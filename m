@@ -1,74 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222Ab1GYSzu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 14:55:50 -0400
-Received: from mga12.intel.com ([143.182.124.36]:47005 "EHLO
-	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751382Ab1GYSzs (ORCPT
+	id S1751563Ab1GYS4y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 14:56:54 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35912 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab1GYS4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 14:55:48 -0400
+	Mon, 25 Jul 2011 14:56:52 -0400
+Date: Mon, 25 Jul 2011 19:56:49 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] vfs pile 1.5
+Message-ID: <20110725185649.GA22133@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <CAJe_ZhdYg4EpaNbBW+dayjSORqM=E6myT3oOG5VTsiQnh3erTA@mail.gmail.com>
-References: <1311185906-7813-1-git-send-email-jaswinder.singh@linaro.org>
-	<1311220903-2545-1-git-send-email-jaswinder.singh@linaro.org>
-	<CACRpkdbWHmob3EWJc6u5=yh=rNwVSR5hu9-Xud5kvQNU9-POtA@mail.gmail.com>
-	<CAJe_Zhc4uJB8N9i2w38zzP3+XxcYF2v-zwsrhERWSi-yObV-6A@mail.gmail.com>
-	<CABE8wwt7dkwgeahYBSUufOvJmVNfYyTss6U5qBgjJk9RVLBkYg@mail.gmail.com>
-	<CAJe_ZhdYg4EpaNbBW+dayjSORqM=E6myT3oOG5VTsiQnh3erTA@mail.gmail.com>
-Date: Mon, 25 Jul 2011 11:55:45 -0700
-Message-ID: <CABE8wwt8J_r9cExG+EAqqK=XVmAyLYhv+-T49Rr9hhKudD8n2g@mail.gmail.com>
-Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
-From: "Williams, Dan J" <dan.j.williams@intel.com>
-To: Jaswinder Singh <jaswinder.singh@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        vinod.koul@intel.com, rmk+kernel@arm.linux.org.uk,
-        linus.walleij@stericsson.com, per.friden@stericsson.com,
-        wei.zhang@freescale.com, ebony.zhu@freescale.com, iws@ovro.caltech.edu,
-        s.hauer@pengutronix.de, maciej.sosnowski@intel.com, saeed@marvell.com,
-        shawn.guo@freescale.com, yur@emcraft.com, agust@denx.de,
-        iwamatsu.nobuhiro@renesas.com, per.forlin@stericsson.com,
-        jonas.aberg@stericsson.com, anemo@mba.ocn.ne.jp
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 8:56 PM, Jaswinder Singh
-<jaswinder.singh@linaro.org> wrote:
-> On 23 July 2011 03:53, Williams, Dan J <dan.j.williams@intel.com> wrote:
->
->>
->> Unless you guaranteed that every id is globally unique I don't see how
->> they are generically usable by common clients?
->>
-> Yes. And the first step is to allow DMAC drivers to freely set chan_id value.
-> Platform could pass the list and mapping of supported 'global channels'
-> via platform_data(?) which the DMAC drivers could set in chan_id
-> And I am not sure of defining a new variable for that, because chan_id
-> is actually used only by some dmac drivers for internal purpose only -
-> which they could do by private variables.
+Regression fixes (devtmpfs race, cifs ->d_revalidate() breakage, fsync
+fallout), ACL stuff (me/Linus/Christoph), fixes for bugs found while
+wading through the mode_t handling.  There'll be another pull request
+with assorted stuff from over the last cycle.
 
-Yes, it does appear to have grown a lot of dubious usage in
-drivers/dma/ for something that is described as just a "channel ID for
-sysfs".  The intent was for drivers that need to maintain their own
-hardware specific identification to define a local id scheme (like
-iop-adma does in the iop3xx case).
+Please, pull from
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
 
-I can sort of see why it is attractive for the goal of having clients
-being able to talk to multiple DMACs since it is a field that all
-channels already implement.  But, I don't think we should be mixing
-sysfs presentation details with a capability that indicates a certain
-compatibility level in a DMAC driver implementation.  If the goal is
-to be able to use a single client with multiple drivers that, to me,
-is asking for a new capability bit (dma_transaction_type) rather than
-an id.  Do you have an example of the client and the DMACs that would
-first take advantage of such a cross DMAC compatibility?
+Shortlog:
 
-> Proposal to have global cross-platform enum of channel-IDs defined by
-> client drivers, was to be my next patch.
-> Though I think, this patch is valid in it's own light.
+Al Viro (11):
+      ocfs2_init_acl(): fix a leak
+      9p: close ACL leaks
+      fix jffs2 ACLs on big-endian with 16bit mode_t
+      asus-wmi: ->is_visible() can't return negative
+      get rid of create_proc_entry() abuses - proc_mkdir() is there for purpose
+      caam: don't pass bogus S_IFCHR to debugfs_create_...()
+      fix devtmpfs race
+      kill boilerplate around posix_acl_chmod_masq()
+      generic_acl: no need to clone acl just to push it to set_cached_acl()
+      kill boilerplates around posix_acl_create_masq()
+      bury posix_acl_..._masq() variants
 
-This is not the purpose of chan_id.
+Christoph Hellwig (4):
+      9p: do no return 0 from ->check_acl without actually checking
+      xfs: cache negative ACLs if there is no attribute fork
+      reiserfs: cache negative ACLs for v1 stat format
+      fs: take the ACL checks to common code
 
---
-Dan
+Linus Torvalds (1):
+      vfs: move ACL cache lookup into generic code
+
+Markus Trippelsdorf (1):
+      xfs: Fix wrong return value of xfs_file_aio_write
+
+Pavel Shilovsky (1):
+      CIFS: Fix oops while mounting with prefixpath
+
+Tim Chen (1):
+      VFS : mount lock scalability for internal mounts
+
+Diffstat:
+ Documentation/filesystems/Locking                  |    4 +-
+ Documentation/filesystems/porting                  |    7 +-
+ Documentation/filesystems/vfs.txt                  |    2 +-
+ arch/arm/mach-bcmring/dma.c                        |    2 +-
+ drivers/base/devtmpfs.c                            |    3 +-
+ drivers/crypto/caam/ctrl.c                         |   26 +++---
+ drivers/mtd/mtdchar.c                              |    2 +-
+ drivers/platform/x86/asus-wmi.c                    |    2 +-
+ drivers/staging/rtl8187se/r8180_core.c             |    2 +-
+ .../staging/rtl8192e/ieee80211/ieee80211_module.c  |    2 +-
+ drivers/staging/rtl8192e/r8192E_core.c             |    6 +-
+ .../staging/rtl8192u/ieee80211/ieee80211_module.c  |    2 +-
+ drivers/staging/rtl8192u/r8192U_core.c             |    6 +-
+ fs/9p/acl.c                                        |   68 +++++---------
+ fs/9p/acl.h                                        |   10 +-
+ fs/9p/vfs_inode_dotl.c                             |   13 ++-
+ fs/anon_inodes.c                                   |    2 +-
+ fs/btrfs/acl.c                                     |   63 +++----------
+ fs/btrfs/ctree.h                                   |    4 +-
+ fs/btrfs/inode.c                                   |   10 +-
+ fs/cifs/dir.c                                      |    2 +-
+ fs/ext2/acl.c                                      |   63 +++----------
+ fs/ext2/acl.h                                      |    4 +-
+ fs/ext2/file.c                                     |    2 +-
+ fs/ext2/namei.c                                    |    4 +-
+ fs/ext3/acl.c                                      |   94 ++++++-------------
+ fs/ext3/acl.h                                      |    4 +-
+ fs/ext3/file.c                                     |    2 +-
+ fs/ext3/namei.c                                    |    4 +-
+ fs/ext4/acl.c                                      |   95 ++++++-------------
+ fs/ext4/acl.h                                      |    4 +-
+ fs/ext4/file.c                                     |    2 +-
+ fs/ext4/namei.c                                    |    4 +-
+ fs/generic_acl.c                                   |   62 +++----------
+ fs/gfs2/acl.c                                      |   75 ++++------------
+ fs/gfs2/acl.h                                      |    2 +-
+ fs/gfs2/inode.c                                    |    6 +-
+ fs/hugetlbfs/inode.c                               |    1 +
+ fs/jffs2/acl.c                                     |   49 +++--------
+ fs/jffs2/acl.h                                     |    6 +-
+ fs/jffs2/dir.c                                     |    2 +-
+ fs/jffs2/file.c                                    |    2 +-
+ fs/jffs2/fs.c                                      |    2 +-
+ fs/jffs2/os-linux.h                                |    2 +-
+ fs/jffs2/symlink.c                                 |    2 +-
+ fs/jfs/acl.c                                       |   75 +++++-----------
+ fs/jfs/file.c                                      |    2 +-
+ fs/jfs/jfs_acl.h                                   |    2 +-
+ fs/jfs/namei.c                                     |    2 +-
+ fs/namei.c                                         |   54 +++++++++++-
+ fs/namespace.c                                     |   21 ++++-
+ fs/nfs/nfs3acl.c                                   |   10 +--
+ fs/ocfs2/acl.c                                     |   77 ++++++-----------
+ fs/ocfs2/acl.h                                     |    2 +-
+ fs/ocfs2/file.c                                    |    4 +-
+ fs/ocfs2/namei.c                                   |    2 +-
+ fs/pipe.c                                          |    2 +-
+ fs/posix_acl.c                                     |   48 ++++++++--
+ fs/reiserfs/file.c                                 |    2 +-
+ fs/reiserfs/inode.c                                |    5 +
+ fs/reiserfs/namei.c                                |    6 +-
+ fs/reiserfs/xattr.c                                |   27 ------
+ fs/reiserfs/xattr_acl.c                            |   71 +++++----------
+ fs/xfs/linux-2.6/xfs_acl.c                         |   80 ++++-------------
+ fs/xfs/linux-2.6/xfs_file.c                        |    5 +-
+ fs/xfs/linux-2.6/xfs_iops.c                        |   14 ++-
+ fs/xfs/linux-2.6/xfs_trace.h                       |    2 +-
+ fs/xfs/xfs_acl.h                                   |    2 -
+ include/linux/fs.h                                 |    3 +-
+ include/linux/generic_acl.h                        |    1 -
+ include/linux/posix_acl.h                          |    5 +-
+ include/linux/reiserfs_acl.h                       |    6 +-
+ include/linux/reiserfs_xattr.h                     |    2 -
+ mm/shmem.c                                         |    6 --
+ security/selinux/selinuxfs.c                       |    1 +
+ sound/core/info.c                                  |    2 +-
+ 76 files changed, 477 insertions(+), 795 deletions(-)
