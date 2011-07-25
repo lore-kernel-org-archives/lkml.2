@@ -1,98 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab1GYTng (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 15:43:36 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:33482 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab1GYTne convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 15:43:34 -0400
+	id S1752815Ab1GYTn4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 15:43:56 -0400
+Received: from home.keithp.com ([63.227.221.253]:37713 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752078Ab1GYTnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 15:43:55 -0400
+From: Keith Packard <keithp@keithp.com>
+To: wwguy <wey-yi.w.guy@intel.com>
+Cc: Intel Linux Wireless <ilw@linux.intel.com>,
+        "linux-wireless\@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] iwlagn: check for !priv->txq in iwlagn_wait_tx_queue_empty
+In-Reply-To: <1311622594.3431.0.camel@wwguy-ubuntu>
+References: <1311622702-4807-1-git-send-email-keithp@keithp.com> <1311622594.3431.0.camel@wwguy-ubuntu>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Mon, 25 Jul 2011 12:43:52 -0700
+Message-ID: <yuny5zmuow7.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-In-Reply-To: <1311618747.3526.32.camel@gandalf.stny.rr.com>
-References: <1310982010-13849-1-git-send-email-wangshaoyan.pt@taobao.com>
-	<1311618747.3526.32.camel@gandalf.stny.rr.com>
-Date: Mon, 25 Jul 2011 15:43:32 -0400
-Message-ID: <CACqU3MVJ9Oj4pXH9O_2jnqDVBqKA+AgoWHwP-n2HGD4LU0pMHQ@mail.gmail.com>
-Subject: Re: [PATCH] TRACING: Fix a copmile warning
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: stufever@gmail.com, linux-kernel@vger.kernel.org,
-        Wang Shaoyan <wangshaoyan.pt@taobao.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jul 25, 2011 at 2:32 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Mon, 2011-07-18 at 17:40 +0800, stufever@gmail.com wrote:
->> From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
->>
->> It's harmless but annyoing.
->>   kernel/trace/trace_printk.c: In function 'module_trace_bprintk_format_notify':
->>   kernel/trace/trace_printk.c:52: warning: 'fmt' may be used uninitialized in this function
->
-> I prefer not to add this patch. Fix gcc. Actually some gcc's do not warn
-> on this, others do. Here's the code that confuses gcc:
->
->                tb_fmt = kmalloc(sizeof(*tb_fmt), GFP_KERNEL);
->                if (tb_fmt)
->                        fmt = kmalloc(strlen(*iter) + 1, GFP_KERNEL);
->                if (tb_fmt && fmt) {
->                        list_add_tail(&tb_fmt->list, &trace_bprintk_fmt_list);
->                        strcpy(fmt, *iter);
->                        tb_fmt->fmt = fmt;
->                        *iter = tb_fmt->fmt;
->
->
-> fmt will never be looked at if tb_fmt is NULL, and fmt is initialized if
-> tb_fmt is not NULL.
->
-Actually, we have a special uninitialized_var(x) macro to handle such
-false positive. From include/linux/compiler-gcc.h:
+On Mon, 25 Jul 2011 12:36:34 -0700, wwguy <wey-yi.w.guy@intel.com> wrote:
 
-/*
- * A trick to suppress uninitialized variable warning without generating any
- * code
- */
-#define uninitialized_var(x) x = x
+> is this against any bug in bugzilla? please include the information in
+> description
 
- - Arnaud
+I looked in bugzilla and didn't find anything matching -- the only
+iwlagn suspend bug I could find was already resolved and completely
+different.
 
-> -- Steve
->
->>
->> Cc: Steven Rostedt <rostedt@goodmis.org>
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Cc: Ingo Molnar <mingo@redhat.com>
->> Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
->>
->> ---
->>  kernel/trace/trace_printk.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
->> index 1f06468..1a5fff8 100644
->> --- a/kernel/trace/trace_printk.c
->> +++ b/kernel/trace/trace_printk.c
->> @@ -49,7 +49,7 @@ static
->>  void hold_module_trace_bprintk_format(const char **start, const char **end)
->>  {
->>       const char **iter;
->> -     char *fmt;
->> +     char *fmt = NULL;
->>
->>       mutex_lock(&btrace_mutex);
->>       for (iter = start; iter < end; iter++) {
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOLcd4Qp8BWwlsTdMRAnLxAJ4gSafBaofppYeuH5dqY602qatkuACgpak8
+PZHzXflZy/g9AUFkkaaaPSo=
+=9Nlv
+-----END PGP SIGNATURE-----
+--=-=-=--
