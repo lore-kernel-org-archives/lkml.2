@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab1GYUUi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 16:20:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26036 "EHLO mx1.redhat.com"
+	id S1752739Ab1GYUU2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 16:20:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25345 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765Ab1GYUUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 16:20:31 -0400
+	id S1752571Ab1GYUUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 16:20:25 -0400
 From: Johannes Weiner <jweiner@redhat.com>
 To: linux-mm@kvack.org
 Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
@@ -14,9 +14,9 @@ Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
         Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
         Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
         Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [patch 5/5] mm: filemap: horrid hack to pass __GFP_WRITE for most page cache writers
-Date: Mon, 25 Jul 2011 22:19:19 +0200
-Message-Id: <1311625159-13771-6-git-send-email-jweiner@redhat.com>
+Subject: [patch 3/5] mm: writeback: remove seriously stale comment on dirty limits
+Date: Mon, 25 Jul 2011 22:19:17 +0200
+Message-Id: <1311625159-13771-4-git-send-email-jweiner@redhat.com>
 In-Reply-To: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
 References: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,76 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johannes Weiner <hannes@cmpxchg.org>
 
-This makes every page allocation that results from grabbing a single
-page in the page cache pass __GFP_WRITE.
-
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- include/linux/pagemap.h |    6 ++++--
- mm/filemap.c            |    8 ++++++--
- 2 files changed, 10 insertions(+), 4 deletions(-)
+ mm/page-writeback.c |   18 ------------------
+ 1 files changed, 0 insertions(+), 18 deletions(-)
 
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index 716875e..3355c9b 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -244,12 +244,14 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
- 			pgoff_t index, unsigned flags);
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index a4de005..41dc871 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -379,24 +379,6 @@ int bdi_set_max_ratio(struct backing_dev_info *bdi, unsigned max_ratio)
+ EXPORT_SYMBOL(bdi_set_max_ratio);
  
  /*
-- * Returns locked page at given index in given cache, creating it if needed.
-+ * Returns locked page at given index in given cache, creating it if
-+ * needed.  XXX: Assumes that page will be dirtied soon!
-  */
- static inline struct page *grab_cache_page(struct address_space *mapping,
- 								pgoff_t index)
- {
--	return find_or_create_page(mapping, index, mapping_gfp_mask(mapping));
-+	return find_or_create_page(mapping, index,
-+				   mapping_gfp_mask(mapping) | __GFP_WRITE);
- }
- 
- extern struct page * grab_cache_page_nowait(struct address_space *mapping,
-diff --git a/mm/filemap.c b/mm/filemap.c
-index a8251a8..e315d46 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1030,6 +1030,7 @@ struct page *
- grab_cache_page_nowait(struct address_space *mapping, pgoff_t index)
- {
- 	struct page *page = find_get_page(mapping, index);
-+	gfp_t gfp_mask;
- 
- 	if (page) {
- 		if (trylock_page(page))
-@@ -1037,7 +1038,8 @@ grab_cache_page_nowait(struct address_space *mapping, pgoff_t index)
- 		page_cache_release(page);
- 		return NULL;
- 	}
--	page = __page_cache_alloc(mapping_gfp_mask(mapping) & ~__GFP_FS);
-+	gfp_mask = (mapping_gfp_mask(mapping) | __GFP_WRITE) & ~__GFP_FS;
-+	page = __page_cache_alloc(gfp_mask);
- 	if (page && add_to_page_cache_lru(page, mapping, index, GFP_NOFS)) {
- 		page_cache_release(page);
- 		page = NULL;
-@@ -2330,6 +2332,7 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
- 					pgoff_t index, unsigned flags)
- {
- 	int status;
-+	gfp_t gfp_mask;
- 	struct page *page;
- 	gfp_t gfp_notmask = 0;
- 	if (flags & AOP_FLAG_NOFS)
-@@ -2339,7 +2342,8 @@ repeat:
- 	if (page)
- 		goto found;
- 
--	page = __page_cache_alloc(mapping_gfp_mask(mapping) & ~gfp_notmask);
-+	gfp_mask = (mapping_gfp_mask(mapping) | __GFP_WRITE) & ~gfp_notmask;
-+	page = __page_cache_alloc(gfp_mask);
- 	if (!page)
- 		return NULL;
- 	status = add_to_page_cache_lru(page, mapping, index,
+- * Work out the current dirty-memory clamping and background writeout
+- * thresholds.
+- *
+- * The main aim here is to lower them aggressively if there is a lot of mapped
+- * memory around.  To avoid stressing page reclaim with lots of unreclaimable
+- * pages.  It is better to clamp down on writers than to start swapping, and
+- * performing lots of scanning.
+- *
+- * We only allow 1/2 of the currently-unmapped memory to be dirtied.
+- *
+- * We don't permit the clamping level to fall below 5% - that is getting rather
+- * excessive.
+- *
+- * We make sure that the background writeout level is below the adjusted
+- * clamping level.
+- */
+-
+-/*
+  * global_dirty_limits - background-writeback and dirty-throttling thresholds
+  *
+  * Calculate the dirty thresholds based on sysctl parameters
 -- 
 1.7.6
 
