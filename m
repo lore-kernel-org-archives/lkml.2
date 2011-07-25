@@ -1,95 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab1GYVrj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 17:47:39 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:61001 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab1GYVrf (ORCPT
+	id S1753163Ab1GYVn3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 17:43:29 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:46811 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064Ab1GYVnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 17:47:35 -0400
-Date: Tue, 26 Jul 2011 01:47:31 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>, linux-kernel@vger.kernel.org,
-        Pekka Enberg <penberg@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 0/3] minor cleanups to EFLAGS initialisation in
- ret_from_fork
-Message-ID: <20110725214731.GE27137@sun>
-References: <1311587883.27940.20.camel@cthulhu.hellion.org.uk>
- <20110725101902.GP4362@sun>
- <20110725182049.GD27137@sun>
- <4E2DDBAA.60200@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E2DDBAA.60200@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 25 Jul 2011 17:43:19 -0400
+From: Jim Cromie <jim.cromie@gmail.com>
+To: jbaron@redhat.com
+Cc: bvanassche@acm.org, joe@perches.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, gnb@fmeh.org,
+        Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH 03/25] dynamic_debug: use pr_debug instead of pr_info
+Date: Mon, 25 Jul 2011 15:42:28 -0600
+Message-Id: <1311630170-26057-4-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1311630170-26057-1-git-send-email-jim.cromie@gmail.com>
+References: <1311630170-26057-1-git-send-email-jim.cromie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 02:10:02PM -0700, H. Peter Anvin wrote:
-> On 07/25/2011 11:20 AM, Cyrill Gorcunov wrote:
-> > On Mon, Jul 25, 2011 at 02:19:02PM +0400, Cyrill Gorcunov wrote:
-> >> On Mon, Jul 25, 2011 at 10:58:03AM +0100, Ian Campbell wrote:
-> >>> The following series removes the use of a global kernel_eflags variable
-> >>> from the x86_64 ret_from_fork path and (very slightly) merges the 32 and
-> >>> 64 bit version of that code path.
-> >>>
-> >>> kernel_eflags could be made a __read_mostly but actually there is no
-> >>> reason to prefer the value at cpu_init() time to a compile time constant
-> >>> value for the initial eflags after a fork.
-> >>>
-> >>> Ian.
-> >>>
-> >>
-> >> Thanks, Ian! I think noone against this simplification, Peter, Andi?
-> >>
-> >> 	Cyrill
-> > 
-> > Ian, I've missed in first place that you've opened IRQs window _before_
-> > schedule_tail() call, ie it's not 1:1 code mapping as it was before.
-> > 
-> > Note kernel_eflags has IF clear and what we have: the ret_from_fork on
-> > x86-64 happens _only_ inside context_switch call, ie
-> > 
-> > schedule (sched.c)
-> >         ...
-> >         raw_spin_lock_irq
-> >         ...
-> >         context_switch
-> >                 switch_to
-> >                         "jnz   ret_from_fork\n\t"
-> >                         pushq_cfi kernel_eflags(%rip)
-> >                         popfq_cfi                               # reset kernel eflags
-> > 
-> > --->                    irqs are still disabled
-> > 
-> >                         call schedule_tail                      # rdi: 'prev' task parameter
-> >                                 finish_lock_switch
-> >                                         raw_spin_unlock_irq
-> > 
-> > I bet raw_spin_lock_irq at the beginning of the schedule() is set
-> > for a reason and such change is not safe. Though I may be missing
-> > something again...
-> > 
-> 
-> This definitely doesn't look "obviously safe" to me.  However, does
-> anyone see a problem with unconditionally leaving IF disabled even on 32
-> bits (I haven't traced all the paths yet), i.e. doing the *opposite* of
-> Ian's patch #2?
-> 
-> 	-hpa
-> 
+Replace almost all occurrences of "if (verbose) pr_info()" with
+pr_debug(), and get full control of output at each callsite.
+Leave a few sites unaltered:
 
-On x86-32 it seems to be similar (not identical in calls though)
+1st also uses pr_cont(), and theres no pr_debug_cont().
+2nd is in ddebug_add_module(), which is called during arch_init,
+too early for callsite to be enabled when called.
 
-copy_thread()
-	p->thread.ip = (unsigned long)ret_from_fork;
+3rd, pr_debug doesnt work in dynamic_debug_init(), its too early.
+Also move the print ddebug_setup_string prior to parsing, since
+afterwards it's been chopped up with '\0's, and only 1st word is seen.
 
-and the task get queued into tasks queue, but later when switch_to
-happens irqs are blocked at ret_from_fork call. I better poke PeterZ
-here /CC'ed/ ;)
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+---
+ lib/dynamic_debug.c |   66 ++++++++++++++++++++-------------------------------
+ 1 files changed, 26 insertions(+), 40 deletions(-)
 
-	Cyrill
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index af6f1ae..a7161db 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -157,18 +157,17 @@ static void ddebug_change(const struct ddebug_query *query,
+ 				dp->enabled = 1;
+ 			else
+ 				dp->enabled = 0;
+-			if (verbose)
+-				pr_info("changed %s:%d [%s]%s %s\n",
+-					dp->filename, dp->lineno,
+-					dt->mod_name, dp->function,
+-					ddebug_describe_flags(dp, flagbuf,
+-							sizeof(flagbuf)));
++			pr_debug("changed %s:%d [%s]%s %s\n",
++				dp->filename, dp->lineno,
++				dt->mod_name, dp->function,
++				ddebug_describe_flags(dp, flagbuf,
++						sizeof(flagbuf)));
+ 		}
+ 	}
+ 	mutex_unlock(&ddebug_lock);
+ 
+-	if (!nfound && verbose)
+-		pr_info("no matches for query\n");
++	if (!nfound)
++		pr_debug("no matches for query\n");
+ }
+ 
+ /*
+@@ -333,12 +332,11 @@ static int ddebug_parse_query(char *words[], int nwords,
+ 		}
+ 	}
+ 
+-	if (verbose)
+-		pr_info("q->function=\"%s\" q->filename=\"%s\" "
+-			"q->module=\"%s\" q->format=\"%s\" q->lineno=%u-%u\n",
+-			query->function, query->filename,
+-			query->module, query->format, query->first_lineno,
+-			query->last_lineno);
++	pr_debug("q->function=\"%s\" q->filename=\"%s\" "
++		"q->module=\"%s\" q->format=\"%s\" q->lineno=%u-%u\n",
++		query->function, query->filename,
++		query->module, query->format, query->first_lineno,
++		query->last_lineno);
+ 
+ 	return 0;
+ }
+@@ -364,8 +362,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 	default:
+ 		return -EINVAL;
+ 	}
+-	if (verbose)
+-		pr_info("op='%c'\n", op);
++	pr_debug("op='%c'\n", op);
+ 
+ 	for ( ; *str ; ++str) {
+ 		for (i = ARRAY_SIZE(opt_array) - 1; i >= 0; i--) {
+@@ -379,8 +376,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 	}
+ 	if (flags == 0)
+ 		return -EINVAL;
+-	if (verbose)
+-		pr_info("flags=0x%x\n", flags);
++	pr_debug("flags=0x%x\n", flags);
+ 
+ 	/* calculate final *flagsp, *maskp according to mask and op */
+ 	switch (op) {
+@@ -397,8 +393,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 		*flagsp = 0;
+ 		break;
+ 	}
+-	if (verbose)
+-		pr_info("*flagsp=0x%x *maskp=0x%x\n", *flagsp, *maskp);
++	pr_debug("*flagsp=0x%x *maskp=0x%x\n", *flagsp, *maskp);
+ 	return 0;
+ }
+ 
+@@ -542,8 +537,7 @@ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
+ 	if (copy_from_user(tmpbuf, ubuf, len))
+ 		return -EFAULT;
+ 	tmpbuf[len] = '\0';
+-	if (verbose)
+-		pr_info("read %d bytes from userspace\n", (int)len);
++	pr_debug("read %d bytes from userspace\n", (int)len);
+ 
+ 	ret = ddebug_exec_query(tmpbuf);
+ 	if (ret)
+@@ -605,8 +599,7 @@ static void *ddebug_proc_start(struct seq_file *m, loff_t *pos)
+ 	struct _ddebug *dp;
+ 	int n = *pos;
+ 
+-	if (verbose)
+-		pr_info("called m=%p *pos=%lld\n", m, (unsigned long long)*pos);
++	pr_debug("called m=%p *pos=%lld\n", m, (unsigned long long)*pos);
+ 
+ 	mutex_lock(&ddebug_lock);
+ 
+@@ -630,9 +623,8 @@ static void *ddebug_proc_next(struct seq_file *m, void *p, loff_t *pos)
+ 	struct ddebug_iter *iter = m->private;
+ 	struct _ddebug *dp;
+ 
+-	if (verbose)
+-		pr_info("called m=%p p=%p *pos=%lld\n",
+-			m, p, (unsigned long long)*pos);
++	pr_debug("called m=%p p=%p *pos=%lld\n",
++		m, p, (unsigned long long)*pos);
+ 
+ 	if (p == SEQ_START_TOKEN)
+ 		dp = ddebug_iter_first(iter);
+@@ -654,8 +646,7 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
+ 	struct _ddebug *dp = p;
+ 	char flagsbuf[8];
+ 
+-	if (verbose)
+-		pr_info("called m=%p p=%p\n", m, p);
++	pr_debug("called m=%p p=%p\n", m, p);
+ 
+ 	if (p == SEQ_START_TOKEN) {
+ 		seq_puts(m,
+@@ -679,8 +670,7 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
+  */
+ static void ddebug_proc_stop(struct seq_file *m, void *p)
+ {
+-	if (verbose)
+-		pr_info("called m=%p p=%p\n", m, p);
++	pr_debug("called m=%p p=%p\n", m, p);
+ 	mutex_unlock(&ddebug_lock);
+ }
+ 
+@@ -702,8 +692,7 @@ static int ddebug_proc_open(struct inode *inode, struct file *file)
+ 	struct ddebug_iter *iter;
+ 	int err;
+ 
+-	if (verbose)
+-		pr_info("called\n");
++	pr_debug("called\n");
+ 
+ 	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
+ 	if (iter == NULL)
+@@ -775,8 +764,7 @@ int ddebug_remove_module(const char *mod_name)
+ 	struct ddebug_table *dt, *nextdt;
+ 	int ret = -ENOENT;
+ 
+-	if (verbose)
+-		pr_info("removing module \"%s\"\n", mod_name);
++	pr_debug("removing module \"%s\"\n", mod_name);
+ 
+ 	mutex_lock(&ddebug_lock);
+ 	list_for_each_entry_safe(dt, nextdt, &ddebug_tables, link) {
+@@ -850,13 +838,11 @@ static int __init dynamic_debug_init(void)
+ 
+ 	/* ddebug_query boot param got passed -> set it up */
+ 	if (ddebug_setup_string[0] != '\0') {
++		pr_info("ddebug initializing with string \"%s\"",
++			ddebug_setup_string);
+ 		ret = ddebug_exec_query(ddebug_setup_string);
+ 		if (ret)
+-			pr_warn("Invalid ddebug boot param %s",
+-				ddebug_setup_string);
+-		else
+-			pr_info("ddebug initialized with string %s",
+-				ddebug_setup_string);
++			pr_warn("invalid ddebug_query\n");
+ 	}
+ 
+ out_free:
+-- 
+1.7.4.1
+
