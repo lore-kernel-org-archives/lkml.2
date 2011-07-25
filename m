@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751370Ab1GYITb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 04:19:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60096 "EHLO mx2.suse.de"
+	id S1751359Ab1GYIVp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 04:21:45 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:33428 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751105Ab1GYITZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 04:19:25 -0400
-Date: Mon, 25 Jul 2011 09:19:18 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <jweiner@redhat.com>
-Subject: Re: [PATCH 2/8] xfs: Warn if direct reclaim tries to writeback pages
-Message-ID: <20110725081918.GZ5349@suse.de>
-References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
- <1311265730-5324-3-git-send-email-mgorman@suse.de>
- <20110724113200.GA26332@infradead.org>
+	id S1750977Ab1GYIVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 04:21:38 -0400
+X-ASG-Debug-ID: 1311582088-01de280c1eec9b0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E2D2784.3060701@fusionio.com>
+Date: Mon, 25 Jul 2011 10:21:24 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110724113200.GA26332@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Shaohua Li <shli@kernel.org>
+CC: Dan Williams <dan.j.williams@intel.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Roland Dreier <roland@purestorage.com>,
+        Dave Jiang <dave.jiang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/2] block: strict rq_affinity
+References: <20110722205736.17420.41366.stgit@localhost6.localdomain6> <20110722205938.17420.68621.stgit@localhost6.localdomain6> <4E2B15DB.4090302@fusionio.com> <CANejiEVMHhOW0N4Wn9LG0NAXMX3uOz5QzcRXZV4Ow4RTsMvN5Q@mail.gmail.com>
+X-ASG-Orig-Subj: Re: [RFC PATCH 1/2] block: strict rq_affinity
+In-Reply-To: <CANejiEVMHhOW0N4Wn9LG0NAXMX3uOz5QzcRXZV4Ow4RTsMvN5Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1311582088
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=INFO_TLD
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.69905
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.00 INFO_TLD               URI: Contains an URL in the INFO top-level domain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 24, 2011 at 07:32:00AM -0400, Christoph Hellwig wrote:
-> On Thu, Jul 21, 2011 at 05:28:44PM +0100, Mel Gorman wrote:
-> > --- a/fs/xfs/linux-2.6/xfs_aops.c
-> > +++ b/fs/xfs/linux-2.6/xfs_aops.c
-> > @@ -930,12 +930,13 @@ xfs_vm_writepage(
-> >  	 * random callers for direct reclaim or memcg reclaim.  We explicitly
-> >  	 * allow reclaim from kswapd as the stack usage there is relatively low.
-> >  	 *
-> > -	 * This should really be done by the core VM, but until that happens
-> > -	 * filesystems like XFS, btrfs and ext4 have to take care of this
-> > -	 * by themselves.
-> > +	 * This should never happen except in the case of a VM regression so
-> > +	 * warn about it.
-> >  	 */
-> > -	if ((current->flags & (PF_MEMALLOC|PF_KSWAPD)) == PF_MEMALLOC)
-> > +	if ((current->flags & (PF_MEMALLOC|PF_KSWAPD)) == PF_MEMALLOC) {
-> > +		WARN_ON_ONCE(1);
-> >  		goto redirty;
-> 
-> The nicer way to write this is
-> 
-> 	if (WARN_ON(current->flags & (PF_MEMALLOC|PF_KSWAPD)) == PF_MEMALLOC)
-> 		goto redirty;
-> 
+On 2011-07-25 03:14, Shaohua Li wrote:
+> 2011/7/24 Jens Axboe <jaxboe@fusionio.com>:
+>> On 2011-07-22 22:59, Dan Williams wrote:
+>>> Some storage controllers benefit from completions always being steered
+>>> to the strict requester cpu rather than the looser "per-socket" steering
+>>> that blk_cpu_to_group() attempts by default.
+>>>
+>>> echo 2 > /sys/block/<bdev>/queue/rq_affinity
+>>
+>> I have applied this one, with a modified patch description.
+>>
+>> I like the adaptive solution, but it should be rewritten to not declare
+>> and expose softirq internals. Essentially have an API from
+>> kernel/softirq.c that can return whether a given (or perhaps just local)
+>> softirq handler is busy or not.
+> Jens,
+> I posted a similar patch about two years ago(
+> http://marc.info/?l=linux-kernel&m=126136252929329&w=2).
+> At that time, you actually did a lot of tests and said the same cpu
+> approach will cause huge lock contention and bounce. Is that get fixed?
 
-I wanted to avoid side effects if WARN_ON was compiled out similar to
-the care that is normally taken for BUG_ON but it's unnecessary and
-your version is far tidier. Do you really want WARN_ON used instead
-of WARN_ON_ONCE()?
+Yep, it's not ideal. But if we are running out of steam on a single
+processor, there's really not much of an option currently.
 
 -- 
-Mel Gorman
-SUSE Labs
+Jens Axboe
+
