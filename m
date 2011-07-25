@@ -1,82 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751254Ab1GYGnn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 02:43:43 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:53782 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750967Ab1GYGnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 02:43:39 -0400
-Date: Mon, 25 Jul 2011 08:42:52 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: linux-kernel@vger.kernel.org, x86 <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>, Avi Kivity <avi@redhat.com>
-Subject: Re: [RFC] syscall calling convention, stts/clts, and xstate latency
-Message-ID: <20110725064252.GD694@elte.hu>
-References: <CAObL_7GCDsfXWRJgkNk7c44GNF0JhQPAH_P0WiYHK7QUX1Bcaw@mail.gmail.com>
- <20110724211526.GA6785@elte.hu>
- <CAObL_7H1j1cewgWP6Jmkw_H9dZVh1kxRGgTLa+ju=ns4gYxMdA@mail.gmail.com>
- <CAObL_7EuFXbuxpz2bzKuEReyDHo+mBxDyJSf_rjBKpdnUmEzLQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751187Ab1GYGyg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 02:54:36 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:5156 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781Ab1GYGya convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:6:1>);
+	Mon, 25 Jul 2011 02:54:30 -0400
+Message-Id: <4E2D2F40020000780004F5CE@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Mon, 25 Jul 2011 07:54:24 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, "Richard Weinberger" <richard@nod.at>
+Cc: "Stephen Rothwell" <sfr@canb.auug.org.au>, <akpm@linux-foundation.org>,
+        <user-mode-linux-devel@lists.sourceforge.net>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        "Randy Dunlap" <rdunlap@xenotime.net>
+Subject: Re: linux-next: Tree for July 22 (uml)
+References: <20110722164237.2b3f6cbdedafa9e1d3f70867@canb.auug.org.au>
+ <20110722085346.51565411.rdunlap@xenotime.net>
+ <201107222055.35341.richard@nod.at>
+In-Reply-To: <201107222055.35341.richard@nod.at>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <CAObL_7EuFXbuxpz2bzKuEReyDHo+mBxDyJSf_rjBKpdnUmEzLQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Andrew Lutomirski <luto@mit.edu> wrote:
-
-> On Sun, Jul 24, 2011 at 6:34 PM, Andrew Lutomirski <luto@mit.edu> wrote:
-> >
-> > I had in mind something a little less ambitious: making 
-> > kernel_fpu_begin very fast, especially when used more than once. 
-> > Currently it's slow enough to have spawned arch/x86/crypto/fpu.c, 
-> > which is a hideous piece of infrastructure that exists solely to 
-> > reduce the number of kernel_fpu_begin/end pairs when using 
-> > AES-NI. Clobbering registers in syscall would reduce the cost 
-> > even more, but it might require having a way to detect whether 
-> > the most recent kernel entry was via syscall or some other means.
+>>> On 22.07.11 at 20:55, Richard Weinberger <richard@nod.at> wrote:
+> Am Freitag 22 Juli 2011, 17:53:46 schrieben Sie:
+>> On Fri, 22 Jul 2011 16:42:37 +1000 Stephen Rothwell wrote:
+>> > Hi all,
+>> 
+>> uml build on i386 fails with:
+>> 
+>> arch/um/sys-i386/built-in.o: In function `call_rwsem_down_read_failed':
+>> linux-next-20110722/arch/um/sys-i386/../../x86/lib/rwsem.S:93: undefined
+>> reference to `rwsem_down_read_failed' arch/um/sys-i386/built-in.o: In
+>> function `call_rwsem_down_write_failed':
+>> linux-next-20110722/arch/um/sys-i386/../../x86/lib/rwsem.S:105: undefined
+>> reference to `rwsem_down_write_failed' arch/um/sys-i386/built-in.o: In
+>> function `call_rwsem_wake':
+>> linux-next-20110722/arch/um/sys-i386/../../x86/lib/rwsem.S:118: undefined
+>> reference to `rwsem_wake' arch/um/sys-i386/built-in.o: In function
+>> `call_rwsem_downgrade_wake':
+>> linux-next-20110722/arch/um/sys-i386/../../x86/lib/rwsem.S:130: undefined
+>> reference to `rwsem_downgrade_wake'
+>> 
 > 
-> I think it will be very hard to inadvertently cause a regression, 
-> because the current code looks pretty bad.
-
-[ heh, one of the rare cases where bad code works in our favor ;-) ]
-
-> 1. Once a task uses xstate for five timeslices, the kernel decides 
-> that it will continue using it.  The only thing that clears that 
-> condition is __unlazy_fpu called with TS_USEDFPU set.  The only way 
-> I can see for that to happen is if kernel_fpu_begin is called twice 
-> in a row between context switches, and that has little do with the 
-> task's xstate usage.
+> Jan,
 > 
-> 2. __switch_to, when switching to a task with fpu_counter > 5, will 
-> do stts(); clts().
+> "x86: Unify rwsem assembly implementation" broke the UML build on i386.
+> Please compile test you changes or CC me when you are touch something in 
+> arch/um/.
 > 
-> The combination means that when switching between two xstate-using 
-> tasks (or even tasks that were once xstate-using), we pay the full 
-> price of a state save/restore *and* stts/clts.
+> make ARCH=um SUBARCH=i386
+> and
+> make ARCH=um SUBARCH=x86_64
+> 
+> does not hurt. :-)
 
-I'm all for simplifying this for modern x86 CPUs.
+I'm sorry for that - I actually meant to, but then forgot.
 
-The lazy FPU switching logic was kind of neat on UP but started 
-showing its limitations with SMP already - and that was 10 years ago.
+> Thanks,
+> //richard
+> 
+> ---
+> 
+> From b9ec24beb55276d74fdf4f9f9607c69fc8662b72 Mon Sep 17 00:00:00 2001
+> From: Richard Weinberger <richard@nod.at>
+> Date: Fri, 22 Jul 2011 20:46:32 +0200
+> Subject: [PATCH] um: Make rwsem.S depend on CONFIG_RWSEM_XCHGADD_ALGORITHM
+> 
+> rwsem.S can only be used with CONFIG_RWSEM_XCHGADD_ALGORITHM.
+> This unbreaks the UML build on i386.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
 
-So if the numbers prove you right then go for it. It's an added bonus 
-that this could enable the kernel to be built using vector 
-instructions - you may or may not want to shoot for the glory of 
-achieving that feat first ;-)
+Acked-by: Jan Beulich <jbeulich@novell.com>
 
-Thanks,
+> ---
+>  arch/um/sys-i386/Makefile |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/um/sys-i386/Makefile b/arch/um/sys-i386/Makefile
+> index 15587ed..87b659d 100644
+> --- a/arch/um/sys-i386/Makefile
+> +++ b/arch/um/sys-i386/Makefile
+> @@ -8,7 +8,8 @@ obj-y = bug.o bugs.o checksum.o delay.o fault.o ksyms.o ldt.o 
+> ptrace.o \
+>  
+>  obj-$(CONFIG_BINFMT_ELF) += elfcore.o
+>  
+> -subarch-obj-y = lib/rwsem.o lib/string_32.o
+> +subarch-obj-y = lib/string_32.o
+> +subarch-obj-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += lib/rwsem.o
+>  subarch-obj-$(CONFIG_HIGHMEM) += mm/highmem_32.o
+>  subarch-obj-$(CONFIG_MODULES) += kernel/module.o
+>  
 
-	Ingo
+
+
+
