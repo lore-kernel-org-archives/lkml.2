@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751844Ab1GYKKS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 06:10:18 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47655 "EHLO mail.skyhub.de"
+	id S1751836Ab1GYKMX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 06:12:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4802 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074Ab1GYKKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 06:10:12 -0400
-Date: Mon, 25 Jul 2011 12:10:08 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        rjw@sisk.pl
-Subject: Re: better oopsing when frozen
-Message-ID: <20110725101008.GA22126@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Oliver Neukum <oneukum@suse.de>,
-	linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-	rjw@sisk.pl
-References: <201107251043.19932.oneukum@suse.de>
+	id S1751074Ab1GYKMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 06:12:17 -0400
+Message-ID: <4E2D4177.9000402@redhat.com>
+Date: Mon, 25 Jul 2011 12:12:07 +0200
+From: Zdenek Kabelac <zkabelac@redhat.com>
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110720 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <201107251043.19932.oneukum@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: device-mapper development <dm-devel@redhat.com>
+CC: Kay Sievers <kay.sievers@vrfy.org>, Greg KH <greg@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [dm-devel] [PATCH] Reduce number of KOBJ_REMOVE events
+References: <4E2987AE.2070707@redhat.com> <1311553130.1671.21.camel@mop>
+In-Reply-To: <1311553130.1671.21.camel@mop>
+X-Enigmail-Version: 1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 10:43:19AM +0200, Oliver Neukum wrote:
-> Hi Rafael,
+Dne 25.7.2011 02:18, Kay Sievers napsal(a):
+> On Fri, 2011-07-22 at 16:22 +0200, Zdenek Kabelac wrote:
 > 
-> I had a problem with the kernel stopping the machine forever because I got an
-> oops while tasks were frozen. It seems to me that we should thaw when this
-> happens. How about this approach?
+>> For now udev recieves 3 event for removal of DM logical volumes. (1 for
+>> bdi and 2 for same block kobject). Reason is dm device generates its
+>> own kobject event with approriate env parameter and block layer sends
+>> another KOBJ_REMOVE event on its own unconditionaly for the same
+>> kobject. As for now only the kobject cleanup checks that the REMOVE
+>> event has been already sent and avoids duplicate REMOVE event.
 > 
-> 	Regards
-> 		Oliver
+>> The patch for kobject_uevent_env() which has been testing for duplicate
+>> REMOVE event did not passed into the mainline (yet?):
 > 
-> From 6f3b5e7a5c7ccf3564bdd2e703eba7eee753ecdc Mon Sep 17 00:00:00 2001
-> From: Oliver Neukum <oliver@neukum.org>
-> Date: Fri, 22 Jul 2011 11:20:19 +0200
-> Subject: [PATCH] unfreeze tasks if an oops happens while tasks are frozen
+> No, it's wasn't merged. Subsystems should really not send their own
+> 'add' or 'remove' events. These are properties of the driver core.
 > 
-> If an oops kills the task suspending or snapshotting
-> is system, the system is dead because the action is
-> never completed and the tasks never thawed.
+>> I'm proposing alternative way around to always use kobject cleanup
+>> routine for sending REMOVE event if it was not send by the module - so
+>> it makes the code few lines shorter.
 > 
-> Signed-off-by: Oliver Neukum <oneukum@suse.de>
-> ---
->  include/linux/freezer.h |    1 +
->  kernel/panic.c          |    2 ++
->  kernel/power/process.c  |   11 +++++++++++
->  3 files changed, 14 insertions(+), 0 deletions(-)
+> The events the core creates are only sent out at release() not at del(),
+> so we would delay 'remove' events when we keep the device pinned but
+> it's not valid anymore. We can not do that today, we would need to move
+> the core-created 'remove' events to del().
 > 
-> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-> index 1effc8b..9907cf6 100644
-> --- a/include/linux/freezer.h
-> +++ b/include/linux/freezer.h
-> @@ -50,6 +50,7 @@ extern int thaw_process(struct task_struct *p);
->  extern void refrigerator(void);
->  extern int freeze_processes(void);
->  extern void thaw_processes(void);
-> +extern void thaw_in_oops(void);
->  
->  static inline int try_to_freeze(void)
->  {
-> diff --git a/kernel/panic.c b/kernel/panic.c
-> index 6923167..255e662 100644
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
-> @@ -23,6 +23,7 @@
->  #include <linux/init.h>
->  #include <linux/nmi.h>
->  #include <linux/dmi.h>
-> +#include <linux/freezer.h>
->  
->  #define PANIC_TIMER_STEP 100
->  #define PANIC_BLINK_SPD 18
-> @@ -355,6 +356,7 @@ void oops_exit(void)
->  	do_oops_enter_exit();
->  	print_oops_end_marker();
->  	kmsg_dump(KMSG_DUMP_OOPS);
-> +	thaw_in_oops();
->  }
->  
->  #ifdef WANT_WARN_ON_SLOWPATH
-> diff --git a/kernel/power/process.c b/kernel/power/process.c
-> index 0cf3a27..20994cd 100644
-> --- a/kernel/power/process.c
-> +++ b/kernel/power/process.c
-> @@ -22,6 +22,9 @@
->   */
->  #define TIMEOUT	(20 * HZ)
->  
-> +/* in case we oops while processes are frozen */
-> +static bool tasks_fozen = false;
+> 
+> For device-mapper, I would prefer to add a '.dev_uevent' callback to the
+> 'block' class let this callback check 'struct block_device_operations'
+> for a possibly specified '.uevent' callback and call it.
+> 
+> Then have 'dm_blk_dops' add '.uevent' and let the core call into the dm
+> code to the needed properties to the 'remove' event, instead of sending
+> its own, and see the duplication.
 
-I think you mean 'tasks_frozen' here :).
+Sounds like complex solution - maybe it would be easier to just register some
+environment variable on dm code side - like kobject_add_env() - so it would
+take envs from this internal kobject list and after sending uevent it would
+implicitly clear this list.
 
--- 
-Regards/Gruss,
-    Boris.
+So in dm case  dm-uevent would just register  env(cookie) for KOBJ_REMOVE and
+would left kobject_uevent() on block layer ?
+
+Also I'm aware that remove event would be delayed by leaving it on
+kobject_cleanup(), but since you mentioned 'del()' as a better place - why not
+move this implicit uvent call there - since most kernel driver writers
+probably do not want to be bothered with uvents?
+
+Zdenek
