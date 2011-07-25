@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836Ab1GYKMX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 06:12:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4802 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074Ab1GYKMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 06:12:17 -0400
-Message-ID: <4E2D4177.9000402@redhat.com>
-Date: Mon, 25 Jul 2011 12:12:07 +0200
-From: Zdenek Kabelac <zkabelac@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110720 Thunderbird/5.0
+	id S1751929Ab1GYKNW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 06:13:22 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33852 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453Ab1GYKNQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 06:13:16 -0400
 MIME-Version: 1.0
-To: device-mapper development <dm-devel@redhat.com>
-CC: Kay Sievers <kay.sievers@vrfy.org>, Greg KH <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [dm-devel] [PATCH] Reduce number of KOBJ_REMOVE events
-References: <4E2987AE.2070707@redhat.com> <1311553130.1671.21.camel@mop>
-In-Reply-To: <1311553130.1671.21.camel@mop>
-X-Enigmail-Version: 1.2
+In-Reply-To: <m1r5n7ln0l.fsf@fess.ebiederm.org>
+References: <5f6c52c61003241920i6b3eaaf7k946f67d1a6f9e384@mail.gmail.com>
+	<m1r5n7ln0l.fsf@fess.ebiederm.org>
+Date: Mon, 25 Jul 2011 18:13:16 +0800
+Message-ID: <CAKdQVUZMC0eaeqev=tAbS2myHJOA1KJt4r8TVMz6=yQeDpUpZQ@mail.gmail.com>
+Subject: Re: x86_64 virtual memory map
+From: Bob Zhang <zhanglinbao@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: hayfeng Lee <omycle@gmail.com>, ak@linux.intel.com,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Bob Zhang <2004.zhang@gmail.com>, zhanglinbao@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 25.7.2011 02:18, Kay Sievers napsal(a):
-> On Fri, 2011-07-22 at 16:22 +0200, Zdenek Kabelac wrote:
-> 
->> For now udev recieves 3 event for removal of DM logical volumes. (1 for
->> bdi and 2 for same block kobject). Reason is dm device generates its
->> own kobject event with approriate env parameter and block layer sends
->> another KOBJ_REMOVE event on its own unconditionaly for the same
->> kobject. As for now only the kobject cleanup checks that the REMOVE
->> event has been already sent and avoids duplicate REMOVE event.
-> 
->> The patch for kobject_uevent_env() which has been testing for duplicate
->> REMOVE event did not passed into the mainline (yet?):
-> 
-> No, it's wasn't merged. Subsystems should really not send their own
-> 'add' or 'remove' events. These are properties of the driver core.
-> 
->> I'm proposing alternative way around to always use kobject cleanup
->> routine for sending REMOVE event if it was not send by the module - so
->> it makes the code few lines shorter.
-> 
-> The events the core creates are only sent out at release() not at del(),
-> so we would delay 'remove' events when we keep the device pinned but
-> it's not valid anymore. We can not do that today, we would need to move
-> the core-created 'remove' events to del().
-> 
-> 
-> For device-mapper, I would prefer to add a '.dev_uevent' callback to the
-> 'block' class let this callback check 'struct block_device_operations'
-> for a possibly specified '.uevent' callback and call it.
-> 
-> Then have 'dm_blk_dops' add '.uevent' and let the core call into the dm
-> code to the needed properties to the 'remove' event, instead of sending
-> its own, and see the duplication.
+thanks in advanced!
 
-Sounds like complex solution - maybe it would be easier to just register some
-environment variable on dm code side - like kobject_add_env() - so it would
-take envs from this internal kobject list and after sending uevent it would
-implicitly clear this list.
+I searched this question , so I directly reply to this mail.
 
-So in dm case  dm-uevent would just register  env(cookie) for KOBJ_REMOVE and
-would left kobject_uevent() on block layer ?
+1, for x86_64 machine ,for example ,HP's proliant machine.
+from the kernel point of view , what is the max physical ram size ?
+if I install 2TB physical memory(I mean physical RAM) , can linux
+kernel recognize 2TB physical memory ?  from mm.txt , it seems that
+physical ram size should be 64TB.
 
-Also I'm aware that remove event would be delayed by leaving it on
-kobject_cleanup(), but since you mentioned 'del()' as a better place - why not
-move this implicit uvent call there - since most kernel driver writers
-probably do not want to be bothered with uvents?
+2,
+from mm.txt :(http://lxr.linux.no/linux+v2.6.39/Documentation/x86/x86_64/mm.txt
+from latest 2.6.39.
 
-Zdenek
+I am a little confused .
+above said that :
+ffff880000000000 - ffffc7ffffffffff (=64 TB) direct mapping of all phys. memory
+10ffffc80000000000 - ffffc8ffffffffff (=40 bits) hole
+11ffffc90000000000 - ffffe8ffffffffff (=45 bits) vmalloc/ioremap space  :32TB
+ffffea0000000000 - ffffeaffffffffff (=40 bits) virtual memory map (1TB)
+from this , we can know ,we can used max 64TB physical memory(physical
+RAM).  vmalloc/ioremap space :32TB . but why tell us 1TB virtual
+memory map ?  if the address that  vmalloc allocated are the address
+that we can use , why say like this ? I am puzzled.
+for example ,for 32bit kernel .vmalloc() range
+
+and in the end of mm.txt , it says :
+>>Current X86-64 implementations only support 40 bits of address space,
+ >> 27but we support up to 46 bits. This expands into MBZ space in the
+>>page tables.
+so this 40bit(1TB) is responding to virtual memory map(1TB) ?
+
+3,  if I installed 64TB physical memory (RAM) , but linux kernel only
+support 1TB address space , what should I do next ?
+
+4 , it seems that MBZ can support up to 256TB ,but who can tell how to
+expand address space by MBZ ?
+thanks very much!
+
+-Bob
