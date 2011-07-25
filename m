@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751370Ab1GYMPJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 08:15:09 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58394 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750864Ab1GYMPG (ORCPT
+	id S1751364Ab1GYMPn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 08:15:43 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:43698 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab1GYMPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 08:15:06 -0400
-Date: Mon, 25 Jul 2011 13:17:01 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
-Cc: debian-arm@lists.debian.org, linux-kernel@vger.kernel.org,
-        Wookey <wookey@wookware.org>
-Subject: Re: dynamic LCD support for "embedded" systems
-Message-ID: <20110725131701.112e635e@lxorguk.ukuu.org.uk>
-In-Reply-To: <CAPweEDwVhaHr=5i8giGCkDWxK9G8Vvibq59vhbu6RsnZf9uerA@mail.gmail.com>
-References: <CAPweEDwVhaHr=5i8giGCkDWxK9G8Vvibq59vhbu6RsnZf9uerA@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Jul 2011 08:15:38 -0400
+MIME-Version: 1.0
+Date: Mon, 25 Jul 2011 13:15:36 +0100
+Message-ID: <CAPweEDyUJZ8ggm0zhMquKNM6Kd-ejjUXrCMR3TnJngukSHAFkw@mail.gmail.com>
+Subject: corrupted ext4 1000gb filesystem (2.6.32, debian stable)
+From: Luke Kenneth Casson Leighton <luke.leighton@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  ok, so.  does anyone on LKML happen to know if there exists in the
-> linux kernel a method for dynamic detection and booting off of
-> absolutely any type of LCD panel?  even if it's a predefined list of
-> say 10 quotes supported quotes static LCD panels?
+folks, hi,
 
-It depends entirely on the platform, the interconnect, the panel and the
-controller. You may have a way of probing it, but even on a PC in a lot
-of cases the knowledge is actually in the firmware not in the panel
-itself. In some cases the relationship is even more incestuous (eg look
-at some of the MIPI drivers).
+i set up a 1000gb RAID1 mirrored filesystem, possibly in a foolish way
+(multiple external USB drives) and had not added a fsck check to the
+script which dynamically assembles the drives.  naively and yet
+happily i followed this advice, here:
 
->  p.s. linus - this is another example of where the complete total
-> utter lack of hardware standardisation and of the complete
-> non-existence of a BIOS in the embedded / ARM world (for very good
-> technical reasons) makes life continued and absolute hell.  ref:
-> https://lkml.org/lkml/2011/7/1/473
+http://lists.debian.org/debian-user/2011/06/msg02164.html
 
-Well really the panel belongs in devicetree. That would I think sort much
-of the mess out.
+the problem was that uh, yeah, the ext4 filesystem _did_ end up
+getting massively corrupted, very very quickly (within weeks), and i
+don't entirely know how.  at approx 50% filled, i carried out another
+copy operation of several tens of thousands of files (backup of a
+system with about 10gb usage) and it was these files and directories
+that had the worst level of filesystem corruption.
 
-Alan
+so my question is: has anyone else encountered significant filesystem
+corruption of large (1000gb+) ext4 filesystems, with any *recent* 2.6
+linux kernels?
+
+tia,
+
+l.
+
+p.s. yes fsck has now been added to the drive assembly script, but i
+am not yet filled with confidence that everything will be hunky-dory.
