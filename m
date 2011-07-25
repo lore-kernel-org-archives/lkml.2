@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445Ab1GYRyc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 13:54:32 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42590 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751214Ab1GYRy3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 13:54:29 -0400
+	id S1751749Ab1GYRzM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 13:55:12 -0400
+Received: from home.keithp.com ([63.227.221.253]:51219 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751349Ab1GYRzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 13:55:09 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Andrew Lutomirski <luto@mit.edu>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Hold struct_mutex during hotplug processing
+In-Reply-To: <CAObL_7F+xiQrsdJzaSR3nnWm-=ZiHZf8dE+Q3yv+TQC7PUYjEA@mail.gmail.com>
+References: <1311613829-4990-1-git-send-email-keithp@keithp.com> <20110725103732.623d7b65@jbarnes-desktop> <CAObL_7F+xiQrsdJzaSR3nnWm-=ZiHZf8dE+Q3yv+TQC7PUYjEA@mail.gmail.com>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Mon, 25 Jul 2011 10:55:05 -0700
+Message-ID: <yun8vrmutxi.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-In-Reply-To: <1311588599.2617.56.camel@laptop>
-References: <20110722125236.GA24832@elte.hu> <CACqU3MUW81UmBK7qBQCZRqzfosrukYM9=o0EZP_DvSjgywfK8g@mail.gmail.com>
- <1311588599.2617.56.camel@laptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 25 Jul 2011 10:53:32 -0700
-Message-ID: <CA+55aFwxqVXb0cFrkgdrDH4J_aF9J7iw8i6ypAda2HiAyeFYpw@mail.gmail.com>
-Subject: Re: [GIT PULL] core/locking changes for v3.1
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 3:09 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->
-> Argh, I really need -Werror to even see warnings, compiler output just
-> flies by waaaaaay too fast.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Do what I do:
+On Mon, 25 Jul 2011 13:40:58 -0400, Andrew Lutomirski <luto@mit.edu> wrote:
 
-  make -j32 > ../makes
+> Will test tonight.
 
-that way the only thing you see is the warnings (and the final link report).
+Thanks.=20
 
-That pattern was one reason why I wanted me default compile to be
-warning-clean. Of course, then gcc started adding more warnings, and
-it's not clean any more ("warning: statement with no effect" from the
-fact that we just define many functions to '(0)' when they are
-disabled) but my current personal compile config only gets four
-warnings.
+> It looks like there is a lot of hotplug activity when 'xset dpms force
+> off' gets run.  (That's not a typo.  I do mean "off," not "on."
 
-I realize there are *many* more warnings once you start enabling more
-special code - as usual, the core code tends to be better quality, and
-the further away from that base you get, the worse things get.
+Yup, that's what I've seen as well -- do a mode set to turn stuff off
+and you get spammed with hotplug events.
 
-But it would definitely be good if most kernel developers did the
-above. Do it for just your personal config - at least you'll see the
-warnings in code you write (because presumably your personal config
-will have that code enabled ;)
+> See attached trace.  perf rocks, even over ssh :)
 
-                    Linus
+Wow. You're nested about three deep in the mode setting code due to
+overlapping hotplug events. What could possibly go wrong?
+
+Makes me optimistic that a bit of locking will help a lot here.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOLa35Qp8BWwlsTdMRAkn9AJ48MSbESAgGvxW/kCXt/zWQ1c1TlACcDkB0
+N6M2ytU22BKxfm9kBHGeF/w=
+=uVDe
+-----END PGP SIGNATURE-----
+--=-=-=--
