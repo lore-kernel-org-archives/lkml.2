@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443Ab1GYI0Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 04:26:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46103 "EHLO
+	id S1751445Ab1GYI1e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 04:27:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38294 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab1GYI0S (ORCPT
+	with ESMTP id S1750864Ab1GYI13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 04:26:18 -0400
-Subject: Re: On migrate_disable() and latencies
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Carsten Emde <ce@ceag.ch>,
-        Clark Williams <williams@redhat.com>,
-        Kumar Gala <galak@gate.crashing.org>,
-        Ralf Baechle <ralf@linux-mips.org>, rostedt <rostedt@goodmis.org>
-In-Reply-To: <20110723003934.GP2382@linux.vnet.ibm.com>
-References: <1311329992.27400.23.camel@twins>
-	 <20110723003934.GP2382@linux.vnet.ibm.com>
+	Mon, 25 Jul 2011 04:27:29 -0400
+Subject: Re: [PATCH v2 1/6] perf: Add interface to add general events to
+ sysfs
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+In-Reply-To: <1311581475.3938.1477.camel@minggr.sh.intel.com>
+References: <1310740503-15608-1-git-send-email-ming.m.lin@intel.com>
+	 <1310740503-15608-2-git-send-email-ming.m.lin@intel.com>
+	 <1310996068.13765.67.camel@twins>
+	 <1311581475.3938.1477.camel@minggr.sh.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Jul 2011 10:30:53 +0200
-Message-ID: <1311582653.2617.49.camel@laptop>
+Date: Mon, 25 Jul 2011 10:32:03 +0200
+Message-ID: <1311582723.2617.50.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -29,59 +32,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-22 at 17:39 -0700, Paul E. McKenney wrote:
-> > Therefore the worst case latency is in the order of
-> > max-migrate-disable-period * nr-cpus.
-> 
-> OK, but wouldn't that be the latency as seen be the lowest-priority
-> task?  
+On Mon, 2011-07-25 at 16:11 +0800, Lin Ming wrote:
+> It's strange that I didn't find a way to check if a directory is present
+> in sysfs. Any hint?
 
-It would indeed, the utility loss is added to the preemption cost of the
-lower priority tasks.
+sysfs is voodoo for me, best I can come up with is, ask the sysfs
+folks ;-)
 
-> Or are migrate-disable tasks given preferential treatment?
-> If not, a prio-99 task would get the same latency either way, right?
-
-Right.
-
-> Migration-disable can magnify the latency seen by low-priority tasks, if
-> I understand correctly.  If you disabled preemption, when a low-priority
-> task became runnable, it would find an idle CPU.  But with migration
-> disable, the lowest-priority task might enter a migration-disable region,
-> then be preempted by a marginally higher-priority task that also enters
-> a migration-diable region, and is also preempted, and so on.  The
-> lowest-priority task cannot run on the current CPU because of all
-> the higher-priority tasks, and cannot migrate due to being in a
-> migration-disable section.
-
-Exactly so.
-
-> In other words, as is often the case, better worst-case service to
-> the high-priority tasks can multiply the latency seen by the
-> low-priority tasks.
-> 
-> So is the topic to quantify this?  
-
-I suppose it is indeed. Even for the SoftRT case we need to make sure
-the total utilization loss is indeed acceptable.
-
-> If so, my take is that the latency
-> to the highest-priority task decreases by an amount roughly equal to
-> the duration of the longest preempt_disable() region that turned into a
-> migration-disable region, while that to the lowest-priority task increases
-> by N-1 times the CPU overhead of the longest migration-disable region,
-> plus context switches.  (Yes, this is a very crude rule-of-thumb model.
-> A real model would have much higher mathematics and might use a more
-> detailed understanding of the workload.)
-> 
-> Or am I misunderstanding how all this works? 
-
-No, I think you're gettin' it.
-
-My main worry with all this is that we have these insane long !preempt
-regions in mainline that are now !migrate regions, and thus per all the
-above we could be looking at a substantial utilization loss.
-
-Alternatively we could all be missing something far more horrid, but
-that might just be my paranoia talking.
+Kay, Greg?
 
