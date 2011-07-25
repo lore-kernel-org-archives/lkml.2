@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab1GYXUo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 19:20:44 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:46743 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990Ab1GYXUg (ORCPT
+	id S1752384Ab1GYXYH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 19:24:07 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60370 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202Ab1GYXYA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 19:20:36 -0400
-Date: Mon, 25 Jul 2011 16:16:32 -0700 (PDT)
-Message-Id: <20110725.161632.432205077107811689.davem@davemloft.net>
-To: schaman@sch.bme.hu
-Cc: kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] IPv4: Send gratuitous ARP for secondary IP
- addresses also
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1311548970-27522-1-git-send-email-schaman@sch.bme.hu>
-References: <1311548970-27522-1-git-send-email-schaman@sch.bme.hu>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 25 Jul 2011 16:16:36 -0700 (PDT)
+	Mon, 25 Jul 2011 19:24:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E2CA683.4010005@gmail.com>
+References: <4E2CA683.4010005@gmail.com>
+Date: Mon, 25 Jul 2011 16:23:59 -0700
+X-Google-Sender-Auth: MgSVIDOUpF5POzhOM3mEAmLqmfc
+Message-ID: <CANcMJZAAfMV2=rTEi7AVg3Qu8uT1kMEpYpTQ+UwvosNPJ81GfA@mail.gmail.com>
+Subject: Re: [bisected regression] Partial breakage of forcedeth driver
+From: john stultz <johnstul@us.ibm.com>
+To: walt <w41ter@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Jiri Pirko <jpirko@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Zoltan, Kiss" <schaman@sch.bme.hu>
-Date: Mon, 25 Jul 2011 01:09:30 +0200
+On Sun, Jul 24, 2011 at 4:10 PM, walt <w41ter@gmail.com> wrote:
+> commit 3326c784c9f492e988617d93f647ae0cfd4c8d09
+> Author: Jiri Pirko <jpirko@>
+> Date:   Wed Jul 20 04:54:38 2011 +0000
+>
+>    forcedeth: do vlan cleanup
+>
+>    - unify vlan and nonvlan rx path
+>    - kill np->vlangrp and nv_vlan_rx_register
+>    - allow to turn on/off rx vlan accel via ethtool (set_features)
+>
+>    Signed-off-by: Jiri Pirko <jpirko@>
+>    Signed-off-by: David S. Miller <davem@>
+>
+> This commit causes networking trouble for my nForce-based motherboard.
+> (Details happily supplied if needed.)
+>
+> I say 'partial' breakage because networking is not completely dead,
+> just limping very slowly :)
+>
+> The simplest test is to ping any host (in my LAN or on the internet,
+> makes no difference).  The replies to my ping come at very irregular
+> intervals, ranging from normal to 5-10 seconds or so, seemingly at
+> random AFAICT.
 
-> From: Zoltan Kiss <schaman@sch.bme.hu>
-> 
-> If a device event generates gratuitous ARP messages, only primary
-> address is used for sending. This patch iterates through the whole
-> list. Tested with 2 IP addresses configuration on bonding interface.
-> 
-> Signed-off-by: Zoltan Kiss <schaman@sch.bme.hu>
+I'm seeing this too.  Ping responses phase in and out every 10 seconds or so.
 
-Applied.
+Jiri, any thoughts?
+
+thanks
+-john
