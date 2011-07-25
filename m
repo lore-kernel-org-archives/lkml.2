@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab1GYDTu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 23:19:50 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:37896 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528Ab1GYDTp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 23:19:45 -0400
-MIME-Version: 1.0
-Message-ID: <a5d17beb-847b-48c0-82d7-cfabe419e7f9@default>
-Date: Sun, 24 Jul 2011 20:19:24 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Nitin Gupta <ngupta@vflare.org>,
-        Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-Subject: RE: [PATCH 1/2] staging: fix zcache building
-References: <1311556452-1859-1-git-send-email-cascardo@holoscopio.com>
-In-Reply-To: <1311556452-1859-1-git-send-email-cascardo@holoscopio.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4E2CE0CB.0044:SCFMA922111,ss=1,re=-4.000,fgs=0
+	id S1752967Ab1GYDUj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 23:20:39 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48415 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752582Ab1GYDUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 23:20:33 -0400
+Date: Mon, 25 Jul 2011 13:20:22 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: linux-next: build failure after merge of the vfs tree
+Message-Id: <20110725132022.9cac27e6aee69728e4de6b97@canb.auug.org.au>
+In-Reply-To: <20110716164404.0f791c640332bbad6ab8ea34@canb.auug.org.au>
+References: <20110716164404.0f791c640332bbad6ab8ea34@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Thadeu Lima de Souza Cascardo [mailto:cascardo@holoscopio.com]
-> Sent: Sunday, July 24, 2011 7:14 PM
-> To: Nitin Gupta
-> Cc: Dan Magenheimer; Greg Kroah-Hartman; devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org;
-> Thadeu Lima de Souza Cascardo
-> Subject: [PATCH 1/2] staging: fix zcache building
+Hi all,
+
+On Sat, 16 Jul 2011 16:44:04 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+> After merging the vfs tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 > 
-> zcache is only building tmem.c and not building zcache.c. To keep the
-> module name, zcache.c must be renamed if symbols from tmem.c are to
-> remain unexported.
+> fs/nfs/read.c: In function 'nfs_do_read':
+> fs/nfs/read.c:246:42: error: 'struct nfs_open_context' has no member named 'path'
 > 
-> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+> Caused by commit 6e4efd568574 ("NFS: Clean up nfs_read_rpcsetup and
+> nfs_write_rpcsetup") from the nfs tree interacting with commit
+> b98aad31afdc ("nfs_open_context doesn't need struct path either").
+> 
+> I have applied the following merge fixup patch:
 
+This patch (repeasted here) is now required after mergeing the nfs tree
+and Linus' tree:
 
-Greg --
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Sat, 16 Jul 2011 16:32:06 +1000
+Subject: [PATCH] vfs/nfs: fixup for nfs_open_context change
 
-Since a newer version of zcache.c is already in staging-next (and
-hopefully soon in staging-for-linus for the 3.1 window), this
-patch, which simply replaces the (older) zcache.c with identical
-code with a different filename, would not apply cleanly.  Could
-you advise on the best way to ensure both the newer version
-and the file rename are applied... perhaps the rename must be
-done manually in your git tree(s)?
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ fs/nfs/read.c |    2 +-
+ fs/nfs/write.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Though I'm not certain of the process steps, please consider the
-rename, the one liner Makefile change for the rename, and the GPL
-module license addition (in patch 2/2)...
+diff --git a/fs/nfs/read.c b/fs/nfs/read.c
+index 3170712..2171c04 100644
+--- a/fs/nfs/read.c
++++ b/fs/nfs/read.c
+@@ -243,7 +243,7 @@ static void nfs_read_rpcsetup(struct nfs_page *req, struct nfs_read_data *data,
+ static int nfs_do_read(struct nfs_read_data *data,
+ 		const struct rpc_call_ops *call_ops)
+ {
+-	struct inode *inode = data->args.context->path.dentry->d_inode;
++	struct inode *inode = data->args.context->dentry->d_inode;
+ 
+ 	return nfs_initiate_read(data, NFS_CLIENT(inode), call_ops);
+ }
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index 2d2c773..ebed518 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -889,7 +889,7 @@ static int nfs_do_write(struct nfs_write_data *data,
+ 		const struct rpc_call_ops *call_ops,
+ 		int how)
+ {
+-	struct inode *inode = data->args.context->path.dentry->d_inode;
++	struct inode *inode = data->args.context->dentry->d_inode;
+ 
+ 	return nfs_initiate_write(data, NFS_CLIENT(inode), call_ops, how);
+ }
+-- 
+1.7.5.4
 
-Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-
-Thanks,
-Dan
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
