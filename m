@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab1GYOgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 10:36:53 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:62829 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176Ab1GYOgv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 10:36:51 -0400
+	id S1752475Ab1GYOhE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 10:37:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56661 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752382Ab1GYOhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 10:37:02 -0400
+Date: Mon, 25 Jul 2011 16:37:00 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wang Sheng-Hui <shhuiw@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH] ext3.txt: update the links in the section "useful
+ links" to the latest ones
+Message-ID: <20110725143700.GB6107@quack.suse.cz>
+References: <4E2A1F21.5060604@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1311593444.29703.20.camel@vkoul-mobl4>
-References: <1311453088-5063-1-git-send-email-jaswinder.singh@linaro.org>
-	<1311593444.29703.20.camel@vkoul-mobl4>
-Date: Mon, 25 Jul 2011 20:06:50 +0530
-Message-ID: <CAJe_Zhc8HjHoF=wjhw76x=UmjE879RWNZigq9TwhjecsiSu9sg@mail.gmail.com>
-Subject: Re: [RFC] DMAEngine: Define generic transfer request api
-From: Jaswinder Singh <jaswinder.singh@linaro.org>
-To: Vinod Koul <vkoul@infradead.org>
-Cc: vinod.koul@intel.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
-        sundaram@ti.com, linus.walleij@linaro.org, rmk+kernel@arm.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E2A1F21.5060604@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 July 2011 17:00, Vinod Koul <vkoul@infradead.org> wrote:
-> On Sun, 2011-07-24 at 02:01 +0530, Jassi Brar wrote:
->> This is an attempt to define an api that could be used for doing
->> fancy data transfers like interleaved to contiguous copy and vice-versa.
->> Traditional SG_list based transfers tend to be very inefficient
->> in such cases. Such cases call for some very condensed api to convey
->> pattern of the transfer. This is an attempt at that condensed api.
->>
->> The api supports all 4 variants of scatter-gather and contiguous transfer.
->> Besides, it could easily represent common operations like
->>       device_prep_dma_{cyclic, memset, memcpy}
-> and how do you specify if the transfer is cyclic, memset or mempcy...
-Sorry I missed this in the dense. Maybe it's a good idea to isolate
-enough the context and reply in a post ?
+  Hello,
 
-Cyclic - I have already explained to Linus. Please ask for clarifications.
+On Sat 23-07-11 09:08:49, Wang Sheng-Hui wrote:
+> The patch is against 3.0.
+> 
+> In Documentation/filesystems/ext3.txt, the section "useful links"
+> provides two links which link to ibm developerworks articles. While
+> the second one can be redirected to the latest one, the first one
+>    http://www.ibm.com/developerworks/library/l-fs7.html
+> fails to be redirected.
+> 
+> Update the 2 links to the latest ones.
+  Thanks. I've merged the patch into my tree.
 
-Memset (with pattern of source bus-width size)
-*********
-struct xfer_template {
-       bool src_inc = false;
-       bool dst_inc = true;
-       size_t numf = memset_length / pattern_size;
-       size_t frame_size = 1;
-       struct data_chunk sgl[0]   represents the pattern to be repeated
-};
-
-If we need to set memory with a pattern or arbitrary length, we can
-add read-width and write-width members(actually I just removed before
-posting).
+								Honza
+> 
+> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+> ---
+>  Documentation/filesystems/ext3.txt |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/filesystems/ext3.txt b/Documentation/filesystems/ext3.txt
+> index 272f80d..a779614 100644
+> --- a/Documentation/filesystems/ext3.txt
+> +++ b/Documentation/filesystems/ext3.txt
+> @@ -227,5 +227,5 @@ kernel source:	<file:fs/ext3/>
+>  programs: 	http://e2fsprogs.sourceforge.net/
+>  		http://ext2resize.sourceforge.net
+>  
+> -useful links:	http://www.ibm.com/developerworks/library/l-fs7.html
+> -		http://www.ibm.com/developerworks/library/l-fs8.html
+> +useful links:	http://www.ibm.com/developerworks/library/l-fs7/index.html
+> +        http://www.ibm.com/developerworks/library/l-fs8/index.html
+> -- 
+> 1.7.1
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
