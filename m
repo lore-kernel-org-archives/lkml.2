@@ -1,89 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab1GYNhv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 09:37:51 -0400
-Received: from smtp4.mundo-r.com ([212.51.32.151]:56083 "EHLO
-	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab1GYNht (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 09:37:49 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap0EAHRwLU5bdWOb/2dsb2JhbAA0AQEEATgBJyUFDAwOBAY6FAEqAxAaF6hOiHwCwA+FYF8Eo1I
-X-IronPort-AV: E=Sophos;i="4.67,261,1309730400"; 
-   d="scan'208";a="863070522"
-Date: Mon, 25 Jul 2011 15:37:46 +0200
-From: =?iso-8859-1?Q?V=EDctor_M=2E_J=E1quez_L=2E?= <vjaquez@igalia.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Jianbin Kang <kjbmail@gmail.com>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH] kbuild: incremental tags updating with GNU GLOBAL
-Message-ID: <20110725133746.GD15684@lit.local.igalia.com>
-References: <1310379990-4367-1-git-send-email-vjaquez@igalia.com>
- <4E1AE9E2.2000603@suse.cz>
- <20110711131725.GA26907@lit.local.igalia.com>
- <20110725132040.GE4482@sepie.suse.cz>
+	id S1751941Ab1GYNmk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 09:42:40 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:52851 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751212Ab1GYNmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 09:42:38 -0400
+From: Hrishikesh Bhandiwad <hrishikesh.b@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>
+CC: Hrishikesh Bhandiwad <hrishikesh.b@ti.com>,
+        Vaibhav Hiremath <hvaibhav@ti.com>, Sanjeev Premi <premi@ti.com>
+Subject: [PATCH] OMAP3: NAND: Adding NAND support and specifying NAND partitions.
+Date: Mon, 25 Jul 2011 19:10:53 +0530
+Message-ID: <1311601253-2933-1-git-send-email-hrishikesh.b@ti.com>
+X-Mailer: git-send-email 1.6.2.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110725132040.GE4482@sepie.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 03:20:40PM +0200, Michal Marek wrote:
-> On Mon, Jul 11, 2011 at 03:17:25PM +0200, Víctor M. Jáquez L. wrote:
-> > On Mon, Jul 11, 2011 at 02:17:38PM +0200, Michal Marek wrote:
-> > > On 11.7.2011 12:26, Víctor Manuel Jáquez Leal wrote:
-> > > >Instead of generating the tag database each time the target is ran, is better
-> > > >just update incrementally the database. It will expend less time.
-> > > >
-> > > >Signed-off-by: Víctor Manuel Jáquez Leal<vjaquez@igalia.com>
-> > > >---
-> > > >  scripts/tags.sh |    6 +++++-
-> > > >  1 files changed, 5 insertions(+), 1 deletions(-)
-> > > >
-> > > >diff --git a/scripts/tags.sh b/scripts/tags.sh
-> > > >index 75c5d24..6a2fedc 100755
-> > > >--- a/scripts/tags.sh
-> > > >+++ b/scripts/tags.sh
-> > > >@@ -116,7 +116,11 @@ docscope()
-> > > >
-> > > >  dogtags()
-> > > >  {
-> > > >-	all_sources | gtags -f -
-> > > >+	if global -p; then
-> > > >+		global -u
-> > > >+	else
-> > > >+		all_sources | gtags -f -
-> > > >+	fi
-> > > 
-> > > Will this handle new source files properly?
-> > 
-> > I ran a quick test and yes, it does.
-> 
-> I installed global and tried it myself:
+This patch adds the NAND support on OMAP3EVM board and also allocates
+five partitions  on NAND.
+Referred to file: arch/arm/mach-omap2/board-omap3beagle.c
 
-Thanks a lot for the review and the testing!
+Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+Signed-off-by: Hrishikesh Bhandiwad <hrishikesh.b@ti.com>
+---
+ arch/arm/mach-omap2/board-omap3evm.c |   40 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 40 insertions(+), 0 deletions(-)
 
-> 1) The first 'make gtags' run prints a rather confusing message (fixable)
->  $ make gtags
->    GEN     gtags
->    global: GTAGS not found.
->  $
+diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+index b4d4346..be45b63 100644
+--- a/arch/arm/mach-omap2/board-omap3evm.c
++++ b/arch/arm/mach-omap2/board-omap3evm.c
+@@ -30,6 +30,10 @@
+ #include <linux/usb/otg.h>
+ #include <linux/smsc911x.h>
+ 
++#include <linux/mtd/mtd.h>
++#include <linux/mtd/partitions.h>
++#include <linux/mtd/nand.h>
++
+ #include <linux/wl12xx.h>
+ #include <linux/regulator/fixed.h>
+ #include <linux/regulator/machine.h>
+@@ -46,6 +50,8 @@
+ #include <plat/mcspi.h>
+ #include <video/omapdss.h>
+ #include <video/omap-panel-generic-dpi.h>
++#include <plat/gpmc.h>
++#include <plat/nand.h>
+ 
+ #include "mux.h"
+ #include "sdram-micron-mt46h32m32lf-6.h"
+@@ -101,6 +107,37 @@ static void __init omap3_evm_get_revision(void)
+ 	}
+ }
+ 
++static struct mtd_partition omap3evm_nand_partitions[] = {
++	/* All the partition sizes are listed in terms of NAND block size */
++	{
++		.name		= "X-Loader",
++		.offset		= 0,
++		.size		= 4 * NAND_BLOCK_SIZE,
++		.mask_flags	= MTD_WRITEABLE,	/* force read-only */
++	},
++	{
++		.name		= "U-Boot",
++		.offset         = 0x80000
++		.size           = 15 * NAND_BLOCK_SIZE,
++		.mask_flags	= MTD_WRITEABLE,	/* force read-only */
++	},
++	{
++		.name		= "U-Boot Env",
++		.offset		= 0x260000
++		.size		= 1 * NAND_BLOCK_SIZE,
++	},
++	{
++		.name		= "Kernel",
++		.offset		= 0x280000
++		.size		= 32 * NAND_BLOCK_SIZE,
++	},
++	{
++		.name		= "File System",
++		.offset		= 0x680000
++		.size		= MTDPART_SIZ_FULL,
++	},
++};
++
+ #if defined(CONFIG_SMSC911X) || defined(CONFIG_SMSC911X_MODULE)
+ #include <plat/gpmc-smsc911x.h>
+ 
+@@ -696,6 +733,9 @@ static void __init omap3_evm_init(void)
+ 
+ 	omap_serial_init();
+ 
++	omap_nand_flash_init(NAND_BUSWIDTH_16, omap3evm_nand_partitions,
++			ARRAY_SIZE(omap3evm_nand_partitions));
++
+ 	/* OMAP3EVM uses ISP1504 phy and so register nop transceiver */
+ 	usb_nop_xceiv_register();
+ 
+-- 
+1.6.2.4
 
-yep, I guess a 2>&1 > /dev/null could do it
-
-> 2) A second run indexes the _whole_ tree, including everything under
-> arch/. The point of the tags.sh script is that it indexes only files
-> relevant to the current architecture. If someone wants to index the
-> whole tree, they can run global directly.
-
-nice catch! 
-
-Well, that makes this patch a bit pointless :( 
-
-Thanks again for the review and sorry for noise.
-
-vmjl
