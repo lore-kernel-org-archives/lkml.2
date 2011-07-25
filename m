@@ -1,42 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab1GYUcM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 16:32:12 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39712 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab1GYUcL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 16:32:11 -0400
-Date: Mon, 25 Jul 2011 21:31:14 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        David Brown <davidb@codeaurora.org>
-Subject: Re: [PATCHv2 2/2] ARM: ARM_PATCH_PHYS_VIRT_16BIT no longer depends
-	on MSM
-Message-ID: <20110725203114.GF14955@n2100.arm.linux.org.uk>
-References: <1311614362-9011-1-git-send-email-sboyd@codeaurora.org> <1311614362-9011-2-git-send-email-sboyd@codeaurora.org> <alpine.LFD.2.00.1107251624560.12766@xanadu.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1107251624560.12766@xanadu.home>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1752760Ab1GYUfs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 16:35:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39085 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752478Ab1GYUfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 16:35:47 -0400
+From: Johannes Weiner <jweiner@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: fuse-devel@lists.sourceforge.net, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 1/2] fuse: delete dead .write_begin and .write_end aops
+Date: Mon, 25 Jul 2011 22:35:34 +0200
+Message-Id: <1311626135-14279-1-git-send-email-jweiner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 04:25:26PM -0400, Nicolas Pitre wrote:
-> On Mon, 25 Jul 2011, Stephen Boyd wrote:
-> 
-> > MSM no longer requires the 16bit version of dynamic P2V. Drop the
-> > dependency.
-> > 
-> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> > Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-> > Cc: David Brown <davidb@codeaurora.org>
-> 
-> Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+Ever since 'ea9b990 fuse: implement perform_write', the .write_begin
+and .write_end aops have been dead code.
 
-As it's now unused, we can kill the additional code which makes things
-needlessly more complex...
+Their task - acquiring a page from the page cache, sending out a write
+request and releasing the page again - is now done batch-wise to
+maximize the number of pages send per userspace request.
+
+Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+---
+ fs/fuse/file.c |   70 --------------------------------------------------------
+ 1 files changed, 0 insertions(+), 70 deletions(-)
+
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 82a6646..5c48126 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -743,18 +743,6 @@ static size_t fuse_send_write(struct fuse_req *req, struct file *file,
+ 	return req->misc.write.out.size;
+ }
+ 
+-static int fuse_write_begin(struct file *file, struct address_space *mapping,
+-			loff_t pos, unsigned len, unsigned flags,
+-			struct page **pagep, void **fsdata)
+-{
+-	pgoff_t index = pos >> PAGE_CACHE_SHIFT;
+-
+-	*pagep = grab_cache_page_write_begin(mapping, index, flags);
+-	if (!*pagep)
+-		return -ENOMEM;
+-	return 0;
+-}
+-
+ void fuse_write_update_size(struct inode *inode, loff_t pos)
+ {
+ 	struct fuse_conn *fc = get_fuse_conn(inode);
+@@ -767,62 +755,6 @@ void fuse_write_update_size(struct inode *inode, loff_t pos)
+ 	spin_unlock(&fc->lock);
+ }
+ 
+-static int fuse_buffered_write(struct file *file, struct inode *inode,
+-			       loff_t pos, unsigned count, struct page *page)
+-{
+-	int err;
+-	size_t nres;
+-	struct fuse_conn *fc = get_fuse_conn(inode);
+-	unsigned offset = pos & (PAGE_CACHE_SIZE - 1);
+-	struct fuse_req *req;
+-
+-	if (is_bad_inode(inode))
+-		return -EIO;
+-
+-	/*
+-	 * Make sure writepages on the same page are not mixed up with
+-	 * plain writes.
+-	 */
+-	fuse_wait_on_page_writeback(inode, page->index);
+-
+-	req = fuse_get_req(fc);
+-	if (IS_ERR(req))
+-		return PTR_ERR(req);
+-
+-	req->in.argpages = 1;
+-	req->num_pages = 1;
+-	req->pages[0] = page;
+-	req->page_offset = offset;
+-	nres = fuse_send_write(req, file, pos, count, NULL);
+-	err = req->out.h.error;
+-	fuse_put_request(fc, req);
+-	if (!err && !nres)
+-		err = -EIO;
+-	if (!err) {
+-		pos += nres;
+-		fuse_write_update_size(inode, pos);
+-		if (count == PAGE_CACHE_SIZE)
+-			SetPageUptodate(page);
+-	}
+-	fuse_invalidate_attr(inode);
+-	return err ? err : nres;
+-}
+-
+-static int fuse_write_end(struct file *file, struct address_space *mapping,
+-			loff_t pos, unsigned len, unsigned copied,
+-			struct page *page, void *fsdata)
+-{
+-	struct inode *inode = mapping->host;
+-	int res = 0;
+-
+-	if (copied)
+-		res = fuse_buffered_write(file, inode, pos, copied, page);
+-
+-	unlock_page(page);
+-	page_cache_release(page);
+-	return res;
+-}
+-
+ static size_t fuse_send_write_pages(struct fuse_req *req, struct file *file,
+ 				    struct inode *inode, loff_t pos,
+ 				    size_t count)
+@@ -2172,8 +2104,6 @@ static const struct address_space_operations fuse_file_aops  = {
+ 	.readpage	= fuse_readpage,
+ 	.writepage	= fuse_writepage,
+ 	.launder_page	= fuse_launder_page,
+-	.write_begin	= fuse_write_begin,
+-	.write_end	= fuse_write_end,
+ 	.readpages	= fuse_readpages,
+ 	.set_page_dirty	= __set_page_dirty_nobuffers,
+ 	.bmap		= fuse_bmap,
+-- 
+1.7.6
+
