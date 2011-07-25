@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab1GYDUj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 23:20:39 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48415 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752582Ab1GYDUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 23:20:33 -0400
-Date: Mon, 25 Jul 2011 13:20:22 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: linux-next: build failure after merge of the vfs tree
-Message-Id: <20110725132022.9cac27e6aee69728e4de6b97@canb.auug.org.au>
-In-Reply-To: <20110716164404.0f791c640332bbad6ab8ea34@canb.auug.org.au>
-References: <20110716164404.0f791c640332bbad6ab8ea34@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752981Ab1GYDWU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 23:22:20 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:45078 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab1GYDWP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 24 Jul 2011 23:22:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAObL_7H1j1cewgWP6Jmkw_H9dZVh1kxRGgTLa+ju=ns4gYxMdA@mail.gmail.com>
+References: <CAObL_7GCDsfXWRJgkNk7c44GNF0JhQPAH_P0WiYHK7QUX1Bcaw@mail.gmail.com>
+ <20110724211526.GA6785@elte.hu> <CAObL_7H1j1cewgWP6Jmkw_H9dZVh1kxRGgTLa+ju=ns4gYxMdA@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Sun, 24 Jul 2011 23:21:55 -0400
+X-Google-Sender-Auth: nUd2Ao1cMedlSlAch3COfcMygKw
+Message-ID: <CAObL_7EuFXbuxpz2bzKuEReyDHo+mBxDyJSf_rjBKpdnUmEzLQ@mail.gmail.com>
+Subject: Re: [RFC] syscall calling convention, stts/clts, and xstate latency
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, x86 <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>, Avi Kivity <avi@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-
-On Sat, 16 Jul 2011 16:44:04 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Sun, Jul 24, 2011 at 6:34 PM, Andrew Lutomirski <luto@mit.edu> wrote:
 >
-> After merging the vfs tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> fs/nfs/read.c: In function 'nfs_do_read':
-> fs/nfs/read.c:246:42: error: 'struct nfs_open_context' has no member named 'path'
-> 
-> Caused by commit 6e4efd568574 ("NFS: Clean up nfs_read_rpcsetup and
-> nfs_write_rpcsetup") from the nfs tree interacting with commit
-> b98aad31afdc ("nfs_open_context doesn't need struct path either").
-> 
-> I have applied the following merge fixup patch:
+> I had in mind something a little less ambitious: making
+> kernel_fpu_begin very fast, especially when used more than once.
+> Currently it's slow enough to have spawned arch/x86/crypto/fpu.c,
+> which is a hideous piece of infrastructure that exists solely to
+> reduce the number of kernel_fpu_begin/end pairs when using AES-NI.
+> Clobbering registers in syscall would reduce the cost even more, but
+> it might require having a way to detect whether the most recent kernel
+> entry was via syscall or some other means.
 
-This patch (repeasted here) is now required after mergeing the nfs tree
-and Linus' tree:
+I think it will be very hard to inadvertently cause a regression,
+because the current code looks pretty bad.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Sat, 16 Jul 2011 16:32:06 +1000
-Subject: [PATCH] vfs/nfs: fixup for nfs_open_context change
+1. Once a task uses xstate for five timeslices, the kernel decides
+that it will continue using it.  The only thing that clears that
+condition is __unlazy_fpu called with TS_USEDFPU set.  The only way I
+can see for that to happen is if kernel_fpu_begin is called twice in a
+row between context switches, and that has little do with the task's
+xstate usage.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- fs/nfs/read.c |    2 +-
- fs/nfs/write.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+2. __switch_to, when switching to a task with fpu_counter > 5, will do
+stts(); clts().
 
-diff --git a/fs/nfs/read.c b/fs/nfs/read.c
-index 3170712..2171c04 100644
---- a/fs/nfs/read.c
-+++ b/fs/nfs/read.c
-@@ -243,7 +243,7 @@ static void nfs_read_rpcsetup(struct nfs_page *req, struct nfs_read_data *data,
- static int nfs_do_read(struct nfs_read_data *data,
- 		const struct rpc_call_ops *call_ops)
- {
--	struct inode *inode = data->args.context->path.dentry->d_inode;
-+	struct inode *inode = data->args.context->dentry->d_inode;
- 
- 	return nfs_initiate_read(data, NFS_CLIENT(inode), call_ops);
- }
-diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-index 2d2c773..ebed518 100644
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -889,7 +889,7 @@ static int nfs_do_write(struct nfs_write_data *data,
- 		const struct rpc_call_ops *call_ops,
- 		int how)
- {
--	struct inode *inode = data->args.context->path.dentry->d_inode;
-+	struct inode *inode = data->args.context->dentry->d_inode;
- 
- 	return nfs_initiate_write(data, NFS_CLIENT(inode), call_ops, how);
- }
--- 
-1.7.5.4
+The combination means that when switching between two xstate-using
+tasks (or even tasks that were once xstate-using), we pay the full
+price of a state save/restore *and* stts/clts.
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+--Andy
