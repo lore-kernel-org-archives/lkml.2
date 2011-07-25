@@ -1,56 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751373Ab1GYMyf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 08:54:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48141 "EHLO mx2.suse.de"
+	id S1751588Ab1GYMyx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 08:54:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63382 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750776Ab1GYMy1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 08:54:27 -0400
-Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <1311598300.10256.10.camel@lappy>
-Date: Mon, 25 Jul 2011 14:54:24 +0200
-Cc: Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Jan Kiszka <jan.kiszka@web.de>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, gorcunov@gmail.com,
-        asias.hejun@gmail.com, prasadjoshi124@gmail.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <8B9ECC32-2AD9-49D9-B120-A726B32AD1B4@suse.de>
-References: <alpine.DEB.2.00.1107242335580.18045@tiger> <4E2CA6DE.4040900@web.de> <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com> <20110725075305.GA32294@elte.hu> <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de> <CAOJsxLHGgpNrHpfnHzD-aOJakE9q_4ym51_AYQHaj+waEZtSuw@mail.gmail.com> <ED2ECD82-2B14-45FF-AA61-AB26B377B626@suse.de> <CAOJsxLFDzSg55u92b6Qgvqn1yjaShYG_Bgdkzy19aBrzxo7FqA@mail.gmail.com> <B0466610-8355-402E-B378-68BD3AF9CE2D@suse.de> <CAOJsxLFT-E5E3YFT5es8FkTfgu1xTvqf-k+WqgH47U+ZKxVVoQ@mail.gmail.com> <4E2D65D7.6030407@redhat.com> <1311598300.10256.10.camel@lappy>
-To: Sasha Levin <levinsasha928@gmail.com>
-X-Mailer: Apple Mail (2.1084)
+	id S1750932Ab1GYMyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 08:54:47 -0400
+Message-ID: <4E2D678E.2010209@redhat.com>
+Date: Mon, 25 Jul 2011 14:54:38 +0200
+From: Zdenek Kabelac <zkabelac@redhat.com>
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110720 Thunderbird/5.0
+MIME-Version: 1.0
+To: Kay Sievers <kay.sievers@vrfy.org>
+CC: device-mapper development <dm-devel@redhat.com>, Greg KH <greg@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [dm-devel] [PATCH] Reduce number of KOBJ_REMOVE events
+References: <4E2987AE.2070707@redhat.com> <1311553130.1671.21.camel@mop> <4E2D4177.9000402@redhat.com> <CAPXgP101Jr3-k4p8ow-F3Phq+fNmC1eR8LD+j609xBvGfd1cUg@mail.gmail.com>
+In-Reply-To: <CAPXgP101Jr3-k4p8ow-F3Phq+fNmC1eR8LD+j609xBvGfd1cUg@mail.gmail.com>
+X-Enigmail-Version: 1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 25.07.2011, at 14:51, Sasha Levin wrote:
-
-> On Mon, 2011-07-25 at 15:47 +0300, Avi Kivity wrote:
->> On 07/25/2011 03:45 PM, Pekka Enberg wrote:
->>> On Mon, Jul 25, 2011 at 12:06 PM, Alexander Graf<agraf@suse.de>  wrote:
->>>>> And don't get this the wrong way either, I'm not hostile against other
->>>>> operating systems, but I simply am not interested enough in them to
->>>>> spend my time improving them.
->>>> 
->>>> Then kvm-tool is about as useful as Mac-on-Linux. Why don't we have MoL user land in the kernel? I even added support for KVM to it about a year ago. So all I need to do is change it to the kernel coding style, add some dependencies on kernel headers and I'm good for a pull request?
->>> 
->>> Oh, I dunno - have you tried that? If you're interested in sending a
->>> patch against tools/kvm that adds KVM-based support to Mac, I'm happy
->>> to review it and consider for inclusion. ;-)
->> 
->> The patch will be a lot bigger than tools/kvm itself.
->> 
+Dne 25.7.2011 14:17, Kay Sievers napsal(a):
+> On Mon, Jul 25, 2011 at 12:12, Zdenek Kabelac <zkabelac@redhat.com> wrote:
+>> Dne 25.7.2011 02:18, Kay Sievers napsal(a):
+>>> On Fri, 2011-07-22 at 16:22 +0200, Zdenek Kabelac wrote:
+>>>
+>>>> For now udev recieves 3 event for removal of DM logical volumes. (1 for
+>>>> bdi and 2 for same block kobject). Reason is dm device generates its
+>>>> own kobject event with approriate env parameter and block layer sends
+>>>> another KOBJ_REMOVE event on its own unconditionaly for the same
+>>>> kobject. As for now only the kobject cleanup checks that the REMOVE
+>>>> event has been already sent and avoids duplicate REMOVE event.
+>>>
+>>>> The patch for kobject_uevent_env() which has been testing for duplicate
+>>>> REMOVE event did not passed into the mainline (yet?):
+>>>
+>>> No, it's wasn't merged. Subsystems should really not send their own
+>>> 'add' or 'remove' events. These are properties of the driver core.
+>>>
+>>>> I'm proposing alternative way around to always use kobject cleanup
+>>>> routine for sending REMOVE event if it was not send by the module - so
+>>>> it makes the code few lines shorter.
+>>>
+>>> The events the core creates are only sent out at release() not at del(),
+>>> so we would delay 'remove' events when we keep the device pinned but
+>>> it's not valid anymore. We can not do that today, we would need to move
+>>> the core-created 'remove' events to del().
+>>>
+>>> For device-mapper, I would prefer to add a '.dev_uevent' callback to the
+>>> 'block' class let this callback check 'struct block_device_operations'
+>>> for a possibly specified '.uevent' callback and call it.
+>>>
+>>> Then have 'dm_blk_dops' add '.uevent' and let the core call into the dm
+>>> code to the needed properties to the 'remove' event, instead of sending
+>>> its own, and see the duplication.
+>>
+>> Sounds like complex solution
 > 
-> But it would be as a single patch series which includes kvm and
-> tools/kvm :)
+> I don't think so, It's clean, ~30 lines long, and technically correct, I expect.
 
-Not sure I get what you mean here. We already have KVM support for Macs ;). And pSeries. And the PS3. It even works on the Wii.
+Well then I've probably not fully understand your idea here - I guess it would
+then simpler written by you?
 
 
-Alex
+>> maybe it would be easier to just register some
+>> environment variable on dm code side - like kobject_add_env() - so it would
+>> take envs from this internal kobject list and after sending uevent it would
+>> implicitly clear this list.
+> 
+> So we would keep allocated per-event-type variables in the kobject, to
+> send when 'remove' is finally called? The callbacks are just much
+> simpler , I guess.
 
+No - nothing so complex - kobject would have the list - and you would be able
+to add some env param to this list - the nearest  kobject_uevent() would just
+splice those parameters to the env list it wants to send (something like 10
+lines of code). The only user would be probably dm so far - and it would check
+it wants to send REMOVE - and in this case it would add env to kobject and
+would skip kobject_uvent.
+
+On the other hand, it would probably extended kobject struct size without big
+use case - so Milan's solution that checks whether REMOVE has been already
+sent and skip all future REMOVE events seems by far the simplest here.
+
+I think your proposal also requires struct extension to store callback somewhere ?
+
+>> So in dm case  dm-uevent would just register  env(cookie) for KOBJ_REMOVE and
+>> would left kobject_uevent() on block layer ?
+>>
+>> Also I'm aware that remove event would be delayed by leaving it on
+>> kobject_cleanup(), but since you mentioned 'del()' as a better place - why not
+>> move this implicit uvent call there.
+> 
+> It's probably not wrong to do that, but I don't remember now why we
+> added it to release() that time.
+
+del() looks like the best natural place here - and safe few lines of code ;)
+
+Zdenek
