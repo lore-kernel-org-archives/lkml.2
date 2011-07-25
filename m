@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108Ab1GYUHS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 16:07:18 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59909 "EHLO hera.kernel.org"
+	id S1752397Ab1GYUHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 16:07:40 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59691 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751507Ab1GYUHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 16:07:16 -0400
-Date: Mon, 25 Jul 2011 20:06:51 GMT
-From: tip-bot for Jesper Juhl <jj@chaosbits.net>
-Message-ID: <tip-f629299b544b6cc12b4e3e85fec96f4ce5809482@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
-        rostedt@goodmis.org, jj@chaosbits.net, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, rostedt@goodmis.org,
-        a.p.zijlstra@chello.nl, jj@chaosbits.net, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <alpine.LNX.2.00.1107250929370.8080@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107250929370.8080@swampdragon.chaosbits.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] trace events: Update version number reference to new 3.x scheme for EVENT_POWER_TRACING_DEPRECATED
-Git-Commit-ID: f629299b544b6cc12b4e3e85fec96f4ce5809482
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1752345Ab1GYUHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 16:07:39 -0400
+Date: Mon, 25 Jul 2011 22:06:45 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Przywara, Andre" <Andre.Przywara@amd.com>,
+        "Pohlack, Martin" <Martin.Pohlack@amd.com>
+Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
+Message-ID: <20110725200645.GC8302@elte.hu>
+References: <1311340547-7861-1-git-send-email-bp@amd64.org>
+ <CA+55aFwL9Fwd9ouX3UMOayoBsZyZzTdDSySa6nZJxbpyLifbaQ@mail.gmail.com>
+ <20110724172222.GB12621@aftab>
+ <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com>
+ <20110724182323.GA13247@aftab>
+ <20110724183045.GB29660@elte.hu>
+ <20110724190752.GA13647@aftab>
+ <20110724204450.GB18546@elte.hu>
+ <20110725200014.GA23986@aftab>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 25 Jul 2011 20:06:52 +0000 (UTC)
+In-Reply-To: <20110725200014.GA23986@aftab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f629299b544b6cc12b4e3e85fec96f4ce5809482
-Gitweb:     http://git.kernel.org/tip/f629299b544b6cc12b4e3e85fec96f4ce5809482
-Author:     Jesper Juhl <jj@chaosbits.net>
-AuthorDate: Sun, 24 Jul 2011 23:15:42 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 25 Jul 2011 09:37:21 +0200
 
-trace events: Update version number reference to new 3.x scheme for EVENT_POWER_TRACING_DEPRECATED
+* Borislav Petkov <bp@amd64.org> wrote:
 
-What was scheduled to be 2.6.41 is now going to be 3.1 .
+> So yeah, the simpler fix works for processes mapping libraries in 
+> the same order but not for processes mapping a subset of libraries 
+> in a different order.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/alpine.LNX.2.00.1107250929370.8080@swampdragon.chaosbits.net
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/trace/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+but what is the proportion of 'good' versus bad alignment of 
+libraries, could you collect some stats on a representative enough, 
+fully booted up Linux system?
 
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 2ad39e5..cd31345 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -82,7 +82,7 @@ config EVENT_POWER_TRACING_DEPRECATED
- 	  power:power_frequency
- 	  This is for userspace compatibility
- 	  and will vanish after 5 kernel iterations,
--	  namely 2.6.41.
-+	  namely 3.1.
- 
- config CONTEXT_SWITCH_TRACER
- 	bool
+Are only 1% of mappings 'bad'? 5%? 10%? 50%? We have no idea and the 
+actual number matters a lot.
+
+Thanks,
+
+	Ingo
