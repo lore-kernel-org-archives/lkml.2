@@ -1,52 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab1GYLDg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 07:03:36 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:32191 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751627Ab1GYLDb (ORCPT
+	id S1752134Ab1GYLGu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 07:06:50 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:60925 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751627Ab1GYLGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 07:03:31 -0400
-X-AuditID: cbfee61b-b7c3dae000002cb8-f5-4e2d4d8107d4
-Date: Mon, 25 Jul 2011 20:03:19 +0900
-From: Kyungmin Park <kmpark@infradead.org>
-Subject: [PATCH] block: use the logical OR condition at	blk_flush_complete_seq
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Message-id: <20110725110319.GA31362@july>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-OriginalArrivalTime: 25 Jul 2011 11:03:50.0574 (UTC)
- FILETIME=[88C2C4E0:01CC4ABA]
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 25 Jul 2011 07:06:41 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E2D4E3B.4050407@cam.ac.uk>
+Date: Mon, 25 Jul 2011 12:06:35 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: linux-kernel@vger.kernel.org, randy.dunlap@oracle.com, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org, guenter.roeck@ericsson.com,
+        johnpol@2ka.mipt.ru, thellstrom@vmware.com, linux-scsi@vger.kernel.org,
+        JBottomley@parallels.com, lm-sensors@lm-sensors.org,
+        airlied@redhat.com, paulmck@linux.vnet.ibm.com, naota@elisp.net,
+        rtc-linux@googlegroups.com, namhyung@gmail.com, rusty@rustcorp.com.au,
+        khali@linux-fr.org, osd-dev@open-osd.org, akpm@linux-foundation.org,
+        a.zummo@towertech.it, jkosina@suse.cz, cabarnes@indesign-llc.com,
+        tj@kernel.org, bhalevy@panasas.com
+Subject: Re: [osd-dev] [PATCH 6/8] [SCSI] osduld: use ida_simple_get to handle
+ id.
+References: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk> <1311352886-4047-7-git-send-email-jic23@cam.ac.uk> <4E29EFDA.1080407@panasas.com>
+In-Reply-To: <4E29EFDA.1080407@panasas.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyungmin Park <kyungmin.park@samsung.com>
+On 07/22/11 22:47, Boaz Harrosh wrote:
+> On 07/22/2011 09:41 AM, Jonathan Cameron wrote:
+>> This does involve additional use of the spin lock in idr.c.
+>> Is this an issue?
+>>
+> 
+> Actually it looks like a bug fix. I had a TODO: to add one.
+> 
+>> Also, some error mangling was needed to keep the interface
+>> the same.  Does this matter or can we return -ENOSPC instead
+>> of -EBUSY?
+>>
+> 
+> Na. -ENOSPC is just fine. All the osd Application just check for
+> "any error" not a specific one.
+Cool, I've scrapped the error mangling and added your acked-by
++ removed questions from commit message as you've answered them!
 
-Even though the meaning is same, use the logical OR condition instead ORing.
+Thanks,
 
-seq	blk_kick_flush(q)	queued
-1	1			0		=> true
-2	0			1		=> true
-8	0			0		=> false
+> 
+>> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+> 
+> Ack-by: Boaz Harrosh <bharrosh@panasas.com>
+> 
+>> ---
+>>  drivers/scsi/osd/osd_uld.c |   22 ++++++++--------------
+>>  1 files changed, 8 insertions(+), 14 deletions(-)
+>>
+>> diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
+>> index b31a8e3..fa849bd 100644
+>> --- a/drivers/scsi/osd/osd_uld.c
+>> +++ b/drivers/scsi/osd/osd_uld.c
+>> @@ -387,7 +387,7 @@ static void __remove(struct device *dev)
+>>  
+>>  	if (oud->disk)
+>>  		put_disk(oud->disk);
+>> -	ida_remove(&osd_minor_ida, oud->minor);
+>> +	ida_simple_remove(&osd_minor_ida, oud->minor);
+>>  
+>>  	kfree(oud);
+>>  }
+>> @@ -403,18 +403,12 @@ static int osd_probe(struct device *dev)
+>>  	if (scsi_device->type != TYPE_OSD)
+>>  		return -ENODEV;
+>>  
+>> -	do {
+>> -		if (!ida_pre_get(&osd_minor_ida, GFP_KERNEL))
+>> -			return -ENODEV;
+>> -
+>> -		error = ida_get_new(&osd_minor_ida, &minor);
+>> -	} while (error == -EAGAIN);
+>> -
+>> -	if (error)
+>> -		return error;
+>> -	if (minor >= SCSI_OSD_MAX_MINOR) {
+>> -		error = -EBUSY;
+>> -		goto err_retract_minor;
+>> +	minor = ida_simple_get(&osd_minor_ida, 0,
+>> +			       SCSI_OSD_MAX_MINOR, GFP_KERNEL);
+>> +	if (minor < 0) {
+>> +		if (minor == -ENOSPC)
+>> +			return -EBUSY;
+> 
+> Just drop the translation is fine as well
+> 
+>> +		return minor;
+>>  	}
+>>  
+>>  	error = -ENOMEM;
+>> @@ -491,7 +485,7 @@ err_free_osd:
+>>  	dev_set_drvdata(dev, NULL);
+>>  	kfree(oud);
+>>  err_retract_minor:
+>> -	ida_remove(&osd_minor_ida, minor);
+>> +	ida_simple_remove(&osd_minor_ida, minor);
+>>  	return error;
+>>  }
+>>  
+> 
+> 
 
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-index bb21e4c..66e0acb 100644
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -187,7 +187,7 @@ static bool blk_flush_complete_seq(struct request *rq, unsigned int seq,
- 		BUG();
- 	}
- 
--	return blk_kick_flush(q) | queued;
-+	return blk_kick_flush(q) || queued;
- }
- 
- static void flush_end_io(struct request *flush_rq, int error)
