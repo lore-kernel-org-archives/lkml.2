@@ -1,149 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751312Ab1GYIQP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 04:16:15 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:33397 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750977Ab1GYIQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 04:16:06 -0400
-X-ASG-Debug-ID: 1311581759-01de280c1eec990001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E2D263C.1060807@fusionio.com>
-Date: Mon, 25 Jul 2011 10:15:56 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Core block IO bits for 3.1
-Content-Type: text/plain; charset="ISO-8859-1"
-X-ASG-Orig-Subj: [GIT PULL] Core block IO bits for 3.1
+	id S1751392Ab1GYIR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 04:17:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45349 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab1GYIRX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 04:17:23 -0400
+Subject: Re: On migrate_disable() and latencies
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Carsten Emde <ce@ceag.ch>,
+        Clark Williams <williams@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Kumar Gala <galak@gate.crashing.org>,
+        Ralf Baechle <ralf@linux-mips.org>, rostedt <rostedt@goodmis.org>
+In-Reply-To: <20110722174500.GB32014@opentech.at>
+References: <1311329992.27400.23.camel@twins>
+	 <20110722174500.GB32014@opentech.at>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 25 Jul 2011 10:21:50 +0200
+Message-ID: <1311582110.2617.40.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1311581759
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.69905
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 2011-07-22 at 19:45 +0200, Nicholas Mc Guire wrote:
 
-Nothing big and major this time, this will be a relaxed cycle on the IO
-side.
+> > Therefore the worst case latency is in the order of
+> > max-migrate-disable-period * nr-cpus.
+> 
+> + something like sum of (interrupt rate [n] /
+> max-migrate-disable-period * nr-cpus) * top-half handler [n]. if you
+> go on with theoretical WCET analysis on multicore systems you will
+> always end up at the conclusion that only UP is suitable for RT....
 
-- Removal of the fs_excl from the task_struct. Gets rid of an IO member
-  in there, which is a good thing. It was never utilized to the intent
-  that it was supposed to be, so lets kill it.
++ preemption cost + migration costs etc.. :-)
 
-- Removal of CFQ special treatment of requests marked as meta data IO.
-  This enables us to expand the scope of what is labelled as meta data
-  IO, giving us better tracing on the IO side.
+> > Currently we have no means of measuring these latencies, this is
+> > something we need to grow, I think Steven can fairly easy craft a
+> > migrate_disable runtime tracer -- it needs to use t->se.sum_exec_runtime
+> > for measure so as to only count the actual time spend on the task and
+> > ignore any time it was blocked.
+>  
+> well this is a similar problem as with the WCET "calculations" - you can
+> calculate theoretical worst cases - but the question is what the actual
+> distribution of "stacking" is and thus what the probability is that you
+> manage to stack tasks in this way.
 
-- Fix for a potential starvation issue of aliases requests.
+Sure, and yes those are thing to look at.
 
-- Conservative handling of discard limits, potentially preventing an
-  infinite loop for a driver that doesn't set all (or buggy) limits.
+> One could I guess put some relatively simple instrumentation in to monitor
+> this stacking problem - quit independant of actually measuring the times 
 
-- Expedited RCU grace period on device removal. Greatly speeds up
-  removal of lots of devices.
+Yes, that would be very easy to do.
 
-- Auto-flush of the on-stack plug list if we reach a certain depth.
+> > Once we have this, its back to the old game of 'lock'-breaking.
+> >
+> if the stacking problem does not practically exist then it might not be worth
+> the effort to resolve it with elaborate lock breaking.
 
-- Various little fixes or cosmetic tweaks.
+Fully agreed, its just that I wanted to share my understanding of the
+problem space (both Thomas and I thought on-list email was a better
+location that private IRC logs ;-), and we need to get the know the
+problem before we can decide to ignore it ;-)
 
-Please pull.
-
-
-  git://git.kernel.dk/linux-block.git for-3.1/core
-
-Dan Williams (1):
-      block: strict rq_affinity
-
-H Hartley Sweeten (1):
-      fs/partitions/check.c: make local symbols static
-
-Jeff Moyer (1):
-      iosched: prevent aliased requests from starving other I/O
-
-Jens Axboe (3):
-      cfq-iosched: fix locking around ioc->ioc_data assignment
-      Merge branch 'for-linus' into for-3.1/core
-      block: fix patch import error in max_discard_sectors check
-
-Joe Perches (2):
-      block: Add __attribute__((format(printf...) and fix fallout
-      blk-throttle: Make total_nr_queued unsigned
-
-Johannes Stezenbach (2):
-      compat_ioctl: fix warning caused by qemu
-      compat_ioctl: fix make headers_check regression
-
-Justin TerAvest (2):
-      cfq: Remove special treatment for metadata rqs.
-      fixlet: Remove fs_excl from struct task.
-
-Mike Snitzer (1):
-      block: eliminate potential for infinite loop in blkdev_issue_discard
-
-Mikulas Patocka (1):
-      backing-dev: use synchronize_rcu_expedited instead of synchronize_rcu
-
-Paul Bolle (2):
-      CFQ: make two functions static
-      block: rename the return of two functions
-
-Richard Kennedy (1):
-      block: reorder request_queue to remove 64 bit alignment padding
-
-Shaohua Li (5):
-      block: avoid building too big plug list
-      block: document blk_plug list access
-      CFQ: move think time check variables to a separate struct
-      CFQ: add think time check for service tree
-      CFQ: add think time check for group
-
-Tejun Heo (1):
-      block: flush MEDIA_CHANGE from drivers on close(2)
-
-Wanlong Gao (2):
-      block:fix the comment error in blkdev.h
-      block:remove some spare spaces in genhd.c
-
- Documentation/block/queue-sysfs.txt |   10 ++-
- block/blk-core.c                    |   11 ++-
- block/blk-ioc.c                     |   40 +++++-----
- block/blk-lib.c                     |    5 +-
- block/blk-softirq.c                 |   11 ++-
- block/blk-sysfs.c                   |   13 ++-
- block/blk-throttle.c                |    8 +-
- block/cfq-iosched.c                 |  152 +++++++++++++++++-----------------
- block/compat_ioctl.c                |   14 ---
- block/deadline-iosched.c            |    4 +-
- block/elevator.c                    |    7 +-
- block/genhd.c                       |   28 ++++---
- fs/block_dev.c                      |   23 +++--
- fs/compat_ioctl.c                   |    5 +
- fs/partitions/check.c               |   12 ++--
- fs/reiserfs/journal.c               |   13 ---
- fs/super.c                          |    4 -
- include/linux/blkdev.h              |   27 ++++--
- include/linux/elevator.h            |    2 +-
- include/linux/fd.h                  |   22 +++++
- include/linux/fs.h                  |    4 -
- include/linux/genhd.h               |    2 +-
- include/linux/init_task.h           |    1 -
- include/linux/iocontext.h           |   14 ++-
- include/linux/sched.h               |    1 -
- kernel/exit.c                       |    1 -
- kernel/fork.c                       |    1 -
- mm/backing-dev.c                    |    2 +-
- 28 files changed, 229 insertions(+), 208 deletions(-)
-
--- 
-Jens Axboe
+Ignoring unknowns always leads to surprises.
 
