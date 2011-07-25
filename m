@@ -1,66 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751770Ab1GYM7M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 08:59:12 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:55130 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab1GYM7I (ORCPT
+	id S1751335Ab1GYM7z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 08:59:55 -0400
+Received: from fsing.rootsland.net ([62.141.37.30]:59528 "EHLO
+	fsing.rootsland.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271Ab1GYM7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 08:59:08 -0400
-Message-ID: <4E2D6896.5010008@redhat.com>
-Date: Mon, 25 Jul 2011 14:59:02 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	Mon, 25 Jul 2011 08:59:48 -0400
+X-Greylist: delayed 498 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Jul 2011 08:59:48 EDT
+X-DKIM: OpenDKIM Filter v2.1.3 fsing.rootsland.net 1998C12FC8033
+Date: Mon, 25 Jul 2011 14:51:24 +0200
+From: Stephan Seitz <stse+lkml@fsing.rootsland.net>
+To: linux-kernel@vger.kernel.org
+Subject: IP forwarding regression since 3.0-rc6
+Message-ID: <20110725T141145.GA.2ae38.stse@fsing.rootsland.net>
+Mail-Followup-To: Stephan Seitz <stse+lkml@fsing.rootsland.net>,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Jan Kiszka <jan.kiszka@web.de>, Pekka Enberg <penberg@kernel.org>,
-        mingo@elte.hu, avi@redhat.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, gorcunov@gmail.com, asias.hejun@gmail.com,
-        prasadjoshi124@gmail.com
-Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
-References: <alpine.DEB.2.00.1107242335580.18045@tiger>  <4E2CA6DE.4040900@web.de> <1311580201.3446.30.camel@lappy>
-In-Reply-To: <1311580201.3446.30.camel@lappy>
-Content-Type: text/plain; charset=ISO-8859-7; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9amGYk9869ThD9tj"
+Content-Disposition: inline
+Organization: Minas Tirith, Gondor
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2011 09:50 AM, Sasha Levin wrote:
-> Anthony had a talk on last years KVM forum regarding the QEMU threading
-> model (slide:
-> http://www.linux-kvm.org/wiki/images/7/70/2010-forum-threading-qemu.pdf) .
->
-> It was suggested that the KVM part of QEMU is having a hard time
-> achieving the ideal threading model due to its need to support TCG -
-> something which has nothing to do with KVM itself.
 
-No, it is not having a hard time.  The "foot in the door" that Anthony 
-mentions has been part of QEMU and qemu-kvm for a long time 
-(multi-threading is necessary to support SMP!) and works quite well.
+--9amGYk9869ThD9tj
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi!
 
-Historically, there were three main loops:
+Since 3.0-rc6 I see that my Linux router is losing packets. I can see=20
+them tracing the internal interface, but I don=E2=80=99t see them on the ex=
+ternal=20
+interface. I can reproduce the problem while using tin with=20
+news.individual.de. At the startup when tin checks every newsgroup from=20
+the server, many packets are suddenly not routed anymore but are dropped,=
+=20
+so tin hangs until it quits with a NNTP error.
+All kernels until 3.0-rc5 are working.
 
-1) QEMU single-threaded;
+Hardware:
+- 2x Realtek Semiconductor Co., Ltd. RTL8111/8168B PCI Express Gigabit=20
+   Ethernet controller
 
-2) QEMU multi-threaded; clean, but buggy, untested and bitrotting;
+Sofware:
+- Debian Testing, 64bit, with Xen 4.1.0
 
-3) qemu-kvm multi-threaded, forked from (1), ugly but robust and widely 
-deployed.
+System:
+Dom0 (Debian Testing, 64bit) is my working system. The two NICs have each=
+=20
+their own bridge interface. One bridge interface (A) has an internal IP=20
+address (IPv4 and IPv6) of my internal network. The other bridge (B)=20
+doesn=E2=80=99t have a IP address in Dom0. The DomU is connected to the two=
+=20
+bridges.
+DomU (Debian Testing, 64bit) is my iptables firewall system with Bind,=20
+Squid, and other services. The interface connected to bridge A has an=20
+internal IP addresses (gateway for my internal network). The interface=20
+connected to bridge B is used for PPPoE (the NIC is directly connected to=
+=20
+my DSL modem).
 
-In 0.15 the two multi-threaded versions have been unified by Jan Kiszka. 
-  I have even ported (2) to Windows with little or no pain; porting to 
-Mac OS X interestingly is harder than Windows, because non-portable 
-Linux assumptions about signal handling have crept in the code (to 
-preempt the objections: they weren't just non-portabilities, they were 
-latent bugs).  Windows just does not have signals. :)
+Kernels:
+Dom0 has had all kernel versions from 3.0-rcX and is running 3.0 at the=20
+moment.
+DomU has had the same kernel versions but is running 3.0-rc5 at the=20
+moment because of the network problems in newer kernels.
 
-So, right now, the only difference is that QEMU is still defaulting to 
-the single-threaded main loop, while qemu-kvm enables multi-threading by 
-default.  In some time even QEMU will switch.
+Long problem description:
+ From Dom0 I use tin to read different newsserver. One of them is=20
+news.individual.de. The first time after DomU switched kernel to -rc6=20
+I started tin (connecting to the mentioned news server) and tin hung=20
+while reading groups from the newsrc and stopped with a NNTP connection=20
+error.
+Since the problem didn=E2=80=99t vanish, I wrote a mail to the support team=
+ of=20
+the news server. They told me that I was the only one with a connection=20
+problem and asked me to try the connection from another client. I tried=20
+it from my vServer, and it worked. So the problem had to be in my setup.
 
-Yes, this is of course worse than getting it right in the first place; 
-Nobody is saying the opposite.
+I traced in Dom0 (bridge A), DomU (bridge A) und DomU (ppp0) and noticed=20
+that all packets generated in Dom0 were visible in DomU bridge A. But not=
+=20
+all of the packets were visisble at the ppp0 interface. So my DomU was=20
+dropping packets and the connection between tin in Dom0 and the news=20
+server failed.
 
-Paolo
+So I tried older kernels and noticed that 3.0-rc5 in DomU was working,=20
+but rc6 and newer were not. The kernel configuration was the same for all=
+=20
+3.0 kernels.
+
+Since I don=E2=80=99t know which maintainer I should contact with my proble=
+m,=20
+I=E2=80=99ll write directly to lkml.
+
+Thanks for your help.
+
+Shade and sweet water!
+
+	Stephan
+
+PS: Please CC me, because I=E2=80=99m not subscribed.
+
+--=20
+| Stephan Seitz             E-Mail: stse@fsing.rootsland.net |
+| PGP Public Keys: http://fsing.rootsland.net/~stse/pgp.html |
+
+--9amGYk9869ThD9tj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk4tZswACgkQXse+NwPOAZ6huwCeNupLVUCYi60+PImhbBlX+Ict
+suEAnR2oSBAPV9ddIFYR9S/Fz8SCdNlf
+=TGIT
+-----END PGP SIGNATURE-----
+
+--9amGYk9869ThD9tj--
