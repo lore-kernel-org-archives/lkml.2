@@ -1,101 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751223Ab1GYHIq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 03:08:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:65128 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750987Ab1GYHIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 03:08:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,259,1309762800"; 
-   d="scan'208";a="31519283"
-Subject: Re: [PATCH v2 1/6] perf: Add interface to add general events to
- sysfs
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1311061926.3938.205.camel@minggr.sh.intel.com>
-References: <1310740503-15608-1-git-send-email-ming.m.lin@intel.com>
-	 <1310740503-15608-2-git-send-email-ming.m.lin@intel.com>
-	 <1310996068.13765.67.camel@twins>
-	 <1311061926.3938.205.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Jul 2011 15:08:37 +0800
-Message-ID: <1311577717.3938.1468.camel@minggr.sh.intel.com>
+	id S1751360Ab1GYHMI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 03:12:08 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:54049 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab1GYHL5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 03:11:57 -0400
+Date: Mon, 25 Jul 2011 16:41:48 +0930
+From: Christopher Yeoh <cyeoh@au1.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-man@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: Cross Memory Attach v3
+Message-ID: <20110725164148.05a672b0@lilo>
+In-Reply-To: <20110721150908.a71a59d6.akpm@linux-foundation.org>
+References: <20110719003537.16b189ae@lilo>
+	<20110721150908.a71a59d6.akpm@linux-foundation.org>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-19 at 15:52 +0800, Lin Ming wrote:
-> On Mon, 2011-07-18 at 21:34 +0800, Peter Zijlstra wrote:
-> > On Fri, 2011-07-15 at 14:34 +0000, Lin Ming wrote:
-> > > PMU can implement ::add_events() to add its general events to sysfs.
-> > > 
-> > > For example,
-> > > 
-> > > /sys/bus/event_source/devices/uncore/events
-> > > └── cycle
-> > > 
-> > > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> > > ---
-> > >  include/linux/perf_event.h |    9 +++++++
-> > >  kernel/events/core.c       |   52 ++++++++++++++++++++++++++++++++++++++++++++
-> > >  2 files changed, 61 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> > > index 3f2711c..14337a3 100644
-> > > --- a/include/linux/perf_event.h
-> > > +++ b/include/linux/perf_event.h
-> > > @@ -676,6 +676,14 @@ struct pmu {
-> > >  	 * for each successful ->add() during the transaction.
-> > >  	 */
-> > >  	void (*cancel_txn)		(struct pmu *pmu); /* optional */
-> > > +
-> > > +	void (*add_events)		(void);
-> > > +};
+On Thu, 21 Jul 2011 15:09:08 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
+
+> On Tue, 19 Jul 2011 00:35:37 +0930
+> Christopher Yeoh <cyeoh@au1.ibm.com> wrote:
+> 
+> > +/*
+> > + * process_vm_rw_pages - read/write pages from task specified
+> > + * @task: task to read/write from
+> > + * @mm: mm for task
+> > + * @process_pages: struct pages area that can store at least
+> > + *  nr_pages_to_copy struct page pointers
+> > + * @pa: address of page in task to start copying from/to
+> > + * @start_offset: offset in page to start copying from/to
+> > + * @len: number of bytes to copy
+> > + * @lvec: iovec array specifying where to copy to/from
+> > + * @lvec_cnt: number of elements in iovec array
+> > + * @lvec_current: index in iovec array we are up to
+> > + * @lvec_offset: offset in bytes from current iovec iov_base we
+> > are up to
+> > + * @vm_write: 0 means copy from, 1 means copy to
+> > + * @nr_pages_to_copy: number of pages to copy
+> > + */
+> > +static ssize_t process_vm_rw_pages(struct task_struct *task,
+> > +				   struct mm_struct *mm,
+> > +				      - *lvec_offset);
+> > .....
 > > 
-> > I'd rather not have a function pointer here, and all the kobj thingies
-> > can be hooking into the existing struct device, right?
+> > +
+> > +		target_kaddr = kmap(process_pages[pgs_copied]) +
+> > start_offset; +
+> > +		if (vm_write)
+> > +			ret = copy_from_user(target_kaddr,
+> > +
+> > lvec[*lvec_current].iov_base
+> > +					     + *lvec_offset,
+> > +					     bytes_to_copy);
+> > +		else
+> > +			ret =
+> > copy_to_user(lvec[*lvec_current].iov_base
+> > +					   + *lvec_offset,
+> > +					   target_kaddr,
+> > bytes_to_copy);
+> > +		kunmap(process_pages[pgs_copied]);
+> > +		if (ret) {
+> > +			pgs_copied++;
+> > +			goto end;
 > 
-> I forgot to mention one important reason why I added a function pointer.
+> afacit this will always return -EFAULT, even after copying some
+> memory.
 > 
-> The events can only be added to sysfs after PMU sysfs is initialized in
-> perf_event_sysfs_init ->
->     pmu_dev_alloc
+> Is this a misdesign?  Would it not be better to return the number of
+> bytes actually copied, or -EFAULT is we weren't able to copy any?
+> Like read().
 > 
-> > @@ -5571,6 +5571,8 @@ static int pmu_dev_alloc(struct pmu *pmu)
-> >        if (ret)
-> >                goto free_dev;
-> >
-> > +       if (pmu->add_events)
-> > +               pmu->add_events();
-> 
-> So we need a pmu callback which is called in pmu_dev_alloc to add events
-> to sysfs.
-> 
-> You suggested a new interface,
-> int perf_pmu_add_event(struct pmu *pmu, const char *name, u64 config)
-> 
-> But where should it be called?
-> I guess you mean to call it in pmu init function, for example,
-> uncore_pmu_init.
-> 
-> But pmu init function maybe called before perf_event_sysfs_init, which
-> means the pmu sysfs has not been initialized yet.
+> That way, userspace can at least process the data which _was_
+> transferred, before retrying and then handling the fault.  With the
+> proposed interface this is not possible, and the data is lost.
 
-Hi, Peter
+Perhaps because of how I'm using the interface for MPI I
+was thinking that if it fails at this point due to EFAULT then
+its an application error and that the partial read/write wouldn't be
+used. But I see your point could be true for other uses of the interface
+and the next version will return partial read/write information all the
+way back to userspace.
 
-Will you have a chance to look at this?
-
-Thanks.
-
+> And note that the function's kerneldoc doesn't document the return
+> value at all!  kerneldoc sucks that way - there's no formal place in
+> the template, so people often ignore this important part of the
+> function interface.  Similarly, there's no kerneldoc template for
+> preconditions such as irq on/off, locks which must be held, etc.
+> So they don't get documented.  But they're part of the interface.
 > 
-> Lin Ming
 
+Ok. Will be fixed in next version
 
+> > nr_pages_to_copy);
+> > +		start_offset = 0;
+> > +
+> > +		if (rc < 0)
+> > +			return rc;
+> 
+> It's propagated here.
+> 
+> (CodingStyleNit: it's conventional to put {} around the single-line
+> block in this case, btw).
+> 
+
+Fixed now.
+
+> > +
+> > +	if (nr_pages == 0)
+> > +		return 0;
+> > +
+> > +	/* For reliability don't try to kmalloc more than 2 pages
+> > worth */
+> > +	process_pages = kmalloc(min_t(size_t,
+> > PVM_MAX_KMALLOC_PAGES,
+> > +				      sizeof(struct pages
+> > *)*nr_pages),
+> > +				GFP_KERNEL);
+> 
+> You might get some speed benefit by optimising for the small copies
+> here.  Define a local on-stack array of N page*'s and point
+> process_pages at that if the number of pages is <= N.  Saves a
+> malloc/free and is more cache-friendly.  But only if the result is
+> measurable!
+
+ok. will do some benchmarking to see if its worth it.
+
+> > +
+> > +static ssize_t process_vm_rw_check_iovecs(pid_t pid,
+> > +					  const struct iovec
+> > __user *lvec,
+> > +					  unsigned long liovcnt,
+> > +					  const struct iovec
+> > __user *rvec,
+> > +					  unsigned long riovcnt,
+> > +					  unsigned long flags, int
+> > vm_write)
+> 
+> I'm allergic to functions with "check" in their name.  Check for what?
+> 
+> And one would expect a check_foo() to return a bool or an errno.  This
+> one returns a ssize_t!  Weird!  Interface documentation, please. 
+> Including return value semantics ;)
+
+That part was split out from the main function because the iovec
+checks are different for 32 bit compatibility. Have renamed:
+
+process_vm_rw -> process_vm_rw_core 
+process_vm_rw_check_iovecs -> process_vm_rw
+compat_process_vm_rw_check_iovecs -> compat_process_vm_rw
+
+...and added more doco - with return value semantics :-)
+
+Chris
+-- 
+cyeoh@au.ibm.com
