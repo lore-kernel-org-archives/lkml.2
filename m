@@ -1,44 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748Ab1GYXip (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 19:38:45 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48809 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752001Ab1GYXij (ORCPT
+	id S1752762Ab1GYXka (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 19:40:30 -0400
+Received: from mother.openwall.net ([195.42.179.200]:52614 "HELO
+	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751963Ab1GYXkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 19:38:39 -0400
-Date: Mon, 25 Jul 2011 16:37:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Andy Grover <agrover@redhat.com>, Hannes Reinecke <hare@suse.de>,
-        Roland Dreier <roland@purestorage.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Boaz Harrosh <openosd@gmail.com>, Mike Christie <michaelc@cs.wisc.edu>
-Subject: Re: [GIT PULL] iscsi-target merge for v3.1-rc1
-Message-Id: <20110725163739.5c19b04d.akpm@linux-foundation.org>
-In-Reply-To: <1311462975.31450.356.camel@haakon2.linux-iscsi.org>
-References: <1311462975.31450.356.camel@haakon2.linux-iscsi.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Mon, 25 Jul 2011 19:40:22 -0400
+Date: Tue, 26 Jul 2011 03:40:13 +0400
+From: Solar Designer <solar@openwall.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, NeilBrown <neilb@suse.de>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        kernel-hardening@lists.openwall.com, James Morris <jmorris@namei.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
+        Sebastian Krahmer <krahmer@suse.de>
+Subject: Re: [kernel-hardening] [PATCH] move RLIMIT_NPROC check from set_user() to do_execve_common()
+Message-ID: <20110725234013.GB24110@openwall.com>
+References: <20110715170650.585f1dad@notabene.brown> <20110715073823.GA3821@albatros> <1310738313.30257.27.camel@moss-pluto> <20110715152641.GA6286@albatros> <1310759683.30257.123.camel@moss-pluto> <20110721140936.632d2c8b@notabene.brown> <20110721124830.GA1325@openwall.com> <CA+55aFy4ybatb0McQr2f4A56ympZVLqK2sbp2=73idu58_4RxQ@mail.gmail.com> <20110721193939.GA3914@openwall.com> <20110725171423.GA3739@albatros>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110725171423.GA3739@albatros>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Jul 2011 16:16:15 -0700
-"Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+Vasiliy,
 
-> Please go ahead and pull from:
-> 
->   master.kernel.org:/pub/scm/linux/kernel/git/nab/target-pending.git for-linus-merge
+On Mon, Jul 25, 2011 at 09:14:23PM +0400, Vasiliy Kulikov wrote:
+> @@ -1433,6 +1433,19 @@ static int do_execve_common(const char *filename,
+>  	struct files_struct *displaced;
+>  	bool clear_in_exec;
+>  	int retval;
+> +	const struct cred *cred = current_cred();
+> +
+> +	/*
+> +	 * We move the actual failure in case of RLIMIT_NPROC excess from
+> +	 * set*uid() to execve() because too many poorly written programs
+> +	 * don't check setuid() return code.  Here we additionally recheck
+> +	 * whether NPROC limit is still exceeded.
+> +	 */
+> +	if ((current->flags & PF_NPROC_EXCEEDED) &&
+> +	    atomic_read(&cred->user->processes) > rlimit(RLIMIT_NPROC)) {
+> +		retval = -EAGAIN;
+> +		goto out_ret;
+> +	}
 
-i386 allyesconfig:
+Do you possibly need:
 
-ERROR: "__udivdi3" [drivers/target/target_core_mod.ko] undefined!
+	current->flags &= ~PF_NPROC_EXCEEDED;
 
-somewhere in drivers/target/target_core_transport.c:transport_allocate_data_tasks().
+somewhere after this point?
+
+I think it's weird to have past set_user() failure affect other than the
+very next execve().
+
+Perhaps also reset the flag on fork() because we have an RLIMIT_NPROC
+check on fork() anyway.
+
+Thanks,
+
+Alexander
