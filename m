@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137Ab1GYOCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 10:02:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:57467 "EHLO
+	id S1752435Ab1GYOD7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 10:03:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:39633 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab1GYOCd (ORCPT
+	with ESMTP id S1752164Ab1GYODJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 10:02:33 -0400
-X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=IpAmYfIOPbMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=hFEfRwvsN7kKOvoysmMA:9 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=PNi3dE7MG_dqs0V-:21 a=zp1aArP8PYXdgwph:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Mon, 25 Jul 2011 10:03:09 -0400
+X-Authority-Analysis: v=1.1 cv=s3eDhkhcaTLnj7IEXy8aaXUiY7FbET0mf+/2Xe0elbc= c=1 sm=0 a=SINDppgerkwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1XWaLZrsAAAA:8 a=dx17oUv-T7HxMn74lR4A:9 a=Fh9jjmw0zCif9yuGc8UA:7 a=PUjeQqilurYA:10 a=UTB_XpHje0EA:10 a=ukqBxsb-6jz1HFkc:21 a=IB1zjz1-i7qUQlHJ:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 4/4] trace-cmd: Support '+' opcode in print format
+Subject: Re: [PATCH 2/4] trace-cmd: Handle invalid opcode parsing gracefully
 From: Steven Rostedt <rostedt@goodmis.org>
 To: Vaibhav Nagarnaik <vnagarnaik@google.com>
 Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
         linux-kernel@vger.kernel.org
-In-Reply-To: <1310785241-3799-4-git-send-email-vnagarnaik@google.com>
+In-Reply-To: <1310785241-3799-2-git-send-email-vnagarnaik@google.com>
 References: <1310785241-3799-1-git-send-email-vnagarnaik@google.com>
-	 <1310785241-3799-4-git-send-email-vnagarnaik@google.com>
+	 <1310785241-3799-2-git-send-email-vnagarnaik@google.com>
 Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 25 Jul 2011 10:02:32 -0400
-Message-ID: <1311602552.3526.17.camel@gandalf.stny.rr.com>
+Date: Mon, 25 Jul 2011 10:03:07 -0400
+Message-ID: <1311602587.3526.18.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
@@ -29,41 +29,247 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, 2011-07-15 at 20:00 -0700, Vaibhav Nagarnaik wrote:
-> The '+' opcode is not supported in the arguments for the print format.
-> This patch adds support for it.
+> If an invalid opcode is encountered, trace-cmd exits with an error.
+> Instead it can be treated as a soft error where the event's print format
+> is not parsed and its binary data is dumped out.
+> 
+> This patch adds a return value to arg_num_eval() function to indicate if
+> the parsing was successful. If not, then the error is considered soft
+> and the parsing of the offending event fails.
+> 
+> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
 
-Thanks! This was on my todo list.
+Thanks Vaibhav, applied!
 
 -- Steve
 
-> 
-> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
 > ---
->  parse-events.c |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
+>  parse-events.c |  125 +++++++++++++++++++++++++++++++++++++-------------------
+>  1 files changed, 83 insertions(+), 42 deletions(-)
 > 
 > diff --git a/parse-events.c b/parse-events.c
-> index 068c77f..2e39415 100644
+> index d8f322a..58ffe51 100644
 > --- a/parse-events.c
 > +++ b/parse-events.c
-> @@ -2033,6 +2033,18 @@ static int arg_num_eval(struct print_arg *arg, long long *val)
->  				break;
->  			*val = left - right;
+> @@ -1901,90 +1901,120 @@ eval_type(unsigned long long val, struct print_arg *arg, int pointer)
+>  	return eval_type_str(val, arg->typecast.type, pointer);
+>  }
+>  
+> -static long long arg_num_eval(struct print_arg *arg)
+> +static int arg_num_eval(struct print_arg *arg, long long *val)
+>  {
+>  	long long left, right;
+> -	long long val = 0;
+> +	int ret = 1;
+>  
+>  	switch (arg->type) {
+>  	case PRINT_ATOM:
+> -		val = strtoll(arg->atom.atom, NULL, 0);
+> +		*val = strtoll(arg->atom.atom, NULL, 0);
+>  		break;
+>  	case PRINT_TYPE:
+> -		val = arg_num_eval(arg->typecast.item);
+> -		val = eval_type(val, arg, 0);
+> +		ret = arg_num_eval(arg->typecast.item, val);
+> +		if (!ret)
+> +			break;
+> +		*val = eval_type(*val, arg, 0);
+>  		break;
+>  	case PRINT_OP:
+>  		switch (arg->op.op[0]) {
+>  		case '|':
+> -			left = arg_num_eval(arg->op.left);
+> -			right = arg_num_eval(arg->op.right);
+> +			ret = arg_num_eval(arg->op.left, &left);
+> +			if (!ret)
+> +				break;
+> +			ret = arg_num_eval(arg->op.right, &right);
+> +			if (!ret)
+> +				break;
+>  			if (arg->op.op[1])
+> -				val = left || right;
+> +				*val = left || right;
+>  			else
+> -				val = left | right;
+> +				*val = left | right;
 >  			break;
-> +		case '+':
-> +			if (arg->op.left->type == PRINT_NULL)
-> +				left = 0;
-> +			else
+>  		case '&':
+> -			left = arg_num_eval(arg->op.left);
+> -			right = arg_num_eval(arg->op.right);
+> +			ret = arg_num_eval(arg->op.left, &left);
+> +			if (!ret)
+> +				break;
+> +			ret = arg_num_eval(arg->op.right, &right);
+> +			if (!ret)
+> +				break;
+>  			if (arg->op.op[1])
+> -				val = left && right;
+> +				*val = left && right;
+>  			else
+> -				val = left & right;
+> +				*val = left & right;
+>  			break;
+>  		case '<':
+> -			left = arg_num_eval(arg->op.left);
+> -			right = arg_num_eval(arg->op.right);
+> +			ret = arg_num_eval(arg->op.left, &left);
+> +			if (!ret)
+> +				break;
+> +			ret = arg_num_eval(arg->op.right, &right);
+> +			if (!ret)
+> +				break;
+>  			switch (arg->op.op[1]) {
+>  			case 0:
+> -				val = left < right;
+> +				*val = left < right;
+>  				break;
+>  			case '<':
+> -				val = left << right;
+> +				*val = left << right;
+>  				break;
+>  			case '=':
+> -				val = left <= right;
+> +				*val = left <= right;
+>  				break;
+>  			default:
+> -				die("unknown op '%s'", arg->op.op);
+> +				do_warning("unknown op '%s'", arg->op.op);
+> +				ret = 0;
+>  			}
+>  			break;
+>  		case '>':
+> -			left = arg_num_eval(arg->op.left);
+> -			right = arg_num_eval(arg->op.right);
+> +			ret = arg_num_eval(arg->op.left, &left);
+> +			if (!ret)
+> +				break;
+> +			ret = arg_num_eval(arg->op.right, &right);
+> +			if (!ret)
+> +				break;
+>  			switch (arg->op.op[1]) {
+>  			case 0:
+> -				val = left > right;
+> +				*val = left > right;
+>  				break;
+>  			case '>':
+> -				val = left >> right;
+> +				*val = left >> right;
+>  				break;
+>  			case '=':
+> -				val = left >= right;
+> +				*val = left >= right;
+>  				break;
+>  			default:
+> -				die("unknown op '%s'", arg->op.op);
+> +				do_warning("unknown op '%s'", arg->op.op);
+> +				ret = 0;
+>  			}
+>  			break;
+>  		case '=':
+> -			left = arg_num_eval(arg->op.left);
+> -			right = arg_num_eval(arg->op.right);
+> -
+> -			if (arg->op.op[1] != '=')
+> -				die("unknown op '%s'", arg->op.op);
+> +			ret = arg_num_eval(arg->op.left, &left);
+> +			if (!ret)
+> +				break;
+> +			ret = arg_num_eval(arg->op.right, &right);
+> +			if (!ret)
+> +				break;
+>  
+> -			val = left == right;
+> +			if (arg->op.op[1] != '=') {
+> +				do_warning("unknown op '%s'", arg->op.op);
+> +				ret = 0;
+> +			} else
+> +				*val = left == right;
+>  			break;
+>  		case '!':
+> -			left = arg_num_eval(arg->op.left);
+> -			right = arg_num_eval(arg->op.right);
+> +			ret = arg_num_eval(arg->op.left, &left);
+> +			if (!ret)
+> +				break;
+> +			ret = arg_num_eval(arg->op.right, &right);
+> +			if (!ret)
+> +				break;
+>  
+>  			switch (arg->op.op[1]) {
+>  			case '=':
+> -				val = left != right;
+> +				*val = left != right;
+>  				break;
+>  			default:
+> -				die("unknown op '%s'", arg->op.op);
+> +				do_warning("unknown op '%s'", arg->op.op);
+> +				ret = 0;
+>  			}
+>  			break;
+>  		case '-':
+> @@ -1992,12 +2022,17 @@ static long long arg_num_eval(struct print_arg *arg)
+>  			if (arg->op.left->type == PRINT_NULL)
+>  				left = 0;
+>  			else
+> -				left = arg_num_eval(arg->op.left);
+> -			right = arg_num_eval(arg->op.right);
+> -			val = left - right;
 > +				ret = arg_num_eval(arg->op.left, &left);
 > +			if (!ret)
 > +				break;
 > +			ret = arg_num_eval(arg->op.right, &right);
 > +			if (!ret)
 > +				break;
-> +			*val = left + right;
-> +			break;
+> +			*val = left - right;
+>  			break;
 >  		default:
->  			do_warning("unknown op '%s'", arg->op.op);
->  			ret = 0;
+> -			die("unknown op '%s'", arg->op.op);
+> +			do_warning("unknown op '%s'", arg->op.op);
+> +			ret = 0;
+>  		}
+>  		break;
+>  
+> @@ -2006,10 +2041,11 @@ static long long arg_num_eval(struct print_arg *arg)
+>  	case PRINT_STRING:
+>  	case PRINT_BSTRING:
+>  	default:
+> -		die("invalid eval type %d", arg->type);
+> +		do_warning("invalid eval type %d", arg->type);
+> +		ret = 0;
+>  
+>  	}
+> -	return val;
+> +	return ret;
+>  }
+>  
+>  static char *arg_eval (struct print_arg *arg)
+> @@ -2023,7 +2059,8 @@ static char *arg_eval (struct print_arg *arg)
+>  	case PRINT_TYPE:
+>  		return arg_eval(arg->typecast.item);
+>  	case PRINT_OP:
+> -		val = arg_num_eval(arg);
+> +		if (!arg_num_eval(arg, &val))
+> +			break;
+>  		sprintf(buf, "%lld", val);
+>  		return buf;
+>  
+> @@ -2065,6 +2102,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+>  		memset(field, 0, sizeof(field));
+>  
+>  		value = arg_eval(arg);
+> +		if (value == NULL)
+> +			goto out_free;
+>  		field->value = strdup(value);
+>  
+>  		free_arg(arg);
+> @@ -2076,6 +2115,8 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+>  			goto out_free;
+>  
+>  		value = arg_eval(arg);
+> +		if (value == NULL)
+> +			goto out_free;
+>  		field->str = strdup(value);
+>  		free_arg(arg);
+>  		arg = NULL;
 
 
