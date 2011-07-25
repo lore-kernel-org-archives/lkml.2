@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751375Ab1GYH1K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 03:27:10 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:59275 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab1GYH1H convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 03:27:07 -0400
+	id S1751430Ab1GYH1b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 03:27:31 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:3981 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751074Ab1GYH1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 03:27:24 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+Message-ID: <4E2D1ACF.1010307@broadcom.com>
+Date: Mon, 25 Jul 2011 09:27:11 +0200
+From: "Roland Vossen" <rvossen@broadcom.com>
+Organization: Broadcom
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
+ Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <4E2CC489.1090509@codemonkey.ws>
-References: <alpine.DEB.2.00.1107242335580.18045@tiger>
-	<4E2CC489.1090509@codemonkey.ws>
-Date: Mon, 25 Jul 2011 10:27:06 +0300
-X-Google-Sender-Auth: _Axz_UaC8ktcPaha3xjNS0A-3B8
-Message-ID: <CAOJsxLH-poY4-wEUPqAa8bzK+1WJ0UYtSuue72RYwcd_D0kx_A@mail.gmail.com>
-Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
-From: Pekka Enberg <penberg@kernel.org>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: torvalds@linux-foundation.org, mingo@elte.hu, avi@redhat.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, gorcunov@gmail.com, levinsasha928@gmail.com,
-        asias.hejun@gmail.com, prasadjoshi124@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Guilherme Salazar" <gmesalazar@gmail.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+Subject: Re: ieee80211 messages at startup (3.0 kernel)
+References: <CA+Hmt2hyH3tZqSJjdOZfceGtpfHyTL4hh56ngXLHevOpVT07VA@mail.gmail.com>
+In-Reply-To: <CA+Hmt2hyH3tZqSJjdOZfceGtpfHyTL4hh56ngXLHevOpVT07VA@mail.gmail.com>
+X-WSS-ID: 6233C39D3DK3437278-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anthony,
+Hi Guilherme,
 
-On Mon, Jul 25, 2011 at 4:19 AM, Anthony Liguori <anthony@codemonkey.ws> wrote:
-> lguest already does this and lives in the kernel.
+ > I've been seeing weird messages concerning ieee80211 driver at startup
+ > after using 3.0.0 kernel.
+ > I don't know whether that is a problem or just debugging messages,
+ > since everything is working fine,
+ > but I've attached the dmesg output (before and after using the 3.0.0)
+ > and my config file.
 
-Does Lguest have SMP, usermode networking, and GUI support?
+this issue has been fixed in the staging-next repo, the fix is probably 
+still on its way to the wireless repo. FYI, the commit on staging-next is:
 
-On Mon, Jul 25, 2011 at 4:19 AM, Anthony Liguori <anthony@codemonkey.ws> wrote:
-> So purely from a kernel perspective, why have two tools in the tree that do
-> the same thing?  Shouldn't you at least unify the userspace with the lguest
-> userspace?
+-----------------
+commit 37c962d195005d009e130e65a9e55960996c3cab
+Author: Roland Vossen <rvossen@broadcom.com>
+Date:   Wed Jun 29 16:48:22 2011 -0700
 
-Are you talking about Documentation/lguest/lguest.c? How would you
-suggest we unify our code with that?
+     staging: brcm80211: fix for reported log spam problem
 
-                                Pekka
+     Every few minutes, this message would appear in syslog:
+
+     ieee80211 ph0: wl_ops_bss_info_changed: BSS idle: true (implement)
+
+     The message has been deleted, the driver requires no special action 
+on this
+     particular event (). See: 
+https://bugzilla.kernel.org/show_bug.cgi?id=38162
+-----------------
+
+Bye, Roland.
+
