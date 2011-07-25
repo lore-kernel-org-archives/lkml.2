@@ -1,52 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab1GYVI5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 17:08:57 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:54299 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012Ab1GYVIz (ORCPT
+	id S1752737Ab1GYVJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 17:09:29 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:43810 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab1GYVJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 17:08:55 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        devel@driverdev.osuosl.org
-Subject: Re: GMA500: ERROR: "__bad_udelay" undefined!
-Date: Mon, 25 Jul 2011 23:08:42 +0200
-Message-ID: <62472696.BtqhiR95vr@wuerfel>
-User-Agent: KMail/4.6.0 (Linux/3.0.0-rc1nosema+; KDE/4.6.90; x86_64; ; )
-In-Reply-To: <4E2CC6CC.5020204@gmail.com>
-References: <alpine.LNX.2.00.1107242327030.7103@swampdragon.chaosbits.net> <4E2CC55B.5010307@gmail.com> <4E2CC6CC.5020204@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ABXsAr+UDXcUSLgrPFq+blNuRjwhalRE+wX7H3cFgbF
- kJfgAb14LGBqz/9T56nORIMnb82U5ATd3sULa4jIbE3S9YSwtx
- fl6E/nemPPN1M/osSP7xZ7IqEZe5ooiQTnLnq/RUvHW94su+c0
- 2HXFIlma6vnyZIiAn8UWkHoN0TK6tFLp8+FZrxrAAHuYQ2SDLk
- ZpCEdbH7qEtg4CTfrksHg==
+	Mon, 25 Jul 2011 17:09:28 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] dmaengine: at_hdmac: add wrappers for testing channel state
+Date: Mon, 25 Jul 2011 23:09:23 +0200
+Message-Id: <a04c691d57da727d0b68affb424e3fec44cfd421.1311627477.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1310005222.20150.23.camel@psiaudioba-mobl1>
+References: <1310005222.20150.23.camel@psiaudioba-mobl1>
+In-Reply-To: <3c302a7166c2aa6ae4b6d7b7cdfe21e640b73603.1311627477.git.nicolas.ferre@atmel.com>
+References: <3c302a7166c2aa6ae4b6d7b7cdfe21e640b73603.1311627477.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 25 July 2011 11:28:44 Ryan Mallon wrote:
-> 
-> diff --git a/drivers/staging/gma500/psb_intel_display.c b/drivers/staging/gma500/psb_intel_display.c
-> index 4f47d09..09e378d 100644
-> --- a/drivers/staging/gma500/psb_intel_display.c
-> +++ b/drivers/staging/gma500/psb_intel_display.c
-> @@ -331,7 +331,7 @@ static bool psb_intel_find_best_PLL(struct drm_crtc *crtc, int target,
->   void psb_intel_wait_for_vblank(struct drm_device *dev)
->   {
->         /* Wait for 20ms, i.e. one cycle at 50hz. */
-> -       udelay(20000);
-> +       mdelay(20);
->   }
-> 
->   int psb_intel_pipe_set_base(struct drm_crtc *crtc,
+Cyclic property and paused state are encoded as bits in the channel status
+bitfield. Tests of those bits are wrapped in convenient helper functions.
 
-A 20 ms busy wait is rather nasty. Can't this be replaced with a sleeping
-wait (msleep)?
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/dma/at_hdmac.c      |   19 +++++++++----------
+ drivers/dma/at_hdmac_regs.h |   17 +++++++++++++++++
+ 2 files changed, 26 insertions(+), 10 deletions(-)
 
-	Arnd
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index 99bd2c18..26a1196 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -301,7 +301,7 @@ atc_chain_complete(struct at_dma_chan *atchan, struct at_desc *desc)
+ 
+ 	/* for cyclic transfers,
+ 	 * no need to replay callback function while stopping */
+-	if (!test_bit(ATC_IS_CYCLIC, &atchan->status)) {
++	if (!atc_chan_is_cyclic(atchan)) {
+ 		dma_async_tx_callback	callback = txd->callback;
+ 		void			*param = txd->callback_param;
+ 
+@@ -478,7 +478,7 @@ static void atc_tasklet(unsigned long data)
+ 	spin_lock_irqsave(&atchan->lock, flags);
+ 	if (test_and_clear_bit(ATC_IS_ERROR, &atchan->status))
+ 		atc_handle_error(atchan);
+-	else if (test_bit(ATC_IS_CYCLIC, &atchan->status))
++	else if (atc_chan_is_cyclic(atchan))
+ 		atc_handle_cyclic(atchan);
+ 	else
+ 		atc_advance_work(atchan);
+@@ -945,7 +945,7 @@ static int atc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 
+ 		spin_unlock_irqrestore(&atchan->lock, flags);
+ 	} else if (cmd == DMA_RESUME) {
+-		if (!test_bit(ATC_IS_PAUSED, &atchan->status))
++		if (!atc_chan_is_paused(atchan))
+ 			return 0;
+ 
+ 		spin_lock_irqsave(&atchan->lock, flags);
+@@ -1035,7 +1035,7 @@ atc_tx_status(struct dma_chan *chan,
+ 	else
+ 		dma_set_tx_state(txstate, last_complete, last_used, 0);
+ 
+-	if (test_bit(ATC_IS_PAUSED, &atchan->status))
++	if (atc_chan_is_paused(atchan))
+ 		ret = DMA_PAUSED;
+ 
+ 	dev_vdbg(chan2dev(chan), "tx_status %d: cookie = %d (d%d, u%d)\n",
+@@ -1057,7 +1057,7 @@ static void atc_issue_pending(struct dma_chan *chan)
+ 	dev_vdbg(chan2dev(chan), "issue_pending\n");
+ 
+ 	/* Not needed for cyclic transfers */
+-	if (test_bit(ATC_IS_CYCLIC, &atchan->status))
++	if (atc_chan_is_cyclic(atchan))
+ 		return;
+ 
+ 	spin_lock_irqsave(&atchan->lock, flags);
+@@ -1395,8 +1395,7 @@ static int at_dma_prepare(struct device *dev)
+ 			device_node) {
+ 		struct at_dma_chan *atchan = to_at_dma_chan(chan);
+ 		/* wait for transaction completion (except in cyclic case) */
+-		if (atc_chan_is_enabled(atchan) &&
+-			!test_bit(ATC_IS_CYCLIC, &atchan->status))
++		if (atc_chan_is_enabled(atchan) && !atc_chan_is_cyclic(atchan))
+ 			return -EAGAIN;
+ 	}
+ 	return 0;
+@@ -1408,7 +1407,7 @@ static void atc_suspend_cyclic(struct at_dma_chan *atchan)
+ 
+ 	/* Channel should be paused by user
+ 	 * do it anyway even if it is not done already */
+-	if (!test_bit(ATC_IS_PAUSED, &atchan->status)) {
++	if (!atc_chan_is_paused(atchan)) {
+ 		dev_warn(chan2dev(chan),
+ 		"cyclic channel not paused, should be done by channel user\n");
+ 		atc_control(chan, DMA_PAUSE, 0);
+@@ -1432,7 +1431,7 @@ static int at_dma_suspend_noirq(struct device *dev)
+ 			device_node) {
+ 		struct at_dma_chan *atchan = to_at_dma_chan(chan);
+ 
+-		if (test_bit(ATC_IS_CYCLIC, &atchan->status))
++		if (atc_chan_is_cyclic(atchan))
+ 			atc_suspend_cyclic(atchan);
+ 		atchan->save_cfg = channel_readl(atchan, CFG);
+ 	}
+@@ -1484,7 +1483,7 @@ static int at_dma_resume_noirq(struct device *dev)
+ 		struct at_dma_chan *atchan = to_at_dma_chan(chan);
+ 
+ 		channel_writel(atchan, CFG, atchan->save_cfg);
+-		if (test_bit(ATC_IS_CYCLIC, &atchan->status))
++		if (atc_chan_is_cyclic(atchan))
+ 			atc_resume_cyclic(atchan);
+ 	}
+ 	return 0;
+diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
+index 6f0c4a3..aa4c9ae 100644
+--- a/drivers/dma/at_hdmac_regs.h
++++ b/drivers/dma/at_hdmac_regs.h
+@@ -362,6 +362,23 @@ static inline int atc_chan_is_enabled(struct at_dma_chan *atchan)
+ 	return !!(dma_readl(atdma, CHSR) & atchan->mask);
+ }
+ 
++/**
++ * atc_chan_is_paused - test channel pause/resume status
++ * @atchan: channel we want to test status
++ */
++static inline int atc_chan_is_paused(struct at_dma_chan *atchan)
++{
++	return test_bit(ATC_IS_PAUSED, &atchan->status);
++}
++
++/**
++ * atc_chan_is_cyclic - test if given channel has cyclic property set
++ * @atchan: channel we want to test status
++ */
++static inline int atc_chan_is_cyclic(struct at_dma_chan *atchan)
++{
++	return test_bit(ATC_IS_CYCLIC, &atchan->status);
++}
+ 
+ /**
+  * set_desc_eol - set end-of-link to descriptor so it will end transfer
+-- 
+1.7.4.1
+
