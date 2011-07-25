@@ -1,37 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab1GYSUx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 14:20:53 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:64165 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499Ab1GYSUv (ORCPT
+	id S1752172Ab1GYSVA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 14:21:00 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:57960 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499Ab1GYSUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 14:20:51 -0400
-Date: Mon, 25 Jul 2011 11:20:45 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: riyer@nvidia.com
-Cc: rydberg@euromail.se, olof@lixom.net, amartin@nvidia.com,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH v1] Input: tegra-kbc - Fix support for key repeat.
-Message-ID: <20110725182045.GC6876@core.coreip.homeip.net>
-References: <1311362271-10544-1-git-send-email-riyer@nvidia.com>
+	Mon, 25 Jul 2011 14:20:55 -0400
+Date: Mon, 25 Jul 2011 22:20:50 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 0/3] minor cleanups to EFLAGS initialisation in
+ ret_from_fork
+Message-ID: <20110725182049.GD27137@sun>
+References: <1311587883.27940.20.camel@cthulhu.hellion.org.uk>
+ <20110725101902.GP4362@sun>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1311362271-10544-1-git-send-email-riyer@nvidia.com>
+In-Reply-To: <20110725101902.GP4362@sun>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 12:17:51PM -0700, riyer@nvidia.com wrote:
-> From: Rakesh Iyer <riyer@nvidia.com>
+On Mon, Jul 25, 2011 at 02:19:02PM +0400, Cyrill Gorcunov wrote:
+> On Mon, Jul 25, 2011 at 10:58:03AM +0100, Ian Campbell wrote:
+> > The following series removes the use of a global kernel_eflags variable
+> > from the x86_64 ret_from_fork path and (very slightly) merges the 32 and
+> > 64 bit version of that code path.
+> > 
+> > kernel_eflags could be made a __read_mostly but actually there is no
+> > reason to prefer the value at cpu_init() time to a compile time constant
+> > value for the initial eflags after a fork.
+> > 
+> > Ian.
+> > 
 > 
-> To support key repeats, keyboard needs to be setup as an autorepeating device.
+> Thanks, Ian! I think noone against this simplification, Peter, Andi?
 > 
-> Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
+> 	Cyrill
 
-Applied, thanks Rakesh.
+Ian, I've missed in first place that you've opened IRQs window _before_
+schedule_tail() call, ie it's not 1:1 code mapping as it was before.
 
--- 
-Dmitry
+Note kernel_eflags has IF clear and what we have: the ret_from_fork on
+x86-64 happens _only_ inside context_switch call, ie
+
+schedule (sched.c)
+        ...
+        raw_spin_lock_irq
+        ...
+        context_switch
+                switch_to
+                        "jnz   ret_from_fork\n\t"
+                        pushq_cfi kernel_eflags(%rip)
+                        popfq_cfi                               # reset kernel eflags
+
+--->                    irqs are still disabled
+
+                        call schedule_tail                      # rdi: 'prev' task parameter
+                                finish_lock_switch
+                                        raw_spin_unlock_irq
+
+I bet raw_spin_lock_irq at the beginning of the schedule() is set
+for a reason and such change is not safe. Though I may be missing
+something again...
+
+	Cyrill
