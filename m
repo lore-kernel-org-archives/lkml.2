@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349Ab1GYMIR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 08:08:17 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:50908 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab1GYMII (ORCPT
+	id S1751320Ab1GYMJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 08:09:42 -0400
+Received: from szxga04-in.huawei.com ([119.145.14.67]:53720 "EHLO
+	szxga04-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab1GYMJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 08:08:08 -0400
-MIME-Version: 1.0
-Date: Mon, 25 Jul 2011 13:08:06 +0100
-X-Google-Sender-Auth: ek92e-DJTgipWWF5YWDNAVI8pAI
-Message-ID: <CAPweEDzv+vByC1s2bWRjVQdVLqw4Xf2sUf_CQgVync_YcxtdvQ@mail.gmail.com>
-Subject: ext3 hacked filesystem (by debian exim4 exploit) available for
- analysis and bugreporting
-From: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 25 Jul 2011 08:09:37 -0400
+X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Jul 2011 08:09:37 EDT
+Date: Mon, 25 Jul 2011 12:04:34 +0000
+From: Shen Canquan <shencanquan@huawei.com>
+Subject: [Patch 1/1] Hot cpu remove patch
+X-Originating-IP: [10.166.80.171]
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-id: <F1F5DF04259F1B4A82BD6BDE1C479F7452CA25@szxeml527-mbs.china.huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=iso-2022-jp
+Content-language: zh-CN
+Content-transfer-encoding: 7BIT
+Accept-Language: zh-CN, en-US
+Thread-topic: [Patch 1/1] Hot cpu remove patch
+Thread-index: AcxKwwTscly5Ni+pSyGATuH8x4jTLg==
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-folks, hi,
-
-i appreciate this was some time ago, but i encountered a quite serious
-issue with an ext3 filesystem that had been hacked, and a rootkit
-installed.  this was with a 2.6.26 kernel.  the issue encountered was
-that the little fuckers directly modified the ext3 filesystem so that
-some files they had created could *not* be deleted.  when i say "could
-not be deleted" i mean "absolutely could not be deleted".  also, fsck
-did *not* report any "problems".
-
-and yes, please do give me credit for knowing that you should use a
-different system (offline) to analyse the [damaged] filesystem :)  as
-you can imagine, i was very very surprised to encounter this as an
-issue.
-
-first thing: has anyone else encountered this?
-
-second thing: if answer "no" to above, would anyone who can prove
-their credentials (public ssh key, public web site, notability blah
-blah) like to analyse the 5gb filesystem?  i still have a copy (it's
-an LVM2 partition on a Xen hosted server).
-
-apart from anything, this really really should go into rkhunter /
-chkrootkit, but it requires someone with expertise to actually analyse
-what the bloody hell happened.  apart from anything, files which
-cannot be deleted (and cannot be detected as "corrupted" by fsck.ext3)
-is pretty damn serious.
-
-l.
+Hello，
+   Recently, I test the cpu hot add and remove function. It is ok for cpu hot add. but it is failure on cpu hot remove . If I modify the source code(Please see the following patch content). It is successful on cpu hot remove.
+patch content:
+ 
+--- linux-2.6.39.3_modify/drivers/acpi/processor_driver.c       2011-07-25 09:11:51.000000000 +0800
++++ linux-2.6.39.3/drivers/acpi/processor_driver.c      2011-07-09 14:16:06.000000000 +0800
+@@ -677,11 +677,6 @@
+                                    "Driver data is NULL, dropping EJECT\n");
+                        return;
+                }
+-               /*The alternative way of modify is add the following code:
+-                       kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+-               */
+-               /*async execute the acip_bus_hot_remove_device*/
+-               acpi_os_hotplug_execute(acpi_bus_hot_remove_device, handle);
+                break;
+        default:
+                ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+diff -u -r linux-2.6.39.3_modify/drivers/acpi/scan.c linux-2.6.39.3/drivers/acpi/scan.c
+--- linux-2.6.39.3_modify/drivers/acpi/scan.c   2011-07-20 15:28:52.000000000 +0800
++++ linux-2.6.39.3/drivers/acpi/scan.c  2011-07-09 14:16:06.000000000 +0800
+@@ -83,7 +83,7 @@
+ }
+ static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+- void acpi_bus_hot_remove_device(void *context)
++static void acpi_bus_hot_remove_device(void *context)
+ {
+        struct acpi_device *device;
+        acpi_handle handle = context;
+diff -u -r linux-2.6.39.3_modify/include/acpi/acpi_bus.h linux-2.6.39.3/include/acpi/acpi_bus.h
+--- linux-2.6.39.3_modify/include/acpi/acpi_bus.h       2011-07-20 15:30:04.000000000 +0800
++++ linux-2.6.39.3/include/acpi/acpi_bus.h      2011-07-09 14:16:06.000000000 +0800
+@@ -342,7 +342,7 @@
+                          const struct acpi_device_id *ids);
+ int acpi_create_dir(struct acpi_device *);
+ void acpi_remove_dir(struct acpi_device *);
+-void acpi_bus_hot_remove_device(void *context);
++
+ /*
+  * Bind physical devices with ACPI devices
+                                               
+ */
+ 
+ 
+Jason.shen
+2011-07-25
