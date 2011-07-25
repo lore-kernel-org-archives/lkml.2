@@ -1,44 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab1GYUVD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 16:21:03 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:41005 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384Ab1GYUUt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 16:20:49 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Mihai Moldovan <ionic@ionic.de>
-Cc: Jesper Juhl <jj@chaosbits.net>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fix fat utf8 iocharset warning message
-References: <4E2C2015.6090200@ionic.de>
-	<alpine.LNX.2.00.1107241921350.5758@swampdragon.chaosbits.net>
-	<4E2C6220.5070706@ionic.de>
-Date: Tue, 26 Jul 2011 05:20:46 +0900
-In-Reply-To: <4E2C6220.5070706@ionic.de> (Mihai Moldovan's message of "Sun, 24
-	Jul 2011 20:19:12 +0200")
-Message-ID: <87fwlukt7l.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752808Ab1GYUUi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 16:20:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26036 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752765Ab1GYUUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 16:20:31 -0400
+From: Johannes Weiner <jweiner@redhat.com>
+To: linux-mm@kvack.org
+Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: [patch 5/5] mm: filemap: horrid hack to pass __GFP_WRITE for most page cache writers
+Date: Mon, 25 Jul 2011 22:19:19 +0200
+Message-Id: <1311625159-13771-6-git-send-email-jweiner@redhat.com>
+In-Reply-To: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
+References: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mihai Moldovan <ionic@ionic.de> writes:
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-> * On 24.07.2011 07:22 PM, Jesper Juhl wrote:
->> @@ -1190,7 +1190,7 @@ out:
->>      if (!strcmp(opts->iocharset, "utf8")) {
->>          fat_msg(sb, KERN_ERR, "utf8 is not a recommended IO charset"
->> Is KERN_ERR really the right thing to use here? 
->> Sounds more like a warning to me..
->
-> I'm interested to see what Ogawa says, but I'd say KERN_WARNING would be
-> better here as well, yeah.
+This makes every page allocation that results from grabbing a single
+page in the page cache pass __GFP_WRITE.
 
-I agree to change it.
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ include/linux/pagemap.h |    6 ++++--
+ mm/filemap.c            |    8 ++++++--
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
-Thanks.
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 716875e..3355c9b 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -244,12 +244,14 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
+ 			pgoff_t index, unsigned flags);
+ 
+ /*
+- * Returns locked page at given index in given cache, creating it if needed.
++ * Returns locked page at given index in given cache, creating it if
++ * needed.  XXX: Assumes that page will be dirtied soon!
+  */
+ static inline struct page *grab_cache_page(struct address_space *mapping,
+ 								pgoff_t index)
+ {
+-	return find_or_create_page(mapping, index, mapping_gfp_mask(mapping));
++	return find_or_create_page(mapping, index,
++				   mapping_gfp_mask(mapping) | __GFP_WRITE);
+ }
+ 
+ extern struct page * grab_cache_page_nowait(struct address_space *mapping,
+diff --git a/mm/filemap.c b/mm/filemap.c
+index a8251a8..e315d46 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1030,6 +1030,7 @@ struct page *
+ grab_cache_page_nowait(struct address_space *mapping, pgoff_t index)
+ {
+ 	struct page *page = find_get_page(mapping, index);
++	gfp_t gfp_mask;
+ 
+ 	if (page) {
+ 		if (trylock_page(page))
+@@ -1037,7 +1038,8 @@ grab_cache_page_nowait(struct address_space *mapping, pgoff_t index)
+ 		page_cache_release(page);
+ 		return NULL;
+ 	}
+-	page = __page_cache_alloc(mapping_gfp_mask(mapping) & ~__GFP_FS);
++	gfp_mask = (mapping_gfp_mask(mapping) | __GFP_WRITE) & ~__GFP_FS;
++	page = __page_cache_alloc(gfp_mask);
+ 	if (page && add_to_page_cache_lru(page, mapping, index, GFP_NOFS)) {
+ 		page_cache_release(page);
+ 		page = NULL;
+@@ -2330,6 +2332,7 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
+ 					pgoff_t index, unsigned flags)
+ {
+ 	int status;
++	gfp_t gfp_mask;
+ 	struct page *page;
+ 	gfp_t gfp_notmask = 0;
+ 	if (flags & AOP_FLAG_NOFS)
+@@ -2339,7 +2342,8 @@ repeat:
+ 	if (page)
+ 		goto found;
+ 
+-	page = __page_cache_alloc(mapping_gfp_mask(mapping) & ~gfp_notmask);
++	gfp_mask = (mapping_gfp_mask(mapping) | __GFP_WRITE) & ~gfp_notmask;
++	page = __page_cache_alloc(gfp_mask);
+ 	if (!page)
+ 		return NULL;
+ 	status = add_to_page_cache_lru(page, mapping, index,
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+1.7.6
+
