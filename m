@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab1GYBTg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 24 Jul 2011 21:19:36 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:58972 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab1GYBTe convert rfc822-to-8bit (ORCPT
+	id S1752847Ab1GYBWo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 24 Jul 2011 21:22:44 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49908 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab1GYBWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 24 Jul 2011 21:19:34 -0400
+	Sun, 24 Jul 2011 21:22:42 -0400
+Message-ID: <4E2CC55B.5010307@gmail.com>
+Date: Mon, 25 Jul 2011 11:22:35 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1311268581-20405-2-git-send-email-lacombar@gmail.com>
-References: <1311268581-20405-1-git-send-email-lacombar@gmail.com>
-	<1311268581-20405-2-git-send-email-lacombar@gmail.com>
-Date: Sun, 24 Jul 2011 21:19:34 -0400
-Message-ID: <CACqU3MVY6n5HXAqUXaOEjs_z=Q9G2PSGnCWHWkstZ0PZWjpoZA@mail.gmail.com>
-Subject: Re: [PATCH 2/4] drivers/base/devtmpfs.c: correct annotation of `setup_done'
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Jesper Juhl <jj@chaosbits.net>
+CC: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org
+Subject: Re: GMA500: ERROR: "__bad_udelay" undefined!
+References: <alpine.LNX.2.00.1107242327030.7103@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1107242327030.7103@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 25/07/11 07:37, Jesper Juhl wrote:
+> Just got this when building the attached .config on x86_64 with gcc 4.6.1
+> on up-to-date mainline git tree (head at
+> b6844e8f64920cdee620157252169ba63afb0c89) :
+>
+>   ERROR: "__bad_udelay" [drivers/staging/gma500/psb_gfx.ko] undefined!
+>   make[1]: *** [__modpost] Error 1
+>
+> I don't need gma500, so I've just disabled the driver to get around it but
+> I thought some people might still like to know :)
+>
+__bad_udelay is a compile time check that constant udelays do not exceed 
+a certain threshold. For x86_64 it used to be n > 20000, now it is n / 
+20000 >= 1. The problem is in 
+drivers/staging/gma500/psb_intel_display.c:psb_init_wait_for_vblank, 
+which does udelay(20000) which under the old code would have been fine, 
+but fails the new __bad_udelay check.
 
-I saw that devtmpfs stuff went on through Al Viro's tree, maybe I
-should have Cc: him on this ?
+Possibly the udelay can just be converted to an mdelay?
 
-Thanks,
- - Arnaud
+~Ryan
 
-On Thu, Jul 21, 2011 at 1:16 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> This fixes the following section mismatch issue:
->
-> WARNING: vmlinux.o(.text+0x1192bf): Section mismatch in reference from the function devtmpfsd() to the variable .init.data:setup_done
-> The function devtmpfsd() references the variable __initdata setup_done.
-> This is often because devtmpfsd lacks a __initdata annotation or the annotation of setup_done is wrong.
->
-> WARNING: vmlinux.o(.text+0x119342): Section mismatch in reference from the function devtmpfsd() to the variable .init.data:setup_done
-> The function devtmpfsd() references the variable __initdata setup_done.
-> This is often because devtmpfsd lacks a __initdata annotation or the annotation of setup_done is wrong.
->
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
-> ---
->  drivers/base/devtmpfs.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
-> index 6d678c9..38e6464 100644
-> --- a/drivers/base/devtmpfs.c
-> +++ b/drivers/base/devtmpfs.c
-> @@ -376,7 +376,7 @@ int devtmpfs_mount(const char *mntdir)
->        return err;
->  }
->
-> -static __initdata DECLARE_COMPLETION(setup_done);
-> +static DECLARE_COMPLETION(setup_done);
->
->  static int handle(const char *name, mode_t mode, struct device *dev)
->  {
-> --
-> 1.7.6.153.g78432
->
->
