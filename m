@@ -1,168 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751275Ab1GYGji (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 02:39:38 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:56578 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750967Ab1GYGje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 02:39:34 -0400
-Date: Mon, 25 Jul 2011 08:38:36 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: linux-kernel@vger.kernel.org, x86 <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>, Avi Kivity <avi@redhat.com>
-Subject: Re: [RFC] syscall calling convention, stts/clts, and xstate latency
-Message-ID: <20110725063836.GC694@elte.hu>
-References: <CAObL_7GCDsfXWRJgkNk7c44GNF0JhQPAH_P0WiYHK7QUX1Bcaw@mail.gmail.com>
- <20110724211526.GA6785@elte.hu>
- <CAObL_7H1j1cewgWP6Jmkw_H9dZVh1kxRGgTLa+ju=ns4gYxMdA@mail.gmail.com>
+	id S1751335Ab1GYGk2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 02:40:28 -0400
+Received: from mta-blr1.sasken.com ([203.200.200.72]:24319 "EHLO
+	mta-blr1.sasken.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab1GYGkW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 02:40:22 -0400
+X-Greylist: delayed 614 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Jul 2011 02:40:21 EDT
+From: Neha Singhal <neha.singhal@sasken.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 25 Jul 2011 12:00:06 +0530
+Subject: Crash while using completions
+Thread-Topic: Crash while using completions
+Thread-Index: AQHMSpRJ1wv5ov5laEaVPqX0mBEZnA==
+Message-ID: <91969FDC112D9742BC923801900F5661205D1B431F@EXGMBX01.sasken.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-IN
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAObL_7H1j1cewgWP6Jmkw_H9dZVh1kxRGgTLa+ju=ns4gYxMdA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Andrew Lutomirski <luto@mit.edu> wrote:
+I am new to kernel programming. I am trying to use completion technique to synchronize two threads. But i am facing a crash due to NULL pointer reference. does anyone also face crash while using completion or have idea about it.  Crash seems to be like this:
 
-> On Sun, Jul 24, 2011 at 5:15 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > * Andrew Lutomirski <luto@mit.edu> wrote:
-> >
-> >> I was trying to understand the FPU/xstate saving code, and I ran
-> >> some benchmarks with surprising results.  These are all on Sandy
-> >> Bridge i7-2600.  Please take all numbers with a grain of salt --
-> >> they're in tight-ish loops and don't really take into account
-> >> real-world cache effects.
-> >>
-> >> A clts/stts pair takes about 80 ns.  Accessing extended state from
-> >> userspace with TS set takes 239 ns.  A kernel_fpu_begin /
-> >> kernel_fpu_end pair with no userspace xstate access takes 80 ns
-> >> (presumably 79 of those 80 are the clts/stts).  (Note: The numbers
-> >> in this paragraph were measured using a hacked-up kernel and KVM.)
-> >>
-> >> With nonzero ymm state, xsave + clflush (on the first cacheline of
-> >> xstate) + xrstor takes 128 ns.  With hot cache, xsave = 24ns,
-> >> xsaveopt (with unchanged state) = 16 ns, and xrstor = 40 ns.
-> >>
-> >> With nonzero xmm state but zero ymm state, xsave+xrstor drops to 38
-> >> ns and xsaveopt saves another 5 ns.
-> >>
-> >> Zeroing the state completely with vzeroall adds 2 ns.  Not sure
-> >> what's going on.
-> >>
-> >> All of this makes me think that, at least on Sandy Bridge, lazy
-> >> xstate saving is a bad optimization -- if the cache is being nice,
-> >> save/restore is faster than twiddling the TS bit.  And the cost of
-> >> the trap when TS is set blows everything else away.
-> >
-> > Interesting. Mind cooking up a delazying patch and measure it on
-> > native as well? KVM generally makes exceptions more expensive, so the
-> > effect of lazy exceptions might be less on native.
-> 
-> Using the same patch on native, I get:
-> 
-> kernel_fpu_begin/kernel_fpu_end (no userspace xstate): 71.53 ns 
-> stts/clts: 73 ns (clearly there's a bit of error here) userspace 
-> xstate with TS set: 229 ns
-> 
-> So virtualization adds only a little bit of overhead.
+[ 1120.334930] Unable to handle kernel NULL pointer dereference at virtual addre
+ss 00000000
+[ 1120.343078] pgd = c0004000
+[ 1120.345855] [00000000] *pgd=00000000
+[ 1120.349456] Internal error: Oops: 80000007 [#1] PREEMPT SMP
+[ 1120.355072] last sysfs file: /sys/devices/platform/nmk-i2c.2/i2c-2/2-0018/dat
+a
+[ 1120.362335] Modules linked in: [last unloaded: cw1200_wlan]
+[ 1120.367980] CPU: 1    Not tainted  (2.6.35.7+ #1)
+[ 1120.372711] PC is at 0x0
+[ 1120.375305] LR is at run_timer_softirq+0x264/0x388
+[ 1120.380126] pc : [<00000000>]    lr : [<c0086d30>]    psr: 60000113
+[ 1120.380157] sp : df863e90  ip : 00fdf000  fp : c06f4040
+[ 1120.391662] r10: 00000000  r9 : c074bc30  r8 : 00000103
+[ 1120.396911] r7 : c074bc20  r6 : df84a000  r5 : df862000  r4 : d9fb8500
+[ 1120.403472] r3 : 00000000  r2 : 00000103  r1 : 00000000  r0 : 00000000
+[ 1120.410034] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kern
+el
+[ 1120.417388] Control: 10c57c7d  Table: 1eaa804a  DAC: 00000017
+[ 1120.423156]
+[ 1120.423187] LR: 0xc0086cb0:
+[ 1120.427459] 6cb0  e1a00006 e5823004 e5832000 e59f2178 e8840006 eb11d757 e5973
+044 e5958004
+[ 1120.435821] 6cd0  e3530000 0a000013 e2883001 e5853004 e59f3158 e593b000 e35b0
+000 0a000006
+[ 1120.444152] 6cf0  e59b0004 e1a01004 e1a0e00f e59bf000 e5bb3008 e3530000 eafff
+ff7 e5953004
+[ 1120.452514] 6d10  e2433001 e5853004 e5953000 e3130002 0a000000 eb11cfab e59d0
+024 e12fff3a
+[ 1120.460845] 6d30  e5973064 e3530000 0a000014 e5953004 e2833001 e5853004 e59f1
+0f4 e591b000
+[ 1120.469177] 6d50  e35b0000 0a000006 e59b0004 e1a01004 e1a0e00f e59bf000 e5bb3
+008 e3530000
+[ 1120.477539] 6d70  eafffff7 e5953004 e2433001 e5853004 e5953000 e3130002 0a000
+000 eb11cf91
+[ 1120.485870] 6d90  e5953004 e1580003 0a00000f e59f20a4 e5523fb8 e3530001 0a000
+00a e58d8000
+[ 1120.494232]
+[ 1120.494232] SP: 0xdf863e10:
+[ 1120.498535] 3e10  ffffff00 ffffffff ffffc200 ffffffff 0000045c 00000000 00000
+001 c1014cb0
+[ 1120.506866] 3e30  00000100 ffffffff df863e7c df84a000 c074bc20 c0039370 00000
+000 00000000
+[ 1120.515228] 3e50  00000103 00000000 d9fb8500 df862000 df84a000 c074bc20 00000
+103 c074bc30
+[ 1120.523559] 3e70  00000000 c06f4040 00fdf000 df863e90 c0086d30 00000000 60000
+113 ffffffff
+[ 1120.531890] 3e90  c1014cb0 e7069d20 00000103 df863eb8 df863ef0 df84a814 df84a
+a14 df84ac14
+[ 1120.540252] 3eb0  df84ae14 00000000 df863eb8 df863eb8 00000000 df862000 00000
+141 00000004
+[ 1120.548583] 3ed0  c074bba0 00000001 00000103 c06f4044 c06f4040 c007eff4 c1014
+c20 ffffffff
+[ 1120.556915] 3ef0  0000000a c0035a10 00000001 00000001 00000000 00000000 c079f
+760 0000001d
+[ 1120.565277]
+[ 1120.565277] FP: 0xc06f3fc0:
+[ 1120.569580] 3fc0  c07e42cc 00000000 c002f038 c07095bc 0002d2d0 c0008b68 c0008
+678 00000cdd
+[ 1120.577911] 3fe0  00000100 c002f038 10c53c7d c075d538 c002f034 00008080 00000
+000 00000000
+[ 1120.586273] 4000  00000000 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.594604] 4020  00000000 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.602935] 4040  c007ea0c c0086acc c03f1718 c03f310c c01f4820 c01f4f38 c007e
+b58 c0075210
+[ 1120.611267] 4060  c0097af8 c00bd3b0 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.619598] 4080  00013ee2 00000001 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.627960] 40a0  00000000 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.636291]
+[ 1120.636291] R4: 0xd9fb8480:
+[ 1120.640594] 8480  00000000 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.648925] 84a0  00000000 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.657257] 84c0  00000000 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.665618] 84e0  00000000 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.673950] 8500  00000000 00200200 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.682281] 8520  00000000 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.690612] 8540  00000000 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.698974] 8560  00000000 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.707305]
+[ 1120.707305] R5: 0xdf861f80:
+[ 1120.711608] 1f80  00797474 57babae3 22b30b8a a926e3eb aeaa6be6 aafb2ba6 aca8b
+aaa a4e2ea9e
+[ 1120.719940] 1fa0  00797474 eee6aa09 8ba27eae 06abc2eb 2baa3abb baca202a fa328
+ac3 22ca6ae1
+[ 1120.728302] 1fc0  76697264 00737265 23656e9a aaa16cab 3ae28a00 024a2aaa ec2aa
+88a 2caaa8b8
+[ 1120.736633] 1fe0  76697264 00737265 b62bc6bb abea286f 2a8ab80a 481baeba a6b2b
+aae aaaabea7
+[ 1120.744995] 2000  00000002 00000105 00000000 df84f5a0 c0716614 00000001 00000
+017 c1016820
+[ 1120.753326] 2020  df84f5a0 df862000 c07e4564 df82e040 df84f808 00000000 df863
+fdc df863f80
+[ 1120.761657] 2040  c04fa928 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.769989] 2060  00000000 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.778350]
+[ 1120.778350] R6: 0xdf849f80:
+[ 1120.782653] 9f80  a44c63de 00000000 c0033958 c0037820 c071a6f0 00000000 df849
+fcc c00b7c28
+[ 1120.790985] 9fa0  c1014d70 df831f20 df849fcc c00b7c28 c1014d70 00000000 00000
+000 00000000
+[ 1120.799316] 9fc0  00000000 c0093a9c 00000000 00000000 00000000 00000000 df849
+fd8 df849fd8
+[ 1120.807678] 9fe0  00000000 df831f20 c0093a24 c003a8fc 00000013 c003a8fc a6b2b
+8ae a2aab2a7
+[ 1120.816009] a000  00000000 00000000 d9fb8500 00013edb 00000000 df84a014 df84a
+014 df84a01c
+[ 1120.824340] a020  df84a01c df84a024 df84a024 df84a02c df84a02c df84a034 df84a
+034 df84a03c
+[ 1120.832702] a040  df84a03c df84a044 df84a044 df84a04c df84a04c df84a054 df84a
+054 df84a05c
+[ 1120.841033] a060  df84a05c df84a064 df84a064 df84a06c df84a06c df84a074 df84a
+074 df84a07c
+[ 1120.849395]
+[ 1120.849395] R7: 0xc074bba0:
+[ 1120.853698] bba0  c06a6148 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.862030] bbc0  c06a6158 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.870361] bbe0  c06a6120 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.878692] bc00  c06a6134 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.887054] bc20  c06a61a8 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.895385] bc40  c06a6168 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.903717] bc60  c06a6180 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.912048] bc80  c06a6194 00000000 00000000 00000000 00000000 00000000 00000
+000 00000000
+[ 1120.920379]
+[ 1120.920410] R9: 0xc074bbb0:
+[ 1120.924682] bbb0  00000000 00000000 00000000 00000000 c06a6158 00000000 00000
+000 00000000
+[ 1120.933044] bbd0  00000000 00000000 00000000 00000000 c06a6120 00000000 00000
+000 00000000
+[ 1120.941375] bbf0  00000000 00000000 00000000 00000000 c06a6134 00000000 00000
+000 00000000
+[ 1120.949707] bc10  00000000 00000000 00000000 00000000 c06a61a8 00000000 00000
+000 00000000
+[ 1120.958038] bc30  00000000 00000000 00000000 00000000 c06a6168 00000000 00000
+000 00000000
+[ 1120.966369] bc50  00000000 00000000 00000000 00000000 c06a6180 00000000 00000
+000 00000000
+[ 1120.974731] bc70  00000000 00000000 00000000 00000000 c06a6194 00000000 00000
+000 00000000
+[ 1120.983062] bc90  00000000 00000000 00000000 00000000 c06a6174 00000000 00000
+000 00000000
+[ 1120.991394] Process swapper (pid: 0, stack limit = 0xdf8622f0)
+[ 1120.997283] Stack: (0xdf863e90 to 0xdf864000)
+[ 1121.001678] 3e80:                                     c1014cb0 e7069d20 00000
+103 df863eb8
+[ 1121.009918] 3ea0: df863ef0 df84a814 df84aa14 df84ac14 df84ae14 00000000 df863
+eb8 df863eb8
+[ 1121.018127] 3ec0: 00000000 df862000 00000141 00000004 c074bba0 00000001 00000
+103 c06f4044
+[ 1121.026367] 3ee0: c06f4040 c007eff4 c1014c20 ffffffff 0000000a c0035a10 00000
+001 00000001
+[ 1121.034606] 3f00: 00000000 00000000 c079f760 0000001d 00000002 00000001 df862
+000 00000000
+[ 1121.042846] 3f20: c06f4080 c007f154 00000000 c00383c8 ffffffff fa410100 00000
+01d c003920c
+[ 1121.051055] 3f40: e66e2f98 60000013 60000013 ffffffff c1014cb0 00000001 c1012
+050 00013ed9
+[ 1121.059295] 3f60: 00013ed9 c07a0e50 00000000 c06f4080 00000488 df863f88 c0074
+c54 c00a2890
+[ 1121.067535] 3f80: 40000013 ffffffff 00000000 00000000 00000001 0000737b e75f8
+c84 60000013
+[ 1121.075775] 3fa0: e66e2f98 00000103 e5af4a80 00000103 e66e2f98 00000103 00000
+000 df862000
+[ 1121.083984] 3fc0: c07095c4 c075d424 c0500c38 90017040 412fc091 0000001f 00000
+000 c003ac18
+[ 1121.092224] 3fe0: 1f86406a 0000001f 10c03c7d c075d5a4 90017040 00008080 abe49
+0e8 b2aaaea3
+[ 1121.100524] [<c0086d30>] (run_timer_softirq+0x264/0x388) from [<c007eff4>] (_
+_do_softirq+0x114/0x228)
+[ 1121.109802] [<c007eff4>] (__do_softirq+0x114/0x228) from [<c007f154>] (irq_ex
+it+0x4c/0xb0)
+[ 1121.118164] [<c007f154>] (irq_exit+0x4c/0xb0) from [<c00383c8>] (do_local_tim
+er+0x50/0x80)
+[ 1121.126495] [<c00383c8>] (do_local_timer+0x50/0x80) from [<c003920c>] (__irq_
+svc+0x4c/0xe4)
+[ 1121.134887] Exception stack(0xdf863f40 to 0xdf863f88)
+[ 1121.139984] 3f40: e66e2f98 60000013 60000013 ffffffff c1014cb0 00000001 c1012
+050 00013ed9
+[ 1121.148223] 3f60: 00013ed9 c07a0e50 00000000 c06f4080 00000488 df863f88 c0074
+c54 c00a2890
+[ 1121.156433] 3f80: 40000013 ffffffff
+[ 1121.159973] [<c003920c>] (__irq_svc+0x4c/0xe4) from [<c00a2890>] (tick_nohz_s
+top_sched_tick+0x3e4/0x444)
+[ 1121.169525] [<c00a2890>] (tick_nohz_stop_sched_tick+0x3e4/0x444) from [<c003a
+c18>] (cpu_idle+0x28/0xf0)
+[ 1121.178985] [<c003ac18>] (cpu_idle+0x28/0xf0) from [<00008080>] (0x8080)
+[ 1121.185729] Code: bad PC value
+[ 1121.188934] CPU 0 will stop doing anything useful since another CPU has crash
+ed
+[ 1121.196777] Loading crashdump kernel...
+[ 1121.200683] Bye!
 
-KVM rocks.
 
-> This isn't really a delazying patch -- it's two arch_prctls, one of 
-> them is kernel_fpu_begin();kernel_fpu_end().  The other is the same 
-> thing in a loop.
-> 
-> The other numbers were already native since I measured them 
-> entirely in userspace.  They look the same after rebooting.
 
-I should have mentioned it earlier, but there's a certain amount of 
-delazying patches in the tip:x86/xsave branch:
+Thanks in advance
+Neha Singhal
 
- $ gll linus..x86/xsave
- 300c6120b465: x86, xsave: fix non-lazy allocation of the xsave area
- f79018f2daa9: Merge branch 'x86/urgent' into x86/xsave
- 66beba27e8b5: x86, xsave: remove lazy allocation of xstate area
- 1039b306b1c6: x86, xsave: add kernel support for AMDs Lightweight Profiling (LWP)
- 4182a4d68bac: x86, xsave: add support for non-lazy xstates
- 324cbb83e215: x86, xsave: more cleanups
- 2efd67935eb7: x86, xsave: remove unused code
- 0c11e6f1aed1: x86, xsave: cleanup fpu/xsave signal frame setup
- 7f4f0a56a7d3: x86, xsave: rework fpu/xsave support
- 26bce4e4c56f: x86, xsave: cleanup fpu/xsave support
-
-it's not in tip:master because the LWP bits need (much) more work to 
-be palatable - but we could spin them off and complete them as per 
-your suggestions if they are an independent speedup on modern CPUs.
-
-> >> Which brings me to another question: what do you think about
-> >> declaring some of the extended state to be clobbered by syscall?
-> >> Ideally, we'd treat syscall like a regular function and clobber
-> >> everything except the floating point control word and mxcsr.  More
-> >> conservatively, we'd leave xmm and x87 state but clobber ymm.  This
-> >> would let us keep the cost of the state save and restore down when
-> >> kernel_fpu_begin is used in a syscall path and when a context
-> >> switch happens as a result of a syscall.
-> >>
-> >> glibc does *not* mark the xmm registers as clobbered when it issues
-> >> syscalls, but I suspect that everything everywhere that issues
-> >> syscalls does it from a function, and functions are implicitly
-> >> assumed to clobber extended state.  (And if anything out there
-> >> assumes that ymm state is preserved, I'd be amazed.)
-> >
-> > To build the kernel with sse optimizations? Would certainly be
-> > interesting to try.
-> 
-> I had in mind something a little less ambitious: making 
-> kernel_fpu_begin very fast, especially when used more than once. 
-> Currently it's slow enough to have spawned arch/x86/crypto/fpu.c, 
-> which is a hideous piece of infrastructure that exists solely to 
-> reduce the number of kernel_fpu_begin/end pairs when using AES-NI. 
-> Clobbering registers in syscall would reduce the cost even more, 
-> but it might require having a way to detect whether the most recent 
-> kernel entry was via syscall or some other means.
-> 
-> Making the whole kernel safe for xstate use would be technically 
-> possible, but it would add about three cycles to syscalls (for 
-> vzeroall -- non-AVX machines would take a larger hit) and 
-> apparently about 57 ns to non-syscall traps.  That seems worse than 
-> the lazier approach.
-
-3 cycles per syscall is acceptable, if the average optimization 
-savings per syscall are better than 3 cycles - which is not 
-impossible at all: using more registers generally moves the pressure 
-away from GP registers and allows the compiler to be smarter.
-
-(older CPUs with higher switching costs wouldnt want to run such 
-kernels, obviously.)
-
-So it's very much worth trying, if only to get some hard numbers.
-
-That would also turn the somewhat awkward way of how we use vector 
-operations in the crypto code into something more natural. In theory 
-you could write a crypto algorithm in C and the compiler would use 
-vector instructions and get a pretty good end result. (one can always 
-hope, right?)
-
-But more importantly, doing that would push vector operations *way* 
-beyond the somewhat niche area of crypto/RAID optimizations. 
-User-space already saves/restores the vector registers so they have 
-already done much of the register switching cost - the kernel just 
-has to take advantage of that.
-
-Thanks,
-
-	Ingo
+SASKEN BUSINESS DISCLAIMER: This message may contain confidential, proprietary or legally privileged information. In case you are not the original intended Recipient of the message, you must not, directly or indirectly, use, disclose, distribute, print, or copy any part of this message and you are requested to delete it and inform the sender. Any views expressed in this message are those of the individual sender unless otherwise stated. Nothing contained in this message shall be construed as an offer or acceptance of any offer by Sasken Communication Technologies Limited ("Sasken") unless sent with that express intent and with due authority of Sasken. Sasken has taken enough precautions to prevent the spread of viruses. However the company accepts no liability for any damage caused by any virus transmitted by this email.
+Read Disclaimer at http://www.sasken.com/extras/mail_disclaimer.html
