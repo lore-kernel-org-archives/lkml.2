@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab1GYKix (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 06:38:53 -0400
-Received: from csmtp3.one.com ([91.198.169.23]:3321 "EHLO csmtp3.one.com"
+	id S1752073Ab1GYKjb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 06:39:31 -0400
+Received: from gold.linx.net ([195.66.232.40]:35798 "EHLO gold.linx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751093Ab1GYKip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 06:38:45 -0400
-Date: Mon, 25 Jul 2011 12:38:26 +0200
-From: Eric Andersson <eric.andersson@unixphere.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
-        alan@lxorguk.ukuu.org.uk, Albert Zhang <xu.zhang@bosch-sensortec.com>
-Subject: Re: [PATCH v5 1/1] input: add driver for Bosch Sensortec's BMA150
- accelerometer
-Message-ID: <20110725103826.GA8594@scully.xfiles.lan>
-References: <1311281268-9498-1-git-send-email-eric.andersson@unixphere.com>
- <1311281268-9498-2-git-send-email-eric.andersson@unixphere.com>
- <20110722051617.GB16040@core.coreip.homeip.net>
- <20110722094521.GB710@scully.xfiles.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110722094521.GB710@scully.xfiles.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751970Ab1GYKjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 06:39:25 -0400
+From: Tony Vroon <tony@linx.net>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: MTRR setup failure on Fujitsu Lifebook S761
+In-Reply-To: <20110722081225.2272F10082@gold.linx.net>
+Message-Id: <20110725103922.5718910089@gold.linx.net>
+Date: Mon, 25 Jul 2011 11:39:22 +0100 (BST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping.
+On 07/22/11 09:12, Tony Vroon wrote:
+> The contents of /proc/mtrr are:
+> reg00: base=0x0ffc00000 ( 4092MB), size=    4MB, count=1: write-protect
+> reg01: base=0x000000000 (    0MB), size= 2048MB, count=1: write-back
+> reg02: base=0x080000000 ( 2048MB), size= 1024MB, count=1: write-back
+> reg03: base=0x0c0000000 ( 3072MB), size=  512MB, count=1: write-back
+> reg04: base=0x0d0000000 ( 3328MB), size=  256MB, count=1: uncachable
+> reg05: base=0x0cc000000 ( 3264MB), size=   64MB, count=1: uncachable
+> reg06: base=0x0cb000000 ( 3248MB), size=   16MB, count=1: uncachable
+> reg07: base=0x0cac00000 ( 3244MB), size=    4MB, count=1: uncachable
+> reg08: base=0x100000000 ( 4096MB), size= 1024MB, count=1: write-back
+> reg09: base=0x130000000 ( 4864MB), size=  256MB, count=1: uncachable
 
-> > > +static int bma150_open(struct bma150_data *bma150)
-> > > +{
-> > > +#ifdef CONFIG_PM_RUNTIME
-> > > +	return pm_runtime_get_sync(&bma150->client->dev);
-> > > +#else
-> > > +	return bma150_set_mode(bma150->client, BMA150_MODE_NORMAL);
-> > 
-> > Hmm, this is kind of weird. I'd expect you want to try waking up the
-> > parent in both cases (if no runtime pm then call to pm_runtime_get_sync
-> > is basically a noop) and then wake up your device.
-> 
-> I am not sure what you mean? Are you suggesting something like:
-> 	bma150_set_mode(bma150->client, BMA150_MODE_NORMAL);
-> 	return pm_runtime_get_sync(&bma150->client->dev);
-> 
-> That would cause multiple bma150_set_mode() calls since
-> pm_runtime_get_sync() will trigger one if needed.
+I believe this is closer to the optimum:
+adrastea ~ # cat /proc/mtrr
+reg00: base=0x0ffc00000 ( 4092MB), size=    4MB, count=1: write-protect
+reg01: base=0x000000000 (    0MB), size= 2048MB, count=1: write-back
+reg02: base=0x080000000 ( 2048MB), size= 1024MB, count=1: write-back
+reg03: base=0x0c0000000 ( 3072MB), size=  256MB, count=1: write-back
+reg04: base=0x0d0000000 ( 3328MB), size=  256MB, count=1: write-combining
+reg05: base=0x100000000 ( 4096MB), size= 1024MB, count=1: write-back
+reg09: base=0x130000000 ( 4864MB), size=  256MB, count=1: uncachable
 
-Dmitry, do you have any comments on the above? Just wanted to know
-before I submit the next version.
+0x0d0000000 is the range triggering the warning before, it is the AGP 
+aperture for the Sandy Bridge graphics.
 
+I used the following script to get there:
+adrastea ~ # cat /usr/sbin/mtrr.sh 
+#!/bin/bash
+echo "disable=3" >| /proc/mtrr
+echo "disable=4" >| /proc/mtrr
+echo "disable=5" >| /proc/mtrr
+echo "disable=6" >| /proc/mtrr
+echo "disable=7" >| /proc/mtrr
+echo "disable=8" >| /proc/mtrr
+echo "base=0xc0000000 size=0x10000000 type=write-back" >| /proc/mtrr
+echo "base=0xd0000000 size=0x10000000 type=write-combining" >| /proc/mtrr
+echo "base=0x100000000 size=0x40000000 type=write-back" >| /proc/mtrr
+
+Two questions remain...
+1) Why can't the MTRR sanitizer figure this one out? (Even on 3.0.0-03370-gb6844e8)
+2) If the MTRR sanitizer will not be fixed, how can I override the above MTRRs on the kernel command line?
+
+Regards,
 -- 
-Best regards,
- Eric
-
- http://www.unixphere.com
+Tony Vroon
+UNIX systems administrator
+London Internet Exchange Ltd, Trinity Court, Trinity Street,
+Peterborough, PE1 1DA
+Registered in England number 3137929
+E-Mail: tony@linx.net 
