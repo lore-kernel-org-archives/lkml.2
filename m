@@ -1,209 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab1GYUAb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 16:00:31 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:53973 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430Ab1GYUA3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 16:00:29 -0400
-Date: Mon, 25 Jul 2011 22:00:14 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-Message-ID: <20110725200014.GA23986@aftab>
-References: <1311340547-7861-1-git-send-email-bp@amd64.org>
- <CA+55aFwL9Fwd9ouX3UMOayoBsZyZzTdDSySa6nZJxbpyLifbaQ@mail.gmail.com>
- <20110724172222.GB12621@aftab>
- <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com>
- <20110724182323.GA13247@aftab>
- <20110724183045.GB29660@elte.hu>
- <20110724190752.GA13647@aftab>
- <20110724204450.GB18546@elte.hu>
+	id S1752033Ab1GYUCv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 16:02:51 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:41640 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751661Ab1GYUCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 16:02:50 -0400
+Date: Mon, 25 Jul 2011 22:02:04 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaud Lacombe <lacombar@gmail.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] core/locking changes for v3.1
+Message-ID: <20110725200204.GA13627@elte.hu>
+References: <20110722125236.GA24832@elte.hu>
+ <CACqU3MUW81UmBK7qBQCZRqzfosrukYM9=o0EZP_DvSjgywfK8g@mail.gmail.com>
+ <1311588599.2617.56.camel@laptop>
+ <CA+55aFwxqVXb0cFrkgdrDH4J_aF9J7iw8i6ypAda2HiAyeFYpw@mail.gmail.com>
+ <20110725190444.GA8302@elte.hu>
+ <CA+55aFyDufcXR62j=crthVkNybk5is+c-zzr+LRmj_QSUskfmg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110724204450.GB18546@elte.hu>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFyDufcXR62j=crthVkNybk5is+c-zzr+LRmj_QSUskfmg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 24, 2011 at 04:44:50PM -0400, Ingo Molnar wrote:
+
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Mon, Jul 25, 2011 at 12:04 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> > ..
+> > net/netfilter/nf_conntrack_core.c: In function ‘nf_conntrack_init’:
+> > net/netfilter/nf_conntrack_core.c:1579:3: warning: the comparison
+> > will always evaluate as ‘true’ for the address of
+> > ‘nf_conntrack_attach’ will never be NULL [-Waddress]
 > 
-> * Borislav Petkov <bp@amd64.org> wrote:
+> These all seem to be essentially compiler bugs.
 > 
-> > On Sun, Jul 24, 2011 at 02:30:46PM -0400, Ingo Molnar wrote:
-> > > > > So I really think that you might be *much* better off just changing
-> > > > > mmap_rnd(), and nothing else. Just make *that* mask off the three low
-> > > > > bits of the random address, ie something like
-> > > > > 
-> > > > >   diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-> > > > >   index 1dab5194fd9d..6b62ab5a5ae1 100644
-> > > > >   --- a/arch/x86/mm/mmap.c
-> > > > >   +++ b/arch/x86/mm/mmap.c
-> > > > >   @@ -90,6 +90,9 @@ static unsigned long mmap_rnd(void)
-> > > > >                           rnd = (long)get_random_int() % (1<<8);
-> > > > >                   else
-> > > > >                           rnd = (long)(get_random_int() % (1<<28));
-> > > > >   +
-> > > > >   +               if (avoid_aliasing_in_bits_14_12)
-> > > > >   +                       rnd &= ~7;
-> > > > >           }
-> > > > >           return rnd << PAGE_SHIFT;
-> > > > >    }
-> > > > > 
-> > > > > would be fundamentally very safe - it would already take all our
-> > > > > current anti-randomization code into account.
-> > > > > 
-> > > > > No?
-> > > > 
-> > > > Hehe, we had that idea initially. However, the special 1% case I was
-> > > > hinting at is this:
-> > > > 
-> > > > process P0, mapping libraries A, B, C
-> > > > 
-> > > > and
-> > > > 
-> > > > process P1, mapping libraries A, C
-> > > > 
-> > > > Library C ends up possibly with aliasing VAs and there's the 
-> > > > problem again. [...]
-> > > 
-> > > Well, since all library positions are randomized, and the quirk masks 
-> > > out bits 12,13,14, all libraries that are not explicitly fix-mapped 
-> > > will end up on a 32K granular VA address.
-> > 
-> > Right, but IIUC, mmap_rnd() is used to determine mm->mmap_base so 
-> > the mmap starting address will have [14:12] cleared but the initial 
-> > address of library C's mapping in the example above will possibly 
-> > differ in those bits due to different linking order, right?
+> We have macros that do generic things (in this case
+> "rcu_assign_pointer()" and tests their values. The fact that the tests
+> sometimes end up being statically true (or false) is not something the
+> compiler should complain about - it should use it to optimize the
+> code.
 > 
-> Indeed, because only the mmap base is randomized, not the individual 
-> vmas.
+> Sad.
 > 
-> I'd still suggest to ignore this link order case first, and get the 
-> 99% fix in place ... that one is also obviously backportable - the 
-> big patch not so much.
+> We can make a compiler bug-report, or disable -Waddress. Or maybe we
+> can write the tests in a way that doesn't trigger the compiler bug.
+> 
+> This same issue is why I hated -Wsign-compare. Some of the things 
+> gcc complained about were just technically moronic. So compiler 
+> warnings are not always a good thing.
 
-Hmm, I've done some experiments with Linus' suggestion and I don't think
-that flies. Here's why:
+With -Wno-address added (see the first patch below) it looks a lot 
+more useful:
 
-With the attached patch, the kernel generates VA spaces for processes
-with mmap_base's bits [14:12] cleared. Here's what it looks like:
+aldebaran:~/linux/linux> make -j32 >e
+sound/pci/hda/patch_sigmatel.c: In function ‘stac92xx_init’:
+sound/pci/hda/patch_sigmatel.c:4385:3: warning: statement with no 
+effect [-Wunused-value]
+sound/pci/hda/patch_sigmatel.c: In function ‘stac92xx_resume’:
+sound/pci/hda/patch_sigmatel.c:4925:3: warning: statement with no 
+effect [-Wunused-value]
+sound/pci/hda/patch_realtek.c: In function ‘alc_init’:
+sound/pci/hda/patch_realtek.c:4176:2: warning: statement with no 
+effect [-Wunused-value]
+sound/pci/hda/patch_realtek.c: In function ‘alc_resume’:
+sound/pci/hda/patch_realtek.c:4558:2: warning: statement with no 
+effect [-Wunused-value]
+sound/pci/hda/hda_codec.c: In function 
+‘snd_hda_mixer_amp_switch_put’:
+sound/pci/hda/hda_codec.c:2320:2: warning: statement with no effect 
+[-Wunused-value]
+sound/pci/hda/patch_realtek.c: In function ‘alc269_resume’:
+sound/pci/hda/patch_realtek.c:14878:2: warning: statement with no 
+effect [-Wunused-value]
+drivers/md/dm.c: In function ‘split_bvec’:
+drivers/md/dm.c:1052:3: warning: statement with no effect 
+[-Wunused-value]
+drivers/md/dm.c: In function ‘clone_bio’:
+drivers/md/dm.c:1079:3: warning: statement with no effect 
+[-Wunused-value]
+drivers/md/dm-table.c: In function ‘dm_table_set_integrity’:
+drivers/md/dm-table.c:1193:2: warning: statement with no effect 
+[-Wunused-value]
+Setup is 15260 bytes (padded to 15360 bytes).
+System is 4654 kB
+CRC 6d1b94ea
 
-$ cat /proc/self/maps
-00400000-0040c000 r-xp 00000000 08:02 1474641                            /bin/cat
-0060b000-0060c000 r--p 0000b000 08:02 1474641                            /bin/cat
-0060c000-0060d000 rw-p 0000c000 08:02 1474641                            /bin/cat
-0118f000-011b0000 rw-p 00000000 00:00 0                                  [heap]
-7f184c7a2000-7f184c9cd000 r--p 00000000 08:02 622671                     /usr/lib64/locale/locale-archive
-7f184c9cd000-7f184cb26000 r-xp 00000000 08:02 2113794                    /lib64/libc-2.12.2.so
-7f184cb26000-7f184cd26000 ---p 00159000 08:02 2113794                    /lib64/libc-2.12.2.so
-7f184cd26000-7f184cd2a000 r--p 00159000 08:02 2113794                    /lib64/libc-2.12.2.so
-7f184cd2a000-7f184cd2b000 rw-p 0015d000 08:02 2113794                    /lib64/libc-2.12.2.so
-7f184cd2b000-7f184cd30000 rw-p 00000000 00:00 0
-7f184cd30000-7f184cd4e000 r-xp 00000000 08:02 2113792                    /lib64/ld-2.12.2.so
-7f184cf30000-7f184cf33000 rw-p 00000000 00:00 0
-7f184cf4c000-7f184cf4d000 rw-p 00000000 00:00 0
-7f184cf4d000-7f184cf4e000 r--p 0001d000 08:02 2113792                    /lib64/ld-2.12.2.so
-7f184cf4e000-7f184cf4f000 rw-p 0001e000 08:02 2113792                    /lib64/ld-2.12.2.so
-7f184cf4f000-7f184cf50000 rw-p 00000000 00:00 0 							<---- A
-7fffcfb8c000-7fffcfbad000 rw-p 00000000 00:00 0                          [stack]
-7fffcfbff000-7fffcfc00000 r-xp 00000000 00:00 0                          [vdso]
-ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
+those unused-x warnings seem legit and should be fixed. For example 
+the second patch below fixed the dm.c warnings.
 
-The end region address at marker A is that changed address
-0x7f184cf50000. We decrement from there because we do topdown
-allocation. Take a look at glibc's executable mapping:
+That's with:
 
-7f184c9cd000-7f184cb26000 r-xp 00000000 08:02 2113794                    /lib64/libc-2.12.2.so
+  gcc version 4.6.0 20110509 (Red Hat 4.6.0-7) (GCC)
 
-slice [14:12] = 101b
+so a reasonably recent GCC. I think we should kill -Waddress.
 
-Now let's take a look at bash's maps (below). The changed mmap_base is
-at marker B below. glibc exec mapping is:
+Thanks,
 
-7f63dc061000-7f63dc1ba000 r-xp 00000000 08:02 2113794                    /lib64/libc-2.12.2.so
+	Ingo
 
-whereas slice [14:12] = 001b
+diff --git a/Makefile b/Makefile
+index d018956..e651294 100644
+--- a/Makefile
++++ b/Makefile
+@@ -559,9 +559,9 @@ endif # $(dot-config)
+ all: vmlinux
+ 
+ ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
+-KBUILD_CFLAGS	+= -Os
++KBUILD_CFLAGS	+= -Os -Wno-address
+ else
+-KBUILD_CFLAGS	+= -O2
++KBUILD_CFLAGS	+= -O2 -Wno-address
+ endif
+ 
+ include $(srctree)/arch/$(SRCARCH)/Makefile
 
-Not good, aliasing.
-
-This is actually a good example for the case where process P0 (bash)
-maps libraries A,B,...C and P1 maps libraries A, C.
-
-So yeah, the simpler fix works for processes mapping libraries in the
-same order but not for processes mapping a subset of libraries in a
-different order.
-
-$ cat /proc/2473/maps
-00400000-004d0000 r-xp 00000000 08:02 2114802                            /bin/bash
-006cf000-006d0000 r--p 000cf000 08:02 2114802                            /bin/bash
-006d0000-006d9000 rw-p 000d0000 08:02 2114802                            /bin/bash
-006d9000-006df000 rw-p 00000000 00:00 0
-02030000-02072000 rw-p 00000000 00:00 0                                  [heap]
-7f63db3e3000-7f63db3e5000 r-xp 00000000 08:02 2113704                    /usr/lib64/gconv/ISO8859-1.so
-7f63db3e5000-7f63db5e4000 ---p 00002000 08:02 2113704                    /usr/lib64/gconv/ISO8859-1.so
-7f63db5e4000-7f63db5e5000 r--p 00001000 08:02 2113704                    /usr/lib64/gconv/ISO8859-1.so
-7f63db5e5000-7f63db5e6000 rw-p 00002000 08:02 2113704                    /usr/lib64/gconv/ISO8859-1.so
-7f63db5e6000-7f63db5f1000 r-xp 00000000 08:02 2113540                    /lib64/libnss_files-2.12.2.so
-7f63db5f1000-7f63db7f0000 ---p 0000b000 08:02 2113540                    /lib64/libnss_files-2.12.2.so
-7f63db7f0000-7f63db7f1000 r--p 0000a000 08:02 2113540                    /lib64/libnss_files-2.12.2.so
-7f63db7f1000-7f63db7f2000 rw-p 0000b000 08:02 2113540                    /lib64/libnss_files-2.12.2.so
-7f63db7f2000-7f63db7fc000 r-xp 00000000 08:02 2113793                    /lib64/libnss_nis-2.12.2.so
-7f63db7fc000-7f63db9fb000 ---p 0000a000 08:02 2113793                    /lib64/libnss_nis-2.12.2.so
-7f63db9fb000-7f63db9fc000 r--p 00009000 08:02 2113793                    /lib64/libnss_nis-2.12.2.so
-7f63db9fc000-7f63db9fd000 rw-p 0000a000 08:02 2113793                    /lib64/libnss_nis-2.12.2.so
-7f63db9fd000-7f63dba12000 r-xp 00000000 08:02 2113807                    /lib64/libnsl-2.12.2.so
-7f63dba12000-7f63dbc11000 ---p 00015000 08:02 2113807                    /lib64/libnsl-2.12.2.so
-7f63dbc11000-7f63dbc12000 r--p 00014000 08:02 2113807                    /lib64/libnsl-2.12.2.so
-7f63dbc12000-7f63dbc13000 rw-p 00015000 08:02 2113807                    /lib64/libnsl-2.12.2.so
-7f63dbc13000-7f63dbc15000 rw-p 00000000 00:00 0
-7f63dbc15000-7f63dbc1c000 r-xp 00000000 08:02 2113801                    /lib64/libnss_compat-2.12.2.so
-7f63dbc1c000-7f63dbe1b000 ---p 00007000 08:02 2113801                    /lib64/libnss_compat-2.12.2.so
-7f63dbe1b000-7f63dbe1c000 r--p 00006000 08:02 2113801                    /lib64/libnss_compat-2.12.2.so
-7f63dbe1c000-7f63dbe1d000 rw-p 00007000 08:02 2113801                    /lib64/libnss_compat-2.12.2.so
-7f63dbe36000-7f63dc061000 r--p 00000000 08:02 622671                     /usr/lib64/locale/locale-archive
-7f63dc061000-7f63dc1ba000 r-xp 00000000 08:02 2113794                    /lib64/libc-2.12.2.so
-7f63dc1ba000-7f63dc3ba000 ---p 00159000 08:02 2113794                    /lib64/libc-2.12.2.so
-7f63dc3ba000-7f63dc3be000 r--p 00159000 08:02 2113794                    /lib64/libc-2.12.2.so
-7f63dc3be000-7f63dc3bf000 rw-p 0015d000 08:02 2113794                    /lib64/libc-2.12.2.so
-7f63dc3bf000-7f63dc3c4000 rw-p 00000000 00:00 0
-7f63dc3c4000-7f63dc3c6000 r-xp 00000000 08:02 2113802                    /lib64/libdl-2.12.2.so
-7f63dc3c6000-7f63dc5c6000 ---p 00002000 08:02 2113802                    /lib64/libdl-2.12.2.so
-7f63dc5c6000-7f63dc5c7000 r--p 00002000 08:02 2113802                    /lib64/libdl-2.12.2.so
-7f63dc5c7000-7f63dc5c8000 rw-p 00003000 08:02 2113802                    /lib64/libdl-2.12.2.so
-7f63dc5c8000-7f63dc613000 r-xp 00000000 08:02 2130033                    /lib64/libncurses.so.5.7
-7f63dc613000-7f63dc812000 ---p 0004b000 08:02 2130033                    /lib64/libncurses.so.5.7
-7f63dc812000-7f63dc816000 r--p 0004a000 08:02 2130033                    /lib64/libncurses.so.5.7
-7f63dc816000-7f63dc817000 rw-p 0004e000 08:02 2130033                    /lib64/libncurses.so.5.7
-7f63dc817000-7f63dc818000 rw-p 00000000 00:00 0
-7f63dc818000-7f63dc836000 r-xp 00000000 08:02 2113792                    /lib64/ld-2.12.2.so
-7f63dca18000-7f63dca1b000 rw-p 00000000 00:00 0
-7f63dca2b000-7f63dca2d000 rw-p 00000000 00:00 0
-7f63dca2d000-7f63dca34000 r--s 00000000 08:02 622670                     /usr/lib64/gconv/gconv-modules.cache
-7f63dca34000-7f63dca35000 rw-p 00000000 00:00 0
-7f63dca35000-7f63dca36000 r--p 0001d000 08:02 2113792                    /lib64/ld-2.12.2.so
-7f63dca36000-7f63dca37000 rw-p 0001e000 08:02 2113792                    /lib64/ld-2.12.2.so
-7f63dca37000-7f63dca38000 rw-p 00000000 00:00 0							<---- B
-7fffba432000-7fffba453000 rw-p 00000000 00:00 0                          [stack]
-7fffba458000-7fffba459000 r-xp 00000000 00:00 0                          [vdso]
-ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
-
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index ce33e68..283250a 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -527,7 +527,7 @@ extern void bio_integrity_init(void);
+ #define bioset_integrity_create(a, b)	(0)
+ #define bio_integrity_prep(a)		(0)
+ #define bio_integrity_enabled(a)	(0)
+-#define bio_integrity_clone(a, b, c, d)	(0)
++#define bio_integrity_clone(a, b, c, d)	({0;})
+ #define bioset_integrity_free(a)	do { } while (0)
+ #define bio_integrity_free(a, b)	do { } while (0)
+ #define bio_integrity_endio(a, b)	do { } while (0)
