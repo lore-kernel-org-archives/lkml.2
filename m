@@ -1,124 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab1GYVRO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 17:17:14 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:33072 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751772Ab1GYVRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 17:17:11 -0400
-Date: Mon, 25 Jul 2011 14:17:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Carsten Emde <ce@ceag.ch>,
-        Clark Williams <williams@redhat.com>,
-        Kumar Gala <galak@gate.crashing.org>,
-        Ralf Baechle <ralf@linux-mips.org>, rostedt <rostedt@goodmis.org>
-Subject: Re: On migrate_disable() and latencies
-Message-ID: <20110725211706.GT2327@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1311329992.27400.23.camel@twins>
- <20110723003934.GP2382@linux.vnet.ibm.com>
- <1311582653.2617.49.camel@laptop>
+	id S1752374Ab1GYVUh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 17:20:37 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:52812 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab1GYVUe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 17:20:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311582653.2617.49.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAJ0pr1_rL8rsEbDR-PL6fs9EzyGfUMbmeUjTGk=WspvrAkdy+g@mail.gmail.com>
+References: <1311199321-4618-1-git-send-email-per.forlin@linaro.org>
+	<1311199321-4618-3-git-send-email-per.forlin@linaro.org>
+	<CAC5umyg44tQxrFEYRL-tjzBMA2+KNXjB+nQveH3KcB_LPmYVHw@mail.gmail.com>
+	<CAJ0pr1_rL8rsEbDR-PL6fs9EzyGfUMbmeUjTGk=WspvrAkdy+g@mail.gmail.com>
+Date: Mon, 25 Jul 2011 23:20:33 +0200
+Message-ID: <CAJ0pr19oTmt5PQw45wbRO8qEzVi3J1OgL=w9Ma7XxX-=1A=A=A@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] mmc: core: add random fault injection
+From: Per Forlin <per.forlin@linaro.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
+        Venkatraman S <svenkatr@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
+        Chris Ball <cjb@laptop.org>,
+        J Freyensee <james_p_freyensee@linux.intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 10:30:53AM +0200, Peter Zijlstra wrote:
-> On Fri, 2011-07-22 at 17:39 -0700, Paul E. McKenney wrote:
-> > > Therefore the worst case latency is in the order of
-> > > max-migrate-disable-period * nr-cpus.
-> > 
-> > OK, but wouldn't that be the latency as seen be the lowest-priority
-> > task?  
-> 
-> It would indeed, the utility loss is added to the preemption cost of the
-> lower priority tasks.
+Hi Akinobu,
 
-OK.
+On 25 July 2011 21:19, Per Forlin <per.forlin@linaro.org> wrote:
+> On 25 July 2011 17:58, Akinobu Mita <akinobu.mita@gmail.com> wrote:
+>> 2011/7/21 Per Forlin <per.forlin@linaro.org>:
+>>> This adds support to inject data errors after a completed host transfer.
+>>> The mmc core will return error even though the host transfer is successful.
+>>> This simple fault injection proved to be very useful to test the
+>>> non-blocking error handling in the mmc_blk_issue_rw_rq().
+>>> Random faults can also test how the host driver handles pre_req()
+>>> and post_req() in case of errors.
+>>
+>> Looks good to me.
+>>
+> Thanks,
+>
+>>> @@ -82,6 +87,66 @@ static void mmc_flush_scheduled_work(void)
+>>>        flush_workqueue(workqueue);
+>>>  }
+>>>
+>>> +#ifdef CONFIG_FAIL_MMC_REQUEST
+>>> +
+>>> +static DECLARE_FAULT_ATTR(fail_mmc_request);
+>>
+>> I think the fail_attr should be defined for each mmc_host like make_it_fail
+>> in struct mmc_host and debugfs entries should also be created in a
+>> subdirectory of mmc host debugfs.
+>>
+> I looked at blk-core.c and used the same code here. Current code
+> creates the entry under the debugfs root. This means one fail_attr for
+> all hosts.
+> I agree, it's more clean to move the fail_attr to the
+> host-debugfs-entry which require the fail_attr to be stored same way
+> as make_it_fail.
+>
+>> And I know that init_fault_attr_dentries() can only create a
+>> subdirectory in debugfs root directory.  But I have a patch which
+>> support for creating it in arbitrary directory.  Could you take a look
+>> at this? (Note that this patch is based on mmotm and not yet tested)
+>>
+I looked at your patch and it raised two questions.
+I can't use FAULT_ATTR_INITIALIZER since mmc_host is allocated on the
+heap. It looks like setup_fault_attr(attr, str) will fail if str is
+NULL. How can I initialise the fault_attrs if not stack allocated?
+About the boot param initialisation of fault attr. There can only be
+one fault_mmc_request boot param for the entire kernel but there is
+one fault_attr per host, and there may be many hosts. It would be
+convenient if setup_fault_attrs would take (attr, boot_param_name),
+look up boot_param_name and use that otherwise set default values.
 
-> > Or are migrate-disable tasks given preferential treatment?
-> > If not, a prio-99 task would get the same latency either way, right?
-> 
-> Right.
-> 
-> > Migration-disable can magnify the latency seen by low-priority tasks, if
-> > I understand correctly.  If you disabled preemption, when a low-priority
-> > task became runnable, it would find an idle CPU.  But with migration
-> > disable, the lowest-priority task might enter a migration-disable region,
-> > then be preempted by a marginally higher-priority task that also enters
-> > a migration-diable region, and is also preempted, and so on.  The
-> > lowest-priority task cannot run on the current CPU because of all
-> > the higher-priority tasks, and cannot migrate due to being in a
-> > migration-disable section.
-> 
-> Exactly so.
-> 
-> > In other words, as is often the case, better worst-case service to
-> > the high-priority tasks can multiply the latency seen by the
-> > low-priority tasks.
-> > 
-> > So is the topic to quantify this?  
-> 
-> I suppose it is indeed. Even for the SoftRT case we need to make sure
-> the total utilization loss is indeed acceptable.
-
-OK.  If you are doing strict priority, then everything below the highest
-priority is workload dependent.  OK, OK, given Linux's throttling,
-everything below the two highest priorities is workload dependent
-(assuming I understand the throttling correctly).  The higher-priority
-tasks can absolutely starve the lower-priority ones, with or without
-the migrate-disable capability.
-
-Another way of looking at it is from the viewpoint of the additional
-priority-boost events.  If preemption is disabled, the low-priority task
-will execute through the preempt-disable region without context switching.
-In contrast, given a migration-disable region, the low-priority task
-might be preempted and then boosted.  (If I understand correctly, if some
-higher-priority task tries to enter the same type of migration-disable
-region, it will acquire the associated lock, thus priority-boosting the
-task that is already in that region.)
-
-One stupid-but-tractable way to model this is to have an interarrival
-rate for the various process priorities, and then calculate the odds of
-(1) a higher priority process arriving while the low-priority one is
-in a *-disable region and (2) that higher priority process needing to
-enter a conflicting *-disable region.  This would give you some measure
-of the added boosting load due to migration-disable as compared to
-preemption-disable.
-
-Would this sort of result be useful?
-
-> > If so, my take is that the latency
-> > to the highest-priority task decreases by an amount roughly equal to
-> > the duration of the longest preempt_disable() region that turned into a
-> > migration-disable region, while that to the lowest-priority task increases
-> > by N-1 times the CPU overhead of the longest migration-disable region,
-> > plus context switches.  (Yes, this is a very crude rule-of-thumb model.
-> > A real model would have much higher mathematics and might use a more
-> > detailed understanding of the workload.)
-> > 
-> > Or am I misunderstanding how all this works? 
-> 
-> No, I think you're gettin' it.
-
-I was afraid of that.  ;-)
-
-> My main worry with all this is that we have these insane long !preempt
-> regions in mainline that are now !migrate regions, and thus per all the
-> above we could be looking at a substantial utilization loss.
-> 
-> Alternatively we could all be missing something far more horrid, but
-> that might just be my paranoia talking.
-
-Ah, good point -- if each migration-disable region is associated with
-a lock, then you -could- allow migration and gain better utilization
-at the expense of worse caching behavior.  Is that the concern?
-
-							Thanx, Paul
+Regards,
+Per
