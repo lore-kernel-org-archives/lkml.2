@@ -1,125 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab1GYXud (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 19:50:33 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:39095 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752700Ab1GYXu1 convert rfc822-to-8bit (ORCPT
+	id S1752767Ab1GYXvq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 19:51:46 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38435 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752118Ab1GYXvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 19:50:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACqU3MUKU_0FbOQT+TKLnnaoFVS_QOgzzx-tvunQy94v-eykTw@mail.gmail.com>
-References: <1310982010-13849-1-git-send-email-wangshaoyan.pt@taobao.com>
-	<1311618747.3526.32.camel@gandalf.stny.rr.com>
-	<CACqU3MVJ9Oj4pXH9O_2jnqDVBqKA+AgoWHwP-n2HGD4LU0pMHQ@mail.gmail.com>
-	<1311625197.3526.35.camel@gandalf.stny.rr.com>
-	<CACqU3MUKU_0FbOQT+TKLnnaoFVS_QOgzzx-tvunQy94v-eykTw@mail.gmail.com>
-Date: Mon, 25 Jul 2011 19:50:26 -0400
-Message-ID: <CACqU3MXO_oR+8Ac2Z7wSji0sUeu-2FwskmxZxtY9NV+XpJXuwA@mail.gmail.com>
-Subject: Re: [PATCH] TRACING: Fix a copmile warning
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>, gcc-help@gcc.gnu.org
-Cc: stufever@gmail.com, linux-kernel@vger.kernel.org,
-        Wang Shaoyan <wangshaoyan.pt@taobao.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 25 Jul 2011 19:51:41 -0400
+Date: Mon, 25 Jul 2011 16:50:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Andy Grover <agrover@redhat.com>, Hannes Reinecke <hare@suse.de>,
+        Roland Dreier <roland@purestorage.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Boaz Harrosh <openosd@gmail.com>, Mike Christie <michaelc@cs.wisc.edu>
+Subject: Re: [GIT PULL] iscsi-target merge for v3.1-rc1
+Message-Id: <20110725165057.9701f16b.akpm@linux-foundation.org>
+In-Reply-To: <20110725163739.5c19b04d.akpm@linux-foundation.org>
+References: <1311462975.31450.356.camel@haakon2.linux-iscsi.org>
+	<20110725163739.5c19b04d.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 25 Jul 2011 16:37:39 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-[adding gcc-help@ to the Cc: list]
+> On Sat, 23 Jul 2011 16:16:15 -0700
+> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+> 
+> > Please go ahead and pull from:
+> > 
+> >   master.kernel.org:/pub/scm/linux/kernel/git/nab/target-pending.git for-linus-merge
+> 
+> i386 allyesconfig:
+> 
+> ERROR: "__udivdi3" [drivers/target/target_core_mod.ko] undefined!
+> 
+> somewhere in drivers/target/target_core_transport.c:transport_allocate_data_tasks().
 
-On Mon, Jul 25, 2011 at 6:38 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> Hi,
->
-> On Mon, Jul 25, 2011 at 4:19 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> On Mon, 2011-07-25 at 15:43 -0400, Arnaud Lacombe wrote:
->>
->>> Actually, we have a special uninitialized_var(x) macro to handle such
->>> false positive. From include/linux/compiler-gcc.h:
->>>
->>> /*
->>>  * A trick to suppress uninitialized variable warning without generating any
->>>  * code
->>>  */
->>> #define uninitialized_var(x) x = x
->>
->> I'm aware of that too, but I think that is inappropriate as well. As I
->> said, some versions of gcc report it, others don't. Seems that gcc 4.6.0
->> says this is an error where 4.5.1 does not (I just tried both).
->>
-gcc will only emits the warning at -Os. It seems to me that the
-resulting code clearly ends-up testing an uninitialized value, ie.
-assuming the following test-case:
+Probably the best place to fix this is within DIV_ROUND_UP(): make it
+handle 64-bits on 32-bit.
 
-extern void *e(void);
-extern void *f(void);
-extern void g(void);
+This will have the pleasing side-effect of breaking
+drivers/scsi/cxgbi/cxgb4i/cxgb4i.c, which felt a need to duplicate the
+existing DIV_ROUND_UP() implementation.
 
-void fn(void)
-{
-        void *b, *a;
-
-        a = e();
-        if (a != 0)
-                b = f();
-        if (a != 0 && b != 0)
-                g();
-}
-
-gcc 4.5.1 will generates the following x86-32 assembly:
-
-% gcc -m32 -Wall -Os -c -S -o - kernel/trace/trace_printk.c
-        .file   "trace_printk.c"
-kernel/trace/trace_printk.c: In function 'fn':
-kernel/trace/trace_printk.c:7:8: warning: 'b' may be used
-uninitialized in this function
-        .text
-.globl fn
-        .type   fn, @function
-fn:
-        pushl   %ebp
-        movl    %esp, %ebp
-        pushl   %esi
-        pushl   %ebx
-        call    e
-        testl   %eax, %eax
-        movl    %eax, %ebx
-        je      .L2
-        call    f
-        movl    %eax, %esi
-.L2:
-        testl   %esi, %esi
-        je      .L1
-        testl   %ebx, %ebx
-        je      .L1
-        popl    %ebx
-        popl    %esi
-        popl    %ebp
-        jmp     g
-.L1:
-        popl    %ebx
-        popl    %esi
-        popl    %ebp
-        ret
-        .size   fn, .-fn
-        .ident  "GCC: (GNU) 4.5.1 20100924 (Red Hat 4.5.1-4)"
-        .section        .note.GNU-stack,"",@progbits
-
-It seems gcc transforms the conditional from:
-
-if (a != NULL && b != NULL) ...
-
-to
-
-if (b != NULL && a != NULL) ...
-
-In which case the warning is fully valid. I'm not sure what's the C
-standard guarantee in term of conditional test order. gcc 4.7.0 has
-the same behavior.
-
- - Arnaud
