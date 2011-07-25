@@ -1,115 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751321Ab1GYM3x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 08:29:53 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:58345 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab1GYM3q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 08:29:46 -0400
-Date: Mon, 25 Jul 2011 17:47:14 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>, Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 4/22]  4: Uprobes: register/unregister
- probes.
-Message-ID: <20110725121714.GA17966@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110607125804.28590.92092.sendpatchset@localhost6.localdomain6>
- <20110607125900.28590.16071.sendpatchset@localhost6.localdomain6>
- <20110724180713.GA24599@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110724180713.GA24599@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751356Ab1GYMcl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 08:32:41 -0400
+Received: from ozlabs.org ([203.10.76.45]:37047 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750864Ab1GYMcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 08:32:35 -0400
+Date: Mon, 25 Jul 2011 22:32:32 +1000
+From: Anton Blanchard <anton@samba.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, emunson@mgebm.net,
+        linux-kernel@vger.kernel.org, amodra@gmail.com
+Subject: Re: [PATCH] perf: Fix symbol resolution on old ppc64 ABI
+Message-ID: <20110725223232.4e2dce43@kryten>
+In-Reply-To: <20110725105004.GN28787@elte.hu>
+References: <20110725142356.0c722c6b@kryten>
+	<20110725062542.GA694@elte.hu>
+	<20110725204859.51e50611@kryten>
+	<20110725105004.GN28787@elte.hu>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2011-07-24 20:07:13]:
 
-> Hi Srikar,
-> 
-> I still hope some day I'll find the time to read the whole series ;)
-> Trying to continue from where I have stopped, and it seems that this
-> patch has a couple more problems.
+Hi Ingo,
 
+> > It would cover most cases. There would be an issue with functions 
+> > that are less than 24 bytes in length (ie 6 instructions). Tiny 
+> > functions are probably rare enough that we can live with it.
+> 
+> Do such tiny functions get packed tightly, below 24 bytes? Another 
+> sanitization pass could solve that issue, to trim partially 
+> overlapping symbol regions, right?
 
-Thanks for the review and I sincerely hope you find time and that too at
-the earliest. 
+That would work I think. Should I cook up a patch?
 
-> 
-> On 06/07, Srikar Dronamraju wrote:
-> >
-> > A probe is specified by a file:offset.  While registering, a breakpoint
-> > is inserted for the first consumer, On subsequent probes, the consumer
-> > gets appended to the existing consumers. While unregistering a
-> > breakpoint is removed if the consumer happens to be the last consumer.
-> > All other unregisterations, the consumer is deleted from the list of
-> > consumers.
-> >
-> > Probe specifications are maintained in a rb tree. A probe specification
-> > is converted into a uprobe before store in a rb tree.  A uprobe can be
-> > shared by many consumers.
-> 
-> register/unregister logic looks racy...
-> 
-> Supose that uprobe U has a single consumer C and register_uprobe()
-> is called with the same inode/offset, while another thread does
-> unregister(U,C).
-> 
-> 	- register() calls alloc_uprobe(), finds the entry in rb tree,
-> 	  and increments U->ref. But this doesn't add the new consumer.
-> 
-> 	- uregister() does del_consumer(), and removes the single
-> 	  consumer C.
-> 
-> 	  then it takes uprobes_mutex, sees uprobe->consumers == NULL
-> 	  and calls delete_uprobe()->rb_erase()
-> 
-> 	- register() continues, takes uprobes_mutex, re-inserts the
-> 	  breakpoints, finds the new consumer and succeeds.
-> 
-> 	  However, this uprobe is not in rb-tree, it was deleted
-> 	  by unregister.
-> 
-
-Agree, 
-I will move the alloc_uprobe under the mutex_lock.
-
-On a side_note: As per the current discussions in this thread, I plan to
-use inode->i_mutex so that we could serialize register/unregister if
-they are for two different files.
-
-> 
-> 
-> OTOH. Suppose we add the new uprobe. register()->alloc_uprobe() sets
-> new_uprobe->ref == 2. If something goes wrong after that, register()
-> does delete_uprobe() + put_uprobe(), new_uprobe->ref becomes 1 and
-> we leak this uprobe.
-> 
-
-Agree:
-yes I will add a put_uprobe() just after delete_uprobe() but just before
-the goto.
-sidenote: Even this code will change based on the discussions we had on
-this topic. But I will ensure to make the appropriate changes are taken
-care of.
-
--- 
-Thanks and Regards
-Srikar
-
-> Oleg.
+Anton
