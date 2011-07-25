@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758Ab1GYRhU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 13:37:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50310 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab1GYRhS (ORCPT
+	id S1752226Ab1GYRhm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 13:37:42 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:44541 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752078Ab1GYRhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 13:37:18 -0400
-References: <20110721164325.231521704@google.com> <1311605881.24752.2.camel@twins> <1311606041.24752.3.camel@twins> <20110725162133.GI2327@linux.vnet.ibm.com> <1311611311.24752.5.camel@twins> <20110725164619.GK2327@linux.vnet.ibm.com> <1311613694.24752.8.camel@twins> <CAPhKKr-+sss_Q+SLCFWbdQdcCG2rn93Hh8KH7p3eG35AWvsRJQ@mail.gmail.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAPhKKr-+sss_Q+SLCFWbdQdcCG2rn93Hh8KH7p3eG35AWvsRJQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [patch 00/18] CFS Bandwidth Control v7.2
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Mon, 25 Jul 2011 19:35:44 +0200
-To: Dhaval Giani <dhaval.giani@gmail.com>
-CC: paulmck@linux.vnet.ibm.com, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Jason Baron <jbaron@redhat.com>
-Message-ID: <488d505f-50ac-47a1-8c89-18b413c33e6a@email.android.com>
+	Mon, 25 Jul 2011 13:37:41 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=RoLu3lZ/OVuoUsRrN47rYCxRrl2q69hz9jiPtgKS0El3OCt13q0l3mYUEBGBNZHh45OPiKN4bYOObl4U19Klss0t2IcdBPEjSU5ouhFbMP3w07IqiWw9AGAkn+W204G2;
+Date: Mon, 25 Jul 2011 10:37:32 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Hold struct_mutex during hotplug
+ processing
+Message-ID: <20110725103732.623d7b65@jbarnes-desktop>
+In-Reply-To: <1311613829-4990-1-git-send-email-keithp@keithp.com>
+References: <1311613829-4990-1-git-send-email-keithp@keithp.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dhaval Giani <dhaval.giani@gmail.com> wrote:
+On Mon, 25 Jul 2011 10:10:29 -0700
+Keith Packard <keithp@keithp.com> wrote:
 
->>
->> I consider setting the cgroup paramaters an utter slow path, and if
->> people complain I'll simply tell them to sod off ;-)
->>
->
->cgroups parameters? I can think of some funky uses if setting cgroup
->parameters was not in the slow path. I think you meant create/destroy
->cgroups here :-).
->
->Dhaval
+> Hotplug detection is a mode setting operation and must hold the
+> struct_mutex or risk colliding with other mode setting operations.
+> 
+> In particular, the display port hotplug function attempts to re-train
+> the link if the monitor is supposed to be running when plugged back
+> in. If that happens while mode setting is underway, the link will get
+> scrambled, leaving it in an inconsistent state.
+> 
+> Signed-off-by: Keith Packard <keithp@keithp.com>
+> ---
+>  drivers/gpu/drm/i915/i915_irq.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+> index 3b03f85..5fe8f28 100644
+> --- a/drivers/gpu/drm/i915/i915_irq.c
+> +++ b/drivers/gpu/drm/i915/i915_irq.c
+> @@ -306,12 +306,15 @@ static void i915_hotplug_work_func(struct work_struct *work)
+>  	struct drm_mode_config *mode_config = &dev->mode_config;
+>  	struct intel_encoder *encoder;
+>  
+> +	mutex_lock(&dev_priv->dev->struct_mutex);
+>  	DRM_DEBUG_KMS("running encoder hotplug functions\n");
+>  
+>  	list_for_each_entry(encoder, &mode_config->encoder_list, base.head)
+>  		if (encoder->hot_plug)
+>  			encoder->hot_plug(encoder);
+>  
+> +	mutex_unlock(&dev_priv->dev->struct_mutex);
+> +
+>  	/* Just fire off a uevent and let userspace tell us what to do */
+>  	drm_helper_hpd_irq_event(dev);
+>  }
 
-No, i meant writing into cgroup files, like the cfs bandwidth period thing.
+yay, sounds like this will fix Andrew's problem and probably lots of
+other random DP related failures.
+
+Looks like the ->detect function is similarly protected at the call
+site (though one level up in ->fill_modes), so it should be safe.
+Looks like all the call sites in the link_status function are safe too.
+
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+
+Let's get this one upstream asap.  Should probably be cc'd to
+stable@kernel.org as well.
+
 -- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+Jesse Barnes, Intel Open Source Technology Center
