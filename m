@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374Ab1GYIMC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 04:12:02 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55753 "EHLO mx2.mail.elte.hu"
+	id S1751358Ab1GYIOW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 04:14:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59923 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750977Ab1GYILz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 04:11:55 -0400
-Date: Mon, 25 Jul 2011 10:11:02 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Asias He <asias.hejun@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        Anthony Liguori <anthony@codemonkey.ws>, torvalds@linux-foundation.org,
+	id S1750977Ab1GYIOQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 04:14:16 -0400
+Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <20110725075305.GA32294@elte.hu>
+Date: Mon, 25 Jul 2011 10:14:13 +0200
+Cc: Pekka Enberg <penberg@kernel.org>, Jan Kiszka <jan.kiszka@web.de>,
+        torvalds@linux-foundation.org, avi@redhat.com,
         akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         kvm@vger.kernel.org, gorcunov@gmail.com, levinsasha928@gmail.com,
-        prasadjoshi124@gmail.com
-Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
-Message-ID: <20110725081102.GA3895@elte.hu>
-References: <alpine.DEB.2.00.1107242335580.18045@tiger>
- <4E2CC489.1090509@codemonkey.ws>
- <CAOJsxLH-poY4-wEUPqAa8bzK+1WJ0UYtSuue72RYwcd_D0kx_A@mail.gmail.com>
- <4E2D1D07.9020009@redhat.com>
- <CAFO3S428qqUAu19QjPxDDAVv+eJSX0MEfYp5y03znNi6XbEtTg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFO3S428qqUAu19QjPxDDAVv+eJSX0MEfYp5y03znNi6XbEtTg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+        asias.hejun@gmail.com, prasadjoshi124@gmail.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de>
+References: <alpine.DEB.2.00.1107242335580.18045@tiger> <4E2CA6DE.4040900@web.de> <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com> <20110725075305.GA32294@elte.hu>
+To: Ingo Molnar <mingo@elte.hu>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Asias He <asias.hejun@gmail.com> wrote:
+On 25.07.2011, at 09:53, Ingo Molnar wrote:
 
-> On Mon, Jul 25, 2011 at 3:36 PM, Avi Kivity <avi@redhat.com> wrote:
 > 
-> > On 07/25/2011 10:27 AM, Pekka Enberg wrote:
-> >
-> >> Hi Anthony,
-> >>
-> >> On Mon, Jul 25, 2011 at 4:19 AM, Anthony Liguori<anthony@codemonkey.ws>
-> >>  wrote:
-> >> >  lguest already does this and lives in the kernel.
-> >>
-> >> Does Lguest have SMP, usermode networking, and GUI support?
-> >>
-> >>
-> > IIRC, yes, no, and no.
-> >
-> >
-> And Lguest only supports 32-bit kernel.
+> * Pekka Enberg <penberg@kernel.org> wrote:
+> 
+>> On Mon, Jul 25, 2011 at 2:12 AM, Jan Kiszka <jan.kiszka@web.de> wrote:
+>>> That said, I definitely appreciate the bug fixes as well as code and
+>>> documentation improvements for KVM that originate from this effort! I'm
+>>> just not convinced that writing a new userland and merging it into the
+>>> kernel is the most efficient way to achieve that.
+>> 
+>> Just to make this crystal clear for everyone: if it weren't for 
+>> tools/kvm, I wouldn't be hacking on KVM at all. I've looked at Qemu 
+>> in the past (and a lot recently!) and I simply don't see myself 
+>> contributing to it, sorry. So 'most efficient' or not, I think 
+>> tools/kvm is a net win for Linux and KVM in general.
+> 
+> Same here - in fact i first asked Qemu to be put into tools/qemu/ so 
+> that it all becomes more hackable and more usable - that suggestion 
+> was rebuked very strongly.
 
-The answer to SMP is 'no' as well, as lguest supports only a single 
-CPU:
+So instead of thinking a bit and trying to realize that there might be a reason people don't want all their user space in the kernel tree you go ahead and start your own crusade of creating a new user space. Great. That's how I always hoped Linux would be :(.
 
-   [Documentation/virtual/lguest/lguest.c]
+> So i wanted to have a lightweight tool that allows me to test KVM and 
+> tools/kvm/ does that very nicely: i type './kvm run' and i can test a 
+> native bzImage (which has some virtualization options enabled as 
+> well) on the _host_ distro i am running, booting to a text shell 
+> prompt.
 
-        /* We're CPU 0.  In fact, that's the only CPU possible right now. */
-        cpu_id = 0;
+I do that all the time.
 
-Thanks,
+  $ qemu-kvm -nographic -kernel arch/x86/boot/bzImage -append console=ttyS0
 
-	Ingo
+does the exact same thing. If that's too much typing for you, make it a bash alias.
+
+> I can do that without downloading any (inevitably outdated) 
+> virtualization images or maintaining my own ones. Maintaining host 
+> userspace is more than enough for me.
+
+Who would need images? I usually only run -kernel and -initrd directly to test out things. Or if I really want to boot into a real system I do -snapshot /dev/sda.
+
+> So, since we already have the lguest tool in the kernel tree, why 
+> cannot we have the much more capable tools/kvm/ in the tree?
+
+Lguest is in Documentation/ for a reason. It's not meant as a user space tool that you take as-is and use. It's meant for documenting how lguest works in general. I admit though, that that's also the reason people don't use it :).
+
+> So while it is the Qemu folks' right to oppose tools/qemu/, i don't 
+> see why they are opposing tools/kvm/ ...
+
+In your logic, you would put all of the GNU utils into tools/. This is just plain insane. There's a reason we have the split between kernel and user space. What does putting them into the same tree bring you? Fame? Glorious stats on kernel commits? Seriously, it's a separate project. It's not the kernel.
+
+> Wrt. integration with lguest - this is a new argument that was not 
+> brought up before (i wish people would not come up with new 
+> requirements on the day of the pull request) - i don't see how it's 
+> relevant really: lguest was designed for legacy CPUs and tools/kvm/ 
+> is precisely about being simple and not doing legacy stuff.
+> 
+> If then Qemu should be the project that integrates lguest. Is anyone 
+> on the Qemu side looking at lguest integration?
+
+I don't think lguest integration makes sense for anyone or anything. Lguest is a toy, so let it be the toy it wants to be.
+
+
+Alex
+
