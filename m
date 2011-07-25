@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751207Ab1GYIH1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 04:07:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23370 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750830Ab1GYIHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 04:07:21 -0400
-Date: Mon, 25 Jul 2011 11:07:43 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Shirley Ma <mashirle@us.ibm.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next] skbuff: clear tx zero-copy flag
-Message-ID: <20110725080743.GC7840@redhat.com>
-References: <1310195566.25391.6.camel@localhost.localdomain>
- <20110725004200.GA25794@gondor.apana.org.au>
+	id S1751338Ab1GYIIT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 04:08:19 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35957 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab1GYIIO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 04:08:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110725004200.GA25794@gondor.apana.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110724130336.GA2116@ime.usp.br>
+References: <20110724130336.GA2116@ime.usp.br>
+Date: Mon, 25 Jul 2011 09:08:12 +0100
+Message-ID: <CAPM=9txTVVxvv85kcZqBVjmpVK1zsAvVarLv1Sm7viwfF+ZYyA@mail.gmail.com>
+Subject: Re: [REGRESSION] [BISECTED] Unable to use 3D with Radeon 2100 and UI
+ freezes with Firefox
+From: Dave Airlie <airlied@gmail.com>
+To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 08:42:00AM +0800, Herbert Xu wrote:
-> Shirley Ma <mashirle@us.ibm.com> wrote:
-> > 
-> > This patch clears tx zero-copy flag as needed.
-> > 
-> > Sign-off-by: Shirley Ma <xma@us.ibm.com>
-> 
-> I think we also need to copy and clear this flag on the splice
-> read path as that takes a direct page reference.
-> 
-> I hope there isn't any other path that does this.
-> 
-> Cheers,
+2011/7/24 Rogério Brito <rbrito@ime.usp.br>:
+> Dear Thomas and other people,
+>
+> After experiencing problems with many post 2.6.38 kernels with X when I used
+> Firefox to see any webpage that used some of the new HTML5 features (Firefox
+> freeze completely X and I could only log in remotely with SSH), I took some
+> time to see where things went wrong and, to cut a long story short, I
+> bisected the kernel and I found that a commit of yours was the first one
+> that introduced a problem with my system:
 
-When there's a way for an skb to get into the
-host networking stack, (e.g. when tap gains zero copy
-support) we'll need to handle that.
+> `----
+>
+> Here I have the dmesg output slightly edited with the points that I think
+> that are the most relevant to the problem. Please note that my understanding
+> of devices/hardware is next to nothing and I may have cut important parts.
 
-However macvtap passes an skb directly to the
-lower device, so as long as macvtap is the only user
-of that interface, we are fine I think - there's
-no way for an skb to get from macvtap to splice
-read path I think.
+Can you attach /proc/interrupts as well please.
 
-Right?
-
-> -- 
-> Email: Herbert Xu <herbert@gondor.apana.org.au>
-> Home Page: http://gondor.apana.org.au/~herbert/
-> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Dave.
