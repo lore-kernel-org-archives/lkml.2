@@ -1,37 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665Ab1GYKCn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 06:02:43 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:45737 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab1GYKCi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 06:02:38 -0400
-Date: Mon, 25 Jul 2011 03:02:29 -0700 (PDT)
-Message-Id: <20110725.030229.1448266647053398033.davem@davemloft.net>
-To: herbert@gondor.hengli.com.au
-Cc: mst@redhat.com, mashirle@us.ibm.com, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next] skbuff: clear tx zero-copy flag
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110725095711.GA30831@gondor.apana.org.au>
-References: <20110725084057.GA30311@gondor.apana.org.au>
-	<20110725094414.GA11776@redhat.com>
-	<20110725095711.GA30831@gondor.apana.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1751850Ab1GYKDE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 06:03:04 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:23678 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751375Ab1GYKDB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 06:03:01 -0400
+X-IronPort-AV: E=Sophos;i="4.67,259,1309752000"; 
+   d="scan'208";a="15236691"
+Subject: [PATCH 0/3] minor cleanups to EFLAGS initialisation in
+ ret_from_fork
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: linux-kernel@vger.kernel.org
+CC: Pekka Enberg <penberg@kernel.org>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Mon, 25 Jul 2011 10:58:03 +0100
+Message-ID: <1311587883.27940.20.camel@cthulhu.hellion.org.uk>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 25 Jul 2011 03:02:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-Date: Mon, 25 Jul 2011 17:57:11 +0800
+The following series removes the use of a global kernel_eflags variable
+from the x86_64 ret_from_fork path and (very slightly) merges the 32 and
+64 bit version of that code path.
 
-> However, I think we should add a WARN_ON to the splice skb path
-> so that should a packet find its way through a path that we haven't
-> thought of then at least we'll know about it.
+kernel_eflags could be made a __read_mostly but actually there is no
+reason to prefer the value at cpu_init() time to a compile time constant
+value for the initial eflags after a fork.
 
-Good idea.
+Ian.
+
