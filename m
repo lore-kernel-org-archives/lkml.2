@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471Ab1GYMhg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 08:37:36 -0400
-Received: from ozlabs.org ([203.10.76.45]:50640 "EHLO ozlabs.org"
+	id S1751552Ab1GYMhr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 08:37:47 -0400
+Received: from ozlabs.org ([203.10.76.45]:46738 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750977Ab1GYMhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 08:37:22 -0400
+	id S1751418Ab1GYMhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 08:37:25 -0400
 X-Mailbox-Line: From anton@samba.org Mon Jul 25 12:34:26 2011
-Message-Id: <20110725023426.037449739@samba.org>
+Message-Id: <20110725023426.218116288@samba.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 25 Jul 2011 12:33:12 +1000
+Date: Mon, 25 Jul 2011 12:33:14 +1000
 From: Anton Blanchard <anton@samba.org>
 To: mingo@elte.hu, peterz@infradead.org, benh@kernel.crashing.org
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        tony.luck@intel.com, fenghua.yu@intel.com, ralf@linux-mips.org,
-        lethal@linux-sh.org, davem@davemloft.net, cmetcalf@tilera.com
-Subject: [PATCH 1/5] powerpc/numa: Enable SD_WAKE_AFFINE in node definition
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/5] powerpc/numa: Increase SD_NODES_PER_DOMAIN to 32.
 References: <20110725023311.175792493@samba.org>
-Content-Disposition: inline; filename=powerpc_numa_wake_affine
+Content-Disposition: inline; filename=override_SD_NODES_PER_DOMAIN
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When chasing a performance issue on ppc64, I noticed tasks
-communicating via a pipe would often end up on different nodes.
+The largest POWER7 boxes have 32 nodes. SD_NODES_PER_DOMAIN groups
+nodes into chunks of 16 and adds a global balancing domain
+(SD_ALLNODES) above it.
 
-It turns out SD_WAKE_AFFINE is not set in our node defition. Commit
-9fcd18c9e63e (sched: re-tune balancing) enabled SD_WAKE_AFFINE
-in the node definition for x86 and we need a similar change for
-ppc64.
+If we bump SD_NODES_PER_DOMAIN to 32, then we avoid this extra
+level of balancing on our largest boxes.
 
-I used lmbench lat_ctx and perf bench pipe to verify this fix. Each
-benchmark was run 10 times and the average taken.
-
-
-lmbench lat_ctx:
-
-before:  66565 ops/sec
-after:  204700 ops/sec
-
-3.1x faster
-
-
-perf bench pipe:
-
-before: 5.6570 usecs
-after:  1.3470 usecs
-
-4.2x faster
-
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Anton Blanchard <anton@samba.org> 
 ---
-
-Cc-ing arch maintainers who might need to look at their SD_NODE_INIT
-definitions
 
 Index: linux-2.6-work/arch/powerpc/include/asm/topology.h
 ===================================================================
---- linux-2.6-work.orig/arch/powerpc/include/asm/topology.h	2011-07-18 16:24:55.639949552 +1000
-+++ linux-2.6-work/arch/powerpc/include/asm/topology.h	2011-07-18 16:25:02.630074557 +1000
-@@ -73,7 +73,7 @@ static inline int pcibus_to_node(struct
- 				| 1*SD_BALANCE_EXEC			\
- 				| 1*SD_BALANCE_FORK			\
- 				| 0*SD_BALANCE_WAKE			\
--				| 0*SD_WAKE_AFFINE			\
-+				| 1*SD_WAKE_AFFINE			\
- 				| 0*SD_PREFER_LOCAL			\
- 				| 0*SD_SHARE_CPUPOWER			\
- 				| 0*SD_POWERSAVINGS_BALANCE		\
+--- linux-2.6-work.orig/arch/powerpc/include/asm/topology.h	2011-07-25 11:43:24.954093179 +1000
++++ linux-2.6-work/arch/powerpc/include/asm/topology.h	2011-07-25 11:43:31.274205122 +1000
+@@ -28,6 +28,12 @@ struct device_node;
+  */
+ #define RECLAIM_DISTANCE 10
+ 
++/*
++ * Avoid creating an extra level of balancing (SD_ALLNODES) on the largest
++ * POWER7 boxes which have a maximum of 32 nodes.
++ */
++#define SD_NODES_PER_DOMAIN 32
++
+ #include <asm/mmzone.h>
+ 
+ static inline int cpu_to_node(int cpu)
 
 
