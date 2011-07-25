@@ -1,102 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483Ab1GYPJn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 11:09:43 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:42795 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750776Ab1GYPJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 11:09:38 -0400
-Date: Mon, 25 Jul 2011 08:09:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: NeilBrown <neilb@suse.de>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Andi Kleen <andi@firstfloor.org>,
-        Matt Mackall <mpm@selenic.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Nanosecond fs timestamp support: sad
-Message-ID: <20110725150931.GD2327@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1311271641.14555.114.camel@calx>
- <m2pql2c0qz.fsf@firstfloor.org>
- <20110722163335.2df4f6ca@notabene.brown>
- <1311363269.14555.261.camel@calx>
- <20110722205922.GS8006@one.firstfloor.org>
- <1311369102.14555.268.camel@calx>
- <20110722214732.GW8006@one.firstfloor.org>
- <20110722221039.GB10749@fieldses.org>
- <20110722223158.GC10749@fieldses.org>
- <20110723085915.308ddc02@notabene.brown>
+	id S1751843Ab1GYPUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 11:20:49 -0400
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:59363 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751153Ab1GYPUp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 11:20:45 -0400
+Date: Mon, 25 Jul 2011 10:20:33 -0500
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, peterz@infradead.org,
+        eric.dumazet@gmail.com, david@rgmadvisors.com,
+        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
+        hughd@google.com, mingo@elte.hu
+Subject: Re: [PATCH v5] futex: Fix regression with read only mappings
+Message-ID: <20110725152033.GA2275@BohrerMBP.rgmadvisors.com>
+References: <4E0C9911.7030907@linux.intel.com>
+ <1309450892-30676-1-git-send-email-sbohrer@rgmadvisors.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110723085915.308ddc02@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1309450892-30676-1-git-send-email-sbohrer@rgmadvisors.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 23, 2011 at 08:59:15AM +1000, NeilBrown wrote:
-> On Fri, 22 Jul 2011 18:31:58 -0400 "J. Bruce Fields" <bfields@fieldses.org>
-> wrote:
+On Thu, Jun 30, 2011 at 11:21:32AM -0500, Shawn Bohrer wrote:
+> commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
+> parameter from get_futex_key()) in 2.6.33 fixed two problems:  First, It
+> prevented a loop when encountering a ZERO_PAGE. Second, it fixed RW
+> MAP_PRIVATE futex operations by forcing the COW to occur by
+> unconditionally performing a write access get_user_pages_fast() to get
+> the page.  The commit also introduced a user-mode regression in that it
+> broke futex operations on read-only memory maps.  For example, this
+> breaks workloads that have one or more reader processes doing a
+> FUTEX_WAIT on a futex within a read only shared file mapping, and a
+> writer processes that has a writable mapping issuing the FUTEX_WAKE.
 > 
-> > On Fri, Jul 22, 2011 at 06:10:39PM -0400, bfields wrote:
-> > > On Fri, Jul 22, 2011 at 11:47:32PM +0200, Andi Kleen wrote:
-> > > > On Fri, Jul 22, 2011 at 04:11:42PM -0500, Matt Mackall wrote:
-> > > > > On Fri, 2011-07-22 at 22:59 +0200, Andi Kleen wrote:
-> > > > > > > Indeed. Only usefully exists on ext4 and requires extra system calls.
-> > > > > > 
-> > > > > > Not sure what you mean?  It's in stat(2), just like the timestamps.
-> > > > > 
-> > > > > I don't see anything that looks like a version or generation number in
-> > > > > either the man pages, the asm-generic/stat.h, or glibc's asm/stat.h.
-> > > > > Pointer?
-> > > > 
-> > > > Hmm you're right. I thought it was in there, but apparently not.
-> > > > I think it should be added there though. We still have some unused 
-> > > > fields.
-> > > 
-> > > But last I checked I thought it was only ext4 that actually incremented
-> > > the i_version on IO, and even then only when given a (non-default) mount
-> > > option.
-> > > 
-> > > My notes on what needs to be done there:
-> > > 
-> > > 	- collect data to determine whether turning on i_version causes
-> > > 	  any significant performance regressions.
-> > > 		- Last I talked to him, Ted Tso recommended running
-> > > 		  Bonnie on a local disk, since it does a lot of little
-> > > 		  writes, which is somewhat of a worst case, as it will
-> > > 		  generate extra metadata updates for each write.
-> > > 		  Compare total wall-clock time, number of iops, and
-> > > 		  number of bytes (using some kind of block tracing).
-> > > 	- If there aren't any problems, turn it on by default, and we're
-> > > 	  done.
-> > 
-> > (Well,and talk the other filesystem implementors into doing it.)
-> > 
+> This fixes the regression for valid futex operations on RO mappings by
+> trying a RO get_user_pages_fast() when the RW get_user_pages_fast()
+> fails. This change makes it necessary to also check for invalid use
+> cases, such as anonymous RO mappings (which can never change) and the
+> ZERO_PAGE which the commit referenced above was written to address.
 > 
-> But does anyone apart from NFSv4 actually *want* i_version as opposed to the
-> more-generally-useful precise timestamps?
+> This patch does restore the original behavior with RO MAP_PRIVATE
+> mappings, which have inherent user-mode usage problems and don't really
+> make sense.  With this patch performing a FUTEX_WAIT within a RO
+> MAP_PRIVATE mapping will be successfully woken provided another process
+> updates the region of the underlying mapped file.  However, the mmap()
+> man page states that for a MAP_PRIVATE mapping:
 > 
-> If not, we probably should tell NFSv4 to use timestamps and focus on making
-> them work well.
-> ??
+>   It is unspecified whether changes made to the file after
+>   the mmap() call are visible in the mapped region.
 > 
-> The timestamp used doesn't need to update ever nanosecond.  I think if it
-> were just updated on every userspace->kernel transition  (or effective
-> equivalents inside kernel threads) that would be enough capture all
-> causality.  I wonder how that would be achieved..  I wonder if RCU machinery
-> could help - doesn't it keep track of when threads schedule ... or something?
+> So user-mode users attempting to use futex operations on RO MAP_PRIVATE
+> mappings are depending on unspecified behavior.  Additionally a
+> RO MAP_PRIVATE mapping could fail to wake up in the following case.
+> 
+>   Thread-A: call futex(FUTEX_WAIT, memory-region-A).
+>             get_futex_key() return inode based key.
+>             sleep on the key
+>   Thread-B: call mprotect(PROT_READ|PROT_WRITE, memory-region-A)
+>   Thread-B: write memory-region-A.
+>             COW happen. This process's memory-region-A become related
+>             to new COWed private (ie PageAnon=1) page.
+>   Thread-B: call futex(FUETX_WAKE, memory-region-A).
+>             get_futex_key() return mm based key.
+>             IOW, we fail to wake up Thread-A.
+> 
+> Once again doing something like this is just silly and users who do
+> something like this get what they deserve.
+> 
+> While RO MAP_PRIVATE mappings are nonsensical, checking for a private
+> mapping requires walking the vmas and was deemed too costly to avoid a
+> userspace hang.
+> 
+> This Patch is based on Peter Zijlstra's initial patch with modifications to
+> only allow RO mappings for futex operations that need VERIFY_READ access.
+> 
+> Reported-by: David Oliver <david@rgmadvisors.com>
+> Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+> ---
+> 
+> Clairified commit description.  Changed get_futex_key() back to having a
+> fshared and rw parameter, per Darren's request.
+> 
+>  kernel/futex.c |   54 ++++++++++++++++++++++++++++++++++++++++++------------
+>  1 files changed, 42 insertions(+), 12 deletions(-)
+> 
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index fe28dc2..70bb54b 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -218,6 +218,8 @@ static void drop_futex_key_refs(union futex_key *key)
+>   * @uaddr:	virtual address of the futex
+>   * @fshared:	0 for a PROCESS_PRIVATE futex, 1 for PROCESS_SHARED
+>   * @key:	address where result is stored.
+> + * @rw:		mapping needs to be read/write (values: VERIFY_READ,
+> + *              VERIFY_WRITE)
+>   *
+>   * Returns a negative error code or 0
+>   * The key words are stored in *key on success.
+> @@ -229,12 +231,12 @@ static void drop_futex_key_refs(union futex_key *key)
+>   * lock_page() might sleep, the caller should not hold a spinlock.
+>   */
+>  static int
+> -get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+> +get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
+>  {
+>  	unsigned long address = (unsigned long)uaddr;
+>  	struct mm_struct *mm = current->mm;
+>  	struct page *page, *page_head;
+> -	int err;
+> +	int err, ro = 0;
+>  
+>  	/*
+>  	 * The futex address must be "naturally" aligned.
+> @@ -262,8 +264,18 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+>  
+>  again:
+>  	err = get_user_pages_fast(address, 1, 1, &page);
+> +	/*
+> +	 * If write access is not required (eg. FUTEX_WAIT), try
+> +	 * and get read-only access.
+> +	 */
+> +	if (err == -EFAULT && rw == VERIFY_READ) {
+> +		err = get_user_pages_fast(address, 1, 0, &page);
+> +		ro = 1;
+> +	}
+>  	if (err < 0)
+>  		return err;
+> +	else
+> +		err = 0;
+>  
+>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>  	page_head = page;
+> @@ -305,6 +317,13 @@ again:
+>  	if (!page_head->mapping) {
+>  		unlock_page(page_head);
+>  		put_page(page_head);
+> +		/*
+> +		* ZERO_PAGE pages don't have a mapping. Avoid a busy loop
+> +		* trying to find one. RW mapping would have COW'd (and thus
+> +		* have a mapping) so this page is RO and won't ever change.
+> +		*/
+> +		if ((page_head == ZERO_PAGE(address)))
+> +			return -EFAULT;
+>  		goto again;
+>  	}
+>  
+> @@ -316,6 +335,15 @@ again:
+>  	 * the object not the particular process.
+>  	 */
+>  	if (PageAnon(page_head)) {
+> +		/*
+> +		 * A RO anonymous page will never change and thus doesn't make
+> +		 * sense for futex operations.
+> +		 */
+> +		if (ro) {
+> +			err = -EFAULT;
+> +			goto out;
+> +		}
+> +
+>  		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
+>  		key->private.mm = mm;
+>  		key->private.address = address;
+> @@ -327,9 +355,10 @@ again:
+>  
+>  	get_futex_key_refs(key);
+>  
+> +out:
+>  	unlock_page(page_head);
+>  	put_page(page_head);
+> -	return 0;
+> +	return err;
+>  }
+>  
+>  static inline void put_futex_key(union futex_key *key)
+> @@ -940,7 +969,7 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
+>  	if (!bitset)
+>  		return -EINVAL;
+>  
+> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
+> +	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key, VERIFY_READ);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+>  
+> @@ -986,10 +1015,10 @@ futex_wake_op(u32 __user *uaddr1, unsigned int flags, u32 __user *uaddr2,
+>  	int ret, op_ret;
+>  
+>  retry:
+> -	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
+> +	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+> -	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
+> +	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
+>  	if (unlikely(ret != 0))
+>  		goto out_put_key1;
+>  
+> @@ -1243,10 +1272,11 @@ retry:
+>  		pi_state = NULL;
+>  	}
+>  
+> -	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
+> +	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+> -	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
+> +	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2,
+> +			    requeue_pi ? VERIFY_WRITE : VERIFY_READ);
+>  	if (unlikely(ret != 0))
+>  		goto out_put_key1;
+>  
+> @@ -1790,7 +1820,7 @@ static int futex_wait_setup(u32 __user *uaddr, u32 val, unsigned int flags,
+>  	 * while the syscall executes.
+>  	 */
+>  retry:
+> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key);
+> +	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key, VERIFY_READ);
+>  	if (unlikely(ret != 0))
+>  		return ret;
+>  
+> @@ -1941,7 +1971,7 @@ static int futex_lock_pi(u32 __user *uaddr, unsigned int flags, int detect,
+>  	}
+>  
+>  retry:
+> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key);
+> +	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key, VERIFY_WRITE);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+>  
+> @@ -2060,7 +2090,7 @@ retry:
+>  	if ((uval & FUTEX_TID_MASK) != vpid)
+>  		return -EPERM;
+>  
+> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
+> +	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key, VERIFY_WRITE);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+>  
+> @@ -2249,7 +2279,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+>  	debug_rt_mutex_init_waiter(&rt_waiter);
+>  	rt_waiter.task = NULL;
+>  
+> -	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
+> +	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+>  
 
-RCU does track thread scheduling, but currently only pays attention to
-it if there is an RCU grace period in progress.  It would be easy to
-make it track more precisely, though, if that would help something.
+Thomas,
 
-That said, I suspect that Peter Zijlstra would be extremely unhappy with
-any proposed change that (say) acquired a global lock on every thread
-schedule.  And I don't believe that he would be all that happy even with a
-change that added a non-global lock acquisition to each context switch...
+What do I need to do to get this patch accepted?
 
-							Thanx, Paul
+Thanks,
+Shawn
 
-							Thanx, Paul
+
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
+
