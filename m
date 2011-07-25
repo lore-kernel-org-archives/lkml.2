@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823Ab1GYNUo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 09:20:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49572 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751139Ab1GYNUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 09:20:43 -0400
-Date: Mon, 25 Jul 2011 15:20:40 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: =?iso-8859-1?Q?V=EDctor_M=2E_J=E1quez_L=2E?= <vjaquez@igalia.com>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Jianbin Kang <kjbmail@gmail.com>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH] kbuild: incremental tags updating with GNU GLOBAL
-Message-ID: <20110725132040.GE4482@sepie.suse.cz>
-References: <1310379990-4367-1-git-send-email-vjaquez@igalia.com>
- <4E1AE9E2.2000603@suse.cz>
- <20110711131725.GA26907@lit.local.igalia.com>
+	id S1751435Ab1GYNZn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 09:25:43 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35627 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab1GYNZl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 09:25:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110711131725.GA26907@lit.local.igalia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E2D6961.9000909@gmail.com>
+References: <4E2D6961.9000909@gmail.com>
+Date: Mon, 25 Jul 2011 16:25:39 +0300
+Message-ID: <CAOQ4uxhGceySNm7-d=NdjPVZDsb4Pi8Gobf145zdDomZqhJCyQ@mail.gmail.com>
+Subject: Re: [PATCH] jbd: change the field "b_cow_tid" of struct journal_head
+ from type unsigned to tid_t
+From: Amir Goldstein <amir73il@gmail.com>
+To: Wang Sheng-Hui <shhuiw@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 11, 2011 at 03:17:25PM +0200, Víctor M. Jáquez L. wrote:
-> On Mon, Jul 11, 2011 at 02:17:38PM +0200, Michal Marek wrote:
-> > On 11.7.2011 12:26, Víctor Manuel Jáquez Leal wrote:
-> > >Instead of generating the tag database each time the target is ran, is better
-> > >just update incrementally the database. It will expend less time.
-> > >
-> > >Signed-off-by: Víctor Manuel Jáquez Leal<vjaquez@igalia.com>
-> > >---
-> > >  scripts/tags.sh |    6 +++++-
-> > >  1 files changed, 5 insertions(+), 1 deletions(-)
-> > >
-> > >diff --git a/scripts/tags.sh b/scripts/tags.sh
-> > >index 75c5d24..6a2fedc 100755
-> > >--- a/scripts/tags.sh
-> > >+++ b/scripts/tags.sh
-> > >@@ -116,7 +116,11 @@ docscope()
-> > >
-> > >  dogtags()
-> > >  {
-> > >-	all_sources | gtags -f -
-> > >+	if global -p; then
-> > >+		global -u
-> > >+	else
-> > >+		all_sources | gtags -f -
-> > >+	fi
-> > 
-> > Will this handle new source files properly?
-> 
-> I ran a quick test and yes, it does.
+On Mon, Jul 25, 2011 at 4:02 PM, Wang Sheng-Hui <shhuiw@gmail.com> wrote:
+> The patch is against 3.0
+>
+> In the definition of struct journal_head, the comment for
+> the field "unsigned b_cow_tid" says the field tracks the
+> last transaction id in which this buffer has been cowed.
+>
+> In the header part of file journal-head.h, it defines
+>   typedef unsigned int  tid_t;
+> We should use type tid_t to define transaction id fields.
+>
+> Change the field "b_cow_tid" of struct journal_head from
+> type unsigned to tid_t.
+>
+> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
 
-I installed global and tried it myself:
-1) The first 'make gtags' run prints a rather confusing message (fixable)
- $ make gtags
-   GEN     gtags
-   global: GTAGS not found.
- $
-2) A second run indexes the _whole_ tree, including everything under
-arch/. The point of the tags.sh script is that it indexes only files
-relevant to the current architecture. If someone wants to index the
-whole tree, they can run global directly.
+my bad.
 
-Michal
+Acked-by: Amir Goldstein <amir73il@users.sf.net>
+
+> ---
+>  include/linux/journal-head.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/include/linux/journal-head.h b/include/linux/journal-head.h
+> index 44e95d0..423cb6d 100644
+> --- a/include/linux/journal-head.h
+> +++ b/include/linux/journal-head.h
+> @@ -45,7 +45,7 @@ struct journal_head {
+>         * has been cowed
+>         * [jbd_lock_bh_state()]
+>         */
+> -       unsigned b_cow_tid;
+> +       tid_t b_cow_tid;
+>
+>        /*
+>         * Copy of the buffer data frozen for writing to the log.
+> --
+> 1.7.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
