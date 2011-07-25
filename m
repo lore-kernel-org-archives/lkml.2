@@ -1,119 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751160Ab1GYF7T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 01:59:19 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34185 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750889Ab1GYF7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 01:59:11 -0400
-Date: Mon, 25 Jul 2011 15:58:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alasdair G Kergon <agk@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Thornber <thornber@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Subject: linux-next: build failure after merge of the final tree
- (device-mapper tree related)
-Message-Id: <20110725155854.e2a82f7e6864ea117d9131ab@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__25_Jul_2011_15_58_54_+1000_zaz8=7/m8ZIqrq/4"
+	id S1751189Ab1GYGFE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 02:05:04 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56818 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750930Ab1GYGFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 02:05:03 -0400
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: menage@google.com, lizf@cn.fujitsu.com, axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [PATCH] cgroup:be able to remove the record of unplugged device
+Date: Mon, 25 Jul 2011 14:03:54 +0800
+Message-Id: <1311573834-7140-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.6
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-25 14:04:01,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-25 14:04:02,
+	Serialize complete at 2011-07-25 14:04:02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__25_Jul_2011_15_58_54_+1000_zaz8=7/m8ZIqrq/4
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If doing like below:
+Write a record like:
+"echo 8:0 1000 > blkio.throttle.read_bps_device" to control the bps of the device.
+And then unplug this device without doing
+"8:0 0 > blkio.throttle.read_bps_device" to remove the record,
+it will not be removed until reboot, because if the device is removed,
+write some record will return "-ENODEV".
 
-Hi all,
+With this patch, when the device is removed, then if we want to remove
+the record for this removed device, just write "0" then it'll not check
+if it is a present device, just remove the present record.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+BTW:If it can support hot-plug, will it be more better?
 
-In file included from drivers/md/persistent-data/dm-space-map-disk.c:14:0:
-include/asm-generic/bitops/le.h:52:19: error: conflicting types for 'test_b=
-it_le'
-arch/powerpc/include/asm/bitops.h:284:23: note: previous definition of 'tes=
-t_bit_le' was here
-include/asm-generic/bitops/le.h:57:20: error: redefinition of '__set_bit_le'
-arch/powerpc/include/asm/bitops.h:291:20: note: previous definition of '__s=
-et_bit_le' was here
-include/asm-generic/bitops/le.h:62:20: error: redefinition of '__clear_bit_=
-le'
-arch/powerpc/include/asm/bitops.h:296:20: note: previous definition of '__c=
-lear_bit_le' was here
-include/asm-generic/bitops/le.h:67:19: error: redefinition of 'test_and_set=
-_bit_le'
-arch/powerpc/include/asm/bitops.h:301:19: note: previous definition of 'tes=
-t_and_set_bit_le' was here
-include/asm-generic/bitops/le.h:72:19: error: redefinition of 'test_and_cle=
-ar_bit_le'
-arch/powerpc/include/asm/bitops.h:306:19: note: previous definition of 'tes=
-t_and_clear_bit_le' was here
-include/asm-generic/bitops/le.h:77:19: error: redefinition of '__test_and_s=
-et_bit_le'
-arch/powerpc/include/asm/bitops.h:311:19: note: previous definition of '__t=
-est_and_set_bit_le' was here
-include/asm-generic/bitops/le.h:82:19: error: redefinition of '__test_and_c=
-lear_bit_le'
-arch/powerpc/include/asm/bitops.h:316:19: note: previous definition of '__t=
-est_and_clear_bit_le' was here
-In file included from drivers/md/persistent-data/dm-space-map-metadata.c:13=
-:0:
-include/asm-generic/bitops/le.h:52:19: error: conflicting types for 'test_b=
-it_le'
-arch/powerpc/include/asm/bitops.h:284:23: note: previous definition of 'tes=
-t_bit_le' was here
-include/asm-generic/bitops/le.h:57:20: error: redefinition of '__set_bit_le'
-arch/powerpc/include/asm/bitops.h:291:20: note: previous definition of '__s=
-et_bit_le' was here
-include/asm-generic/bitops/le.h:62:20: error: redefinition of '__clear_bit_=
-le'
-arch/powerpc/include/asm/bitops.h:296:20: note: previous definition of '__c=
-lear_bit_le' was here
-include/asm-generic/bitops/le.h:67:19: error: redefinition of 'test_and_set=
-_bit_le'
-arch/powerpc/include/asm/bitops.h:301:19: note: previous definition of 'tes=
-t_and_set_bit_le' was here
-include/asm-generic/bitops/le.h:72:19: error: redefinition of 'test_and_cle=
-ar_bit_le'
-arch/powerpc/include/asm/bitops.h:306:19: note: previous definition of 'tes=
-t_and_clear_bit_le' was here
-include/asm-generic/bitops/le.h:77:19: error: redefinition of '__test_and_s=
-et_bit_le'
-arch/powerpc/include/asm/bitops.h:311:19: note: previous definition of '__t=
-est_and_set_bit_le' was here
-include/asm-generic/bitops/le.h:82:19: error: redefinition of '__test_and_c=
-lear_bit_le'
-arch/powerpc/include/asm/bitops.h:316:19: note: previous definition of '__t=
-est_and_clear_bit_le' was here
+Thanks
 
-Casued by commit 3222df7eca25 ("The persistent-data library offers a
-re-usable framework for the storage").
+Below is my test:
+1. Test native:
+[root@test ~]# mount -t cgroup -o blkio nodev /cgroup/
+[root@test ~]# cd /cgroup/
+[root@test cgroup]# ll /dev/sd*
+brw-rw---- 1 root disk 8, 0 Jul 25 13:27 /dev/sda
+brw-rw---- 1 root disk 8, 1 Jul 25 13:27 /dev/sda1
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+[root@test cgroup]# echo 8:0 1000 > blkio.throttle.read_bps_device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+8:0	1000
+[root@test cgroup]# echo 8:0 0 > blkio.throttle.read_bps_device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+[root@test cgroup]# echo 8:0 1000 > blkio.throttle.read_bps_device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+8:0	1000
+[root@test cgroup]# ll /dev/sd*
+ls: cannot access /dev/sd*: No such file or directory
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+8:0	1000
+[root@test cgroup]# echo 8:0 0 > blkio.throttle.read_bps_device
+-bash: echo: write error: No such device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+8:0	1000
 
-I am not quite sure how you should fix this (maybe just include
-linux/bitops.h?) so I have left this build error for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+2.Test with this patch:
 
---Signature=_Mon__25_Jul_2011_15_58_54_+1000_zaz8=7/m8ZIqrq/4
-Content-Type: application/pgp-signature
+[root@test ~]# mount -t cgroup -o blkio nodev /cgroup/
+[root@test ~]# ll /dev/sd*
+brw-rw---- 1 root disk 8, 0 Jul 25 13:11 /dev/sda
+brw-rw---- 1 root disk 8, 1 Jul 25 13:11 /dev/sda1
+[root@test ~]# cd /cgroup/
+[root@test cgroup]# echo 8:0 1000 > blkio.throttle.read_bps_device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+8:0	1000
+[root@test cgroup]# ll /dev/sd*
+brw-rw---- 1 root disk 8, 0 Jul 25 13:11 /dev/sda
+brw-rw---- 1 root disk 8, 1 Jul 25 13:11 /dev/sda1
+[root@test cgroup]# echo 8:0 0 > blkio.throttle.read_bps_device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+[root@test cgroup]# ll /dev/sd*
+brw-rw---- 1 root disk 8, 0 Jul 25 13:11 /dev/sda
+brw-rw---- 1 root disk 8, 1 Jul 25 13:11 /dev/sda1
+[root@test cgroup]# echo 8:0 2000 > blkio.throttle.read_bps_device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+8:0	2000
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+[root@test cgroup]# ll /dev/sd*
+ls: cannot access /dev/sd*: No such file or directory
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+8:0	2000
+[root@test cgroup]# echo 8:0 0 > blkio.throttle.read_bps_device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+[root@test cgroup]# echo 8:0 1000 > blkio.throttle.read_bps_device
+-bash: echo: write error: No such device
+[root@test cgroup]# echo 8:0 01100 > blkio.throttle.read_bps_device
+-bash: echo: write error: No such device
+[root@test cgroup]#
 
-iQEcBAEBAgAGBQJOLQYeAAoJEDMEi1NhKgbsz8IH/3N/nBsEUHvE1npEKj7zwEIG
-jgEwZ4gmyTyXumDg1H5M07Z6JjSM35FMyACDHWCqMtxtXkW5l9g2e6IggUrqq3nB
-87tGHn97CK7LGhnTXIMC+SWp4aGIDTbuSYIzsVOz2wpAx6hKyS0WSiAxo6eYqtlW
-b1hewtS4AdnU9yk3DCQtjFPpCWUDf9xAevvFi0W/qbKt9MYZOYjqpKL+HVtPw08w
-DOlyiEb8/RhuEPGK6vLlMD28kpbBywtQI/bHNjRuIomjHmI+qWQaHFAuleekliIk
-6UHBbiCOCsRD6DXFdeIuIoBkFWA3+zO6/lQUkTrLC2zVS9gBpVOV0gd9NEpN6tA=
-=G4x6
------END PGP SIGNATURE-----
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+---
+ block/blk-cgroup.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
---Signature=_Mon__25_Jul_2011_15_58_54_+1000_zaz8=7/m8ZIqrq/4--
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index bcaf16e..ea32b01 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -826,15 +826,15 @@ static int blkio_policy_parse_and_set(char *buf,
+ 
+ 	dev = MKDEV(major, minor);
+ 
++	if (s[1] == NULL)
++		return -EINVAL;
++
+ 	ret = blkio_check_dev_num(dev);
+-	if (ret)
++	if (ret && (strcmp(s[1], "0\0")))
+ 		return ret;
+ 
+ 	newpn->dev = dev;
+ 
+-	if (s[1] == NULL)
+-		return -EINVAL;
+-
+ 	switch (plid) {
+ 	case BLKIO_POLICY_PROP:
+ 		ret = strict_strtoul(s[1], 10, &temp);
+-- 
+1.7.6
+
