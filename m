@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751320Ab1GYMJm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 08:09:42 -0400
-Received: from szxga04-in.huawei.com ([119.145.14.67]:53720 "EHLO
-	szxga04-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab1GYMJh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 08:09:37 -0400
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Jul 2011 08:09:37 EDT
-Date: Mon, 25 Jul 2011 12:04:34 +0000
-From: Shen Canquan <shencanquan@huawei.com>
-Subject: [Patch 1/1] Hot cpu remove patch
-X-Originating-IP: [10.166.80.171]
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-id: <F1F5DF04259F1B4A82BD6BDE1C479F7452CA25@szxeml527-mbs.china.huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=iso-2022-jp
-Content-language: zh-CN
-Content-transfer-encoding: 7BIT
-Accept-Language: zh-CN, en-US
-Thread-topic: [Patch 1/1] Hot cpu remove patch
-Thread-index: AcxKwwTscly5Ni+pSyGATuH8x4jTLg==
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-CFilter-Loop: Reflected
+	id S1751271Ab1GYMKC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 08:10:02 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34711 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750946Ab1GYMJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 08:09:56 -0400
+Date: Mon, 25 Jul 2011 14:09:03 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Alexander Graf <agraf@suse.de>, Pekka Enberg <penberg@kernel.org>,
+        Jan Kiszka <jan.kiszka@web.de>, torvalds@linux-foundation.org,
+        avi@redhat.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, gorcunov@gmail.com,
+        levinsasha928@gmail.com, asias.hejun@gmail.com,
+        prasadjoshi124@gmail.com
+Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
+Message-ID: <20110725120903.GA11952@elte.hu>
+References: <alpine.DEB.2.00.1107242335580.18045@tiger>
+ <4E2CA6DE.4040900@web.de>
+ <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com>
+ <20110725075305.GA32294@elte.hu>
+ <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de>
+ <20110725103817.GA21683@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110725103817.GA21683@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello，
-   Recently, I test the cpu hot add and remove function. It is ok for cpu hot add. but it is failure on cpu hot remove . If I modify the source code(Please see the following patch content). It is successful on cpu hot remove.
-patch content:
- 
---- linux-2.6.39.3_modify/drivers/acpi/processor_driver.c       2011-07-25 09:11:51.000000000 +0800
-+++ linux-2.6.39.3/drivers/acpi/processor_driver.c      2011-07-09 14:16:06.000000000 +0800
-@@ -677,11 +677,6 @@
-                                    "Driver data is NULL, dropping EJECT\n");
-                        return;
-                }
--               /*The alternative way of modify is add the following code:
--                       kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
--               */
--               /*async execute the acip_bus_hot_remove_device*/
--               acpi_os_hotplug_execute(acpi_bus_hot_remove_device, handle);
-                break;
-        default:
-                ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-diff -u -r linux-2.6.39.3_modify/drivers/acpi/scan.c linux-2.6.39.3/drivers/acpi/scan.c
---- linux-2.6.39.3_modify/drivers/acpi/scan.c   2011-07-20 15:28:52.000000000 +0800
-+++ linux-2.6.39.3/drivers/acpi/scan.c  2011-07-09 14:16:06.000000000 +0800
-@@ -83,7 +83,7 @@
- }
- static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
-- void acpi_bus_hot_remove_device(void *context)
-+static void acpi_bus_hot_remove_device(void *context)
- {
-        struct acpi_device *device;
-        acpi_handle handle = context;
-diff -u -r linux-2.6.39.3_modify/include/acpi/acpi_bus.h linux-2.6.39.3/include/acpi/acpi_bus.h
---- linux-2.6.39.3_modify/include/acpi/acpi_bus.h       2011-07-20 15:30:04.000000000 +0800
-+++ linux-2.6.39.3/include/acpi/acpi_bus.h      2011-07-09 14:16:06.000000000 +0800
-@@ -342,7 +342,7 @@
-                          const struct acpi_device_id *ids);
- int acpi_create_dir(struct acpi_device *);
- void acpi_remove_dir(struct acpi_device *);
--void acpi_bus_hot_remove_device(void *context);
-+
- /*
-  * Bind physical devices with ACPI devices
-                                               
- */
- 
- 
-Jason.shen
-2011-07-25
+
+* Christoph Hellwig <hch@infradead.org> wrote:
+
+> On Mon, Jul 25, 2011 at 10:14:13AM +0200, Alexander Graf wrote:
+
+> > So instead of thinking a bit and trying to realize that there 
+> > might be a reason people don't want all their user space in the 
+> > kernel tree you go ahead and start your own crusade of creating a 
+> > new user space. Great. That's how I always hoped Linux would be 
+> > :(.
+> 
+> It's not Linux in general yet, it's mostly a crusade of a few with 
+> a political agenda.
+
+I find it weird (and insulting) that you are calling our patches that 
+implement better tolling a 'crusade' done under a 'political agenda'.
+
+I'd rather say that the extremist position is yours: to keep 
+everything separated always, all the time and ban tools from the 
+kernel repo.
+
+You have declared it a failure from the very start and if it were up 
+to you it would never get a fair chance.
+
+Thanks,
+
+	Ingo
