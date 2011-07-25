@@ -1,128 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697Ab1GYRWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 13:22:48 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51594 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189Ab1GYRWq convert rfc822-to-8bit (ORCPT
+	id S1751865Ab1GYRYP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 13:24:15 -0400
+Received: from eastrmfepi208.cox.net ([68.230.241.212]:36629 "EHLO
+	eastrmfepi208.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189Ab1GYRYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 13:22:46 -0400
+	Mon, 25 Jul 2011 13:24:13 -0400
+X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Mon, 25 Jul 2011 13:24:13 EDT
+X-CT-Class: Clean
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A020201.4E2DA575.00BD,ss=1,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=jIWSoOJlfEKcyP/XLSIvjRUN9z2hPsnm6d/gIbPq3UQ=
+ c=1 sm=1 a=G8Uczd0VNMoA:10 a=dcIMPEurbQsA:10 a=IkcTkHD0fZMA:10
+ a=1irRP9yUgqMih2bc7s8iaw==:17 a=aSRvjw2BAAAA:8 a=Zo5euW2OAAAA:8
+ a=G7fnURM3QgzSq7Fhv0cA:9 a=H0T2xbPSO7Fu-1y3zQoA:7 a=QEXdDO2ut3YA:10
+ a=orci7rBiiA4A:10 a=9eCwGWfDHQ4A:10 a=QjnnFjwcg36-OlQk:21
+ a=ShIGees72CHQJu1I:21 a=1irRP9yUgqMih2bc7s8iaw==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20110725131846.X8UVY.523403.imail@eastrmwml36>
+Date: Mon, 25 Jul 2011 13:18:46 -0400
+From: BBC <serdf@cox.net>
+Reply-To: dfkb2011@qatar.io
+Subject: Esteemed Winner !
 MIME-Version: 1.0
-In-Reply-To: <CAFR8uefgC-9stfbQCWed8j2SgHZ-Q7_dbD4iRv-Z=E91SnmmyQ@mail.gmail.com>
-References: <CAFR8uec5MxvHEWS=hgRXo1eunjQqWrpPCVXthdGMfWR+Yitw_A@mail.gmail.com>
-	<4E1B37B1.9030608@fusionio.com>
-	<CAFR8ueetLzSwTEc7D1zW4Yhd8t8iFbKvjJ07onWVQJbhzSOXLQ@mail.gmail.com>
-	<4E1B3A1D.2050400@fusionio.com>
-	<CAFR8ued8s_V0dqxgcFfeXbzm8VrNL5eE90gqHpk-RvW8frL7QA@mail.gmail.com>
-	<CAFR8uefgC-9stfbQCWed8j2SgHZ-Q7_dbD4iRv-Z=E91SnmmyQ@mail.gmail.com>
-Date: Mon, 25 Jul 2011 10:22:45 -0700
-Message-ID: <CAFR8uee0ixYJZe+-88fCqSSTmqCG4i9JdH3Yy2X9QpT46Q+xQg@mail.gmail.com>
-Subject: Re: [PATCH]: block: try-2 (modified): Initialize bi_rw in mpage so
- bio_add can make use of it.
-From: Muthu Kumar <muthu.lkml@gmail.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens,
-Is this OK? If not, how about mpage.c fix that we discussed (since
-that is the most common case)?
+Attention,
 
-Regards,
-Muthu
+Your email account has won you 1, 000, 000 pounds from the BBC LOTTERY. Email addresses were pulled together from a wide range of Worldwide Email Users and Internet Subscribers information.
+ 
+The National Lottery Wednesday Night Draws presented by Jenni Falconer. Includes Lotto and Thunderball draws, 10.35pm on BBC One. See our website to confirm your winning numbers http://www.bbc.co.uk/lottery/ the draw no.1626 brought out your e-mail address from a Data Base of Internet Email Users and qualified you a lucky winner of the stated winning amount.
+
+You are required contact Mr. Williams Morris your Claim Agent in United Kingdom via e-mail ( pwm2011@hotmail.co.uk ) providing the below stated information for the processing of your claims.
+
+1. Full Names:2. Address...3. Country/State:....4. Mobile No:.....
+5. Sex:....6. Age:...7. Occupation:....8. Email:....
+ 
+Sandra Collins.
+Announcer
 
 
-On Mon, Jul 18, 2011 at 12:13 PM, Muthu Kumar <muthu.lkml@gmail.com> wrote:
-> Patch attached (as one big file) for review.
->
-> On Mon, Jul 18, 2011 at 11:54 AM, Muthu Kumar <muthu.lkml@gmail.com> wrote:
->> Jens,
->> Here is the diff stats. Its changing more files than I expected. Let
->> me know what you think... (If this is OK I can also split and send the
->> patches for review).
->>
->> FYI:
->> muthu@sakthi linux-2.6-head]$ wc -l blk-bio-init-rw-before-add-page.patch
->> 1610 blk-bio-init-rw-before-add-page.patch
->>
->> ---------------------------
->>  block/blk-core.c                    |    2 +-
->>  block/blk-flush.c                   |    2 +-
->>  block/blk-lib.c                     |    4 +-
->>  block/blk-map.c                     |   12 ++++-----
->>  drivers/block/drbd/drbd_actlog.c    |    3 +-
->>  drivers/block/drbd/drbd_bitmap.c    |    3 +-
->>  drivers/block/drbd/drbd_receiver.c  |    3 +-
->>  drivers/block/floppy.c              |    2 +-
->>  drivers/block/loop.c                |    2 +-
->>  drivers/block/osdblk.c              |    2 +-
->>  drivers/block/pktcdvd.c             |   15 +++++------
->>  drivers/block/virtio_blk.c          |    2 +-
->>  drivers/block/xen-blkback/blkback.c |    4 +-
->>  drivers/md/dm-crypt.c               |    5 +--
->>  drivers/md/dm-io.c                  |    2 +-
->>  drivers/md/dm.c                     |   10 +++-----
->>  drivers/md/md.c                     |   17 +++++++------
->>  drivers/md/md.h                     |    2 +-
->>  drivers/md/raid1.c                  |    7 +++++-
->>  drivers/md/raid10.c                 |    7 +++++-
->>  drivers/md/raid5.c                  |    2 +-
->>  drivers/scsi/osd/osd_initiator.c    |   21 ++++++----------
->>  drivers/target/target_core_iblock.c |    3 +-
->>  fs/bio.c                            |   43 ++++++++++++++++++-----------------
->>  fs/btrfs/compression.c              |   12 +++++-----
->>  fs/btrfs/extent_io.c                |    8 +++---
->>  fs/btrfs/extent_io.h                |    2 +-
->>  fs/btrfs/inode.c                    |   21 +++++++++--------
->>  fs/btrfs/scrub.c                    |    4 +-
->>  fs/buffer.c                         |    2 +-
->>  fs/direct-io.c                      |   12 +++++-----
->>  fs/exofs/ios.c                      |    6 +++-
->>  fs/ext4/page-io.c                   |    6 +++-
->>  fs/gfs2/ops_fstype.c                |    6 +++-
->>  fs/hfsplus/wrapper.c                |    2 +-
->>  fs/jfs/jfs_logmgr.c                 |   12 ++++++---
->>  fs/jfs/jfs_metapage.c               |    4 +-
->>  fs/logfs/dev_bdev.c                 |   10 ++++----
->>  fs/mpage.c                          |   11 +++++----
->>  fs/nfs/objlayout/objio_osd.c        |    8 +++---
->>  fs/nilfs2/segbuf.c                  |    9 ++++---
->>  fs/ocfs2/cluster/heartbeat.c        |    9 ++++---
->>  fs/xfs/linux-2.6/xfs_aops.c         |    8 ++++--
->>  fs/xfs/linux-2.6/xfs_buf.c          |    2 +-
->>  include/linux/bio.h                 |   10 ++++----
->>  kernel/power/block_io.c             |    2 +-
->>  mm/bounce.c                         |    2 +-
->>  mm/page_io.c                        |   14 ++++++-----
->>  48 files changed, 187 insertions(+), 170 deletions(-)
->> -----------------------------------
->>
->>
->> On Mon, Jul 11, 2011 at 10:59 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
->>> On 2011-07-11 19:52, Muthu Kumar wrote:
->>>>> For this particular case, doing it when the bio is allocated makes more
->>>>> sense. That will avoid a similar error in there in the future.
->>>>>
->>>>
->>>> Sounds good. Thanks. How about for other cases that alloc a new bio
->>>> and do bio_add_page() - like blkdev_issue_zeroout() and similar.
->>>> Should we add there too?
->>>
->>> Good question, ideally the allocator should be passed in the rw argument
->>> since we need it before even submitting it for the merge cases. We don't
->>> have _that_ many callers of bio_alloc() or bio_kmalloc(), so probably
->>> the best option is just to bite the bullet and change the prototypes to
->>> take the 'rw' argument there. Oh, and the bioset variants, too.
->>> bio_init() should be passed the 'rw' argument from the allcators, so we
->>> catch any private use of that, too.
->>>
->>> --
->>> Jens Axboe
->>>
->>>
->>
->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Attention,
+
+Your email account has won you 1, 000, 000 pounds from the BBC LOTTERY. Email addresses were pulled together from a wide range of Worldwide Email Users and Internet Subscribers information.
+ 
+The National Lottery Wednesday Night Draws presented by Jenni Falconer. Includes Lotto and Thunderball draws, 10.35pm on BBC One. See our website to confirm your winning numbers http://www.bbc.co.uk/lottery/ the draw no.1626 brought out your e-mail address from a Data Base of Internet Email Users and qualified you a lucky winner of the stated winning amount.
+
+You are required contact Mr. Williams Morris your Claim Agent in United Kingdom via e-mail ( pwm2011@hotmail.co.uk ) providing the below stated information for the processing of your claims.
+
+1. Full Names:2. Address...3. Country/State:....4. Mobile No:.....
+5. Sex:....6. Age:...7. Occupation:....8. Email:....
+ 
+Sandra Collins.
+Announcer
