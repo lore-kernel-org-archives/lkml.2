@@ -1,82 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751461Ab1GYJmS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 05:42:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37151 "EHLO mx2.suse.de"
+	id S1751639Ab1GYJmf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 05:42:35 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35889 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864Ab1GYJmN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 05:42:13 -0400
-Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20110725092656.GD28787@elte.hu>
-Date: Mon, 25 Jul 2011 11:42:02 +0200
+	id S1751445Ab1GYJm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 05:42:28 -0400
+Date: Mon, 25 Jul 2011 11:41:36 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Alexander Graf <agraf@suse.de>
 Cc: Pekka Enberg <penberg@kernel.org>, Jan Kiszka <jan.kiszka@web.de>,
         torvalds@linux-foundation.org, avi@redhat.com,
         akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
         kvm@vger.kernel.org, gorcunov@gmail.com, levinsasha928@gmail.com,
         asias.hejun@gmail.com, prasadjoshi124@gmail.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <68C2AB77-AA91-4B21-A321-2DB4EF8121C1@suse.de>
-References: <alpine.DEB.2.00.1107242335580.18045@tiger> <4E2CA6DE.4040900@web.de> <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com> <20110725075305.GA32294@elte.hu> <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de> <CAOJsxLHGgpNrHpfnHzD-aOJakE9q_4ym51_AYQHaj+waEZtSuw@mail.gmail.com> <ED2ECD82-2B14-45FF-AA61-AB26B377B626@suse.de> <CAOJsxLFDzSg55u92b6Qgvqn1yjaShYG_Bgdkzy19aBrzxo7FqA@mail.gmail.com> <20110725092656.GD28787@elte.hu>
-To: Ingo Molnar <mingo@elte.hu>
-X-Mailer: Apple Mail (2.1084)
+Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
+Message-ID: <20110725094136.GE28787@elte.hu>
+References: <alpine.DEB.2.00.1107242335580.18045@tiger>
+ <4E2CA6DE.4040900@web.de>
+ <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com>
+ <20110725075305.GA32294@elte.hu>
+ <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de>
+ <20110725085426.GA28787@elte.hu>
+ <C80CB058-38B3-4EA4-996F-4585F521415C@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C80CB058-38B3-4EA4-996F-4585F521415C@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 25.07.2011, at 11:26, Ingo Molnar wrote:
+* Alexander Graf <agraf@suse.de> wrote:
 
+> On 25.07.2011, at 10:54, Ingo Molnar wrote:
 > 
-> * Pekka Enberg <penberg@kernel.org> wrote:
+> > 
+> > * Alexander Graf <agraf@suse.de> wrote:
+> > 
+> >> On 25.07.2011, at 09:53, Ingo Molnar wrote:
+> >> 
+> >>> 
+> >>> * Pekka Enberg <penberg@kernel.org> wrote:
+> >>> 
+> >>>> On Mon, Jul 25, 2011 at 2:12 AM, Jan Kiszka <jan.kiszka@web.de> wrote:
+> >>>>> 
+> >>>>> That said, I definitely appreciate the bug fixes as well as 
+> >>>>> code and documentation improvements for KVM that originate from 
+> >>>>> this effort! I'm just not convinced that writing a new userland 
+> >>>>> and merging it into the kernel is the most efficient way to 
+> >>>>> achieve that.
+> >>>> 
+> >>>> Just to make this crystal clear for everyone: if it weren't for 
+> >>>> tools/kvm, I wouldn't be hacking on KVM at all. I've looked at 
+> >>>> Qemu in the past (and a lot recently!) and I simply don't see 
+> >>>> myself contributing to it, sorry. So 'most efficient' or not, I 
+> >>>> think tools/kvm is a net win for Linux and KVM in general.
+> >>> 
+> >>> Same here - in fact i first asked Qemu to be put into tools/qemu/ 
+> >>> so that it all becomes more hackable and more usable - that 
+> >>> suggestion was rebuked very strongly.
+> >> 
+> >> So instead of thinking a bit and trying to realize that there might 
+> >> be a reason people don't want all their user space in the kernel 
+> >> tree you go ahead and start your own crusade of creating a new user 
+> >> space. Great. That's how I always hoped Linux would be :(.
+> > 
+> > Not "all their user space" but the ones that are tightly 
+> > integrated with the kernel to begin with. How hard is that 
+> > concept to understand?
 > 
->> [ I thought the 'native Linux' part in 'native Linux KVM tool' was 
->> a dead giveaway, really. ]
->> 
->> Now if people want to support other operating systems, that's cool 
->> and I'm happy to help out where I can. But I don't understand why 
->> people keep bringing non-Linux OSs as an argument for not merging 
->> tools/kvm into the Linux kernel tree. I mean really, did someone 
->> actually expect that a Linux kernel developer spends his weekends 
->> improving the state of Windows virtualization?
->> 
->> And don't get this the wrong way either, I'm not hostile against 
->> other operating systems, but I simply am not interested enough in 
->> them to spend my time improving them.
+> It's very hard to understand. It's similar to religion - I could 
+> easily apply your point to every reasonably low-level user space 
+> project out there. X for example. X needs to interact with KMS and 
+> DRI and whatdoiknow. So it'd be a perfect fit to pull into tools/, 
+> no?
+
+If the graphics folks feel comfortable with that approach then yes, i 
+think graphics would be a good example as well - in my experience a 
+lot of the user-space pain related to graphics development comes from 
+ugly version friction between various graphics components, and all 
+the APIs are pretty fluid and heavily developed - which is easier to 
+do within a single code repository.
+
+But if the Xorg/graphics folks want it separate it's their decision 
+and they've said it in the past that they like the current 
+modularization.
+
+If someone comes with tools/X11/ that actually *works* and provides a 
+usable X11 replacement i sure would try it out and would likely 
+contribute to it.
+
+Basic infrastructure and tooling - many projects could apply but the 
+most obvious choices are ones that relate to and depend on the 
+kernel.
+
+Browsers, email clients, GIMP, games, LibreOffice, not so much.
+
+There's no clear line but that's not a problem - there are seldom any 
+clear lines in life. It's a case by case issue and very much depends 
+on the attributes of the project and the preferences of the 
+developers who are driving it.
+
+I can tell you my first hand experience: for tools/perf/ and 
+tools/kvm/ it was highly beneficial to be developed in the kernel 
+repo.
+
+I don't see how you can validly bring religion into this discussion.
+
+> > Virtualization is very tightly bound to the kernel, like it or 
+> > not.
 > 
-> In fact one of the problems i see with Qemu is that Qemu had to make 
-> many compromises to support Windows and other weird platforms that 
-> i'm (and i'd claim most other Linux kernel developers) are personally 
-> not interested in.
+> I don't see why. The whole point of virtualization is to model 
+> simple, with KVM preferably even very-close-to-real-hardware 
+> interfaces that allow you to keep things separate.
 
-It's what makes it so powerful. Adding a new architecture for KVM for example is as easy as only implementing the CPU. All device emulation is already there. If you want something Linux only, lguest would've been enough, no?
+Look at tools/kvm/ - i cannot do anything useful without a Linux 
+kernel under it. It's as deeply bound to the Linux kernel as it gets.
 
-The only real problem I see with Qemu is that it's been born in a time of uniprocessor systems. Making it fully threaded as an after-thought is insanely hard.
+Then look at the actual drivers and interfaces within tools/kvm/. 
+It's using the same symbols and conventions for 'guest' and 'host' 
+side.
 
-> So here's a 14 KLOC tools/kvm/ that does everything that i need from 
-> virtualization (easy testing of a bzImage before rebooting the host 
-> system into it), is clean, readable and hackable and is 1.5% of the 
-> nearly 1 MLOC Qemu code base.
+Check out tools/kvm/hw/i8042.c and match it up with 
+include/linux/serio.h and drivers/input/serio/i8042.c - you can 
+literally walk from one side to the other and understand how guest 
+and host are tightly related not just functionality but also 
+implementation wise.
 
-Sure, we'll talk again when you can run Android for ARM on kvm-tool.
+This is how Qemu should be doing it as well btw., to ease the 
+debugging of host/guest interaction bugs and to ease development.
 
-> The whole tools/kvm/ code base is (much) smaller than Qemu's IA64 
-> support code for example. The size difference is startling. 
+> > So is profiling, power management and a few other things.
+> 
+> I'm also failing to see the reasoning here TBH.
 
-That's the host code compiler. Qemu doesn't have IA64 guest support.
+You need to quote the full argument to see the reason in it:
 
-> tools/kvm/ does less and in my experience does it better - is that 
-> such a surprising thing?
+> > Virtualization is very tightly bound to the kernel, like it or 
+> > not. So is profiling, power management and a few other things.
 
-I already stated in a few mails before and also in the last discussion that I'm in general in favor of having multiple user space targets for KVM. In fact, I wrote 2 backends (both for PPC) myself. Though adding those 2 backends to their respective projects probably provided a lot more value-add (features that qemu didn't already have) than kvm-tool does atm. Kvm-tool really just smells a lot like NIH. Which is fine - that's why we have KDE and Gnome, right? ;)
+It's a very simple point and observation: tools which integrate to 
+the kernel so that they wouldnt even run on another kernel obviously 
+are very natural to develop in tools/.
 
-> So it was a no brainer for me to pull it into -tip.
+Thanks,
 
-The thing I don't agree with is that it should live in the kernel tree.
-
-
-Alex
-
+	Ingo
