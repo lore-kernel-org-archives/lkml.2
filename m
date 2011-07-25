@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab1GYJrn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 05:47:43 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35372 "EHLO arroyo.ext.ti.com"
+	id S1751823Ab1GYJtb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 05:49:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7007 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751350Ab1GYJrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 05:47:39 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [RFC PATCH] time: Convert noisy NOHz prints to pr_debug.
-Date: Mon, 25 Jul 2011 15:15:54 +0530
-Message-ID: <1311587154-17186-1-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.6.0.4
+	id S1751074Ab1GYJtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 05:49:24 -0400
+Message-ID: <4E2D3BF1.7070406@redhat.com>
+Date: Mon, 25 Jul 2011 12:48:33 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ingo Molnar <mingo@elte.hu>
+CC: Alexander Graf <agraf@suse.de>, Pekka Enberg <penberg@kernel.org>,
+        Jan Kiszka <jan.kiszka@web.de>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, gorcunov@gmail.com, levinsasha928@gmail.com,
+        asias.hejun@gmail.com, prasadjoshi124@gmail.com
+Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
+References: <alpine.DEB.2.00.1107242335580.18045@tiger> <4E2CA6DE.4040900@web.de> <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com> <20110725075305.GA32294@elte.hu> <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de> <20110725085426.GA28787@elte.hu> <C80CB058-38B3-4EA4-996F-4585F521415C@suse.de> <20110725094136.GE28787@elte.hu>
+In-Reply-To: <20110725094136.GE28787@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Couple of prints from tick-sched.c which says 'Switched to NOHz mode on CPU'
-is more of debug information with NOHZ enabled. Mark these as debug prints
-to avoid console noise.
+On 07/25/2011 12:41 PM, Ingo Molnar wrote:
+> Look at tools/kvm/ - i cannot do anything useful without a Linux
+> kernel under it. It's as deeply bound to the Linux kernel as it gets.
 
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/tick-sched.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+The actual code that interacts with the kernel is pretty small, and will 
+grow smaller (as a fraction) in time.
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index d5097c4..bc10bd6 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -641,7 +641,7 @@ static void tick_nohz_switch_to_nohz(void)
- 	}
- 	local_irq_enable();
- 
--	printk(KERN_INFO "Switched to NOHz mode on CPU #%d\n", smp_processor_id());
-+	pr_debug("Switched to NOHz mode on CPU #%d\n", smp_processor_id());
- }
- 
- /*
-@@ -795,7 +795,7 @@ void tick_setup_sched_timer(void)
- #ifdef CONFIG_NO_HZ
- 	if (tick_nohz_enabled) {
- 		ts->nohz_mode = NOHZ_MODE_HIGHRES;
--		printk(KERN_INFO "Switched to NOHz mode on CPU #%d\n", smp_processor_id());
-+		pr_debug("Switched to NOHz mode on CPU #%d\n", smp_processor_id());
- 	}
- #endif
- }
+> Then look at the actual drivers and interfaces within tools/kvm/.
+> It's using the same symbols and conventions for 'guest' and 'host'
+> side.
+>
+> Check out tools/kvm/hw/i8042.c and match it up with
+> include/linux/serio.h and drivers/input/serio/i8042.c - you can
+> literally walk from one side to the other and understand how guest
+> and host are tightly related not just functionality but also
+> implementation wise.
+>
+> This is how Qemu should be doing it as well btw., to ease the
+> debugging of host/guest interaction bugs and to ease development.
+
+No.  That ties the guest and host interfaces together.  If you change 
+the guest to use a feature you didn't implement previously in the host, 
+it's suddenly broken when virtualized.
+
+The right thing is to implement the hardware interface exactly per spec, 
+and ignore the guest(s) completely except for testing and performance.
+
+
 -- 
-1.6.0.4
+error compiling committee.c: too many arguments to function
 
