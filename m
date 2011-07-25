@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458Ab1GYSUX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 14:20:23 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:64165 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150Ab1GYSUV convert rfc822-to-8bit (ORCPT
+	id S1752528Ab1GYSUn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 14:20:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:43057 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499Ab1GYSUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 14:20:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110722125934.GA25433@elte.hu>
-References: <20110722125934.GA25433@elte.hu>
-Date: Mon, 25 Jul 2011 14:20:20 -0400
-Message-ID: <CACqU3MW-7_gCqNARdrPA5rZoZGLti+DMvkZsJN40VSDtU+VhpQ@mail.gmail.com>
-Subject: Re: [GIT PULL] core/printk changes for v3.1
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 25 Jul 2011 14:20:41 -0400
+X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=yFouZXgJKjEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=0azM3ZO7AAAA:8 a=iYi5UPBRHxpa-eNom4QA:9 a=PUjeQqilurYA:10 a=BGWj8ct6lkoA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH][Trivial] Update version number reference to new 3.x
+ scheme for EVENT_POWER_TRACING_DEPRECATED
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        trivial@kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <alpine.LNX.2.00.1107250929370.8080@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1107242313550.7103@swampdragon.chaosbits.net>
+	 <20110725062743.GB694@elte.hu>
+	 <alpine.LNX.2.00.1107250929370.8080@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 25 Jul 2011 14:20:38 -0400
+Message-ID: <1311618038.3526.28.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2011-07-25 at 09:30 +0200, Jesper Juhl wrote:
+> On Mon, 25 Jul 2011, Ingo Molnar wrote:
+> 
+> > 
+> > * Jesper Juhl <jj@chaosbits.net> wrote:
+> > 
+> > > What was scheduled to be 2.6.41 is now going to be 3.1 .
+> > > 
+> > > diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+> > 
+> > SOB missing.
+> > 
+> 
+> Whoops.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> 
 
-On Fri, Jul 22, 2011 at 8:59 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> Linus,
->
-> Please pull the latest core-printk-for-linus git tree from:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-printk-for-linus
->
-> ( These are just the tested-safe commits - the ones that were causing
->  problems are not included. )
->
->  Thanks,
->
->        Ingo
->
-> ------------------>
-> Peter Zijlstra (3):
->      [...]
->      lockdep: Fix trace_[soft,hard]irqs_[on,off]() recursion
->
-This commit is triggering:
+Ingo, I'm back from vacation. Want me to pull this in. I'll probably
+make a list of things to pull in for 3.1 and some things for 3.2.
 
-WARNING: at /src/linux/linux/kernel/lockdep.c:2529
-trace_hardirqs_on_caller+0x52/0x79()
-Hardware name: Bochs
-Modules linked in:
-Pid: 0, comm: swapper Not tainted 3.0.0-rc2+ #12
-Call Trace:
- [<c101be35>] warn_slowpath_common+0x65/0x7a
- [<c103d976>] ? trace_hardirqs_on_caller+0x52/0x79
- [<c11fdfc4>] ? restore_all+0xf/0xf
- [<c1003254>] ? math_state_restore+0x40/0x40
- [<c101be59>] warn_slowpath_null+0xf/0x13
- [<c103d976>] trace_hardirqs_on_caller+0x52/0x79
- [<c10df760>] trace_hardirqs_on_thunk+0xc/0x10
- [<c11fdfc4>] ? restore_all+0xf/0xf
- [<c1003254>] ? math_state_restore+0x40/0x40
- [<c146a774>] ? check_bugs+0x54/0xdd
- [<c14750ab>] ? proc_root_init+0x8d/0x8f
- [<c1465680>] ? start_kernel+0x27f/0x28e
- [<c14650b0>] ? i386_start_kernel+0xb0/0xb7
+-- Steve
 
-in qemu.
 
- - Arnaud
