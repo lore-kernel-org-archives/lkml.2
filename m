@@ -1,76 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab1GYUya (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 16:54:30 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:25696 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab1GYUy2 (ORCPT
+	id S1752569Ab1GYU4b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 16:56:31 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:26793 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751578Ab1GYU43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 16:54:28 -0400
-Date: Mon, 25 Jul 2011 21:51:16 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LM Sensors <lm-sensors@lm-sensors.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] hwmon updates for Linux 3.1
-Message-ID: <20110725215116.161aed47@endymion.delvare>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Jul 2011 16:56:29 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-pm@lists.linux-foundation.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        Kevin Hilman <khilman@ti.com>, Nishanth Menon <nm@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Colin Cross <ccross@android.com>
+Subject: [PATCH v2] PM: runtime: add might_sleep to PM runtime functions
+Date: Mon, 25 Jul 2011 13:55:44 -0700
+Message-Id: <1311627344-8097-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.4.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Some of the entry points to pm runtime are not safe to
+call in atomic context unless pm_runtime_irq_safe() has
+been called.  Inspecting the code, it is not immediately
+obvious that the functions sleep at all, as they run
+inside a spin_lock_irqsave, but under some conditions
+they can drop the lock and turn on irqs.
 
-Please pull hwmon subsystem updates for Linux 3.1 from:
+If a driver incorrectly calls the pm_runtime apis, it can
+cause sleeping and irq processing when it expects to stay
+in atomic context.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git hwmon-for-linus
+Add might_sleep_if to all the __pm_runtime_* entry points
+to enforce correct usage.
 
-We have support for one new device (SMSC SCH5636), and minor
-improvements and cleanups to a few drivers.
+Add pm_runtime_put_sync_autosuspend to the list of
+functions that can be called in atomic context.
 
- Documentation/hwmon/it87       |    3 +-
- Documentation/hwmon/lm78       |    3 +-
- Documentation/hwmon/sch5636    |   31 +++
- MAINTAINERS                    |    7 +
- drivers/hwmon/Kconfig          |   21 ++
- drivers/hwmon/Makefile         |    2 +
- drivers/hwmon/hwmon-vid.c      |   42 +++-
- drivers/hwmon/it87.c           |   29 +++
- drivers/hwmon/lm78.c           |  305 +++++++++++++----------
- drivers/hwmon/max1111.c        |   27 +--
- drivers/hwmon/sch5627.c        |  334 ++-----------------------
- drivers/hwmon/sch5636.c        |  539 ++++++++++++++++++++++++++++++++++++++++
- drivers/hwmon/sch56xx-common.c |  340 +++++++++++++++++++++++++
- drivers/hwmon/sch56xx-common.h |   24 ++
- drivers/hwmon/sht15.c          |    2 +-
- drivers/hwmon/via-cputemp.c    |   44 +++-
- 16 files changed, 1285 insertions(+), 468 deletions(-)
- create mode 100644 Documentation/hwmon/sch5636
- create mode 100644 drivers/hwmon/sch5636.c
- create mode 100644 drivers/hwmon/sch56xx-common.c
- create mode 100644 drivers/hwmon/sch56xx-common.h
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ Documentation/power/runtime_pm.txt |    1 +
+ drivers/base/power/runtime.c       |   15 ++++++++++++---
+ 2 files changed, 13 insertions(+), 3 deletions(-)
 
----------------
-
-Hans de Goede (2):
-      hwmon: (sch5627) Factor out some code shared with sch5636 driver
-      hwmon: New driver sch5636
-
-Jean Delvare (7):
-      hwmon-vid: Add support for VIA family 6 model D CPU
-      hwmon: (via-cputemp) Add VID reporting support
-      hwmon: (it87) Add chassis intrusion detection support
-      hwmon: (max1111) Avoid extra memory allocations
-      hwmon: (lm78) Avoid forward declarations
-      hwmon: (lm78) Make ISA interface depend on CONFIG_ISA
-      hwmon: (lm78) Become the maintainer
-
-Vivien Didelot (1):
-      hwmon: (sht15) Correct a comment mistake
-
-Thanks,
+diff --git a/Documentation/power/runtime_pm.txt b/Documentation/power/runtime_pm.txt
+index c291233..1ad507c 100644
+--- a/Documentation/power/runtime_pm.txt
++++ b/Documentation/power/runtime_pm.txt
+@@ -469,6 +469,7 @@ pm_runtime_resume()
+ pm_runtime_get_sync()
+ pm_runtime_put_sync()
+ pm_runtime_put_sync_suspend()
++pm_runtime_put_sync_autosuspend()
+ 
+ 5. Run-time PM Initialization, Device Probing and Removal
+ 
+diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+index 2e746f8..f3d8583 100644
+--- a/drivers/base/power/runtime.c
++++ b/drivers/base/power/runtime.c
+@@ -731,13 +731,16 @@ EXPORT_SYMBOL_GPL(pm_schedule_suspend);
+  * return immediately if it is larger than zero.  Then carry out an idle
+  * notification, either synchronous or asynchronous.
+  *
+- * This routine may be called in atomic context if the RPM_ASYNC flag is set.
++ * This routine may be called in atomic context if the RPM_ASYNC flag is set,
++ * or if pm_runtime_irq_safe() has been called.
+  */
+ int __pm_runtime_idle(struct device *dev, int rpmflags)
+ {
+ 	unsigned long flags;
+ 	int retval;
+ 
++	might_sleep_if(!(rpmflags & RPM_ASYNC) && !dev->power.irq_safe);
++
+ 	if (rpmflags & RPM_GET_PUT) {
+ 		if (!atomic_dec_and_test(&dev->power.usage_count))
+ 			return 0;
+@@ -760,13 +763,16 @@ EXPORT_SYMBOL_GPL(__pm_runtime_idle);
+  * return immediately if it is larger than zero.  Then carry out a suspend,
+  * either synchronous or asynchronous.
+  *
+- * This routine may be called in atomic context if the RPM_ASYNC flag is set.
++ * This routine may be called in atomic context if the RPM_ASYNC flag is set,
++ * or if pm_runtime_irq_safe() has been called.
+  */
+ int __pm_runtime_suspend(struct device *dev, int rpmflags)
+ {
+ 	unsigned long flags;
+ 	int retval;
+ 
++	might_sleep_if(!(rpmflags & RPM_ASYNC) && !dev->power.irq_safe);
++
+ 	if (rpmflags & RPM_GET_PUT) {
+ 		if (!atomic_dec_and_test(&dev->power.usage_count))
+ 			return 0;
+@@ -788,13 +794,16 @@ EXPORT_SYMBOL_GPL(__pm_runtime_suspend);
+  * If the RPM_GET_PUT flag is set, increment the device's usage count.  Then
+  * carry out a resume, either synchronous or asynchronous.
+  *
+- * This routine may be called in atomic context if the RPM_ASYNC flag is set.
++ * This routine may be called in atomic context if the RPM_ASYNC flag is set,
++ * or if pm_runtime_irq_safe() has been called.
+  */
+ int __pm_runtime_resume(struct device *dev, int rpmflags)
+ {
+ 	unsigned long flags;
+ 	int retval;
+ 
++	might_sleep_if(!(rpmflags & RPM_ASYNC) && !dev->power.irq_safe);
++
+ 	if (rpmflags & RPM_GET_PUT)
+ 		atomic_inc(&dev->power.usage_count);
+ 
 -- 
-Jean Delvare
+1.7.4.1
+
