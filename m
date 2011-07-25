@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab1GYOAA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 10:00:00 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:46294 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751972Ab1GYN76 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 09:59:58 -0400
-Date: Mon, 25 Jul 2011 16:59:54 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Andrea Galbusera <gizero@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: power: bq20z75: problem with optional battery detect gpio feature
-Message-ID: <20110725135953.GC18062@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <CAC+thW0Cx4pQDeZ2ZJfvFMfv23ExDmS5LDM8_-1Nz23t1TpJcA@mail.gmail.com>
+	id S1752153Ab1GYOAM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 10:00:12 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:58386 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751372Ab1GYOAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 10:00:08 -0400
+From: Richard Weinberger <richard@nod.at>
+To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+Subject: Re: [PATCH] um: disable CMPXCHG_DOUBLE as it breaks UML build
+Date: Mon, 25 Jul 2011 16:00:03 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.5; x86_64; ; )
+Cc: jdike@addtoit.com, user-mode-linux-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>
+References: <1311438111-10961-1-git-send-email-cascardo@holoscopio.com>
+In-Reply-To: <1311438111-10961-1-git-send-email-cascardo@holoscopio.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1AtvaQRkIQxkm1Oe"
-Content-Disposition: inline
-In-Reply-To: <CAC+thW0Cx4pQDeZ2ZJfvFMfv23ExDmS5LDM8_-1Nz23t1TpJcA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107251600.03311.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Samstag 23 Juli 2011, 18:21:51 schrieb Thadeu Lima de Souza Cascardo:
+> Commit b789ef518b2a7231b0668c813f677cee528a9d3f tests for cmpxchg_double
+> support in the SLUB code and it breaks UML builds with SLUB. Since UML
+> does not support checking for CPU features, disable CMPXCHG_DOUBLE just
+> like CMPXCHG_LOCAL is disabled for UML.
+> 
+> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Jeff Dike <jdike@addtoit.com>
+> Cc: Richard Weinberger <richard@nod.at>
 
---1AtvaQRkIQxkm1Oe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Applied!
 
-On Mon, Jul 25, 2011 at 03:55:34PM +0200, Andrea Galbusera wrote:
-> Is the in-object feature really optional?
-> If battery_detect field in my bq20z75_platform_data structure is not
-> explicitly set, I suspect the driver ends up requesting an irq for the
-> GPIO number 0. This look indesirable.
-
-set the gpio to -EINVAL. gpio 0 is a valid gpio number. Maybe we should
-remap zero to 1, 1 to 2 and so forth... Grant ?
-
---=20
-balbi
-
---1AtvaQRkIQxkm1Oe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOLXbZAAoJEAv8Txj19kN1I4sIAKGW2MUKF1PT8KHRn3Dt9Aa5
-3z8CrauUkKgk3r3DWfw7dakiwNOp340CezyJz3krRMK+y3faln+K5XW6qdHSmWgG
-D39/9RZeDHhh5RrN/pbYv/U05QbzMFAThNsKZJlnF4+b+n+3b80ii6xSshCLAxYt
-7wZder4KNZNNSl8Dk7rR0xj4utaNUpUaORFG+F1cyqLyxcpkiCu0oPujE9s2QI+r
-Q3nvEJ8CFzbTNUA5N3VLptMPO5EzyK5SwY1sp/u+nfcQeugzTLqI9hQ7Nq8da8Il
-yOq7Gmua1snenAEOHmyEpohY1pFs3PcPadrL+roc8MMvQBJN3fUzm8BCwMWyihw=
-=8RgI
------END PGP SIGNATURE-----
-
---1AtvaQRkIQxkm1Oe--
+Thanks,
+//richard
