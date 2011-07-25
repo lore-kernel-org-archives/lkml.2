@@ -1,205 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab1GYTFi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 15:05:38 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:46639 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751666Ab1GYTFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 15:05:35 -0400
-Date: Mon, 25 Jul 2011 21:04:44 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaud Lacombe <lacombar@gmail.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] core/locking changes for v3.1
-Message-ID: <20110725190444.GA8302@elte.hu>
-References: <20110722125236.GA24832@elte.hu>
- <CACqU3MUW81UmBK7qBQCZRqzfosrukYM9=o0EZP_DvSjgywfK8g@mail.gmail.com>
- <1311588599.2617.56.camel@laptop>
- <CA+55aFwxqVXb0cFrkgdrDH4J_aF9J7iw8i6ypAda2HiAyeFYpw@mail.gmail.com>
+	id S1752687Ab1GYTRr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 15:17:47 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55694 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab1GYTRq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 15:17:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFwxqVXb0cFrkgdrDH4J_aF9J7iw8i6ypAda2HiAyeFYpw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <CABE8wwt8J_r9cExG+EAqqK=XVmAyLYhv+-T49Rr9hhKudD8n2g@mail.gmail.com>
+References: <1311185906-7813-1-git-send-email-jaswinder.singh@linaro.org>
+	<1311220903-2545-1-git-send-email-jaswinder.singh@linaro.org>
+	<CACRpkdbWHmob3EWJc6u5=yh=rNwVSR5hu9-Xud5kvQNU9-POtA@mail.gmail.com>
+	<CAJe_Zhc4uJB8N9i2w38zzP3+XxcYF2v-zwsrhERWSi-yObV-6A@mail.gmail.com>
+	<CABE8wwt7dkwgeahYBSUufOvJmVNfYyTss6U5qBgjJk9RVLBkYg@mail.gmail.com>
+	<CAJe_ZhdYg4EpaNbBW+dayjSORqM=E6myT3oOG5VTsiQnh3erTA@mail.gmail.com>
+	<CABE8wwt8J_r9cExG+EAqqK=XVmAyLYhv+-T49Rr9hhKudD8n2g@mail.gmail.com>
+Date: Tue, 26 Jul 2011 00:47:45 +0530
+Message-ID: <CAJe_ZheVyLk-yqyF_XO80xX3j7_7mDPnv-me+n=X_hNWycSLwg@mail.gmail.com>
+Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
+From: Jaswinder Singh <jaswinder.singh@linaro.org>
+To: "Williams, Dan J" <dan.j.williams@intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        vinod.koul@intel.com, rmk+kernel@arm.linux.org.uk,
+        linus.walleij@stericsson.com, per.friden@stericsson.com,
+        wei.zhang@freescale.com, ebony.zhu@freescale.com, iws@ovro.caltech.edu,
+        s.hauer@pengutronix.de, maciej.sosnowski@intel.com, saeed@marvell.com,
+        shawn.guo@freescale.com, yur@emcraft.com, agust@denx.de,
+        iwamatsu.nobuhiro@renesas.com, per.forlin@stericsson.com,
+        jonas.aberg@stericsson.com, anemo@mba.ocn.ne.jp
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 26 July 2011 00:25, Williams, Dan J <dan.j.williams@intel.com> wrote:
+>>> Unless you guaranteed that every id is globally unique I don't see how
+>>> they are generically usable by common clients?
+>>>
+>> Yes. And the first step is to allow DMAC drivers to freely set chan_id value.
+>> Platform could pass the list and mapping of supported 'global channels'
+>> via platform_data(?) which the DMAC drivers could set in chan_id
+>> And I am not sure of defining a new variable for that, because chan_id
+>> is actually used only by some dmac drivers for internal purpose only -
+>> which they could do by private variables.
+>
+> Yes, it does appear to have grown a lot of dubious usage in
+> drivers/dma/ for something that is described as just a "channel ID for
+> sysfs". �The intent was for drivers that need to maintain their own
+> hardware specific identification to define a local id scheme (like
+> iop-adma does in the iop3xx case).
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+You mean chan_id is meant to be used for _internal_ purposes by DMAC drivers ?
 
-> On Mon, Jul 25, 2011 at 3:09 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> >
-> > Argh, I really need -Werror to even see warnings, compiler output just
-> > flies by waaaaaay too fast.
-> 
-> Do what I do:
-> 
->   make -j32 > ../makes
-> 
-> that way the only thing you see is the warnings (and the final link report).
-> 
-> That pattern was one reason why I wanted me default compile to be 
-> warning-clean. Of course, then gcc started adding more warnings, 
-> and it's not clean any more ("warning: statement with no effect" 
-> from the fact that we just define many functions to '(0)' when they 
-> are disabled) but my current personal compile config only gets four 
-> warnings.
-> 
-> I realize there are *many* more warnings once you start enabling 
-> more special code - as usual, the core code tends to be better 
-> quality, and the further away from that base you get, the worse 
-> things get.
-> 
-> But it would definitely be good if most kernel developers did the 
-> above. Do it for just your personal config - at least you'll see 
-> the warnings in code you write (because presumably your personal 
-> config will have that code enabled ;)
+Shouldn't there instead be just something like 'void *dmac_data' for
+DMAC drivers to hang their private info on?
 
-Here is what i see on 'make defconfig' (which enables common core and 
-common drivers):
+Sorry, I couldn't find chan_id in drivers/dma/iop-adma.c
+Do I misunderstand ?
 
-sound/pci/hda/patch_sigmatel.c: In function ‘stac92xx_init’:
-sound/pci/hda/patch_sigmatel.c:4385:3: warning: statement with no 
-effect [-Wunused-value]
-sound/pci/hda/patch_sigmatel.c: In function ‘stac92xx_resume’:
-sound/pci/hda/patch_sigmatel.c:4925:3: warning: statement with no 
-effect [-Wunused-value]
-sound/pci/hda/patch_realtek.c: In function ‘alc_init’:
-sound/pci/hda/patch_realtek.c:4176:2: warning: statement with no 
-effect [-Wunused-value]
-sound/pci/hda/patch_realtek.c: In function ‘alc_resume’:
-sound/pci/hda/patch_realtek.c:4558:2: warning: statement with no 
-effect [-Wunused-value]
-sound/pci/hda/patch_realtek.c: In function ‘alc269_resume’:
-sound/pci/hda/patch_realtek.c:14878:2: warning: statement with no 
-effect [-Wunused-value]
-net/sched/sch_generic.c: In function ‘dev_graft_qdisc’:
-net/sched/sch_generic.c:678:2: warning: the comparison will always 
-evaluate as ‘true’ for the address of ‘noop_qdisc’ will never be NULL 
-[-Waddress]
-net/netfilter/nf_conntrack_core.c: In function ‘nf_conntrack_init’:
-net/netfilter/nf_conntrack_core.c:1579:3: warning: the comparison 
-will always evaluate as ‘true’ for the address of 
-‘nf_conntrack_attach’ will never be NULL [-Waddress]
-net/netfilter/nf_conntrack_core.c:1580:3: warning: the comparison 
-will always evaluate as ‘true’ for the address of ‘destroy_conntrack’ 
-will never be NULL [-Waddress]
-sound/pci/hda/hda_codec.c: In function 
-‘snd_hda_mixer_amp_switch_put’:
-sound/pci/hda/hda_codec.c:2320:2: warning: statement with no effect 
-[-Wunused-value]
-net/netfilter/nf_conntrack_proto.c: In function 
-‘nf_conntrack_l3proto_unregister’:
-net/netfilter/nf_conntrack_proto.c:210:2: warning: the comparison 
-will always evaluate as ‘true’ for the address of 
-‘nf_conntrack_l3proto_generic’ will never be NULL [-Waddress]
-net/netfilter/nf_conntrack_proto.c: In function 
-‘nf_conntrack_l4proto_unregister’:
-net/netfilter/nf_conntrack_proto.c:345:2: warning: the comparison 
-will always evaluate as ‘true’ for the address of 
-‘nf_conntrack_l4proto_generic’ will never be NULL [-Waddress]
-net/netfilter/nf_conntrack_proto.c: In function 
-‘nf_conntrack_proto_init’:
-net/netfilter/nf_conntrack_proto.c:370:3: warning: the comparison 
-will always evaluate as ‘true’ for the address of 
-‘nf_conntrack_l3proto_generic’ will never be NULL [-Waddress]
-drivers/md/dm.c: In function ‘split_bvec’:
-drivers/md/dm.c:1052:3: warning: statement with no effect 
-[-Wunused-value]
-drivers/md/dm.c: In function ‘clone_bio’:
-drivers/md/dm.c:1079:3: warning: statement with no effect 
-[-Wunused-value]
-drivers/md/dm-table.c: In function ‘dm_table_set_integrity’:
-drivers/md/dm-table.c:1193:2: warning: statement with no effect 
-[-Wunused-value]
-net/ipv4/netfilter/nf_nat_standalone.c: In function 
-‘nf_nat_standalone_init’:
-net/ipv4/netfilter/nf_nat_standalone.c:287:2: warning: the comparison 
-will always evaluate as ‘true’ for the address of 
-‘nat_decode_session’ will never be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_core.c: In function 
-‘nf_nat_protocol_unregister’:
-net/ipv4/netfilter/nf_nat_core.c:528:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of 
-‘nf_nat_unknown_protocol’ will never be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_core.c: In function ‘nf_nat_init’:
-net/ipv4/netfilter/nf_nat_core.c:739:3: warning: the comparison will 
-always evaluate as ‘true’ for the address of 
-‘nf_nat_unknown_protocol’ will never be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_core.c:740:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘nf_nat_protocol_tcp’ 
-will never be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_core.c:741:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘nf_nat_protocol_udp’ 
-will never be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_core.c:742:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘nf_nat_protocol_icmp’ 
-will never be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_core.c:751:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘nf_nat_seq_adjust’ will 
-never be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_core.c:753:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of 
-‘nfnetlink_parse_nat_setup’ will never be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_core.c:756:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘nf_nat_get_offset’ will 
-never be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_ftp.c: In function ‘nf_nat_ftp_init’:
-net/ipv4/netfilter/nf_nat_ftp.c:123:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘nf_nat_ftp’ will never 
-be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_irc.c: In function ‘nf_nat_irc_init’:
-net/ipv4/netfilter/nf_nat_irc.c:85:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘help’ will never be 
-NULL [-Waddress]
-In file included from drivers/usb/host/ohci-hcd.c:101:0:
-drivers/usb/host/ohci-dbg.c: In function ‘fill_registers_buffer’:
-drivers/usb/host/ohci-dbg.c:642:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘next’ will never be 
-NULL [-Waddress]
-drivers/usb/host/ohci-dbg.c:661:3: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘next’ will never be 
-NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_sip.c: In function ‘nf_nat_sip_init’:
-net/ipv4/netfilter/nf_nat_sip.c:550:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘ip_nat_sip’ will never 
-be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_sip.c:551:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘ip_nat_sip_seq_adjust’ 
-will never be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_sip.c:552:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘ip_nat_sip_expect’ will 
-never be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_sip.c:553:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘ip_nat_sdp_addr’ will 
-never be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_sip.c:554:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘ip_nat_sdp_port’ will 
-never be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_sip.c:555:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘ip_nat_sdp_session’ 
-will never be NULL [-Waddress]
-net/ipv4/netfilter/nf_nat_sip.c:556:2: warning: the comparison will 
-always evaluate as ‘true’ for the address of ‘ip_nat_sdp_media’ will 
-never be NULL [-Waddress]
-Setup is 15260 bytes (padded to 15360 bytes).
-System is 4654 kB
-CRC 43bdb86
+>
+> I can sort of see why it is attractive for the goal of having clients
+> being able to talk to multiple DMACs since it is a field that all
+> channels already implement. �But, I don't think we should be mixing
+> sysfs presentation details with a capability that indicates a certain
+> compatibility level in a DMAC driver implementation. �If the goal is
+> to be able to use a single client with multiple drivers that, to me,
+> is asking for a new capability bit (dma_transaction_type) rather than
+> an id. �Do you have an example of the client and the DMACs that would
+> first take advantage of such a cross DMAC compatibility?
+>
+Apparently I fail to explain my well. let me ask you this....
 
-Not pretty :-/
+Some DMAC drivers initialize chan_id before calling dma_async_device_register().
+And dma_async_device_register() overwrites the chan_id _always_.
 
-Thanks,
+Clearly only _one_ of them should be setting chan_id. Which was meant to be?
 
-	Ingo
+
+>> Proposal to have global cross-platform enum of channel-IDs defined by
+>> client drivers, was to be my next patch.
+>> Though I think, this patch is valid in it's own light.
+>
+> This is not the purpose of chan_id.
+Let us ignore it for a while.
