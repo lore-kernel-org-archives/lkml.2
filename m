@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751729Ab1GYJqw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 05:46:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37277 "EHLO mx2.suse.de"
+	id S1751818Ab1GYJrn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 05:47:43 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35372 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074Ab1GYJqq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 05:46:46 -0400
-Subject: Re: [GIT PULL] Native Linux KVM tool for 3.1
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20110725094136.GE28787@elte.hu>
-Date: Mon, 25 Jul 2011 11:46:42 +0200
-Cc: Pekka Enberg <penberg@kernel.org>, Jan Kiszka <jan.kiszka@web.de>,
-        torvalds@linux-foundation.org, avi@redhat.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, gorcunov@gmail.com, levinsasha928@gmail.com,
-        asias.hejun@gmail.com, prasadjoshi124@gmail.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <AB20F4B6-2A48-4245-9652-E1AE33C7DD29@suse.de>
-References: <alpine.DEB.2.00.1107242335580.18045@tiger> <4E2CA6DE.4040900@web.de> <CAOJsxLEkXpDCiMZZnSXnxQ6-PFBwMEv4j5mLRhPZVMKw=LoPSQ@mail.gmail.com> <20110725075305.GA32294@elte.hu> <0EAA5203-D598-4CBA-B8D2-AB371A7689A9@suse.de> <20110725085426.GA28787@elte.hu> <C80CB058-38B3-4EA4-996F-4585F521415C@suse.de> <20110725094136.GE28787@elte.hu>
-To: Ingo Molnar <mingo@elte.hu>
-X-Mailer: Apple Mail (2.1084)
+	id S1751350Ab1GYJrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 05:47:39 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [RFC PATCH] time: Convert noisy NOHz prints to pr_debug.
+Date: Mon, 25 Jul 2011 15:15:54 +0530
+Message-ID: <1311587154-17186-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.6.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Couple of prints from tick-sched.c which says 'Switched to NOHz mode on CPU'
+is more of debug information with NOHZ enabled. Mark these as debug prints
+to avoid console noise.
 
-On 25.07.2011, at 11:41, Ingo Molnar wrote:
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/tick-sched.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
->>> Virtualization is very tightly bound to the kernel, like it or 
->>> not. So is profiling, power management and a few other things.
-> 
-> It's a very simple point and observation: tools which integrate to 
-> the kernel so that they wouldnt even run on another kernel obviously 
-> are very natural to develop in tools/.
-
-Ah, very good. So all we need to do to prove the point that kvm-tool doesn't belong in tools/ is port KVM to another OS and make kvm-tool compile there too? Shouldn't be too hard. People already have working ports of (old) KVM versions on FreeBSD and Windows.
-
-
-Alex
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index d5097c4..bc10bd6 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -641,7 +641,7 @@ static void tick_nohz_switch_to_nohz(void)
+ 	}
+ 	local_irq_enable();
+ 
+-	printk(KERN_INFO "Switched to NOHz mode on CPU #%d\n", smp_processor_id());
++	pr_debug("Switched to NOHz mode on CPU #%d\n", smp_processor_id());
+ }
+ 
+ /*
+@@ -795,7 +795,7 @@ void tick_setup_sched_timer(void)
+ #ifdef CONFIG_NO_HZ
+ 	if (tick_nohz_enabled) {
+ 		ts->nohz_mode = NOHZ_MODE_HIGHRES;
+-		printk(KERN_INFO "Switched to NOHz mode on CPU #%d\n", smp_processor_id());
++		pr_debug("Switched to NOHz mode on CPU #%d\n", smp_processor_id());
+ 	}
+ #endif
+ }
+-- 
+1.6.0.4
 
