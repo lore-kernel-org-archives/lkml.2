@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430Ab1GYH1b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 03:27:31 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:3981 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074Ab1GYH1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 03:27:24 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Message-ID: <4E2D1ACF.1010307@broadcom.com>
-Date: Mon, 25 Jul 2011 09:27:11 +0200
-From: "Roland Vossen" <rvossen@broadcom.com>
-Organization: Broadcom
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17)
- Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: "Guilherme Salazar" <gmesalazar@gmail.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: Re: ieee80211 messages at startup (3.0 kernel)
-References: <CA+Hmt2hyH3tZqSJjdOZfceGtpfHyTL4hh56ngXLHevOpVT07VA@mail.gmail.com>
-In-Reply-To: <CA+Hmt2hyH3tZqSJjdOZfceGtpfHyTL4hh56ngXLHevOpVT07VA@mail.gmail.com>
-X-WSS-ID: 6233C39D3DK3437278-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
+	id S1751471Ab1GYH1k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 03:27:40 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:39752 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab1GYH1a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 03:27:30 -0400
+Subject: Re: linux-next: build failure after merge of the iscsi-target tree
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        target-devel <target-devel@vger.kernel.org>,
+        Mike Christie <michaelc@cs.wisc.edu>
+In-Reply-To: <20110725134509.3a1c59c07eb7a5608a8712f7@canb.auug.org.au>
+References: <20110725134509.3a1c59c07eb7a5608a8712f7@canb.auug.org.au>
+Content-Type: text/plain
+Date: Mon, 25 Jul 2011 00:18:09 -0700
+Message-Id: <1311578289.17766.17.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guilherme,
+On Mon, 2011-07-25 at 13:45 +1000, Stephen Rothwell wrote:
+> Hi Nicholas,
+> 
 
- > I've been seeing weird messages concerning ieee80211 driver at startup
- > after using 3.0.0 kernel.
- > I don't know whether that is a problem or just debugging messages,
- > since everything is working fine,
- > but I've attached the dmesg output (before and after using the 3.0.0)
- > and my config file.
+Hi Stephen,
 
-this issue has been fixed in the staging-next repo, the fix is probably 
-still on its way to the wireless repo. FYI, the commit on staging-next is:
+> After merging the iscsi-target tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> drivers/scsi/bnx2i/bnx2i_iscsi.c: In function 'bnx2i_task_xmit':
+> drivers/scsi/bnx2i/bnx2i_iscsi.c:1233:20: error: dereferencing pointer to incomplete type
+> 
+> Caused by commit 5dd46e6560d4 ("iscsi: Resolve iscsi_proto.h naming
+> conflicts with drivers/target/iscsi").
+> 
+> I have dropped the iscsi-target tree for today.
 
------------------
-commit 37c962d195005d009e130e65a9e55960996c3cab
-Author: Roland Vossen <rvossen@broadcom.com>
-Date:   Wed Jun 29 16:48:22 2011 -0700
+My apologies for missing this one..
 
-     staging: brcm80211: fix for reported log spam problem
+Just fixed the missing struct iscsi_cmd -> struct iscsi_scsi_req
+conversion in bnx2i_task_xmit(), and rebased -> pushed into
+target-pending.git/for-next.
 
-     Every few minutes, this message would appear in syslog:
+Thank you,
 
-     ieee80211 ph0: wl_ops_bss_info_changed: BSS idle: true (implement)
-
-     The message has been deleted, the driver requires no special action 
-on this
-     particular event (). See: 
-https://bugzilla.kernel.org/show_bug.cgi?id=38162
------------------
-
-Bye, Roland.
+--nab
 
