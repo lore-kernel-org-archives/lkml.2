@@ -1,63 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565Ab1GYRP2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 13:15:28 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:41581 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab1GYRPZ convert rfc822-to-8bit (ORCPT
+	id S1751715Ab1GYRPp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 13:15:45 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:32892 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634Ab1GYRPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 13:15:25 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=kBBwih5HnsxxhioSO6D7Yhz2B4e1qJds6FQvDhGtYvRBD08narh4u+H/SjgpFXfdT
-	kk+ubPoKWyk7ZcmsvnHKA==
+	Mon, 25 Jul 2011 13:15:40 -0400
+Date: Mon, 25 Jul 2011 21:14:23 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: NeilBrown <neilb@suse.de>, Stephen Smalley <sds@tycho.nsa.gov>,
+        kernel-hardening@lists.openwall.com, James Morris <jmorris@namei.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
+        Sebastian Krahmer <krahmer@suse.de>
+Subject: [PATCH] move RLIMIT_NPROC check from set_user() to
+ do_execve_common()
+Message-ID: <20110725171423.GA3739@albatros>
+References: <20110715063113.GA3166@albatros>
+ <20110715170650.585f1dad@notabene.brown>
+ <20110715073823.GA3821@albatros>
+ <1310738313.30257.27.camel@moss-pluto>
+ <20110715152641.GA6286@albatros>
+ <1310759683.30257.123.camel@moss-pluto>
+ <20110721140936.632d2c8b@notabene.brown>
+ <20110721124830.GA1325@openwall.com>
+ <CA+55aFy4ybatb0McQr2f4A56ympZVLqK2sbp2=73idu58_4RxQ@mail.gmail.com>
+ <20110721193939.GA3914@openwall.com>
 MIME-Version: 1.0
-In-Reply-To: <CAC-0EqgJtddENZO_=kmjSy8-bocLf+ansDbpGwbkb+a3YLakLQ@mail.gmail.com>
-References: <CAC-0EqgJtddENZO_=kmjSy8-bocLf+ansDbpGwbkb+a3YLakLQ@mail.gmail.com>
-From: Mike Waychison <mikew@google.com>
-Date: Mon, 25 Jul 2011 10:15:03 -0700
-Message-ID: <CAGTjWtBw7JJHQFnxjDJEs58LyO2wX98aNWKtCmrQ3fYzebX2Xw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/5] firmware: Add DMI entry types to the headers
-To: David Hubbard <david.c.hubbard@gmail.com>
-Cc: Linux kernel <linux-kernel@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110721193939.GA3914@openwall.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 24, 2011 at 4:22 PM, David Hubbard
-<david.c.hubbard@gmail.com> wrote:
-> Hi Mike,
->
->> In preparation for the upcoming commits, introduce the DMI entry types to
->> the headers.  These type names are based on those specified in the DMTF
->> SMBIOS specification version 2.7.1.
->>
->> Signed-off-by: Mike Waychison <mikew@google.com>
->> ---
->>  include/linux/dmi.h |   47 +++++++++++++++++++++++++++++++++++++++++++++++
->>  1 files changed, 47 insertions(+), 0 deletions(-)
->
-> I noticed a missing entry w.r.t. dmi_smbios_structure_type() in dmidecode.c:
->
-> --- include/linux/dmi.h 2011-07-24 17:14:34.000000000 -0600
-> +++ include/linux/dmi.h 2011-07-24 17:14:49.000000000 -0600
-> @@ -57,6 +57,7 @@
->        DMI_ENTRY_OOB_REMOTE_ACCESS,
->        DMI_ENTRY_BIS_ENTRY,
->        DMI_ENTRY_SYSTEM_BOOT,
-> +       DMI_ENTRY_64_MEM_ERROR,
->        DMI_ENTRY_MGMT_DEV,
->        DMI_ENTRY_MGMT_DEV_COMPONENT,
->        DMI_ENTRY_MGMT_DEV_THRES,
+The patch http://lkml.org/lkml/2003/7/13/226 introduced an RLIMIT_NPROC
+check in set_user() to check for NPROC exceeding via setuid() and
+similar functions.  Before the check there was a possibility to greatly
+exceed the allowed number of processes by an unprivileged user if the
+program relied on rlimit only.  But the check created new security
+threat: many poorly written programs simply don't check setuid() return
+code and believe it cannot fail if executed with root privileges.  So,
+the check is removed in this patch because of too often privilege
+escalations related to buggy programs.
 
-Good catch.  Looks like I screwed this up when transcribing the types
-from the docs.   Good thing nobody depends on these later enums yet ;)
+The NPROC can still be enforced in the common code flow of daemons
+spawning user processes.  Most of daemons do fork()+setuid()+execve().
+The check introduced in execve() (1) enforces the same limit as in
+setuid() and (2) doesn't create similar security issues.
 
-Can you post a patch in the canonical format specified in
-Documentation/SubmittingPatches ?
+Neil Brown suggested to track what specific process has exceeded the
+limit by setting PF_NPROC_EXCEEDED process flag.  With the change only
+this process would fail on execve(), and other processes' execve()
+behaviour is not changed.
+
+Solar Designer suggested to re-check whether NPROC limit is still
+exceeded at the moment of execve().  If the process was sleeping for
+days between set*uid() and execve(), and the NPROC counter step down
+under the limit, the deferred execve() failure because NPROC limit was
+exceeded days ago would be unexpected.
+
+Similar check was introduced in -ow patches (without the process flag).
+
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ fs/exec.c             |   13 +++++++++++++
+ include/linux/sched.h |    1 +
+ kernel/cred.c         |    7 +++----
+ kernel/sys.c          |   13 +++++++++----
+ 4 files changed, 26 insertions(+), 8 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index 6075a1e..706a213 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1433,6 +1433,19 @@ static int do_execve_common(const char *filename,
+ 	struct files_struct *displaced;
+ 	bool clear_in_exec;
+ 	int retval;
++	const struct cred *cred = current_cred();
++
++	/*
++	 * We move the actual failure in case of RLIMIT_NPROC excess from
++	 * set*uid() to execve() because too many poorly written programs
++	 * don't check setuid() return code.  Here we additionally recheck
++	 * whether NPROC limit is still exceeded.
++	 */
++	if ((current->flags & PF_NPROC_EXCEEDED) &&
++	    atomic_read(&cred->user->processes) > rlimit(RLIMIT_NPROC)) {
++		retval = -EAGAIN;
++		goto out_ret;
++	}
+ 
+ 	retval = unshare_files(&displaced);
+ 	if (retval)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 496770a..f024c63 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1759,6 +1759,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+ #define PF_DUMPCORE	0x00000200	/* dumped core */
+ #define PF_SIGNALED	0x00000400	/* killed by a signal */
+ #define PF_MEMALLOC	0x00000800	/* Allocating memory */
++#define PF_NPROC_EXCEEDED 0x00001000	/* set_user noticed that RLIMIT_NPROC was exceeded */
+ #define PF_USED_MATH	0x00002000	/* if unset the fpu must be initialized before use */
+ #define PF_FREEZING	0x00004000	/* freeze in progress. do not account to load */
+ #define PF_NOFREEZE	0x00008000	/* this thread should not be frozen */
+diff --git a/kernel/cred.c b/kernel/cred.c
+index 174fa84..52f4342 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -508,11 +508,10 @@ int commit_creds(struct cred *new)
+ 		key_fsgid_changed(task);
+ 
+ 	/* do it
+-	 * - What if a process setreuid()'s and this brings the
+-	 *   new uid over his NPROC rlimit?  We can check this now
+-	 *   cheaply with the new uid cache, so if it matters
+-	 *   we should be checking for it.  -DaveM
++	 * RLIMIT_NPROC limits on user->processes have already been checked
++	 * in set_user().
+ 	 */
++
+ 	alter_cred_subscribers(new, 2);
+ 	if (new->user != old->user)
+ 		atomic_inc(&new->user->processes);
+diff --git a/kernel/sys.c b/kernel/sys.c
+index e4128b2..fc40cbc 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -591,11 +591,16 @@ static int set_user(struct cred *new)
+ 	if (!new_user)
+ 		return -EAGAIN;
+ 
++	/*
++	 * We don't fail in case of NPROC limit excess here because too many
++	 * poorly written programs don't check set*uid() return code, assuming
++	 * it never fails if called by root.  We may still enforce NPROC limit
++	 * for programs doing set*uid()+execve() by harmlessly deferring the
++	 * failure to the execve() stage.
++	 */
+ 	if (atomic_read(&new_user->processes) >= rlimit(RLIMIT_NPROC) &&
+-			new_user != INIT_USER) {
+-		free_uid(new_user);
+-		return -EAGAIN;
+-	}
++			new_user != INIT_USER)
++		current->flags |= PF_NPROC_EXCEEDED;
+ 
+ 	free_uid(new->user);
+ 	new->user = new_user;
+-- 
+1.7.0.4
+
