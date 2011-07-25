@@ -1,42 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752512Ab1GYUJP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 16:09:15 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:49935 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab1GYUJN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 16:09:13 -0400
+	id S1752174Ab1GYUJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 16:09:28 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:33671 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752217Ab1GYUJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 16:09:26 -0400
 From: Ram Pai <linuxram@us.ibm.com>
 To: jbarnes@virtuousgeek.org
 Cc: torvalds@linux-foundation.org, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, yinghai@kernel.org,
         bhutchings@solarflare.com, socketcan@hartkopp.net, bhelgaas@google.com,
         linux@dominikbrodowski.net, linuxram@us.ibm.com
-Subject: [PATCH 0/5 v3] PCI: fix cardbus and sriov regressions
-Date: Mon, 25 Jul 2011 13:08:37 -0700
-Message-Id: <1311624522-30242-1-git-send-email-linuxram@us.ibm.com>
+Subject: [PATCH 1/5 v3] PCI: honor child buses add_size in hot plug configuration
+Date: Mon, 25 Jul 2011 13:08:38 -0700
+Message-Id: <1311624522-30242-2-git-send-email-linuxram@us.ibm.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1311624522-30242-1-git-send-email-linuxram@us.ibm.com>
+References: <1311624522-30242-1-git-send-email-linuxram@us.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patch-set fixes regressions caused by:
+From: Yinghai Lu <yinghai@kernel.org>
 
-the commit "PCI: update bridge resources to get more big ranges when allocating space (again)"
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=da7822e5ad71ec9b745b412639f1e5e0ba795a20
+git commit c8adf9a3e873eddaaec11ac410a99ef6b9656938
+    "PCI: pre-allocate additional resources to devices only after
+	successful allocation of essential resources."
 
-patch 1/5: fix calculation of additional resource size for hotplug bridges
-patch 2/5: ability to resize assigned pci-resource
-patch 3/5: make SRIOV BARs resources optional
-patch 4/5: make cardbus bridge resources optional
-patch 5/5: code and terminology cleanup
+fails to take into consideration the optional-resources needed by children
+devices while calculating the optional-resource needed by the bridge.
 
-The regression was caused on some platforms with limited i/o and memory
-resources, the optional resources were allocated ahead of required resources,
-thus starving the latter. The patchset ensures that all the required resources
-are satisfied before any optional resources are satisfied.
+This can be a problem on some setup. For example, if a hotplug bridge has 8
+children hotplug bridges, the bridge should have enough resources to accomodate
+the hotplug requirements for each of its children hotplug bridges.  Currently
+this is not the case.
 
-Changelog: patch 2/5 is split into two patches. The changes corresponding to
-	resource.c is upstream; commit 23c570a67448e803408191f529ed9a83fd34a25a.
-	This patch has the remaining changes.
+This patch fixes the problem.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Ram Pai <linuxram@us.ibm.com>
+---
+ drivers/pci/setup-bus.c |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index 9995842..fb0d344 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -543,6 +543,20 @@ static resource_size_t calculate_memsize(resource_size_t size,
+ 	return size;
+ }
+ 
++static resource_size_t get_res_add_size(struct resource_list_x *add_head,
++					struct resource *res)
++{
++	struct resource_list_x *list;
++
++	/* check if it is in add_head list */
++	for (list = add_head->next; list && list->res != res;
++			list = list->next);
++	if (list)
++		return list->add_size;
++
++	return 0;
++}
++
+ /**
+  * pbus_size_io() - size the io window of a given bus
+  *
+@@ -562,6 +576,7 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size,
+ 	struct pci_dev *dev;
+ 	struct resource *b_res = find_free_bus_resource(bus, IORESOURCE_IO);
+ 	unsigned long size = 0, size0 = 0, size1 = 0;
++	resource_size_t children_add_size = 0;
+ 
+ 	if (!b_res)
+  		return;
+@@ -582,10 +597,15 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size,
+ 				size += r_size;
+ 			else
+ 				size1 += r_size;
++
++			if (add_head)
++				children_add_size += get_res_add_size(add_head, r);
+ 		}
+ 	}
+ 	size0 = calculate_iosize(size, min_size, size1,
+ 			resource_size(b_res), 4096);
++	if (children_add_size > add_size)
++		add_size = children_add_size;
+ 	size1 = (!add_head || (add_head && !add_size)) ? size0 :
+ 		calculate_iosize(size, min_size+add_size, size1,
+ 			resource_size(b_res), 4096);
+@@ -627,6 +647,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+ 	int order, max_order;
+ 	struct resource *b_res = find_free_bus_resource(bus, type);
+ 	unsigned int mem64_mask = 0;
++	resource_size_t children_add_size = 0;
+ 
+ 	if (!b_res)
+ 		return 0;
+@@ -668,6 +689,9 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+ 			if (order > max_order)
+ 				max_order = order;
+ 			mem64_mask &= r->flags & IORESOURCE_MEM_64;
++
++			if (add_head)
++				children_add_size += get_res_add_size(add_head, r);
+ 		}
+ 	}
+ 	align = 0;
+@@ -684,6 +708,8 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+ 		align += aligns[order];
+ 	}
+ 	size0 = calculate_memsize(size, min_size, 0, resource_size(b_res), min_align);
++	if (children_add_size > add_size)
++		add_size = children_add_size;
+ 	size1 = (!add_head || (add_head && !add_size)) ? size0 :
+ 		calculate_memsize(size, min_size+add_size, 0,
+ 				resource_size(b_res), min_align);
+-- 
+1.7.4.1
+
