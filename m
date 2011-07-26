@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab1GZOHM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 10:07:12 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58058 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab1GZOHI (ORCPT
+	id S1752135Ab1GZOOb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 10:14:31 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41799 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab1GZOOY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 10:07:08 -0400
+	Tue, 26 Jul 2011 10:14:24 -0400
+Date: Tue, 26 Jul 2011 16:14:15 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Dan.Morav@nuvoton.com
+Cc: linux-kernel@vger.kernel.org, debora@linux.vnet.ibm.com,
+        srajiv@linux.vnet.ibm.com, m.selhorst@sirrix.com,
+        Leonid.Azriel@nuvoton.com, Guy.Pavlov@nuvoton.com
+Subject: Re: [PATCH] TPM Nuvoton I2C driver, kernel 3.0
+Message-ID: <20110726141415.GA31162@pengutronix.de>
+References: <8F2A7B0931C16B4C99DDA3B283A436301401CFB6@ntilml01.nuvoton.com>
+ <8F2A7B0931C16B4C99DDA3B283A43630215E501F@ntilml01.nuvoton.com>
+ <8F2A7B0931C16B4C99DDA3B283A4363059782006@ntilml01.nuvoton.com>
 MIME-Version: 1.0
-In-Reply-To: <20110726111927.129270f7@lxorguk.ukuu.org.uk>
-References: <alpine.LNX.2.00.1107242327030.7103@swampdragon.chaosbits.net>
-	<4E2CC55B.5010307@gmail.com>
-	<4E2CC6CC.5020204@gmail.com>
-	<62472696.BtqhiR95vr@wuerfel>
-	<20110725224250.7d6edb83@bob.linux.org.uk>
-	<CAMeQTsY3T5sPCRYzf8-Xca8y_mWjXSUOOptxHZ2YK5YNL0uvuw@mail.gmail.com>
-	<20110726111927.129270f7@lxorguk.ukuu.org.uk>
-Date: Tue, 26 Jul 2011 16:07:07 +0200
-Message-ID: <CAMeQTsYhLTPLUBGgBTQ=2xDjzw1aK2Oif+_aC+=hVikALuUXPg@mail.gmail.com>
-Subject: Re: GMA500: ERROR: "__bad_udelay" undefined!
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Ryan Mallon <rmallon@gmail.com>, Jesper Juhl <jj@chaosbits.net>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
+Content-Disposition: inline
+In-Reply-To: <8F2A7B0931C16B4C99DDA3B283A4363059782006@ntilml01.nuvoton.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Opinions are cheap, generating a list of all the paths through the tree
-> that can hit vblank waits is alas not, neither is verifying it on a pile
-> of real hardware 8(
 
-Yes, it certainly needs testing before being changed.
+--Q68bSM7Ycu6FN28Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Plus none of the Intel issued IMG drivers wait for a vblank event and in
-> several cases it's quite clear that there is *no* vblank that can be
-> waited for at that point, eg look at the MIPI interfaces.
+On Mon, Jul 25, 2011 at 10:25:30AM +0300, Dan.Morav@nuvoton.com wrote:
 
-I don't think there is a particular reason for that. They are based on an old
-version of i915 that used to do it that way. i915 changed to polling pipestat
-in 2.6.36.
+> Below are the additions for WPCT301/NPCT501 Nuvoton Technology TPM with I=
+2C
+> interface device driver. This driver uses Linux I2C bus driver to interfa=
+ce
+> with the I2C bus and Linux TPM driver (tpm.ko), to export the standard Li=
+nux
+> TPM interface. This driver requires an I2C bus driver and TPM driver (tpm=
+=2Eko)
+> to be loaded prior to its loading. This driver tested on Linux kernel ver=
+sion
+> 3.0-rc6 on an x86 based platform and Linux kernel version 2.6.36.3 on an =
+ARM
+> platform.
 
-If there is no vblank to be waited for, we shouldn't be doing
-wait_for_vblank. If we're waiting for a pipe to turn off, there should be a
-wait_for_pipe_disable, and so on..
+NACK. Please address the issues I mentioned last time.
 
-> So unfortunately it's rather complicated to fix although working them
-> through to make some of the msleeps is certainly doable - add a
-> sleep_for_vblank() or similar and send patches as you verify each one is
-> ok and test it perhaps ?
->
-> Alan
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-What about catching vblanks in irq handler and using a wait queue in
-sleep_for_vblank and do pipestat polling in wait_for_vblank? Then I can start
-testing sleep vs wait. All current wait_for_vblanks should be replaced with
-mdelay(20) and marked with a FIXME.
+--Q68bSM7Ycu6FN28Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-wait_for_pipe_disable can do mdelay(20) until something better comes up.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-If that is ok with you, I'll send some patches.
+iEYEARECAAYFAk4uy7cACgkQD27XaX1/VRvpTgCgsu1cg26xsmuvydYdPapBp5+4
+5IwAn0BER55qhuXTcuPlD7g9/CC3fAyV
+=jIQ5
+-----END PGP SIGNATURE-----
 
-Patrik
+--Q68bSM7Ycu6FN28Q--
