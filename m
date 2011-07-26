@@ -1,37 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976Ab1GZInc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 04:43:32 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:50073 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab1GZInZ (ORCPT
+	id S1752404Ab1GZIof (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 04:44:35 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:44478 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab1GZIo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 04:43:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <m1ei1ewsxa.fsf@fess.ebiederm.org>
-References: <5f6c52c61003241920i6b3eaaf7k946f67d1a6f9e384@mail.gmail.com>
-	<m1r5n7ln0l.fsf@fess.ebiederm.org>
-	<CAKdQVUZMC0eaeqev=tAbS2myHJOA1KJt4r8TVMz6=yQeDpUpZQ@mail.gmail.com>
-	<CAKdQVUaKea64ROeDo-SLRgQ3sHptyxD2TjKKgK5OmS+28Ee1zw@mail.gmail.com>
-	<m1ei1ewsxa.fsf@fess.ebiederm.org>
-Date: Tue, 26 Jul 2011 16:43:24 +0800
-Message-ID: <CAKdQVUYRoj5xEkq2c1LjrJmy9P2zZqG3PNZkRxCLCzyytQcevg@mail.gmail.com>
-Subject: Re: x86_64 virtual memory map
-From: Bob Zhang <zhanglinbao@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        hayfeng Lee <omycle@gmail.com>, ak@linux.intel.com,
-        Bob Zhang <2004.zhang@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 26 Jul 2011 04:44:28 -0400
+Subject: Re: [PATCH-v2 1/2] kernel.h: Add DIV_ROUND_UP_ULL and
+	DIV_ROUND_UP_SECTOR_T macro usage
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
+        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@purestorage.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        target-devel <target-devel@vger.kernel.org>
+In-Reply-To: <1311665743-20639-1-git-send-email-nab@linux-iscsi.org>
+References: <1311665743-20639-1-git-send-email-nab@linux-iscsi.org>
+Content-Type: text/plain
+Date: Tue, 26 Jul 2011 01:35:06 -0700
+Message-Id: <1311669306.17766.256.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-who can answer my first email of questions ?thanks .
+On Tue, 2011-07-26 at 07:35 +0000, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+> 
+> Add new DIV_ROUND_UP_SECTOR_T macro usage for 32-bit architectures requiring
+> a new DIV_ROUND_UP_ULL, and existing 64-bit usage with DIV_ROUND_UP.
+> 
+> Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Reported-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> ---
+>  include/linux/kernel.h |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 953352a..e81b647 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -56,6 +56,14 @@
+>  
+>  #define FIELD_SIZEOF(t, f) (sizeof(((t*)0)->f))
+>  #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
+> +#define DIV_ROUND_UP_ULL(ll,d) \
+> +	({ unsigned long long _tmp = (ll)+(d)-1; do_div(_tmp, d); _tmp; })
+> +
+> +#if BITS_PER_LONG == 32
+> +# define DIV_ROUND_UP_SECTOR_T(ll,d) DIV_ROUND_UP_ULL(ll, d)
+> +#else
+> +# define DIV_ROUND_UP_SECTOR_T(ll,d) DIV_ROUND_UP(ll,d)
+> +#endif
+>  
 
-Good idea , yes ,yes ,BIOS probes the real physical RAM size ,and
-linux kernel will get this by e820 BIOS call(INT 0x15) .we can check
-e820 output to judge whether firmware 's problem or not.
+Hi Andrew,
 
- I will grab e820 output information from dmesg .now ,I can't access
-that machine , so wait .thanks .
+Is CONFIG_LBDAF=n usage going to have problems with the above..?  
+
+Things are looking as expected AFAICT with some quick tests with
+CONFIG_LBDAF=y on i386, but still need to verify the CONFIG_LBDAF=n on
+32-bit as well.  Any more comments here are appercitated.
+
+Thank you,
+
+--nab
+
+
+
