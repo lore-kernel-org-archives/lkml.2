@@ -1,231 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab1GZNt6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 09:49:58 -0400
-Received: from mail.mnsspb.ru ([84.204.75.2]:56119 "EHLO mail.mnsspb.ru"
+	id S1752829Ab1GZNwF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 09:52:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38752 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751665Ab1GZNtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 09:49:53 -0400
-Date: Tue, 26 Jul 2011 17:48:27 +0400
-From: Kirill Smelkov <kirr@mns.spb.ru>
-To: Keith Packard <keithp@keithp.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Herbert Xu <herbert@gondor.hengli.com.au>, Luke-Jr <luke@dashjr.org>,
-        intel-gfx@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Pekka Enberg <penberg@kernel.org>,
-        Ray Lee <ray-lk@madrabbit.org>,
+	id S1751211Ab1GZNv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 09:51:56 -0400
+Date: Tue, 26 Jul 2011 14:51:51 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [Intel-gfx] Major 2.6.38 / 2.6.39 / 3.0 regression ignored?
-Message-ID: <20110726134827.GA23696@tugrik.mns.mnsspb.ru>
-References: <BANLkTimOqhNEsBEg6f=nMiMJqYGNyFJmeQ@mail.gmail.com> <013811$4lfs6@fmsmga002.fm.intel.com> <201105211123.56053.luke@dashjr.org> <aefc95$1usaq@orsmga001.jf.intel.com> <20110528131920.GA10467@tugrik.mns.mnsspb.ru> <20110712171706.GA18414@tugrik.mns.mnsspb.ru> <CAOJsxLEz-fPnb9oYnLMk9UbGqgsfm-g1d2yH=TrEiEk7HvyQzA@mail.gmail.com> <20110722110806.GA29757@tugrik.mns.mnsspb.ru> <yun7h7atcty.fsf@aiko.keithp.com> <20110722202336.GA14375@tugrik.mns.mnsspb.ru>
+        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/5] mm: page_alloc: increase __GFP_BITS_SHIFT to include
+ __GFP_OTHER_NODE
+Message-ID: <20110726135151.GB3010@suse.de>
+References: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
+ <1311625159-13771-2-git-send-email-jweiner@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20110722202336.GA14375@tugrik.mns.mnsspb.ru>
-Organization: Marine Bridge & Navigation Systems
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1311625159-13771-2-git-send-email-jweiner@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 23, 2011 at 12:23:36AM +0400, Kirill Smelkov wrote:
-> Keith,
+On Mon, Jul 25, 2011 at 10:19:15PM +0200, Johannes Weiner wrote:
+> From: Johannes Weiner <hannes@cmpxchg.org>
 > 
-> first of all thanks for your prompt reply. Then...
+> __GFP_OTHER_NODE is used for NUMA allocations on behalf of other
+> nodes.  It's supposed to be passed through from the page allocator to
+> zone_statistics(), but it never gets there as gfp_allowed_mask is not
+> wide enough and masks out the flag early in the allocation path.
 > 
-> On Fri, Jul 22, 2011 at 11:00:41AM -0700, Keith Packard wrote:
-> > On Fri, 22 Jul 2011 15:08:06 +0400, Kirill Smelkov <kirr@mns.spb.ru> wrote:
-> > 
-> > > And now after v3.0 is out, I've tested it again, and yes, like it was
-> > > broken on v3.0-rc5, it is (now even more) broken on v3.0 -- after first
-> > > bad io access the system freezes completely:
-> > 
-> > I looked at this when I first saw it (a couple of weeks ago), and I
-> > couldn't see any obvious reason this patch would cause this particular
-> > problem. I didn't want to revert the patch at that point as I feared it
-> > would cause other subtle problems. Given that you've got a work-around,
-> > it seemed best to just push this off past 3.0.
+> The result is an accounting glitch where successful NUMA allocations
+> by-agent are not properly attributed as local.
 > 
-> What kind of a workaround are you talking about? Sorry, to me it all
-> looked like "UMS is being ignored forever". Anyway, let's move on to try
-> to solve the issue.
+> Increase __GFP_BITS_SHIFT so that it includes __GFP_OTHER_NODE.
 > 
-> 
-> > Given the failing address passed to ioread32, this seems like it's
-> > probably the call to READ_BREADCRUMB -- I915_BREADCRUMB_INDEX is 0x21,
-> > which is an offset in 32-bit units within the hardware status page. If
-> > the status_page.page_addr value was zero, then the computed address
-> > would end up being 0x84.
-> > 
-> > And, it looks like status_page.page_addr *will* end up being zero as a
-> > result of the patch in question. The patch resets the entire ring
-> > structure contents back to the initial values, which includes smashing
-> > the status_page structure to zero, clearing the value of
-> > status_page.page_addr set in i915_init_phys_hws.
-> > 
-> > Here's an untested patch which moves the initialization of
-> > status_page.page_addr into intel_render_ring_init_dri. I note that
-> > intel_init_render_ring_buffer *already* has the setting of the
-> > status_page.page_addr value, and so I've removed the setting of
-> > status_page.page_addr from i915_init_phys_hws.
-> > 
-> > I suspect we could remove the memset from intel_init_render_ring_buffer;
-> > it seems entirely superfluous given the memset in i915_init_phys_hws.
-> > 
-> > From 159ba1dd207fc52590ce8a3afd83f40bd2cedf46 Mon Sep 17 00:00:00 2001
-> > From: Keith Packard <keithp@keithp.com>
-> > Date: Fri, 22 Jul 2011 10:44:39 -0700
-> > Subject: [PATCH] drm/i915: Initialize RCS ring status page address in
-> >  intel_render_ring_init_dri
-> > 
-> > Physically-addressed hardware status pages are initialized early in
-> > the driver load process by i915_init_phys_hws. For UMS environments,
-> > the ring structure is not initialized until the X server starts. At
-> > that point, the entire ring structure is re-initialized with all new
-> > values. Any values set in the ring structure (including
-> > ring->status_page.page_addr) will be lost when the ring is
-> > re-initialized.
-> > 
-> > This patch moves the initialization of the status_page.page_addr value
-> > to intel_render_ring_init_dri.
-> > 
-> > Signed-off-by: Keith Packard <keithp@keithp.com>
-> > ---
-> >  drivers/gpu/drm/i915/i915_dma.c         |    6 ++----
-> >  drivers/gpu/drm/i915/intel_ringbuffer.c |    3 +++
-> >  2 files changed, 5 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-> > index 1271282..8a3942c 100644
-> > --- a/drivers/gpu/drm/i915/i915_dma.c
-> > +++ b/drivers/gpu/drm/i915/i915_dma.c
-> > @@ -61,7 +61,6 @@ static void i915_write_hws_pga(struct drm_device *dev)
-> >  static int i915_init_phys_hws(struct drm_device *dev)
-> >  {
-> >  	drm_i915_private_t *dev_priv = dev->dev_private;
-> > -	struct intel_ring_buffer *ring = LP_RING(dev_priv);
-> >  
-> >  	/* Program Hardware Status Page */
-> >  	dev_priv->status_page_dmah =
-> > @@ -71,10 +70,9 @@ static int i915_init_phys_hws(struct drm_device *dev)
-> >  		DRM_ERROR("Can not allocate hardware status page\n");
-> >  		return -ENOMEM;
-> >  	}
-> > -	ring->status_page.page_addr =
-> > -		(void __force __iomem *)dev_priv->status_page_dmah->vaddr;
-> >  
-> > -	memset_io(ring->status_page.page_addr, 0, PAGE_SIZE);
-> > +	memset_io((void __force __iomem *)dev_priv->status_page_dmah->vaddr,
-> > +		  0, PAGE_SIZE);
-> >  
-> >  	i915_write_hws_pga(dev);
-> >  
-> > diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-> > index e961568..47b9b27 100644
-> > --- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-> > +++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-> > @@ -1321,6 +1321,9 @@ int intel_render_ring_init_dri(struct drm_device *dev, u64 start, u32 size)
-> >  		ring->get_seqno = pc_render_get_seqno;
-> >  	}
-> >  
-> > +	if (!I915_NEED_GFX_HWS(dev))
-> > +		ring->status_page.page_addr = dev_priv->status_page_dmah->vaddr;
-> > +
-> >  	ring->dev = dev;
-> >  	INIT_LIST_HEAD(&ring->active_list);
-> >  	INIT_LIST_HEAD(&ring->request_list);
-> 
-> I can't tell whether this is correct, because intel gfx driver is
-> unknown to me, but from the first glance your description sounds reasonable.
-> 
-> I'm out of office till ~ next week's tuesday, and on return I'll try
-> to test it on the hardware in question.
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Keith, thanks again for the patch. As promised I've tested it on the
-hardware in question and yes, bad_access is gone and X seems to work,
-so thank you, but...
+You're right, this should be merged separately.
 
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-I see there are more such bugs in introduced-in-guilty-patch
-intel_render_ring_init_dri(). For example ring->irq_queue is
-left uninitialized and also ring->irq_lock etc...
-
-I'm X newbie, so if here is something stupid X-wise, please don't
-beat me too hard, but to me the gist of the problem is the original
-patch, where Chris does
-
-( git show e8616b6ced6137085e6657cc63bc2fe3900b8616 )
-> diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-> index 03e3370..51fbc5e 100644
-> --- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-> +++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-> @@ -1291,6 +1291,48 @@ int intel_init_render_ring_buffer(struct drm_device *dev)
->         return intel_init_ring_buffer(dev, ring);
->  }
->  
-> +int intel_render_ring_init_dri(struct drm_device *dev, u64 start, u32 size)
-> +{
-> +       drm_i915_private_t *dev_priv = dev->dev_private;
-> +       struct intel_ring_buffer *ring = &dev_priv->ring[RCS];
-> +
-> +       *ring = render_ring;
-          ^^^^^^^^^^^^^^^^^^^
-          here resets
-
-> +       if (INTEL_INFO(dev)->gen >= 6) {
-> +               ring->add_request = gen6_add_request;
-> +               ring->irq_get = gen6_render_ring_get_irq;
-> +               ring->irq_put = gen6_render_ring_put_irq;
-> +       } else if (IS_GEN5(dev)) {
-> +               ring->add_request = pc_render_add_request;
-> +               ring->get_seqno = pc_render_get_seqno;
-> +       }
-
-and then the rest of the `ring` is initialized seemingly copy-pasted
-from intel_init_ring_buffer():
-
-> +       ring->dev = dev;
-> +       INIT_LIST_HEAD(&ring->active_list);
-> +       INIT_LIST_HEAD(&ring->request_list);
-> +       INIT_LIST_HEAD(&ring->gpu_write_list);
-> +
-> +       ring->size = size;
-> +       ring->effective_size = ring->size;
-> +       if (IS_I830(ring->dev))
-> +               ring->effective_size -= 128;
-> +
-> +       ring->map.offset = start;
-> +       ring->map.size = size;
-> +       ring->map.type = 0;
-> +       ring->map.flags = 0;
-> +       ring->map.mtrr = 0;
-...
-
-where both 3 chunks go almost exactly from intel_init_ring_buffer(), and
-ring->effective_size tweak even stripped original comment:
-
-# original version from intel_init_ring_buffer():
-        /* Workaround an erratum on the i830 which causes a hang if
-         * the TAIL pointer points to within the last 2 cachelines
-         * of the buffer.
-         */
-        ring->effective_size = ring->size;
-        if (IS_I830(ring->dev))
-                ring->effective_size -= 128;
-
-...
-
-
-The line marked "here resets" resets all the fields, and maybe it's not a good
-idea to re-initialize them all afterwards (missing some as this thread show),
-or at least if it is really needed, share initialization code between
-intel_render_ring_init_dri() and intel_init_ring_buffer() ?
-
->From the outside it looks like the offending patch was done as a quick
-fix in a hurry (lots of copy-paste), and maybe it would be better to
-re-do it properly...
-
-
-Thanks again,
-Kirill
+-- 
+Mel Gorman
+SUSE Labs
