@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab1GZUcr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 16:32:47 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:44176 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab1GZUcp (ORCPT
+	id S1753195Ab1GZUke (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 16:40:34 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:59778 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443Ab1GZUkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 16:32:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:message-id:mime-version:content-type; q=dns; s=
-	newdream.net; b=AU0H6qk25FNA0I9akdOzB/QqzL+CviYU2Uw4hgFryK/B6cRL
-	UEroXR3mWTgkYwWW5PVX+vnhNBktdkzN3HSLgazgIeIY7sqMJVZJVk6dAzYmhJKz
-	VCTz3GpQO+4Dgc6JUvkI7qYi/d9DtfUGGddmfHKYloOurnMVZevS7J6aDHU=
-Date: Tue, 26 Jul 2011 13:36:37 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        ceph-devel@vger.kernel.org
-Subject: [GIT PULL] Ceph updates for 3.1-rc1
-Message-ID: <Pine.LNX.4.64.1107261152440.2593@cobra.newdream.net>
+	Tue, 26 Jul 2011 16:40:31 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CA+55aFyqf6G2ZByfaTR5ZiKBVDMeiS2bC3r-WsSfc_M0bJViDg@mail.gmail.com>
+References: <20110722125934.GA25433@elte.hu>
+	<CACqU3MW-7_gCqNARdrPA5rZoZGLti+DMvkZsJN40VSDtU+VhpQ@mail.gmail.com>
+	<1311679697.24752.28.camel@twins>
+	<CACqU3MUghvskv4HrVn+w7rCTki0RkRwQfFUaaysHYOqB6V+q4A@mail.gmail.com>
+	<CA+55aFyqf6G2ZByfaTR5ZiKBVDMeiS2bC3r-WsSfc_M0bJViDg@mail.gmail.com>
+Date: Tue, 26 Jul 2011 16:40:30 -0400
+Message-ID: <CACqU3MVBFatEBkaO0qDR19HXn0Dqn2hp-6pZ2K=rn_SUtNVM=g@mail.gmail.com>
+Subject: Re: [GIT PULL] core/printk changes for v3.1
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        SergeySenozhatsky <sergey.senozhatsky@gmail.com>,
+        DaveJones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi,
 
-Please pull the following Ceph updates from
+On Tue, Jul 26, 2011 at 4:30 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Jul 26, 2011 at 1:12 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>>
+>> [0]: I still have to find an easy way to transfer patch between gmail
+>> and my tree... For now, I ruled out mutt as it mangle the patch...
+>
+> The gmail web interface on the *receiving* end is easy enough, and I
+> do it all the time: just go to the per-email menu in the upper right
+> corner of the email, and choose "Show original". Then you just save
+> that, and you're done.
+>
+yes and no. This works locally, but my desktop machine, and my dev
+machine are not the same, so I have to do an extra-copy. Moreover,
+this gets complicated when working remotely.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+I guess the solution I'll ends-up doing is a mix between tagging the
+mail in gmail, and retrieving the mbox/maildir through IMAP, but I'd
+need a way to tag a single message, not a conversation...
 
-Lots of different things here.  There is some code cleanup with the file 
-flags, a few snapshot metadata writeback fixes, a fix for unnecessary 
-timeouts on heavily loaded clusters, and a fix for dentry leases.  There 
-are many fixes for bugs Al turned up: a fix and cleanup in the open intent 
-code, and several fixes for d_parent use without the appropriate locks (a 
-full code audit caught a few more).  RBD devices now clean up on the 
-server when they are unmapped, rbd request sizes are now larger, and the 
-ceph readahead window is set up properly.
+> Sadly, the gmail web interface cannot *send* patches without
+> whitespace-mangling them. You have to send them as attachements, and
+> there is no way to say "do this attachement inline".
+>
+> Sad, sad, sad. gmail gets so many other things right, but sending
+> patches is a big pain in the *ss for no good reason.
+>
+> The gmail web client also does threading the wrong way (by subject
+> line rather than by following references), but that's apparently what
+> Windows people want and are used to because of how Exchange works. Or
+> so I've been told - I've never touched that pile of crap. It's sad how
+> it has then resulted in crud in gmail. It's not like proper threading
+> is some kind of unheard-of feature..
+>
+agree on most of that :)
 
-Thanks!
-sage
+It would have been nice if there was a Labs feature to provide
+threading the traditional way and to provide a way for inline
+attachment. If some people at Google read this message... who knows!
 
-
-Greg Farnum (1):
-      ceph: report f_bfree based on kb_avail rather than diffing.
-
-Josh Durgin (1):
-      rbd: set blk_queue request sizes to object size
-
-Sage Weil (19):
-      ceph: add flags field to file_info
-      ceph: add F_SYNC file flag to force sync (non-O_DIRECT) io
-      ceph: use flag bit for at_end readdir flag
-      ceph: fix snap writeback when racing with writes
-      ceph: only queue capsnap if caps are dirty
-      libceph: don't time out osd requests that haven't been received
-      ceph: avoid carrying Fw cap during write into page cache
-      ceph: fix bad parent_inode calc in ceph_lookup_open
-      ceph: only link open operations to directory unsafe list if O_CREAT|O_TRUNC
-      ceph: fix ceph_lookup_open intent usage
-      ceph: ignore lease mask
-      ceph: set dir complete frag after adding capability
-      ceph: handle racing calls to ceph_init_dentry
-      ceph: protect access to d_parent
-      ceph: protect d_parent access in ceph_d_revalidate
-      ceph: avoid d_parent in ceph_dentry_hash; fix ceph_encode_fh() hashing bug
-      ceph: document locking for ceph_set_dentry_offset
-      ceph: explicitly reference rename old_dentry parent dir in request
-      ceph: document unlocked d_parent accesses
-
-Yehuda Sadeh (2):
-      rbd: cancel watch request when releasing the device
-      ceph: set up readahead size when rsize is not passed
-
- drivers/block/rbd.c            |   46 +++++++++++++++-
- fs/ceph/debugfs.c              |    2 +-
- fs/ceph/dir.c                  |  116 +++++++++++++++++++++++++---------------
- fs/ceph/export.c               |   24 +++++---
- fs/ceph/file.c                 |   61 +++++++++++++++------
- fs/ceph/inode.c                |   48 +++++++++-------
- fs/ceph/ioctl.c                |   15 +++++-
- fs/ceph/ioctl.h                |    1 +
- fs/ceph/mds_client.c           |   56 +++++++++++---------
- fs/ceph/mds_client.h           |    3 +-
- fs/ceph/snap.c                 |   25 +++++++--
- fs/ceph/super.c                |    7 ++-
- fs/ceph/super.h                |   20 +++----
- fs/ceph/xattr.c                |    8 ++-
- include/linux/ceph/messenger.h |    1 +
- net/ceph/messenger.c           |   12 ++---
- net/ceph/osd_client.c          |    6 ++
- 17 files changed, 306 insertions(+), 145 deletions(-)
+ - Arnaud
