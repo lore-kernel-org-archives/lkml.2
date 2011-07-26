@@ -1,95 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562Ab1GZS6X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 14:58:23 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:41323 "EHLO
+	id S1753613Ab1GZS6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 14:58:33 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:41312 "EHLO
 	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751750Ab1GZS6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752102Ab1GZS6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Jul 2011 14:58:17 -0400
 From: Serge Hallyn <serge@hallyn.com>
 To: linux-kernel@vger.kernel.org
 Cc: dhowells@redhat.com, ebiederm@xmission.com,
         containers@lists.linux-foundation.org, netdev@vger.kernel.org,
-        akpm@osdl.org, "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: [PATCH 04/14] user_ns: convert fs/attr.c to targeted capabilities
-Date: Tue, 26 Jul 2011 18:58:27 +0000
-Message-Id: <1311706717-7398-5-git-send-email-serge@hallyn.com>
+        akpm@osdl.org
+Subject: [PATCH 0/14] user namespaces v2: continue targetting capabilities
+Date: Tue, 26 Jul 2011 18:58:23 +0000
+Message-Id: <1311706717-7398-1-git-send-email-serge@hallyn.com>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1311706717-7398-1-git-send-email-serge@hallyn.com>
-References: <1311706717-7398-1-git-send-email-serge@hallyn.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Serge E. Hallyn <serge.hallyn@canonical.com>
+Hi,
 
-Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
----
- fs/attr.c |   20 +++++++++++++-------
- 1 files changed, 13 insertions(+), 7 deletions(-)
+here is a set of patches to continue targetting capabilities
+where appropriate.  This set goes about as far as is possible
+without making the VFS user namespace aware, meaning that the
+VFS can provide a namespaced view of userids, i.e init_user_ns
+sees file owner 500, while child user ns sees file owner 0 or
+1000.  (There are a few other things, like siginfos, which can
+be addressed before we address the VFS).
 
-diff --git a/fs/attr.c b/fs/attr.c
-index 538e279..e0cf46a 100644
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -29,6 +29,7 @@
- int inode_change_ok(const struct inode *inode, struct iattr *attr)
- {
- 	unsigned int ia_valid = attr->ia_valid;
-+	struct user_namespace *ns;
- 
- 	/*
- 	 * First check size constraints.  These can't be overriden using
-@@ -44,26 +45,28 @@ int inode_change_ok(const struct inode *inode, struct iattr *attr)
- 	if (ia_valid & ATTR_FORCE)
- 		return 0;
- 
-+	ns = inode_userns(inode);
- 	/* Make sure a caller can chown. */
- 	if ((ia_valid & ATTR_UID) &&
--	    (current_fsuid() != inode->i_uid ||
--	     attr->ia_uid != inode->i_uid) && !capable(CAP_CHOWN))
-+	    (ns != current_user_ns() || current_fsuid() != inode->i_uid ||
-+	     attr->ia_uid != inode->i_uid) && !ns_capable(ns, CAP_CHOWN))
- 		return -EPERM;
- 
- 	/* Make sure caller can chgrp. */
- 	if ((ia_valid & ATTR_GID) &&
--	    (current_fsuid() != inode->i_uid ||
-+	    (ns != current_user_ns() || current_fsuid() != inode->i_uid ||
- 	    (!in_group_p(attr->ia_gid) && attr->ia_gid != inode->i_gid)) &&
--	    !capable(CAP_CHOWN))
-+	    !ns_capable(ns, CAP_CHOWN))
- 		return -EPERM;
- 
- 	/* Make sure a caller can chmod. */
- 	if (ia_valid & ATTR_MODE) {
-+		gid_t gid = (ia_valid & ATTR_GID) ? attr->ia_gid : inode->i_gid;
- 		if (!inode_owner_or_capable(inode))
- 			return -EPERM;
- 		/* Also check the setgid bit! */
--		if (!in_group_p((ia_valid & ATTR_GID) ? attr->ia_gid :
--				inode->i_gid) && !capable(CAP_FSETID))
-+		if ((ns != current_user_ns() || !in_group_p(gid)) &&
-+		    !ns_capable(ns, CAP_FSETID))
- 			attr->ia_mode &= ~S_ISGID;
- 	}
- 
-@@ -154,9 +157,12 @@ void setattr_copy(struct inode *inode, const struct iattr *attr)
- 						inode->i_sb->s_time_gran);
- 	if (ia_valid & ATTR_MODE) {
- 		umode_t mode = attr->ia_mode;
-+		struct user_namespace *ns = inode_userns(inode);
- 
--		if (!in_group_p(inode->i_gid) && !capable(CAP_FSETID))
-+		if ((ns != current_user_ns() || !in_group_p(inode->i_gid)) &&
-+		    !ns_capable(ns, CAP_FSETID))
- 			mode &= ~S_ISGID;
-+
- 		inode->i_mode = mode;
- 	}
- }
--- 
-1.7.4.1
+With this set applied, you can create and configure veth netdevs
+if your user namespace owns your network namespace (and you are
+privileged), but not otherwise.
+
+Some simple testcases can be found at
+https://code.launchpad.net/~serge-hallyn/+junk/usernstests with
+packages at https://launchpad.net/~serge-hallyn/+archive/userns-natty
+
+Feedback very much appreciated.
+
+Changes since v1:
+    documentation: incorporate feedback on user_namespaces.txt
+    netlink_capable: use sock_net() instead of ifdefs
 
