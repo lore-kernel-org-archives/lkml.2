@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab1GZJP2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 05:15:28 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:55556 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880Ab1GZJPW (ORCPT
+	id S1753043Ab1GZJQX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 05:16:23 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38693 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab1GZJQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 05:15:22 -0400
-Date: Tue, 26 Jul 2011 11:15:20 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Steven Liu <lingjiujianke@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
-Subject: [PATCH] xfs: Fix build breakage in xfs_iops.c when
- CONFIG_FS_POSIX_ACL is not set
-Message-ID: <20110726091520.GB1639@x4.trippels.de>
-References: <20110725185649.GA22133@ZenIV.linux.org.uk>
- <20110726033535.GA11939@x4.trippels.de>
- <CA+55aFzaKHpVdLKac6rFN+YsAugz1aR3fv-reThJiD4HWDND8w@mail.gmail.com>
- <20110726082146.GB11939@x4.trippels.de>
- <CADxeRwnYxgxZPT3DN=SraZOvL_juWzV+MoY9+0vqZr29y6U6cA@mail.gmail.com>
- <20110726085804.GA1639@x4.trippels.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110726085804.GA1639@x4.trippels.de>
+	Tue, 26 Jul 2011 05:16:16 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankr <ravishankarkm32@gmail.com>
+Subject: [PATCH 1/1 v3] Staging: comedi: fix printk issue in c6xdigio.c
+Date: Tue, 26 Jul 2011 14:59:43 +0530
+Message-Id: <1311672583-3152-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH]Staging: Comedi: fix printk issue in c6xdigio.c>
+References: <[PATCH]Staging: Comedi: fix printk issue in c6xdigio.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 4e34e719e45, that takes the ACL checks to common code,
-accidentely broke the build when CONFIG_FS_POSIX_ACL is not set:
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-  CC      fs/xfs/linux-2.6/xfs_iops.o
-fs/xfs/linux-2.6/xfs_iops.c:1025:14: error: ‘xfs_get_acl’ undeclared here (not in a function)
+This is a patch to the c6xdigio.c file that fixes up a printk warning found by the checkpatch.pl tool
 
-Fix this by declaring xfs_get_acl a static inline function.
-
-Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Ravishankr <ravishankarkm32@gmail.com>
 ---
- fs/xfs/xfs_acl.h |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/fs/xfs/xfs_acl.h b/fs/xfs/xfs_acl.h
-index 2c656ef..39632d9 100644
---- a/fs/xfs/xfs_acl.h
-+++ b/fs/xfs/xfs_acl.h
-@@ -51,7 +51,10 @@ extern int posix_acl_default_exists(struct inode *inode);
- extern const struct xattr_handler xfs_xattr_acl_access_handler;
- extern const struct xattr_handler xfs_xattr_acl_default_handler;
- #else
--# define xfs_get_acl(inode, type)			NULL
-+static inline struct posix_acl *xfs_get_acl(struct inode *inode, int type)
-+{
-+	return NULL;
-+}
- # define xfs_inherit_acl(inode, default_acl)		0
- # define xfs_acl_chmod(inode)				0
- # define posix_acl_access_exists(inode)			0
+ Added __func__ names to  printks.
+
+ drivers/staging/comedi/drivers/c6xdigio.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/c6xdigio.c b/drivers/staging/comedi/drivers/c6xdigio.c
+index e0ac825..b0b578c 100644
+--- a/drivers/staging/comedi/drivers/c6xdigio.c
++++ b/drivers/staging/comedi/drivers/c6xdigio.c
+@@ -343,7 +343,7 @@ static int c6xdigio_pwmo_insn_read(struct comedi_device *dev,
+ 				   struct comedi_subdevice *s,
+ 				   struct comedi_insn *insn, unsigned int *data)
+ {
+-	printk("c6xdigio_pwmo_insn_read %x\n", insn->n);
++	pr_info("%s %x\n", __func__, insn->n);
+ 	return insn->n;
+ }
+ 
+@@ -439,9 +439,9 @@ static int c6xdigio_attach(struct comedi_device *dev,
+ 	struct comedi_subdevice *s;
+ 
+ 	iobase = it->options[0];
+-	printk("comedi%d: c6xdigio: 0x%04lx\n", dev->minor, iobase);
++	pr_info("%s: comedi%d: c6xdigio: 0x%04lx\n", __func__,
++	iobase);
+ 	if (!request_region(iobase, C6XDIGIO_SIZE, "c6xdigio")) {
+-		printk("comedi%d: I/O port conflict\n", dev->minor);
++		pr_err("%s: comedi%d: I/O port conflict\n", __func__,
++		dev->minor);
+ 		return -EIO;
+ 	}
+ 	dev->iobase = iobase;
+@@ -456,9 +456,9 @@ static int c6xdigio_attach(struct comedi_device *dev,
+ 
+ 	irq = it->options[1];
+ 	if (irq > 0)
+-		printk("comedi%d: irq = %u ignored\n", dev->minor, irq);
++		pr_debug("%s: comedi%d: irq = %u ignored\n", __func__
++		dev->minor, irq);
+ 	else if (irq == 0)
+-		printk("comedi%d: no irq\n", dev->minor);
++		pr_debug("%s: comedi%d: no irq\n", __func__, dev->minor);
+ 
+ 	s = dev->subdevices + 0;
+ 	/* pwm output subdevice */
+@@ -503,7 +503,7 @@ static int c6xdigio_detach(struct comedi_device *dev)
+ {
+ 	/* board_halt(dev);  may not need this */
+ 
+-	printk("comedi%d: c6xdigio: remove\n", dev->minor);
++	pr_info("%s: comedi%d: c6xdigio: remove\n", __func__, dev->minor);
+ 
+ 	if (dev->iobase)
+ 		release_region(dev->iobase, C6XDIGIO_SIZE);
 -- 
-Markus
+1.6.5.2
+
