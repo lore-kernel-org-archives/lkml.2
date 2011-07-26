@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab1GZUI3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 16:08:29 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:49887 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934Ab1GZUI0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 16:08:26 -0400
+	id S1753260Ab1GZULO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 16:11:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58056 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751934Ab1GZULL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 16:11:11 -0400
+Date: Tue, 26 Jul 2011 22:10:38 +0200
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
+        Josef Bacik <josef@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PULL REQUEST] ext3, jbd, ext2, and quota fixes for 3.1-rc1
+Message-ID: <20110726201038.GE27993@quack.suse.cz>
+References: <20110726181418.GA27993@quack.suse.cz>
+ <CA+55aFwYsdyE4KxFW70c_FfTb41m+EwchYvNJU-eUEw4usRkUw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAC5umyg44tQxrFEYRL-tjzBMA2+KNXjB+nQveH3KcB_LPmYVHw@mail.gmail.com>
-References: <1311199321-4618-1-git-send-email-per.forlin@linaro.org>
-	<1311199321-4618-3-git-send-email-per.forlin@linaro.org>
-	<CAC5umyg44tQxrFEYRL-tjzBMA2+KNXjB+nQveH3KcB_LPmYVHw@mail.gmail.com>
-Date: Tue, 26 Jul 2011 22:08:25 +0200
-Message-ID: <CAJ0pr18wJ4YiPu9emO9acLDhVpfzDm7UQB-F3C+Vzy84bnJKrQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] mmc: core: add random fault injection
-From: Per Forlin <per.forlin@linaro.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
-        Venkatraman S <svenkatr@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
-        Chris Ball <cjb@laptop.org>,
-        J Freyensee <james_p_freyensee@linux.intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFwYsdyE4KxFW70c_FfTb41m+EwchYvNJU-eUEw4usRkUw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 July 2011 17:58, Akinobu Mita <akinobu.mita@gmail.com> wrote:
-> 2011/7/21 Per Forlin <per.forlin@linaro.org>:
->> This adds support to inject data errors after a completed host transfer.
->> The mmc core will return error even though the host transfer is successful.
->> This simple fault injection proved to be very useful to test the
->> non-blocking error handling in the mmc_blk_issue_rw_rq().
->> Random faults can also test how the host driver handles pre_req()
->> and post_req() in case of errors.
->
-> Looks good to me.
->
->> @@ -82,6 +87,66 @@ static void mmc_flush_scheduled_work(void)
->>        flush_workqueue(workqueue);
->>  }
->>
->> +#ifdef CONFIG_FAIL_MMC_REQUEST
->> +
->> +static DECLARE_FAULT_ATTR(fail_mmc_request);
->
-> I think the fail_attr should be defined for each mmc_host like make_it_fail
-> in struct mmc_host and debugfs entries should also be created in a
-> subdirectory of mmc host debugfs.
->
-> And I know that init_fault_attr_dentries() can only create a
-> subdirectory in debugfs root directory.  But I have a patch which
-> support for creating it in arbitrary directory.  Could you take a look
-> at this? (Note that this patch is based on mmotm and not yet tested)
->
-I tested your patch on a Snowball board. I had two active mmc cards
-and did various fault injection configurations on the two cards
-together with dd. I did only test MMC IO fault injection and not any
-of the other fault injection clients.
-Tested-by: Per Forlin <per.forlin@linaro.org>
+On Tue 26-07-11 11:36:29, Linus Torvalds wrote:
+> On Tue, Jul 26, 2011 at 11:14 AM, Jan Kara <jack@suse.cz> wrote:
+> >
+> >  could you please pull from
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs-2.6.git for_linus
+> 
+> Ok, this clashed with the fsync mutex pushdown, and the whole addition
+> of fixed tracepoints.
+> 
+> Quite frankly, I think the fixed tracepoints are broken and make the
+> code unreadable (why have them?) but I fixed it up.
+> 
+> Somebody should really double-check the resolve. That's especially
+> true since the whole i_mutex thing is *also* rather dubious. The
+> comment that moved that down says:
+> 
+> +       /*
+> +        * Taking the mutex here just to keep consistent with how fsync was
+> +        * called previously, however it looks like we don't need to take
+> +        * i_mutex at all.
+> +        */
+> 
+> but in fact it is *not* consistent with how fsync() used to be called,
+> since we then drop the mutex *before* doing
+> 
+>     return ext3_force_commit(inode->i_sb);
+> 
+> for the should_journal_data case.
+> 
+> See commit 02c24a82187 ("fs: push i_mutex and filemap_write_and_wait
+> down into ->fsync() handlers").
+> 
+> I resolved it with the mutex still dropped early (especially since the
+> comment implies it may not matter at all), but quite frankly,
+> everything I did around that resolve made me go "that code is just
+> WRONG". Both wrt the tracepoints and wrt the i_mutex.
+> 
+> So I think my resolution is "correct" from a merge standpoint, but I
+> think the code is total crap. I also wonder whether you can really do
+> that
+> 
+>     J_ASSERT(ext3_journal_current_handle() == NULL);
+> 
+> without holding the i_mutex, so I moved that back down again.
+> 
+> So I *really* want people to take a look at that ext3_sync_file()
+> function. Please?
+  ext3_sync_file() really does not need i_mutex for anything. I've just
+checked how you resolved the conflict and it looks nice. I'll queue a patch
+which just removes i_mutex from that function altogether. Thanks for the
+resolve.
 
-Regards,
-Per
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
