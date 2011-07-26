@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237Ab1GZCk2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 22:40:28 -0400
-Received: from anchor-post-1.mail.demon.net ([195.173.77.132]:62391 "EHLO
-	anchor-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751219Ab1GZCkV (ORCPT
+	id S1753009Ab1GZCko (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 22:40:44 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:56150 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219Ab1GZCkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 22:40:21 -0400
-Date: Tue, 26 Jul 2011 03:40:45 +0100
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Documentation: Exporting: update description of
- d_splice_alias
-Message-ID: <4e2e292d.simGZB2oLp++vx9O%phillip@lougher.demon.co.uk>
-User-Agent: Heirloom mailx 12.4 7/29/08
+	Mon, 25 Jul 2011 22:40:37 -0400
+Date: Mon, 25 Jul 2011 18:51:21 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Eric Andersson <eric.andersson@unixphere.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
+        alan@lxorguk.ukuu.org.uk, Albert Zhang <xu.zhang@bosch-sensortec.com>
+Subject: Re: [PATCH v5 1/1] input: add driver for Bosch Sensortec's BMA150
+ accelerometer
+Message-ID: <20110726015121.GA2076@core.coreip.homeip.net>
+References: <1311281268-9498-1-git-send-email-eric.andersson@unixphere.com>
+ <1311281268-9498-2-git-send-email-eric.andersson@unixphere.com>
+ <20110722051617.GB16040@core.coreip.homeip.net>
+ <20110722094521.GB710@scully.xfiles.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20110722094521.GB710@scully.xfiles.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 22, 2011 at 11:45:21AM +0200, Eric Andersson wrote:
+> Hi Dmitry,
+> 
+> Thanks for reviewing!
+> 
+> > > +static int bma150_open(struct bma150_data *bma150)
+> > > +{
+> > > +#ifdef CONFIG_PM_RUNTIME
+> > > +	return pm_runtime_get_sync(&bma150->client->dev);
+> > > +#else
+> > > +	return bma150_set_mode(bma150->client, BMA150_MODE_NORMAL);
+> > 
+> > Hmm, this is kind of weird. I'd expect you want to try waking up the
+> > parent in both cases (if no runtime pm then call to pm_runtime_get_sync
+> > is basically a noop) and then wake up your device.
+> 
+> I am not sure what you mean? Are you suggesting something like:
+> 	bma150_set_mode(bma150->client, BMA150_MODE_NORMAL);
+> 	return pm_runtime_get_sync(&bma150->client->dev);
+> 
+> That would cause multiple bma150_set_mode() calls since
+> pm_runtime_get_sync() will trigger one if needed.
+> 
 
-Following commits a904937 and 0c1aa9a update the d_splice_alias
-desciption.
+Right... It looks like instead of calling pm_runtime_get_sync() we need
+to do something like this:
 
-Signed-off-by: Phillip Lougher <phillip@squashfs.org.uk>
----
- Documentation/filesystems/nfs/Exporting |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+static int bma150_open(struct bma150_data *bma150)
+{
+	int error;
 
-diff --git a/Documentation/filesystems/nfs/Exporting b/Documentation/filesystems/nfs/Exporting
-index 87019d2..09994c2 100644
---- a/Documentation/filesystems/nfs/Exporting
-+++ b/Documentation/filesystems/nfs/Exporting
-@@ -92,7 +92,14 @@ For a filesystem to be exportable it must:
-    1/ provide the filehandle fragment routines described below.
-    2/ make sure that d_splice_alias is used rather than d_add
-       when ->lookup finds an inode for a given parent and name.
--      Typically the ->lookup routine will end with a:
-+
-+      If inode is NULL, d_splice_alias(inode, dentry) is eqivalent to
-+
-+		d_add(dentry, inode), NULL
-+
-+      Similarly, d_splice_alias(ERR_PTR(err), dentry) = ERR_PTR(err)
-+
-+      Typically the ->lookup routine will simply end with a:
- 
- 		return d_splice_alias(inode, dentry);
- 	}
+	error = pm_runtime_set_active(&bma150->client->dev);
+	if (error)
+		return error;
+
+	return bma150_set_mode(bma150->client, BMA150_MODE_NORMAL);
+}
+
+and opposite in bma150_close().
+
+Thanks.
+
 -- 
-1.7.1
-
+Dmitry
