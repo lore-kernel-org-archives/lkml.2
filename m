@@ -1,101 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127Ab1GZSj6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 14:39:58 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:50221 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752542Ab1GZSjw (ORCPT
+	id S1753119Ab1GZSk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 14:40:56 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:8167 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752542Ab1GZSkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 14:39:52 -0400
-Date: Tue, 26 Jul 2011 20:39:35 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Borislav Petkov <bp@amd64.org>, Ray Lee <ray-lk@madrabbit.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-Message-ID: <20110726183935.GG32536@aftab>
-References: <20110724182323.GA13247@aftab>
- <20110724183045.GB29660@elte.hu>
- <20110724190752.GA13647@aftab>
- <20110724204450.GB18546@elte.hu>
- <20110725200014.GA23986@aftab>
- <20110725200645.GC8302@elte.hu>
- <20110725215328.GA25960@aftab>
- <CADU53JV-aKbRU-iixbqcv_kAci7L6z43GYmP6uw8hZdY4PrBbQ@mail.gmail.com>
- <20110726172801.GC32536@aftab>
- <20110726183430.GA501@elte.hu>
+	Tue, 26 Jul 2011 14:40:52 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:x-system-of-record;
+	b=BxUzY7XigtAarPfJvgHjpJy6AAoVhXCMszXWxUi+czGYQDgBVB7cCjJv9oQdaZQCW
+	U64OHMck64ZFuBPTlcwfA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110726183430.GA501@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110726174148.GC13780@redhat.com>
+References: <1311573834-7140-1-git-send-email-gaowanlong@cn.fujitsu.com>
+ <1311645400-19434-1-git-send-email-gaowanlong@cn.fujitsu.com>
+ <20110726144427.GB13780@redhat.com> <CAJniumVm=oH_yJAgaTzwVu1XwJfn8eAsHw2Cm0tfvg=unA6hkA@mail.gmail.com>
+ <20110726174148.GC13780@redhat.com>
+From: Paul Menage <menage@google.com>
+Date: Tue, 26 Jul 2011 11:40:26 -0700
+Message-ID: <CAJniumW-+aQE0jWr0NhvTUuxLDiP27bQaZVmVORpnNHvPqp0kQ@mail.gmail.com>
+Subject: Re: [PATCH v3] blk-cgroup:be able to remove the record of unplugged device
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, lizf@cn.fujitsu.com,
+        axboe@kernel.dk, linux-kernel@vger.kernel.org, wanlong.gao@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 02:34:30PM -0400, Ingo Molnar wrote:
-> 
-> * Borislav Petkov <bp@amd64.org> wrote:
-> 
-> > Ok, I went and installed a Debian wheezy with gnome and started 
-> > almost everything I could find in the startup menu. Kernel is 3.0 
-> > with Linus' simpler fix.
-> > 
-> > The attached file shows all libraries which would create aliases 
-> > (i.e. 2 or more unique values for bits [14:12] along with the 
-> > respective count) in the total of:
-> > 
-> > Total r-xp mappings: 831, aliasing: 240 (0.289%)
-> 
-> 28.9%, right?
+On Tue, Jul 26, 2011 at 10:41 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> They have but the context where temp is being used to figure out if it
+> is a deletion rule is generic. So if a rule is being deleted (be it
+> weight, bps or iops), we are going to parse it early in the function.
+> So in that context not calling it "weight" makes sense to me.
+>
+> We use bps, iops names only after knowing the value type.
 
-Yessir.
+Fair enough - but in that case, wouldn't it make sense to make "temp"
+a u64 and just parse it once, rather than reparsing the iops/bps later
+in their switch cases?
 
-> > For example, libc gets mapped into all possible slots for [14:12]
-> > 
-> > Library                                 [14:12] count
-> > =======                                 ======= =====
-> > /lib/libc-2.11.2.so
-> >                                         0       12
-> >                                         1       12
-> >                                         2       11
-> >                                         3       12
-> >                                         4       13
-> >                                         5       16
-> >                                         6       13
-> >                                         7       9
-> > 
-> > 
-> > and so on.
-> 
-> Was this done with a stock kernel, or with the simple patch applied?
-
-with the simplest version of Linus' patch:
-
-diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-index 1dab519..6b1094d 100644
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -90,6 +90,8 @@ static unsigned long mmap_rnd(void)
-                        rnd = (long)get_random_int() % (1<<8);
-                else
-                        rnd = (long)(get_random_int() % (1<<28));
-+
-+               rnd &= ~0x7;
-        }
-        return rnd << PAGE_SHIFT;
- }
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Paul
