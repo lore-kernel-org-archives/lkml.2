@@ -1,92 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab1GZRFX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 13:05:23 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:43254 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753975Ab1GZRFR (ORCPT
+	id S1751797Ab1GZRLZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 13:11:25 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:39266 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064Ab1GZRLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 13:05:17 -0400
-X-Authority-Analysis: v=1.1 cv=s3eDhkhcaTLnj7IEXy8aaXUiY7FbET0mf+/2Xe0elbc= c=1 sm=0 a=BYjp-8hqa-kA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=9ouZYpg21h5U8RkBtYwA:9 a=2Wn9l-nSmqVnJ2ieHB4A:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [PATCH] cgroup/kmemcheck: No need to annotate base anymore
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Dave Hansen <dave@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 26 Jul 2011 13:05:11 -0400
-Message-ID: <1311699911.3526.87.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	Tue, 26 Jul 2011 13:11:17 -0400
+Message-ID: <4E2EF532.20407@gmail.com>
+Date: Tue, 26 Jul 2011 19:11:14 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Darren Hart <dvhart@linux.intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.0-rt3
+References: <alpine.LFD.2.02.1107241223560.2702@ionos> <4E2C2ED6.4040904@gmail.com> <alpine.LFD.2.02.1107241807390.3136@ionos> <4E2DEC1A.5070109@linux.intel.com> <4E2E57FF.7030206@linux.intel.com> <4E2EA89A.2020007@gmail.com> <4E2EF304.30601@linux.intel.com>
+In-Reply-To: <4E2EF304.30601@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the cgroup base was allocated with kmalloc, it was necessary to
-annotate the variable with kmemcheck_not_leak(). But because it has
-recently been changed to be allocated with alloc_page(), the annotation
-is no longer needed.
+On 07/26/2011 07:01 PM, Darren Hart wrote:
+>
+> On 07/26/2011 04:44 AM, Maarten Lankhorst wrote:
+>> On 07/26/2011 08:00 AM, Darren Hart wrote:
+>>> On 07/25/2011 03:20 PM, Darren Hart wrote:
+>>>> On 07/24/2011 09:12 AM, Thomas Gleixner wrote:
+>>>>> On Sun, 24 Jul 2011, Maarten Lankhorst wrote:
+>>>> ...
+>>>>
+>>>>>> Also not sure where this one came from:
+>>>>>> [   37.456688] BUG: spinlock bad magic on CPU#3, threaded-ml/1619
+>>>>>> [   37.456690]  lock: ffff8801fdc74d50, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
+>>>>>> [   37.456692] Pid: 1619, comm: threaded-ml Tainted: G         C  3.0.0-rt3-patser+ #39
+> Maarten, I'm finding fairly little out there on what threaded-ml might
+> be. What I do find suggests 3D visualization and real-time audio
+> playback. Are you working with something like this? If so, which
+> libraries are you using? If not, any idea what this is?
+threaded ml = from pulseaudio,
+src/pulse/thread-mainloop.c to be exact. But like I said it occurs with the functional broadcast test too, on the waker thread.
+>>>>>> [   37.456693] Call Trace:
+>>>>>> [   37.456697]  [<ffffffff81607a78>] spin_bug+0xa0/0xa8
+>>>>>> [   37.456699]  [<ffffffff8132b412>] do_raw_spin_lock+0xa2/0x170
+>>>>>> [   37.456702]  [<ffffffff8104a201>] ? get_parent_ip+0x11/0x50
+>>>>>> [   37.456704]  [<ffffffff8160d783>] _raw_spin_lock+0x23/0x30
+>>>>>> [   37.456706]  [<ffffffff810931ce>] rt_mutex_start_proxy_lock+0x2e/0xd0
+>>>>>> [   37.456708]  [<ffffffff8109093a>] futex_requeue+0x47a/0x850
+>>>>>> [   37.456710]  [<ffffffff8109138e>] do_futex+0xae/0xb00
+> Maarten, could you provide the addr2line of the addresses from do_futex
+> to spin_bug ? This will help me trace the path.
+decodes to:
+linux/lib/spinlock_debug.c:72
+linux/lib/spinlock_debug.c:79
+linux/kernel/sched.c:4114
+linux/kernel/spinlock.c:141
+linux/kernel/rtmutex.c:100
+linux/kernel/futex.c:1378
+linux/kernel/futex.c:2662
 
-I was triggering this output:
-
-allocated 8388608 bytes of page_cgroup
-please try 'cgroup_disable=memory' option if you don't want memory cgroups
-kmemleak: Trying to color unknown object at 0xf5840000 as Grey
-Pid: 0, comm: swapper Not tainted 3.0.0-test #12
-Call Trace:
- [<c17e34e6>] ? printk+0x1d/0x1f^M
- [<c10e2941>] paint_ptr+0x4f/0x78
- [<c178ab57>] kmemleak_not_leak+0x58/0x7d
- [<c108ae9f>] ? __rcu_read_unlock+0x9/0x7d
- [<c1cdb462>] kmemleak_init+0x19d/0x1e9
- [<c1cbf771>] start_kernel+0x346/0x3ec
- [<c1cbf1b4>] ? loglevel+0x18/0x18
- [<c1cbf0aa>] i386_start_kernel+0xaa/0xb0
-
-After a bit of debugging I tracked the object 0xf840000 (and others)
-down to the cgroup code. The change from allocating base with kmalloc to
-alloc_page() has the base not calling kmemleak_alloc() which adds the
-pointer to the object_tree_root, but kmemleak_not_leak() adds it to the
-crt_early_log[] table. On kmemleak_init(), the entry is found in the
-early_log[] but not the object_tree_root, and this error message is
-displayed.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-index 53bffc6..955a49f 100644
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -9,7 +9,6 @@
- #include <linux/vmalloc.h>
- #include <linux/cgroup.h>
- #include <linux/swapops.h>
--#include <linux/kmemleak.h>
- 
- static void __meminit init_page_cgroup(struct page_cgroup *pc, unsigned long id)
- {
-@@ -179,13 +178,6 @@ static int __meminit init_section_page_cgroup(unsigned long pfn, int nid)
- 	table_size = sizeof(struct page_cgroup) * PAGES_PER_SECTION;
- 	base = alloc_page_cgroup(table_size, nid);
- 
--	/*
--	 * The value stored in section->page_cgroup is (base - pfn)
--	 * and it does not point to the memory block allocated above,
--	 * causing kmemleak false positives.
--	 */
--	kmemleak_not_leak(base);
--
- 	if (!base) {
- 		printk(KERN_ERR "page cgroup allocation failure\n");
- 		return -ENOMEM;
-
-
+~Maarten
