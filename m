@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751742Ab1GZNB5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 09:01:57 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58502 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab1GZNBv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 09:01:51 -0400
+	id S1751901Ab1GZNER (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 09:04:17 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:43307 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751387Ab1GZNEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 09:04:11 -0400
+X-ASG-Debug-ID: 1311685449-03d6a510aa1d7030001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E2EBB46.6060108@fusionio.com>
+Date: Tue, 26 Jul 2011 15:04:06 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <1311634718-32588-1-git-send-email-mmarek@suse.cz>
-References: <4E1D9C25.8080300@suse.cz>
-	<1311634718-32588-1-git-send-email-mmarek@suse.cz>
-Date: Tue, 26 Jul 2011 21:01:50 +0800
-Message-ID: <CAM_iQpUEfYrrtpcRLTekSHMHrTTka6ir=z_GUUbnxuQKfY+OXA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 1/2] kconfig: Introduce KCONFIG(), KCONFIG_BUILTIN()
- and KCONFIG_MODULE()
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, lacombar@gmail.com, sam@ravnborg.org,
-        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Ming Lei <tom.leiming@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: block: BUG: using smp_processor_id() in preemptible [00000000]
+  code
+References: <CACVXFVOYYZt-XfbPx_dEOm9qOAuGqmviH4TdXxg6xTrrB8PaMQ@mail.gmail.com> <4E2E4FF1.1010103@fusionio.com> <CACVXFVPK9B65-McHv9HVsmLNZdwfeLbVgYYagpK-ymEK+hC0RQ@mail.gmail.com>
+X-ASG-Orig-Subj: Re: block: BUG: using smp_processor_id() in preemptible [00000000]
+  code
+In-Reply-To: <CACVXFVPK9B65-McHv9HVsmLNZdwfeLbVgYYagpK-ymEK+hC0RQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1311685449
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.70020
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 6:58 AM, Michal Marek <mmarek@suse.cz> wrote:
-> Replace the config_is_*() macros with a variant that allows for grepping
-> for usage of CONFIG_* options in the code. Usage:
->
->  if (KCONFIG(CONFIG_NUMA))
->
-> or
->
->  #if KCONFIG(CONFIG_NUMA)
->
-> The KCONFIG() macro evaluates to 1 if the argument is set (to either 'y'
-> or 'm'), KCONFIG_BUILTIN() and KCONFIG_MODULE() test if the respective
-> option is 'y' and 'm', respectively.
+On 2011-07-26 08:22, Ming Lei wrote:
+> Hi,
+> 
+> On Tue, Jul 26, 2011 at 1:26 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>> On 2011-07-26 06:49, Ming Lei wrote:
+>>> Hi,
+>>>
+>>> The bug is observed in -next-20110725, follows the stack trace[1], and
+>>> seems the attachment patch can fix the bug.
+>>
+>> Does this work, too? We don't necessarily need the CPU stable, but
+>> spewing debug output isn't very nice.
+> 
+> This does work, thanks,
 
-I think it's better to let KCONFIG_MODULE() returns true only for =m, so that
-KCONFIG() will equal to KCONFIG_BUILTIN() || KCONFIG_MODULE().
+Great, thanks for reporting and testing.
 
-BTW, the name KCONFIG(CONFIG_NUMA) seems ugly.
+-- 
+Jens Axboe
+
