@@ -1,79 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936Ab1GZHf3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 03:35:29 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:43721 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab1GZHfX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 03:35:23 -0400
-Subject: Re: [GIT PULL] iscsi-target merge for v3.1-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Andy Grover <agrover@redhat.com>, Hannes Reinecke <hare@suse.de>,
-        Roland Dreier <roland@purestorage.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Boaz Harrosh <openosd@gmail.com>, Mike Christie <michaelc@cs.wisc.edu>
-In-Reply-To: <CA+55aFyNBaf2+=XJDLKNF1S5zMtpx38+Zd8uNd9k4ap4YpZmvw@mail.gmail.com>
-References: <1311462975.31450.356.camel@haakon2.linux-iscsi.org>
-	 <20110725163739.5c19b04d.akpm@linux-foundation.org>
-	 <20110725165057.9701f16b.akpm@linux-foundation.org>
-	 <1311663071.17766.230.camel@haakon2.linux-iscsi.org>
-	 <CA+55aFyNBaf2+=XJDLKNF1S5zMtpx38+Zd8uNd9k4ap4YpZmvw@mail.gmail.com>
-Content-Type: text/plain
-Date: Tue, 26 Jul 2011 00:26:01 -0700
-Message-Id: <1311665161.17766.234.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1752000Ab1GZHgI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 03:36:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19077 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751083Ab1GZHgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 03:36:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,268,1309762800"; 
+   d="scan'208";a="31994169"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCHv2 1/2] staging: vt6655: simplify MAC printing by using %pM
+Date: Tue, 26 Jul 2011 10:35:30 +0300
+Message-Id: <f3732234b64aa8f5a7ac7992451d1c60c672c3b9.1311665655.git.andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1311258256.1663.35.camel@Joe-Laptop>
+References: <1311258256.1663.35.camel@Joe-Laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-26 at 00:09 -0700, Linus Torvalds wrote:
-> On Mon, Jul 25, 2011 at 11:51 PM, Nicholas A. Bellinger
-> <nab@linux-iscsi.org> wrote:
-> >
-> > How about the following to add a new DIV_ROUND_UP_ULL macro
-> 
-> Hmm.
-> 
-> >  #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
-> > +#define DIV_ROUND_UP_ULL(n,d) (                                \
-> > +{                                                      \
-> > +       unsigned long long _tmp = n, _off;              \
-> > +       int _res;                                       \
-> > +       /* Round up using asm/div64.h:do_div */         \
-> > +       _off = do_div(_tmp, d);                         \
-> > +       if (_off != 0)                                  \
-> > +               _tmp++;                                 \
-> > +       _res = _tmp;                                    \
-> > +}                                                      \
-> > +)
-> 
-> That looks buggy. Why the "_res = _tmp" there? All that does is to
-> truncate the result to "int", which looks bogus.
-> 
-> And it just looks unnecessarily complicated. Just a simple
-> 
-> #define DIV_ROUND_UP_ULL(ll,d) \
->   ({ unsigned long long _tmp = (ll)+(d)-1; do_div(_tmp, d); _tmp; })
-> 
-> looks like it would work and be simpler. Avoid the conditional, do the
-> same "add 'd-1' thing as the regular ROUND_UP().
-> 
-> Untested. And not much thinking involved.
-> 
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/staging/vt6655/device_main.c |   10 +-----
+ drivers/staging/vt6655/dpc.c         |   30 ++++----------------
+ drivers/staging/vt6655/wmgr.c        |   49 +++++++---------------------------
+ 3 files changed, 18 insertions(+), 71 deletions(-)
 
-Fixing this up in lio-core-2.6.git now and pushing out into
-target-pending.git/for-next now unless you have any other concerns.
-
-Thank you,
-
---nab
-
+diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
+index 3d2a9ba..567df43 100644
+--- a/drivers/staging/vt6655/device_main.c
++++ b/drivers/staging/vt6655/device_main.c
+@@ -815,14 +815,8 @@ else  CARDbRadioPowerOn(pDevice);
+             pMgmt->eScanType = WMAC_SCAN_PASSIVE;
+     // get Permanent network address
+     SROMvReadEtherAddress(pDevice->PortOffset, pDevice->abyCurrentNetAddr);
+-    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Network address = %02x-%02x-%02x=%02x-%02x-%02x\n",
+-        pDevice->abyCurrentNetAddr[0],
+-        pDevice->abyCurrentNetAddr[1],
+-        pDevice->abyCurrentNetAddr[2],
+-        pDevice->abyCurrentNetAddr[3],
+-        pDevice->abyCurrentNetAddr[4],
+-        pDevice->abyCurrentNetAddr[5]);
+-
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Network address = %pM\n",
++		pDevice->abyCurrentNetAddr);
+ 
+     // reset Tx pointer
+     CARDvSafeResetRx(pDevice);
+diff --git a/drivers/staging/vt6655/dpc.c b/drivers/staging/vt6655/dpc.c
+index cf0deac..c0fab4b 100644
+--- a/drivers/staging/vt6655/dpc.c
++++ b/drivers/staging/vt6655/dpc.c
+@@ -1107,30 +1107,12 @@ static bool s_bAPModeRxCtl (
+                                        &Status
+                                        );
+                     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "dpc: send vMgrDeAuthenBeginSta 3\n");
+-                    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "BSSID:%02x-%02x-%02x=%02x-%02x-%02x \n",
+-                                p802_11Header->abyAddr3[0],
+-                                p802_11Header->abyAddr3[1],
+-                                p802_11Header->abyAddr3[2],
+-                                p802_11Header->abyAddr3[3],
+-                                p802_11Header->abyAddr3[4],
+-                                p802_11Header->abyAddr3[5]
+-                               );
+-                    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR2:%02x-%02x-%02x=%02x-%02x-%02x \n",
+-                                p802_11Header->abyAddr2[0],
+-                                p802_11Header->abyAddr2[1],
+-                                p802_11Header->abyAddr2[2],
+-                                p802_11Header->abyAddr2[3],
+-                                p802_11Header->abyAddr2[4],
+-                                p802_11Header->abyAddr2[5]
+-                               );
+-                    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR1:%02x-%02x-%02x=%02x-%02x-%02x \n",
+-                                p802_11Header->abyAddr1[0],
+-                                p802_11Header->abyAddr1[1],
+-                                p802_11Header->abyAddr1[2],
+-                                p802_11Header->abyAddr1[3],
+-                                p802_11Header->abyAddr1[4],
+-                                p802_11Header->abyAddr1[5]
+-                               );
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "BSSID:%pM\n",
++				p802_11Header->abyAddr3);
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR2:%pM\n",
++				p802_11Header->abyAddr2);
++			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "ADDR1:%pM\n",
++				p802_11Header->abyAddr1);
+                     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "dpc: wFrameCtl= %x\n", p802_11Header->wFrameCtl );
+                     VNSvInPortB(pDevice->PortOffset + MAC_REG_RCR, &(pDevice->byRxMode));
+                     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "dpc:pDevice->byRxMode = %x\n", pDevice->byRxMode );
+diff --git a/drivers/staging/vt6655/wmgr.c b/drivers/staging/vt6655/wmgr.c
+index ab289c3..c46d519 100644
+--- a/drivers/staging/vt6655/wmgr.c
++++ b/drivers/staging/vt6655/wmgr.c
+@@ -2521,14 +2521,8 @@ vMgrCreateOwnIBSS(
+     if (pMgmt->eCurrMode == WMAC_MODE_ESS_AP) {
+         // AP mode BSSID = MAC addr
+         memcpy(pMgmt->abyCurrBSSID, pMgmt->abyMACAddr, WLAN_ADDR_LEN);
+-        DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"AP beacon created BSSID:%02x-%02x-%02x-%02x-%02x-%02x \n",
+-                      pMgmt->abyCurrBSSID[0],
+-                      pMgmt->abyCurrBSSID[1],
+-                      pMgmt->abyCurrBSSID[2],
+-                      pMgmt->abyCurrBSSID[3],
+-                      pMgmt->abyCurrBSSID[4],
+-                      pMgmt->abyCurrBSSID[5]
+-                    );
++	DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"AP beacon created BSSID:%pM\n",
++		pMgmt->abyCurrBSSID);
+     }
+ 
+     if (pMgmt->eCurrMode == WMAC_MODE_IBSS_STA) {
+@@ -2550,14 +2544,8 @@ vMgrCreateOwnIBSS(
+         pMgmt->abyCurrBSSID[0] |= IEEE_ADDR_UNIVERSAL;
+ 
+ 
+-        DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"Adhoc beacon created bssid:%02x-%02x-%02x-%02x-%02x-%02x \n",
+-                      pMgmt->abyCurrBSSID[0],
+-                      pMgmt->abyCurrBSSID[1],
+-                      pMgmt->abyCurrBSSID[2],
+-                      pMgmt->abyCurrBSSID[3],
+-                      pMgmt->abyCurrBSSID[4],
+-                      pMgmt->abyCurrBSSID[5]
+-                    );
++	DBG_PRT(MSG_LEVEL_INFO, KERN_INFO"Adhoc beacon created bssid:%pM\n",
++		pMgmt->abyCurrBSSID);
+     }
+ 
+     // Set Capability Info
+@@ -2887,14 +2875,8 @@ vMgrJoinBSSBegin(
+ //            pDevice->bLinkPass = true;
+ //            memcpy(pDevice->abyBSSID, pCurr->abyBSSID, WLAN_BSSID_LEN);
+ 
+-            DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Join IBSS ok:%02x-%02x-%02x-%02x-%02x-%02x \n",
+-                  pMgmt->abyCurrBSSID[0],
+-                  pMgmt->abyCurrBSSID[1],
+-                  pMgmt->abyCurrBSSID[2],
+-                  pMgmt->abyCurrBSSID[3],
+-                  pMgmt->abyCurrBSSID[4],
+-                  pMgmt->abyCurrBSSID[5]
+-                );
++		DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Join IBSS ok:%pM\n",
++			pMgmt->abyCurrBSSID);
+             // Preamble type auto-switch: if AP can receive short-preamble cap,
+             // and if registry setting is short preamble we can turn on too.
+ 
+@@ -2984,13 +2966,8 @@ s_vMgrSynchBSS (
+ 
+     MACvReadBSSIDAddress(pDevice->PortOffset, pMgmt->abyCurrBSSID);
+ 
+-    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Sync:set CurrBSSID address = %02x-%02x-%02x=%02x-%02x-%02x\n",
+-        pMgmt->abyCurrBSSID[0],
+-        pMgmt->abyCurrBSSID[1],
+-        pMgmt->abyCurrBSSID[2],
+-        pMgmt->abyCurrBSSID[3],
+-        pMgmt->abyCurrBSSID[4],
+-        pMgmt->abyCurrBSSID[5]);
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Sync:set CurrBSSID address = "
++		"%pM\n", pMgmt->abyCurrBSSID);
+ 
+     if (pCurr->eNetworkTypeInUse == PHY_TYPE_11A) {
+         if ((pMgmt->eConfigPHYMode == PHY_TYPE_11A) ||
+@@ -4462,14 +4439,8 @@ s_vMgrRxProbeRequest(
+         sFrame.pBuf = (unsigned char *)pRxPacket->p80211Header;
+         vMgrDecodeProbeRequest(&sFrame);
+ /*
+-        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Probe request rx:MAC addr:%02x-%02x-%02x=%02x-%02x-%02x \n",
+-                  sFrame.pHdr->sA3.abyAddr2[0],
+-                  sFrame.pHdr->sA3.abyAddr2[1],
+-                  sFrame.pHdr->sA3.abyAddr2[2],
+-                  sFrame.pHdr->sA3.abyAddr2[3],
+-                  sFrame.pHdr->sA3.abyAddr2[4],
+-                  sFrame.pHdr->sA3.abyAddr2[5]
+-                );
++	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "Probe request rx:MAC addr:%pM\n",
++		sFrame.pHdr->sA3.abyAddr2);
+ */
+         if (sFrame.pSSID->len != 0) {
+             if (sFrame.pSSID->len != ((PWLAN_IE_SSID)pMgmt->abyCurrSSID)->len)
+-- 
+1.7.5.4
 
