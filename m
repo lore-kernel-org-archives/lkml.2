@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab1GZVGn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 17:06:43 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:47465 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753272Ab1GZVGl (ORCPT
+	id S1753641Ab1GZVHS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 17:07:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59979 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab1GZVHQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 17:06:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <1310462166-31469-14-git-send-email-tj@kernel.org>
-References: <1310462166-31469-1-git-send-email-tj@kernel.org>
-	<1310462166-31469-14-git-send-email-tj@kernel.org>
-Date: Tue, 26 Jul 2011 14:06:40 -0700
-Message-ID: <CAE9FiQU3+ceB+uDY6q2WyBvaTsJr-v9sRF7DDr_omNMf49o3Kg@mail.gmail.com>
-Subject: Re: [PATCH 13/13] memblock, x86: Replace memblock_x86_reserve/free_range()
- with generic ones
-From: Yinghai Lu <yhlu.kernel@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
-        benh@kernel.crashing.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 26 Jul 2011 17:07:16 -0400
+Subject: per-cpu operation madness vs validation
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 26 Jul 2011 23:06:50 +0200
+Message-ID: <1311714410.24752.404.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 12, 2011 at 2:16 AM, Tejun Heo <tj@kernel.org> wrote:
-> Other than sanity check and debug message, the x86 specific version of
-> memblock reserve/free functions are simple wrappers around the generic
-> versions - memblock_reserve/free().
->
-> This patch adds debug messages with caller identification to the
-> generic versions and replaces x86 specific ones and kills them.
-> arch/x86/include/asm/memblock.h and arch/x86/mm/memblock.c are empty
-> after this change and removed.
->
-...
-> diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-> index 5636308..6e76c19 100644
-> --- a/arch/x86/kernel/aperture_64.c
-> +++ b/arch/x86/kernel/aperture_64.c
-> @@ -94,7 +94,7 @@ static u32 __init allocate_aperture(void)
->                                addr, aper_size>>10);
->                return 0;
->        }
-> -       memblock_x86_reserve_range(addr, addr + aper_size, "aperture64");
-> +       memblock_reserve(addr, aper_size);
+Hi all,
 
-Wonder if we have a new function like
+so recently our per-cpu ops have exploded.. who can say (without
+looking) what the difference is between percpu_read() and
+this_cpu_read() ?
 
-__memblock_reserve(addr, size, name)
+Now Thomas recently did a fresh -rt and ran into the fun problem of
+trying to reconstruct the requirements on a lot of the per-cpu grub
+we've grown over the past few releases.
 
-in mm/memblock.c
+Does it require preempt-disable, bh disable, irq-disable, is it perhaps
+covered by a lock, what!? I'm sure Thomas can point you to a few gems if
+you're interested in specifics.
 
-so could keep string for debug purpose instead of using _RET_IP_.
+Now the reason is of course that -rt changes some things, even when
+using migrate_disable() it might be multiple processes might try and
+access the per-cpu variable, needing serialization.
 
-with that, we can figure out what is in exact reserved position with boot log.
+The idea was to do something similar to rcu-lockdep, where each
+rcu_dereference() was paired with a conditional that expresses the exact
+conditions under which that dereference was good -- typically either
+when holding the rcu_read_lock() or the lock used to serialize the
+modifying side of things.
 
-Thanks
+Even for mainline such validation is useful, suppose you intended the
+variable to only be accessed by task context, and thus disabling
+preemption is plenty to fully serialize things. However unbeknown to the
+original author someone adds usage from IRQ context, and voila things
+start breaking.
 
-Yinghai
+The point of course is, how are we going to go about doing this, I'm
+sure adding a proper conditional to each and every per-cpu op is going
+to be a herculean task, and most of it utterly boring.
+
+One of the thing we could do is create a lock type that doesn't actually
+generate any lock code on mainline (but does on rt) but is instead used
+to annotate the serialization requirements of various of these things.
+If such a lock isn't IRQ safe but used from IRQ context lockdep will
+complain etc..
+
+
