@@ -1,29 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab1GZQym (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 12:54:42 -0400
-Received: from mail.perches.com ([173.55.12.10]:4303 "EHLO mail.perches.com"
+	id S1753887Ab1GZRBy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 13:01:54 -0400
+Received: from mail.perches.com ([173.55.12.10]:4310 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753658Ab1GZQyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 12:54:38 -0400
-Subject: Re: [PATCH 1/2] kernel.h: Add DIV_ROUND_UP_ULL usage
+	id S1752926Ab1GZRBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 13:01:47 -0400
+Subject: Re: [PATCH] printk: add Kconfig for default console loglevel
 From: Joe Perches <joe@perches.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
-        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@purestorage.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <1311667641.17766.249.camel@haakon2.linux-iscsi.org>
-References: <1311664225-20172-1-git-send-email-nab@linux-iscsi.org>
-	 <1311666821.26957.13.camel@Joe-Laptop>
-	 <1311667641.17766.249.camel@haakon2.linux-iscsi.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Dave Reisner <d@falconindy.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Dave Reisner <dreisner@archlinux.org>
+In-Reply-To: <20110726093730.aa164c70.rdunlap@xenotime.net>
+References: <1311694431-17037-1-git-send-email-dreisner@archlinux.org>
+	 <20110726093730.aa164c70.rdunlap@xenotime.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Jul 2011 09:54:35 -0700
-Message-ID: <1311699275.15386.14.camel@Joe-Laptop>
+Date: Tue, 26 Jul 2011 10:01:45 -0700
+Message-ID: <1311699705.15386.20.camel@Joe-Laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -31,55 +24,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-26 at 01:07 -0700, Nicholas A. Bellinger wrote:
-> On Tue, 2011-07-26 at 00:53 -0700, Joe Perches wrote:
-> > On Tue, 2011-07-26 at 07:10 +0000, Nicholas A. Bellinger wrote:
-> > > Add new DIV_ROUND_UP_ULL macro usage for 32-bit architectures requiring
-> > > unsigned long long division of sectors * dev_max_sectors.
-> > []
-> > > diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> > []
-> > > +#define DIV_ROUND_UP_ULL(ll,d) \
-> > > +	({ unsigned long long _tmp = (ll)+(d)-1; do_div(_tmp, d); _tmp; })
-> > Maybe use uint64_t and a temporary for d?
-> > #define DIV_ROUND_UP_ULL(ll, d)				\
-> > ({							\
-> > 	typeof(d) _d = d;				\
-> > 	uint64_t _tmp = (uint64_t)(ll) + _d - 1;	\
-> > 	do_div(_tmp, _d);				\
-> > 	_tmp;						\
-> > })
+On Tue, 2011-07-26 at 09:37 -0700, Randy Dunlap wrote:
+> On Tue, 26 Jul 2011 11:33:51 -0400 Dave Reisner wrote:
+> > Keep the historical default of 7, but allow distributions and users to
+> > tune this value instead of requiring a kernel cmdline parameter.
+> Please explain how this is different from what is already in lib/Kconfig.debug:
+> config DEFAULT_MESSAGE_LOGLEVEL
+> 	int "Default message log level (1-7)"
+> 	range 1 7
+> 	default "4"
+> 	help
+> 	  Default log level for printk statements with no specified priority.
 
-> Hi Joe,
+DEFAULT_MESSAGE_LOGLEVEL sets a KERN_<level> for
+printks without a KERN_<level>.
 
-Hi Nicholas.
+> > +config DEFAULT_CONSOLE_LOGLEVEL
+> > +	int "Default console log level (1-7)"
+> > +	range 1 7
+> > +	default "7"
+> > +	help
+> > +	  Default console log level setting for printk statements.
+> > +
+> > +	  This was hard-coded to KERN_INFO (7) since at least 2.6.12. You may
+> > +	  wish to turn this down to 4 for a quieter console.
+> > +
 
-> Not sure on this one myself..  Would this case ever be strictly required
-> for proper 32-bit operation with unsigned long long division with
-> sector_t..?
+This allows 'unimportant' messages to not be shown by default.
 
-It's just for correctness.
-
-For 32 bit uses, if ll is a unsigned long and not an
-unsigned long long then without the cast the addition
-will be done as a 32 bit value.
-
-e.g.:
-
-$ cat t.c
-#include <stdio.h>
-#include <stdlib.h>
-
-int main(int argc, char** argv)
-{
-	unsigned long l = 0xFFFFFFFFUL;
-	unsigned long long ull = l + 1;
-	unsigned long long ull2 = (unsigned long long)l + 1;
-
-	printf("l: %lu, ull:%llu, ull2: %llu\n", l, ull, ull2);
-}
-$ gcc t.c
-$ ./a.out
-l: 4294967295, ull:0, ull2: 4294967296
-
+I think there are lots of KERN_INFO messages that are
+miscategorized.  This change might cause some shifting
+of KERN_<level>s in the future, so it's OK by me. 
 
