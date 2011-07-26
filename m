@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743Ab1GZKOJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 06:14:09 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49438 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087Ab1GZKOF convert rfc822-to-8bit (ORCPT
+	id S1751087Ab1GZKQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 06:16:50 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:38368 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752491Ab1GZKQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 06:14:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110726100804.GA6069@dspnet.fr>
-References: <1311462975.31450.356.camel@haakon2.linux-iscsi.org>
-	<20110725163739.5c19b04d.akpm@linux-foundation.org>
-	<20110725165057.9701f16b.akpm@linux-foundation.org>
-	<1311663071.17766.230.camel@haakon2.linux-iscsi.org>
-	<CA+55aFyNBaf2+=XJDLKNF1S5zMtpx38+Zd8uNd9k4ap4YpZmvw@mail.gmail.com>
-	<20110726100804.GA6069@dspnet.fr>
-Date: Tue, 26 Jul 2011 13:14:03 +0300
-Message-ID: <CACVxJT-bP-2xSnPZxtP0QtLdGW1vaxTDGzr0WLLFR+wMqaQ9Wg@mail.gmail.com>
-Subject: Re: [GIT PULL] iscsi-target merge for v3.1-rc1
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Olivier Galibert <galibert@pobox.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Andy Grover <agrover@redhat.com>, Hannes Reinecke <hare@suse.de>,
-        Roland Dreier <roland@purestorage.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Boaz Harrosh <openosd@gmail.com>, Mike Christie <michaelc@cs.wisc.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 26 Jul 2011 06:16:44 -0400
+Date: Tue, 26 Jul 2011 11:19:27 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Ryan Mallon <rmallon@gmail.com>, Jesper Juhl <jj@chaosbits.net>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        devel@driverdev.osuosl.org
+Subject: Re: GMA500: ERROR: "__bad_udelay" undefined!
+Message-ID: <20110726111927.129270f7@lxorguk.ukuu.org.uk>
+In-Reply-To: <CAMeQTsY3T5sPCRYzf8-Xca8y_mWjXSUOOptxHZ2YK5YNL0uvuw@mail.gmail.com>
+References: <alpine.LNX.2.00.1107242327030.7103@swampdragon.chaosbits.net>
+	<4E2CC55B.5010307@gmail.com>
+	<4E2CC6CC.5020204@gmail.com>
+	<62472696.BtqhiR95vr@wuerfel>
+	<20110725224250.7d6edb83@bob.linux.org.uk>
+	<CAMeQTsY3T5sPCRYzf8-Xca8y_mWjXSUOOptxHZ2YK5YNL0uvuw@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 1:08 PM, Olivier Galibert <galibert@pobox.com> wrote:
-> On Tue, Jul 26, 2011 at 12:09:40AM -0700, Linus Torvalds wrote:
->> And it just looks unnecessarily complicated. Just a simple
->>
->> #define DIV_ROUND_UP_ULL(ll,d) \
->>   ({ unsigned long long _tmp = (ll)+(d)-1; do_div(_tmp, d); _tmp; })
->>
->> looks like it would work and be simpler. Avoid the conditional, do the
->> same "add 'd-1' thing as the regular ROUND_UP().
->>
->> Untested. And not much thinking involved.
->
-> Overflow risk?  Of course DIV_ROUND_UP has the same issue, and looks
-> slight easier to trigger, maybe.
+> > Don't know yet - its on the fixme list to dig into - I think the answer
+> > is some cases but not all.
+> 
+> IMO, it should be replaced with actually waiting for the vblank and not an
+> arbitrary time. I think this is fine as long as we don't use it when waiting for
+> a pipe to disable. And I guess we could sleep while waiting for vblank.
 
-Can we please make DIV_ROUND_UP to demultiplex based on argument type inside?
+Opinions are cheap, generating a list of all the paths through the tree
+that can hit vblank waits is alas not, neither is verifying it on a pile
+of real hardware 8(
+
+Plus none of the Intel issued IMG drivers wait for a vblank event and in
+several cases it's quite clear that there is *no* vblank that can be
+waited for at that point, eg look at the MIPI interfaces.
+
+So unfortunately it's rather complicated to fix although working them
+through to make some of the msleeps is certainly doable - add a
+sleep_for_vblank() or similar and send patches as you verify each one is
+ok and test it perhaps ?
+
+Alan
