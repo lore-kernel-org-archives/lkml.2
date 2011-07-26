@@ -1,109 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751158Ab1GZEoj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 00:44:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35212 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750750Ab1GZEoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 00:44:32 -0400
-Date: Mon, 25 Jul 2011 21:42:57 -0700
-From: Greg KH <gregkh@suse.de>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH v2 1/6] perf: Add interface to add general events to sysfs
-Message-ID: <20110726044257.GB27720@suse.de>
-References: <1310740503-15608-1-git-send-email-ming.m.lin@intel.com>
- <1310740503-15608-2-git-send-email-ming.m.lin@intel.com>
- <1310996068.13765.67.camel@twins>
- <1311581475.3938.1477.camel@minggr.sh.intel.com>
- <1311582723.2617.50.camel@laptop>
- <20110725152038.GA23356@suse.de>
- <1311642367.3938.1516.camel@minggr.sh.intel.com>
+	id S1751187Ab1GZEtO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 00:49:14 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:47964 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab1GZEtJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 00:49:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311642367.3938.1516.camel@minggr.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 26 Jul 2011 12:49:08 +0800
+Message-ID: <CACVXFVOYYZt-XfbPx_dEOm9qOAuGqmviH4TdXxg6xTrrB8PaMQ@mail.gmail.com>
+Subject: block: BUG: using smp_processor_id() in preemptible [00000000] code
+From: Ming Lei <tom.leiming@gmail.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=20cf303b3cc1f51a0304a8f1a6b5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 09:06:07AM +0800, Lin Ming wrote:
-> On Mon, 2011-07-25 at 23:20 +0800, Greg KH wrote:
-> > On Mon, Jul 25, 2011 at 10:32:03AM +0200, Peter Zijlstra wrote:
-> > > On Mon, 2011-07-25 at 16:11 +0800, Lin Ming wrote:
-> > > > It's strange that I didn't find a way to check if a directory is present
-> > > > in sysfs. Any hint?
-> > > 
-> > > sysfs is voodoo for me, best I can come up with is, ask the sysfs
-> > > folks ;-)
-> > > 
-> > > Kay, Greg?
-> > 
-> > What are you trying to do here specifically?
-> 
-> Now there are perf event source devices in sysfs.
+--20cf303b3cc1f51a0304a8f1a6b5
+Content-Type: text/plain; charset=ISO-8859-1
 
-As of what kernel release?
+Hi,
 
-> $ tree /sys/bus/event_source/devices/
-> /sys/bus/event_source/devices/
-> |-- breakpoint
-> |-- cpu
-> |-- software
-> `-- tracepoint
-> 
-> I want to create a "events" directory to hold the most useful events
-> under the event_source.
+The bug is observed in -next-20110725, follows the stack trace[1], and
+seems the attachment patch can fix the bug.
 
-Then use the attribute group for that.
 
-> $ tree /sys/bus/event_source/devices/cpu
-> | -- events
-> 
-> Then add one event each time to the "events" dir.
-> 
-> Add "event1"
-> $ tree /sys/bus/event_source/devices/cpu
-> | -- events
->      | -- event1
-> 
-> Add "event2"
-> $ tree /sys/bus/event_source/devices/cpu
-> | -- events
->      | -- event1
->      | -- event2
-> 
-> So at the first time to add a event I need to check if the "events"
-> directory is present. If not, create it.
-> 
-> Like below pseudo code,
-> 
-> int perf_pmu_add_event(struct pmu *pmu, const char *name, ....)
-> {
-> 	if there is no "events" dir under pmu->dev->kobj
-> 		then create "events" dir
-> 
-> 	add event "name" to "events"
-> 
-> 	return ....
-> }
-> 
-> So the problem is, for example, how to check if there is a "events" dir
-> under /sys/bus/event_source/devices/cpu in kernel.
 
-Just use the proper attribute group and you will be fine.  That will
-create the directory automatically.
+[1], stack trace
 
-And I really don't think sysfs is good for this, as you don't have a
-bus, and your devices aren't on that bus, and the subdirs you are
-creating are not "normal" for sysfs.
+[   22.247222] BUG: using smp_processor_id() in preemptible [00000000]
+code: kjournald/514
+[   22.255737] caller is __make_request+0x1b8/0x308
+[   22.260681] [<c0019f44>] (unwind_backtrace+0x0/0xe8) from
+[<c024b4cc>] (debug_smp_processor_id+0xbc/0xf0)
+[   22.270751] [<c024b4cc>] (debug_smp_processor_id+0xbc/0xf0) from
+[<c0223d14>] (__make_request+0x1b8/0x308)
+[   22.280944] [<c0223d14>] (__make_request+0x1b8/0x308) from
+[<c02215ac>] (generic_make_request+0x4dc/0x558)
+[   22.291107] [<c02215ac>] (generic_make_request+0x4dc/0x558) from
+[<c022173c>] (submit_bio+0x114/0x138)
+[   22.300903] [<c022173c>] (submit_bio+0x114/0x138) from [<c011f504>]
+(submit_bh+0x148/0x16c)
+[   22.309692] [<c011f504>] (submit_bh+0x148/0x16c) from [<c0121ed8>]
+(__sync_dirty_buffer+0x88/0xd8)
+[   22.319122] [<c0121ed8>] (__sync_dirty_buffer+0x88/0xd8) from
+[<c01aff78>] (journal_commit_transaction+0x1198/0
+x1688)
+[   22.330322] [<c01aff78>] (journal_commit_transaction+0x1198/0x1688)
+from [<c01b4034>] (kjournald+0xb4/0x224)
+[   22.340667] [<c01b4034>] (kjournald+0xb4/0x224) from [<c0069ea0>]
+(kthread+0x8c/0x94)
+[   22.348937] [<c0069ea0>] (kthread+0x8c/0x94) from [<c00137f8>]
+(kernel_thread_exit+0x0/0x8)
 
-Why not create your own filesystem?
 
-greg k-h
+thanks,
+-- 
+Ming Lei
+
+--20cf303b3cc1f51a0304a8f1a6b5
+Content-Type: text/x-patch; charset=US-ASCII; name="fix_blk_bug_smp_processor_id.patch"
+Content-Disposition: attachment; 
+	filename="fix_blk_bug_smp_processor_id.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gqkdxs830
+
+ZGlmZiAtLWdpdCBhL2Jsb2NrL2Jsay1jb3JlLmMgYi9ibG9jay9ibGstY29yZS5jCmluZGV4IGY4
+Y2IwOTkuLjdlOTg2NzcgMTAwNjQ0Ci0tLSBhL2Jsb2NrL2Jsay1jb3JlLmMKKysrIGIvYmxvY2sv
+YmxrLWNvcmUuYwpAQCAtMTI4Miw4ICsxMjgyLDEwIEBAIGdldF9ycToKIAlpbml0X3JlcXVlc3Rf
+ZnJvbV9iaW8ocmVxLCBiaW8pOwogCiAJaWYgKHRlc3RfYml0KFFVRVVFX0ZMQUdfU0FNRV9DT01Q
+LCAmcS0+cXVldWVfZmxhZ3MpIHx8Ci0JICAgIGJpb19mbGFnZ2VkKGJpbywgQklPX0NQVV9BRkZJ
+TkUpKQotCQlyZXEtPmNwdSA9IHNtcF9wcm9jZXNzb3JfaWQoKTsKKwkgICAgYmlvX2ZsYWdnZWQo
+YmlvLCBCSU9fQ1BVX0FGRklORSkpIHsKKwkJcmVxLT5jcHUgPSBnZXRfY3B1KCk7CisJCXB1dF9j
+cHUoKTsKKwl9CiAKIAlwbHVnID0gY3VycmVudC0+cGx1ZzsKIAlpZiAocGx1Zykgewo=
+--20cf303b3cc1f51a0304a8f1a6b5--
