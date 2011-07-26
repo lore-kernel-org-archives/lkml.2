@@ -1,68 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab1GZMuK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 08:50:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:62599 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215Ab1GZMuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 08:50:09 -0400
-X-Authority-Analysis: v=1.1 cv=sbbt6Wn8j+VvNVI1Ftt/uHhinWyuFt+R57MN9Ty2Tys= c=1 sm=0 a=3NOpT3G9tzkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=qRdErg5HNKU5SqRPwJwA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 6/7] sched: Balance RT tasks when forked as well
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1311683818.24752.34.camel@twins>
-References: <20110617015516.301117218@goodmis.org>
-	 <20110617015919.832743148@goodmis.org>  <1311683108.24752.33.camel@twins>
-	 <1311683732.3526.64.camel@gandalf.stny.rr.com>
-	 <1311683818.24752.34.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 26 Jul 2011 08:50:07 -0400
-Message-ID: <1311684607.3526.67.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	id S1751499Ab1GZM4E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 08:56:04 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56014 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750946Ab1GZMz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 08:55:58 -0400
+Message-ID: <4E2EA5D2.8040804@cn.fujitsu.com>
+Date: Tue, 26 Jul 2011 19:32:34 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 11/11] KVM: MMU: improve write flooding detected
+References: <4E2EA3DB.7040403@cn.fujitsu.com>
+In-Reply-To: <4E2EA3DB.7040403@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-26 19:29:40,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-26 19:29:40,
+	Serialize complete at 2011-07-26 19:29:40
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-26 at 14:36 +0200, Peter Zijlstra wrote:
-> On Tue, 2011-07-26 at 08:35 -0400, Steven Rostedt wrote:
-> > On Tue, 2011-07-26 at 14:25 +0200, Peter Zijlstra wrote:
-> > > On Thu, 2011-06-16 at 21:55 -0400, Steven Rostedt wrote:
-> > > > +       /* For anything but wake ups, just return the task_cpu */
-> > > > +       if (sd_flag != SD_BALANCE_WAKE || sd_flag != SD_BALANCE_FORK) 
-> > > 
-> > > So we call select_task_rq() with SD_BALANCE_{WAKE,EXEC,FORK}, 
-> > > 
-> > > 	(WAKE != WAKE -> 0 || WAKE != FORK -> 1) -> 1
-> > > 	(EXEC != WAKE -> 1 ) -> 1
-> > > 	(FORK != WAKE -> 1 ) -> 1
-> > > 
-> > > IOW, you never end up doing anything now.. surely you didn't mean that?!
-> > 
-> > Bah!
-> > 
-> > s/||/&&/
-> 
-> So you only want to rebalance on EXEC? The comment says you want to
-> balance on wakeups. Please as to unconfuse!?
+Detecting write-flooding does not work well, when we handle page written, if
+the last speculative spte is not accessed, we treat the page is
+write-flooding, however, we can speculative spte on many path, such as pte
+prefetch, page synced, that means the last speculative spte may be not point
+to the written page and the written page can be accessed via other sptes, so
+depends on the Accessed bit of the last speculative spte is not enough
 
-The patch is (with fixup):
+Instead of detected page accessed, we can detect whether the spte is accessed
+or not, if the spte is not accessed but it is written frequently, we treat is
+not a page table or it not used for a long time
 
-+       /* For anything but wake ups, just return the task_cpu */
-+       if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
-+               goto out;
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/include/asm/kvm_host.h |    6 +---
+ arch/x86/kvm/mmu.c              |   53 +++++++++------------------------------
+ arch/x86/kvm/paging_tmpl.h      |    9 +-----
+ 3 files changed, 16 insertions(+), 52 deletions(-)
 
-In other words, if it isn't a WAKE or FORK (FORK being new task wakeup)
-then exit the routine.
-
-EXEC should not rebalance.
-
--- Steve
-
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index ce17642..8c938db 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -239,6 +239,8 @@ struct kvm_mmu_page {
+ 	int clear_spte_count;
+ #endif
+ 
++	int write_flooding_count;
++
+ 	struct rcu_head rcu;
+ };
+ 
+@@ -352,10 +354,6 @@ struct kvm_vcpu_arch {
+ 	struct kvm_mmu_memory_cache mmu_page_cache;
+ 	struct kvm_mmu_memory_cache mmu_page_header_cache;
+ 
+-	gfn_t last_pt_write_gfn;
+-	int   last_pt_write_count;
+-	u64  *last_pte_updated;
+-
+ 	struct fpu guest_fpu;
+ 	u64 xcr0;
+ 
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index bb55b15..8c2885c 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1688,6 +1688,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 		} else if (sp->unsync)
+ 			kvm_mmu_mark_parents_unsync(sp);
+ 
++		sp->write_flooding_count = 0;
+ 		trace_kvm_mmu_get_page(sp, false);
+ 		return sp;
+ 	}
+@@ -1840,15 +1841,6 @@ static void kvm_mmu_put_page(struct kvm_mmu_page *sp, u64 *parent_pte)
+ 	mmu_page_remove_parent_pte(sp, parent_pte);
+ }
+ 
+-static void kvm_mmu_reset_last_pte_updated(struct kvm *kvm)
+-{
+-	int i;
+-	struct kvm_vcpu *vcpu;
+-
+-	kvm_for_each_vcpu(i, vcpu, kvm)
+-		vcpu->arch.last_pte_updated = NULL;
+-}
+-
+ static void kvm_mmu_unlink_parents(struct kvm *kvm, struct kvm_mmu_page *sp)
+ {
+ 	u64 *parent_pte;
+@@ -1908,7 +1900,6 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+ 	}
+ 
+ 	sp->role.invalid = 1;
+-	kvm_mmu_reset_last_pte_updated(kvm);
+ 	return ret;
+ }
+ 
+@@ -2350,8 +2341,6 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		}
+ 	}
+ 	kvm_release_pfn_clean(pfn);
+-	if (speculative)
+-		vcpu->arch.last_pte_updated = sptep;
+ }
+ 
+ static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
+@@ -3509,13 +3498,6 @@ static void mmu_pte_write_flush_tlb(struct kvm_vcpu *vcpu, bool zap_page,
+ 		kvm_mmu_flush_tlb(vcpu);
+ }
+ 
+-static bool last_updated_pte_accessed(struct kvm_vcpu *vcpu)
+-{
+-	u64 *spte = vcpu->arch.last_pte_updated;
+-
+-	return !!(spte && (*spte & shadow_accessed_mask));
+-}
+-
+ static int get_free_pte_list_desc_nr(struct kvm_vcpu *vcpu)
+ {
+ 	struct kvm_mmu_memory_cache *cache;
+@@ -3565,22 +3547,14 @@ static u64 mmu_pte_write_fetch_gpte(struct kvm_vcpu *vcpu, gpa_t *gpa,
+  * If we're seeing too many writes to a page, it may no longer be a page table,
+  * or we may be forking, in which case it is better to unmap the page.
+  */
+-static bool detect_write_flooding(struct kvm_vcpu *vcpu, gfn_t gfn)
++static bool detect_write_flooding(struct kvm_mmu_page *sp, u64 *spte)
+ {
+-	bool flooded = false;
+-
+-	if (gfn == vcpu->arch.last_pt_write_gfn
+-	    && !last_updated_pte_accessed(vcpu)) {
+-		++vcpu->arch.last_pt_write_count;
+-		if (vcpu->arch.last_pt_write_count >= 3)
+-			flooded = true;
+-	} else {
+-		vcpu->arch.last_pt_write_gfn = gfn;
+-		vcpu->arch.last_pt_write_count = 1;
+-		vcpu->arch.last_pte_updated = NULL;
+-	}
++	if (spte && !(*spte & shadow_accessed_mask))
++		sp->write_flooding_count++;
++	else
++		sp->write_flooding_count = 0;
+ 
+-	return flooded;
++	return sp->write_flooding_count >= 3;
+ }
+ 
+ /*
+@@ -3663,7 +3637,7 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 	LIST_HEAD(invalid_list);
+ 	u64 entry, gentry, *spte;
+ 	int npte;
+-	bool remote_flush, local_flush, zap_page, flooded;
++	bool remote_flush, local_flush, zap_page;
+ 
+ 	/*
+ 	 * If we don't have indirect shadow pages, it means no page is
+@@ -3682,21 +3656,18 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 	++vcpu->kvm->stat.mmu_pte_write;
+ 	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PTE_WRITE);
+ 
+-	flooded = detect_write_flooding(vcpu, gfn);
+ 	for_each_gfn_indirect_valid_sp(vcpu->kvm, sp, gfn, node) {
+-		bool mismatch, misaligned;
+-
+-		misaligned = detect_write_misaligned(sp, gpa, bytes);
+-		mismatch = detect_mismatch_sp(vcpu, sp);
++		spte = get_written_sptes(sp, gpa, &npte);
+ 
+-		if (misaligned || mismatch || flooded || repeat_write) {
++		if (repeat_write || detect_write_misaligned(sp, gpa, bytes) ||
++		      detect_write_flooding(sp, spte) ||
++		      detect_mismatch_sp(vcpu, sp)) {
+ 			zap_page |= !!kvm_mmu_prepare_zap_page(vcpu->kvm, sp,
+ 						     &invalid_list);
+ 			++vcpu->kvm->stat.mmu_flooded;
+ 			continue;
+ 		}
+ 
+-		spte = get_written_sptes(sp, gpa, &npte);
+ 		if (!spte)
+ 			continue;
+ 
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 3466229..82063b2 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -595,11 +595,9 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 	 */
+ 	if (!r) {
+ 		pgprintk("%s: guest page fault\n", __func__);
+-		if (!prefault) {
++		if (!prefault)
+ 			inject_page_fault(vcpu, &walker.fault);
+-			/* reset fork detector */
+-			vcpu->arch.last_pt_write_count = 0;
+-		}
++
+ 		return 0;
+ 	}
+ 
+@@ -637,9 +635,6 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 	pgprintk("%s: shadow pte %p %llx emulate %d\n", __func__,
+ 		 sptep, *sptep, emulate);
+ 
+-	if (!emulate)
+-		vcpu->arch.last_pt_write_count = 0; /* reset fork detector */
+-
+ 	++vcpu->stat.pf_fixed;
+ 	trace_kvm_mmu_audit(vcpu, AUDIT_POST_PAGE_FAULT);
+ 	spin_unlock(&vcpu->kvm->mmu_lock);
+-- 
+1.7.5.4
 
