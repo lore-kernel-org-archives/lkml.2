@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940Ab1GZJmP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 05:42:15 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49016
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751369Ab1GZJmK (ORCPT
+	id S1752670Ab1GZJoZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 05:44:25 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:40958 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab1GZJoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 05:42:10 -0400
-Date: Tue, 26 Jul 2011 05:42:04 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, David Miller <davem@davemloft.net>,
-        Andi Kleen <andi@firstfloor.org>, Matthew Wilcox <matthew@wil.cx>,
-        Anton Blanchard <anton@samba.org>, npiggin@kernel.dk,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] vfs: dont chain pipe/anon/socket on superblock s_inodes
- list
-Message-ID: <20110726094204.GA12086@infradead.org>
-References: <20110721204042.GB31405@ZenIV.linux.org.uk>
- <1311294452.2576.18.camel@schen9-DESK>
- <20110723132411.GA22183@infradead.org>
- <1311633550.2576.33.camel@schen9-DESK>
- <20110725225154.GD22133@ZenIV.linux.org.uk>
- <1311636178.2576.34.camel@schen9-DESK>
- <1311660013.2996.6.camel@edumazet-laptop>
- <1311668466.2355.12.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20110726090357.GA13013@infradead.org>
- <1311672994.2355.17.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311672994.2355.17.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 26 Jul 2011 05:44:20 -0400
+Subject: Re: [patch 0/9] kdump: Patch series for s390 support
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: oomichi@mxs.nes.nec.co.jp, linux-s390@vger.kernel.org,
+        mahesh@linux.vnet.ibm.com, heiko.carstens@de.ibm.com,
+        linux-kernel@vger.kernel.org, hbabu@us.ibm.com, horms@verge.net.au,
+        ebiederm@xmission.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        kexec@lists.infradead.org
+In-Reply-To: <20110725160244.GB11009@redhat.com>
+References: <20110718123140.GB31986@redhat.com>
+	 <1310997641.4427.10.camel@br98xy6r> <20110718141943.GE31986@redhat.com>
+	 <1311000253.4427.23.camel@br98xy6r> <20110718152532.GF31986@redhat.com>
+	 <1311012188.4427.58.camel@br98xy6r> <20110720192509.GD10079@redhat.com>
+	 <1311260298.6160.43.camel@br98xy6r> <20110721212257.GI12373@redhat.com>
+	 <1311327191.5772.51.camel@br98xy6r>  <20110725160244.GB11009@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Tue, 26 Jul 2011 11:44:01 +0200
+Message-ID: <1311673441.4146.10.camel@br98xy6r>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 11:36:34AM +0200, Eric Dumazet wrote:
-> [PATCH v2] vfs: dont chain pipe/anon/socket on superblock s_inodes list
-> 
-> Workloads using pipes and sockets hit inode_sb_list_lock contention.
-> 
-> superblock s_inodes list is needed for quota, dirty, pagecache and
-> fsnotify management. pipe/anon/socket fs are clearly not candidates for
-> these.
-> 
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+On Mon, 2011-07-25 at 12:02 -0400, Vivek Goyal wrote:
+> On Fri, Jul 22, 2011 at 11:33:11AM +0200, Michael Holzheu wrote:
 
-Looks good to me,
+[snip]
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+> > crash_kexec can be entered by e.g.:
+> > * panic -> kdump shutdown action -> crash_kexec
+> > * panic -> s390 dump shutdown action -> auto IPL dump tool -> s390_kdump_entry -> crash_kexec
+> 
+> So after panic() You will still jump to dump tools?
+
+This is our current mechanism to create an automatic dump in case of
+panic. I do not see a reason to change that now.
+
+>  The only thing you
+> need to do there is installing program check handler and could have been
+> easily done in kernel too.
+> 
+> > * hard hang -> manual IPL dump tool -> s390_kdump_entry -> crash_kexec
+> 
+> This one makes sense as kernel is hard hung and dump tools need to
+> force crash_kexec() now. It is more like x86 NMI handler.
+> 
+> > 
+> > Handling for corrupted kdump:
+> > 
+> > New idea for returning to dump tools in case of program check:
+> > We could force a program check for s390, if purgatory checksum
+> > fails. Then we would automatically return to stand-alone dump
+> > tools.
+> > 
+> > The flow would look like the following in this case:
+> > 
+> > IPL dump tool -> s390_kdump_entry -> crash_kexec +--> purgatory -+->[checksum ok]---> kdump
+> >       ^                                          |               |
+> >       |                                          |        [checksum fail]
+> >       |                                          |               |
+> >       |                                          |     [forced program check]
+> >       +------[program check]---------------------+               |
+> >       |                                                          |
+> >       +----------------------------------------------------------+
+> > 
+> > Then of course also the kernel code would have to install a special
+> > program check handler before calling purgatory.
+> 
+> If kernel code is going to install the program check handler before
+> calling purgatory, then we don't need to jump to dump tools at all
+> after panic()?
+
+Independent from hard wait or panic, if dump tools have control, we want
+to jump back to the dump tools code in order to be able to create
+full-blown dump as backup method.
+
+I think we now have a design, where almost no change of your kdump
+framework is needed. I will resend the updated patch series.
+
+Michael
+
 
