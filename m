@@ -1,170 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab1GZJZI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 05:25:08 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50464 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780Ab1GZJZF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 05:25:05 -0400
-Date: Tue, 26 Jul 2011 11:25:01 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-cc: Frank Rowand <frank.rowand@am.sony.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.0-rt3
-In-Reply-To: <20110726091917.GQ16561@pengutronix.de>
-Message-ID: <alpine.LFD.2.02.1107261124280.2848@ionos>
-References: <alpine.LFD.2.02.1107241223560.2702@ionos> <4E2E3089.5070600@am.sony.com> <20110726091917.GQ16561@pengutronix.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2120855139-1311672301=:2848"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1752840Ab1GZJaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 05:30:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59567 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751461Ab1GZJ3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 05:29:55 -0400
+Subject: Preempt & smp_processor_id in __make_request
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Tue, 26 Jul 2011 10:32:06 +0100
+Message-ID: <1311672726.2700.5.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi,
 
---8323328-2120855139-1311672301=:2848
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+On the latest upstream kernel, I'm getting large quantities of messages
+as per the following:
 
-On Tue, 26 Jul 2011, Uwe Kleine-König wrote:
+Jul 26 09:54:04 chywoon kernel: BUG: using smp_processor_id() in preemptible [00
+000000] code: jbd2/dm-0-8/1546
+Jul 26 09:54:04 chywoon kernel: caller is __make_request+0x209/0x350
+Jul 26 09:54:04 chywoon kernel: Pid: 1546, comm: jbd2/dm-0-8 Tainted: G        W
+   3.0.0+ #252
+Jul 26 09:54:04 chywoon kernel: Call Trace:
+Jul 26 09:54:04 chywoon kernel: [<ffffffff813db897>] debug_smp_processor_id+0xe7
+/0x100
+Jul 26 09:54:04 chywoon kernel: [<ffffffff813b6f29>] __make_request+0x209/0x350
+Jul 26 09:54:04 chywoon kernel: [<ffffffff8154635e>] ? dm_request+0x2e/0x280
+Jul 26 09:54:04 chywoon kernel: [<ffffffff813b3ffb>] generic_make_request+0x27b/
+0x550
+Jul 26 09:54:04 chywoon kernel: [<ffffffff8123ef7e>] ? jbd2_journal_file_buffer+
+0x8e/0x130
+Jul 26 09:54:04 chywoon kernel: [<ffffffff813b432f>] submit_bio+0x5f/0xd0
+Jul 26 09:54:04 chywoon kernel: [<ffffffff811b14a6>] submit_bh+0xe6/0x120
+etc.
 
-> On Mon, Jul 25, 2011 at 08:12:09PM -0700, Frank Rowand wrote:
-> > On 07/24/11 03:33, Thomas Gleixner wrote:
-> > > Dear RT Folks,
-> > > 
-> > > I'm pleased to announce the 3.0-rt3 release.
-> > 
-> > ARM panda board boots for PREEMPT_RT_FULL, with a BUG:
-> > 
-> > Freeing init memory: 308K
-> > BUG: sleeping function called from invalid context at kernel/rtmutex.c:645
-> > in_atomic(): 1, irqs_disabled(): 128, pid: 0, name: swapper
-> > 1 lock held by swapper/0:
-> >  #0:  (&irq_desc_lock_class){-.....}, at: [<c00ed470>] handle_fasteoi_irq+0x14/0x10c
-> > irq event stamp: 21292
-> > hardirqs last  enabled at (21291): [<c0061ee0>] default_idle+0x2c/0x3c
-> > hardirqs last disabled at (21292): [<c0484bb4>] __irq_svc+0x34/0x138
-> > softirqs last  enabled at (0): [<  (null)>]   (null)
-> > softirqs last disabled at (0): [<  (null)>]   (null)
-> > [<c00681b8>] (unwind_backtrace+0x0/0xf0) from [<c0483d20>] (rt_spin_lock+0x24/0x5c)
-> > [<c0483d20>] (rt_spin_lock+0x24/0x5c) from [<c006df74>] (gic_mask_irq+0x28/0x7c)
-> > [<c006df74>] (gic_mask_irq+0x28/0x7c) from [<c00ece20>] (mask_irq+0x1c/0x2c)
-> > [<c00ece20>] (mask_irq+0x1c/0x2c) from [<c00ed514>] (handle_fasteoi_irq+0xb8/0x10c)
-> > [<c00ed514>] (handle_fasteoi_irq+0xb8/0x10c) from [<c00ea724>] (generic_handle_irq+0x34/0x50)
-> > [<c00ea724>] (generic_handle_irq+0x34/0x50) from [<c0055048>] (asm_do_IRQ+0x48/0xa8)
-> > [<c0055048>] (asm_do_IRQ+0x48/0xa8) from [<c0484bd0>] (__irq_svc+0x50/0x138)
-> I guess you need something like the patch below.
+The (trivial) fix appears to be the following:
 
-Yep. Will add it to the other pile of ARM lock conversions.
+diff --git a/block/blk-core.c b/block/blk-core.c
+index f8cb099..f925581 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1283,7 +1283,7 @@ get_rq:
  
-> Best regards
-> Uwe
-> 
-> diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
-> index 4ddd0a6..5c1dd07 100644
-> --- a/arch/arm/common/gic.c
-> +++ b/arch/arm/common/gic.c
-> @@ -33,7 +33,7 @@
->  #include <asm/mach/irq.h>
->  #include <asm/hardware/gic.h>
->  
-> -static DEFINE_SPINLOCK(irq_controller_lock);
-> +static DEFINE_RAW_SPINLOCK(irq_controller_lock);
->  
->  /* Address of GIC 0 CPU interface */
->  void __iomem *gic_cpu_base_addr __read_mostly;
-> @@ -88,30 +88,30 @@ static void gic_mask_irq(struct irq_data *d)
->  {
->  	u32 mask = 1 << (d->irq % 32);
->  
-> -	spin_lock(&irq_controller_lock);
-> +	raw_spin_lock(&irq_controller_lock);
->  	writel_relaxed(mask, gic_dist_base(d) + GIC_DIST_ENABLE_CLEAR + (gic_irq(d) / 32) * 4);
->  	if (gic_arch_extn.irq_mask)
->  		gic_arch_extn.irq_mask(d);
-> -	spin_unlock(&irq_controller_lock);
-> +	raw_spin_unlock(&irq_controller_lock);
->  }
->  
->  static void gic_unmask_irq(struct irq_data *d)
->  {
->  	u32 mask = 1 << (d->irq % 32);
->  
-> -	spin_lock(&irq_controller_lock);
-> +	raw_spin_lock(&irq_controller_lock);
->  	if (gic_arch_extn.irq_unmask)
->  		gic_arch_extn.irq_unmask(d);
->  	writel_relaxed(mask, gic_dist_base(d) + GIC_DIST_ENABLE_SET + (gic_irq(d) / 32) * 4);
-> -	spin_unlock(&irq_controller_lock);
-> +	raw_spin_unlock(&irq_controller_lock);
->  }
->  
->  static void gic_eoi_irq(struct irq_data *d)
->  {
->  	if (gic_arch_extn.irq_eoi) {
-> -		spin_lock(&irq_controller_lock);
-> +		raw_spin_lock(&irq_controller_lock);
->  		gic_arch_extn.irq_eoi(d);
-> -		spin_unlock(&irq_controller_lock);
-> +		raw_spin_unlock(&irq_controller_lock);
->  	}
->  
->  	writel_relaxed(gic_irq(d), gic_cpu_base(d) + GIC_CPU_EOI);
-> @@ -135,7 +135,7 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
->  	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
->  		return -EINVAL;
->  
-> -	spin_lock(&irq_controller_lock);
-> +	raw_spin_lock(&irq_controller_lock);
->  
->  	if (gic_arch_extn.irq_set_type)
->  		gic_arch_extn.irq_set_type(d, type);
-> @@ -160,7 +160,7 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
->  	if (enabled)
->  		writel_relaxed(enablemask, base + GIC_DIST_ENABLE_SET + enableoff);
->  
-> -	spin_unlock(&irq_controller_lock);
-> +	raw_spin_unlock(&irq_controller_lock);
->  
->  	return 0;
->  }
-> @@ -188,11 +188,11 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
->  	mask = 0xff << shift;
->  	bit = 1 << (cpu + shift);
->  
-> -	spin_lock(&irq_controller_lock);
-> +	raw_spin_lock(&irq_controller_lock);
->  	d->node = cpu;
->  	val = readl_relaxed(reg) & ~mask;
->  	writel_relaxed(val | bit, reg);
-> -	spin_unlock(&irq_controller_lock);
-> +	raw_spin_unlock(&irq_controller_lock);
->  
->  	return 0;
->  }
-> @@ -222,9 +222,9 @@ static void gic_handle_cascade_irq(unsigned int irq, struct irq_desc *desc)
->  
->  	chained_irq_enter(chip, desc);
->  
-> -	spin_lock(&irq_controller_lock);
-> +	raw_spin_lock(&irq_controller_lock);
->  	status = readl_relaxed(chip_data->cpu_base + GIC_CPU_INTACK);
-> -	spin_unlock(&irq_controller_lock);
-> +	raw_spin_unlock(&irq_controller_lock);
->  
->  	gic_irq = (status & 0x3ff);
->  	if (gic_irq == 1023)
-> -- 
-> Pengutronix e.K.                           | Uwe Kleine-König            |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> 
---8323328-2120855139-1311672301=:2848--
+ 	if (test_bit(QUEUE_FLAG_SAME_COMP, &q->queue_flags) ||
+ 	    bio_flagged(bio, BIO_CPU_AFFINE))
+-		req->cpu = smp_processor_id();
++		req->cpu = raw_smp_processor_id();
+ 
+ 	plug = current->plug;
+ 	if (plug) {
+
+However this fixes the symptoms, rather than the cause, so I'm not at
+all sure that this is the correct solution,
+
+Steve.
+
+
