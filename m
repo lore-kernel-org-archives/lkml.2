@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab1GZPg0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 11:36:26 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:57408 "EHLO
+	id S1753602Ab1GZPgq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 11:36:46 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:52428 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753309Ab1GZPfu (ORCPT
+	with ESMTP id S1753583Ab1GZPfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 11:35:50 -0400
+	Tue, 26 Jul 2011 11:35:54 -0400
 From: Tejun Heo <tj@kernel.org>
 To: benh@kernel.crashing.org, yinghai@kernel.org, hpa@zytor.com,
         tony.luck@intel.com, ralf@linux-mips.org, schwidefsky@de.ibm.com,
         liqin.chen@sunplusct.com, lethal@linux-sh.org, davem@davemloft.net,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
 Cc: mingo@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 05/23] memblock: Kill sentinel entries at the end of static region arrays
-Date: Tue, 26 Jul 2011 17:35:16 +0200
-Message-Id: <1311694534-5161-6-git-send-email-tj@kernel.org>
+Subject: [PATCH 08/23] memblock: Reimplement __memblock_remove() using memblock_isolate_range()
+Date: Tue, 26 Jul 2011 17:35:19 +0200
+Message-Id: <1311694534-5161-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1311694534-5161-1-git-send-email-tj@kernel.org>
 References: <1311694534-5161-1-git-send-email-tj@kernel.org>
@@ -23,56 +23,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memblock no longer depends on having one more entry at the end during
-addition making the sentinel entries at the end of region arrays not
-too useful.  Remove the sentinels.  This eases further updates.
+__memblock_remove()'s open coded region manipulation can be trivially
+replaced with memlbock_islate_range().  This increases code sharing
+and eases improving region tracking.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 ---
- mm/memblock.c |   14 ++------------
- 1 files changed, 2 insertions(+), 12 deletions(-)
+ mm/memblock.c |   52 +++++++---------------------------------------------
+ 1 files changed, 7 insertions(+), 45 deletions(-)
 
 diff --git a/mm/memblock.c b/mm/memblock.c
-index 73d36ea..7b73b56 100644
+index a64d469..8b38cd9 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -24,8 +24,8 @@ struct memblock memblock __initdata_memblock;
+@@ -400,7 +400,6 @@ int __init_memblock memblock_add(phys_addr_t base, phys_addr_t size)
+ 	return memblock_add_region(&memblock.memory, base, size);
+ }
  
- int memblock_debug __initdata_memblock;
- int memblock_can_resize __initdata_memblock;
--static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS + 1] __initdata_memblock;
--static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1] __initdata_memblock;
-+static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
-+static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
+-#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ /**
+  * memblock_isolate_range - isolate given range into disjoint memblocks
+  * @type: memblock type to isolate range for
+@@ -469,56 +468,19 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
  
- /* inline so we don't get a warning when pr_debug is compiled out */
- static inline const char *memblock_type_name(struct memblock_type *type)
-@@ -905,12 +905,6 @@ void __init memblock_analyze(void)
+ 	return 0;
+ }
+-#endif
+ 
+ static int __init_memblock __memblock_remove(struct memblock_type *type,
+ 					     phys_addr_t base, phys_addr_t size)
  {
- 	int i;
- 
--	/* Check marker in the unused last array entry */
--	WARN_ON(memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS].base
--		!= (phys_addr_t)RED_INACTIVE);
--	WARN_ON(memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS].base
--		!= (phys_addr_t)RED_INACTIVE);
+-	phys_addr_t end = base + size;
+-	int i;
 -
- 	memblock.memory_size = 0;
- 
- 	for (i = 0; i < memblock.memory.cnt; i++)
-@@ -934,10 +928,6 @@ void __init memblock_init(void)
- 	memblock.reserved.regions	= memblock_reserved_init_regions;
- 	memblock.reserved.max	= INIT_MEMBLOCK_REGIONS;
- 
--	/* Write a marker in the unused last array entry */
--	memblock.memory.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
--	memblock.reserved.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
+-	/* Walk through the array for collisions */
+-	for (i = 0; i < type->cnt; i++) {
+-		struct memblock_region *rgn = &type->regions[i];
+-		phys_addr_t rend = rgn->base + rgn->size;
 -
- 	/* Create a dummy zero size MEMBLOCK which will get coalesced away later.
- 	 * This simplifies the memblock_add() code below...
- 	 */
+-		/* Nothing more to do, exit */
+-		if (rgn->base > end || rgn->size == 0)
+-			break;
+-
+-		/* If we fully enclose the block, drop it */
+-		if (base <= rgn->base && end >= rend) {
+-			memblock_remove_region(type, i--);
+-			continue;
+-		}
+-
+-		/* If we are fully enclosed within a block
+-		 * then we need to split it and we are done
+-		 */
+-		if (base > rgn->base && end < rend) {
+-			rgn->size = base - rgn->base;
+-			if (!memblock_add_region(type, end, rend - end))
+-				return 0;
+-			/* Failure to split is bad, we at least
+-			 * restore the block before erroring
+-			 */
+-			rgn->size = rend - rgn->base;
+-			WARN_ON(1);
+-			return -1;
+-		}
+-
+-		/* Check if we need to trim the bottom of a block */
+-		if (rgn->base < end && rend > end) {
+-			rgn->size -= end - rgn->base;
+-			rgn->base = end;
+-			break;
+-		}
++	int start_rgn, end_rgn;
++	int i, ret;
+ 
+-		/* And check if we need to trim the top of a block */
+-		if (base < rend)
+-			rgn->size -= rend - base;
++	ret = memblock_isolate_range(type, base, size, &start_rgn, &end_rgn);
++	if (ret)
++		return ret;
+ 
+-	}
++	for (i = end_rgn - 1; i >= start_rgn; i--)
++		memblock_remove_region(type, i);
+ 	return 0;
+ }
+ 
 -- 
 1.7.6
 
