@@ -1,83 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557Ab1GZGcV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 02:32:21 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:39298 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293Ab1GZGcP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 02:32:15 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankr <ravishankarkm32@gmail.com>
-Subject: [PATCH 1/1 v2] Staging: comedi: fix printk issue in c6xdigio.c
-Date: Tue, 26 Jul 2011 12:15:34 +0530
-Message-Id: <1311662734-22064-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH]Staging: comedi: fix printk issue in c6xdigio.c>
-References: <[PATCH]Staging: comedi: fix printk issue in c6xdigio.c>
+	id S1751859Ab1GZGcn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 02:32:43 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53302 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751371Ab1GZGch convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 02:32:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110726051533.GA2835@kroah.com>
+References: <20110726051533.GA2835@kroah.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 25 Jul 2011 23:31:48 -0700
+Message-ID: <CA+55aFwOgkOXmY654-qbuiFFnUC1yXZ27DBDFR02JP12NxAF9w@mail.gmail.com>
+Subject: Re: [GIT PATCH] STAGING patches for 3.1
+To: Greg KH <greg@kroah.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+On Mon, Jul 25, 2011 at 10:15 PM, Greg KH <greg@kroah.com> wrote:
+>
+> Note, I have not successfully merged this with your tree yet, the
+> diffstat below is against the 3.0-rc6 tree.  When merging with your
+> tree, there are a number of merge issues that I trust you can resolve
+> easier than I can.  If you have problems, please let me know and I will
+> fix them up on Wednesday when I get done driving to my next hotel
+> location.
 
-This is a patch to the c6xdigio.c file that fixes up a printk warning found by the checkpatch.pl tool
+No problem, some of the merge conflicts looked a bit ugly, but they
+were all trivial. Most of them was due to some trivial removed or
+added #include lines, and it just then clashed with your much bigger
+changes. Easy enough to sort out, and in couple of cases the bigger
+changes had just made the small changes irrelevant too.
 
-Signed-off-by: Ravishankr <ravishankarkm32@gmail.com>
----
+So all merged and pushed out. Of course, maybe I made a mistake
+somewhere, but none of it looked at all questionable (famous last
+words ;)
 
- drivers/staging/comedi/drivers/c6xdigio.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/c6xdigio.c b/drivers/staging/comedi/drivers/c6xdigio.c
-index e0ac825..b0b578c 100644
---- a/drivers/staging/comedi/drivers/c6xdigio.c
-+++ b/drivers/staging/comedi/drivers/c6xdigio.c
-@@ -343,7 +343,7 @@ static int c6xdigio_pwmo_insn_read(struct comedi_device *dev,
- 				   struct comedi_subdevice *s,
- 				   struct comedi_insn *insn, unsigned int *data)
- {
--	printk("c6xdigio_pwmo_insn_read %x\n", insn->n);
-+	pr_info("%s %x\n", __func__, insn->n);
- 	return insn->n;
- }
- 
-@@ -439,9 +439,9 @@ static int c6xdigio_attach(struct comedi_device *dev,
- 	struct comedi_subdevice *s;
- 
- 	iobase = it->options[0];
--	printk("comedi%d: c6xdigio: 0x%04lx\n", dev->minor, iobase);
-+	pr_info("comedi%d: c6xdigio: 0x%04lx\n", dev->minor, iobase);
- 	if (!request_region(iobase, C6XDIGIO_SIZE, "c6xdigio")) {
--		printk("comedi%d: I/O port conflict\n", dev->minor);
-+		pr_err("comedi%d: I/O port conflict\n", dev->minor);
- 		return -EIO;
- 	}
- 	dev->iobase = iobase;
-@@ -456,9 +456,9 @@ static int c6xdigio_attach(struct comedi_device *dev,
- 
- 	irq = it->options[1];
- 	if (irq > 0)
--		printk("comedi%d: irq = %u ignored\n", dev->minor, irq);
-+		pr_debug("%s: %x\n", __func__, insn->n);
- 	else if (irq == 0)
--		printk("comedi%d: no irq\n", dev->minor);
-+		pr_debug("%s: %x\n", __func__, insn->n);
- 
- 	s = dev->subdevices + 0;
- 	/* pwm output subdevice */
-@@ -503,7 +503,7 @@ static int c6xdigio_detach(struct comedi_device *dev)
- {
- 	/* board_halt(dev);  may not need this */
- 
--	printk("comedi%d: c6xdigio: remove\n", dev->minor);
-+	pr_info("comedi%d: c6xdigio: remove\n", dev->minor);
- 
- 	if (dev->iobase)
- 		release_region(dev->iobase, C6XDIGIO_SIZE);
--- 
-1.6.5.2
-
+                   Linus
