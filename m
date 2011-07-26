@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab1GZPEv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 11:04:51 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:33392 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751573Ab1GZPEq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 11:04:46 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=a7h0BdWN8Js1l9nWh9NOg/xwkABngL8JluPY7/fJ+hzGaSH9RZdPQyqqkKGcIFoCd/+k6IHorBN8HBnPNGvkTnZNUf31krvvEZCG4p7qStq+chmBfCEH9NpEgdZoQLs+;
-Date: Tue, 26 Jul 2011 08:04:43 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Michal Marek <mmarek@suse.cz>
-Cc: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        linux-kbuild@vger.kernel.org, lacombar@gmail.com, sam@ravnborg.org,
-        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
-Subject: Re: [RFC][PATCH 1/2] kconfig: Introduce KCONFIG(),
- KCONFIG_BUILTIN() and KCONFIG_MODULE()
-Message-Id: <20110726080443.62196869.rdunlap@xenotime.net>
-In-Reply-To: <4E2EBF63.8050208@suse.cz>
-References: <4E1D9C25.8080300@suse.cz>
-	<1311634718-32588-1-git-send-email-mmarek@suse.cz>
-	<CAM_iQpUEfYrrtpcRLTekSHMHrTTka6ir=z_GUUbnxuQKfY+OXA@mail.gmail.com>
-	<4E2EBF63.8050208@suse.cz>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1753197Ab1GZPFZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 11:05:25 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:24917
+	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751877Ab1GZPFV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 11:05:21 -0400
+X-SpamScore: -14
+X-BigFish: VS-14(zz9371M1432N98dKzz1202hzzz2dh2a8h668h839h8e2h8e3h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Tabi Timur-B04825 <B04825@freescale.com>
+To: Greg KH <gregkh@suse.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
+Subject: Re: [GIT PATCH] TTY/serial driver patches for 3.1
+Thread-Topic: [GIT PATCH] TTY/serial driver patches for 3.1
+Thread-Index: AQHMS6VtbctqBOlBPEy1w7LMSdttZQ==
+Date: Tue, 26 Jul 2011 15:05:17 +0000
+Message-ID: <CAOZdJXWuRLSZVof1q51yTmk1FXFR28mb9qSYcbChC8KC2awn=g@mail.gmail.com>
+References: <20110726050225.GA2529@kroah.com>
+In-Reply-To: <20110726050225.GA2529@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [174.129.36.64]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <375F0D82D6FC7B4CA22FC1855F182442@freescale.net>
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Jul 2011 15:21:39 +0200 Michal Marek wrote:
+On Tue, Jul 26, 2011 at 12:02 AM, Greg KH <gregkh@suse.de> wrote:
+> Here is the big tty/serial patchset for your 3.1 tree.
+>
+> Nothing major at all, lots of line discipline tweaks for the newer ones
+> that were added last release, and some small tty core fixes as well.
 
-> On 26.7.2011 15:01, Américo Wang wrote:
-> > On Tue, Jul 26, 2011 at 6:58 AM, Michal Marek<mmarek@suse.cz>  wrote:
-> >> Replace the config_is_*() macros with a variant that allows for grepping
-> >> for usage of CONFIG_* options in the code. Usage:
-> >>
-> >>   if (KCONFIG(CONFIG_NUMA))
-> >>
-> >> or
-> >>
-> >>   #if KCONFIG(CONFIG_NUMA)
-> >>
-> >> The KCONFIG() macro evaluates to 1 if the argument is set (to either 'y'
-> >> or 'm'), KCONFIG_BUILTIN() and KCONFIG_MODULE() test if the respective
-> >> option is 'y' and 'm', respectively.
-> >
-> > I think it's better to let KCONFIG_MODULE() returns true only for =m, so that
-> > KCONFIG() will equal to KCONFIG_BUILTIN() || KCONFIG_MODULE().
-> 
-> This is how it's done.
-> 
-> 
-> > BTW, the name KCONFIG(CONFIG_NUMA) seems ugly.
-> 
-> Suggest a better one :). The proposals so far:
-> config_is_numa() (breaks grep)
+Greg,
 
-explain, please.
+I hate to be a pest, but you didn't include my patch, "[v3]
+tty/powerpc: introduce the ePAPR embedded hypervisor byte channel
+driver".  The other six patches of that patchset are already in Linus'
+tree, so I'd really like to get this one into 3.1 as well.  You even
+tried to apply v2 to tty-next about three weeks ago, but it didn't
+apply so I immediately posted v3.
 
-> CONFIGURED(CONFIG_NUMA)
-> ENABLED(CONFIG_NUMA)
-> KCONFIG(CONFIG_NUMA)
-
-CONFIG(NUMA) || CONFIG(NUMA_BUILTIN) || CONFIG(NUMA_MODULE)
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
