@@ -1,86 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab1GZVST (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 17:18:19 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58965 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753112Ab1GZVSQ (ORCPT
+	id S1753668Ab1GZVa1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 17:30:27 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:39843 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753307Ab1GZVaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 17:18:16 -0400
-Date: Tue, 26 Jul 2011 14:17:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        balbir@linux.vnet.ibm.com, linux-mm@kvack.org,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org,
-        Tim Deegan <Tim.Deegan@citrix.com>
-Subject: Re: [PATCH] memcg: do not expose uninitialized mem_cgroup_per_node
- to world
-Message-Id: <20110726141754.c69b96c6.akpm@linux-foundation.org>
-In-Reply-To: <4DF24D04.1080802@redhat.com>
-References: <1306925044-2828-1-git-send-email-imammedo@redhat.com>
-	<20110601123913.GC4266@tiehlicka.suse.cz>
-	<4DE6399C.8070802@redhat.com>
-	<20110601134149.GD4266@tiehlicka.suse.cz>
-	<4DE64F0C.3050203@redhat.com>
-	<20110601152039.GG4266@tiehlicka.suse.cz>
-	<4DE66BEB.7040502@redhat.com>
-	<BANLkTimbqHPeUdue=_Z31KVdPwcXtbLpeg@mail.gmail.com>
-	<4DE8D50F.1090406@redhat.com>
-	<BANLkTinMamg_qesEffGxKu3QkT=zyQ2MRQ@mail.gmail.com>
-	<4DEE26E7.2060201@redhat.com>
-	<20110608123527.479e6991.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110608140951.115ab1dd.akpm@linux-foundation.org>
-	<4DF24D04.1080802@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Tue, 26 Jul 2011 17:30:25 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=GsEvqT4PxD91S6aOVH5Kt1eLSm8jHFLVmkGxBJT3jgA08QSL27HcY/K29BNQ+i4SMC3NGDT3zXkd/EY6CwnkKLM/mnBvxdNCe7K/Vs9ZHJQQI7n7TxFHyKhW5eeVTTjL;
+Date: Tue, 26 Jul 2011 14:30:23 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        alan@linux.intel.com
+Subject: Re: linux-next: Tree for July 26 (gpu vs. staging/gma500)
+Message-Id: <20110726143023.cc2d7f81.rdunlap@xenotime.net>
+In-Reply-To: <20110726155744.5c1bee67177bd94211ed8c2b@canb.auug.org.au>
+References: <20110726155744.5c1bee67177bd94211ed8c2b@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Jun 2011 18:57:40 +0200
-Igor Mammedov <imammedo@redhat.com> wrote:
+On Tue, 26 Jul 2011 15:57:44 +1000 Stephen Rothwell wrote:
 
-> On 06/08/2011 11:09 PM, Andrew Morton wrote:
-> > The original patch:
-> >
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -4707,7 +4707,6 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
-> >   	if (!pn)
-> >   		return 1;
-> >
-> > -	mem->info.nodeinfo[node] = pn;
-> >   	for (zone = 0; zone<  MAX_NR_ZONES; zone++) {
-> >   		mz =&pn->zoneinfo[zone];
-> >   		for_each_lru(l)
-> > @@ -4716,6 +4715,7 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
-> >   		mz->on_tree = false;
-> >   		mz->mem = mem;
-> >   	}
-> > +	mem->info.nodeinfo[node] = pn;
-> >   	return 0;
-> >   }
-> >
-> > looks like a really good idea.  But it needs a new changelog and I'd be
-> > a bit reluctant to merge it as it appears that the aptch removes our
-> > only known way of reproducing a bug.
-> >
-> > So for now I think I'll queue the patch up unchangelogged so the issue
-> > doesn't get forgotten about.
-> >
-> Problem was in rhel's xen hv.
-> It was missing fix for imul emulation.
-> Details here 
-> http://lists.xensource.com/archives/html/xen-devel/2011-06/msg00801.html
-> Thanks to Tim Deegan and everyone who was involved in the discussion.
+> Hi all,
 
-I really don't want to trawl through a lengthy xen bug report and write
-your changelog for you.
+drivers/staging/built-in.o: In function `drm_gem_private_object_init':
+(.text+0x8e170): multiple definition of `drm_gem_private_object_init'
+drivers/gpu/built-in.o:(.text+0x9a20): first defined here
 
-We still have no changelog for this patch.  Please send one.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
