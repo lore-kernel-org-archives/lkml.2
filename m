@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab1GZMs4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 08:48:56 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56081 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215Ab1GZMsu (ORCPT
+	id S1752310Ab1GZMuK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 08:50:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:62599 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752215Ab1GZMuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 08:48:50 -0400
-MIME-Version: 1.0
-Date: Tue, 26 Jul 2011 20:48:49 +0800
-Message-ID: <CAJd=RBCx=PGqynuogmq-1M-2JtSLvGRM=2Pm8mjZRARB5ctB0A@mail.gmail.com>
-Subject: [RFC patch] DMAengine/Langwell: unmap IO region in error path
-From: Hillf Danton <dhillf@gmail.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 26 Jul 2011 08:50:09 -0400
+X-Authority-Analysis: v=1.1 cv=sbbt6Wn8j+VvNVI1Ftt/uHhinWyuFt+R57MN9Ty2Tys= c=1 sm=0 a=3NOpT3G9tzkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=qRdErg5HNKU5SqRPwJwA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 6/7] sched: Balance RT tasks when forked as well
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1311683818.24752.34.camel@twins>
+References: <20110617015516.301117218@goodmis.org>
+	 <20110617015919.832743148@goodmis.org>  <1311683108.24752.33.camel@twins>
+	 <1311683732.3526.64.camel@gandalf.stny.rr.com>
+	 <1311683818.24752.34.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 26 Jul 2011 08:50:07 -0400
+Message-ID: <1311684607.3526.67.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When setting up the Langwell DMA controller, if error encountered, the newly
-mapped IO region should be unmapped.
+On Tue, 2011-07-26 at 14:36 +0200, Peter Zijlstra wrote:
+> On Tue, 2011-07-26 at 08:35 -0400, Steven Rostedt wrote:
+> > On Tue, 2011-07-26 at 14:25 +0200, Peter Zijlstra wrote:
+> > > On Thu, 2011-06-16 at 21:55 -0400, Steven Rostedt wrote:
+> > > > +       /* For anything but wake ups, just return the task_cpu */
+> > > > +       if (sd_flag != SD_BALANCE_WAKE || sd_flag != SD_BALANCE_FORK) 
+> > > 
+> > > So we call select_task_rq() with SD_BALANCE_{WAKE,EXEC,FORK}, 
+> > > 
+> > > 	(WAKE != WAKE -> 0 || WAKE != FORK -> 1) -> 1
+> > > 	(EXEC != WAKE -> 1 ) -> 1
+> > > 	(FORK != WAKE -> 1 ) -> 1
+> > > 
+> > > IOW, you never end up doing anything now.. surely you didn't mean that?!
+> > 
+> > Bah!
+> > 
+> > s/||/&&/
+> 
+> So you only want to rebalance on EXEC? The comment says you want to
+> balance on wakeups. Please as to unconfuse!?
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
- drivers/dma/intel_mid_dma.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+The patch is (with fixup):
 
-diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
-index f653517..4c9a572 100644
---- a/drivers/dma/intel_mid_dma.c
-+++ b/drivers/dma/intel_mid_dma.c
-@@ -1199,6 +1199,8 @@ static int mid_setup_dma(struct pci_dev *pdev)
- err_engine:
- 	free_irq(pdev->irq, dma);
- err_irq:
-+	if (dma->mask_reg)
-+		iounmap(dma->mask_reg);
- 	pci_pool_destroy(dma->dma_pool);
- err_dma_pool:
- 	pr_err("ERR_MDMA:setup_dma failed: %d\n", err);
++       /* For anything but wake ups, just return the task_cpu */
++       if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
++               goto out;
+
+In other words, if it isn't a WAKE or FORK (FORK being new task wakeup)
+then exit the routine.
+
+EXEC should not rebalance.
+
+-- Steve
+
+
