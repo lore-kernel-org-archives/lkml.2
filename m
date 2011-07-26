@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836Ab1GZM5L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 08:57:11 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:53140 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946Ab1GZM5F (ORCPT
+	id S1751742Ab1GZNB5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 09:01:57 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58502 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946Ab1GZNBv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 08:57:05 -0400
-Message-ID: <4E2EBA11.6000700@free-electrons.com>
-Date: Tue, 26 Jul 2011 14:58:57 +0200
-From: David Wagner <david.wagner@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	Tue, 26 Jul 2011 09:01:51 -0400
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: linux-mtd@lists.infradead.org, dedekind1@gmail.com, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org,
-        tim.bird@am.sony.com
-Subject: Re: [PATCH] UBI: new module ubiblk: block layer on top of UBI
-References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com> <1311683250-7921-1-git-send-email-david.wagner@free-electrons.com> <20110726123453.GA18513@infradead.org>
-In-Reply-To: <20110726123453.GA18513@infradead.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1311634718-32588-1-git-send-email-mmarek@suse.cz>
+References: <4E1D9C25.8080300@suse.cz>
+	<1311634718-32588-1-git-send-email-mmarek@suse.cz>
+Date: Tue, 26 Jul 2011 21:01:50 +0800
+Message-ID: <CAM_iQpUEfYrrtpcRLTekSHMHrTTka6ir=z_GUUbnxuQKfY+OXA@mail.gmail.com>
+Subject: Re: [RFC][PATCH 1/2] kconfig: Introduce KCONFIG(), KCONFIG_BUILTIN()
+ and KCONFIG_MODULE()
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, lacombar@gmail.com, sam@ravnborg.org,
+        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2011 02:34 PM, Christoph Hellwig wrote:
->> TODO:
->>  * the modules keeps a table of the devices which length is the
-maximum number
->>    of UBI volumes.  It should make use of a linked list.
+On Tue, Jul 26, 2011 at 6:58 AM, Michal Marek <mmarek@suse.cz> wrote:
+> Replace the config_is_*() macros with a variant that allows for grepping
+> for usage of CONFIG_* options in the code. Usage:
 >
-> A linked list isn't very nice either.  Try using idr, which gives you
-> both an allocator for the minor number space, and a way to look up
-> the structure by that index.
+>  if (KCONFIG(CONFIG_NUMA))
 >
-
-I'll take a look ; is it really worth it, though ? I look in the table
-only when a volume is created, resized, or removed (that is, rarely) and
-there are really few items (I bet, between 1 and 8 ; max possible is 4096).
-
->> Advantages of ubiblk over gluebi+mtdblock_ro:
+> or
 >
-> This section should be in the main commit log, and not that part with
-> the changelog which gets dropped.
-
-Will do.
-
->> +int major;
+>  #if KCONFIG(CONFIG_NUMA)
 >
-> Please don't use global variables with generic names.  In this case you
-> should neither make it global nor give it a generic name.
->
+> The KCONFIG() macro evaluates to 1 if the argument is set (to either 'y'
+> or 'm'), KCONFIG_BUILTIN() and KCONFIG_MODULE() test if the respective
+> option is 'y' and 'm', respectively.
 
-fixed.
+I think it's better to let KCONFIG_MODULE() returns true only for =m, so that
+KCONFIG() will equal to KCONFIG_BUILTIN() || KCONFIG_MODULE().
 
-
-Thank you for your feedback :)
-
--- 
-David Wagner, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
-
+BTW, the name KCONFIG(CONFIG_NUMA) seems ugly.
