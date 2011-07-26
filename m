@@ -1,54 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab1GZHng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 03:43:36 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39205 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751142Ab1GZHnb (ORCPT
+	id S1752072Ab1GZHoj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 03:44:39 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:42684 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab1GZHoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 03:43:31 -0400
-Date: Tue, 26 Jul 2011 00:43:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Andy Grover <agrover@redhat.com>, Hannes Reinecke <hare@suse.de>,
-        Roland Dreier <roland@purestorage.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Boaz Harrosh <openosd@gmail.com>, Mike Christie <michaelc@cs.wisc.edu>
-Subject: Re: [GIT PULL] iscsi-target merge for v3.1-rc1
-Message-Id: <20110726004335.c6f26c5c.akpm@linux-foundation.org>
-In-Reply-To: <CA+55aFyNBaf2+=XJDLKNF1S5zMtpx38+Zd8uNd9k4ap4YpZmvw@mail.gmail.com>
-References: <1311462975.31450.356.camel@haakon2.linux-iscsi.org>
-	<20110725163739.5c19b04d.akpm@linux-foundation.org>
-	<20110725165057.9701f16b.akpm@linux-foundation.org>
-	<1311663071.17766.230.camel@haakon2.linux-iscsi.org>
-	<CA+55aFyNBaf2+=XJDLKNF1S5zMtpx38+Zd8uNd9k4ap4YpZmvw@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Jul 2011 03:44:34 -0400
+MIME-Version: 1.0
+X-Originating-IP: [212.120.32.74]
+In-Reply-To: <1311662194-4050-5-git-send-email-keithp@keithp.com>
+References: <1311662194-4050-1-git-send-email-keithp@keithp.com>
+	<1311662194-4050-5-git-send-email-keithp@keithp.com>
+Date: Tue, 26 Jul 2011 09:44:32 +0200
+X-Google-Sender-Auth: uxEaMtCYoW6oxvHeaRdxEhcDI4M
+Message-ID: <CAKMK7uGHiXRU_3AqfOdLSmQsgMgf=Ah1_zf3k4T5E-7HC-f=Ng@mail.gmail.com>
+Subject: Re: [PATCH 4/5] drm/i915: Delay 250ms before running the hotplug code
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Jul 2011 00:09:40 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
+queue_delayed_work? Plays nicer with other workqueue-items.
 
-> Just a simple
-> 
-> #define DIV_ROUND_UP_ULL(ll,d) \
->   ({ unsigned long long _tmp = (ll)+(d)-1; do_div(_tmp, d); _tmp; })
-> 
-> looks like it would work and be simpler. Avoid the conditional, do the
-> same "add 'd-1' thing as the regular ROUND_UP().
-> 
+-Daniel
 
-We might end up needing a DIV_ROUND_UP_SECTOR_T because that guy's
-type/size is Kconfigurable.
-
-otoh DIV_ROUND_UP_ULL won't have many callsites - the occasional
-conversion from UL to ULL then back to UL wouldn't kill us.  Unless
-there be subtle problems with such a conversion.
-
+PS: Scrap my other mail, just noticed that the merged patched r-b'ed
+by Jesse uses the mode_config mutex.
+-- 
+Daniel Vetter
+daniel.vetter@ffwll.ch - +41 (0) 79 364 57 48 - http://blog.ffwll.ch
