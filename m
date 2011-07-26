@@ -1,102 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab1GZTTW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 15:19:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45829 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752075Ab1GZTTT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 15:19:19 -0400
-X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=4zXO0g0yDmYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=QqmXBP8GPko3f0F5R2YA:9 a=X30Qk5PqzUqJoMUiit4A:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [PATCH v3] cgroup/kmemcheck: Annotate alloc_page() for cgroup
- allocations
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-In-Reply-To: <1311707088.21143.0.camel@gandalf.stny.rr.com>
-References: <1311699911.3526.87.camel@gandalf.stny.rr.com>
-	 <20110726173816.GA26597@tiehlicka.suse.cz>
-	 <1311702110.3526.98.camel@gandalf.stny.rr.com>
-	 <1311702244.3526.100.camel@gandalf.stny.rr.com>
-	 <1311704249.3526.106.camel@gandalf.stny.rr.com>
-	 <20110726184342.GB26597@tiehlicka.suse.cz>
-	 <1311707088.21143.0.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 26 Jul 2011 15:19:16 -0400
-Message-ID: <1311707956.21143.2.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1753544Ab1GZTYw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 15:24:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42743 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752189Ab1GZTYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 15:24:49 -0400
+Date: Tue, 26 Jul 2011 15:24:41 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Paul Menage <menage@google.com>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, lizf@cn.fujitsu.com,
+        axboe@kernel.dk, linux-kernel@vger.kernel.org, wanlong.gao@gmail.com
+Subject: Re: [PATCH v3] blk-cgroup:be able to remove the record of unplugged
+ device
+Message-ID: <20110726192441.GD13780@redhat.com>
+References: <1311573834-7140-1-git-send-email-gaowanlong@cn.fujitsu.com>
+ <1311645400-19434-1-git-send-email-gaowanlong@cn.fujitsu.com>
+ <20110726144427.GB13780@redhat.com>
+ <CAJniumVm=oH_yJAgaTzwVu1XwJfn8eAsHw2Cm0tfvg=unA6hkA@mail.gmail.com>
+ <20110726174148.GC13780@redhat.com>
+ <CAJniumW-+aQE0jWr0NhvTUuxLDiP27bQaZVmVORpnNHvPqp0kQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJniumW-+aQE0jWr0NhvTUuxLDiP27bQaZVmVORpnNHvPqp0kQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the cgroup base was allocated with kmalloc, it was necessary to
-annotate the variable with kmemcheck_not_leak(). But because it has
-recently been changed to be allocated with alloc_page() (which skips
-kmemleak checks) causes a warning on boot up.
+On Tue, Jul 26, 2011 at 11:40:26AM -0700, Paul Menage wrote:
+> On Tue, Jul 26, 2011 at 10:41 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > They have but the context where temp is being used to figure out if it
+> > is a deletion rule is generic. So if a rule is being deleted (be it
+> > weight, bps or iops), we are going to parse it early in the function.
+> > So in that context not calling it "weight" makes sense to me.
+> >
+> > We use bps, iops names only after knowing the value type.
+> 
+> Fair enough - but in that case, wouldn't it make sense to make "temp"
+> a u64 and just parse it once, rather than reparsing the iops/bps later
+> in their switch cases?
 
-I was triggering this output:
+Agreed. That makes sense. Make temp u64 and use strict_strtoull() and
+once parsed use that value for weight, bps and iops and don't do
+parsing again.
 
-allocated 8388608 bytes of page_cgroup
-please try 'cgroup_disable=memory' option if you don't want memory cgroups
-kmemleak: Trying to color unknown object at 0xf5840000 as Grey
-Pid: 0, comm: swapper Not tainted 3.0.0-test #12
-Call Trace:
- [<c17e34e6>] ? printk+0x1d/0x1f^M
- [<c10e2941>] paint_ptr+0x4f/0x78
- [<c178ab57>] kmemleak_not_leak+0x58/0x7d
- [<c108ae9f>] ? __rcu_read_unlock+0x9/0x7d
- [<c1cdb462>] kmemleak_init+0x19d/0x1e9
- [<c1cbf771>] start_kernel+0x346/0x3ec
- [<c1cbf1b4>] ? loglevel+0x18/0x18
- [<c1cbf0aa>] i386_start_kernel+0xaa/0xb0
+Wanlong, could you please take care of above also in your next posting?
 
-After a bit of debugging I tracked the object 0xf840000 (and others)
-down to the cgroup code. The change from allocating base with kmalloc to
-alloc_page() has the base not calling kmemleak_alloc() which adds the
-pointer to the object_tree_root, but kmemleak_not_leak() adds it to the
-crt_early_log[] table. On kmemleak_init(), the entry is found in the
-early_log[] but not the object_tree_root, and this error message is
-displayed.
-
-If alloc_page() fails then it defaults back to vmalloc() which still
-uses the kmemleak_alloc() which makes us still need the
-kmemleak_not_leak() call. The solution is to call the kmemleak_alloc()
-directly if the alloc_page() succeeds.
-
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-index 53bffc6..1eb534a 100644
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -133,10 +133,13 @@ struct page *lookup_cgroup_page(struct page_cgroup *pc)
- static void *__meminit alloc_page_cgroup(size_t size, int nid)
- {
- 	void *addr = NULL;
-+	gfp_t flags = GFP_KERNEL | __GFP_NOWARN;
- 
--	addr = alloc_pages_exact_nid(nid, size, GFP_KERNEL | __GFP_NOWARN);
--	if (addr)
-+	addr = alloc_pages_exact_nid(nid, size, flags);
-+	if (addr) {
-+		kmemleak_alloc(addr, size, 1, flags);
- 		return addr;
-+	}
- 
- 	if (node_state(nid, N_HIGH_MEMORY))
- 		addr = vmalloc_node(size, nid);
-
-
+Thanks
+Vivek
