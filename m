@@ -1,144 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab1GZJhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 05:37:17 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:44665 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753334Ab1GZJgy (ORCPT
+	id S1753234Ab1GZJiy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 05:38:54 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54701 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab1GZJir convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 05:36:54 -0400
-Subject: [PATCH v3 2/2] dt/irq: add irq_domain_generate_simple() helper
-To: devicetree-discuss@lists.ozlabs.org, tglx@linutronix.de,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 26 Jul 2011 03:36:47 -0600
-Message-ID: <20110726093646.12508.68128.stgit@ponder>
-In-Reply-To: <20110726093141.12508.48108.stgit@ponder>
-References: <20110726093141.12508.48108.stgit@ponder>
-User-Agent: StGit/0.15
+	Tue, 26 Jul 2011 05:38:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1311601253-2933-1-git-send-email-hrishikesh.b@ti.com>
+References: <1311601253-2933-1-git-send-email-hrishikesh.b@ti.com>
+Date: Tue, 26 Jul 2011 12:38:46 +0300
+Message-ID: <CANOLnOODuPKAmRfiokC_4UgwrxCcw5xY1a9vhMsWN0T2LzNzAQ@mail.gmail.com>
+Subject: Re: [PATCH] OMAP3: NAND: Adding NAND support and specifying NAND partitions.
+From: Grazvydas Ignotas <notasas@gmail.com>
+To: Hrishikesh Bhandiwad <hrishikesh.b@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        Vaibhav Hiremath <hvaibhav@ti.com>, Sanjeev Premi <premi@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq_domain_generate_simple() is an easy way to generate an irq translation
-domain for simple irq controllers.  It assumes a flat 1:1 mapping from
-hardware irq number to an offset of the first linux irq number assigned
-to the controller
+On Mon, Jul 25, 2011 at 4:40 PM, Hrishikesh Bhandiwad
+<hrishikesh.b@ti.com> wrote:
+> This patch adds the NAND support on OMAP3EVM board and also allocates
+> five partitions  on NAND.
+> Referred to file: arch/arm/mach-omap2/board-omap3beagle.c
+>
+> Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+> Signed-off-by: Sanjeev Premi <premi@ti.com>
+> Signed-off-by: Hrishikesh Bhandiwad <hrishikesh.b@ti.com>
+> ---
+>  arch/arm/mach-omap2/board-omap3evm.c |   40 ++++++++++++++++++++++++++++++++++
+>  1 files changed, 40 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
+> index b4d4346..be45b63 100644
+> --- a/arch/arm/mach-omap2/board-omap3evm.c
+> +++ b/arch/arm/mach-omap2/board-omap3evm.c
+> @@ -30,6 +30,10 @@
+>  #include <linux/usb/otg.h>
+>  #include <linux/smsc911x.h>
+>
+> +#include <linux/mtd/mtd.h>
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
- include/linux/irqdomain.h |   12 +++++++++
- kernel/irq/irqdomain.c    |   59 ++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 70 insertions(+), 1 deletions(-)
+You don't need this include.
 
-diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-index 8f2c10a..8e3ea36 100644
---- a/include/linux/irqdomain.h
-+++ b/include/linux/irqdomain.h
-@@ -16,6 +16,7 @@
- #define _LINUX_IRQDOMAIN_H
- 
- #include <linux/irq.h>
-+#include <linux/mod_devicetable.h>
- 
- #ifdef CONFIG_IRQ_DOMAIN
- struct device_node;
-@@ -76,6 +77,17 @@ static inline unsigned int irq_domain_to_irq(struct irq_domain *d,
- 
- extern void irq_domain_add(struct irq_domain *domain);
- extern void irq_domain_del(struct irq_domain *domain);
-+
-+#ifdef CONFIG_OF_IRQ
-+extern void irq_domain_add_simple(struct device_node *controller, int irq_base);
-+extern void irq_domain_generate_simple(const struct of_device_id *match,
-+					u64 phys_base, unsigned int irq_start);
-+#else /* CONFIG_OF_IRQ */
-+static inline void irq_domain_generate_simple(const struct of_device_id *match,
-+					u64 phys_base, unsigned int irq_start) { }
-+#endif /* CONFIG_OF_IRQ */
-+
-+
- #endif /* CONFIG_IRQ_DOMAIN */
- 
- #endif /* _LINUX_IRQDOMAIN_H */
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 171b754..d5828da 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -1,9 +1,10 @@
--
- #include <linux/irq.h>
- #include <linux/irqdomain.h>
- #include <linux/module.h>
- #include <linux/mutex.h>
- #include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/slab.h>
- 
- static LIST_HEAD(irq_domain_list);
- static DEFINE_MUTEX(irq_domain_mutex);
-@@ -120,4 +121,60 @@ void irq_dispose_mapping(unsigned int irq)
- 	 */
- }
- EXPORT_SYMBOL_GPL(irq_dispose_mapping);
-+
-+int irq_domain_simple_dt_translate(struct irq_domain *d,
-+			    struct device_node *controller,
-+			    const u32 *intspec, unsigned int intsize,
-+			    unsigned long *out_hwirq, unsigned int *out_type)
-+{
-+	if (d->of_node != controller)
-+		return -EINVAL;
-+	if (intsize < 1)
-+		return -EINVAL;
-+
-+	*out_hwirq = intspec[0];
-+	*out_type = IRQ_TYPE_NONE;
-+	if (intsize > 1)
-+		*out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
-+	return 0;
-+}
-+
-+struct irq_domain_ops irq_domain_simple_ops = {
-+	.dt_translate = irq_domain_simple_dt_translate,
-+};
-+EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
-+
-+/**
-+ * irq_domain_create_simple() - Set up a 'simple' translation range
-+ */
-+void irq_domain_add_simple(struct device_node *controller, int irq_base)
-+{
-+	struct irq_domain *domain;
-+
-+	domain = kzalloc(sizeof(*domain), GFP_KERNEL);
-+	if (!domain) {
-+		WARN_ON(1);
-+		return;
-+	}
-+
-+	domain->irq_base = irq_base;
-+	domain->of_node = of_node_get(controller);
-+	domain->ops = &irq_domain_simple_ops;
-+	irq_domain_add(domain);
-+}
-+EXPORT_SYMBOL_GPL(irq_domain_add_simple);
-+
-+void irq_domain_generate_simple(const struct of_device_id *match,
-+				u64 phys_base, unsigned int irq_start)
-+{
-+	struct device_node *node;
-+	pr_info("looking for phys_base=%llx, irq_start=%i\n",
-+		(unsigned long long) phys_base, (int) irq_start);
-+	node = of_find_matching_node_by_address(NULL, match, phys_base);
-+	if (node)
-+		irq_domain_add_simple(node, irq_start);
-+	else
-+		pr_info("no node found\n");
-+}
-+EXPORT_SYMBOL_GPL(irq_domain_generate_simple);
- #endif /* CONFIG_OF_IRQ */
+> +#include <linux/mtd/partitions.h>
+> +#include <linux/mtd/nand.h>
+> +
+>  #include <linux/wl12xx.h>
+>  #include <linux/regulator/fixed.h>
+>  #include <linux/regulator/machine.h>
+> @@ -46,6 +50,8 @@
+>  #include <plat/mcspi.h>
+>  #include <video/omapdss.h>
+>  #include <video/omap-panel-generic-dpi.h>
+> +#include <plat/gpmc.h>
+> +#include <plat/nand.h>
 
+These 2 too.
+
+>
+>  #include "mux.h"
+>  #include "sdram-micron-mt46h32m32lf-6.h"
+> @@ -101,6 +107,37 @@ static void __init omap3_evm_get_revision(void)
+>        }
+>  }
+>
+> +static struct mtd_partition omap3evm_nand_partitions[] = {
+> +       /* All the partition sizes are listed in terms of NAND block size */
+> +       {
+> +               .name           = "X-Loader",
+> +               .offset         = 0,
+> +               .size           = 4 * NAND_BLOCK_SIZE,
+> +               .mask_flags     = MTD_WRITEABLE,        /* force read-only */
+> +       },
+> +       {
+> +               .name           = "U-Boot",
+> +               .offset         = 0x80000
+
+Missing comma. Have you at least tried compiling this?
+
+> +               .size           = 15 * NAND_BLOCK_SIZE,
+> +               .mask_flags     = MTD_WRITEABLE,        /* force read-only */
+> +       },
+> +       {
+> +               .name           = "U-Boot Env",
+> +               .offset         = 0x260000
+> +               .size           = 1 * NAND_BLOCK_SIZE,
+> +       },
+> +       {
+> +               .name           = "Kernel",
+> +               .offset         = 0x280000
+> +               .size           = 32 * NAND_BLOCK_SIZE,
+> +       },
+> +       {
+> +               .name           = "File System",
+> +               .offset         = 0x680000
+> +               .size           = MTDPART_SIZ_FULL,
+> +       },
+> +};
+> +
+>  #if defined(CONFIG_SMSC911X) || defined(CONFIG_SMSC911X_MODULE)
+>  #include <plat/gpmc-smsc911x.h>
+>
+> @@ -696,6 +733,9 @@ static void __init omap3_evm_init(void)
+>
+>        omap_serial_init();
+>
+> +       omap_nand_flash_init(NAND_BUSWIDTH_16, omap3evm_nand_partitions,
+> +                       ARRAY_SIZE(omap3evm_nand_partitions));
+> +
+>        /* OMAP3EVM uses ISP1504 phy and so register nop transceiver */
+>        usb_nop_xceiv_register();
+>
+> --
+> 1.6.2.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+-- 
+Gražvydas
