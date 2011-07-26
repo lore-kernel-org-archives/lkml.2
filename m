@@ -1,105 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753599Ab1GZO7y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 10:59:54 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:46929 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753536Ab1GZO7r (ORCPT
+	id S1752129Ab1GZPAF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 11:00:05 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:47440 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751573Ab1GZO77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 10:59:47 -0400
-Subject: Re: [PATCH v3] blk-cgroup:be able to remove the record of
- unplugged device
-From: Wanlong Gao <wanlong.gao@gmail.com>
-Reply-To: wanlong.gao@gmail.com
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, menage@google.com,
-        lizf@cn.fujitsu.com, axboe@kernel.dk, linux-kernel@vger.kernel.org
-In-Reply-To: <20110726144427.GB13780@redhat.com>
-References: <1311573834-7140-1-git-send-email-gaowanlong@cn.fujitsu.com>
-	 <1311645400-19434-1-git-send-email-gaowanlong@cn.fujitsu.com>
-	 <20110726144427.GB13780@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: FNST
-Date: Tue, 26 Jul 2011 22:59:40 +0800
-Message-ID: <1311692380.2431.7.camel@Allen>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Jul 2011 10:59:59 -0400
+Date: Tue, 26 Jul 2011 17:59:54 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [Patch] fusb300_udc: remove unused function
+ fusb300_ep0_complete()
+Message-ID: <20110726145953.GI32582@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <CAM_iQpX84cR+9s3nL-p5V3a=bQgmRwJ5jhWpLY0WNS3TO8f8LQ@mail.gmail.com>
+ <20110726145315.GE32582@legolas.emea.dhcp.ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cjXvCArabh/jFWdZ"
+Content-Disposition: inline
+In-Reply-To: <20110726145315.GE32582@legolas.emea.dhcp.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-26 at 10:44 -0400, Vivek Goyal wrote:
-> On Tue, Jul 26, 2011 at 09:56:40AM +0800, Wanlong Gao wrote:
-> > 
-> > Write a record like:
-> > echo 8:0 1000 > blkio.throttle.read_bps_device
-> > to control the bps of the device.
-> > And then unplug this device without doing
-> > "8:0 0 > blkio.throttle.read_bps_device" to remove the record,
-> > it will not be removed until reboot, because if the device is removed,
-> > write some record will return "-ENODEV".
-> > 
-> > With this patch, when the device is removed, then if we want to remove
-> > the record for this removed device, just write "0" then it'll not check
-> > if it is a present device, just remove the present record.
-> 
-> Ok, not checking for device presence while deleting a rule makes sense.
-> Some comments inline.
-> 
-> [..]
-> > 
-> > Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+
+--cjXvCArabh/jFWdZ
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Jul 26, 2011 at 05:53:16PM +0300, Felipe Balbi wrote:
+> On Sun, Jul 17, 2011 at 05:53:39PM +0800, Am=E9rico Wang wrote:
+> > It is not used, so just remove it.
+> >=20
+> > Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+> > Cc: Felipe Balbi <balbi@ti.com>
+> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
 > > ---
-> >  block/blk-cgroup.c |   18 +++++++++---------
-> >  1 files changed, 9 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> > index bcaf16e..246645c 100644
-> > --- a/block/blk-cgroup.c
-> > +++ b/block/blk-cgroup.c
-> > @@ -785,7 +785,7 @@ static int blkio_policy_parse_and_set(char *buf,
-> >  {
-> >  	char *s[4], *p, *major_s = NULL, *minor_s = NULL;
-> >  	int ret;
-> > -	unsigned long major, minor, temp;
-> > +	unsigned long major, minor, weight;
-> 
-> Do not replace temp with name weight. The place you are parsing it,
-> it could be weight, bps or iops. So lets keep the generic name in
-> place.
-OK, will keep it.
-> 
-> >  	int i = 0;
-> >  	dev_t dev;
-> >  	u64 bps, iops;
-> > @@ -826,25 +826,25 @@ static int blkio_policy_parse_and_set(char *buf,
-> >  
-> >  	dev = MKDEV(major, minor);
-> >  
-> > -	ret = blkio_check_dev_num(dev);
-> > +	ret = strict_strtoul(s[1], 10, &weight);
-> >  	if (ret)
-> > +		return -EINVAL;
-> > +
-> > +	ret = blkio_check_dev_num(dev);
-> > +	if (ret && (weight != 0))
-> >  		return ret;
-> 
-> Can you simplify above and just put a one comment also. Don't even call
-> blkio_check_dev_num() if we are removing the rule. 
-> 
-> /* For rule removal, do not check for device presence. */
-> 
-> if (temp != 0)
-> 	ret = blkio_check_dev_num(dev);
-Yeah, it's better. I'll make another version of v5 and send tomorrow.
+>=20
+> applied, thanks.
+>=20
+> (next time, please put patch inline on the mail rather than as
+> attachment ;-)
 
-Meanwhile, Vivek, maybe you missed the v4 patch, which simplify the
-comments of this patch suggested by Zefan.
-The v4 patch is here:   https://lkml.org/lkml/2011/7/25/532
+actually, sorry. This doesn't apply, care to re-spin if necessary.
 
-Thanks a lot
-Best regards
-Wanlong Gao
+--=20
+balbi
 
+--cjXvCArabh/jFWdZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOLtZpAAoJEAv8Txj19kN1dXsH/01U9ThzwSRV94zsx6BTrkVz
+HgP6BVQOEgkm7IDW/BeTkXeS3S14V6cPEG83TIrn/W6XTq+vfHNNd3ESeIMsk2LI
+CjZ1y/m/n0NyEWMHjFRlnKi3RsUAYaWlKNL7N9Ra8IE/LgAdo1/Ojkd38Y7kCbyY
+Nr3cPHgm0XjxqSo2SC0kEt1n5QIB5965QGBcNpw+WUkhWHNiN500evap0Sv0TbBB
+YffmnT7pwZd7q6wDjjNwoSG9m5mXEfEp/COKWyum4PE3/DEkpCRRjVisupRgWWo1
+OSxGYrSuMqtpa4NZ7JD73/RrH4j229tjxxkXWYTbuBtWUqDMpMko5RBwbAMMf9U=
+=qlXL
+-----END PGP SIGNATURE-----
+
+--cjXvCArabh/jFWdZ--
