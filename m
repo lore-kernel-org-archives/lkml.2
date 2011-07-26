@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab1GZQiE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 12:38:04 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60795 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753889Ab1GZQhx convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 12:37:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110726161831.GA6704@infradead.org>
-References: <20110725185649.GA22133@ZenIV.linux.org.uk> <20110726033535.GA11939@x4.trippels.de>
- <CA+55aFzaKHpVdLKac6rFN+YsAugz1aR3fv-reThJiD4HWDND8w@mail.gmail.com>
- <20110726082146.GB11939@x4.trippels.de> <CADxeRwnYxgxZPT3DN=SraZOvL_juWzV+MoY9+0vqZr29y6U6cA@mail.gmail.com>
- <20110726085804.GA1639@x4.trippels.de> <CA+55aFz0S3mO9ETFZpsEcbotWV+NMzaFhpZcN09LNAdk+eavjg@mail.gmail.com>
- <20110726155930.GB1629@x4.trippels.de> <CA+55aFzxmLvLcEagYqE5iOTRv724ecW3va+Pv_RPsPLKeYHTCA@mail.gmail.com>
- <20110726161831.GA6704@infradead.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 26 Jul 2011 09:37:01 -0700
-Message-ID: <CA+55aFzJUdCgY=p_5tXf2z8_ctGYcwfyj9jYRvABUuu1g58VXA@mail.gmail.com>
-Subject: Re: [git pull] vfs pile 1.5
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Steven Liu <lingjiujianke@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753877Ab1GZQjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 12:39:01 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:33189 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753719Ab1GZQiz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 12:38:55 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=hzpiCDGCnB+q14LVsH06yTi9ga+V0g7/lT8w+GoZWwXRRh5tr1CVpe/n7rxi9uF5wrAGnWxcRX+mp7aaDT3wCpxWQuEHI5nT+AXdMN+hPCD68U7xF0uFLhb7WTF/8GPr;
+Date: Tue, 26 Jul 2011 09:38:46 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 3/5] drm/i915: In intel_dp_init, replace
+ read of DPCD with intel_dp_get_dpcd
+Message-ID: <20110726093846.58e2c9f1@jbarnes-desktop>
+In-Reply-To: <1311662194-4050-4-git-send-email-keithp@keithp.com>
+References: <1311662194-4050-1-git-send-email-keithp@keithp.com>
+	<1311662194-4050-4-git-send-email-keithp@keithp.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 9:18 AM, Christoph Hellwig <hch@infradead.org> wrote:
->
-> Even getting to check_acl() requires MS_POSIXACL to be set on the
-> superblock, which it won't be if CONFIG_XFS_ACL isn't set.
+On Mon, 25 Jul 2011 23:36:32 -0700
+Keith Packard <keithp@keithp.com> wrote:
 
-Ahh, ok. That thing is well-hidden behind that IS_POSIXACL() thing..
-And it turns out that now that I see it, I shudder. That's another of
-those potentially expensive inode indirect pointer accesses - but I
-haven't seen it because my normal test-workload is as the owner of the
-tree I'm traversing.
+> Eliminates an open-coded read and also gains the retry behaviour of
+> intel_dp_get_dpcd, which seems like a good idea.
+> 
+> Signed-off-by: Keith Packard <keithp@keithp.com>
+> ---
+>  drivers/gpu/drm/i915/intel_dp.c |    8 +++-----
+>  1 files changed, 3 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+> index 41674e1..9f134d2 100644
+> --- a/drivers/gpu/drm/i915/intel_dp.c
+> +++ b/drivers/gpu/drm/i915/intel_dp.c
+> @@ -2015,7 +2015,7 @@ intel_dp_init(struct drm_device *dev, int output_reg)
+>  
+>  	/* Cache some DPCD data in the eDP case */
+>  	if (is_edp(intel_dp)) {
+> -		int ret;
+> +		bool ret;
+>  		u32 pp_on, pp_div;
+>  
+>  		pp_on = I915_READ(PCH_PP_ON_DELAYS);
+> @@ -2028,11 +2028,9 @@ intel_dp_init(struct drm_device *dev, int output_reg)
+>  		dev_priv->panel_t12 *= 100; /* t12 in 100ms units */
+>  
+>  		ironlake_edp_panel_vdd_on(intel_dp);
+> -		ret = intel_dp_aux_native_read(intel_dp, DP_DPCD_REV,
+> -					       intel_dp->dpcd,
+> -					       sizeof(intel_dp->dpcd));
+> +		ret = intel_dp_get_dpcd(intel_dp);
+>  		ironlake_edp_panel_vdd_off(intel_dp);
+> -		if (ret == sizeof(intel_dp->dpcd)) {
+> +		if (ret) {
+>  			if (intel_dp->dpcd[DP_DPCD_REV] >= 0x11)
+>  				dev_priv->no_aux_handshake =
+>  					intel_dp->dpcd[DP_MAX_DOWNSPREAD] &
 
-> These days we can probably kill CONFIG_FOOFS_ACL given that everyone
-> now uses the generic code, and due to the deeper VFS interaction is
-> more or less forced to anyway.  Historically that wasn't the case.
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-Yeah. And these days pretty much every single distribution uses ACL's,
-which also didn't use to be the case (or even if they used them, it
-wasn't a requirement: now it tends to be).
+Now we just have to enable fast link training in the eDP case (and
+optionally when we know the DP monitor hasn't changed, just DPMS'd).
 
-> While I agree with you that we should life it into the common code,
-> the common caching is not related at all to this particular issue.
-
-Yeah, I had missed the hidden MS_POSIX_ACL test.
-
-So I agree, the plain NULL return for "no ACL" works fine.
-
-Do we have a signed-off version with a changelog etc?
-
-                          Linus
+-- 
+Jesse Barnes, Intel Open Source Technology Center
