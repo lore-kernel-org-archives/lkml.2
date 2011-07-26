@@ -1,83 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab1GZO4T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 10:56:19 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:43623 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753379Ab1GZO4N (ORCPT
+	id S1753599Ab1GZO7y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 10:59:54 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:46929 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753536Ab1GZO7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 10:56:13 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        usb-storage@lists.one-eyed-alien.net, linux-kernel@vger.kernel.org,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Subject: [PATCH] usb_storage: Don't freeze in usb-stor-scan
-Date: Tue, 26 Jul 2011 09:56:07 -0500
-Message-Id: <1311692167-14658-1-git-send-email-seth.forshee@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 26 Jul 2011 10:59:47 -0400
+Subject: Re: [PATCH v3] blk-cgroup:be able to remove the record of
+ unplugged device
+From: Wanlong Gao <wanlong.gao@gmail.com>
+Reply-To: wanlong.gao@gmail.com
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, menage@google.com,
+        lizf@cn.fujitsu.com, axboe@kernel.dk, linux-kernel@vger.kernel.org
+In-Reply-To: <20110726144427.GB13780@redhat.com>
+References: <1311573834-7140-1-git-send-email-gaowanlong@cn.fujitsu.com>
+	 <1311645400-19434-1-git-send-email-gaowanlong@cn.fujitsu.com>
+	 <20110726144427.GB13780@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: FNST
+Date: Tue, 26 Jul 2011 22:59:40 +0800
+Message-ID: <1311692380.2431.7.camel@Allen>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scanning cannot be run during suspend or hibernation, but if
-usb-stor-scan freezes another thread waiting on scanning to
-complete may fail to freeze.
+On Tue, 2011-07-26 at 10:44 -0400, Vivek Goyal wrote:
+> On Tue, Jul 26, 2011 at 09:56:40AM +0800, Wanlong Gao wrote:
+> > 
+> > Write a record like:
+> > echo 8:0 1000 > blkio.throttle.read_bps_device
+> > to control the bps of the device.
+> > And then unplug this device without doing
+> > "8:0 0 > blkio.throttle.read_bps_device" to remove the record,
+> > it will not be removed until reboot, because if the device is removed,
+> > write some record will return "-ENODEV".
+> > 
+> > With this patch, when the device is removed, then if we want to remove
+> > the record for this removed device, just write "0" then it'll not check
+> > if it is a present device, just remove the present record.
+> 
+> Ok, not checking for device presence while deleting a rule makes sense.
+> Some comments inline.
+> 
+> [..]
+> > 
+> > Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> > ---
+> >  block/blk-cgroup.c |   18 +++++++++---------
+> >  1 files changed, 9 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+> > index bcaf16e..246645c 100644
+> > --- a/block/blk-cgroup.c
+> > +++ b/block/blk-cgroup.c
+> > @@ -785,7 +785,7 @@ static int blkio_policy_parse_and_set(char *buf,
+> >  {
+> >  	char *s[4], *p, *major_s = NULL, *minor_s = NULL;
+> >  	int ret;
+> > -	unsigned long major, minor, temp;
+> > +	unsigned long major, minor, weight;
+> 
+> Do not replace temp with name weight. The place you are parsing it,
+> it could be weight, bps or iops. So lets keep the generic name in
+> place.
+OK, will keep it.
+> 
+> >  	int i = 0;
+> >  	dev_t dev;
+> >  	u64 bps, iops;
+> > @@ -826,25 +826,25 @@ static int blkio_policy_parse_and_set(char *buf,
+> >  
+> >  	dev = MKDEV(major, minor);
+> >  
+> > -	ret = blkio_check_dev_num(dev);
+> > +	ret = strict_strtoul(s[1], 10, &weight);
+> >  	if (ret)
+> > +		return -EINVAL;
+> > +
+> > +	ret = blkio_check_dev_num(dev);
+> > +	if (ret && (weight != 0))
+> >  		return ret;
+> 
+> Can you simplify above and just put a one comment also. Don't even call
+> blkio_check_dev_num() if we are removing the rule. 
+> 
+> /* For rule removal, do not check for device presence. */
+> 
+> if (temp != 0)
+> 	ret = blkio_check_dev_num(dev);
+Yeah, it's better. I'll make another version of v5 and send tomorrow.
 
-However, if usb-stor-scan is left freezable without ever actually
-freezing then the freezer will wait on it to exit, and threads
-waiting for scanning to finish will no longer be blocked. One
-problem with this approach is that usb-stor-scan has a delay to
-wait for devices to settle (which is currently the only point where
-it can freeze). To work around this we can request that the freezer
-send a fake signal when freezing, then use interruptible sleep to
-wake the thread early when freezing happens.
+Meanwhile, Vivek, maybe you missed the v4 patch, which simplify the
+comments of this patch suggested by Zefan.
+The v4 patch is here:   https://lkml.org/lkml/2011/7/25/532
 
-To make this happen, the following changes are made to
-usb-stor-scan:
-
- * Use set_freezable_with_signal() instead of set_freezable() to
-   request a fake signal when freezing
-
- * Use wait_event_interruptible_timeout() instead of
-   wait_event_freezable_timeout() to avoid freezing
-
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/usb/storage/usb.c |   16 +++++++++++++---
- 1 files changed, 13 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/usb/storage/usb.c b/drivers/usb/storage/usb.c
-index 0ca0958..c325e69 100644
---- a/drivers/usb/storage/usb.c
-+++ b/drivers/usb/storage/usb.c
-@@ -831,12 +831,22 @@ static int usb_stor_scan_thread(void * __us)
- 
- 	dev_dbg(dev, "device found\n");
- 
--	set_freezable();
--	/* Wait for the timeout to expire or for a disconnect */
-+	set_freezable_with_signal();
-+	/*
-+	 * Wait for the timeout to expire or for a disconnect
-+	 *
-+	 * We can't freeze in this thread or we risk causing khubd to
-+	 * fail to freeze, but we can't be non-freezable either. Nor can
-+	 * khubd freeze while waiting for scanning to complete as it may
-+	 * hold the device lock, causing a hang when suspending devices.
-+	 * So we request a fake signal when freezing and use
-+	 * interruptible sleep to kick us out of our wait early when
-+	 * freezing happens.
-+	 */
- 	if (delay_use > 0) {
- 		dev_dbg(dev, "waiting for device to settle "
- 				"before scanning\n");
--		wait_event_freezable_timeout(us->delay_wait,
-+		wait_event_interruptible_timeout(us->delay_wait,
- 				test_bit(US_FLIDX_DONT_SCAN, &us->dflags),
- 				delay_use * HZ);
- 	}
--- 
-1.7.4.1
+Thanks a lot
+Best regards
+Wanlong Gao
 
