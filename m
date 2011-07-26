@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab1GZHh6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 03:37:58 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62086 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab1GZHhx convert rfc822-to-8bit (ORCPT
+	id S1751942Ab1GZHng (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 03:43:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39205 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751142Ab1GZHnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 03:37:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <1311630170-26057-19-git-send-email-jim.cromie@gmail.com>
-References: <1311630170-26057-1-git-send-email-jim.cromie@gmail.com> <1311630170-26057-19-git-send-email-jim.cromie@gmail.com>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Tue, 26 Jul 2011 09:37:32 +0200
-X-Google-Sender-Auth: umPtn9TEv8lO2Lw6fciSBjzNvJ4
-Message-ID: <CAO+b5-o1vZLResL9LzquZw5qu50evzfGAXNQ8fU0dVZZ5iX6+Q@mail.gmail.com>
-Subject: Re: [PATCH 18/25] dynamic_debug: describe_flags with '=[pmflta_]*'
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: jbaron@redhat.com, joe@perches.com, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, gnb@fmeh.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 26 Jul 2011 03:43:31 -0400
+Date: Tue, 26 Jul 2011 00:43:35 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Andy Grover <agrover@redhat.com>, Hannes Reinecke <hare@suse.de>,
+        Roland Dreier <roland@purestorage.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Boaz Harrosh <openosd@gmail.com>, Mike Christie <michaelc@cs.wisc.edu>
+Subject: Re: [GIT PULL] iscsi-target merge for v3.1-rc1
+Message-Id: <20110726004335.c6f26c5c.akpm@linux-foundation.org>
+In-Reply-To: <CA+55aFyNBaf2+=XJDLKNF1S5zMtpx38+Zd8uNd9k4ap4YpZmvw@mail.gmail.com>
+References: <1311462975.31450.356.camel@haakon2.linux-iscsi.org>
+	<20110725163739.5c19b04d.akpm@linux-foundation.org>
+	<20110725165057.9701f16b.akpm@linux-foundation.org>
+	<1311663071.17766.230.camel@haakon2.linux-iscsi.org>
+	<CA+55aFyNBaf2+=XJDLKNF1S5zMtpx38+Zd8uNd9k4ap4YpZmvw@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 11:42 PM, Jim Cromie <jim.cromie@gmail.com> wrote:
-> Change describe_flags() to emit '=[pmflta_]+' for current callsite
-> flags, or just '=_' when they're disabled.  Having '=' in output
-> allows a more selective grep expression, in contrast '-' may appear
-> in filenames, line-ranges, and format-strings.  '=' also has better
-> mnemonics, saying; "the current setting are equal to <flags>".
->
-> The default allows grep "=_" <dbgfs>/dynamic_debug/control
-> to see disabled callsites while avoiding the many occurrences of " = "
-> seen in format strings.
->
-> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-> ---
->  lib/dynamic_debug.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-> index 396ffb4..37f9748 100644
-> --- a/lib/dynamic_debug.c
-> +++ b/lib/dynamic_debug.c
-> @@ -92,6 +92,7 @@ static struct { unsigned flag:8; char opt_char; } opt_array[] = {
->        { _DPRINTK_FLAGS_INCL_LINENO, 'l' },
->        { _DPRINTK_FLAGS_INCL_TID, 't' },
->        { _DPRINTK_FLAGS_APPEND, 'a' },
-> +       { _DPRINTK_FLAGS_DEFAULT, '_' },
->  };
->
->  /* format a string into buf[] which describes the _ddebug's flags */
-> @@ -102,11 +103,12 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
->        int i;
->
->        BUG_ON(maxlen < 4);
-> +       *p++ = '=';
->        for (i = 0; i < ARRAY_SIZE(opt_array); ++i)
->                if (dp->flags & opt_array[i].flag)
->                        *p++ = opt_array[i].opt_char;
-> -       if (p == buf)
-> -               *p++ = '-';
-> +       if (*(p-1) == '=')
-> +               *p++ = '_';
->        *p = '\0';
->
->        return buf;
+On Tue, 26 Jul 2011 00:09:40 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-The "BUG_ON(maxlen < 4)" tests whether a buffer overflow can occur
-before starting to write in the buffer. Since the above code affects
-the number of characters that can be written in the output buffer,
-shouldn't that statement be updated or replaced ?
+> Just a simple
+> 
+> #define DIV_ROUND_UP_ULL(ll,d) \
+>   ({ unsigned long long _tmp = (ll)+(d)-1; do_div(_tmp, d); _tmp; })
+> 
+> looks like it would work and be simpler. Avoid the conditional, do the
+> same "add 'd-1' thing as the regular ROUND_UP().
+> 
 
-Bart.
+We might end up needing a DIV_ROUND_UP_SECTOR_T because that guy's
+type/size is Kconfigurable.
+
+otoh DIV_ROUND_UP_ULL won't have many callsites - the occasional
+conversion from UL to ULL then back to UL wouldn't kill us.  Unless
+there be subtle problems with such a conversion.
+
