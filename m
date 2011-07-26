@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349Ab1GZNdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 09:33:15 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:39416 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab1GZNdH convert rfc822-to-8bit (ORCPT
+	id S1752951Ab1GZNd3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 09:33:29 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:36424 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254Ab1GZNdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 09:33:07 -0400
+	Tue, 26 Jul 2011 09:33:24 -0400
+Date: Tue, 26 Jul 2011 08:33:17 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        usb-storage@lists.one-eyed-alien.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb_storage: make usb-stor-scan task non-freezable
+Message-ID: <20110726133317.GB6687@thinkpad-t410>
+Mail-Followup-To: Alan Stern <stern@rowland.harvard.edu>,
+	Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+	Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+	usb-storage@lists.one-eyed-alien.net, linux-kernel@vger.kernel.org
+References: <20110723210805.GA25113@thinkpad-t410>
+ <Pine.LNX.4.44L0.1107232150380.27037-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <4E1E510A.6010005@cuw.edu>
-References: <1310520405-1558-1-git-send-email-Gregory.Dietsche@cuw.edu>
-	<1310520405-1558-4-git-send-email-Gregory.Dietsche@cuw.edu>
-	<1310524935.32558.8.camel@Joe-Laptop>
-	<4E1E510A.6010005@cuw.edu>
-Date: Tue, 26 Jul 2011 15:33:05 +0200
-X-Google-Sender-Auth: uFfK9YrH6bKWerTauUaNlxGaDwg
-Message-ID: <CAAxaTiNJNXnn3PAcKWBSZ2wbMKBDD9yL6pyediEEBHnjNH-uaA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] coccicheck: add parallel execution
-From: Nicolas Palix <Nicolas.Palix@inria.fr>
-To: Greg Dietsche <gregory.dietsche@cuw.edu>
-Cc: Joe Perches <joe@perches.com>, julia@diku.dk, Gilles.Muller@lip6.fr,
-        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cocci@diku.dk,
-        Michal Marek <mmarek@suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1107232150380.27037-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Jul 23, 2011 at 09:56:15PM -0400, Alan Stern wrote:
+> On Sat, 23 Jul 2011, Seth Forshee wrote:
+> 
+> > After experimenting with this device more I came to the conclusion that
+> > the normal behavior with this machine is for the card reader to be
+> > disconnected from the USB bus unless there's a card in the slot. During
+> > a normal boot with an empty card slot the card reader never shows up on
+> > the bus.
+> 
+> Weird.  Then the reader would never be usable.  Unless it connects 
+> itself to the bus when a card is inserted?
 
-On Thu, Jul 14, 2011 at 4:14 AM, Greg Dietsche <gregory.dietsche@cuw.edu> wrote:
-> On 07/12/2011 09:42 PM, Joe Perches wrote:
->>
->> On Tue, 2011-07-12 at 20:26 -0500, Greg Dietsche wrote:
->>
->>>
->>> For example to process 6 SmPL patches at the same time:
->>>        make coccicheck PARALLEL=6
->>> Results are held in /tmp until the scripts finish. By doing this the
->>> script is able to collate the results from each SmPL patch instead of
->>> interleaving them in the output.
+Yes, the reader is connected to the bus when a card is inserted. Remove
+the card and it disappears again.
 
-On my system, when killing the make task, the cleanup function only
-kills the first level of
-children processes (shell processes) thus living spatch running, both
-the frontend script and the actual code.
+> > The only solution I've come up with is to leave usb-stor-scan freezable
+> > without allowing it to actually freeze. We can request a fake signal be
+> > sent when freezing and use interruptible sleep to abort the wait early
+> > and finish up the thread's processing. This is implemented in the patch
+> > below. Does this approach look reasonable? It's rather subtle, but it
+> > does seem to work. I done numerous S4 cycles with and without a card
+> > inserted and didn't get any failures.
+> 
+> This runs the risk of failing to suspend if scanning takes too long.  
 
-Could you resubmit a patch with "pkill -P $$" replaced by  "pkill -s 0"
-to kill all related processes ?
+It may increase the exposure to that risk, but really the risk is
+already there.
 
-That is the only problem I notice. I will thus acked your patch.
-Keep Michal in CC for your resubmission as he will commit
-your patch.
+> On the other hand, many systems nowadays use async scanning anyway.
+> And that combination of events isn't too likely to happen, whereas 
+> you're facing a real problem right now.  So I guess this is okay.
 
->>>
->>
->> You might try adding support for gnu parallel instead.
->> http://www.gnu.org/software/parallel/
->>
->>
->
-> That is a very interesting and useful tool :) I'd never heard of it before.
-> The man page scares me a little bit - lots of options are marked as "alpha
-> testing," but the ones i tried seemed to work fine. Anyway, without any
-> modifications to Coccinelle, it is possible to do this:
->
-> ls scripts/coccinelle/*/*.cocci | parallel -j+0 make coccicheck COCCI={}
-> MODE=patch
+Great, thanks.
 
-Maybe that alternative could be added to the documentation ?
+Will the patch get picked up from my previous email, or do I need to
+resend it?
 
->
-> it seems to behave mostly like my patch, but doesn't cleanup quite as well
-> if you decide to kill it with ctrl-c (it leaves instances of spatch
-> running). On the upside, it is up to 3 seconds faster than my patch (because
-> my patch waits 3 seconds before checking on the number of jobs that are
-> running).
->
-> Greg
->
-
-
-
--- 
-Nicolas Palix
-http://sardes.inrialpes.fr/~npalix/
+Thanks,
+Seth
