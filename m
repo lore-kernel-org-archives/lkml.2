@@ -1,184 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab1GZNtW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 09:49:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52349 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab1GZNtQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 09:49:16 -0400
-Subject: Re: [PATCH 2/3] dmaengine: at_hdmac: improve power management
- routines
-From: Vinod Koul <vkoul@infradead.org>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: vinod.koul@intel.com, dan.j.williams@intel.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-In-Reply-To: <4E2DDAEA.6050809@atmel.com>
-References: <fb4657207f9eb34784c10333e11c48b5638542ed.1309259835.git.nicolas.ferre@atmel.com>
-	 <e8b0dceb5995556214d03477662f4ff7caf734e1.1309259835.git.nicolas.ferre@atmel.com>
-	 <1310005222.20150.23.camel@psiaudioba-mobl1>  <4E2DDAEA.6050809@atmel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corp
-Date: Tue, 26 Jul 2011 16:21:54 +0530
-Message-ID: <1311677514.24316.6.camel@vkoul-mobl4>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1752912Ab1GZNt6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 09:49:58 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:56119 "EHLO mail.mnsspb.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751665Ab1GZNtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 09:49:53 -0400
+Date: Tue, 26 Jul 2011 17:48:27 +0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Keith Packard <keithp@keithp.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, Luke-Jr <luke@dashjr.org>,
+        intel-gfx@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Pekka Enberg <penberg@kernel.org>,
+        Ray Lee <ray-lk@madrabbit.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] Major 2.6.38 / 2.6.39 / 3.0 regression ignored?
+Message-ID: <20110726134827.GA23696@tugrik.mns.mnsspb.ru>
+References: <BANLkTimOqhNEsBEg6f=nMiMJqYGNyFJmeQ@mail.gmail.com> <013811$4lfs6@fmsmga002.fm.intel.com> <201105211123.56053.luke@dashjr.org> <aefc95$1usaq@orsmga001.jf.intel.com> <20110528131920.GA10467@tugrik.mns.mnsspb.ru> <20110712171706.GA18414@tugrik.mns.mnsspb.ru> <CAOJsxLEz-fPnb9oYnLMk9UbGqgsfm-g1d2yH=TrEiEk7HvyQzA@mail.gmail.com> <20110722110806.GA29757@tugrik.mns.mnsspb.ru> <yun7h7atcty.fsf@aiko.keithp.com> <20110722202336.GA14375@tugrik.mns.mnsspb.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110722202336.GA14375@tugrik.mns.mnsspb.ru>
+Organization: Marine Bridge & Navigation Systems
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-25 at 23:06 +0200, Nicolas Ferre wrote:
-> On 07/07/2011 04:20 AM, Vinod Koul wrote:
-> > On Tue, 2011-06-28 at 13:17 +0200, Nicolas Ferre wrote:
-> >> Save/restore dma controller state across a suspend-resume sequence.
-> >> The prepare() function will wait for the non-cyclic channels to become idle.
-> >> It also deals with cyclic operations with the start at next period while
-> >> resuming.
-> >>
-> >> Signed-off-by: Nicolas Ferre<nicolas.ferre@atmel.com>
-> >> Signed-off-by: Uwe Kleine-König<u.kleine-koenig@pengutronix.de>
-> >> ---
-> >>   drivers/dma/at_hdmac.c      |   88 ++++++++++++++++++++++++++++++++++++++++++-
-> >>   drivers/dma/at_hdmac_regs.h |    7 +++
-> >>   2 files changed, 94 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-> >> index fd87b96..7096adb 100644
-> >> --- a/drivers/dma/at_hdmac.c
-> >> +++ b/drivers/dma/at_hdmac.c
-> >> @@ -1385,27 +1385,113 @@ static void at_dma_shutdown(struct platform_device *pdev)
-> >>   	clk_disable(atdma->clk);
-> >>   }
-> >>
-> >> +static int at_dma_prepare(struct device *dev)
-> >> +{
-> >> +	struct platform_device *pdev = to_platform_device(dev);
-> >> +	struct at_dma *atdma = platform_get_drvdata(pdev);
-> >> +	struct dma_chan *chan, *_chan;
-> >> +
-> >> +	list_for_each_entry_safe(chan, _chan,&atdma->dma_common.channels,
-> >> +			device_node) {
-> >> +		struct at_dma_chan *atchan = to_at_dma_chan(chan);
-> >> +		/* wait for transaction completion (except in cyclic case) */
-> >> +		if (atc_chan_is_enabled(atchan)&&
-> >> +			!test_bit(ATC_IS_CYCLIC,&atchan->status))
-> >> +			return -EAGAIN;
-> > pls fix indent here
+On Sat, Jul 23, 2011 at 12:23:36AM +0400, Kirill Smelkov wrote:
+> Keith,
 > 
-> Fixed by replacement of test_bit() with a wrapper in a patch to come (as 
-> you suggest hereafter).
+> first of all thanks for your prompt reply. Then...
 > 
-> >> +	}
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +static void atc_suspend_cyclic(struct at_dma_chan *atchan)
-> >> +{
-> >> +	struct dma_chan	*chan =&atchan->chan_common;
-> >> +
-> >> +	/* Channel should be paused by user
-> >> +	 * do it anyway even if it is not done already */
-> >> +	if (!test_bit(ATC_IS_PAUSED,&atchan->status)) {
-> >> +		dev_warn(chan2dev(chan),
-> >> +		"cyclic channel not paused, should be done by channel user\n");
-> >> +		atc_control(chan, DMA_PAUSE, 0);
-> >> +	}
-> >> +
-> >> +	/* now preserve additional data for cyclic operations */
-> >> +	/* next descriptor address in the cyclic list */
-> >> +	atchan->save_dscr = channel_readl(atchan, DSCR);
-> >> +
-> >> +	vdbg_dump_regs(atchan);
-> >> +}
-> >> +
-> >>   static int at_dma_suspend_noirq(struct device *dev)
-> >>   {
-> >>   	struct platform_device *pdev = to_platform_device(dev);
-> >>   	struct at_dma *atdma = platform_get_drvdata(pdev);
-> >> +	struct dma_chan *chan, *_chan;
-> >>
-> >> -	at_dma_off(platform_get_drvdata(pdev));
-> >> +	/* preserve data */
-> >> +	list_for_each_entry_safe(chan, _chan,&atdma->dma_common.channels,
-> >> +			device_node) {
-> >> +		struct at_dma_chan *atchan = to_at_dma_chan(chan);
-> >> +
-> >> +		if (test_bit(ATC_IS_CYCLIC,&atchan->status))
-> >> +			atc_suspend_cyclic(atchan);
-> >> +		atchan->save_cfg = channel_readl(atchan, CFG);
-> >> +	}
-> >> +	atdma->save_imr = dma_readl(atdma, EBCIMR);
-> >> +
-> >> +	/* disable DMA controller */
-> >> +	at_dma_off(atdma);
-> >>   	clk_disable(atdma->clk);
-> >>   	return 0;
-> >>   }
-> >>
-> >> +static void atc_resume_cyclic(struct at_dma_chan *atchan)
-> >> +{
-> >> +	struct at_dma	*atdma = to_at_dma(atchan->chan_common.device);
-> >> +
-> >> +	/* restore channel status for cyclic descriptors list:
-> >> +	 * next descriptor in the cyclic list at the time of suspend */
-> >> +	channel_writel(atchan, SADDR, 0);
-> >> +	channel_writel(atchan, DADDR, 0);
-> >> +	channel_writel(atchan, CTRLA, 0);
-> >> +	channel_writel(atchan, CTRLB, 0);
-> >> +	channel_writel(atchan, DSCR, atchan->save_dscr);
-> >> +	dma_writel(atdma, CHER, atchan->mask);
-> >> +
-> >> +	/* channel pause status should be removed by channel user
-> >> +	 * We cannot take the initiative to do it here */
-> >> +
-> >> +	vdbg_dump_regs(atchan);
-> >> +}
-> >> +
-> >>   static int at_dma_resume_noirq(struct device *dev)
-> >>   {
-> >>   	struct platform_device *pdev = to_platform_device(dev);
-> >>   	struct at_dma *atdma = platform_get_drvdata(pdev);
-> >> +	struct dma_chan *chan, *_chan;
-> >>
-> >> +	/* bring back DMA controller */
-> >>   	clk_enable(atdma->clk);
-> >>   	dma_writel(atdma, EN, AT_DMA_ENABLE);
-> >> +
-> >> +	/* clear any pending interrupt */
-> >> +	while (dma_readl(atdma, EBCISR))
-> >> +		cpu_relax();
-> >> +
-> >> +	/* restore saved data */
-> >> +	dma_writel(atdma, EBCIER, atdma->save_imr);
-> >> +	list_for_each_entry_safe(chan, _chan,&atdma->dma_common.channels,
-> >> +			device_node) {
-> >> +		struct at_dma_chan *atchan = to_at_dma_chan(chan);
-> >> +
-> >> +		channel_writel(atchan, CFG, atchan->save_cfg);
-> >> +		if (test_bit(ATC_IS_CYCLIC,&atchan->status))
-> >> +			atc_resume_cyclic(atchan);
-> > This testing on bits seems to be reused few times how about wrapping it
-> > up in a routine?
+> On Fri, Jul 22, 2011 at 11:00:41AM -0700, Keith Packard wrote:
+> > On Fri, 22 Jul 2011 15:08:06 +0400, Kirill Smelkov <kirr@mns.spb.ru> wrote:
+> > 
+> > > And now after v3.0 is out, I've tested it again, and yes, like it was
+> > > broken on v3.0-rc5, it is (now even more) broken on v3.0 -- after first
+> > > bad io access the system freezes completely:
+> > 
+> > I looked at this when I first saw it (a couple of weeks ago), and I
+> > couldn't see any obvious reason this patch would cause this particular
+> > problem. I didn't want to revert the patch at that point as I feared it
+> > would cause other subtle problems. Given that you've got a work-around,
+> > it seemed best to just push this off past 3.0.
 > 
-> True: I write a little patch for this and the "PAUSE" state. I send a 
-> patch for this now:
-> dmaengine: at_hdmac: add wrappers for testing channel state
-> So can you:
-> 1/ queue 1/3 and 2/3 of this patch series
-> 2/ queue the following patch named
-> "dmaengine: at_hdmac: add wrappers for testing channel state"
-> on top of that
+> What kind of a workaround are you talking about? Sorry, to me it all
+> looked like "UMS is being ignored forever". Anyway, let's move on to try
+> to solve the issue.
 > 
-> 3/ drop the patch 3/3 of this series: it certainly have to be reworked 
-> with all slave config infrastructure implementation in the at_hdmac driver.
-The indent needs to be fixed before I can apply this one, sorry but
-error introduced in one patch cannot be fixed in next, it is not
-supposed to work that way
+> 
+> > Given the failing address passed to ioread32, this seems like it's
+> > probably the call to READ_BREADCRUMB -- I915_BREADCRUMB_INDEX is 0x21,
+> > which is an offset in 32-bit units within the hardware status page. If
+> > the status_page.page_addr value was zero, then the computed address
+> > would end up being 0x84.
+> > 
+> > And, it looks like status_page.page_addr *will* end up being zero as a
+> > result of the patch in question. The patch resets the entire ring
+> > structure contents back to the initial values, which includes smashing
+> > the status_page structure to zero, clearing the value of
+> > status_page.page_addr set in i915_init_phys_hws.
+> > 
+> > Here's an untested patch which moves the initialization of
+> > status_page.page_addr into intel_render_ring_init_dri. I note that
+> > intel_init_render_ring_buffer *already* has the setting of the
+> > status_page.page_addr value, and so I've removed the setting of
+> > status_page.page_addr from i915_init_phys_hws.
+> > 
+> > I suspect we could remove the memset from intel_init_render_ring_buffer;
+> > it seems entirely superfluous given the memset in i915_init_phys_hws.
+> > 
+> > From 159ba1dd207fc52590ce8a3afd83f40bd2cedf46 Mon Sep 17 00:00:00 2001
+> > From: Keith Packard <keithp@keithp.com>
+> > Date: Fri, 22 Jul 2011 10:44:39 -0700
+> > Subject: [PATCH] drm/i915: Initialize RCS ring status page address in
+> >  intel_render_ring_init_dri
+> > 
+> > Physically-addressed hardware status pages are initialized early in
+> > the driver load process by i915_init_phys_hws. For UMS environments,
+> > the ring structure is not initialized until the X server starts. At
+> > that point, the entire ring structure is re-initialized with all new
+> > values. Any values set in the ring structure (including
+> > ring->status_page.page_addr) will be lost when the ring is
+> > re-initialized.
+> > 
+> > This patch moves the initialization of the status_page.page_addr value
+> > to intel_render_ring_init_dri.
+> > 
+> > Signed-off-by: Keith Packard <keithp@keithp.com>
+> > ---
+> >  drivers/gpu/drm/i915/i915_dma.c         |    6 ++----
+> >  drivers/gpu/drm/i915/intel_ringbuffer.c |    3 +++
+> >  2 files changed, 5 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+> > index 1271282..8a3942c 100644
+> > --- a/drivers/gpu/drm/i915/i915_dma.c
+> > +++ b/drivers/gpu/drm/i915/i915_dma.c
+> > @@ -61,7 +61,6 @@ static void i915_write_hws_pga(struct drm_device *dev)
+> >  static int i915_init_phys_hws(struct drm_device *dev)
+> >  {
+> >  	drm_i915_private_t *dev_priv = dev->dev_private;
+> > -	struct intel_ring_buffer *ring = LP_RING(dev_priv);
+> >  
+> >  	/* Program Hardware Status Page */
+> >  	dev_priv->status_page_dmah =
+> > @@ -71,10 +70,9 @@ static int i915_init_phys_hws(struct drm_device *dev)
+> >  		DRM_ERROR("Can not allocate hardware status page\n");
+> >  		return -ENOMEM;
+> >  	}
+> > -	ring->status_page.page_addr =
+> > -		(void __force __iomem *)dev_priv->status_page_dmah->vaddr;
+> >  
+> > -	memset_io(ring->status_page.page_addr, 0, PAGE_SIZE);
+> > +	memset_io((void __force __iomem *)dev_priv->status_page_dmah->vaddr,
+> > +		  0, PAGE_SIZE);
+> >  
+> >  	i915_write_hws_pga(dev);
+> >  
+> > diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
+> > index e961568..47b9b27 100644
+> > --- a/drivers/gpu/drm/i915/intel_ringbuffer.c
+> > +++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+> > @@ -1321,6 +1321,9 @@ int intel_render_ring_init_dri(struct drm_device *dev, u64 start, u32 size)
+> >  		ring->get_seqno = pc_render_get_seqno;
+> >  	}
+> >  
+> > +	if (!I915_NEED_GFX_HWS(dev))
+> > +		ring->status_page.page_addr = dev_priv->status_page_dmah->vaddr;
+> > +
+> >  	ring->dev = dev;
+> >  	INIT_LIST_HEAD(&ring->active_list);
+> >  	INIT_LIST_HEAD(&ring->request_list);
+> 
+> I can't tell whether this is correct, because intel gfx driver is
+> unknown to me, but from the first glance your description sounds reasonable.
+> 
+> I'm out of office till ~ next week's tuesday, and on return I'll try
+> to test it on the hardware in question.
 
--- 
-~Vinod Koul
-Intel Corp.
+Keith, thanks again for the patch. As promised I've tested it on the
+hardware in question and yes, bad_access is gone and X seems to work,
+so thank you, but...
 
+
+I see there are more such bugs in introduced-in-guilty-patch
+intel_render_ring_init_dri(). For example ring->irq_queue is
+left uninitialized and also ring->irq_lock etc...
+
+I'm X newbie, so if here is something stupid X-wise, please don't
+beat me too hard, but to me the gist of the problem is the original
+patch, where Chris does
+
+( git show e8616b6ced6137085e6657cc63bc2fe3900b8616 )
+> diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
+> index 03e3370..51fbc5e 100644
+> --- a/drivers/gpu/drm/i915/intel_ringbuffer.c
+> +++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+> @@ -1291,6 +1291,48 @@ int intel_init_render_ring_buffer(struct drm_device *dev)
+>         return intel_init_ring_buffer(dev, ring);
+>  }
+>  
+> +int intel_render_ring_init_dri(struct drm_device *dev, u64 start, u32 size)
+> +{
+> +       drm_i915_private_t *dev_priv = dev->dev_private;
+> +       struct intel_ring_buffer *ring = &dev_priv->ring[RCS];
+> +
+> +       *ring = render_ring;
+          ^^^^^^^^^^^^^^^^^^^
+          here resets
+
+> +       if (INTEL_INFO(dev)->gen >= 6) {
+> +               ring->add_request = gen6_add_request;
+> +               ring->irq_get = gen6_render_ring_get_irq;
+> +               ring->irq_put = gen6_render_ring_put_irq;
+> +       } else if (IS_GEN5(dev)) {
+> +               ring->add_request = pc_render_add_request;
+> +               ring->get_seqno = pc_render_get_seqno;
+> +       }
+
+and then the rest of the `ring` is initialized seemingly copy-pasted
+from intel_init_ring_buffer():
+
+> +       ring->dev = dev;
+> +       INIT_LIST_HEAD(&ring->active_list);
+> +       INIT_LIST_HEAD(&ring->request_list);
+> +       INIT_LIST_HEAD(&ring->gpu_write_list);
+> +
+> +       ring->size = size;
+> +       ring->effective_size = ring->size;
+> +       if (IS_I830(ring->dev))
+> +               ring->effective_size -= 128;
+> +
+> +       ring->map.offset = start;
+> +       ring->map.size = size;
+> +       ring->map.type = 0;
+> +       ring->map.flags = 0;
+> +       ring->map.mtrr = 0;
+...
+
+where both 3 chunks go almost exactly from intel_init_ring_buffer(), and
+ring->effective_size tweak even stripped original comment:
+
+# original version from intel_init_ring_buffer():
+        /* Workaround an erratum on the i830 which causes a hang if
+         * the TAIL pointer points to within the last 2 cachelines
+         * of the buffer.
+         */
+        ring->effective_size = ring->size;
+        if (IS_I830(ring->dev))
+                ring->effective_size -= 128;
+
+...
+
+
+The line marked "here resets" resets all the fields, and maybe it's not a good
+idea to re-initialize them all afterwards (missing some as this thread show),
+or at least if it is really needed, share initialization code between
+intel_render_ring_init_dri() and intel_init_ring_buffer() ?
+
+>From the outside it looks like the offending patch was done as a quick
+fix in a hurry (lots of copy-paste), and maybe it would be better to
+re-do it properly...
+
+
+Thanks again,
+Kirill
