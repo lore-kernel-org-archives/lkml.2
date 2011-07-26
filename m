@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab1GZOxm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 10:53:42 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:59205 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753597Ab1GZOxe (ORCPT
+	id S1753590Ab1GZOzD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 10:55:03 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:47704 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753385Ab1GZOy5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 10:53:34 -0400
-Date: Tue, 26 Jul 2011 17:53:31 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sergei Trofimovich <slyich@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sergei Trofimovich <slyfox@gentoo.org>
-Subject: Re: [resend PATCH] tusb6010_omap: fix build failure: error: 'musb'
- undeclared
-Message-ID: <20110726145330.GF32582@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1310916480-3477-1-git-send-email-slyich@gmail.com>
+	Tue, 26 Jul 2011 10:54:57 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hU50fLDIZPaBYjJk"
-Content-Disposition: inline
-In-Reply-To: <1310916480-3477-1-git-send-email-slyich@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <3904dcad-951e-43ca-bd2d-1c906d0b0a9e@default>
+Date: Tue, 26 Jul 2011 07:54:31 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: ocfs2-devel@oss.oracle.com, Joel Becker <jlbec@evilplan.org>,
+        Sunil Mushran <sunil.mushran@oracle.com>, linux-kernel@vger.kernel.org
+Subject: RE: bug in cleancache ocfs2 hook, anybody want to try cleancache?
+References: <da833bdb-7f77-4ebb-ad9b-9fae656b75a1@default>
+ <1307004343.2823.17.camel@menhir>
+ <75f89186-d730-4b89-b88c-899cd5674cf0@default
+ 1307090628.2881.15.camel@menhir>
+In-Reply-To: <1307090628.2881.15.camel@menhir>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6557.5001]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090201.4E2ED539.0076,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > > Also, as regards your earlier question wrt a kvm backend, I may be
+> > > tempted to have a go at writing one, but I'd like to figure out what
+> > > I'm letting myself in for before making any commitment to that,
+> 
+> > I think the hardest part is updating the tmem.c module in zcache
+> > to support multiple "clients".  When I ported it from Xen, I tore
+> > all that out.  Fortunately, I've put it back in during RAMster
+> > development but those changes haven't yet seen the light of day
+> > (though I can share them offlist).
+> 
+> I'd like to try and understand the design of the existing code before I
+> consider anything more advanced such as writing a kvm backend,
 
---hU50fLDIZPaBYjJk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+FYI, the "hardest part" (support for multiple clients) is now in
+Linus's tree as of today.  With a little hypercall and glue code,
+KVM might just work now with tmem/cleancache/frontswap.
 
-On Sun, Jul 17, 2011 at 06:28:00PM +0300, Sergei Trofimovich wrote:
-> From: Sergei Trofimovich <slyfox@gentoo.org>
->=20
->   CC      drivers/usb/musb/tusb6010_omap.o
-> drivers/usb/musb/tusb6010_omap.c: In function 'tusb_omap_use_shared_dmare=
-q':
-> drivers/usb/musb/tusb6010_omap.c:92: error: 'musb' undeclared (first use =
-in this function)
-> drivers/usb/musb/tusb6010_omap.c:92: error: (Each undeclared identifier i=
-s reported only once
-> drivers/usb/musb/tusb6010_omap.c:92: error: for each function it appears =
-in.)
->=20
-> Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
+Dan
 
-applied, thanks
-
---=20
-balbi
-
---hU50fLDIZPaBYjJk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOLtTqAAoJEAv8Txj19kN1IhMH/RRJXeVyyC0MtHPY00tliPo7
-2dkkzg3E81oKqeGpNsqeIFtixC/WNEJof/j5Ggt5NJ/eoNkRKPs8tEI7xCkMerWl
-3g6bE2i7+QxPdzJ5V+PSWRE3eMdDKD8xgCtBPCGuJ0Ia70bwT6xvvkwWOvTdmBfQ
-+KVjAOJJaXRWd9mdGBsqnV+DtMNWRmQ472qGpBGWushxg0Skl+fHDcSlwi/TBJeE
-SAox3oZBBrZwDv1Btyz+QOWFaukF0aQuRz+JCIu3OyE/yTUaDnXiAQVjlm85C96T
-QT5GxcTOtquxCesxtnicL0dnw191qZWheqbqvSLeT2UD+5t85Zg9raLu//BIDgU=
-=nVUO
------END PGP SIGNATURE-----
-
---hU50fLDIZPaBYjJk--
