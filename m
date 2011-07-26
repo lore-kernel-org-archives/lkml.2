@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab1GZRl6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 13:41:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42621 "EHLO
+	id S1752491Ab1GZRoN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 13:44:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:58749 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab1GZRlx (ORCPT
+	with ESMTP id S1751202Ab1GZRoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 13:41:53 -0400
-X-Authority-Analysis: v=1.1 cv=sbbt6Wn8j+VvNVI1Ftt/uHhinWyuFt+R57MN9Ty2Tys= c=1 sm=0 a=Qv89JQfnOpAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=PqNd8jxuZCaroCJSvU4A:9 a=6d2kLKNEXrcqNgOZwuYA:7 a=PUjeQqilurYA:10 a=x8gzFH9gYPwA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Tue, 26 Jul 2011 13:44:06 -0400
+X-Authority-Analysis: v=1.1 cv=Pm0sEXe2MdIPK/rOEC7hwDW84D/yDsPO3JtCzsVYOFU= c=1 sm=0 a=Qv89JQfnOpAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=5Dbxrd4wnBevCbeDC3oA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
 Subject: Re: [PATCH] cgroup/kmemcheck: No need to annotate base anymore
@@ -22,12 +22,13 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         Catalin Marinas <catalin.marinas@arm.com>
-In-Reply-To: <20110726173816.GA26597@tiehlicka.suse.cz>
+In-Reply-To: <1311702110.3526.98.camel@gandalf.stny.rr.com>
 References: <1311699911.3526.87.camel@gandalf.stny.rr.com>
 	 <20110726173816.GA26597@tiehlicka.suse.cz>
+	 <1311702110.3526.98.camel@gandalf.stny.rr.com>
 Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 26 Jul 2011 13:41:50 -0400
-Message-ID: <1311702110.3526.98.camel@gandalf.stny.rr.com>
+Date: Tue, 26 Jul 2011 13:44:04 -0400
+Message-ID: <1311702244.3526.100.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
@@ -35,84 +36,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-26 at 19:38 +0200, Michal Hocko wrote:
-> On Tue 26-07-11 13:05:11, Steven Rostedt wrote:
-> > When the cgroup base was allocated with kmalloc, it was necessary to
-> > annotate the variable with kmemcheck_not_leak(). But because it has
-> > recently been changed to be allocated with alloc_page(), the annotation
-> > is no longer needed.
-> > 
-> > I was triggering this output:
-> > 
-> > allocated 8388608 bytes of page_cgroup
-> > please try 'cgroup_disable=memory' option if you don't want memory cgroups
-> > kmemleak: Trying to color unknown object at 0xf5840000 as Grey
-> > Pid: 0, comm: swapper Not tainted 3.0.0-test #12
-> > Call Trace:
-> >  [<c17e34e6>] ? printk+0x1d/0x1f^M
-> >  [<c10e2941>] paint_ptr+0x4f/0x78
-> >  [<c178ab57>] kmemleak_not_leak+0x58/0x7d
-> >  [<c108ae9f>] ? __rcu_read_unlock+0x9/0x7d
-> >  [<c1cdb462>] kmemleak_init+0x19d/0x1e9
-> >  [<c1cbf771>] start_kernel+0x346/0x3ec
-> >  [<c1cbf1b4>] ? loglevel+0x18/0x18
-> >  [<c1cbf0aa>] i386_start_kernel+0xaa/0xb0
-> > 
-> > After a bit of debugging I tracked the object 0xf840000 (and others)
-> > down to the cgroup code. The change from allocating base with kmalloc to
-> > alloc_page() has the base not calling kmemleak_alloc() which adds the
-> > pointer to the object_tree_root, but kmemleak_not_leak() adds it to the
-> > crt_early_log[] table. On kmemleak_init(), the entry is found in the
-> > early_log[] but not the object_tree_root, and this error message is
-> > displayed.
-> 
-> We can still fall back to vmalloc allocation (even though it is really
-> not probable that alloc_pages_exact_nid would fail that early).
-> Is vmalloc a problem here? (sorry I am not familiar with kmemleak
-> internals) The original code didn't distinguish kmalloc vs. vmalloc.
-> 
+On Tue, 2011-07-26 at 13:41 -0400, Steven Rostedt wrote:
 
-Good question. I forgot to add the maintainer of kmemleak to the Cc
-list. (fixed here).
+> > We can still fall back to vmalloc allocation (even though it is really
+> > not probable that alloc_pages_exact_nid would fail that early).
+> > Is vmalloc a problem here? (sorry I am not familiar with kmemleak
+> > internals) The original code didn't distinguish kmalloc vs. vmalloc.
+> > 
+> 
+> Good question. I forgot to add the maintainer of kmemleak to the Cc
+> list. (fixed here).
+
+Depending on the answer, I suspect that the result will be to keep the
+not_leak call, and just add a call directly to kmemleak_alloc() in the
+page_alloc() side.
+
+I'll have a patch ready on hand when we find out :)
 
 -- Steve
-
-> > 
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > 
-> > diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-> > index 53bffc6..955a49f 100644
-> > --- a/mm/page_cgroup.c
-> > +++ b/mm/page_cgroup.c
-> > @@ -9,7 +9,6 @@
-> >  #include <linux/vmalloc.h>
-> >  #include <linux/cgroup.h>
-> >  #include <linux/swapops.h>
-> > -#include <linux/kmemleak.h>
-> >  
-> >  static void __meminit init_page_cgroup(struct page_cgroup *pc, unsigned long id)
-> >  {
-> > @@ -179,13 +178,6 @@ static int __meminit init_section_page_cgroup(unsigned long pfn, int nid)
-> >  	table_size = sizeof(struct page_cgroup) * PAGES_PER_SECTION;
-> >  	base = alloc_page_cgroup(table_size, nid);
-> >  
-> > -	/*
-> > -	 * The value stored in section->page_cgroup is (base - pfn)
-> > -	 * and it does not point to the memory block allocated above,
-> > -	 * causing kmemleak false positives.
-> > -	 */
-> > -	kmemleak_not_leak(base);
-> > -
-> >  	if (!base) {
-> >  		printk(KERN_ERR "page cgroup allocation failure\n");
-> >  		return -ENOMEM;
-> > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
 
