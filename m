@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab1GZHeH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 03:34:07 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:43697 "EHLO
+	id S1751951Ab1GZHeM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 03:34:12 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:43705 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087Ab1GZHeA (ORCPT
+	with ESMTP id S1751461Ab1GZHeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 03:34:00 -0400
+	Tue, 26 Jul 2011 03:34:04 -0400
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: target-devel <target-devel@vger.kernel.org>,
         linux-scsi <linux-scsi@vger.kernel.org>,
@@ -17,38 +17,52 @@ Cc: Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 1/2] kernel.h: Add DIV_ROUND_UP_ULL usage
-Date: Tue, 26 Jul 2011 07:10:24 +0000
-Message-Id: <1311664225-20172-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 2/2] target: Convert to DIV_ROUND_UP_ULL usage for sectors / dev_max_sectors
+Date: Tue, 26 Jul 2011 07:10:25 +0000
+Message-Id: <1311664225-20172-2-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1311664225-20172-1-git-send-email-nab@linux-iscsi.org>
+References: <1311664225-20172-1-git-send-email-nab@linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Add new DIV_ROUND_UP_ULL macro usage for 32-bit architectures requiring
-unsigned long long division of sectors * dev_max_sectors.
+This patch adds the new macro usage of include/linux/kernel.h:DIV_ROUND_UP_ULL
+for transport_allocate_data_tasks() usage in target_core_mod v4.1
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- include/linux/kernel.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/target/target_core_transport.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 953352a..016dcc9 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -56,6 +56,8 @@
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index a244c90..8032e1e 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -4054,17 +4054,16 @@ static int transport_allocate_data_tasks(
+ 	struct se_task *task;
+ 	struct se_device *dev = cmd->se_dev;
+ 	unsigned long flags;
+-	sector_t sectors;
+ 	int task_count, i, ret;
+-	sector_t dev_max_sectors = dev->se_sub_dev->se_dev_attrib.max_sectors;
++	sector_t sectors, dev_max_sectors = dev->se_sub_dev->se_dev_attrib.max_sectors;
+ 	u32 sector_size = dev->se_sub_dev->se_dev_attrib.block_size;
+ 	struct scatterlist *sg;
+ 	struct scatterlist *cmd_sg;
  
- #define FIELD_SIZEOF(t, f) (sizeof(((t*)0)->f))
- #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
-+#define DIV_ROUND_UP_ULL(ll,d) \
-+	({ unsigned long long _tmp = (ll)+(d)-1; do_div(_tmp, d); _tmp; })
- 
- /* The `const' in roundup() prevents gcc-3.3 from calling __divdi3 */
- #define roundup(x, y) (					\
+ 	WARN_ON(cmd->data_length % sector_size);
+ 	sectors = DIV_ROUND_UP(cmd->data_length, sector_size);
+-	task_count = DIV_ROUND_UP(sectors, dev_max_sectors);
+-
++	task_count = DIV_ROUND_UP_ULL(sectors, dev_max_sectors);
++	
+ 	cmd_sg = sgl;
+ 	for (i = 0; i < task_count; i++) {
+ 		unsigned int task_size;
 -- 
 1.7.2.5
 
