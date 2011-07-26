@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab1GZH5D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 03:57:03 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:64157 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310Ab1GZH4y (ORCPT
+	id S1753358Ab1GZH7S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 03:59:18 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:35699 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419Ab1GZH7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 03:56:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E2E70C3.7050306@ncos.nec.co.jp>
-References: <1311599418-1915-1-git-send-email-yong.zhang0@gmail.com>
-	<4E2E507F.7030607@jp.fujitsu.com>
-	<CAM2zO=CGkVCMNZS8F6LxFi-NdYXf0fDLB_AEc00xrPvO_D02qw@mail.gmail.com>
-	<4E2E6102.3060600@jp.fujitsu.com>
-	<CAM2zO=CxriXK4bqGbwhfkfdgSpGwe1mAJE=6cYpDAf0Hxji0sQ@mail.gmail.com>
-	<4E2E70C3.7050306@ncos.nec.co.jp>
-Date: Tue, 26 Jul 2011 15:56:53 +0800
-Message-ID: <CAM2zO=Db07v6xOkOnikNz+MYdGJWTZ9Se_dFWr+OY025OV7+yA@mail.gmail.com>
-Subject: Re: [PATCH] proc/softirqs: only show state for online cpus
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Keika Kobayashi <kobayashi.kk@ncos.nec.co.jp>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 26 Jul 2011 03:59:13 -0400
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
+        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@purestorage.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH-v2 1/2] kernel.h: Add DIV_ROUND_UP_ULL and DIV_ROUND_UP_SECTOR_T macro usage
+Date: Tue, 26 Jul 2011 07:35:42 +0000
+Message-Id: <1311665743-20639-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 3:46 PM, Keika Kobayashi
-<kobayashi.kk@ncos.nec.co.jp> wrote:
->
-> for_each_online_cpu() was in my first patch, like /proc/softirq.
->
-> But Andrew said
-> --
-> Probably for_each_possible_cpu() is best - people might want to see how
-> many softirqs happened on a CPU which was recently offlined.
-> --
-> It makes sense.
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Ah, thanks for the clarification.
+Add new DIV_ROUND_UP_SECTOR_T macro usage for 32-bit architectures requiring
+a new DIV_ROUND_UP_ULL, and existing 64-bit usage with DIV_ROUND_UP.
 
->
-> We would like to collect this information
-> for trouble-shooting.
-> I think for_each_possible_cpu() is better.
->
-> At that time, I suggested to change
-> from for_each_online_cpu() to for_each_possible_cpu(),
-> in /proc/interrupts.
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ include/linux/kernel.h |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-+1
-Thus we could also avoid the issue pointed by KOSAKI Motonhiro.
-
->
-> In conclusion, we decided to remain /proc/interrupts.
-> because it had been the way for a long time.
-
-fair enough :)
-I will make a patch for /proc/interrupts instead.
-
-Thanks,
-Yong
-
-
-
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 953352a..e81b647 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -56,6 +56,14 @@
+ 
+ #define FIELD_SIZEOF(t, f) (sizeof(((t*)0)->f))
+ #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
++#define DIV_ROUND_UP_ULL(ll,d) \
++	({ unsigned long long _tmp = (ll)+(d)-1; do_div(_tmp, d); _tmp; })
++
++#if BITS_PER_LONG == 32
++# define DIV_ROUND_UP_SECTOR_T(ll,d) DIV_ROUND_UP_ULL(ll, d)
++#else
++# define DIV_ROUND_UP_SECTOR_T(ll,d) DIV_ROUND_UP(ll,d)
++#endif
+ 
+ /* The `const' in roundup() prevents gcc-3.3 from calling __divdi3 */
+ #define roundup(x, y) (					\
 -- 
-Only stand for myself
+1.7.2.5
+
