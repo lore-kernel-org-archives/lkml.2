@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549Ab1GZNUl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 09:20:41 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:40481 "EHLO mx2.fusionio.com"
+	id S1752448Ab1GZNVr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 09:21:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35960 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752417Ab1GZNUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 09:20:34 -0400
-X-ASG-Debug-ID: 1311686432-01de280c1ef11a0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E2EBF1D.8010409@fusionio.com>
-Date: Tue, 26 Jul 2011 15:20:29 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1751665Ab1GZNVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 09:21:41 -0400
+Message-ID: <4E2EBF63.8050208@suse.cz>
+Date: Tue, 26 Jul 2011 15:21:39 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-To: Muthu Kumar <muthu.lkml@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]: block: try-2 (modified): Initialize bi_rw in mpage so
-  bio_add can make use of it.
-References: <CAFR8uec5MxvHEWS=hgRXo1eunjQqWrpPCVXthdGMfWR+Yitw_A@mail.gmail.com> <4E1B37B1.9030608@fusionio.com> <CAFR8ueetLzSwTEc7D1zW4Yhd8t8iFbKvjJ07onWVQJbhzSOXLQ@mail.gmail.com> <4E1B3A1D.2050400@fusionio.com> <CAFR8ued8s_V0dqxgcFfeXbzm8VrNL5eE90gqHpk-RvW8frL7QA@mail.gmail.com> <CAFR8uefgC-9stfbQCWed8j2SgHZ-Q7_dbD4iRv-Z=E91SnmmyQ@mail.gmail.com> <CAFR8uee0ixYJZe+-88fCqSSTmqCG4i9JdH3Yy2X9QpT46Q+xQg@mail.gmail.com>
-X-ASG-Orig-Subj: Re: [PATCH]: block: try-2 (modified): Initialize bi_rw in mpage so
-  bio_add can make use of it.
-In-Reply-To: <CAFR8uee0ixYJZe+-88fCqSSTmqCG4i9JdH3Yy2X9QpT46Q+xQg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1311686432
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.70021
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+To: =?UTF-8?B?QW3DqXJpY28gV2FuZw==?= <xiyou.wangcong@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, lacombar@gmail.com, sam@ravnborg.org,
+        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
+Subject: Re: [RFC][PATCH 1/2] kconfig: Introduce KCONFIG(), KCONFIG_BUILTIN()
+ and KCONFIG_MODULE()
+References: <4E1D9C25.8080300@suse.cz> <1311634718-32588-1-git-send-email-mmarek@suse.cz> <CAM_iQpUEfYrrtpcRLTekSHMHrTTka6ir=z_GUUbnxuQKfY+OXA@mail.gmail.com>
+In-Reply-To: <CAM_iQpUEfYrrtpcRLTekSHMHrTTka6ir=z_GUUbnxuQKfY+OXA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-07-25 19:22, Muthu Kumar wrote:
-> Jens,
-> Is this OK? If not, how about mpage.c fix that we discussed (since
-> that is the most common case)?
+On 26.7.2011 15:01, Américo Wang wrote:
+> On Tue, Jul 26, 2011 at 6:58 AM, Michal Marek<mmarek@suse.cz>  wrote:
+>> Replace the config_is_*() macros with a variant that allows for grepping
+>> for usage of CONFIG_* options in the code. Usage:
+>>
+>>   if (KCONFIG(CONFIG_NUMA))
+>>
+>> or
+>>
+>>   #if KCONFIG(CONFIG_NUMA)
+>>
+>> The KCONFIG() macro evaluates to 1 if the argument is set (to either 'y'
+>> or 'm'), KCONFIG_BUILTIN() and KCONFIG_MODULE() test if the respective
+>> option is 'y' and 'm', respectively.
+>
+> I think it's better to let KCONFIG_MODULE() returns true only for =m, so that
+> KCONFIG() will equal to KCONFIG_BUILTIN() || KCONFIG_MODULE().
 
-Sorry, mostly away on vacation. I'll take a look at this tonight.
+This is how it's done.
 
--- 
-Jens Axboe
 
+> BTW, the name KCONFIG(CONFIG_NUMA) seems ugly.
+
+Suggest a better one :). The proposals so far:
+config_is_numa() (breaks grep)
+CONFIGURED(CONFIG_NUMA)
+ENABLED(CONFIG_NUMA)
+KCONFIG(CONFIG_NUMA)
+
+Michal
