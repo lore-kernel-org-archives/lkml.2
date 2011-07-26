@@ -1,126 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab1GZNZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 09:25:46 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48762 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab1GZNZl (ORCPT
+	id S1752612Ab1GZNcQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 09:32:16 -0400
+Received: from bipbip.grupopie.com ([195.23.16.24]:48323 "EHLO
+	bipbip.grupopie.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373Ab1GZNcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 09:25:41 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH RESEND] n_gsm: generate gsmtty device nodes
-To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Tue, 26 Jul 2011 14:27:50 +0100
-Message-ID: <20110726132716.27387.21457.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	Tue, 26 Jul 2011 09:32:10 -0400
+Message-ID: <4E2EC1D6.4020102@grupopie.com>
+Date: Tue, 26 Jul 2011 14:32:06 +0100
+From: Paulo Marques <pmarques@grupopie.com>
+Organization: Grupo PIE
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Jesper Juhl <jj@chaosbits.net>
+CC: Steven Rostedt <rostedt@goodmis.org>, stufever@gmail.com,
+        linux-kernel@vger.kernel.org, Wang Shaoyan <wangshaoyan.pt@taobao.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] TRACING: Fix a copmile warning
+References: <1310982010-13849-1-git-send-email-wangshaoyan.pt@taobao.com> <1311618747.3526.32.camel@gandalf.stny.rr.com> <4E2EAC70.4030609@grupopie.com> <alpine.LNX.2.00.1107261516550.11180@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1107261516550.11180@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Seems this one got lost somewhere but it is still relevant)
+Jesper Juhl wrote:
+> On Tue, 26 Jul 2011, Paulo Marques wrote:
+> 
+>> Steven Rostedt wrote:
+>>> On Mon, 2011-07-18 at 17:40 +0800, stufever@gmail.com wrote:
+>>>> From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+>>>>
+>>>> It's harmless but annyoing.
+>>>>   kernel/trace/trace_printk.c: In function 'module_trace_bprintk_format_notify':
+>>>>   kernel/trace/trace_printk.c:52: warning: 'fmt' may be used uninitialized in this function
+>>> I prefer not to add this patch. Fix gcc. Actually some gcc's do not warn
+>>> on this, others do. Here's the code that confuses gcc:
+>>>
+>>> 		tb_fmt = kmalloc(sizeof(*tb_fmt), GFP_KERNEL);
+>>> 		if (tb_fmt)
+>>> 			fmt = kmalloc(strlen(*iter) + 1, GFP_KERNEL);
+>>> 		if (tb_fmt && fmt) {
+>>> 			list_add_tail(&tb_fmt->list, &trace_bprintk_fmt_list);
+>>> 			strcpy(fmt, *iter);
+>>> 			tb_fmt->fmt = fmt;
+>>> 			*iter = tb_fmt->fmt;
+>>>
+>>>
+>>> fmt will never be looked at if tb_fmt is NULL, and fmt is initialized if
+>>> tb_fmt is not NULL.
+>> Yes, changing code just to please gcc is not nice. In this case,
+>> changing the code to the more straightforward / naive implementation
+>> might make it more readable (IMHO) and maybe even improve code
+>> generation. I.e., something like this:
+>>
+>> tb_fmt = kmalloc(sizeof(*tb_fmt), GFP_KERNEL);
+>> if (tb_fmt) {
+>>         fmt = kmalloc(strlen(*iter) + 1, GFP_KERNEL);
+>> 	if (fmt) {
+>>         	list_add_tail(&tb_fmt->list, &trace_bprintk_fmt_list);
+>>         	strcpy(fmt, *iter);
+>>         	tb_fmt->fmt = fmt;
+>>         	*iter = tb_fmt->fmt;
+>>         } else {
+>> 	        kfree(tb_fmt);
+>>         	*iter = NULL;
+>>         }
+>> } else {
+>>         *iter = NULL;
+>> }
+>>
+>> The downside is that the "*iter = NULL" gets repeated twice...
+>>
+> 
+> You could avoid that like this:
+> 
+> *iter = NULL;
+> tb_fmt = kmalloc(sizeof(*tb_fmt), GFP_KERNEL);
+> if (tb_fmt) {
+>       fmt = kmalloc(strlen(*iter) + 1, GFP_KERNEL);
+>       if (fmt) {
+>               list_add_tail(&tb_fmt->list, &trace_bprintk_fmt_list);
+>               strcpy(fmt, *iter);
+>               tb_fmt->fmt = fmt;
+>               *iter = tb_fmt->fmt;
+>         } else {
+>               kfree(tb_fmt);
+>         }
+> }
 
-From: Ken Mills <ken.k.mills@intel.com>
+Yes, but this way you always set *iter to NULL, whereas in the previous
+version that was the very unlikely case (kmalloc returning NULL).
 
-The mux does not generate gsmtty device nodes in /dev.
+Probably gcc is smart enough to generate the same code for both
+versions, to avoid setting *iter twice for the likely case (and even if
+it doesn't, then the cache will be hot and probably not written back
+yet, yadda, yadda)...
 
-Added call to tty_register_device in function gsmld_attach_gsm to do this.
+-- 
+Paulo Marques - www.grupopie.com
 
-Signed-off-by: Ken Mills <ken.k.mills@intel.com>
-[Rewrote to work with multiple muxes]
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
-
- drivers/tty/n_gsm.c |   25 ++++++++++++++++---------
- 1 files changed, 16 insertions(+), 9 deletions(-)
-
-
-diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
-index 19b4ae0..fef7ccb 100644
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -169,6 +169,7 @@ struct gsm_control {
- struct gsm_mux {
- 	struct tty_struct *tty;		/* The tty our ldisc is bound to */
- 	spinlock_t lock;
-+	unsigned int num;
- 
- 	/* Events on the GSM channel */
- 	wait_queue_head_t event;
-@@ -250,6 +251,8 @@ struct gsm_mux {
- static struct gsm_mux *gsm_mux[MAX_MUX];	/* GSM muxes */
- static spinlock_t gsm_mux_lock;
- 
-+static struct tty_driver *gsm_tty_driver;
-+
- /*
-  *	This section of the driver logic implements the GSM encodings
-  *	both the basic and the 'advanced'. Reliable transport is not
-@@ -1950,14 +1953,8 @@ void gsm_cleanup_mux(struct gsm_mux *gsm)
- 	gsm->dead = 1;
- 
- 	spin_lock(&gsm_mux_lock);
--	for (i = 0; i < MAX_MUX; i++) {
--		if (gsm_mux[i] == gsm) {
--			gsm_mux[i] = NULL;
--			break;
--		}
--	}
-+	gsm_mux[gsm->num] = NULL;
- 	spin_unlock(&gsm_mux_lock);
--	WARN_ON(i == MAX_MUX);
- 
- 	del_timer_sync(&gsm->t2_timer);
- 	/* Now we are sure T2 has stopped */
-@@ -2010,6 +2007,7 @@ int gsm_activate_mux(struct gsm_mux *gsm)
- 	spin_lock(&gsm_mux_lock);
- 	for (i = 0; i < MAX_MUX; i++) {
- 		if (gsm_mux[i] == NULL) {
-+			gsm->num = i;
- 			gsm_mux[i] = gsm;
- 			break;
- 		}
-@@ -2115,13 +2113,18 @@ static int gsmld_output(struct gsm_mux *gsm, u8 *data, int len)
- 
- static int gsmld_attach_gsm(struct tty_struct *tty, struct gsm_mux *gsm)
- {
--	int ret;
-+	int ret, i;
-+	int base = gsm->num << 6; /* Base for this MUX */
- 
- 	gsm->tty = tty_kref_get(tty);
- 	gsm->output = gsmld_output;
- 	ret =  gsm_activate_mux(gsm);
- 	if (ret != 0)
- 		tty_kref_put(gsm->tty);
-+	/* Don't register device 0 - this is the control channel and not
-+	   a usable tty interface */
-+	for (i = 1; i < NUM_DLCI; i++)
-+		tty_register_device(gsm_tty_driver, base + i, NULL);
- 	return ret;
- }
- 
-@@ -2136,7 +2139,12 @@ static int gsmld_attach_gsm(struct tty_struct *tty, struct gsm_mux *gsm)
- 
- static void gsmld_detach_gsm(struct tty_struct *tty, struct gsm_mux *gsm)
- {
-+	int i;
-+	int base = gsm->num << 6; /* Base for this MUX */
-+
- 	WARN_ON(tty != gsm->tty);
-+	for (i = 1; i < NUM_DLCI; i++)
-+		tty_unregister_device(gsm_tty_driver, base + i);
- 	gsm_cleanup_mux(gsm);
- 	tty_kref_put(gsm->tty);
- 	gsm->tty = NULL;
-@@ -2726,7 +2734,6 @@ static int gsmtty_break_ctl(struct tty_struct *tty, int state)
- 	return gsmtty_modem_update(dlci, encode);
- }
- 
--static struct tty_driver *gsm_tty_driver;
- 
- /* Virtual ttys for the demux */
- static const struct tty_operations gsmtty_ops = {
-
+"I used to be indecisive, but now I'm not so sure."
