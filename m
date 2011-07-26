@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751187Ab1GZEtO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 00:49:14 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:47964 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab1GZEtJ (ORCPT
+	id S1751262Ab1GZEx4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 00:53:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34548 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750750Ab1GZExt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 00:49:09 -0400
+	Tue, 26 Jul 2011 00:53:49 -0400
 MIME-Version: 1.0
-Date: Tue, 26 Jul 2011 12:49:08 +0800
-Message-ID: <CACVXFVOYYZt-XfbPx_dEOm9qOAuGqmviH4TdXxg6xTrrB8PaMQ@mail.gmail.com>
-Subject: block: BUG: using smp_processor_id() in preemptible [00000000] code
-From: Ming Lei <tom.leiming@gmail.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=20cf303b3cc1f51a0304a8f1a6b5
+In-Reply-To: <20110726033535.GA11939@x4.trippels.de>
+References: <20110725185649.GA22133@ZenIV.linux.org.uk> <20110726033535.GA11939@x4.trippels.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 25 Jul 2011 21:52:57 -0700
+Message-ID: <CA+55aFzaKHpVdLKac6rFN+YsAugz1aR3fv-reThJiD4HWDND8w@mail.gmail.com>
+Subject: Re: [git pull] vfs pile 1.5
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=20cf307f33b2c5b7f704a8f1b539
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf303b3cc1f51a0304a8f1a6b5
+--20cf307f33b2c5b7f704a8f1b539
 Content-Type: text/plain; charset=ISO-8859-1
 
-Hi,
+On Mon, Jul 25, 2011 at 8:35 PM, Markus Trippelsdorf
+<markus@trippelsdorf.de> wrote:
+>
+> This breaks the build for "# CONFIG_FS_POSIX_ACL is not set" configs:
 
-The bug is observed in -next-20110725, follows the stack trace[1], and
-seems the attachment patch can fix the bug.
+Of course it does. And as usual, my exhaustive testing was for the
+allyesconfig case, rather than doing both allyesconfig and allnoconfig
+like I should.
 
+Bah.
 
+Does the attached trivial patch fix everything for you?
 
-[1], stack trace
+                   Linus
 
-[   22.247222] BUG: using smp_processor_id() in preemptible [00000000]
-code: kjournald/514
-[   22.255737] caller is __make_request+0x1b8/0x308
-[   22.260681] [<c0019f44>] (unwind_backtrace+0x0/0xe8) from
-[<c024b4cc>] (debug_smp_processor_id+0xbc/0xf0)
-[   22.270751] [<c024b4cc>] (debug_smp_processor_id+0xbc/0xf0) from
-[<c0223d14>] (__make_request+0x1b8/0x308)
-[   22.280944] [<c0223d14>] (__make_request+0x1b8/0x308) from
-[<c02215ac>] (generic_make_request+0x4dc/0x558)
-[   22.291107] [<c02215ac>] (generic_make_request+0x4dc/0x558) from
-[<c022173c>] (submit_bio+0x114/0x138)
-[   22.300903] [<c022173c>] (submit_bio+0x114/0x138) from [<c011f504>]
-(submit_bh+0x148/0x16c)
-[   22.309692] [<c011f504>] (submit_bh+0x148/0x16c) from [<c0121ed8>]
-(__sync_dirty_buffer+0x88/0xd8)
-[   22.319122] [<c0121ed8>] (__sync_dirty_buffer+0x88/0xd8) from
-[<c01aff78>] (journal_commit_transaction+0x1198/0
-x1688)
-[   22.330322] [<c01aff78>] (journal_commit_transaction+0x1198/0x1688)
-from [<c01b4034>] (kjournald+0xb4/0x224)
-[   22.340667] [<c01b4034>] (kjournald+0xb4/0x224) from [<c0069ea0>]
-(kthread+0x8c/0x94)
-[   22.348937] [<c0069ea0>] (kthread+0x8c/0x94) from [<c00137f8>]
-(kernel_thread_exit+0x0/0x8)
-
-
-thanks,
--- 
-Ming Lei
-
---20cf303b3cc1f51a0304a8f1a6b5
-Content-Type: text/x-patch; charset=US-ASCII; name="fix_blk_bug_smp_processor_id.patch"
-Content-Disposition: attachment; 
-	filename="fix_blk_bug_smp_processor_id.patch"
+--20cf307f33b2c5b7f704a8f1b539
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
 Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gqkdxs830
+X-Attachment-Id: f_gqke37wn0
 
-ZGlmZiAtLWdpdCBhL2Jsb2NrL2Jsay1jb3JlLmMgYi9ibG9jay9ibGstY29yZS5jCmluZGV4IGY4
-Y2IwOTkuLjdlOTg2NzcgMTAwNjQ0Ci0tLSBhL2Jsb2NrL2Jsay1jb3JlLmMKKysrIGIvYmxvY2sv
-YmxrLWNvcmUuYwpAQCAtMTI4Miw4ICsxMjgyLDEwIEBAIGdldF9ycToKIAlpbml0X3JlcXVlc3Rf
-ZnJvbV9iaW8ocmVxLCBiaW8pOwogCiAJaWYgKHRlc3RfYml0KFFVRVVFX0ZMQUdfU0FNRV9DT01Q
-LCAmcS0+cXVldWVfZmxhZ3MpIHx8Ci0JICAgIGJpb19mbGFnZ2VkKGJpbywgQklPX0NQVV9BRkZJ
-TkUpKQotCQlyZXEtPmNwdSA9IHNtcF9wcm9jZXNzb3JfaWQoKTsKKwkgICAgYmlvX2ZsYWdnZWQo
-YmlvLCBCSU9fQ1BVX0FGRklORSkpIHsKKwkJcmVxLT5jcHUgPSBnZXRfY3B1KCk7CisJCXB1dF9j
-cHUoKTsKKwl9CiAKIAlwbHVnID0gY3VycmVudC0+cGx1ZzsKIAlpZiAocGx1Zykgewo=
---20cf303b3cc1f51a0304a8f1a6b5--
+IGZzL25hbWVpLmMgfCAgICAyICsrCiAxIGZpbGVzIGNoYW5nZWQsIDIgaW5zZXJ0aW9ucygrKSwg
+MCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9mcy9uYW1laS5jIGIvZnMvbmFtZWkuYwppbmRl
+eCBlZjAwYjk4NGZiMjAuLmY4YzY5ZDM3Mzc5MyAxMDA2NDQKLS0tIGEvZnMvbmFtZWkuYworKysg
+Yi9mcy9uYW1laS5jCkBAIC0xNzYsNiArMTc2LDcgQEAgRVhQT1JUX1NZTUJPTChwdXRuYW1lKTsK
+IAogc3RhdGljIGludCBjaGVja19hY2woc3RydWN0IGlub2RlICppbm9kZSwgaW50IG1hc2spCiB7
+CisjaWZkZWYgQ09ORklHX0ZTX1BPU0lYX0FDTAogCXN0cnVjdCBwb3NpeF9hY2wgKmFjbDsKIAog
+CS8qCkBAIC0yMTksNiArMjIwLDcgQEAgc3RhdGljIGludCBjaGVja19hY2woc3RydWN0IGlub2Rl
+ICppbm9kZSwgaW50IG1hc2spCiAJICAgICAgICBwb3NpeF9hY2xfcmVsZWFzZShhY2wpOwogCSAg
+ICAgICAgcmV0dXJuIGVycm9yOwogCX0KKyNlbmRpZgogCiAJcmV0dXJuIC1FQUdBSU47CiB9Cg==
+--20cf307f33b2c5b7f704a8f1b539--
