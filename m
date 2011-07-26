@@ -1,158 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752898Ab1GZB3v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 21:29:51 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:48026 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062Ab1GZB3p convert rfc822-to-8bit (ORCPT
+	id S1752953Ab1GZBl2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 21:41:28 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:59478 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667Ab1GZBlX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 21:29:45 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=WrdfOQ02SnwFoqIvDB+pSXgpDzi5nBgZat4+LB06B8+8CJDDW/ernzsK83II612/U
-	ohknWhZAxmhVgDQx9UBTQ==
+	Mon, 25 Jul 2011 21:41:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <1311640646-12587-1-git-send-email-gaowanlong@cn.fujitsu.com>
-References: <1311573834-7140-1-git-send-email-gaowanlong@cn.fujitsu.com> <1311640646-12587-1-git-send-email-gaowanlong@cn.fujitsu.com>
-From: Paul Menage <menage@google.com>
-Date: Mon, 25 Jul 2011 18:29:22 -0700
-Message-ID: <CAJniumVKTYcJc6K=X1gGufQLX7dqNvaS-hgkzgz2st37Fyd8iw@mail.gmail.com>
-Subject: Re: [PATCH v2] cgroup:be able to remove the record of unplugged device
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: lizf@cn.fujitsu.com, axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        wanlong.gao@gmail.com
+In-Reply-To: <CAJ0pr19oTmt5PQw45wbRO8qEzVi3J1OgL=w9Ma7XxX-=1A=A=A@mail.gmail.com>
+References: <1311199321-4618-1-git-send-email-per.forlin@linaro.org>
+	<1311199321-4618-3-git-send-email-per.forlin@linaro.org>
+	<CAC5umyg44tQxrFEYRL-tjzBMA2+KNXjB+nQveH3KcB_LPmYVHw@mail.gmail.com>
+	<CAJ0pr1_rL8rsEbDR-PL6fs9EzyGfUMbmeUjTGk=WspvrAkdy+g@mail.gmail.com>
+	<CAJ0pr19oTmt5PQw45wbRO8qEzVi3J1OgL=w9Ma7XxX-=1A=A=A@mail.gmail.com>
+Date: Tue, 26 Jul 2011 10:41:22 +0900
+Message-ID: <CAC5umyjR3V2uFtWZ7tQQtGH2B=s+-C43U1H01qYysBScYc8fxQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] mmc: core: add random fault injection
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Per Forlin <per.forlin@linaro.org>
+Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
+        Venkatraman S <svenkatr@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
+        Chris Ball <cjb@laptop.org>,
+        J Freyensee <james_p_freyensee@linux.intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd be inclined to call that variable something like 'weight' rather
-than 'temp', for clarity.
+2011/7/26 Per Forlin <per.forlin@linaro.org>:
+>>> And I know that init_fault_attr_dentries() can only create a
+>>> subdirectory in debugfs root directory.  But I have a patch which
+>>> support for creating it in arbitrary directory.  Could you take a look
+>>> at this? (Note that this patch is based on mmotm and not yet tested)
+>>>
+> I looked at your patch and it raised two questions.
+> I can't use FAULT_ATTR_INITIALIZER since mmc_host is allocated on the
+> heap. It looks like setup_fault_attr(attr, str) will fail if str is
+> NULL. How can I initialise the fault_attrs if not stack allocated?
+> About the boot param initialisation of fault attr. There can only be
+> one fault_mmc_request boot param for the entire kernel but there is
+> one fault_attr per host, and there may be many hosts. It would be
+> convenient if setup_fault_attrs would take (attr, boot_param_name),
+> look up boot_param_name and use that otherwise set default values.
 
-The change seems to fit the intent, AFAICS. But someone who has a
-really good understanding of this file should review it.
-blkiocg_file_write() in particular needs a bunch of comments to make
-the logic more immediately clear, and to explain why it's OK to do
-e.g. blkio_update_policy_rule() outside the lock.
+I think you can define one default fail_attr for boot time configuration
+and copy it to per-host fail_attr in mmc_add_host_debugfs().
 
-Paul
+/* pseudo-code */
 
-On Mon, Jul 25, 2011 at 5:37 PM, Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
-> Hi Paul:
-> How about this version?
-> Thanks
->
-> Write a record like:
-> echo 8:0 1000 > blkio.throttle.read_bps_device
-> to control the bps of the device.
-> And then unplug this device without doing
-> "8:0 0 > blkio.throttle.read_bps_device" to remove the record,
-> it will not be removed until reboot, because if the device is removed,
-> write some record will return "-ENODEV".
->
-> With this patch, when the device is removed, then if we want to remove
-> the record for this removed device, just write "0" then it'll not check
-> if it is a present device, just remove the present record.
->
-> Below is my test:
-> 1. Test native.
-> [root@test ~]# mount -t cgroup -o blkio nodev /cgroup/
-> [root@test ~]# cd /cgroup/
-> [root@test cgroup]# ll /dev/sd*
-> brw-rw---- 1 root disk 8, 0 Jul 25 13:27 /dev/sda
-> brw-rw---- 1 root disk 8, 1 Jul 25 13:27 /dev/sda1
-> [root@test cgroup]# cat blkio.throttle.read_bps_device
-> [root@test cgroup]# echo 8:0 1000 > blkio.throttle.read_bps_device
-> [root@test cgroup]# cat blkio.throttle.read_bps_device
-> 8:0     1000
-> [root@test cgroup]# echo 8:0 0 > blkio.throttle.read_bps_device
-> [root@test cgroup]# cat blkio.throttle.read_bps_device
-> [root@test cgroup]# echo 8:0 1000 > blkio.throttle.read_bps_device
-> [root@test cgroup]# cat blkio.throttle.read_bps_device
-> 8:0     1000
-> [root@test cgroup]# ll /dev/sd*
-> ls: cannot access /dev/sd*: No such file or directory
-> [root@test cgroup]# cat blkio.throttle.read_bps_device
-> 8:0     1000
-> [root@test cgroup]# echo 8:0 0 > blkio.throttle.read_bps_device
-> -bash: echo: write error: No such device
-> [root@test cgroup]# cat blkio.throttle.read_bps_device
-> 8:0     1000
->
-> 2.Test with this patch:
->
-> [root@test ~]# mount -t cgroup -o blkio nodev /cgroup/
-> [root@test ~]# ll /dev/sd*
-> brw-rw---- 1 root disk 8, 0 Jul 25 13:11 /dev/sda
-> brw-rw---- 1 root disk 8, 1 Jul 25 13:11 /dev/sda1
-> [root@test ~]# cd /cgroup/
-> [root@test cgroup]# echo 8:0 1000 > blkio.throttle.read_bps_device
-> [root@test cgroup]# cat blkio.throttle.read_bps_device
-> 8:0     1000
-> [root@test cgroup]# ll /dev/sd*
-> brw-rw---- 1 root disk 8, 0 Jul 25 13:11 /dev/sda
-> brw-rw---- 1 root disk 8, 1 Jul 25 13:11 /dev/sda1
-> [root@test cgroup]# echo 8:0 0 > blkio.throttle.read_bps_device
-> [root@test cgroup]# cat blkio.throttle.read_bps_device
-> [root@test cgroup]# ll /dev/sd*
-> brw-rw---- 1 root disk 8, 0 Jul 25 13:11 /dev/sda
-> brw-rw---- 1 root disk 8, 1 Jul 25 13:11 /dev/sda1
-> [root@test cgroup]# echo 8:0 2000 > blkio.throttle.read_bps_device
-> [root@test cgroup]# cat blkio.throttle.read_bps_device
-> 8:0     2000
->
-> [root@test cgroup]# ll /dev/sd*
-> ls: cannot access /dev/sd*: No such file or directory
-> [root@test cgroup]# cat blkio.throttle.read_bps_device
-> 8:0     2000
-> [root@test cgroup]# echo 8:0 0 > blkio.throttle.read_bps_device
-> [root@test cgroup]# cat blkio.throttle.read_bps_device
-> [root@test cgroup]# echo 8:0 1000 > blkio.throttle.read_bps_device
-> -bash: echo: write error: No such device
-> [root@test cgroup]# echo 8:0 01100 > blkio.throttle.read_bps_device
-> -bash: echo: write error: No such device
-> [root@test cgroup]#
->
-> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> ---
->  block/blk-cgroup.c |   12 ++++++------
->  1 files changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index bcaf16e..4e81170 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -826,19 +826,19 @@ static int blkio_policy_parse_and_set(char *buf,
->
->        dev = MKDEV(major, minor);
->
-> -       ret = blkio_check_dev_num(dev);
-> +       ret = strict_strtoul(s[1], 10, &temp);
->        if (ret)
-> +               return -EINVAL;
-> +
-> +       ret = blkio_check_dev_num(dev);
-> +       if (ret && (temp != 0))
->                return ret;
->
->        newpn->dev = dev;
->
-> -       if (s[1] == NULL)
-> -               return -EINVAL;
-> -
->        switch (plid) {
->        case BLKIO_POLICY_PROP:
-> -               ret = strict_strtoul(s[1], 10, &temp);
-> -               if (ret || (temp < BLKIO_WEIGHT_MIN && temp > 0) ||
-> +               if ((temp < BLKIO_WEIGHT_MIN && temp > 0) ||
->                        temp > BLKIO_WEIGHT_MAX)
->                        return -EINVAL;
->
-> --
-> 1.7.6
->
->
+static DECLARE_FAULT_ATTR(default_mmc_fail_attr);
+
+static int __init setup_fail_mmc_request(char *str)
+{
+	return setup_fault_attr(&default_mmc_fail_attr, str);
+}
+__setup("fail_mmc_request=", setup_fail_mmc_request);
+
+...
+
+void mmc_add_host_debugfs(struct mmc_host *host)
+{
+	...
+
+#ifdef CONFIG_FAIL_MMC_REQUEST
+	host->fail_attr = default_mmc_fail_attr;
+	if (!debugfs_create_fault_attr("fail_mmc_request",
+					root, &host->fail_attr))
+		goto err_node;
+#endif
+	...
+}
