@@ -1,169 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab1GZPkl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 11:40:41 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:56152 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753423Ab1GZPgB (ORCPT
+	id S1753642Ab1GZPmm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 11:42:42 -0400
+Received: from mtaout03-winn.ispmail.ntl.com ([81.103.221.49]:57343 "EHLO
+	mtaout03-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753085Ab1GZPmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 11:36:01 -0400
-From: Tejun Heo <tj@kernel.org>
-To: benh@kernel.crashing.org, yinghai@kernel.org, hpa@zytor.com,
-        tony.luck@intel.com, ralf@linux-mips.org, schwidefsky@de.ibm.com,
-        liqin.chen@sunplusct.com, lethal@linux-sh.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: mingo@redhat.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 12/23] memblock: Track total size of regions automatically
-Date: Tue, 26 Jul 2011 17:35:23 +0200
-Message-Id: <1311694534-5161-13-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1311694534-5161-1-git-send-email-tj@kernel.org>
-References: <1311694534-5161-1-git-send-email-tj@kernel.org>
+	Tue, 26 Jul 2011 11:42:36 -0400
+X-Greylist: delayed 166077 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Jul 2011 11:42:32 EDT
+From: Daniel Drake <dsd@laptop.org>
+To: mingo@redhat.com
+To: tglx@linutronix.de
+To: hpa@zytor.com
+To: x86@kernel.org
+Cc: dilinger@queued.net
+Cc: pgf@laptop.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, olpc: Wait for last byte of EC command to be accepted
+Message-Id: <20110726154226.93A9F9D401C@zog.reactivated.net>
+Date: Tue, 26 Jul 2011 16:42:26 +0100 (BST)
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=4rr6EKLBedkA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=NKBxTcpnRpsW_ARbErMA:9 a=4Gb8eucrq0BMUHm73HoA:7 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Total size of memory regions was calculated by memblock_analyze()
-requiring explicitly calling the function between operations which can
-change memory regions and possible users of total size, which is
-cumbersome and fragile.
+From: Paul Fox <pgf@laptop.org>
 
-This patch makes each memblock_type track total size automatically
-with minor modifications to memblock manipulation functions and remove
-requirements on calling memblock_analyze().  [__]memblock_dump_all()
-now also dumps the total size of reserved regions.
+When executing EC commands, only waiting when there are still more bytes to
+write is usually fine. However, if the system suspends very quickly after
+a call to olpc_ec_cmd(), the last data byte may not yet be transferred to
+the EC, and the command will not complete.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
+This solves a bug where the SCI wakeup mask was not correctly written
+when going into suspend.
+
+Signed-off-by: Paul Fox <pgf@laptop.org>
+Signed-off-by: Daniel Drake <dsd@laptop.org>
 ---
- include/linux/memblock.h |    2 +-
- mm/memblock.c            |   27 +++++++++++++--------------
- 2 files changed, 14 insertions(+), 15 deletions(-)
+ arch/x86/platform/olpc/olpc.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index cd54a1d..3d3c8ce 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -30,12 +30,12 @@ struct memblock_region {
- struct memblock_type {
- 	unsigned long cnt;	/* number of regions */
- 	unsigned long max;	/* size of the allocated array */
-+	phys_addr_t total_size;	/* size of all regions */
- 	struct memblock_region *regions;
- };
- 
- struct memblock {
- 	phys_addr_t current_limit;
--	phys_addr_t memory_size;	/* Updated by memblock_analyze() */
- 	struct memblock_type memory;
- 	struct memblock_type reserved;
- };
-diff --git a/mm/memblock.c b/mm/memblock.c
-index d8582f7..051bc4e 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -179,12 +179,14 @@ int __init_memblock memblock_reserve_reserved_regions(void)
- 
- static void __init_memblock memblock_remove_region(struct memblock_type *type, unsigned long r)
- {
-+	type->total_size -= type->regions[r].size;
- 	memmove(&type->regions[r], &type->regions[r + 1],
- 		(type->cnt - (r + 1)) * sizeof(type->regions[r]));
- 	type->cnt--;
- 
- 	/* Special case for empty arrays */
- 	if (type->cnt == 0) {
-+		WARN_ON(type->total_size != 0);
- 		type->cnt = 1;
- 		type->regions[0].base = 0;
- 		type->regions[0].size = 0;
-@@ -314,6 +316,7 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
- 	rgn->size = size;
- 	memblock_set_region_node(rgn, nid);
- 	type->cnt++;
-+	type->total_size += size;
- }
- 
- /**
-@@ -340,10 +343,11 @@ static int __init_memblock memblock_add_region(struct memblock_type *type,
- 
- 	/* special case for empty array */
- 	if (type->regions[0].size == 0) {
--		WARN_ON(type->cnt != 1);
-+		WARN_ON(type->cnt != 1 || type->total_size);
- 		type->regions[0].base = base;
- 		type->regions[0].size = size;
- 		memblock_set_region_node(&type->regions[0], MAX_NUMNODES);
-+		type->total_size = size;
- 		return 0;
+diff --git a/arch/x86/platform/olpc/olpc.c b/arch/x86/platform/olpc/olpc.c
+index 8b9940e..7cce722 100644
+--- a/arch/x86/platform/olpc/olpc.c
++++ b/arch/x86/platform/olpc/olpc.c
+@@ -161,13 +161,13 @@ restart:
+ 	if (inbuf && inlen) {
+ 		/* write data to EC */
+ 		for (i = 0; i < inlen; i++) {
++			pr_devel("olpc-ec:  sending cmd arg 0x%x\n", inbuf[i]);
++			outb(inbuf[i], 0x68);
+ 			if (wait_on_ibf(0x6c, 0)) {
+ 				printk(KERN_ERR "olpc-ec:  timeout waiting for"
+ 						" EC accept data!\n");
+ 				goto err;
+ 			}
+-			pr_devel("olpc-ec:  sending cmd arg 0x%x\n", inbuf[i]);
+-			outb(inbuf[i], 0x68);
+ 		}
  	}
- repeat:
-@@ -453,7 +457,8 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
- 			 * to process the next region - the new top half.
- 			 */
- 			rgn->base = base;
--			rgn->size = rend - rgn->base;
-+			rgn->size -= base - rbase;
-+			type->total_size -= base - rbase;
- 			memblock_insert_region(type, i, rbase, base - rbase,
- 					       rgn->nid);
- 		} else if (rend > end) {
-@@ -462,7 +467,8 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
- 			 * current region - the new bottom half.
- 			 */
- 			rgn->base = end;
--			rgn->size = rend - rgn->base;
-+			rgn->size -= end - rbase;
-+			type->total_size -= end - rbase;
- 			memblock_insert_region(type, i--, rbase, end - rbase,
- 					       rgn->nid);
- 		} else {
-@@ -784,10 +790,9 @@ phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, i
-  * Remaining API functions
-  */
- 
--/* You must call memblock_analyze() before this. */
- phys_addr_t __init memblock_phys_mem_size(void)
- {
--	return memblock.memory_size;
-+	return memblock.memory.total_size;
- }
- 
- phys_addr_t __init_memblock memblock_end_of_DRAM(void)
-@@ -797,7 +802,6 @@ phys_addr_t __init_memblock memblock_end_of_DRAM(void)
- 	return (memblock.memory.regions[idx].base + memblock.memory.regions[idx].size);
- }
- 
--/* You must call memblock_analyze() after this. */
- void __init memblock_enforce_memory_limit(phys_addr_t limit)
- {
- 	unsigned long i;
-@@ -900,7 +904,9 @@ static void __init_memblock memblock_dump(struct memblock_type *type, char *name
- void __init_memblock __memblock_dump_all(void)
- {
- 	pr_info("MEMBLOCK configuration:\n");
--	pr_info(" memory size = 0x%llx\n", (unsigned long long)memblock.memory_size);
-+	pr_info(" memory size = %#llx reserved size = %#llx\n",
-+		(unsigned long long)memblock.memory.total_size,
-+		(unsigned long long)memblock.reserved.total_size);
- 
- 	memblock_dump(&memblock.memory, "memory");
- 	memblock_dump(&memblock.reserved, "reserved");
-@@ -908,13 +914,6 @@ void __init_memblock __memblock_dump_all(void)
- 
- void __init memblock_analyze(void)
- {
--	int i;
--
--	memblock.memory_size = 0;
--
--	for (i = 0; i < memblock.memory.cnt; i++)
--		memblock.memory_size += memblock.memory.regions[i].size;
--
- 	/* We allow resizing from there */
- 	memblock_can_resize = 1;
- }
+ 	if (outbuf && outlen) {
 -- 
 1.7.6
 
