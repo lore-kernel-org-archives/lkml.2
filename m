@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab1GZTYw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 15:24:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42743 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752189Ab1GZTYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 15:24:49 -0400
-Date: Tue, 26 Jul 2011 15:24:41 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Paul Menage <menage@google.com>
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, lizf@cn.fujitsu.com,
-        axboe@kernel.dk, linux-kernel@vger.kernel.org, wanlong.gao@gmail.com
-Subject: Re: [PATCH v3] blk-cgroup:be able to remove the record of unplugged
- device
-Message-ID: <20110726192441.GD13780@redhat.com>
-References: <1311573834-7140-1-git-send-email-gaowanlong@cn.fujitsu.com>
- <1311645400-19434-1-git-send-email-gaowanlong@cn.fujitsu.com>
- <20110726144427.GB13780@redhat.com>
- <CAJniumVm=oH_yJAgaTzwVu1XwJfn8eAsHw2Cm0tfvg=unA6hkA@mail.gmail.com>
- <20110726174148.GC13780@redhat.com>
- <CAJniumW-+aQE0jWr0NhvTUuxLDiP27bQaZVmVORpnNHvPqp0kQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJniumW-+aQE0jWr0NhvTUuxLDiP27bQaZVmVORpnNHvPqp0kQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753587Ab1GZT0N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 15:26:13 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:60467 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753443Ab1GZT0L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 15:26:11 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Bob Zhang <zhanglinbao@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        hayfeng Lee <omycle@gmail.com>, ak@linux.intel.com,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Bob Zhang <2004.zhang@gmail.com>
+Subject: Re: x86_64 virtual memory map
+In-Reply-To: Your message of "Mon, 25 Jul 2011 18:13:16 +0800."
+             <CAKdQVUZMC0eaeqev=tAbS2myHJOA1KJt4r8TVMz6=yQeDpUpZQ@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <5f6c52c61003241920i6b3eaaf7k946f67d1a6f9e384@mail.gmail.com> <m1r5n7ln0l.fsf@fess.ebiederm.org>
+            <CAKdQVUZMC0eaeqev=tAbS2myHJOA1KJt4r8TVMz6=yQeDpUpZQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1311708366_2745P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 26 Jul 2011 15:26:06 -0400
+Message-ID: <46580.1311708366@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020208.4E2F14D0.003A,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 11:40:26AM -0700, Paul Menage wrote:
-> On Tue, Jul 26, 2011 at 10:41 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > They have but the context where temp is being used to figure out if it
-> > is a deletion rule is generic. So if a rule is being deleted (be it
-> > weight, bps or iops), we are going to parse it early in the function.
-> > So in that context not calling it "weight" makes sense to me.
-> >
-> > We use bps, iops names only after knowing the value type.
-> 
-> Fair enough - but in that case, wouldn't it make sense to make "temp"
-> a u64 and just parse it once, rather than reparsing the iops/bps later
-> in their switch cases?
+--==_Exmh_1311708366_2745P
+Content-Type: text/plain; charset=us-ascii
 
-Agreed. That makes sense. Make temp u64 and use strict_strtoull() and
-once parsed use that value for weight, bps and iops and don't do
-parsing again.
+On Mon, 25 Jul 2011 18:13:16 +0800, Bob Zhang said:
 
-Wanlong, could you please take care of above also in your next posting?
+> 3,  if I installed 64TB physical memory (RAM) , but linux kernel only
+> support 1TB address space , what should I do next ?
 
-Thanks
-Vivek
+Prepare to explain to your boss why you blew the project budget by buying 63T
+too much RAM without checking first if it was supported? :)
+
+
+--==_Exmh_1311708366_2745P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOLxTOcC3lWbTT17ARAlEkAJ9SEz34MIr+IN5FzOn5ouRIvkM4gQCgrX5W
+2MrsRwToDfSto3Iqo/u6xAw=
+=rzSc
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1311708366_2745P--
+
