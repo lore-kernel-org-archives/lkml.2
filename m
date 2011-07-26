@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab1GZRQQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 13:16:16 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:53778 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751064Ab1GZRQG (ORCPT
+	id S1751636Ab1GZRRq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 13:17:46 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:29237 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab1GZRRk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 13:16:06 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=ewxedzNSLOjnyNUgYEBqdVt83pnwuuoimt2T5Hj8/dgR7HjWIvzOatZAqnI+HYt4ZFdHKNYmhDbwtJ87iAVPHoK/6sR9hVi/NmEN6r2I32a/oRaGCmahMf4KhjoPqWXV;
-Date: Tue, 26 Jul 2011 10:16:00 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Joe Perches <joe@perches.com>
-Cc: Dave Reisner <d@falconindy.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Dave Reisner <dreisner@archlinux.org>
-Subject: Re: [PATCH] printk: add Kconfig for default console loglevel
-Message-Id: <20110726101600.d6a18aa2.rdunlap@xenotime.net>
-In-Reply-To: <1311699705.15386.20.camel@Joe-Laptop>
-References: <1311694431-17037-1-git-send-email-dreisner@archlinux.org>
-	<20110726093730.aa164c70.rdunlap@xenotime.net>
-	<1311699705.15386.20.camel@Joe-Laptop>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Tue, 26 Jul 2011 13:17:40 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=IVhoQxxmbbTQEVrm9uMHKm5mpN4gKkdI42iY2zli1cO2PtvutfYmNV5fXqysSwcFm
+	M8of0VQ89yy/mtlHgt1Tg==
+MIME-Version: 1.0
+In-Reply-To: <20110726144427.GB13780@redhat.com>
+References: <1311573834-7140-1-git-send-email-gaowanlong@cn.fujitsu.com>
+ <1311645400-19434-1-git-send-email-gaowanlong@cn.fujitsu.com> <20110726144427.GB13780@redhat.com>
+From: Paul Menage <menage@google.com>
+Date: Tue, 26 Jul 2011 10:17:16 -0700
+Message-ID: <CAJniumVm=oH_yJAgaTzwVu1XwJfn8eAsHw2Cm0tfvg=unA6hkA@mail.gmail.com>
+Subject: Re: [PATCH v3] blk-cgroup:be able to remove the record of unplugged device
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, lizf@cn.fujitsu.com,
+        axboe@kernel.dk, linux-kernel@vger.kernel.org, wanlong.gao@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Jul 2011 10:01:45 -0700 Joe Perches wrote:
+On Tue, Jul 26, 2011 at 7:44 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>>       char *s[4], *p, *major_s = NULL, *minor_s = NULL;
+>>       int ret;
+>> -     unsigned long major, minor, temp;
+>> +     unsigned long major, minor, weight;
+>
+> Do not replace temp with name weight. The place you are parsing it,
+> it could be weight, bps or iops. So lets keep the generic name in
+> place.
 
-> On Tue, 2011-07-26 at 09:37 -0700, Randy Dunlap wrote:
-> > On Tue, 26 Jul 2011 11:33:51 -0400 Dave Reisner wrote:
-> > > Keep the historical default of 7, but allow distributions and users to
-> > > tune this value instead of requiring a kernel cmdline parameter.
-> > Please explain how this is different from what is already in lib/Kconfig.debug:
-> > config DEFAULT_MESSAGE_LOGLEVEL
-> > 	int "Default message log level (1-7)"
-> > 	range 1 7
-> > 	default "4"
-> > 	help
-> > 	  Default log level for printk statements with no specified priority.
-> 
-> DEFAULT_MESSAGE_LOGLEVEL sets a KERN_<level> for
-> printks without a KERN_<level>.
-> 
-> > > +config DEFAULT_CONSOLE_LOGLEVEL
-> > > +	int "Default console log level (1-7)"
-> > > +	range 1 7
-> > > +	default "7"
-> > > +	help
-> > > +	  Default console log level setting for printk statements.
-> > > +
-> > > +	  This was hard-coded to KERN_INFO (7) since at least 2.6.12. You may
-> > > +	  wish to turn this down to 4 for a quieter console.
-> > > +
-> 
-> This allows 'unimportant' messages to not be shown by default.
+The variable currently called "temp" is only ever stored in
+newpn->val.weight. iops and bps already have their own local
+variables.
 
-Thanks.  Maybe Kconfig help text could be clearer.
-
-> I think there are lots of KERN_INFO messages that are
-> miscategorized.  This change might cause some shifting
-> of KERN_<level>s in the future, so it's OK by me. 
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Paul
