@@ -1,64 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab1GZL2f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 07:28:35 -0400
-Received: from smtp-68.nebula.fi ([83.145.220.68]:42989 "EHLO
-	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab1GZL23 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 07:28:29 -0400
-Date: Tue, 26 Jul 2011 14:28:25 +0300
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [PATCH] adp1653: check platform_data before usage
-Message-ID: <20110726112825.GB32507@valkosipuli.localdomain>
-References: <55316b63b7084f869d550fd600f29d2e0dfa862c.1311603384.git.andriy.shevchenko@linux.intel.com>
+	id S1753147Ab1GZL2r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 07:28:47 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61561 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753473Ab1GZL2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 07:28:32 -0400
+Message-ID: <4E2EA551.8070209@cn.fujitsu.com>
+Date: Tue, 26 Jul 2011 19:30:25 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <55316b63b7084f869d550fd600f29d2e0dfa862c.1311603384.git.andriy.shevchenko@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 08/11] KVM: MMU: split kvm_mmu_pte_write function
+References: <4E2EA3DB.7040403@cn.fujitsu.com>
+In-Reply-To: <4E2EA3DB.7040403@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-26 19:27:31,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-26 19:27:31,
+	Serialize complete at 2011-07-26 19:27:31
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Andy!
+kvm_mmu_pte_write is too long, we split it for better readable
 
-On Mon, Jul 25, 2011 at 05:16:41PM +0300, Andy Shevchenko wrote:
-> The driver requires platform_data to be present. That's why we need to check
-> and fail in case of the absence of necessary data.
-> 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> ---
->  drivers/media/video/adp1653.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |  180 ++++++++++++++++++++++++++++++++--------------------
+ 1 files changed, 111 insertions(+), 69 deletions(-)
 
-Thanks for the patch. I'll add this to my next pull req.
-
-> 
-> diff --git a/drivers/media/video/adp1653.c b/drivers/media/video/adp1653.c
-> index be7befd..8ad89ff 100644
-> --- a/drivers/media/video/adp1653.c
-> +++ b/drivers/media/video/adp1653.c
-> @@ -413,6 +413,10 @@ static int adp1653_probe(struct i2c_client *client,
->  	struct adp1653_flash *flash;
->  	int ret;
->  
-> +	/* we couldn't work without platform data */
-> +	if (client->dev.platform_data == NULL)
-> +		return -ENODEV;
-> +
->  	flash = kzalloc(sizeof(*flash), GFP_KERNEL);
->  	if (flash == NULL)
->  		return -ENOMEM;
-> -- 
-> 1.7.5.4
-> 
-
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 7629802..931c23a 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -3524,48 +3524,29 @@ static int get_free_pte_list_desc_nr(struct kvm_vcpu *vcpu)
+ 	return mmu_memory_cache_free_object(cache);
+ }
+ 
+-void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+-		       const u8 *new, int bytes, bool repeat_write)
++static u64 mmu_pte_write_fetch_gpte(struct kvm_vcpu *vcpu, gpa_t *gpa,
++				    const u8 *new, int *bytes)
+ {
+-	gfn_t gfn = gpa >> PAGE_SHIFT;
+-	union kvm_mmu_page_role mask = { .word = 0 };
+-	struct kvm_mmu_page *sp;
+-	struct hlist_node *node;
+-	LIST_HEAD(invalid_list);
+-	u64 entry, gentry, *spte;
+-	unsigned pte_size, page_offset, misaligned, quadrant, offset;
+-	int level, npte, r, flooded = 0;
+-	bool remote_flush, local_flush, zap_page;
+-
+-	/*
+-	 * If we don't have indirect shadow pages, it means no page is
+-	 * write-protected, so we can exit simply.
+-	 */
+-	if (!ACCESS_ONCE(vcpu->kvm->arch.indirect_shadow_pages))
+-		return;
+-
+-	zap_page = remote_flush = local_flush = false;
+-	offset = offset_in_page(gpa);
+-
+-	pgprintk("%s: gpa %llx bytes %d\n", __func__, gpa, bytes);
++	u64 gentry;
++	int r;
+ 
+ 	/*
+ 	 * Assume that the pte write on a page table of the same type
+ 	 * as the current vcpu paging mode since we update the sptes only
+ 	 * when they have the same mode.
+ 	 */
+-	if (is_pae(vcpu) && bytes == 4) {
++	if (is_pae(vcpu) && *bytes == 4) {
+ 		/* Handle a 32-bit guest writing two halves of a 64-bit gpte */
+-		gpa &= ~(gpa_t)7;
+-		bytes = 8;
++		*gpa &= ~(gpa_t)7;
++		*bytes = 8;
+ 
+-		r = kvm_read_guest(vcpu->kvm, gpa, &gentry, min(bytes, 8));
++		r = kvm_read_guest(vcpu->kvm, *gpa, &gentry, min(*bytes, 8));
+ 		if (r)
+ 			gentry = 0;
+ 		new = (const u8 *)&gentry;
+ 	}
+ 
+-	switch (bytes) {
++	switch (*bytes) {
+ 	case 4:
+ 		gentry = *(const u32 *)new;
+ 		break;
+@@ -3577,66 +3558,127 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 		break;
+ 	}
+ 
+-	mmu_topup_memory_caches(vcpu);
+-	spin_lock(&vcpu->kvm->mmu_lock);
+-	++vcpu->kvm->stat.mmu_pte_write;
+-	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PTE_WRITE);
++	return gentry;
++}
++
++/*
++ * If we're seeing too many writes to a page, it may no longer be a page table,
++ * or we may be forking, in which case it is better to unmap the page.
++ */
++static bool detect_write_flooding(struct kvm_vcpu *vcpu, gfn_t gfn)
++{
++	bool flooded = false;
++
+ 	if (gfn == vcpu->arch.last_pt_write_gfn
+ 	    && !last_updated_pte_accessed(vcpu)) {
+ 		++vcpu->arch.last_pt_write_count;
+ 		if (vcpu->arch.last_pt_write_count >= 3)
+-			flooded = 1;
++			flooded = true;
+ 	} else {
+ 		vcpu->arch.last_pt_write_gfn = gfn;
+ 		vcpu->arch.last_pt_write_count = 1;
+ 		vcpu->arch.last_pte_updated = NULL;
+ 	}
+ 
++	return flooded;
++}
++
++/*
++ * Misaligned accesses are too much trouble to fix up; also, they usually
++ * indicate a page is not used as a page table.
++ */
++static bool detect_write_misaligned(struct kvm_mmu_page *sp, gpa_t gpa,
++				    int bytes)
++{
++	unsigned offset, pte_size, misaligned;
++
++	pgprintk("misaligned: gpa %llx bytes %d role %x\n",
++		 gpa, bytes, sp->role.word);
++
++	offset = offset_in_page(gpa);
++	pte_size = sp->role.cr4_pae ? 8 : 4;
++	misaligned = (offset ^ (offset + bytes - 1)) & ~(pte_size - 1);
++	misaligned |= bytes < 4;
++
++	return misaligned;
++}
++
++static u64 *get_written_sptes(struct kvm_mmu_page *sp, gpa_t gpa, int *nspte)
++{
++	unsigned page_offset, quadrant;
++	u64 *spte;
++	int level;
++
++	page_offset = offset_in_page(gpa);
++	level = sp->role.level;
++	*nspte = 1;
++	if (!sp->role.cr4_pae) {
++		page_offset <<= 1;	/* 32->64 */
++		/*
++		 * A 32-bit pde maps 4MB while the shadow pdes map
++		 * only 2MB.  So we need to double the offset again
++		 * and zap two pdes instead of one.
++		 */
++		if (level == PT32_ROOT_LEVEL) {
++			page_offset &= ~7; /* kill rounding error */
++			page_offset <<= 1;
++			*nspte = 2;
++		}
++		quadrant = page_offset >> PAGE_SHIFT;
++		page_offset &= ~PAGE_MASK;
++		if (quadrant != sp->role.quadrant)
++			return NULL;
++	}
++
++	spte = &sp->spt[page_offset / sizeof(*spte)];
++	return spte;
++}
++
++void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
++		       const u8 *new, int bytes, bool repeat_write)
++{
++	gfn_t gfn = gpa >> PAGE_SHIFT;
++	union kvm_mmu_page_role mask = { .word = 0 };
++	struct kvm_mmu_page *sp;
++	struct hlist_node *node;
++	LIST_HEAD(invalid_list);
++	u64 entry, gentry, *spte;
++	int npte;
++	bool remote_flush, local_flush, zap_page, flooded, misaligned;
++
++	/*
++	 * If we don't have indirect shadow pages, it means no page is
++	 * write-protected, so we can exit simply.
++	 */
++	if (!ACCESS_ONCE(vcpu->kvm->arch.indirect_shadow_pages))
++		return;
++
++	zap_page = remote_flush = local_flush = false;
++
++	pgprintk("%s: gpa %llx bytes %d\n", __func__, gpa, bytes);
++
++	gentry = mmu_pte_write_fetch_gpte(vcpu, &gpa, new, &bytes);
++	mmu_topup_memory_caches(vcpu);
++	spin_lock(&vcpu->kvm->mmu_lock);
++	++vcpu->kvm->stat.mmu_pte_write;
++	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PTE_WRITE);
++
++	flooded = detect_write_flooding(vcpu, gfn);
+ 	mask.cr0_wp = mask.cr4_pae = mask.nxe = 1;
+ 	for_each_gfn_indirect_valid_sp(vcpu->kvm, sp, gfn, node) {
+-		pte_size = sp->role.cr4_pae ? 8 : 4;
+-		misaligned = (offset ^ (offset + bytes - 1)) & ~(pte_size - 1);
+-		misaligned |= bytes < 4;
++		misaligned = detect_write_misaligned(sp, gpa, bytes);
+ 		if (misaligned || flooded || repeat_write) {
+-			/*
+-			 * Misaligned accesses are too much trouble to fix
+-			 * up; also, they usually indicate a page is not used
+-			 * as a page table.
+-			 *
+-			 * If we're seeing too many writes to a page,
+-			 * it may no longer be a page table, or we may be
+-			 * forking, in which case it is better to unmap the
+-			 * page.
+-			 */
+-			pgprintk("misaligned: gpa %llx bytes %d role %x\n",
+-				 gpa, bytes, sp->role.word);
+ 			zap_page |= !!kvm_mmu_prepare_zap_page(vcpu->kvm, sp,
+ 						     &invalid_list);
+ 			++vcpu->kvm->stat.mmu_flooded;
+ 			continue;
+ 		}
+-		page_offset = offset;
+-		level = sp->role.level;
+-		npte = 1;
+-		if (!sp->role.cr4_pae) {
+-			page_offset <<= 1;	/* 32->64 */
+-			/*
+-			 * A 32-bit pde maps 4MB while the shadow pdes map
+-			 * only 2MB.  So we need to double the offset again
+-			 * and zap two pdes instead of one.
+-			 */
+-			if (level == PT32_ROOT_LEVEL) {
+-				page_offset &= ~7; /* kill rounding error */
+-				page_offset <<= 1;
+-				npte = 2;
+-			}
+-			quadrant = page_offset >> PAGE_SHIFT;
+-			page_offset &= ~PAGE_MASK;
+-			if (quadrant != sp->role.quadrant)
+-				continue;
+-		}
++
++		spte = get_written_sptes(sp, gpa, &npte);
++		if (!spte)
++			continue;
++
+ 		local_flush = true;
+-		spte = &sp->spt[page_offset / sizeof(*spte)];
+ 		while (npte--) {
+ 			entry = *spte;
+ 			mmu_page_zap_pte(vcpu->kvm, sp, spte);
 -- 
-Sakari Ailus
-sakari.ailus@iki.fi
+1.7.5.4
+
