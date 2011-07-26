@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab1GZSdo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 14:33:44 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45229 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab1GZSdj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 14:33:39 -0400
-Date: Tue, 26 Jul 2011 20:33:25 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	id S1752880Ab1GZSfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 14:35:37 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:37134 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751661Ab1GZSfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 14:35:31 -0400
+Date: Tue, 26 Jul 2011 20:34:30 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Ray Lee <ray-lk@madrabbit.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         LKML <linux-kernel@vger.kernel.org>,
         "Przywara, Andre" <Andre.Przywara@amd.com>,
         "Pohlack, Martin" <Martin.Pohlack@amd.com>
 Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-Message-ID: <20110726183325.GE32536@aftab>
-References: <1311340547-7861-1-git-send-email-bp@amd64.org>
- <20110724111350.GD21120@elte.hu>
- <20110724134046.GA10583@aftab>
+Message-ID: <20110726183430.GA501@elte.hu>
+References: <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com>
+ <20110724182323.GA13247@aftab>
+ <20110724183045.GB29660@elte.hu>
+ <20110724190752.GA13647@aftab>
+ <20110724204450.GB18546@elte.hu>
+ <20110725200014.GA23986@aftab>
+ <20110725200645.GC8302@elte.hu>
+ <20110725215328.GA25960@aftab>
+ <CADU53JV-aKbRU-iixbqcv_kAci7L6z43GYmP6uw8hZdY4PrBbQ@mail.gmail.com>
+ <20110726172801.GC32536@aftab>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110724134046.GA10583@aftab>
+In-Reply-To: <20110726172801.GC32536@aftab>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 24, 2011 at 09:40:46AM -0400, Borislav Petkov wrote:
-> > also, the PAGE_ALIGN() complication here looks unnecessary - can the
-> > vdso 'addr' ever be not 4K aligned above?
+
+* Borislav Petkov <bp@amd64.org> wrote:
+
+> Ok, I went and installed a Debian wheezy with gnome and started 
+> almost everything I could find in the startup menu. Kernel is 3.0 
+> with Linus' simpler fix.
 > 
-> Yeah, it can. I did some trace_printk runs and 'addr' wasn't 4K aligned
-> in some cases. I think this is because of the stack randomization we do
-> and we use mm->start_stack to get the vdso base address. Unfortunately,
-> I can't find those traces anymore but will do some again tomorrow.
+> The attached file shows all libraries which would create aliases 
+> (i.e. 2 or more unique values for bits [14:12] along with the 
+> respective count) in the total of:
+> 
+> Total r-xp mappings: 831, aliasing: 240 (0.289%)
 
-Better late than never :).
+28.9%, right?
 
-So yes, mm->start_stack comes in unaligned from setup_arg_pages() and we
-use it to generate the vdso VA because the vdso is below the stack:
+> For example, libc gets mapped into all possible slots for [14:12]
+> 
+> Library                                 [14:12] count
+> =======                                 ======= =====
+> /lib/libc-2.11.2.so
+>                                         0       12
+>                                         1       12
+>                                         2       11
+>                                         3       12
+>                                         4       13
+>                                         5       16
+>                                         6       13
+>                                         7       9
+> 
+> 
+> and so on.
 
-7fff761f9000-7fff7621a000 rw-p 00000000 00:00 0                          [stack]
-7fff763ec000-7fff763ed000 r-xp 00000000 00:00 0                          [vdso]
-ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]
+Was this done with a stock kernel, or with the simple patch applied?
 
-here's a trace_printk excerpt from vdso_addr() (gets inlined into
-arch_setup_additional_pages()):
+Thanks,
 
-           <...>-2516  [006]   624.364274: arch_setup_additional_pages: mm->start_stack: 0x7fff7621942a, len: 4096
-           <...>-2516  [006]   624.364278: arch_setup_additional_pages: randomized: 0x7fff763eb42a
-           <...>-2516  [006]   624.364279: arch_setup_additional_pages: final addr: 0x7fff763eb42a
-
-Then, both arch_get_unmapped_area{,_topdown} page-align it.
-
-For our case, we PAGE_ALIGN it before randomizing it so that we can
-control the [14:12] setting.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+	Ingo
