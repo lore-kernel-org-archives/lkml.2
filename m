@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab1GZTFA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 15:05:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:48421 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab1GZTEu (ORCPT
+	id S1752878Ab1GZTMf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 15:12:35 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:51968 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751361Ab1GZTMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 15:04:50 -0400
-X-Authority-Analysis: v=1.1 cv=s3eDhkhcaTLnj7IEXy8aaXUiY7FbET0mf+/2Xe0elbc= c=1 sm=0 a=1gfTn2teGlkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=_-IuOyh5tuNKMDGD5yMA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH v2] cgroup/kmemcheck: Annotate alloc_page() for cgroup
- allocations
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-In-Reply-To: <20110726184342.GB26597@tiehlicka.suse.cz>
-References: <1311699911.3526.87.camel@gandalf.stny.rr.com>
-	 <20110726173816.GA26597@tiehlicka.suse.cz>
-	 <1311702110.3526.98.camel@gandalf.stny.rr.com>
-	 <1311702244.3526.100.camel@gandalf.stny.rr.com>
-	 <1311704249.3526.106.camel@gandalf.stny.rr.com>
-	 <20110726184342.GB26597@tiehlicka.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 26 Jul 2011 15:04:48 -0400
-Message-ID: <1311707088.21143.0.camel@gandalf.stny.rr.com>
+	Tue, 26 Jul 2011 15:12:34 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=ajTpZHG7pTYsdeenx3KhiBxlkXYpbXf4blCNVJ4i7aH2wydQIVLCEBtL6XWHrq9jf4sLTKJzjRvXWRR2QF2aRDsK/k+UjCCCx5PxzWgIwW0MNEaZYw0aOyW5azswfO7Y;
+Date: Tue, 26 Jul 2011 12:12:25 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Dave Airlie <airlied@redhat.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Hold struct_mutex during hotplug
+ processing
+Message-ID: <20110726121225.3ae7acce@jbarnes-desktop>
+In-Reply-To: <yunsjpt2hi6.fsf@aiko.keithp.com>
+References: <1311613829-4990-1-git-send-email-keithp@keithp.com>
+	<CAKMK7uHO1jqUNrnqC9sd=JJ9Vr=hmAjnJ06eDYxfeyTTFAMK1w@mail.gmail.com>
+	<yunsjpt2hi6.fsf@aiko.keithp.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-26 at 20:43 +0200, Michal Hocko wrote:
+On Tue, 26 Jul 2011 08:23:13 -0700
+Keith Packard <keithp@keithp.com> wrote:
 
-> Maybe just a nit. What about making 
-> gfp_t flags = GFP_KERNEL | __GFP_NOWARN;
-> and use it at both places?
-
-I actually thought about that, but was too lazy to do it ;)
-
-
+> On Tue, 26 Jul 2011 09:24:39 +0200, Daniel Vetter <daniel@ffwll.ch> wrote:
+> > Two things I've noticed:
 > 
-> Anyway feel free to add my:
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> > - Why not dev->mode_config.mutex?
 > 
+> You're right, of course. I noticed that just after posting that version
+> and updated it; the updated version is on my drm-intel-fixes branch
+> already (having been reviewed by Jesse).
+> 
+> > - And a nitpick: Why the dev_priv->dev indirection, when dev is
+> > already lying around?
+> 
+> All nicely cleaned up by using &mode_config->mutex instead :-)
+> 
+> Thanks for looking it over!
 
-Thanks, I'll send out a v3 with the updates.
+I'd like to amend my reviewed by and say the lock shouldn't be held
+around the call to the drm helper function.  It queues some work that
+also takes the mode config lock, which will break.  So you can drop it
+before that...  Previously I had only checked our internal driver
+callbacks but missed that the lock was held across the helper too.
 
--- Steve
-
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
