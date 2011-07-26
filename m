@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab1GZO10 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 10:27:26 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:56427 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406Ab1GZO1T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 10:27:19 -0400
-Date: Tue, 26 Jul 2011 17:25:20 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: josef@redhat.com
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [patch] fs: add missing unlock in default_llseek()
-Message-ID: <20110726142520.GG3824@shale.localdomain>
+	id S1753276Ab1GZO2K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 10:28:10 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52187 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751406Ab1GZO2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 10:28:03 -0400
+Date: Tue, 26 Jul 2011 14:27:54 GMT
+From: "tip-bot for jhbird.choi@samsung.com" <jhbird.choi@samsung.com>
+Message-ID: <tip-1dd75f91ae713049eb6baaa640078f3a6549e522@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, jhbird.choi@samsung.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, jhbird.choi@samsung.com
+In-Reply-To: <1311229754-6003-1-git-send-email-jhbird.choi@samsung.com>
+References: <1311229754-6003-1-git-send-email-jhbird.choi@samsung.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/urgent] genirq: Fix wrong bit operation
+Git-Commit-ID: 1dd75f91ae713049eb6baaa640078f3a6549e522
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 26 Jul 2011 14:27:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  1dd75f91ae713049eb6baaa640078f3a6549e522
+Gitweb:     http://git.kernel.org/tip/1dd75f91ae713049eb6baaa640078f3a6549e522
+Author:     jhbird.choi@samsung.com <jhbird.choi@samsung.com>
+AuthorDate: Thu, 21 Jul 2011 15:29:14 +0900
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 26 Jul 2011 16:24:02 +0200
 
-A recent change in linux-next, 982d816581 "fs: add SEEK_HOLE and
-SEEK_DATA flags" added some direct returns on error, but it should
-have been a goto out.
+genirq: Fix wrong bit operation
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+(!msk & 0x01) should be !(msk & 0x01)
 
-diff --git a/fs/read_write.c b/fs/read_write.c
-index 5907b49..179f1c3 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -166,8 +166,10 @@ loff_t default_llseek(struct file *file, loff_t offset, int origin)
- 			 * long as offset isn't at the end of the file then the
- 			 * offset is data.
- 			 */
--			if (offset >= inode->i_size)
--				return -ENXIO;
-+			if (offset >= inode->i_size) {
-+				retval = -ENXIO;
-+				goto out;
-+			}
- 			break;
- 		case SEEK_HOLE:
- 			/*
-@@ -175,8 +177,10 @@ loff_t default_llseek(struct file *file, loff_t offset, int origin)
- 			 * as long as offset isn't i_size or larger, return
- 			 * i_size.
- 			 */
--			if (offset >= inode->i_size)
--				return -ENXIO;
-+			if (offset >= inode->i_size) {
-+				retval = -ENXIO;
-+				goto out;
-+			}
- 			offset = inode->i_size;
- 			break;
- 	}
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Link: http://lkml.kernel.org/r/1311229754-6003-1-git-send-email-jhbird.choi@samsung.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable@kernel.org
+---
+ kernel/irq/generic-chip.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
+index 3a2cab4..e38544d 100644
+--- a/kernel/irq/generic-chip.c
++++ b/kernel/irq/generic-chip.c
+@@ -246,7 +246,7 @@ void irq_setup_generic_chip(struct irq_chip_generic *gc, u32 msk,
+ 		gc->mask_cache = irq_reg_readl(gc->reg_base + ct->regs.mask);
+ 
+ 	for (i = gc->irq_base; msk; msk >>= 1, i++) {
+-		if (!msk & 0x01)
++		if (!(msk & 0x01))
+ 			continue;
+ 
+ 		if (flags & IRQ_GC_INIT_NESTED_LOCK)
+@@ -301,7 +301,7 @@ void irq_remove_generic_chip(struct irq_chip_generic *gc, u32 msk,
+ 	raw_spin_unlock(&gc_lock);
+ 
+ 	for (; msk; msk >>= 1, i++) {
+-		if (!msk & 0x01)
++		if (!(msk & 0x01))
+ 			continue;
+ 
+ 		/* Remove handler first. That will mask the irq line */
