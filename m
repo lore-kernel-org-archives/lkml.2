@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab1GZSso (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 14:48:44 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34451 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753032Ab1GZSsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 14:48:39 -0400
-Date: Tue, 26 Jul 2011 20:47:44 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ray Lee <ray-lk@madrabbit.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-Message-ID: <20110726184744.GA8422@elte.hu>
-References: <20110724183045.GB29660@elte.hu>
- <20110724190752.GA13647@aftab>
- <20110724204450.GB18546@elte.hu>
- <20110725200014.GA23986@aftab>
- <20110725200645.GC8302@elte.hu>
- <20110725215328.GA25960@aftab>
- <CADU53JV-aKbRU-iixbqcv_kAci7L6z43GYmP6uw8hZdY4PrBbQ@mail.gmail.com>
- <20110726172801.GC32536@aftab>
- <20110726183430.GA501@elte.hu>
- <20110726183935.GG32536@aftab>
+	id S1753385Ab1GZSs5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 14:48:57 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:34493 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064Ab1GZSsv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 14:48:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110726183935.GG32536@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110726112824.b357c756.rdunlap@xenotime.net>
+References: <4E1D9C25.8080300@suse.cz>
+	<1311634718-32588-1-git-send-email-mmarek@suse.cz>
+	<CAM_iQpUEfYrrtpcRLTekSHMHrTTka6ir=z_GUUbnxuQKfY+OXA@mail.gmail.com>
+	<4E2EBF63.8050208@suse.cz>
+	<20110726080443.62196869.rdunlap@xenotime.net>
+	<4E2F0735.1070403@suse.cz>
+	<20110726112824.b357c756.rdunlap@xenotime.net>
+Date: Tue, 26 Jul 2011 14:48:50 -0400
+Message-ID: <CACqU3MWOjjB0RiWLWS8yf0u0gRqOL3JP0StyrtP1kbA+i92SfA@mail.gmail.com>
+Subject: Re: [RFC][PATCH 1/2] kconfig: Introduce KCONFIG(), KCONFIG_BUILTIN()
+ and KCONFIG_MODULE()
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Michal Marek <mmarek@suse.cz>,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        linux-kbuild@vger.kernel.org, sam@ravnborg.org,
+        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Borislav Petkov <bp@amd64.org> wrote:
+On Tue, Jul 26, 2011 at 2:28 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On Tue, 26 Jul 2011 20:28:05 +0200 Michal Marek wrote:
+>
+>> Dne 26.7.2011 17:04, Randy Dunlap napsal(a):
+>> > On Tue, 26 Jul 2011 15:21:39 +0200 Michal Marek wrote:
+>> >> On 26.7.2011 15:01, Américo Wang wrote:
+>> >>> BTW, the name KCONFIG(CONFIG_NUMA) seems ugly.
+>> >>
+>> >> Suggest a better one :). The proposals so far:
+>> >> config_is_numa() (breaks grep)
+>> >
+>> > explain, please.
+>>
+>> If you grep for CONFIG_FOO usage, you'll miss this alternate syntax.
+>>
+>
+> Ack.
+>
+>>
+>> >> CONFIGURED(CONFIG_NUMA)
+>> >> ENABLED(CONFIG_NUMA)
+>> >> KCONFIG(CONFIG_NUMA)
+>> >
+>> > CONFIG(NUMA) || CONFIG(NUMA_BUILTIN) || CONFIG(NUMA_MODULE)
+>>
+>> same problem.
+>
+> Yes, I sorta got that after I sent the email.
+>
+> I guess I prefer your ENABLED() syntax then.
+>
+we need to be careful about namespace pollution/collision.
 
-> > Was this done with a stock kernel, or with the simple patch 
-> > applied?
-> 
-> with the simplest version of Linus' patch:
-> 
-> diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-> index 1dab519..6b1094d 100644
-> --- a/arch/x86/mm/mmap.c
-> +++ b/arch/x86/mm/mmap.c
-> @@ -90,6 +90,8 @@ static unsigned long mmap_rnd(void)
->                         rnd = (long)get_random_int() % (1<<8);
->                 else
->                         rnd = (long)(get_random_int() % (1<<28));
-> +
-> +               rnd &= ~0x7;
-
-So, unless i got the stats right, unmodified kernel has like a 75% 
-mis-aligned rate, while with the simple fix this goes down to 30%?
-
-Have you run the numbers on the stock, unmodified kernel by any 
-chance, just to make sure the stats are ok?
-
-Thanks,
-
-	Ingo
+ - Arnaud
