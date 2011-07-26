@@ -1,109 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab1GZPwp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 11:52:45 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:60415 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753465Ab1GZPwk (ORCPT
+	id S1753783Ab1GZPxy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 11:53:54 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34760 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753509Ab1GZPxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 11:52:40 -0400
-Date: Tue, 26 Jul 2011 11:52:37 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [RELEASE] LTTng 2.0 prerelease 1
-Message-ID: <20110726155237.GA16077@Krystal>
-References: <20110725175927.GA6943@Krystal>
+	Tue, 26 Jul 2011 11:53:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110725175927.GA6943@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:48:27 up 244 days, 20:51,  4 users,  load average: 0.13, 0.05,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110726085804.GA1639@x4.trippels.de>
+References: <20110725185649.GA22133@ZenIV.linux.org.uk> <20110726033535.GA11939@x4.trippels.de>
+ <CA+55aFzaKHpVdLKac6rFN+YsAugz1aR3fv-reThJiD4HWDND8w@mail.gmail.com>
+ <20110726082146.GB11939@x4.trippels.de> <CADxeRwnYxgxZPT3DN=SraZOvL_juWzV+MoY9+0vqZr29y6U6cA@mail.gmail.com>
+ <20110726085804.GA1639@x4.trippels.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 26 Jul 2011 08:52:50 -0700
+Message-ID: <CA+55aFz0S3mO9ETFZpsEcbotWV+NMzaFhpZcN09LNAdk+eavjg@mail.gmail.com>
+Subject: Re: [git pull] vfs pile 1.5
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Steven Liu <lingjiujianke@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> LTTng, the Linux Trace Toolkit Next Generation, is a highly efficient
-> full system tracing solution toolchain. It is composed of several
-> components to allow tracing of the kernel, of userspace, trace viewing
-> and analysis and trace streaming. LTTng is open source software.
+On Tue, Jul 26, 2011 at 1:58 AM, Markus Trippelsdorf
+<markus@trippelsdorf.de> wrote:
+>
+> #ifdefs are ugly. The following fixes the issue for me:
 
-FYI, the new bundle:
-http://lttng.org/bundles/20110726/
+Actually, I think the proper fix is just the following
+(whitespace-damaged).  It's better to just set ".get_acl" to NULL, and
+it's what we used to do back when it was called "check_acl" (see
+commit 4e34e719e45).
 
-contains lttng-modules-2.0-pre2 which fixes perf counters context
-support: in pre1, using perf counters with multiple contexts, on a setup
-with cpu hotplug enabled, sometimes caused kernel OOPS on trace session
-destroy, because reallocation of context array could move these
-addresses, but cpu hotplug notifier needs a fixed address. This is fixed
-in lttng-modules-2.0-pre2.
+Christoph?
 
-Thanks,
+                  Linus
 
-Mathieu
+---
+ fs/xfs/xfs_acl.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> 
-> New Features:
-> 
-> - LTTng 2.0 kernel modules build against a vanilla or distribution
->   kernel, without need for additional patches.
-> - Produces CTF (Common Trace Format) natively,
->   (http://www.efficios.com/ctf)
-> - Tracepoints, Function tracer, CPU Performance Monitoring Unit (PMU)
->   counters and kprobes support,
-> - Integrated interface for both kernel and userspace tracing,
-> - Have the ability to attach "context" information to events in the
->   trace (e.g. any PMU counter, pid, ppid, tid, comm name, etc).
->   All the extra information fields to be collected with events are
->   optional, specified on a per-tracing-session basis (except for
->   timestamp and event id, which are mandatory).
-> - Allows non-root users part of the "tracing" group to perform kernel
->   and userspace tracing.
-> - Allows multiple tracing sessions to be active concurrently, each with
->   its own instrumentation set.
-> 
-> You can get a the current release "bundle" (recommanded set of packages)
-> at the following URL:
-> 
-> http://lttng.org/bundles/20110725/
-> 
-> Refer to the README files for installation instructions and lttng-tools
-> doc/quickstart.txt for usage information and examples.
-> (http://git.lttng.org/?p=lttng-tools.git;a=blob_plain;f=doc/quickstart.txt)
-> 
-> Please note that the LTTng-UST 2.0 (user-space tracing counterpart of
-> LTTng 2.0) is still in active development and not released yet. Only
-> text-dump output of the binary traces is available at this moment
-> through the Babeltrace tool (LTTV is not supported yet). Tracing from
-> the "tracing" group currently produces traces owned by "root"; this
-> known problem will be fixed in the next prerelease. This release has
-> been tested on vanilla Linux kernels, Debian kernels, Ubuntu kernels,
-> and Fedora kernels on the version range 2.6.38, 2.6.39 and 3.0 (on x86
-> 32/64-bit, and powerpc 32-bit at the moment, build tested on ARM).
-> 
-> Feedback is welcome!
-> 
-> Thanks,
-> 
-> Mathieu
-> 
-> Project website: http://lttng.org
-> Download link: http://lttng.org/lttng2.0
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+diff --git a/fs/xfs/xfs_acl.h b/fs/xfs/xfs_acl.h
+index 2c656ef49473..b97a6edcab9d 100644
+--- a/fs/xfs/xfs_acl.h
++++ b/fs/xfs/xfs_acl.h
+@@ -51,7 +51,7 @@ extern int posix_acl_default_exists(struct inode *inode);
+ extern const struct xattr_handler xfs_xattr_acl_access_handler;
+ extern const struct xattr_handler xfs_xattr_acl_default_handler;
+ #else
+-# define xfs_get_acl(inode, type)                      NULL
++# define xfs_get_acl                                   NULL
+ # define xfs_inherit_acl(inode, default_acl)           0
+ # define xfs_acl_chmod(inode)                          0
+ # define posix_acl_access_exists(inode)                        0
