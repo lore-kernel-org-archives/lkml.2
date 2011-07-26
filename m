@@ -1,46 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030Ab1GZSj3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 14:39:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57094 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751908Ab1GZSjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 14:39:25 -0400
-Message-ID: <4E2F09BB.9060605@zytor.com>
-Date: Tue, 26 Jul 2011 11:38:51 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
+	id S1753127Ab1GZSj6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 14:39:58 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:50221 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752542Ab1GZSjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 14:39:52 -0400
+Date: Tue, 26 Jul 2011 20:39:35 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Borislav Petkov <bp@amd64.org>, Ray Lee <ray-lk@madrabbit.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         LKML <linux-kernel@vger.kernel.org>,
         "Przywara, Andre" <Andre.Przywara@amd.com>,
         "Pohlack, Martin" <Martin.Pohlack@amd.com>
 Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-References: <1311340547-7861-1-git-send-email-bp@amd64.org> <4E2F0068.1080001@redhat.com> <20110726181304.GD32536@aftab> <4E2F0498.8050005@zytor.com> <20110726183721.GF32536@aftab>
-In-Reply-To: <20110726183721.GF32536@aftab>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Message-ID: <20110726183935.GG32536@aftab>
+References: <20110724182323.GA13247@aftab>
+ <20110724183045.GB29660@elte.hu>
+ <20110724190752.GA13647@aftab>
+ <20110724204450.GB18546@elte.hu>
+ <20110725200014.GA23986@aftab>
+ <20110725200645.GC8302@elte.hu>
+ <20110725215328.GA25960@aftab>
+ <CADU53JV-aKbRU-iixbqcv_kAci7L6z43GYmP6uw8hZdY4PrBbQ@mail.gmail.com>
+ <20110726172801.GC32536@aftab>
+ <20110726183430.GA501@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110726183430.GA501@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2011 11:37 AM, Borislav Petkov wrote:
->>
->> I think the question was the width (and position) for the mask... i.e.
->> your [14:12] above which *is* magic.
+On Tue, Jul 26, 2011 at 02:34:30PM -0400, Ingo Molnar wrote:
 > 
-> Oh, that's easy: family 15h means bits [14:12] - those bits are used for
-> I$ index generation.
+> * Borislav Petkov <bp@amd64.org> wrote:
 > 
+> > Ok, I went and installed a Debian wheezy with gnome and started 
+> > almost everything I could find in the startup menu. Kernel is 3.0 
+> > with Linus' simpler fix.
+> > 
+> > The attached file shows all libraries which would create aliases 
+> > (i.e. 2 or more unique values for bits [14:12] along with the 
+> > respective count) in the total of:
+> > 
+> > Total r-xp mappings: 831, aliasing: 240 (0.289%)
+> 
+> 28.9%, right?
 
-In other words, it's completely ad hoc.
+Yessir.
 
-	-hpa
+> > For example, libc gets mapped into all possible slots for [14:12]
+> > 
+> > Library                                 [14:12] count
+> > =======                                 ======= =====
+> > /lib/libc-2.11.2.so
+> >                                         0       12
+> >                                         1       12
+> >                                         2       11
+> >                                         3       12
+> >                                         4       13
+> >                                         5       16
+> >                                         6       13
+> >                                         7       9
+> > 
+> > 
+> > and so on.
+> 
+> Was this done with a stock kernel, or with the simple patch applied?
 
+with the simplest version of Linus' patch:
+
+diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+index 1dab519..6b1094d 100644
+--- a/arch/x86/mm/mmap.c
++++ b/arch/x86/mm/mmap.c
+@@ -90,6 +90,8 @@ static unsigned long mmap_rnd(void)
+                        rnd = (long)get_random_int() % (1<<8);
+                else
+                        rnd = (long)(get_random_int() % (1<<28));
++
++               rnd &= ~0x7;
+        }
+        return rnd << PAGE_SHIFT;
+ }
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
