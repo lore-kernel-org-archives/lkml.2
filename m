@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab1GZJBw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 05:01:52 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38067 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab1GZJBo (ORCPT
+	id S1752957Ab1GZJEO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 05:04:14 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52004
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751459Ab1GZJEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 05:01:44 -0400
-Date: Tue, 26 Jul 2011 11:01:40 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Darren Hart <dvhart@linux.intel.com>
-cc: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.0-rt3
-In-Reply-To: <4E2DEC1A.5070109@linux.intel.com>
-Message-ID: <alpine.LFD.2.02.1107261100480.2848@ionos>
-References: <alpine.LFD.2.02.1107241223560.2702@ionos> <4E2C2ED6.4040904@gmail.com> <alpine.LFD.2.02.1107241807390.3136@ionos> <4E2DEC1A.5070109@linux.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 26 Jul 2011 05:04:09 -0400
+Date: Tue, 26 Jul 2011 05:03:57 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        David Miller <davem@davemloft.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Matthew Wilcox <matthew@wil.cx>,
+        Anton Blanchard <anton@samba.org>, npiggin@kernel.dk,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH] vfs: dont chain pipe/anon/socket on superblock s_inodes
+ list
+Message-ID: <20110726090357.GA13013@infradead.org>
+References: <20110718155141.GA11013@ZenIV.linux.org.uk>
+ <1311093158.2707.75.camel@schen9-DESK>
+ <20110721204042.GB31405@ZenIV.linux.org.uk>
+ <1311294452.2576.18.camel@schen9-DESK>
+ <20110723132411.GA22183@infradead.org>
+ <1311633550.2576.33.camel@schen9-DESK>
+ <20110725225154.GD22133@ZenIV.linux.org.uk>
+ <1311636178.2576.34.camel@schen9-DESK>
+ <1311660013.2996.6.camel@edumazet-laptop>
+ <1311668466.2355.12.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311668466.2355.12.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Jul 2011, Darren Hart wrote:
-> 
-> 
-> On 07/24/2011 09:12 AM, Thomas Gleixner wrote:
-> > On Sun, 24 Jul 2011, Maarten Lankhorst wrote:
-> 
-> ...
-> 
-> >> Also not sure where this one came from:
-> >> [   37.456688] BUG: spinlock bad magic on CPU#3, threaded-ml/1619
-> >> [   37.456690]  lock: ffff8801fdc74d50, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
-> >> [   37.456692] Pid: 1619, comm: threaded-ml Tainted: G         C  3.0.0-rt3-patser+ #39
-> >> [   37.456693] Call Trace:
-> >> [   37.456697]  [<ffffffff81607a78>] spin_bug+0xa0/0xa8
-> >> [   37.456699]  [<ffffffff8132b412>] do_raw_spin_lock+0xa2/0x170
-> >> [   37.456702]  [<ffffffff8104a201>] ? get_parent_ip+0x11/0x50
-> >> [   37.456704]  [<ffffffff8160d783>] _raw_spin_lock+0x23/0x30
-> >> [   37.456706]  [<ffffffff810931ce>] rt_mutex_start_proxy_lock+0x2e/0xd0
-> >> [   37.456708]  [<ffffffff8109093a>] futex_requeue+0x47a/0x850
-> >> [   37.456710]  [<ffffffff8109138e>] do_futex+0xae/0xb00
-> >> [   37.456712]  [<ffffffff81157dcd>] ? fget_light+0x6d/0x110
-> >> [   37.456714]  [<ffffffff810b77b7>] ? audit_syscall_entry+0x2e7/0x310
-> >> [   37.456715]  [<ffffffff814c9375>] ? sys_recvmsg+0x75/0x90
-> >> [   37.456717]  [<ffffffff810923e6>] compat_sys_futex+0xf6/0x190
-> >> [   37.456719]  [<ffffffff8100e864>] ? syscall_trace_enter+0x184/0x210
-> >> [   37.456721]  [<ffffffff816158b3>] ia32_do_call+0x13/0x13
-> > 
-> > Urrgh, that's not a good one. Darren, can you please have a look at that?
-> > 
-> 
-> Will do.
-> 
-> Maarten, what are you running when you hit this?
-> rt_mutex_start_proxy_lock() is only called by the requeue_pi code and
-> there is no libc support for that yet, so I'm surprised to see that in
-> the stack trace (unless you're running my futextest suite).
+On Tue, Jul 26, 2011 at 10:21:06AM +0200, Eric Dumazet wrote:
+> Well, not 'last' contention point, as we still hit remove_inode_hash(),
 
-threaded-ml, whatever that is. I suspect that the changes to the futex
-code, which I ported forward from 33-rt have some wreckage in it.
+There should be no ned to put pipe or anon inodes on the inode hash.
+Probably sockets don't need it either, but I'd need to look at it in
+detail.
+
+> inode_wb_list_del()
+
+The should never be on the wb list either, doing an unlocked check for
+actually beeing on the list before taking the lock should help you.
+
+> inode_lru_list_del(),
+
+No real need to keep inodes in the LRU if we only allocate them using
+new_inode but never look them up either.  You might want to try setting
+.drop_inode to generic_delete_inode for these.
+
+> +struct inode *__new_inode(struct super_block *sb)
+> +{
+> +	struct inode *inode = alloc_inode(sb);
+> +
+> +	if (inode) {
+> +		spin_lock(&inode->i_lock);
+> +		inode->i_state = 0;
+> +		spin_unlock(&inode->i_lock);
+> +		INIT_LIST_HEAD(&inode->i_sb_list);
+> +	}
+> +	return inode;
+> +}
+
+This needs a much better name like new_inode_pseudo, and a kerneldoc 
+comment explaining when it is safe to use, and the consequences, which
+appear to me:
+
+ - fs may never be unmount
+ - quotas can't work on the filesystem
+ - writeback can't work on the filesystem
+
+> @@ -814,13 +829,9 @@ struct inode *new_inode(struct super_block *sb)
+>  
+>  	spin_lock_prefetch(&inode_sb_list_lock);
+>  
+> -	inode = alloc_inode(sb);
+> -	if (inode) {
+> -		spin_lock(&inode->i_lock);
+> -		inode->i_state = 0;
+> -		spin_unlock(&inode->i_lock);
+> -		inode_sb_list_add(inode);
+> -	}
+> +	inode = __new_inode(sb);
+> +	if (inode)
+> +			inode_sb_list_add(inode);
+
+bad indentation.
+
