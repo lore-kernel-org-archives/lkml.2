@@ -1,33 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137Ab1GZJPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 05:15:06 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:42923
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751145Ab1GZJO7 (ORCPT
+	id S1753174Ab1GZJP2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 05:15:28 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:55556 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880Ab1GZJPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 05:14:59 -0400
-Date: Tue, 26 Jul 2011 05:14:55 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
+	Tue, 26 Jul 2011 05:15:22 -0400
+Date: Tue, 26 Jul 2011 11:15:20 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Steven Liu <lingjiujianke@gmail.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [GIT PULL] writeback changes for 3.1
-Message-ID: <20110726091455.GA22191@infradead.org>
-References: <20110726083848.GA8366@localhost>
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: [PATCH] xfs: Fix build breakage in xfs_iops.c when
+ CONFIG_FS_POSIX_ACL is not set
+Message-ID: <20110726091520.GB1639@x4.trippels.de>
+References: <20110725185649.GA22133@ZenIV.linux.org.uk>
+ <20110726033535.GA11939@x4.trippels.de>
+ <CA+55aFzaKHpVdLKac6rFN+YsAugz1aR3fv-reThJiD4HWDND8w@mail.gmail.com>
+ <20110726082146.GB11939@x4.trippels.de>
+ <CADxeRwnYxgxZPT3DN=SraZOvL_juWzV+MoY9+0vqZr29y6U6cA@mail.gmail.com>
+ <20110726085804.GA1639@x4.trippels.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110726083848.GA8366@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110726085804.GA1639@x4.trippels.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks a lot Fengguang for managing to get our first clean writeback
-tree in Linux history.  I hope we can keep all the pending development
-in a git tree for the next releases as that made testing a whole lot
-easier!
+commit 4e34e719e45, that takes the ACL checks to common code,
+accidentely broke the build when CONFIG_FS_POSIX_ACL is not set:
 
+  CC      fs/xfs/linux-2.6/xfs_iops.o
+fs/xfs/linux-2.6/xfs_iops.c:1025:14: error: ‘xfs_get_acl’ undeclared here (not in a function)
+
+Fix this by declaring xfs_get_acl a static inline function.
+
+Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+---
+ fs/xfs/xfs_acl.h |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/fs/xfs/xfs_acl.h b/fs/xfs/xfs_acl.h
+index 2c656ef..39632d9 100644
+--- a/fs/xfs/xfs_acl.h
++++ b/fs/xfs/xfs_acl.h
+@@ -51,7 +51,10 @@ extern int posix_acl_default_exists(struct inode *inode);
+ extern const struct xattr_handler xfs_xattr_acl_access_handler;
+ extern const struct xattr_handler xfs_xattr_acl_default_handler;
+ #else
+-# define xfs_get_acl(inode, type)			NULL
++static inline struct posix_acl *xfs_get_acl(struct inode *inode, int type)
++{
++	return NULL;
++}
+ # define xfs_inherit_acl(inode, default_acl)		0
+ # define xfs_acl_chmod(inode)				0
+ # define posix_acl_access_exists(inode)			0
+-- 
+Markus
