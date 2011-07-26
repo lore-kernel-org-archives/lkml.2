@@ -1,93 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708Ab1GZAlR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 20:41:17 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:48394 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794Ab1GZAlM (ORCPT
+	id S1752824Ab1GZAmY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 20:42:24 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:36254 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794Ab1GZAmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 20:41:12 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:from:to:cc:subject:references:date:
-	in-reply-to:message-id:user-agent:mime-version:content-type:x-system-of-record;
-	b=D17puO/IojH5HxgHzoSxVR39JGB7enrGv9Dn153iu8mRo6rlXcW9e7mcb9PzuHyiL
-	rFQhnUr+c8ElCLfZ7EiEg==
-From: Ian Lance Taylor <iant@google.com>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, gcc-help@gcc.gnu.org,
-        stufever@gmail.com, linux-kernel@vger.kernel.org,
-        Wang Shaoyan <wangshaoyan.pt@taobao.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] TRACING: Fix a copmile warning
-References: <1310982010-13849-1-git-send-email-wangshaoyan.pt@taobao.com>
-	<1311618747.3526.32.camel@gandalf.stny.rr.com>
-	<CACqU3MVJ9Oj4pXH9O_2jnqDVBqKA+AgoWHwP-n2HGD4LU0pMHQ@mail.gmail.com>
-	<1311625197.3526.35.camel@gandalf.stny.rr.com>
-	<CACqU3MUKU_0FbOQT+TKLnnaoFVS_QOgzzx-tvunQy94v-eykTw@mail.gmail.com>
-	<CACqU3MXO_oR+8Ac2Z7wSji0sUeu-2FwskmxZxtY9NV+XpJXuwA@mail.gmail.com>
-Date: Mon, 25 Jul 2011 17:41:02 -0700
-In-Reply-To: <CACqU3MXO_oR+8Ac2Z7wSji0sUeu-2FwskmxZxtY9NV+XpJXuwA@mail.gmail.com>
-	(Arnaud Lacombe's message of "Mon, 25 Jul 2011 19:50:26 -0400")
-Message-ID: <mcrfwltoov5.fsf@coign.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-System-Of-Record: true
+	Mon, 25 Jul 2011 20:42:17 -0400
+Subject: Re: [GIT PULL] iscsi-target merge for v3.1-rc1
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Andy Grover <agrover@redhat.com>, Hannes Reinecke <hare@suse.de>,
+        Roland Dreier <roland@purestorage.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Boaz Harrosh <openosd@gmail.com>, Mike Christie <michaelc@cs.wisc.edu>,
+        Andy Grover <agrover@redhat.com>
+In-Reply-To: <20110725163739.5c19b04d.akpm@linux-foundation.org>
+References: <1311462975.31450.356.camel@haakon2.linux-iscsi.org>
+	 <20110725163739.5c19b04d.akpm@linux-foundation.org>
+Content-Type: text/plain
+Date: Mon, 25 Jul 2011 17:32:56 -0700
+Message-Id: <1311640376.17766.221.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaud Lacombe <lacombar@gmail.com> writes:
+On Mon, 2011-07-25 at 16:37 -0700, Andrew Morton wrote:
+> On Sat, 23 Jul 2011 16:16:15 -0700
+> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+> 
+> > Please go ahead and pull from:
+> > 
+> >   master.kernel.org:/pub/scm/linux/kernel/git/nab/target-pending.git for-linus-merge
+> 
+> i386 allyesconfig:
+> 
+> ERROR: "__udivdi3" [drivers/target/target_core_mod.ko] undefined!
+> 
+> somewhere in drivers/target/target_core_transport.c:transport_allocate_data_tasks().
 
-> gcc will only emits the warning at -Os. It seems to me that the
-> resulting code clearly ends-up testing an uninitialized value, ie.
-> assuming the following test-case:
->
-> extern void *e(void);
-> extern void *f(void);
-> extern void g(void);
->
-> void fn(void)
-> {
->         void *b, *a;
->
->         a = e();
->         if (a != 0)
->                 b = f();
->         if (a != 0 && b != 0)
->                 g();
-> }
->
-> ...
->
-> It seems gcc transforms the conditional from:
->
-> if (a != NULL && b != NULL) ...
->
-> to
->
-> if (b != NULL && a != NULL) ...
->
-> In which case the warning is fully valid. I'm not sure what's the C
-> standard guarantee in term of conditional test order. gcc 4.7.0 has
-> the same behavior.
+Mmmm, I was under the assumption that DIV_ROUND_UP() did unsigned long
+long division correctly for sector_t on 32-bit , but apparently not with
+the new v4.1 transport_allocate_data_tasks() code..   Andy..?  
 
-Not quite.  C guarantees that && is executed in order.  In this case gcc
-is generating
+Once upon a time we used the following __udivdi3() and __umoddi3()
+wrappers around do_div() to handle this instruction in target_core_mod
+for 32-bit, but we ended up removing these during the .38 merge in favor
+of IIRC direct do_div() usage.  These wrappers are still in use for LIO
+backports on 32-bit x86 and arm however..
 
-  a = e();
-  if (a != NULL)
-    b = f();
-  if (a != NULL & b != NULL)
-    g();
+So I'll go ahead and make sure this works on i386 with lio-core-2.6.git
+shortly, and double check __udivdi3() usage with iscsi-target in
+for-next.  Andrew and Christoph, did have any input on a preffered
+method of handling this case in the new v4.1 DIV_ROUND_UP() usage..?
 
-Note the change from && to & in the last conditional.  This
-transformation is safe, in that it does not change the meaning of the
-program.  However, it does cause a read of an uninitialized memory
-location, and this is causing a later gcc pass to generate a false
-positive warning.
+Thank you!
 
-Please consider filing a bug report about this false positive.  Thanks.
+--nab
 
-Ian
+
