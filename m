@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab1GZShP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 14:37:15 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57747 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751620Ab1GZShM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 14:37:12 -0400
+	id S1753085Ab1GZShj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 14:37:39 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:50202 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752977Ab1GZShf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 14:37:35 -0400
+Date: Tue, 26 Jul 2011 20:37:21 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@amd64.org>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Przywara, Andre" <Andre.Przywara@amd.com>,
+        "Pohlack, Martin" <Martin.Pohlack@amd.com>
+Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
+Message-ID: <20110726183721.GF32536@aftab>
+References: <1311340547-7861-1-git-send-email-bp@amd64.org>
+ <4E2F0068.1080001@redhat.com>
+ <20110726181304.GD32536@aftab>
+ <4E2F0498.8050005@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <20110726181418.GA27993@quack.suse.cz>
-References: <20110726181418.GA27993@quack.suse.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 26 Jul 2011 11:36:29 -0700
-Message-ID: <CA+55aFwYsdyE4KxFW70c_FfTb41m+EwchYvNJU-eUEw4usRkUw@mail.gmail.com>
-Subject: Re: [PULL REQUEST] ext3, jbd, ext2, and quota fixes for 3.1-rc1
-To: Jan Kara <jack@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        Josef Bacik <josef@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E2F0498.8050005@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 11:14 AM, Jan Kara <jack@suse.cz> wrote:
->
->  could you please pull from
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs-2.6.git for_linus
+On Tue, Jul 26, 2011 at 02:16:56PM -0400, H. Peter Anvin wrote:
+> >> Is it possible to derive the bit positions (and the need to mask them) 
+> >> from the cpuid description of the cache topology and sizes?
+> > 
+> > As far as I understand your question, there's no need for deriving the
+> > bit positions because they're not special. You just have to have bits
+> > [14:12] the same across all processes - we simply opted for clearing
+> > them in order to keep the patch as simple as possible. But we could just
+> > as well hashed the library name and generated the bits from it and thus
+> > keep them same per library (we have that version too, btw. :)).
+> > 
+> > FWIW, in both cases, the patch should fix even the virtualization
+> > scenario with and without KSM.
+> > 
+> > Does that answer your question?
+> > 
+> 
+> I think the question was the width (and position) for the mask... i.e.
+> your [14:12] above which *is* magic.
 
-Ok, this clashed with the fsync mutex pushdown, and the whole addition
-of fixed tracepoints.
+Oh, that's easy: family 15h means bits [14:12] - those bits are used for
+I$ index generation.
 
-Quite frankly, I think the fixed tracepoints are broken and make the
-code unreadable (why have them?) but I fixed it up.
+-- 
+Regards/Gruss,
+Boris.
 
-Somebody should really double-check the resolve. That's especially
-true since the whole i_mutex thing is *also* rather dubious. The
-comment that moved that down says:
-
-+       /*
-+        * Taking the mutex here just to keep consistent with how fsync was
-+        * called previously, however it looks like we don't need to take
-+        * i_mutex at all.
-+        */
-
-but in fact it is *not* consistent with how fsync() used to be called,
-since we then drop the mutex *before* doing
-
-    return ext3_force_commit(inode->i_sb);
-
-for the should_journal_data case.
-
-See commit 02c24a82187 ("fs: push i_mutex and filemap_write_and_wait
-down into ->fsync() handlers").
-
-I resolved it with the mutex still dropped early (especially since the
-comment implies it may not matter at all), but quite frankly,
-everything I did around that resolve made me go "that code is just
-WRONG". Both wrt the tracepoints and wrt the i_mutex.
-
-So I think my resolution is "correct" from a merge standpoint, but I
-think the code is total crap. I also wonder whether you can really do
-that
-
-    J_ASSERT(ext3_journal_current_handle() == NULL);
-
-without holding the i_mutex, so I moved that back down again.
-
-So I *really* want people to take a look at that ext3_sync_file()
-function. Please?
-
-                      Linus
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
