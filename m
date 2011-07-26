@@ -1,60 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037Ab1GZBqa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 21:46:30 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48650 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752496Ab1GZBq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 21:46:26 -0400
-Date: Tue, 26 Jul 2011 11:46:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michal Simek <michal.simek@petalogix.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: linux-next: manual merge of the microblaze tree with Linus' tree
-Message-Id: <20110726114615.534c5501ac3d27d0459087df@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__26_Jul_2011_11_46_15_+1000_wf9usW4F=Zy1XH.h"
+	id S1752895Ab1GZB55 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 21:57:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63842 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751794Ab1GZB5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 21:57:54 -0400
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: menage@google.com, lizf@cn.fujitsu.com, Vivek Goyal <vgoyal@redhat.com>,
+        axboe@kernel.dk
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        wanlong.gao@gmail.com
+Subject: [PATCH v3] blk-cgroup:be able to remove the record of unplugged device
+Date: Tue, 26 Jul 2011 09:56:40 +0800
+Message-Id: <1311645400-19434-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1311573834-7140-1-git-send-email-gaowanlong@cn.fujitsu.com>
+References: <1311573834-7140-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-26 09:56:56,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-26 09:56:58,
+	Serialize complete at 2011-07-26 09:56:58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__26_Jul_2011_11_46_15_+1000_wf9usW4F=Zy1XH.h
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Michal,
+Write a record like:
+echo 8:0 1000 > blkio.throttle.read_bps_device
+to control the bps of the device.
+And then unplug this device without doing
+"8:0 0 > blkio.throttle.read_bps_device" to remove the record,
+it will not be removed until reboot, because if the device is removed,
+write some record will return "-ENODEV".
 
-Today's linux-next merge of the microblaze tree got a conflict in
-arch/microblaze/pci/pci_32.c between commit 98d9f30c820d ("pci/of: Match
-PCI devices to OF nodes dynamically") from Linus' tree and commit
-c9d761b7c4b6 ("microblaze: PCI fix typo fault in of_node pointer moving
-into pci_bus") from the microblaze tree.
+With this patch, when the device is removed, then if we want to remove
+the record for this removed device, just write "0" then it'll not check
+if it is a present device, just remove the present record.
 
-The former removed the line fixed up by the latter.  The file was then
-removed in a later commit, so I did that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Below is my test:
+1. Test native.
+[root@test ~]# mount -t cgroup -o blkio nodev /cgroup/
+[root@test ~]# cd /cgroup/
+[root@test cgroup]# ll /dev/sd*
+brw-rw---- 1 root disk 8, 0 Jul 25 13:27 /dev/sda
+brw-rw---- 1 root disk 8, 1 Jul 25 13:27 /dev/sda1
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+[root@test cgroup]# echo 8:0 1000 > blkio.throttle.read_bps_device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+8:0	1000
+[root@test cgroup]# echo 8:0 0 > blkio.throttle.read_bps_device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+[root@test cgroup]# echo 8:0 1000 > blkio.throttle.read_bps_device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+8:0	1000
+[root@test cgroup]# ll /dev/sd*
+ls: cannot access /dev/sd*: No such file or directory
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+8:0	1000
+[root@test cgroup]# echo 8:0 0 > blkio.throttle.read_bps_device
+-bash: echo: write error: No such device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+8:0	1000
 
---Signature=_Tue__26_Jul_2011_11_46_15_+1000_wf9usW4F=Zy1XH.h
-Content-Type: application/pgp-signature
+2.Test with this patch:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+[root@test ~]# mount -t cgroup -o blkio nodev /cgroup/
+[root@test ~]# ll /dev/sd*
+brw-rw---- 1 root disk 8, 0 Jul 25 13:11 /dev/sda
+brw-rw---- 1 root disk 8, 1 Jul 25 13:11 /dev/sda1
+[root@test ~]# cd /cgroup/
+[root@test cgroup]# echo 8:0 1000 > blkio.throttle.read_bps_device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+8:0	1000
+[root@test cgroup]# ll /dev/sd*
+brw-rw---- 1 root disk 8, 0 Jul 25 13:11 /dev/sda
+brw-rw---- 1 root disk 8, 1 Jul 25 13:11 /dev/sda1
+[root@test cgroup]# echo 8:0 0 > blkio.throttle.read_bps_device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+[root@test cgroup]# ll /dev/sd*
+brw-rw---- 1 root disk 8, 0 Jul 25 13:11 /dev/sda
+brw-rw---- 1 root disk 8, 1 Jul 25 13:11 /dev/sda1
+[root@test cgroup]# echo 8:0 2000 > blkio.throttle.read_bps_device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+8:0	2000
 
-iQEcBAEBAgAGBQJOLhxnAAoJEDMEi1NhKgbsb0UH/29oKfW+/ZmhrEl67gBTdMSw
-/R+n2eQ4qo5HsRFjrtyGADorbeIyxMoAcHiP1Q8qgGvPiXPmvhy+wGXZ2smJlsYs
-FaGk11PFQuDFgZMnyoiHJ6sQZ6zoLrt1HRswQecxeEvTpJ8DxLhmVkzYmxZrrK0H
-7orWp6YKrJ7gKrx3jHl9ipuHbmkVupbJeOJSAm52avnfbu6+aCB/Hclc+3umLHIF
-x3N/oPIXkkGNjrnCW4BRvP/yLNJ+C0kRNdliOWdiHg9R63vq9hMHDBR6Pv9qnWZd
-dGGxjiuxVIz7VJX/1ykv52EuEbdz8zEcumqR+chLxcHV4JN5TcE92n1CO8hINzA=
-=+X9J
------END PGP SIGNATURE-----
+[root@test cgroup]# ll /dev/sd*
+ls: cannot access /dev/sd*: No such file or directory
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+8:0	2000
+[root@test cgroup]# echo 8:0 0 > blkio.throttle.read_bps_device
+[root@test cgroup]# cat blkio.throttle.read_bps_device
+[root@test cgroup]# echo 8:0 1000 > blkio.throttle.read_bps_device
+-bash: echo: write error: No such device
+[root@test cgroup]# echo 8:0 01100 > blkio.throttle.read_bps_device
+-bash: echo: write error: No such device
+[root@test cgroup]#
 
---Signature=_Tue__26_Jul_2011_11_46_15_+1000_wf9usW4F=Zy1XH.h--
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+---
+ block/blk-cgroup.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index bcaf16e..246645c 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -785,7 +785,7 @@ static int blkio_policy_parse_and_set(char *buf,
+ {
+ 	char *s[4], *p, *major_s = NULL, *minor_s = NULL;
+ 	int ret;
+-	unsigned long major, minor, temp;
++	unsigned long major, minor, weight;
+ 	int i = 0;
+ 	dev_t dev;
+ 	u64 bps, iops;
+@@ -826,25 +826,25 @@ static int blkio_policy_parse_and_set(char *buf,
+ 
+ 	dev = MKDEV(major, minor);
+ 
+-	ret = blkio_check_dev_num(dev);
++	ret = strict_strtoul(s[1], 10, &weight);
+ 	if (ret)
++		return -EINVAL;
++
++	ret = blkio_check_dev_num(dev);
++	if (ret && (weight != 0))
+ 		return ret;
+ 
+ 	newpn->dev = dev;
+ 
+-	if (s[1] == NULL)
+-		return -EINVAL;
+-
+ 	switch (plid) {
+ 	case BLKIO_POLICY_PROP:
+-		ret = strict_strtoul(s[1], 10, &temp);
+-		if (ret || (temp < BLKIO_WEIGHT_MIN && temp > 0) ||
+-			temp > BLKIO_WEIGHT_MAX)
++		if ((weight < BLKIO_WEIGHT_MIN && weight > 0) ||
++			weight > BLKIO_WEIGHT_MAX)
+ 			return -EINVAL;
+ 
+ 		newpn->plid = plid;
+ 		newpn->fileid = fileid;
+-		newpn->val.weight = temp;
++		newpn->val.weight = weight;
+ 		break;
+ 	case BLKIO_POLICY_THROTL:
+ 		switch(fileid) {
+-- 
+1.7.6
+
