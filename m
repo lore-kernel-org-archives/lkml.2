@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab1GZHJR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 03:09:17 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58143 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab1GZHJK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 03:09:10 -0400
+	id S1754230Ab1GZHKn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 03:10:43 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41096 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754196Ab1GZHKf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 03:10:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <1311630170-26057-4-git-send-email-jim.cromie@gmail.com>
-References: <1311630170-26057-1-git-send-email-jim.cromie@gmail.com> <1311630170-26057-4-git-send-email-jim.cromie@gmail.com>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Tue, 26 Jul 2011 09:08:49 +0200
-X-Google-Sender-Auth: SzrfvBvtGEl8m1OhcBT-Gvjl4zM
-Message-ID: <CAO+b5-rpXrAZ6bAtWiy+rCaWEmRCwzMmNrqsRWQChM9nkdofiw@mail.gmail.com>
-Subject: Re: [PATCH 03/25] dynamic_debug: use pr_debug instead of pr_info
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: jbaron@redhat.com, joe@perches.com, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, gnb@fmeh.org
+In-Reply-To: <1311663071.17766.230.camel@haakon2.linux-iscsi.org>
+References: <1311462975.31450.356.camel@haakon2.linux-iscsi.org>
+ <20110725163739.5c19b04d.akpm@linux-foundation.org> <20110725165057.9701f16b.akpm@linux-foundation.org>
+ <1311663071.17766.230.camel@haakon2.linux-iscsi.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 26 Jul 2011 00:09:40 -0700
+Message-ID: <CA+55aFyNBaf2+=XJDLKNF1S5zMtpx38+Zd8uNd9k4ap4YpZmvw@mail.gmail.com>
+Subject: Re: [GIT PULL] iscsi-target merge for v3.1-rc1
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Andy Grover <agrover@redhat.com>, Hannes Reinecke <hare@suse.de>,
+        Roland Dreier <roland@purestorage.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Boaz Harrosh <openosd@gmail.com>, Mike Christie <michaelc@cs.wisc.edu>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 11:42 PM, Jim Cromie <jim.cromie@gmail.com> wrote:
-> Replace almost all occurrences of "if (verbose) pr_info()" with
-> pr_debug(), and get full control of output at each callsite.
-> Leave a few sites unaltered:
+On Mon, Jul 25, 2011 at 11:51 PM, Nicholas A. Bellinger
+<nab@linux-iscsi.org> wrote:
 >
-> 1st also uses pr_cont(), and theres no pr_debug_cont().
-> 2nd is in ddebug_add_module(), which is called during arch_init,
-> too early for callsite to be enabled when called.
->
-> 3rd, pr_debug doesnt work in dynamic_debug_init(), its too early.
-> Also move the print ddebug_setup_string prior to parsing, since
-> afterwards it's been chopped up with '\0's, and only 1st word is seen.
->
-> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-> ---
->  lib/dynamic_debug.c |   66 ++++++++++++++++++++-------------------------------
->  1 files changed, 26 insertions(+), 40 deletions(-)
->
-> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-> index af6f1ae..a7161db 100644
-> --- a/lib/dynamic_debug.c
-> +++ b/lib/dynamic_debug.c
-> @@ -157,18 +157,17 @@ static void ddebug_change(const struct ddebug_query *query,
->                                dp->enabled = 1;
->                        else
->                                dp->enabled = 0;
-> -                       if (verbose)
-> -                               pr_info("changed %s:%d [%s]%s %s\n",
-> -                                       dp->filename, dp->lineno,
-> -                                       dt->mod_name, dp->function,
-> -                                       ddebug_describe_flags(dp, flagbuf,
-> -                                                       sizeof(flagbuf)));
-> +                       pr_debug("changed %s:%d [%s]%s %s\n",
-> +                               dp->filename, dp->lineno,
-> +                               dt->mod_name, dp->function,
-> +                               ddebug_describe_flags(dp, flagbuf,
-> +                                               sizeof(flagbuf)));
+> How about the following to add a new DIV_ROUND_UP_ULL macro
 
-Changing pr_info() into pr_debug() inside the dynamic_debug
-implementation seems like a really bad idea to me. Such changes make
-it hard to find out via source code reading whether or not there is a
-risk that invoking one of these pr_debug() macros will cause infinite
-recursion.
+Hmm.
 
-Bart.
+>  #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
+> +#define DIV_ROUND_UP_ULL(n,d) (                                \
+> +{                                                      \
+> +       unsigned long long _tmp = n, _off;              \
+> +       int _res;                                       \
+> +       /* Round up using asm/div64.h:do_div */         \
+> +       _off = do_div(_tmp, d);                         \
+> +       if (_off != 0)                                  \
+> +               _tmp++;                                 \
+> +       _res = _tmp;                                    \
+> +}                                                      \
+> +)
+
+That looks buggy. Why the "_res = _tmp" there? All that does is to
+truncate the result to "int", which looks bogus.
+
+And it just looks unnecessarily complicated. Just a simple
+
+#define DIV_ROUND_UP_ULL(ll,d) \
+  ({ unsigned long long _tmp = (ll)+(d)-1; do_div(_tmp, d); _tmp; })
+
+looks like it would work and be simpler. Avoid the conditional, do the
+same "add 'd-1' thing as the regular ROUND_UP().
+
+Untested. And not much thinking involved.
+
+                     Linus
