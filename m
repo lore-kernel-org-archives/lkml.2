@@ -1,117 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab1GZBQx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 21:16:53 -0400
-Received: from mother.openwall.net ([195.42.179.200]:36724 "HELO
-	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752219Ab1GZBQq (ORCPT
+	id S1753011Ab1GZBRi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 21:17:38 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:59602 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab1GZBRc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 21:16:46 -0400
-Date: Tue, 26 Jul 2011 05:16:29 +0400
-From: Solar Designer <solar@openwall.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Vasiliy Kulikov <segoon@openwall.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        kernel-hardening@lists.openwall.com, James Morris <jmorris@namei.org>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+	Mon, 25 Jul 2011 21:17:32 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=R/vd0xE9V5X1ZKE7n89pSyCGzi1/UJmzHbfob5POCIi86uvtYJlfGI2xsVPvg3xA7
+	EluUqQKhC6o4S8dOzFjiQ==
+MIME-Version: 1.0
+In-Reply-To: <1310393706-321-8-git-send-email-fweisbec@gmail.com>
+References: <1310393706-321-1-git-send-email-fweisbec@gmail.com> <1310393706-321-8-git-send-email-fweisbec@gmail.com>
+From: Paul Menage <menage@google.com>
+Date: Mon, 25 Jul 2011 18:17:08 -0700
+Message-ID: <CAJniumW7ZKLLDaXSZ4TZ_=PX0ARERTeEyL-iTir12hciOArJqA@mail.gmail.com>
+Subject: Re: [PATCH 7/7] cgroups: Add a max number of tasks subsystem
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
-        Sebastian Krahmer <krahmer@suse.de>
-Subject: Re: [kernel-hardening] [PATCH] move RLIMIT_NPROC check from set_user() to do_execve_common()
-Message-ID: <20110726011629.GA24610@openwall.com>
-References: <1310738313.30257.27.camel@moss-pluto> <20110715152641.GA6286@albatros> <1310759683.30257.123.camel@moss-pluto> <20110721140936.632d2c8b@notabene.brown> <20110721124830.GA1325@openwall.com> <CA+55aFy4ybatb0McQr2f4A56ympZVLqK2sbp2=73idu58_4RxQ@mail.gmail.com> <20110721193939.GA3914@openwall.com> <20110725171423.GA3739@albatros> <20110725234013.GB24110@openwall.com> <20110726104713.37273143@notabene.brown>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110726104713.37273143@notabene.brown>
-User-Agent: Mutt/1.4.2.3i
+        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 10:47:13AM +1000, NeilBrown wrote:
-> On Tue, 26 Jul 2011 03:40:13 +0400 Solar Designer <solar@openwall.com> wrote:
-> > On Mon, Jul 25, 2011 at 09:14:23PM +0400, Vasiliy Kulikov wrote:
-> > > @@ -1433,6 +1433,19 @@ static int do_execve_common(const char *filename,
-> > >  	struct files_struct *displaced;
-> > >  	bool clear_in_exec;
-> > >  	int retval;
-> > > +	const struct cred *cred = current_cred();
-> > > +
-> > > +	/*
-> > > +	 * We move the actual failure in case of RLIMIT_NPROC excess from
-> > > +	 * set*uid() to execve() because too many poorly written programs
-> > > +	 * don't check setuid() return code.  Here we additionally recheck
-> > > +	 * whether NPROC limit is still exceeded.
-> > > +	 */
-> > > +	if ((current->flags & PF_NPROC_EXCEEDED) &&
-> > > +	    atomic_read(&cred->user->processes) > rlimit(RLIMIT_NPROC)) {
-> > > +		retval = -EAGAIN;
-> > > +		goto out_ret;
-> > > +	}
-> > 
-> > Do you possibly need:
-> > 
-> > 	current->flags &= ~PF_NPROC_EXCEEDED;
-> > 
-> > somewhere after this point?
-> > 
-> > I think it's weird to have past set_user() failure affect other than the
-> > very next execve().
-> 
-> So we are hoping that no program uses execvp() or similar...
+On Mon, Jul 11, 2011 at 7:15 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>  /* */
+> +
+> +#ifdef CONFIG_CGROUP_MAX_TASKS
+> +SUBSYS(max_tasks)
+> +#endif
 
-Why?  No, we don't, unless I am missing something.
+I think I'd be inclined to make the naming slightly (IMO) cleaner:
+call the subsystem 'tasks' and the files 'limit' and 'count' (or maybe
+'usage' to be more in line with memcg).
+>
+> +config CGROUP_MAX_TASKS
+> +        bool "Control max number of tasks in a cgroup"
+> +       depends on RESOURCE_COUNTERS
+> +       help
+> +         This option let the user to set up an upper bound allowed number
+> +         of tasks.
+> +
 
-> Maybe that is
-> reasonable but "in for a penny, in for a pound" - I'd fail them all.
-> 
-> I think the flag should only be cleared once we notice that the limit is no
-> longer exceeded.  So clearing the flag can appear *after* the code you quote
-> above, but not in the middle of it.
+Needs to depend on CGROUPS too?
 
-Definitely.  In case execve() fails because of the limit, the flag
-remains set, so a second execve() by the process will fail too.
+> +
+> +
+> +struct task_counter {
+> +       struct res_counter              res;
+> +       struct cgroup_subsys_state      css;
+> +};
 
-> > Perhaps also reset the flag on fork() because we have an RLIMIT_NPROC
-> > check on fork() anyway.
-> 
-> I agree it should be cleared here too.
+All other CSS structures put the "css" field as the first thing in the
+structure. Not sure that anything relies on that, but consistency
+can't hurt and it probably makes the code fractionally smaller since
+the translation between CSS and task_counter becomes a no-op.
 
-Great.  Just to clarify my own words: on fork(), clear the flag in the
-child process only.
+> +static void task_counter_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
+> +                             struct cgroup *old_cgrp, struct task_struct *task)
+> +{
+> +       struct task_counter *cnt = cgroup_task_counter(old_cgrp);
+> +
+> +       if (cnt != &root_counter)
+> +               res_counter_uncharge_until(&cnt->res, &root_counter.res, 1);
+> +}
 
-> But there is still the issue of 'zygot' like services....
+Do we even need the root_counter to be exposed in any way? Why not
+make children of the root cgroup just have a NULL parent res_counter?
 
-Here's my take on it:
+You'll still need a task_counter object so that the cgroups framework
+has a CSS object for cgroups housekeeping, but I don't think it needs
+to actually be used for anything.
 
-1. It is not known (from the discussion so far) whether Android/Zygote
-even cares about RLIMIT_NPROC specifically or not.  The code is very
-generic, usable for any rlimits, and the rationale behind it might have
-been to be able to apply certain other limits.  I don't know whether or
-not there exists a system that actually sets RLIMIT_NPROC via that
-mechanism and expects it working.
-
-2. If desired, Android/Zygote will be able to check the
-PF_NPROC_EXCEEDED flag, via procfs or via a prctl() interface that we
-might introduce.  Or it may simply pass an extra fork().
-
-> Let me try another suggestion.  Instead of catching the error in
-> do_execve_common, how about we catch it in do_mmap_pgoff.
-> i.e. if the flag is set and an attempt it made to create an executable
-> mapping, we check the user->processes against the limit then - either failing
-> or clearing the flag and succeeding.
-> 
-> This will stop an execve, and an attempt to load a shared library and call it.
-
-This sounds too hackish to me, although if others are (unexpectedly) OK
-with it, I don't mind.
-
-Thanks,
-
-Alexander
+Paul
