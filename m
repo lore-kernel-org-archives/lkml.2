@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab1GZOWP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 10:22:15 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56650 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab1GZOWJ (ORCPT
+	id S1753233Ab1GZO10 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 10:27:26 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:56427 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406Ab1GZO1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 10:22:09 -0400
-From: Pieterjan Camerlynck <pieterjan.camerlynck@gmail.com>
-To: keithp@keithp.com, airlied@linux.ie
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Pieterjan Camerlynck <pieterjan.camerlynck@gmail.com>
-Subject: [PATCH] i915: add Dell OptiPlex FX170 to intel_no_lvds
-Date: Tue, 26 Jul 2011 16:23:54 +0200
-Message-Id: <1311690234-23333-1-git-send-email-pieterjan.camerlynck@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
+	Tue, 26 Jul 2011 10:27:19 -0400
+Date: Tue, 26 Jul 2011 17:25:20 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: josef@redhat.com
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: [patch] fs: add missing unlock in default_llseek()
+Message-ID: <20110726142520.GG3824@shale.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Dell OptiPlex FX170 claims to have LVDS, but doesn't.
 
-Signed-off-by: Pieterjan Camerlynck <pieterjan.camerlynck@gmail.com>
----
- drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+A recent change in linux-next, 982d816581 "fs: add SEEK_HOLE and
+SEEK_DATA flags" added some direct returns on error, but it should
+have been a goto out.
 
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index b28f7bd..2e8ddfc 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -690,6 +690,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
- 	},
- 	{
- 		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Dell OptiPlex FX170",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex FX170"),
-+		},
-+	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
- 		.ident = "AOpen Mini PC",
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "AOpen"),
--- 
-1.7.3.4
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 5907b49..179f1c3 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -166,8 +166,10 @@ loff_t default_llseek(struct file *file, loff_t offset, int origin)
+ 			 * long as offset isn't at the end of the file then the
+ 			 * offset is data.
+ 			 */
+-			if (offset >= inode->i_size)
+-				return -ENXIO;
++			if (offset >= inode->i_size) {
++				retval = -ENXIO;
++				goto out;
++			}
+ 			break;
+ 		case SEEK_HOLE:
+ 			/*
+@@ -175,8 +177,10 @@ loff_t default_llseek(struct file *file, loff_t offset, int origin)
+ 			 * as long as offset isn't i_size or larger, return
+ 			 * i_size.
+ 			 */
+-			if (offset >= inode->i_size)
+-				return -ENXIO;
++			if (offset >= inode->i_size) {
++				retval = -ENXIO;
++				goto out;
++			}
+ 			offset = inode->i_size;
+ 			break;
+ 	}
