@@ -1,56 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab1GZJgn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 05:36:43 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:44665 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711Ab1GZJgj (ORCPT
+	id S1753336Ab1GZJgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 05:36:54 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33467 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760Ab1GZJgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 05:36:39 -0400
-Subject: [PATCH v3 0/2] Simple irq_domain implementation
-To: devicetree-discuss@lists.ozlabs.org, tglx@linutronix.de,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 26 Jul 2011 03:36:36 -0600
-Message-ID: <20110726093141.12508.48108.stgit@ponder>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Jul 2011 05:36:41 -0400
+Subject: Re: [PATCH] vfs: dont chain pipe/anon/socket on superblock
+ s_inodes list
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        David Miller <davem@davemloft.net>, Andi Kleen <andi@firstfloor.org>,
+        Matthew Wilcox <matthew@wil.cx>, Anton Blanchard <anton@samba.org>,
+        npiggin@kernel.dk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <20110726090357.GA13013@infradead.org>
+References: <20110718155141.GA11013@ZenIV.linux.org.uk>
+	 <1311093158.2707.75.camel@schen9-DESK>
+	 <20110721204042.GB31405@ZenIV.linux.org.uk>
+	 <1311294452.2576.18.camel@schen9-DESK>
+	 <20110723132411.GA22183@infradead.org>
+	 <1311633550.2576.33.camel@schen9-DESK>
+	 <20110725225154.GD22133@ZenIV.linux.org.uk>
+	 <1311636178.2576.34.camel@schen9-DESK>
+	 <1311660013.2996.6.camel@edumazet-laptop>
+	 <1311668466.2355.12.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20110726090357.GA13013@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Jul 2011 11:36:34 +0200
+Message-ID: <1311672994.2355.17.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the interest of getting this infrastructure merged, I've reworked the
-basic irq_domain patch to implement only what is required for ARM device
-tree board support.  That means it doesn't affect any architectures other
-than ARM, and I'll send follow-on patches targeted at v3.2 to migrate
-MIPS, Microblaze, x86 embedded and PowerPC over to it.
+Le mardi 26 juillet 2011 à 05:03 -0400, Christoph Hellwig a écrit :
+> On Tue, Jul 26, 2011 at 10:21:06AM +0200, Eric Dumazet wrote:
+> > Well, not 'last' contention point, as we still hit remove_inode_hash(),
+> 
+> There should be no ned to put pipe or anon inodes on the inode hash.
+> Probably sockets don't need it either, but I'd need to look at it in
+> detail.
+> 
+> > inode_wb_list_del()
+> 
+> The should never be on the wb list either, doing an unlocked check for
+> actually beeing on the list before taking the lock should help you.
 
-Thomas, can you please take a look?  I've got devicetree board support
-queued up and ready to be merged but for this infrastructure.
+Yes, it might even help regular inodes ;)
 
-g.
+> 
+> > inode_lru_list_del(),
+> 
+> No real need to keep inodes in the LRU if we only allocate them using
+> new_inode but never look them up either.  You might want to try setting
+> .drop_inode to generic_delete_inode for these.
 
+Yes, I'll take a look, thanks.
+
+> 
+> > +struct inode *__new_inode(struct super_block *sb)
+> > +{
+> > +	struct inode *inode = alloc_inode(sb);
+> > +
+> > +	if (inode) {
+> > +		spin_lock(&inode->i_lock);
+> > +		inode->i_state = 0;
+> > +		spin_unlock(&inode->i_lock);
+> > +		INIT_LIST_HEAD(&inode->i_sb_list);
+> > +	}
+> > +	return inode;
+> > +}
+> 
+> This needs a much better name like new_inode_pseudo, and a kerneldoc 
+> comment explaining when it is safe to use, and the consequences, which
+> appear to me:
+> 
+>  - fs may never be unmount
+>  - quotas can't work on the filesystem
+>  - writeback can't work on the filesystem
+
+Thanks for reviewing, here is v2 of the patch, addressing your comments.
+
+
+[PATCH v2] vfs: dont chain pipe/anon/socket on superblock s_inodes list
+
+Workloads using pipes and sockets hit inode_sb_list_lock contention.
+
+superblock s_inodes list is needed for quota, dirty, pagecache and
+fsnotify management. pipe/anon/socket fs are clearly not candidates for
+these.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 ---
+v2: address Christoph comments
 
-Grant Likely (2):
-      irq: add irq_domain translation infrastructure
-      dt/irq: add irq_domain_generate_simple() helper
+ fs/anon_inodes.c   |    2 +-
+ fs/inode.c         |   39 ++++++++++++++++++++++++++++++---------
+ fs/pipe.c          |    2 +-
+ include/linux/fs.h |    3 ++-
+ net/socket.c       |    2 +-
+ 5 files changed, 35 insertions(+), 13 deletions(-)
+
+diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
+index 4d433d3..f11e43e 100644
+--- a/fs/anon_inodes.c
++++ b/fs/anon_inodes.c
+@@ -187,7 +187,7 @@ EXPORT_SYMBOL_GPL(anon_inode_getfd);
+  */
+ static struct inode *anon_inode_mkinode(void)
+ {
+-	struct inode *inode = new_inode(anon_inode_mnt->mnt_sb);
++	struct inode *inode = new_inode_pseudo(anon_inode_mnt->mnt_sb);
+ 
+ 	if (!inode)
+ 		return ERR_PTR(-ENOMEM);
+diff --git a/fs/inode.c b/fs/inode.c
+index 96c77b8..319b93b 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -362,9 +362,11 @@ EXPORT_SYMBOL_GPL(inode_sb_list_add);
+ 
+ static inline void inode_sb_list_del(struct inode *inode)
+ {
+-	spin_lock(&inode_sb_list_lock);
+-	list_del_init(&inode->i_sb_list);
+-	spin_unlock(&inode_sb_list_lock);
++	if (!list_empty(&inode->i_sb_list)) {
++		spin_lock(&inode_sb_list_lock);
++		list_del_init(&inode->i_sb_list);
++		spin_unlock(&inode_sb_list_lock);
++	}
+ }
+ 
+ static unsigned long hash(struct super_block *sb, unsigned long hashval)
+@@ -797,6 +799,29 @@ unsigned int get_next_ino(void)
+ EXPORT_SYMBOL(get_next_ino);
+ 
+ /**
++ *	new_inode_pseudo 	- obtain an inode
++ *	@sb: superblock
++ *
++ *	Allocates a new inode for given superblock.
++ *	Inode wont be chained in superblock s_inodes list
++ *	This means :
++ *	- fs can't be unmount
++ *	- quotas, fsnotify, writeback can't work
++ */
++struct inode *new_inode_pseudo(struct super_block *sb)
++{
++	struct inode *inode = alloc_inode(sb);
++
++	if (inode) {
++		spin_lock(&inode->i_lock);
++		inode->i_state = 0;
++		spin_unlock(&inode->i_lock);
++		INIT_LIST_HEAD(&inode->i_sb_list);
++	}
++	return inode;
++}
++
++/**
+  *	new_inode 	- obtain an inode
+  *	@sb: superblock
+  *
+@@ -814,13 +839,9 @@ struct inode *new_inode(struct super_block *sb)
+ 
+ 	spin_lock_prefetch(&inode_sb_list_lock);
+ 
+-	inode = alloc_inode(sb);
+-	if (inode) {
+-		spin_lock(&inode->i_lock);
+-		inode->i_state = 0;
+-		spin_unlock(&inode->i_lock);
++	inode = new_inode_pseudo(sb);
++	if (inode)
+ 		inode_sb_list_add(inode);
+-	}
+ 	return inode;
+ }
+ EXPORT_SYMBOL(new_inode);
+diff --git a/fs/pipe.c b/fs/pipe.c
+index 1b7f9af..0e0be1d 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -948,7 +948,7 @@ static const struct dentry_operations pipefs_dentry_operations = {
+ 
+ static struct inode * get_pipe_inode(void)
+ {
+-	struct inode *inode = new_inode(pipe_mnt->mnt_sb);
++	struct inode *inode = new_inode_pseudo(pipe_mnt->mnt_sb);
+ 	struct pipe_inode_info *pipe;
+ 
+ 	if (!inode)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index a665804..cc363fa 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2310,7 +2310,8 @@ extern void __iget(struct inode * inode);
+ extern void iget_failed(struct inode *);
+ extern void end_writeback(struct inode *);
+ extern void __destroy_inode(struct inode *);
+-extern struct inode *new_inode(struct super_block *);
++extern struct inode *new_inode_pseudo(struct super_block *sb);
++extern struct inode *new_inode(struct super_block *sb);
+ extern void free_inode_nonrcu(struct inode *inode);
+ extern int should_remove_suid(struct dentry *);
+ extern int file_remove_suid(struct file *);
+diff --git a/net/socket.c b/net/socket.c
+index 02dc82d..26ed35c 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -467,7 +467,7 @@ static struct socket *sock_alloc(void)
+ 	struct inode *inode;
+ 	struct socket *sock;
+ 
+-	inode = new_inode(sock_mnt->mnt_sb);
++	inode = new_inode_pseudo(sock_mnt->mnt_sb);
+ 	if (!inode)
+ 		return NULL;
+ 
 
 
- arch/arm/Kconfig            |    1 
- arch/arm/include/asm/prom.h |    5 -
- arch/arm/kernel/devtree.c   |   14 ---
- include/linux/irq.h         |    6 +
- include/linux/irqdomain.h   |   93 ++++++++++++++++++++++
- include/linux/of_irq.h      |    4 +
- kernel/irq/Kconfig          |    4 +
- kernel/irq/Makefile         |    1 
- kernel/irq/irqdomain.c      |  180 +++++++++++++++++++++++++++++++++++++++++++
- 9 files changed, 289 insertions(+), 19 deletions(-)
- create mode 100644 include/linux/irqdomain.h
- create mode 100644 kernel/irq/irqdomain.c
-
--- 
-Signature
