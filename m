@@ -1,107 +1,413 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab1GZLfq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 07:35:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:36282 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752130Ab1GZLfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 07:35:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,268,1309762800"; 
-   d="scan'208";a="32070219"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH RESEND] sched: fix false lockdep warning in set_task_cpu()
-Date: Tue, 26 Jul 2011 14:36:01 +0300
-Message-Id: <1311680161-23755-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1753426Ab1GZLh6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 07:37:58 -0400
+Received: from mss-uk.mssgmbh.com ([217.174.251.109]:42845 "EHLO
+	mss-uk.mssgmbh.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753299Ab1GZLhv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 07:37:51 -0400
+To: kaber@trash.net
+Cc: netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] netfilter: add per-namespace logging to nfnetlink_log.c (updated again)
+In-Reply-To: <87sjq1xab8.fsf_-_@sapphire.mobileactivedefense.com> (Rainer Weikusat's message of "Wed\, 20 Jul 2011 16\:04\:43 +0100")
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+References: <8739i3fp6s.fsf@sapphire.mobileactivedefense.com>
+	<20110718191956.GA2489@p183.telecom.by>
+	<87hb6je5nh.fsf@sapphire.mobileactivedefense.com>
+	<20110718.124638.30010338187296272.davem@davemloft.net>
+	<87d3h7e43n.fsf@sapphire.mobileactivedefense.com>
+	<alpine.LNX.2.01.1107182218170.9579@frira.zrqbmnf.qr>
+	<878vruymq6.fsf@sapphire.mobileactivedefense.com>
+	<87sjq1xab8.fsf_-_@sapphire.mobileactivedefense.com>
+From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
+Date: Tue, 26 Jul 2011 12:37:42 +0100
+Message-ID: <87y5zlgtmh.fsf_-_@sapphire.mobileactivedefense.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we have CONFIG_LOCKDEP enabled we get occasionally following warning
-on the system console at boot:
+From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
 
- WARNING: at kernel/sched.c:2204 set_task_cpu+0x1a1/0x390()
- Modules linked in:
- Pid: 133, comm: mount Not tainted 3.0.0-rc2+ #70
- Call Trace:
-  [<c104137d>] warn_slowpath_common+0x6d/0xa0
-  [<c103d3b1>] ? set_task_cpu+0x1a1/0x390
-  [<c103d3b1>] ? set_task_cpu+0x1a1/0x390
-  [<c10413cd>] warn_slowpath_null+0x1d/0x20
-  [<c103d3b1>] set_task_cpu+0x1a1/0x390
-  [<c103e0a7>] try_to_wake_up+0x127/0x250
-  [<c103e1db>] default_wake_function+0xb/0x10
-  [<c106290e>] autoremove_wake_function+0x1e/0x50
-  [<c102a2b0>] __wake_up_common+0x40/0x70
-  [<c102f2d7>] __wake_up+0x37/0x50
-  [<c12d36c0>] ? serial_m3110_enable_ms+0x10/0x10
-  [<c12d3715>] serial_m3110_con_write+0x55/0x60
-  [<c1041575>] __call_console_drivers+0x75/0x90
-  [<c10415d9>] _call_console_drivers+0x49/0x80
-  [<c1041baa>] console_unlock+0xca/0x1f0
-  [<c10420ef>] vprintk+0x18f/0x4f0
-  [<c10787cb>] ? trace_hardirqs_on+0xb/0x10
-  [<c107985e>] ? lockdep_init_map+0x4e/0x4c0
-  [<c10787cb>] ? trace_hardirqs_on+0xb/0x10
-  [<c14928a3>] printk+0x18/0x1a
-  [<c115dd4e>] ext3_msg+0x3e/0x40
-  [<c116046a>] ext3_fill_super+0x16ba/0x1960
-  [<c11478b8>] ? disk_name+0x88/0xc0
-  [<c10fa88d>] mount_bdev+0x16d/0x1b0
-  [<c10ed667>] ? __kmalloc_track_caller+0xf7/0x280
-  [<c1112021>] ? alloc_vfsmnt+0x81/0x140
-  [<c115d20a>] ext3_mount+0x1a/0x20
-  [<c115edb0>] ? ext3_clear_journal_err+0xa0/0xa0
-  [<c10f95dc>] mount_fs+0x1c/0xc0
-  [<c10d763a>] ? __alloc_percpu+0xa/0x10
-  [<c111203b>] ? alloc_vfsmnt+0x9b/0x140
-  [<c1112896>] vfs_kern_mount+0x46/0xa0
-  [<c1113609>] do_kern_mount+0x39/0xd0
-  [<c1114087>] do_mount+0x2c7/0x680
-  [<c10d31f9>] ? strndup_user+0x49/0x60
-  [<c11144a6>] sys_mount+0x66/0xa0
-  [<c14976d0>] sysenter_do_call+0x12/0x36
+Presently, the nfnetlink_log.c file contains only very nominal support
+for network namespaces: While it is possible to create sockets which
+should theoretically receive NFLOG originated messages in arbitrary
+network namespaces, there is only one table of nfulnl_instance
+structures in the kernel and all log messages sent via __nfulnl_send
+are forced into the init_net namespace so that only sockets created
+in this namespace will ever actually receive log data. Likewise, the
+nfulnl_rcv_nl_event notification callback won't destroy logging
+instances created by processes in other network namespace upon process
+death. The patch included below changes the code to use a logging
+instance table per network namespace, to send messages generated from
+within a specific namespace to sockets also belonging to this
+namespace and to destroy logging instances created from other network
+namespaces than init_net when cleaning up after a logging process
+terminated. It doesn't touch the code dealing with nfnetlink_log /proc
+files which thus remain restricted to the init_net namespace because
+this isn't really needed in order to get per-namespace logging and
+would require changes to other files, in particular, nf_log.c
 
-This is due the fact that printk() disables lockdep before the output is
-passed to the actual console driver. If the console driver happens to call
-some functions which eventually calls set_task_cpu() we end up failing the
-following test:
+The patch also removes the hash_init file scope variable because
+that's not used for anything except that the existing init routine
+initializes it.
 
-       WARN_ON_ONCE(debug_locks && !(lockdep_is_held(&p->pi_lock) ||
-                                     lockdep_is_held(&task_rq(p)->lock)));
-
-This is because lockdep_is_held() returns 0 if lockdep is temporarily
-disabled.
-
-So we check whether lockdep is enabled and only then validate the locks.
-
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>
+Signed-Off-By: Rainer Weikusat <rweikusat@mobileactivedefense.com>
 ---
- kernel/sched.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 9769c75..1177f81 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2211,8 +2211,9 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
- 	 * Furthermore, all task_rq users should acquire both locks, see
- 	 * task_rq_lock().
- 	 */
--	WARN_ON_ONCE(debug_locks && !(lockdep_is_held(&p->pi_lock) ||
--				      lockdep_is_held(&task_rq(p)->lock)));
-+	WARN_ON_ONCE(debug_locks && !current->lockdep_recursion &&
-+			!(lockdep_is_held(&p->pi_lock) ||
-+			  lockdep_is_held(&task_rq(p)->lock)));
- #endif
+--- nf-2.6/net/netfilter/nfnetlink_log.c	2011-07-25 16:53:41.693829768 +0100
++++ nf-2.6.patched//net/netfilter/nfnetlink_log.c	2011-07-26 12:06:46.543418699 +0100
+@@ -39,6 +39,9 @@
+ #include "../bridge/br_private.h"
  #endif
  
--- 
-1.7.5.4
-
++#include <net/net_namespace.h>
++#include <net/netns/generic.h>
++
+ #define NFULNL_NLBUFSIZ_DEFAULT	NLMSG_GOODSIZE
+ #define NFULNL_TIMEOUT_DEFAULT 	100	/* every second */
+ #define NFULNL_QTHRESH_DEFAULT 	100	/* 100 packets */
+@@ -47,6 +50,15 @@
+ #define PRINTR(x, args...)	do { if (net_ratelimit()) \
+ 				     printk(x, ## args); } while (0);
+ 
++#define INSTANCE_BUCKETS	16
++
++struct nfulnl_instances {
++	spinlock_t lock;
++	atomic_t global_seq;
++	struct hlist_head table[INSTANCE_BUCKETS];
++	struct net *net;
++};
++
+ struct nfulnl_instance {
+ 	struct hlist_node hlist;	/* global list of instances */
+ 	spinlock_t lock;
+@@ -67,14 +79,39 @@ struct nfulnl_instance {
+ 	u_int16_t flags;
+ 	u_int8_t copy_mode;
+ 	struct rcu_head rcu;
++	struct nfulnl_instances *instances;
+ };
+ 
+-static DEFINE_SPINLOCK(instances_lock);
+-static atomic_t global_seq;
++static struct nfulnl_instances *instances;
++static int nfulnl_net_id;
+ 
+-#define INSTANCE_BUCKETS	16
+-static struct hlist_head instance_table[INSTANCE_BUCKETS];
+-static unsigned int hash_init;
++#ifdef CONFIG_NET_NS
++static inline struct nfulnl_instances *instances_for_net(struct net *net)
++{
++	return net_generic(net, nfulnl_net_id);
++}
++#else
++static inline struct nfulnl_instances *instances_for_net(struct net *net)
++{
++	return instances;
++}
++#endif
++
++static struct nfulnl_instances *instances_via_skb(struct sk_buff const *skb)
++{
++	struct net *net;
++
++	net = skb->sk ? sock_net(skb->sk) :
++		(skb->dev ? dev_net(skb->dev) : &init_net);
++
++	return instances_for_net(net);
++}
++
++static inline struct net *inst_net(struct nfulnl_instance *inst)
++{
++	return read_pnet(&inst->instances->net);
++
++}
+ 
+ static inline u_int8_t instance_hashfn(u_int16_t group_num)
+ {
+@@ -82,13 +119,13 @@ static inline u_int8_t instance_hashfn(u
+ }
+ 
+ static struct nfulnl_instance *
+-__instance_lookup(u_int16_t group_num)
++__instance_lookup(struct nfulnl_instances *instances, u_int16_t group_num)
+ {
+ 	struct hlist_head *head;
+ 	struct hlist_node *pos;
+ 	struct nfulnl_instance *inst;
+ 
+-	head = &instance_table[instance_hashfn(group_num)];
++	head = &instances->table[instance_hashfn(group_num)];
+ 	hlist_for_each_entry_rcu(inst, pos, head, hlist) {
+ 		if (inst->group_num == group_num)
+ 			return inst;
+@@ -103,12 +140,15 @@ instance_get(struct nfulnl_instance *ins
+ }
+ 
+ static struct nfulnl_instance *
+-instance_lookup_get(u_int16_t group_num)
++instance_lookup_get(struct nfulnl_instances *instances, u_int16_t group_num)
+ {
+ 	struct nfulnl_instance *inst;
+ 
++	if (!instances)
++		return NULL;
++
+ 	rcu_read_lock_bh();
+-	inst = __instance_lookup(group_num);
++	inst = __instance_lookup(instances, group_num);
+ 	if (inst && !atomic_inc_not_zero(&inst->use))
+ 		inst = NULL;
+ 	rcu_read_unlock_bh();
+@@ -132,13 +172,14 @@ instance_put(struct nfulnl_instance *ins
+ static void nfulnl_timer(unsigned long data);
+ 
+ static struct nfulnl_instance *
+-instance_create(u_int16_t group_num, int pid)
++instance_create(struct nfulnl_instances *instances,
++		u_int16_t group_num, int pid)
+ {
+ 	struct nfulnl_instance *inst;
+ 	int err;
+ 
+-	spin_lock_bh(&instances_lock);
+-	if (__instance_lookup(group_num)) {
++	spin_lock_bh(&instances->lock);
++	if (__instance_lookup(instances, group_num)) {
+ 		err = -EEXIST;
+ 		goto out_unlock;
+ 	}
+@@ -171,15 +212,16 @@ instance_create(u_int16_t group_num, int
+ 	inst->copy_mode 	= NFULNL_COPY_PACKET;
+ 	inst->copy_range 	= NFULNL_COPY_RANGE_MAX;
+ 
+-	hlist_add_head_rcu(&inst->hlist,
+-		       &instance_table[instance_hashfn(group_num)]);
++	inst->instances = instances;
+ 
+-	spin_unlock_bh(&instances_lock);
++	hlist_add_head_rcu(&inst->hlist,
++			&instances->table[instance_hashfn(group_num)]);
+ 
++	spin_unlock_bh(&instances->lock);
+ 	return inst;
+ 
+ out_unlock:
+-	spin_unlock_bh(&instances_lock);
++	spin_unlock_bh(&instances->lock);
+ 	return ERR_PTR(err);
+ }
+ 
+@@ -208,11 +250,12 @@ __instance_destroy(struct nfulnl_instanc
+ }
+ 
+ static inline void
+-instance_destroy(struct nfulnl_instance *inst)
++instance_destroy(struct nfulnl_instances *instances,
++		struct nfulnl_instance *inst)
+ {
+-	spin_lock_bh(&instances_lock);
++	spin_lock_bh(&instances->lock);
+ 	__instance_destroy(inst);
+-	spin_unlock_bh(&instances_lock);
++	spin_unlock_bh(&instances->lock);
+ }
+ 
+ static int
+@@ -334,7 +377,7 @@ __nfulnl_send(struct nfulnl_instance *in
+ 			  NLMSG_DONE,
+ 			  sizeof(struct nfgenmsg));
+ 
+-	status = nfnetlink_unicast(inst->skb, &init_net, inst->peer_pid,
++	status = nfnetlink_unicast(inst->skb, inst_net(inst), inst->peer_pid,
+ 				   MSG_DONTWAIT);
+ 
+ 	inst->qlen = 0;
+@@ -505,7 +548,8 @@ __build_packet_message(struct nfulnl_ins
+ 	/* global sequence number */
+ 	if (inst->flags & NFULNL_CFG_F_SEQ_GLOBAL)
+ 		NLA_PUT_BE32(inst->skb, NFULA_SEQ_GLOBAL,
+-			     htonl(atomic_inc_return(&global_seq)));
++			     htonl(atomic_inc_return(
++					     &inst->instances->global_seq)));
+ 
+ 	if (data_len) {
+ 		struct nlattr *nla;
+@@ -567,7 +611,8 @@ nfulnl_log_packet(u_int8_t pf,
+ 	else
+ 		li = &default_loginfo;
+ 
+-	inst = instance_lookup_get(li->u.ulog.group);
++	inst = instance_lookup_get(instances_via_skb(skb),
++				li->u.ulog.group);
+ 	if (!inst)
+ 		return;
+ 
+@@ -678,24 +723,26 @@ nfulnl_rcv_nl_event(struct notifier_bloc
+ 		   unsigned long event, void *ptr)
+ {
+ 	struct netlink_notify *n = ptr;
++	struct nfulnl_instances *instances;
+ 
+ 	if (event == NETLINK_URELEASE && n->protocol == NETLINK_NETFILTER) {
+ 		int i;
+ 
++		instances = instances_for_net(n->net);
++
+ 		/* destroy all instances for this pid */
+-		spin_lock_bh(&instances_lock);
++		spin_lock_bh(&instances->lock);
+ 		for  (i = 0; i < INSTANCE_BUCKETS; i++) {
+ 			struct hlist_node *tmp, *t2;
+ 			struct nfulnl_instance *inst;
+-			struct hlist_head *head = &instance_table[i];
++			struct hlist_head *head = &instances->table[i];
+ 
+ 			hlist_for_each_entry_safe(inst, tmp, t2, head, hlist) {
+-				if ((net_eq(n->net, &init_net)) &&
+-				    (n->pid == inst->peer_pid))
++				if (n->pid == inst->peer_pid)
+ 					__instance_destroy(inst);
+ 			}
+ 		}
+-		spin_unlock_bh(&instances_lock);
++		spin_unlock_bh(&instances->lock);
+ 	}
+ 	return NOTIFY_DONE;
+ }
+@@ -734,6 +781,7 @@ nfulnl_recv_config(struct sock *ctnl, st
+ {
+ 	struct nfgenmsg *nfmsg = NLMSG_DATA(nlh);
+ 	u_int16_t group_num = ntohs(nfmsg->res_id);
++	struct nfulnl_instances *instances;
+ 	struct nfulnl_instance *inst;
+ 	struct nfulnl_msg_config_cmd *cmd = NULL;
+ 	int ret = 0;
+@@ -752,7 +800,11 @@ nfulnl_recv_config(struct sock *ctnl, st
+ 		}
+ 	}
+ 
+-	inst = instance_lookup_get(group_num);
++	instances = instances_for_net(sock_net(ctnl));
++	if (!instances)
++		return -ENODEV;
++
++	inst = instance_lookup_get(instances, group_num);
+ 	if (inst && inst->peer_pid != NETLINK_CB(skb).pid) {
+ 		ret = -EPERM;
+ 		goto out_put;
+@@ -766,7 +818,7 @@ nfulnl_recv_config(struct sock *ctnl, st
+ 				goto out_put;
+ 			}
+ 
+-			inst = instance_create(group_num,
++			inst = instance_create(instances, group_num,
+ 					       NETLINK_CB(skb).pid);
+ 			if (IS_ERR(inst)) {
+ 				ret = PTR_ERR(inst);
+@@ -779,7 +831,7 @@ nfulnl_recv_config(struct sock *ctnl, st
+ 				goto out;
+ 			}
+ 
+-			instance_destroy(inst);
++			instance_destroy(instances, inst);
+ 			goto out_put;
+ 		default:
+ 			ret = -ENOTSUPP;
+@@ -862,17 +914,27 @@ static const struct nfnetlink_subsystem
+ 
+ #ifdef CONFIG_PROC_FS
+ struct iter_state {
++	struct nfulnl_instances *instances;
+ 	unsigned int bucket;
+ };
+ 
++static inline struct nfulnl_instances *instances_for_seq(void)
++{
++	return instances_for_net(&init_net);
++}
++
+ static struct hlist_node *get_first(struct iter_state *st)
+ {
+ 	if (!st)
+ 		return NULL;
+ 
++	st->instances = instances_for_seq();
++
+ 	for (st->bucket = 0; st->bucket < INSTANCE_BUCKETS; st->bucket++) {
+-		if (!hlist_empty(&instance_table[st->bucket]))
+-			return rcu_dereference_bh(hlist_first_rcu(&instance_table[st->bucket]));
++		if (!hlist_empty(&st->instances->table[st->bucket]))
++			return rcu_dereference_bh(
++				hlist_first_rcu(
++					&st->instances->table[st->bucket]));
+ 	}
+ 	return NULL;
+ }
+@@ -884,7 +946,8 @@ static struct hlist_node *get_next(struc
+ 		if (++st->bucket >= INSTANCE_BUCKETS)
+ 			return NULL;
+ 
+-		h = rcu_dereference_bh(hlist_first_rcu(&instance_table[st->bucket]));
++		h = rcu_dereference_bh(
++			hlist_first_rcu(&st->instances->table[st->bucket]));
+ 	}
+ 	return h;
+ }
+@@ -953,17 +1016,36 @@ static const struct file_operations nful
+ 
+ #endif /* PROC_FS */
+ 
+-static int __init nfnetlink_log_init(void)
++static int nfulnl_net_init(struct net *net)
+ {
+-	int i, status = -ENOMEM;
++	struct nfulnl_instances *insts;
++	int i;
+ 
+-	for (i = 0; i < INSTANCE_BUCKETS; i++)
+-		INIT_HLIST_HEAD(&instance_table[i]);
++	insts = net_generic(net, nfulnl_net_id);
++	insts->net = net;
++	spin_lock_init(&insts->lock);
++
++	i = INSTANCE_BUCKETS;
++	do INIT_HLIST_HEAD(insts->table + --i); while (i);
++
++	/* avoid 'runtime' net_generic for 'no netns' */
++	instances = insts;
++	return 0;
++}
++
++static struct pernet_operations nfulnl_net_ops = {
++	.init =		nfulnl_net_init,
++	.id =		&nfulnl_net_id,
++	.size =		sizeof(struct nfulnl_instances)
++};
++
++static int __init nfnetlink_log_init(void)
++{
++	int status;
+ 
+-	/* it's not really all that important to have a random value, so
+-	 * we can do this from the init function, even if there hasn't
+-	 * been that much entropy yet */
+-	get_random_bytes(&hash_init, sizeof(hash_init));
++	status = register_pernet_subsys(&nfulnl_net_ops);
++	if (status)
++		return status;
+ 
+ 	netlink_register_notifier(&nfulnl_rtnl_notifier);
+ 	status = nfnetlink_subsys_register(&nfulnl_subsys);
+@@ -1004,6 +1086,7 @@ static void __exit nfnetlink_log_fini(vo
+ #endif
+ 	nfnetlink_subsys_unregister(&nfulnl_subsys);
+ 	netlink_unregister_notifier(&nfulnl_rtnl_notifier);
++	unregister_pernet_subsys(&nfulnl_net_ops);
+ }
+ 
+ MODULE_DESCRIPTION("netfilter userspace logging");
