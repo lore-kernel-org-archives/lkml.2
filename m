@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab1GZAmY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 20:42:24 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:36254 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794Ab1GZAmR (ORCPT
+	id S1752816Ab1GZAoh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 20:44:37 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:49331 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794Ab1GZAob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 20:42:17 -0400
-Subject: Re: [GIT PULL] iscsi-target merge for v3.1-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Andy Grover <agrover@redhat.com>, Hannes Reinecke <hare@suse.de>,
-        Roland Dreier <roland@purestorage.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Boaz Harrosh <openosd@gmail.com>, Mike Christie <michaelc@cs.wisc.edu>,
-        Andy Grover <agrover@redhat.com>
-In-Reply-To: <20110725163739.5c19b04d.akpm@linux-foundation.org>
-References: <1311462975.31450.356.camel@haakon2.linux-iscsi.org>
-	 <20110725163739.5c19b04d.akpm@linux-foundation.org>
-Content-Type: text/plain
-Date: Mon, 25 Jul 2011 17:32:56 -0700
-Message-Id: <1311640376.17766.221.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Mon, 25 Jul 2011 20:44:31 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:from:to:cc:subject:references:date:
+	in-reply-to:message-id:user-agent:mime-version:content-type:x-system-of-record;
+	b=tDI/HgK32XcxU6A2MaLaNIkc1O2mSWOgUhPtWzREfJcKDj0/9Xb+bAiSI5SXYs+xL
+	sHnEInfFqWxLiyNSzB7Tg==
+From: Ian Lance Taylor <iant@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, gcc-help@gcc.gnu.org,
+        stufever@gmail.com, linux-kernel@vger.kernel.org,
+        Wang Shaoyan <wangshaoyan.pt@taobao.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] TRACING: Fix a copmile warning
+References: <1310982010-13849-1-git-send-email-wangshaoyan.pt@taobao.com>
+	<1311618747.3526.32.camel@gandalf.stny.rr.com>
+	<CACqU3MVJ9Oj4pXH9O_2jnqDVBqKA+AgoWHwP-n2HGD4LU0pMHQ@mail.gmail.com>
+	<1311625197.3526.35.camel@gandalf.stny.rr.com>
+	<CACqU3MUKU_0FbOQT+TKLnnaoFVS_QOgzzx-tvunQy94v-eykTw@mail.gmail.com>
+	<CACqU3MXO_oR+8Ac2Z7wSji0sUeu-2FwskmxZxtY9NV+XpJXuwA@mail.gmail.com>
+	<1311640534.3526.50.camel@gandalf.stny.rr.com>
+Date: Mon, 25 Jul 2011 17:44:25 -0700
+In-Reply-To: <1311640534.3526.50.camel@gandalf.stny.rr.com> (Steven Rostedt's
+	message of "Mon, 25 Jul 2011 20:35:34 -0400")
+Message-ID: <mcr7h75oopi.fsf@coign.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-25 at 16:37 -0700, Andrew Morton wrote:
-> On Sat, 23 Jul 2011 16:16:15 -0700
-> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> 
-> > Please go ahead and pull from:
-> > 
-> >   master.kernel.org:/pub/scm/linux/kernel/git/nab/target-pending.git for-linus-merge
-> 
-> i386 allyesconfig:
-> 
-> ERROR: "__udivdi3" [drivers/target/target_core_mod.ko] undefined!
-> 
-> somewhere in drivers/target/target_core_transport.c:transport_allocate_data_tasks().
+Steven Rostedt <rostedt@goodmis.org> writes:
 
-Mmmm, I was under the assumption that DIV_ROUND_UP() did unsigned long
-long division correctly for sector_t on 32-bit , but apparently not with
-the new v4.1 transport_allocate_data_tasks() code..   Andy..?  
+>> It seems gcc transforms the conditional from:
+>> 
+>> if (a != NULL && b != NULL) ...
+>> 
+>> to
+>> 
+>> if (b != NULL && a != NULL) ...
+>> 
+>> In which case the warning is fully valid. I'm not sure what's the C
+>> standard guarantee in term of conditional test order. gcc 4.7.0 has
+>> the same behavior.
+>
+> Yes it seems to be doing this :-/
+>
+> This is a real bug!
 
-Once upon a time we used the following __udivdi3() and __umoddi3()
-wrappers around do_div() to handle this instruction in target_core_mod
-for 32-bit, but we ended up removing these during the .38 merge in favor
-of IIRC direct do_div() usage.  These wrappers are still in use for LIO
-backports on 32-bit x86 and arm however..
+To be clear, gcc is not doing that, and this is not a code generation
+bug.  It is a warning generation bug; the generated code is correct.
 
-So I'll go ahead and make sure this works on i386 with lio-core-2.6.git
-shortly, and double check __udivdi3() usage with iscsi-target in
-for-next.  Andrew and Christoph, did have any input on a preffered
-method of handling this case in the new v4.1 DIV_ROUND_UP() usage..?
-
-Thank you!
-
---nab
-
-
+Ian
