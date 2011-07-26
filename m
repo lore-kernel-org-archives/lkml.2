@@ -1,216 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab1GZUM6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 16:12:58 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:39571 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab1GZUMX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 16:12:23 -0400
-From: Per Forlin <per.forlin@linaro.org>
-To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
-        Venkatraman S <svenkatr@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
-        Chris Ball <cjb@laptop.org>, Akinobu Mita <akinobu.mita@gmail.com>,
-        J Freyensee <james_p_freyensee@linux.intel.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v4 2/3] mmc: core: add random fault injection
-Date: Tue, 26 Jul 2011 22:11:58 +0200
-Message-Id: <1311711119-6286-3-git-send-email-per.forlin@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1311711119-6286-1-git-send-email-per.forlin@linaro.org>
-References: <1311711119-6286-1-git-send-email-per.forlin@linaro.org>
+	id S1753317Ab1GZURM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 16:17:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58416 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752695Ab1GZURK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 16:17:10 -0400
+Date: Tue, 26 Jul 2011 22:16:58 +0200
+From: Jan Kara <jack@suse.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Josef Bacik <josef@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, Ted Tso <tytso@mit.edu>
+Subject: Re: [PULL REQUEST] ext3, jbd, ext2, and quota fixes for 3.1-rc1
+Message-ID: <20110726201658.GF27993@quack.suse.cz>
+References: <20110726181418.GA27993@quack.suse.cz>
+ <CA+55aFwYsdyE4KxFW70c_FfTb41m+EwchYvNJU-eUEw4usRkUw@mail.gmail.com>
+ <20110726185220.GJ22133@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110726185220.GJ22133@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support to inject data errors after a completed host transfer.
-The mmc core will return error even though the host transfer is successful.
-This simple fault injection proved to be very useful to test the
-non-blocking error handling in the mmc_blk_issue_rw_rq().
-Random faults can also test how the host driver handles pre_req()
-and post_req() in case of errors.
+On Tue 26-07-11 19:52:20, Al Viro wrote:
+> On Tue, Jul 26, 2011 at 11:36:29AM -0700, Linus Torvalds wrote:
+> 
+> > So I *really* want people to take a look at that ext3_sync_file()
+> > function. Please?
+> 
+> While we are at it, could somebody please explain what the hell is ext4
+> doing in
+> static int ext4_sync_parent(struct inode *inode)
+> {
+>         struct writeback_control wbc;
+>         struct dentry *dentry = NULL;
+>         int ret = 0;
+> 
+>         while (inode && ext4_test_inode_state(inode, EXT4_STATE_NEWENTRY)) {
+>                 ext4_clear_inode_state(inode, EXT4_STATE_NEWENTRY);
+>                 dentry = list_entry(inode->i_dentry.next,
+>                                     struct dentry, d_alias);
+>                 if (!dentry || !dentry->d_parent || !dentry->d_parent->d_inode)
+>                         break;
+>                 inode = dentry->d_parent->d_inode;
+>                 ret = sync_mapping_buffers(inode->i_mapping);
+> 		...
+> Note that dentry obviously can't be NULL there.  dentry->d_parent is never
+> NULL.  And dentry->d_parent would better not be negative, for crying out
+> loud!  What's worse, there's no guarantees that dentry->d_parent will
+> remain our parent over that sync_mapping_buffers() *and* that inode won't
+> just be freed under us (after rename() and memory pressure leading to
+> eviction of what used to be our dentry->d_parent).  Moreover, even if
+> inode survives in icache, there is no promise that it will have an alias
+> in dcache by the time we get to the next iteration of the loop, so this
+> list_entry() next time around can bloody well happen to &inode->i_dentry,
+> dentry being a garbage address somewhere inside that struct inode (or a
+> bit above it - I hadn't compared offsets).
+> 
+> What the hell is going on there?  It appeared more than a year ago in commit
+> 14ece1028b3ed53ffec1b1213ffc6acaf79ad77c
+> Author: Frank Mayhar <fmayhar@google.com>
+> Date:   Mon May 17 08:00:00 2010 -0400
+> ext4: Make fsync sync new parent directories in no-journal mode
+> 
+> and it had remained broken ever after...
+  It really looks broken. Added Ted to CC...
 
-Signed-off-by: Per Forlin <per.forlin@linaro.org>
----
- drivers/mmc/core/core.c    |   45 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/mmc/core/debugfs.c |   26 +++++++++++++++++++++++++
- include/linux/mmc/host.h   |    7 ++++++
- lib/Kconfig.debug          |   11 ++++++++++
- 4 files changed, 89 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index f091b43..c9195b0 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -24,6 +24,11 @@
- #include <linux/regulator/consumer.h>
- #include <linux/pm_runtime.h>
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+#include <linux/fault-inject.h>
-+#include <linux/random.h>
-+#endif
-+
- #include <linux/mmc/card.h>
- #include <linux/mmc/host.h>
- #include <linux/mmc/mmc.h>
-@@ -82,6 +87,44 @@ static void mmc_flush_scheduled_work(void)
- 	flush_workqueue(workqueue);
- }
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+
-+/*
-+ * Internal function. Inject random data errors.
-+ * If mmc_data is NULL no errors are injected.
-+ */
-+static void mmc_should_fail_request(struct mmc_host *host,
-+				    struct mmc_request *mrq)
-+{
-+	struct mmc_command *cmd = mrq->cmd;
-+	struct mmc_data *data = mrq->data;
-+	static const int data_errors[] = {
-+		-ETIMEDOUT,
-+		-EILSEQ,
-+		-EIO,
-+	};
-+
-+	if (!data)
-+		return;
-+
-+	if (cmd->error || data->error || !host->make_it_fail ||
-+	    !should_fail(&host->fail_mmc_request, data->blksz * data->blocks))
-+		return;
-+
-+	data->error = data_errors[random32() % ARRAY_SIZE(data_errors)];
-+	data->bytes_xfered = (random32() % (data->bytes_xfered >> 9)) << 9;
-+}
-+
-+#else /* CONFIG_FAIL_MMC_REQUEST */
-+
-+static void mmc_should_fail_request(struct mmc_host *host,
-+				    struct mmc_request *mrq)
-+{
-+}
-+
-+#endif /* CONFIG_FAIL_MMC_REQUEST */
-+
-+
- /**
-  *	mmc_request_done - finish processing an MMC request
-  *	@host: MMC host which completed request
-@@ -108,6 +151,8 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
- 		cmd->error = 0;
- 		host->ops->request(host, mrq);
- 	} else {
-+		mmc_should_fail_request(host, mrq);
-+
- 		led_trigger_event(host->led, LED_OFF);
- 
- 		pr_debug("%s: req done (CMD%u): %d: %08x %08x %08x %08x\n",
-diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
-index 998797e..5f885a4 100644
---- a/drivers/mmc/core/debugfs.c
-+++ b/drivers/mmc/core/debugfs.c
-@@ -12,6 +12,9 @@
- #include <linux/seq_file.h>
- #include <linux/slab.h>
- #include <linux/stat.h>
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+#include <linux/fault-inject.h>
-+#endif
- 
- #include <linux/mmc/card.h>
- #include <linux/mmc/host.h>
-@@ -158,6 +161,20 @@ static int mmc_clock_opt_set(void *data, u64 val)
- 	return 0;
- }
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+
-+static DECLARE_FAULT_ATTR(fail_mmc_request);
-+/*
-+ * Internal function. Pass the boot param fail_mmc_request to
-+ * the setup fault injection attributes routine.
-+ */
-+static int __init setup_fail_mmc_request(char *str)
-+{
-+	return setup_fault_attr(&fail_mmc_request, str);
-+}
-+__setup("fail_mmc_request=", setup_fail_mmc_request);
-+#endif
-+
- DEFINE_SIMPLE_ATTRIBUTE(mmc_clock_fops, mmc_clock_opt_get, mmc_clock_opt_set,
- 	"%llu\n");
- 
-@@ -188,6 +205,15 @@ void mmc_add_host_debugfs(struct mmc_host *host)
- 				root, &host->clk_delay))
- 		goto err_node;
- #endif
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+	if (!debugfs_create_u8("make-it-fail", S_IRUSR | S_IWUSR,
-+			       root, &host->make_it_fail))
-+		goto err_node;
-+	host->fail_mmc_request = fail_mmc_request;
-+	if (init_fault_attr_dentries(&host->fail_mmc_request,
-+				     "fail_mmc_request"))
-+		goto err_node;
-+#endif
- 	return;
- 
- err_node:
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 0f83858..3b57f4b 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -12,6 +12,9 @@
- 
- #include <linux/leds.h>
- #include <linux/sched.h>
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+#include <linux/fault-inject.h>
-+#endif
- 
- #include <linux/mmc/core.h>
- #include <linux/mmc/pm.h>
-@@ -304,6 +307,10 @@ struct mmc_host {
- 
- 	struct mmc_async_req	*areq;		/* active async req */
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+	u8			make_it_fail;
-+	struct fault_attr	fail_mmc_request;
-+#endif
- 	unsigned long		private[0] ____cacheline_aligned;
- };
- 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index dd373c8..e29e36d 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1067,6 +1067,17 @@ config FAIL_IO_TIMEOUT
- 	  Only works with drivers that use the generic timeout handling,
- 	  for others it wont do anything.
- 
-+config FAIL_MMC_REQUEST
-+	bool "Fault-injection capability for MMC IO"
-+	select DEBUG_FS
-+	depends on FAULT_INJECTION && MMC
-+	help
-+	  Provide fault-injection capability for MMC IO.
-+	  This will make the mmc core return data errors. This is
-+	  useful to test the error handling in the mmc block device
-+	  and to test how the mmc host driver handles retries from
-+	  the block device.
-+
- config FAULT_INJECTION_DEBUG_FS
- 	bool "Debugfs entries for fault-injection capabilities"
- 	depends on FAULT_INJECTION && SYSFS && DEBUG_FS
+								Honza
 -- 
-1.7.4.1
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
