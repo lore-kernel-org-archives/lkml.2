@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab1GZPjw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 11:39:52 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:57408 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753672Ab1GZPgI (ORCPT
+	id S1753980Ab1GZPkC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 11:40:02 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:54562 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753667Ab1GZPgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 11:36:08 -0400
+	Tue, 26 Jul 2011 11:36:06 -0400
 From: Tejun Heo <tj@kernel.org>
 To: benh@kernel.crashing.org, yinghai@kernel.org, hpa@zytor.com,
         tony.luck@intel.com, ralf@linux-mips.org, schwidefsky@de.ibm.com,
         liqin.chen@sunplusct.com, lethal@linux-sh.org, davem@davemloft.net,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: mingo@redhat.com, Tejun Heo <tj@kernel.org>, sparclinux@vger.kernel.org
-Subject: [PATCH 16/23] sparc: Use HAVE_MEMBLOCK_NODE_MAP
-Date: Tue, 26 Jul 2011 17:35:27 +0200
-Message-Id: <1311694534-5161-17-git-send-email-tj@kernel.org>
+Cc: mingo@redhat.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 15/23] powerpc: Use HAVE_MEMBLOCK_NODE_MAP
+Date: Tue, 26 Jul 2011 17:35:26 +0200
+Message-Id: <1311694534-5161-16-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1311694534-5161-1-git-send-email-tj@kernel.org>
 References: <1311694534-5161-1-git-send-email-tj@kernel.org>
@@ -23,105 +23,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sparc doesn't access early_node_map[] directly and enabling
+powerpc doesn't access early_node_map[] directly and enabling
 HAVE_MEMBLOCK_NODE_MAP is trivial - replacing add_active_range() calls
 with memblock_set_node() and selecting HAVE_MEMBLOCK_NODE_MAP is
 enough.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
 ---
-David, memblock now can carry node information itself without relying
-on early_node_map[], which makes operations which make use of both
-information much saner and generally makes NUMA memory init simpler.
+ arch/powerpc/Kconfig   |    1 +
+ arch/powerpc/mm/mem.c  |    2 +-
+ arch/powerpc/mm/numa.c |   10 ++++------
+ 3 files changed, 6 insertions(+), 7 deletions(-)
 
-Boot-tested 64bit [!]SMP [!]NUMA on my non-NUMA u60.  Compile tested
-32bit [!]SMP.
-
-The patches implementing HAVE_MEMBLOCK_NODE_MAP is currently in
-tip:x86/memblock branch on which this patch is based on.
-
-Thanks.
-
- arch/sparc/Kconfig      |    3 +++
- arch/sparc/mm/init_64.c |   24 ++++--------------------
- 2 files changed, 7 insertions(+), 20 deletions(-)
-
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 253986b..9ae3b19 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -356,6 +356,9 @@ config NODES_SPAN_OTHER_NODES
- config ARCH_POPULATES_NODE_MAP
- 	def_bool y if SPARC64
- 
-+config HAVE_MEMBLOCK_NODE_MAP
-+	def_bool y if SPARC64
-+
- config ARCH_SELECT_MEMORY_MODEL
- 	def_bool y if SPARC64
- 
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index ae9bab4..3985d3b 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -811,7 +811,7 @@ static u64 memblock_nid_range(u64 start, u64 end, int *nid)
- #endif
- 
- /* This must be invoked after performing all of the necessary
-- * add_active_range() calls for 'nid'.  We need to be able to get
-+ * memblock_set_node() calls for 'nid'.  We need to be able to get
-  * correct data from get_pfn_range_for_nid().
-  */
- static void __init allocate_node_data(int nid)
-@@ -982,14 +982,11 @@ static void __init add_node_ranges(void)
- 
- 			this_end = memblock_nid_range(start, end, &nid);
- 
--			numadbg("Adding active range nid[%d] "
-+			numadbg("Setting memblock NUMA node nid[%d] "
- 				"start[%lx] end[%lx]\n",
- 				nid, start, this_end);
- 
--			add_active_range(nid,
--					 start >> PAGE_SHIFT,
--					 this_end >> PAGE_SHIFT);
--
-+			memblock_set_node(start, this_end - start, nid);
- 			start = this_end;
- 		}
- 	}
-@@ -1277,7 +1274,6 @@ static void __init bootmem_init_nonnuma(void)
- {
- 	unsigned long top_of_ram = memblock_end_of_DRAM();
- 	unsigned long total_ram = memblock_phys_mem_size();
--	struct memblock_region *reg;
- 
- 	numadbg("bootmem_init_nonnuma()\n");
- 
-@@ -1287,20 +1283,8 @@ static void __init bootmem_init_nonnuma(void)
- 	       (top_of_ram - total_ram) >> 20);
- 
- 	init_node_masks_nonnuma();
--
--	for_each_memblock(memory, reg) {
--		unsigned long start_pfn, end_pfn;
--
--		if (!reg->size)
--			continue;
--
--		start_pfn = memblock_region_memory_base_pfn(reg);
--		end_pfn = memblock_region_memory_end_pfn(reg);
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 2729c66..900f54f 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -117,6 +117,7 @@ config PPC
+ 	select HAVE_KRETPROBES
+ 	select HAVE_ARCH_TRACEHOOK
+ 	select HAVE_MEMBLOCK
++	select HAVE_MEMBLOCK_NODE_MAP
+ 	select HAVE_DMA_ATTRS
+ 	select HAVE_DMA_API_DEBUG
+ 	select USE_GENERIC_SMP_HELPERS if SMP
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index 29d4dde..3ec2192 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -197,7 +197,7 @@ void __init do_init_bootmem(void)
+ 		unsigned long start_pfn, end_pfn;
+ 		start_pfn = memblock_region_memory_base_pfn(reg);
+ 		end_pfn = memblock_region_memory_end_pfn(reg);
 -		add_active_range(0, start_pfn, end_pfn);
--	}
--
-+	memblock_set_node(0, (phys_addr_t)ULLONG_MAX, 0);
- 	allocate_node_data(0);
--
- 	node_set_online(0);
- }
++		memblock_set_node(0, (phys_addr_t)ULLONG_MAX, 0);
+ 	}
  
+ 	/* Add all physical memory to the bootmem map, mark each area
+diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+index 6f06ea5..4978286 100644
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -680,9 +680,7 @@ static void __init parse_drconf_memory(struct device_node *memory)
+ 			node_set_online(nid);
+ 			sz = numa_enforce_memory_limit(base, size);
+ 			if (sz)
+-				add_active_range(nid, base >> PAGE_SHIFT,
+-						 (base >> PAGE_SHIFT)
+-						 + (sz >> PAGE_SHIFT));
++				memblock_set_node(base, sz, nid);
+ 		} while (--ranges);
+ 	}
+ }
+@@ -772,8 +770,7 @@ new_range:
+ 				continue;
+ 		}
+ 
+-		add_active_range(nid, start >> PAGE_SHIFT,
+-				(start >> PAGE_SHIFT) + (size >> PAGE_SHIFT));
++		memblock_set_node(start, size, nid);
+ 
+ 		if (--ranges)
+ 			goto new_range;
+@@ -808,7 +805,8 @@ static void __init setup_nonnuma(void)
+ 		end_pfn = memblock_region_memory_end_pfn(reg);
+ 
+ 		fake_numa_create_new_node(end_pfn, &nid);
+-		add_active_range(nid, start_pfn, end_pfn);
++		memblock_set_node(PFN_PHYS(start_pfn),
++				  PFN_PHYS(end_pfn - start_pfn), nid);
+ 		node_set_online(nid);
+ 	}
+ }
 -- 
 1.7.6
 
