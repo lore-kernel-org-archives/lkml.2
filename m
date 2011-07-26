@@ -1,63 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab1GZAoh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 20:44:37 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:49331 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794Ab1GZAob (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 20:44:31 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:from:to:cc:subject:references:date:
-	in-reply-to:message-id:user-agent:mime-version:content-type:x-system-of-record;
-	b=tDI/HgK32XcxU6A2MaLaNIkc1O2mSWOgUhPtWzREfJcKDj0/9Xb+bAiSI5SXYs+xL
-	sHnEInfFqWxLiyNSzB7Tg==
-From: Ian Lance Taylor <iant@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, gcc-help@gcc.gnu.org,
-        stufever@gmail.com, linux-kernel@vger.kernel.org,
-        Wang Shaoyan <wangshaoyan.pt@taobao.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] TRACING: Fix a copmile warning
-References: <1310982010-13849-1-git-send-email-wangshaoyan.pt@taobao.com>
-	<1311618747.3526.32.camel@gandalf.stny.rr.com>
-	<CACqU3MVJ9Oj4pXH9O_2jnqDVBqKA+AgoWHwP-n2HGD4LU0pMHQ@mail.gmail.com>
-	<1311625197.3526.35.camel@gandalf.stny.rr.com>
-	<CACqU3MUKU_0FbOQT+TKLnnaoFVS_QOgzzx-tvunQy94v-eykTw@mail.gmail.com>
-	<CACqU3MXO_oR+8Ac2Z7wSji0sUeu-2FwskmxZxtY9NV+XpJXuwA@mail.gmail.com>
-	<1311640534.3526.50.camel@gandalf.stny.rr.com>
-Date: Mon, 25 Jul 2011 17:44:25 -0700
-In-Reply-To: <1311640534.3526.50.camel@gandalf.stny.rr.com> (Steven Rostedt's
-	message of "Mon, 25 Jul 2011 20:35:34 -0400")
-Message-ID: <mcr7h75oopi.fsf@coign.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-System-Of-Record: true
+	id S1752855Ab1GZArn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 20:47:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57802 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751794Ab1GZArg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 20:47:36 -0400
+Date: Tue, 26 Jul 2011 10:47:13 +1000
+From: NeilBrown <neilb@suse.de>
+To: Solar Designer <solar@openwall.com>
+Cc: Vasiliy Kulikov <segoon@openwall.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>,
+        kernel-hardening@lists.openwall.com, James Morris <jmorris@namei.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
+        Sebastian Krahmer <krahmer@suse.de>
+Subject: Re: [kernel-hardening] [PATCH] move RLIMIT_NPROC check from
+ set_user() to do_execve_common()
+Message-ID: <20110726104713.37273143@notabene.brown>
+In-Reply-To: <20110725234013.GB24110@openwall.com>
+References: <20110715170650.585f1dad@notabene.brown>
+	<20110715073823.GA3821@albatros>
+	<1310738313.30257.27.camel@moss-pluto>
+	<20110715152641.GA6286@albatros>
+	<1310759683.30257.123.camel@moss-pluto>
+	<20110721140936.632d2c8b@notabene.brown>
+	<20110721124830.GA1325@openwall.com>
+	<CA+55aFy4ybatb0McQr2f4A56ympZVLqK2sbp2=73idu58_4RxQ@mail.gmail.com>
+	<20110721193939.GA3914@openwall.com>
+	<20110725171423.GA3739@albatros>
+	<20110725234013.GB24110@openwall.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt <rostedt@goodmis.org> writes:
+On Tue, 26 Jul 2011 03:40:13 +0400 Solar Designer <solar@openwall.com> wrote:
 
->> It seems gcc transforms the conditional from:
->> 
->> if (a != NULL && b != NULL) ...
->> 
->> to
->> 
->> if (b != NULL && a != NULL) ...
->> 
->> In which case the warning is fully valid. I'm not sure what's the C
->> standard guarantee in term of conditional test order. gcc 4.7.0 has
->> the same behavior.
->
-> Yes it seems to be doing this :-/
->
-> This is a real bug!
+> Vasiliy,
+> 
+> On Mon, Jul 25, 2011 at 09:14:23PM +0400, Vasiliy Kulikov wrote:
+> > @@ -1433,6 +1433,19 @@ static int do_execve_common(const char *filename,
+> >  	struct files_struct *displaced;
+> >  	bool clear_in_exec;
+> >  	int retval;
+> > +	const struct cred *cred = current_cred();
+> > +
+> > +	/*
+> > +	 * We move the actual failure in case of RLIMIT_NPROC excess from
+> > +	 * set*uid() to execve() because too many poorly written programs
+> > +	 * don't check setuid() return code.  Here we additionally recheck
+> > +	 * whether NPROC limit is still exceeded.
+> > +	 */
+> > +	if ((current->flags & PF_NPROC_EXCEEDED) &&
+> > +	    atomic_read(&cred->user->processes) > rlimit(RLIMIT_NPROC)) {
+> > +		retval = -EAGAIN;
+> > +		goto out_ret;
+> > +	}
+> 
+> Do you possibly need:
+> 
+> 	current->flags &= ~PF_NPROC_EXCEEDED;
+> 
+> somewhere after this point?
+> 
+> I think it's weird to have past set_user() failure affect other than the
+> very next execve().
 
-To be clear, gcc is not doing that, and this is not a code generation
-bug.  It is a warning generation bug; the generated code is correct.
+So we are hoping that no program uses execvp() or similar...  Maybe that is
+reasonable but "in for a penny, in for a pound" - I'd fail them all.
 
-Ian
+I think the flag should only be cleared once we notice that the limit is no
+longer exceeded.  So clearing the flag can appear *after* the code you quote
+above, but not in the middle of it.
+
+> 
+> Perhaps also reset the flag on fork() because we have an RLIMIT_NPROC
+> check on fork() anyway.
+
+I agree it should be cleared here too.
+
+> 
+> Thanks,
+> 
+> Alexander
+
+
+But there is still the issue of 'zygot' like services....
+
+Let me try another suggestion.  Instead of catching the error in
+do_execve_common, how about we catch it in do_mmap_pgoff.
+i.e. if the flag is set and an attempt it made to create an executable
+mapping, we check the user->processes against the limit then - either failing
+or clearing the flag and succeeding.
+
+This will stop an execve, and an attempt to load a shared library and call it.
+
+In the case of 'exec' the process will get a SIGKILL as well, which is
+probably a good thing.
+
+Thoughts?
+
+NeilBrown
+
