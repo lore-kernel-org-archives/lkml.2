@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab1GZI31 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 04:29:27 -0400
-Received: from ganesha.gnumonks.org ([213.95.27.120]:44812 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147Ab1GZI3X (ORCPT
+	id S1752797Ab1GZIbI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 04:31:08 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45591 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651Ab1GZIbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 04:29:23 -0400
-From: jhbird.choi@samsung.com
-To: linux-kernel@vger.kernel.org
-Cc: Donggeun Kim <dg77.kim@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [PATCH] driver/misc/fsa9480.c fix potential null-pointer dereference
-Date: Tue, 26 Jul 2011 17:19:35 +0900
-Message-Id: <1311668375-24131-1-git-send-email-jhbird.choi@samsung.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 26 Jul 2011 04:31:05 -0400
+Message-ID: <33198.192.168.10.11.1311669060.squirrel@dbdmail.itg.ti.com>
+In-Reply-To: <20110722171708.370b2cf5.rdunlap@xenotime.net>
+References: <20110722171708.370b2cf5.rdunlap@xenotime.net>
+Date: Tue, 26 Jul 2011 14:01:00 +0530
+Subject: Re: [PATCH] mfd: twl6030-pwm.c needs MODULE_LICENSE
+From: Hemanth V <hemanthv@ti.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: "lkml" <linux-kernel@vger.kernel.org>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        "akpm" <akpm@linux-foundation.org>
+User-Agent: SquirrelMail/1.4.3a
+X-Mailer: SquirrelMail/1.4.3a
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonghwan Choi <jhbird.choi@samsung.com>
+> From: Randy Dunlap <rdunlap@xenotime.net>
+>
+> twl6030_pwm: module license 'unspecified' taints kernel.
+>
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> Cc: Hemanth V <hemanthv@ti.com>
 
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
----
- drivers/misc/fsa9480.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Acked-by: Hemanth V <hemanthv@ti.com>
 
-diff --git a/drivers/misc/fsa9480.c b/drivers/misc/fsa9480.c
-index 5325a7e..0bd1e5b 100644
---- a/drivers/misc/fsa9480.c
-+++ b/drivers/misc/fsa9480.c
-@@ -400,7 +400,8 @@ static int fsa9480_irq_init(struct fsa9480_usbsw *usbsw)
- 			return ret;
- 		}
- 
--		device_init_wakeup(&client->dev, pdata->wakeup);
-+		if (pdata)
-+			device_init_wakeup(&client->dev, pdata->wakeup);
- 	}
- 
- 	return 0;
--- 
-1.7.0
+> ---
+>  drivers/mfd/twl6030-pwm.c |    2 ++
+>  1 file changed, 2 insertions(+)
+>
+> --- lnx-30-rc7.orig/drivers/mfd/twl6030-pwm.c
+> +++ lnx-30-rc7/drivers/mfd/twl6030-pwm.c
+> @@ -161,3 +161,5 @@ void pwm_free(struct pwm_device *pwm)
+>  	kfree(pwm);
+>  }
+>  EXPORT_SYMBOL(pwm_free);
+> +
+> +MODULE_LICENSE("GPL");
+>
+
 
