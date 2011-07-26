@@ -1,91 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab1GZS66 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 14:58:58 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:41313 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753188Ab1GZS6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 14:58:17 -0400
-From: Serge Hallyn <serge@hallyn.com>
-To: linux-kernel@vger.kernel.org
-Cc: dhowells@redhat.com, ebiederm@xmission.com,
-        containers@lists.linux-foundation.org, netdev@vger.kernel.org,
-        akpm@osdl.org, "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: [PATCH 02/14] allow root in container to copy namespaces
-Date: Tue, 26 Jul 2011 18:58:25 +0000
-Message-Id: <1311706717-7398-3-git-send-email-serge@hallyn.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1311706717-7398-1-git-send-email-serge@hallyn.com>
-References: <1311706717-7398-1-git-send-email-serge@hallyn.com>
+	id S1754056Ab1GZTAD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 15:00:03 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55691
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754042Ab1GZS7z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 14:59:55 -0400
+Date: Tue, 26 Jul 2011 14:59:20 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Josef Bacik <josef@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PULL REQUEST] ext3, jbd, ext2, and quota fixes for 3.1-rc1
+Message-ID: <20110726185920.GA2970@infradead.org>
+References: <20110726181418.GA27993@quack.suse.cz>
+ <CA+55aFwYsdyE4KxFW70c_FfTb41m+EwchYvNJU-eUEw4usRkUw@mail.gmail.com>
+ <20110726185220.GJ22133@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110726185220.GJ22133@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Serge E. Hallyn <serge.hallyn@canonical.com>
+On Tue, Jul 26, 2011 at 07:52:20PM +0100, Al Viro wrote:
+> Note that dentry obviously can't be NULL there.  dentry->d_parent is never
+> NULL.  And dentry->d_parent would better not be negative, for crying out
+> loud!  What's worse, there's no guarantees that dentry->d_parent will
+> remain our parent over that sync_mapping_buffers() *and* that inode won't
+> just be freed under us (after rename() and memory pressure leading to
+> eviction of what used to be our dentry->d_parent).  Moreover, even if
+> inode survives in icache, there is no promise that it will have an alias
+> in dcache by the time we get to the next iteration of the loop, so this
+> list_entry() next time around can bloody well happen to &inode->i_dentry,
+> dentry being a garbage address somewhere inside that struct inode (or a
+> bit above it - I hadn't compared offsets).
 
-Othewise nested containers with user namespaces won't be possible.
-
-It's true that user namespaces are not yet fully isolated, but for
-that same reason there are far worse things that root in a child
-user ns can do.  Spawning a child user ns is not in itself bad.
-
-This patch also allows setns for root in a container:
-@Eric Biederman: are there gotchas in allowing setns from child
-userns?
-
-Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
----
- kernel/fork.c    |    4 ++--
- kernel/nsproxy.c |    6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 17bf7c8..22d0cf0 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1473,8 +1473,8 @@ long do_fork(unsigned long clone_flags,
- 		/* hopefully this check will go away when userns support is
- 		 * complete
- 		 */
--		if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SETUID) ||
--				!capable(CAP_SETGID))
-+		if (!nsown_capable(CAP_SYS_ADMIN) || !nsown_capable(CAP_SETUID) ||
-+				!nsown_capable(CAP_SETGID))
- 			return -EPERM;
- 	}
- 
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index 9aeab4b..f50542d 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -134,7 +134,7 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
- 				CLONE_NEWPID | CLONE_NEWNET)))
- 		return 0;
- 
--	if (!capable(CAP_SYS_ADMIN)) {
-+	if (!nsown_capable(CAP_SYS_ADMIN)) {
- 		err = -EPERM;
- 		goto out;
- 	}
-@@ -191,7 +191,7 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
- 			       CLONE_NEWNET)))
- 		return 0;
- 
--	if (!capable(CAP_SYS_ADMIN))
-+	if (!nsown_capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 
- 	*new_nsp = create_new_namespaces(unshare_flags, current,
-@@ -241,7 +241,7 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
- 	struct file *file;
- 	int err;
- 
--	if (!capable(CAP_SYS_ADMIN))
-+	if (!nsown_capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 
- 	file = proc_ns_fget(fd);
--- 
-1.7.4.1
+In addition to beeing bogus the code also is useless.  fsync on a file
+explicitly does not guarantee anything at all about the parent, and
+never really has on Linux either.
 
