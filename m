@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754133Ab1GZTAw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 15:00:52 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:41356 "EHLO
+	id S1754142Ab1GZTA7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 15:00:59 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:41355 "EHLO
 	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753510Ab1GZS6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753467Ab1GZS6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Jul 2011 14:58:19 -0400
 From: Serge Hallyn <serge@hallyn.com>
 To: linux-kernel@vger.kernel.org
 Cc: dhowells@redhat.com, ebiederm@xmission.com,
         containers@lists.linux-foundation.org, netdev@vger.kernel.org,
-        akpm@osdl.org, Serge Hallyn <serge.hallyn@ubuntu.com>
-Subject: [PATCH 07/14] user namespace: use net->user_ns for some capable calls under net/
-Date: Tue, 26 Jul 2011 18:58:30 +0000
-Message-Id: <1311706717-7398-8-git-send-email-serge@hallyn.com>
+        akpm@osdl.org, "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Subject: [PATCH 11/14] userns: make some net-sysfs capable calls targeted
+Date: Tue, 26 Jul 2011 18:58:34 +0000
+Message-Id: <1311706717-7398-12-git-send-email-serge@hallyn.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1311706717-7398-1-git-send-email-serge@hallyn.com>
 References: <1311706717-7398-1-git-send-email-serge@hallyn.com>
@@ -21,111 +21,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
+From: Serge E. Hallyn <serge.hallyn@canonical.com>
 
-Just a partial conversion to show how the previous patch is expected to
-be used.
+Changelog: jul 1: fix compilation errors (net_device != net)
 
-Changelog:
-  6/28/11: fix typo in net/core/sock.c
-  7/08/11: don't target capability which authorizes module loading
-
-Signed-off-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
 Cc: Eric W. Biederman <ebiederm@xmission.com>
 ---
- net/core/dev.c  |    4 ++--
- net/core/sock.c |   14 ++++++++------
- 2 files changed, 10 insertions(+), 8 deletions(-)
+ net/core/net-sysfs.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 9444c5c..cee43eb 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -5014,7 +5014,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, void __user *arg)
- 	case SIOCGMIIPHY:
- 	case SIOCGMIIREG:
- 	case SIOCSIFNAME:
--		if (!capable(CAP_NET_ADMIN))
-+		if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
- 			return -EPERM;
- 		dev_load(net, ifr.ifr_name);
- 		rtnl_lock();
-@@ -5053,7 +5053,7 @@ int dev_ioctl(struct net *net, unsigned int cmd, void __user *arg)
- 	case SIOCBRADDIF:
- 	case SIOCBRDELIF:
- 	case SIOCSHWTSTAMP:
--		if (!capable(CAP_NET_ADMIN))
-+		if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
- 			return -EPERM;
- 		/* fall through */
- 	case SIOCBONDSLAVEINFOQUERY:
-diff --git a/net/core/sock.c b/net/core/sock.c
-index bc745d0..0f31675 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -420,7 +420,7 @@ static int sock_bindtodevice(struct sock *sk, char __user *optval, int optlen)
+diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+index 1683e5d..876915b 100644
+--- a/net/core/net-sysfs.c
++++ b/net/core/net-sysfs.c
+@@ -76,7 +76,7 @@ static ssize_t netdev_store(struct device *dev, struct device_attribute *attr,
+ 	unsigned long new;
+ 	int ret = -EINVAL;
  
- 	/* Sorry... */
- 	ret = -EPERM;
--	if (!capable(CAP_NET_RAW))
-+	if (!ns_capable(net->user_ns, CAP_NET_RAW))
- 		goto out;
+-	if (!capable(CAP_NET_ADMIN))
++	if (!ns_capable(dev_net(net)->user_ns, CAP_NET_ADMIN))
+ 		return -EPERM;
  
- 	ret = -EINVAL;
-@@ -488,6 +488,7 @@ int sock_setsockopt(struct socket *sock, int level, int optname,
- 	int valbool;
- 	struct linger ling;
- 	int ret = 0;
-+	struct net *net = sock_net(sk);
+ 	new = simple_strtoul(buf, &endp, 0);
+@@ -261,7 +261,7 @@ static ssize_t store_ifalias(struct device *dev, struct device_attribute *attr,
+ 	size_t count = len;
+ 	ssize_t ret;
  
- 	/*
- 	 *	Options without arguments
-@@ -508,7 +509,7 @@ int sock_setsockopt(struct socket *sock, int level, int optname,
+-	if (!capable(CAP_NET_ADMIN))
++	if (!ns_capable(dev_net(netdev)->user_ns, CAP_NET_ADMIN))
+ 		return -EPERM;
  
- 	switch (optname) {
- 	case SO_DEBUG:
--		if (val && !capable(CAP_NET_ADMIN))
-+		if (val && !ns_capable(net->user_ns, CAP_NET_ADMIN))
- 			ret = -EACCES;
- 		else
- 			sock_valbool_flag(sk, SOCK_DBG, valbool);
-@@ -551,7 +552,7 @@ set_sndbuf:
- 		break;
- 
- 	case SO_SNDBUFFORCE:
--		if (!capable(CAP_NET_ADMIN)) {
-+		if (!ns_capable(net->user_ns, CAP_NET_ADMIN)) {
- 			ret = -EPERM;
- 			break;
- 		}
-@@ -589,7 +590,7 @@ set_rcvbuf:
- 		break;
- 
- 	case SO_RCVBUFFORCE:
--		if (!capable(CAP_NET_ADMIN)) {
-+		if (!ns_capable(net->user_ns, CAP_NET_ADMIN)) {
- 			ret = -EPERM;
- 			break;
- 		}
-@@ -612,7 +613,8 @@ set_rcvbuf:
- 		break;
- 
- 	case SO_PRIORITY:
--		if ((val >= 0 && val <= 6) || capable(CAP_NET_ADMIN))
-+		if ((val >= 0 && val <= 6) ||
-+		     ns_capable(net->user_ns, CAP_NET_ADMIN))
- 			sk->sk_priority = val;
- 		else
- 			ret = -EPERM;
-@@ -729,7 +731,7 @@ set_rcvbuf:
- 			clear_bit(SOCK_PASSSEC, &sock->flags);
- 		break;
- 	case SO_MARK:
--		if (!capable(CAP_NET_ADMIN))
-+		if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
- 			ret = -EPERM;
- 		else
- 			sk->sk_mark = val;
+ 	/* ignore trailing newline */
 -- 
 1.7.4.1
 
