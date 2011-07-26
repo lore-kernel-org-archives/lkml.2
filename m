@@ -1,41 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292Ab1GZHYs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 03:24:48 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:60556 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087Ab1GZHYl (ORCPT
+	id S1751330Ab1GZH1K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 03:27:10 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65293 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087Ab1GZH1F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 03:24:41 -0400
+	Tue, 26 Jul 2011 03:27:05 -0400
 MIME-Version: 1.0
-X-Originating-IP: [212.120.32.74]
-In-Reply-To: <1311613829-4990-1-git-send-email-keithp@keithp.com>
-References: <1311613829-4990-1-git-send-email-keithp@keithp.com>
-Date: Tue, 26 Jul 2011 09:24:39 +0200
-X-Google-Sender-Auth: NzSGf2f4oZoPBvJis1OM243BO7k
-Message-ID: <CAKMK7uHO1jqUNrnqC9sd=JJ9Vr=hmAjnJ06eDYxfeyTTFAMK1w@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Hold struct_mutex during hotplug processing
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Keith Packard <keithp@keithp.com>
-Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+In-Reply-To: <1311630170-26057-17-git-send-email-jim.cromie@gmail.com>
+References: <1311630170-26057-1-git-send-email-jim.cromie@gmail.com> <1311630170-26057-17-git-send-email-jim.cromie@gmail.com>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Tue, 26 Jul 2011 09:26:44 +0200
+X-Google-Sender-Auth: tBrYnt31karbgU68nfdzHjP4CpY
+Message-ID: <CAO+b5-rk0uuRcVDDkAbNRBOhXBUyFOF8MqaUWfueP2C0=SeOXQ@mail.gmail.com>
+Subject: Re: [PATCH 16/25] dynamic_debug: require 'a' flag to explicitly mark
+ pending queries
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: jbaron@redhat.com, joe@perches.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, gnb@fmeh.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two things I've noticed:
-- Why not dev->mode_config.mutex? I was under the impression that
-mode_config.mutex protects most of the modesetting state and
-dev->struct_mutex protects things related to the gpu execution cores
-(i.e. all things gem), with struct_mutex nested within
-mode_config.mutex. It's hazy at the edges and likely broken in tons of
-corner cases, but still ... This has also the benefit that it won't
-stall execbuf.
-- And a nitpick: Why the dev_priv->dev indirection, when dev is
-already lying around?
+On Mon, Jul 25, 2011 at 11:42 PM, Jim Cromie <jim.cromie@gmail.com> wrote:
+> +       if (!q1->module ^ !q2->module ||
+> +               !q1->filename ^ !q2->filename ||
+> +               !q1->function ^ !q2->function ||
+> +               !q1->format ^ !q2->format)
+> +               return false;  /* a match-spec set/unset state differs */
 
--Daniel
--- 
-Daniel Vetter
-daniel.vetter@ffwll.ch - +41 (0) 79 364 57 48 - http://blog.ffwll.ch
+I'd suggest to use "!=" here instead of "^" when testing booleans for
+inequality. At least for me that would make the above code easier to
+read.
+
+Bart.
