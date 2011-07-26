@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab1GZGjG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 02:39:06 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48959 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab1GZGjC (ORCPT
+	id S1751716Ab1GZGlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 02:41:42 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47896 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab1GZGlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 02:39:02 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E2E6102.3060600@jp.fujitsu.com>
-Date: Tue, 26 Jul 2011 15:38:58 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Tue, 26 Jul 2011 02:41:35 -0400
+Message-ID: <4E2E6199.5010409@gmail.com>
+Date: Tue, 26 Jul 2011 16:41:29 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: yong.zhang0@gmail.com
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        kobayashi.kk@ncos.nec.co.jp
-Subject: Re: [PATCH] proc/softirqs: only show state for online cpus
-References: <1311599418-1915-1-git-send-email-yong.zhang0@gmail.com> <4E2E507F.7030607@jp.fujitsu.com> <CAM2zO=CGkVCMNZS8F6LxFi-NdYXf0fDLB_AEc00xrPvO_D02qw@mail.gmail.com>
-In-Reply-To: <CAM2zO=CGkVCMNZS8F6LxFi-NdYXf0fDLB_AEc00xrPvO_D02qw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Ravishankar <ravishankarkm32@gmail.com>
+CC: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>
+Subject: Re: [PATCH 1/1 v2] Staging: comedi: fix printk issue in c6xdigio.c
+References: <[PATCH]Staging: comedi: fix printk issue in c6xdigio.c> <1311662734-22064-1-git-send-email-ravishankarkm32@gmail.com>
+In-Reply-To: <1311662734-22064-1-git-send-email-ravishankarkm32@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/07/26 15:14), Yong Zhang wrote:
-> 2011/7/26 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
->>> Like /proc/interrupts, no need to output data for nobody.
->>>
->>> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
->>> Cc: Andrew Morton <akpm@linux-foundation.org>
->>> Cc: Keika Kobayashi <kobayashi.kk@ncos.nec.co.jp>
->>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>
->> If the cpu never be onlined, its statistics always 0. Then, it definitely
-> 
-> Yeah, so your screen may contain noise.
-
-One question. Is this big matter?
-Who see /proc/softirqs and /proc/interrupts directly? (i.e. by 'cat' command).
-
-
->> no value. In the other hand, if the cpu was offlined dynamically, we don't
->> know the user want to know the cpus's statistics or not.
-> 
-> Same to /proc/interrupts :)
-> 
-> IMHO, if user want to check the value of offline-cpu, maybe that means
-> he want to check the state of the whole system, /proc/stat should be the
-> right choice. /proc/{softirqs,interrupts} is just for immediate state.
+On 26/07/11 16:45, Ravishankar wrote:
+> From: Ravishankar<ravi.shankar@greenturtles.in>
 >
->> Anyway, it's incompatibility change.
-> 
-> Yup, I should have marked the patch with RFC :)
+> This is a patch to the c6xdigio.c file that fixes up a printk warning found by the checkpatch.pl tool
+>
+> Signed-off-by: Ravishankr<ravishankarkm32@gmail.com>
+> ---
+>
+>   drivers/staging/comedi/drivers/c6xdigio.c |   12 ++++++------
+>   1 files changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/c6xdigio.c b/drivers/staging/comedi/drivers/c6xdigio.c
+> index e0ac825..b0b578c 100644
+> --- a/drivers/staging/comedi/drivers/c6xdigio.c
+> +++ b/drivers/staging/comedi/drivers/c6xdigio.c
+> @@ -343,7 +343,7 @@ static int c6xdigio_pwmo_insn_read(struct comedi_device *dev,
+>   				   struct comedi_subdevice *s,
+>   				   struct comedi_insn *insn, unsigned int *data)
+>   {
+> -	printk("c6xdigio_pwmo_insn_read %x\n", insn->n);
+> +	pr_info("%s %x\n", __func__, insn->n);
+>   	return insn->n;
+>   }
+>
+> @@ -439,9 +439,9 @@ static int c6xdigio_attach(struct comedi_device *dev,
+>   	struct comedi_subdevice *s;
+>
+>   	iobase = it->options[0];
+> -	printk("comedi%d: c6xdigio: 0x%04lx\n", dev->minor, iobase);
+> +	pr_info("comedi%d: c6xdigio: 0x%04lx\n", dev->minor, iobase);
+>   	if (!request_region(iobase, C6XDIGIO_SIZE, "c6xdigio")) {
+> -		printk("comedi%d: I/O port conflict\n", dev->minor);
+> +		pr_err("comedi%d: I/O port conflict\n", dev->minor);
+>   		return -EIO;
+>   	}
+>   	dev->iobase = iobase;
+> @@ -456,9 +456,9 @@ static int c6xdigio_attach(struct comedi_device *dev,
+>
+>   	irq = it->options[1];
+>   	if (irq>  0)
+> -		printk("comedi%d: irq = %u ignored\n", dev->minor, irq);
+> +		pr_debug("%s: %x\n", __func__, insn->n);
+>   	else if (irq == 0)
+> -		printk("comedi%d: no irq\n", dev->minor);
+> +		pr_debug("%s: %x\n", __func__, insn->n);
 
-And I should have remarked I don't dislike this patch so strongly, so
-if kobayashi-san who original /proc/softirqs author ack you, I'm going
-to second him.
+You are doing this without any thought at all. Not only does this 
+replace a useful message with a completely useless one, but it also 
+won't even compile if DEBUG is defined. It is not confidence inspiring.
 
-
-Offtopic, /proc/interrupt should be protected by get_online_cpus().
-Otherwise the header (i.e. cpu number) and the actual statistics fields
-can be mismatched likes following. Am I missing something?
-
-           CPU0       CPU1       CPU2
-  0:   14286646   14747155          0   IO-APIC-edge      timer
-  1:          6          6   IO-APIC-edge      i8042
-
-                                 ^
-                                 |
-                               cpu2 was offlined dynamically at the same time.
-
-
+~Ryan
 
