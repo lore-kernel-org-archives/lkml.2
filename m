@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661Ab1GZQJC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 12:09:02 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:14395 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431Ab1GZQI4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 12:08:56 -0400
-Subject: [PATCH] hpsa: retry commands completing with status of
-	UNSOLICITED_ABORT
-To: james.bottomley@hansenpartnership.com
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mikem@beardog.cce.hp.com, stephenmcameron@gmail.com, thenzl@redhat.com,
-        akpm@linux-foundation.org, stable@kernel.org
-Date: Tue, 26 Jul 2011 11:08:52 -0500
-Message-ID: <20110726160852.7394.78474.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
+	id S1753736Ab1GZQKb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 12:10:31 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35471 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753520Ab1GZQKZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 12:10:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110726155930.GB1629@x4.trippels.de>
+References: <20110725185649.GA22133@ZenIV.linux.org.uk> <20110726033535.GA11939@x4.trippels.de>
+ <CA+55aFzaKHpVdLKac6rFN+YsAugz1aR3fv-reThJiD4HWDND8w@mail.gmail.com>
+ <20110726082146.GB11939@x4.trippels.de> <CADxeRwnYxgxZPT3DN=SraZOvL_juWzV+MoY9+0vqZr29y6U6cA@mail.gmail.com>
+ <20110726085804.GA1639@x4.trippels.de> <CA+55aFz0S3mO9ETFZpsEcbotWV+NMzaFhpZcN09LNAdk+eavjg@mail.gmail.com>
+ <20110726155930.GB1629@x4.trippels.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 26 Jul 2011 09:10:02 -0700
+Message-ID: <CA+55aFzxmLvLcEagYqE5iOTRv724ecW3va+Pv_RPsPLKeYHTCA@mail.gmail.com>
+Subject: Re: [git pull] vfs pile 1.5
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Steven Liu <lingjiujianke@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+On Tue, Jul 26, 2011 at 8:59 AM, Markus Trippelsdorf
+<markus@trippelsdorf.de> wrote:
+>
+> Yes, that was my first idea, too. But unfortunately it doesn't work:
+>
+>  CC      fs/xfs/linux-2.6/xfs_iops.o
+> fs/xfs/linux-2.6/xfs_iops.c: In function ‘xfs_vn_mknod’:
+> fs/xfs/linux-2.6/xfs_iops.c:184:28: error: called object ‘0u’ is not a function
+> make[2]: *** [fs/xfs/linux-2.6/xfs_iops.o] Error 1
 
-In a shared SAS setup, target devices may be reset by one of
-several hosts, and outstanding commands on that device will be
-completed to corresponding hosts with status of UNSOLICITED_ABORT.
-Such commands should be retried instead of being treated as i/o
-errors.  Also fixed a nearby spelling error.
+Ahh, we use that elsewhere too.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
----
- drivers/scsi/hpsa.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+However, if we *do* have POSIX ACL's enabled, but we just have the XFS
+ACL's disabled, then just returning NULL from xfs_get_acl() is
+actually a horrible idea, because then the VFS code will always call
+that function and it never gets cached as "I have no ACL's". Which is
+why I didn't like the inline function approach. Well, at least not the
+one that only returns NULL - we also want to fill in the cache.
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 6bba23a..b64b29f 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -1219,8 +1219,8 @@ static void complete_scsi_command(struct CommandList *cp)
- 		dev_warn(&h->pdev->dev, "cp %p reports abort failed\n", cp);
- 		break;
- 	case CMD_UNSOLICITED_ABORT:
--		cmd->result = DID_RESET << 16;
--		dev_warn(&h->pdev->dev, "cp %p aborted do to an unsolicited "
-+		cmd->result = DID_SOFT_ERROR << 16; /* retry the command */
-+		dev_warn(&h->pdev->dev, "cp %p aborted due to an unsolicited "
- 			"abort\n", cp);
- 		break;
- 	case CMD_TIMEOUT:
+I'm actually getting more and more convinced that we should just do
+that "set_acl_cache()" in generic code for the "get_acl()" case. Even
+without any locking it's no worse than all the current filesystems,
+since they *also* do it with no locking. And then this kind of issue
+wouldn't come up.
 
+Christoph, Al, comments?
+
+                           Linus
