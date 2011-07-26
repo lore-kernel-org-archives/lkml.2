@@ -1,58 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab1GZXRo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 19:17:44 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:39586 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754119Ab1GZXRm (ORCPT
+	id S1754028Ab1GZXUU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 19:20:20 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:55751 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753749Ab1GZXUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 19:17:42 -0400
-Message-ID: <4E2F4B11.3030402@canonical.com>
-Date: Tue, 26 Jul 2011 16:17:37 -0700
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Tue, 26 Jul 2011 19:20:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:in-reply-to:message-id:references:mime-version:
+	content-type; q=dns; s=newdream.net; b=NqceAcesRcEbL7pI/dWOFST6+
+	F36mbMk8n/nPA2Njkm2h9cauvG9/doDZm7QLs/EC0P1pC39Ur2hCiXw/RpK8oKOM
+	is8Jl/p6MTPdYSyyTXNeCfcejBatAPeZjc6Nfxj+GT5fwzHCjP0W25MVOa9cPL0n
+	Uzj5HV3CYcXSUY2ua4=
+Date: Tue, 26 Jul 2011 16:24:10 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: viro@ZenIV.linux.org.uk
+cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: add d_prune dentry operation
+In-Reply-To: <Pine.LNX.4.64.1107081409160.1326@cobra.newdream.net>
+Message-ID: <Pine.LNX.4.64.1107261621130.2593@cobra.newdream.net>
+References: <Pine.LNX.4.64.1107081409160.1326@cobra.newdream.net>
 MIME-Version: 1.0
-To: Daniel Kurtz <djkurtz@chromium.org>
-CC: dmitry.torokhov@gmail.com, rydberg@euromail.se, rubini@cvml.unipv.it,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
-        olofj@chromium.org
-Subject: Re: [PATCH 9/9 v2] Input: synaptics - process finger (<=5) transitions
-References: <1311169146-20066-1-git-send-email-djkurtz@chromium.org> <1311169146-20066-10-git-send-email-djkurtz@chromium.org> <4E2A1D9A.2090704@canonical.com> <CAGS+omABdrRjZ0nsajAB3WRj2WASUYKMfAaPeaOWuhUfLUFMeQ@mail.gmail.com>
-In-Reply-To: <CAGS+omABdrRjZ0nsajAB3WRj2WASUYKMfAaPeaOWuhUfLUFMeQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2011 09:11 PM, Daniel Kurtz wrote:
-> On Sat, Jul 23, 2011 at 9:02 AM, Chase Douglas
-> <chase.douglas@canonical.com> wrote:
->>
->> On 07/20/2011 06:39 AM, djkurtz@chromium.org wrote:
->>> From: Daniel Kurtz <djkurtz@chromium.org>
->>>
->>> Synaptics image sensor touchpads track up to 5 fingers, but only report 2.
->>> They use a special "TYPE=2" (AGM-CONTACT) packet type that reports
->>> the number of tracked fingers and which finger is reported in the SGM
->>> and AGM packets.
->>>
->>> With this new packet type, it is possible to tell userspace when 4 or 5
->>> fingers are touching.
->>
->> Maybe I'm blind, but I don't see where the QUADTAP and QUINTAP values
->> are set in the events. I see where the bits are set during
->> initialization, but not during use.
+Hi Al,
+
+Any chance we can get this in 3.1-rc1?  Not being able to use the dcache 
+fully isn't doing good things to our metadata performance.
+
+sage
+
+
+
+On Fri, 8 Jul 2011, Sage Weil wrote:
+
+> This adds a d_prune dentry operation that is called by the VFS prior to 
+> pruning (i.e. unhashing and killing) a hashed dentry from the dcache. This 
+> allows the file system to maintain visibility into the contents and 
+> consistency of the dcache:
 > 
-> It's subtle.
-> The firmware actually report 4/5 in the AGM-CONTACT packet, which the
-> agm packet parser sets directly in mt_state->count.
-> This is then reported to userspace when synaptics_report_mt() calls
-> input_mt_report_finger_count(dev, mt_state->count), which now supports
-> QUINTTAP (see patch #8).
-
-Ahh, thanks! Conditional upon getting the previous patches merged in
-some fashion:
-
-Acked-by: Chase Douglas <chase.douglas@canonical.com>
+>  - dentry eviction/pruning now calls into the fs
+>  - any modifications (unlink, rename, create, etc.) are protected by 
+>    i_mutex and call into the fs
+> 
+> This will be used by Ceph to maintain a flag indicating whether the 
+> complete contents of a directory are contained in the dcache, allowing it 
+> to satisfy lookups and readdir with cached results without additional 
+> server communication.
+> 
+> Signed-off-by: Sage Weil <sage@newdream.net>
+> ---
+>  Documentation/filesystems/Locking |    1 +
+>  fs/dcache.c                       |    8 ++++++++
+>  include/linux/dcache.h            |    3 +++
+>  3 files changed, 12 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+> index 57d827d..b3fa7c8 100644
+> --- a/Documentation/filesystems/Locking
+> +++ b/Documentation/filesystems/Locking
+> @@ -29,6 +29,7 @@ d_hash		no		no		no		maybe
+>  d_compare:	yes		no		no		maybe
+>  d_delete:	no		yes		no		no
+>  d_release:	no		no		yes		no
+> +d_prune:        no              yes             no              no
+>  d_iput:		no		no		yes		no
+>  d_dname:	no		no		no		no
+>  d_automount:	no		no		yes		no
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index 37f72ee..74d1a30 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -673,6 +673,8 @@ static void try_prune_one_dentry(struct dentry *dentry)
+>  			spin_unlock(&dentry->d_lock);
+>  			return;
+>  		}
+> +		if (dentry->d_flags & DCACHE_OP_PRUNE)
+> +			dentry->d_op->d_prune(dentry);
+>  		dentry = dentry_kill(dentry, 1);
+>  	}
+>  }
+> @@ -879,6 +881,8 @@ static void shrink_dcache_for_umount_subtree(struct dentry *dentry)
+>  
+>  	/* detach this root from the system */
+>  	spin_lock(&dentry->d_lock);
+> +	if (dentry->d_flags & DCACHE_OP_PRUNE)
+> +		dentry->d_op->d_prune(dentry);
+>  	dentry_lru_del(dentry);
+>  	__d_drop(dentry);
+>  	spin_unlock(&dentry->d_lock);
+> @@ -895,6 +899,8 @@ static void shrink_dcache_for_umount_subtree(struct dentry *dentry)
+>  					    d_u.d_child) {
+>  				spin_lock_nested(&loop->d_lock,
+>  						DENTRY_D_LOCK_NESTED);
+> +				if (dentry->d_flags & DCACHE_OP_PRUNE)
+> +					dentry->d_op->d_prune(dentry);
+>  				dentry_lru_del(loop);
+>  				__d_drop(loop);
+>  				spin_unlock(&loop->d_lock);
+> @@ -1363,6 +1369,8 @@ void d_set_d_op(struct dentry *dentry, const struct dentry_operations *op)
+>  		dentry->d_flags |= DCACHE_OP_REVALIDATE;
+>  	if (op->d_delete)
+>  		dentry->d_flags |= DCACHE_OP_DELETE;
+> +	if (op->d_prune)
+> +		dentry->d_flags |= DCACHE_OP_PRUNE;
+>  
+>  }
+>  EXPORT_SYMBOL(d_set_d_op);
+> diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+> index 19d90a5..681f46f 100644
+> --- a/include/linux/dcache.h
+> +++ b/include/linux/dcache.h
+> @@ -165,6 +165,7 @@ struct dentry_operations {
+>  			unsigned int, const char *, const struct qstr *);
+>  	int (*d_delete)(const struct dentry *);
+>  	void (*d_release)(struct dentry *);
+> +	void (*d_prune)(struct dentry *);
+>  	void (*d_iput)(struct dentry *, struct inode *);
+>  	char *(*d_dname)(struct dentry *, char *, int);
+>  	struct vfsmount *(*d_automount)(struct path *);
+> @@ -219,6 +220,8 @@ struct dentry_operations {
+>  #define DCACHE_MANAGED_DENTRY \
+>  	(DCACHE_MOUNTED|DCACHE_NEED_AUTOMOUNT|DCACHE_MANAGE_TRANSIT)
+>  
+> +#define DCACHE_OP_PRUNE         0x80000
+> +
+>  extern seqlock_t rename_lock;
+>  
+>  static inline int dname_external(struct dentry *dentry)
+> -- 
+> 1.7.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
