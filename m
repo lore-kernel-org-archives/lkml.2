@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681Ab1GZGaG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 02:30:06 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:36137 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293Ab1GZG37 (ORCPT
+	id S1751557Ab1GZGcV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 02:32:21 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:39298 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab1GZGcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 02:29:59 -0400
-Subject: [GIT PULL] RTC fixes for 3.1
-From: john stultz <johnstul@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Ben Greear <greearb@candelatech.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Willy Tarreau <w@1wt.eu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Jul 2011 23:29:54 -0700
-Message-ID: <1311661794.2945.305.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Jul 2011 02:32:15 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankr <ravishankarkm32@gmail.com>
+Subject: [PATCH 1/1 v2] Staging: comedi: fix printk issue in c6xdigio.c
+Date: Tue, 26 Jul 2011 12:15:34 +0530
+Message-Id: <1311662734-22064-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH]Staging: comedi: fix printk issue in c6xdigio.c>
+References: <[PATCH]Staging: comedi: fix printk issue in c6xdigio.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas,
-	So while your analysis obviously pointed out the problem, just to be
-sure I took your rtc patches and ran them through the stress test that I
-was using to reproduce the issue Ben reported, and they've lasted for
-over six hours now without issue (usually I could trigger the lockup in
-30 minutes to an hour).
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-Thanks again for the narrowing down the issue and the patches to fix it!
+This is a patch to the c6xdigio.c file that fixes up a printk warning found by the checkpatch.pl tool
 
-I've reworked some of the commit logs and also refined the PIE hrtimer
-freq limit (using Willy's suggestion of the ~8khz max value from the man
-page). The patches are available in the git repository at:
+Signed-off-by: Ravishankr <ravishankarkm32@gmail.com>
+---
 
-  git://git.linaro.org/people/jstultz/linux.git fortglx/3.1/tip/timers/rtc
+ drivers/staging/comedi/drivers/c6xdigio.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-Thomas Gleixner (3):
-      rtc: Handle errors correctly in rtc_irq_set_state()
-      rtc: Fix hrtimer deadlock
-      rtc: Limit RTC PIE frequency
-
- drivers/rtc/interface.c |   55 ++++++++++++++++++++++++++++++++--------------
- include/linux/rtc.h     |    3 ++
- 2 files changed, 41 insertions(+), 17 deletions(-)
-
+diff --git a/drivers/staging/comedi/drivers/c6xdigio.c b/drivers/staging/comedi/drivers/c6xdigio.c
+index e0ac825..b0b578c 100644
+--- a/drivers/staging/comedi/drivers/c6xdigio.c
++++ b/drivers/staging/comedi/drivers/c6xdigio.c
+@@ -343,7 +343,7 @@ static int c6xdigio_pwmo_insn_read(struct comedi_device *dev,
+ 				   struct comedi_subdevice *s,
+ 				   struct comedi_insn *insn, unsigned int *data)
+ {
+-	printk("c6xdigio_pwmo_insn_read %x\n", insn->n);
++	pr_info("%s %x\n", __func__, insn->n);
+ 	return insn->n;
+ }
+ 
+@@ -439,9 +439,9 @@ static int c6xdigio_attach(struct comedi_device *dev,
+ 	struct comedi_subdevice *s;
+ 
+ 	iobase = it->options[0];
+-	printk("comedi%d: c6xdigio: 0x%04lx\n", dev->minor, iobase);
++	pr_info("comedi%d: c6xdigio: 0x%04lx\n", dev->minor, iobase);
+ 	if (!request_region(iobase, C6XDIGIO_SIZE, "c6xdigio")) {
+-		printk("comedi%d: I/O port conflict\n", dev->minor);
++		pr_err("comedi%d: I/O port conflict\n", dev->minor);
+ 		return -EIO;
+ 	}
+ 	dev->iobase = iobase;
+@@ -456,9 +456,9 @@ static int c6xdigio_attach(struct comedi_device *dev,
+ 
+ 	irq = it->options[1];
+ 	if (irq > 0)
+-		printk("comedi%d: irq = %u ignored\n", dev->minor, irq);
++		pr_debug("%s: %x\n", __func__, insn->n);
+ 	else if (irq == 0)
+-		printk("comedi%d: no irq\n", dev->minor);
++		pr_debug("%s: %x\n", __func__, insn->n);
+ 
+ 	s = dev->subdevices + 0;
+ 	/* pwm output subdevice */
+@@ -503,7 +503,7 @@ static int c6xdigio_detach(struct comedi_device *dev)
+ {
+ 	/* board_halt(dev);  may not need this */
+ 
+-	printk("comedi%d: c6xdigio: remove\n", dev->minor);
++	pr_info("comedi%d: c6xdigio: remove\n", dev->minor);
+ 
+ 	if (dev->iobase)
+ 		release_region(dev->iobase, C6XDIGIO_SIZE);
+-- 
+1.6.5.2
 
