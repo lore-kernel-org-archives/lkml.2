@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab1GZTAq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 15:00:46 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:41357 "EHLO
+	id S1754098Ab1GZTAe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 15:00:34 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:41361 "EHLO
 	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753532Ab1GZS6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753530Ab1GZS6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 26 Jul 2011 14:58:19 -0400
 From: Serge Hallyn <serge@hallyn.com>
 To: linux-kernel@vger.kernel.org
 Cc: dhowells@redhat.com, ebiederm@xmission.com,
         containers@lists.linux-foundation.org, netdev@vger.kernel.org,
         akpm@osdl.org, "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: [PATCH 12/14] user_ns: target af_key capability check
-Date: Tue, 26 Jul 2011 18:58:35 +0000
-Message-Id: <1311706717-7398-13-git-send-email-serge@hallyn.com>
+Subject: [PATCH 06/14] user namespace: make each net (net_ns) belong to a user_ns
+Date: Tue, 26 Jul 2011 18:58:29 +0000
+Message-Id: <1311706717-7398-7-git-send-email-serge@hallyn.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1311706717-7398-1-git-send-email-serge@hallyn.com>
 References: <1311706717-7398-1-git-send-email-serge@hallyn.com>
@@ -23,28 +23,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Serge E. Hallyn <serge.hallyn@canonical.com>
 
-This presumes that it really is complete wrt network namespaces.  Looking
-at the code it appears to be.
+This way we can target capabilites at the user_ns which created the
+net ns.
+
+Changelog:
+   jul 8: nsproxy: don't assign netns->userns if not cloning.
 
 Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
 Cc: Eric W. Biederman <ebiederm@xmission.com>
 ---
- net/key/af_key.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/net/net_namespace.h |    2 ++
+ kernel/nsproxy.c            |    2 ++
+ net/core/net_namespace.c    |    3 +++
+ 3 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/net/key/af_key.c b/net/key/af_key.c
-index 1e733e9..1f90f4e 100644
---- a/net/key/af_key.c
-+++ b/net/key/af_key.c
-@@ -141,7 +141,7 @@ static int pfkey_create(struct net *net, struct socket *sock, int protocol,
- 	struct sock *sk;
- 	int err;
+diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
+index 1ab1aec..38a5154 100644
+--- a/include/net/net_namespace.h
++++ b/include/net/net_namespace.h
+@@ -29,6 +29,7 @@ struct ctl_table_header;
+ struct net_generic;
+ struct sock;
+ struct netns_ipvs;
++struct user_namespace;
  
--	if (!capable(CAP_NET_ADMIN))
-+	if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
- 		return -EPERM;
- 	if (sock->type != SOCK_RAW)
- 		return -ESOCKTNOSUPPORT;
+ 
+ #define NETDEV_HASHBITS    8
+@@ -101,6 +102,7 @@ struct net {
+ 	struct netns_xfrm	xfrm;
+ #endif
+ 	struct netns_ipvs	*ipvs;
++	struct user_namespace	*user_ns;
+ };
+ 
+ 
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index f50542d..e616904 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -95,6 +95,8 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
+ 		err = PTR_ERR(new_nsp->net_ns);
+ 		goto out_net;
+ 	}
++	if (flags & CLONE_NEWNET)
++		new_nsp->net_ns->user_ns = get_user_ns(task_cred_xxx(tsk, user_ns));
+ 
+ 	return new_nsp;
+ 
+diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+index 5bbdbf0..791c19c 100644
+--- a/net/core/net_namespace.c
++++ b/net/core/net_namespace.c
+@@ -10,6 +10,7 @@
+ #include <linux/nsproxy.h>
+ #include <linux/proc_fs.h>
+ #include <linux/file.h>
++#include <linux/user_namespace.h>
+ #include <net/net_namespace.h>
+ #include <net/netns/generic.h>
+ 
+@@ -209,6 +210,7 @@ static void net_free(struct net *net)
+ 	}
+ #endif
+ 	kfree(net->gen);
++	put_user_ns(net->user_ns);
+ 	kmem_cache_free(net_cachep, net);
+ }
+ 
+@@ -389,6 +391,7 @@ static int __init net_ns_init(void)
+ 	rcu_assign_pointer(init_net.gen, ng);
+ 
+ 	mutex_lock(&net_mutex);
++	init_net.user_ns = &init_user_ns;
+ 	if (setup_net(&init_net))
+ 		panic("Could not setup the initial network namespace");
+ 
 -- 
 1.7.4.1
 
