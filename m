@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904Ab1GZWet (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 18:34:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34603 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753552Ab1GZWer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 18:34:47 -0400
-Message-ID: <4E2F40EA.70308@zytor.com>
-Date: Tue, 26 Jul 2011 15:34:18 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Andre Przywara <andre.przywara@amd.com>
-CC: Borislav Petkov <bp@amd64.org>, Avi Kivity <avi@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-References: <1311340547-7861-1-git-send-email-bp@amd64.org> <4E2F0068.1080001@redhat.com> <20110726181304.GD32536@aftab> <4E2F0498.8050005@zytor.com> <20110726183721.GF32536@aftab> <4E2F09BB.9060605@zytor.com> <4E2F1889.8030708@amd.com>
-In-Reply-To: <4E2F1889.8030708@amd.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754004Ab1GZWge (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 18:36:34 -0400
+Received: from mta21.charter.net ([216.33.127.81]:35739 "EHLO
+	mta21.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552Ab1GZWgc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 18:36:32 -0400
+X-Authority-Analysis: v=1.1 cv=1b2X7W/SifksZeClH/haT1SUt4udqxFGF00pZw2/jJk=
+ c=1 sm=1 a=rCW5EqJiSQUA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
+ a=lOJ6EeQOOqWRJFn9WD4A:9 a=xzrYXqw+0zwiO4gHSXHcAg==:117
+From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+To: Nicolas.Palix@inria.fr
+Cc: joe@perches.com, julia@diku.dk, Gilles.Muller@lip6.fr,
+        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cocci@diku.dk, mmarek@suse.cz,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Subject: [PATCH v2] coccicheck: add parallel execution
+Date: Tue, 26 Jul 2011 17:36:57 -0500
+Message-Id: <1311719817-11336-1-git-send-email-Gregory.Dietsche@cuw.edu>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <CAAxaTiNJNXnn3PAcKWBSZ2wbMKBDD9yL6pyediEEBHnjNH-uaA@mail.gmail.com>
+References: <CAAxaTiNJNXnn3PAcKWBSZ2wbMKBDD9yL6pyediEEBHnjNH-uaA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2011 12:42 PM, Andre Przywara wrote:
->>
->> In other words, it's completely ad hoc.
-> 
-> There is no need to determine it by calculating, because it caused by 
-> the special design of the BD L1 cache and thus fixed.
-> And a calculation would be even more confusing:
-> 
-> The L1I is virtually indexed, but physically tagged.
-> 64KB L1I cache, 64 Bytes per Cacheline = 1024 cache lines
-> 1024 lines / 2 way associative = 512 indexes
-> 64 Bytes per Cacheline (6 bits) + 512 indexes (9 bits) = bits [14:0]
-> virtual and physical addresses are the same for bits [11:0], which 
-> leaves the remaining 14:12 susceptible for aliasing.
-> 
-> So bit 12 comes from PAGESIZE and yes, the 14 could be derived from the 
-> CPUID cache info, but I don't see much value in breaking this down this way.
-> But I agree that there should be some comment in the patch which at 
-> least notes that bits [14:12] are due to the L1I design, maybe we can 
-> copy a nicer version of the above math in the commit message for reference.
-> 
+For example to process 6 SmPL patches at the same time:
+	make coccicheck PARALLEL=6
 
-The right thing to do this would be to have a bit in CPUID which would
-indicate that the kernel has to perform the above calculation -- because
-obviously not all CPUs have this issue.  From that we can calculate a
-mask to insert into whatever appropriate location... depending on the
-exact tack we have to apply to deal with this situation.
+Results are held in /tmp until the scripts finish. By doing this the
+script is able to collate the results from each SmPL patch instead of
+interleaving them in the output.
 
-	-hpa
+Version 2: change pkill -P $$ to pkill -s 0
+
+Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+---
+ scripts/coccicheck |   27 ++++++++++++++++++++++++++-
+ 1 files changed, 26 insertions(+), 1 deletions(-)
+
+diff --git a/scripts/coccicheck b/scripts/coccicheck
+index 1bb1a1b..c2a04c2 100755
+--- a/scripts/coccicheck
++++ b/scripts/coccicheck
+@@ -97,10 +97,35 @@ coccinelle () {
+ 
+ }
+ 
++parallel_cleanup () {
++	pkill -s 0 > /dev/null
++	rm /tmp/cocci_parallel_$$_* 2>/dev/null
++	exit
++}
++
++trap parallel_cleanup SIGINT
++PARALLEL_ID=0
++
+ if [ "$COCCI" = "" ] ; then
+     for f in `find $srctree/scripts/coccinelle/ -name '*.cocci' -type f | sort`; do
+-	coccinelle $f
++	if [ "$PARALLEL" -eq "$PARALLEL" 2>/dev/null ] ; then
++		if [ "$ONLINE" = "0" ] ; then
++			echo Processing: `basename $f`
++		fi
++		coccinelle $f>/tmp/cocci_parallel_$$_$PARALLEL_ID 2>&1 &
++		PARALLEL_ID=$(($PARALLEL_ID + 1))
++		while [ "`jobs -p | wc -l`" -ge "$PARALLEL" ] ; do
++			sleep 3
++		done
++	else
++		coccinelle $f
++	fi
+     done
++    wait
++    if [ "$PARALLEL_ID" -ge "0" ] ; then
++	cat /tmp/cocci_parallel_$$_*
++	parallel_cleanup
++    fi
+ else
+     coccinelle $COCCI
+ fi
+-- 
+1.7.2.5
 
