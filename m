@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228Ab1GZDMm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 23:12:42 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:3028
+	id S1752469Ab1GZDOM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 23:14:12 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:47993
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751364Ab1GZDMe (ORCPT
+	by vger.kernel.org with ESMTP id S1751364Ab1GZDOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 23:12:34 -0400
+	Mon, 25 Jul 2011 23:14:06 -0400
 X-SpamScore: -12
 X-BigFish: VPS-12(zzbb2dKc85dh1432N98dKzz1202hzzz2fh668h839h34h61h)
 X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4E2E3089.5070600@am.sony.com>
-Date: Mon, 25 Jul 2011 20:12:09 -0700
+Message-ID: <4E2E306A.6040007@am.sony.com>
+Date: Mon, 25 Jul 2011 20:11:38 -0700
 From: Frank Rowand <frank.rowand@am.sony.com>
 Reply-To: <frank.rowand@am.sony.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
@@ -24,13 +24,13 @@ Subject: Re: [ANNOUNCE] 3.0-rt3
 References: <alpine.LFD.2.02.1107241223560.2702@ionos>
 In-Reply-To: <alpine.LFD.2.02.1107241223560.2702@ionos>
 Content-Type: multipart/mixed;
-	boundary="------------090703000209030308010404"
+	boundary="------------000801020707010100030408"
 X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------090703000209030308010404
+--------------000801020707010100030408
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 
@@ -39,34 +39,12 @@ On 07/24/11 03:33, Thomas Gleixner wrote:
 > 
 > I'm pleased to announce the 3.0-rt3 release.
 
-ARM panda board boots for PREEMPT_RT_FULL, with a BUG:
+ARM panda board boots for PREEMPT_NONE.
 
-Freeing init memory: 308K
-BUG: sleeping function called from invalid context at kernel/rtmutex.c:645
-in_atomic(): 1, irqs_disabled(): 128, pid: 0, name: swapper
-1 lock held by swapper/0:
- #0:  (&irq_desc_lock_class){-.....}, at: [<c00ed470>] handle_fasteoi_irq+0x14/0x10c
-irq event stamp: 21292
-hardirqs last  enabled at (21291): [<c0061ee0>] default_idle+0x2c/0x3c
-hardirqs last disabled at (21292): [<c0484bb4>] __irq_svc+0x34/0x138
-softirqs last  enabled at (0): [<  (null)>]   (null)
-softirqs last disabled at (0): [<  (null)>]   (null)
-[<c00681b8>] (unwind_backtrace+0x0/0xf0) from [<c0483d20>] (rt_spin_lock+0x24/0x5c)
-[<c0483d20>] (rt_spin_lock+0x24/0x5c) from [<c006df74>] (gic_mask_irq+0x28/0x7c)
-[<c006df74>] (gic_mask_irq+0x28/0x7c) from [<c00ece20>] (mask_irq+0x1c/0x2c)
-[<c00ece20>] (mask_irq+0x1c/0x2c) from [<c00ed514>] (handle_fasteoi_irq+0xb8/0x10c)
-[<c00ed514>] (handle_fasteoi_irq+0xb8/0x10c) from [<c00ea724>] (generic_handle_irq+0x34/0x50)
-[<c00ea724>] (generic_handle_irq+0x34/0x50) from [<c0055048>] (asm_do_IRQ+0x48/0xa8)
-[<c0055048>] (asm_do_IRQ+0x48/0xa8) from [<c0484bd0>] (__irq_svc+0x50/0x138)
-Exception stack(0xc0629f60 to 0xc0629fa8)
-9f60: 00000001 00000001 00000000 0000532b c0628000 c06b6908 c048f7a0 00000000
-9f80: c0649268 411fc092 c0649448 00000000 00000000 c0629fa8 c00d7750 c0061ee4
-9fa0: 20000013 ffffffff
-[<c0484bd0>] (__irq_svc+0x50/0x138) from [<c0061ee4>] (default_idle+0x30/0x3c)
-[<c0061ee4>] (default_idle+0x30/0x3c) from [<c006253c>] (cpu_idle+0xc0/0x104)
-[<c006253c>] (cpu_idle+0xc0/0x104) from [<c0008980>] (start_kernel+0x278/0x31c)
-[<c0008980>] (start_kernel+0x278/0x31c) from [<80008040>] (0x80008040)
+New compile warning for ARM pandaboard, PREEMPT_NONE:
 
+kernel/softirq.c: In function 'softirq_check_pending_idle':
+kernel/softirq.c:119: warning: format '%02lx' expects type 'long unsigned int', but argument 2 has type 'unsigned int'
 
 
 .config is attached or use this recipe:
@@ -87,15 +65,13 @@ Exception stack(0xc0629f60 to 0xc0629fa8)
    #  SMSC LAN95XX based USB 2.0 10/100 ethernet devices
    CONFIG_USB_NET_SMSC95XX=y
 
-   # Kernel Features -> Preemption Model -> Fully Preemptible Kernel (RT)
-
 
 -Frank
 
---------------090703000209030308010404
-Content-Type: text/plain; name="panda_3.0_rt3_rt_full"
+--------------000801020707010100030408
+Content-Type: text/plain; name="panda_3.0_rt3_rt_none"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="panda_3.0_rt3_rt_full"
+Content-Disposition: attachment; filename="panda_3.0_rt3_rt_none"
 
 #
 # Automatically generated make config: don't edit
@@ -115,7 +91,6 @@ CONFIG_LOCKDEP_SUPPORT=y
 CONFIG_TRACE_IRQFLAGS_SUPPORT=y
 CONFIG_HARDIRQS_SW_RESEND=y
 CONFIG_GENERIC_IRQ_PROBE=y
-CONFIG_GENERIC_LOCKBREAK=y
 CONFIG_RWSEM_GENERIC_SPINLOCK=y
 CONFIG_ARCH_HAS_CPUFREQ=y
 CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
@@ -168,14 +143,13 @@ CONFIG_IRQ_FORCED_THREADING=y
 #
 # RCU Subsystem
 #
-# CONFIG_TREE_RCU is not set
-CONFIG_TREE_PREEMPT_RCU=y
-CONFIG_PREEMPT_RCU=y
+CONFIG_TREE_RCU=y
+# CONFIG_PREEMPT_RCU is not set
 # CONFIG_RCU_TRACE is not set
 CONFIG_RCU_FANOUT=32
 # CONFIG_RCU_FANOUT_EXACT is not set
+# CONFIG_RCU_FAST_NO_HZ is not set
 # CONFIG_TREE_RCU_TRACE is not set
-# CONFIG_RCU_BOOST is not set
 CONFIG_IKCONFIG=y
 CONFIG_IKCONFIG_PROC=y
 CONFIG_LOG_BUF_SHIFT=16
@@ -530,13 +504,11 @@ CONFIG_PAGE_OFFSET=0xC0000000
 CONFIG_NR_CPUS=2
 CONFIG_HOTPLUG_CPU=y
 CONFIG_LOCAL_TIMERS=y
-CONFIG_PREEMPT=y
-CONFIG_PREEMPT_RT_BASE=y
-# CONFIG_PREEMPT_NONE is not set
+CONFIG_PREEMPT_NONE=y
 # CONFIG_PREEMPT_VOLUNTARY is not set
 # CONFIG_PREEMPT_LL is not set
 # CONFIG_PREEMPT_RTB is not set
-CONFIG_PREEMPT_RT_FULL=y
+# CONFIG_PREEMPT_RT_FULL is not set
 CONFIG_HZ=128
 CONFIG_AEABI=y
 CONFIG_OABI_COMPAT=y
@@ -544,6 +516,7 @@ CONFIG_ARCH_HAS_HOLES_MEMORYMODEL=y
 # CONFIG_ARCH_SPARSEMEM_DEFAULT is not set
 # CONFIG_ARCH_SELECT_MEMORY_MODEL is not set
 CONFIG_HAVE_ARCH_PFN_VALID=y
+# CONFIG_HIGHMEM is not set
 CONFIG_SELECT_MEMORY_MODEL=y
 CONFIG_FLATMEM_MANUAL=y
 CONFIG_FLATMEM=y
@@ -1108,6 +1081,7 @@ CONFIG_USB_NET_ZAURUS=y
 #
 # CONFIG_PPP is not set
 # CONFIG_SLIP is not set
+# CONFIG_NETCONSOLE is not set
 # CONFIG_NETPOLL is not set
 # CONFIG_NET_POLL_CONTROLLER is not set
 # CONFIG_ISDN is not set
@@ -2314,6 +2288,7 @@ CONFIG_DEBUG_FS=y
 # CONFIG_HEADERS_CHECK is not set
 # CONFIG_DEBUG_SECTION_MISMATCH is not set
 CONFIG_DEBUG_KERNEL=y
+# CONFIG_DEBUG_SHIRQ is not set
 # CONFIG_LOCKUP_DETECTOR is not set
 # CONFIG_HARDLOCKUP_DETECTOR is not set
 # CONFIG_DETECT_HUNG_TASK is not set
@@ -2323,7 +2298,6 @@ CONFIG_TIMER_STATS=y
 # CONFIG_DEBUG_OBJECTS is not set
 # CONFIG_DEBUG_SLAB is not set
 # CONFIG_DEBUG_KMEMLEAK is not set
-CONFIG_DEBUG_PREEMPT=y
 # CONFIG_DEBUG_RT_MUTEXES is not set
 # CONFIG_RT_MUTEX_TESTER is not set
 CONFIG_DEBUG_SPINLOCK=y
@@ -2355,7 +2329,6 @@ CONFIG_DEBUG_INFO=y
 # CONFIG_BOOT_PRINTK_DELAY is not set
 # CONFIG_RCU_TORTURE_TEST is not set
 CONFIG_RCU_CPU_STALL_TIMEOUT=60
-CONFIG_RCU_CPU_STALL_VERBOSE=y
 # CONFIG_KPROBES_SANITY_TEST is not set
 # CONFIG_BACKTRACE_SELF_TEST is not set
 # CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
@@ -2382,7 +2355,6 @@ CONFIG_TRACING_SUPPORT=y
 CONFIG_FTRACE=y
 # CONFIG_FUNCTION_TRACER is not set
 # CONFIG_IRQSOFF_TRACER is not set
-# CONFIG_PREEMPT_TRACER is not set
 # CONFIG_SCHED_TRACER is not set
 # CONFIG_MISSED_TIMER_OFFSETS_HIST is not set
 # CONFIG_ENABLE_DEFAULT_TRACERS is not set
@@ -2545,4 +2517,4 @@ CONFIG_NLATTR=y
 CONFIG_GENERIC_ATOMIC64=y
 CONFIG_AVERAGE=y
 
---------------090703000209030308010404--
+--------------000801020707010100030408--
