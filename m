@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751669Ab1GZGAX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 02:00:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36352 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240Ab1GZGAT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 02:00:19 -0400
-Subject: Re: [Patch] VFS : mount lock scalability for files systems without
- mount point   (WAS vfsmount lock issues on very large ppc64 box)
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, Matthew Wilcox <matthew@wil.cx>,
-        Anton Blanchard <anton@samba.org>, npiggin@kernel.dk,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-In-Reply-To: <1311636178.2576.34.camel@schen9-DESK>
-References: <20110717010427.GC5359@parisc-linux.org>
-	 <20110717084630.GC8006@one.firstfloor.org>
-	 <1310977028.5756.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20110718154008.GA29593@infradead.org>
-	 <20110718155141.GA11013@ZenIV.linux.org.uk>
-	 <1311093158.2707.75.camel@schen9-DESK>
-	 <20110721204042.GB31405@ZenIV.linux.org.uk>
-	 <1311294452.2576.18.camel@schen9-DESK>
-	 <20110723132411.GA22183@infradead.org>
-	 <1311633550.2576.33.camel@schen9-DESK>
-	 <20110725225154.GD22133@ZenIV.linux.org.uk>
-	 <1311636178.2576.34.camel@schen9-DESK>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 26 Jul 2011 08:00:13 +0200
-Message-ID: <1311660013.2996.6.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1751871Ab1GZGAg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 02:00:36 -0400
+Received: from mga03.intel.com ([143.182.124.21]:33398 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751750Ab1GZGAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 02:00:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,267,1309762800"; 
+   d="scan'208";a="31447772"
+Message-ID: <4E2E57FF.7030206@linux.intel.com>
+Date: Mon, 25 Jul 2011 23:00:31 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.0-rt3
+References: <alpine.LFD.2.02.1107241223560.2702@ionos> <4E2C2ED6.4040904@gmail.com> <alpine.LFD.2.02.1107241807390.3136@ionos> <4E2DEC1A.5070109@linux.intel.com>
+In-Reply-To: <4E2DEC1A.5070109@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 25 juillet 2011 à 16:22 -0700, Tim Chen a écrit :
-> On Mon, 2011-07-25 at 23:51 +0100, Al Viro wrote:
+
+
+On 07/25/2011 03:20 PM, Darren Hart wrote:
 > 
-> > It's mostly merged in mainline already...  BTW, you forgot to export
-> > that sucker - mtdchar can be modular.
 > 
-> Thanks for fixing it up and merging it.
+> On 07/24/2011 09:12 AM, Thomas Gleixner wrote:
+>> On Sun, 24 Jul 2011, Maarten Lankhorst wrote:
 > 
+> ...
+> 
+>>> Also not sure where this one came from:
+>>> [   37.456688] BUG: spinlock bad magic on CPU#3, threaded-ml/1619
+>>> [   37.456690]  lock: ffff8801fdc74d50, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
+>>> [   37.456692] Pid: 1619, comm: threaded-ml Tainted: G         C  3.0.0-rt3-patser+ #39
+>>> [   37.456693] Call Trace:
+>>> [   37.456697]  [<ffffffff81607a78>] spin_bug+0xa0/0xa8
+>>> [   37.456699]  [<ffffffff8132b412>] do_raw_spin_lock+0xa2/0x170
+>>> [   37.456702]  [<ffffffff8104a201>] ? get_parent_ip+0x11/0x50
+>>> [   37.456704]  [<ffffffff8160d783>] _raw_spin_lock+0x23/0x30
+>>> [   37.456706]  [<ffffffff810931ce>] rt_mutex_start_proxy_lock+0x2e/0xd0
+>>> [   37.456708]  [<ffffffff8109093a>] futex_requeue+0x47a/0x850
+>>> [   37.456710]  [<ffffffff8109138e>] do_futex+0xae/0xb00
+>>> [   37.456712]  [<ffffffff81157dcd>] ? fget_light+0x6d/0x110
+>>> [   37.456714]  [<ffffffff810b77b7>] ? audit_syscall_entry+0x2e7/0x310
+>>> [   37.456715]  [<ffffffff814c9375>] ? sys_recvmsg+0x75/0x90
+>>> [   37.456717]  [<ffffffff810923e6>] compat_sys_futex+0xf6/0x190
+>>> [   37.456719]  [<ffffffff8100e864>] ? syscall_trace_enter+0x184/0x210
+>>> [   37.456721]  [<ffffffff816158b3>] ia32_do_call+0x13/0x13
+>>
+>> Urrgh, that's not a good one. Darren, can you please have a look at that?
+>>
+> 
+> Will do.
+> 
+> Maarten, what are you running when you hit this?
+> rt_mutex_start_proxy_lock() is only called by the requeue_pi code and
+> there is no libc support for that yet, so I'm surprised to see that in
+> the stack trace (unless you're running my futextest suite).
 
-Next step is to not chain pipes/sockets into superblock s_inodes list
+I've run a couple iterations of functional/run.sh from futextest which
+exercises the requeue_pi code with no errors. I also wrote a new test to
+improperly use the requeue_pi path, and the kernel properly detects the
+abuse and kicks the user back with -EINVAL.
 
-inode_sb_list_add()/inode_sb_list_del() is the very last contention
-point because of spin_lock(&inode_sb_list_lock);
+Could you try running futextest on your system to see if you can
+reproduce the above? Specifically the functional/run.sh script (no need
+to run the performance bits).
 
+http://git.kernel.org/?p=linux/kernel/git/dvhart/futextest.git;a=summary
 
-
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
