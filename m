@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab1GZWYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 18:24:33 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63651 "EHLO
+	id S1753760Ab1GZWbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 18:31:35 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56936 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004Ab1GZWYc (ORCPT
+	with ESMTP id S1752756Ab1GZWbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 18:24:32 -0400
+	Tue, 26 Jul 2011 18:31:33 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>,
@@ -14,69 +14,29 @@ Cc: Thomas Gleixner <tglx@linutronix.de>,
         linux-arm-kernel@lists.infradead.org,
         Russell King <rmk@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
         Tony Lindgren <tony@atomide.com>
-Subject: [GIT PULL] arm-soc new SOCs for 3.1
-Date: Wed, 27 Jul 2011 00:24:23 +0200
-Message-ID: <3057645.NjCAYUXHGt@wuerfel>
+Subject: [GIT PULL] arm-soc bug fixes (part 2) for 3.1
+Date: Wed, 27 Jul 2011 00:31:19 +0200
+Message-ID: <1687325.AEKSI6RCv5@wuerfel>
 User-Agent: KMail/4.6.0 (Linux/3.0.0-rc1nosema+; KDE/4.6.90; x86_64; ; )
+In-Reply-To: <3057645.NjCAYUXHGt@wuerfel>
+References: <3057645.NjCAYUXHGt@wuerfel>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:IVr6kD7bEfSWEb1LKsmM0tytlX4czu+yEnCHPSGR7Tr
- 6hmI3HpcZPYI8Fm/bc5n7XJdI3KSHvP4sxGIYb4BfS2AVJRJOP
- DExvEnr1HOKDWOB1BVBgYqDdOfV4tYLF4J4dlurVKhX2sgfeiC
- BwNCr7XU0WO24MsdXn7ROaMK92EUwJjohK91CrUVIrKbwlqONV
- o1ILw2YJn5oDkecvy2l3Q==
+X-Provags-ID: V02:K0:Sj9khbOU/zAUXywQiKPRtZ2gnHPXFM3zDLK4ANkjT+s
+ DBisYdK0F7234jEMey0peM9Bsl3dZiYvUrC/IzSCTflzthSyOd
+ aUtA1ub8pMpu8J3ZedsX4hfahV+WCS9drgfz6IkIQZnfHlcOhA
+ lJiQ7I4UbZPleFNH4xe+mnEj8oRLzpqvgbye9C4MSu8q/y61be
+ kb++TPIH41xXuM8wxvvQg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-This adds support for two new platforms and a new OMAP SOC in the
-ARM architecture. The new platforms, zynq and prima2, are about as
-good as it gets in following the latest set of guidelines for how
-to do a platform in ARM. We are working on improving that further,
-getting rid of the need for platform specific include/mach/*.h files
-one by one, and moving the clock and timer code into drivers.
-
-The infrastructure required for those changes is not there yet, and
-I see no reason to keep the new platforms out while waiting for it.
-If everything goes well, they will become even cleaner in 3.2 and can
-serve as examples for the other platforms in the meantime, showing
-everyone where we are headed with the move to device trees instead
-of board files.
-
-The OMAP4460 is the current platform from TI, it still largely follows
-the same basic pattern as other OMAP, which I think is the best
-we can do for that right now. There is a small conflict in
-cm-regbits-44xx.h, my solution was
-
-  +/* Renamed from DELTAMSTEP Used by CM_SSC_DELTAMSTEP_DPLL_USB */
-  +#define OMAP4460_DELTAMSTEP_0_20_SHIFT                                0
-  +#define OMAP4460_DELTAMSTEP_0_20_MASK                         (0x1fffff << 0)
-  +
- - /* Used by CM_SHADOW_FREQ_CONFIG1, CM_SHADOW_FREQ_CONFIG1_RESTORE */
- - #define OMAP4430_DLL_OVERRIDE_SHIFT                           2
- - #define OMAP4430_DLL_OVERRIDE_MASK                            (1 << 2)
- + /* Used by CM_DLL_CTRL */
- + #define OMAP4430_DLL_OVERRIDE_SHIFT                           0
- + #define OMAP4430_DLL_OVERRIDE_MASK                            (1 << 0)
-  
- - /* Renamed from DLL_OVERRIDE Used by CM_DLL_CTRL */
- - #define OMAP4430_DLL_OVERRIDE_0_0_SHIFT                               0
- - #define OMAP4430_DLL_OVERRIDE_0_0_MASK                                (1 << 0)
- + /* Renamed from DLL_OVERRIDE Used by CM_SHADOW_FREQ_CONFIG1 */
- + #define OMAP4430_DLL_OVERRIDE_2_2_SHIFT                               2
- + #define OMAP4430_DLL_OVERRIDE_2_2_MASK                                (1 << 2)
-
-All the branches I'm sending today are also merged in the for-next
-branch of arm-soc, so you can also pull that one instead if you get
-bored by the conflicts and just want to have it all.
-
-The diffstat below is the one I generated post-merge, for reasons
-I still need to understand better, git-request-pull would otherwise
-add the diffstat for the omap/cleanup branch that you have already
-pulled.
+This branch contains more bug fixes, all for the omap platform. They were not
+part of the first pull request because they depend on branches that you
+have pulled in the meantime.
 
 	Arnd
 
@@ -86,135 +46,90 @@ The following changes since commit ba5b56cb3e3d2cab73d4fee9a022bb69462a8cd9:
 
 are available in the git repository at:
 
-  git+ssh://master.kernel.org/pub/scm/linux/kernel/git/arm/linux-arm-soc.git/ next/soc
+  git+ssh://master.kernel.org/pub/scm/linux/kernel/git/arm/linux-arm-soc.git/ next/fixes2
 
-Aneesh V (2):
-      OMAP: ID: introduce chip detection for OMAP4460
-      OMAP4: ID: add omap_has_feature for max freq supported
+Ambresh K (1):
+      OMAP4: DMTIMER: enable autoidle mode
 
-Arnd Bergmann (3):
-      ARM: Xilinx: merge board file into main platform code
-      Merge branch 'zynq/master' of git+ssh://master.kernel.org/.../arm/linux-arm-soc into next/soc
-      Merge branch 'omap/4460' of git+ssh://master.kernel.org/.../arm/linux-arm-soc into next/soc
+Andy Green (6):
+      I2C: OMAP2+: Set hwmod flags to only allow 16-bit accesses to i2c
+      I2C: OMAP2+: increase omap_i2c_dev_attr flags from u8 to u32
+      I2C: OMAP2+:  Introduce I2C IP versioning constants
+      I2C: OMAP1/OMAP2+: create omap I2C functionality flags for each cpu_... test
+      I2C: OMAP2+: Tag all OMAP2+ hwmod defintions with I2C IP revision
+      I2C: OMAP2+: add correct functionality flags to all omap2plus i2c dev_attr
 
-Barry Song (2):
-      ARM: CSR: mapping early DEBUG_LL uart
-      MAINTAINERS: add maintainer of CSR SiRFprimaII machine
+Arnd Bergmann (1):
+      Merge branch 'fixes-part-2' of git://git.kernel.org/.../tmlind/linux-omap-2.6 into omap/fixes
 
-Binghua Duan (1):
-      ARM: CSR: Adding CSR SiRFprimaII board support
+Avinash.H.M (1):
+      OMAP: hwmod: fix the i2c-reset timeout during bootup
 
-John Linn (1):
-      ARM: Xilinx: Adding Xilinx board support
+Benoit Cousson (1):
+      OMAP4: powerdomain data: Fix core mem states and missing cefuse flag
 
-Rajendra Nayak (2):
-      OMAP4: PRCM: OMAP4460 specific PRM and CM register bitshifts
-      OMAP4: clocks: Update the clock tree with 4460 clock nodes
+Charulatha V (1):
+      omap: ZOOM: QUART: Request reset GPIO
 
-Rongjun Ying (1):
-      ARM: CSR: initializing L2 cache
+Daniel Mack (1):
+      omap: Overo: remove duplicate call to overo_ads7846_init()
 
- Documentation/devicetree/bindings/arm/sirf.txt   |    3 +
- Documentation/devicetree/bindings/arm/xilinx.txt |    7 +
- MAINTAINERS                                      |    6 +
- arch/arm/Kconfig                                 |   26 ++
- arch/arm/Makefile                                |    3 +
- arch/arm/boot/dts/prima2-cb.dts                  |  416 ++++++++++++++++++
- arch/arm/boot/dts/zynq-ep107.dts                 |   52 +++
- arch/arm/mach-omap2/clock44xx_data.c             |   39 ++
- arch/arm/mach-omap2/cm-regbits-44xx.h            |   36 ++
- arch/arm/mach-omap2/id.c                         |   53 ++-
- arch/arm/mach-omap2/prm-regbits-44xx.h           |    8 +
- arch/arm/mach-prima2/Makefile                    |    7 +
- arch/arm/mach-prima2/Makefile.boot               |    3 +
- arch/arm/mach-prima2/clock.c                     |  509 ++++++++++++++++++++++
- arch/arm/mach-prima2/common.h                    |   26 ++
- arch/arm/mach-prima2/include/mach/clkdev.h       |   15 +
- arch/arm/mach-prima2/include/mach/debug-macro.S  |   29 ++
- arch/arm/mach-prima2/include/mach/entry-macro.S  |   29 ++
- arch/arm/mach-prima2/include/mach/hardware.h     |   15 +
- arch/arm/mach-prima2/include/mach/io.h           |   16 +
- arch/arm/mach-prima2/include/mach/irqs.h         |   17 +
- arch/arm/mach-prima2/include/mach/map.h          |   16 +
- arch/arm/mach-prima2/include/mach/memory.h       |   21 +
- arch/arm/mach-prima2/include/mach/system.h       |   29 ++
- arch/arm/mach-prima2/include/mach/timex.h        |   14 +
- arch/arm/mach-prima2/include/mach/uart.h         |   23 +
- arch/arm/mach-prima2/include/mach/uncompress.h   |   40 ++
- arch/arm/mach-prima2/include/mach/vmalloc.h      |   16 +
- arch/arm/mach-prima2/irq.c                       |   71 +++
- arch/arm/mach-prima2/l2x0.c                      |   59 +++
- arch/arm/mach-prima2/lluart.c                    |   25 +
- arch/arm/mach-prima2/prima2.c                    |   41 ++
- arch/arm/mach-prima2/rstc.c                      |   69 +++
- arch/arm/mach-prima2/timer.c                     |  217 +++++++++
- arch/arm/mach-zynq/Makefile                      |    6 +
- arch/arm/mach-zynq/Makefile.boot                 |    3 +
- arch/arm/mach-zynq/common.c                      |  118 +++++
- arch/arm/mach-zynq/common.h                      |   24 +
- arch/arm/mach-zynq/include/mach/clkdev.h         |   32 ++
- arch/arm/mach-zynq/include/mach/debug-macro.S    |   36 ++
- arch/arm/mach-zynq/include/mach/entry-macro.S    |   30 ++
- arch/arm/mach-zynq/include/mach/hardware.h       |   18 +
- arch/arm/mach-zynq/include/mach/io.h             |   33 ++
- arch/arm/mach-zynq/include/mach/irqs.h           |   21 +
- arch/arm/mach-zynq/include/mach/memory.h         |   22 +
- arch/arm/mach-zynq/include/mach/system.h         |   28 ++
- arch/arm/mach-zynq/include/mach/timex.h          |   23 +
- arch/arm/mach-zynq/include/mach/uart.h           |   25 +
- arch/arm/mach-zynq/include/mach/uncompress.h     |   51 +++
- arch/arm/mach-zynq/include/mach/vmalloc.h        |   20 +
- arch/arm/mach-zynq/include/mach/zynq_soc.h       |   48 ++
- arch/arm/mach-zynq/timer.c                       |  298 +++++++++++++
- arch/arm/mm/Kconfig                              |    3 +-
- arch/arm/plat-omap/include/plat/clkdev_omap.h    |    1 +
- arch/arm/plat-omap/include/plat/clock.h          |    2 +
- arch/arm/plat-omap/include/plat/cpu.h            |   35 ++-
- 56 files changed, 2820 insertions(+), 13 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/sirf.txt
- create mode 100644 Documentation/devicetree/bindings/arm/xilinx.txt
- create mode 100644 arch/arm/boot/dts/prima2-cb.dts
- create mode 100644 arch/arm/boot/dts/zynq-ep107.dts
- create mode 100644 arch/arm/mach-prima2/Makefile
- create mode 100644 arch/arm/mach-prima2/Makefile.boot
- create mode 100644 arch/arm/mach-prima2/clock.c
- create mode 100644 arch/arm/mach-prima2/common.h
- create mode 100644 arch/arm/mach-prima2/include/mach/clkdev.h
- create mode 100644 arch/arm/mach-prima2/include/mach/debug-macro.S
- create mode 100644 arch/arm/mach-prima2/include/mach/entry-macro.S
- create mode 100644 arch/arm/mach-prima2/include/mach/hardware.h
- create mode 100644 arch/arm/mach-prima2/include/mach/io.h
- create mode 100644 arch/arm/mach-prima2/include/mach/irqs.h
- create mode 100644 arch/arm/mach-prima2/include/mach/map.h
- create mode 100644 arch/arm/mach-prima2/include/mach/memory.h
- create mode 100644 arch/arm/mach-prima2/include/mach/system.h
- create mode 100644 arch/arm/mach-prima2/include/mach/timex.h
- create mode 100644 arch/arm/mach-prima2/include/mach/uart.h
- create mode 100644 arch/arm/mach-prima2/include/mach/uncompress.h
- create mode 100644 arch/arm/mach-prima2/include/mach/vmalloc.h
- create mode 100644 arch/arm/mach-prima2/irq.c
- create mode 100644 arch/arm/mach-prima2/l2x0.c
- create mode 100644 arch/arm/mach-prima2/lluart.c
- create mode 100644 arch/arm/mach-prima2/prima2.c
- create mode 100644 arch/arm/mach-prima2/rstc.c
- create mode 100644 arch/arm/mach-prima2/timer.c
- create mode 100644 arch/arm/mach-zynq/Makefile
- create mode 100644 arch/arm/mach-zynq/Makefile.boot
- create mode 100644 arch/arm/mach-zynq/board_dt.c
- create mode 100644 arch/arm/mach-zynq/common.c
- create mode 100644 arch/arm/mach-zynq/common.h
- create mode 100644 arch/arm/mach-zynq/include/mach/clkdev.h
- create mode 100644 arch/arm/mach-zynq/include/mach/debug-macro.S
- create mode 100644 arch/arm/mach-zynq/include/mach/entry-macro.S
- create mode 100644 arch/arm/mach-zynq/include/mach/hardware.h
- create mode 100644 arch/arm/mach-zynq/include/mach/io.h
- create mode 100644 arch/arm/mach-zynq/include/mach/irqs.h
- create mode 100644 arch/arm/mach-zynq/include/mach/memory.h
- create mode 100644 arch/arm/mach-zynq/include/mach/system.h
- create mode 100644 arch/arm/mach-zynq/include/mach/timex.h
- create mode 100644 arch/arm/mach-zynq/include/mach/uart.h
- create mode 100644 arch/arm/mach-zynq/include/mach/uncompress.h
- create mode 100644 arch/arm/mach-zynq/include/mach/vmalloc.h
- create mode 100644 arch/arm/mach-zynq/include/mach/zynq_soc.h
- create mode 100644 arch/arm/mach-zynq/timer.c
+Igor Grinberg (2):
+      arm: omap3: cm-t35: minor comments fixes
+      arm: omap3: cm-t35: fix slow path warning
 
+Julia Lawall (1):
+      arch/arm/mach-omap2/clock.c: add missing clk_put
+
+Ohad Ben-Cohen (2):
+      omap: iovmm: s/sg_dma_len(sg)/sg->length/
+      OMAP4: iommu: fix clock name
+
+Paul Walmsley (2):
+      Merge branches 'powerdomain_fixes_3.1', 'hardware_workarounds_3.1', 'hwmod_dss_fix_3.1' and 'i2c_fixes_3.1' into prcm-fixes-3.1
+      ASoC: omap: McBSP: fix build breakage on OMAP1
+
+Rajendra Nayak (1):
+      OMAP2+: PM: Initialise sleep_switch to a non-valid value
+
+Santosh Shilimkar (2):
+      OMAP4: clock data: Keep GPMC clocks always enabled and hardware managed
+      OMAP4: powerdomain data: Remove unsupported MPU powerdomain state
+
+Silesh C V (1):
+      omap: HSMMC: Fix GPIO muxing
+
+Suman Anna (1):
+      omap: iommu: fix pte programming
+
+Tomi Valkeinen (2):
+      OMAP4: hwmod data: Modify DSS opt clocks
+      OMAP4: hwmod data: Change DSS main_clk scheme
+
+Tony Lindgren (2):
+      Merge branch 'iommu-for-tony' of git://github.com/ohadbc/omap-iommu into devel-fixes
+      Merge branch 'prcm-fixes-3.1' of git://git.pwsan.com/linux-2.6 into fixes-part-2
+
+ arch/arm/mach-omap2/board-cm-t35.c           |   18 ++----
+ arch/arm/mach-omap2/board-overo.c            |    1 -
+ arch/arm/mach-omap2/board-zoom-debugboard.c  |    9 +++
+ arch/arm/mach-omap2/clock.c                  |    1 +
+ arch/arm/mach-omap2/clock44xx_data.c         |    9 ++-
+ arch/arm/mach-omap2/hsmmc.c                  |    7 +-
+ arch/arm/mach-omap2/i2c.c                    |   68 +++++++++++++++++++++
+ arch/arm/mach-omap2/iommu2.c                 |    4 +-
+ arch/arm/mach-omap2/omap-iommu.c             |    2 +-
+ arch/arm/mach-omap2/omap_hwmod.c             |   27 +++++++++
+ arch/arm/mach-omap2/omap_hwmod_2420_data.c   |    9 +++-
+ arch/arm/mach-omap2/omap_hwmod_2430_data.c   |    7 ++
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c   |   18 +++++-
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c   |   81 ++++++++++++++++++++------
+ arch/arm/mach-omap2/pm.c                     |    2 +-
+ arch/arm/mach-omap2/powerdomains44xx_data.c  |    9 ++-
+ arch/arm/plat-omap/dmtimer.c                 |    4 +-
+ arch/arm/plat-omap/include/plat/i2c.h        |    6 ++-
+ arch/arm/plat-omap/include/plat/omap_hwmod.h |    1 +
+ arch/arm/plat-omap/iovmm.c                   |    6 +-
+ arch/arm/plat-omap/mcbsp.c                   |   27 +++++++++
+ include/linux/i2c-omap.h                     |   27 +++++++++
+ 22 files changed, 288 insertions(+), 55 deletions(-)
