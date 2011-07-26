@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404Ab1GZIof (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 04:44:35 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:44478 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147Ab1GZIo2 (ORCPT
+	id S1752431Ab1GZIuv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 04:50:51 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37802 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751242Ab1GZIuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 04:44:28 -0400
-Subject: Re: [PATCH-v2 1/2] kernel.h: Add DIV_ROUND_UP_ULL and
-	DIV_ROUND_UP_SECTOR_T macro usage
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
-        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@purestorage.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>
-In-Reply-To: <1311665743-20639-1-git-send-email-nab@linux-iscsi.org>
-References: <1311665743-20639-1-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain
-Date: Tue, 26 Jul 2011 01:35:06 -0700
-Message-Id: <1311669306.17766.256.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Jul 2011 04:50:46 -0400
+Date: Tue, 26 Jul 2011 09:50:44 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Marcus Folkesson <marcus.folkesson@gmail.com>
+Cc: lrg@slimlogic.co.uk, linux-kernel@vger.kernel.org
+Subject: Re: regulator: tps65020 support
+Message-ID: <20110726085043.GA7285@opensource.wolfsonmicro.com>
+References: <CAM8FrKJ2LAhjvDO9jMZN-D1Sfx=PUuVjMZXBE-E581qdJGxvug@mail.gmail.com>
+ <CAM8FrKK1z7euvURCH+ou8uNYumF82bn13oYfBOAiMNiB9zdBJA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAM8FrKK1z7euvURCH+ou8uNYumF82bn13oYfBOAiMNiB9zdBJA@mail.gmail.com>
+X-Cookie: Save energy: be apathetic.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-26 at 07:35 +0000, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Tue, Jul 26, 2011 at 12:03:46AM +0200, Marcus Folkesson wrote:
+
+> This patch gives support for the tps65020 voltage regulator from Texas
+> Instruments.
+> The support is added to the existing tps65023 regulator.
 > 
-> Add new DIV_ROUND_UP_SECTOR_T macro usage for 32-bit architectures requiring
-> a new DIV_ROUND_UP_ULL, and existing 64-bit usage with DIV_ROUND_UP.
+> It also fixes two bugs:
+> * The original driver does not allow core voltage adjustments by the
+> I2C bus. (clearing CORE ADJ bit in CTRL2 register).
+> * The original driver does not either telling the chip that the
+> DEFCORE register i changed by setting the GO bit in CTRL2.
 > 
-> Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Reported-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> ---
->  include/linux/kernel.h |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 953352a..e81b647 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -56,6 +56,14 @@
->  
->  #define FIELD_SIZEOF(t, f) (sizeof(((t*)0)->f))
->  #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
-> +#define DIV_ROUND_UP_ULL(ll,d) \
-> +	({ unsigned long long _tmp = (ll)+(d)-1; do_div(_tmp, d); _tmp; })
-> +
-> +#if BITS_PER_LONG == 32
-> +# define DIV_ROUND_UP_SECTOR_T(ll,d) DIV_ROUND_UP_ULL(ll, d)
-> +#else
-> +# define DIV_ROUND_UP_SECTOR_T(ll,d) DIV_ROUND_UP(ll,d)
-> +#endif
->  
+> I have read SubmittingPatches and think all should be okay (this is my
+> first submit :-) ), but I still have two questions:
 
-Hi Andrew,
+No, a few more issues from SubmittingPatches you need to take care of:
 
-Is CONFIG_LBDAF=n usage going to have problems with the above..?  
+- Use git format-patch -M to show the diff, right now the patch just
+  looks like deleting a bunch of files and adding some new ones which is
+  very hard to review.
+- Split out the bug fixes from the rename, one change per patch.
+- Submit in the format specified in SubmittingPatches, not as an
+  attachment.
 
-Things are looking as expected AFAICT with some quick tests with
-CONFIG_LBDAF=y on i386, but still need to verify the CONFIG_LBDAF=n on
-32-bit as well.  Any more comments here are appercitated.
+> * The patch is renaming tps65023-regulator.c to tps6502x-regulator.c
+> (and edits the corresponding Kconfig/Makefile) since it now handles
+> both tps65020 and tps65023. Is this allowed or is the Kconfig and
+> Makefile files holy or something?
 
-Thank you,
+That's fine but you need to take care of any users.
 
---nab
+> * checkpatch.pl is showing two warnings about lines over 80
+> characters, but this is not really truth. The lines is splitted up so
+> it should not complain. Please take a look.
 
-
-
+If you think there's a bug in checkpatch please tell the checkpatch
+maintainers.
