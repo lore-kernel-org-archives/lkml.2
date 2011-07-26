@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751232Ab1GZI5o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 04:57:44 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57076 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab1GZI5h (ORCPT
+	id S1752662Ab1GZI6N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 04:58:13 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:58908 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459Ab1GZI6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 04:57:37 -0400
-Date: Tue, 26 Jul 2011 09:57:25 +0100
-From: Dave Martin <dave.martin@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH] Documentation: Document ARM's user_debug parameter
-Message-ID: <20110726085721.GB2075@arm.com>
-References: <1311556514-24728-1-git-send-email-sboyd@codeaurora.org>
- <20110725142924.85de25dd.rdunlap@xenotime.net>
+	Tue, 26 Jul 2011 04:58:08 -0400
+Date: Tue, 26 Jul 2011 10:58:04 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Steven Liu <lingjiujianke@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [git pull] vfs pile 1.5
+Message-ID: <20110726085804.GA1639@x4.trippels.de>
+References: <20110725185649.GA22133@ZenIV.linux.org.uk>
+ <20110726033535.GA11939@x4.trippels.de>
+ <CA+55aFzaKHpVdLKac6rFN+YsAugz1aR3fv-reThJiD4HWDND8w@mail.gmail.com>
+ <20110726082146.GB11939@x4.trippels.de>
+ <CADxeRwnYxgxZPT3DN=SraZOvL_juWzV+MoY9+0vqZr29y6U6cA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110725142924.85de25dd.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CADxeRwnYxgxZPT3DN=SraZOvL_juWzV+MoY9+0vqZr29y6U6cA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 02:29:24PM -0700, Randy Dunlap wrote:
-> On Sun, 24 Jul 2011 18:15:14 -0700 Stephen Boyd wrote:
+On 2011.07.26 at 16:52 +0800, Steven Liu wrote:
+> 2011/7/26 Markus Trippelsdorf <markus@trippelsdorf.de>:
+> > On 2011.07.25 at 21:52 -0700, Linus Torvalds wrote:
+> >> On Mon, Jul 25, 2011 at 8:35 PM, Markus Trippelsdorf
+> >> <markus@trippelsdorf.de> wrote:
+> >> >
+> >> > This breaks the build for "# CONFIG_FS_POSIX_ACL is not set" configs:
+> >>
+> >> Of course it does. And as usual, my exhaustive testing was for the
+> >> allyesconfig case, rather than doing both allyesconfig and allnoconfig
+> >> like I should.
+> >>
+> >> Bah.
+> >>
+> >> Does the attached trivial patch fix everything for you?
+> >
+> > Yes, thanks.
+> >
+> > But now xfs fails to build when CONFIG_FS_POSIX_ACL is not set:
+> >
+> >  CC      fs/xfs/linux-2.6/xfs_xattr.o
+> > fs/xfs/linux-2.6/xfs_iops.c:1025:14: error: ‘xfs_get_acl’ undeclared here (not in a function)
 > 
-> > Usually kernel parameters are documented in kernel-parameters.txt
-> > but user_debug is only documented in the Kconfig. Document the
-> > option and point to the Kconfig help text for more info.
-> > 
-> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> 
-> Is this a superset of 'print_fatal_signals'?
-> 
-> Applied, thanks.
-> 
-> > ---
-> >  Documentation/kernel-parameters.txt |   10 ++++++++++
-> >  1 files changed, 10 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> > index aa47be7..8186adc 100644
-> > --- a/Documentation/kernel-parameters.txt
-> > +++ b/Documentation/kernel-parameters.txt
-> > @@ -2612,6 +2612,16 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
-> >  					medium is write-protected).
-> >  			Example: quirks=0419:aaf5:rl,0421:0433:rc
-> >  
-> > +	user_debug=	[KNL,ARM]
-> > +			Format: <int>
-> > +			See arch/arm/Kconfig.debug help text.
-> > +				 1 - undefined instruction events
-> > +				 2 - system calls
+> maybe some one have not use #ifdef CONFIG_FS_POSIX_ACL
+> with  fs/xfs/linux-2.6/xfs_iops.c:1025:14
 
-linux$ git grep UDBG_SYSCALL -- arch/arm/
-include/asm/system.h:#define UDBG_SYSCALL       (1 << 1)
-kernel/traps.c: if (user_debug & UDBG_SYSCALL) {
-kernel/traps.c: if (user_debug & UDBG_SYSCALL) {
+#ifdefs are ugly. The following fixes the issue for me:
 
-Looking at kernel/traps.c, it looks like only undefined or obsolete
-syscalls are logged.  It could be worth clarifying this in the wording,
-both here and in arch/arm/Kconfig.debug.
+diff --git a/fs/xfs/xfs_acl.h b/fs/xfs/xfs_acl.h
+index 2c656ef..39632d9 100644
+--- a/fs/xfs/xfs_acl.h
++++ b/fs/xfs/xfs_acl.h
+@@ -51,7 +51,10 @@ extern int posix_acl_default_exists(struct inode *inode);
+ extern const struct xattr_handler xfs_xattr_acl_access_handler;
+ extern const struct xattr_handler xfs_xattr_acl_default_handler;
+ #else
+-# define xfs_get_acl(inode, type)			NULL
++static inline struct posix_acl *xfs_get_acl(struct inode *inode, int type)
++{
++	return NULL;
++}
+ # define xfs_inherit_acl(inode, default_acl)		0
+ # define xfs_acl_chmod(inode)				0
+ # define posix_acl_access_exists(inode)			0
 
-Cheers
----Dave
-
-> > +				 4 - invalid data aborts
-> > +				 8 - SIGSEGV faults
-> > +				16 - SIGBUS faults
-> > +			Example: user_debug=31
-> > +
-> >  	userpte=
-> >  			[X86] Flags controlling user PTE allocations.
-> >  
-> > -- 
-> > Sent by an employee of the Qualcomm Innovation Center, Inc.
-> > The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-> 
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+-- 
+Markus
