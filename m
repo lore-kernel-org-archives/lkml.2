@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab1GZW7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 18:59:41 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:46135 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591Ab1GZW7j (ORCPT
+	id S1754020Ab1GZXAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 19:00:06 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:17687 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188Ab1GZXAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 18:59:39 -0400
-Message-ID: <4E2F46D5.6060206@canonical.com>
-Date: Tue, 26 Jul 2011 15:59:33 -0700
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: djkurtz@chromium.org, rydberg@euromail.se, rubini@cvml.unipv.it,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
-        olofj@chromium.org
-Subject: Re: [PATCH 1/9 v2] Input: synaptics - refactor y inversion
-References: <1311169146-20066-1-git-send-email-djkurtz@chromium.org> <1311169146-20066-2-git-send-email-djkurtz@chromium.org> <20110725082752.GB22937@core.coreip.homeip.net>
-In-Reply-To: <20110725082752.GB22937@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Jul 2011 19:00:04 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=fotFJG2EBr27g1wgiyeu0+JC+rfVHS9XE7ZA+t4580zxeiBSY0Glw9xuq+bCmqrsB
+	7B108VI9UP2+ULBaZ0k/g==
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH 0/5] Add dynamic updates to trace ring buffer
+Date: Tue, 26 Jul 2011 15:59:49 -0700
+Message-Id: <1311721194-12164-1-git-send-email-vnagarnaik@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2011 01:27 AM, Dmitry Torokhov wrote:
-> On Wed, Jul 20, 2011 at 09:38:58PM +0800, djkurtz@chromium.org wrote:
->> From: Daniel Kurtz <djkurtz@chromium.org>
->>
->> Synaptics touchpads report increasing y from bottom to top.
->> This is inverted from normal userspace "top of screen is 0" coordinates.
->> Thus, the kernel driver reports inverted y coordinates to userspace.
->>
->> This patch refactors this inversion.
->>
-> 
-> I really do not see the point...
+These patches are in response to the fact that sometimes there are
+higher rate of events generated on some CPUs as compared to others. This
+makes it inefficient to have equal memory size allocated to each of the
+per-cpu ring buffers.
 
-It's easier for me to read and comprehend, at least. I agree that it's
-really really minor, but if it's in the middle of 10 other patches, then
-I don't have a problem with it.
+This patch series adds 3 things to achieve this:
+* Add a way to measure the rate of events generated on a CPU. This is a
+  part of patch#2 which makes the 'stats' files print out the number of
+  bytes in the ring buffer, the oldest time stamp ("head ts"), and the
+  current time stamp ("now ts"). The rate is measured as: bytes /
+  (now-head)
 
--- Chase
+* The next patch#3 adds the flexibility to assign different sizes to
+  individual per-cpu ring buffers. This is done by adding a
+  "buffer_size_kb" debugfs file entry under per_cpu/* directories.
+
+* The final two patches provide a way to change the size of ring
+  buffer concurrent to events being added to the ring buffer. Patch#4
+  adds functionality to remove pages from the ring buffer and patch#5
+  adds functionality to add pages to the ring buffer.
+
+Patch#1 adds a debugfs entry "buffer_total_size_kb" which provides the
+total memory allocated for the ring buffer.
+
+This makes it easy for a user process to monitor the rate at which the
+ring buffers are being filled up and update the individual per-cpu ring
+buffer sizes in response to it.
+
+Vaibhav Nagarnaik (5):
+  trace: Add a new readonly entry to report total buffer size
+  trace: Add ring buffer stats to measure rate of events
+  trace: Add per_cpu ring buffer control files
+  trace: Make removal of ring buffer pages atomic
+  trace: Make addition of pages in ring buffer atomic
+
+ include/linux/ring_buffer.h |    8 +-
+ kernel/trace/ring_buffer.c  |  562 +++++++++++++++++++++++++++++++------------
+ kernel/trace/trace.c        |  241 ++++++++++++++----
+ kernel/trace/trace.h        |    2 +-
+ 4 files changed, 603 insertions(+), 210 deletions(-)
+
+-- 
+1.7.3.1
+
