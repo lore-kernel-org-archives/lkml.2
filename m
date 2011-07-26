@@ -1,106 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab1GZVOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 17:14:31 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43832 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753819Ab1GZVO3 convert rfc822-to-8bit (ORCPT
+	id S1753819Ab1GZVST (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 17:18:19 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58965 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753112Ab1GZVSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 17:14:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <1311694534-5161-1-git-send-email-tj@kernel.org>
-References: <1311694534-5161-1-git-send-email-tj@kernel.org>
-Date: Tue, 26 Jul 2011 14:14:28 -0700
-Message-ID: <CAE9FiQX0i2UwO9fSntwSEMUWiO6KdzbQth8Bf+_9OnKXntasKQ@mail.gmail.com>
-Subject: Re: [PATCHSET tip:x86/memblock] memblock: Kill early_node_map[]
-From: Yinghai Lu <yhlu.kernel@gmail.com>
-To: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: benh@kernel.crashing.org, tony.luck@intel.com, ralf@linux-mips.org,
-        schwidefsky@de.ibm.com, liqin.chen@sunplusct.com, lethal@linux-sh.org,
-        davem@davemloft.net, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, mingo@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 26 Jul 2011 17:18:16 -0400
+Date: Tue, 26 Jul 2011 14:17:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        balbir@linux.vnet.ibm.com, linux-mm@kvack.org,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org,
+        Tim Deegan <Tim.Deegan@citrix.com>
+Subject: Re: [PATCH] memcg: do not expose uninitialized mem_cgroup_per_node
+ to world
+Message-Id: <20110726141754.c69b96c6.akpm@linux-foundation.org>
+In-Reply-To: <4DF24D04.1080802@redhat.com>
+References: <1306925044-2828-1-git-send-email-imammedo@redhat.com>
+	<20110601123913.GC4266@tiehlicka.suse.cz>
+	<4DE6399C.8070802@redhat.com>
+	<20110601134149.GD4266@tiehlicka.suse.cz>
+	<4DE64F0C.3050203@redhat.com>
+	<20110601152039.GG4266@tiehlicka.suse.cz>
+	<4DE66BEB.7040502@redhat.com>
+	<BANLkTimbqHPeUdue=_Z31KVdPwcXtbLpeg@mail.gmail.com>
+	<4DE8D50F.1090406@redhat.com>
+	<BANLkTinMamg_qesEffGxKu3QkT=zyQ2MRQ@mail.gmail.com>
+	<4DEE26E7.2060201@redhat.com>
+	<20110608123527.479e6991.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110608140951.115ab1dd.akpm@linux-foundation.org>
+	<4DF24D04.1080802@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 8:35 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
->
-> This patchset builds on the previous "memblock, x86: Allow node info
-> in memblock and remove x86 specific memblock code" patchset, which now
-> is in tip:x86/memblock.  This patchset updates memblock so that it's
-> easier to use, converts all archs which use early_node_map[] to use
-> memblock instead, and kills early_node_map[].
->
-> Bootmem allocator is still looming there but this ensures a unified
-> way forward where memblock is the universal early memory management
-> mechanism.  This cleans up the entanglement between memblock and
-> early_node_map[] in the backend but API visible to archs is still a
-> bit confusing and can use some cleanup and documentation once things
-> settle down a bit.
->
-> x86, powerpc and sparc are boot tested in several different
-> configurations.  On x86 allmod/noconfigs are compile tested.  On all
-> other archs except for score, defconfig + some variations are compile
-> tested.
->
-> This does touch a lot of archs but except for x86 and powerpc the
-> changes are mostly trivial and as bulk of the changes involve updates
-> to generic memblock code, it would be great if these can be routed
-> through single tree (tip:x86/memblock).
->
-> David, Ben, Paul, patches 0015-0017 are identical sans some offsets to
-> the previously posted versions.
->
->  0001-memblock-Make-memblock_overlaps_region-static.patch
->  0002-memblock-Make-memblock_-add-remove-free-reserve-retu.patch
->  0003-memblock-Use-memblock_reserve-in-memblock-internal-f.patch
->  0004-memblock-Add-__memblock_dump_all.patch
->  0005-memblock-Kill-sentinel-entries-at-the-end-of-static-.patch
->  0006-memblock-Kill-memblock_init.patch
->  0007-memblock-Separate-out-memblock_isolate_range-from-me.patch
->  0008-memblock-Reimplement-__memblock_remove-using-membloc.patch
->  0009-memblock-Make-memblock-functions-handle-overflowing-.patch
->  0010-memblock-Reimplement-memblock_enforce_memory_limit-u.patch
->  0011-powerpc-Cleanup-memblock-usage.patch
->  0012-memblock-Track-total-size-of-regions-automatically.patch
->  0013-memblock-s-memblock_analyze-memblock_allow_resize-an.patch
->  0014-memblock-Implement-memblock_add_node.patch
->  0015-powerpc-Use-HAVE_MEMBLOCK_NODE_MAP.patch
->  0016-sparc-Use-HAVE_MEMBLOCK_NODE_MAP.patch
->  0017-SuperH-Use-HAVE_MEMBLOCK_NODE_MAP.patch
->  0018-ia64-Use-HAVE_MEMBLOCK_NODE_MAP.patch
->  0019-mips-Use-HAVE_MEMBLOCK_NODE_MAP.patch
->  0020-s390-Use-HAVE_MEMBLOCK_NODE_MAP.patch
->  0021-score-Use-HAVE_MEMBLOCK_NODE_MAP.patch
->  0022-memblock-Kill-early_node_map.patch
->  0023-memblock-Reimplement-memblock-allocation-using-rever.patch
->
-> 0001-0014 clean up and improve generic memblock code (powerpc update
-> is to allow updates to generic code) so that it's easier for archs.
-> e.g. memblock_init/analyze() are no longer necessary.
->
-> 0015-0017 convert archs which were using memblock + early_node_map[]
-> to use MEMBLOCK_HAVE_NODE_MAP.
->
-> 0018-0021 convert archs which were using only early_node_map[] to
-> MEMBLOCK_HAVE_NODE_MAP.
->
-> 0022 kills now unused early_node_map[].
->
-> 0023 reimplements memblock allocator in sane way, which is possible
-> with early_node_map[] gone.
->
-> This patchset is available in the following git branch.
->
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git memblock
->
+On Fri, 10 Jun 2011 18:57:40 +0200
+Igor Mammedov <imammedo@redhat.com> wrote:
 
-it passes test with my x86 64bits setups.
+> On 06/08/2011 11:09 PM, Andrew Morton wrote:
+> > The original patch:
+> >
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -4707,7 +4707,6 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
+> >   	if (!pn)
+> >   		return 1;
+> >
+> > -	mem->info.nodeinfo[node] = pn;
+> >   	for (zone = 0; zone<  MAX_NR_ZONES; zone++) {
+> >   		mz =&pn->zoneinfo[zone];
+> >   		for_each_lru(l)
+> > @@ -4716,6 +4715,7 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
+> >   		mz->on_tree = false;
+> >   		mz->mem = mem;
+> >   	}
+> > +	mem->info.nodeinfo[node] = pn;
+> >   	return 0;
+> >   }
+> >
+> > looks like a really good idea.  But it needs a new changelog and I'd be
+> > a bit reluctant to merge it as it appears that the aptch removes our
+> > only known way of reproducing a bug.
+> >
+> > So for now I think I'll queue the patch up unchangelogged so the issue
+> > doesn't get forgotten about.
+> >
+> Problem was in rhel's xen hv.
+> It was missing fix for imul emulation.
+> Details here 
+> http://lists.xensource.com/archives/html/xen-devel/2011-06/msg00801.html
+> Thanks to Tim Deegan and everyone who was involved in the discussion.
 
-looks like tip/master does not include tip/x86/memblock and tip/x86/mm yet.
+I really don't want to trawl through a lengthy xen bug report and write
+your changelog for you.
 
-So tip/x86/memblock, tip/x86/mm will not get into 3.1?
+We still have no changelog for this patch.  Please send one.
