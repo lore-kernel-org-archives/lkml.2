@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab1GZL3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 07:29:36 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50333 "EHLO song.cn.fujitsu.com"
+	id S1753523Ab1GZLaH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 07:30:07 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50149 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753419Ab1GZL32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 07:29:28 -0400
-Message-ID: <4E2EA58B.1030503@cn.fujitsu.com>
-Date: Tue, 26 Jul 2011 19:31:23 +0800
+	id S1753033Ab1GZLaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 07:30:03 -0400
+Message-ID: <4E2EA5AA.2010708@cn.fujitsu.com>
+Date: Tue, 26 Jul 2011 19:31:54 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: [PATCH 09/11] KVM: MMU: remove the mismatch shadow page
+Subject: [PATCH 10/11] KVM: MMU: fix detecting misaligned accessed
 References: <4E2EA3DB.7040403@cn.fujitsu.com>
 In-Reply-To: <4E2EA3DB.7040403@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-26 19:28:29,
+ 2011-07-26 19:29:00,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-26 19:28:30,
-	Serialize complete at 2011-07-26 19:28:30
+ 2011-07-26 19:29:00,
+	Serialize complete at 2011-07-26 19:29:00
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the shadow page has different cpu mode with current vcpu, we do better
-remove them since the OS does not changes cpu mode frequently
+Sometimes, we only modify the last one byte of a pte to update status bit,
+for example, clear_bit is used to clear r/w bit in linux kernel and 'andb'
+instruction is used in this function, in this case, kvm_mmu_pte_write will
+treat it as misaligned access, and the shadow page table is zapped
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/mmu.c |   26 +++++++++++++++++++-------
- 1 files changed, 19 insertions(+), 7 deletions(-)
+ arch/x86/kvm/mmu.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 931c23a..2328ee6 100644
+index 2328ee6..bb55b15 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -3603,6 +3603,18 @@ static bool detect_write_misaligned(struct kvm_mmu_page *sp, gpa_t gpa,
- 	return misaligned;
- }
+@@ -3597,6 +3597,14 @@ static bool detect_write_misaligned(struct kvm_mmu_page *sp, gpa_t gpa,
  
-+/*
-+ * The OS hardly changes cpu mode after boot, we can zap the shadow page if
-+ * it is mismatched with the current vcpu.
-+ */
-+static bool detect_mismatch_sp(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
-+{
-+	union kvm_mmu_page_role mask;
+ 	offset = offset_in_page(gpa);
+ 	pte_size = sp->role.cr4_pae ? 8 : 4;
 +
-+	mask.cr0_wp = mask.cr4_pae = mask.nxe = 1;
-+	return (sp->role.word ^ vcpu->arch.mmu.base_role.word) & mask.word;
-+}
++	/*
++	 * Sometimes, the OS only writes the last one bytes to update status
++	 * bits, for example, in linux, andb instruction is used in clear_bit().
++	 */
++	if (sp->role.level == 1 && !(offset & (pte_size - 1)) && bytes == 1)
++		return false;
 +
- static u64 *get_written_sptes(struct kvm_mmu_page *sp, gpa_t gpa, int *nspte)
- {
- 	unsigned page_offset, quadrant;
-@@ -3638,13 +3650,12 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
- 		       const u8 *new, int bytes, bool repeat_write)
- {
- 	gfn_t gfn = gpa >> PAGE_SHIFT;
--	union kvm_mmu_page_role mask = { .word = 0 };
- 	struct kvm_mmu_page *sp;
- 	struct hlist_node *node;
- 	LIST_HEAD(invalid_list);
- 	u64 entry, gentry, *spte;
- 	int npte;
--	bool remote_flush, local_flush, zap_page, flooded, misaligned;
-+	bool remote_flush, local_flush, zap_page, flooded;
+ 	misaligned = (offset ^ (offset + bytes - 1)) & ~(pte_size - 1);
+ 	misaligned |= bytes < 4;
  
- 	/*
- 	 * If we don't have indirect shadow pages, it means no page is
-@@ -3664,10 +3675,13 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
- 	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PTE_WRITE);
- 
- 	flooded = detect_write_flooding(vcpu, gfn);
--	mask.cr0_wp = mask.cr4_pae = mask.nxe = 1;
- 	for_each_gfn_indirect_valid_sp(vcpu->kvm, sp, gfn, node) {
-+		bool mismatch, misaligned;
-+
- 		misaligned = detect_write_misaligned(sp, gpa, bytes);
--		if (misaligned || flooded || repeat_write) {
-+		mismatch = detect_mismatch_sp(vcpu, sp);
-+
-+		if (misaligned || mismatch || flooded || repeat_write) {
- 			zap_page |= !!kvm_mmu_prepare_zap_page(vcpu->kvm, sp,
- 						     &invalid_list);
- 			++vcpu->kvm->stat.mmu_flooded;
-@@ -3682,9 +3696,7 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
- 		while (npte--) {
- 			entry = *spte;
- 			mmu_page_zap_pte(vcpu->kvm, sp, spte);
--			if (gentry &&
--			      !((sp->role.word ^ vcpu->arch.mmu.base_role.word)
--			      & mask.word) && get_free_pte_list_desc_nr(vcpu))
-+			if (gentry && get_free_pte_list_desc_nr(vcpu))
- 				mmu_pte_write_new_pte(vcpu, sp, spte, &gentry);
- 			if (!remote_flush && need_remote_flush(entry, *spte))
- 				remote_flush = true;
 -- 
 1.7.5.4
 
