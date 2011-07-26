@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab1GZBZU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 21:25:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:33288 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064Ab1GZBYj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 21:24:39 -0400
-X-Authority-Analysis: v=1.1 cv=sbbt6Wn8j+VvNVI1Ftt/uHhinWyuFt+R57MN9Ty2Tys= c=1 sm=0 a=vhdKIqpQuCYA:10 a=8opqq1d1oSAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=5ci9UVt6zelwpgQI5AMA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20110726012429.229935886@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Mon, 25 Jul 2011 21:22:57 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 19/19] ktest: Fix bug when ADD_CONFIG is set but MIN_CONFIG is not
-References: <20110726012238.271008621@goodmis.org>
-Content-Disposition: inline; filename=0019-ktest-Fix-bug-when-ADD_CONFIG-is-set-but-MIN_CONFIG-.patch
+	id S1753235Ab1GZBZh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 21:25:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:51198 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752455Ab1GZBZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 21:25:29 -0400
+Message-ID: <4E2E178B.3000500@cn.fujitsu.com>
+Date: Tue, 26 Jul 2011 09:25:31 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Paul Menage <menage@google.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>
+Subject: Re: [PATCH 7/7] cgroups: Add a max number of tasks subsystem
+References: <1310393706-321-1-git-send-email-fweisbec@gmail.com> <1310393706-321-8-git-send-email-fweisbec@gmail.com> <CAJniumW7ZKLLDaXSZ4TZ_=PX0ARERTeEyL-iTir12hciOArJqA@mail.gmail.com>
+In-Reply-To: <CAJniumW7ZKLLDaXSZ4TZ_=PX0ARERTeEyL-iTir12hciOArJqA@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-26 09:24:34,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-26 09:24:34,
+	Serialize complete at 2011-07-26 09:24:34
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+Paul Menage wrote:
+> On Mon, Jul 11, 2011 at 7:15 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>>  /* */
+>> +
+>> +#ifdef CONFIG_CGROUP_MAX_TASKS
+>> +SUBSYS(max_tasks)
+>> +#endif
+> 
+> I think I'd be inclined to make the naming slightly (IMO) cleaner:
+> call the subsystem 'tasks' and the files 'limit' and 'count' (or maybe
+> 'usage' to be more in line with memcg).
+>>
+>> +config CGROUP_MAX_TASKS
+>> +        bool "Control max number of tasks in a cgroup"
+>> +       depends on RESOURCE_COUNTERS
+>> +       help
+>> +         This option let the user to set up an upper bound allowed number
+>> +         of tasks.
+>> +
+> 
+> Needs to depend on CGROUPS too?
+> 
 
-The MIN_CONFIG is a single config that is considered to have all the
-configs that are required to boot the box.
+it's done implicitly, because it's inside "menuconfig CGROUPS".
 
-ADD_CONFIG is a list of configs that we add that may contain configs
-known to be broken (set off) or just configs that we want every box to
-have and this can include shared configs.
+>> +
+>> +
+>> +struct task_counter {
+>> +       struct res_counter              res;
+>> +       struct cgroup_subsys_state      css;
+>> +};
+> 
+> All other CSS structures put the "css" field as the first thing in the
+> structure. Not sure that anything relies on that, but consistency
 
-If a config has no MIN_CONFIG defined, but has multiple files defined
-for the ADD_CONFIG, the test will die, because the MIN_CONFIG will
-default to ADD_CONFIG. The problem is the code to open MIN_CONFIG
-expects a string of one file, not multiple, and the open will fail.
+no as far as I know, and that's a bad thing.
 
-Since the real minconfig that is used is a concatination of MIN_CONFIG
-and ADD_CONFIG files, we change the code to open that instead of
-whatever MIN_CONFIG defaults to.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- tools/testing/ktest/ktest.pl |   19 +++++++------------
- 1 files changed, 7 insertions(+), 12 deletions(-)
-
-diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index e826704..8d02ccb 100755
---- a/tools/testing/ktest/ktest.pl
-+++ b/tools/testing/ktest/ktest.pl
-@@ -1970,12 +1970,6 @@ sub config_bisect {
- 	unlink $tmpconfig;
-     }
- 
--    # Add other configs
--    if (defined($addconfig)) {
--	run_command "cat $addconfig >> $tmpconfig" or
--	    dodie "failed to append $addconfig";
--    }
--
-     if (-f $tmpconfig) {
- 	load_force_config($tmpconfig);
- 	process_config_ignore $tmpconfig;
-@@ -1997,7 +1991,7 @@ sub config_bisect {
-     }
-     close(IN);
- 
--    # Now run oldconfig with the minconfig (and addconfigs)
-+    # Now run oldconfig with the minconfig
-     make_oldconfig;
- 
-     # check to see what we lost (or gained)
-@@ -2901,11 +2895,12 @@ for (my $i = 1; $i <= $opt{"NUM_TESTS"}; $i++) {
-     unlink $dmesg;
-     unlink $buildlog;
- 
--    if (!defined($minconfig)) {
--	$minconfig = $addconfig;
--
--    } elsif (defined($addconfig)) {
--	run_command "cat $addconfig $minconfig > $tmpdir/add_config" or
-+    if (defined($addconfig)) {
-+	my $min = $minconfig;
-+	if (!defined($minconfig)) {
-+	    $min = "";
-+	}
-+	run_command "cat $addconfig $min > $tmpdir/add_config" or
- 	    dodie "Failed to create temp config";
- 	$minconfig = "$tmpdir/add_config";
-     }
--- 
-1.7.5.4
-
-
+> can't hurt and it probably makes the code fractionally smaller since
+> the translation between CSS and task_counter becomes a no-op.
+> 
+>> +static void task_counter_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
+>> +                             struct cgroup *old_cgrp, struct task_struct *task)
+>> +{
+>> +       struct task_counter *cnt = cgroup_task_counter(old_cgrp);
+>> +
+>> +       if (cnt != &root_counter)
+>> +               res_counter_uncharge_until(&cnt->res, &root_counter.res, 1);
+>> +}
+> 
+> Do we even need the root_counter to be exposed in any way? Why not
+> make children of the root cgroup just have a NULL parent res_counter?
+> 
+> You'll still need a task_counter object so that the cgroups framework
+> has a CSS object for cgroups housekeeping, but I don't think it needs
+> to actually be used for anything.
+> 
+> Paul
+> 
