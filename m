@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab1GZSfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 14:35:37 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37134 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751661Ab1GZSfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 14:35:31 -0400
-Date: Tue, 26 Jul 2011 20:34:30 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ray Lee <ray-lk@madrabbit.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-Message-ID: <20110726183430.GA501@elte.hu>
-References: <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com>
- <20110724182323.GA13247@aftab>
- <20110724183045.GB29660@elte.hu>
- <20110724190752.GA13647@aftab>
- <20110724204450.GB18546@elte.hu>
- <20110725200014.GA23986@aftab>
- <20110725200645.GC8302@elte.hu>
- <20110725215328.GA25960@aftab>
- <CADU53JV-aKbRU-iixbqcv_kAci7L6z43GYmP6uw8hZdY4PrBbQ@mail.gmail.com>
- <20110726172801.GC32536@aftab>
+	id S1752926Ab1GZShP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 14:37:15 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57747 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751620Ab1GZShM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 14:37:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110726172801.GC32536@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110726181418.GA27993@quack.suse.cz>
+References: <20110726181418.GA27993@quack.suse.cz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 26 Jul 2011 11:36:29 -0700
+Message-ID: <CA+55aFwYsdyE4KxFW70c_FfTb41m+EwchYvNJU-eUEw4usRkUw@mail.gmail.com>
+Subject: Re: [PULL REQUEST] ext3, jbd, ext2, and quota fixes for 3.1-rc1
+To: Jan Kara <jack@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
+        Josef Bacik <josef@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 26, 2011 at 11:14 AM, Jan Kara <jack@suse.cz> wrote:
+>
+>  could you please pull from
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs-2.6.git for_linus
 
-* Borislav Petkov <bp@amd64.org> wrote:
+Ok, this clashed with the fsync mutex pushdown, and the whole addition
+of fixed tracepoints.
 
-> Ok, I went and installed a Debian wheezy with gnome and started 
-> almost everything I could find in the startup menu. Kernel is 3.0 
-> with Linus' simpler fix.
-> 
-> The attached file shows all libraries which would create aliases 
-> (i.e. 2 or more unique values for bits [14:12] along with the 
-> respective count) in the total of:
-> 
-> Total r-xp mappings: 831, aliasing: 240 (0.289%)
+Quite frankly, I think the fixed tracepoints are broken and make the
+code unreadable (why have them?) but I fixed it up.
 
-28.9%, right?
+Somebody should really double-check the resolve. That's especially
+true since the whole i_mutex thing is *also* rather dubious. The
+comment that moved that down says:
 
-> For example, libc gets mapped into all possible slots for [14:12]
-> 
-> Library                                 [14:12] count
-> =======                                 ======= =====
-> /lib/libc-2.11.2.so
->                                         0       12
->                                         1       12
->                                         2       11
->                                         3       12
->                                         4       13
->                                         5       16
->                                         6       13
->                                         7       9
-> 
-> 
-> and so on.
++       /*
++        * Taking the mutex here just to keep consistent with how fsync was
++        * called previously, however it looks like we don't need to take
++        * i_mutex at all.
++        */
 
-Was this done with a stock kernel, or with the simple patch applied?
+but in fact it is *not* consistent with how fsync() used to be called,
+since we then drop the mutex *before* doing
 
-Thanks,
+    return ext3_force_commit(inode->i_sb);
 
-	Ingo
+for the should_journal_data case.
+
+See commit 02c24a82187 ("fs: push i_mutex and filemap_write_and_wait
+down into ->fsync() handlers").
+
+I resolved it with the mutex still dropped early (especially since the
+comment implies it may not matter at all), but quite frankly,
+everything I did around that resolve made me go "that code is just
+WRONG". Both wrt the tracepoints and wrt the i_mutex.
+
+So I think my resolution is "correct" from a merge standpoint, but I
+think the code is total crap. I also wonder whether you can really do
+that
+
+    J_ASSERT(ext3_journal_current_handle() == NULL);
+
+without holding the i_mutex, so I moved that back down again.
+
+So I *really* want people to take a look at that ext3_sync_file()
+function. Please?
+
+                      Linus
