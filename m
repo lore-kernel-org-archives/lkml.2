@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab1GZMfF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 08:35:05 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:58560
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751208Ab1GZMe6 (ORCPT
+	id S1752175Ab1GZMfj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 08:35:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:50013 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208Ab1GZMff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 08:34:58 -0400
-Date: Tue, 26 Jul 2011 08:34:53 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: David Wagner <david.wagner@free-electrons.com>
-Cc: linux-mtd@lists.infradead.org, dedekind1@gmail.com, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org,
-        tim.bird@am.sony.com
-Subject: Re: [PATCH] UBI: new module ubiblk: block layer on top of UBI
-Message-ID: <20110726123453.GA18513@infradead.org>
-References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com>
- <1311683250-7921-1-git-send-email-david.wagner@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311683250-7921-1-git-send-email-david.wagner@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 26 Jul 2011 08:35:35 -0400
+X-Authority-Analysis: v=1.1 cv=s3eDhkhcaTLnj7IEXy8aaXUiY7FbET0mf+/2Xe0elbc= c=1 sm=0 a=3NOpT3G9tzkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=WQuCyQq__gPjfFxVObEA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 6/7] sched: Balance RT tasks when forked as well
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1311683108.24752.33.camel@twins>
+References: <20110617015516.301117218@goodmis.org>
+	 <20110617015919.832743148@goodmis.org>  <1311683108.24752.33.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 26 Jul 2011 08:35:32 -0400
+Message-ID: <1311683732.3526.64.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> TODO:
->  * the modules keeps a table of the devices which length is the maximum number
->    of UBI volumes.  It should make use of a linked list.
+On Tue, 2011-07-26 at 14:25 +0200, Peter Zijlstra wrote:
+> On Thu, 2011-06-16 at 21:55 -0400, Steven Rostedt wrote:
+> > +       /* For anything but wake ups, just return the task_cpu */
+> > +       if (sd_flag != SD_BALANCE_WAKE || sd_flag != SD_BALANCE_FORK) 
+> 
+> So we call select_task_rq() with SD_BALANCE_{WAKE,EXEC,FORK}, 
+> 
+> 	(WAKE != WAKE -> 0 || WAKE != FORK -> 1) -> 1
+> 	(EXEC != WAKE -> 1 ) -> 1
+> 	(FORK != WAKE -> 1 ) -> 1
+> 
+> IOW, you never end up doing anything now.. surely you didn't mean that?!
 
-A linked list isn't very nice either.  Try using idr, which gives you
-both an allocator for the minor number space, and a way to look up
-the structure by that index.
+Bah!
 
-> Advantages of ubiblk over gluebi+mtdblock_ro:
+s/||/&&/
 
-This section should be in the main commit log, and not that part with
-the changelog which gets dropped.
+:-p
 
-> +int major;
+Thanks!
 
-Please don't use global variables with generic names.  In this case you
-should neither make it global nor give it a generic name.
+-- Steve
+
 
