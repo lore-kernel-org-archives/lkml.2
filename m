@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290Ab1GZPS0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 11:18:26 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:41212 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776Ab1GZPSV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 11:18:21 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: hirofumi@mail.parknet.co.jp
-Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>
-Subject: [PATCH] fat: fat16 support maximum 4GB file/vol size as WinXP or 7.
-Date: Wed, 27 Jul 2011 00:17:50 +0900
-Message-Id: <1311693470-2220-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1753398Ab1GZPTR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 11:19:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44593 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753333Ab1GZPTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 11:19:12 -0400
+Date: Tue, 26 Jul 2011 17:19:08 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, lacombar@gmail.com, sam@ravnborg.org,
+        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 2/2] mm: Switch NUMA_BUILD and COMPACTION_BUILD to
+ new KCONFIG() syntax
+Message-ID: <20110726151908.GD17958@tiehlicka.suse.cz>
+References: <4E1D9C25.8080300@suse.cz>
+ <1311634718-32588-1-git-send-email-mmarek@suse.cz>
+ <1311634718-32588-2-git-send-email-mmarek@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311634718-32588-2-git-send-email-mmarek@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FAT16 support maximum 4GB vol/file size with 64KB cluster size.
+On Tue 26-07-11 00:58:38, Michal Marek wrote:
+> Cc: linux-mm@kvack.org
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
 
-Win NT/XP/7 increased the maximum cluster size to 64KB, and file/vol size increased 4GB also.
-Although increasing, the file size of linux FAT is still limited at 2GB.
-I found that it is limited by sb->maxbytes(0x7fffffff) when partition is formatted by FAT16.
-sb->s_maxbytes in fill_super should be set to 0xffffffff like fat32.
+I assume that this is a cleanup. Without seeing the rest of the patch
+set (probably not in linux-mm missing in the CC) and the cover email it
+is hard to be sure. Could you add some description to the patch, please?
 
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
----
- fs/fat/inode.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+> ---
+>  include/linux/gfp.h    |    2 +-
+>  include/linux/kernel.h |   14 --------------
+>  mm/page_alloc.c        |   12 ++++++------
+>  mm/vmalloc.c           |    4 ++--
+>  mm/vmscan.c            |    2 +-
+>  5 files changed, 10 insertions(+), 24 deletions(-)
 
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 5942fec..f2dce50 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -1367,6 +1367,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 	sbi->free_clusters = -1;	/* Don't know yet */
- 	sbi->free_clus_valid = 0;
- 	sbi->prev_free = FAT_START_ENT;
-+	sb->s_maxbytes = 0xffffffff;
- 
- 	if (!sbi->fat_length && b->fat32_length) {
- 		struct fat_boot_fsinfo *fsinfo;
-@@ -1377,8 +1378,6 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 		sbi->fat_length = le32_to_cpu(b->fat32_length);
- 		sbi->root_cluster = le32_to_cpu(b->root_cluster);
- 
--		sb->s_maxbytes = 0xffffffff;
--
- 		/* MC - if info_sector is 0, don't multiply by 0 */
- 		sbi->fsinfo_sector = le16_to_cpu(b->info_sector);
- 		if (sbi->fsinfo_sector == 0)
 -- 
-1.7.4.4
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
