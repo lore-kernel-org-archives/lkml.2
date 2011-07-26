@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751649Ab1GZF7T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 01:59:19 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:48280 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064Ab1GZF7N (ORCPT
+	id S1751669Ab1GZGAX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 02:00:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:36352 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240Ab1GZGAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 01:59:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110725215328.GA25960@aftab>
-References: <1311340547-7861-1-git-send-email-bp@amd64.org>
- <CA+55aFwL9Fwd9ouX3UMOayoBsZyZzTdDSySa6nZJxbpyLifbaQ@mail.gmail.com>
- <20110724172222.GB12621@aftab> <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com>
- <20110724182323.GA13247@aftab> <20110724183045.GB29660@elte.hu>
- <20110724190752.GA13647@aftab> <20110724204450.GB18546@elte.hu>
- <20110725200014.GA23986@aftab> <20110725200645.GC8302@elte.hu> <20110725215328.GA25960@aftab>
-From: Ray Lee <ray-lk@madrabbit.org>
-Date: Mon, 25 Jul 2011 22:58:43 -0700
-X-Google-Sender-Auth: 5mouqIxJXsddf2cEw6DNHVmtJsU
-Message-ID: <CADU53JV-aKbRU-iixbqcv_kAci7L6z43GYmP6uw8hZdY4PrBbQ@mail.gmail.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 26 Jul 2011 02:00:19 -0400
+Subject: Re: [Patch] VFS : mount lock scalability for files systems without
+ mount point   (WAS vfsmount lock issues on very large ppc64 box)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, Matthew Wilcox <matthew@wil.cx>,
+        Anton Blanchard <anton@samba.org>, npiggin@kernel.dk,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+In-Reply-To: <1311636178.2576.34.camel@schen9-DESK>
+References: <20110717010427.GC5359@parisc-linux.org>
+	 <20110717084630.GC8006@one.firstfloor.org>
+	 <1310977028.5756.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20110718154008.GA29593@infradead.org>
+	 <20110718155141.GA11013@ZenIV.linux.org.uk>
+	 <1311093158.2707.75.camel@schen9-DESK>
+	 <20110721204042.GB31405@ZenIV.linux.org.uk>
+	 <1311294452.2576.18.camel@schen9-DESK>
+	 <20110723132411.GA22183@infradead.org>
+	 <1311633550.2576.33.camel@schen9-DESK>
+	 <20110725225154.GD22133@ZenIV.linux.org.uk>
+	 <1311636178.2576.34.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Jul 2011 08:00:13 +0200
+Message-ID: <1311660013.2996.6.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 2:53 PM, Borislav Petkov <bp@amd64.org> wrote:
->
-> On Mon, Jul 25, 2011 at 04:06:45PM -0400, Ingo Molnar wrote:
-> >
-> > * Borislav Petkov <bp@amd64.org> wrote:
-> >
-> > > So yeah, the simpler fix works for processes mapping libraries in
-> > > the same order but not for processes mapping a subset of libraries
-> > > in a different order.
-> >
-> > but what is the proportion of 'good' versus bad alignment of
-> > libraries, could you collect some stats on a representative enough,
-> > fully booted up Linux system?
-> >
-> > Are only 1% of mappings 'bad'? 5%? 10%? 50%? We have no idea and the
-> > actual number matters a lot.
->
-> Actually, it's hard to say what is a 'good' and 'bad' allocation. If
-> they don't alias, they're always good :).
+Le lundi 25 juillet 2011 à 16:22 -0700, Tim Chen a écrit :
+> On Mon, 2011-07-25 at 23:51 +0100, Al Viro wrote:
+> 
+> > It's mostly merged in mainline already...  BTW, you forgot to export
+> > that sucker - mtdchar can be modular.
+> 
+> Thanks for fixing it up and merging it.
+> 
 
-Count the number of aliases per total mappings, and report that as a
-failure percentage? It doesn't have to be a perfect metric, it just
-needs to be a meaningful and repeatable one.
+Next step is to not chain pipes/sockets into superblock s_inodes list
+
+inode_sb_list_add()/inode_sb_list_del() is the very last contention
+point because of spin_lock(&inode_sb_list_lock);
+
+
+
