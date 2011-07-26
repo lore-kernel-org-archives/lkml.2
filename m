@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376Ab1GZF1U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 01:27:20 -0400
-Received: from mail.perches.com ([173.55.12.10]:4279 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750717Ab1GZF1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 01:27:15 -0400
-Subject: Re: [PATCH 1/1] Staging: comedi: fix printk issue in c6xdigio.c
-From: Joe Perches <joe@perches.com>
-To: Ravishankar <ravishankarkm32@gmail.com>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>
-In-Reply-To: <1311658020-16057-1-git-send-email-ravishankarkm32@gmail.com>
-References: <[PATCH]Staging: comedi: fix printk issue in c6xdigio.c>
-	 <1311658020-16057-1-git-send-email-ravishankarkm32@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 25 Jul 2011 22:27:14 -0700
-Message-ID: <1311658034.26957.3.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1751450Ab1GZFaT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 01:30:19 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49960 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab1GZFaQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 01:30:16 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4E2E507F.7030607@jp.fujitsu.com>
+Date: Tue, 26 Jul 2011 14:28:31 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+MIME-Version: 1.0
+To: yong.zhang0@gmail.com
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        kobayashi.kk@ncos.nec.co.jp
+Subject: Re: [PATCH] proc/softirqs: only show state for online cpus
+References: <1311599418-1915-1-git-send-email-yong.zhang0@gmail.com>
+In-Reply-To: <1311599418-1915-1-git-send-email-yong.zhang0@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-26 at 10:57 +0530, Ravishankar wrote:
-> This is a patch to the c6xdigio.c file that fixes up a printk warning found by the checkpatch.pl tool
-> diff --git a/drivers/staging/comedi/drivers/c6xdigio.c b/drivers/staging/comedi/drivers/c6xdigio.c
-[]
-> @@ -343,7 +343,7 @@ static int c6xdigio_pwmo_insn_read(struct comedi_device *dev,
-[]
-> -	printk("c6xdigio_pwmo_insn_read %x\n", insn->n);
-> +	pr_info("c6xdigio_pwmo_insn_read %x\n", insn->n);
+> Like /proc/interrupts, no need to output data for nobody.
+> 
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Keika Kobayashi <kobayashi.kk@ncos.nec.co.jp>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-It would be good if you would convert embedded function names
-to "%s", __func__.  Maybe convert the bare printks to appropriate
-levels as well.  Perhaps:
+If the cpu never be onlined, its statistics always 0. Then, it definitely
+no value. In the other hand, if the cpu was offlined dynamically, we don't
+know the user want to know the cpus's statistics or not.
 
-	pr_debug("%s: %x\n", __func__, insn->n);
+Anyway, it's incompatibility change. I don't think this is valuable change.
+
+
+> ---
+>  fs/proc/softirqs.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/proc/softirqs.c b/fs/proc/softirqs.c
+> index 62604be..2b32b46 100644
+> --- a/fs/proc/softirqs.c
+> +++ b/fs/proc/softirqs.c
+> @@ -11,13 +11,13 @@ static int show_softirqs(struct seq_file *p, void *v)
+>  	int i, j;
+>  
+>  	seq_puts(p, "                    ");
+> -	for_each_possible_cpu(i)
+> +	for_each_online_cpu(i)
+>  		seq_printf(p, "CPU%-8d", i);
+>  	seq_putc(p, '\n');
+>  
+>  	for (i = 0; i < NR_SOFTIRQS; i++) {
+>  		seq_printf(p, "%12s:", softirq_to_name[i]);
+> -		for_each_possible_cpu(j)
+> +		for_each_online_cpu(j)
+>  			seq_printf(p, " %10u", kstat_softirqs_cpu(i, j));
+>  		seq_putc(p, '\n');
+>  	}
 
 
