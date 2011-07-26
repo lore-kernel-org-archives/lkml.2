@@ -1,75 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab1GZBF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 21:05:29 -0400
-Received: from lo.gmane.org ([80.91.229.12]:60714 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751349Ab1GZBFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752794Ab1GZBFi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 21:05:38 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:55696 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751794Ab1GZBFW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 25 Jul 2011 21:05:22 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Marc D Ronell <mronell@alumni.upenn.edu>
-Subject: initio.c driver question?  Can read but not write; Initio Corporation INI-950 SCSI Adapter (rev 02)
-Date: Mon, 25 Jul 2011 21:05:08 -0400
-Message-ID: <87hb69ua0r.fsf@cadence.glidepath.invalid>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: pool-71-255-164-94.bstnma.east.verizon.net
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-Cancel-Lock: sha1:DDgIZxaYIr9OyDyas5ZkRiNJtTY=
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=CGPSxVNVFqHN9Si6qgorQes4wUpMJkql3ojAUSU27oS0IrX5fOJ5znwyB2dlKnLNo
+	/vcL3+Xft94lGI7UozTNQ==
+MIME-Version: 1.0
+In-Reply-To: <1310393706-321-7-git-send-email-fweisbec@gmail.com>
+References: <1310393706-321-1-git-send-email-fweisbec@gmail.com> <1310393706-321-7-git-send-email-fweisbec@gmail.com>
+From: Paul Menage <menage@google.com>
+Date: Mon, 25 Jul 2011 18:05:00 -0700
+Message-ID: <CAJniumUGC5-KS5Rbg0SkHv5xD4XtAifYAaEM1-X-W7zbgCwCcg@mail.gmail.com>
+Subject: Re: [PATCH 6/7] cgroups: Add res counter common ancestor searching
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 11, 2011 at 7:15 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> Add a new API to find the common ancestor between two resource
+> counters. This includes the passed resource counter themselves.
+>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 
+Acked-by: Paul Menage <menage@google.com>
 
-I am having trouble writing to a scsi tape drive which is connected to
-a  startech PCISCSIUW card  that uses  the Initio  Corporation INI-950
-chipset.  Using  the 2.6.39.3  kernel, I can  read from the  scsi tape
-drive successfully, but  when I attempt to write,  the write fails.  I
-am attempting  to write  as root to  avoid permission  problems.  This
-failure seems to be potentially  a driver problem.  The tape drive and
-tapes have been  tested earlier with a different box  and were used to
-generate the tapes which were successfully read.
+There's something distasteful about doing an O(N^2) search on every
+charge/uncharge operation, but I guess in general N isn't going to be
+more than 2 or 3 so it's not worth optimizing.
 
-The failures are as follows:
+If you wanted to avoid the N^2 search then you could add a "depth"
+field in struct res_counter, which would be initialized to
+parent->depth+1, and then easily get both r1 and r2 to the same depth
+before proceeding up the tree in lock step, but that would bloat all
+instances of res_counter, which might work out as more expensive in
+the long run.
 
-root@myhost:~#  tar cvf /dev/st0 ~myaccount/
-tar: Removing leading `/' from member names
-/home/myaccount/
-/home/myaccount/.netpanzer/
-/home/myaccount/.netpanzer/log.txt
-/home/myaccount/.netpanzer/config/
-/home/myaccount/.netpanzer/config/netpanzer.xml
-/home/myaccount/.newsrc.eld
-/home/myaccount/2.4.24.config
-/home/myaccount/.Xauthority
-/home/myaccount/.xsession-errors
-tar: /dev/st0: Cannot write: Input/output error
-tar: Error is not recoverable: exiting now
+Paul
 
-The errors written to the /var/log/syslog are:
-
-Jul 24 14:10:50 myhost kernel: [18806.011317] st0: Block limits 1 - 16777215 bytes.
-Jul 24 14:11:32 myhost kernel: [18848.303903] st0: Sense Key : Illegal Request [current] 
-Jul 24 14:11:32 myhost kernel: [18848.303909] st0: Add. Sense: Invalid command operation code
-Jul 24 14:11:32 myhost kernel: [18848.303914] st0: Error on write filemark.
-Jul 24 14:12:29 myhost kernel: [18905.561873] st0: Sense Key : Illegal Request [current] 
-Jul 24 14:12:29 myhost kernel: [18905.561878] st0: Add. Sense: Invalid command operation code
-Jul 24 14:12:51 myhost kernel: [18926.897446] st0: Sense Key : 0xf [deferred] [descriptor]
-Jul 24 14:12:51 myhost kernel: [18926.897452] Descriptor sense data with sense descriptors (in hex):
-Jul 24 14:12:51 myhost kernel: [18926.897455]         ff ff fe ef c9 24 a5 2d d3 29 6e 09 d0 56 00 00 
-Jul 24 14:12:51 myhost kernel: [18926.897463]         00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-Jul 24 14:12:51 myhost kernel: [18926.897471]         00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-Jul 24 14:12:51 myhost kernel: [18926.897479]         00 00 00 00 00 
-Jul 24 14:12:51 myhost kernel: [18926.897482] st0: <<vendor>> ASC=0xfe ASCQ=0xefASC=0xfe <<vendor>> ASCQ=0xef
-
-Not sure if anyone is supporting the driver.  Thanks in advance for
-any help or suggestions.
-
-Marc
-
--- 
-
-
+> Cc: Paul Menage <menage@google.com>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Aditya Kali <adityakali@google.com>
+> ---
+>  include/linux/res_counter.h |    2 ++
+>  kernel/res_counter.c        |   19 +++++++++++++++++++
+>  2 files changed, 21 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+> index 8c421ac..354ed30 100644
+> --- a/include/linux/res_counter.h
+> +++ b/include/linux/res_counter.h
+> @@ -139,6 +139,8 @@ void res_counter_uncharge_until(struct res_counter *counter, struct res_counter
+>                                unsigned long val);
+>  void res_counter_uncharge(struct res_counter *counter, unsigned long val);
+>
+> +struct res_counter *res_counter_common_ancestor(struct res_counter *l, struct res_counter *r);
+> +
+>  /**
+>  * res_counter_margin - calculate chargeable space of a counter
+>  * @cnt: the counter
+> diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+> index 39f2513..1b2efd6 100644
+> --- a/kernel/res_counter.c
+> +++ b/kernel/res_counter.c
+> @@ -102,6 +102,25 @@ void res_counter_uncharge(struct res_counter *counter, unsigned long val)
+>        res_counter_uncharge_until(counter, NULL, val);
+>  }
+>
+> +struct res_counter *
+> +res_counter_common_ancestor(struct res_counter *r1, struct res_counter *r2)
+> +{
+> +       struct res_counter *iter;
+> +
+> +       while (r1) {
+> +               iter = r2;
+> +               while (iter) {
+> +                       if (iter == r1)
+> +                               return iter;
+> +                       iter = iter->parent;
+> +               }
+> +
+> +               r1 = r1->parent;
+> +       }
+> +
+> +       return NULL;
+> +}
+> +
+>  static inline unsigned long long *
+>  res_counter_member(struct res_counter *counter, int member)
+>  {
+> --
+> 1.7.5.4
+>
+>
