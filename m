@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab1GZRFQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 13:05:16 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40487 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753845Ab1GZRFH (ORCPT
+	id S1754005Ab1GZRFX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 13:05:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:43254 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975Ab1GZRFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 13:05:07 -0400
-Date: Tue, 26 Jul 2011 19:04:49 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Rosenfeld, Hans" <Hans.Rosenfeld@amd.com>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        Mike Travis <travis@sgi.com>, Frank Arnold <Frank.Arnold@amd.com>
-Subject: Re: [patch 3/3] x86: cache_info: Kill the atomic allocation in
- amd_init_l3_cache()
-Message-ID: <20110726170449.GB32536@aftab>
-References: <20110723212603.517924252@linutronix.de>
- <20110723212626.688229918@linutronix.de>
- <20110724102734.GA17099@liondog.tnic>
- <alpine.LFD.2.02.1107241812590.3136@ionos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1107241812590.3136@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 26 Jul 2011 13:05:17 -0400
+X-Authority-Analysis: v=1.1 cv=s3eDhkhcaTLnj7IEXy8aaXUiY7FbET0mf+/2Xe0elbc= c=1 sm=0 a=BYjp-8hqa-kA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=9ouZYpg21h5U8RkBtYwA:9 a=2Wn9l-nSmqVnJ2ieHB4A:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [PATCH] cgroup/kmemcheck: No need to annotate base anymore
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Dave Hansen <dave@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 26 Jul 2011 13:05:11 -0400
+Message-ID: <1311699911.3526.87.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 24, 2011 at 12:13:38PM -0400, Thomas Gleixner wrote:
-> > Let me test the patchset on Monday to verify there are no other subtle
-> > interactions I haven't thought of right now.
+When the cgroup base was allocated with kmalloc, it was necessary to
+annotate the variable with kmemcheck_not_leak(). But because it has
+recently been changed to be allocated with alloc_page(), the annotation
+is no longer needed.
 
-Yep, patches look good and boot as a xen guest too.
+I was triggering this output:
 
-While you're at it, can you please also apply the following one which
-updates L3 size calculation on F15h?
+allocated 8388608 bytes of page_cgroup
+please try 'cgroup_disable=memory' option if you don't want memory cgroups
+kmemleak: Trying to color unknown object at 0xf5840000 as Grey
+Pid: 0, comm: swapper Not tainted 3.0.0-test #12
+Call Trace:
+ [<c17e34e6>] ? printk+0x1d/0x1f^M
+ [<c10e2941>] paint_ptr+0x4f/0x78
+ [<c178ab57>] kmemleak_not_leak+0x58/0x7d
+ [<c108ae9f>] ? __rcu_read_unlock+0x9/0x7d
+ [<c1cdb462>] kmemleak_init+0x19d/0x1e9
+ [<c1cbf771>] start_kernel+0x346/0x3ec
+ [<c1cbf1b4>] ? loglevel+0x18/0x18
+ [<c1cbf0aa>] i386_start_kernel+0xaa/0xb0
 
-Thanks.
+After a bit of debugging I tracked the object 0xf840000 (and others)
+down to the cgroup code. The change from allocating base with kmalloc to
+alloc_page() has the base not calling kmemleak_alloc() which adds the
+pointer to the object_tree_root, but kmemleak_not_leak() adds it to the
+crt_early_log[] table. On kmemleak_init(), the entry is found in the
+early_log[] but not the object_tree_root, and this error message is
+displayed.
 
---
-From: Frank Arnold <frank.arnold@amd.com>
-Date: Wed, 18 May 2011 11:32:10 +0200
-Subject: [PATCH] x86, AMD, cacheinfo: Update calculation of L3 cache indices
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-L3 subcaches 0 and 1 of AMD Family 15h CPUs can have a size of 2MB.
-Update the calculation routine for the number of L3 indices to reflect
-that.
-
-Signed-off-by: Frank Arnold <frank.arnold@amd.com>
----
- arch/x86/kernel/cpu/intel_cacheinfo.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index 951820f..a3b0811 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -314,6 +314,12 @@ static void __cpuinit amd_calc_l3_indices(struct amd_northbridge *nb)
- 	/* calculate subcache sizes */
- 	l3->subcaches[0] = sc0 = !(val & BIT(0));
- 	l3->subcaches[1] = sc1 = !(val & BIT(4));
-+
-+	if (boot_cpu_data.x86 == 0x15) {
-+		l3->subcaches[0] = sc0 += !(val & BIT(1));
-+		l3->subcaches[1] = sc1 += !(val & BIT(5));
-+	}
-+
- 	l3->subcaches[2] = sc2 = !(val & BIT(8))  + !(val & BIT(9));
- 	l3->subcaches[3] = sc3 = !(val & BIT(12)) + !(val & BIT(13));
+diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+index 53bffc6..955a49f 100644
+--- a/mm/page_cgroup.c
++++ b/mm/page_cgroup.c
+@@ -9,7 +9,6 @@
+ #include <linux/vmalloc.h>
+ #include <linux/cgroup.h>
+ #include <linux/swapops.h>
+-#include <linux/kmemleak.h>
  
--- 
-1.7.6.134.gcf13f6
+ static void __meminit init_page_cgroup(struct page_cgroup *pc, unsigned long id)
+ {
+@@ -179,13 +178,6 @@ static int __meminit init_section_page_cgroup(unsigned long pfn, int nid)
+ 	table_size = sizeof(struct page_cgroup) * PAGES_PER_SECTION;
+ 	base = alloc_page_cgroup(table_size, nid);
+ 
+-	/*
+-	 * The value stored in section->page_cgroup is (base - pfn)
+-	 * and it does not point to the memory block allocated above,
+-	 * causing kmemleak false positives.
+-	 */
+-	kmemleak_not_leak(base);
+-
+ 	if (!base) {
+ 		printk(KERN_ERR "page cgroup allocation failure\n");
+ 		return -ENOMEM;
 
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
