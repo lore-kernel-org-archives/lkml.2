@@ -1,51 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab1GZHws (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 03:52:48 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33151 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752788Ab1GZHwl (ORCPT
+	id S1753094Ab1GZHxL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 03:53:11 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:35120 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752434Ab1GZHxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 03:52:41 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E2E7246.6050204@jp.fujitsu.com>
-Date: Tue, 26 Jul 2011 16:52:38 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: yong.zhang0@gmail.com
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        kobayashi.kk@ncos.nec.co.jp
-Subject: Re: [PATCH] proc/softirqs: only show state for online cpus
-References: <1311599418-1915-1-git-send-email-yong.zhang0@gmail.com> <4E2E507F.7030607@jp.fujitsu.com> <CAM2zO=CGkVCMNZS8F6LxFi-NdYXf0fDLB_AEc00xrPvO_D02qw@mail.gmail.com> <4E2E6102.3060600@jp.fujitsu.com> <CAM2zO=CxriXK4bqGbwhfkfdgSpGwe1mAJE=6cYpDAf0Hxji0sQ@mail.gmail.com>
-In-Reply-To: <CAM2zO=CxriXK4bqGbwhfkfdgSpGwe1mAJE=6cYpDAf0Hxji0sQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 26 Jul 2011 03:53:09 -0400
+Subject: Re: [PATCH 9/9] [SCSI] mvsas: Add support for interrupt tasklet
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: yxlraid@gmail.com
+Cc: James.Bottomley@suse.de, jack_wang@usish.com,
+        lucas.demarchi@profusion.mobi, maciej.trela@intel.com,
+        dan.j.williams@intel.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yuxiangl@marvell.com, jfeng@marvell.com
+In-Reply-To: <1309444056-29277-1-git-send-email-yxlraid@gmail.com>
+References: <1309444056-29277-1-git-send-email-yxlraid@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 26 Jul 2011 11:53:00 +0400
+Message-ID: <1311666780.17353.8.camel@mulgrave>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Offtopic, /proc/interrupt should be protected by get_online_cpus().
->> Otherwise the header (i.e. cpu number) and the actual statistics fields
->> can be mismatched likes following. Am I missing something?
+On Thu, 2011-06-30 at 22:27 +0800, yxlraid@gmail.com wrote:
+> From: Xiangliang Yu <yuxiangl@marvell.com>
 > 
-> I think you are right. The reader could be preempted by cpu hotplug.
+> -- Add support for interrupt tasklet, which will improve performance.
+> -- Correct spelling of "20011"
 > 
-> After searching the whole tree, only s390 take cpu_hotplug.lock,
-> but its usage is not currect:
+> Signed-off-by: Xiangliang Yu <yuxiangl@marvell.com>
+> ---
+>  drivers/scsi/mvsas/Kconfig   |    9 ++++++++-
+>  drivers/scsi/mvsas/Makefile  |    1 +
+>  drivers/scsi/mvsas/mv_64xx.c |    6 ++----
+>  drivers/scsi/mvsas/mv_94xx.c |    5 +----
+>  drivers/scsi/mvsas/mv_init.c |   32 ++++++++++++++++++++------------
+>  drivers/scsi/mvsas/mv_sas.h  |    1 +
+>  6 files changed, 33 insertions(+), 21 deletions(-)
 > 
-> arch/s390/kernel/irq.c:
-> int show_interrupts(struct seq_file *p, void *v)
-> {
->           get_online_cpus();
->           .........
->           put_online_cpus();
-> }
-> 
-> Because the reader will call show_interrupts nr_irqs times.
-> So get_online_cpus()/put_online_cpus() should be put upper,
-> maybe interrupts_open(). How do you think about it?
+> diff --git a/drivers/scsi/mvsas/Kconfig b/drivers/scsi/mvsas/Kconfig
+> index c82b012..78f7e20 100644
+> --- a/drivers/scsi/mvsas/Kconfig
+> +++ b/drivers/scsi/mvsas/Kconfig
+> @@ -3,7 +3,7 @@
+>  #
+>  # Copyright 2007 Red Hat, Inc.
+>  # Copyright 2008 Marvell. <kewei@marvell.com>
+> -# Copyright 2009-20011 Marvell. <yuxiangl@marvell.com>
+> +# Copyright 2009-2011 Marvell. <yuxiangl@marvell.com>
+>  #
+>  # This file is licensed under GPLv2.
+>  #
+> @@ -41,3 +41,10 @@ config SCSI_MVSAS_DEBUG
+>  	help
+>  		Compiles the 88SE64XX/88SE94XX driver in debug mode.  In debug mode,
+>  		the driver prints some messages to the console.
+> +config SCSI_MVSAS_TASKLET
+> +	bool "Support for interrupt tasklet"
+> +	default n
+> +	depends on SCSI_MVSAS
+> +	help
+> +		Compiles the 88SE64xx/88SE94xx driver in interrupt tasklet mode.In this mode,
+> +		the interrupt will schedule a tasklet.
+> diff --git a/drivers/scsi/mvsas/Makefile b/drivers/scsi/mvsas/Makefile
+> index 87b231a..40aae8a 100644
+> --- a/drivers/scsi/mvsas/Makefile
+> +++ b/drivers/scsi/mvsas/Makefile
+> @@ -23,6 +23,7 @@
+>  # USA
+>  
+>  ccflags-$(CONFIG_SCSI_MVSAS_DEBUG) := -DMV_DEBUG
+> +ccflags-$(CONFIG_SCSI_MVSAS_TASKLET) := -DMVS_USE_TASKLET
 
-I agree with you.
+There's no need for this #define indirection: just use the config
+variable (I fixed this up, see below).
+
+I also fixed an unused variable with one of the branches of the ifdef,
+see below.
+
+In general, this sort of nastiness makes it more optimal to use C to do
+the ifdef instead of preprocessor, something like
+
+#ifdef CONFIG_SCSI_MVSAS_TASKLET
+static const int mvs_use_tasklet = 1
+#else
+static const int mvs_use_tasklet = 0
+#endif
+
+and then all the ifdefs become
+
+if (mvs_use_tasklet)
+	...
+
+We can't get unused variable warnings and the compiler, since it should
+know statically the value, should optimise out the unused legs of the
+ifs.
+
+James
+
+---
+diff --git a/drivers/scsi/mvsas/Makefile b/drivers/scsi/mvsas/Makefile
+index 40aae8a..87b231a 100644
+--- a/drivers/scsi/mvsas/Makefile
++++ b/drivers/scsi/mvsas/Makefile
+@@ -23,7 +23,6 @@
+ # USA
+ 
+ ccflags-$(CONFIG_SCSI_MVSAS_DEBUG) := -DMV_DEBUG
+-ccflags-$(CONFIG_SCSI_MVSAS_TASKLET) := -DMVS_USE_TASKLET
+ 
+ obj-$(CONFIG_SCSI_MVSAS) += mvsas.o
+ mvsas-y +=  mv_init.o  \
+diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
+index 77dea68..4e9af66 100644
+--- a/drivers/scsi/mvsas/mv_init.c
++++ b/drivers/scsi/mvsas/mv_init.c
+@@ -170,7 +170,7 @@ static void mvs_free(struct mvs_info *mvi)
+ 	kfree(mvi);
+ }
+ 
+-#ifdef MVS_USE_TASKLET
++#ifdef CONFIG_SCSI_MVSAS_TASKLET
+ static void mvs_tasklet(unsigned long opaque)
+ {
+ 	u32 stat;
+@@ -201,29 +201,32 @@ out:
+ 
+ static irqreturn_t mvs_interrupt(int irq, void *opaque)
+ {
+-	u32 core_nr, i = 0;
++	u32 core_nr;
+ 	u32 stat;
+ 	struct mvs_info *mvi;
+ 	struct sas_ha_struct *sha = opaque;
++#ifndef CONFIG_SCSI_MVSAS_TASKLET
++	u32 i;
++#endif
+ 
+ 	core_nr = ((struct mvs_prv_info *)sha->lldd_ha)->n_host;
+ 	mvi = ((struct mvs_prv_info *)sha->lldd_ha)->mvi[0];
+ 
+ 	if (unlikely(!mvi))
+ 		return IRQ_NONE;
+-#ifdef MVS_USE_TASKLET
++#ifdef CONFIG_SCSI_MVSAS_TASKLET
+ 	MVS_CHIP_DISP->interrupt_disable(mvi);
+ #endif
+ 
+ 	stat = MVS_CHIP_DISP->isr_status(mvi, irq);
+ 	if (!stat) {
+-	#ifdef MVS_USE_TASKLET
++	#ifdef CONFIG_SCSI_MVSAS_TASKLET
+ 		MVS_CHIP_DISP->interrupt_enable(mvi);
+ 	#endif
+ 		return IRQ_NONE;
+ 	}
+ 
+-#ifdef MVS_USE_TASKLET
++#ifdef CONFIG_SCSI_MVSAS_TASKLET
+ 	tasklet_schedule(&((struct mvs_prv_info *)sha->lldd_ha)->mv_tasklet);
+ #else
+ 	for (i = 0; i < core_nr; i++) {
+@@ -607,7 +610,7 @@ static int __devinit mvs_pci_init(struct pci_dev *pdev,
+ 		nhost++;
+ 	} while (nhost < chip->n_host);
+ 	mpi = (struct mvs_prv_info *)(SHOST_TO_SAS_HA(shost)->lldd_ha);
+-#ifdef MVS_USE_TASKLET
++#ifdef CONFIG_SCSI_MVSAS_TASKLET
+ 	tasklet_init(&(mpi->mv_tasklet), mvs_tasklet,
+ 		     (unsigned long)SHOST_TO_SAS_HA(shost));
+ #endif
+@@ -653,7 +656,7 @@ static void __devexit mvs_pci_remove(struct pci_dev *pdev)
+ 	core_nr = ((struct mvs_prv_info *)sha->lldd_ha)->n_host;
+ 	mvi = ((struct mvs_prv_info *)sha->lldd_ha)->mvi[0];
+ 
+-#ifdef MVS_USE_TASKLET
++#ifdef CONFIG_SCSI_MVSAS_TASKLET
+ 	tasklet_kill(&((struct mvs_prv_info *)sha->lldd_ha)->mv_tasklet);
+ #endif
+ 
+
+
+
 
 
