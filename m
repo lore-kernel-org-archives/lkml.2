@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab1GZAv1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 20:51:27 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:36193 "EHLO
+	id S1752870Ab1GZA6Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 20:58:16 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:53304 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794Ab1GZAvU convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752062Ab1GZA6I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 20:51:20 -0400
+	Mon, 25 Jul 2011 20:58:08 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:mime-version:in-reply-to:references:from:date:
 	message-id:subject:to:cc:content-type:
 	content-transfer-encoding:x-system-of-record;
-	b=pNPUInnEiJIBKICY8qx4w29AkWxra3ObDE7x2R8D1u9G8ADyP9DpAQzmXsq2Dnc1R
-	VhQtWfZ/FSd7q8gDtPN0A==
+	b=i6FAZGX2ISFm6YvA1MKio0JQKOyh7F9vP5XD4cbp83WSQK2iYYAkU6DXCG+1O4JKL
+	i6YTLMSPaKHMr0mNdbAfg==
 MIME-Version: 1.0
-In-Reply-To: <1310393706-321-6-git-send-email-fweisbec@gmail.com>
-References: <1310393706-321-1-git-send-email-fweisbec@gmail.com> <1310393706-321-6-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1310393706-321-5-git-send-email-fweisbec@gmail.com>
+References: <1310393706-321-1-git-send-email-fweisbec@gmail.com> <1310393706-321-5-git-send-email-fweisbec@gmail.com>
 From: Paul Menage <menage@google.com>
-Date: Mon, 25 Jul 2011 17:50:54 -0700
-Message-ID: <CAJniumXTq18gDTyirNwu-QRxRdZQZs75j-ffGUcxsnTQs7CshQ@mail.gmail.com>
-Subject: Re: [PATCH 5/7] cgroups: Ability to stop res charge propagation on
- bounded ancestor
+Date: Mon, 25 Jul 2011 17:57:41 -0700
+Message-ID: <CAJniumVhPWpzpoLmv6Owtr8iofkxxJ19Mwdx8iycF5D8TgvD_Q@mail.gmail.com>
+Subject: Re: [PATCH 4/7] cgroups: New cancel_attach_task subsystem callback
 To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -34,127 +33,85 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, Jul 11, 2011 at 7:15 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> Moving a task from a cgroup to another may require to substract
-> its resource charge from the old cgroup and add it to the new one.
+> To cancel a process attachment on a subsystem, we only call the
+> cancel_attach() callback once on the leader but we have no
+> way to cancel the attachment individually for each member of
+> the process group.
 >
-> For this to happen, the uncharge/charge propagation can just stop
-> when we reach the common ancestor for the two cgroups. Further
-> the performance reasons, we also want to avoid to temporarily
-> overload the common ancestors with a non-accurate resource
-> counter usage if we charge first the new cgroup and uncharge the
-> old one thereafter. This is going to be a requirement for the coming
-> max number of task subsystem.
+> This is going to be needed for the max number of tasks susbystem
+> that is coming.
 >
-> To solve this, provide a pair of new API that can charge/uncharge
-> a resource counter until we reach a given ancestor.
+> To prepare for this integration, call a new cancel_attach_task()
+> callback on each task of the group until we reach the member that
+> failed to attach.
 >
 > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 
 Acked-by: Paul Menage <menage@google.com>
 
-Looks good, thanks.
-Paul
 
 > Cc: Paul Menage <menage@google.com>
 > Cc: Li Zefan <lizf@cn.fujitsu.com>
 > Cc: Johannes Weiner <hannes@cmpxchg.org>
 > Cc: Aditya Kali <adityakali@google.com>
 > ---
->  include/linux/res_counter.h |    6 ++++++
->  kernel/res_counter.c        |   23 ++++++++++++++++++-----
->  2 files changed, 24 insertions(+), 5 deletions(-)
+>  include/linux/cgroup.h |    1 +
+>  kernel/cgroup.c        |   15 ++++++++++++---
+>  2 files changed, 13 insertions(+), 3 deletions(-)
 >
-> diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-> index 109d118..8c421ac 100644
-> --- a/include/linux/res_counter.h
-> +++ b/include/linux/res_counter.h
-> @@ -117,6 +117,10 @@ void res_counter_init(struct res_counter *counter, struct res_counter *parent);
->
->  int __must_check res_counter_charge_locked(struct res_counter *counter,
->                unsigned long val);
-> +int __must_check res_counter_charge_until(struct res_counter *counter,
-> +                                         struct res_counter *limit,
-> +                                         unsigned long val,
-> +                                         struct res_counter **limit_fail_at);
->  int __must_check res_counter_charge(struct res_counter *counter,
->                unsigned long val, struct res_counter **limit_fail_at);
->
-> @@ -131,6 +135,8 @@ int __must_check res_counter_charge(struct res_counter *counter,
->  */
->
->  void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val);
-> +void res_counter_uncharge_until(struct res_counter *counter, struct res_counter *limit,
-> +                               unsigned long val);
->  void res_counter_uncharge(struct res_counter *counter, unsigned long val);
->
->  /**
-> diff --git a/kernel/res_counter.c b/kernel/res_counter.c
-> index 8cb0362..39f2513 100644
-> --- a/kernel/res_counter.c
-> +++ b/kernel/res_counter.c
-> @@ -35,8 +35,9 @@ int res_counter_charge_locked(struct res_counter *counter, unsigned long val)
->        return 0;
->  }
->
-> -int res_counter_charge(struct res_counter *counter, unsigned long val,
-> -                       struct res_counter **limit_fail_at)
-> +int res_counter_charge_until(struct res_counter *counter,
-> +                            struct res_counter *limit, unsigned long val,
-> +                            struct res_counter **limit_fail_at)
+> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+> index e8288a0..94454143 100644
+> --- a/include/linux/cgroup.h
+> +++ b/include/linux/cgroup.h
+> @@ -472,6 +472,7 @@ struct cgroup_subsys {
+>                               struct task_struct *tsk);
+>        void (*cancel_attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
+>                              struct task_struct *tsk);
+> +       void (*cancel_attach_task)(struct cgroup *cgrp, struct task_struct *tsk);
+>        void (*pre_attach)(struct cgroup *cgrp);
+>        void (*attach_task)(struct cgroup *cgrp, struct cgroup *old_cgrp, struct task_struct *tsk);
+>        void (*attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index c3ee4cf..210dc05 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -1989,7 +1989,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
 >  {
->        int ret;
->        unsigned long flags;
-> @@ -44,7 +45,7 @@ int res_counter_charge(struct res_counter *counter, unsigned long val,
->
->        *limit_fail_at = NULL;
->        local_irq_save(flags);
-> -       for (c = counter; c != NULL; c = c->parent) {
-> +       for (c = counter; c != limit; c = c->parent) {
->                spin_lock(&c->lock);
->                ret = res_counter_charge_locked(c, val);
->                spin_unlock(&c->lock);
-> @@ -66,6 +67,12 @@ done:
->        return ret;
->  }
->
-> +int res_counter_charge(struct res_counter *counter, unsigned long val,
-> +                       struct res_counter **limit_fail_at)
-> +{
-> +       return res_counter_charge_until(counter, NULL, val, limit_fail_at);
-> +}
+>        int retval, i, group_size;
+>        struct cgroup_subsys *ss, *failed_ss = NULL;
+> -       bool cancel_failed_ss = false;
+> +       struct task_struct *failed_task = NULL;
+>        /* guaranteed to be initialized later, but the compiler needs this */
+>        struct cgroup *oldcgrp = NULL;
+>        struct css_set *oldcg;
+> @@ -2077,7 +2077,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+>                                retval = ss->can_attach_task(cgrp, oldcgrp, tsk);
+>                                if (retval) {
+>                                        failed_ss = ss;
+> -                                       cancel_failed_ss = true;
+> +                                       failed_task = tsk;
+>                                        goto out_cancel_attach;
+>                                }
+>                        }
+> @@ -2172,8 +2172,17 @@ out_cancel_attach:
+>        /* same deal as in cgroup_attach_task */
+>        if (retval) {
+>                for_each_subsys(root, ss) {
+> +                       if (ss->cancel_attach_task && (ss != failed_ss || failed_task)) {
+> +                               for (i = 0; i < group_size; i++) {
+> +                                       tsk = flex_array_get_ptr(group, i);
+> +                                       if (tsk == failed_task)
+> +                                               break;
+> +                                       ss->cancel_attach_task(cgrp, tsk);
+> +                               }
+> +                       }
 > +
->  void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
->  {
->        if (WARN_ON(counter->usage < val))
-> @@ -74,13 +81,15 @@ void res_counter_uncharge_locked(struct res_counter *counter, unsigned long val)
->        counter->usage -= val;
->  }
->
-> -void res_counter_uncharge(struct res_counter *counter, unsigned long val)
-> +void res_counter_uncharge_until(struct res_counter *counter,
-> +                               struct res_counter *limit,
-> +                               unsigned long val)
->  {
->        unsigned long flags;
->        struct res_counter *c;
->
->        local_irq_save(flags);
-> -       for (c = counter; c != NULL; c = c->parent) {
-> +       for (c = counter; c != limit; c = c->parent) {
->                spin_lock(&c->lock);
->                res_counter_uncharge_locked(c, val);
->                spin_unlock(&c->lock);
-> @@ -88,6 +97,10 @@ void res_counter_uncharge(struct res_counter *counter, unsigned long val)
->        local_irq_restore(flags);
->  }
->
-> +void res_counter_uncharge(struct res_counter *counter, unsigned long val)
-> +{
-> +       res_counter_uncharge_until(counter, NULL, val);
-> +}
->
->  static inline unsigned long long *
->  res_counter_member(struct res_counter *counter, int member)
+>                        if (ss == failed_ss) {
+> -                               if (cancel_failed_ss && ss->cancel_attach)
+> +                               if (failed_task && ss->cancel_attach)
+>                                        ss->cancel_attach(ss, cgrp, leader);
+>                                break;
+>                        }
 > --
 > 1.7.5.4
 >
