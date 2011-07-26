@@ -1,67 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab1GZSDk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 14:03:40 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:24191 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121Ab1GZSDf (ORCPT
+	id S1751850Ab1GZSEk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 14:04:40 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:36565 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373Ab1GZSEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 14:03:35 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6419"; a="106036298"
-Message-ID: <4E2F0176.1080403@codeaurora.org>
-Date: Tue, 26 Jul 2011 11:03:34 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Tue, 26 Jul 2011 14:04:33 -0400
+Date: Tue, 26 Jul 2011 11:04:15 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+        rtc-linux@googlegroups.com, osd-dev@open-osd.org,
+        linux-scsi@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        jkosina@suse.cz, naota@elisp.net, rusty@rustcorp.com.au,
+        paulmck@linux.vnet.ibm.com, namhyung@gmail.com,
+        randy.dunlap@oracle.com, tj@kernel.org, cabarnes@indesign-llc.com,
+        akpm@linux-foundation.org, airlied@redhat.com, thellstrom@vmware.com,
+        johnpol@2ka.mipt.ru, JBottomley@parallels.com, bhalevy@panasas.com,
+        bharrosh@panasas.com, a.zummo@towertech.it, guenter.roeck@ericsson.com,
+        khali@linux-fr.org, airlied@linux.ie
+Subject: Re: [PATCH 3/8] hwmon: ibmaem: convert idr to ida and use
+	ida_simple_get
+Message-ID: <20110726180415.GT20579@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <1311352886-4047-1-git-send-email-jic23@cam.ac.uk> <1311352886-4047-4-git-send-email-jic23@cam.ac.uk>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Nicolas Pitre <nico@fluxnic.net>
-Subject: Re: [RFC] ARM Subarchitecture group maintainership
-References: <201105181047.17309.arnd@arndb.de>
-In-Reply-To: <201105181047.17309.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311352886-4047-4-git-send-email-jic23@cam.ac.uk>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2011 01:47 AM, Arnd Bergmann wrote:
-> This is the draft plan for maintaining the ARM subarchitectures in a common
-> tree, as a way to help coordinate the upstream merging of the
-> arch/arm/{plat,mach}-* changes into Linus' tree.
->
-[snip]
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 8fce5e6..942d052 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -630,6 +630,17 @@ S:	Maintained
->  F:	drivers/amba/
->  F:	include/linux/amba/bus.h
->  
-> +ARM SUBARCHITECTURES
-> +M:	Arnd Bergmann <arnd@arndb.de>
-> +M:	Nicolas Pitre <nico@fluxnic.net>
-> +M:	Thomas Gleixner <tglx@linutronix.de>
-> +M:	arm@kernel.org
-> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> +S:	MAINTAINED
-> +F:	arch/arm/mach-*/
-> +F:	arch/arm/plat-*/
-> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-subarch.git
-> +
->  ARM/ADI ROADRUNNER MACHINE SUPPORT
->  M:	Lennert Buytenhek <kernel@wantstofly.org>
->  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->
+On Fri, Jul 22, 2011 at 05:41:12PM +0100, Jonathan Cameron wrote:
+> A straightforward looking use of idr for a device id.
+> 
+> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+> ---
+> Note I have even build tested this one so will definitely
+> want an Ack from someone who has.
 
-Is this patch (or something similar) going to be merged now that the ARM
-SoC tree is up and running? Also, is the arm@kernel.org alias working?
+Looks ok and seems to build and run ok, so:
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Acked-by: Darrick J. Wong <djwong@us.ibm.com>
+> 
+>  drivers/hwmon/ibmaem.c |   47 ++++++++---------------------------------------
+>  1 files changed, 8 insertions(+), 39 deletions(-)
+> 
+> diff --git a/drivers/hwmon/ibmaem.c b/drivers/hwmon/ibmaem.c
+> index 1a409c5..058e0ae 100644
+> --- a/drivers/hwmon/ibmaem.c
+> +++ b/drivers/hwmon/ibmaem.c
+> @@ -88,8 +88,7 @@
+>  #define AEM_MIN_POWER_INTERVAL	200
+>  #define UJ_PER_MJ		1000L
+> 
+> -static DEFINE_IDR(aem_idr);
+> -static DEFINE_SPINLOCK(aem_idr_lock);
+> +static DEFINE_IDA(aem_ida);
+> 
+>  static struct platform_driver aem_driver = {
+>  	.driver = {
+> @@ -356,38 +355,6 @@ static void aem_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
+>  	complete(&data->read_complete);
+>  }
+> 
+> -/* ID functions */
+> -
+> -/* Obtain an id */
+> -static int aem_idr_get(int *id)
+> -{
+> -	int i, err;
+> -
+> -again:
+> -	if (unlikely(!idr_pre_get(&aem_idr, GFP_KERNEL)))
+> -		return -ENOMEM;
+> -
+> -	spin_lock(&aem_idr_lock);
+> -	err = idr_get_new(&aem_idr, NULL, &i);
+> -	spin_unlock(&aem_idr_lock);
+> -
+> -	if (unlikely(err == -EAGAIN))
+> -		goto again;
+> -	else if (unlikely(err))
+> -		return err;
+> -
+> -	*id = i & MAX_ID_MASK;
+> -	return 0;
+> -}
+> -
+> -/* Release an object ID */
+> -static void aem_idr_put(int id)
+> -{
+> -	spin_lock(&aem_idr_lock);
+> -	idr_remove(&aem_idr, id);
+> -	spin_unlock(&aem_idr_lock);
+> -}
+> -
+>  /* Sensor support functions */
+> 
+>  /* Read a sensor value */
+> @@ -525,7 +492,7 @@ static void aem_delete(struct aem_data *data)
+>  	ipmi_destroy_user(data->ipmi.user);
+>  	platform_set_drvdata(data->pdev, NULL);
+>  	platform_device_unregister(data->pdev);
+> -	aem_idr_put(data->id);
+> +	ida_simple_remove(&aem_ida, data->id);
+>  	kfree(data);
+>  }
+> 
+> @@ -582,7 +549,8 @@ static int aem_init_aem1_inst(struct aem_ipmi_data *probe, u8 module_handle)
+>  		data->power_period[i] = AEM_DEFAULT_POWER_INTERVAL;
+> 
+>  	/* Create sub-device for this fw instance */
+> -	if (aem_idr_get(&data->id))
+> +	data->id = ida_simple_get(&aem_ida, 0, 0, GFP_KERNEL);
+> +	if (data->id < 0)
+>  		goto id_err;
+> 
+>  	data->pdev = platform_device_alloc(DRVNAME, data->id);
+> @@ -633,7 +601,7 @@ ipmi_err:
+>  	platform_set_drvdata(data->pdev, NULL);
+>  	platform_device_unregister(data->pdev);
+>  dev_err:
+> -	aem_idr_put(data->id);
+> +	ida_simple_remove(&aem_ida, data->id);
+>  id_err:
+>  	kfree(data);
+> 
+> @@ -715,7 +683,8 @@ static int aem_init_aem2_inst(struct aem_ipmi_data *probe,
+>  		data->power_period[i] = AEM_DEFAULT_POWER_INTERVAL;
+> 
+>  	/* Create sub-device for this fw instance */
+> -	if (aem_idr_get(&data->id))
+> +	data->id = ida_simple_get(&aem_ida, 0, 0, GFP_KERNEL);
+> +	if (data->id < 0)
+>  		goto id_err;
+> 
+>  	data->pdev = platform_device_alloc(DRVNAME, data->id);
+> @@ -766,7 +735,7 @@ ipmi_err:
+>  	platform_set_drvdata(data->pdev, NULL);
+>  	platform_device_unregister(data->pdev);
+>  dev_err:
+> -	aem_idr_put(data->id);
+> +	ida_simple_remove(&aem_ida, data->id);
+>  id_err:
+>  	kfree(data);
+> 
+> -- 
+> 1.7.3.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
