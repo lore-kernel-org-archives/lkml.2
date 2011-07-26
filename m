@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201Ab1GZMhT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 08:37:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38945 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925Ab1GZMhP convert rfc822-to-8bit (ORCPT
+	id S1752372Ab1GZMoD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 08:44:03 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47899 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752249Ab1GZMn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 08:37:15 -0400
-Subject: Re: [RFC][PATCH 6/7] sched: Balance RT tasks when forked as well
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1311683732.3526.64.camel@gandalf.stny.rr.com>
-References: <20110617015516.301117218@goodmis.org>
-	 <20110617015919.832743148@goodmis.org>  <1311683108.24752.33.camel@twins>
-	 <1311683732.3526.64.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 26 Jul 2011 14:36:58 +0200
-Message-ID: <1311683818.24752.34.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 26 Jul 2011 08:43:56 -0400
+MIME-Version: 1.0
+Date: Tue, 26 Jul 2011 20:43:54 +0800
+Message-ID: <CAJd=RBDCLp0hXNtXVSzUd4De+z9cZLpTDftnxWVGeHauAbsWaQ@mail.gmail.com>
+Subject: [RFC patch] DMAengine/Langwell: put tx descriptor in error path
+From: Hillf Danton <dhillf@gmail.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-26 at 08:35 -0400, Steven Rostedt wrote:
-> On Tue, 2011-07-26 at 14:25 +0200, Peter Zijlstra wrote:
-> > On Thu, 2011-06-16 at 21:55 -0400, Steven Rostedt wrote:
-> > > +       /* For anything but wake ups, just return the task_cpu */
-> > > +       if (sd_flag != SD_BALANCE_WAKE || sd_flag != SD_BALANCE_FORK) 
-> > 
-> > So we call select_task_rq() with SD_BALANCE_{WAKE,EXEC,FORK}, 
-> > 
-> > 	(WAKE != WAKE -> 0 || WAKE != FORK -> 1) -> 1
-> > 	(EXEC != WAKE -> 1 ) -> 1
-> > 	(FORK != WAKE -> 1 ) -> 1
-> > 
-> > IOW, you never end up doing anything now.. surely you didn't mean that?!
-> 
-> Bah!
-> 
-> s/||/&&/
+When preparing LLI based periphral transfer, if error encountered, the newly
+prepared tx descriptor should be put for later recycling.
 
-So you only want to rebalance on EXEC? The comment says you want to
-balance on wakeups. Please as to unconfuse!?
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
+ drivers/dma/intel_mid_dma.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
+index f653517..b78a65a 100644
+--- a/drivers/dma/intel_mid_dma.c
++++ b/drivers/dma/intel_mid_dma.c
+@@ -793,6 +793,7 @@ static struct dma_async_tx_descriptor
+*intel_mid_dma_prep_slave_sg(
+ 				32, 0);
+ 	if (NULL == desc->lli_pool) {
+ 		pr_err("MID_DMA:LLI pool create failed\n");
++		midc_desc_put(midc, desc);
+ 		return NULL;
+ 	}
+
+@@ -800,6 +801,7 @@ static struct dma_async_tx_descriptor
+*intel_mid_dma_prep_slave_sg(
+ 	if (!desc->lli) {
+ 		pr_err("MID_DMA: LLI alloc failed\n");
+ 		pci_pool_destroy(desc->lli_pool);
++		midc_desc_put(midc, desc);
+ 		return NULL;
+ 	}
