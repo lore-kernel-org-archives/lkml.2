@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab1GZOzD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 10:55:03 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47704 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753385Ab1GZOy5 convert rfc822-to-8bit (ORCPT
+	id S1753647Ab1GZOzS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 10:55:18 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56012 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753494Ab1GZOzM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 10:54:57 -0400
+	Tue, 26 Jul 2011 10:55:12 -0400
 MIME-Version: 1.0
-Message-ID: <3904dcad-951e-43ca-bd2d-1c906d0b0a9e@default>
-Date: Tue, 26 Jul 2011 07:54:31 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: ocfs2-devel@oss.oracle.com, Joel Becker <jlbec@evilplan.org>,
-        Sunil Mushran <sunil.mushran@oracle.com>, linux-kernel@vger.kernel.org
-Subject: RE: bug in cleancache ocfs2 hook, anybody want to try cleancache?
-References: <da833bdb-7f77-4ebb-ad9b-9fae656b75a1@default>
- <1307004343.2823.17.camel@menhir>
- <75f89186-d730-4b89-b88c-899cd5674cf0@default
- 1307090628.2881.15.camel@menhir>
-In-Reply-To: <1307090628.2881.15.camel@menhir>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <CADnq5_MKAgmZgSA1t20Spc1YX5MTY+LM66ujmdpJcyngkbYecQ@mail.gmail.com>
+References: <CADnq5_M5NAd2PVbS0FPB_VSmg8+41HUsDL1TcbKK94GK6MF_jA@mail.gmail.com>
+	<1309995012-5873-1-git-send-email-reimth@gmail.com>
+	<1309995012-5873-3-git-send-email-reimth@gmail.com>
+	<CADnq5_MCRwTe34MijfN4xBhF98x3J=+4vXPZcvBJX2edsgSaxg@mail.gmail.com>
+	<CAPM=9txkD1WKiTKtD1NDygESaX+DAak3avJMGV5DT5NdQRJV5Q@mail.gmail.com>
+	<CADnq5_MKAgmZgSA1t20Spc1YX5MTY+LM66ujmdpJcyngkbYecQ@mail.gmail.com>
+Date: Tue, 26 Jul 2011 10:55:11 -0400
+Message-ID: <CADnq5_MDJ_hHZEJARkinzxbrYpHee=ijQQsQQkjiQ-0dL=zHxg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] drm/radeon: Fix Asus M2A-VM HDMI EDID error flooding problem
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: reimth@googlemail.com, Dave Airlie <airlied@redhat.com>,
+        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
+        Jean Delvare <khali@linux-fr.org>,
+        Tyson Whitehead <twhitehead@gmail.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org, Thomas Reim <rdratlos@yahoo.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090201.4E2ED539.0076,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > Also, as regards your earlier question wrt a kvm backend, I may be
-> > > tempted to have a go at writing one, but I'd like to figure out what
-> > > I'm letting myself in for before making any commitment to that,
-> 
-> > I think the hardest part is updating the tmem.c module in zcache
-> > to support multiple "clients".  When I ported it from Xen, I tore
-> > all that out.  Fortunately, I've put it back in during RAMster
-> > development but those changes haven't yet seen the light of day
-> > (though I can share them offlist).
-> 
-> I'd like to try and understand the design of the existing code before I
-> consider anything more advanced such as writing a kvm backend,
+On Tue, Jul 26, 2011 at 10:52 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+> On Tue, Jul 26, 2011 at 9:20 AM, Dave Airlie <airlied@gmail.com> wrote:
+>> On Thu, Jul 7, 2011 at 3:01 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>>> On Wed, Jul 6, 2011 at 7:30 PM,  <reimth@googlemail.com> wrote:
+>>>> From: Thomas Reim <rdratlos@yahoo.co.uk>
+>>
+>> Guys I really still hate this :-)
+>>
+>> Other OSes must deal with this sort of thing and I can't say they
+>> don't do it like this but I can't say for certain this feels like the
+>> right answer.
+>>
+>
+> I emailed the closed driver display team, but as the issue seems to
+> only afflict certain rs690/rs740 boards, I'm not sure anyone will
+> remember what quirks those boards had as they are about 5 generations
+> old at this point.
 
-FYI, the "hardest part" (support for multiple clients) is now in
-Linus's tree as of today.  With a little hypercall and glue code,
-KVM might just work now with tmem/cleancache/frontswap.
+Another possibility is that the closed driver uses the hw i2c engine
+which may not be affected, or they just tell the hw i2c engine to
+fetch several bytes and they inspect the result similar to what this
+patch does.  I'll let you know what I hear back.
 
-Dan
-
+>
+>> My thinking is that we could probably just trust the hot plug detect
+>> if its reported on HDMI and DVI-D connectors, we still need to poll
+>> DVI-D as the VGA->DVI convertors don't often assert hpd.
+>>
+>> Am I missing something that this wouldn't fix?
+>
+> The issue in this case is that the problematic connectors don't have
+> HPD pin wired up and the ddc lines seem to be wired improperly so a
+> ddc probe always reports something connected unless you actually look
+> at the EDID header.  For DVI-I we probably have to poll since only the
+> digital portion will assert hpd in most cases.
+>
+> Alex
+>
