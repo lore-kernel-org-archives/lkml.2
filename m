@@ -1,62 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab1GZQgm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 12:36:42 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:56061 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753684Ab1GZQgf (ORCPT
+	id S1753776Ab1GZQhj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 12:37:39 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:35968 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753830Ab1GZQhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 12:36:35 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=QFi9RsjTuUHDmNs3galyRaPQ3jn+0HBt1gO9g0iw3d/CiIQQ2fqqg/sYdTTl0+mr7uVtk93Skth04uzJqQqxlTC3pbgFfIC9Galw9k5+Evy3sFAQfmMtbaCsFDHndbPr;
-Date: Tue, 26 Jul 2011 09:36:24 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Keith Packard <keithp@keithp.com>
-Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 1/5] drm/i915: Use dp_detect_common in
- hotplug helper function
-Message-ID: <20110726093624.2d067e1b@jbarnes-desktop>
-In-Reply-To: <1311662194-4050-2-git-send-email-keithp@keithp.com>
-References: <1311662194-4050-1-git-send-email-keithp@keithp.com>
-	<1311662194-4050-2-git-send-email-keithp@keithp.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	Tue, 26 Jul 2011 12:37:33 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=TqUylQEXjuFT1pQKWk+abUeM30aLYQ/+TH0MpuvFYHIYVOTGAt765vZZg1tdRgoBZNM/6KR+gf705tNoMlHRJiSxtKNxulxcm4NYtTpaRCoaqZSjoRucLnlWKim7Qlle;
+Date: Tue, 26 Jul 2011 09:37:30 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Dave Reisner <d@falconindy.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Dave Reisner <dreisner@archlinux.org>
+Subject: Re: [PATCH] printk: add Kconfig for default console loglevel
+Message-Id: <20110726093730.aa164c70.rdunlap@xenotime.net>
+In-Reply-To: <1311694431-17037-1-git-send-email-dreisner@archlinux.org>
+References: <1311694431-17037-1-git-send-email-dreisner@archlinux.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Jul 2011 23:36:30 -0700
-Keith Packard <keithp@keithp.com> wrote:
+On Tue, 26 Jul 2011 11:33:51 -0400 Dave Reisner wrote:
 
-> This uses the common dpcd reading routine, i915_dp_detect_common,
-> instead of open-coding a call to intel_dp_aux_native_read. Besides
-> reducing duplicated code, this also gains the read retries which
-> may be necessary when a cable is first plugged back in and the link
-> needs to be retrained.
-> 
-> Signed-off-by: Keith Packard <keithp@keithp.com>
+> Keep the historical default of 7, but allow distributions and users to
+> tune this value instead of requiring a kernel cmdline parameter.
+
+Hi,
+
+Please explain how this is different from what is already in lib/Kconfig.debug:
+
+config DEFAULT_MESSAGE_LOGLEVEL
+	int "Default message log level (1-7)"
+	range 1 7
+	default "4"
+	help
+	  Default log level for printk statements with no specified priority.
+
+
+> Signed-off-by: Dave Reisner <dreisner@archlinux.org>
 > ---
->  drivers/gpu/drm/i915/intel_dp.c |   39 +++++++++++++++++++--------------------
->  1 files changed, 19 insertions(+), 20 deletions(-)
+>  kernel/printk.c   |    4 +++-
+>  lib/Kconfig.debug |   10 ++++++++++
+>  2 files changed, 13 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-> index dcc7ae6..45db810 100644
-> --- a/drivers/gpu/drm/i915/intel_dp.c
-> +++ b/drivers/gpu/drm/i915/intel_dp.c
-> @@ -1567,6 +1567,20 @@ intel_dp_link_down(struct intel_dp *intel_dp)
->  	POSTING_READ(intel_dp->output_reg);
->  }
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index 37dff34..fabc216 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -58,7 +58,9 @@ void asmlinkage __attribute__((weak)) early_printk(const char *fmt, ...)
 >  
-> +static enum drm_connector_status
-> +i915_dp_detect_common(struct intel_dp *intel_dp)
+>  /* We show everything that is MORE important than this.. */
+>  #define MINIMUM_CONSOLE_LOGLEVEL 1 /* Minimum loglevel we let people use */
+> -#define DEFAULT_CONSOLE_LOGLEVEL 7 /* anything MORE serious than KERN_DEBUG */
+> +
+> +/* default to 7 -- anything MORE serious than KERN_DEBUG */
+> +#define DEFAULT_CONSOLE_LOGLEVEL CONFIG_DEFAULT_CONSOLE_LOGLEVEL
+>  
+>  DECLARE_WAIT_QUEUE_HEAD(log_wait);
+>  
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index c0cb9c4..6caa66e 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -21,6 +21,16 @@ config DEFAULT_MESSAGE_LOGLEVEL
+>  	  that are auditing their logs closely may want to set it to a lower
+>  	  priority.
+>  
+> +config DEFAULT_CONSOLE_LOGLEVEL
+> +	int "Default console log level (1-7)"
+> +	range 1 7
+> +	default "7"
+> +	help
+> +	  Default console log level setting for printk statements.
+> +
+> +	  This was hard-coded to KERN_INFO (7) since at least 2.6.12. You may
+> +	  wish to turn this down to 4 for a quieter console.
+> +
+>  config ENABLE_WARN_DEPRECATED
+>  	bool "Enable __deprecated logic"
+>  	default y
+> -- 
 
-Maybe you can fix the prefix of this function while you're at it since
-it's not i915 or even i9xx specific?
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
