@@ -1,94 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071Ab1GZSG0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 14:06:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54057 "EHLO
+	id S1752543Ab1GZSGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 14:06:34 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54059 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751373Ab1GZSGV (ORCPT
+	by vger.kernel.org with ESMTP id S1751753Ab1GZSGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 14:06:21 -0400
+	Tue, 26 Jul 2011 14:06:23 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: linux-kernel@vger.kernel.org
 Cc: patches@opensource.wolfsonmicro.com,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 1/5] regmap: Allow devices to specify which registers are accessible
-Date: Tue, 26 Jul 2011 19:06:12 +0100
-Message-Id: <1311703576-7955-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 3/5] regmap: Use a local header for API internals
+Date: Tue, 26 Jul 2011 19:06:14 +0100
+Message-Id: <1311703576-7955-3-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1311703576-7955-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1311703576-7955-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is currently unused but we need to know which registers exist and
-their properties in order to implement diagnostics like register map
-dumps and the cache features.
-
-We use callbacks partly because properties can vary at runtime (eg, through
-access locks on registers) and partly because big switch statements are a
-good compromise between readable code and small data size for providing
-information on big register maps.
+Allowing the implementation to be multi-file.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/base/regmap/regmap.c |    9 +++++++++
- include/linux/regmap.h       |   13 +++++++++++++
- 2 files changed, 22 insertions(+), 0 deletions(-)
+ drivers/base/regmap/internal.h |   45 ++++++++++++++++++++++++++++++++++++++++
+ drivers/base/regmap/regmap.c   |   29 +------------------------
+ 2 files changed, 46 insertions(+), 28 deletions(-)
+ create mode 100644 drivers/base/regmap/internal.h
 
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+new file mode 100644
+index 0000000..7e61504
+--- /dev/null
++++ b/drivers/base/regmap/internal.h
+@@ -0,0 +1,45 @@
++/*
++ * Register map access API internal header
++ *
++ * Copyright 2011 Wolfson Microelectronics plc
++ *
++ * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef _REGMAP_INTERNAL_H
++#define _REGMAP_INTERNAL_H
++
++#include <linux/regmap.h>
++
++struct regmap;
++
++struct regmap_format {
++	size_t buf_size;
++	size_t reg_bytes;
++	size_t val_bytes;
++	void (*format_write)(struct regmap *map,
++			     unsigned int reg, unsigned int val);
++	void (*format_reg)(void *buf, unsigned int reg);
++	void (*format_val)(void *buf, unsigned int val);
++	unsigned int (*parse_val)(void *buf);
++};
++
++struct regmap {
++	struct mutex lock;
++
++	struct device *dev; /* Device we do I/O on */
++	void *work_buf;     /* Scratch buffer used to format I/O */
++	struct regmap_format format;  /* Buffer format */
++	const struct regmap_bus *bus;
++
++	unsigned int max_register;
++	bool (*writeable_reg)(struct device *dev, unsigned int reg);
++	bool (*readable_reg)(struct device *dev, unsigned int reg);
++	bool (*volatile_reg)(struct device *dev, unsigned int reg);
++};
++
++#endif
 diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 95bab38..7d4dc11 100644
+index e57f10f..f51efeb 100644
 --- a/drivers/base/regmap/regmap.c
 +++ b/drivers/base/regmap/regmap.c
-@@ -40,6 +40,11 @@ struct regmap {
- 	void *work_buf;     /* Scratch buffer used to format I/O */
- 	struct regmap_format format;  /* Buffer format */
- 	const struct regmap_bus *bus;
-+
-+	unsigned int max_register;
-+	bool (*writeable_reg)(struct device *dev, unsigned int reg);
-+	bool (*readable_reg)(struct device *dev, unsigned int reg);
-+	bool (*volatile_reg)(struct device *dev, unsigned int reg);
- };
+@@ -15,37 +15,10 @@
+ #include <linux/mutex.h>
+ #include <linux/err.h>
+ 
+-#include <linux/regmap.h>
+-
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/regmap.h>
+ 
+-struct regmap;
+-
+-struct regmap_format {
+-	size_t buf_size;
+-	size_t reg_bytes;
+-	size_t val_bytes;
+-	void (*format_write)(struct regmap *map,
+-			     unsigned int reg, unsigned int val);
+-	void (*format_reg)(void *buf, unsigned int reg);
+-	void (*format_val)(void *buf, unsigned int val);
+-	unsigned int (*parse_val)(void *buf);
+-};
+-
+-struct regmap {
+-	struct mutex lock;
+-
+-	struct device *dev; /* Device we do I/O on */
+-	void *work_buf;     /* Scratch buffer used to format I/O */
+-	struct regmap_format format;  /* Buffer format */
+-	const struct regmap_bus *bus;
+-
+-	unsigned int max_register;
+-	bool (*writeable_reg)(struct device *dev, unsigned int reg);
+-	bool (*readable_reg)(struct device *dev, unsigned int reg);
+-	bool (*volatile_reg)(struct device *dev, unsigned int reg);
+-};
++#include "internal.h"
  
  static void regmap_format_4_12_write(struct regmap *map,
-@@ -119,6 +124,10 @@ struct regmap *regmap_init(struct device *dev,
- 	map->format.val_bytes = config->val_bits / 8;
- 	map->dev = dev;
- 	map->bus = bus;
-+	map->max_register = config->max_register;
-+	map->writeable_reg = config->writeable_reg;
-+	map->readable_reg = config->readable_reg;
-+	map->volatile_reg = config->volatile_reg;
- 
- 	switch (config->reg_bits) {
- 	case 4:
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index cf8e4cf..aef2b36 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -25,10 +25,23 @@ struct spi_device;
-  *
-  * @reg_bits: Number of bits in a register address, mandatory.
-  * @val_bits: Number of bits in a register value, mandatory.
-+ *
-+ * @max_register: Optional, specifies the maximum valid register index.
-+ * @writeable_register: Optional callback returning true if the register
-+ *                      can be written to.
-+ * @readable_register: Optional callback returning true if the register
-+ *                     can be read from.
-+ * @volatile_register: Optional callback returning true if the register
-+ *                     value can't be cached.
-  */
- struct regmap_config {
- 	int reg_bits;
- 	int val_bits;
-+
-+	unsigned int max_register;
-+	bool (*writeable_reg)(struct device *dev, unsigned int reg);
-+	bool (*readable_reg)(struct device *dev, unsigned int reg);
-+	bool (*volatile_reg)(struct device *dev, unsigned int reg);
- };
- 
- typedef int (*regmap_hw_write)(struct device *dev, const void *data,
+ 				     unsigned int reg, unsigned int val)
 -- 
 1.7.5.4
 
