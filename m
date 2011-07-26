@@ -1,68 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab1GZAWN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 20:22:13 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:59075 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751694Ab1GZAWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 20:22:08 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: Chris Mason <chris.mason@oracle.com>
-Subject: Re: Linux 3.0 release - btrfs possible locking deadlock
-Date: Mon, 25 Jul 2011 20:22:03 -0400
-User-Agent: KMail/1.13.7 (Linux/3.0.0-crc+; KDE/4.6.5; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-btrfs" <linux-btrfs@vger.kernel.org>,
-        Josef Bacik <josef@redhat.com>
-References: <CA+55aFxakA2U+oMJ1T7awTYa+p6xp9N0aCbfrUqgkF7BJ8gnQw@mail.gmail.com> <201107221921.00798.edt@aei.ca> <1311623259-sup-8037@shiny>
-In-Reply-To: <1311623259-sup-8037@shiny>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1752591Ab1GZAfk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 20:35:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:50176 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694Ab1GZAfg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 25 Jul 2011 20:35:36 -0400
+X-Authority-Analysis: v=1.1 cv=Pm0sEXe2MdIPK/rOEC7hwDW84D/yDsPO3JtCzsVYOFU= c=1 sm=0 a=wp_X8QvuP7UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=n6SIYIHP9guV50b9y-kA:9 a=Iwtp-aVJJfeS8Ktj1CgA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] TRACING: Fix a copmile warning
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: gcc-help@gcc.gnu.org, stufever@gmail.com, linux-kernel@vger.kernel.org,
+        Wang Shaoyan <wangshaoyan.pt@taobao.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <CACqU3MXO_oR+8Ac2Z7wSji0sUeu-2FwskmxZxtY9NV+XpJXuwA@mail.gmail.com>
+References: <1310982010-13849-1-git-send-email-wangshaoyan.pt@taobao.com>
+	 <1311618747.3526.32.camel@gandalf.stny.rr.com>
+	 <CACqU3MVJ9Oj4pXH9O_2jnqDVBqKA+AgoWHwP-n2HGD4LU0pMHQ@mail.gmail.com>
+	 <1311625197.3526.35.camel@gandalf.stny.rr.com>
+	 <CACqU3MUKU_0FbOQT+TKLnnaoFVS_QOgzzx-tvunQy94v-eykTw@mail.gmail.com>
+	 <CACqU3MXO_oR+8Ac2Z7wSji0sUeu-2FwskmxZxtY9NV+XpJXuwA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 25 Jul 2011 20:35:34 -0400
+Message-ID: <1311640534.3526.50.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107252022.03834.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 25 July 2011 15:49:37 Chris Mason wrote:
-> Excerpts from Ed Tomlinson's message of 2011-07-22 19:21:00 -0400:
-> > On Thursday 21 July 2011 22:59:53 Linus Torvalds wrote:
-> > > So there it is. Gone are the 2.6.<bignum> days, and 3.0 is out.
-> > > 
-> > 
-> > Hi,
-> > 
-> > Managed to get this with btrfs rsync(ing) from ext4 to a btrfs fs with three partitions using raid1.
-> > 
-> > [16018.211493] device fsid f7186eeb-60df-4b1a-890a-4a1eb42f81fe devid 1 transid 10 /dev/sdd4
-> > [16018.230643] btrfs: use lzo compression
-> > [16018.234619] btrfs: enabling disk space caching
-> > [25949.414011] 
-> > [25949.414011] =======================================================
-> > [25949.416549] [ INFO: possible circular locking dependency detected ]
-> > [25949.423187] 3.0.0-crc+ #348
-> > [25949.423187] -------------------------------------------------------
-> > [25949.423187] rsync/20237 is trying to acquire lock:
-> > [25949.423187]  (btrfs-extent-01){+.+...}, at: [<ffffffffa047ce88>] btrfs_try_spin_lock+0x78/0xb0 [btrfs]
-> > [25949.423187] 
-> > [25949.423187] but task is already holding lock:
-> > [25949.423187]  (&(&eb->lock)->rlock){+.+...}, at: [<ffffffffa047cee2>] btrfs_clear_lock_blocking+0x22/0x30 [btrfs]
-> > [25949.423187] 
-> > [25949.423187] which lock already depends on the new lock.
-> > 
-> > Kernel is 3.0.0 without any extras.
-> > 
-> > Ideas?
+On Mon, 2011-07-25 at 19:50 -0400, Arnaud Lacombe wrote:
+
+> gcc will only emits the warning at -Os. It seems to me that the
+> resulting code clearly ends-up testing an uninitialized value, ie.
+> assuming the following test-case:
 > 
-> Did this actually deadlock?  lockdep has issues with the btrfs
-> clear_lock_blocking code, and I need to redo the annotations a bit.  The
-> problem is that we have the same lock class representing unrelated locks from
-> different trees.
+> extern void *e(void);
+> extern void *f(void);
+> extern void g(void);
+> 
+> void fn(void)
+> {
+>         void *b, *a;
+> 
+>         a = e();
+>         if (a != 0)
+>                 b = f();
+>         if (a != 0 && b != 0)
+>                 g();
+> }
+> 
+> gcc 4.5.1 will generates the following x86-32 assembly:
+> 
+> % gcc -m32 -Wall -Os -c -S -o - kernel/trace/trace_printk.c
+>         .file   "trace_printk.c"
+> kernel/trace/trace_printk.c: In function 'fn':
+> kernel/trace/trace_printk.c:7:8: warning: 'b' may be used
+> uninitialized in this function
+>         .text
+> .globl fn
+>         .type   fn, @function
+> fn:
+>         pushl   %ebp
+>         movl    %esp, %ebp
+>         pushl   %esi
+>         pushl   %ebx
+>         call    e
+>         testl   %eax, %eax
+>         movl    %eax, %ebx
+>         je      .L2
+>         call    f
+>         movl    %eax, %esi
+> .L2:
+>         testl   %esi, %esi
+>         je      .L1
+>         testl   %ebx, %ebx
+>         je      .L1
+>         popl    %ebx
+>         popl    %esi
+>         popl    %ebp
+>         jmp     g
+> .L1:
+>         popl    %ebx
+>         popl    %esi
+>         popl    %ebp
+>         ret
+>         .size   fn, .-fn
+>         .ident  "GCC: (GNU) 4.5.1 20100924 (Red Hat 4.5.1-4)"
+>         .section        .note.GNU-stack,"",@progbits
+> 
 
-It did not stop any processes that I could see and the rsync did complete ok.  Thats why I said possible.
-Figured it might be something you needed to see and/or fix though.
+I wrote a similar program and got the same results for both 4.5.1 and
+4.6.0. but only with -Os and -O2 seems fine.
 
-Thanks
-Ed
+> It seems gcc transforms the conditional from:
+> 
+> if (a != NULL && b != NULL) ...
+> 
+> to
+> 
+> if (b != NULL && a != NULL) ...
+> 
+> In which case the warning is fully valid. I'm not sure what's the C
+> standard guarantee in term of conditional test order. gcc 4.7.0 has
+> the same behavior.
+
+Yes it seems to be doing this :-/
+
+This is a real bug!
+
+-- Steve
+
+
