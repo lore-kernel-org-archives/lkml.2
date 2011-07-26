@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab1GZOet (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 10:34:49 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:50242 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752491Ab1GZOem (ORCPT
+	id S1753412Ab1GZOla (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 10:41:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57845 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895Ab1GZOlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 10:34:42 -0400
-Date: Tue, 26 Jul 2011 17:34:34 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Keshava Munegowda <keshava_mgowda@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
-        sameo@linux.intel.com, parthab@india.ti.com, kishon@ti.com
-Subject: Re: [PATCH] mfd: omap-usb-host: fix clock API usage on
- usbhs_disable()
-Message-ID: <20110726143433.GX32582@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1311340170-28773-1-git-send-email-keshava_mgowda@ti.com>
+	Tue, 26 Jul 2011 10:41:24 -0400
+Date: Tue, 26 Jul 2011 16:41:08 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Herbert P?tzl <herbert@13thfloor.at>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Axel Lin <axel.lin@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH] USB: s3c2410_udc: fix unterminated platform_device_id
+ table
+Message-ID: <20110726144108.GB18052@linutronix.de>
+References: <1310468729.6590.3.camel@phoenix>
+ <20110714082414.GC7149@linutronix.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NAuYj0K7Umiq33rm"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1311340170-28773-1-git-send-email-keshava_mgowda@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110714082414.GC7149@linutronix.de>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Sebastian Andrzej Siewior | 2011-07-14 10:24:14 [+0200]:
 
---NAuYj0K7Umiq33rm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>* Axel Lin | 2011-07-12 19:05:29 [+0800]:
+>
+>>Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-On Fri, Jul 22, 2011 at 06:39:30PM +0530, Keshava Munegowda wrote:
-> From: Keshava Munegowda <Keshava_mgowda@ti.com>
->=20
-> usbhs_disable function was invoking clk_enable() instead of
-> clk_disable(), thus only increasing the clock usage counter and
-> preventing this particular clock from being ever turned off.
-> Because of this, the power domain of omap4 the USB Host subsystem
-> would never reach lower power states.This patch calls clk_disable()
-> in usbhs_disable function
->=20
-> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
+Felipe / Greg: can one of you please pick it up, please? Should I
+resent it?
 
-Acked-by: Felipe Balbi <balbi@ti.com>
-
-Samuel, I guess you can take this via MFD ?
-
---=20
-balbi
-
---NAuYj0K7Umiq33rm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEbBAEBAgAGBQJOLtB5AAoJEAv8Txj19kN1f0YH+Pwg1oUbEOrPgDMMdlAJHC/Q
-c76bwUVnnP6PF4JT8erfKcgAsHQWTtXn54J07l5DBfKjlhKCy8bvzzJZCD06N3Nr
-oZu8oWbeZEgJX141F26cjniUzLOL8RwraIqxKW5JwxX1FcV93MG6ukW2lu7VsrkF
-Ga8gO81XproFSCcRG8mnJmSHAfjW5HFTPFdcKYD5ePVD/csJlUAaMdVV+oLjcGH+
-b0VKpq81SBeZfTCEyOuka+a3Z6Y6b22LRNKRrVA4L5jiC0y0MGQrMOdCgaKHKOtv
-g4zv9mJcPg150HBWNiqkxN9+h4KL4yyWpGj8h12q+E/RgPt2xPuDYuBB4mrHGA==
-=Fb9y
------END PGP SIGNATURE-----
-
---NAuYj0K7Umiq33rm--
+Sebastian
