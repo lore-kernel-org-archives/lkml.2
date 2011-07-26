@@ -1,236 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab1GZXBG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 19:01:06 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:17749 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420Ab1GZXAK (ORCPT
+	id S1753881Ab1GZXCJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 19:02:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:62114 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752159Ab1GZXCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 19:00:10 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=LrCQVxYCAahyTNoYYvVw/mFDzavhrIKR/JL4uj0MdYvsqB8otSItJ2Waz/Xf1H6qj
-	FhHgpNBaLac9i+maSviDg==
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH 5/5] trace: Make addition of pages in ring buffer atomic
-Date: Tue, 26 Jul 2011 15:59:54 -0700
-Message-Id: <1311721194-12164-6-git-send-email-vnagarnaik@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1311721194-12164-1-git-send-email-vnagarnaik@google.com>
-References: <1311721194-12164-1-git-send-email-vnagarnaik@google.com>
+	Tue, 26 Jul 2011 19:02:07 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: [GIT PULL] arm-soc new board support for 3.1
+Date: Wed, 27 Jul 2011 01:01:44 +0200
+Message-ID: <5818290.TCY0zMWmbr@wuerfel>
+User-Agent: KMail/4.6.0 (Linux/3.0.0-rc1nosema+; KDE/4.6.90; x86_64; ; )
+In-Reply-To: <2178768.MnKF3D4aeP@wuerfel>
+References: <3057645.NjCAYUXHGt@wuerfel> <1687325.AEKSI6RCv5@wuerfel> <2178768.MnKF3D4aeP@wuerfel>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:iSXlXx7Ev2LCPREAAL2raO4wKpYh3lobaMlzQcaNwQS
+ KvZv+ouGAgfYv/XJQ+Duqlkyv3ARfrNS6EF4gkQgjVgABI72o0
+ kiZSWQFXeX/Gi6k+NHW1LULYjLVT3ip841GNRCMcPIhKLKNcyJ
+ 1/vVheDurdgKoyQWZ+QcVwrpXvdsrbA2K1wFMzyb0i4xlMGKgp
+ ogiLRqiy/DMVIYHbwTXfg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the capability to add new pages to a ring buffer
-atomically while write operations are going on. This makes it possible
-to expand the ring buffer size without reinitializing the ring buffer.
+Hi Linus,
 
-The new pages are attached between the head page and its previous page.
+This adds support for new boards in the TI omap and samsung s3c platforms.
+These platforms are still a long way from being able to add support for
+new boards just with a device tree instead of a board file, but it's
+clear from the work going into these platforms that the maintainers
+are actively working on changing that.
 
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
----
- kernel/trace/ring_buffer.c |  109 +++++++++++++++++++++++++++++++------------
- 1 files changed, 78 insertions(+), 31 deletions(-)
+Once we get to the point that the platforms can describe a board using
+a device tree, we will start removing existing board files and no longer
+allow new ones. Until then, my feeling is that we need to allow additional
+boards to be added when they are clean enough and work is proceeding on
+obsoleting them.
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 0b43758..aecef65 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1415,36 +1415,68 @@ out:
- }
- 
- static void
--rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer,
--		struct list_head *pages, unsigned nr_pages)
-+rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer)
- {
--	struct buffer_page *bpage;
--	struct list_head *p;
--	unsigned i;
-+	struct list_head *pages = &cpu_buffer->new_pages;
-+	int retries, success;
- 
--	/* stop the writers while inserting pages */
--	atomic_inc(&cpu_buffer->record_disabled);
-+	spin_lock_irq(&cpu_buffer->reader_lock);
-+	/*
-+	 * We are holding the reader lock, so the reader page won't be swapped
-+	 * in the ring buffer. Now we are racing with the writer trying to
-+	 * move head page and the tail page.
-+	 * We are going to adapt the reader page update process where:
-+	 * 1. We first splice the start and end of list of new pages between
-+	 *    the head page and its previous page.
-+	 * 2. We cmpxchg the prev_page->next to point from head page to the
-+	 *    start of new pages list.
-+	 * 3. Finally, we update the head->prev to the end of new list.
-+	 *
-+	 * We will try this process 3 times, to make sure that we don't keep
-+	 * spinning.
-+	 */
-+	retries = 3;
-+	success = 0;
-+	while (retries--) {
-+		struct list_head *last_page, *first_page;
-+		struct list_head *head_page, *prev_page, *r;
-+		struct list_head *head_page_with_bit;
- 
--	/* Make sure all writers are done with this buffer. */
--	synchronize_sched();
-+		head_page = &rb_set_head_page(cpu_buffer)->list;
-+		prev_page = head_page->prev;
- 
--	spin_lock_irq(&cpu_buffer->reader_lock);
--	rb_head_page_deactivate(cpu_buffer);
-+		first_page = pages->next;
-+		last_page  = pages->prev;
- 
--	for (i = 0; i < nr_pages; i++) {
--		if (RB_WARN_ON(cpu_buffer, list_empty(pages)))
--			goto out;
--		p = pages->next;
--		bpage = list_entry(p, struct buffer_page, list);
--		list_del_init(&bpage->list);
--		list_add_tail(&bpage->list, cpu_buffer->pages);
-+
-+		head_page_with_bit = (struct list_head *)
-+				((unsigned long)head_page | RB_PAGE_HEAD);
-+
-+		last_page->next  = head_page_with_bit;
-+		first_page->prev = prev_page;
-+
-+		r = cmpxchg(&prev_page->next, head_page_with_bit, first_page);
-+
-+		if (r == head_page_with_bit) {
-+			/*
-+			 * yay, we replaced the page pointer to our new list,
-+			 * now, we just have to update to head page's prev
-+			 * pointer to point to end of list
-+			 */
-+			head_page->prev = last_page;
-+			success = 1;
-+			break;
-+		}
- 	}
--	rb_reset_cpu(cpu_buffer);
--	rb_check_pages(cpu_buffer);
- 
--out:
-+	if (success)
-+		INIT_LIST_HEAD(pages);
-+	/*
-+	 * If we weren't successful in adding in new pages, warn and stop
-+	 * tracing
-+	 */
-+	RB_WARN_ON(cpu_buffer, !success);
- 	spin_unlock_irq(&cpu_buffer->reader_lock);
--	atomic_dec(&cpu_buffer->record_disabled);
- }
- 
- static void update_pages_handler(struct work_struct *work)
-@@ -1453,8 +1485,7 @@ static void update_pages_handler(struct work_struct *work)
- 			struct ring_buffer_per_cpu, update_pages_work);
- 
- 	if (cpu_buffer->nr_pages_to_update > 0)
--		rb_insert_pages(cpu_buffer, &cpu_buffer->new_pages,
--				cpu_buffer->nr_pages_to_update);
-+		rb_insert_pages(cpu_buffer);
- 	else
- 		rb_remove_pages(cpu_buffer, -cpu_buffer->nr_pages_to_update);
- 
-@@ -1475,7 +1506,7 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size,
- {
- 	struct ring_buffer_per_cpu *cpu_buffer;
- 	unsigned nr_pages;
--	int cpu;
-+	int cpu, err = 0;
- 
- 	/*
- 	 * Always succeed at resizing a non-existent buffer:
-@@ -1500,6 +1531,11 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size,
- 		for_each_buffer_cpu(buffer, cpu) {
- 			cpu_buffer = buffer->buffers[cpu];
- 
-+			if (atomic_read(&cpu_buffer->record_disabled)) {
-+				err = -EBUSY;
-+				goto out_err;
-+			}
-+
- 			cpu_buffer->nr_pages_to_update = nr_pages -
- 							cpu_buffer->nr_pages;
- 
-@@ -1515,9 +1551,11 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size,
- 			 */
- 			INIT_LIST_HEAD(&cpu_buffer->new_pages);
- 			if (__rb_allocate_pages(cpu_buffer->nr_pages_to_update,
--						&cpu_buffer->new_pages, cpu))
-+						&cpu_buffer->new_pages, cpu)) {
- 				/* not enough memory for new pages */
--				goto no_mem;
-+				err = -ENOMEM;
-+				goto out_err;
-+			}
- 		}
- 
- 		/* fire off all the required work handlers */
-@@ -1540,6 +1578,12 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size,
- 		}
- 	} else {
- 		cpu_buffer = buffer->buffers[cpu_id];
-+
-+		if (atomic_read(&cpu_buffer->record_disabled)) {
-+			err = -EBUSY;
-+			goto out_err;
-+		}
-+
- 		if (nr_pages == cpu_buffer->nr_pages)
- 			goto out;
- 
-@@ -1549,8 +1593,10 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size,
- 		INIT_LIST_HEAD(&cpu_buffer->new_pages);
- 		if (cpu_buffer->nr_pages_to_update > 0 &&
- 			__rb_allocate_pages(cpu_buffer->nr_pages_to_update,
--						&cpu_buffer->new_pages, cpu_id))
--			goto no_mem;
-+					&cpu_buffer->new_pages, cpu_id)) {
-+			err = -ENOMEM;
-+			goto out_err;
-+		}
- 
- 		schedule_work_on(cpu_id, &cpu_buffer->update_pages_work);
- 		wait_for_completion(&cpu_buffer->update_completion);
-@@ -1564,7 +1610,7 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size,
- 	mutex_unlock(&buffer->mutex);
- 	return size;
- 
-- no_mem:
-+ out_err:
- 	for_each_buffer_cpu(buffer, cpu) {
- 		struct buffer_page *bpage, *tmp;
- 
-@@ -1582,7 +1628,7 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size,
- 		}
- 	}
- 	mutex_unlock(&buffer->mutex);
--	return -ENOMEM;
-+	return err;
- }
- EXPORT_SYMBOL_GPL(ring_buffer_resize);
- 
-@@ -3727,6 +3773,7 @@ rb_reset_cpu(struct ring_buffer_per_cpu *cpu_buffer)
- 	cpu_buffer->commit_page = cpu_buffer->head_page;
- 
- 	INIT_LIST_HEAD(&cpu_buffer->reader_page->list);
-+	INIT_LIST_HEAD(&cpu_buffer->new_pages);
- 	local_set(&cpu_buffer->reader_page->write, 0);
- 	local_set(&cpu_buffer->reader_page->entries, 0);
- 	local_set(&cpu_buffer->reader_page->page->commit, 0);
--- 
-1.7.3.1
+	Arnd
+
+The following changes since commit ba5b56cb3e3d2cab73d4fee9a022bb69462a8cd9:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client (2011-07-26 13:38:50 -0700)
+
+are available in the git repository at:
+
+  git+ssh://master.kernel.org/pub/scm/linux/kernel/git/arm/linux-arm-soc.git/ next/board
+
+Ambresh K (1):
+      OMAP4: DMTIMER: enable autoidle mode
+
+Ameya Palande (1):
+      omap: rx51: Platform support for lp5523 led chip
+
+Arnd Bergmann (2):
+      Merge branch 'omap/board' of git+ssh://master.kernel.org/.../arm/linux-arm-soc into next/board
+      Merge branch 'next-samsung-board' of git://git.kernel.org/.../kgene/linux-samsung into next/board
+
+Charulatha V (1):
+      omap: ZOOM: QUART: Request reset GPIO
+
+Daniel Mack (1):
+      omap: Overo: remove duplicate call to overo_ads7846_init()
+
+Igor Grinberg (3):
+      arm: omap3: cm-t35: minor comments fixes
+      arm: omap3: cm-t35: fix slow path warning
+      arm: omap3: cm-t35: add support for cm-t3730
+
+Joel A Fernandes (1):
+      OMAP3: beagle: add support for beagleboard xM revision C
+
+Julia Lawall (1):
+      arch/arm/mach-omap2/clock.c: add missing clk_put
+
+Kalle Jokiniemi (1):
+      OMAP3: rx-51: Add full regulator definitions
+
+Mark Brown (5):
+      ARM: S3C64XX: Initial support for Wolfson/Simtec Cragganmore/Banff
+      ARM: S3C64XX: Refresh Cragganmore support
+      ARM: S3C64XX: Configure supplies for all Cragganmore regulators
+
+Ohad Ben-Cohen (2):
+      omap: iovmm: s/sg_dma_len(sg)/sg->length/
+      OMAP4: iommu: fix clock name
+
+Shubhrajyoti Datta (1):
+      OMAP4: Keyboard: Mux changes in the board file
+
+Silesh C V (2):
+      omap: HSMMC: Fix GPIO muxing
+      omap: 4430SDP: Register the card detect GPIO properly
+
+Suman Anna (1):
+      omap: iommu: fix pte programming
+
+Tony Lindgren (2):
+      Merge branch 'iommu-for-tony' of git://github.com/ohadbc/omap-iommu into devel-fixes
+      Merge branch 'cleanup-part-2' into devel-board
+
+Vishal Mahaveer (1):
+      omap: blaze: add mmc5/wl1283 device support
+
+ arch/arm/mach-omap2/Kconfig                    |    6 +-
+ arch/arm/mach-omap2/board-4430sdp.c            |  148 +++++-
+ arch/arm/mach-omap2/board-cm-t35.c             |   95 ++-
+ arch/arm/mach-omap2/board-omap3beagle.c        |   78 ++-
+ arch/arm/mach-omap2/board-overo.c              |    1 -
+ arch/arm/mach-omap2/board-rx51-peripherals.c   |  135 ++++
+ arch/arm/mach-omap2/board-zoom-debugboard.c    |    9 +
+ arch/arm/mach-omap2/clock.c                    |    1 +
+ arch/arm/mach-omap2/devices.c                  |    3 +-
+ arch/arm/mach-omap2/hsmmc.c                    |    7 +-
+ arch/arm/mach-omap2/iommu2.c                   |    4 +-
+ arch/arm/mach-omap2/omap-iommu.c               |    2 +-
+ arch/arm/mach-s3c64xx/Kconfig                  |   23 +
+ arch/arm/mach-s3c64xx/Makefile                 |    1 +
+ arch/arm/mach-s3c64xx/include/mach/irqs.h      |    4 +-
+ arch/arm/mach-s3c64xx/mach-crag6410.c          |  774 ++++++++++++++++++++++++
+ arch/arm/plat-omap/dmtimer.c                   |    4 +-
+ arch/arm/plat-omap/include/plat/omap4-keypad.h |    3 +-
+ arch/arm/plat-omap/include/plat/uncompress.h   |    1 +
+ arch/arm/plat-omap/iovmm.c                     |    6 +-
+ 20 files changed, 1233 insertions(+), 72 deletions(-)
 
