@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab1GZOrG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 10:47:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54064 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417Ab1GZOrA convert rfc822-to-8bit (ORCPT
+	id S1753496Ab1GZOwM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 10:52:12 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52308 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab1GZOwG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 10:47:00 -0400
-Subject: Re: [PATCH 0/3] minor cleanups to EFLAGS initialisation in
- ret_from_fork
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ian Campbell <Ian.Campbell@citrix.com>,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <20110725214731.GE27137@sun>
-References: <1311587883.27940.20.camel@cthulhu.hellion.org.uk>
-	 <20110725101902.GP4362@sun> <20110725182049.GD27137@sun>
-	 <4E2DDBAA.60200@zytor.com>  <20110725214731.GE27137@sun>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 26 Jul 2011 10:52:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPM=9txkD1WKiTKtD1NDygESaX+DAak3avJMGV5DT5NdQRJV5Q@mail.gmail.com>
+References: <CADnq5_M5NAd2PVbS0FPB_VSmg8+41HUsDL1TcbKK94GK6MF_jA@mail.gmail.com>
+	<1309995012-5873-1-git-send-email-reimth@gmail.com>
+	<1309995012-5873-3-git-send-email-reimth@gmail.com>
+	<CADnq5_MCRwTe34MijfN4xBhF98x3J=+4vXPZcvBJX2edsgSaxg@mail.gmail.com>
+	<CAPM=9txkD1WKiTKtD1NDygESaX+DAak3avJMGV5DT5NdQRJV5Q@mail.gmail.com>
+Date: Tue, 26 Jul 2011 10:52:05 -0400
+Message-ID: <CADnq5_MKAgmZgSA1t20Spc1YX5MTY+LM66ujmdpJcyngkbYecQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] drm/radeon: Fix Asus M2A-VM HDMI EDID error flooding problem
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: reimth@googlemail.com, Dave Airlie <airlied@redhat.com>,
+        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
+        Jean Delvare <khali@linux-fr.org>,
+        Tyson Whitehead <twhitehead@gmail.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org, Thomas Reim <rdratlos@yahoo.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 26 Jul 2011 16:46:34 +0200
-Message-ID: <1311691594.24752.40.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-26 at 01:47 +0400, Cyrill Gorcunov wrote:
-> > > schedule (sched.c)
-> > >         ...
-> > >         raw_spin_lock_irq
-> > >         ...
-> > >         context_switch
-> > >                 switch_to
-> > >                         "jnz   ret_from_fork\n\t"
-> > >                         pushq_cfi kernel_eflags(%rip)
-> > >                         popfq_cfi                               # reset kernel eflags
-> > > 
-> > > --->                    irqs are still disabled
-> > > 
-> > >                         call schedule_tail                      # rdi: 'prev' task parameter
-> > >                                 finish_lock_switch
-> > >                                         raw_spin_unlock_irq
-> > > 
-> > > I bet raw_spin_lock_irq at the beginning of the schedule() is set
-> > > for a reason and such change is not safe. Though I may be missing
-> > > something again...
-> > > 
-> > 
-> > This definitely doesn't look "obviously safe" to me.  However, does
-> > anyone see a problem with unconditionally leaving IF disabled even on 32
-> > bits (I haven't traced all the paths yet), i.e. doing the *opposite* of
-> > Ian's patch #2?
+On Tue, Jul 26, 2011 at 9:20 AM, Dave Airlie <airlied@gmail.com> wrote:
+> On Thu, Jul 7, 2011 at 3:01 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>> On Wed, Jul 6, 2011 at 7:30 PM,  <reimth@googlemail.com> wrote:
+>>> From: Thomas Reim <rdratlos@yahoo.co.uk>
+>
+> Guys I really still hate this :-)
+>
+> Other OSes must deal with this sort of thing and I can't say they
+> don't do it like this but I can't say for certain this feels like the
+> right answer.
+>
 
-Right, enabling IRQs there isn't cool, currently there's still
-__ARCH_WANT_INTERRUPTS_ON_CTXSW but we're working hard on getting rid of
-that nightmare.
+I emailed the closed driver display team, but as the issue seems to
+only afflict certain rs690/rs740 boards, I'm not sure anyone will
+remember what quirks those boards had as they are about 5 generations
+old at this point.
 
-There's a number of very subtle things that can go wrong when you enable
-interrupts over the context switch.
+> My thinking is that we could probably just trust the hot plug detect
+> if its reported on HDMI and DVI-D connectors, we still need to poll
+> DVI-D as the VGA->DVI convertors don't often assert hpd.
+>
+> Am I missing something that this wouldn't fix?
 
-Leaving IRQs disabled should be the right thing, on x86 we should
-_never_ have interrupts enabled there.
+The issue in this case is that the problematic connectors don't have
+HPD pin wired up and the ddc lines seem to be wired improperly so a
+ddc probe always reports something connected unless you actually look
+at the EDID header.  For DVI-I we probably have to poll since only the
+digital portion will assert hpd in most cases.
+
+Alex
