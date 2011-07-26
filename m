@@ -1,101 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab1GZTA0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 15:00:26 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:41360 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753534Ab1GZS6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 14:58:19 -0400
-From: Serge Hallyn <serge@hallyn.com>
-To: linux-kernel@vger.kernel.org
-Cc: dhowells@redhat.com, ebiederm@xmission.com,
-        containers@lists.linux-foundation.org, netdev@vger.kernel.org,
-        akpm@osdl.org, "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: [PATCH 10/14] net/core/scm.c: target capable() calls to user_ns owning the net_ns
-Date: Tue, 26 Jul 2011 18:58:33 +0000
-Message-Id: <1311706717-7398-11-git-send-email-serge@hallyn.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1311706717-7398-1-git-send-email-serge@hallyn.com>
-References: <1311706717-7398-1-git-send-email-serge@hallyn.com>
+	id S1753873Ab1GZTEu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 15:04:50 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43884 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753405Ab1GZTEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 15:04:45 -0400
+Date: Tue, 26 Jul 2011 19:04:19 GMT
+From: tip-bot for Shawn Bohrer <sbohrer@rgmadvisors.com>
+Message-ID: <tip-9ea71503a8ed9184d2d0b8ccc4d269d05f7940ae@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        dvhart@linux.intel.com, a.p.zijlstra@chello.nl,
+        sbohrer@rgmadvisors.com, tglx@linutronix.de, david@rgmadvisors.com,
+        kosaki.motohiro@jp.fujitsu.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, dvhart@linux.intel.com,
+        sbohrer@rgmadvisors.com, tglx@linutronix.de, david@rgmadvisors.com,
+        kosaki.motohiro@jp.fujitsu.com
+In-Reply-To: <1309450892-30676-1-git-send-email-sbohrer@rgmadvisors.com>
+References: <1309450892-30676-1-git-send-email-sbohrer@rgmadvisors.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/urgent] futex: Fix regression with read only mappings
+Git-Commit-ID: 9ea71503a8ed9184d2d0b8ccc4d269d05f7940ae
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 26 Jul 2011 19:04:20 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Serge E. Hallyn <serge.hallyn@canonical.com>
+Commit-ID:  9ea71503a8ed9184d2d0b8ccc4d269d05f7940ae
+Gitweb:     http://git.kernel.org/tip/9ea71503a8ed9184d2d0b8ccc4d269d05f7940ae
+Author:     Shawn Bohrer <sbohrer@rgmadvisors.com>
+AuthorDate: Thu, 30 Jun 2011 11:21:32 -0500
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 26 Jul 2011 20:59:35 +0200
 
-The uid/gid comparisons don't have to be pulled out.  This just seemed
-more easily proved correct.
+futex: Fix regression with read only mappings
 
-Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
+commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
+parameter from get_futex_key()) in 2.6.33 fixed two problems:  First, It
+prevented a loop when encountering a ZERO_PAGE. Second, it fixed RW
+MAP_PRIVATE futex operations by forcing the COW to occur by
+unconditionally performing a write access get_user_pages_fast() to get
+the page.  The commit also introduced a user-mode regression in that it
+broke futex operations on read-only memory maps.  For example, this
+breaks workloads that have one or more reader processes doing a
+FUTEX_WAIT on a futex within a read only shared file mapping, and a
+writer processes that has a writable mapping issuing the FUTEX_WAKE.
+
+This fixes the regression for valid futex operations on RO mappings by
+trying a RO get_user_pages_fast() when the RW get_user_pages_fast()
+fails. This change makes it necessary to also check for invalid use
+cases, such as anonymous RO mappings (which can never change) and the
+ZERO_PAGE which the commit referenced above was written to address.
+
+This patch does restore the original behavior with RO MAP_PRIVATE
+mappings, which have inherent user-mode usage problems and don't really
+make sense.  With this patch performing a FUTEX_WAIT within a RO
+MAP_PRIVATE mapping will be successfully woken provided another process
+updates the region of the underlying mapped file.  However, the mmap()
+man page states that for a MAP_PRIVATE mapping:
+
+  It is unspecified whether changes made to the file after
+  the mmap() call are visible in the mapped region.
+
+So user-mode users attempting to use futex operations on RO MAP_PRIVATE
+mappings are depending on unspecified behavior.  Additionally a
+RO MAP_PRIVATE mapping could fail to wake up in the following case.
+
+  Thread-A: call futex(FUTEX_WAIT, memory-region-A).
+            get_futex_key() return inode based key.
+            sleep on the key
+  Thread-B: call mprotect(PROT_READ|PROT_WRITE, memory-region-A)
+  Thread-B: write memory-region-A.
+            COW happen. This process's memory-region-A become related
+            to new COWed private (ie PageAnon=1) page.
+  Thread-B: call futex(FUETX_WAKE, memory-region-A).
+            get_futex_key() return mm based key.
+            IOW, we fail to wake up Thread-A.
+
+Once again doing something like this is just silly and users who do
+something like this get what they deserve.
+
+While RO MAP_PRIVATE mappings are nonsensical, checking for a private
+mapping requires walking the vmas and was deemed too costly to avoid a
+userspace hang.
+
+This Patch is based on Peter Zijlstra's initial patch with modifications to
+only allow RO mappings for futex operations that need VERIFY_READ access.
+
+Reported-by: David Oliver <david@rgmadvisors.com>
+Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: peterz@infradead.org
+Cc: eric.dumazet@gmail.com
+Cc: zvonler@rgmadvisors.com
+Cc: hughd@google.com
+Link: http://lkml.kernel.org/r/1309450892-30676-1-git-send-email-sbohrer@rgmadvisors.com
+Cc: stable@kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- net/core/scm.c |   41 ++++++++++++++++++++++++++++++++++-------
- 1 files changed, 34 insertions(+), 7 deletions(-)
+ kernel/futex.c |   54 ++++++++++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 42 insertions(+), 12 deletions(-)
 
-diff --git a/net/core/scm.c b/net/core/scm.c
-index 4c1ef02..21b5d0b 100644
---- a/net/core/scm.c
-+++ b/net/core/scm.c
-@@ -43,17 +43,44 @@
-  *	setu(g)id.
+diff --git a/kernel/futex.c b/kernel/futex.c
+index fe28dc2..70bb54b 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -218,6 +218,8 @@ static void drop_futex_key_refs(union futex_key *key)
+  * @uaddr:	virtual address of the futex
+  * @fshared:	0 for a PROCESS_PRIVATE futex, 1 for PROCESS_SHARED
+  * @key:	address where result is stored.
++ * @rw:		mapping needs to be read/write (values: VERIFY_READ,
++ *              VERIFY_WRITE)
+  *
+  * Returns a negative error code or 0
+  * The key words are stored in *key on success.
+@@ -229,12 +231,12 @@ static void drop_futex_key_refs(union futex_key *key)
+  * lock_page() might sleep, the caller should not hold a spinlock.
   */
- 
--static __inline__ int scm_check_creds(struct ucred *creds)
-+static __inline__ bool uidequiv(struct cred *src, struct ucred *tgt,
-+			       struct user_namespace *ns)
-+{
-+	if (src->user_ns != ns)
-+		goto check_capable;
-+	if (src->uid == tgt->uid || src->euid == tgt->uid ||
-+	    src->suid == tgt->uid)
-+		return true;
-+check_capable:
-+	if (ns_capable(ns, CAP_SETUID))
-+		return true;
-+	return false;
-+}
-+
-+static __inline__ bool gidequiv(struct cred *src, struct ucred *tgt,
-+			       struct user_namespace *ns)
-+{
-+	if (src->user_ns != ns)
-+		goto check_capable;
-+	if (src->gid == tgt->gid || src->egid == tgt->gid ||
-+	    src->sgid == tgt->gid)
-+		return true;
-+check_capable:
-+	if (ns_capable(ns, CAP_SETGID))
-+		return true;
-+	return false;
-+}
-+
-+static __inline__ int scm_check_creds(struct ucred *creds, struct socket *sock)
+ static int
+-get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
++get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key, int rw)
  {
- 	const struct cred *cred = current_cred();
-+	struct user_namespace *ns = sock_net(sock->sk)->user_ns;
+ 	unsigned long address = (unsigned long)uaddr;
+ 	struct mm_struct *mm = current->mm;
+ 	struct page *page, *page_head;
+-	int err;
++	int err, ro = 0;
  
--	if ((creds->pid == task_tgid_vnr(current) || capable(CAP_SYS_ADMIN)) &&
--	    ((creds->uid == cred->uid   || creds->uid == cred->euid ||
--	      creds->uid == cred->suid) || capable(CAP_SETUID)) &&
--	    ((creds->gid == cred->gid   || creds->gid == cred->egid ||
--	      creds->gid == cred->sgid) || capable(CAP_SETGID))) {
-+	if ((creds->pid == task_tgid_vnr(current) || ns_capable(ns, CAP_SYS_ADMIN)) &&
-+	     uidequiv(cred, creds, ns) && gidequiv(cred, creds, ns)) {
- 	       return 0;
+ 	/*
+ 	 * The futex address must be "naturally" aligned.
+@@ -262,8 +264,18 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+ 
+ again:
+ 	err = get_user_pages_fast(address, 1, 1, &page);
++	/*
++	 * If write access is not required (eg. FUTEX_WAIT), try
++	 * and get read-only access.
++	 */
++	if (err == -EFAULT && rw == VERIFY_READ) {
++		err = get_user_pages_fast(address, 1, 0, &page);
++		ro = 1;
++	}
+ 	if (err < 0)
+ 		return err;
++	else
++		err = 0;
+ 
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	page_head = page;
+@@ -305,6 +317,13 @@ again:
+ 	if (!page_head->mapping) {
+ 		unlock_page(page_head);
+ 		put_page(page_head);
++		/*
++		* ZERO_PAGE pages don't have a mapping. Avoid a busy loop
++		* trying to find one. RW mapping would have COW'd (and thus
++		* have a mapping) so this page is RO and won't ever change.
++		*/
++		if ((page_head == ZERO_PAGE(address)))
++			return -EFAULT;
+ 		goto again;
  	}
+ 
+@@ -316,6 +335,15 @@ again:
+ 	 * the object not the particular process.
+ 	 */
+ 	if (PageAnon(page_head)) {
++		/*
++		 * A RO anonymous page will never change and thus doesn't make
++		 * sense for futex operations.
++		 */
++		if (ro) {
++			err = -EFAULT;
++			goto out;
++		}
 +
- 	return -EPERM;
+ 		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
+ 		key->private.mm = mm;
+ 		key->private.address = address;
+@@ -327,9 +355,10 @@ again:
+ 
+ 	get_futex_key_refs(key);
+ 
++out:
+ 	unlock_page(page_head);
+ 	put_page(page_head);
+-	return 0;
++	return err;
  }
  
-@@ -169,7 +196,7 @@ int __scm_send(struct socket *sock, struct msghdr *msg, struct scm_cookie *p)
- 			if (cmsg->cmsg_len != CMSG_LEN(sizeof(struct ucred)))
- 				goto error;
- 			memcpy(&p->creds, CMSG_DATA(cmsg), sizeof(struct ucred));
--			err = scm_check_creds(&p->creds);
-+			err = scm_check_creds(&p->creds, sock);
- 			if (err)
- 				goto error;
+ static inline void put_futex_key(union futex_key *key)
+@@ -940,7 +969,7 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
+ 	if (!bitset)
+ 		return -EINVAL;
  
--- 
-1.7.4.1
-
+-	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
++	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+ 
+@@ -986,10 +1015,10 @@ futex_wake_op(u32 __user *uaddr1, unsigned int flags, u32 __user *uaddr2,
+ 	int ret, op_ret;
+ 
+ retry:
+-	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
++	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+-	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
++	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
+ 	if (unlikely(ret != 0))
+ 		goto out_put_key1;
+ 
+@@ -1243,10 +1272,11 @@ retry:
+ 		pi_state = NULL;
+ 	}
+ 
+-	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
++	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+-	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
++	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2,
++			    requeue_pi ? VERIFY_WRITE : VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out_put_key1;
+ 
+@@ -1790,7 +1820,7 @@ static int futex_wait_setup(u32 __user *uaddr, u32 val, unsigned int flags,
+ 	 * while the syscall executes.
+ 	 */
+ retry:
+-	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key);
++	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		return ret;
+ 
+@@ -1941,7 +1971,7 @@ static int futex_lock_pi(u32 __user *uaddr, unsigned int flags, int detect,
+ 	}
+ 
+ retry:
+-	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key);
++	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key, VERIFY_WRITE);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+ 
+@@ -2060,7 +2090,7 @@ retry:
+ 	if ((uval & FUTEX_TID_MASK) != vpid)
+ 		return -EPERM;
+ 
+-	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
++	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key, VERIFY_WRITE);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+ 
+@@ -2249,7 +2279,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 	debug_rt_mutex_init_waiter(&rt_waiter);
+ 	rt_waiter.task = NULL;
+ 
+-	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
++	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+ 
