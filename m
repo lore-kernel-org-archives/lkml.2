@@ -1,112 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab1GZKoD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 06:44:03 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35954 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752692Ab1GZKno (ORCPT
+	id S1752800Ab1GZK45 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 06:56:57 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:41951 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296Ab1GZK4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 06:43:44 -0400
-Date: Tue, 26 Jul 2011 11:46:40 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: <asamymuthupa@micron.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>, <linux-ide@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: New driver mtipx2xx submission
-Message-ID: <20110726114640.2b05dd34@lxorguk.ukuu.org.uk>
-In-Reply-To: <4E14D712.9090805@micron.com>
-References: <22A973199D2C2F46933448F6E7990A300204F2BC@ntxboimbx31.micron.com>
-	<20110428230605.78c55c70@lxorguk.ukuu.org.uk>
-	<22A973199D2C2F46933448F6E7990A300204F728@ntxboimbx31.micron.com>
-	<20110502184206.25907c5e@lxorguk.ukuu.org.uk>
-	<22A973199D2C2F46933448F6E7990A300214B0D6@ntxboimbx31.micron.com>
-	<20110511202013.075b07cc@lxorguk.ukuu.org.uk>
-	<4DD722DB.8030303@micron.com>
-	<x49lixuyhhs.fsf@segfault.boston.devel.redhat.com>
-	<22A973199D2C2F46933448F6E7990A300239EA77@ntxboimbx31.micron.com>
-	<x49ipsp9voy.fsf@segfault.boston.devel.redhat.com>
-	<20110601212129.11534c55@lxorguk.ukuu.org.uk>
-	<4DF80ADE.8020206@micron.com>
-	<x49ips75f4j.fsf@segfault.boston.devel.redhat.com>
-	<22A973199D2C2F46933448F6E7990A3002697E77@ntxboimbx31.micron.com>
-	<x49boxirnl8.fsf@segfault.boston.devel.redhat.com>
-	<20110628163125.0f2acc94@lxorguk.ukuu.org.uk>
-	<x4962nqrmp2.fsf@segfault.boston.devel.redhat.com>
-	<4E14D712.9090805@micron.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 26 Jul 2011 06:56:52 -0400
+Date: Tue, 26 Jul 2011 13:56:03 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: Re: Preempt & smp_processor_id in __make_request
+Message-ID: <20110726105603.GA3298@swordfish.minsk.epam.com>
+References: <1311672726.2700.5.camel@menhir>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311672726.2700.5.camel@menhir>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry this has taken a while - I've been away and also dealing with
-various bits of graphics security stuff.
+On (07/26/11 10:32), Steven Whitehouse wrote:
+> Jul 26 09:54:04 chywoon kernel: BUG: using smp_processor_id() in preemptible [00
+> 000000] code: jbd2/dm-0-8/1546
+> Jul 26 09:54:04 chywoon kernel: caller is __make_request+0x209/0x350
+> Jul 26 09:54:04 chywoon kernel: Pid: 1546, comm: jbd2/dm-0-8 Tainted: G        W
+>    3.0.0+ #252
+> Jul 26 09:54:04 chywoon kernel: Call Trace:
+> Jul 26 09:54:04 chywoon kernel: [<ffffffff813db897>] debug_smp_processor_id+0xe7
+> /0x100
+> Jul 26 09:54:04 chywoon kernel: [<ffffffff813b6f29>] __make_request+0x209/0x350
+> Jul 26 09:54:04 chywoon kernel: [<ffffffff8154635e>] ? dm_request+0x2e/0x280
+> Jul 26 09:54:04 chywoon kernel: [<ffffffff813b3ffb>] generic_make_request+0x27b/
+> 0x550
+> Jul 26 09:54:04 chywoon kernel: [<ffffffff8123ef7e>] ? jbd2_journal_file_buffer+
+> 0x8e/0x130
+> Jul 26 09:54:04 chywoon kernel: [<ffffffff813b432f>] submit_bio+0x5f/0xd0
+> Jul 26 09:54:04 chywoon kernel: [<ffffffff811b14a6>] submit_bh+0xe6/0x120
+> etc.
+> 
+> The (trivial) fix appears to be the following:
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index f8cb099..f925581 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -1283,7 +1283,7 @@ get_rq:
+>  
+>  	if (test_bit(QUEUE_FLAG_SAME_COMP, &q->queue_flags) ||
+>  	    bio_flagged(bio, BIO_CPU_AFFINE))
+> -		req->cpu = smp_processor_id();
+> +		req->cpu = raw_smp_processor_id();
+>  
+>  	plug = current->plug;
+>  	if (plug) {
+> 
+> However this fixes the symptoms, rather than the cause, so I'm not at
+> all sure that this is the correct solution,
+> 
 
-I've now been through the errata, the timing data and the driver code in
-somewhat more detail
+Or we can switch back to get_cpu()/put_cpu() pair as it's been prior to
+commit 5757a6d76cdf6dda2a492c09b985c015e86779b1
+Author: Dan Williams <dan.j.williams@intel.com>
 
-Overall:
-  The hardware deviates a bit from AHCI. The AHCI driver could be taught
-  to support it but even with the longer queue supported it's not clear
-  this is the right path, and some of the error handling needs deviate a
-  bit.
+    block: strict rq_affinity
+    
+    Some systems benefit from completions always being steered to the strict
+    requester cpu rather than the looser "per-socket" steering that
+    blk_cpu_to_group() attempts by default. This is because the first
+    CPU in the group mask ends up being completely overloaded with work,
+    while the others (including the original submitter) has power left
+    to spare.
 
-  The performance numbers are pretty definitive, and the data shows that
-  is mostly higher up in the queue handling. That's awkward in some ways
-  because it means there isn't an obvious way to fix it, and we still
-  want the queue stuff for 'normal' disks.
+that changed CPU affinity logic from using blk_cpu_to_group(get_cpu()) to 
+smp_processor_id():
 
-  Looking at other vendors there don't seem to be a pile of them also
-  planning to do AHCI with extras instead most seem focussed on NVHMCI so
-  it doesn't look like a pile of near identikit drivers will appear. Also
-  if they do we would probably want them all to be related to this driver
-  not to the general AHCI driver.
-
-So having gone over it all I think the case is rather well made for this
-being added as its own driver matching their specific PCI idents, but with
-some code clean up, and possibly some further compatibility code if it
-turns out some general ide/scsi tools don't work on it as expected.
-
-Comments on the driver code
-
-Questions:
-  Should there be security checks on the ioctl interfaces ?
-
-Code:
-  Use k[mz]alloc/kfree for small objects like structs, vmalloc has a lot
-  of ovherad you don't need
-
-- Lots of global function names with general naming. This causes problems
-  in Linux because all the compiled in drivers share a common namespace.
-  So they really ought to be something like
-
-	mtip_ahci_write()
-
-  and so on
-
-- Semaphores. Unless you need the counting properties please use mutexes.
-  Sempahores really make for problems in hard real time environments if
-  using the -rt kernel additions
-
-Style:
-- Confuses our kernel-doc tools as it has its own different comment
-  extraction format. That wants pulling into line (it looks like all the
-  info is there and its a 'perl script from hell' sort of conversion)
-
-- Various struct names in capitals - please search/replace those as for
-  style we keep capitals for defines
-
-- Various ifdefs and a lot of printk stuff. Some of this is clearly
-  because its a development driver, but it ought to be tidied for a final
-  submission. Also use of dev_info/dev_err etc is strongly preferred as
-  it means a user and tools can clearly identify which device generated
-  the message (dev_dbg() supports runtime debug switching so may also
-  deal with stuff you'd otherwise remove later)
-
-- for ata_swap_string look at bswap()
+[  573.599424] BUG: using smp_processor_id() in preemptible [00000000]
+[  573.599429] caller is __make_request+0x19c/0x344
+[  573.599437] Call Trace:
+[  573.599443]  [<ffffffff81249a5f>] debug_smp_processor_id+0xc7/0xe0
+[  573.599449]  [<ffffffff812298bc>] __make_request+0x19c/0x344
+[  573.599455]  [<ffffffff81227873>] generic_make_request+0x4b8/0x60f
+[  573.599462]  [<ffffffff81227aa9>] submit_bio+0xdf/0xfe
+[  573.599467]  [<ffffffff811352d1>] ? bio_alloc_bioset+0x47/0xbe
+[  573.599473]  [<ffffffff81130886>] submit_bh+0xda/0xf9
+[  573.599480]  [<ffffffff811efcc0>] jbd2_journal_commit_transaction+0xb8f/0x1963
+[  573.599486]  [<ffffffff8104cb00>] ? lock_timer_base.isra.30+0x26/0x4b
+[  573.599493]  [<ffffffff8104cc9c>] ? try_to_del_timer_sync+0x177/0x177
+[  573.599499]  [<ffffffff811f46b0>] kjournald2+0xce/0x215
+[  573.599505]  [<ffffffff8105d91a>] ? __init_waitqueue_head+0x46/0x46
+[  573.599510]  [<ffffffff811f45e2>] ? commit_timeout+0xb/0xb
+[  573.599516]  [<ffffffff8105d0ce>] kthread+0x9a/0xa2
+[  573.599522]  [<ffffffff81487824>] kernel_thread_helper+0x4/0x10
+[  573.599528]  [<ffffffff8102d4d1>] ? finish_task_switch+0x76/0xf0
+[  573.599533]  [<ffffffff814805b8>] ? retint_restore_args+0x13/0x13
+[  573.599540]  [<ffffffff8105d034>] ? __init_kthread_worker+0x53/0x53
+[  573.599545]  [<ffffffff81487820>] ? gs_change+0x13/0x13
 
 
-Alan
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
+---
+
+ block/blk-core.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index f8cb099..7e98677 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1282,8 +1282,10 @@ get_rq:
+ 	init_request_from_bio(req, bio);
+ 
+ 	if (test_bit(QUEUE_FLAG_SAME_COMP, &q->queue_flags) ||
+-	    bio_flagged(bio, BIO_CPU_AFFINE))
+-		req->cpu = smp_processor_id();
++	    bio_flagged(bio, BIO_CPU_AFFINE)) {
++		req->cpu = get_cpu();
++		put_cpu();
++	}
+ 
+ 	plug = current->plug;
+ 	if (plug) {
+
+
