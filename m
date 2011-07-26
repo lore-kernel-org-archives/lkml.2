@@ -1,38 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab1GZSuw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 14:50:52 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:53645 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753435Ab1GZSul (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 14:50:41 -0400
-Message-ID: <4E2F0C7D.2020802@garzik.org>
-Date: Tue, 26 Jul 2011 14:50:37 -0400
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
+	id S1753445Ab1GZSw0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 14:52:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54443 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752766Ab1GZSwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 14:52:21 -0400
+Date: Tue, 26 Jul 2011 20:52:19 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, lacombar@gmail.com, sam@ravnborg.org,
+        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 2/2] mm: Switch NUMA_BUILD and COMPACTION_BUILD to
+ new KCONFIG() syntax
+Message-ID: <20110726185219.GC26597@tiehlicka.suse.cz>
+References: <4E1D9C25.8080300@suse.cz>
+ <1311634718-32588-1-git-send-email-mmarek@suse.cz>
+ <1311634718-32588-2-git-send-email-mmarek@suse.cz>
+ <20110726151908.GD17958@tiehlicka.suse.cz>
+ <4E2F08A0.5080704@suse.cz>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, asamymuthupa@micron.com,
-        Jeff Moyer <jmoyer@redhat.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: New driver mtipx2xx submission
-References: <x49ipsp9voy.fsf@segfault.boston.devel.redhat.com> <20110601212129.11534c55@lxorguk.ukuu.org.uk> <4DF80ADE.8020206@micron.com> <x49ips75f4j.fsf@segfault.boston.devel.redhat.com> <22A973199D2C2F46933448F6E7990A3002697E77@ntxboimbx31.micron.com> <x49boxirnl8.fsf@segfault.boston.devel.redhat.com> <20110628163125.0f2acc94@lxorguk.ukuu.org.uk> <x4962nqrmp2.fsf@segfault.boston.devel.redhat.com> <4E14D712.9090805@micron.com> <20110726114640.2b05dd34@lxorguk.ukuu.org.uk> <20110726114445.GB12704@infradead.org>
-In-Reply-To: <20110726114445.GB12704@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E2F08A0.5080704@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2011 07:44 AM, Christoph Hellwig wrote:
-> On Tue, Jul 26, 2011 at 11:46:40AM +0100, Alan Cox wrote:
->> Sorry this has taken a while - I've been away and also dealing with
->> various bits of graphics security stuff.
->
-> Alan, where did the mail that you reply to originate from?  Care to post
-> the whole driver to lkml?
+On Tue 26-07-11 20:34:08, Michal Marek wrote:
+> Dne 26.7.2011 17:19, Michal Hocko napsal(a):
+> > On Tue 26-07-11 00:58:38, Michal Marek wrote:
+> >> Cc: linux-mm@kvack.org
+> >> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> > 
+> > I assume that this is a cleanup. Without seeing the rest of the patch
+> > set (probably not in linux-mm missing in the CC) and the cover email it
+> > is hard to be sure. Could you add some description to the patch, please?
+> 
+> Sorry for the confusion. Patch 1/2 is here:
+> https://lkml.org/lkml/2011/7/25/448 and provides a generic way to use
+> CONFIG_* options in C expressions.
 
-The original, full post was back in April:
-http://marc.info/?l=linux-ide&m=130400649131349&w=2
+Yeah, google told me but the email was on its way already.
 
+> This patch 2/2 for demonstration purposes only, if the first patch
+> hits mainline, then I'll submit this one properly.
+
+I like the change I am just afraid that this will make some hackery
+easier.
+In this particular case the code looks better and more grep friendly.
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
