@@ -1,104 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953Ab1GZPit (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 11:38:49 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:60404 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753690Ab1GZPgL (ORCPT
+	id S1753958Ab1GZPi7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 11:38:59 -0400
+Received: from mga06.intel.com ([134.134.136.21]:25350 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753617Ab1GZPiz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 11:36:11 -0400
-From: Tejun Heo <tj@kernel.org>
-To: benh@kernel.crashing.org, yinghai@kernel.org, hpa@zytor.com,
-        tony.luck@intel.com, ralf@linux-mips.org, schwidefsky@de.ibm.com,
-        liqin.chen@sunplusct.com, lethal@linux-sh.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: mingo@redhat.com, Tejun Heo <tj@kernel.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
-Subject: [PATCH 18/23] ia64: Use HAVE_MEMBLOCK_NODE_MAP
-Date: Tue, 26 Jul 2011 17:35:29 +0200
-Message-Id: <1311694534-5161-19-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1311694534-5161-1-git-send-email-tj@kernel.org>
-References: <1311694534-5161-1-git-send-email-tj@kernel.org>
+	Tue, 26 Jul 2011 11:38:55 -0400
+X-Greylist: delayed 562 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Jul 2011 11:38:55 EDT
+MIME-Version: 1.0
+In-Reply-To: <CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com>
+References: <1311185906-7813-1-git-send-email-jaswinder.singh@linaro.org>
+	<1311220903-2545-1-git-send-email-jaswinder.singh@linaro.org>
+	<CACRpkdbWHmob3EWJc6u5=yh=rNwVSR5hu9-Xud5kvQNU9-POtA@mail.gmail.com>
+	<CAJe_Zhc4uJB8N9i2w38zzP3+XxcYF2v-zwsrhERWSi-yObV-6A@mail.gmail.com>
+	<CABE8wwt7dkwgeahYBSUufOvJmVNfYyTss6U5qBgjJk9RVLBkYg@mail.gmail.com>
+	<CAJe_ZhdYg4EpaNbBW+dayjSORqM=E6myT3oOG5VTsiQnh3erTA@mail.gmail.com>
+	<CABE8wwt8J_r9cExG+EAqqK=XVmAyLYhv+-T49Rr9hhKudD8n2g@mail.gmail.com>
+	<CAJe_ZheVyLk-yqyF_XO80xX3j7_7mDPnv-me+n=X_hNWycSLwg@mail.gmail.com>
+	<CABE8wwtkSnaJ5fvi=4bq7zye3W0SmErHAZeWAcHuYvLgvqy=_Q@mail.gmail.com>
+	<CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com>
+Date: Tue, 26 Jul 2011 08:29:29 -0700
+Message-ID: <CABE8wwv2XQ_aJ8O2TUAz1LgJorBwDbgyQQv7jeAn06Q2AcqH+Q@mail.gmail.com>
+Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: Jaswinder Singh <jaswinder.singh@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        vinod.koul@intel.com, rmk+kernel@arm.linux.org.uk,
+        linus.walleij@stericsson.com, per.friden@stericsson.com,
+        wei.zhang@freescale.com, ebony.zhu@freescale.com, iws@ovro.caltech.edu,
+        s.hauer@pengutronix.de, maciej.sosnowski@intel.com, saeed@marvell.com,
+        shawn.guo@freescale.com, yur@emcraft.com, agust@denx.de,
+        iwamatsu.nobuhiro@renesas.com, per.forlin@stericsson.com,
+        jonas.aberg@stericsson.com, anemo@mba.ocn.ne.jp
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ia64 used early_node_map[] just to prime free_area_init_nodes().  Now
-memblock can be used for the same purpose and early_node_map[] is
-scheduled to be dropped.  Use memblock instead.
+On Tue, Jul 26, 2011 at 7:30 AM, Jaswinder Singh
+<jaswinder.singh@linaro.org> wrote:
+> On 26 July 2011 01:38, Williams, Dan J <dan.j.williams@intel.com> wrote:
+>> Correct, it is meant that chan_id is only a sysfs property.  Any
+>> driver usage that is assuming chan_id is anything more than a
+>> guaranteed unique number within a given dma_device's list of channels
+>> is probably inferring too much.
+>
+> So you mean dmac/client drivers are wrong if they make use of chan_id.
+> They shouldn't count upon it's value - which is set by DMA API for a completely
+> independent purpose, i.e, creating contiguous sysfs entries.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-ia64@vger.kernel.org
----
-Only compile tested (both contig and discontig).
+They can count on it being unique, and maybe the fact that it is in
+the same order as dma_device.channels.
 
- arch/ia64/Kconfig     |    3 +++
- arch/ia64/mm/contig.c |    3 ++-
- arch/ia64/mm/init.c   |    4 ++--
- 3 files changed, 7 insertions(+), 3 deletions(-)
+>
+> Since "chan_id is only a sysfs property" and the fact that it is used
+> only _once_
+> by the DMA API
+>
+> In drivers/dma/dmaengine.c
+>
+>      chan->chan_id = chancnt++;
+>      dev_set_name(&chan->dev->device, "dma%dchan%d",
+>                             device->dev_id, chan->chan_id);
+>
+>
+> Can't we do away with chan_id altogether ? by having
+>
+>      dev_set_name(&chan->dev->device, "dma%dchan%d",
+>                             device->dev_id, chancnt++);
+>
+> I mean why make every instance of dma_chan bigger by 4bytes ?
+>
+> So why shouldn't we remove chan_id completely from the DMA API ?
 
-diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-index 38280ef..e8b9cd7 100644
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -23,6 +23,9 @@ config IA64
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_DMA_API_DEBUG
- 	select HAVE_GENERIC_HARDIRQS
-+	select HAVE_MEMBLOCK
-+	select HAVE_MEMBLOCK_NODE_MAP
-+	select ARCH_DISCARD_MEMBLOCK
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_PENDING_IRQ if SMP
- 	select IRQ_PER_CPU
-diff --git a/arch/ia64/mm/contig.c b/arch/ia64/mm/contig.c
-index f114a3b..1516d1d 100644
---- a/arch/ia64/mm/contig.c
-+++ b/arch/ia64/mm/contig.c
-@@ -16,6 +16,7 @@
-  */
- #include <linux/bootmem.h>
- #include <linux/efi.h>
-+#include <linux/memblock.h>
- #include <linux/mm.h>
- #include <linux/nmi.h>
- #include <linux/swap.h>
-@@ -348,7 +349,7 @@ paging_init (void)
- 		printk("Virtual mem_map starts at 0x%p\n", mem_map);
- 	}
- #else /* !CONFIG_VIRTUAL_MEM_MAP */
--	add_active_range(0, 0, max_low_pfn);
-+	memblock_add_node(0, PFN_PHYS(max_low_pfn), 0);
- 	free_area_init_nodes(max_zone_pfns);
- #endif /* !CONFIG_VIRTUAL_MEM_MAP */
- 	zero_page_memmap_ptr = virt_to_page(ia64_imva(empty_zero_page));
-diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
-index 00cb0e2..13df239d 100644
---- a/arch/ia64/mm/init.c
-+++ b/arch/ia64/mm/init.c
-@@ -10,6 +10,7 @@
- #include <linux/bootmem.h>
- #include <linux/efi.h>
- #include <linux/elf.h>
-+#include <linux/memblock.h>
- #include <linux/mm.h>
- #include <linux/mmzone.h>
- #include <linux/module.h>
-@@ -557,8 +558,7 @@ int __init register_active_ranges(u64 start, u64 len, int nid)
- #endif
- 
- 	if (start < end)
--		add_active_range(nid, __pa(start) >> PAGE_SHIFT,
--			__pa(end) >> PAGE_SHIFT);
-+		memblock_add_node(__pa(start), end - start, nid);
- 	return 0;
- }
- 
--- 
-1.7.6
+Good point...  Let's remove chan_id from the core and push it into the
+drivers that need it.
 
+--
+Dan
