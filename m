@@ -1,623 +1,455 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab1GZCkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 22:40:53 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:56150 "EHLO
+	id S1752418Ab1GZCwq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 22:52:46 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:37187 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab1GZCkj (ORCPT
+	with ESMTP id S1751376Ab1GZCwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 22:40:39 -0400
-Date: Mon, 25 Jul 2011 19:39:37 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: ashishj3 <ashish.jangam@kpitcummins.com>
-Cc: randy.dunlap@oracle.com, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org
-Subject: Re: [Patch v1 08/11] Touch: DA9052 touchscreen driver
-Message-ID: <20110726023937.GC2076@core.coreip.homeip.net>
-References: <1310633890.284.90.camel@L-0532.kpit.com>
+	Mon, 25 Jul 2011 22:52:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310633890.284.90.camel@L-0532.kpit.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110725103732.623d7b65@jbarnes-desktop>
+References: <1311613829-4990-1-git-send-email-keithp@keithp.com> <20110725103732.623d7b65@jbarnes-desktop>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Mon, 25 Jul 2011 22:52:15 -0400
+X-Google-Sender-Auth: TANw_DSamNL8okEbFAVVvl5DGMk
+Message-ID: <CAObL_7EqL+1rhP=9go0EnCrVwWoZqgpVw0ZmLYa99vvFBJTmGQ@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Hold struct_mutex during hotplug processing
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Keith Packard <keithp@keithp.com>, Dave Airlie <airlied@redhat.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Content-Type: multipart/mixed; boundary=bcaec5215e4d5afed404a8f00669
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ashish,
+--bcaec5215e4d5afed404a8f00669
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jul 14, 2011 at 02:28:10PM +0530, ashishj3 wrote:
-> This driver add support for DA9052 4-wire resistive ADC interfaced touchscreen
-> controller.
-> 
-> DA9052 is a MFD therefore this driver depends on DA9052 core driver for core
-> functionalities.
-> 
-> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> ---
->  drivers/input/touchscreen/Kconfig      |    7 +
->  drivers/input/touchscreen/Makefile     |    1 +
->  drivers/input/touchscreen/da9052_tsi.c |  489 ++++++++++++++++++++++++++++++++
->  3 files changed, 497 insertions(+), 0 deletions(-)
->  create mode 100755 drivers/input/touchscreen/da9052_tsi.c
-> diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-> index cabd9e5..a5d2e7b 100644
-> --- a/drivers/input/touchscreen/Kconfig
-> +++ b/drivers/input/touchscreen/Kconfig
-> @@ -144,6 +144,13 @@ config TOUCHSCREEN_DA9034
->  	  Say Y here to enable the support for the touchscreen found
->  	  on Dialog Semiconductor DA9034 PMIC.
->  
-> +config TOUCHSCREEN_DA9052
-> +	tristate "Dialog DA9052 TSI"
-> +	depends on PMIC_DA9052
-> +	help
-> +	  Say y here to support the touchscreen found on
-> +	  Dialog Semiconductor DA9052 PMIC
-> +
+On Mon, Jul 25, 2011 at 1:37 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wr=
+ote:
+> On Mon, 25 Jul 2011 10:10:29 -0700
+> Keith Packard <keithp@keithp.com> wrote:
+>
+>> Hotplug detection is a mode setting operation and must hold the
+>> struct_mutex or risk colliding with other mode setting operations.
+>>
+>> In particular, the display port hotplug function attempts to re-train
+>> the link if the monitor is supposed to be running when plugged back
+>> in. If that happens while mode setting is underway, the link will get
+>> scrambled, leaving it in an inconsistent state.
+>>
+>> Signed-off-by: Keith Packard <keithp@keithp.com>
+>> ---
+>> =A0drivers/gpu/drm/i915/i915_irq.c | =A0 =A03 +++
+>> =A01 files changed, 3 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915=
+_irq.c
+>> index 3b03f85..5fe8f28 100644
+>> --- a/drivers/gpu/drm/i915/i915_irq.c
+>> +++ b/drivers/gpu/drm/i915/i915_irq.c
+>> @@ -306,12 +306,15 @@ static void i915_hotplug_work_func(struct work_str=
+uct *work)
+>> =A0 =A0 =A0 struct drm_mode_config *mode_config =3D &dev->mode_config;
+>> =A0 =A0 =A0 struct intel_encoder *encoder;
+>>
+>> + =A0 =A0 mutex_lock(&dev_priv->dev->struct_mutex);
+>> =A0 =A0 =A0 DRM_DEBUG_KMS("running encoder hotplug functions\n");
+>>
+>> =A0 =A0 =A0 list_for_each_entry(encoder, &mode_config->encoder_list, bas=
+e.head)
+>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 if (encoder->hot_plug)
+>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 encoder->hot_plug(encoder);
+>>
+>> + =A0 =A0 mutex_unlock(&dev_priv->dev->struct_mutex);
+>> +
+>> =A0 =A0 =A0 /* Just fire off a uevent and let userspace tell us what to =
+do */
+>> =A0 =A0 =A0 drm_helper_hpd_irq_event(dev);
+>> =A0}
+>
+> yay, sounds like this will fix Andrew's problem and probably lots of
+> other random DP related failures.
 
-To compile this driver as a module...
+Doesn't help :(
 
->  config TOUCHSCREEN_DYNAPRO
->  	tristate "Dynapro serial touchscreen"
->  	select SERIO
-> diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
-> index 282d6f7..a4aeb25 100644
-> --- a/drivers/input/touchscreen/Makefile
-> +++ b/drivers/input/touchscreen/Makefile
-> @@ -18,6 +18,7 @@ obj-$(CONFIG_TOUCHSCREEN_BITSY)		+= h3600_ts_input.o
->  obj-$(CONFIG_TOUCHSCREEN_BU21013)       += bu21013_ts.o
->  obj-$(CONFIG_TOUCHSCREEN_CY8CTMG110)	+= cy8ctmg110_ts.o
->  obj-$(CONFIG_TOUCHSCREEN_DA9034)	+= da9034-ts.o
-> +obj-$(CONFIG_TOUCHSCREEN_DA9052)	+= da9052_tsi.o
->  obj-$(CONFIG_TOUCHSCREEN_DYNAPRO)	+= dynapro.o
->  obj-$(CONFIG_TOUCHSCREEN_HAMPSHIRE)	+= hampshire.o
->  obj-$(CONFIG_TOUCHSCREEN_GUNZE)		+= gunze.o
-> diff --git a/drivers/input/touchscreen/da9052_tsi.c b/drivers/input/touchscreen/da9052_tsi.c
-> new file mode 100755
-> index 0000000..dade0a9
-> --- /dev/null
-> +++ b/drivers/input/touchscreen/da9052_tsi.c
-> @@ -0,0 +1,489 @@
-> +/*
-> + * TSI driver for Dialog DA9052
-> + *
-> + * Copyright(c) 2011 Dialog Semiconductor Ltd.
-> + *
-> + * Author: David Dajun Chen <dchen@diasemi.com>
-> + *
-> + *  This program is free software; you can redistribute  it and/or modify it
-> + *  under  the terms of  the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> + *  option) any later version.
-> + *
-> + */
-> +#include <linux/module.h>
-> +#include <linux/input.h>
-> +#include <linux/delay.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/freezer.h>
-> +#include <linux/kthread.h>
-> +#include <linux/kfifo.h>
-> +
-> +#include <linux/mfd/da9052/reg.h>
-> +#include <linux/mfd/da9052/da9052.h>
-> +
-> +#define DA9052_ACTIVE			1
-> +#define DA9052_INACTIVE		0
-> +
-> +#define DA9052_TSI_FIFOSIZE		640
-> +
-> +enum {
-> +	DA9052_PEN_IDLE,
-> +	DA9052_PEN_DOWN,
-> +	DA9052_PEN_UP
-> +};
-> +
-> +struct da9052_tsi_reg {
-> +	u16	x;
-> +	u16	y;
-> +};
-> +
-> +struct tsi_thread_type {
-> +	u8		pid;
-> +	u8		state;
-> +	struct completion	notifier;
-> +	struct task_struct	*thread_task;
-> +};
+When I do 'xset dpms force off', one of two things happens.  Either
+the display comes back all by itself or it never comes back until I
+power cycle it.
 
-What is the reason for rolling out your own kernel thread
-implementation? From what I understand you just need periodically to
-check for "pen up" and that's it, so simply use standard workqueue to
-schedule checks.
+If the display is generating a hotplug event after the dpms code drops
+the link, then with "drm/i915/dp: remove DPMS mode tracking from DP"
+applied the driver will try to bring the display back up.  Maybe my
+display can't handle coming back up that quickly after being told to
+go to sleep, or maybe there's another bug.
 
-> +
-> +struct da9052_tsi {
-> +	struct da9052	*da9052;
-> +	struct input_dev *dev;
-> +	struct tsi_thread_type	tsi_pen_state_thread;
-> +	struct tsi_thread_type  tsi_filter_thread;
-> +	struct kfifo fifo;
-> +	struct kfifo fifo_buf;
-> +	u8 pen_up_detect_interval;
-> +	u32 zero_data_cnt;
-> +	u32 valid_penup_count;
-> +	u8 pen_state;
-> +	int irq_pendwn;
-> +	int irq_datardy;
-> +};
-> +
-> +static inline int da9052_ts_start(struct da9052_tsi *tsi)
+Is the original patch supposed to bring the display up if the user
+unplugs it and re-plugs it?  If so, why?  And shouldn't a dpms off
+command at least stick until a hotplug event reports that the display
+isn't there?
 
-Drop inline, let compiler figure out if the function needs to be
-inlined.
+--Andy
 
-Normally only fucntions in header files should be marked as static
-inline.
+--bcaec5215e4d5afed404a8f00669
+Content-Type: text/plain; charset=US-ASCII; name="dmesg_4.txt"
+Content-Disposition: attachment; filename="dmesg_4.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gqk9mzdp0
 
-> +{
-> +	return da9052_reg_update(tsi->da9052, DA9052_TSI_CONT_A_REG,
-> +				 1 << 0, 1 << 0);
-> +}
-> +
-> +static inline int da9052_ts_stop(struct da9052_tsi *tsi)
-> +{
-> +	return da9052_clear_bits(tsi->da9052, DA9052_TSI_CONT_A_REG, 1 << 0);
-> +}
-> +
-> +static irqreturn_t da9052_ts_pendwn_irq(int irq, void *data)
-> +{
-> +	struct da9052_tsi *tsi = (struct da9052_tsi *)data;
-> +	struct da9052 *da9052 = tsi->da9052;
-> +	int ret;
-> +
-> +	da9052->events_mask |= DA9052_E_PEN_DOWN;
-> +	da9052->events_mask &= ~DA9052_E_TSI_READY;
-> +
-> +	/* Mask PEN_DOWN event and unmask TSI_READY event*/
-> +	ret = da9052_reg_update(da9052, DA9052_IRQ_MASK_B_REG, 0x80, 0x40);
-> +	if (ret < 0)
-> +		return IRQ_NONE;
-> +
-> +	da9052_ts_start(tsi);
-> +	tsi->pen_state = DA9052_PEN_DOWN;
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int da9052_ts_read(struct da9052_tsi *tsi)
-> +{
-> +	struct da9052_tsi_reg co_ord = {0, 0};
-> +	int ret;
-> +	uint8_t _x, _y, _v;
-> +
-> +	ret = da9052_reg_read(tsi->da9052, DA9052_TSI_X_MSB_REG);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	_x = (uint8_t) ret;
-> +
-> +	ret = da9052_reg_read(tsi->da9052, DA9052_TSI_Y_MSB_REG);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	_y = (uint8_t) ret;
-> +
-> +	ret = da9052_reg_read(tsi->da9052, DA9052_TSI_LSB_REG);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	_v = (uint8_t) ret;
-> +
-> +	co_ord.x = ((_x << 2) & 0x3fc) | (_v & 0x3);
-> +	co_ord.y = ((_y << 2) & 0x3fc) | ((_v & 0xc) >> 2);
-> +
-> +	ret = kfifo_in(&tsi->fifo, &co_ord, sizeof(struct da9052_tsi_reg));
+WyAgMjA5LjE0NjAxNl0geHNldCBkcG1zIGZvcmNlIG9mZgpbICAyMTQuMDE0NTU1XSBbZHJtOmRy
+bV9tb2RlX2FkZGZiXSwgW0ZCOjQ4XQpbICAyMTQuMTYyNjY0XSBbZHJtOmRybV9tb2RlX2FkZGZi
+XSwgW0ZCOjQwXQpbICAyMTQuNDg1NzQyXSBbZHJtOmRybV9tb2RlX2FkZGZiXSwgW0ZCOjQ4XQpb
+ICAyMTQuNjUyNjQ2XSBbZHJtOmRybV9tb2RlX2FkZGZiXSwgW0ZCOjQwXQpbICAyMTQuOTM0OTQ4
+XSBbZHJtOmRybV9tb2RlX2FkZGZiXSwgW0ZCOjQ4XQpbICAyMTUuMTE5NDU5XSBbZHJtOmRybV9t
+b2RlX2FkZGZiXSwgW0ZCOjQwXQpbICAyMTUuMzc4MDA1XSBbZHJtOmRybV9tb2RlX2FkZGZiXSwg
+W0ZCOjQ4XQpbICAyMTUuNTgxMjExXSBbZHJtOmRybV9tb2RlX2FkZGZiXSwgW0ZCOjQwXQpbICAy
+MTcuNTQxNDk4XSBbZHJtOmRybV9tb2RlX2FkZGZiXSwgW0ZCOjQ4XQpbICAyMTcuNTc5MTE3XSBb
+ZHJtOmRybV9tb2RlX2FkZGZiXSwgW0ZCOjQwXQpbICAyMTcuNTg4Mjg3XSBbZHJtOmRybV9tb2Rl
+X2FkZGZiXSwgW0ZCOjQ4XQpbICAyMTcuNjA0OTM4XSBbZHJtOmRybV9tb2RlX2FkZGZiXSwgW0ZC
+OjQwXQpbICAyMTcuNjM4MzAxXSBbZHJtOmRybV9tb2RlX2FkZGZiXSwgW0ZCOjQ4XQpbICAyMTcu
+NjU0OTcwXSBbZHJtOmRybV9tb2RlX2FkZGZiXSwgW0ZCOjQwXQpbICAyMTcuNjcxNjQxXSBbZHJt
+OmRybV9tb2RlX2FkZGZiXSwgW0ZCOjQ4XQpbICAyMTcuNzI4Mzg4XSBbZHJtOmRybV9tb2RlX2Fk
+ZGZiXSwgW0ZCOjQwXQpbICAyMTguMDA3MTQxXSBbZHJtOmRybV9tb2RlX2FkZGZiXSwgW0ZCOjQ4
+XQpbICAyMTguMDMwMzk3XSBidHJmczogZnJlZSBzcGFjZSBpbm9kZSBnZW5lcmF0aW9uICgwKSBk
+aWQgbm90IG1hdGNoIGZyZWUgc3BhY2UgY2FjaGUgZ2VuZXJhdGlvbiAoMTMyMjczKQpbICAyMTgu
+MDMwNDAyXSBidHJmczogZmFpbGVkIHRvIGxvYWQgZnJlZSBzcGFjZSBjYWNoZSBmb3IgYmxvY2sg
+Z3JvdXAgMTgyODI5NzExMzYKWyAgMjE4LjI3NTUwNV0gW2RybTpkcm1fbW9kZV9hZGRmYl0sIFtG
+Qjo0MF0KWyAgMjE4LjM1MzI1MF0gW2RybTpkcm1fbW9kZV9hZGRmYl0sIFtGQjo0OF0KWyAgMjE4
+LjM3ODM4OF0gW2RybTpkcm1fbW9kZV9hZGRmYl0sIFtGQjo0MF0KWyAgMjE4LjQwNTE1NF0gW2Ry
+bTpkcm1fbW9kZV9hZGRmYl0sIFtGQjo0OF0KWyAgMjE4LjQyMjU0NV0gW2RybTpkcm1fbW9kZV9h
+ZGRmYl0sIFtGQjo0MF0KWyAgMjE4LjQ1NTE2NV0gW2RybTpkcm1fbW9kZV9hZGRmYl0sIFtGQjo0
+OF0KWyAgMjE4LjQ3MTc5NF0gW2RybTpkcm1fbW9kZV9hZGRmYl0sIFtGQjo0MF0KWyAgMjE4LjQ5
+MDI2MF0gW2RybTpkcm1fbW9kZV9hZGRmYl0sIFtGQjo0OF0KWyAgMjE4LjUyMTg0NV0gW2RybTpk
+cm1fbW9kZV9hZGRmYl0sIFtGQjo0MF0KWyAgMjE4LjUzODUxNV0gW2RybTpkcm1fbW9kZV9hZGRm
+Yl0sIFtGQjo0OF0KWyAgMjE4LjU1Njk5Nl0gW2RybTpkcm1fbW9kZV9hZGRmYl0sIFtGQjo0MF0K
+WyAgMjE4LjYwMDQyMl0gW2RybTpkcm1fbW9kZV9hZGRmYl0sIFtGQjo0OF0KWyAgMjE4LjgwNjk5
+M10gW2RybTpkcm1fbW9kZV9hZGRmYl0sIFtGQjo0MF0KWyAgMjI1LjcxMTk0M10gW2RybTppbnRl
+bF9kcF9kcG1zXSwgc3RhcnQgZHBtcyAtPiAzClsgIDIyNS43MTIxNjBdIFtkcm06aW50ZWxfZHBf
+bGlua19kb3duXSwgClsgIDIyNS43MjkyNDVdIFtkcm06aW50ZWxfZHBfZHBtc10sIGZpbmlzaCBk
+cG1zIC0+IDMKWyAgMjI3LjI0MjAzOF0gW2RybTppOTE1X2hvdHBsdWdfd29ya19mdW5jXSwgcnVu
+bmluZyBlbmNvZGVyIGhvdHBsdWcgZnVuY3Rpb25zClsgIDIyNy4yNDIwNDNdIFtkcm06aW50ZWxf
+ZHBfaG90X3BsdWddLCBhYm91dCB0byBjaGVjayBzdGF0dXMKWyAgMjI3LjI0MjA0Nl0gW2RybTpp
+bnRlbF9kcF9ob3RfcGx1Z10sIGRvbmUgY2hlY2tpbmcgc3RhdHVzClsgIDIyNy4yNDIwNDldIFtk
+cm06aW50ZWxfZHBfaG90X3BsdWddLCBhYm91dCB0byBjaGVjayBzdGF0dXMKWyAgMjI3LjI0MjQ3
+NF0gW2RybTppbnRlbF9kcF9jaGVja19saW5rX3N0YXR1c10sIGVxIG9rYXkKWyAgMjI3LjI5NDMy
+MF0gW2RybTppbnRlbF93YWl0X2Zvcl92YmxhbmtdLCB2Ymxhbmsgd2FpdCB0aW1lZCBvdXQKWyAg
+MjI3LjI5NTI3MF0gW2RybTppbnRlbF9kcF9jaGVja19saW5rX3N0YXR1c10sIHN0YXJ0X2xpbmtf
+dHJhaW4gZG9uZQpbICAyMjcuMjk2NTIwXSBbZHJtOmludGVsX2RwX2NoZWNrX2xpbmtfc3RhdHVz
+XSwgY29tcGxldGVfbGlua190cmFpbiBkb25lClsgIDIyNy4yOTY1MjNdIFtkcm06aW50ZWxfZHBf
+aG90X3BsdWddLCBkb25lIGNoZWNraW5nIHN0YXR1cwpbICAyMjcuMjk2NTI1XSBbZHJtOmludGVs
+X2RwX2hvdF9wbHVnXSwgYWJvdXQgdG8gY2hlY2sgc3RhdHVzClsgIDIyNy4yOTY1MjddIFtkcm06
+aW50ZWxfZHBfaG90X3BsdWddLCBkb25lIGNoZWNraW5nIHN0YXR1cwpbICAyMjcuMjk2NTM5XSBb
+ZHJtOmludGVsX2lyb25sYWtlX2NydF9kZXRlY3RfaG90cGx1Z10sIGlyb25sYWtlIGhvdHBsdWcg
+YWRwYT0weGY0MDAwMCwgcmVzdWx0IDAKWyAgMjI3LjI5NjU0M10gW2RybTppbnRlbF9jcnRfZGV0
+ZWN0XSwgQ1JUIG5vdCBkZXRlY3RlZCB2aWEgaG90cGx1ZwpbICAyMjcuMjk2NTQ3XSBbZHJtOm91
+dHB1dF9wb2xsX2V4ZWN1dGVdLCBbQ09OTkVDVE9SOjU6VkdBLTFdIHN0YXR1cyB1cGRhdGVkIGZy
+b20gMiB0byAyClsgIDIyNy4zMDg5NTldIFtkcm06b3V0cHV0X3BvbGxfZXhlY3V0ZV0sIFtDT05O
+RUNUT1I6ODpIRE1JLUEtMV0gc3RhdHVzIHVwZGF0ZWQgZnJvbSAyIHRvIDIKWyAgMjI3LjMwOTQ3
+Nl0gW2RybTppbnRlbF9kcF9hdXhfY2hdLCBkcF9hdXhfY2ggdGltZW91dCBzdGF0dXMgMHg1MTQz
+MDAzZQpbICAyMjcuMzExODIwXSBbZHJtOmludGVsX2RwX2F1eF9jaF0sIGRwX2F1eF9jaCB0aW1l
+b3V0IHN0YXR1cyAweDUxNDMwMDNlClsgIDIyNy4zMTM4MjBdIFtkcm06aW50ZWxfZHBfYXV4X2No
+XSwgZHBfYXV4X2NoIHRpbWVvdXQgc3RhdHVzIDB4NTE0MzAwM2UKWyAgMjI3LjMxNTMwMl0gW2Ry
+bTppcm9ubGFrZV9kcF9kZXRlY3RdLCBEUENEOiAwMDAwClsgIDIyNy4zMTUzMDhdIFtkcm06b3V0
+cHV0X3BvbGxfZXhlY3V0ZV0sIFtDT05ORUNUT1I6MTE6RFAtMV0gc3RhdHVzIHVwZGF0ZWQgZnJv
+bSAyIHRvIDIKWyAgMjI3LjMyNzcyM10gW2RybTpvdXRwdXRfcG9sbF9leGVjdXRlXSwgW0NPTk5F
+Q1RPUjoxNDpIRE1JLUEtMl0gc3RhdHVzIHVwZGF0ZWQgZnJvbSAyIHRvIDIKWyAgMjI3LjM0MDEy
+OV0gW2RybTpvdXRwdXRfcG9sbF9leGVjdXRlXSwgW0NPTk5FQ1RPUjoxNjpIRE1JLUEtM10gc3Rh
+dHVzIHVwZGF0ZWQgZnJvbSAyIHRvIDIKWyAgMjI3LjM0MDM0M10gW2RybTppcm9ubGFrZV9kcF9k
+ZXRlY3RdLCBEUENEOiAxMWE4NDEKWyAgMjI3LjM0MTM5M10gW2RybTppMmNfYWxnb19kcF9hdXhf
+eGZlcl0sIGRwX2F1eF94ZmVyIHJldHVybiAyClsgIDIyNy4zNjg5NzBdIFtkcm06aTJjX2FsZ29f
+ZHBfYXV4X3hmZXJdLCBkcF9hdXhfeGZlciByZXR1cm4gMgpbICAyMjcuMzk2NTQ0XSBbZHJtOmky
+Y19hbGdvX2RwX2F1eF94ZmVyXSwgZHBfYXV4X3hmZXIgcmV0dXJuIDIKWyAgMjI3LjM5NjU0OF0g
+W2RybTpkcm1fZGV0ZWN0X21vbml0b3JfYXVkaW9dLCBNb25pdG9yIGhhcyBiYXNpYyBhdWRpbyBz
+dXBwb3J0ClsgIDIyNy4zOTY1NTFdIFtkcm06b3V0cHV0X3BvbGxfZXhlY3V0ZV0sIFtDT05ORUNU
+T1I6MTc6RFAtMl0gc3RhdHVzIHVwZGF0ZWQgZnJvbSAxIHRvIDEKWyAgMjI3LjM5NzA2N10gW2Ry
+bTppbnRlbF9kcF9hdXhfY2hdLCBkcF9hdXhfY2ggdGltZW91dCBzdGF0dXMgMHg1MTQzMDAzZQpb
+ICAyMjcuMzk4NzY0XSBbZHJtOmludGVsX2RwX2F1eF9jaF0sIGRwX2F1eF9jaCB0aW1lb3V0IHN0
+YXR1cyAweDUxNDMwMDNlClsgIDIyNy40MDA3NjNdIFtkcm06aW50ZWxfZHBfYXV4X2NoXSwgZHBf
+YXV4X2NoIHRpbWVvdXQgc3RhdHVzIDB4NTE0MzAwM2UKWyAgMjI3LjQwMjI0OV0gW2RybTppcm9u
+bGFrZV9kcF9kZXRlY3RdLCBEUENEOiAwMDAwClsgIDIyNy40MDIyNTVdIFtkcm06b3V0cHV0X3Bv
+bGxfZXhlY3V0ZV0sIFtDT05ORUNUT1I6MTk6RFAtM10gc3RhdHVzIHVwZGF0ZWQgZnJvbSAyIHRv
+IDIKWyAgMjMzLjU0OTI3OV0gW2RybTppcm9ubGFrZV9jcnRjX2RwbXNdLCBjcnRjIDAvMCBkcG1z
+IG9uClsgIDIzMy41NDkyODZdIFtkcm06aW50ZWxfZHBfZHBtc10sIHN0YXJ0IGRwbXMgLT4gMApb
+ICAyMzMuNTQ5NTAwXSBbZHJtOmludGVsX2RwX2RwbXNdLCBmaW5pc2ggZHBtcyAtPiAwClsgIDIz
+NC42OTA2ODRdIFtkcm06aW50ZWxfY3J0Y19jdXJzb3Jfc2V0XSwgClsgIDIzNC42OTA2ODhdIFtk
+cm06aW50ZWxfY3J0Y19jdXJzb3Jfc2V0XSwgY3Vyc29yIG9mZgpbICAyNDUuNDUyNTY2XSBkaXNw
+bGF5IGNhbWUgYmFjayBvbiBpdHMgb3duIGFuZCBtYWRlIG5vaXNlLiAgdHJ5aW5nIGFnYWluLgpb
+ICAyNDYuODg0Mjc4XSBbZHJtOmludGVsX2NydGNfY3Vyc29yX3NldF0sIApbICAyNDYuOTA2ODIz
+XSBbZHJtOmRybV9tb2RlX2FkZGZiXSwgW0ZCOjQ4XQpbICAyNDYuOTUzNjMyXSBbZHJtOmludGVs
+X2NydGNfY3Vyc29yX3NldF0sIApbICAyNDYuOTUzNjM4XSBbZHJtOmludGVsX2NydGNfY3Vyc29y
+X3NldF0sIGN1cnNvciBvZmYKWyAgMjQ3LjA0NDI3OV0gW2RybTpkcm1fbW9kZV9hZGRmYl0sIFtG
+Qjo0MF0KWyAgMjQ4Ljk3NjI0N10gW2RybTppbnRlbF9jcnRjX2N1cnNvcl9zZXRdLCAKWyAgMjUw
+LjQ0MDIwMV0gW2RybTppbnRlbF9kcF9kcG1zXSwgc3RhcnQgZHBtcyAtPiAzClsgIDI1MC40NDA0
+MTddIFtkcm06aW50ZWxfZHBfbGlua19kb3duXSwgClsgIDI1MC40NTc5MjNdIFtkcm06aW50ZWxf
+ZHBfZHBtc10sIGZpbmlzaCBkcG1zIC0+IDMKWyAgMjUwLjQ1NzkyOV0gW2RybTppcm9ubGFrZV9j
+cnRjX2RwbXNdLCBjcnRjIDAvMCBkcG1zIG9mZgpbICAyNTAuNTA5ODc3XSBbZHJtOmludGVsX3dh
+aXRfZm9yX3ZibGFua10sIHZibGFuayB3YWl0IHRpbWVkIG91dApbICAyNTAuNTMwMjgyXSBbZHJt
+OnNhbmR5YnJpZGdlX3VwZGF0ZV93bV0sIEZJRk8gd2F0ZXJtYXJrcyBGb3IgcGlwZSBBIC0gcGxh
+bmUgMTMsIGN1cnNvcjogNgpbICAyNTAuNTMwMjg5XSBbZHJtOmlyb25sYWtlX2NoZWNrX3Nyd21d
+LCB3YXRlcm1hcmsgMTogZGlzcGxheSBwbGFuZSAyNSwgZmJjIGxpbmVzIDMsIGN1cnNvciA2Clsg
+IDI1MC41MzAyOTNdIFtkcm06aXJvbmxha2VfY2hlY2tfc3J3bV0sIHdhdGVybWFyayAyOiBkaXNw
+bGF5IHBsYW5lIDMzLCBmYmMgbGluZXMgMywgY3Vyc29yIDYKWyAgMjUwLjUzMDI5OF0gW2RybTpp
+cm9ubGFrZV9jaGVja19zcndtXSwgd2F0ZXJtYXJrIDM6IGRpc3BsYXkgcGxhbmUgMTY5LCBmYmMg
+bGluZXMgNCwgY3Vyc29yIDEwClsgIDI1MC41MzAzMDJdIFtkcm06aW50ZWxfdXBkYXRlX2ZiY10s
+IApbICAyNTEuOTY1MDc5XSBbZHJtOmk5MTVfaG90cGx1Z193b3JrX2Z1bmNdLCBydW5uaW5nIGVu
+Y29kZXIgaG90cGx1ZyBmdW5jdGlvbnMKWyAgMjUxLjk2NTA4NF0gW2RybTppbnRlbF9kcF9ob3Rf
+cGx1Z10sIGFib3V0IHRvIGNoZWNrIHN0YXR1cwpbICAyNTEuOTY1MDg3XSBbZHJtOmludGVsX2Rw
+X2hvdF9wbHVnXSwgZG9uZSBjaGVja2luZyBzdGF0dXMKWyAgMjUxLjk2NTA4OV0gW2RybTppbnRl
+bF9kcF9ob3RfcGx1Z10sIGFib3V0IHRvIGNoZWNrIHN0YXR1cwpbICAyNTEuOTY1NTEzXSBbZHJt
+OmludGVsX2RwX2NoZWNrX2xpbmtfc3RhdHVzXSwgZXEgb2theQpbICAyNTIuMDE3MDAxXSBbZHJt
+OmludGVsX3dhaXRfZm9yX3ZibGFua10sIHZibGFuayB3YWl0IHRpbWVkIG91dApbICAyNTIuMDE5
+NDE3XSBbZHJtOmludGVsX2RwX2NoZWNrX2xpbmtfc3RhdHVzXSwgc3RhcnRfbGlua190cmFpbiBk
+b25lClsgIDI1Mi4wNzE5NjhdIFtkcm06aW50ZWxfd2FpdF9mb3JfdmJsYW5rXSwgdmJsYW5rIHdh
+aXQgdGltZWQgb3V0ClsgIDI1Mi4xMjY5NDddIFtkcm06aW50ZWxfd2FpdF9mb3JfdmJsYW5rXSwg
+dmJsYW5rIHdhaXQgdGltZWQgb3V0ClsgIDI1Mi4xODE5MDRdIFtkcm06aW50ZWxfd2FpdF9mb3Jf
+dmJsYW5rXSwgdmJsYW5rIHdhaXQgdGltZWQgb3V0ClsgIDI1Mi4yMzY4NzNdIFtkcm06aW50ZWxf
+d2FpdF9mb3JfdmJsYW5rXSwgdmJsYW5rIHdhaXQgdGltZWQgb3V0ClsgIDI1Mi4yOTE4NDRdIFtk
+cm06aW50ZWxfd2FpdF9mb3JfdmJsYW5rXSwgdmJsYW5rIHdhaXQgdGltZWQgb3V0ClsgIDI1Mi4z
+NDY4MDldIFtkcm06aW50ZWxfd2FpdF9mb3JfdmJsYW5rXSwgdmJsYW5rIHdhaXQgdGltZWQgb3V0
+ClsgIDI1Mi4zNDkyMjZdIFtkcm06aW50ZWxfZHBfY29tcGxldGVfbGlua190cmFpbl0gKkVSUk9S
+KiBmYWlsZWQgdG8gdHJhaW4gRFAsIGFib3J0aW5nClsgIDI1Mi4zNDkyMzFdIFtkcm06aW50ZWxf
+ZHBfbGlua19kb3duXSwgClsgIDI1Mi4zNjcwMjRdIFtkcm06aW50ZWxfZHBfY2hlY2tfbGlua19z
+dGF0dXNdLCBjb21wbGV0ZV9saW5rX3RyYWluIGRvbmUKWyAgMjUyLjM2NzAyOV0gW2RybTppbnRl
+bF9kcF9ob3RfcGx1Z10sIGRvbmUgY2hlY2tpbmcgc3RhdHVzClsgIDI1Mi4zNjcwMzJdIFtkcm06
+aW50ZWxfZHBfaG90X3BsdWddLCBhYm91dCB0byBjaGVjayBzdGF0dXMKWyAgMjUyLjM2NzAzNF0g
+W2RybTppbnRlbF9kcF9ob3RfcGx1Z10sIGRvbmUgY2hlY2tpbmcgc3RhdHVzClsgIDI1Mi4zNjcw
+NDhdIFtkcm06aW50ZWxfaXJvbmxha2VfY3J0X2RldGVjdF9ob3RwbHVnXSwgaXJvbmxha2UgaG90
+cGx1ZyBhZHBhPTB4ZjQwMDAwLCByZXN1bHQgMApbICAyNTIuMzY3MDUzXSBbZHJtOmludGVsX2Ny
+dF9kZXRlY3RdLCBDUlQgbm90IGRldGVjdGVkIHZpYSBob3RwbHVnClsgIDI1Mi4zNjcwNThdIFtk
+cm06b3V0cHV0X3BvbGxfZXhlY3V0ZV0sIFtDT05ORUNUT1I6NTpWR0EtMV0gc3RhdHVzIHVwZGF0
+ZWQgZnJvbSAyIHRvIDIKWyAgMjUyLjM3OTU2M10gW2RybTpvdXRwdXRfcG9sbF9leGVjdXRlXSwg
+W0NPTk5FQ1RPUjo4OkhETUktQS0xXSBzdGF0dXMgdXBkYXRlZCBmcm9tIDIgdG8gMgpbICAyNTIu
+MzgwMDgxXSBbZHJtOmludGVsX2RwX2F1eF9jaF0sIGRwX2F1eF9jaCB0aW1lb3V0IHN0YXR1cyAw
+eDUxNDMwMDNlClsgIDI1Mi4zODIyOTRdIFtkcm06aW50ZWxfZHBfYXV4X2NoXSwgZHBfYXV4X2No
+IHRpbWVvdXQgc3RhdHVzIDB4NTE0MzAwM2UKWyAgMjUyLjM4NDI5Nl0gW2RybTppbnRlbF9kcF9h
+dXhfY2hdLCBkcF9hdXhfY2ggdGltZW91dCBzdGF0dXMgMHg1MTQzMDAzZQpbICAyNTIuMzg1Nzgx
+XSBbZHJtOmlyb25sYWtlX2RwX2RldGVjdF0sIERQQ0Q6IDAwMDAKWyAgMjUyLjM4NTc4N10gW2Ry
+bTpvdXRwdXRfcG9sbF9leGVjdXRlXSwgW0NPTk5FQ1RPUjoxMTpEUC0xXSBzdGF0dXMgdXBkYXRl
+ZCBmcm9tIDIgdG8gMgpbICAyNTIuMzk4MjU0XSBbZHJtOm91dHB1dF9wb2xsX2V4ZWN1dGVdLCBb
+Q09OTkVDVE9SOjE0OkhETUktQS0yXSBzdGF0dXMgdXBkYXRlZCBmcm9tIDIgdG8gMgpbICAyNTIu
+NDEwNzAyXSBbZHJtOm91dHB1dF9wb2xsX2V4ZWN1dGVdLCBbQ09OTkVDVE9SOjE2OkhETUktQS0z
+XSBzdGF0dXMgdXBkYXRlZCBmcm9tIDIgdG8gMgpbICAyNTIuNDEwOTE3XSBbZHJtOmlyb25sYWtl
+X2RwX2RldGVjdF0sIERQQ0Q6IDExYTg0MQpbICAyNTIuNDExOTY5XSBbZHJtOmkyY19hbGdvX2Rw
+X2F1eF94ZmVyXSwgZHBfYXV4X3hmZXIgcmV0dXJuIDIKWyAgMjUyLjQzOTU3M10gW2RybTppMmNf
+YWxnb19kcF9hdXhfeGZlcl0sIGRwX2F1eF94ZmVyIHJldHVybiAyClsgIDI1Mi40NjcxODNdIFtk
+cm06aTJjX2FsZ29fZHBfYXV4X3hmZXJdLCBkcF9hdXhfeGZlciByZXR1cm4gMgpbICAyNTIuNDY3
+MTg3XSBbZHJtOmRybV9kZXRlY3RfbW9uaXRvcl9hdWRpb10sIE1vbml0b3IgaGFzIGJhc2ljIGF1
+ZGlvIHN1cHBvcnQKWyAgMjUyLjQ2NzE5MV0gW2RybTpvdXRwdXRfcG9sbF9leGVjdXRlXSwgW0NP
+Tk5FQ1RPUjoxNzpEUC0yXSBzdGF0dXMgdXBkYXRlZCBmcm9tIDEgdG8gMQpbICAyNTIuNDY3NzA4
+XSBbZHJtOmludGVsX2RwX2F1eF9jaF0sIGRwX2F1eF9jaCB0aW1lb3V0IHN0YXR1cyAweDUxNDMw
+MDNlClsgIDI1Mi40NjkyNDFdIFtkcm06aW50ZWxfZHBfYXV4X2NoXSwgZHBfYXV4X2NoIHRpbWVv
+dXQgc3RhdHVzIDB4NTE0MzAwM2UKWyAgMjUyLjQ3MTI0Ml0gW2RybTppbnRlbF9kcF9hdXhfY2hd
+LCBkcF9hdXhfY2ggdGltZW91dCBzdGF0dXMgMHg1MTQzMDAzZQpbICAyNTIuNDcyNzMxXSBbZHJt
+Omlyb25sYWtlX2RwX2RldGVjdF0sIERQQ0Q6IDAwMDAKWyAgMjUyLjQ3MjczN10gW2RybTpvdXRw
+dXRfcG9sbF9leGVjdXRlXSwgW0NPTk5FQ1RPUjoxOTpEUC0zXSBzdGF0dXMgdXBkYXRlZCBmcm9t
+IDIgdG8gMgpbICAyNjAuNDIzNTA0XSBbZHJtOmlyb25sYWtlX2NydGNfZHBtc10sIGNydGMgMC8w
+IGRwbXMgb24KWyAgMjYwLjQyMzUxMF0gW2RybTpzYW5keWJyaWRnZV91cGRhdGVfd21dLCBGSUZP
+IHdhdGVybWFya3MgRm9yIHBpcGUgQSAtIHBsYW5lIDEzLCBjdXJzb3I6IDYKWyAgMjYwLjQyMzUx
+NF0gW2RybTppcm9ubGFrZV9jaGVja19zcndtXSwgd2F0ZXJtYXJrIDE6IGRpc3BsYXkgcGxhbmUg
+MjUsIGZiYyBsaW5lcyAzLCBjdXJzb3IgNgpbICAyNjAuNDIzNTE5XSBbZHJtOmlyb25sYWtlX2No
+ZWNrX3Nyd21dLCB3YXRlcm1hcmsgMjogZGlzcGxheSBwbGFuZSAzMywgZmJjIGxpbmVzIDMsIGN1
+cnNvciA2ClsgIDI2MC40MjM1MjNdIFtkcm06aXJvbmxha2VfY2hlY2tfc3J3bV0sIHdhdGVybWFy
+ayAzOiBkaXNwbGF5IHBsYW5lIDE2OSwgZmJjIGxpbmVzIDQsIGN1cnNvciAxMApbICAyNjAuNDc1
+MTA2XSBbZHJtOmludGVsX3dhaXRfZm9yX3ZibGFua10sIHZibGFuayB3YWl0IHRpbWVkIG91dApb
+ICAyNjAuNTI3MDc2XSBbZHJtOmludGVsX3dhaXRfZm9yX3ZibGFua10sIHZibGFuayB3YWl0IHRp
+bWVkIG91dApbICAyNjAuNTI3ODkwXSBbZHJtOmdlbjZfZmRpX2xpbmtfdHJhaW5dLCBGRElfUlhf
+SUlSIDB4MTAwClsgIDI2MC41Mjc4OTRdIFtkcm06Z2VuNl9mZGlfbGlua190cmFpbl0sIEZESSB0
+cmFpbiAxIGRvbmUuClsgIDI2MC41Mjg1NjRdIFtkcm06Z2VuNl9mZGlfbGlua190cmFpbl0sIEZE
+SV9SWF9JSVIgMHg2MDAKWyAgMjYwLjUyODU2OF0gW2RybTpnZW42X2ZkaV9saW5rX3RyYWluXSwg
+RkRJIHRyYWluIDIgZG9uZS4KWyAgMjYwLjUyODU3MF0gW2RybTpnZW42X2ZkaV9saW5rX3RyYWlu
+XSwgRkRJIHRyYWluIGRvbmUuClsgIDI2MC41Mjk4MzldIFtkcm06aW50ZWxfdXBkYXRlX2ZiY10s
+IApbICAyNjAuNTI5ODQ2XSBbZHJtOmludGVsX2RwX2RwbXNdLCBzdGFydCBkcG1zIC0+IDAKWyAg
+MjYwLjUzMDA2MF0gW2RybTppbnRlbF9kcF9kcG1zXSwgZmluaXNoIGRwbXMgLT4gMApbICAyODAu
+MTAwOTc4XSB4aGNpX2hjZCAwMDAwOjAyOjAwLjA6IFdBUk46IHRyYW5zZmVyIGVycm9yIG9uIGVu
+ZHBvaW50ClsgIDI4MC4xMDEzOTFdIHhoY2lfaGNkIDAwMDA6MDI6MDAuMDogV0FSTjogdHJhbnNm
+ZXIgZXJyb3Igb24gZW5kcG9pbnQKWyAgMjgwLjEwMTQxNV0gaHViIDMtMS4xOjEuMDogY2Fubm90
+IHJlc2V0IHBvcnQgMSAoZXJyID0gLTcxKQpbICAyODAuMTAxODcyXSB4aGNpX2hjZCAwMDAwOjAy
+OjAwLjA6IFdBUk46IHRyYW5zZmVyIGVycm9yIG9uIGVuZHBvaW50ClsgIDI4MC4xMDE4OTRdIGh1
+YiAzLTEuMToxLjA6IGNhbm5vdCByZXNldCBwb3J0IDEgKGVyciA9IC03MSkKWyAgMjgwLjEwMjM3
+NV0geGhjaV9oY2QgMDAwMDowMjowMC4wOiBXQVJOOiB0cmFuc2ZlciBlcnJvciBvbiBlbmRwb2lu
+dApbICAyODAuMTAyMzkxXSBodWIgMy0xLjE6MS4wOiBjYW5ub3QgcmVzZXQgcG9ydCAxIChlcnIg
+PSAtNzEpClsgIDI4MC4xMDI4OTFdIHhoY2lfaGNkIDAwMDA6MDI6MDAuMDogV0FSTjogdHJhbnNm
+ZXIgZXJyb3Igb24gZW5kcG9pbnQKWyAgMjgwLjEwMjkxN10gaHViIDMtMS4xOjEuMDogY2Fubm90
+IHJlc2V0IHBvcnQgMSAoZXJyID0gLTcxKQpbICAyODAuMTAzMzczXSB4aGNpX2hjZCAwMDAwOjAy
+OjAwLjA6IFdBUk46IHRyYW5zZmVyIGVycm9yIG9uIGVuZHBvaW50ClsgIDI4MC4xMDMzOTFdIGh1
+YiAzLTEuMToxLjA6IGNhbm5vdCByZXNldCBwb3J0IDEgKGVyciA9IC03MSkKWyAgMjgwLjEwMzM5
+NF0gaHViIDMtMS4xOjEuMDogQ2Fubm90IGVuYWJsZSBwb3J0IDEuICBNYXliZSB0aGUgVVNCIGNh
+YmxlIGlzIGJhZD8KWyAgMjgwLjEwMzg3M10geGhjaV9oY2QgMDAwMDowMjowMC4wOiBXQVJOOiB0
+cmFuc2ZlciBlcnJvciBvbiBlbmRwb2ludApbICAyODAuMTAzODkzXSBodWIgMy0xLjE6MS4wOiBj
+YW5ub3QgZGlzYWJsZSBwb3J0IDEgKGVyciA9IC03MSkKWyAgMjgwLjEwNDM1Nl0geGhjaV9oY2Qg
+MDAwMDowMjowMC4wOiBXQVJOOiB0cmFuc2ZlciBlcnJvciBvbiBlbmRwb2ludApbICAyODAuMTA0
+MzcyXSBodWIgMy0xLjE6MS4wOiBjYW5ub3QgcmVzZXQgcG9ydCAxIChlcnIgPSAtNzEpClsgIDI4
+MC4xMDQ4NzJdIHhoY2lfaGNkIDAwMDA6MDI6MDAuMDogV0FSTjogdHJhbnNmZXIgZXJyb3Igb24g
+ZW5kcG9pbnQKWyAgMjgwLjEwNDg5MV0gaHViIDMtMS4xOjEuMDogY2Fubm90IHJlc2V0IHBvcnQg
+MSAoZXJyID0gLTcxKQpbICAyODAuMTA1MzU4XSB4aGNpX2hjZCAwMDAwOjAyOjAwLjA6IFdBUk46
+IHRyYW5zZmVyIGVycm9yIG9uIGVuZHBvaW50ClsgIDI4MC4xMDUzNzNdIGh1YiAzLTEuMToxLjA6
+IGNhbm5vdCByZXNldCBwb3J0IDEgKGVyciA9IC03MSkKWyAgMjgwLjEwNTUwMl0gdXNiIDMtMTog
+VVNCIGRpc2Nvbm5lY3QsIGRldmljZSBudW1iZXIgMgpbICAyODAuMTA1NTA0XSB1c2IgMy0xLjE6
+IFVTQiBkaXNjb25uZWN0LCBkZXZpY2UgbnVtYmVyIDMKWyAgMjgwLjEwNTUwN10gdXNiIDMtMS4x
+LjE6IFVTQiBkaXNjb25uZWN0LCBkZXZpY2UgbnVtYmVyIDQKWyAgMjgwLjEwNTg3MF0geGhjaV9o
+Y2QgMDAwMDowMjowMC4wOiBXQVJOOiB0cmFuc2ZlciBlcnJvciBvbiBlbmRwb2ludApbICAyODAu
+MTA1ODkwXSBodWIgMy0xLjE6MS4wOiBjYW5ub3QgcmVzZXQgcG9ydCAxIChlcnIgPSAtNzEpClsg
+IDI4MC4xMDU4OTRdIGh1YiAzLTEuMToxLjA6IGNhbm5vdCByZXNldCBwb3J0IDEgKGVyciA9IC0x
+OSkKWyAgMjgwLjEwNTg5N10gaHViIDMtMS4xOjEuMDogY2Fubm90IGRpc2FibGUgcG9ydCAxIChl
+cnIgPSAtMTkpClsgIDI4MC4xMDU5MDFdIGh1YiAzLTEuMToxLjA6IGNhbm5vdCBkaXNhYmxlIHBv
+cnQgMSAoZXJyID0gLTE5KQpbICAyODAuOTk2NDUxXSBbZHJtOmk5MTVfaG90cGx1Z193b3JrX2Z1
+bmNdLCBydW5uaW5nIGVuY29kZXIgaG90cGx1ZyBmdW5jdGlvbnMKWyAgMjgwLjk5NjQ1N10gW2Ry
+bTppbnRlbF9kcF9ob3RfcGx1Z10sIGFib3V0IHRvIGNoZWNrIHN0YXR1cwpbICAyODAuOTk2NDU5
+XSBbZHJtOmludGVsX2RwX2hvdF9wbHVnXSwgZG9uZSBjaGVja2luZyBzdGF0dXMKWyAgMjgwLjk5
+NjQ2Ml0gW2RybTppbnRlbF9kcF9ob3RfcGx1Z10sIGFib3V0IHRvIGNoZWNrIHN0YXR1cwpbICAy
+ODAuOTk2OTc4XSBbZHJtOmludGVsX2RwX2F1eF9jaF0sIGRwX2F1eF9jaCB0aW1lb3V0IHN0YXR1
+cyAweDUwMTMwMDNlClsgIDI4MC45OTg2MjhdIFtkcm06aW50ZWxfZHBfY2hlY2tfbGlua19zdGF0
+dXNdLCBlcSBva2F5ClsgIDI4MS4wNTAxOTBdIFtkcm06aW50ZWxfd2FpdF9mb3JfdmJsYW5rXSwg
+dmJsYW5rIHdhaXQgdGltZWQgb3V0ClsgIDI4MS4wNTExNDBdIFtkcm06aW50ZWxfZHBfY2hlY2tf
+bGlua19zdGF0dXNdLCBzdGFydF9saW5rX3RyYWluIGRvbmUKWyAgMjgxLjA1MjM4OV0gW2RybTpp
+bnRlbF9kcF9jaGVja19saW5rX3N0YXR1c10sIGNvbXBsZXRlX2xpbmtfdHJhaW4gZG9uZQpbICAy
+ODEuMDUyMzkyXSBbZHJtOmludGVsX2RwX2hvdF9wbHVnXSwgZG9uZSBjaGVja2luZyBzdGF0dXMK
+WyAgMjgxLjA1MjM5NV0gW2RybTppbnRlbF9kcF9ob3RfcGx1Z10sIGFib3V0IHRvIGNoZWNrIHN0
+YXR1cwpbICAyODEuMDUyMzk3XSBbZHJtOmludGVsX2RwX2hvdF9wbHVnXSwgZG9uZSBjaGVja2lu
+ZyBzdGF0dXMKWyAgMjgxLjA1MjQwOV0gW2RybTppbnRlbF9pcm9ubGFrZV9jcnRfZGV0ZWN0X2hv
+dHBsdWddLCBpcm9ubGFrZSBob3RwbHVnIGFkcGE9MHhmNDAwMDAsIHJlc3VsdCAwClsgIDI4MS4w
+NTI0MTRdIFtkcm06aW50ZWxfY3J0X2RldGVjdF0sIENSVCBub3QgZGV0ZWN0ZWQgdmlhIGhvdHBs
+dWcKWyAgMjgxLjA1MjQxN10gW2RybTpvdXRwdXRfcG9sbF9leGVjdXRlXSwgW0NPTk5FQ1RPUjo1
+OlZHQS0xXSBzdGF0dXMgdXBkYXRlZCBmcm9tIDIgdG8gMgpbICAyODEuMDY0ODIwXSBbZHJtOm91
+dHB1dF9wb2xsX2V4ZWN1dGVdLCBbQ09OTkVDVE9SOjg6SERNSS1BLTFdIHN0YXR1cyB1cGRhdGVk
+IGZyb20gMiB0byAyClsgIDI4MS4wNjUzMzddIFtkcm06aW50ZWxfZHBfYXV4X2NoXSwgZHBfYXV4
+X2NoIHRpbWVvdXQgc3RhdHVzIDB4NTE0MzAwM2UKWyAgMjgxLjA2NzY4OF0gW2RybTppbnRlbF9k
+cF9hdXhfY2hdLCBkcF9hdXhfY2ggdGltZW91dCBzdGF0dXMgMHg1MTQzMDAzZQpbICAyODEuMDY5
+Njg4XSBbZHJtOmludGVsX2RwX2F1eF9jaF0sIGRwX2F1eF9jaCB0aW1lb3V0IHN0YXR1cyAweDUx
+NDMwMDNlClsgIDI4MS4wNzExNjldIFtkcm06aXJvbmxha2VfZHBfZGV0ZWN0XSwgRFBDRDogMDAw
+MApbICAyODEuMDcxMTc1XSBbZHJtOm91dHB1dF9wb2xsX2V4ZWN1dGVdLCBbQ09OTkVDVE9SOjEx
+OkRQLTFdIHN0YXR1cyB1cGRhdGVkIGZyb20gMiB0byAyClsgIDI4MS4wODM1OTJdIFtkcm06b3V0
+cHV0X3BvbGxfZXhlY3V0ZV0sIFtDT05ORUNUT1I6MTQ6SERNSS1BLTJdIHN0YXR1cyB1cGRhdGVk
+IGZyb20gMiB0byAyClsgIDI4MS4wOTU5OTldIFtkcm06b3V0cHV0X3BvbGxfZXhlY3V0ZV0sIFtD
+T05ORUNUT1I6MTY6SERNSS1BLTNdIHN0YXR1cyB1cGRhdGVkIGZyb20gMiB0byAyClsgIDI4MS4w
+OTYyMTRdIFtkcm06aXJvbmxha2VfZHBfZGV0ZWN0XSwgRFBDRDogMTFhODQxClsgIDI4MS4wOTcy
+NjVdIFtkcm06aTJjX2FsZ29fZHBfYXV4X3hmZXJdLCBkcF9hdXhfeGZlciByZXR1cm4gMgpbICAy
+ODEuMTI0ODQ0XSBbZHJtOmkyY19hbGdvX2RwX2F1eF94ZmVyXSwgZHBfYXV4X3hmZXIgcmV0dXJu
+IDIKWyAgMjgxLjE1MjQyNV0gW2RybTppMmNfYWxnb19kcF9hdXhfeGZlcl0sIGRwX2F1eF94ZmVy
+IHJldHVybiAyClsgIDI4MS4xNTI0MjldIFtkcm06ZHJtX2RldGVjdF9tb25pdG9yX2F1ZGlvXSwg
+TW9uaXRvciBoYXMgYmFzaWMgYXVkaW8gc3VwcG9ydApbICAyODEuMTUyNDMyXSBbZHJtOm91dHB1
+dF9wb2xsX2V4ZWN1dGVdLCBbQ09OTkVDVE9SOjE3OkRQLTJdIHN0YXR1cyB1cGRhdGVkIGZyb20g
+MSB0byAxClsgIDI4MS4xNTI5NDldIFtkcm06aW50ZWxfZHBfYXV4X2NoXSwgZHBfYXV4X2NoIHRp
+bWVvdXQgc3RhdHVzIDB4NTE0MzAwM2UKWyAgMjgxLjE1NDYzMl0gW2RybTppbnRlbF9kcF9hdXhf
+Y2hdLCBkcF9hdXhfY2ggdGltZW91dCBzdGF0dXMgMHg1MTQzMDAzZQpbICAyODEuMTU2NjM1XSBb
+ZHJtOmludGVsX2RwX2F1eF9jaF0sIGRwX2F1eF9jaCB0aW1lb3V0IHN0YXR1cyAweDUxNDMwMDNl
+ClsgIDI4MS4xNTgxMThdIFtkcm06aXJvbmxha2VfZHBfZGV0ZWN0XSwgRFBDRDogMDAwMApbICAy
+ODEuMTU4MTI0XSBbZHJtOm91dHB1dF9wb2xsX2V4ZWN1dGVdLCBbQ09OTkVDVE9SOjE5OkRQLTNd
+IHN0YXR1cyB1cGRhdGVkIGZyb20gMiB0byAyClsgIDI4MS40NDc5ODddIHVzYiAzLTE6IG5ldyBo
+aWdoIHNwZWVkIFVTQiBkZXZpY2UgbnVtYmVyIDUgdXNpbmcgeGhjaV9oY2QKWyAgMjgxLjQ2MDQ0
+N10gdXNiIDMtMTogTmV3IFVTQiBkZXZpY2UgZm91bmQsIGlkVmVuZG9yPTA0MjQsIGlkUHJvZHVj
+dD0yNTE0ClsgIDI4MS40NjA0NTJdIHVzYiAzLTE6IE5ldyBVU0IgZGV2aWNlIHN0cmluZ3M6IE1m
+cj0wLCBQcm9kdWN0PTAsIFNlcmlhbE51bWJlcj0wClsgIDI4MS40NjQ3MjFdIGh1YiAzLTE6MS4w
+OiBVU0IgaHViIGZvdW5kClsgIDI4MS40NjQ4OTJdIHhoY2lfaGNkIDAwMDA6MDI6MDAuMDogV0FS
+Tjogc2hvcnQgdHJhbnNmZXIgb24gY29udHJvbCBlcApbICAyODEuNDY1MDMxXSBodWIgMy0xOjEu
+MDogMyBwb3J0cyBkZXRlY3RlZApbICAyODEuNzQxMDIwXSB1c2IgMy0xLjE6IG5ldyBoaWdoIHNw
+ZWVkIFVTQiBkZXZpY2UgbnVtYmVyIDYgdXNpbmcgeGhjaV9oY2QKWyAgMjgxLjc1MzI2Nl0gdXNi
+IDMtMS4xOiBOZXcgVVNCIGRldmljZSBmb3VuZCwgaWRWZW5kb3I9MDQyNCwgaWRQcm9kdWN0PTI2
+NDAKWyAgMjgxLjc1MzI3MV0gdXNiIDMtMS4xOiBOZXcgVVNCIGRldmljZSBzdHJpbmdzOiBNZnI9
+MCwgUHJvZHVjdD0wLCBTZXJpYWxOdW1iZXI9MApbICAyODEuNzUzOTMzXSBodWIgMy0xLjE6MS4w
+OiBVU0IgaHViIGZvdW5kClsgIDI4MS43NTQwODldIHhoY2lfaGNkIDAwMDA6MDI6MDAuMDogV0FS
+Tjogc2hvcnQgdHJhbnNmZXIgb24gY29udHJvbCBlcApbICAyODEuNzU0MjI2XSBodWIgMy0xLjE6
+MS4wOiAzIHBvcnRzIGRldGVjdGVkClsgIDI4Mi4wMjk4NDFdIHVzYiAzLTEuMS4xOiBuZXcgaGln
+aCBzcGVlZCBVU0IgZGV2aWNlIG51bWJlciA3IHVzaW5nIHhoY2lfaGNkClsgIDI4Mi4wNTI4MTFd
+IHhoY2lfaGNkIDAwMDA6MDI6MDAuMDogV0FSTjogc2hvcnQgdHJhbnNmZXIgb24gY29udHJvbCBl
+cApbICAyODIuMDU4MzEwXSB4aGNpX2hjZCAwMDAwOjAyOjAwLjA6IFdBUk46IHNob3J0IHRyYW5z
+ZmVyIG9uIGNvbnRyb2wgZXAKWyAgMjgyLjA2MjgwM10geGhjaV9oY2QgMDAwMDowMjowMC4wOiBX
+QVJOOiBzaG9ydCB0cmFuc2ZlciBvbiBjb250cm9sIGVwClsgIDI4Mi4wNjY0MjddIHhoY2lfaGNk
+IDAwMDA6MDI6MDAuMDogV0FSTjogc2hvcnQgdHJhbnNmZXIgb24gY29udHJvbCBlcApbICAyODIu
+MDY2Nzg2XSB1c2IgMy0xLjEuMTogTmV3IFVTQiBkZXZpY2UgZm91bmQsIGlkVmVuZG9yPTA0MjQs
+IGlkUHJvZHVjdD00MDYzClsgIDI4Mi4wNjY3OTBdIHVzYiAzLTEuMS4xOiBOZXcgVVNCIGRldmlj
+ZSBzdHJpbmdzOiBNZnI9MSwgUHJvZHVjdD0yLCBTZXJpYWxOdW1iZXI9MwpbICAyODIuMDY2Nzkz
+XSB1c2IgMy0xLjEuMTogUHJvZHVjdDogVWx0cmEgRmFzdCBNZWRpYSBSZWFkZXIKWyAgMjgyLjA2
+Njc5NV0gdXNiIDMtMS4xLjE6IE1hbnVmYWN0dXJlcjogR2VuZXJpYwpbICAyODIuMDY2Nzk3XSB1
+c2IgMy0xLjEuMTogU2VyaWFsTnVtYmVyOiAwMDAwMDAyNjQwMDEKWyAgMjgyLjA2Nzc1Nl0gc2Nz
+aTkgOiB1c2Itc3RvcmFnZSAzLTEuMS4xOjEuMApbICAyODIuMTQzNzM5XSBtdHAtcHJvYmVbMjY2
+MF06IGJ1czogMywgZGV2aWNlOiA3IHdhcyBub3QgYW4gTVRQIGRldmljZQpbICAyODMuMDcyNzk2
+XSBzY3NpIDk6MDowOjA6IERpcmVjdC1BY2Nlc3MgICAgIEdlbmVyaWMgIFVsdHJhIEhTLVNEL01N
+QyAgMS45MSBQUTogMCBBTlNJOiAwClsgIDI4My4wNzYzMjJdIHNkIDk6MDowOjA6IEF0dGFjaGVk
+IHNjc2kgZ2VuZXJpYyBzZzMgdHlwZSAwClsgIDI4My4wODUwODVdIHNkIDk6MDowOjA6IFtzZGNd
+IEF0dGFjaGVkIFNDU0kgcmVtb3ZhYmxlIGRpc2sKWyAgMjgzLjg0MTI5MF0gW2RybTppOTE1X2hv
+dHBsdWdfd29ya19mdW5jXSwgcnVubmluZyBlbmNvZGVyIGhvdHBsdWcgZnVuY3Rpb25zClsgIDI4
+My44NDEyOTZdIFtkcm06aW50ZWxfZHBfaG90X3BsdWddLCBhYm91dCB0byBjaGVjayBzdGF0dXMK
+WyAgMjgzLjg0MTI5OF0gW2RybTppbnRlbF9kcF9ob3RfcGx1Z10sIGRvbmUgY2hlY2tpbmcgc3Rh
+dHVzClsgIDI4My44NDEzMDFdIFtkcm06aW50ZWxfZHBfaG90X3BsdWddLCBhYm91dCB0byBjaGVj
+ayBzdGF0dXMKWyAgMjgzLjg0MTcyNV0gW2RybTppbnRlbF9kcF9jaGVja19saW5rX3N0YXR1c10s
+IGVxIG5vdCBva2F5ClsgIDI4My44NDE3MjhdIFtkcm06aW50ZWxfZHBfaG90X3BsdWddLCBkb25l
+IGNoZWNraW5nIHN0YXR1cwpbICAyODMuODQxNzMwXSBbZHJtOmludGVsX2RwX2hvdF9wbHVnXSwg
+YWJvdXQgdG8gY2hlY2sgc3RhdHVzClsgIDI4My44NDE3MzNdIFtkcm06aW50ZWxfZHBfaG90X3Bs
+dWddLCBkb25lIGNoZWNraW5nIHN0YXR1cwpbICAyODMuODQxNzYwXSBbZHJtOmludGVsX2lyb25s
+YWtlX2NydF9kZXRlY3RfaG90cGx1Z10sIGlyb25sYWtlIGhvdHBsdWcgYWRwYT0weGY0MDAwMCwg
+cmVzdWx0IDAKWyAgMjgzLjg0MTc2NF0gW2RybTppbnRlbF9jcnRfZGV0ZWN0XSwgQ1JUIG5vdCBk
+ZXRlY3RlZCB2aWEgaG90cGx1ZwpbICAyODMuODQxNzY4XSBbZHJtOm91dHB1dF9wb2xsX2V4ZWN1
+dGVdLCBbQ09OTkVDVE9SOjU6VkdBLTFdIHN0YXR1cyB1cGRhdGVkIGZyb20gMiB0byAyClsgIDI4
+My44NTQxNzFdIFtkcm06b3V0cHV0X3BvbGxfZXhlY3V0ZV0sIFtDT05ORUNUT1I6ODpIRE1JLUEt
+MV0gc3RhdHVzIHVwZGF0ZWQgZnJvbSAyIHRvIDIKWyAgMjgzLjg1NDY4N10gW2RybTppbnRlbF9k
+cF9hdXhfY2hdLCBkcF9hdXhfY2ggdGltZW91dCBzdGF0dXMgMHg1MTQzMDAzZQpbICAyODMuODU3
+MDY3XSBbZHJtOmludGVsX2RwX2F1eF9jaF0sIGRwX2F1eF9jaCB0aW1lb3V0IHN0YXR1cyAweDUx
+NDMwMDNlClsgIDI4My44NTkwNjddIFtkcm06aW50ZWxfZHBfYXV4X2NoXSwgZHBfYXV4X2NoIHRp
+bWVvdXQgc3RhdHVzIDB4NTE0MzAwM2UKWyAgMjgzLjg2MDU1NF0gW2RybTppcm9ubGFrZV9kcF9k
+ZXRlY3RdLCBEUENEOiAwMDAwClsgIDI4My44NjA1NjBdIFtkcm06b3V0cHV0X3BvbGxfZXhlY3V0
+ZV0sIFtDT05ORUNUT1I6MTE6RFAtMV0gc3RhdHVzIHVwZGF0ZWQgZnJvbSAyIHRvIDIKWyAgMjgz
+Ljg3MjkyMl0gW2RybTpvdXRwdXRfcG9sbF9leGVjdXRlXSwgW0NPTk5FQ1RPUjoxNDpIRE1JLUEt
+Ml0gc3RhdHVzIHVwZGF0ZWQgZnJvbSAyIHRvIDIKWyAgMjgzLjg4NTI3MV0gW2RybTpvdXRwdXRf
+cG9sbF9leGVjdXRlXSwgW0NPTk5FQ1RPUjoxNjpIRE1JLUEtM10gc3RhdHVzIHVwZGF0ZWQgZnJv
+bSAyIHRvIDIKWyAgMjgzLjg4NTQ4M10gW2RybTppcm9ubGFrZV9kcF9kZXRlY3RdLCBEUENEOiAx
+MWE4NDEKWyAgMjgzLjg4NjUzMF0gW2RybTppMmNfYWxnb19kcF9hdXhfeGZlcl0sIGRwX2F1eF94
+ZmVyIHJldHVybiAyClsgIDI4My45MTQwODNdIFtkcm06aTJjX2FsZ29fZHBfYXV4X3hmZXJdLCBk
+cF9hdXhfeGZlciByZXR1cm4gMgpbICAyODMuOTQxNjM1XSBbZHJtOmkyY19hbGdvX2RwX2F1eF94
+ZmVyXSwgZHBfYXV4X3hmZXIgcmV0dXJuIDIKWyAgMjgzLjk0MTYzNl0gW2RybTpkcm1fZGV0ZWN0
+X21vbml0b3JfYXVkaW9dLCBNb25pdG9yIGhhcyBiYXNpYyBhdWRpbyBzdXBwb3J0ClsgIDI4My45
+NDE2MzhdIFtkcm06b3V0cHV0X3BvbGxfZXhlY3V0ZV0sIFtDT05ORUNUT1I6MTc6RFAtMl0gc3Rh
+dHVzIHVwZGF0ZWQgZnJvbSAxIHRvIDEKWyAgMjgzLjk0MjE1Ml0gW2RybTppbnRlbF9kcF9hdXhf
+Y2hdLCBkcF9hdXhfY2ggdGltZW91dCBzdGF0dXMgMHg1MTQzMDAzZQpbICAyODMuOTQ0MDE3XSBb
+ZHJtOmludGVsX2RwX2F1eF9jaF0sIGRwX2F1eF9jaCB0aW1lb3V0IHN0YXR1cyAweDUxNDMwMDNl
+ClsgIDI4My45NDYwMThdIFtkcm06aW50ZWxfZHBfYXV4X2NoXSwgZHBfYXV4X2NoIHRpbWVvdXQg
+c3RhdHVzIDB4NTE0MzAwM2UKWyAgMjgzLjk0NzUwNV0gW2RybTppcm9ubGFrZV9kcF9kZXRlY3Rd
+LCBEUENEOiAwMDAwClsgIDI4My45NDc1MTFdIFtkcm06b3V0cHV0X3BvbGxfZXhlY3V0ZV0sIFtD
+T05ORUNUT1I6MTk6RFAtM10gc3RhdHVzIHVwZGF0ZWQgZnJvbSAyIHRvIDIKWyAgMjkwLjkxMzk5
+NF0gW2RybTppbnRlbF9jcnRjX2N1cnNvcl9zZXRdLCAKWyAgMjkwLjkxMzk5OF0gW2RybTppbnRl
+bF9jcnRjX2N1cnNvcl9zZXRdLCBjdXJzb3Igb2ZmClsgIDMwOS43NTA4ODhdIHRoaXMgdGltZSBp
+dCBtYWRlIG5vaXNlIGFuZCB3ZW50IHRvIHNsZWVwLiAgaXQgZmFpbGVkIHRvIGNvbWUgYmFjayBv
+biBpdHMgb3duIGFuZCBuZWVkZWQgYSBwb3dlciBjeWNsZQo=
+--bcaec5215e4d5afed404a8f00669
+Content-Type: text/x-patch; charset=US-ASCII; name="i915_dpms_trace.patch"
+Content-Disposition: attachment; filename="i915_dpms_trace.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gqk9n6ra1
 
-
-You have data, you know the pen state, why mess with 2! kfifos? Just
-report the events right here.
-
-> +
-> +	return 0;
-> +}
-> +
-> +static irqreturn_t da9052_ts_datardy_irq(int irq, void *data)
-> +{
-> +	struct da9052_tsi *tsi = (struct da9052_tsi *)data;
-> +	int ret;
-> +
-> +	ret = da9052_ts_read(tsi);
-> +	if (ret) {
-> +		dev_err(tsi->da9052->dev,
-> +			"Failed to read TSI co-ordinate, %d\n", ret);
-> +		return IRQ_NONE;
-> +	}
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +/*
-> +* Two FIFO are been used. FIFO1 is used for detecting pen up and
-> +* FIFO2 for reporting pen down co-ordinate.
-> +*/
-> +void da9052_ts_process_reg_data(struct da9052_tsi *tsi)
-> +{
-> +	struct da9052_tsi_reg tmp_raw_data;
-> +	u32 reg_data_cnt;
-> +	int ret;
-> +
-> +	reg_data_cnt = kfifo_len(&tsi->fifo);
-> +
-> +	while (reg_data_cnt-- > 0) {
-> +		ret = kfifo_out(&tsi->fifo, &tmp_raw_data,
-> +				sizeof(struct da9052_tsi_reg));
-> +		if (ret < 0)
-> +			continue;
-> +		kfifo_in(&tsi->fifo_buf, &tmp_raw_data,
-> +			 sizeof(struct da9052_tsi_reg));
-> +	}
-> +	return;
-> +}
-> +
-> +static void da9052_ts_report_penup(struct da9052_tsi *tsi)
-> +{
-> +	struct input_dev *ip_dev = tsi->dev;
-> +	struct da9052 *da9052 = tsi->da9052;
-> +	ssize_t ret;
-> +
-> +	ret = da9052_ts_stop(tsi);
-> +	if (ret < 0)
-> +		return;
-> +
-> +	da9052->events_mask |= DA9052_E_TSI_READY;
-> +	da9052->events_mask &= ~DA9052_E_PEN_DOWN;
-> +
-> +	/* Mask TSI_READY event and unmask PEN_DOWN event*/
-> +	ret = da9052_reg_update(da9052, DA9052_IRQ_MASK_B_REG, 0x40, 0x80);
-> +	if (ret < 0)
-> +		return;
-> +
-> +	input_report_abs(ip_dev, BTN_TOUCH, 0);
-> +	input_sync(ip_dev);
-> +
-> +	tsi->zero_data_cnt = 0;
-> +}
-> +
-> +/*
-> +* This function detects the pen up state using the kfifo len.
-> +* If kfifo len is zero for some interval then pen up is reported.
-> +* Else pen co-ordinate are reported.
-> +*/
-> +static int da9052_ts_monitor_pen_state(void *data)
-> +{
-> +	struct da9052_tsi *tsi = (struct da9052_tsi *) data;
-> +	u32 data_cnt;
-> +
-> +	set_freezable();
-> +
-> +	while (tsi->tsi_pen_state_thread.state == DA9052_ACTIVE) {
-> +		try_to_freeze();
-> +
-> +		set_current_state(TASK_INTERRUPTIBLE);
-> +		schedule_timeout(msecs_to_jiffies(10));
-> +
-> +		if (tsi->pen_state != DA9052_PEN_DOWN)
-> +			continue;
-> +
-> +		data_cnt = kfifo_len(&tsi->fifo);
-> +		if (data_cnt < 0)
-> +			continue;
-> +
-> +		da9052_ts_process_reg_data(tsi);
-> +
-> +		if (data_cnt)
-> +			tsi->zero_data_cnt = 0;
-> +		else {
-> +			if ((++(tsi->zero_data_cnt)) >
-> +				tsi->valid_penup_count) {
-> +				tsi->pen_state = DA9052_PEN_UP;
-> +				da9052_ts_report_penup(tsi);
-> +			}
-> +		}
-> +	}
-> +
-> +	complete_and_exit(&tsi->tsi_pen_state_thread.notifier, 0);
-> +	return 0;
-> +}
-> +
-> +static int da9052_ts_process_thread(void *ptr)
-> +{
-> +	struct da9052_tsi_reg co_ord;
-> +	int cnt = 0, ret;
-> +	struct da9052_tsi *tsi = (struct da9052_tsi *)ptr;
-> +
-> +	set_freezable();
-> +
-> +	while (tsi->tsi_filter_thread.state == DA9052_ACTIVE) {
-> +
-> +		try_to_freeze();
-> +
-> +		set_current_state(TASK_INTERRUPTIBLE);
-> +		schedule_timeout(msecs_to_jiffies(10));
-> +		cnt = kfifo_len(&tsi->fifo_buf);
-> +		if (cnt <= 0)
-> +			continue;
-> +
-> +		ret = kfifo_out(&tsi->fifo_buf, &co_ord,
-> +				sizeof(struct da9052_tsi_reg));
-> +		if (ret < 0)
-> +			continue;
-> +
-> +		input_report_abs(tsi->dev, BTN_TOUCH, 1);
-> +		input_report_abs(tsi->dev, ABS_X, co_ord.x);
-> +		input_report_abs(tsi->dev, ABS_Y, co_ord.y);
-> +		input_sync(tsi->dev);
-> +	}
-> +
-> +	tsi->tsi_filter_thread.thread_task = NULL;
-> +	complete_and_exit(&tsi->tsi_filter_thread.notifier, 0);
-> +
-> +	return 0;
-> +}
-> +
-> +static int da9052_ts_configure_gpio(struct da9052 *da9052)
-> +{
-> +	int ret;
-> +
-> +	ret = da9052_clear_bits(da9052, DA9052_GPIO_2_3_REG, 0x30);
-> +	if (ret < 0)
-> +		return -EIO;
-> +
-> +	ret = da9052_clear_bits(da9052, DA9052_GPIO_4_5_REG, 0x33);
-> +	if (ret < 0)
-> +		return -EIO;
-> +
-> +	ret = da9052_clear_bits(da9052, DA9052_GPIO_6_7_REG, 0x33);
-> +	if (ret < 0)
-> +		return -EIO;
-> +
-> +	return ret;
-> +}
-> +
-> +static int __init da9052_ts_enable_device(struct da9052_tsi *tsi)
-> +{
-> +	ssize_t ret;
-> +	struct da9052 *da9052 = tsi->da9052;
-> +
-> +	ret = da9052_ts_configure_gpio(tsi->da9052);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = da9052_reg_update(tsi->da9052, DA9052_TSI_CONT_A_REG, 0xFC, 0xC0);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	tsi->valid_penup_count = 5;
-> +
-> +	init_completion(&tsi->tsi_pen_state_thread.notifier);
-> +	tsi->tsi_pen_state_thread.state = DA9052_ACTIVE;
-> +	tsi->tsi_pen_state_thread.pid = kernel_thread(da9052_ts_monitor_pen_state, tsi,
-> +						      CLONE_KERNEL | SIGCHLD);
-> +
-> +	init_completion(&tsi->tsi_filter_thread.notifier);
-> +	tsi->tsi_filter_thread.state = DA9052_ACTIVE;
-> +	tsi->tsi_filter_thread.pid = kernel_thread(da9052_ts_process_thread, tsi,
-> +						   CLONE_KERNEL | SIGCHLD);
-> +
-> +	tsi->zero_data_cnt = 0;
-> +
-> +	/* Measure TSI sample every 1ms */
-> +	ret = da9052_reg_update(tsi->da9052, DA9052_ADC_CONT_REG,
-> +				1 << 6, 1 << 6);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	/* TSI_DELAY: 4 slots, TSI_SKIP: 0 slots, TSI_MODE: XYZP */
-> +	ret = da9052_reg_update(tsi->da9052, DA9052_TSI_CONT_A_REG,
-> +				1 << 1, 1 << 1);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	da9052->events_mask |= DA9052_E_TSI_READY;
-> +
-> +	/* Mask TSI_READY event*/
-> +	ret = da9052_reg_update(da9052, DA9052_IRQ_MASK_B_REG, 0, 0x80);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	/*Supply TSIRef thru LD09 */
-> +	ret = da9052_reg_write(tsi->da9052, DA9052_LDO9_REG, 0x59);
-> +
-> +	return ret;
-> +}
-> +
-> +static s32 __devinit da9052_ts_probe(struct platform_device *pdev)
-> +{
-> +	struct da9052_tsi *tsi;
-> +	struct input_dev *input_dev;
-> +	struct da9052 *da9052;
-> +	int ret;
-> +
-> +	da9052 = dev_get_drvdata(pdev->dev.parent);
-
-Check for NULL?
-
-> +
-> +	tsi = kzalloc(sizeof(struct da9052_tsi), GFP_KERNEL);
-> +	if (!tsi)
-> +		return -ENOMEM;
-> +
-> +	input_dev = input_allocate_device();
-> +	if (!input_dev) {
-> +		dev_err(tsi->da9052->dev,
-> +			"failed to allocate input device\n");
-> +		ret = -ENOMEM;
-> +		goto err_mem;
-> +	}
-> +
-> +	ret = kfifo_alloc(&tsi->fifo, DA9052_TSI_FIFOSIZE, GFP_KERNEL);
-> +	if (ret < 0)
-> +		goto err_input;
-> +
-> +	ret = kfifo_alloc(&tsi->fifo_buf, DA9052_TSI_FIFOSIZE, GFP_KERNEL);
-> +	if (ret < 0)
-> +		goto err_fifo;
-> +
-> +	tsi->da9052 = da9052;
-> +	tsi->pen_up_detect_interval = 5;
-> +	platform_set_drvdata(pdev, tsi);
-
-Can probably be moved right before "return 0;" statement.
-
-> +
-> +	input_dev->id.version = 0x0101;
-> +	input_dev->id.vendor = 0x15B6;
-> +	input_dev->id.product = 0x9052;
-> +	input_dev->id.bustype = BUS_RS232;
-
-Is it really RS232? BUS_HOST or leave it 0.
-
-> +	input_dev->name = "Dialog DA9052 TouchScreen Driver";
-> +	input_dev->dev.parent	= &pdev->dev;
-> +	__set_bit(EV_ABS, input_dev->evbit);
-> +	__set_bit(EV_KEY, input_dev->evbit);
-> +	__set_bit(BTN_TOUCH, input_dev->keybit);
-> +	__set_bit(ABS_X, input_dev->absbit);
-> +	__set_bit(ABS_Y, input_dev->absbit);
-> +
-> +	input_set_abs_params(input_dev, ABS_X, 0, 1023, 0, 0);
-> +	input_set_abs_params(input_dev, ABS_Y, 0, 1023, 0, 0);
-> +	input_set_abs_params(input_dev, ABS_PRESSURE, 0, 1023, 0, 0);
-> +
-> +	tsi->dev = input_dev;
-> +	input_set_drvdata(input_dev, tsi);
-
-I do not think you are using input_get_drvdata() enywhere...
-
-> +	ret = input_register_device(tsi->dev);
-> +	if (ret)
-> +		goto err_mem;
-> +
-> +	tsi->irq_pendwn = platform_get_irq_byname(pdev, "PENDWN");
-
-What if call fails?
-
-> +	ret = request_threaded_irq(tsi->da9052->irq_base + tsi->irq_pendwn,
-> +				NULL, da9052_ts_pendwn_irq,
-> +				IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> +				"PENDWN", tsi);
-> +	if (ret < 0) {
-> +		dev_err(tsi->da9052->dev,
-> +			"Failed to register %s IRQ %d, error = %d\n", "PENDWN",
-> +			tsi->da9052->irq_base + tsi->irq_pendwn, ret);
-> +		goto err_fifo_buf;
-> +	}
-> +
-> +	tsi->irq_datardy = platform_get_irq_byname(pdev, "TSIRDY");
-> +	ret = request_threaded_irq(tsi->da9052->irq_base + tsi->irq_datardy,
-> +				NULL, da9052_ts_datardy_irq,
-> +				IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> +				"TSIRDY", tsi);
-> +	if (ret < 0) {
-> +		dev_err(tsi->da9052->dev,
-> +			"Failed to register %s IRQ %d, error = %d\n", "TSIRDY",
-> +			tsi->da9052->irq_base + tsi->irq_datardy, ret);
-> +		goto err_fifo_buf;
-> +	}
-> +
-> +	ret = da9052_ts_enable_device(tsi);
-> +	if (ret < 0)
-> +		goto err_fifo_buf;
-> +
-> +	return 0;
-> +
-> +err_fifo_buf:
-
-Error handling is busted, you forgetting to free IRQs.
-
-> +	kfifo_free(&tsi->fifo_buf);
-> +err_fifo:
-> +	kfifo_free(&tsi->fifo);
-> +err_input:
-
-Sometimes device is already registered here, you need to call
-input_unregister_device() in such cases. The easiest way to handle this
-case it to register input device as the very last action.
-
-> +	input_free_device(input_dev);
-> +err_mem:
-> +	kfree(tsi);
-> +	return ret;
-> +}
-> +
-> +static int __devexit da9052_ts_remove(struct platform_device *pdev)
-> +{
-> +	struct da9052_tsi *tsi = platform_get_drvdata(pdev);
-> +	s32 ret;
-> +
-> +	ret = da9052_clear_bits(tsi->da9052, DA9052_TSI_CONT_A_REG, 1 << 0);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = da9052_reg_write(tsi->da9052, DA9052_LDO9_REG, 0x19);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	free_irq(tsi->da9052->irq_base + tsi->irq_pendwn, NULL);
-> +	free_irq(tsi->da9052->irq_base + tsi->irq_datardy, NULL);
-
-You passed 'tsi' to request_irq(), here you are passing NULL thus
-leaking IRQs.
-
-> +
-> +	tsi->tsi_pen_state_thread.state = DA9052_INACTIVE;
-> +	wait_for_completion(&tsi->tsi_pen_state_thread.notifier);
-> +
-> +	tsi->tsi_filter_thread.state = DA9052_INACTIVE;
-> +	wait_for_completion(&tsi->tsi_filter_thread.notifier);
-> +
-> +	input_unregister_device(tsi->dev);
-> +
-> +	platform_set_drvdata(pdev, NULL);
-> +
-> +	kfifo_free(&tsi->fifo);
-> +	kfifo_free(&tsi->fifo_buf);
-> +	kfree(tsi);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver da9052_tsi_driver = {
-> +	.probe = da9052_ts_probe,
-> +	.remove = __devexit_p(da9052_ts_remove),
-> +	.driver = {
-> +		.name = "da9052-tsi",
-> +		.owner = THIS_MODULE,
-> +	},
-> +};
-> +
-> +static int __init da9052_ts_init(void)
-> +{
-> +	return platform_driver_register(&da9052_tsi_driver);
-> +}
-> +module_init(da9052_ts_init);
-> +
-> +static void __exit da9052_ts_exit(void)
-> +{
-> +	platform_driver_unregister(&da9052_tsi_driver);
-> +}
-> +module_exit(da9052_ts_exit);
-> +
-> +MODULE_DESCRIPTION("Touchscreen driver for Dialog Semiconductor DA9052");
-> +MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:da9052-tsi");
-> 
-> 
-
-Thanks.
-
--- 
-Dmitry
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2RybS9pOTE1L2ludGVsX2RwLmMgYi9kcml2ZXJzL2dw
+dS9kcm0vaTkxNS9pbnRlbF9kcC5jCmluZGV4IGUyYWNlZDYuLjU1MGIzMjkgMTAwNjQ0Ci0tLSBh
+L2RyaXZlcnMvZ3B1L2RybS9pOTE1L2ludGVsX2RwLmMKKysrIGIvZHJpdmVycy9ncHUvZHJtL2k5
+MTUvaW50ZWxfZHAuYwpAQCAtMTAyMCw2ICsxMDIwLDggQEAgaW50ZWxfZHBfZHBtcyhzdHJ1Y3Qg
+ZHJtX2VuY29kZXIgKmVuY29kZXIsIGludCBtb2RlKQogCXN0cnVjdCBkcm1faTkxNV9wcml2YXRl
+ICpkZXZfcHJpdiA9IGRldi0+ZGV2X3ByaXZhdGU7CiAJdWludDMyX3QgZHBfcmVnID0gSTkxNV9S
+RUFEKGludGVsX2RwLT5vdXRwdXRfcmVnKTsKIAorCURSTV9ERUJVR19LTVMoInN0YXJ0IGRwbXMg
+LT4gJWRcbiIsIG1vZGUpOworCiAJaWYgKG1vZGUgIT0gRFJNX01PREVfRFBNU19PTikgewogCQlp
+ZiAoaXNfZWRwKGludGVsX2RwKSkKIAkJCWlyb25sYWtlX2VkcF9iYWNrbGlnaHRfb2ZmKGRldik7
+CkBAIC0xMDQ0LDYgKzEwNDYsOCBAQCBpbnRlbF9kcF9kcG1zKHN0cnVjdCBkcm1fZW5jb2RlciAq
+ZW5jb2RlciwgaW50IG1vZGUpCiAJCWlmIChpc19lZHAoaW50ZWxfZHApKQogCQkJaXJvbmxha2Vf
+ZWRwX2JhY2tsaWdodF9vbihkZXYpOwogCX0KKworCURSTV9ERUJVR19LTVMoImZpbmlzaCBkcG1z
+IC0+ICVkXG4iLCBtb2RlKTsKIH0KIAogLyoKQEAgLTE1NzcsNiArMTU4MSw3IEBAIGludGVsX2Rw
+X2NoZWNrX2xpbmtfc3RhdHVzKHN0cnVjdCBpbnRlbF9kcCAqaW50ZWxfZHApCiAKIAlpZiAoIWlu
+dGVsX2RwX2dldF9saW5rX3N0YXR1cyhpbnRlbF9kcCkpIHsKIAkJaW50ZWxfZHBfbGlua19kb3du
+KGludGVsX2RwKTsKKwkJRFJNX0RFQlVHX0tNUygibGluayBpcyBkb3duIik7CiAJCXJldHVybjsK
+IAl9CiAKQEAgLTE1ODYsMTIgKzE1OTEsMTggQEAgaW50ZWxfZHBfY2hlY2tfbGlua19zdGF0dXMo
+c3RydWN0IGludGVsX2RwICppbnRlbF9kcCkKIAkJCQkgICAgICAgc2l6ZW9mIChpbnRlbF9kcC0+
+ZHBjZCkpOwogCWlmIChyZXQgIT0gc2l6ZW9mKGludGVsX2RwLT5kcGNkKSkgewogCQlpbnRlbF9k
+cF9saW5rX2Rvd24oaW50ZWxfZHApOworCQlEUk1fREVCVUdfS01TKCJmYWlsZWQgdG8gcmVhZCBE
+UENEIik7CiAJCXJldHVybjsKIAl9CiAKIAlpZiAoIWludGVsX2NoYW5uZWxfZXFfb2soaW50ZWxf
+ZHApKSB7CisJCURSTV9ERUJVR19LTVMoImVxIG9rYXkiKTsKIAkJaW50ZWxfZHBfc3RhcnRfbGlu
+a190cmFpbihpbnRlbF9kcCk7CisJCURSTV9ERUJVR19LTVMoInN0YXJ0X2xpbmtfdHJhaW4gZG9u
+ZSIpOwogCQlpbnRlbF9kcF9jb21wbGV0ZV9saW5rX3RyYWluKGludGVsX2RwKTsKKwkJRFJNX0RF
+QlVHX0tNUygiY29tcGxldGVfbGlua190cmFpbiBkb25lIik7CisJfSBlbHNlIHsKKwkJRFJNX0RF
+QlVHX0tNUygiZXEgbm90IG9rYXkiKTsKIAl9CiB9CiAKQEAgLTE4NTUsNyArMTg2NiwxMCBAQCBp
+bnRlbF9kcF9ob3RfcGx1ZyhzdHJ1Y3QgaW50ZWxfZW5jb2RlciAqaW50ZWxfZW5jb2RlcikKIHsK
+IAlzdHJ1Y3QgaW50ZWxfZHAgKmludGVsX2RwID0gY29udGFpbmVyX29mKGludGVsX2VuY29kZXIs
+IHN0cnVjdCBpbnRlbF9kcCwgYmFzZSk7CiAKKwlEUk1fREVCVUdfS01TKCJhYm91dCB0byBjaGVj
+ayBzdGF0dXMiKTsKIAlpbnRlbF9kcF9jaGVja19saW5rX3N0YXR1cyhpbnRlbF9kcCk7CisJRFJN
+X0RFQlVHX0tNUygiZG9uZSBjaGVja2luZyBzdGF0dXMiKTsKKwogfQogCiAvKiBSZXR1cm4gd2hp
+Y2ggRFAgUG9ydCBzaG91bGQgYmUgc2VsZWN0ZWQgZm9yIFRyYW5zY29kZXIgRFAgY29udHJvbCAq
+Lwo=
+--bcaec5215e4d5afed404a8f00669--
