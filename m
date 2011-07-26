@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab1GZCSL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 25 Jul 2011 22:18:11 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64161 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752744Ab1GZCSJ convert rfc822-to-8bit (ORCPT
+	id S1753113Ab1GZCSb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 25 Jul 2011 22:18:31 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:1619 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753030Ab1GZCSZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 25 Jul 2011 22:18:09 -0400
+	Mon, 25 Jul 2011 22:18:25 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
+	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=U7aUR6m8bycNIdsMTzSGSBPFjSA5bTb1pDRlvy8XOfPnawOwonauyG+PnMap8O7ia
+	YJRmWMRdaDwmcGMXY+m0g==
 MIME-Version: 1.0
-In-Reply-To: <1307981153.1449.19.camel@mop>
-References: <1306930476-1899-1-git-send-email-lucas.demarchi@profusion.mobi>
- <BANLkTin6CP-A+UsGXyu9wb7U34wEN7DKsw@mail.gmail.com> <m18vtkq57c.fsf@fess.ebiederm.org>
- <BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com> <20110602134338.0c56160e@lxorguk.ukuu.org.uk>
- <BANLkTik72cU_R5k9NLnqN_FNkm-y5Fk0nQ@mail.gmail.com> <m1hb88e3qs.fsf@fess.ebiederm.org>
- <BANLkTin5P8P_HR78qo0oyzeu9hpWazZqTw@mail.gmail.com> <20110608151732.2b321b9a.akpm@linux-foundation.org>
- <BANLkTinXwE0K5nJ649rhNxN06KvwLNDeCA@mail.gmail.com> <1307981153.1449.19.camel@mop>
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Mon, 25 Jul 2011 23:17:48 -0300
-Message-ID: <CAMOw1v5veDqE+=gbNBn3juXHOOp764d7F20XtwUJXZoBW45zyg@mail.gmail.com>
-Subject: Re: [PATCH] sysctl: add support for poll()
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>,
-        neilb@suse.de
+In-Reply-To: <20110725181645.GA6876@core.coreip.homeip.net>
+References: <1311169146-20066-1-git-send-email-djkurtz@chromium.org>
+ <1311169146-20066-9-git-send-email-djkurtz@chromium.org> <20110725082918.GC22937@core.coreip.homeip.net>
+ <CAGS+omAQmb-q6xC-Gh6z69iNNyr=rN-Khsq90aCHJwe-6F9ANw@mail.gmail.com> <20110725181645.GA6876@core.coreip.homeip.net>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Tue, 26 Jul 2011 10:18:02 +0800
+X-Google-Sender-Auth: Wdshj7adPVNGhIrMqomECNQAHoU
+Message-ID: <CAGS+omCAUAgK6thEPqkp0iSFbnzonw0jH77XToptTwTUz5BH7w@mail.gmail.com>
+Subject: Re: [PATCH 8/9 v2] Input: add BTN_TOOL_QUINTTAP for reporting 5
+ fingers on touchpad
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: rydberg@euromail.se, chase.douglas@canonical.com, rubini@cvml.unipv.it,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
+        olofj@chromium.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 1:05 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
-> On Thu, 2011-06-09 at 15:16 +0200, Kay Sievers wrote:
->> On Thu, Jun 9, 2011 at 00:17, Andrew Morton <akpm@linux-foundation.org> wrote:
+Hi Dmitry, et al,
+
+On Tue, Jul 26, 2011 at 2:16 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
 >
->> > We already have several pollable procfs files, such as
->> > fs/proc/base.c:mounts_poll() and I think drivers/md has one.  I do
->> > think that any work in this area should end up with those custom
->> > make-procfs-pollable hacks being identified and removed.
->>
->> For these files we can probably move the event counter into the
->> seq_file structure, and get rid of the dance to kmalloc it and assign
->> it to seq_file->private. That might simplify the logic a bit.
->>
->> [Adding Neil, to get his opinion of moving 'event' so seq_file and get
->> rid of the malloc dance]
+> On Mon, Jul 25, 2011 at 05:14:22PM +0800, Daniel Kurtz wrote:
+> > On Mon, Jul 25, 2011 at 4:29 PM, Dmitry Torokhov
+> > <dmitry.torokhov@gmail.com> wrote:
+> > >
+> > > On Wed, Jul 20, 2011 at 09:39:05PM +0800, djkurtz@chromium.org wrote:
+> > > > From: Daniel Kurtz <djkurtz@chromium.org>
+> > > >
+> > >
+> > > Do we know what we want to do with this gesture? Because if not I'd
+> > > rather not merge it for now, until there are real users.
+> >
+> > And do what instead?
+> > Report 5 fingers with BTN_TOOL_QUADTAP?
+> >
 >
-> I guess, we could do something like this, which looks quite a bit
-> simpler by moving the poll event counter into the dynamically allocated
-> seq_file structure itself, instead of having private structures
-> allocated on top to just carry the counter (patch is just
-> compile-tested).
+> That, or nothing... The fact that the device can report 5 finger touch
+> does not mean that anybody cares about this.
+> --
+> Dmitry
 
-Now that this cleanup made its way, could we look again to to the
-pollable sysctl implementation?
+The only current use of this is to detect "resting thumb + 4-finger-scroll".
+"4-finger scroll" is a gesture supported by some applications and
+operating systems.
+"resting thumb" is when a clickpad user rests a finger (typically a
+thumb), in the bottom left "click zone" in anticipation of
+click+move=select gestures.
+Thus, this 4-finger scroll is actually sometimes a 5-finger gesture.
 
+Similarly, I work with many touchpads from different vendors, some of
+which do actually provide 5 independent finger coordinates.  The
+drivers for these touchpads truly send 5 MT-B slots when 5 fingers are
+present.
 
-thanks
-Lucas De Marchi
+Should these drivers perform input_mt_report_pointer_emulation()?
+If so, should we add BTN_TOOL_QUINTTAP to allow them to report 5
+fingers in emulation mode?
+Or is that ridiculous, since emulation is only for old userspace
+programs which wouldn't know what to do with QUINTTAP, anyway?
+
+-Dan
