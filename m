@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab1GZSs5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 14:48:57 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:34493 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064Ab1GZSsv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 14:48:51 -0400
+	id S1753490Ab1GZSu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 14:50:29 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51895 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753246Ab1GZSuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 14:50:14 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 2/2] USB / Renesas: Fix build issue related to struct scatterlist
+Date: Tue, 26 Jul 2011 20:51:01 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-usb@vger.kernel.org
+References: <201107262049.15333.rjw@sisk.pl>
+In-Reply-To: <201107262049.15333.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <20110726112824.b357c756.rdunlap@xenotime.net>
-References: <4E1D9C25.8080300@suse.cz>
-	<1311634718-32588-1-git-send-email-mmarek@suse.cz>
-	<CAM_iQpUEfYrrtpcRLTekSHMHrTTka6ir=z_GUUbnxuQKfY+OXA@mail.gmail.com>
-	<4E2EBF63.8050208@suse.cz>
-	<20110726080443.62196869.rdunlap@xenotime.net>
-	<4E2F0735.1070403@suse.cz>
-	<20110726112824.b357c756.rdunlap@xenotime.net>
-Date: Tue, 26 Jul 2011 14:48:50 -0400
-Message-ID: <CACqU3MWOjjB0RiWLWS8yf0u0gRqOL3JP0StyrtP1kbA+i92SfA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 1/2] kconfig: Introduce KCONFIG(), KCONFIG_BUILTIN()
- and KCONFIG_MODULE()
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Michal Marek <mmarek@suse.cz>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        linux-kbuild@vger.kernel.org, sam@ravnborg.org,
-        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107262051.02019.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-On Tue, Jul 26, 2011 at 2:28 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On Tue, 26 Jul 2011 20:28:05 +0200 Michal Marek wrote:
->
->> Dne 26.7.2011 17:04, Randy Dunlap napsal(a):
->> > On Tue, 26 Jul 2011 15:21:39 +0200 Michal Marek wrote:
->> >> On 26.7.2011 15:01, Américo Wang wrote:
->> >>> BTW, the name KCONFIG(CONFIG_NUMA) seems ugly.
->> >>
->> >> Suggest a better one :). The proposals so far:
->> >> config_is_numa() (breaks grep)
->> >
->> > explain, please.
->>
->> If you grep for CONFIG_FOO usage, you'll miss this alternate syntax.
->>
->
-> Ack.
->
->>
->> >> CONFIGURED(CONFIG_NUMA)
->> >> ENABLED(CONFIG_NUMA)
->> >> KCONFIG(CONFIG_NUMA)
->> >
->> > CONFIG(NUMA) || CONFIG(NUMA_BUILTIN) || CONFIG(NUMA_MODULE)
->>
->> same problem.
->
-> Yes, I sorta got that after I sent the email.
->
-> I guess I prefer your ENABLED() syntax then.
->
-we need to be careful about namespace pollution/collision.
+Fix build issue caused by undefined struct scatterlist in
+drivers/usb/renesas_usbhs/fifo.c.
 
- - Arnaud
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/usb/renesas_usbhs/fifo.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-2.6/drivers/usb/renesas_usbhs/fifo.c
+===================================================================
+--- linux-2.6.orig/drivers/usb/renesas_usbhs/fifo.c
++++ linux-2.6/drivers/usb/renesas_usbhs/fifo.c
+@@ -16,6 +16,7 @@
+  */
+ #include <linux/delay.h>
+ #include <linux/io.h>
++#include <linux/scatterlist.h>
+ #include "./common.h"
+ #include "./pipe.h"
+ 
+
