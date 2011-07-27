@@ -1,45 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab1G0Jbc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 05:31:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28571 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754022Ab1G0Jba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 05:31:30 -0400
-Message-ID: <4E2FDAD0.8000809@redhat.com>
-Date: Wed, 27 Jul 2011 12:30:56 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+	id S1754205Ab1G0Jeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 05:34:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57016 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752766Ab1G0Jea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 05:34:30 -0400
+Message-ID: <4E2FDC10.10906@cn.fujitsu.com>
+Date: Wed, 27 Jul 2011 17:36:16 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Borislav Petkov <bp@amd64.org>, "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-References: <1311340547-7861-1-git-send-email-bp@amd64.org> <4E2F0068.1080001@redhat.com> <20110726181304.GD32536@aftab> <4E2F0498.8050005@zytor.com> <20110726183721.GF32536@aftab> <4E2F09BB.9060605@zytor.com> <4E2F1889.8030708@amd.com> <4E2F90A2.4030409@redhat.com> <20110727062120.GA5272@aftab> <20110727065932.GA16555@elte.hu>
-In-Reply-To: <20110727065932.GA16555@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Gleb Natapov <gleb@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 03/11] KVM: x86: fast emulate repeat string write instructions
+References: <4E2EA3DB.7040403@cn.fujitsu.com> <4E2EA476.9070607@cn.fujitsu.com> <20110726122710.GM4404@redhat.com> <4E2F6E48.7030802@cn.fujitsu.com> <20110727042602.GA7966@redhat.com> <4E2FB10B.9080805@cn.fujitsu.com> <20110727075119.GB7966@redhat.com>
+In-Reply-To: <20110727075119.GB7966@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-27 17:33:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-27 17:33:28,
+	Serialize complete at 2011-07-27 17:33:28
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2011 09:59 AM, Ingo Molnar wrote:
-> >
-> >  Yeah, actually the idea is to patch the kernel only this one time
-> >  and never ever be needing to do this for future CPUs, for this
-> >  matter.
->
-> But the check you have added turns this workaround on for all family
-> 0x15 CPUs. If a family 0x15 CPU is built with a larger or more
-> associative cache, one that does not need the workaround, we would
-> still turn on the workaround.
+On 07/27/2011 03:51 PM, Gleb Natapov wrote:
+> On Wed, Jul 27, 2011 at 02:32:43PM +0800, Xiao Guangrong wrote:
+>> On 07/27/2011 12:26 PM, Gleb Natapov wrote:
+>>> On Wed, Jul 27, 2011 at 09:47:52AM +0800, Xiao Guangrong wrote:
+>>>> On 07/26/2011 08:27 PM, Gleb Natapov wrote:
+>>>>> On Tue, Jul 26, 2011 at 07:26:46PM +0800, Xiao Guangrong wrote:
+>>>>>> We usually use repeat string instructions to clear the page, for example,
+>>>>> By "we" do you mean Linux guest?
+>>>>>
+>>>>
+>>>> I do not know other guests except linux, but, generally rep instruction is
+>>>> not used to update a page table which is been using.
+>>>>
+>>>>>> we call memset to clear a page table, stosb is used in this function, and 
+>>>>>> repeated for 1024 times, that means we should occupy mmu lock for 1024 times
+>>>>>> and walking shadow page cache for 1024 times, it is terrible
+>>>>>>
+>>>>>> In fact, if it is the repeat string instructions emulated and it is not a
+>>>>>> IO/MMIO access, we can zap all the corresponding shadow pages and return to the
+>>>>>> guest, then the mapping can became writable and directly write the page
+>>>>>>
+>>>>
+>>>>
+>>>>> So this patch does two independent things as far as I can see. First it
+>>>>> stops reentering guest if rep instruction is done on memory and second
+>>>>
+>>>> No.
+>>>> Oppositely, it enters guest as soon as possible if rep instruction is done
+>>>> on memory ;-)
+>>> Oops. Indeed. I read it other way around. So why not just return
+>>> X86EMUL_UNHANDLEABLE from emulator_write_emulated_onepage() which should
+>>> have the same effect?
+>>>
+>>
+>> It seams not, the count register(RCX) is not decreased, and redundant work
+>> need to be done by handling EMULATION_FAILED.
+> The only difference is that with your approach one rep is emulated and then
+> control goes back to a guest. With EMULATION_FAILED kvm returns to a guest
+> immediately, so RCX shouldn't be decreased. There shouldn't a be big difference
+> performance wise and if there is it is likely on EMULATION_FAILED side.
+> Last but not least emulate.c knows nothing about the hack.
+> 
 
-Similarly, if family 0x21 CPUs have a similar arrangement (with 
-identical or different cache sizes and associativity) the hardcoded 
-check will fail.
-
--- 
-error compiling committee.c: too many arguments to function
-
+Umm. it is reasonable, i'll update this patch. Thanks, Gleb!
