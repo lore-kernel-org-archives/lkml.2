@@ -1,146 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab1G0M7R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 08:59:17 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:50233 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329Ab1G0M6S (ORCPT
+	id S1754647Ab1G0M7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 08:59:20 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:36503 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754241Ab1G0M6S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Jul 2011 08:58:18 -0400
-Message-Id: <20110727125808.367205861@linux.vnet.ibm.com>
+Message-Id: <20110727125808.516079721@linux.vnet.ibm.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 27 Jul 2011 14:55:10 +0200
+Date: Wed, 27 Jul 2011 14:55:11 +0200
 From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 To: vgoyal@redhat.com
 Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
         oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: [patch v2 06/10] s390: Export store_status() function
+Subject: [patch v2 07/10] s390: Use diagnose 308 for system reset
 References: <20110727125504.491183728@linux.vnet.ibm.com>
-Content-Disposition: inline; filename=s390-kdump-arch-store-status.patch
+Content-Disposition: inline; filename=s390-kdump-arch-diag308_reset.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-For kdump we need a store status function to save the registers for the
-current CPU. Therefore this patch exports a function "store_status()".
-In addition to that now also floating point registers are saved correctly.
+The diagnose 308 call is the prefered method for clearing all ongoing I/O.
+Therefore if it is available we use it instead of doing a manual reset.
 
 Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 ---
- arch/s390/kernel/reipl64.S |   80 +++++++++++++++++++++++++++++++++------------
- 1 file changed, 60 insertions(+), 20 deletions(-)
+ arch/s390/include/asm/ipl.h |    1 +
+ arch/s390/kernel/base.S     |   36 ++++++++++++++++++++++++++++++++++++
+ arch/s390/kernel/ipl.c      |    6 ++++++
+ 3 files changed, 43 insertions(+)
 
---- a/arch/s390/kernel/reipl64.S
-+++ b/arch/s390/kernel/reipl64.S
-@@ -1,5 +1,5 @@
- /*
-- *    Copyright IBM Corp 2000,2009
-+ *    Copyright IBM Corp 2000,2011
-  *    Author(s): Holger Smolinski <Holger.Smolinski@de.ibm.com>,
-  *		 Denis Joseph Barrow,
-  */
-@@ -8,6 +8,64 @@
- #include <asm/asm-offsets.h>
+--- a/arch/s390/include/asm/ipl.h
++++ b/arch/s390/include/asm/ipl.h
+@@ -167,5 +167,6 @@ enum diag308_rc {
+ };
  
- #
-+# store_status
+ extern int diag308(unsigned long subcode, void *addr);
++extern void diag308_reset(void);
+ 
+ #endif /* _ASM_S390_IPL_H */
+--- a/arch/s390/kernel/base.S
++++ b/arch/s390/kernel/base.S
+@@ -76,6 +76,42 @@ s390_base_pgm_handler_fn:
+ 	.quad	0
+ 	.previous
+ 
 +#
-+# Prerequisites to run this function:
-+# - Prefix register is set to zero
-+# - Original prefix register is stored in "dump_prefix_page"
-+# - Lowcore protection is off
++# Calls diag 308 subcode 1 and continues execution
 +#
-+ENTRY(store_status)
-+	/* Save register one and load save area base */
-+	stg	%r1,__LC_SAVE_AREA_64(%r0)
-+	lghi	%r1,SAVE_AREA_BASE
-+	/* General purpose registers */
-+	stmg	%r0,%r15,__LC_GPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	lg	%r2,__LC_SAVE_AREA_64(%r0)
-+	stg	%r2,__LC_GPREGS_SAVE_AREA-SAVE_AREA_BASE+8(%r1)
-+	/* Control registers */
-+	stctg	%c0,%c15,__LC_CREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	/* Access registers */
-+	stam	%a0,%a15,__LC_AREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	/* Floating point registers */
-+	std	%f0, 0x00 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	std	%f1, 0x08 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	std	%f2, 0x10 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	std	%f3, 0x18 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	std	%f4, 0x20 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	std	%f5, 0x28 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	std	%f6, 0x30 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	std	%f7, 0x38 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	std	%f8, 0x40 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	std	%f9, 0x48 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	std	%f10,0x50 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	std	%f11,0x58 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	std	%f12,0x60 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	std	%f13,0x68 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	std	%f14,0x70 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	std	%f15,0x78 + __LC_FPREGS_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	/* Floating point control register */
-+	stfpc	__LC_FP_CREG_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	/* CPU timer */
-+	stpt	__LC_CPU_TIMER_SAVE_AREA-SAVE_AREA_BASE(%r1)
-+	/* Saved prefix register */
-+	larl	%r2,dump_prefix_page
-+	mvc	__LC_PREFIX_SAVE_AREA-SAVE_AREA_BASE(4,%r1),0(%r2)
-+	/* Clock comparator - seven bytes */
-+	larl	%r2,.Lclkcmp
-+	stckc	0(%r2)
-+	mvc	__LC_CLOCK_COMP_SAVE_AREA-SAVE_AREA_BASE + 1(7,%r1),1(%r2)
-+	/* Program status word */
-+	epsw	%r2,%r3
-+	st	%r2,__LC_PSW_SAVE_AREA-SAVE_AREA_BASE + 0(%r1)
-+	st	%r3,__LC_PSW_SAVE_AREA-SAVE_AREA_BASE + 4(%r1)
-+	larl	%r2,store_status
-+	stg	%r2,__LC_PSW_SAVE_AREA-SAVE_AREA_BASE + 8(%r1)
++# The following conditions must be ensured before calling this function:
++# * Prefix register = 0
++# * Lowcore protection is disabled
++#
++ENTRY(diag308_reset)
++	larl	%r4,.Lctlregs		# Save control registers
++	stctg	%c0,%c15,0(%r4)
++	larl	%r4,.Lrestart_psw	# Setup restart PSW at absolute 0
++	lghi	%r3,0
++	lg	%r4,0(%r4)		# Save PSW
++	sturg	%r4,%r3			# Use sturg, because of large pages
++	lghi	%r1,1
++	diag	%r1,%r1,0x308
++.Lrestart_part2:
++	lhi	%r0,0			# Load r0 with zero
++	lhi	%r1,2			# Use mode 2 = ESAME (dump)
++	sigp	%r1,%r0,0x12		# Switch to ESAME mode
++	sam64				# Switch to 64 bit addressing mode
++	larl	%r4,.Lctlregs		# Restore control registers
++	lctlg	%c0,%c15,0(%r4)
 +	br	%r14
-+.align	8
-+.Lclkcmp:	.quad	0x0000000000000000
++.align 16
++.Lrestart_psw:
++	.long	0x00080000,0x80000000 + .Lrestart_part2
 +
-+#
- # do_reipl_asm
- # Parameter: r2 = schid of reipl device
- #
-@@ -15,22 +73,7 @@
- ENTRY(do_reipl_asm)
- 		basr	%r13,0
- .Lpg0:		lpswe	.Lnewpsw-.Lpg0(%r13)
--.Lpg1:		# do store status of all registers
--
--		stg	%r1,.Lregsave-.Lpg0(%r13)
--		lghi	%r1,0x1000
--		stmg	%r0,%r15,__LC_GPREGS_SAVE_AREA-0x1000(%r1)
--		lg	%r0,.Lregsave-.Lpg0(%r13)
--		stg	%r0,__LC_GPREGS_SAVE_AREA-0x1000+8(%r1)
--		stctg	%c0,%c15,__LC_CREGS_SAVE_AREA-0x1000(%r1)
--		stam	%a0,%a15,__LC_AREGS_SAVE_AREA-0x1000(%r1)
--		lg	%r10,.Ldump_pfx-.Lpg0(%r13)
--		mvc	__LC_PREFIX_SAVE_AREA-0x1000(4,%r1),0(%r10)
--		stfpc	__LC_FP_CREG_SAVE_AREA-0x1000(%r1)
--		stckc	.Lclkcmp-.Lpg0(%r13)
--		mvc	__LC_CLOCK_COMP_SAVE_AREA-0x1000(7,%r1),.Lclkcmp-.Lpg0(%r13)
--		stpt	__LC_CPU_TIMER_SAVE_AREA-0x1000(%r1)
--		stg	%r13, __LC_PSW_SAVE_AREA-0x1000+8(%r1)
-+.Lpg1:		brasl	%r14,store_status
++	.section .bss
++.align 8
++.Lctlregs:
++	.rept	16
++	.quad	0
++	.endr
++	.previous
++
+ #else /* CONFIG_64BIT */
  
- 		lctlg	%c6,%c6,.Lall-.Lpg0(%r13)
- 		lgr	%r1,%r2
-@@ -67,10 +110,7 @@ ENTRY(do_reipl_asm)
- 		st	%r14,.Ldispsw+12-.Lpg0(%r13)
- 		lpswe	.Ldispsw-.Lpg0(%r13)
- 		.align	8
--.Lclkcmp:	.quad	0x0000000000000000
- .Lall:		.quad	0x00000000ff000000
--.Ldump_pfx:	.quad	dump_prefix_page
--.Lregsave:	.quad	0x0000000000000000
- 		.align	16
- /*
-  * These addresses have to be 31 bit otherwise
+ ENTRY(s390_base_mcck_handler)
+--- a/arch/s390/kernel/ipl.c
++++ b/arch/s390/kernel/ipl.c
+@@ -1996,6 +1996,12 @@ static void do_reset_calls(void)
+ {
+ 	struct reset_call *reset;
+ 
++#ifdef CONFIG_64BIT
++	if (diag308_set_works) {
++		diag308_reset();
++		return;
++	}
++#endif
+ 	list_for_each_entry(reset, &rcall, list)
+ 		reset->fn();
+ }
 
