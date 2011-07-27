@@ -1,141 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666Ab1G0Mf4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 08:35:56 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:23135 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878Ab1G0Mfz (ORCPT
+	id S1753874Ab1G0MjV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 08:39:21 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:55567
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751303Ab1G0MjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 08:35:55 -0400
-Date: Wed, 27 Jul 2011 14:35:52 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Ravishankar <ravishankarkm32@gmail.com>
-cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>
-Subject: Re: [PATCH v2] Staging: comedi: fix printk issue in adv_pci_dio.c
-In-Reply-To: <1311766859-6217-1-git-send-email-ravishankarkm32@gmail.com>
-Message-ID: <alpine.LNX.2.00.1107271359150.16245@swampdragon.chaosbits.net>
-References: <[PATCH]Staging: Comedi: fix printk issue in adv_pci_dio.c> <1311766859-6217-1-git-send-email-ravishankarkm32@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 27 Jul 2011 08:39:18 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zzbb2dK1432N98dKzz1202hzz8275bh8275dhz32i668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LOZSGX-02-617-02
+X-M-MSG: 
+Message-ID: <4E3006DF.6010906@amd.com>
+Date: Wed, 27 Jul 2011 08:38:55 -0400
+From: Boris Ostrovsky <boris.ostrovsky@amd.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Andi Kleen <andi@firstfloor.org>
+CC: "ostr@amd64.org" <ostr@amd64.org>, "jvpeetz@web.de" <jvpeetz@web.de>,
+        "Petkov, Borislav" <Borislav.Petkov@amd.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "mingo@elte.hu" <mingo@elte.hu>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>,
+        "tim.bird@am.sony.com" <tim.bird@am.sony.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH] [25/98] x86, AMD: Fix APIC timer erratum 400 affecting
+ K8 Rev.A-E processors
+References: <20110726534.972201586@firstfloor.org> <20110727003517.6946C2403FF@tassilo.jf.intel.com>
+In-Reply-To: <20110727003517.6946C2403FF@tassilo.jf.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jul 2011, Ravishankar wrote:
-
-> From: Ravishankar <ravi.shankar@greenturtles.in>
-> 
-> This is a patch to the adv_pci_dio.c file that fixes up a printk warning found by the checkpatch.pl tool
-> 
-> Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+On 07/26/11 20:35, Andi Kleen wrote:
+> 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+> From: Boris Ostrovsky<ostr@amd64.org>
+>
+> commit e20a2d205c05cef6b5783df339a7d54adeb50962 upstream.
+>
+> Older AMD K8 processors (Revisions A-E) are affected by erratum
+> 400 (APIC timer interrupts don't occur in C states greater than
+> C1). This, for example, means that X86_FEATURE_ARAT flag should
+> not be set for these parts.
+>
+> This addresses regression introduced by commit
+> b87cf80af3ba4b4c008b4face3c68d604e1715c6 ("x86, AMD: Set ARAT
+> feature on AMD processors") where the system may become
+> unresponsive until external interrupt (such as keyboard input)
+> occurs. This results, for example, in time not being reported
+> correctly, lack of progress on the system and other lockups.
+>
+> Reported-by: Joerg-Volker Peetz<jvpeetz@web.de>
+> Tested-by: Joerg-Volker Peetz<jvpeetz@web.de>
+> Acked-by: Borislav Petkov<borislav.petkov@amd.com>
+> Signed-off-by: Boris Ostrovsky<Boris.Ostrovsky@amd.com>
+> Signed-off-by: Andi Kleen<ak@linux.intel.com>
+> Link: http://lkml.kernel.org/r/1304113663-6586-1-git-send-email-ostr@amd64.org
+> Signed-off-by: Ingo Molnar<mingo@elte.hu>
+> Signed-off-by: Greg Kroah-Hartman<gregkh@suse.de>
+>
 > ---
->  drivers/staging/comedi/drivers/adv_pci_dio.c |   18 +++++++++---------
->  1 files changed, 9 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/adv_pci_dio.c b/drivers/staging/comedi/drivers/adv_pci_dio.c
-> index d23799b..1d2261f 100644
-> --- a/drivers/staging/comedi/drivers/adv_pci_dio.c
-> +++ b/drivers/staging/comedi/drivers/adv_pci_dio.c
-> @@ -1106,11 +1106,11 @@ static int pci_dio_attach(struct comedi_device *dev,
->  	unsigned long iobase;
->  	struct pci_dev *pcidev = NULL;
->  
-> -	printk("comedi%d: adv_pci_dio: ", dev->minor);
-> +	printk(KERN_INFO "comedi%d: adv_pci_dio: ", dev->minor);
->  
-
-This printk() is used both for printing out information in the case of 
-success, in which case the KERN_INFO level is fine. But it is also used to 
-print out error messages in case of failure, in which case KERN_WARNING 
-would probably be better. So I'm wondering if it wouldn't be better to 
-restructure the code so that the printing of error messages and success 
-info becomes two seperate printk()'s each with the apropriate level.
+>   arch/x86/kernel/cpu/amd.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> Index: linux-2.6.35.y/arch/x86/kernel/cpu/amd.c
+> ===================================================================
+> --- linux-2.6.35.y.orig/arch/x86/kernel/cpu/amd.c
+> +++ linux-2.6.35.y/arch/x86/kernel/cpu/amd.c
+> @@ -651,7 +651,7 @@ cpu_dev_register(amd_cpu_dev);
+>    */
+>
+>   const int amd_erratum_400[] =
+> -	AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0xf, 0x41, 0x2, 0xff, 0xf),
+> +	AMD_OSVW_ERRATUM(1, AMD_MODEL_RANGE(0x0f, 0x4, 0x2, 0xff, 0xf),
+>   			    AMD_MODEL_RANGE(0x10, 0x2, 0x1, 0xff, 0xf));
+>
+>
+>
 
 
->  	ret = alloc_private(dev, sizeof(struct pci_dio_private));
->  	if (ret < 0) {
-> -		printk(", Error: Cann't allocate private memory!\n");
-> +		printk(KERN_CONT ", Error: Cann't allocate private memory!\n");
+Andi, this patch is unnecessary.
 
-Might as well fix the spelling error ( s/Cann't/Can't/ ) while you are 
-changing the line anyway.
+It (as well as 328935e6348c6a7cb34798a68c326f4b8372e68a and 
+14fb57dccb6e1defe9f89a66f548fcb24c374c1d) is superseded by 
+e9cdd343a5e42c43bcda01e609fa23089e026470 upstream
 
 
->  		return -ENOMEM;
->  	}
->  
-> @@ -1140,19 +1140,19 @@ static int pci_dio_attach(struct comedi_device *dev,
->  	}
->  
->  	if (!dev->board_ptr) {
-> -		printk(", Error: Requested type of the card was not found!\n");
-> +		printk(KERN_WARNING ", Error: Requested type of the card was not "
-> +		"found!\n");
-
-As Joe Perches already pointed out to you, this is a continuation of the 
-first printk() and should be using KERN_CONT.
-
-
->  		return -EIO;
->  	}
->  
->  	if (comedi_pci_enable(pcidev, driver_pci_dio.driver_name)) {
->  		printk
-> -		    (", Error: Can't enable PCI device and request regions!\n");
-> +		(KERN_WARNING ", Error: Can't enable PCI device and request "
-> +		"regions!\n");
-
-This one as well. And it has got to be possible to find a less hideous way 
-to break that line..
-
-what about:
-
-  printk(KERN_CONT
-         ", Error: Can't enable PCI device and request regions!\n");
-
-? If it even needs to be broken at all (the 80 column rule is not fixed in 
-stone).
-
-
->  		return -EIO;
->  	}
->  	iobase = pci_resource_start(pcidev, this_board->main_pci_region);
-> -	printk(", b:s:f=%d:%d:%d, io=0x%4lx",
-> -	       pcidev->bus->number, PCI_SLOT(pcidev->devfn),
-> -	       PCI_FUNC(pcidev->devfn), iobase);
-> +	printk(KERN_CONT ", b:s:f=%d:%d:%d, io=0x%4lx",
-> +	       pcidev->bus->number, PCI_SLOT(pcidev->devfn),
-> +	       PCI_FUNC(pcidev->devfn), iobase);
-> 
->  	dev->iobase = iobase;
->  	dev->board_name = this_board->name;
-> @@ -1178,11 +1178,11 @@ static int pci_dio_attach(struct comedi_device *dev,
->  
->  	ret = alloc_subdevices(dev, n_subdevices);
->  	if (ret < 0) {
-> -		printk(", Error: Cann't allocate subdevice memory!\n");
-> +		printk(KERN_CONT ", Error: Cann't allocate subdevice memory!\n");
->  		return ret;
->  	}
->  
-> -	printk(".\n");
-> +	printk(KERN_CONT ".\n");
->  
->  	subdev = 0;
->  
- 
-Please take the feedback people give you serious. Joe kindly pointed out 
-your mistakes the last time you posted this and yet your next patch has 
-the exact same mistakes.
-
-Read through your patches before you send them and double check each and 
-every change - then check it again.
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+-boris
 
