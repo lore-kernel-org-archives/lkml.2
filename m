@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab1G0WJI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:09:08 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36473 "EHLO mga09.intel.com"
+	id S1756189Ab1G0WJY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:09:24 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26104 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755427Ab1G0VsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:48:17 -0400
+	id S1754943Ab1G0VsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:48:15 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
-   d="scan'208";a="30900399"
+X-IronPort-AV: E=Sophos;i="4.67,279,1309762800"; 
+   d="scan'208";a="33043507"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: balbi@ti.com, gregkh@suse.de, ak@linux.intel.com,
+To: herkne@gmx.de, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [18/99] usb: gadget: rndis: don't test against req->length
-Message-Id: <20110727214816.A07372403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:48:16 -0700 (PDT)
+Subject: [PATCH] [16/99] USB: gamin_gps: Fix for data transfer problems in native
+Message-Id: <20110727214814.9786E2403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:48:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,39 +24,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Felipe Balbi <balbi@ti.com>
+From: Hermann Kneissel <herkne@gmx.de>
 
-commit 472b91274a6c6857877b5caddb875dcb5ecdfcb8 upstream.
+commit b4026c4584cd70858d4d3450abfb1cd0714d4f32 upstream.
 
-composite.c always sets req->length to zero
-and expects function driver's setup handlers
-to return the amount of bytes to be used
-on req->length. If we test against req->length
-w_length will always be greater than req->length
-thus making us always stall that particular
-SEND_ENCAPSULATED_COMMAND request.
+This patch fixes a problem where data received from the gps is sometimes
+transferred incompletely to the serial port. If used in native mode now
+all data received via the bulk queue will be forwarded to the serial
+port.
 
-Tested against a Windows XP SP3.
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Hermann Kneissel <herkne@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/usb/gadget/f_rndis.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/serial/garmin_gps.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
-Index: linux-2.6.35.y/drivers/usb/gadget/f_rndis.c
+Index: linux-2.6.35.y/drivers/usb/serial/garmin_gps.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/usb/gadget/f_rndis.c
-+++ linux-2.6.35.y/drivers/usb/gadget/f_rndis.c
-@@ -420,8 +420,7 @@ rndis_setup(struct usb_function *f, cons
- 	 */
- 	case ((USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8)
- 			| USB_CDC_SEND_ENCAPSULATED_COMMAND:
--		if (w_length > req->length || w_value
--				|| w_index != rndis->ctrl_id)
-+		if (w_value || w_index != rndis->ctrl_id)
- 			goto invalid;
- 		/* read the request; process it later */
- 		value = w_length;
+--- linux-2.6.35.y.orig/drivers/usb/serial/garmin_gps.c
++++ linux-2.6.35.y/drivers/usb/serial/garmin_gps.c
+@@ -1,7 +1,7 @@
+ /*
+  * Garmin GPS driver
+  *
+- * Copyright (C) 2006-2009 Hermann Kneissel herkne@users.sourceforge.net
++ * Copyright (C) 2006-2011 Hermann Kneissel herkne@gmx.de
+  *
+  * The latest version of the driver can be found at
+  * http://sourceforge.net/projects/garmin-gps/
+@@ -51,7 +51,7 @@ static int debug;
+  */
+ 
+ #define VERSION_MAJOR	0
+-#define VERSION_MINOR	33
++#define VERSION_MINOR	36
+ 
+ #define _STR(s) #s
+ #define _DRIVER_VERSION(a, b) "v" _STR(a) "." _STR(b)
+@@ -410,6 +410,7 @@ static int gsp_send_ack(struct garmin_da
+  */
+ static int gsp_rec_packet(struct garmin_data *garmin_data_p, int count)
+ {
++	unsigned long flags;
+ 	const __u8 *recpkt = garmin_data_p->inbuffer+GSP_INITIAL_OFFSET;
+ 	__le32 *usbdata = (__le32 *) garmin_data_p->inbuffer;
+ 
+@@ -458,7 +459,9 @@ static int gsp_rec_packet(struct garmin_
+ 	/* if this was an abort-transfer command, flush all
+ 	   queued data. */
+ 	if (isAbortTrfCmnd(garmin_data_p->inbuffer)) {
++		spin_lock_irqsave(&garmin_data_p->lock, flags);
+ 		garmin_data_p->flags |= FLAGS_DROP_DATA;
++		spin_unlock_irqrestore(&garmin_data_p->lock, flags);
+ 		pkt_clear(garmin_data_p);
+ 	}
+ 
+@@ -943,7 +946,7 @@ static int garmin_open(struct tty_struct
+ 	spin_lock_irqsave(&garmin_data_p->lock, flags);
+ 	garmin_data_p->mode  = initial_mode;
+ 	garmin_data_p->count = 0;
+-	garmin_data_p->flags = 0;
++	garmin_data_p->flags &= FLAGS_SESSION_REPLY1_SEEN;
+ 	spin_unlock_irqrestore(&garmin_data_p->lock, flags);
+ 
+ 	/* shutdown any bulk reads that might be going on */
+@@ -1178,7 +1181,8 @@ static int garmin_write_room(struct tty_
+ 
+ 
+ static void garmin_read_process(struct garmin_data *garmin_data_p,
+-				 unsigned char *data, unsigned data_length)
++				 unsigned char *data, unsigned data_length,
++				 int bulk_data)
+ {
+ 	unsigned long flags;
+ 
+@@ -1193,7 +1197,8 @@ static void garmin_read_process(struct g
+ 		   send it directly to the tty port */
+ 		if (garmin_data_p->flags & FLAGS_QUEUING) {
+ 			pkt_add(garmin_data_p, data, data_length);
+-		} else if (getLayerId(data) == GARMIN_LAYERID_APPL) {
++		} else if (bulk_data ||
++			   getLayerId(data) == GARMIN_LAYERID_APPL) {
+ 
+ 			spin_lock_irqsave(&garmin_data_p->lock, flags);
+ 			garmin_data_p->flags |= APP_RESP_SEEN;
+@@ -1237,7 +1242,7 @@ static void garmin_read_bulk_callback(st
+ 	usb_serial_debug_data(debug, &port->dev,
+ 				__func__, urb->actual_length, data);
+ 
+-	garmin_read_process(garmin_data_p, data, urb->actual_length);
++	garmin_read_process(garmin_data_p, data, urb->actual_length, 1);
+ 
+ 	if (urb->actual_length == 0 &&
+ 			0 != (garmin_data_p->flags & FLAGS_BULK_IN_RESTART)) {
+@@ -1347,7 +1352,7 @@ static void garmin_read_int_callback(str
+ 			__func__, garmin_data_p->serial_num);
+ 	}
+ 
+-	garmin_read_process(garmin_data_p, data, urb->actual_length);
++	garmin_read_process(garmin_data_p, data, urb->actual_length, 0);
+ 
+ 	port->interrupt_in_urb->dev = port->serial->dev;
+ 	retval = usb_submit_urb(urb, GFP_ATOMIC);
+@@ -1462,6 +1467,7 @@ static int garmin_attach(struct usb_seri
+ 	garmin_data_p->timer.function = timeout_handler;
+ 	garmin_data_p->port = port;
+ 	garmin_data_p->state = 0;
++	garmin_data_p->flags = 0;
+ 	garmin_data_p->count = 0;
+ 	usb_set_serial_port_data(port, garmin_data_p);
+ 
