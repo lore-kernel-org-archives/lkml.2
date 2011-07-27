@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304Ab1G0M45 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 08:56:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48013 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752255Ab1G0M4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 08:56:55 -0400
-Date: Wed, 27 Jul 2011 13:56:51 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com
-Cc: bruno@ioda-net.ch, mjg@redhat.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: Add reboot quirk for Dell Precision M4600
-Message-ID: <20110727125651.GH3010@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754461Ab1G0M6V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 08:58:21 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:59689 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753993Ab1G0M6Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 08:58:16 -0400
+Message-Id: <20110727125807.529303146@linux.vnet.ibm.com>
+User-Agent: quilt/0.48-1
+Date: Wed, 27 Jul 2011 14:55:05 +0200
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+To: vgoyal@redhat.com
+Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
+        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+Subject: [patch v2 01/10] kdump: Add KEXEC_CRASH_CONTROL_MEMORY_LIMIT
+References: <20110727125504.491183728@linux.vnet.ibm.com>
+Content-Disposition: inline; filename=s390-kdump-common-control-limit.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI reboot does not work for Dell Precision M4600. Detect this
-machine via DMI and force the use of the PCI reboot method.
-    
-Reported-and-tested-by: Bruno Friedmann <bruno@ioda-net.ch>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- arch/x86/kernel/reboot.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 9242436..7ca2ec4 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -443,6 +443,15 @@ static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6420"),
- 		},
- 	},
-+	{	/* Handle problems with rebooting on Dell Precision M4600's */
-+		.callback = set_pci_reboot,
-+		.ident = "Dell Precision M4600",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Precision M4600"),
-+		},
-+	},
-+
- 	{ }
- };
+On s390 there is a different KEXEC_CONTROL_MEMORY_LIMIT for the normal and
+the kdump kexec case. Therefore this patch introduces a new macro
+KEXEC_CRASH_CONTROL_MEMORY_LIMIT. This is set to
+KEXEC_CONTROL_MEMORY_LIMIT for all architectures that do not define
+KEXEC_CRASH_CONTROL_MEMORY_LIMIT.
+
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+---
+ include/linux/kexec.h |    4 ++++
+ kernel/kexec.c        |    2 +-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+--- a/include/linux/kexec.h
++++ b/include/linux/kexec.h
+@@ -33,6 +33,10 @@
+ #error KEXEC_ARCH not defined
+ #endif
  
++#ifndef KEXEC_CRASH_CONTROL_MEMORY_LIMIT
++#define KEXEC_CRASH_CONTROL_MEMORY_LIMIT KEXEC_CONTROL_MEMORY_LIMIT
++#endif
++
+ #define KEXEC_NOTE_HEAD_BYTES ALIGN(sizeof(struct elf_note), 4)
+ #define KEXEC_CORE_NOTE_NAME "CORE"
+ #define KEXEC_CORE_NOTE_NAME_BYTES ALIGN(sizeof(KEXEC_CORE_NOTE_NAME), 4)
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -498,7 +498,7 @@ static struct page *kimage_alloc_crash_c
+ 	while (hole_end <= crashk_res.end) {
+ 		unsigned long i;
+ 
+-		if (hole_end > KEXEC_CONTROL_MEMORY_LIMIT)
++		if (hole_end > KEXEC_CRASH_CONTROL_MEMORY_LIMIT)
+ 			break;
+ 		if (hole_end > crashk_res.end)
+ 			break;
+
