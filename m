@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab1G0QnQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 12:43:16 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42836 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753341Ab1G0QnN (ORCPT
+	id S1754725Ab1G0Qrw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 12:47:52 -0400
+Received: from queue02.mail.zen.net.uk ([212.23.3.27]:36926 "EHLO
+	queue02.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753282Ab1G0Qrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 12:43:13 -0400
-Date: Wed, 27 Jul 2011 18:42:57 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-Message-ID: <20110727164257.GC19477@aftab>
-References: <4E2F09BB.9060605@zytor.com>
- <4E2F1889.8030708@amd.com>
- <4E2F90A2.4030409@redhat.com>
- <20110727062120.GA5272@aftab>
- <20110727065932.GA16555@elte.hu>
- <4E2FDAD0.8000809@redhat.com>
- <20110727153731.GA19477@aftab>
- <4E30327C.5020509@redhat.com>
- <20110727154957.GB19477@aftab>
- <4E303579.4000903@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E303579.4000903@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 27 Jul 2011 12:47:49 -0400
+From: Andrew Bird <ajb@spheresystems.co.uk>
+To: gregkh@suse.de
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Bird <ajb@spheresystems.co.uk>
+Subject: [PATCH 2/4] USB: option driver: add PID for Vodafone-Huawei K3771
+Date: Wed, 27 Jul 2011 17:03:18 +0100
+Message-Id: <1311782600-13353-2-git-send-email-ajb@spheresystems.co.uk>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1311782600-13353-1-git-send-email-ajb@spheresystems.co.uk>
+References: <1311782600-13353-1-git-send-email-ajb@spheresystems.co.uk>
+X-Originating-Smarthost01-IP: [82.71.70.22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 11:57:45AM -0400, Avi Kivity wrote:
-> Out of curiosity, what's the performance impact if the workaround is
-> not enabled?
+This patch adds the product ID of Huawei's Vodafone K3771 mobile broadband
+modem to option.c. This is necessary so that the driver gets loaded on demand
+without the intervention of usb_modeswitch. This has the benefit of it becoming
+available faster and also ensures that the option driver is not bound to a
+network interface that should be claimed by cdc_ether.
 
-Up to 3% for a CPU-intensive style benchmark, and it can vary highly in
-a microbenchmark depending on workload and compiler.
+Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
+---
+ drivers/usb/serial/option.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 4dbce2d..b9783b6 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -149,6 +149,7 @@ static void option_instat_callback(struct urb *urb);
+ #define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_E14AC			0x14AC
+ #define HUAWEI_PRODUCT_K3770			0x14C9
++#define HUAWEI_PRODUCT_K3771			0x14CA
+ #define HUAWEI_PRODUCT_ETS1220			0x1803
+ #define HUAWEI_PRODUCT_E353			0x1506
+ 
+@@ -550,6 +551,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x31) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x31) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x32) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E353, 0xff, 0x01, 0x01) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V640) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V620) },
 -- 
-Regards/Gruss,
-Boris.
+1.7.6
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
