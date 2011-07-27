@@ -1,59 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab1G0WpF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:45:05 -0400
-Received: from mail.codesourcery.com ([38.113.113.100]:45032 "EHLO
-	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab1G0WpA (ORCPT
+	id S1755222Ab1G0WrM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:47:12 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:54241 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753985Ab1G0WrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 18:45:00 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Jul 2011 18:45:00 EDT
-From: Pedro Alves <pedro@codesourcery.com>
-Organization: CodeSourcery
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 0/8] make vfork killable/restartable/traceable
-Date: Wed, 27 Jul 2011 23:38:14 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-References: <20110727163159.GA23785@redhat.com>
-In-Reply-To: <20110727163159.GA23785@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107272338.15238.pedro@codesourcery.com>
+	Wed, 27 Jul 2011 18:47:10 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: linux-btrfs <linux-btrfs@vger.kernel.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Btrfs updates
+Date: Wed, 27 Jul 2011 18:46:53 -0400
+Message-Id: <1311805265-sup-502@shiny>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090205.4E309569.0048,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 July 2011 17:31:59, Oleg Nesterov wrote:
-> Hello.
-> 
-> CLONE_VFORK sleeps in TASK_INTERRUPTIBLE until the child exits/execs.
-> This is obviously not good, it is sooo simple to create the task which
-> doesn't react to SIGKILL/SIGSTOP.
-> 
-> Questions:
-> 
-> 	- do we really need this?
-> 
-> 	  I think we do. This really "looks like a bug" in any case,
-> 	  even if nobody ever complained afaik.
-> 
-> 	- may be 1-3 is enough?
-> 
-> 	  may be... but personally I think SIGSTOP/ptrace should work
-> 	  too.
+Hi everyone,
 
-Thanks, me too.  If not SIGSTOP, then PTRACE_STOP.  The fact that it
-doesn't has led to the need for workarounds in gdb.  Do you see
-any way gdb will be able to check at runtime its workarounds
-won't be needed anymore ?
+The for-linus branch of the btrfs-unstable repo is reading for pulling:
 
--- 
-Pedro Alves
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git for-linus
+
+This started off as a larger pull, but I had to pull out a number of
+cleanups from Fujitsu, Novell and a few others (sorry guys) while
+hunting a crash during stress.sh.  It looks like it is unrelated to
+those commits, but I had to pull out a bunch of them until I can be sure
+I understand the bug.
+
+I'll have another pull request with the fully tested cleanups on Monday.
+Depending on how Linus does rc1, they might end up as the start of my
+3.2 branch.
+
+This pull has the commits that I've been able to run through extensive
+testing.  The biggest change here is switching the btrfs tree locks to a
+reader/writer lock.  This has been one of our biggest bottlenecks for
+some time, and it was consistently at the top of profiles on large
+machines.
+
+The new locks do away with all the adaptive spinning inside of btrfs and
+rely on the spinning/blocking hints in the code to decide when it must
+block.
+
+The reader/writer locks break the code I had in place to use kmap on
+metadata buffers, so all of our metadata is now in lowmem.  I did test
+this on a 32 bit VM, but x86-32 users will want to poke gently.
+
+I also adapted Tejun's lockdep fixes for the btrfs locks, and so far I
+haven't seen any lockdep warnings.
+
+Josef has a series of enospc fixes and tweaks here as well.  His bigger
+patch to start reworking the enospc reservations seems to be causing the
+corruptions during stress.sh, so it will wait for 3.2.
+
+Josef Bacik (11) commits (+320/-322):
+    Btrfs: use the normal checksumming infrastructure for free space cache (+59/-110)
+    Btrfs: do transaction space reservation before joining the transaction (+17/-42)
+    Btrfs: fix how we merge extent states and deal with cached states (+11/-12)
+    Btrfs: try to only do one btrfs_search_slot in do_setxattr (+42/-33)
+    Btrfs: use find_or_create_page instead of grab_cache_page (+9/-7)
+    Btrfs: serialize flushers in reserve_metadata_bytes (+51/-21)
+    Btrfs: fix deadlock when throttling transactions (+9/-2)
+    Btrfs: fix enospc problems with delalloc (+86/-60)
+    Btrfs: use a worker thread to do caching (+27/-29)
+    Btrfs: don't flush delalloc arbitrarily (+0/-3)
+    Btrfs: tag pages for writeback in sync (+9/-3)
+
+Chris Mason (7) commits (+642/-699):
+    Btrfs: make sure reserve_metadata_bytes doesn't leak out strange errors (+6/-1)
+    Btrfs: use the commit_root for reading free_space_inode crcs (+28/-19)
+    Btrfs: reduce extent_state lock contention for metadata (+41/-14)
+    Btrfs: switch the btrfs tree locks to reader/writer (+431/-218)
+    Btrfs: remove lockdep magic from btrfs_next_leaf (+5/-31)
+    Btrfs: stop using highmem for extent_buffers (+52/-378)
+    Btrfs: make a lockdep class for each root (+79/-38)
+
+Miao Xie (1) commits (+21/-7):
+    Btrfs: fix BUG_ON() caused by ENOSPC when relocating space
+
+Total: (19)
+
+ fs/btrfs/btrfs_inode.h      |   16 ++-
+ fs/btrfs/ctree.c            |  457 +++++++++++++++++++------------------------
+ fs/btrfs/ctree.h            |   14 +-
+ fs/btrfs/delayed-inode.c    |    2 +-
+ fs/btrfs/dir-item.c         |    9 +-
+ fs/btrfs/disk-io.c          |  116 ++++++++----
+ fs/btrfs/disk-io.h          |   10 +-
+ fs/btrfs/extent-tree.c      |  285 +++++++++++++++-------------
+ fs/btrfs/extent_io.c        |  168 ++++++++--------
+ fs/btrfs/extent_io.h        |   35 ++--
+ fs/btrfs/file-item.c        |   41 +---
+ fs/btrfs/file.c             |   11 +-
+ fs/btrfs/free-space-cache.c |  173 ++++++-----------
+ fs/btrfs/inode.c            |   90 ++++------
+ fs/btrfs/ioctl.c            |    8 +-
+ fs/btrfs/locking.c          |  280 ++++++++++++++-------------
+ fs/btrfs/locking.h          |   36 ++++-
+ fs/btrfs/relocation.c       |    3 +-
+ fs/btrfs/struct-funcs.c     |  100 +++-------
+ fs/btrfs/transaction.c      |   47 +++--
+ fs/btrfs/tree-log.c         |    6 +-
+ fs/btrfs/volumes.c          |    2 +-
+ fs/btrfs/xattr.c            |   66 ++++---
+ 23 files changed, 965 insertions(+), 1010 deletions(-)
