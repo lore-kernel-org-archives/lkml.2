@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749Ab1G0VtZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 17:49:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:40913 "EHLO mga09.intel.com"
+	id S1755900Ab1G0VuE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 17:50:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16747 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755661Ab1G0VtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:49:12 -0400
+	id S1755789Ab1G0Vth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:49:37 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
-   d="scan'208";a="30900978"
+X-IronPort-AV: E=Sophos;i="4.67,279,1309762800"; 
+   d="scan'208";a="32826622"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: dame_eugene@mail.ru, me@bobcopeland.com, linville@tuxdriver.com,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [72/99] ath5k: fix memory leak when fewer than N_PD_CURVES are in use
-Message-Id: <20110727214911.9608C2403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:49:11 -0700 (PDT)
+To: drosenberg@vsecurity.com, rth@twiddle.net, ink@jurassic.park.msu.ru,
+        mattst88@gmail.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [97/99] alpha: fix several security issues
+Message-Id: <20110727214937.0EEA22403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:49:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,44 +26,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: "Eugene A. Shatokhin" <dame_eugene@mail.ru>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit a0b8de350be458b33248e48b2174d9af8a4c4798 upstream.
+[ upstream commit 21c5977a836e399fc710ff2c5367845ed5c2527f ]
 
-We would free the proper number of curves, but in the wrong
-slots, due to a missing level of indirection through
-the pdgain_idx table.
+Fix several security issues in Alpha-specific syscalls.  Untested, but
+mostly trivial.
 
-It's simpler just to try to free all four slots, so do that.
+1. Signedness issue in osf_getdomainname allows copying out-of-bounds
+kernel memory to userland.
 
-Signed-off-by: Bob Copeland <me@bobcopeland.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+2. Signedness issue in osf_sysinfo allows copying large amounts of
+kernel memory to userland.
+
+3. Typo (?) in osf_getsysinfo bounds minimum instead of maximum copy
+size, allowing copying large amounts of kernel memory to userland.
+
+4. Usage of user pointer in osf_wait4 while under KERNEL_DS allows
+privilege escalation via writing return value of sys_wait4 to kernel
+memory.
+
+Said to fix CVE-2011-2208 to CVE-2011-2211
+
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
----
- drivers/net/wireless/ath/ath5k/eeprom.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
-
-Index: linux-2.6.35.y/drivers/net/wireless/ath/ath5k/eeprom.c
+Index: linux-2.6.35.y/arch/alpha/kernel/osf_sys.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/net/wireless/ath/ath5k/eeprom.c
-+++ linux-2.6.35.y/drivers/net/wireless/ath/ath5k/eeprom.c
-@@ -1592,14 +1592,12 @@ ath5k_eeprom_free_pcal_info(struct ath5k
- 		if (!chinfo[pier].pd_curves)
- 			continue;
+--- linux-2.6.35.y.orig/arch/alpha/kernel/osf_sys.c
++++ linux-2.6.35.y/arch/alpha/kernel/osf_sys.c
+@@ -432,7 +432,7 @@ SYSCALL_DEFINE2(osf_getdomainname, char 
+ 		return -EFAULT;
  
--		for (pdg = 0; pdg < ee->ee_pd_gains[mode]; pdg++) {
-+		for (pdg = 0; pdg < AR5K_EEPROM_N_PD_CURVES; pdg++) {
- 			struct ath5k_pdgain_info *pd =
- 					&chinfo[pier].pd_curves[pdg];
+ 	len = namelen;
+-	if (namelen > 32)
++	if (len > 32)
+ 		len = 32;
  
--			if (pd != NULL) {
--				kfree(pd->pd_step);
--				kfree(pd->pd_pwr);
--			}
-+			kfree(pd->pd_step);
-+			kfree(pd->pd_pwr);
- 		}
+ 	down_read(&uts_sem);
+@@ -619,7 +619,7 @@ SYSCALL_DEFINE3(osf_sysinfo, int, comman
+ 	down_read(&uts_sem);
+ 	res = sysinfo_table[offset];
+ 	len = strlen(res)+1;
+-	if (len > count)
++	if ((unsigned long)len > (unsigned long)count)
+ 		len = count;
+ 	if (copy_to_user(buf, res, len))
+ 		err = -EFAULT;
+@@ -674,7 +674,7 @@ SYSCALL_DEFINE5(osf_getsysinfo, unsigned
+ 		return 1;
  
- 		kfree(chinfo[pier].pd_curves);
+ 	case GSI_GET_HWRPB:
+-		if (nbytes < sizeof(*hwrpb))
++		if (nbytes > sizeof(*hwrpb))
+ 			return -EINVAL;
+ 		if (copy_to_user(buffer, hwrpb, nbytes) != 0)
+ 			return -EFAULT;
+@@ -1036,6 +1036,7 @@ SYSCALL_DEFINE4(osf_wait4, pid_t, pid, i
+ {
+ 	struct rusage r;
+ 	long ret, err;
++	unsigned int status = 0;
+ 	mm_segment_t old_fs;
+ 
+ 	if (!ur)
+@@ -1044,13 +1045,15 @@ SYSCALL_DEFINE4(osf_wait4, pid_t, pid, i
+ 	old_fs = get_fs();
+ 		
+ 	set_fs (KERNEL_DS);
+-	ret = sys_wait4(pid, ustatus, options, (struct rusage __user *) &r);
++	ret = sys_wait4(pid, (unsigned int __user *) &status, options,
++			(struct rusage __user *) &r);
+ 	set_fs (old_fs);
+ 
+ 	if (!access_ok(VERIFY_WRITE, ur, sizeof(*ur)))
+ 		return -EFAULT;
+ 
+ 	err = 0;
++	err |= put_user(status, ustatus);
+ 	err |= __put_user(r.ru_utime.tv_sec, &ur->ru_utime.tv_sec);
+ 	err |= __put_user(r.ru_utime.tv_usec, &ur->ru_utime.tv_usec);
+ 	err |= __put_user(r.ru_stime.tv_sec, &ur->ru_stime.tv_sec);
