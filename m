@@ -1,95 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598Ab1G0Ll2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 07:41:28 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:43565 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754529Ab1G0Ll0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 07:41:26 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH v2] Staging: comedi: fix printk issue in adv_pci_dio.c
-Date: Wed, 27 Jul 2011 17:10:59 +0530
-Message-Id: <1311766859-6217-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <[PATCH]Staging: Comedi: fix printk issue in adv_pci_dio.c>
-References: <[PATCH]Staging: Comedi: fix printk issue in adv_pci_dio.c>
+	id S1752686Ab1G0Lw6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 07:52:58 -0400
+Received: from narfation.org ([79.140.41.39]:48791 "EHLO v3-1039.vlinux.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160Ab1G0Lw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 07:52:56 -0400
+From: Sven Eckelmann <sven@narfation.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: Re: [PATCHv4 10/11] drop_monitor: Use *_dec_not_zero instead of *_add_unless
+Date: Wed, 27 Jul 2011 13:52:50 +0200
+Message-ID: <2127465.xrCKehbL3A@sven-laptop.home.narfation.org>
+User-Agent: KMail/4.6.0 (Linux/2.6.39-2-686-pae; KDE/4.6.5; i686; ; )
+In-Reply-To: <20110727105907.GA19001@hmsreliant.think-freely.org>
+References: <1311760070-21532-1-git-send-email-sven@narfation.org> <1311760070-21532-10-git-send-email-sven@narfation.org> <20110727105907.GA19001@hmsreliant.think-freely.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="nextPart3686055.hEzUH6zKZp"; micalg="pgp-sha512"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
 
-This is a patch to the adv_pci_dio.c file that fixes up a printk warning found by the checkpatch.pl tool
+--nextPart3686055.hEzUH6zKZp
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/adv_pci_dio.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+On Wednesday 27 July 2011 06:59:07 Neil Horman wrote:
+> On Wed, Jul 27, 2011 at 11:47:49AM +0200, Sven Eckelmann wrote:
+> > atomic_dec_not_zero is defined for each architecture through
+> > <linux/atomic.h> to provide the functionality of
+> > atomic_add_unless(x, -1, 0).
+> > 
+> > Signed-off-by: Sven Eckelmann <sven@narfation.org>
+> > Cc: Neil Horman <nhorman@tuxdriver.com>
+> > Cc: netdev@vger.kernel.org
+> > ---
+> > 
+> >  net/core/drop_monitor.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
+> > index 7f36b38..ef4a05d 100644
+> > --- a/net/core/drop_monitor.c
+> > +++ b/net/core/drop_monitor.c
+> > @@ -137,7 +137,7 @@ static void trace_drop_common(struct sk_buff *skb,
+> > void *location)
+> > 
+> >  	struct per_cpu_dm_data *data = &__get_cpu_var(dm_cpu_data);
+> > 
+> > -	if (!atomic_add_unless(&data->dm_hit_count, -1, 0)) {
+> > +	if (!atomic_dec_not_zero(&data->dm_hit_count)) {
+> > 
+> >  		/*
+> >  		
+> >  		 * we're already at zero, discard this hit
+> >  		 */
+> 
+> Wheres the patch that creates the per arch definition of this function?  I
+> see the other posts in this series went to lkml, but the archives don't
+> have the first in the series anywhere, which ostensibly adds the
+> definition. Neil
 
-diff --git a/drivers/staging/comedi/drivers/adv_pci_dio.c b/drivers/staging/comedi/drivers/adv_pci_dio.c
-index d23799b..1d2261f 100644
---- a/drivers/staging/comedi/drivers/adv_pci_dio.c
-+++ b/drivers/staging/comedi/drivers/adv_pci_dio.c
-@@ -1106,11 +1106,11 @@ static int pci_dio_attach(struct comedi_device *dev,
- 	unsigned long iobase;
- 	struct pci_dev *pcidev = NULL;
- 
--	printk("comedi%d: adv_pci_dio: ", dev->minor);
-+	printk(KERN_INFO "comedi%d: adv_pci_dio: ", dev->minor);
- 
- 	ret = alloc_private(dev, sizeof(struct pci_dio_private));
- 	if (ret < 0) {
--		printk(", Error: Cann't allocate private memory!\n");
-+		printk(KERN_CONT ", Error: Cann't allocate private memory!\n");
- 		return -ENOMEM;
- 	}
- 
-@@ -1140,19 +1140,19 @@ static int pci_dio_attach(struct comedi_device *dev,
- 	}
- 
- 	if (!dev->board_ptr) {
--		printk(", Error: Requested type of the card was not found!\n");
-+		printk(KERN_WARNING ", Error: Requested type of the card was not "
-+		"found!\n");
- 		return -EIO;
- 	}
- 
- 	if (comedi_pci_enable(pcidev, driver_pci_dio.driver_name)) {
- 		printk
--		    (", Error: Can't enable PCI device and request regions!\n");
-+		(KERN_WARNING ", Error: Can't enable PCI device and request "
-+		"regions!\n");
- 		return -EIO;
- 	}
- 	iobase = pci_resource_start(pcidev, this_board->main_pci_region);
--	printk(", b:s:f=%d:%d:%d, io=0x%4lx",
--	       pcidev->bus->number, PCI_SLOT(pcidev->devfn),
--	       PCI_FUNC(pcidev->devfn), iobase);
-+	printk(KERN_CONT ", b:s:f=%d:%d:%d, io=0x%4lx",
-+	       pcidev->bus->number, PCI_SLOT(pcidev->devfn),
-+	       PCI_FUNC(pcidev->devfn), iobase);
+Most architectures don't use a per architecture definition anymore, but a 
+cross-architecture the definition in include/linux/atomic.h.
 
- 	dev->iobase = iobase;
- 	dev->board_name = this_board->name;
-@@ -1178,11 +1178,11 @@ static int pci_dio_attach(struct comedi_device *dev,
- 
- 	ret = alloc_subdevices(dev, n_subdevices);
- 	if (ret < 0) {
--		printk(", Error: Cann't allocate subdevice memory!\n");
-+		printk(KERN_CONT ", Error: Cann't allocate subdevice memory!\n");
- 		return ret;
- 	}
- 
--	printk(".\n");
-+	printk(KERN_CONT ".\n");
- 
- 	subdev = 0;
- 
--- 
-1.6.5.2
+The 01/11 can be found in different archives under the message id 
+1311760070-21532-1-git-send-email-sven@narfation.org ... for example gmane: 
+http://article.gmane.org/gmane.linux.ports.arm.kernel/126704
+
+Kind regards,
+	Sven
+--nextPart3686055.hEzUH6zKZp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABCgAGBQJOL/wSAAoJEF2HCgfBJntGNz8P/2wDmBhHkECns7OOuBVqlMOz
+r66gEhnNLTnztYkxL0GQ8/qH2OfsKDwfKF1i7tXkie0yqAhAxUtjMJUahxmX786G
+Ek2nanC8Qbt5EmTrwx/bpzxLDM0UrOaLu1OcxA0AjT8qu/hJlzwicgr4fEElaanM
+oL6VE0fTD2fk/7CYNEBC9omh4Om3pHWulj4pirEjR3pYqQ2/2mUO5RZ3blCNbts/
+MOMrcrRC/p9ZFP/VanETM8xXcjD1nRDeKnliuYC+S0ZYB0ns6apPXBpflXdw2+4A
+CVvfUcGk5ao0DaiggW6yaWxgshDSyT6gmy5fhXc/MKLvq6GswQKDBHjQZCO54fDM
+upV+2gIZa0ehPdDxjQbSvmwY50U50jK9eDp22H/s6WOO+30RMVRrPKpAjhs310lL
+Eql8hKRQP8/6xL27B9lbpIQvkUGNmFi1Uh/gS+kctOl6GUKONzmN40mHSyfS1+nf
+mSUs3+eBmNz1arazwTwzCVC4SibXdC7WV6CwfNXQkceAvkLfOedV6J+wLmDgTE+0
+mcdiIv7D3lnLdDOoyftlFkMOL0+hwAsg0MIhVaWE1BEL3zS4VoEyqI2ass7Vyw7U
+7tR89XaaQKL4+na/NjO4BPulO4DZEVzFh6orxLMaUAbZpZ77+yG90TO4dtSuu3rv
+ohcG9P/NR3n/KRZvxk1I
+=cQPZ
+-----END PGP SIGNATURE-----
+
+--nextPart3686055.hEzUH6zKZp--
 
