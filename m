@@ -1,91 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab1G0UhG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 16:37:06 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:57031 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754807Ab1G0UhD convert rfc822-to-8bit (ORCPT
+	id S1755217Ab1G0Uhc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 16:37:32 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39396 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755146Ab1G0Uh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 16:37:03 -0400
-X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
-   d="scan'208";a="566042738"
-Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Christoph Hellwig <hch@infradead.org>,
-        Bryan Schumaker <bjschuma@netapp.com>
-Cc: Justin Piszcz <jpiszcz@lucidpixels.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Date: Wed, 27 Jul 2011 16:37:01 -0400
-In-Reply-To: <20110727194722.GA9345@infradead.org>
-References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>
-	 <20110727160752.GC974@fieldses.org>
-	 <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
-	 <20110727181111.GA23009@infradead.org>
-	 <alpine.DEB.2.02.1107271530340.1451@p34.internal.lan>
-	 <20110727193937.GA5354@infradead.org>
-	 <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>
-	 <20110727194722.GA9345@infradead.org>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Message-ID: <1311799021.25645.41.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-OriginalArrivalTime: 27 Jul 2011 20:37:02.0728 (UTC) FILETIME=[F0E88080:01CC4C9C]
+	Wed, 27 Jul 2011 16:37:29 -0400
+Date: Wed, 27 Jul 2011 21:37:11 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Jaswinder Singh <jaswinder.singh@linaro.org>
+Cc: "Koul, Vinod" <vinod.koul@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, per.friden@stericsson.com,
+        wei.zhang@freescale.com, ebony.zhu@freescale.com, iws@ovro.caltech.edu,
+        s.hauer@pengutronix.de, maciej.sosnowski@intel.com, saeed@marvell.com,
+        shawn.guo@freescale.com, yur@emcraft.com, agust@denx.de,
+        iwamatsu.nobuhiro@renesas.com, per.forlin@stericsson.com,
+        jonas.aberg@stericsson.com, anemo@mba.ocn.ne.jp
+Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
+Message-ID: <20110727203710.GB5028@flint.arm.linux.org.uk>
+References: <CABE8wwt8J_r9cExG+EAqqK=XVmAyLYhv+-T49Rr9hhKudD8n2g@mail.gmail.com> <CAJe_ZheVyLk-yqyF_XO80xX3j7_7mDPnv-me+n=X_hNWycSLwg@mail.gmail.com> <CABE8wwtkSnaJ5fvi=4bq7zye3W0SmErHAZeWAcHuYvLgvqy=_Q@mail.gmail.com> <CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com> <CABE8wwv2XQ_aJ8O2TUAz1LgJorBwDbgyQQv7jeAn06Q2AcqH+Q@mail.gmail.com> <CAJe_ZhcNM7m-eWA0nDUrOrHxeAhNS00gewf=txmvOFL_uOPhrw@mail.gmail.com> <1311740499.1536.56.camel@vkoul-udesk3> <CAJe_ZhfaPfobs5P+q+t-kRSK4fAvm-v_brYgqmco8fwOOBeT8A@mail.gmail.com> <1311757347.1536.103.camel@vkoul-udesk3> <CAJe_Zhd+Z4-=xDzFrd3ARuKZkUAo6n_miQgdSADY9Uk6uhkqhw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJe_Zhd+Z4-=xDzFrd3ARuKZkUAo6n_miQgdSADY9Uk6uhkqhw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-27 at 15:47 -0400, Christoph Hellwig wrote: 
-> On Wed, Jul 27, 2011 at 03:44:20PM -0400, Justin Piszcz wrote:
-> > 
-> > 
-> > On Wed, 27 Jul 2011, Christoph Hellwig wrote:
-> > 
-> > >On Wed, Jul 27, 2011 at 03:35:01PM -0400, Justin Piszcz wrote:
-> > >>Currently I do not see any dupes, however I have a script that moves
-> > >>images out of the directory once an hour:
-> > >>0 * * * * /usr/local/bin/move_to_old2.sh > /dev/null 2>&1
-> > >
-> > >Do you keep adding files to the directory while you move files out?
-> > Yes, otherwise there are too many files in the directory and viewers, e.g.,
-> > each geeqie (picture viewer) will use > 4-6GB of memory, so I try to keep
-> > it around 5,000 pictures or less.
-> > 
-> > >What's the rate of additions/removals to the directory?
-> > Additions it depends, around 5,000 over a 12hr period, 416/hr, current:
-> > 
-> > atom:/d1/motion# find cam1|wc
-> >    5215    5215  166853
-> > atom:/d1/motion# find cam2|wc
-> >    5069    5069  162181
-> > atom:/d1/motion# find cam3|wc
-> >    5594    5594  178981
-> > atom:/d1/motion#
+On Wed, Jul 27, 2011 at 08:00:23PM +0530, Jaswinder Singh wrote:
+> On 27 July 2011 14:32, Koul, Vinod <vinod.koul@intel.com> wrote:
+> > You can have two different DMACs in same system. At least I have two
+> > from current intel_mid_dma which are used. Both give their channel id
+> > starting from 0, 1....
+> > Further as we integrate video, audio, spi, emmc dmacs possibility of
+> > having multiple dmacs will increase in a system
+>
+> Most of Samsung's S5P series have 3 DMACs - 2 for peripherals and 1 for
+> mem->mem But that is not the point.
 > 
-> This sounds a lot like xfs simply filling up the directory index slots
-> of files that you just moved out with new files, and nfs falsely
-> claiming that this is a problem.
+> This patch in no way affects what values currently a dmac driver
+> assigns to chan_id
 
-Yep. There is an existing bugzilla report for this bug at
+Then *explain* how the chan_id is used to match the channel which the
+peripheral requires when you have three DMA controllers, each with
+channels numbered 0 to 7.
 
-   https://bugzilla.kernel.org/show_bug.cgi?id=38572
+> > Sorry I didn't get you.
+> > As I understand you are trying to simplify the filter function by
+> > assigning unique ids to all channels,
+>
+> No dear. Let me put it precisely.
+> 
+> Even if we make no further change to the dmaengine, this patch is the right
+> thing to do today.
 
-I have a preliminary patch there that attempts to turn off the loop
-detection when the directory is seen to change, however that patch still
-appears to have a bug in it, and I haven't had time to figure out what
-is wrong yet.
+You sound like a politician.  "the right thing to do" is a cop-out.  That
+says "believe me, I know I'm right, but I can't say why I'm right, I just
+am."  Basically, it means that the person saying it has no clue on the
+subject they're talking about.
 
-Can you perhaps take a look, Bryan?
+If you do have a clue, then don't say that infuriating phrase, but give an
+actual reason.
 
-Cheers
-  Trond
+> On a serious note, my proposal, and the reply, shows the possibility
+> of having :-
+> a) Client drivers that are truly platform agnostic -- no platform_data
+> poking for
+>       channel selection
+
+I really doubt that's even possible.  Take this setup:
+
+MMCI ---> DMAC
+
+where the DMAC has 32 request signals, and 8 channels.  The MMCI is
+connected to two of them.  The DMAC can supply any of its physical
+channels for MMCI.
+
+Board 1 has the MMCI connected to request signals #1 and #3.  Board 2
+has the MMCI connected to request signals #8 and #22.  Board 3 has
+the MMCI connected through an external FPGA mux, which can route the
+MMCI requests to DMA request signals #1, #2 or #3.
+
+Now, explain how a channel is selected for each of those two boards, and
+the DMA controller is provided with the relevant request signal is found
+without platform data involved, using _only_ your 'capabilities' bitfield
+and the channel ID number.
+
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
