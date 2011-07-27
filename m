@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab1G0VWB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 17:22:01 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:57806 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755069Ab1G0VWA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:22:00 -0400
-X-Authenticated: #11967524
-X-Provags-ID: V01U2FsdGVkX1+Hm6FALiKHQ1ZlugwS9myyNPb1OedmtvEHWnTY+v
-	y6bP2ew9PHdef0
-From: =?iso-8859-1?q?R=FCdiger_Meier?= <sweet_f_a@gmx.de>
-To: Christoph Hellwig <hch@infradead.org>
-Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
-Date: Wed, 27 Jul 2011 23:21:45 +0200
-User-Agent: KMail/1.9.10
-Cc: Bryan Schumaker <bjschuma@netapp.com>,
-        Justin Piszcz <jpiszcz@lucidpixels.com>,
+	id S1755292Ab1G0VYN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 17:24:13 -0400
+Received: from lucidpixels.com ([72.73.18.11]:57172 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755069Ab1G0VYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:24:10 -0400
+Date: Wed, 27 Jul 2011 17:24:09 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+cc: Christoph Hellwig <hch@infradead.org>,
+        Bryan Schumaker <bjschuma@netapp.com>,
         "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan> <201107272227.03265.sweet_f_a@gmx.de> <20110727204724.GA21314@infradead.org>
-In-Reply-To: <20110727204724.GA21314@infradead.org>
+Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
+In-Reply-To: <1311800195.25645.45.camel@lade.trondhjem.org>
+Message-ID: <alpine.DEB.2.02.1107271723500.25432@p34.internal.lan>
+References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>  <20110727160752.GC974@fieldses.org>  <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>  <20110727181111.GA23009@infradead.org>  <alpine.DEB.2.02.1107271530340.1451@p34.internal.lan> 
+ <20110727193937.GA5354@infradead.org>  <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>  <20110727194722.GA9345@infradead.org>  <1311799021.25645.41.camel@lade.trondhjem.org>  <1311800051.25645.43.camel@lade.trondhjem.org>
+ <1311800195.25645.45.camel@lade.trondhjem.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201107272321.54030.sweet_f_a@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 27 July 2011, Christoph Hellwig wrote:
-> On Wed, Jul 27, 2011 at 10:26:55PM +0200, R?diger Meier wrote:
-> > At the time I've started this thread
-> > http://comments.gmane.org/gmane.linux.nfs/40863
-> > I had the feeling that the readdir cache changings in 2.6.37 have
-> > something to do with these loop problems.
-> >
-> > After that thread I've accepted that's a general problem with
-> > ext4/dirindex and nfs but seeing it again on xfs with just 5000
-> > files I'm in doubt again.
+
+
+On Wed, 27 Jul 2011, Trond Myklebust wrote:
+
+> On Wed, 2011-07-27 at 16:54 -0400, Trond Myklebust wrote:
+>> On Wed, 2011-07-27 at 16:37 -0400, Trond Myklebust wrote:
+>>> On Wed, 2011-07-27 at 15:47 -0400, Christoph Hellwig wrote:
+>>>> On Wed, Jul 27, 2011 at 03:44:20PM -0400, Justin Piszcz wrote:
+>>>>>
+>>>>>
+>>>>> On Wed, 27 Jul 2011, Christoph Hellwig wrote:
+>>>>>
+>>>>>> On Wed, Jul 27, 2011 at 03:35:01PM -0400, Justin Piszcz wrote:
+>>>>>>> Currently I do not see any dupes, however I have a script that moves
+>>>>>>> images out of the directory once an hour:
+>>>>>>> 0 * * * * /usr/local/bin/move_to_old2.sh > /dev/null 2>&1
+>>>>>>
+>>>>>> Do you keep adding files to the directory while you move files out?
+>>>>> Yes, otherwise there are too many files in the directory and viewers, e.g.,
+>>>>> each geeqie (picture viewer) will use > 4-6GB of memory, so I try to keep
+>>>>> it around 5,000 pictures or less.
+>>>>>
+>>>>>> What's the rate of additions/removals to the directory?
+>>>>> Additions it depends, around 5,000 over a 12hr period, 416/hr, current:
+>>>>>
+>>>>> atom:/d1/motion# find cam1|wc
+>>>>>    5215    5215  166853
+>>>>> atom:/d1/motion# find cam2|wc
+>>>>>    5069    5069  162181
+>>>>> atom:/d1/motion# find cam3|wc
+>>>>>    5594    5594  178981
+>>>>> atom:/d1/motion#
+>>>>
+>>>> This sounds a lot like xfs simply filling up the directory index slots
+>>>> of files that you just moved out with new files, and nfs falsely
+>>>> claiming that this is a problem.
+>>>
+>>> Yep. There is an existing bugzilla report for this bug at
+>>>
+>>>    https://bugzilla.kernel.org/show_bug.cgi?id=38572
+>>>
+>>> I have a preliminary patch there that attempts to turn off the loop
+>>> detection when the directory is seen to change, however that patch still
+>>> appears to have a bug in it, and I haven't had time to figure out what
+>>> is wrong yet.
+>>>
+>>> Can you perhaps take a look, Bryan?
+>>
+>> Actually, Justin, can you test the following slight variant on the patch
+>> in the bugzilla?
 >
-> Two separate issues. [...]
+> Doh! This one will actually compile....
 
-Yup, I didn't wanted to say that I'm in doubt about the general 
-ext4/dirindex problem but I'am still in doubt about the complete 
-innocence of readdir cache.
+Hi,
 
-I guess I've run into both issues at that time. I remember that I 
-couldn't easily create such "broken" dir from scratch but my users 
-managed it to have dozens of them, often just about 30000 files.
-Somehow it seemed to be important that the dirs were growing in a 
-natural way.
+Should I try 3.0 first or retry 2.6.38 w/ this patch?
 
-However no probs again since with xfs and ext4 without dirindex. But 
-still the feeling that upgrading to 2.6.37 was also a part of the 
-problem.
-
-cu,
-Rudi
+Justin.
 
