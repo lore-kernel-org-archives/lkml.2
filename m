@@ -1,85 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab1G0OZk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 10:25:40 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:40188 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754521Ab1G0OZi (ORCPT
+	id S1754104Ab1G0O2e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 10:28:34 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:53465 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753836Ab1G0O2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 10:25:38 -0400
-Date: Wed, 27 Jul 2011 10:25:22 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Sven Eckelmann <sven@narfation.org>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: Re: [PATCHv4 10/11] drop_monitor: Use *_dec_not_zero instead of
- *_add_unless
-Message-ID: <20110727142521.GB19001@hmsreliant.think-freely.org>
-References: <1311760070-21532-1-git-send-email-sven@narfation.org>
- <1311760070-21532-10-git-send-email-sven@narfation.org>
- <20110727105907.GA19001@hmsreliant.think-freely.org>
- <2127465.xrCKehbL3A@sven-laptop.home.narfation.org>
+	Wed, 27 Jul 2011 10:28:32 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Will Newton <will.newton@gmail.com>
+Subject: Re: [PATCH] bitops: Use volatile in generic atomic bitops.
+Date: Wed, 27 Jul 2011 16:28:29 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>, stable@kernel.org
+References: <CAFbHwiQaYeQSwRykhKp57rQ8xLKSst9MXF7YJoQjEm0V+WN4Qw@mail.gmail.com> <201107271455.39511.arnd@arndb.de> <CAFbHwiSkqpRUv2CW8sqL8XQEkbbvtos2h5UTTX19jeXJNrBOUA@mail.gmail.com>
+In-Reply-To: <CAFbHwiSkqpRUv2CW8sqL8XQEkbbvtos2h5UTTX19jeXJNrBOUA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2127465.xrCKehbL3A@sven-laptop.home.narfation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -1.4 (-)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107271628.29532.arnd@arndb.de>
+X-Provags-ID: V02:K0:7s0xUiPFahP/u1NVkFcUsMllm0ZcvCLK8gviKOwqkAT
+ kXgPICdkra9CzHScCPJGFkHDSiUZ2ECyEbULU1JPwRfhJ/eDad
+ 5A78apQqynuNwtnTGgd9vGS0g7ho6OraLC23CAxB0KiRc83kx/
+ sp2y/jiu6QTt1BQl4Pzoi1mpmQAZlRt731XXAl8wzlFGLYcOhT
+ XmEUFW0+GDo01tDn4tjdw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 01:52:50PM +0200, Sven Eckelmann wrote:
-> On Wednesday 27 July 2011 06:59:07 Neil Horman wrote:
-> > On Wed, Jul 27, 2011 at 11:47:49AM +0200, Sven Eckelmann wrote:
-> > > atomic_dec_not_zero is defined for each architecture through
-> > > <linux/atomic.h> to provide the functionality of
-> > > atomic_add_unless(x, -1, 0).
-> > > 
-> > > Signed-off-by: Sven Eckelmann <sven@narfation.org>
-> > > Cc: Neil Horman <nhorman@tuxdriver.com>
-> > > Cc: netdev@vger.kernel.org
-> > > ---
-> > > 
-> > >  net/core/drop_monitor.c |    2 +-
-> > >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
-> > > index 7f36b38..ef4a05d 100644
-> > > --- a/net/core/drop_monitor.c
-> > > +++ b/net/core/drop_monitor.c
-> > > @@ -137,7 +137,7 @@ static void trace_drop_common(struct sk_buff *skb,
-> > > void *location)
-> > > 
-> > >  	struct per_cpu_dm_data *data = &__get_cpu_var(dm_cpu_data);
-> > > 
-> > > -	if (!atomic_add_unless(&data->dm_hit_count, -1, 0)) {
-> > > +	if (!atomic_dec_not_zero(&data->dm_hit_count)) {
-> > > 
-> > >  		/*
-> > >  		
-> > >  		 * we're already at zero, discard this hit
-> > >  		 */
-> > 
-> > Wheres the patch that creates the per arch definition of this function?  I
-> > see the other posts in this series went to lkml, but the archives don't
-> > have the first in the series anywhere, which ostensibly adds the
-> > definition. Neil
+On Wednesday 27 July 2011, Will Newton wrote:
+> >
+> > Have you observed this behavior? The interrupt disable/enable should
+> > always come with a barrier that should prevent the bitops from
+> > leaking out, so I don't see how this causes problems in practice.
 > 
-> Most architectures don't use a per architecture definition anymore, but a 
-> cross-architecture the definition in include/linux/atomic.h.
-> 
-> The 01/11 can be found in different archives under the message id 
-> 1311760070-21532-1-git-send-email-sven@narfation.org ... for example gmane: 
-> http://article.gmane.org/gmane.linux.ports.arm.kernel/126704
-> 
-> Kind regards,
-> 	Sven
-Ok, thank you, I just didn't see the patch that implemented it in the lkml
-archive at MARC, and wanted to be sure this wasn't proposed for a different tree
-than the patch with the definition.
+> Yes, although my arch does not have these barriers. Now I see from
+> memory-barriers.txt that lock/unlock are required to implement a
+> compiler barrier, sorry for the noise!
 
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Which architectures is this?
 
-
-
+	Arnd
