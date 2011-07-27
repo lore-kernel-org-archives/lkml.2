@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab1G0PLS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 11:11:18 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:50456 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab1G0PLQ (ORCPT
+	id S1752307Ab1G0PPB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 11:15:01 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:35178 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750879Ab1G0PO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 11:11:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E3014E2.40501@suse.cz>
-References: <4E1D9C25.8080300@suse.cz>
-	<1311634718-32588-1-git-send-email-mmarek@suse.cz>
-	<CAM_iQpUEfYrrtpcRLTekSHMHrTTka6ir=z_GUUbnxuQKfY+OXA@mail.gmail.com>
-	<4E2EBF63.8050208@suse.cz>
-	<20110726080443.62196869.rdunlap@xenotime.net>
-	<4E2F0735.1070403@suse.cz>
-	<20110726112824.b357c756.rdunlap@xenotime.net>
-	<CACqU3MWOjjB0RiWLWS8yf0u0gRqOL3JP0StyrtP1kbA+i92SfA@mail.gmail.com>
-	<CACqU3MWopoJcd+5ELWEDp6_GvVpEjOHLnkcj4s_fHT5unp+MtA@mail.gmail.com>
-	<20110726213536.1f56f0e3.rdunlap@xenotime.net>
-	<4E2FCE2A.3000909@suse.cz>
-	<CACqU3MX7p-3sM=L3MQygyr9=sBkpSHcvk9ponxJTh2i=c=YiKA@mail.gmail.com>
-	<4E3014E2.40501@suse.cz>
-Date: Wed, 27 Jul 2011 11:11:16 -0400
-Message-ID: <CACqU3MVyD8z=L8VP9K5c9iQaOPmWcqQprtM28VDzSVjwua_etQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH 1/2] kconfig: Introduce KCONFIG(), KCONFIG_BUILTIN()
- and KCONFIG_MODULE()
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        linux-kbuild@vger.kernel.org, sam@ravnborg.org,
-        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 27 Jul 2011 11:14:59 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18mBV0ixNomBS4x+LhK9tC+/kXvkoPN64OD4eeb24
+	reKCG6Sv/lpywp
+Subject: [patch] sched: fix broken SCHED_RESET_ON_FORK handling
+From: Mike Galbraith <efault@gmx.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Jul 2011 17:14:55 +0200
+Message-ID: <1311779695.8691.2.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Wed, Jul 27, 2011 at 9:38 AM, Michal Marek <mmarek@suse.cz> wrote:
->> [...]
->> I'm good with the naming, but how would you define those ? I may have
->> trouble to discern between IS_ENABLED() and IS_ENABLED_BUILTIN().
->
-> IS_ENABLED() would mean not disabled, i.e. either 'y' or 'm'.
-> IS_ENABLED_BUILTIN() would mean 'y' and only 'y' and IS_ENABLED_MODULE()
-> would mean 'm'. For boolean options, IS_ENABLED() would be equivalent to
-> IS_ENABLED_BUILTIN() and IS_ENABLED_MODULE() would be always false.
->
-how would IS_ENABLED() behave on CONFIG_FOO, with FOO being S_STRING
-or, say, S_HEX ?
+sched: fix broken SCHED_RESET_ON_FORK handling
 
- - Arnaud
+Setting child->prio = current->normal_prio _after_ SCHED_RESET_ON_FORK has
+been handled for an RT parent gives birth to a deranged mutant child with
+non-RT policy, but RT prio and sched_class.
+
+Move PI leakage protection up, always set priorities and weight, and if the
+child is leaving RT class, reset rt_priority to the proper value.
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Cc: <stable@kernel.org>
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 0281f84..a3e65a0 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2804,19 +2804,23 @@ void sched_fork(struct task_struct *p)
+ 	p->state = TASK_RUNNING;
+ 
+ 	/*
++	 * Make sure we do not leak PI boosting priority to the child.
++	 */
++	p->prio = current->normal_prio;
++
++	/*
+ 	 * Revert to default priority/policy on fork if requested.
+ 	 */
+ 	if (unlikely(p->sched_reset_on_fork)) {
+-		if (p->policy == SCHED_FIFO || p->policy == SCHED_RR) {
++		if (task_has_rt_policy(p)) {
+ 			p->policy = SCHED_NORMAL;
+-			p->normal_prio = p->static_prio;
+-		}
+-
+-		if (PRIO_TO_NICE(p->static_prio) < 0) {
+ 			p->static_prio = NICE_TO_PRIO(0);
+-			p->normal_prio = p->static_prio;
+-			set_load_weight(p);
+-		}
++			p->rt_priority = 0;
++		} else if (PRIO_TO_NICE(p->static_prio) < 0)
++			p->static_prio = NICE_TO_PRIO(0);
++
++		p->prio = p->normal_prio = __normal_prio(p);
++		set_load_weight(p);
+ 
+ 		/*
+ 		 * We don't need the reset flag anymore after the fork. It has
+@@ -2825,11 +2829,6 @@ void sched_fork(struct task_struct *p)
+ 		p->sched_reset_on_fork = 0;
+ 	}
+ 
+-	/*
+-	 * Make sure we do not leak PI boosting priority to the child.
+-	 */
+-	p->prio = current->normal_prio;
+-
+ 	if (!rt_prio(p->prio))
+ 		p->sched_class = &fair_sched_class;
+ 
+
+
