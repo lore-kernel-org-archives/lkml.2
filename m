@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab1G0VsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 17:48:24 -0400
-Received: from mga09.intel.com ([134.134.136.24]:46879 "EHLO mga09.intel.com"
+	id S1755449Ab1G0VsU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 17:48:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32147 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755416Ab1G0VsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:48:21 -0400
+	id S1755416Ab1G0VsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:48:14 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,279,1309762800"; 
-   d="scan'208";a="32826289"
+   d="scan'208";a="32826252"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: chunkeey@googlemail.com, linville@tuxdriver.com, gregkh@suse.de,
+To: broonie@opensource.wolfsonmicro.com, lrg@ti.com, gregkh@suse.de,
         ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
         tim.bird@am.sony.com
-Subject: [PATCH] [22/99] p54usb: add zoom 4410 usbid
-Message-Id: <20110727214820.B24182403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:48:20 -0700 (PDT)
+Subject: [PATCH] [8/99] ASoC: Ensure output PGA is enabled for line outputs in
+Message-Id: <20110727214806.76E9A2403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:48:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,29 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 9368a9a2378ab721f82f59430a135b4ce4ff5109 upstream.
+commit d0b48af6c2b887354d0893e598d92911ce52620e upstream.
 
-Reported-by: Mark Davis <marked86@gmail.com>
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Also fix a left/right typo while we're at it.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/net/wireless/p54/p54usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/codecs/wm_hubs.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Index: linux-2.6.35.y/drivers/net/wireless/p54/p54usb.c
+Index: linux-2.6.35.y/sound/soc/codecs/wm_hubs.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/net/wireless/p54/p54usb.c
-+++ linux-2.6.35.y/drivers/net/wireless/p54/p54usb.c
-@@ -82,6 +82,7 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
- 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
- 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
-+	{USB_DEVICE(0x083a, 0xc501)},	/* Zoom Wireless-G 4410 */
- 	{USB_DEVICE(0x083a, 0xf503)},	/* Accton FD7050E ver 1010ec  */
- 	{USB_DEVICE(0x0846, 0x4240)},	/* Netgear WG111 (v2) */
- 	{USB_DEVICE(0x0915, 0x2000)},	/* Cohiba Proto board */
+--- linux-2.6.35.y.orig/sound/soc/codecs/wm_hubs.c
++++ linux-2.6.35.y/sound/soc/codecs/wm_hubs.c
+@@ -752,17 +752,17 @@ static const struct snd_soc_dapm_route a
+ static const struct snd_soc_dapm_route lineout1_diff_routes[] = {
+ 	{ "LINEOUT1 Mixer", "IN1L Switch", "IN1L PGA" },
+ 	{ "LINEOUT1 Mixer", "IN1R Switch", "IN1R PGA" },
+-	{ "LINEOUT1 Mixer", "Output Switch", "Left Output Mixer" },
++	{ "LINEOUT1 Mixer", "Output Switch", "Left Output PGA" },
+ 
+ 	{ "LINEOUT1N Driver", NULL, "LINEOUT1 Mixer" },
+ 	{ "LINEOUT1P Driver", NULL, "LINEOUT1 Mixer" },
+ };
+ 
+ static const struct snd_soc_dapm_route lineout1_se_routes[] = {
+-	{ "LINEOUT1N Mixer", "Left Output Switch", "Left Output Mixer" },
+-	{ "LINEOUT1N Mixer", "Right Output Switch", "Left Output Mixer" },
++	{ "LINEOUT1N Mixer", "Left Output Switch", "Left Output PGA" },
++	{ "LINEOUT1N Mixer", "Right Output Switch", "Right Output PGA" },
+ 
+-	{ "LINEOUT1P Mixer", "Left Output Switch", "Left Output Mixer" },
++	{ "LINEOUT1P Mixer", "Left Output Switch", "Left Output PGA" },
+ 
+ 	{ "LINEOUT1N Driver", NULL, "LINEOUT1N Mixer" },
+ 	{ "LINEOUT1P Driver", NULL, "LINEOUT1P Mixer" },
+@@ -771,17 +771,17 @@ static const struct snd_soc_dapm_route l
+ static const struct snd_soc_dapm_route lineout2_diff_routes[] = {
+ 	{ "LINEOUT2 Mixer", "IN2L Switch", "IN2L PGA" },
+ 	{ "LINEOUT2 Mixer", "IN2R Switch", "IN2R PGA" },
+-	{ "LINEOUT2 Mixer", "Output Switch", "Right Output Mixer" },
++	{ "LINEOUT2 Mixer", "Output Switch", "Right Output PGA" },
+ 
+ 	{ "LINEOUT2N Driver", NULL, "LINEOUT2 Mixer" },
+ 	{ "LINEOUT2P Driver", NULL, "LINEOUT2 Mixer" },
+ };
+ 
+ static const struct snd_soc_dapm_route lineout2_se_routes[] = {
+-	{ "LINEOUT2N Mixer", "Left Output Switch", "Left Output Mixer" },
+-	{ "LINEOUT2N Mixer", "Right Output Switch", "Left Output Mixer" },
++	{ "LINEOUT2N Mixer", "Left Output Switch", "Left Output PGA" },
++	{ "LINEOUT2N Mixer", "Right Output Switch", "Right Output PGA" },
+ 
+-	{ "LINEOUT2P Mixer", "Right Output Switch", "Right Output Mixer" },
++	{ "LINEOUT2P Mixer", "Right Output Switch", "Right Output PGA" },
+ 
+ 	{ "LINEOUT2N Driver", NULL, "LINEOUT2N Mixer" },
+ 	{ "LINEOUT2P Driver", NULL, "LINEOUT2P Mixer" },
