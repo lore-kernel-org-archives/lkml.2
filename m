@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453Ab1G0Kf4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 06:35:56 -0400
-Received: from mga09.intel.com ([134.134.136.24]:60450 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753743Ab1G0Kfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 06:35:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,275,1309762800"; 
-   d="scan'208";a="32559264"
-Date: Wed, 27 Jul 2011 13:36:09 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: Jaswinder Singh <jaswinder.singh@linaro.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        rmk+kernel@arm.linux.org.uk, linus.walleij@stericsson.com,
-        per.friden@stericsson.com, wei.zhang@freescale.com,
-        ebony.zhu@freescale.com, iws@ovro.caltech.edu, s.hauer@pengutronix.de,
-        maciej.sosnowski@intel.com, saeed@marvell.com, shawn.guo@freescale.com,
-        yur@emcraft.com, agust@denx.de, iwamatsu.nobuhiro@renesas.com,
-        per.forlin@stericsson.com, jonas.aberg@stericsson.com,
-        anemo@mba.ocn.ne.jp
-Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
-Message-ID: <20110727103609.GC16623@intel.com>
-References: <CAJe_ZheVyLk-yqyF_XO80xX3j7_7mDPnv-me+n=X_hNWycSLwg@mail.gmail.com>
- <CABE8wwtkSnaJ5fvi=4bq7zye3W0SmErHAZeWAcHuYvLgvqy=_Q@mail.gmail.com>
- <CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com>
- <CABE8wwv2XQ_aJ8O2TUAz1LgJorBwDbgyQQv7jeAn06Q2AcqH+Q@mail.gmail.com>
- <CAJe_ZhcNM7m-eWA0nDUrOrHxeAhNS00gewf=txmvOFL_uOPhrw@mail.gmail.com>
- <1311740499.1536.56.camel@vkoul-udesk3>
- <CAJe_ZhfaPfobs5P+q+t-kRSK4fAvm-v_brYgqmco8fwOOBeT8A@mail.gmail.com>
- <1311757347.1536.103.camel@vkoul-udesk3>
- <20110727095909.GB16623@intel.com>
- <1311759264.1536.113.camel@vkoul-udesk3>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311759264.1536.113.camel@vkoul-udesk3>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754522Ab1G0K7N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 06:59:13 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:60237 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754110Ab1G0K7M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 06:59:12 -0400
+From: Andy Whitcroft <apw@canonical.com>
+To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
+Subject: [PATCH 1/1] btrfs: btrfs_calc_avail_data_space cope with no read/write devices
+Date: Wed, 27 Jul 2011 11:59:07 +0100
+Message-Id: <1311764347-5520-1-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 03:04:24PM +0530, Koul, Vinod wrote:
+When we mount a btrfs filesystem from read-only media there will be no
+read/write devices; for example mounting an SD card with its lock enabled.
+This triggers an immediate BUG during mount:
 
-> Is this a dma controller limitation or due to the fact even channels get
-> assigned h/w interface corresponding to TX and so on.
+  kernel BUG at .../fs/btrfs/super.c:984!
 
-I think the later but not sure how it is implemented in hw. The
-documentation only states that even channels are for TX and odd for RX.
-There is no way of changing the direction as far I can tell.
+This is triggered by statfs when calculating the free space in the
+filesytem.  We bug if the number of read/write devices is 0.
+
+It seems more appropriate to indicate we have no writable space.  Note
+that this does make df return 0 free blocks on a read-only device.
+Whether that is reasonable is debatable.
+
+BugLink: http://bugs.launchpad.net/bugs/803815
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ fs/btrfs/super.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+index 15634d4..8d3f9b0 100644
+--- a/fs/btrfs/super.c
++++ b/fs/btrfs/super.c
+@@ -981,7 +981,10 @@ static int btrfs_calc_avail_data_space(struct btrfs_root *root, u64 *free_bytes)
+ 	int ret;
+ 
+ 	nr_devices = fs_info->fs_devices->rw_devices;
+-	BUG_ON(!nr_devices);
++	if (!nr_devices) {
++		*free_bytes = 0;
++		return 0;
++	}
+ 
+ 	devices_info = kmalloc(sizeof(*devices_info) * nr_devices,
+ 			       GFP_NOFS);
+-- 
+1.7.4.1
+
