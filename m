@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab1G0WH7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:07:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:46879 "EHLO mga09.intel.com"
+	id S1755499Ab1G0WIR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:08:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:36473 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755226Ab1G0VsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:48:23 -0400
+	id S1755442Ab1G0VsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:48:20 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
-   d="scan'208";a="30900462"
+X-IronPort-AV: E=Sophos;i="4.67,279,1309762800"; 
+   d="scan'208";a="32826287"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: Artem.Bityutskiy@nokia.com, gregkh@suse.de, ak@linux.intel.com,
+To: stern@rowland.harvard.edu, andre.osku.schmidt@googlemail.com,
+        yurand2@gmail.com, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [24/99] UBIFS: fix a rare memory leak in ro to rw remounting path
-Message-Id: <20110727214822.BAD082403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:48:22 -0700 (PDT)
+Subject: [PATCH] [21/99] OHCI: fix regression caused by nVidia shutdown workaround
+Message-Id: <20110727214819.ADD9B2403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:48:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,47 +25,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit eaeee242c531cd4b0a4a46e8b5dd7ef504380c42 upstream.
+commit 2b7aaf503d56216b847c8265421d2a7d9b42df3e upstream.
 
-When re-mounting from R/O mode to R/W mode and the LEB count in the superblock
-is not up-to date, because for the underlying UBI volume became larger, we
-re-write the superblock. We allocate RAM for these purposes, but never free it.
-So this is a memory leak, although very rare one.
+This patch (as1463) fixes a regression caused by commit
+3df7169e73fc1d71a39cffeacc969f6840cdf52b (OHCI: work around for nVidia
+shutdown problem).
 
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+The original problem encountered by people using NVIDIA chipsets was
+that USB devices were not turning off when the system shut down.  For
+example, the LED on an optical mouse would remain on, draining a
+laptop's battery.  The problem was caused by a bug in the chipset; an
+OHCI controller in the Reset state would continue to drive a bus reset
+signal even after system shutdown.  The workaround was to put the
+controllers into the Suspend state instead.
+
+It turns out that later NVIDIA chipsets do not suffer from this bug.
+Instead some have the opposite bug: If a system is shut down while an
+OHCI controller is in the Suspend state, USB devices remain powered!
+On other systems, shutting down with a Suspended controller causes the
+system to reboot immediately.  Thus, working around the original bug
+on some machines exposes other bugs on other machines.
+
+The best solution seems to be to limit the workaround to OHCI
+controllers with a low-numbered PCI product ID.  I don't know exactly
+at what point NVIDIA changed their chipsets; the value used here is a
+guess.  So far it was worked out okay for all the people who have
+tested it.
+
+This fixes Bugzilla #35032.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Andre "Osku" Schmidt <andre.osku.schmidt@googlemail.com>
+Tested-by: Yury Siamashka <yurand2@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/ubifs/sb.c    |    3 ++-
- fs/ubifs/super.c |    1 +
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/host/ohci-pci.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-Index: linux-2.6.35.y/fs/ubifs/sb.c
+Index: linux-2.6.35.y/drivers/usb/host/ohci-pci.c
 ===================================================================
---- linux-2.6.35.y.orig/fs/ubifs/sb.c
-+++ linux-2.6.35.y/fs/ubifs/sb.c
-@@ -475,7 +475,8 @@ failed:
-  * @c: UBIFS file-system description object
-  *
-  * This function returns a pointer to the superblock node or a negative error
-- * code.
-+ * code. Note, the user of this function is responsible of kfree()'ing the
-+ * returned superblock buffer.
+--- linux-2.6.35.y.orig/drivers/usb/host/ohci-pci.c
++++ linux-2.6.35.y/drivers/usb/host/ohci-pci.c
+@@ -207,10 +207,18 @@ static int ohci_quirk_amd700(struct usb_
   */
- struct ubifs_sb_node *ubifs_read_sb_node(struct ubifs_info *c)
+ static int ohci_quirk_nvidia_shutdown(struct usb_hcd *hcd)
  {
-Index: linux-2.6.35.y/fs/ubifs/super.c
-===================================================================
---- linux-2.6.35.y.orig/fs/ubifs/super.c
-+++ linux-2.6.35.y/fs/ubifs/super.c
-@@ -1545,6 +1545,7 @@ static int ubifs_remount_rw(struct ubifs
- 		}
- 		sup->leb_cnt = cpu_to_le32(c->leb_cnt);
- 		err = ubifs_write_sb_node(c, sup);
-+		kfree(sup);
- 		if (err)
- 			goto out;
- 	}
++	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
+ 	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
+ 
+-	ohci->flags |= OHCI_QUIRK_SHUTDOWN;
+-	ohci_dbg(ohci, "enabled nVidia shutdown quirk\n");
++	/* Evidently nVidia fixed their later hardware; this is a guess at
++	 * the changeover point.
++	 */
++#define PCI_DEVICE_ID_NVIDIA_NFORCE_MCP51_USB		0x026d
++
++	if (pdev->device < PCI_DEVICE_ID_NVIDIA_NFORCE_MCP51_USB) {
++		ohci->flags |= OHCI_QUIRK_SHUTDOWN;
++		ohci_dbg(ohci, "enabled nVidia shutdown quirk\n");
++	}
+ 
+ 	return 0;
+ }
