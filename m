@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094Ab1G0Uj1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 16:39:27 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:49521 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab1G0UjZ (ORCPT
+	id S1755207Ab1G0UlI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 16:41:08 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:50919 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838Ab1G0UlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 16:39:25 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:x-system-of-record;
-	b=vMGG8GcB8ncV5z9Psw+6hKW1knlAUVoPJslNvj0dvtDuGqNlWRHcFHiNo5bNIrPe/
-	WLl+sc5Q4TsZq6lSBjeEw==
+	Wed, 27 Jul 2011 16:41:06 -0400
+Date: Wed, 27 Jul 2011 22:40:14 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH 1/2] MMC / TMIO: Fix build issue related to struct
+ scatterlist
+In-Reply-To: <201107262050.23379.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.64.1107272236510.7435@axis700.grange>
+References: <201107262049.15333.rjw@sisk.pl> <201107262050.23379.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <1308151691.9218.128.camel@gandalf.stny.rr.com>
-References: <1304462995-1825-1-git-send-email-vnagarnaik@google.com>
- <BANLkTimNs-iJPK67fkWdeq_Hmd2WvPSFpo9-ZL4hHOobkXaZNg@mail.gmail.com> <1308151691.9218.128.camel@gandalf.stny.rr.com>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Wed, 27 Jul 2011 13:38:51 -0700
-Message-ID: <CAL26m8KHBd+40sBYoSEvi0ss1pBYrtZvSJydtkp85nn5YOFWCA@mail.gmail.com>
-Subject: Re: [PATCH] x86: Change trap definitions to enumerated values
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Aditya Kali <adityakali@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:4kUrN7BaHXBmn1aV5/qfu9LNVFzTRPQNADN0MYqXuPJ
+ TBJXjl3a3B4h5kug2a+/3Tj67p1LEntF+nlyx9e2dt/N9SUekR
+ o26xj9jqF8TgO5+M7CjsaOsqwmuiJ2VGfnDvT5Ugtgvw6wyVFQ
+ seApjR9AgXpW0B+FnuLt2R1xGGr+nylT92l19MHmFoE1BPC3hJ
+ bB7l+aNYSjMX2bmQ4rur/wH9uMAr+E8duWioWA2Urk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 15, 2011 at 8:28 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Mon, 2011-06-13 at 16:29 -0700, Vaibhav Nagarnaik wrote:
->> On Tue, May 3, 2011 at 3:49 PM, Vaibhav Nagarnaik <vnagarnaik@google.com> wrote:
->> > From: Aditya Kali <adityakali@google.com>
->> >
->> > The traps are referred to by their numbers and it can be difficult to
->> > understand them while reading the code without context. This patch adds
->> > enumeration of the trap numbers and replaced the numbers to the correct
->> > enum for x86.
->> >
->> > Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
->> >
->
->> All
->>
->> Can you please go through this patch?
->
-> This is very x86 specific and needs to be handled by the x86
-> maintainers.
->
-> Thomas, Ingo ?
->
+(added MMC maintainer to CC:)
 
-Can the x86 maintainers please take a look at this patch?
+On Tue, 26 Jul 2011, Rafael J. Wysocki wrote:
 
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> Fix build issue caused by undefined struct scatterlist in
+> drivers/mmc/host/tmio_mmc.c.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+
+A nitpick, if I may: sCatterlist comes before sPinlock in my versions of 
+most popular alphabets;-) Please, fix (or maybe Chris can fix it himself), 
+after which:
+
+Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
 Thanks
+Guennadi
 
-Vaibhav Nagarnaik
+> ---
+>  drivers/mmc/host/tmio_mmc.h      |    1 +
+>  drivers/usb/renesas_usbhs/fifo.c |    1 +
+>  2 files changed, 2 insertions(+)
+> 
+> Index: linux-2.6/drivers/mmc/host/tmio_mmc.h
+> ===================================================================
+> --- linux-2.6.orig/drivers/mmc/host/tmio_mmc.h
+> +++ linux-2.6/drivers/mmc/host/tmio_mmc.h
+> @@ -21,6 +21,7 @@
+>  #include <linux/mutex.h>
+>  #include <linux/pagemap.h>
+>  #include <linux/spinlock.h>
+> +#include <linux/scatterlist.h>
+>  
+>  /* Definitions for values the CTRL_SDIO_STATUS register can take. */
+>  #define TMIO_SDIO_STAT_IOIRQ	0x0001
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
