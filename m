@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab1G0PFI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 11:05:08 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:38815 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab1G0PFE convert rfc822-to-8bit (ORCPT
+	id S1754360Ab1G0PIH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 11:08:07 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:59166 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861Ab1G0PID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 11:05:04 -0400
+	Wed, 27 Jul 2011 11:08:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL] arm-soc new features (part 2/2) for 3.1
+Date: Wed, 27 Jul 2011 17:07:53 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>
+References: <3057645.NjCAYUXHGt@wuerfel> <5039974.y3GReu3Vjy@wuerfel> <CA+55aFygBzynb_4kZQEHQAU0Np0H9UCBFoW1hoRJ571QCMo42Q@mail.gmail.com>
+In-Reply-To: <CA+55aFygBzynb_4kZQEHQAU0Np0H9UCBFoW1hoRJ571QCMo42Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110727145745.GA11872@dumpdata.com>
-References: <cover.1311736366.git.luto@mit.edu> <20110727145745.GA11872@dumpdata.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 27 Jul 2011 11:04:44 -0400
-X-Google-Sender-Auth: uIbRXxZo2Dh6igxDJojruczn0TA
-Message-ID: <CAObL_7FT8QLg-wihasBahhAtS=pA7+KeU8E=E9x8NPZ0+QJ5iQ@mail.gmail.com>
-Subject: Re: [PATCH 0/5] Collected vdso/vsyscall fixes for 3.1
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: x86@kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jeremy@goop.org, keir.xen@gmail.com, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107271707.54059.arnd@arndb.de>
+X-Provags-ID: V02:K0:boj8lr6BqIBSmhuPeLzMDgUc9bM0CCK2YoF+dySBKUM
+ 5dytyQwBb/KQjqxbUxJWU+Gr0DSTJOjETBa1JOhjypzjoMGC7L
+ DZWIjzqpo6VqsMCMhqlaWXQ1odpBMZ6c4mx6jKGgTOL+4m5S7p
+ 1Zy4A8VlMDLwfNcMabrABcl/npw2uFiuGrgXdiiTgNN7UJwA/V
+ wJYobhyjTyHleokg6cXog==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 10:57 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Tue, Jul 26, 2011 at 11:20:34PM -0400, Andy Lutomirski wrote:
->> This fixes various problems that cropped up with the vdso patches.
->>
->>  - Patch 1 fixes an information leak to userspace.
->>  - Patches 2 and 3 fix the kernel build on gold.
->>  - Patches 4 and 5 fix Xen (I hope).
->>
->> Konrad, could you could test these on Xen and run 'test_vsyscall test' [1]?
->
-> They boot 64-bit guest succesfully.
->
-> But I doesn't compile under 32-bit:
->
-> home/konrad/ssd/linux/arch/x86/xen/enlighten.c:953: error: unknown field ‘extra_user_64bit_cs’ specified in initializer
-> /home/konrad/ssd/linux/arch/x86/xen/enlighten.c:953: error: ‘FLAT_USER_CS64’ undeclared here (not in a function)
->
-> Looks like it needs some #ifdef CONFIG_X86_64 magic.. and after
-> applying that magic dust it compiles and it also boots as 32-bit
-> (no surprise there).
+On Wednesday 27 July 2011, Linus Torvalds wrote:
+> I compared the end result with yours, and we did some things a bit
+> differently, but on the whole it looks pretty identical. We have a
+> different resolution for "exynos4_cpu_suspend()", but afaik mine is
+> better (it looks like from a type standpoint it should return int, but
+> due to the panic it doesn't matter). And we did those
+> OMAP4430_DLL_OVERRIDE_SHIFT/MASK defines in a different order. I have
+> some other changes in my tree (Andrew's patch-set for asm/atomic.h
+> etc), so that makes for other differences in arch/arm, but it looks
+> like it's ok.
+> 
+> But you should double-check. I didn't compile-test any of it, I don't
+> do the cross-compile thing, and maybe I missed something.
 
-Whoops!  I thought xen/enlighten.c was 64-bit only.
+Looks all good as far as I can tell. Your exynos4_cpu_suspend is
+better than the solution I had in next and everything else
+is equivalent.
 
->
->> I don't have a usable Xen setup.
->
-> It is pretty easy to setup. Google for PVops Wiki and you will find wealth
-> of information. FYI: I am gone next week so won't be able to test these
-> patches.
->
->>
->> Also, I'd appreciate a review of patches 4 and 5 from some Xen/paravirt
->> people.
->>
->> [1] https://gitorious.org/linux-test-utils/linux-clock-tests
->
-> Grrrrr..
->
-> g++ -o test_vsyscall -std=gnu++0x -lrt -ldl -O2 -Wall -mavx -g test_vsyscall.cc
-> test_vsyscall.cc: In function ‘int bench(int, char**)’:
-> test_vsyscall.cc:205: error: expected primary-expression before ‘[’ token
+I'm still in the process of fixing randconfig builds that have never
+been working for most arm platforms, so I can do a better job
+at automatically doing build tests myself. My guess is that there
+will be several build regressions due to stuff coming in but that
+they are not the result of mismerges.
 
-[...]
-
->
-> Is there a specific version of GCC I should be using? I seem to be
-> using: g++ (GCC) 4.4.4 20100503 (Red Hat 4.4.4-2)
-
-Apparently it needs g++ 4.5 for lambdas.
-
->
-> Anyhow, removed the benchmark code and ran it on 64-bit:
->
-> sh-4.1# /test_vsyscall  test
-> Testing gettimeofday...
-> [  109.552261] test_vsyscall[2462] trap invalid opcode ip:400c8d sp:7fff84fab470 error:0 in test_vsyscall[400000+2000]
-> Illegal instruction
-> sh-4.1# /test_vsyscall  intcc
-> About to execute int 0xcc from RIP = 400959
-> [  114.137150] test_vsyscall[2463] illegal int 0xcc (exploit attempt?) ip:400959 cs:e033 sp:7fff8b328310 ax:2c si:0 di:7fff8b3280f0
-> Caught SIGSEGV: Segmentation fault (Signal sent by the kernel [(nil)])RIP = 400959
->
-> [This is on git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git #testing, which
-> has todays linus/master and your patchset]
->
-
-I'll set up Xen.  Something's clearly still buggy.
-
---Andy
+	Arnd
