@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab1G0TMH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 15:12:07 -0400
-Received: from mail.cs.tu-berlin.de ([130.149.17.13]:54794 "EHLO
+	id S1755046Ab1G0TMP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 15:12:15 -0400
+Received: from mail.cs.tu-berlin.de ([130.149.17.13]:54840 "EHLO
 	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754985Ab1G0TMC (ORCPT
+	with ESMTP id S1755024Ab1G0TMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 15:12:02 -0400
+	Wed, 27 Jul 2011 15:12:12 -0400
 From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
 Cc: Paul Turner <pjt@google.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-Subject: [PATCH RFCv2 3/8] sched: Handle on_list ancestor in list_add_leaf_cfs_rq()
-Date: Wed, 27 Jul 2011 21:10:20 +0200
-Message-Id: <1311793825-31933-4-git-send-email-schnhrr@cs.tu-berlin.de>
+Subject: [PATCH RFCv2 4/8] list, treewide: Rename __list_del_entry() to __list_del()
+Date: Wed, 27 Jul 2011 21:10:21 +0200
+Message-Id: <1311793825-31933-5-git-send-email-schnhrr@cs.tu-berlin.de>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1311793825-31933-1-git-send-email-schnhrr@cs.tu-berlin.de>
 References: <1311793825-31933-1-git-send-email-schnhrr@cs.tu-berlin.de>
@@ -28,182 +28,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
 
-In the case of an on_list ancestor we may incorrectly place the child to
-the right of a great-ancestor on the list.
+Now that the name __list_del was freed, we can use this more
+appropriate name for __list_del_entry(), making the name a bit
+more consistent with __list_add().
 
-Consider:
-
-      A
-     / \     Here, t1A results in A->cfs_rq being on_list, however when
-    B  t1A   we start enqueuing from C this will not be visible.  This is
-   /         compounded by the fact that on_list expiration may also be out
-  C          of order, punching holes in the tree.
- /
-t1C
-
-Prevent this by making additions to the leaf_cfs_rq_list position
-independent.
-
-This is done by collecting additions to this list within the
-enqueue_task_fair() path until we reach the top or find an on_list
-ancestor. All additions are then spliced into the leaf_cfs_rq_list at
-once.
-
-The additions cannot be collected in a list with the normal means as
-this violates the RCU guarantee that the next pointer of an element
-always leads back to the list as long as there could be concurrent
-readers.  However, we are still allowed to modify the next pointer of
-deleted entries as long as we make sure that they eventually return to
-the list. That is, if we have to collect more than one entry in a row,
-it is legal to set the next-pointer of the first collected entry to the
-next one. (We can do this even without using *_rcu functions, as there
-are no new elements on that path.)
-
-Suggested-by: Paul Turner <pjt@google.com>
 Signed-off-by: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
-
 ---
-Changes since v1:
-- moved some more code to include/linux/rculist.h
-- added comment regarding RCU
----
- kernel/sched_fair.c |   93 ++++++++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 73 insertions(+), 20 deletions(-)
+ include/linux/list.h |   10 +++++-----
+ lib/list_debug.c     |    6 +++---
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index c768588..1487649 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -143,26 +143,75 @@ static inline struct cfs_rq *cpu_cfs_rq(struct cfs_rq *cfs_rq, int this_cpu)
- 	return cfs_rq->tg->cfs_rq[this_cpu];
- }
- 
--static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
-+static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq,
-+					struct list_head *leaf_cfs_rqs)
+diff --git a/include/linux/list.h b/include/linux/list.h
+index 9d093cc..5319099 100644
+--- a/include/linux/list.h
++++ b/include/linux/list.h
+@@ -95,7 +95,7 @@ static inline void __list_link(struct list_head *prev, struct list_head *next)
+  * in an undefined state.
+  */
+ #ifndef CONFIG_DEBUG_LIST
+-static inline void __list_del_entry(struct list_head *entry)
++static inline void __list_del(struct list_head *entry)
  {
--	if (!cfs_rq->on_list) {
--		/*
--		 * Ensure we either appear before our parent (if already
--		 * enqueued) or force our parent to appear after us when it is
--		 * enqueued.  The fact that we always enqueue bottom-up
--		 * reduces this to two cases.
--		 */
--		if (cfs_rq->tg->parent &&
--		    cfs_rq->tg->parent->cfs_rq[cpu_of(rq_of(cfs_rq))]->on_list) {
--			list_add_rcu(&cfs_rq->leaf_cfs_rq_list,
--				&rq_of(cfs_rq)->leaf_cfs_rq_list);
--		} else {
--			list_add_tail_rcu(&cfs_rq->leaf_cfs_rq_list,
--				&rq_of(cfs_rq)->leaf_cfs_rq_list);
--		}
-+	if (cfs_rq->on_list)
-+		return;
-+
-+	/*
-+	 * Carefully collect leaf-cfs entries.
-+	 *
-+	 * There are basically two cases:
-+	 * 1. cfs_rq has not yet been on the leaf-list.
-+	 * 2. cfs_rq has been deleted previously from the leaf_list.
-+	 *
-+	 * In case 2, we might still have concurrent readers.
-+	 *
-+	 * Therefore, the requirements of list_add_tail_nobackref() are
-+	 * fulfilled:
-+	 *
-+	 * a) If there are concurrent readers, ->next must lead back to the
-+	 *    list.
-+	 *
-+	 *    We can only have readers after case 2. After case 2, only case 2
-+	 *    can follow. The next pointers of case 2 nodes always lead back to
-+	 *    the list.
-+	 *
-+	 * b) If there are concurrent readers, ->next must not lead to any
-+	 *    already collected node.
-+	 *
-+	 *    As we collect nodes always bottom-up, all already collected nodes
-+	 *    must be below this node in the task group hierarchy.  The
-+	 *    ordering constraint of the leaf list guarantees that next
-+	 *    pointers only lead to nodes further up in the hierarchy (or to
-+	 *    unrelated nodes). Neither deleting nodes nor the manipulations
-+	 *    done here change that. Thus, we cannot reach an already collected
-+	 *    node.
-+	 *
-+	 * c) If there are concurrent readers, they must already know this
-+	 *    node.
-+	 *
-+	 *    If we have to add case 1 nodes, they are collected in the
-+	 *    beginning and cannot be reached by readers until they are
-+	 *    spliced. Furthermore, after they are spliced, we will not
-+	 *    encounter more case 1 nodes higher up in the task group
-+	 *    hierarchy. For this reason any reader on an earlier collected
-+	 *    case 2 node must know all nodes that we collect later.
-+	 */
-+	list_add_tail_nobackref(&cfs_rq->leaf_cfs_rq_list, leaf_cfs_rqs);
- 
--		cfs_rq->on_list = 1;
-+	/*
-+	 * If our parent is on_list or if there is no parent, then splice all
-+	 * entries collected so far at the correct position into the
-+	 * leaf_cfs_rq_list.
-+	 *
-+	 * If our parent is not on the list, it will be collected during the
-+	 * next call to this function.
-+	 */
-+	if (cfs_rq->tg->parent) {
-+		int cpu = cpu_of(rq_of(cfs_rq));
-+		struct cfs_rq *parent_cfs_rq = cfs_rq->tg->parent->cfs_rq[cpu];
-+		if (parent_cfs_rq->on_list) {
-+			list_splice_tail_init_rcu(leaf_cfs_rqs,
-+					&parent_cfs_rq->leaf_cfs_rq_list);
-+		}
-+	} else {
-+		list_splice_tail_init_rcu(leaf_cfs_rqs,
-+					&rq_of(cfs_rq)->leaf_cfs_rq_list);
- 	}
-+
-+	cfs_rq->on_list = 1;
+ 	__list_link(entry->prev, entry->next);
  }
- 
- static inline void list_del_leaf_cfs_rq(struct cfs_rq *cfs_rq)
-@@ -276,7 +325,8 @@ static inline struct cfs_rq *cpu_cfs_rq(struct cfs_rq *cfs_rq, int this_cpu)
- 	return &cpu_rq(this_cpu)->cfs;
+@@ -107,7 +107,7 @@ static inline void list_del(struct list_head *entry)
+ 	entry->prev = LIST_POISON2;
  }
+ #else
+-extern void __list_del_entry(struct list_head *entry);
++extern void __list_del(struct list_head *entry);
+ extern void list_del(struct list_head *entry);
+ #endif
  
--static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
-+static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq,
-+					struct list_head *leaf_cfs_rqs)
+@@ -140,7 +140,7 @@ static inline void list_replace_init(struct list_head *old,
+  */
+ static inline void list_del_init(struct list_head *entry)
  {
+-	__list_del_entry(entry);
++	__list_del(entry);
+ 	INIT_LIST_HEAD(entry);
  }
  
-@@ -998,8 +1048,6 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- 		__enqueue_entity(cfs_rq, se);
- 	se->on_rq = 1;
- 
--	if (cfs_rq->nr_running == 1)
--		list_add_leaf_cfs_rq(cfs_rq);
- }
- 
- static void __clear_buddies_last(struct sched_entity *se)
-@@ -1326,12 +1374,17 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+@@ -151,7 +151,7 @@ static inline void list_del_init(struct list_head *entry)
+  */
+ static inline void list_move(struct list_head *list, struct list_head *head)
  {
- 	struct cfs_rq *cfs_rq;
- 	struct sched_entity *se = &p->se;
-+	struct list_head leaf_cfs_rqs;
-+
-+	INIT_LIST_HEAD(&leaf_cfs_rqs);
+-	__list_del_entry(list);
++	__list_del(list);
+ 	list_add(list, head);
+ }
  
- 	for_each_sched_entity(se) {
- 		if (se->on_rq)
- 			break;
- 		cfs_rq = cfs_rq_of(se);
- 		enqueue_entity(cfs_rq, se, flags);
-+		if (cfs_rq->nr_running == 1)
-+			list_add_leaf_cfs_rq(cfs_rq, &leaf_cfs_rqs);
- 		flags = ENQUEUE_WAKEUP;
- 	}
+@@ -163,7 +163,7 @@ static inline void list_move(struct list_head *list, struct list_head *head)
+ static inline void list_move_tail(struct list_head *list,
+ 				  struct list_head *head)
+ {
+-	__list_del_entry(list);
++	__list_del(list);
+ 	list_add_tail(list, head);
+ }
  
+diff --git a/lib/list_debug.c b/lib/list_debug.c
+index 7e37695..9ca2d3a 100644
+--- a/lib/list_debug.c
++++ b/lib/list_debug.c
+@@ -35,7 +35,7 @@ void __list_add(struct list_head *new,
+ }
+ EXPORT_SYMBOL(__list_add);
+ 
+-void __list_del_entry(struct list_head *entry)
++void __list_del(struct list_head *entry)
+ {
+ 	struct list_head *prev, *next;
+ 
+@@ -58,7 +58,7 @@ void __list_del_entry(struct list_head *entry)
+ 
+ 	__list_link(prev, next);
+ }
+-EXPORT_SYMBOL(__list_del_entry);
++EXPORT_SYMBOL(__list_del);
+ 
+ /**
+  * list_del - deletes entry from list.
+@@ -68,7 +68,7 @@ EXPORT_SYMBOL(__list_del_entry);
+  */
+ void list_del(struct list_head *entry)
+ {
+-	__list_del_entry(entry);
++	__list_del(entry);
+ 	entry->next = LIST_POISON1;
+ 	entry->prev = LIST_POISON2;
+ }
 -- 
 1.7.6
 
