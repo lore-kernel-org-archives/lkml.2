@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab1G0WAM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:00:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36368 "EHLO mga11.intel.com"
+	id S1756104Ab1G0WAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:00:16 -0400
+Received: from mga01.intel.com ([192.55.52.88]:48866 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755668Ab1G0VtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755667Ab1G0VtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Jul 2011 17:49:10 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,279,1309762800"; 
-   d="scan'208";a="33043725"
+   d="scan'208";a="35258344"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: tglx@linutronix.de, stefan.bader@canonical.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [61/99] genirq: Add IRQF_FORCE_RESUME
-Message-Id: <20110727214900.689EA2403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:49:00 -0700 (PDT)
+To: sarah.a.sharp@linux.intel.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [70/99] xhci: Reject double add of active endpoints.
+Message-Id: <20110727214909.8D6EC2403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:49:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,80 +24,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit dc5f219e88294b93009eef946251251ffffb6d60 upstream.
+commit fa75ac379e63c2864e9049b5e8615e40f65c1e70 upstream.
 
-Xen needs to reenable interrupts which are marked IRQF_NO_SUSPEND in the
-resume path. Add a flag to force the reenabling in the resume code.
+While trying to switch a UAS device from the BOT configuration to the UAS
+configuration via the bConfigurationValue file, Tanya ran into an issue in
+the USB core.  usb_disable_device() sets entries in udev->ep_out and
+udev->ep_out to NULL, but doesn't call into the xHCI bandwidth management
+functions to remove the BOT configuration endpoints from the xHCI host's
+internal structures.
 
-Tested-and-acked-by: Ian Campbell <Ian.Campbell@eu.citrix.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+The USB core would then attempt to add endpoints for the UAS
+configuration, and some of the endpoints had the same address as endpoints
+in the BOT configuration.  The xHCI driver blindly added the endpoints
+again, but the xHCI host controller rejected the Configure Endpoint
+command because active endpoints were added without being dropped.
+
+Make the xHCI driver reject calls to xhci_add_endpoint() that attempt to
+add active endpoints without first calling xhci_drop_endpoint().
+
+This should be backported to kernels as old as 2.6.31.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Tanya Brokhman <tlinder@codeaurora.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- include/linux/interrupt.h |    3 ++-
- kernel/irq/manage.c       |   11 ++++++++++-
- kernel/irq/pm.c           |    3 ---
- 3 files changed, 12 insertions(+), 5 deletions(-)
+ drivers/usb/host/xhci.c |   22 ++++++++++++++++++----
+ 1 file changed, 18 insertions(+), 4 deletions(-)
 
-Index: linux-2.6.35.y/include/linux/interrupt.h
+Index: linux-2.6.35.y/drivers/usb/host/xhci.c
 ===================================================================
---- linux-2.6.35.y.orig/include/linux/interrupt.h
-+++ linux-2.6.35.y/include/linux/interrupt.h
-@@ -54,7 +54,7 @@
-  *                Used by threaded interrupts which need to keep the
-  *                irq line disabled until the threaded handler has been run.
-  * IRQF_NO_SUSPEND - Do not disable this IRQ during suspend
-- *
-+ * IRQF_FORCE_RESUME - Force enable it on resume even if IRQF_NO_SUSPEND is set
-  */
- #define IRQF_DISABLED		0x00000020
- #define IRQF_SAMPLE_RANDOM	0x00000040
-@@ -66,6 +66,7 @@
- #define IRQF_IRQPOLL		0x00001000
- #define IRQF_ONESHOT		0x00002000
- #define IRQF_NO_SUSPEND		0x00004000
-+#define IRQF_FORCE_RESUME	0x00008000
+--- linux-2.6.35.y.orig/drivers/usb/host/xhci.c
++++ linux-2.6.35.y/drivers/usb/host/xhci.c
+@@ -1016,6 +1016,7 @@ int xhci_add_endpoint(struct usb_hcd *hc
+ 	u32 added_ctxs;
+ 	unsigned int last_ctx;
+ 	u32 new_add_flags, new_drop_flags, new_slot_info;
++	struct xhci_virt_device *virt_dev;
+ 	int ret = 0;
  
- #define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND)
+ 	ret = xhci_check_args(hcd, udev, ep, 1, __func__);
+@@ -1044,11 +1045,25 @@ int xhci_add_endpoint(struct usb_hcd *hc
+ 		return -EINVAL;
+ 	}
  
-Index: linux-2.6.35.y/kernel/irq/manage.c
-===================================================================
---- linux-2.6.35.y.orig/kernel/irq/manage.c
-+++ linux-2.6.35.y/kernel/irq/manage.c
-@@ -281,8 +281,17 @@ EXPORT_SYMBOL(disable_irq);
- 
- void __enable_irq(struct irq_desc *desc, unsigned int irq, bool resume)
- {
--	if (resume)
-+	if (resume) {
-+		if (!(desc->status & IRQ_SUSPENDED)) {
-+			if (!desc->action)
-+				return;
-+			if (!(desc->action->flags & IRQF_FORCE_RESUME))
-+				return;
-+			/* Pretend that it got disabled ! */
-+			desc->depth++;
-+		}
- 		desc->status &= ~IRQ_SUSPENDED;
+-	in_ctx = xhci->devs[udev->slot_id]->in_ctx;
+-	out_ctx = xhci->devs[udev->slot_id]->out_ctx;
++	virt_dev = xhci->devs[udev->slot_id];
++	in_ctx = virt_dev->in_ctx;
++	out_ctx = virt_dev->out_ctx;
+ 	ctrl_ctx = xhci_get_input_control_ctx(xhci, in_ctx);
+ 	ep_index = xhci_get_endpoint_index(&ep->desc);
+ 	ep_ctx = xhci_get_ep_ctx(xhci, out_ctx, ep_index);
++
++	/* If this endpoint is already in use, and the upper layers are trying
++	 * to add it again without dropping it, reject the addition.
++	 */
++	if (virt_dev->eps[ep_index].ring &&
++			!(le32_to_cpu(ctrl_ctx->drop_flags) &
++				xhci_get_endpoint_flag(&ep->desc))) {
++		xhci_warn(xhci, "Trying to add endpoint 0x%x "
++				"without dropping it.\n",
++				(unsigned int) ep->desc.bEndpointAddress);
++		return -EINVAL;
 +	}
- 
- 	switch (desc->depth) {
- 	case 0:
-Index: linux-2.6.35.y/kernel/irq/pm.c
-===================================================================
---- linux-2.6.35.y.orig/kernel/irq/pm.c
-+++ linux-2.6.35.y/kernel/irq/pm.c
-@@ -53,9 +53,6 @@ void resume_device_irqs(void)
- 	for_each_irq_desc(irq, desc) {
- 		unsigned long flags;
- 
--		if (!(desc->status & IRQ_SUSPENDED))
--			continue;
--
- 		raw_spin_lock_irqsave(&desc->lock, flags);
- 		__enable_irq(desc, irq, true);
- 		raw_spin_unlock_irqrestore(&desc->lock, flags);
++
+ 	/* If the HCD has already noted the endpoint is enabled,
+ 	 * ignore this request.
+ 	 */
+@@ -1063,8 +1078,7 @@ int xhci_add_endpoint(struct usb_hcd *hc
+ 	 * process context, not interrupt context (or so documenation
+ 	 * for usb_set_interface() and usb_set_configuration() claim).
+ 	 */
+-	if (xhci_endpoint_init(xhci, xhci->devs[udev->slot_id],
+-				udev, ep, GFP_NOIO) < 0) {
++	if (xhci_endpoint_init(xhci, virt_dev, udev, ep, GFP_NOIO) < 0) {
+ 		dev_dbg(&udev->dev, "%s - could not initialize ep %#x\n",
+ 				__func__, ep->desc.bEndpointAddress);
+ 		return -ENOMEM;
