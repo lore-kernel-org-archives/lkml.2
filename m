@@ -1,174 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755524Ab1G0XFT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 19:05:19 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52569 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753031Ab1G0XFR (ORCPT
+	id S1753031Ab1G0XOj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 19:14:39 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:53940 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab1G0XOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 19:05:17 -0400
+	Wed, 27 Jul 2011 19:14:36 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Serge Hallyn <serge@hallyn.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        containers@lists.linux-foundation.org, dhowells@redhat.com
+References: <1311706717-7398-1-git-send-email-serge@hallyn.com>
+	<1311706717-7398-3-git-send-email-serge@hallyn.com>
+Date: Wed, 27 Jul 2011 16:14:30 -0700
+In-Reply-To: <1311706717-7398-3-git-send-email-serge@hallyn.com> (Serge
+	Hallyn's message of "Tue, 26 Jul 2011 18:58:25 +0000")
+Message-ID: <m1hb67fh9l.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Wed, 27 Jul 2011 15:58:24 -0700
-Message-ID: <CAB=NE6UpMSRh4JCA676O3nwObX9ftVvRKu=HcWKVUFBwTLTCQg@mail.gmail.com>
-Subject: [ANN] compat-wireless release for Linux 3.0
-To: linux-wireless <linux-wireless@vger.kernel.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18vw5TDrtqDl7BKtbfrkxTdYkVRt39oB9k=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Serge Hallyn <serge@hallyn.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 02/14] allow root in container to copy namespaces
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus flushed out Linux 3.0, the respective backport of that release
-for the 802.11, Bluetooth and Networking subsystems is available now
-[1]. Thanks for all the contributions, below are the compat.git and
-compat-wireless.git contributions, for more details please refer to
-the complete ChangeLog [2], and the stable compat-wireless page page
-[3]. I've compile tested this against 2.6.38 and loaded iwlagn
-successfully.
+Serge Hallyn <serge@hallyn.com> writes:
 
-To discuss if we want to expand this framework to include other
-subsystems we can talk about it in person at the 2011 Linux Plumbers
-conference [4], should the BoF proposal get accepted. Farewell 2.6.x
-days.
+> From: Serge E. Hallyn <serge.hallyn@canonical.com>
+>
+> Othewise nested containers with user namespaces won't be possible.
+>
+> It's true that user namespaces are not yet fully isolated, but for
+> that same reason there are far worse things that root in a child
+> user ns can do.  Spawning a child user ns is not in itself bad.
+>
+> This patch also allows setns for root in a container:
+> @Eric Biederman: are there gotchas in allowing setns from child
+> userns?
 
-===============================================
-ChangeLog for compat-wireless for linux-3.0
-===============================================
+Yes.  We need to ensure that the target namespaces are namespaces
+that have been created in from user_namespace or from a child of this
+user_namespace.
 
-This is the ChangeLog for the Linux kernel project compat-wireless.
-It provides a backport of a few Linux kernel subsystems down to
-older kernels:
+Aka we need to ensure that we have CAP_SYS_ADMIN for the new namespace.
 
-  * 802.11
-  * Bluetooth
-  * Ethernet
+Eric
 
-For more details refer to the home page:
-
-http://wireless.kernel.org/en/users/Download/stable/
-
-The compat-wireless project consists of code from three projects:
-
-  * The Linux kernel: linux-2.6-allstable.git
-  * Compat-wirelesS: compat-wireless.git
-  * Compat: compat.git
-
-The compat-wireless stable releases incorporates code from from
-each of these git trees for the respective upstream Linux kernel
-stable release. A branch called linux-2.6.3x.y exists for each
-stable release. Below we provide the ChangeLog of changes from
-the previous branched release to the new branched release.
-
-Release: linux-3.0
-
-
-Updates from the compat.git project:
-====================================
-
-git shortlog linux-2.6.39.y..linux-3.0.y
-
-Eliad Peller (1):
-      compat: add an empty implementation for pm_wakeup_event()
-
-Felix Fietkau (4):
-      compat: add an empty definition for __rcu
-      compat: backport rcu_dereference_protected
-      compat: backport rcu_access_pointer
-      compat: backport rtnl_dereference
-
-Hauke Mehrtens (23):
-      compat: backport netdev_refcnt_read.
-      compat: add support for kernel 2.6.39
-      compat: fix build for kernel < 2.6.29
-      compat: semaphore.h mpoved from asm/ to linux/
-      compat: integrate kfifo into compat.ko
-      compat: add kstrtox
-      compat: remove sdio_set_host_pm_flags
-      compat: add time_to_tm
-      compat: do not include kstrto* for kernel >= 2.6.38.4
-      compat: fix TASK_INTERRUPTIBLE missing
-      compat: backport vzalloc()
-      compat: handle fail of vmalloc()
-      compat: add missing include
-      compat: backport kfree_rcu
-      compat: backport ethtool_cmd_speed
-      compat: add header linux/printk.h
-      compat: backport rcu_dereference_raw
-      compat: backport RCU_INIT_POINTER
-      compat: remove wrong backport of kfree_rcu
-      compat: add support for kernel 3.0
-      compat: add device name in register_netdevice(dev)
-      compat: rename CONFIG_COMPAT_KERNEL_
-      compat: add KEY_WPS_BUTTON
-
-Luis R. Rodriguez (2):
-      compat: backport IRQ namespace cleanup
-      compat: empty commit for 3.0 tag changes
-
-Updates from the compat-wireless.git project:
-=============================================
-
-git shortlog linux-2.6.39.y..linux-3.0.y
-
-Hauke Mehrtens (29):
-      compat-wireless: add support for mwifiex
-      compat-wireless: backport threaded irq for wl12xx_spi
-      compat-wirless: deactivate PM support for libertas_spi for kernel < 2.6.29
-      compat-wireless: fix compile warning for wl12xx
-      compat-wireless: clean up the config file
-      compat-wireless: Remove extra config option for kfifo.
-      compat-wireless: make patches apply again
-      compat-wireless: remove ar9170
-      compat-wireless: make patches apply again
-      compat-wireless: fix build of atheros Ethernet drivers.
-      compat-wireless: update config options
-      compat-wireless: use function for setting queue_mapping
-      compat-wireless: fix compile problem with IRQF_ONESHOT
-      compat-wireless: backport multicast filter in p54 for kernel < 2.6.35
-      compat-wireless: make patches apply again
-      compat-wireless: add RTL8192SE driver
-      compat-wireless: enable RT33XX support.
-      compat-wireless: make patches apply again
-      compat-wireless: set CONFIG_COMPAT_STAGING=m
-      compat-wireless: fix building of brcm80211
-      Revert "compat-wireless: fix rfkill patches from applying"
-      compat-wireless: adapt rename of dev to sdev in b43
-      compat-wireless: revert usage of kfree_rcu
-      compat-wireless: rename CONFIG_COMPAT_KERNEL_
-      compat-wireless: add support for kernel 3.XX
-      compat-wireless: activate CARL9170_WPC by default
-      compat-wireless: activate CONFIG_RT2800{USB,PCI}_RT35XX by default.
-      compat-wireless: sync atheros-debug.mk with config.mk
-      compat-wireless: update enable-older-kernels patches
-
-Johannes Berg (1):
-      The sched_scan patches changed context for a patch.
-
-Luis R. Rodriguez (19):
-      compat-wireless: fix compilation warning for wl12xx
-      compat-wireless: refresh patches for next-20110414
-      compat-wireless: fix patches/09-threaded-irq.patch
-      compat-wireless: refresh patches
-      compat-wireless: refresh patches
-      compat-wireless: refresh patches
-      compat-wireless: refresh patches
-      compat-wireless: fix patch dealing with lbs_pr_err() / pr_err()
-      compat-wireless: fix rfkill patches from applying
-      compat-wireless: fix applying of 09-threaded-irq.patch
-      compat-wireless: refresh patches
-      compat-wireless: patch updates for updates for 3.0.1-rc1 release
-      compat-wireless: fixes for making 3.0 stable compat-wireless releases
-      compat-wireless: refresh patches for 3.0-rc3
-      compat-wireless: fix usb/Makefile patch for 3.0-rc4 release
-      compat-wireless: refresh patches for 3.0-rc4
-      compat-wireless: fix script for generating releases
-      compat-wireless: refresh patches for 3.0 final release
-      compat-wireless: dummy update for -2 release
-
-[1] http://www.orbit-lab.org/kernel/compat-wireless-3.0-stable/v3.0/compat-wireless-3.0-2.tar.bz2
-[2] http://www.orbit-lab.org/kernel/compat-wireless-3.0-stable/v3.0/ChangeLog-3.0-wireless
-[3] http://wireless.kernel.org/en/users/Download/stable
-[4] http://www.linuxplumbersconf.org/2011/ocw/proposals/771
-
-  Luis
+> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> ---
+>  kernel/fork.c    |    4 ++--
+>  kernel/nsproxy.c |    6 +++---
+>  2 files changed, 5 insertions(+), 5 deletions(-)
+>
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 17bf7c8..22d0cf0 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -1473,8 +1473,8 @@ long do_fork(unsigned long clone_flags,
+>  		/* hopefully this check will go away when userns support is
+>  		 * complete
+>  		 */
+> -		if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SETUID) ||
+> -				!capable(CAP_SETGID))
+> +		if (!nsown_capable(CAP_SYS_ADMIN) || !nsown_capable(CAP_SETUID) ||
+> +				!nsown_capable(CAP_SETGID))
+>  			return -EPERM;
+>  	}
+>  
+> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+> index 9aeab4b..f50542d 100644
+> --- a/kernel/nsproxy.c
+> +++ b/kernel/nsproxy.c
+> @@ -134,7 +134,7 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
+>  				CLONE_NEWPID | CLONE_NEWNET)))
+>  		return 0;
+>  
+> -	if (!capable(CAP_SYS_ADMIN)) {
+> +	if (!nsown_capable(CAP_SYS_ADMIN)) {
+>  		err = -EPERM;
+>  		goto out;
+>  	}
+> @@ -191,7 +191,7 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
+>  			       CLONE_NEWNET)))
+>  		return 0;
+>  
+> -	if (!capable(CAP_SYS_ADMIN))
+> +	if (!nsown_capable(CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+>  	*new_nsp = create_new_namespaces(unshare_flags, current,
+> @@ -241,7 +241,7 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+>  	struct file *file;
+>  	int err;
+>  
+> -	if (!capable(CAP_SYS_ADMIN))
+> +	if (!nsown_capable(CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+>  	file = proc_ns_fget(fd);
