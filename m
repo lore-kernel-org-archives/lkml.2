@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab1G0REY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 13:04:24 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:33138 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754914Ab1G0REW (ORCPT
+	id S1755190Ab1G0RFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 13:05:42 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:40631 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754914Ab1G0RFj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 13:04:22 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 5farToAVM1ljiO1zkzOrrQ5Mvb7uaWIT1Hf50KMySpRxX0F
- Fh.vdAP9RzHTZpA2juitH9MSMWa7iAhsp7lqgbr8zAZasDBppNbt7lMKePVs
- uKvT_c6abapJEXwaT7PCA.hikt18Q4VrElxbn_jsd4hWGbMk6vO2VLrY.r6N
- edCqxyy58l7rwV3PA2mUBVZ1orJQtwTjDLoKNsR..q4kMHaqv0jgPxVrQ0rr
- l6OJUjqCv9LcXYJpcwS5VtSuW1RuZYoCZ8E6Qyo.BTNAe2mpX4qeUFqo4jQb
- BcPQ.wkUvPtHY1W3DsgIRjy5NzwxMTcoH52v.kzgIId7ue2KQ
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 27 Jul 2011 12:04:18 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, eric.dumazet@gmail.com
-Subject: Re: per-cpu operation madness vs validation
-In-Reply-To: <1311784149.5890.181.camel@twins>
-Message-ID: <alpine.DEB.2.00.1107271155410.13058@router.home>
-References: <1311714410.24752.404.camel@twins>  <alpine.DEB.2.00.1107261624210.10273@router.home>  <1311768693.24752.488.camel@twins> <1311771677.24752.495.camel@twins>  <alpine.DEB.2.00.1107270916240.9418@router.home>  <1311783617.5890.179.camel@twins>
- <1311784149.5890.181.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 27 Jul 2011 13:05:39 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110727165844.GA8064@dumpdata.com>
+References: <cover.1311736366.git.luto@mit.edu> <20110727145745.GA11872@dumpdata.com>
+ <CAObL_7FT8QLg-wihasBahhAtS=pA7+KeU8E=E9x8NPZ0+QJ5iQ@mail.gmail.com>
+ <20110727153015.GA16688@dumpdata.com> <CAObL_7GWGx4rYJFLpucEX=ozNpk+5ipyq0=vw16xcGetEXSuGQ@mail.gmail.com>
+ <20110727154316.GA16909@dumpdata.com> <CAObL_7FncQ7DdNf2igFZW=ZzPFQLO3Vvp1c_y5EajA_KTt8iOg@mail.gmail.com>
+ <20110727165844.GA8064@dumpdata.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Wed, 27 Jul 2011 13:05:18 -0400
+X-Google-Sender-Auth: CHwKRG_uQIhhwJKI7xWq517hspI
+Message-ID: <CAObL_7F4pqWGAFgrG8KiwCW4X+BOgvFfsdHNfkhhmVDqMOSuvQ@mail.gmail.com>
+Subject: Re: [Xen-devel] Re: [PATCH 0/5] Collected vdso/vsyscall fixes for 3.1
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: jeremy@goop.org, xen-devel@lists.xensource.com, x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        virtualization@lists.linux-foundation.org, keir.xen@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jul 2011, Peter Zijlstra wrote:
-
-> Also things like the below hunk are just plain ugly and obfuscate the
-> code to safe one load at best. I'm sorely tempted to revert such crap.
+On Wed, Jul 27, 2011 at 12:58 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+>> >> $ test_vsyscall test
+>> >> Testing gettimeofday...
+>> >>   vDSO offset = 0.000001s
+>> >>   vsyscall offset = 0.000001s
+>> >>
+>> >> Testing time...
+>> >>   vDSO offset = 0
+>> >>   vsyscall offset = 0
+>> >> Testing getcpu...
+>> >>   ok!  cpu=6 node=0
 >
-> @@ -1468,14 +1465,12 @@ static void x86_pmu_start_txn(struct pmu *pmu)
->   */
->  static void x86_pmu_cancel_txn(struct pmu *pmu)
->  {
-> -       struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-> -
-> -       cpuc->group_flag &= ~PERF_EVENT_TXN;
-> +       __this_cpu_and(cpu_hw_events.group_flag, ~PERF_EVENT_TXN);
->         /*
->          * Truncate the collected events.
->          */
-> -       cpuc->n_added -= cpuc->n_txn;
-> -       cpuc->n_events -= cpuc->n_txn;
-> +       __this_cpu_sub(cpu_hw_events.n_added, __this_cpu_read(cpu_hw_events.n_txn));
-> +       __this_cpu_sub(cpu_hw_events.n_events, __this_cpu_read(cpu_hw_events.n_txn));
->         perf_pmu_enable(pmu);
->  }
+>> I bet if you pull a new copy or remove -mavx from Makefile it will
+>> work.  I got a grossly hacked-up Xen domU booted and everything seems
+>> to work.
+>
+> It did. Both Dom0 and DomU work on AMD and Intel.
+>
+> In regards to the last pv-ops patch - is there no better way? The reason I am asking
+> is the pv-ops hook is just a bandaid for the problem. Is the Xen syscall suppose to
+> be doingsomething extra with the stack perhaps?
+>
 
-Yea that is pretty ugly and went overboard. Too many segment
-overrides there. The following patch will make that easier to read. We
-could also remove the whole hunk. __this_cpu ops there only causes the
-generation of simple xadds avoiding register operations.
+The Xen code in question is:
 
----
- arch/x86/kernel/cpu/perf_event.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+restore_all_guest:
+        ASSERT_INTERRUPTS_DISABLED
+        RESTORE_ALL
+        testw $TRAP_syscall,4(%rsp)
+        jz    iret_exit_to_guest
 
-Index: linux-2.6/arch/x86/kernel/cpu/perf_event.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/perf_event.c	2011-07-27 11:59:35.000000000 -0500
-+++ linux-2.6/arch/x86/kernel/cpu/perf_event.c	2011-07-27 12:03:41.000000000 -0500
-@@ -1612,12 +1612,14 @@ static void x86_pmu_start_txn(struct pmu
-  */
- static void x86_pmu_cancel_txn(struct pmu *pmu)
- {
-+	int x = __this_cpu_read(cpu_hw_events.n_txn);
-+
- 	__this_cpu_and(cpu_hw_events.group_flag, ~PERF_EVENT_TXN);
- 	/*
- 	 * Truncate the collected events.
- 	 */
--	__this_cpu_sub(cpu_hw_events.n_added, __this_cpu_read(cpu_hw_events.n_txn));
--	__this_cpu_sub(cpu_hw_events.n_events, __this_cpu_read(cpu_hw_events.n_txn));
-+	__this_cpu_sub(cpu_hw_events.n_added, x);
-+	__this_cpu_sub(cpu_hw_events.n_events, x);
- 	perf_pmu_enable(pmu);
- }
+        addq  $8,%rsp
+        popq  %rcx                    # RIP
+        popq  %r11                    # CS
+        cmpw  $FLAT_USER_CS32,%r11
+        popq  %r11                    # RFLAGS
+        popq  %rsp                    # RSP
+        je    1f
+        sysretq
+1:      sysretl
 
 
+So with VCGF_in_syscall set, the ireq hypercall will return via
+sysretq if the saved CS is __USER_CS or FLAT_USER_CS64.  This is
+faster than iretq.
 
+The hypervisor doesn't allow the guest OS to override the values in
+MSR_STAR, so FLAT_USER_CS64 gets returned to userspace.  And sysretq
+is probably much faster than iretq, so unsetting VCGF_in_syscall is
+probably a bad idea.
 
+The ideal solution would be to allow the kernel to change MSR_STAR,
+but this would require changing the hypervisor and the kernel.
 
+--Andy
