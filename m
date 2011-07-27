@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab1G0FzZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 01:55:25 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39178 "EHLO
+	id S1753356Ab1G0F4P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 01:56:15 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58746 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553Ab1G0FzW (ORCPT
+	with ESMTP id S1752347Ab1G0F4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 01:55:22 -0400
+	Wed, 27 Jul 2011 01:56:13 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E2FA846.6000305@jp.fujitsu.com>
-Date: Wed, 27 Jul 2011 14:55:18 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: yong.zhang0@gmail.com
-CC: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, kobayashi.kk@ncos.nec.co.jp,
-        heiko.carstens@de.ibm.com
-Subject: Re: [PATCH 1/2] proc/insterrupts: make it cpu hotplug safe
-References: <20110726163424.GC2576@osiris.boeblingen.de.ibm.com> <1311742583-18633-1-git-send-email-yong.zhang0@gmail.com> <4E2FA002.2020302@jp.fujitsu.com> <CAM2zO=AiGqbyna8NeC8PZxGBJzHokLKyixE6wv6nac3-OjzcWQ@mail.gmail.com>
-In-Reply-To: <CAM2zO=AiGqbyna8NeC8PZxGBJzHokLKyixE6wv6nac3-OjzcWQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Date: Wed, 27 Jul 2011 14:49:00 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: [PATCH v4 3/5] memcg : stop scanning if enough
+Message-Id: <20110727144900.503a0afe.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110727144438.a9fdfd5b.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110727144438.a9fdfd5b.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/07/27 14:47), Yong Zhang wrote:
-> 2011/7/27 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
->> (2011/07/27 13:56), Yong Zhang wrote:
->>> KOSAKI Motonhiro noticed that the reader of /proc/interrupts
->>> could be preempted by cpu hotplug, thus the reader can get
->>> broken result due to show_interrupts() iterate every online
->>> cpu without any protection.
->>>
->>> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
->>> Cc: Andrew Morton <akpm@linux-foundation.org>
->>> Cc: Keika Kobayashi <kobayashi.kk@ncos.nec.co.jp>
->>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
->>
->> Looks good. but I have a question. On last thread, kobayashi-san
->> suggested to use for_each_possible_cpu() and you wrote "+1".
-> 
-> Yeah, for_each_possible_cpu() will make code more cleaner.
-> so I give it my support.
-> 
->>
->>>> At that time, I suggested to change
->>>> from for_each_online_cpu() to for_each_possible_cpu(),
->>>> in /proc/interrupts.
->>> +1
->>> Thus we could also avoid the issue pointed by KOSAKI Motonhiro.
->>
->> Why do you decide to use another way?
-> 
-> But, as kobayashi-san has also said:
-> In conclusion, we decided to remain /proc/interrupts.
-> because it had been the way for a long time.
-> 
-> So I don't want to raise an argument again :)
+memcg :avoid node fallback scan if possible.
 
-Fair enough. thanks.
+Now, try_to_free_pages() scans all zonelist because the page allocator
+should visit all zonelists...but that behavior is harmful for memcg.
+Memcg just scans memory because it hits limit...no memory shortage
+in pased zonelist.
 
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+For example, with following unbalanced nodes
 
+     Node 0    Node 1
+File 1G        0
+Anon 200M      200M
 
+memcg will cause swap-out from Node1 at every vmscan.
+
+Another example, assume 1024 nodes system.
+With 1024 node system, memcg will visit 1024 nodes
+pages per vmscan... This is overkilling. 
+
+This is why memcg's victim node selection logic doesn't work
+as expected.
+
+This patch is a help for stopping vmscan when we scanned enough.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/vmscan.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+Index: mmotm-0710/mm/vmscan.c
+===================================================================
+--- mmotm-0710.orig/mm/vmscan.c
++++ mmotm-0710/mm/vmscan.c
+@@ -2058,6 +2058,16 @@ static void shrink_zones(int priority, s
+ 		}
+ 
+ 		shrink_zone(priority, zone, sc);
++		if (!scanning_global_lru(sc)) {
++			/*
++			 * When we do scan for memcg's limit, it's bad to do
++			 * fallback into more node/zones because there is no
++			 * memory shortage. We quit as much as possible when
++			 * we reache target.
++			 */
++			if (sc->nr_to_reclaim <= sc->nr_reclaimed)
++				break;
++		}
+ 	}
+ }
+ 
 
