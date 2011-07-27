@@ -1,121 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab1G0PiM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 11:38:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:41061 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754248Ab1G0PiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 11:38:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,276,1309762800"; 
-   d="scan'208";a="32108985"
-Date: Wed, 27 Jul 2011 08:38:08 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Bob Zhang <zhanglinbao@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        hayfeng Lee <omycle@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Bob Zhang <2004.zhang@gmail.com>
-Subject: Re: x86_64 virtual memory map
-Message-ID: <20110727153808.GA16180@tassilo.jf.intel.com>
-References: <5f6c52c61003241920i6b3eaaf7k946f67d1a6f9e384@mail.gmail.com>
- <m1r5n7ln0l.fsf@fess.ebiederm.org>
- <CAKdQVUZMC0eaeqev=tAbS2myHJOA1KJt4r8TVMz6=yQeDpUpZQ@mail.gmail.com>
- <20110726194956.GA4117@tassilo.jf.intel.com>
- <CAKdQVUZgSJi4z1BnwnKiOjX7L2dhOyMxA018sS-MtqOQixSKeg@mail.gmail.com>
+	id S1754670Ab1G0PiU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 11:38:20 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:45734 "EHLO
+	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754582Ab1G0PiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 11:38:17 -0400
+Date: Wed, 27 Jul 2011 15:38:48 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com, ebiederm@xmission.com,
+        containers@lists.linux-foundation.org, netdev@vger.kernel.org,
+        akpm@osdl.org, "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Subject: Re: [PATCH 01/14] add Documentation/namespaces/user_namespace.txt
+Message-ID: <20110727153848.GA17288@hallyn.com>
+References: <1311706717-7398-1-git-send-email-serge@hallyn.com>
+ <1311706717-7398-2-git-send-email-serge@hallyn.com>
+ <20110726132249.69533206.rdunlap@xenotime.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKdQVUZgSJi4z1BnwnKiOjX7L2dhOyMxA018sS-MtqOQixSKeg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110726132249.69533206.rdunlap@xenotime.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 03:13:19PM +0800, Bob Zhang wrote:
-> 2011/7/27 Andi Kleen <ak@linux.intel.com>:
-> >> and in the end of mm.txt , it says :
-> >> >>Current X86-64 implementations only support 40 bits of address space,
-> >>  >> 27but we support up to 46 bits. This expands into MBZ space in the
-> >> >>page tables.
-> >> so this 40bit(1TB) is responding to virtual memory map(1TB) ?
-> >
-> > The 1TB limit was dropped a long time ago.
-> > Your googling found an old file.
+Quoting Randy Dunlap (rdunlap@xenotime.net):
+> On Tue, 26 Jul 2011 18:58:24 +0000 Serge Hallyn wrote:
 > 
-> I am not googling this , I get this file from lxr . I get that file
-> from kernel v3.0 again .
-> http://lxr.linux.no/linux+v3.0/Documentation/x86/x86_64/mm.txt
-> it still said 1TB limit, if this number is really obsolete , it seems
-> that related people should update it to correct number.thanks.
-
-Ah that virtual memory map just revers to a specific kernel data structure,
-it's not a limit you need to be concerned about.
-
-The max user mapping is 128TB, the direct mapping (physical limit)
-64TB at the moment.
-
-
+> > From: Serge E. Hallyn <serge.hallyn@canonical.com>
+> > 
+> > This will hold some info about the design.  Currently it contains
+> > future todos, issues and questions.
+> > 
+> > Changelog:
+> >    jul 26: incorporate feed back from David Howells.
+> > 
+> > Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+> > Cc: Eric W. Biederman <ebiederm@xmission.com>
+> > Cc: David Howells <dhowells@redhat.com>
+> > ---
+> >  Documentation/namespaces/user_namespace.txt |  107 +++++++++++++++++++++++++++
+> >  1 files changed, 107 insertions(+), 0 deletions(-)
+> >  create mode 100644 Documentation/namespaces/user_namespace.txt
+> > 
+> > diff --git a/Documentation/namespaces/user_namespace.txt b/Documentation/namespaces/user_namespace.txt
+> > new file mode 100644
+> > index 0000000..7e50517
+> > --- /dev/null
+> > +++ b/Documentation/namespaces/user_namespace.txt
+> > @@ -0,0 +1,107 @@
+> > +Description
+> > +===========
+> > +
+> > +Traditionally, each task is owned by a user ID (UID) and belongs to one or more
+> > +groups (GID).  Both are simple numeric IDs, though userspace usually translates
+> > +them to names.  The user namespace allows tasks to have different views of the
+> > +UIDs and GIDs associated with tasks and other resources.  (See 'UID mapping'
+> > +below for more)
 > 
-> >
-> >> 3,  if I installed 64TB physical memory (RAM) , but linux kernel only
-> >
-> > What system is that out of curiosity? Are you sure it's not
-> > a cluster?
-> This system is HP's latest Proliant machine , DL980G7 .
-> I have verified with firmware guys , they have tested sles11sp1 on
-> DL980G7 ,2TB ,4TB ,they tested successfully. not BIOS problem. it
-> seems that customer's configuration may has some issues. we don't
-> think this is linux kernel issue again. thanks for help.
+>          for more.)
 
-I don't think 64TB are really supported by this machine.
+Thanks for reviewing, Randy.
 
-Xeon E7-7xxx has a limit of 16TB physical address space.
-
-The HP web site says it's capable of 4TB.
-
+> > +
+> > +The user namespace is a simple hierarchical one.  The system starts with all
+> > +tasks belonging to the initial user namespace.  A task creates a new user
+> > +namespace by passing the CLONE_NEWUSER flag to clone(2).  This requires the
+> > +creating task to have the CAP_SETUID, CAP_SETGID, and CAP_CHOWN capabilities,
+> > +but it does not need to be running as root.  The clone(2) call will result in a
+> > +new task which to itself appears to be running as UID and GID 0, but to its
+> > +creator seems to have the creator's credentials.
+> > +
+> > +Any task in or resource belonging to the initial user namespace will, to this
+> > +new task, appear to belong to UID and GID -1 - which is usually known as
 > 
-> >
-> >> support 1TB address space , what should I do next ?
-> > There's no known 1TB limit currently.
-> so as you said below ,it should be 64TB, but no one test with 64TB really.
+> that extra hyphen is confusing.  how about:
 > 
-> > However at least for Intel Xeons there is no CPU which supports
-> > more than 16TB physical address space.
-> This information is very important, I will check System spec for details.
-> which spec can get this information ? x86_64 ,which spec ?
+>                               to UID and GID -1, which is
+> 
+> > +'nobody'.  Permission to open such files will be granted according to world
 
-It's probably somewhere in the datasheet, or when you boot the system
-grep "address sizes" /proc/cpuinfo 
-reports the limits reported by the CPU.
+As I'd been asked to switch from comma, I'll restructure, something like:
 
+"To this new task, any resource belonging to the initial user namespace will
+appear to belong to user 'nobody', which has UID and GID -1."
 
+> > +access permissions.  UID comparisons and group membership checks will return
+> > +false, and privilege will be denied.
+> > +
+> > +When a task belonging to (for example) userid 500 in the initial user namespace
+> > +creates a new user namespace, even though the new task will see itself as
+> > +belonging to UID 0, any task in the initial user namespace will see it as
+> > +belonging to UID 500.  Therefore, UID 500 in the initial user namespace will be
+> > +able to kill the new task.  Files created by the new user will (eventually) be
+> > +seen by tasks in its own user namespace as belonging to UID 0, but to tasks in
+> > +the initial user namespace as belonging to UID 500.
+> > +
+> > +Note that this userid mapping for the VFS is not yet implemented, though the
+> > +lkml and containers mailing list archives will show several previous
+> > +prototypes.  In the end, those got hung up waiting on the concept of targeted
+> > +capabilities to be developed, which, thanks to the insight of Eric Biederman,
+> > +they finally did.
+> > +
+> > +Relationship between the User namespace and other namespaces
+> > +============================================================
+> > +
+> > +Other namespaces, such as UTS and network, are owned by a user namespace.  When
+> > +such a namespace is created, it is assigned to the user namespace of the task
+> > +by which it was created.  Therefore, attempts to exercise privilege to
+> > +resources in, for instance, a particular network namespace, can be properly
+> > +validated by checking whether the caller has the needed privilege (i.e.
+> > +CAP_NET_ADMIN) targeted to the user namespace which owns the network namespace.
+> > +This is done using the ns_capable() function.
+> > +
+> > +As an example, if a new task is cloned with a private user namespace but
+> > +no private network namespace, then the task's network namespace is owned
+> > +by the parent user namespace.  The new task has no privilege to the
+> > +parent user namespace, so it will not be able to create or configure
+> > +network devices.  If, instead, the task were cloned with both private
+> > +user and network namespaces, then the private network namespace is owned
+> > +by the private user namespace, and so root in the new user namespace
+> > +will have privilege targeted to the network namespace.  It will be able
+> > +to create and configure network devices.
+> > +
+> > +UID Mapping
+> > +===========
+> > +The current plan (see 'flexible UID mapping' at
+> > +https://wiki.ubuntu.com/UserNamespace) is:
+> > +
+> > +The UID/GID stored on disk will be that in the init_user_ns.  Most likely
+> > +UID/GID in other namespaces will be stored in xattrs.  But Eric was advocating
+> > +(a few years ago) leaving the details up to filesystems while providing a lib/
+> > +stock implementation.  See the thread around here
+> 
+>                                                 here:
+> 
+> > +http://www.mail-archive.com/devel@openvz.org/msg09331.html
+> > +
+> > +
+> > +Working notes
+> > +=============
+> 
+> A lot of this file is working notes and will need to be updated...
+
+Yup.  I can leave it out of this file and keep it on the wiki instead, if
+that is preferred.
+
+> > +Capability checks for actions related to syslog must be against the
+> > +init_user_ns until syslog is containerized.
+> > +
+> > +Same is true for reboot and power, control groups, devices, and time.
+> > +
+> > +Perf actions (kernel/event/core.c for instance) will always be constrained to
+> > +init_user_ns.
+> > +
+> > +Q:
+> > +Is accounting considered properly containerized wrt pidns?  (it appears to be).
+> 
+> s/wrt/with respect to/
+> 
+> > +If so, then we can change the capable() check in kernel/acct.c to
+> > +'ns_capable(current_pid_ns()->user_ns, CAP_PACCT)'
+> > +
+> > +Q:
+> > +For things like nice and schedaffinity, we could allow root in a container to
+> > +control those, and leave only cgroups to constrain the container.  I'm not sure
+> > +whether that is right, or whether it violates admin expectations.
+> > +
+> > +I deferred some of commoncap.c.  I'm punting on xattr stuff as they take
+> > +dentries, not inodes.
+> > +
+> > +For drivers/tty/tty_io.c and drivers/tty/vt/vt.c, we'll want to (for some of
+> > +them) target the capability checks at the user_ns owning the tty.  That will
+> > +have to wait until we get userns owning files straightened out.
+> > +
+> > +We need to figure out how to label devices.  Should we just toss a user_ns
+> > +right into struct device?
+> > +
+> > +capable(CAP_MAC_ADMIN) checks are always to be against init_user_ns, unless
+> > +some day LSMs were to be containerized, near zero chance.
+> > +
+> > +inode_owner_or_capable() should probably take an optional ns and cap parameter.
+> > +If cap is 0, then CAP_FOWNER is checked.  If ns is NULL, we derive the ns from
+> > +inode.  But if ns is provided, then callers who need to derive
+> > +inode_userns(inode) anyway can save a few cycles.
+> > -- 
 > 
 > 
-> 
-> >
-> > Are you sure you have your units correct?
-> >
-> hoho , I am not richer , I don't have 64TB installed, I just supposed that.
-> in fact, my DL980G7 just have 2 TB installed , but linux kernel
-> recognized only  992GB. as I said above , firmware guys said they have
-> tested 4TB on DL980G7 with sles11sp1 , so we are investigating why our
-> environment will happen this issue . wait for future reply.
-
-
-As someone earlier suggested check the beginning of the kernel log
-for the e820 map.  This tells how much memory the BIOS reported
-to the OS.
-
-
-> so I basicly understand what you mean , you mean intel Xeon just
-> support 16TB , linux kernel should have no issue to support this 16TB
-> ?
-
-I don't know if especially 16TB has been tested. At least there's 
-no theoretical limit that should prevent it.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
