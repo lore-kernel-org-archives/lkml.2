@@ -1,119 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946Ab1G0TtU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 15:49:20 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56544 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751974Ab1G0TtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 15:49:18 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sven Eckelmann <sven@narfation.org>
-Subject: Re: [PATCHv4 04/11] PM: Use *_dec_not_zero instead of *_add_unless
-Date: Wed, 27 Jul 2011 21:50:37 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0+; KDE/4.6.0; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        linux-pm@lists.linux-foundation.org
-References: <1311760070-21532-1-git-send-email-sven@narfation.org> <1311760070-21532-4-git-send-email-sven@narfation.org>
-In-Reply-To: <1311760070-21532-4-git-send-email-sven@narfation.org>
+	id S1755024Ab1G0TuZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 15:50:25 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:22890 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754696Ab1G0TuW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 15:50:22 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=reCLQ7R4lSrZEenSAFx8aTd2sKyIVS9XPsvBpd4fuMSYo56/p6rmeoO+R5djVYL3a
+	2zxqbXxcBn8gzpqk2DwWA==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107272150.37962.rjw@sisk.pl>
+In-Reply-To: <20110727101128.8d63fbab.rdunlap@xenotime.net>
+References: <20110727141151.d31e3da6a8d21a255473293c@canb.auug.org.au> <20110727101128.8d63fbab.rdunlap@xenotime.net>
+From: Mike Waychison <mikew@google.com>
+Date: Wed, 27 Jul 2011 12:49:59 -0700
+Message-ID: <CAGTjWtBq39vBMWfk0aTZuw_kNQSUch8oUcg14VF5NpOwuuJiew@mail.gmail.com>
+Subject: Re: [PATCH -next] firmware: fix google/gsmi.c build warning
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 27, 2011, Sven Eckelmann wrote:
-> atomic_dec_not_zero is defined for each architecture through
-> <linux/atomic.h> to provide the functionality of
-> atomic_add_unless(x, -1, 0).
-> 
-> Signed-off-by: Sven Eckelmann <sven@narfation.org>
-> Cc: Len Brown <len.brown@intel.com>
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: linux-pm@lists.linux-foundation.org
-
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-
+On Wed, Jul 27, 2011 at 10:11 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
+>
+> Modify function parameter type to match expected type.  Fixes a
+> build warning:
+>
+> drivers/firmware/google/gsmi.c:473: warning: initialization from incompatible pointer type
+>
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> Cc: Mike Waychison <mikew@google.com>
 > ---
->  drivers/base/power/runtime.c |    4 ++--
->  include/linux/pm_runtime.h   |    2 +-
->  kernel/power/hibernate.c     |    4 ++--
->  kernel/power/user.c          |    2 +-
->  4 files changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-> index 8dc247c..bda10d9 100644
-> --- a/drivers/base/power/runtime.c
-> +++ b/drivers/base/power/runtime.c
-> @@ -401,7 +401,7 @@ static int rpm_suspend(struct device *dev, int rpmflags)
->  
->  		if (dev->parent) {
->  			parent = dev->parent;
-> -			atomic_add_unless(&parent->power.child_count, -1, 0);
-> +			atomic_dec_not_zero(&parent->power.child_count);
->  		}
->  	}
->  	wake_up_all(&dev->power.wait_queue);
-> @@ -841,7 +841,7 @@ int __pm_runtime_set_status(struct device *dev, unsigned int status)
->  	if (status == RPM_SUSPENDED) {
->  		/* It always is possible to set the status to 'suspended'. */
->  		if (parent) {
-> -			atomic_add_unless(&parent->power.child_count, -1, 0);
-> +			atomic_dec_not_zero(&parent->power.child_count);
->  			notify_parent = !parent->power.ignore_children;
->  		}
->  		goto out_set;
-> diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
-> index daac05d..3b4931c 100644
-> --- a/include/linux/pm_runtime.h
-> +++ b/include/linux/pm_runtime.h
-> @@ -63,7 +63,7 @@ static inline void pm_runtime_get_noresume(struct device *dev)
->  
->  static inline void pm_runtime_put_noidle(struct device *dev)
->  {
-> -	atomic_add_unless(&dev->power.usage_count, -1, 0);
-> +	atomic_dec_not_zero(&dev->power.usage_count);
->  }
->  
->  static inline bool device_run_wake(struct device *dev)
-> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-> index 8f7b1db..0ba8d87 100644
-> --- a/kernel/power/hibernate.c
-> +++ b/kernel/power/hibernate.c
-> @@ -606,7 +606,7 @@ int hibernate(void)
->  
->  	mutex_lock(&pm_mutex);
->  	/* The snapshot device should not be opened while we're running */
-> -	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
-> +	if (!atomic_dec_not_zero(&snapshot_device_available)) {
->  		error = -EBUSY;
->  		goto Unlock;
->  	}
-> @@ -756,7 +756,7 @@ static int software_resume(void)
->  		goto Unlock;
->  
->  	/* The snapshot device should not be opened while we're running */
-> -	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
-> +	if (!atomic_dec_not_zero(&snapshot_device_available)) {
->  		error = -EBUSY;
->  		swsusp_close(FMODE_READ);
->  		goto Unlock;
-> diff --git a/kernel/power/user.c b/kernel/power/user.c
-> index 42ddbc6..1c1cc01 100644
-> --- a/kernel/power/user.c
-> +++ b/kernel/power/user.c
-> @@ -72,7 +72,7 @@ static int snapshot_open(struct inode *inode, struct file *filp)
->  
->  	mutex_lock(&pm_mutex);
->  
-> -	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
-> +	if (!atomic_dec_not_zero(&snapshot_device_available)) {
->  		error = -EBUSY;
->  		goto Unlock;
->  	}
-> 
+>  drivers/firmware/google/gsmi.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> --- linux-next-20110727.orig/drivers/firmware/google/gsmi.c
+> +++ linux-next-20110727/drivers/firmware/google/gsmi.c
+> @@ -420,7 +420,7 @@ static efi_status_t gsmi_get_next_variab
+>
+>  static efi_status_t gsmi_set_variable(efi_char16_t *name,
+>                                      efi_guid_t *vendor,
+> -                                     unsigned long attr,
+> +                                     u32 attr,
+>                                      unsigned long data_size,
+>                                      void *data)
+>  {
+>
 
+Looks good.
