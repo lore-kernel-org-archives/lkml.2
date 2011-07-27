@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345Ab1G0QxP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 12:53:15 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:49096 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752667Ab1G0QxN (ORCPT
+	id S1754921Ab1G0Q7f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 12:59:35 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:16524 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754903Ab1G0Q7d convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 12:53:13 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: b3gAQx8VM1nLhiT9hZjvhYMhVzzgARDJkpme1gvtSkqUoyg
- 9yiXJI72LuQ5AMNkkZsSL79u7w5JjvmWn6I_kDo.AZ4VAc07J9R0m_q5ZtvP
- cEO_q10ROt11A6EcxdmpXi2l1dbgsivk1XG5Qz2NeO_aNwcQrMFAWDOHXXl7
- VFh86Ux_q4Dhio0lOMAd26L4ewI2h5VspJD6rlLJ9iURsoiIl2q5IhdgL_j6
- P80khfw0zkljfA3hARMuzo8ziruk5flMyS7EWwX5AOJ6SCCRCIz6ytDKQOmJ
- KT0MJ6w6bdrgC9ApyEGBEQoROMF0HeH5E6RJh3WWkDJZDsY9j
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 27 Jul 2011 11:53:09 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: per-cpu operation madness vs validation
-In-Reply-To: <1311783617.5890.179.camel@twins>
-Message-ID: <alpine.DEB.2.00.1107271148550.13058@router.home>
-References: <1311714410.24752.404.camel@twins>  <alpine.DEB.2.00.1107261624210.10273@router.home>  <1311768693.24752.488.camel@twins> <1311771677.24752.495.camel@twins>  <alpine.DEB.2.00.1107270916240.9418@router.home> <1311783617.5890.179.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 27 Jul 2011 12:59:33 -0400
+Date: Wed, 27 Jul 2011 12:58:45 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: jeremy@goop.org, xen-devel@lists.xensource.com, x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        virtualization@lists.linux-foundation.org, keir.xen@gmail.com
+Subject: Re: [Xen-devel] Re: [PATCH 0/5] Collected vdso/vsyscall fixes for 3.1
+Message-ID: <20110727165844.GA8064@dumpdata.com>
+References: <cover.1311736366.git.luto@mit.edu>
+ <20110727145745.GA11872@dumpdata.com>
+ <CAObL_7FT8QLg-wihasBahhAtS=pA7+KeU8E=E9x8NPZ0+QJ5iQ@mail.gmail.com>
+ <20110727153015.GA16688@dumpdata.com>
+ <CAObL_7GWGx4rYJFLpucEX=ozNpk+5ipyq0=vw16xcGetEXSuGQ@mail.gmail.com>
+ <20110727154316.GA16909@dumpdata.com>
+ <CAObL_7FncQ7DdNf2igFZW=ZzPFQLO3Vvp1c_y5EajA_KTt8iOg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <CAObL_7FncQ7DdNf2igFZW=ZzPFQLO3Vvp1c_y5EajA_KTt8iOg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4E3043D2.0078:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jul 2011, Peter Zijlstra wrote:
+> >> $ test_vsyscall test
+> >> Testing gettimeofday...
+> >>   vDSO offset = 0.000001s
+> >>   vsyscall offset = 0.000001s
+> >>
+> >> Testing time...
+> >>   vDSO offset = 0
+> >>   vsyscall offset = 0
+> >> Testing getcpu...
+> >>   ok!  cpu=6 node=0
 
-> > regardless of the execution context. The primary initial motivation was
-> > incrementing per cpu counters without having to disabling interrupts
-> > and/or preemption and it grew from there.
->
-> I think you need to look at 20b876918c065818b3574a426d418f68b4f8ad19 and
-> try again. You removed get_cpu_var()/put_cpu_var() and replaced it with
-> naked preempt_disable()/preempt_enable(). That's loosing information
-> right there.
+> I bet if you pull a new copy or remove -mavx from Makefile it will
+> work.  I got a grossly hacked-up Xen domU booted and everything seems
+> to work.
 
-It avoided storing the cpu variable.
+It did. Both Dom0 and DomU work on AMD and Intel.
 
-> Also, I think if you do s/__this_cpu/this_cpu/ on that function you can
-> simply drop the preempt_enable/disable things.
-
-Ok that would be good. Could you do a patch like that?
-
-> > The atomic per cpu operations (like the this_cpu_cmpxchg) allow the
-> > construction of cheap sections that would satisfy your goals too (with
-> > some work and the use of transaction ids instead of locking). See the slub
-> > fastpath f.e.
->
-> The slub fastpath is a shining example of crap. Its horrid code and
-> there was nothing wrong with actually disabling preemption over it, even
-> for -rt. Sure you made it go faster, but thats not the point.
-
-The faster is the main point. Serialization overhead is a major cause of
-slowdown. Sure it may look unusual to you but over time this will clear
-up and become easier to use.
-
-> Most of the slub problems with -rt are in the slow path where you still
-> have per-cpu assumptions and keep preempt/irqs disabled.
-
-There are patches pending that continue to remove these things from the
-slowpath. With the proposed changes pending for 3.1 we will have a free
-slowpath that does not require irq disable or preempt disable.
-
-> I don't think it is possible, nor desirable, to wreck all per-cpu usage
-> in the kernel that way.
-
-What in the world are you talking about? No major change to basic
-get_cpu/put_cpu and friends is necessary. The __this_cpu ops is a new
-thing true but it also replaces open coded increments in preempt sections
-that then have per cpu increments in non preempt sections.
+In regards to the last pv-ops patch - is there no better way? The reason I am asking
+is the pv-ops hook is just a bandaid for the problem. Is the Xen syscall suppose to
+be doingsomething extra with the stack perhaps?
