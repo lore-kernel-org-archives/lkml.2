@@ -1,117 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab1G0WKh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:10:37 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26104 "EHLO mga11.intel.com"
+	id S1756186Ab1G0WKo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:10:44 -0400
+Received: from mail.perches.com ([173.55.12.10]:4337 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755395Ab1G0VsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:48:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
-   d="scan'208";a="35258009"
-From: Andi Kleen <andi@firstfloor.org>
-References: <20110727247.325703029@firstfloor.org>
-In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: namhyung@gmail.com, Laurent.Vivier@bull.net, jaxboe@fusionio.com,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [12/99] loop: handle on-demand devices correctly
-Message-Id: <20110727214810.87F772403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:48:10 -0700 (PDT)
+	id S1755494Ab1G0WKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 18:10:40 -0400
+Subject: Re: [U-Boot] [RFC PATCH] checkpatch.pl: Add ability to ignore
+ various messages
+From: Joe Perches <joe@perches.com>
+To: Wolfgang Denk <wd@denx.de>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Graeme Russ <graeme.russ@gmail.com>,
+        U-Boot Users <u-boot@lists.denx.de>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110727211707.139ED15794C3@gemini.denx.de>
+References: <1303713156.1745.38.camel@Joe-Laptop>
+	 <b41636a5e5756917b07e50a4b8309dbb092b0a17.1303778411.git.joe@perches.com>
+	 <20110727211707.139ED15794C3@gemini.denx.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Jul 2011 15:10:39 -0700
+Message-ID: <1311804639.21169.22.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+On Wed, 2011-07-27 at 23:17 +0200, Wolfgang Denk wrote:
+> Dear Joe,
+> In message <b41636a5e5756917b07e50a4b8309dbb092b0a17.1303778411.git.joe@perches.com> you wrote:
+> > Some users would like the ability to not emit some of the
+> > messages that checkpatch produces.
+> > Add command line option to "--ignore" various message types.
+> > Add .checkpatch.conf file to store a default set of "ignore" flags
+> > Categorize all ERROR, WARN and CHK types with flags.
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> > ---
+> >  scripts/checkpatch.pl |  456 +++++++++++++++++++++++++++++++++++--------------
+> >  1 files changed, 327 insertions(+), 129 deletions(-)
+> Did you receive any feedback for your proposal, especially from Andrew
+> Morton?
+> This feature would be really useful for us, but I'd rather see this in
+> mainline than starting a fork.
 
-------------------
-From: Namhyung Kim <namhyung@gmail.com>
+A better version is in Linus' current 3.0+ as of a couple of days ago.
+It's not in 3.0.
 
-commit a1c15c59feee36267c43142a41152fbf7402afb6 upstream.
+commit 000d1cc1829f938c87402fc2fd4bb5e8daed6b52
+Author: Joe Perches <joe@perches.com>
+Date:   Mon Jul 25 17:13:25 2011 -0700
 
-When finding or allocating a loop device, loop_probe() did not take
-partition numbers into account so that it can result to a different
-device. Consider following example:
+    checkpatch.pl: add ability to ignore various messages
+    
+    Some users would like the ability to not emit some of the messages that
+    checkpatch produces.  This can make it easier to use checkpatch in other
+    projects and integrate into scm hook scripts.
+    
+    Add command line option to "--ignore" various message types.  Add option
+    --show-types to emit the "type" of each message.  Categorize all ERROR,
+    WARN and CHK messages with types.
+    
+    Add optional .checkpatch.conf file to store default options.
+    3 paths are searched for .checkpatch.conf
+        .             customized per-tree configurations
+        $HOME         user global configuration when per-tree configs don't exis
+        ./scripts     lk defaults to override script
+    The .conf file can contain any valid command-line argument and
+    the contents are prepended to any additional command line arguments.
+    Multiple lines may be used, blank lines are ignored, # is a comment.
+    
+    Update "false positive" output for readability.
+    
+    Update version to 0.32
+    
+    Signed-off-by: Joe Perches <joe@perches.com>
+    Acked-by: Mike Frysinger <vapier@gentoo.org>
+    Cc: Andy Whitcroft <apw@canonical.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
-$ sudo modprobe loop max_part=15
-$ ls -l /dev/loop*
-brw-rw---- 1 root disk 7,   0 2011-05-24 22:16 /dev/loop0
-brw-rw---- 1 root disk 7,  16 2011-05-24 22:16 /dev/loop1
-brw-rw---- 1 root disk 7,  32 2011-05-24 22:16 /dev/loop2
-brw-rw---- 1 root disk 7,  48 2011-05-24 22:16 /dev/loop3
-brw-rw---- 1 root disk 7,  64 2011-05-24 22:16 /dev/loop4
-brw-rw---- 1 root disk 7,  80 2011-05-24 22:16 /dev/loop5
-brw-rw---- 1 root disk 7,  96 2011-05-24 22:16 /dev/loop6
-brw-rw---- 1 root disk 7, 112 2011-05-24 22:16 /dev/loop7
-$ sudo mknod /dev/loop8 b 7 128
-$ sudo losetup /dev/loop8 ~/temp/disk-with-3-parts.img
-$ sudo losetup -a
-/dev/loop128: [0805]:278201 (/home/namhyung/temp/disk-with-3-parts.img)
-$ ls -l /dev/loop*
-brw-rw---- 1 root disk 7,    0 2011-05-24 22:16 /dev/loop0
-brw-rw---- 1 root disk 7,   16 2011-05-24 22:16 /dev/loop1
-brw-rw---- 1 root disk 7, 2048 2011-05-24 22:18 /dev/loop128
-brw-rw---- 1 root disk 7, 2049 2011-05-24 22:18 /dev/loop128p1
-brw-rw---- 1 root disk 7, 2050 2011-05-24 22:18 /dev/loop128p2
-brw-rw---- 1 root disk 7, 2051 2011-05-24 22:18 /dev/loop128p3
-brw-rw---- 1 root disk 7,   32 2011-05-24 22:16 /dev/loop2
-brw-rw---- 1 root disk 7,   48 2011-05-24 22:16 /dev/loop3
-brw-rw---- 1 root disk 7,   64 2011-05-24 22:16 /dev/loop4
-brw-rw---- 1 root disk 7,   80 2011-05-24 22:16 /dev/loop5
-brw-rw---- 1 root disk 7,   96 2011-05-24 22:16 /dev/loop6
-brw-rw---- 1 root disk 7,  112 2011-05-24 22:16 /dev/loop7
-brw-r--r-- 1 root root 7,  128 2011-05-24 22:17 /dev/loop8
 
-After this patch, /dev/loop8 - instead of /dev/loop128 - was
-accessed correctly.
 
-In addition, 'range' passed to blk_register_region() should
-include all range of dev_t that LOOP_MAJOR can address. It does
-not need to be limited by partition numbers unless 'max_loop'
-param was specified.
-
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Laurent Vivier <Laurent.Vivier@bull.net>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
----
- drivers/block/loop.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-Index: linux-2.6.35.y/drivers/block/loop.c
-===================================================================
---- linux-2.6.35.y.orig/drivers/block/loop.c
-+++ linux-2.6.35.y/drivers/block/loop.c
-@@ -1579,7 +1579,7 @@ static struct kobject *loop_probe(dev_t 
- 	struct kobject *kobj;
- 
- 	mutex_lock(&loop_devices_mutex);
--	lo = loop_init_one(dev & MINORMASK);
-+	lo = loop_init_one(MINOR(dev) >> part_shift);
- 	kobj = lo ? get_disk(lo->lo_disk) : ERR_PTR(-ENOMEM);
- 	mutex_unlock(&loop_devices_mutex);
- 
-@@ -1620,10 +1620,10 @@ static int __init loop_init(void)
- 
- 	if (max_loop) {
- 		nr = max_loop;
--		range = max_loop;
-+		range = max_loop << part_shift;
- 	} else {
- 		nr = 8;
--		range = 1UL << (MINORBITS - part_shift);
-+		range = 1UL << MINORBITS;
- 	}
- 
- 	if (register_blkdev(LOOP_MAJOR, "loop"))
-@@ -1662,7 +1662,7 @@ static void __exit loop_exit(void)
- 	unsigned long range;
- 	struct loop_device *lo, *next;
- 
--	range = max_loop ? max_loop :  1UL << (MINORBITS - part_shift);
-+	range = max_loop ? max_loop << part_shift : 1UL << MINORBITS;
- 
- 	list_for_each_entry_safe(lo, next, &loop_devices, lo_list)
- 		loop_del_one(lo);
