@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab1G0WFv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:05:51 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52957 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755532Ab1G0WFs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 18:05:48 -0400
-Date: Thu, 28 Jul 2011 00:05:45 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Frank Rowand <frank.rowand@am.sony.com>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [ANNOUNCE] 3.0-rt4
-In-Reply-To: <4E3089BC.1080001@am.sony.com>
-Message-ID: <alpine.LFD.2.02.1107280004410.2660@ionos>
-References: <alpine.LFD.2.02.1107272222420.2660@ionos> <4E3089BC.1080001@am.sony.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1756164Ab1G0WGV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:06:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24579 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755506Ab1G0Vse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:48:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
+   d="scan'208";a="30900554"
+From: Andi Kleen <andi@firstfloor.org>
+References: <20110727247.325703029@firstfloor.org>
+In-Reply-To: <20110727247.325703029@firstfloor.org>
+To: Artem.Bityutskiy@nokia.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [34/99] UBIFS: fix shrinker object count reports
+Message-Id: <20110727214832.E64A02403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:48:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jul 2011, Frank Rowand wrote:
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-> On 07/27/11 14:37, Thomas Gleixner wrote:
-> > Dear RT Folks,
-> > 
-> > I'm pleased to announce the 3.0-rt4 release.
-> 
-> ARM panda board, PREEMPT_RT_FULL
-> 
-> -rt3 compiled OK.  -rt4 compile fails:
-> 
-> 
-> mm/init-mm.c:24: error: unknown field 'lock' specified in initializer
-> mm/init-mm.c:24: error: unknown field 'wait_lock' specified in initializer
-> mm/init-mm.c:24: error: incompatible types in initialization
-> mm/init-mm.c:24: error: unknown field 'save_state' specified in initializer
-> mm/init-mm.c:24: warning: excess elements in struct initializer
-> mm/init-mm.c:24: warning: (near initialization for 'init_mm.context.id_lock.raw_lock')
+------------------
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-Bah, that's what I get for trying to vanish. Fix below.
+commit cf610bf4199770420629d3bc273494bd27ad6c1d upstream.
 
---- linux-2.6.orig/arch/arm/include/asm/mmu.h
-+++ linux-2.6/arch/arm/include/asm/mmu.h
-@@ -16,7 +16,7 @@ typedef struct {
+Sometimes VM asks the shrinker to return amount of objects it can shrink,
+and we return the ubifs_clean_zn_cnt in that case. However, it is possible
+that this counter is negative for a short period of time, due to the way
+UBIFS TNC code updates it. And I can observe the following warnings sometimes:
+
+shrink_slab: ubifs_shrinker+0x0/0x2b7 [ubifs] negative objects to delete nr=-8541616642706119788
+
+This patch makes sure UBIFS never returns negative count of objects.
+
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+---
+ fs/ubifs/shrinker.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+Index: linux-2.6.35.y/fs/ubifs/shrinker.c
+===================================================================
+--- linux-2.6.35.y.orig/fs/ubifs/shrinker.c
++++ linux-2.6.35.y/fs/ubifs/shrinker.c
+@@ -283,7 +283,11 @@ int ubifs_shrinker(struct shrinker *shri
+ 	long clean_zn_cnt = atomic_long_read(&ubifs_clean_zn_cnt);
  
- /* init_mm.context.id_lock should be initialized. */
- #define INIT_MM_CONTEXT(name)                                                 \
--	.context.id_lock    = __SPIN_LOCK_UNLOCKED(name.context.id_lock),
-+	.context.id_lock    = __RAW_SPIN_LOCK_UNLOCKED(name.context.id_lock),
- #else
- #define ASID(mm)	(0)
- #endif
-
-
+ 	if (nr == 0)
+-		return clean_zn_cnt;
++		/*
++		 * Due to the way UBIFS updates the clean znode counter it may
++		 * temporarily be negative.
++		 */
++		return clean_zn_cnt >= 0 ? clean_zn_cnt : 1;
+ 
+ 	if (!clean_zn_cnt) {
+ 		/*
