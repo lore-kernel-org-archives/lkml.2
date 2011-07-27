@@ -1,185 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab1G0Oa3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 10:30:29 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46244 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753620Ab1G0Oa0 convert rfc822-to-8bit (ORCPT
+	id S1754302Ab1G0Ocq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 10:32:46 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63890 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292Ab1G0Oco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 10:30:26 -0400
+	Wed, 27 Jul 2011 10:32:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <1311757347.1536.103.camel@vkoul-udesk3>
-References: <1311185906-7813-1-git-send-email-jaswinder.singh@linaro.org>
-	<1311220903-2545-1-git-send-email-jaswinder.singh@linaro.org>
-	<CACRpkdbWHmob3EWJc6u5=yh=rNwVSR5hu9-Xud5kvQNU9-POtA@mail.gmail.com>
-	<CAJe_Zhc4uJB8N9i2w38zzP3+XxcYF2v-zwsrhERWSi-yObV-6A@mail.gmail.com>
-	<CABE8wwt7dkwgeahYBSUufOvJmVNfYyTss6U5qBgjJk9RVLBkYg@mail.gmail.com>
-	<CAJe_ZhdYg4EpaNbBW+dayjSORqM=E6myT3oOG5VTsiQnh3erTA@mail.gmail.com>
-	<CABE8wwt8J_r9cExG+EAqqK=XVmAyLYhv+-T49Rr9hhKudD8n2g@mail.gmail.com>
-	<CAJe_ZheVyLk-yqyF_XO80xX3j7_7mDPnv-me+n=X_hNWycSLwg@mail.gmail.com>
-	<CABE8wwtkSnaJ5fvi=4bq7zye3W0SmErHAZeWAcHuYvLgvqy=_Q@mail.gmail.com>
-	<CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com>
-	<CABE8wwv2XQ_aJ8O2TUAz1LgJorBwDbgyQQv7jeAn06Q2AcqH+Q@mail.gmail.com>
-	<CAJe_ZhcNM7m-eWA0nDUrOrHxeAhNS00gewf=txmvOFL_uOPhrw@mail.gmail.com>
-	<1311740499.1536.56.camel@vkoul-udesk3>
-	<CAJe_ZhfaPfobs5P+q+t-kRSK4fAvm-v_brYgqmco8fwOOBeT8A@mail.gmail.com>
-	<1311757347.1536.103.camel@vkoul-udesk3>
-Date: Wed, 27 Jul 2011 20:00:23 +0530
-Message-ID: <CAJe_Zhd+Z4-=xDzFrd3ARuKZkUAo6n_miQgdSADY9Uk6uhkqhw@mail.gmail.com>
-Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
-From: Jaswinder Singh <jaswinder.singh@linaro.org>
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        rmk+kernel@arm.linux.org.uk, linus.walleij@stericsson.com,
-        per.friden@stericsson.com, wei.zhang@freescale.com,
-        ebony.zhu@freescale.com, iws@ovro.caltech.edu, s.hauer@pengutronix.de,
-        maciej.sosnowski@intel.com, saeed@marvell.com, shawn.guo@freescale.com,
-        yur@emcraft.com, agust@denx.de, iwamatsu.nobuhiro@renesas.com,
-        per.forlin@stericsson.com, jonas.aberg@stericsson.com,
-        anemo@mba.ocn.ne.jp
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <201107271628.29532.arnd@arndb.de>
+References: <CAFbHwiQaYeQSwRykhKp57rQ8xLKSst9MXF7YJoQjEm0V+WN4Qw@mail.gmail.com>
+	<201107271455.39511.arnd@arndb.de>
+	<CAFbHwiSkqpRUv2CW8sqL8XQEkbbvtos2h5UTTX19jeXJNrBOUA@mail.gmail.com>
+	<201107271628.29532.arnd@arndb.de>
+Date: Wed, 27 Jul 2011 15:32:43 +0100
+Message-ID: <CAFbHwiRUKEuK_88+yfUpiWnRBgGKBTpH2Fm7EpzW-dJSiwhHLA@mail.gmail.com>
+Subject: Re: [PATCH] bitops: Use volatile in generic atomic bitops.
+From: Will Newton <will.newton@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 July 2011 14:32, Koul, Vinod <vinod.koul@intel.com> wrote:
->> >> >>> Correct, it is meant that chan_id is only a sysfs property.  Any
->> >> >>> driver usage that is assuming chan_id is anything more than a
->> >> >>> guaranteed unique number within a given dma_device's list of channels
->> >> >>> is probably inferring too much.
->> >> >>
->> >> >> So you mean dmac/client drivers are wrong if they make use of chan_id.
->> >> >> They shouldn't count upon it's value - which is set by DMA API for a completely
->> >> >> independent purpose, i.e, creating contiguous sysfs entries.
->> >> >
->> >> > They can count on it being unique, and maybe the fact that it is in
->> >> > the same order as dma_device.channels.
->> >> The latter implies the former. And it is already the dmac driver that
->> >> decides the
->> >> rank of a channel in the list.
->> >>
->> >> >
->> >> >>
->> >> >> Since "chan_id is only a sysfs property" and the fact that it is used
->> >> >> only _once_
->> >> >> by the DMA API
->> >> >>
->> >> >> In drivers/dma/dmaengine.c
->> >> >>
->> >> >>      chan->chan_id = chancnt++;
->> >> >>      dev_set_name(&chan->dev->device, "dma%dchan%d",
->> >> >>                             device->dev_id, chan->chan_id);
->> >> >>
->> >> >>
->> >> >> Can't we do away with chan_id altogether ? by having
->> >> >>
->> >> >>      dev_set_name(&chan->dev->device, "dma%dchan%d",
->> >> >>                             device->dev_id, chancnt++);
->> >> >>
->> >> >> I mean why make every instance of dma_chan bigger by 4bytes ?
->> >> >>
->> >> >> So why shouldn't we remove chan_id completely from the DMA API ?
->> >> >
->> >> > Good point...  Let's remove chan_id from the core and push it into the
->> >> > drivers that need it.
->> >> >
->> >> If you agree, I would preserve the chan_id in 'struct dma_chan' but remove
->> >> any assignment to it in dmaengine.c  and let the dmac drivers use it freely.
->> >> That would:-
->> >> a) Let dmac drivers decide what numbers they want to show up in sysfs.
->> >> b) chan_id is easily reachable by client drivers, so it is better this way.
->> >> c) It would mean lesser and simpler changes to extant users of it.
->> > But this can cause conflict between two controllers who think they are
->> > assigning unique numbers.
->> Could you please clarify, which two controllers ?
-> You can have two different DMACs in same system. At least I have two
-> from current intel_mid_dma which are used. Both give their channel id
-> starting from 0, 1....
-> Further as we integrate video, audio, spi, emmc dmacs possibility of
-> having multiple dmacs will increase in a system
-Most of Samsung's S5P series have 3 DMACs - 2 for peripherals and 1 for mem->mem
-But that is not the point.
-
-This patch in no way affects what values currently a dmac driver
-assigns to chan_id
-
->>
->> > IMO sysfs representation needs to be with
->> > dmaengine only. How do we guarantee uniqueness b/w two controllers?
->> Again, how is chan_id currently unique between two controllers ?
->>
->> Btw, do you not want to keep chan_id in dma_chan or do you not want to change
->> anything at all ?
->>
+On Wed, Jul 27, 2011 at 3:28 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 27 July 2011, Will Newton wrote:
 >> >
->> > Also I am not sure about the approach: The whole point is to make filter
->> > function select based on some channel number "x", but you should filter
->> > channels based on controller you want and capability of a channel. If
->> > caps is not enough to filter we should add more flags but asking that I
->> > need channel 'y' doesn't sound right to me.
->> > This is all coming from that fact that some drivers assume channel 'a'
->> > is for this type of transfer and channel 'b' for something else, for a
->> > dma controller that really doesn't matter, as all channels have similar
->> > capabilities and can do similar things so you should
->> > _get_channel_based_on_caps rather than on some numbering.
->> >
->> > Lastly, why do you need a channel reserved for some type of transfer, is
->> > it for assigning h/w interface for dma transfer, if so that can be
->> > achieved in different ways as well
+>> > Have you observed this behavior? The interrupt disable/enable should
+>> > always come with a barrier that should prevent the bitops from
+>> > leaking out, so I don't see how this causes problems in practice.
 >>
->> Please look at this patch from POV of utility of chan_id, which isn't much
->> currently as explainined.
-> Sorry I didn't get you.
-> As I understand you are trying to simplify the filter function by
-> assigning unique ids to all channels,
-No dear. Let me put it precisely.
+>> Yes, although my arch does not have these barriers. Now I see from
+>> memory-barriers.txt that lock/unlock are required to implement a
+>> compiler barrier, sorry for the noise!
+>
+> Which architectures is this?
 
-Even if we make no further change to the dmaengine, this patch is the right
-thing to do today.
+Imagination Technologies META, which is a custom in-house
+architecture. No immediate plans to upstream unfortunately. :-/
 
-Please have a look at the patch and figure if it breaks anything or is not the
-right change. Plz ignore what you _think_ I plan to do next.
-
-> but whole point itself is not
-> quite right, as I said selection should be based on capability and not
-> channel number "x".
-* I absolutely agree *
-
-
-> Can you please help me understand why channel number "x" is important
-> and strictly needed by some client?
-I never said that. I don't think so.
-
-I request you to please have a look at
-
-1) What I propose
-        http://lists.infradead.org/pipermail/linux-arm-kernel/2011-July/059212.html
-
-2) Why RMK thinks I am the biggest idiot on earth
-        http://lists.infradead.org/pipermail/linux-arm-kernel/2011-July/059217.html
-
-3) How I ask for better proof of that
-       http://lists.infradead.org/pipermail/linux-arm-kernel/2011-July/059223.html
-
-On a serious note, my proposal, and the reply, shows the possibility
-of having :-
-a) Client drivers that are truly platform agnostic -- no platform_data
-poking for
-      channel selection
-b) A standard way to express capabilities of a channel -- chan_id is just one,
-     we can employ different method if need be.
-c) DMAENGINE API smart enough to provide best channel selection for a request.
-
-Finally, let us please take this discussion there, because this patch should be
-judged only under it's own light.
-
-Thanks,
-Jassi
-
-
--- 
-Linaro.org │ Open source software for ARM SoCs | Follow Linaro
-http://facebook.com/pages/Linaro/155974581091106  -
-http://twitter.com/#!/linaroorg - http://linaro.org/linaro-blog
+FWIW I checked all the in-tree architectures and it seems everyone
+else gets this right (although I got a bit lost with tile).
