@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab1G0Vsf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 17:48:35 -0400
-Received: from mga09.intel.com ([134.134.136.24]:46879 "EHLO mga09.intel.com"
+	id S1755976Ab1G0WFV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:05:21 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56897 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755324Ab1G0Vs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:48:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,279,1309762800"; 
-   d="scan'208";a="32826303"
-From: Andi Kleen <andi@firstfloor.org>
-References: <20110727247.325703029@firstfloor.org>
-In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: mbroz@redhat.com, snitzer@redhat.com, agk@redhat.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [27/99] dm table: reject devices without request fns
-Message-Id: <20110727214825.C7C382403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:48:25 -0700 (PDT)
+	id S1755527Ab1G0WFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 18:05:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH 1/2] MMC / TMIO: Fix build issue related to struct scatterlist
+Date: Thu, 28 Jul 2011 00:06:26 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0+; KDE/4.6.0; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+References: <201107262049.15333.rjw@sisk.pl> <201107262050.23379.rjw@sisk.pl> <m2pqkvl7l6.fsf@bob.laptop.org>
+In-Reply-To: <m2pqkvl7l6.fsf@bob.laptop.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107280006.26466.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+On Wednesday, July 27, 2011, Chris Ball wrote:
+> Hi Rafael,
+> 
+> On Tue, Jul 26 2011, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >
+> > Fix build issue caused by undefined struct scatterlist in
+> > drivers/mmc/host/tmio_mmc.c.
+> >
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> >  drivers/mmc/host/tmio_mmc.h      |    1 +
+> >  drivers/usb/renesas_usbhs/fifo.c |    1 +
+> >  2 files changed, 2 insertions(+)
+> >
+> > Index: linux-2.6/drivers/mmc/host/tmio_mmc.h
+> > ===================================================================
+> > --- linux-2.6.orig/drivers/mmc/host/tmio_mmc.h
+> > +++ linux-2.6/drivers/mmc/host/tmio_mmc.h
+> > @@ -21,6 +21,7 @@
+> >  #include <linux/mutex.h>
+> >  #include <linux/pagemap.h>
+> >  #include <linux/spinlock.h>
+> > +#include <linux/scatterlist.h>
+> >  
+> >  /* Definitions for values the CTRL_SDIO_STATUS register can take. */
+> >  #define TMIO_SDIO_STAT_IOIRQ	0x0001
+> 
+> I'm not able to reproduce the build failure here.
+> 
+> drivers/mmc/host/tmio_mmc.c already performs "#include <linux/scatterlist.h>"
+> itself (and always has done), so I'm confused about why this is necessary.
+> Do you have a copy of your build log with the error?
 
-------------------
-From: Milan Broz <mbroz@redhat.com>
+tmio_mmc.h is included by sh_mobile_sdhi.c too and that one doesn't include
+scatterlist.h, which causes a build failure to happen, becuase of the
+bounce_sg member of struct tmio_mmc_host.
 
-commit f4808ca99a203f20b4475601748e44b25a65bdec upstream.
+The patch has been merged already anyway.
 
-This patch adds a check that a block device has a request function
-defined before it is used.  Otherwise, misconfiguration can cause an oops.
-
-Because we are allowing devices with zero size e.g. an offline multipath
-device as in commit 2cd54d9bedb79a97f014e86c0da393416b264eb3
-("dm: allow offline devices") there needs to be an additional check
-to ensure devices are initialised.  Some block devices, like a loop
-device without a backing file, exist but have no request function.
-
-Reproducer is trivial: dm-mirror on unbound loop device
-(no backing file on loop devices)
-
-dmsetup create x --table "0 8 mirror core 2 8 sync 2 /dev/loop0 0 /dev/loop1 0"
-
-and mirror resync will immediatelly cause OOps.
-
-BUG: unable to handle kernel NULL pointer dereference at   (null)
- ? generic_make_request+0x2bd/0x590
- ? kmem_cache_alloc+0xad/0x190
- submit_bio+0x53/0xe0
- ? bio_add_page+0x3b/0x50
- dispatch_io+0x1ca/0x210 [dm_mod]
- ? read_callback+0x0/0xd0 [dm_mirror]
- dm_io+0xbb/0x290 [dm_mod]
- do_mirror+0x1e0/0x748 [dm_mirror]
-
-Signed-off-by: Milan Broz <mbroz@redhat.com>
-Reported-by: Zdenek Kabelac <zkabelac@redhat.com>
-Acked-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
----
- drivers/md/dm-table.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
-
-Index: linux-2.6.35.y/drivers/md/dm-table.c
-===================================================================
---- linux-2.6.35.y.orig/drivers/md/dm-table.c
-+++ linux-2.6.35.y/drivers/md/dm-table.c
-@@ -352,6 +352,7 @@ static void close_dev(struct dm_dev_inte
- static int device_area_is_invalid(struct dm_target *ti, struct dm_dev *dev,
- 				  sector_t start, sector_t len, void *data)
- {
-+	struct request_queue *q;
- 	struct queue_limits *limits = data;
- 	struct block_device *bdev = dev->bdev;
- 	sector_t dev_size =
-@@ -360,6 +361,22 @@ static int device_area_is_invalid(struct
- 		limits->logical_block_size >> SECTOR_SHIFT;
- 	char b[BDEVNAME_SIZE];
- 
-+	/*
-+	 * Some devices exist without request functions,
-+	 * such as loop devices not yet bound to backing files.
-+	 * Forbid the use of such devices.
-+	 */
-+	q = bdev_get_queue(bdev);
-+	if (!q || !q->make_request_fn) {
-+		DMWARN("%s: %s is not yet initialised: "
-+		       "start=%llu, len=%llu, dev_size=%llu",
-+		       dm_device_name(ti->table->md), bdevname(bdev, b),
-+		       (unsigned long long)start,
-+		       (unsigned long long)len,
-+		       (unsigned long long)dev_size);
-+		return 1;
-+	}
-+
- 	if (!dev_size)
- 		return 0;
- 
+Thanks,
+Rafael
