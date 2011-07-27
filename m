@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab1G0I03 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 04:26:29 -0400
-Received: from mail.bbaw.de ([194.95.188.6]:58256 "EHLO mail.bbaw.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754023Ab1G0I00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 04:26:26 -0400
-Date: Wed, 27 Jul 2011 10:26:24 +0200
-From: Lars =?UTF-8?B?VMOkdWJlcg==?= <taeuber@bbaw.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org
-Subject: Re: [PROBLEM] reproduceable storage errors on high IO load - mvsas
- & 3.0-rc7
-Message-Id: <20110727102624.971cc287.taeuber@bbaw.de>
-In-Reply-To: <20110714123012.92787569.taeuber@bbaw.de>
-References: <20110606095127.21d23a70.taeuber@bbaw.de>
-	<201106060559.03131.gene.heskett@gmail.com>
-	<20110606130628.e86f0c67.taeuber@bbaw.de>
-	<201106060920.32257.gene.heskett@gmail.com>
-	<20110606155610.69a0d17a.taeuber@bbaw.de>
-	<20110607124354.06ed074e.taeuber@bbaw.de>
-	<20110701102323.3db579ad.taeuber@bbaw.de>
-	<20110701151313.2afd48e0.taeuber@bbaw.de>
-	<20110701163719.27afc580.taeuber@bbaw.de>
-	<20110704153923.b929ce5d.taeuber@bbaw.de>
-	<62378.1309905287@turing-police.cc.vt.edu>
-	<20110706091117.9caa1d69.taeuber@bbaw.de>
-	<20110714111642.83335f2a.taeuber@bbaw.de>
-	<20110714123012.92787569.taeuber@bbaw.de>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-AntiVirus: checked by Avira MailGate (version: 2.1.4-7; AVE: 7.9.6.18; VDF: 7.11.12.130; host: mailhub); id=10619-BhKIGq
+	id S1754097Ab1G0I1a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 04:27:30 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:58072 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab1G0I10 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 04:27:26 -0400
+Date: Wed, 27 Jul 2011 01:27:30 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Mingming Cao <cmm@us.ibm.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] Add inode checksum support to ext4
+Message-ID: <20110727082730.GG20655@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20110406224410.GB24354@tux1.beaverton.ibm.com> <1302290868.4461.7.camel@mingming-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1302290868.4461.7.camel@mingming-laptop>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello again!
+On Fri, Apr 08, 2011 at 12:27:48PM -0700, Mingming Cao wrote:
+> On Wed, 2011-04-06 at 15:44 -0700, Darrick J. Wong wrote:
+> > Hi all,
+> > 
+> > I spent last week analyzing a client's corrupted ext3 image to see if I could
+> > determine what had gone wrong and caused the filesystem to blow apart.  As best
+> > as I could tell, a data block got miswritten into a different sector ... which
+> > happened to be an indirect block.  Some time later the indirect block, which
+> > now pointed at one of the inode tables (among other things that shouldn't ever
+> > become file data) was loaded as part of a file write, which caused that inode
+> > table to be blown to smithereens.  Just for fun I tried reading from one of
+> > these busted-inode files and ... failed to encounter any errors.  Somehow, they
+> > didn't find it funny that ext3 would read block numbers from a table with the
+> > contents "ibm.com" with a straight face.  Fortunately there were backups. :)
+> > 
+> > The client at this point asked if ext4 would do a better job of sanity
+> > checking, which got me to wonder why ext4 checksums block groups but not
+> > inodes.  It's on Ted's todo list, but apparently nobody wrote any patch, so I
+> > did.  The following two patches are a first draft of adding inode checksum
+> > support to both the kernel driver and to the various e2fsprogs.
+> > 
+> 
+> We had some discussion about this week at SF (at the ext4 bof at the
+> linux colloboration summit). Beyond checksumming the inode itself, it
+> would be more useful to checksum the extent indexing blocks, as the ext3
+> corruption actually happen at the indirect block.  
+> 
+> The idea is to reduce the eh_max (the max # of extents stored in this
+> block) to save some space to store the checksums in the block, 
+> 
+> /*
+>  * Each block (leaves and indexes), even inode-stored has header.
+>  */
+> struct ext4_extent_header {
+>         __le16  eh_magic;       /* probably will support different
+> formats */
+>         __le16  eh_entries;     /* number of valid entries */
+>         __le16  eh_max;         /* capacity of store in entries */
+>         __le16  eh_depth;       /* has tree real underlying blocks? */
+>         __le32  eh_generation;  /* generation of the tree */
 
-This is an update for those who are interested.
+Does anyone use eh_generation?  Linux 3.0 shows no users and it didn't look like
+the snapshot patches do either.  If nobody intends to start using this field,
+(part of) it could become eh_checksum.
 
-I could find a hardware setup whith which the problems don't occur.
-I exchanged the Supermicro H8SCM-F (AMD Opteron 4170HE) board with one with an
-Intel CPU.
-
-So it might be the chipset or the like.
-
-All previous tested HBAs and SATA controller run just fine without any
-strange messages on the intel based board.
-
-The last try with the supermicro board was with an LSI SAS1068E PCI-Express
-Fusion-MPT SAS HBA. It doesn't crash but did resets on the SATA connection
-all the time. I could get 5,1MB write speed at most.
-
-Best regards
-Lars
+--D
