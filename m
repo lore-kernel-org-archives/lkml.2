@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab1G0WMy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:12:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23542 "EHLO mga02.intel.com"
+	id S1755364Ab1G0WQe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:16:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1115 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755344Ab1G0VsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:48:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
-   d="scan'208";a="30900318"
-From: Andi Kleen <andi@firstfloor.org>
-References: <20110727247.325703029@firstfloor.org>
-In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: dchang@novell.com, arjan.mels@gmx.net, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [4/99] staging: usbip: fix wrong endian conversion
-Message-Id: <20110727214802.655872403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:48:02 -0700 (PDT)
+	id S1754138Ab1G0WQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 18:16:30 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Dan Ehrenberg <dehrenberg@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dio: Fast-path for page-aligned IOs
+References: <1308611855-18096-1-git-send-email-dehrenberg@google.com>
+	<20110727210828.GB12714@infradead.org>
+	<20110727141415.a67cafb8.akpm@linux-foundation.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 27 Jul 2011 18:15:53 -0400
+In-Reply-To: <20110727141415.a67cafb8.akpm@linux-foundation.org> (Andrew
+	Morton's message of "Wed, 27 Jul 2011 14:14:15 -0700")
+Message-ID: <x49vcuns73a.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+Andrew Morton <akpm@linux-foundation.org> writes:
 
-------------------
-From: David Chang <dchang@novell.com>
+> On Wed, 27 Jul 2011 17:08:28 -0400
+> Christoph Hellwig <hch@infradead.org> wrote:
+>
+>> On Mon, Jun 20, 2011 at 04:17:35PM -0700, Dan Ehrenberg wrote:
+>> > The fast path does not apply for operations of the wrong size
+>> > or alignmnent, or for operations on raw drives with 512-byte sectors.
+>> > It might be possible to make this special case a little more general
+>> > while maintaining its performance benefits, but I do not believe that
+>> > the full performance benefits can be achieved without resorting to
+>> > special handling of simple cases, as is done in this patch.
+>> 
+>> Did you check how this compares to Andis small optimizations?
+>> 
+>> Also operations on raw disks are something people with fast devices
+>> care about a lot.  We often hear about benchmark regressions due to
+>> stupid little things in the direct I/O code.
+>> 
+>> If we want to special case something that would be a very easy target,
+>> with a 1:1 mapping of logical to physical blocks and thus no need
+>> to call the allocator first, and no need for any kind of locking
+>> or alignment handling.
+>
+> Ken did this back in 2006
+> (http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=e61c90188b9956edae1105eef361d8981a352fcd)
+> but we reverted that shortly afterwards for some reason.
 
-commit cacd18a8476ce145ca5dcd46dc5b75585fd1289c upstream.
+For this reason:
 
-Fix number_of_packets wrong endian conversion in function
-correct_endian_ret_submit()
+commit b2e895dbd80c420bfc0937c3729b4afe073b3848
+Author: Andrew Morton <akpm@osdl.org>
+Date:   Sat Feb 3 01:14:01 2007 -0800
 
-Signed-off-by: David Chang <dchang@novell.com>
-Acked-by: Arjan Mels <arjan.mels@gmx.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
----
- drivers/staging/usbip/usbip_common.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6.35.y/drivers/staging/usbip/usbip_common.c
-===================================================================
---- linux-2.6.35.y.orig/drivers/staging/usbip/usbip_common.c
-+++ linux-2.6.35.y/drivers/staging/usbip/usbip_common.c
-@@ -709,7 +709,7 @@ static void correct_endian_ret_submit(st
- 		be32_to_cpus(&pdu->status);
- 		be32_to_cpus(&pdu->actual_length);
- 		be32_to_cpus(&pdu->start_frame);
--		cpu_to_be32s(&pdu->number_of_packets);
-+		be32_to_cpus(&pdu->number_of_packets);
- 		be32_to_cpus(&pdu->error_count);
- 	}
- }
+    [PATCH] revert blockdev direct io back to 2.6.19 version
+    
+    Andrew Vasquez is reporting as-iosched oopses and a 65% throughput
+    slowdown due to the recent special-casing of direct-io against
+    blockdevs.  We don't know why either of these things are occurring.
+    
+    The patch minimally reverts us back to the 2.6.19 code for a 2.6.20
+    release.
