@@ -1,84 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab1G0Dzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 23:55:54 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:57460 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529Ab1G0Dzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 23:55:52 -0400
-Date: Wed, 27 Jul 2011 13:55:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arun Sharma <asharma@fb.com>, David Miller <davem@davemloft.net>,
-        "Hans-Christian Egtvedt" <hans-christian.egtvedt@atmel.com>
-Subject: linux-next: build failure after merge of the final tree (akpm tree
- related)
-Message-Id: <20110727135545.7875bcfb5e9d207901b8d7f1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751589Ab1G0EFb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 00:05:31 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:52109 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750702Ab1G0EF3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 00:05:29 -0400
+X-Sasl-enc: VbSJRnMb2orWwEfuG5ycUm2APXf+MOhDz1p6i+doiwXG 1311739527
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: "Robert P. J. Day" <rpjday@crashcourse.ca>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 02/11] DOCUMENTATION: Update overview.txt in Doc/driver-model.
+Date: Tue, 26 Jul 2011 21:05:12 -0700
+Message-Id: <1311739521-11014-2-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1311739521-11014-1-git-send-email-gregkh@suse.de>
+References: <20110726045707.GA2321@kroah.com>
+ <1311739521-11014-1-git-send-email-gregkh@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
 
-After merging the final tree, today's linux-next build (sparc32 defconfig)
-failed like this:
+A few grammatical fixes, clarifications and corrections in just the
+overview file for the driver model documentation.
 
-arch/sparc/lib/atomic32.c:58:5: error: redefinition of 'atomic_add_unless'
-include/linux/atomic.h:15:19: note: previous definition of 'atomic_add_unless' was here
-
-Presumably caused by commit 1af08a1407f4 ("This is in preparation for
-more generic atomic").
-
-That commit is now in Linus' tree as commit f24219b4e90c ("atomic: move
-atomic_add_unless to generic code"), so this patch is probably applicable
-there, now.
-
-I have applied this patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 27 Jul 2011 13:48:55 +1000
-Subject: [PATCH] sparc: rename atomic_add_unless
-
-Should have been done in commit 1af08a1407f4 ("This is in preparation
-for more generic atomic").
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Robert P. J. Day <rpjday@crashcourse.ca>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/sparc/lib/atomic32.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ Documentation/driver-model/overview.txt |   52 ++++++++++++++++++++-----------
+ 1 files changed, 34 insertions(+), 18 deletions(-)
 
-diff --git a/arch/sparc/lib/atomic32.c b/arch/sparc/lib/atomic32.c
-index 1a371f8..8600eb2 100644
---- a/arch/sparc/lib/atomic32.c
-+++ b/arch/sparc/lib/atomic32.c
-@@ -55,7 +55,7 @@ int atomic_cmpxchg(atomic_t *v, int old, int new)
- }
- EXPORT_SYMBOL(atomic_cmpxchg);
+diff --git a/Documentation/driver-model/overview.txt b/Documentation/driver-model/overview.txt
+index 07236ed..6a8f9a8 100644
+--- a/Documentation/driver-model/overview.txt
++++ b/Documentation/driver-model/overview.txt
+@@ -30,7 +30,7 @@ management, and hot plug. In particular, the model dictated by Intel and
+ Microsoft (namely ACPI) ensures that almost every device on almost any bus
+ on an x86-compatible system can work within this paradigm.  Of course,
+ not every bus is able to support all such operations, although most
+-buses support a most of those operations.
++buses support most of those operations.
  
--int atomic_add_unless(atomic_t *v, int a, int u)
-+int __atomic_add_unless(atomic_t *v, int a, int u)
- {
- 	int ret;
- 	unsigned long flags;
-@@ -67,7 +67,7 @@ int atomic_add_unless(atomic_t *v, int a, int u)
- 	spin_unlock_irqrestore(ATOMIC_HASH(v), flags);
- 	return ret != u;
- }
--EXPORT_SYMBOL(atomic_add_unless);
-+EXPORT_SYMBOL(__atomic_add_unless);
  
- /* Atomic operations are already serializing */
- void atomic_set(atomic_t *v, int i)
+ Downstream Access
+@@ -46,25 +46,29 @@ struct pci_dev now looks like this:
+ struct pci_dev {
+ 	...
+ 
+-	struct device dev;
++	struct device dev;     /* Generic device interface */
++	...
+ };
+ 
+-Note first that it is statically allocated. This means only one allocation on
+-device discovery. Note also that it is at the _end_ of struct pci_dev. This is
+-to make people think about what they're doing when switching between the bus
+-driver and the global driver; and to prevent against mindless casts between
+-the two.
++Note first that the struct device dev within the struct pci_dev is
++statically allocated. This means only one allocation on device discovery.
++
++Note also that that struct device dev is not necessarily defined at the
++front of the pci_dev structure.  This is to make people think about what
++they're doing when switching between the bus driver and the global driver,
++and to discourage meaningless and incorrect casts between the two.
+ 
+ The PCI bus layer freely accesses the fields of struct device. It knows about
+ the structure of struct pci_dev, and it should know the structure of struct
+ device. Individual PCI device drivers that have been converted to the current
+ driver model generally do not and should not touch the fields of struct device,
+-unless there is a strong compelling reason to do so.
++unless there is a compelling reason to do so.
+ 
+-This abstraction is prevention of unnecessary pain during transitional phases.
+-If the name of the field changes or is removed, then every downstream driver
+-will break. On the other hand, if only the bus layer (and not the device
+-layer) accesses struct device, it is only that layer that needs to change.
++The above abstraction prevents unnecessary pain during transitional phases.
++If it were not done this way, then when a field was renamed or removed, every
++downstream driver would break.  On the other hand, if only the bus layer
++(and not the device layer) accesses the struct device, it is only the bus
++layer that needs to change.
+ 
+ 
+ User Interface
+@@ -73,15 +77,27 @@ User Interface
+ By virtue of having a complete hierarchical view of all the devices in the
+ system, exporting a complete hierarchical view to userspace becomes relatively
+ easy. This has been accomplished by implementing a special purpose virtual
+-file system named sysfs. It is hence possible for the user to mount the
+-whole sysfs filesystem anywhere in userspace.
++file system named sysfs.
++
++Almost all mainstream Linux distros mount this filesystem automatically; you
++can see some variation of the following in the output of the "mount" command:
++
++$ mount
++...
++none on /sys type sysfs (rw,noexec,nosuid,nodev)
++...
++$
++
++The auto-mounting of sysfs is typically accomplished by an entry similar to
++the following in the /etc/fstab file:
++
++none     	/sys	sysfs    defaults	  	0 0
+ 
+-This can be done permanently by providing the following entry into the
+-/etc/fstab (under the provision that the mount point does exist, of course):
++or something similar in the /lib/init/fstab file on Debian-based systems:
+ 
+-none     	/sys	sysfs    defaults		0	0
++none            /sys    sysfs    nodev,noexec,nosuid    0 0
+ 
+-Or by hand on the command line:
++If sysfs is not automatically mounted, you can always do it manually with:
+ 
+ # mount -t sysfs sysfs /sys
+ 
 -- 
-1.7.5.4
+1.7.6
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
