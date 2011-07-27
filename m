@@ -1,48 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab1G0PSX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 11:18:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34416 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752628Ab1G0PSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 11:18:21 -0400
-Message-ID: <4E302C3C.9090804@suse.cz>
-Date: Wed, 27 Jul 2011 17:18:20 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1754368Ab1G0PS4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 11:18:56 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:59152 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750879Ab1G0PSz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 11:18:55 -0400
 MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        linux-kbuild@vger.kernel.org, sam@ravnborg.org,
-        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
+In-Reply-To: <4E302BC4.5060003@suse.cz>
+References: <4E1D9C25.8080300@suse.cz>
+	<1311634718-32588-1-git-send-email-mmarek@suse.cz>
+	<CACqU3MX3=edNJSNXYLVP=nYFx+bDnBs-zi3A3uYCPLNUrJiMyA@mail.gmail.com>
+	<4E302BC4.5060003@suse.cz>
+Date: Wed, 27 Jul 2011 11:18:54 -0400
+Message-ID: <CACqU3MX7Lip=2wCVs0o0PWkGFVHry4fte_eoadR4SzN00NB-pw@mail.gmail.com>
 Subject: Re: [RFC][PATCH 1/2] kconfig: Introduce KCONFIG(), KCONFIG_BUILTIN()
  and KCONFIG_MODULE()
-References: <4E1D9C25.8080300@suse.cz> <1311634718-32588-1-git-send-email-mmarek@suse.cz> <CAM_iQpUEfYrrtpcRLTekSHMHrTTka6ir=z_GUUbnxuQKfY+OXA@mail.gmail.com> <4E2EBF63.8050208@suse.cz> <20110726080443.62196869.rdunlap@xenotime.net> <4E2F0735.1070403@suse.cz> <20110726112824.b357c756.rdunlap@xenotime.net> <CACqU3MWOjjB0RiWLWS8yf0u0gRqOL3JP0StyrtP1kbA+i92SfA@mail.gmail.com> <CACqU3MWopoJcd+5ELWEDp6_GvVpEjOHLnkcj4s_fHT5unp+MtA@mail.gmail.com> <20110726213536.1f56f0e3.rdunlap@xenotime.net> <4E2FCE2A.3000909@suse.cz> <CACqU3MX7p-3sM=L3MQygyr9=sBkpSHcvk9ponxJTh2i=c=YiKA@mail.gmail.com> <4E3014E2.40501@suse.cz> <CACqU3MVyD8z=L8VP9K5c9iQaOPmWcqQprtM28VDzSVjwua_etQ@mail.gmail.com>
-In-Reply-To: <CACqU3MVyD8z=L8VP9K5c9iQaOPmWcqQprtM28VDzSVjwua_etQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, sam@ravnborg.org,
+        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.7.2011 17:11, Arnaud Lacombe wrote:
-> Hi,
+Hi,
+
+On Wed, Jul 27, 2011 at 11:16 AM, Michal Marek <mmarek@suse.cz> wrote:
+> On 27.7.2011 17:09, Arnaud Lacombe wrote:
+>>
+>> Hi,
+>>
+>> On Mon, Jul 25, 2011 at 6:58 PM, Michal Marek<mmarek@suse.cz>  wrote:
+>>>
+>>> Replace the config_is_*() macros with a variant that allows for grepping
+>>> for usage of CONFIG_* options in the code. Usage:
+>>>
+>>>  if (KCONFIG(CONFIG_NUMA))
+>>>
+>>> or
+>>>
+>>>  #if KCONFIG(CONFIG_NUMA)
+>>>
+>>> The KCONFIG() macro evaluates to 1 if the argument is set (to either 'y'
+>>> or 'm'), KCONFIG_BUILTIN() and KCONFIG_MODULE() test if the respective
+>>> option is 'y' and 'm', respectively.
+>>>
+>>> Signed-off-by: Michal Marek<mmarek@suse.cz>
+>>> ---
+>>>  Makefile                   |    2 +-
+>>>  include/linux/kconfig.h    |   24 +++++++++++++++
+>>>  scripts/kconfig/confdata.c |   70
+>>> ++++++++-----------------------------------
+>>>  3 files changed, 38 insertions(+), 58 deletions(-)
+>>>  create mode 100644 include/linux/kconfig.h
+>>>
+>>> diff --git a/Makefile b/Makefile
+>>> index afb8e0d..bd7629b 100644
+>>> --- a/Makefile
+>>> +++ b/Makefile
+>>> @@ -360,7 +360,7 @@ CFLAGS_GCOV = -fprofile-arcs -ftest-coverage
+>>>  LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
+>>>                    -Iarch/$(hdr-arch)/include/generated -Iinclude \
+>>>                    $(if $(KBUILD_SRC), -I$(srctree)/include) \
+>>> -                   -include include/generated/autoconf.h
+>>> +                   -include $(srctree)/include/linux/kconfig.h
+>>>
+>>>  KBUILD_CPPFLAGS := -D__KERNEL__
+>>>
+>>> diff --git a/include/linux/kconfig.h b/include/linux/kconfig.h
+>>> new file mode 100644
+>>> index 0000000..fe80348
+>>> --- /dev/null
+>>> +++ b/include/linux/kconfig.h
+>>> @@ -0,0 +1,24 @@
+>>> +#ifndef __LINUX_KCONFIG_H
+>>> +#define __LINUX_KCONFIG_H
+>>> +
+>>> +#include<generated/autoconf.h>
+>>> +
+>>> +/*
+>>> + * Evaluates to 1 if CONFIG_option is set to 'y', 0 otherwise
+>>> + */
+>>> +#define KCONFIG_BUILTIN(option) __enabled_ ## option
+>>> +
+>>> +/*
+>>> + * Evaluates to 1 if CONFIG_option is set to 'm', 0 otherwise
+>>> + */
+>>> +#define KCONFIG_MODULE(option) __enabled_ ## option ## _MODULE
+>>> +
+>>> +/*
+>>> + * Evaluates to 1 if CONFIG_option is set to 'y' or 'm', 0 otherwise
+>>> + *
+>>> + */
+>>> +#define KCONFIG(option) \
+>>> +       (__enabled_ ## option || __enabled_ ## option ## _MODULE)
+>>> +
+>>> +
+>>> +#endif /* __LINUX_KCONFIG_H */
+>>> diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+>>> index df629ec..3bab40a 100644
+>>> --- a/scripts/kconfig/confdata.c
+>>> +++ b/scripts/kconfig/confdata.c
+>>> @@ -495,15 +495,24 @@ header_print_symbol(FILE *fp, struct symbol *sym,
+>>> const char *value, void *arg)
+>>>
+>>>                switch (*value) {
+>>>                case 'n':
+>>> -                       return;
+>>> +                       break;
+>>>                case 'm':
+>>>                        suffix = "_MODULE";
+>>>                        /* fall through */
+>>>                default:
+>>> -                       value = "1";
+>>> +                       fprintf(fp, "#define %s%s%s 1\n",
+>>> +                           CONFIG_, sym->name, suffix);
+>>>                }
+>>> -               fprintf(fp, "#define %s%s%s %s\n",
+>>> -                   CONFIG_, sym->name, suffix, value);
+>>> +               /*
+>>> +                * Generate the __enabled_CONFIG_* and
+>>> +                * __enabled_CONFIG_*_MODULE macros for use by the
+>>> KCONFIG*()
+>>> +                * macros. The _MODULE variant is generated even for
+>>> booleans
+>>> +                * so that the KCONFIG() macro works.
+>>> +                */
+>>> +               fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
+>>> +                               sym->name, (*value == 'y'));
+>>> +               fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE
+>>> %d\n",
+>>> +                               sym->name, (*value == 'm'));
+>>>                break;
+>>>        }
+>>>        case S_HEX: {
+>>
+>> Just to comment on the patch itself, it will certainly not apply
+>> against kbuild/kconfig as I changed header_print_symbol() to fix the
+>> S_HEX prefix issue.
 >
-> On Wed, Jul 27, 2011 at 9:38 AM, Michal Marek<mmarek@suse.cz>  wrote:
->>> [...]
->>> I'm good with the naming, but how would you define those ? I may have
->>> trouble to discern between IS_ENABLED() and IS_ENABLED_BUILTIN().
->>
->> IS_ENABLED() would mean not disabled, i.e. either 'y' or 'm'.
->> IS_ENABLED_BUILTIN() would mean 'y' and only 'y' and IS_ENABLED_MODULE()
->> would mean 'm'. For boolean options, IS_ENABLED() would be equivalent to
->> IS_ENABLED_BUILTIN() and IS_ENABLED_MODULE() would be always false.
->>
-> how would IS_ENABLED() behave on CONFIG_FOO, with FOO being S_STRING
-> or, say, S_HEX ?
+> If course it applies, the "case S_HEX: {" context line you are quoting was
+> added by your commit:
+> http://git.kernel.org/?p=linux/kernel/git/mmarek/kbuild-2.6.git;a=commitdiff;h=eb4cf5a642f6430cffff7ba5d8d9bd46ea409281
+>
+@#$... morning... I was looking at the wrong place, sorry.
 
-It would fail to compile, because the helper macros are only defined for 
-boolean and tristate symbols.
-
-Michal
+ - Arnaud
