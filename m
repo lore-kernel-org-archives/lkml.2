@@ -1,55 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab1G0UNv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 16:13:51 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:33461 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380Ab1G0UNt (ORCPT
+	id S1754427Ab1G0UOL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 16:14:11 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33936 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752792Ab1G0UOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 16:13:49 -0400
-Date: Wed, 27 Jul 2011 22:13:48 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Boris Ostrovsky <boris.ostrovsky@amd.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        "ostr@amd64.org" <ostr@amd64.org>, "jvpeetz@web.de" <jvpeetz@web.de>,
-        "Petkov, Borislav" <Borislav.Petkov@amd.com>,
-        "mingo@elte.hu" <mingo@elte.hu>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "tim.bird@am.sony.com" <tim.bird@am.sony.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH] [25/98] x86, AMD: Fix APIC timer erratum 400 affecting K8 Rev.A-E processors
-Message-ID: <20110727201348.GB8006@one.firstfloor.org>
-References: <20110726534.972201586@firstfloor.org> <20110727003517.6946C2403FF@tassilo.jf.intel.com> <4E3006DF.6010906@amd.com> <20110727154203.GB16180@tassilo.jf.intel.com> <4E303785.8000102@amd.com>
+	Wed, 27 Jul 2011 16:14:09 -0400
+Date: Wed, 27 Jul 2011 13:13:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH v4 06/10] migration: introudce migrate_ilru_pages
+Message-Id: <20110727131357.cc5a42ce.akpm@linux-foundation.org>
+In-Reply-To: <132686a2ab204bb917bea5faa4eb5cb797940518.1309787991.git.minchan.kim@gmail.com>
+References: <cover.1309787991.git.minchan.kim@gmail.com>
+	<132686a2ab204bb917bea5faa4eb5cb797940518.1309787991.git.minchan.kim@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E303785.8000102@amd.com>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 12:06:29PM -0400, Boris Ostrovsky wrote:
-> On 07/27/11 11:42, Andi Kleen wrote:
-> >>Andi, this patch is unnecessary.
-> >>
-> >>It (as well as 328935e6348c6a7cb34798a68c326f4b8372e68a and
-> >>14fb57dccb6e1defe9f89a66f548fcb24c374c1d) is superseded by
-> >>e9cdd343a5e42c43bcda01e609fa23089e026470 upstream
-> >
-> >Is it obsolete in 2.6.35 too?
-> 
-> Yes.
-> 
-> >
-> >So what should I do? Drop this one and merge some other?
-> >Or just drop?
-> 
-> Please drop it (and skip the other two that I mentioned above) and apply 
-> e9cdd343a5e42c43bcda01e609fa23089e026470.
+On Mon,  4 Jul 2011 23:04:39 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-Looks like I already had a revert and that one too. I dropped the 
-patch+revert
+> This patch defines new APIs to put back new page into old page's position as LRU order.
+> for LRU churning of compaction.
+> 
+> The idea I suggested in LSF/MM is simple.
+>
+> ...
+>
+> +static bool same_lru(struct page *page, struct page *prev)
+> +{
+> +	bool ret = false;
+> +	if (!prev || !PageLRU(prev))
 
--Andi
+Both parts of this test need explanations so readers can understand why
+they are here.
+
+> +		goto out;
+> +
+> +	if (unlikely(PageUnevictable(prev)))
+
+As does this.
+
+> +		goto out;
+> +
+> +	if (page_lru_base_type(page) != page_lru_base_type(prev))
+> +		goto out;
+
+This (and testing for PageLRU) is the only part of this function whcih
+is sufficiently obvious to leave undocumented.
+
+> +	ret = true;
+> +out:
+> +	return ret;
+> +}
+> +
+> +void putback_ilru_pages(struct inorder_lru *l)
+> +{
+> +	struct zone *zone;
+> +	struct page *page, *page2, *prev;
+> +
+> +	list_for_each_ilru_entry_safe(page, page2, l, ilru) {
+> +		ilru_list_del(page, l);
+> +		dec_zone_page_state(page, NR_ISOLATED_ANON +
+> +				page_is_file_cache(page));
+> +		zone = page_zone(page);
+> +		spin_lock_irq(&zone->lru_lock);
+> +		prev = page->ilru.prev_page;
+> +		if (same_lru(page, prev)) {
+> +			putback_page_to_lru(page, prev);
+> +			spin_unlock_irq(&zone->lru_lock);
+> +			put_page(page);
+> +		} else {
+> +			spin_unlock_irq(&zone->lru_lock);
+> +			putback_lru_page(page);
+> +		}
+> +	}
+> +}
+
+This function takes lru_lock at lest once per page, up to twice per
+page.  The spinlocking frequency here could be optimised tremendously.
+
+The trick of hanging onto zone->lru_lock is the zone didn't change gets
+hard if we want to do a put_page() inside the loop.
+
+We have functions "putback_page_to_lru()" and "putback_lru_page()". 
+Ugh.  Can we think of better naming?
+
+Does this function even need to exist if CONFIG_MIGRATION=n?
+
+> +/*
+>   * Restore a potential migration pte to a working pte entry
+>   */
+>
+> ...
+>
+> +void __put_ilru_pages(struct page *page, struct page *newpage,
+> +		struct inorder_lru *prev_lru, struct inorder_lru *ihead)
+
+The function name leaves me wondering where we put the pages, and
+there's no documentation telling me.
+
+> +{
+> +	struct page *prev_page;
+> +	struct zone *zone;
+> +	prev_page = page->ilru.prev_page;
+> +	/*
+> +	 * A page that has been migrated has all references
+> +	 * removed and will be freed. A page that has not been
+> +	 * migrated will have kepts its references and be
+> +	 * restored.
+> +	 */
+> +	ilru_list_del(page, prev_lru);
+> +	dec_zone_page_state(page, NR_ISOLATED_ANON +
+> +			page_is_file_cache(page));
+> +
+> +	/*
+> +	 * Move the new page to the LRU. If migration was not successful
+> +	 * then this will free the page.
+> +	 */
+> +	zone = page_zone(newpage);
+> +	spin_lock_irq(&zone->lru_lock);
+> +	if (same_lru(page, prev_page)) {
+> +		putback_page_to_lru(newpage, prev_page);
+> +		spin_unlock_irq(&zone->lru_lock);
+> +		/*
+> +		 * The newpage replaced LRU position of old page and
+> +		 * old one would be freed. So let's adjust prev_page of pages
+> +		 * remained in inorder_lru list.
+> +		 */
+> +		adjust_ilru_prev_page(ihead, page, newpage);
+> +		put_page(newpage);
+> +	} else {
+> +		spin_unlock_irq(&zone->lru_lock);
+> +		putback_lru_page(newpage);
+> +	}
+
+The same spinlocking frequency issue.
+
+> +	putback_lru_page(page);
+> +}
+> +
+>
+> ...
+>
+> +int migrate_ilru_pages(struct inorder_lru *ihead, new_page_t get_new_page,
+> +		unsigned long private, bool offlining, bool sync)
+> +{
+> +	int retry = 1;
+> +	int nr_failed = 0;
+> +	int pass = 0;
+> +	struct page *page, *page2;
+> +	struct inorder_lru *prev;
+> +	int swapwrite = current->flags & PF_SWAPWRITE;
+> +	int rc;
+> +
+> +	if (!swapwrite)
+> +		current->flags |= PF_SWAPWRITE;
+> +
+> +	for (pass = 0; pass < 10 && retry; pass++) {
+
+That ten-passes thing was too ugly to live, and now it's breeding.  Argh.
+
+> +		retry = 0;
+> +		prev = ihead;
+> +		list_for_each_ilru_entry_safe(page, page2, ihead, ilru) {
+> +			cond_resched();
+> +
+> +			rc = unmap_and_move_ilru(get_new_page, private,
+> +					page, pass > 2, offlining,
+> +					sync, prev, ihead);
+> +
+> +			switch (rc) {
+> +			case -ENOMEM:
+> +				goto out;
+> +			case -EAGAIN:
+> +				retry++;
+> +				prev = &page->ilru;
+> +				break;
+> +			case 0:
+> +				break;
+> +			default:
+> +				/* Permanent failure */
+> +				nr_failed++;
+> +				break;
+> +			}
+> +		}
+> +	}
+> +	rc = 0;
+> +out:
+> +	if (!swapwrite)
+> +		current->flags &= ~PF_SWAPWRITE;
+> +
+> +	if (rc)
+> +		return rc;
+> +
+> +	return nr_failed + retry;
+> +}
+> +
+>
+> ...
+>
+
