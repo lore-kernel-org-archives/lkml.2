@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab1G0Q3f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 12:29:35 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40295 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754603Ab1G0Q3c convert rfc822-to-8bit (ORCPT
+	id S1754874Ab1G0Q3v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 12:29:51 -0400
+Received: from queue01.mail.zen.net.uk ([212.23.3.234]:55183 "EHLO
+	queue01.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754603Ab1G0Q3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 12:29:32 -0400
-Subject: Re: per-cpu operation madness vs validation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1311783617.5890.179.camel@twins>
-References: <1311714410.24752.404.camel@twins>
-	 <alpine.DEB.2.00.1107261624210.10273@router.home>
-	 <1311768693.24752.488.camel@twins> <1311771677.24752.495.camel@twins>
-	 <alpine.DEB.2.00.1107270916240.9418@router.home>
-	 <1311783617.5890.179.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 27 Jul 2011 18:29:09 +0200
-Message-ID: <1311784149.5890.181.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 27 Jul 2011 12:29:49 -0400
+From: Andrew Bird <ajb@spheresystems.co.uk>
+To: gregkh@suse.de
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Bird <ajb@spheresystems.co.uk>
+Subject: [PATCH 3/4] USB: option driver: add PID for Vodafone-Huawei K4510
+Date: Wed, 27 Jul 2011 17:03:19 +0100
+Message-Id: <1311782600-13353-3-git-send-email-ajb@spheresystems.co.uk>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1311782600-13353-1-git-send-email-ajb@spheresystems.co.uk>
+References: <1311782600-13353-1-git-send-email-ajb@spheresystems.co.uk>
+X-Originating-Smarthost04-IP: [82.71.70.22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-27 at 18:20 +0200, Peter Zijlstra wrote:
-> > > get_cpu_var()/put_cpu_var() were supposed to provide such delineation as
-> > > well, but you've been actively destroying things like that with the
-> > > recent per-cpu work.
-> > 
-> > The per cpu work is *not* focused on sections that access per cpu data, so
-> > how could it destroy that? Nothing is changed there so far. The this_cpu
-> > ops are introducing per cpu atomic operations that are safe and cheap
-> > regardless of the execution context. The primary initial motivation was
-> > incrementing per cpu counters without having to disabling interrupts
-> > and/or preemption and it grew from there.
-> 
-> I think you need to look at 20b876918c065818b3574a426d418f68b4f8ad19 and
-> try again. You removed get_cpu_var()/put_cpu_var() and replaced it with
-> naked preempt_disable()/preempt_enable(). That's loosing information
-> right there. 
+This patch adds the product ID of Huawei's Vodafone K4510 mobile broadband
+modem to option.c. This is necessary so that the driver gets loaded on demand
+without the intervention of usb_modeswitch. This has the benefit of it becoming
+available faster and also ensures that the option driver is not bound to a
+network interface that should be claimed by cdc_ether.
 
-Also things like the below hunk are just plain ugly and obfuscate the
-code to safe one load at best. I'm sorely tempted to revert such crap.
+Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
+---
+ drivers/usb/serial/option.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-@@ -1468,14 +1465,12 @@ static void x86_pmu_start_txn(struct pmu *pmu)
-  */
- static void x86_pmu_cancel_txn(struct pmu *pmu)
- {
--       struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
--
--       cpuc->group_flag &= ~PERF_EVENT_TXN;
-+       __this_cpu_and(cpu_hw_events.group_flag, ~PERF_EVENT_TXN);
-        /*
-         * Truncate the collected events.
-         */
--       cpuc->n_added -= cpuc->n_txn;
--       cpuc->n_events -= cpuc->n_txn;
-+       __this_cpu_sub(cpu_hw_events.n_added, __this_cpu_read(cpu_hw_events.n_txn));
-+       __this_cpu_sub(cpu_hw_events.n_events, __this_cpu_read(cpu_hw_events.n_txn));
-        perf_pmu_enable(pmu);
- }
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index b9783b6..ceb9336 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -150,6 +150,7 @@ static void option_instat_callback(struct urb *urb);
+ #define HUAWEI_PRODUCT_E14AC			0x14AC
+ #define HUAWEI_PRODUCT_K3770			0x14C9
+ #define HUAWEI_PRODUCT_K3771			0x14CA
++#define HUAWEI_PRODUCT_K4510			0x14CB
+ #define HUAWEI_PRODUCT_ETS1220			0x1803
+ #define HUAWEI_PRODUCT_E353			0x1506
+ 
+@@ -553,6 +554,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x31) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x32) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4510, 0xff, 0x01, 0x31) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4510, 0xff, 0x01, 0x32) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E353, 0xff, 0x01, 0x01) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V640) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V620) },
+-- 
+1.7.6
 
