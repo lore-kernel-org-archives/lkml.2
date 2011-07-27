@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab1G0TLb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 15:11:31 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:51404 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754114Ab1G0TL2 (ORCPT
+	id S1754910Ab1G0TLo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 15:11:44 -0400
+Received: from fresno.net.uniovi.es ([156.35.11.2]:55431 "EHLO
+	FRESNO.NET.UNIOVI.ES" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754770Ab1G0TLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 15:11:28 -0400
-Date: Wed, 27 Jul 2011 12:11:25 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: gregkh@suse.de
-Subject: [PATCH] driver core: fix kernel-doc warning in platform.c
-Message-Id: <20110727121125.03892326.rdunlap@xenotime.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Wed, 27 Jul 2011 15:11:41 -0400
+X-Greylist: delayed 1223 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Jul 2011 15:11:41 EDT
+Date: Wed, 27 Jul 2011 11:51:13 -0700
+From: Mr Garry Moore <lluisalvarez@uniovi.es>
+Subject: WESTERN UNION TRANSFER
+To: undisclosed-recipients:;
+Reply-to: western.dept@w.cn
+Message-id: <5e3d297fa468bb66e5d095c9dce7df35@uniovi.es>
+Organization: Mr Garry Moore
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 8BIT
+Mail-Reply-To: <western.dept@w.cn>
+User-Agent: Uniovi Webmail/0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
 
-Warning(drivers/base/platform.c:50): No description found for parameter 'pdev'
-Warning(drivers/base/platform.c:50): Excess function parameter 'dev' description in 'arch_setup_pdev_archdata'
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/base/platform.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+-- 
+ My associate has helped me to send your first paymentof $7,500 USD to 
+ you as instructed by Mr.David Cameronthe United Kingdom prime minister 
+ after the last G20meeting that was held in United Kingdom, making you 
+ one of the beneficiaries. Here is the information below.
 
---- linux-3.0-git8.orig/drivers/base/platform.c
-+++ linux-3.0-git8/drivers/base/platform.c
-@@ -33,7 +33,7 @@ EXPORT_SYMBOL_GPL(platform_bus);
- 
- /**
-  * arch_setup_pdev_archdata - Allow manipulation of archdata before its used
-- * @dev: platform device
-+ * @pdev: platform device
-  *
-  * This is called before platform_device_add() such that any pdev_archdata may
-  * be setup before the platform_notifier is called.  So if a user needs to
+ MTCN Numbers: 6096147516
+
+ Sender First Name Is = Johannes
+ Second Name = Davis
+
+ I told him to keep sending you £7,500 USD twice a weekuntil the FULL
+ payment of (£820000.00 pounds)is completed.
+
+ A certificate will be made to change the Receiver Name asstated by the
+ British prime minister, send your Full Namesand address via Email to: 
+ Mr Garry Moore Email:western.dept@w.cn
+
+ You cannot pickup the money until the certificate is issued to you.
+ Regards
+
+ Mr. Garry Moore.Tel: +(44) 703 596 3900.
