@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab1G0QlT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 12:41:19 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:47951 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752862Ab1G0QlR (ORCPT
+	id S1753844Ab1G0QnQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 12:43:16 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42836 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753341Ab1G0QnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 12:41:17 -0400
-Date: Wed, 27 Jul 2011 09:41:12 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Thomas Mingarelli <thomas.mingarelli@hp.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
-Subject: Re: linux-next: Tree for July 27 (watchdog/hpwdt)
-Message-Id: <20110727094112.89ab9901.rdunlap@xenotime.net>
-In-Reply-To: <20110727141151.d31e3da6a8d21a255473293c@canb.auug.org.au>
-References: <20110727141151.d31e3da6a8d21a255473293c@canb.auug.org.au>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Wed, 27 Jul 2011 12:43:13 -0400
+Date: Wed, 27 Jul 2011 18:42:57 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@elte.hu>,
+        "Przywara, Andre" <Andre.Przywara@amd.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Pohlack, Martin" <Martin.Pohlack@amd.com>
+Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
+Message-ID: <20110727164257.GC19477@aftab>
+References: <4E2F09BB.9060605@zytor.com>
+ <4E2F1889.8030708@amd.com>
+ <4E2F90A2.4030409@redhat.com>
+ <20110727062120.GA5272@aftab>
+ <20110727065932.GA16555@elte.hu>
+ <4E2FDAD0.8000809@redhat.com>
+ <20110727153731.GA19477@aftab>
+ <4E30327C.5020509@redhat.com>
+ <20110727154957.GB19477@aftab>
+ <4E303579.4000903@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E303579.4000903@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jul 2011 14:11:51 +1000 Stephen Rothwell wrote:
+On Wed, Jul 27, 2011 at 11:57:45AM -0400, Avi Kivity wrote:
+> Out of curiosity, what's the performance impact if the workaround is
+> not enabled?
 
-> Hi all,
-> 
-> Just in case anyone needs reminding:  Please do not add anything destined
-> for v3.2 into linux-next included trees until after v3.1-rc1.
+Up to 3% for a CPU-intensive style benchmark, and it can vary highly in
+a microbenchmark depending on workload and compiler.
 
+-- 
+Regards/Gruss,
+Boris.
 
-When CONFIG_HPWDT_NMI_DECODING is not enabled:
-
-drivers/watchdog/hpwdt.c:833: error: 'allow_kdump' undeclared (first use in this function)
-drivers/watchdog/hpwdt.c:833: error: 'priority' undeclared (first use in this function)
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
