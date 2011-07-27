@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab1G0AlZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 20:41:25 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6474 "EHLO mga01.intel.com"
+	id S1754267Ab1G0AlX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 20:41:23 -0400
+Received: from mga01.intel.com ([192.55.52.88]:46726 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753497Ab1G0AfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 20:35:01 -0400
+	id S1753520Ab1G0AfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 20:35:02 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,272,1309762800"; 
-   d="scan'208";a="34855562"
+   d="scan'208";a="32659188"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110726534.972201586@firstfloor.org>
 In-Reply-To: <20110726534.972201586@firstfloor.org>
-To: jslaby@suse.cz, amitshah@gmx.net, baoyb@avit.org.cn, stable@kernel.org,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: [PATCH] [9/98] USB: serial/usb_wwan, fix tty NULL dereference
-Message-Id: <20110727003501.247242403FF@tassilo.jf.intel.com>
-Date: Tue, 26 Jul 2011 17:35:01 -0700 (PDT)
+To: tgraf@infradead.org, davem@davemloft.net, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH] [10/98] ipv6: add special mode accept_ra=2 to accept RA while configured as router
+Message-Id: <20110727003502.28C332403FF@tassilo.jf.intel.com>
+Date: Tue, 26 Jul 2011 17:35:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,69 +25,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Jiri Slaby <jslaby@suse.cz>
+From: Thomas Graf <tgraf@infradead.org>
 
-[ upstream commit 38237fd2be9421c104f84cc35665097bdce89013 ]
+[ upstream commit 65e9b62d4503849b10bedfc29bff0473760cc597 ]
 
-tty_port_tty_get may return without any problems NULL. Handle this
-case and do not oops in usb_wwan_indat_callback by dereferencing it.
+The current IPv6 behavior is to not accept router advertisements while
+forwarding, i.e. configured as router.
 
-The oops:
-Unable to handle kernel paging request for data at address 0x000000d8
-Faulting instruction address: 0xc0175b3c
-Oops: Kernel access of bad area, sig: 11 [#1]
-PowerPC 40x Platform
-last sysfs file:
-/sys/devices/pci0000:00/0000:00:00.0/0000:01:00.0/0000:02:09.2/usb1/idVendor
-Modules linked in:
-NIP: c0175b3c LR: c0175e7c CTR: c0215c90
-REGS: c77f7d50 TRAP: 0300   Not tainted  (2.6.37-rc5)
-MSR: 00021030 <ME,CE,IR,DR>  CR: 88482028  XER: 2000005f
-DEAR: 000000d8, ESR: 00000000
-TASK = c7141b90[1149] 'wvdial' THREAD: c2750000
-GPR00: 00021030 c77f7e00 c7141b90 00000000 0000000e 00000000 0000000e c0410680
-GPR08: c683db00 00000000 00000001 c03c81f8 88482028 10073ef4 ffffffb9 ffffff94
-GPR16: 00000000 fde036c0 00200200 00100100 00000001 ffffff8d c34fabcc 00000000
-GPR24: c71120d4 00000000 00000000 0000000e 00021030 00000000 00000000 0000000e
-NIP [c0175b3c] tty_buffer_request_room+0x2c/0x194
-LR [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
-Call Trace:
-[c77f7e00] [00000003] 0x3 (unreliable)
-[c77f7e30] [c0175e7c] tty_insert_flip_string_fixed_flag+0x3c/0xb0
-[c77f7e60] [c0215df4] usb_wwan_indat_callback+0x164/0x170
-...
+This does make sense, a router is typically not supposed to be auto
+configured. However there are exceptions and we should allow the
+current behavior to be overwritten.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=24582
-Cc: Amit Shah <amitshah@gmx.net>
-Cc: baoyb <baoyb@avit.org.cn>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: stable <stable@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Therefore this patch enables the user to overrule the "if forwarding
+enabled then don't listen to RAs" rule by setting accept_ra to the
+special value of 2.
+
+An alternative would be to ignore the forwarding switch alltogether
+and solely accept RAs based on the value of accept_ra. However, I
+found that if not intended, accepting RAs as a router can lead to
+strange unwanted behavior therefore we it seems wise to only do so
+if the user explicitely asks for this behavior.
+
+Signed-off-by: Thomas Graf <tgraf@infradead.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Index: linux-2.6.35.y/drivers/usb/serial/usb_wwan.c
+Index: linux-2.6.35.y/net/ipv6/ndisc.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/usb/serial/usb_wwan.c
-+++ linux-2.6.35.y/drivers/usb/serial/usb_wwan.c
-@@ -216,12 +216,15 @@ static void usb_wwan_indat_callback(stru
- 		    __func__, status, endpoint);
- 	} else {
- 		tty = tty_port_tty_get(&port->port);
--		if (urb->actual_length) {
--			tty_insert_flip_string(tty, data, urb->actual_length);
--			tty_flip_buffer_push(tty);
--		} else
--			dbg("%s: empty read urb received", __func__);
--		tty_kref_put(tty);
-+		if (tty) {
-+			if (urb->actual_length) {
-+				tty_insert_flip_string(tty, data,
-+						urb->actual_length);
-+				tty_flip_buffer_push(tty);
-+			} else
-+				dbg("%s: empty read urb received", __func__);
-+			tty_kref_put(tty);
-+		}
+--- linux-2.6.35.y.orig/net/ipv6/ndisc.c
++++ linux-2.6.35.y/net/ipv6/ndisc.c
+@@ -1105,6 +1105,18 @@ errout:
+ 	rtnl_set_sk_err(net, RTNLGRP_ND_USEROPT, err);
+ }
  
- 		/* Resubmit urb so we continue receiving */
- 		if (status != -ESHUTDOWN) {
++static inline int accept_ra(struct inet6_dev *in6_dev)
++{
++	/*
++	 * If forwarding is enabled, RA are not accepted unless the special
++	 * hybrid mode (accept_ra=2) is enabled.
++	 */
++	if (in6_dev->cnf.forwarding && in6_dev->cnf.accept_ra < 2)
++		return 0;
++
++	return in6_dev->cnf.accept_ra;
++}
++
+ static void ndisc_router_discovery(struct sk_buff *skb)
+ {
+ 	struct ra_msg *ra_msg = (struct ra_msg *)skb_transport_header(skb);
+@@ -1158,8 +1170,7 @@ static void ndisc_router_discovery(struc
+ 		return;
+ 	}
+ 
+-	/* skip route and link configuration on routers */
+-	if (in6_dev->cnf.forwarding || !in6_dev->cnf.accept_ra)
++	if (!accept_ra(in6_dev))
+ 		goto skip_linkparms;
+ 
+ #ifdef CONFIG_IPV6_NDISC_NODETYPE
+@@ -1309,8 +1320,7 @@ skip_linkparms:
+ 			     NEIGH_UPDATE_F_ISROUTER);
+ 	}
+ 
+-	/* skip route and link configuration on routers */
+-	if (in6_dev->cnf.forwarding || !in6_dev->cnf.accept_ra)
++	if (!accept_ra(in6_dev))
+ 		goto out;
+ 
+ #ifdef CONFIG_IPV6_ROUTE_INFO
