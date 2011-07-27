@@ -1,84 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab1G0SYg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 14:24:36 -0400
-Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:13830 "EHLO
-	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753031Ab1G0SYe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 14:24:34 -0400
-From: Daniel Drake <dsd@laptop.org>
-To: cbou@mail.ru
-To: dwmw2@infradead.org
-Cc: dilinger@queued.net
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] olpc_battery: add wakeup support
-Message-Id: <20110727182426.9EE599D401D@zog.reactivated.net>
-Date: Wed, 27 Jul 2011 19:24:26 +0100 (BST)
-X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=7A8QoG2UdyIA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=8DgI5CuxNwjYZL_WLIcA:9 a=rab-LXelTIMD8oiw0SkA:7 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	id S1754501Ab1G0S2v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 14:28:51 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:39454 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753076Ab1G0S2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 14:28:48 -0400
+X-IronPort-AV: E=Sophos;i="4.67,277,1309762800"; 
+   d="scan'208";a="566002173"
+Message-ID: <4E3058CF.9020304@netapp.com>
+Date: Wed, 27 Jul 2011 14:28:31 -0400
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110628 Thunderbird/5.0
+MIME-Version: 1.0
+To: Ruediger Meier <sweet_f_a@gmx.de>
+CC: Justin Piszcz <jpiszcz@lucidpixels.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
+References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan> <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan> <4E303F6F.8010706@netapp.com> <201107271900.11091.sweet_f_a@gmx.de>
+In-Reply-To: <201107271900.11091.sweet_f_a@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Battery and AC events can now be used to wake up the system from suspend.
+On 07/27/2011 01:00 PM, Ruediger Meier wrote:
+> On Wednesday 27 July 2011, Bryan Schumaker wrote:
+>> On 07/27/2011 12:28 PM, Justin Piszcz wrote:
+>>> On Wed, 27 Jul 2011, J. Bruce Fields wrote:
+>>>>
+>>>> What filesystem on the server are you exporting?
+>>>
+>>> xfs.
+>>> /dev/sda1 on / type xfs (rw,noatime)
+>>>
+>>> Nothing special, thoughts?
+>>
+>> Are there a lot of files in the directory you're exporting?  It looks
+>> like cookie 10272 is mapped to multiple files.
+> 
+> I thought xfs is immune to readdir loops!?
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
----
- drivers/power/olpc_battery.c |   24 ++++++++++++++++++++++++
- 1 files changed, 24 insertions(+), 0 deletions(-)
+I can ls a directory with 500,000 files over nfs4.  That's usually enough to cause the readdir loop in ext4, so I guess this is a different problem.
 
-Depends on power management patches that were merged into linus master
-yesterday.
-
-diff --git a/drivers/power/olpc_battery.c b/drivers/power/olpc_battery.c
-index 9972268..46a2f07 100644
---- a/drivers/power/olpc_battery.c
-+++ b/drivers/power/olpc_battery.c
-@@ -533,6 +533,24 @@ void olpc_battery_trigger_uevent(unsigned long cause)
- 		kobject_uevent(&olpc_bat.dev->kobj, KOBJ_CHANGE);
- }
- 
-+static int olpc_battery_suspend(struct platform_device *pdev,
-+				pm_message_t state)
-+{
-+	if (device_may_wakeup(olpc_ac.dev))
-+		olpc_ec_wakeup_set(EC_SCI_SRC_ACPWR);
-+	else
-+		olpc_ec_wakeup_clear(EC_SCI_SRC_ACPWR);
-+
-+	if (device_may_wakeup(olpc_bat.dev))
-+		olpc_ec_wakeup_set(EC_SCI_SRC_BATTERY | EC_SCI_SRC_BATSOC
-+				   | EC_SCI_SRC_BATERR);
-+	else
-+		olpc_ec_wakeup_clear(EC_SCI_SRC_BATTERY | EC_SCI_SRC_BATSOC
-+				     | EC_SCI_SRC_BATERR);
-+
-+	return 0;
-+}
-+
- static int __devinit olpc_battery_probe(struct platform_device *pdev)
- {
- 	int ret;
-@@ -578,6 +596,11 @@ static int __devinit olpc_battery_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto error_failed;
- 
-+	if (olpc_ec_wakeup_available()) {
-+		device_set_wakeup_capable(olpc_ac.dev, true);
-+		device_set_wakeup_capable(olpc_bat.dev, true);
-+	}
-+
- 	return 0;
- 
- error_failed:
-@@ -612,6 +635,7 @@ static struct platform_driver olpc_battery_drv = {
- 	},
- 	.probe = olpc_battery_probe,
- 	.remove = __devexit_p(olpc_battery_remove),
-+	.suspend = olpc_battery_suspend,
- };
- 
- static int __init olpc_bat_init(void)
--- 
-1.7.6
+> Is your export directory really located directly within / on /dev/sda1?
+> 
+> cu,
+> Rudi
 
