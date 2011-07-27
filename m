@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646Ab1G0MNs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 08:13:48 -0400
-Received: from crypton3.daxa.net ([27.122.59.3]:38356 "EHLO crypton3.daxa.net"
+	id S1753718Ab1G0MRz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 08:17:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8919 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752353Ab1G0MNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 08:13:46 -0400
-X-Greylist: delayed 5453 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Jul 2011 08:13:46 EDT
-Message-ID: <61981.82.128.14.114.1311763366.squirrel@mail.atikom.co.id>
-Date: Wed, 27 Jul 2011 18:42:46 +0800 (SGT)
-Subject: Warning!!!
-From: "WEBMAIL CUSTOMER CARE" <info@team.org>
-To: info@yahoo.com
-Reply-To: customercare1@xnmsn.cn
-User-Agent: SquirrelMail/1.4.6
+	id S1751303Ab1G0MRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 08:17:53 -0400
+Date: Wed, 27 Jul 2011 14:17:34 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: rostedt@goodmis.org, a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC 3/4] perf, ftrace: Add new perf ioctl for function trace
+ filter
+Message-ID: <20110727121734.GB2605@jolsa.brq.redhat.com>
+References: <1310390576-8289-1-git-send-email-jolsa@redhat.com>
+ <1310390576-8289-4-git-send-email-jolsa@redhat.com>
+ <20110718151229.GA32167@somewhere>
+ <20110719095727.GA3008@jolsa.brq.redhat.com>
+ <20110726134327.GA1779@somewhere>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110726134327.GA1779@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Email Warning
+On Tue, Jul 26, 2011 at 03:43:44PM +0200, Frederic Weisbecker wrote:
 
-We have been monitory all your transaction through our data base system
-and your e-mail has been accomplish for update, kindly note that we
-recently did some upgrade on our database. During the upgrade there was an
-unusual responds code from your email address requesting for deactivation.
-Verify to deactivate or keep your email account active in order to
-verify/confirm your email identity, you are to provide the following data;
+SNIP
 
-CONFIRM YOUR EMAIL IDENTITY BELOW
+> Ideally, the filter engine should split expressions into a tree
+> of ops:
+> 
+> 	ip == func1 + func2 + func3 || ip == func4
+> 
+> should be parsed into:
+> 
+>             ||
+>             /\
+>            /  \
+>           /    \
+>          /      \
+>         ==       ==
+>        /  \     /  \
+>       /    \   ip   \
+>      /      \       func4
+>     ip       +       
+>             / \
+>            /   \
+>           +     \
+>          /  \   func3
+>         /    \
+>     func1   func2
+> 
+> And then pass that to ftrace that interprets that tree
+> by building set of functions on top of each node joined to
+> the other.
+> 
+> But that can be complicated to do, and perhaps a bit of
+> an overkill even for daily use of it.
+> 
+> Having a simple "ip == func + func2 + func3" expression support
 
-First Name:____________________________
-Last Name:_____________________________
-Email Username:________________________
-Email Password:________________________
-Account Deactivation :__________________ ( specifies yes to deactivate. No
-to keep active)
+so the '+' is just shortcut for '||' ... like:
 
-Reason for Deactivation_____________ (if yes)
+"ip == x1 || ip == x1" AND "ip == x1 + x2" mean the same thing
 
-Warning!!! In failure to verify your email account within 48 hrs or
-receiving this notification, your account will automatically deactivated.
+if we omit the '+' and keep just the whitespace we could use the function
+name parser as used in set_ftrace_filter interface with no change ;)
+but adding new separator should not be that hard..
 
-Thank you for using our Email!
+> should be enough I think. And we can reject expressions that don't
+> fit that pattern. Then if it becomes necessary one day to support
+> real expressions there, we can still switch to a real tree.
+> 
+> Does that look sane? 
 
-Warning Code: ASPH8B02AXV
+I'l make the change and send new version
 
-Kind regards,
-Email service
-Team Management. Bookmark
+thanks,
+jirka
