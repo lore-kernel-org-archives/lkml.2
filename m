@@ -1,182 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab1G0SaQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 14:30:16 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:46983 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752792Ab1G0SaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 14:30:14 -0400
-Date: Wed, 27 Jul 2011 11:30:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Carsten Emde <ce@ceag.ch>,
-        Clark Williams <williams@redhat.com>,
-        Kumar Gala <galak@gate.crashing.org>,
-        Ralf Baechle <ralf@linux-mips.org>, rostedt <rostedt@goodmis.org>,
-        Nicholas Mc Guire <der.herr@hofr.at>
-Subject: Re: On migrate_disable() and latencies
-Message-ID: <20110727183008.GA2407@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1311329992.27400.23.camel@twins>
- <20110723003934.GP2382@linux.vnet.ibm.com>
- <1311582653.2617.49.camel@laptop>
- <20110725211706.GT2327@linux.vnet.ibm.com>
- <1311765198.24752.437.camel@twins>
+	id S1754841Ab1G0Sco (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 14:32:44 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49903 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754759Ab1G0Scm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 14:32:42 -0400
+Date: Wed, 27 Jul 2011 20:32:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "N, Mugunthan V" <mugunthanvnm@ti.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: RE: [ANNOUNCE] 3.0-rt3
+In-Reply-To: <45EE9921DD12714AB1D7B7B9D2FE208B0230256D48BF@dbde03.ent.ti.com>
+Message-ID: <alpine.LFD.2.02.1107272029430.2660@ionos>
+References: <alpine.LFD.2.02.1107241223560.2702@ionos> <45EE9921DD12714AB1D7B7B9D2FE208B0230256D48BF@dbde03.ent.ti.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311765198.24752.437.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 01:13:18PM +0200, Peter Zijlstra wrote:
-> On Mon, 2011-07-25 at 14:17 -0700, Paul E. McKenney wrote:
+On Wed, 27 Jul 2011, N, Mugunthan V wrote:
+
+Please do not top post.
+
+> I am testing 3.0-rt3 on AM3517 - Arm Cortex A8. As the kernel from the
+> mainline is not booting I am using a patch to boot AM3517 kernel on top of
+> the mainline kernel. Its crashing when I start hackbench and cyclictest.
 > 
-> > > I suppose it is indeed. Even for the SoftRT case we need to make sure
-> > > the total utilization loss is indeed acceptable.
-> > 
-> > OK.  If you are doing strict priority, then everything below the highest
-> > priority is workload dependent. 
+> There were two warnings while starting the test and then the kernel crashes.
+> Attaching the patch and the rt-config file.
 > 
-> <snip throttling, that's a whole different thing>
-> 
-> >  The higher-priority
-> > tasks can absolutely starve the lower-priority ones, with or without
-> > the migrate-disable capability.
-> 
-> Sure, that's how FIFO works, but it also relies on the fact that once
-> your high priority task completes the lower priority task resumes.
-> 
-> The extension to SMP is that we run the m highest priority tasks on n
-> cpus ; where m <= n. Any loss in utilization (idle time in this
-> particular case, but irq/preemption/migration and cache overhead are
-> also time not spend on the actual workload.
-> 
-> Now the WCET folks are all about quantifying the needs of applications
-> and the utilization limits of the OS etc. And while for SoftRT you can
-> relax quite a few of the various bounds you still need to know them in
-> order relax them (der Hofrat likes to move from worst case to avg case
-> IIRC).
+> [  266.001220] BUG: sleeping function called from invalid context at
+> kernel/rtmutex.c:645
 
-;-)
+That should be fixed by the patch below.
 
-> > Another way of looking at it is from the viewpoint of the additional
-> > priority-boost events.  If preemption is disabled, the low-priority task
-> > will execute through the preempt-disable region without context switching.
-> > In contrast, given a migration-disable region, the low-priority task
-> > might be preempted and then boosted.  (If I understand correctly, if some
-> > higher-priority task tries to enter the same type of migration-disable
-> > region, it will acquire the associated lock, thus priority-boosting the
-> > task that is already in that region.)
-> 
-> No, there is no boosting involved, migrate_disable() isn't intrinsically
-> tied to a lock or other PI construct. We might needs locks to keep some
-> of the per-cpu crap correct, but that again, is a whole different ball
-> game.
-> 
-> But even if it was, I don't think PI will help any for this, we still
-> need to complete the various migrate_disable() sections, see below.
+> [  267.494995] ------------[ cut here ]------------
+> [  267.495086] WARNING: at kernel/lockdep.c:939 __bfs+0x1f8/0x254()
 
-OK, got it.  I think, anyway.  I was incorrectly (or at least unhelpfully)
-pulling in locks that might be needed to handle per-CPU variables.
+Could you please disable CONFIG_RCU_BOOST ?
 
-> > One stupid-but-tractable way to model this is to have an interarrival
-> > rate for the various process priorities, and then calculate the odds of
-> > (1) a higher priority process arriving while the low-priority one is
-> > in a *-disable region and (2) that higher priority process needing to
-> > enter a conflicting *-disable region.  This would give you some measure
-> > of the added boosting load due to migration-disable as compared to
-> > preemption-disable.
-> > 
-> > Would this sort of result be useful?
-> 
-> Yes, such type of analysis can be used, and I guess we can measure
-> various variables related to that.
+Thanks,
 
-OK, good.
+	tglx
 
-> > > My main worry with all this is that we have these insane long !preempt
-> > > regions in mainline that are now !migrate regions, and thus per all the
-> > > above we could be looking at a substantial utilization loss.
-> > > 
-> > > Alternatively we could all be missing something far more horrid, but
-> > > that might just be my paranoia talking.
-> > 
-> > Ah, good point -- if each migration-disable region is associated with
-> > a lock, then you -could- allow migration and gain better utilization
-> > at the expense of worse caching behavior.  Is that the concern?
-> 
-> I'm not seeing how that would be true, suppose you have this stack of 4
-> migrate_disable() sections and 3 idle cpus, no amount of boosting will
-> make the already running task at the top of the stack go any faster, and
-> it needs to complete the migrate_disable section before it can be
-> migrated, equally so for the rest, so you still need
-> 3*migrate-disable-period of time before all your cpus are busy again.
-> 
-> You can move another task to the top of the stack by boosting, but
-> you'll need 3 tasks to complete their resp migrate-disable section, it
-> doesn't matter which task, so boosting doesn't change anything.
-
-OK, so let me see if I understand what you are looking to model.
-
-o	There are no locks.
-
-o	There are a finite number of tasks with varying priorities.
-	(I would initially work with a single task per priority
-	level, but IIRC it is not hard to make multiple tasks per
-	priority work.  Not a fan of infinite numbers of priorities,
-	though!)
-
-o	There are multiple CPUs.
-
-o	Once a task enters a migrate-disable region, it must remain
-	on that CPU.  (I will initially model the migrate-disable region
-	as consuming a fixed amount of CPU.  If I wanted to really wuss
-	out, I would model it as consuming an exponentially distributed
-	amount of CPU.)
-
-o	Tasks awakening outside of migrate-disable regions will pick
-	the CPU running the lowest-priority task, whether or not this
-	task is in migrate-disable state.  (At least I don't see
-	anything in 3.0-rt3 that looks like a scheduling decision
-	based on ->migrate_disable, perhaps due to blindness.)
-
-o	For an example, if all CPUs except for one are running prio-99
-	tasks, and the remaining CPU is running a prio-1 task in
-	a migrate-disable region, if a prio-2 tasks awakens, it
-	will preempt the prio-1 task.
-
-	On the other hand, if at least one of the CPUs was idle,
-	the prio-2 task would have instead run on that idle CPU.
-
-o	The transition probabilities depend on the priority
-	of the currently running migrate-disable CPU -- the higher
-	that priority, the greater the chance that any preempting
-	task will find some other CPU instead.
-
-	The recurrence times depend on the number of tasks stacked
-	up in migrate-disable regions on that CPU.
-
-If this all holds, it would be possible to compute the probability
-of a given migrate-disable region being preempted and if preempted,
-the expected duration of that preemption, given the following
-quantities as input:
-
-o	The probability that a given CPU is running a task
-	of priority P for each priority.  The usual way to
-	estimate this is based on per-thread CPU utilizations.
-
-o	The expected duration of migrate-disable regions.
-
-o	The expected wakeups per second for tasks of each priority.
-
-With the usual disclaimers about cheezy mathematical approximations
-of reality and all that.
-
-Would this be useful, or am I still missing the point?
-
-							Thanx, Paul
+Index: linux-2.6/arch/arm/include/asm/mmu.h
+===================================================================
+--- linux-2.6.orig/arch/arm/include/asm/mmu.h
++++ linux-2.6/arch/arm/include/asm/mmu.h
+@@ -6,7 +6,7 @@
+ typedef struct {
+ #ifdef CONFIG_CPU_HAS_ASID
+ 	unsigned int id;
+-	spinlock_t id_lock;
++	raw_spinlock_t id_lock;
+ #endif
+ 	unsigned int kvm_seq;
+ } mm_context_t;
+Index: linux-2.6/arch/arm/mm/context.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mm/context.c
++++ linux-2.6/arch/arm/mm/context.c
+@@ -31,7 +31,7 @@ DEFINE_PER_CPU(struct mm_struct *, curre
+ void __init_new_context(struct task_struct *tsk, struct mm_struct *mm)
+ {
+ 	mm->context.id = 0;
+-	spin_lock_init(&mm->context.id_lock);
++	raw_spin_lock_init(&mm->context.id_lock);
+ }
+ 
+ static void flush_context(void)
+@@ -58,7 +58,7 @@ static void set_mm_context(struct mm_str
+ 	 * the broadcast. This function is also called via IPI so the
+ 	 * mm->context.id_lock has to be IRQ-safe.
+ 	 */
+-	spin_lock_irqsave(&mm->context.id_lock, flags);
++	raw_spin_lock_irqsave(&mm->context.id_lock, flags);
+ 	if (likely((mm->context.id ^ cpu_last_asid) >> ASID_BITS)) {
+ 		/*
+ 		 * Old version of ASID found. Set the new one and
+@@ -67,7 +67,7 @@ static void set_mm_context(struct mm_str
+ 		mm->context.id = asid;
+ 		cpumask_clear(mm_cpumask(mm));
+ 	}
+-	spin_unlock_irqrestore(&mm->context.id_lock, flags);
++	raw_spin_unlock_irqrestore(&mm->context.id_lock, flags);
+ 
+ 	/*
+ 	 * Set the mm_cpumask(mm) bit for the current CPU.
