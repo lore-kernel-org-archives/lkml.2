@@ -1,185 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab1G0TCY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 15:02:24 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:56047 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab1G0TCV (ORCPT
+	id S1754543Ab1G0TLZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 15:11:25 -0400
+Received: from mail.cs.tu-berlin.de ([130.149.17.13]:54641 "EHLO
+	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754114Ab1G0TLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 15:02:21 -0400
-Date: Wed, 27 Jul 2011 14:49:21 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless-next-2.6 2011-07-27
-Message-ID: <20110727184920.GB16431@tuxdriver.com>
+	Wed, 27 Jul 2011 15:11:23 -0400
+From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Turner <pjt@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+Subject: [PATCH RFCv2 0/8] sched: Enforce order of leaf CFS runqueues (and list cleanup)
+Date: Wed, 27 Jul 2011 21:10:17 +0200
+Message-Id: <1311793825-31933-1-git-send-email-schnhrr@cs.tu-berlin.de>
+X-Mailer: git-send-email 1.7.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+Code review showed, that the hierarchical order of the leaf
+CFS runqueues introduced by commit 67e8625 ("sched: Introduce 
+hierarchal order on shares update list") is not yet achieved.
+(See description of third patch for an example.)
 
-Here is a handful of fixes intended for 3.1.  This includes a
-user-visible typo fix, a fix for a user after free in the new pn533
-NFC driver, a cfg80211 fix for a possible NULL pointer dereference,
-a fix for an invalid memory access in b43, and another b43 fix for
-a memory corruption problem.
+During the discussion of possible solutions [1], Paul Turner
+mentioned an "ideal approach" to solve that.
 
-On top of that b43 memory corruption fix, there is a patch to remove
-BROKEN from the B43_BCMA Kconfig entry, which is key to enabling
-support for some of the more modern Broadcom wireless hardware.
-I'm sure the Rafał (and a number of others) would love to see that
-merged while the 3.1 merge window is still open as well.
+This is the second iteration of the patch-set that tries to
+realize this "ideal" approach. 
 
-Please let me know if there are problems...
+The first iteration got some positive feedback from Paul E. McKenney
+regarding its "advanced" RCU usage. His negative feedback -- missing
+comments -- should be addressed, now.
 
-Thanks!
+Changes since v1:
+- rebased against v3.0
+- included follow-up patches 4 to 8 (demonstrating the purpose of patch 1)
+- patch 1 should be complete this time
+- moved more functionality to rculist.h (see patch 2+3)
+- more comments everywhere
 
-John
 
----
+Patch 1: After inventing __list_link(), I realized, that this
+	 function already existed, but with a different name.
 
-The following changes since commit 41bf37117b47fc5ce2aae91f6a108e7e42e0b046:
+	 This patch just does some renaming. Not really needed,
+	 but if I use the old naming in patch 2 it's really 
+	 hard to understand what's actually going on.
 
-  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next-2.6 into for-davem (2011-07-22 17:51:16 -0400)
+	 It also helps to increase the readability of the existing
+	 code, see patches 6-8.
 
-are available in the git repository at:
+Patch 2: This introduces new list functions to splice RCU lists
+	 and handle deleted RCU list entries.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next-2.6.git for-davem
+Patch 3: The actual bugfix.
 
-Dan Carpenter (1):
-      NFC: pn533: use after free in pn533_disconnect()
+Patch 4+5: Follow-ups to patch 1. Some more renaming and use of
+	   appropriate functions.
 
-John W. Linville (1):
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-next-2.6 into for-davem
+Patch 6: Another follow-up to patch 1, improving the readability of
+	 the list routines a bit.
 
-Mihai Moldovan (1):
-      wireless: fix a typo in ignore_reg_update
+Patch 7+8: Follow-ups to patch 2. Make use of the introduced
+           functionality in the already existing code.
 
-Pavel Roskin (1):
-      b43: fix invalid memory access in b43_ssb_remove()
 
-Rafał Miłecki (2):
-      b43: bus: fix memory corruption when setting driver's data
-      b43: bcma: drop BROKEN
+Comments?
 
-Sven Neumann (1):
-      cfg80211: really ignore the regulatory request
+Regards
+Jan
 
- drivers/net/wireless/b43/Kconfig |    2 +-
- drivers/net/wireless/b43/bus.c   |    2 ++
- drivers/net/wireless/b43/main.c  |    5 +++--
- drivers/nfc/pn533.c              |    2 +-
- net/wireless/reg.c               |    7 ++++---
- 5 files changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/wireless/b43/Kconfig b/drivers/net/wireless/b43/Kconfig
-index d2293dc..3cab843 100644
---- a/drivers/net/wireless/b43/Kconfig
-+++ b/drivers/net/wireless/b43/Kconfig
-@@ -28,7 +28,7 @@ config B43
- 
- config B43_BCMA
- 	bool "Support for BCMA bus"
--	depends on B43 && BCMA && BROKEN
-+	depends on B43 && BCMA
- 	default y
- 
- config B43_SSB
-diff --git a/drivers/net/wireless/b43/bus.c b/drivers/net/wireless/b43/bus.c
-index 64c3f65..05f6c7b 100644
---- a/drivers/net/wireless/b43/bus.c
-+++ b/drivers/net/wireless/b43/bus.c
-@@ -244,10 +244,12 @@ void b43_bus_set_wldev(struct b43_bus_dev *dev, void *wldev)
- #ifdef CONFIG_B43_BCMA
- 	case B43_BUS_BCMA:
- 		bcma_set_drvdata(dev->bdev, wldev);
-+		break;
- #endif
- #ifdef CONFIG_B43_SSB
- 	case B43_BUS_SSB:
- 		ssb_set_drvdata(dev->sdev, wldev);
-+		break;
- #endif
- 	}
- }
-diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
-index 73fbf03..a92cde8 100644
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -5350,6 +5350,7 @@ static void b43_ssb_remove(struct ssb_device *sdev)
- {
- 	struct b43_wl *wl = ssb_get_devtypedata(sdev);
- 	struct b43_wldev *wldev = ssb_get_drvdata(sdev);
-+	struct b43_bus_dev *dev = wldev->dev;
- 
- 	/* We must cancel any work here before unregistering from ieee80211,
- 	 * as the ieee80211 unreg will destroy the workqueue. */
-@@ -5365,14 +5366,14 @@ static void b43_ssb_remove(struct ssb_device *sdev)
- 		ieee80211_unregister_hw(wl->hw);
- 	}
- 
--	b43_one_core_detach(wldev->dev);
-+	b43_one_core_detach(dev);
- 
- 	if (list_empty(&wl->devlist)) {
- 		b43_leds_unregister(wl);
- 		/* Last core on the chip unregistered.
- 		 * We can destroy common struct b43_wl.
- 		 */
--		b43_wireless_exit(wldev->dev, wl);
-+		b43_wireless_exit(dev, wl);
- 	}
- }
- 
-diff --git a/drivers/nfc/pn533.c b/drivers/nfc/pn533.c
-index 0372315..c77e054 100644
---- a/drivers/nfc/pn533.c
-+++ b/drivers/nfc/pn533.c
-@@ -1596,7 +1596,7 @@ static void pn533_disconnect(struct usb_interface *interface)
- 	usb_free_urb(dev->out_urb);
- 	kfree(dev);
- 
--	nfc_dev_info(&dev->interface->dev, "NXP PN533 NFC device disconnected");
-+	nfc_dev_info(&interface->dev, "NXP PN533 NFC device disconnected");
- }
- 
- static struct usb_driver pn533_driver = {
-diff --git a/net/wireless/reg.c b/net/wireless/reg.c
-index 1ad0f39..02751db 100644
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -903,7 +903,7 @@ static bool ignore_reg_update(struct wiphy *wiphy,
- 	    initiator != NL80211_REGDOM_SET_BY_COUNTRY_IE &&
- 	    !is_world_regdom(last_request->alpha2)) {
- 		REG_DBG_PRINT("Ignoring regulatory request %s "
--			      "since the driver requires its own regulaotry "
-+			      "since the driver requires its own regulatory "
- 			      "domain to be set first",
- 			      reg_initiator_name(initiator));
- 		return true;
-@@ -1125,12 +1125,13 @@ void wiphy_update_regulatory(struct wiphy *wiphy,
- 	enum ieee80211_band band;
- 
- 	if (ignore_reg_update(wiphy, initiator))
--		goto out;
-+		return;
-+
- 	for (band = 0; band < IEEE80211_NUM_BANDS; band++) {
- 		if (wiphy->bands[band])
- 			handle_band(wiphy, band, initiator);
- 	}
--out:
-+
- 	reg_process_beacons(wiphy);
- 	reg_process_ht_flags(wiphy);
- 	if (wiphy->reg_notifier)
+[1] http://lkml.org/lkml/2011/7/18/86
+
+
+
+Jan H. Schönherr (8):
+  list, treewide: Rename __list_del() to __list_link()
+  rcu: More rcu-variants for list manipulation
+  sched: Handle on_list ancestor in list_add_leaf_cfs_rq()
+  list, treewide: Rename __list_del_entry() to __list_del()
+  treewide: Use __list_del() instead of __list_link()
+  list: Make use of __list_link()
+  rcu: Make use of __list_link() and __list_link_rcu()
+  rcu: Rewrite and rename list_splice_init_rcu()
+
+ drivers/char/ipmi/ipmi_msghandler.c  |    2 +-
+ drivers/firewire/core-topology.c     |    2 +-
+ drivers/gpu/drm/ttm/ttm_page_alloc.c |    4 +-
+ fs/btrfs/volumes.c                   |    2 +-
+ include/linux/list.h                 |   80 ++++++++----------
+ include/linux/rculist.h              |  155 +++++++++++++++++++++++++++++----
+ kernel/mutex.h                       |    2 +-
+ kernel/sched_fair.c                  |   93 ++++++++++++++++-----
+ kernel/timer.c                       |    2 +-
+ lib/list_debug.c                     |    8 +-
+ net/ipv4/cipso_ipv4.c                |    2 +-
+ 11 files changed, 257 insertions(+), 95 deletions(-)
+
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+1.7.6
+
