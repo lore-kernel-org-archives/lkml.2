@@ -1,62 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab1G0DVR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 23:21:17 -0400
-Received: from DMZ-MAILSEC-SCANNER-8.MIT.EDU ([18.7.68.37]:56094 "EHLO
-	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753689Ab1G0DU7 (ORCPT
+	id S1754061Ab1G0DV5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 23:21:57 -0400
+Received: from DMZ-MAILSEC-SCANNER-4.MIT.EDU ([18.9.25.15]:54034 "EHLO
+	dmz-mailsec-scanner-4.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753780Ab1G0DVC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 23:20:59 -0400
-X-AuditID: 12074425-b7bcaae000000a1b-1c-4e2f83f29cc0
+	Tue, 26 Jul 2011 23:21:02 -0400
+X-AuditID: 1209190f-b7b44ae000000a24-94-4e2f8387f4b1
 From: Andy Lutomirski <luto@MIT.EDU>
 To: x86@kernel.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, jeremy@goop.org,
         keir.xen@gmail.com, xen-devel@lists.xensource.com,
         virtualization@lists.linux-foundation.org,
         Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH 1/5] x86-64: Pad vDSO to a page boundary
-Date: Tue, 26 Jul 2011 23:20:35 -0400
-Message-Id: <8a9c7b051547171afd88fc53a6416a001f76ec4a.1311736366.git.luto@mit.edu>
+Subject: [PATCH 3/5] x86-64: Work around gold bug 13023
+Date: Tue, 26 Jul 2011 23:20:37 -0400
+Message-Id: <754803d081d19d257f44c5f4eee309e353ef4d4c.1311736366.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1311736366.git.luto@mit.edu>
 References: <cover.1311736366.git.luto@mit.edu>
 In-Reply-To: <cover.1311736366.git.luto@mit.edu>
 References: <cover.1311736366.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHIsWRmVeSWpSXmKPExsUixG6novupWd/P4PRUTou+K0fZLR7Ne8Rq
-	MXXZXFaLZYufMlpc3jWHzWL52XlsFj82PGa1uDflPbsDh8fOWXfZPTZfXM3ksWlVJ5vH5BvL
-	GT229+1i9/j49BaLx+dNcgHsUVw2Kak5mWWpRfp2CVwZ+6bNZCzoZqnoaNnK2sC4irmLkYND
-	QsBEYv27qC5GTiBTTOLCvfVsXYxcHEIC+xgl2hddYIdwNjBKXDo8gRGkSkjgGZPEyZnhIDab
-	gIpEx9IHTCC2iICTROuEj0wgDcwCzxglNh09wwySEBawkJi39gsbiM0ioCpxafFedhCbVyBI
-	YsPjrewQq+Ukjlx+DjaIU8BAYu/GVmaIZfoS677cZcYlPoFRYAEjwypG2ZTcKt3cxMyc4tRk
-	3eLkxLy81CJdC73czBK91JTSTYzgYHZR3cE44ZDSIUYBDkYlHt6Nkfp+QqyJZcWVuYcYJTmY
-	lER5M4CxIMSXlJ9SmZFYnBFfVJqTWnyIUYKDWUmEd8d/PT8h3pTEyqrUonyYlDQHi5I4b4j3
-	f18hgfTEktTs1NSC1CKYrAwHh5IEbxjIUMGi1PTUirTMnBKENBMHJ8hwHqDh3iA1vMUFibnF
-	mekQ+VOMilLivFtBEgIgiYzSPLheWLJ5xSgO9Iow7xKQKh5gooLrfgU0mAnkah2wwSWJCCmp
-	Bkbtwgm3ej7WRPu6vHtxQNKo/vf6ABPBjPvfbZm+HGA+dfGB+UwN/Zj5QT7ZGVMz9h95EzMt
-	yGSxwLpu/RS7h1vnWteuyQnYsDfV8an6zXMSLq3tD9/kz7lg6DzhttZ5rlkHsrnf9HWcrVSO
-	LA/QM5h4Pcf+gO+NC6v+rjzjm7Tu5stT/nrVmbZKLMUZiYZazEXFiQBldTt3EQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHIsWRmVeSWpSXmKPExsUixCmqrNverO9nsG6nhEXflaPsFo/mPWK1
+	mLpsLqvFssVPGS0u75rDZrH87Dw2ix8bHrNa3Jvynt2Bw2PnrLvsHpsvrmby2LSqk81j8o3l
+	jB7b+3axe3x8eovF4/MmuQD2KC6blNSczLLUIn27BK6MDSsvMhWs46/o2/2MpYFxLk8XIyeH
+	hICJxOnH51khbDGJC/fWs3UxcnEICexjlHi9rZkJwtnAKLH8xTFGCOcZk8SRbS0sIC1sAioS
+	HUsfMIHYIgJOEq0TPoJ1MAs8Y5TYdPQMM0hCWMBc4uWVBiCbg4NFQFXi/lklEJNXIEji/z8H
+	iM1yEkcuPwcbwylgILF3YytYp5CAvsS6L3eZcYlPYBRYwMiwilE2JbdKNzcxM6c4NVm3ODkx
+	Ly+1SNdELzezRC81pXQTIziYJfl3MH47qHSIUYCDUYmHd1Okvp8Qa2JZcWXuIUZJDiYlUd7G
+	RqAQX1J+SmVGYnFGfFFpTmrxIUYJDmYlEd4d//X8hHhTEiurUovyYVLSHCxK4rzl3v99hQTS
+	E0tSs1NTC1KLYLIyHBxKErxhwKgVEixKTU+tSMvMKUFIM3FwggznARruDVLDW1yQmFucmQ6R
+	P8WoKCXOqwuSEABJZJTmwfXCks0rRnGgV4R5Q0CqeICJCq77FdBgJpCrdcAGlyQipKQaGJMm
+	S1p3hMT5aC/Xtm6N3JY9f1sIh8bzybUzHz7K+ng0v109//bazcf3HF/W1lI1j//zkii9+ksy
+	8yf1OT6TnrOZQyLES6Ixrfx1eMNkzmtmT/7oTv2xvHTKhx0OlW8W73pmm8EZGlV6WtZ7/pne
+	9PburPy5btn9k6TLdxZN9+55wvli+SfdLiWW4oxEQy3mouJEAH7x6n4RAwAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This avoids an information leak to userspace.
+Gold has trouble assigning numbers to the location counter inside of
+an output section description.  The bug was triggered by
+9fd67b4ed0714ab718f1f9bd14c344af336a6df7, which consolidated all of
+the vsyscall sections into a single section.  The workaround is IMO
+still nicer than the old way of doing it.
+
+This produces an apparently valid kernel image and passes my vdso
+tests on both GNU ld version 2.21.51.0.6-2.fc15 20110118 and GNU
+gold (version 2.21.51.0.6-2.fc15 20110118) 1.10 as distributed by
+Fedora 15.
 
 Signed-off-by: Andy Lutomirski <luto@mit.edu>
+Reported-by: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
 ---
- arch/x86/vdso/vdso.S |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/x86/kernel/vmlinux.lds.S |   16 ++++++++++------
+ 1 files changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/vdso/vdso.S b/arch/x86/vdso/vdso.S
-index 1b979c1..01f5e3b 100644
---- a/arch/x86/vdso/vdso.S
-+++ b/arch/x86/vdso/vdso.S
-@@ -9,6 +9,7 @@ __PAGE_ALIGNED_DATA
- vdso_start:
- 	.incbin "arch/x86/vdso/vdso.so"
- vdso_end:
-+	.align PAGE_SIZE /* extra data here leaks to userspace. */
+diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+index e79fb39..8f3a265 100644
+--- a/arch/x86/kernel/vmlinux.lds.S
++++ b/arch/x86/kernel/vmlinux.lds.S
+@@ -158,10 +158,12 @@ SECTIONS
+ 	__vvar_page = .;
  
- .previous
+ 	.vvar : AT(ADDR(.vvar) - LOAD_OFFSET) {
++		/* work around gold bug 13023 */
++		__vvar_beginning_hack = .;
+ 
+-	      /* Place all vvars at the offsets in asm/vvar.h. */
+-#define EMIT_VVAR(name, offset) 		\
+-		. = offset;		\
++		/* Place all vvars at the offsets in asm/vvar.h. */
++#define EMIT_VVAR(name, offset) 			\
++		. = __vvar_beginning_hack + offset;	\
+ 		*(.vvar_ ## name)
+ #define __VVAR_KERNEL_LDS
+ #include <asm/vvar.h>
+@@ -184,15 +186,17 @@ SECTIONS
+ 
+ 	. = VSYSCALL_ADDR;
+ 	.vsyscall : AT(VLOAD(.vsyscall)) {
++		/* work around gold bug 13023 */
++		__vsyscall_beginning_hack = .;
+ 		*(.vsyscall_0)
+ 
+-		. = 1024;
++		. = __vsyscall_beginning_hack + 1024;
+ 		*(.vsyscall_1)
+ 
+-		. = 2048;
++		. = __vsyscall_beginning_hack + 2048;
+ 		*(.vsyscall_2)
+ 
+-		. = 4096;  /* Pad the whole page. */
++		. = __vsyscall_beginning_hack + 4096;  /* Pad the whole page. */
+ 	} :user =0xcc
+ 	. = ALIGN(__vsyscall_0 + PAGE_SIZE, PAGE_SIZE);
  
 -- 
 1.7.6
