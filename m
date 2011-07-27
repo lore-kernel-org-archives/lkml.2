@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab1G0VRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 17:17:19 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:46679 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755160Ab1G0VRR (ORCPT
+	id S1755275Ab1G0VUP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 17:20:15 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51114 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755069Ab1G0VUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:17:17 -0400
-X-Auth-Info: VOBltCvuxbxf9GSQl+t22kqDzLe4NhY58wlyxkp9CF0=
-To: Joe Perches <joe@perches.com>
-cc: Andy Whitcroft <apw@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Graeme Russ <graeme.russ@gmail.com>,
-        U-Boot Users <u-boot@lists.denx.de>, linux-kernel@vger.kernel.org
-From: Wolfgang Denk <wd@denx.de>
-Subject: Re: [U-Boot] [RFC PATCH] checkpatch.pl: Add ability to ignore various messages
-MIME-Version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 8bit
-In-reply-to: <b41636a5e5756917b07e50a4b8309dbb092b0a17.1303778411.git.joe@perches.com>
-References: <1303713156.1745.38.camel@Joe-Laptop> <b41636a5e5756917b07e50a4b8309dbb092b0a17.1303778411.git.joe@perches.com>
-Comments: In-reply-to Joe Perches <joe@perches.com>
-   message dated "Mon, 25 Apr 2011 17:43:22 -0700."
-Date: Wed, 27 Jul 2011 23:17:07 +0200
-Message-Id: <20110727211707.139ED15794C3@gemini.denx.de>
+	Wed, 27 Jul 2011 17:20:13 -0400
+Date: Wed, 27 Jul 2011 14:19:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel =?ISO-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>,
+        "George G. Davis" <gdavis@mvista.com>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rtc-omap: Fix initialization of control register
+Message-Id: <20110727141907.53225270.akpm@linux-foundation.org>
+In-Reply-To: <1310381866-25584-1-git-send-email-dg@emlix.com>
+References: <1310381866-25584-1-git-send-email-dg@emlix.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Joe,
+On Mon, 11 Jul 2011 12:57:46 +0200
+Daniel Gl__ckner <dg@emlix.com> wrote:
 
-In message <b41636a5e5756917b07e50a4b8309dbb092b0a17.1303778411.git.joe@perches.com> you wrote:
-> Some users would like the ability to not emit some of the
-> messages that checkpatch produces.
+> As the comment explains, the intention of the code is to clear the
+> OMAP_RTC_CTRL_MODE_12_24 bit, but instead it only clears the
+> OMAP_RTC_CTRL_SPLIT and OMAP_RTC_CTRL_AUTO_COMP bits, which should be
+> kept. OMAP_RTC_CTRL_DISABLE, OMAP_RTC_CTRL_SET_32_COUNTER,
+> OMAP_RTC_CTRL_TEST, and OMAP_RTC_CTRL_ROUND_30S are also better off
+> being cleared.
 > 
-> Add command line option to "--ignore" various message types.
-> Add .checkpatch.conf file to store a default set of "ignore" flags
-> Categorize all ERROR, WARN and CHK types with flags.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> Signed-off-by: Daniel Gl__ckner <dg@emlix.com>
 > ---
->  scripts/checkpatch.pl |  456 +++++++++++++++++++++++++++++++++++--------------
->  1 files changed, 327 insertions(+), 129 deletions(-)
+>  drivers/rtc/rtc-omap.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+> index bcae8dd..7789002 100644
+> --- a/drivers/rtc/rtc-omap.c
+> +++ b/drivers/rtc/rtc-omap.c
+> @@ -368,7 +368,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+>  		pr_info("%s: already running\n", pdev->name);
+>  
+>  	/* force to 24 hour mode */
+> -	new_ctrl = reg & ~(OMAP_RTC_CTRL_SPLIT|OMAP_RTC_CTRL_AUTO_COMP);
+> +	new_ctrl = reg & (OMAP_RTC_CTRL_SPLIT|OMAP_RTC_CTRL_AUTO_COMP);
+>  	new_ctrl |= OMAP_RTC_CTRL_STOP;
+>  
+>  	/* BOARD-SPECIFIC CUSTOMIZATION CAN GO HERE:
 
-Did you receive any feedback for your proposal, especially from Andrew
-Morton?
+Decisions need to be made about which kernel version(s) this should be
+merged into.  To make and support those decisions we need to know the
+user-visible effects of the bug.  But the changelog is silent on this
+important thing.
 
-This feature would be really useful for us, but I'd rather see this in
-mainline than starting a fork.
+What were the user-visible effects of the bug?
 
-Best regards,
-Viele Grüße,
-
-Wolfgang Denk
-
--- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
-Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
-The IQ of the group is the lowest IQ of a member of the group divided
-by the number of people in the group.
