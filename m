@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab1G0Dql (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 23:46:41 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:27577 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753995Ab1G0Dqk (ORCPT
+	id S1753596Ab1G0Dwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 23:52:39 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:52350 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752792Ab1G0Dwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 23:46:40 -0400
-X-AuditID: cbfee61a-b7cf0ae000006bc6-af-4e2f8a1e64f8
-Date: Wed, 27 Jul 2011 12:46:32 +0900
-From: Kyungmin Park <kmpark@infradead.org>
-Subject: [PATCH] serial: samsung: Fix compiler error when !CONFIG_PM_SLEEP
-To: Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-id: <20110727034632.GA31896@july>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-OriginalArrivalTime: 27 Jul 2011 03:46:58.0436 (UTC)
- FILETIME=[D5EF6C40:01CC4C0F]
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 26 Jul 2011 23:52:37 -0400
+Message-ID: <4E2F8B7B.80906@signal11.us>
+Date: Tue, 26 Jul 2011 23:52:27 -0400
+From: Alan Ott <alan@signal11.us>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, linux-net@vger.kernel.org
+Subject: IP over 802.2 with LLC/SNAP
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyungmin Park <kyungmin.park@samsung.com>
+Hi,
 
-drivers/tty/serial/samsung.c: In function 's3c24xx_serial_init':
-drivers/tty/serial/samsung.c:1237: error: lvalue required as unary '&' operand
+What I have is a fairly straight-forward question, but takes a little 
+background to get there.
 
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
-index afc6294..318ab90 100644
---- a/drivers/tty/serial/samsung.c
-+++ b/drivers/tty/serial/samsung.c
-@@ -1225,15 +1225,15 @@ static const struct dev_pm_ops s3c24xx_serial_pm_ops = {
- 	.suspend = s3c24xx_serial_suspend,
- 	.resume = s3c24xx_serial_resume,
- };
--#else /* !CONFIG_PM_SLEEP */
--#define s3c24xx_serial_pm_ops	NULL
- #endif /* CONFIG_PM_SLEEP */
- 
- int s3c24xx_serial_init(struct platform_driver *drv,
- 			struct s3c24xx_uart_info *info)
- {
- 	dbg("s3c24xx_serial_init(%p,%p)\n", drv, info);
-+#ifdef CONFIG_PM_SLEEP
- 	drv->driver.pm = &s3c24xx_serial_pm_ops;
-+#endif
- 
- 	return platform_driver_register(drv);
- }
+I have an ancient computer (Gould 3267) that I'm trying to interface 
+with both a Windows computer and an embedded Linux computer over 
+UDP/Ethernet. Since the Gould doesn't have any IP support, I have to 
+make the IP packet myself. Also, because of the way the Gould's Ethernet 
+driver works, sent packets all use the type/length field in the Ethernet 
+header to represent the length and therefore are unable to specify that 
+the packet contains IP data in the Ethernet header. To get around this, 
+I added an 802.2 LLC/SNAP header to my packet[1]. My packet looks good 
+in Wireshark, and I have it working well communicating with the Windows 
+PC. However, I can't seem to get Linux to recognize the packet as IP, 
+and thus I am unable to receive it using the normal socket interface on 
+the Linux system.
+
+So the question is, does Linux support IP over 802.2 with LLC/SNAP? Is 
+there a sysfs/proc entry that I have to turn on to make this work (I 
+didn't find one)? I have the LLC2 module loaded, and I believe my packet 
+to be correct, since Windows recognizes it and since Wireshark doesn't 
+give any red flags on it. I've been unable to find anything about this 
+kind of thing in my searching.
+
+I put a sample capture file of the packets I'm sending at [2] for those 
+interested.
+
+Alan.
+
+[1] So the packet looks like this:
+  Ethernet Header
+  LLC/SNAP header
+  IP Header
+  UDP Header
+  data
+
+[2] www.signal11.us/~alan/testraw.pcap
