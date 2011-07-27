@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab1G0R2h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 13:28:37 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:7026 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753785Ab1G0R2e (ORCPT
+	id S1754719Ab1G0R2u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 13:28:50 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:34045 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754593Ab1G0R2r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 13:28:34 -0400
-From: Yufeng Shen <miletus@chromium.org>
-To: linux-input@vger.kernel.org
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Chris Leech <christopher.leech@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Yufeng Shen <miletus@chromium.org>
-Subject: [PATCH v2] Input: atmel_mxt_ts - Report pressure information from the driver
-Date: Wed, 27 Jul 2011 13:28:15 -0400
-Message-Id: <1311787695-28147-1-git-send-email-miletus@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+	Wed, 27 Jul 2011 13:28:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAO+b5-o1vZLResL9LzquZw5qu50evzfGAXNQ8fU0dVZZ5iX6+Q@mail.gmail.com>
+References: <1311630170-26057-1-git-send-email-jim.cromie@gmail.com>
+ <1311630170-26057-19-git-send-email-jim.cromie@gmail.com> <CAO+b5-o1vZLResL9LzquZw5qu50evzfGAXNQ8fU0dVZZ5iX6+Q@mail.gmail.com>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Wed, 27 Jul 2011 11:28:16 -0600
+Message-ID: <CAJfuBxy8gqCDNJrhh1EWnBe2zUazvzji66g=0KTfA9b6FPn45A@mail.gmail.com>
+Subject: Re: [PATCH 18/25] dynamic_debug: describe_flags with '=[pmflta_]*'
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: jbaron@redhat.com, joe@perches.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, gnb@fmeh.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Atmel mxt1386 touch controller has the touch pressure information but
-the current driver atmel_mxt_ts does not expose it to the user space.
-This patch makes the driver report the touch pressure information to
-user space.
+On Tue, Jul 26, 2011 at 1:37 AM, Bart Van Assche <bvanassche@acm.org> wrote:
+> On Mon, Jul 25, 2011 at 11:42 PM, Jim Cromie <jim.cromie@gmail.com> wrote:
+>> Change describe_flags() to emit '=[pmflta_]+' for current callsite
+>> flags, or just '=_' when they're disabled.  Having '=' in output
+>> allows a more selective grep expression, in contrast '-' may appear
+>> in filenames, line-ranges, and format-strings.  '=' also has better
+>> mnemonics, saying; "the current setting are equal to <flags>".
+>>
+>> The default allows grep "=_" <dbgfs>/dynamic_debug/control
+>> to see disabled callsites while avoiding the many occurrences of " = "
+>> seen in format strings.
+>>
+>> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 
-ChangeLog:
-v2: fixed indentation as commented by Wanlong Gao
+>> @@ -102,11 +103,12 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
+>>        int i;
+>>
+>>        BUG_ON(maxlen < 4);
+>> +       *p++ = '=';
+>>        for (i = 0; i < ARRAY_SIZE(opt_array); ++i)
 
-Change-Id: Ie0e4683a3cd5ec79222f7682b0ddc24f909af543
----
- drivers/input/touchscreen/atmel_mxt_ts.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+>
+> The "BUG_ON(maxlen < 4)" tests whether a buffer overflow can occur
+> before starting to write in the buffer. Since the above code affects
+> the number of characters that can be written in the output buffer,
+> shouldn't that statement be updated or replaced ?
+>
+> Bart.
+>
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index ae00604..9bdf4e0 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -244,6 +244,7 @@ struct mxt_finger {
- 	int x;
- 	int y;
- 	int area;
-+	int pressure;
- };
- 
- /* Each client has this additional data */
-@@ -536,6 +537,8 @@ static void mxt_input_report(struct mxt_data *data, int single_id)
- 					finger[id].x);
- 			input_report_abs(input_dev, ABS_MT_POSITION_Y,
- 					finger[id].y);
-+			input_report_abs(input_dev, ABS_MT_PRESSURE,
-+					finger[id].pressure);
- 		} else {
- 			finger[id].status = 0;
- 		}
-@@ -560,6 +563,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
- 	int x;
- 	int y;
- 	int area;
-+	int pressure;
- 
- 	/* Check the touch is present on the screen */
- 	if (!(status & MXT_DETECT)) {
-@@ -584,6 +588,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
- 		y = y >> 2;
- 
- 	area = message->message[4];
-+	pressure = message->message[5];
- 
- 	dev_dbg(dev, "[%d] %s x: %d, y: %d, area: %d\n", id,
- 		status & MXT_MOVE ? "moved" : "pressed",
-@@ -594,6 +599,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
- 	finger[id].x = x;
- 	finger[id].y = y;
- 	finger[id].area = area;
-+	finger[id].pressure = pressure;
- 
- 	mxt_input_report(data, id);
- }
-@@ -1125,6 +1131,8 @@ static int __devinit mxt_probe(struct i2c_client *client,
- 			     0, data->max_x, 0, 0);
- 	input_set_abs_params(input_dev, ABS_MT_POSITION_Y,
- 			     0, data->max_y, 0, 0);
-+	input_set_abs_params(input_dev, ABS_MT_PRESSURE,
-+			     0, 255, 0, 0);
- 
- 	input_set_drvdata(input_dev, data);
- 	i2c_set_clientdata(client, data);
--- 
-1.7.3.1
+Ack.
+Ive just enlarged buffer and check to 10.
+strictly, only 9 is needed, but Im feeling generous.
 
+thanks for the close reading.
+
+updated git://github.com/jimc/linux-2.6.git  dyndbg-next
