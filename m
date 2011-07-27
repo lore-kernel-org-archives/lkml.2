@@ -1,285 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab1G0HPW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 03:15:22 -0400
-Received: from webbox1416.server-home.net ([77.236.96.61]:41658 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751826Ab1G0HPU (ORCPT
+	id S1753849Ab1G0HRR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 03:17:17 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61772 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178Ab1G0HRO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 03:15:20 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Subject: [PATCH RFC resend] pch_uart: Add console support
-Date: Wed, 27 Jul 2011 09:15:14 +0200
-Message-Id: <1311750914-28870-1-git-send-email-alexander.stein@systec-electronic.com>
-X-Mailer: git-send-email 1.7.3.4
+	Wed, 27 Jul 2011 03:17:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <1311740499.1536.56.camel@vkoul-udesk3>
+References: <1311185906-7813-1-git-send-email-jaswinder.singh@linaro.org>
+	<1311220903-2545-1-git-send-email-jaswinder.singh@linaro.org>
+	<CACRpkdbWHmob3EWJc6u5=yh=rNwVSR5hu9-Xud5kvQNU9-POtA@mail.gmail.com>
+	<CAJe_Zhc4uJB8N9i2w38zzP3+XxcYF2v-zwsrhERWSi-yObV-6A@mail.gmail.com>
+	<CABE8wwt7dkwgeahYBSUufOvJmVNfYyTss6U5qBgjJk9RVLBkYg@mail.gmail.com>
+	<CAJe_ZhdYg4EpaNbBW+dayjSORqM=E6myT3oOG5VTsiQnh3erTA@mail.gmail.com>
+	<CABE8wwt8J_r9cExG+EAqqK=XVmAyLYhv+-T49Rr9hhKudD8n2g@mail.gmail.com>
+	<CAJe_ZheVyLk-yqyF_XO80xX3j7_7mDPnv-me+n=X_hNWycSLwg@mail.gmail.com>
+	<CABE8wwtkSnaJ5fvi=4bq7zye3W0SmErHAZeWAcHuYvLgvqy=_Q@mail.gmail.com>
+	<CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com>
+	<CABE8wwv2XQ_aJ8O2TUAz1LgJorBwDbgyQQv7jeAn06Q2AcqH+Q@mail.gmail.com>
+	<CAJe_ZhcNM7m-eWA0nDUrOrHxeAhNS00gewf=txmvOFL_uOPhrw@mail.gmail.com>
+	<1311740499.1536.56.camel@vkoul-udesk3>
+Date: Wed, 27 Jul 2011 12:47:13 +0530
+Message-ID: <CAJe_ZhfaPfobs5P+q+t-kRSK4fAvm-v_brYgqmco8fwOOBeT8A@mail.gmail.com>
+Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
+From: Jaswinder Singh <jaswinder.singh@linaro.org>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        rmk+kernel@arm.linux.org.uk, linus.walleij@stericsson.com,
+        per.friden@stericsson.com, wei.zhang@freescale.com,
+        ebony.zhu@freescale.com, iws@ovro.caltech.edu, s.hauer@pengutronix.de,
+        maciej.sosnowski@intel.com, saeed@marvell.com, shawn.guo@freescale.com,
+        yur@emcraft.com, agust@denx.de, iwamatsu.nobuhiro@renesas.com,
+        per.forlin@stericsson.com, jonas.aberg@stericsson.com,
+        anemo@mba.ocn.ne.jp
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add console support to pch_uart. To enable append e.g.
-console=ttyPCH0,115200 to your kernel command line.
+On 27 July 2011 09:51, Koul, Vinod <vinod.koul@intel.com> wrote:
+> On Tue, 2011-07-26 at 23:42 +0530, Jaswinder Singh wrote:
+>> On 26 July 2011 20:59, Williams, Dan J <dan.j.williams@intel.com> wrote:
+>> > On Tue, Jul 26, 2011 at 7:30 AM, Jaswinder Singh
+>> > <jaswinder.singh@linaro.org> wrote:
+>> >> On 26 July 2011 01:38, Williams, Dan J <dan.j.williams@intel.com> wrote:
+>> >>> Correct, it is meant that chan_id is only a sysfs property.  Any
+>> >>> driver usage that is assuming chan_id is anything more than a
+>> >>> guaranteed unique number within a given dma_device's list of channels
+>> >>> is probably inferring too much.
+>> >>
+>> >> So you mean dmac/client drivers are wrong if they make use of chan_id.
+>> >> They shouldn't count upon it's value - which is set by DMA API for a completely
+>> >> independent purpose, i.e, creating contiguous sysfs entries.
+>> >
+>> > They can count on it being unique, and maybe the fact that it is in
+>> > the same order as dma_device.channels.
+>> The latter implies the former. And it is already the dmac driver that
+>> decides the
+>> rank of a channel in the list.
+>>
+>> >
+>> >>
+>> >> Since "chan_id is only a sysfs property" and the fact that it is used
+>> >> only _once_
+>> >> by the DMA API
+>> >>
+>> >> In drivers/dma/dmaengine.c
+>> >>
+>> >>      chan->chan_id = chancnt++;
+>> >>      dev_set_name(&chan->dev->device, "dma%dchan%d",
+>> >>                             device->dev_id, chan->chan_id);
+>> >>
+>> >>
+>> >> Can't we do away with chan_id altogether ? by having
+>> >>
+>> >>      dev_set_name(&chan->dev->device, "dma%dchan%d",
+>> >>                             device->dev_id, chancnt++);
+>> >>
+>> >> I mean why make every instance of dma_chan bigger by 4bytes ?
+>> >>
+>> >> So why shouldn't we remove chan_id completely from the DMA API ?
+>> >
+>> > Good point...  Let's remove chan_id from the core and push it into the
+>> > drivers that need it.
+>> >
+>> If you agree, I would preserve the chan_id in 'struct dma_chan' but remove
+>> any assignment to it in dmaengine.c  and let the dmac drivers use it freely.
+>> That would:-
+>> a) Let dmac drivers decide what numbers they want to show up in sysfs.
+>> b) chan_id is easily reachable by client drivers, so it is better this way.
+>> c) It would mean lesser and simpler changes to extant users of it.
+> But this can cause conflict between two controllers who think they are
+> assigning unique numbers.
+Could you please clarify, which two controllers ?
 
-Expected issues:
-* Should not work on CM-iTC boards due to different clock.
+> IMO sysfs representation needs to be with
+> dmaengine only. How do we guarantee uniqueness b/w two controllers?
+Again, how is chan_id currently unique between two controllers ?
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
----
-This patch is rebased to current Linus' master branch
+Btw, do you not want to keep chan_id in dma_chan or do you not want to change
+anything at all ?
 
- drivers/tty/serial/Kconfig    |    9 +++
- drivers/tty/serial/pch_uart.c |  160 ++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 168 insertions(+), 1 deletions(-)
+>
+> Also I am not sure about the approach: The whole point is to make filter
+> function select based on some channel number "x", but you should filter
+> channels based on controller you want and capability of a channel. If
+> caps is not enough to filter we should add more flags but asking that I
+> need channel 'y' doesn't sound right to me.
+> This is all coming from that fact that some drivers assume channel 'a'
+> is for this type of transfer and channel 'b' for something else, for a
+> dma controller that really doesn't matter, as all channels have similar
+> capabilities and can do similar things so you should
+> _get_channel_based_on_caps rather than on some numbering.
+>
+> Lastly, why do you need a channel reserved for some type of transfer, is
+> it for assigning h/w interface for dma transfer, if so that can be
+> achieved in different ways as well
 
-diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-index cb40b82..278d1c9 100644
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -1585,6 +1585,15 @@ config SERIAL_PCH_UART
- 	  ML7213/ML7223 is companion chip for Intel Atom E6xx series.
- 	  ML7213/ML7223 is completely compatible for Intel EG20T PCH.
- 
-+config SERIAL_PCH_UART_CONSOLE
-+	bool "Support for console on Intel EG20T PCH UART/OKI SEMICONDUCTOR ML7213 IOH"
-+	depends on SERIAL_PCH_UART=y
-+	select SERIAL_CORE_CONSOLE
-+	help
-+	  Say Y here if you wish to use the PCH UART as the system console
-+	  (the system  console is the device which receives all kernel messages and
-+	  warnings and which allows logins in single user mode).
-+
- config SERIAL_MSM_SMD
- 	bool "Enable tty device interface for some SMD ports"
- 	default n
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index 846dfcd..21923c35 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -23,6 +23,9 @@
- #include <linux/interrupt.h>
- #include <linux/io.h>
- #include <linux/dmi.h>
-+#include <linux/console.h>
-+#include <linux/nmi.h>
-+#include <linux/delay.h>
- 
- #include <linux/dmaengine.h>
- #include <linux/pch_dma.h>
-@@ -196,6 +199,10 @@ enum {
- 
- #define PCI_VENDOR_ID_ROHM		0x10DB
- 
-+#define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
-+
-+#define DEFAULT_BAUD_RATE 1843200 /* 1.8432MHz */
-+
- struct pch_uart_buffer {
- 	unsigned char *buf;
- 	int size;
-@@ -270,6 +277,9 @@ static struct pch_uart_driver_data drv_dat[] = {
- 	[pch_ml7223_uart1] = {PCH_UART_2LINE, 1},
- };
- 
-+#ifdef CONFIG_SERIAL_PCH_UART_CONSOLE
-+static struct eg20t_port *pch_uart_ports[PCH_UART_NR];
-+#endif
- static unsigned int default_baud = 9600;
- static const int trigger_level_256[4] = { 1, 64, 128, 224 };
- static const int trigger_level_64[4] = { 1, 16, 32, 56 };
-@@ -1377,6 +1387,143 @@ static struct uart_ops pch_uart_ops = {
- 	.verify_port = pch_uart_verify_port
- };
- 
-+#ifdef CONFIG_SERIAL_PCH_UART_CONSOLE
-+
-+/*
-+ *	Wait for transmitter & holding register to empty
-+ */
-+static void wait_for_xmitr(struct eg20t_port *up, int bits)
-+{
-+	unsigned int status, tmout = 10000;
-+
-+	/* Wait up to 10ms for the character(s) to be sent. */
-+	for (;;) {
-+		status = ioread8(up->membase + UART_LSR);
-+
-+		if ((status & bits) == bits)
-+			break;
-+		if (--tmout == 0)
-+			break;
-+		udelay(1);
-+	}
-+
-+	/* Wait up to 1s for flow control if necessary */
-+	if (up->port.flags & UPF_CONS_FLOW) {
-+		unsigned int tmout;
-+		for (tmout = 1000000; tmout; tmout--) {
-+			unsigned int msr = ioread8(up->membase + UART_MSR);
-+			if (msr & UART_MSR_CTS)
-+				break;
-+			udelay(1);
-+			touch_nmi_watchdog();
-+		}
-+	}
-+}
-+
-+static void pch_console_putchar(struct uart_port *port, int ch)
-+{
-+	struct eg20t_port *priv =
-+		container_of(port, struct eg20t_port, port);
-+
-+	wait_for_xmitr(priv, UART_LSR_THRE);
-+	iowrite8(ch, priv->membase + PCH_UART_THR);
-+}
-+
-+/*
-+ *	Print a string to the serial port trying not to disturb
-+ *	any possible real use of the port...
-+ *
-+ *	The console_lock must be held when we get here.
-+ */
-+static void
-+pch_console_write(struct console *co, const char *s, unsigned int count)
-+{
-+	struct eg20t_port *priv;
-+
-+	unsigned long flags;
-+	u8 ier;
-+	int locked = 1;
-+
-+	priv = pch_uart_ports[co->index];
-+
-+	touch_nmi_watchdog();
-+
-+	local_irq_save(flags);
-+	if (priv->port.sysrq) {
-+		/* serial8250_handle_port() already took the lock */
-+		locked = 0;
-+	} else if (oops_in_progress) {
-+		locked = spin_trylock(&priv->port.lock);
-+	} else
-+		spin_lock(&priv->port.lock);
-+
-+	/*
-+	 *	First save the IER then disable the interrupts
-+	 */
-+	ier = ioread8(priv->membase + UART_IER);
-+
-+	pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_ALL_INT);
-+
-+	uart_console_write(&priv->port, s, count, pch_console_putchar);
-+
-+	/*
-+	 *	Finally, wait for transmitter to become empty
-+	 *	and restore the IER
-+	 */
-+	wait_for_xmitr(priv, BOTH_EMPTY);
-+	iowrite8(ier, priv->membase + UART_IER);
-+
-+	if (locked)
-+		spin_unlock(&priv->port.lock);
-+	local_irq_restore(flags);
-+}
-+
-+static int __init pch_console_setup(struct console *co, char *options)
-+{
-+	struct uart_port *port;
-+	int baud = 9600;
-+	int bits = 8;
-+	int parity = 'n';
-+	int flow = 'n';
-+
-+	/*
-+	 * Check whether an invalid uart number has been specified, and
-+	 * if so, search for the first available port that does have
-+	 * console support.
-+	 */
-+	if (co->index >= PCH_UART_NR)
-+		co->index = 0;
-+	port = &pch_uart_ports[co->index]->port;
-+
-+	if (!port || (!port->iobase && !port->membase))
-+		return -ENODEV;
-+
-+	/* setup uartclock */
-+	port->uartclk = DEFAULT_BAUD_RATE;
-+
-+	if (options)
-+		uart_parse_options(options, &baud, &parity, &bits, &flow);
-+
-+	return uart_set_options(port, co, baud, parity, bits, flow);
-+}
-+
-+static struct uart_driver pch_uart_driver;
-+
-+static struct console pch_console = {
-+	.name		= PCH_UART_DRIVER_DEVICE,
-+	.write		= pch_console_write,
-+	.device		= uart_console_device,
-+	.setup		= pch_console_setup,
-+	.flags		= CON_PRINTBUFFER | CON_ANYTIME,
-+	.index		= -1,
-+	.data		= &pch_uart_driver,
-+};
-+
-+#define PCH_CONSOLE	(&pch_console)
-+#else
-+#define PCH_CONSOLE	NULL
-+#endif
-+
- static struct uart_driver pch_uart_driver = {
- 	.owner = THIS_MODULE,
- 	.driver_name = KBUILD_MODNAME,
-@@ -1384,6 +1531,7 @@ static struct uart_driver pch_uart_driver = {
- 	.major = 0,
- 	.minor = 0,
- 	.nr = PCH_UART_NR,
-+	.cons = PCH_CONSOLE,
- };
- 
- static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
-@@ -1410,7 +1558,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 	if (!rxbuf)
- 		goto init_port_free_txbuf;
- 
--	base_baud = 1843200; /* 1.8432MHz */
-+	base_baud = DEFAULT_BAUD_RATE;
- 
- 	/* quirk for CM-iTC board */
- 	board_name = dmi_get_system_info(DMI_BOARD_NAME);
-@@ -1460,6 +1608,9 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 	pci_set_drvdata(pdev, priv);
- 	pch_uart_hal_request(pdev, fifosize, base_baud);
- 
-+#ifdef CONFIG_SERIAL_PCH_UART_CONSOLE
-+	pch_uart_ports[board->line_no] = priv;
-+#endif
- 	ret = uart_add_one_port(&pch_uart_driver, &priv->port);
- 	if (ret < 0)
- 		goto init_port_hal_free;
-@@ -1467,6 +1618,9 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 	return priv;
- 
- init_port_hal_free:
-+#ifdef CONFIG_SERIAL_PCH_UART_CONSOLE
-+	pch_uart_ports[board->line_no] = NULL;
-+#endif
- 	free_page((unsigned long)rxbuf);
- init_port_free_txbuf:
- 	kfree(priv);
-@@ -1489,6 +1643,10 @@ static void pch_uart_pci_remove(struct pci_dev *pdev)
- 	priv = (struct eg20t_port *)pci_get_drvdata(pdev);
- 
- 	pci_disable_msi(pdev);
-+
-+#ifdef CONFIG_SERIAL_PCH_UART_CONSOLE
-+	pch_uart_ports[priv->port.line] = NULL;
-+#endif
- 	pch_uart_exit_port(priv);
- 	pci_disable_device(pdev);
- 	kfree(priv);
--- 
-1.7.3.4
-
+Please look at this patch from POV of utility of chan_id, which isn't much
+currently as explainined.
