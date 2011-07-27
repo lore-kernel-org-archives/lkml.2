@@ -1,69 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980Ab1G0Tr3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 15:47:29 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34348
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752681Ab1G0Tr1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 15:47:27 -0400
-Date: Wed, 27 Jul 2011 15:47:22 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
-Message-ID: <20110727194722.GA9345@infradead.org>
-References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>
- <20110727160752.GC974@fieldses.org>
- <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
- <20110727181111.GA23009@infradead.org>
- <alpine.DEB.2.02.1107271530340.1451@p34.internal.lan>
- <20110727193937.GA5354@infradead.org>
- <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>
+	id S1754946Ab1G0TtU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 15:49:20 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56544 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751974Ab1G0TtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 15:49:18 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Sven Eckelmann <sven@narfation.org>
+Subject: Re: [PATCHv4 04/11] PM: Use *_dec_not_zero instead of *_add_unless
+Date: Wed, 27 Jul 2011 21:50:37 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0+; KDE/4.6.0; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        linux-pm@lists.linux-foundation.org
+References: <1311760070-21532-1-git-send-email-sven@narfation.org> <1311760070-21532-4-git-send-email-sven@narfation.org>
+In-Reply-To: <1311760070-21532-4-git-send-email-sven@narfation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107272150.37962.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 03:44:20PM -0400, Justin Piszcz wrote:
+On Wednesday, July 27, 2011, Sven Eckelmann wrote:
+> atomic_dec_not_zero is defined for each architecture through
+> <linux/atomic.h> to provide the functionality of
+> atomic_add_unless(x, -1, 0).
 > 
-> 
-> On Wed, 27 Jul 2011, Christoph Hellwig wrote:
-> 
-> >On Wed, Jul 27, 2011 at 03:35:01PM -0400, Justin Piszcz wrote:
-> >>Currently I do not see any dupes, however I have a script that moves
-> >>images out of the directory once an hour:
-> >>0 * * * * /usr/local/bin/move_to_old2.sh > /dev/null 2>&1
-> >
-> >Do you keep adding files to the directory while you move files out?
-> Yes, otherwise there are too many files in the directory and viewers, e.g.,
-> each geeqie (picture viewer) will use > 4-6GB of memory, so I try to keep
-> it around 5,000 pictures or less.
-> 
-> >What's the rate of additions/removals to the directory?
-> Additions it depends, around 5,000 over a 12hr period, 416/hr, current:
-> 
-> atom:/d1/motion# find cam1|wc
->    5215    5215  166853
-> atom:/d1/motion# find cam2|wc
->    5069    5069  162181
-> atom:/d1/motion# find cam3|wc
->    5594    5594  178981
-> atom:/d1/motion#
+> Signed-off-by: Sven Eckelmann <sven@narfation.org>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: linux-pm@lists.linux-foundation.org
 
-This sounds a lot like xfs simply filling up the directory index slots
-of files that you just moved out with new files, and nfs falsely
-claiming that this is a problem.
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-Any chance to figure out if the file you hit the printk with was one
-that got either recently added or moved when you hit it?  (I can't
-follow the nfs code enough to check if it prints the first or second hit
-of the same cookie)
+> ---
+>  drivers/base/power/runtime.c |    4 ++--
+>  include/linux/pm_runtime.h   |    2 +-
+>  kernel/power/hibernate.c     |    4 ++--
+>  kernel/power/user.c          |    2 +-
+>  4 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+> index 8dc247c..bda10d9 100644
+> --- a/drivers/base/power/runtime.c
+> +++ b/drivers/base/power/runtime.c
+> @@ -401,7 +401,7 @@ static int rpm_suspend(struct device *dev, int rpmflags)
+>  
+>  		if (dev->parent) {
+>  			parent = dev->parent;
+> -			atomic_add_unless(&parent->power.child_count, -1, 0);
+> +			atomic_dec_not_zero(&parent->power.child_count);
+>  		}
+>  	}
+>  	wake_up_all(&dev->power.wait_queue);
+> @@ -841,7 +841,7 @@ int __pm_runtime_set_status(struct device *dev, unsigned int status)
+>  	if (status == RPM_SUSPENDED) {
+>  		/* It always is possible to set the status to 'suspended'. */
+>  		if (parent) {
+> -			atomic_add_unless(&parent->power.child_count, -1, 0);
+> +			atomic_dec_not_zero(&parent->power.child_count);
+>  			notify_parent = !parent->power.ignore_children;
+>  		}
+>  		goto out_set;
+> diff --git a/include/linux/pm_runtime.h b/include/linux/pm_runtime.h
+> index daac05d..3b4931c 100644
+> --- a/include/linux/pm_runtime.h
+> +++ b/include/linux/pm_runtime.h
+> @@ -63,7 +63,7 @@ static inline void pm_runtime_get_noresume(struct device *dev)
+>  
+>  static inline void pm_runtime_put_noidle(struct device *dev)
+>  {
+> -	atomic_add_unless(&dev->power.usage_count, -1, 0);
+> +	atomic_dec_not_zero(&dev->power.usage_count);
+>  }
+>  
+>  static inline bool device_run_wake(struct device *dev)
+> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> index 8f7b1db..0ba8d87 100644
+> --- a/kernel/power/hibernate.c
+> +++ b/kernel/power/hibernate.c
+> @@ -606,7 +606,7 @@ int hibernate(void)
+>  
+>  	mutex_lock(&pm_mutex);
+>  	/* The snapshot device should not be opened while we're running */
+> -	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
+> +	if (!atomic_dec_not_zero(&snapshot_device_available)) {
+>  		error = -EBUSY;
+>  		goto Unlock;
+>  	}
+> @@ -756,7 +756,7 @@ static int software_resume(void)
+>  		goto Unlock;
+>  
+>  	/* The snapshot device should not be opened while we're running */
+> -	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
+> +	if (!atomic_dec_not_zero(&snapshot_device_available)) {
+>  		error = -EBUSY;
+>  		swsusp_close(FMODE_READ);
+>  		goto Unlock;
+> diff --git a/kernel/power/user.c b/kernel/power/user.c
+> index 42ddbc6..1c1cc01 100644
+> --- a/kernel/power/user.c
+> +++ b/kernel/power/user.c
+> @@ -72,7 +72,7 @@ static int snapshot_open(struct inode *inode, struct file *filp)
+>  
+>  	mutex_lock(&pm_mutex);
+>  
+> -	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
+> +	if (!atomic_dec_not_zero(&snapshot_device_available)) {
+>  		error = -EBUSY;
+>  		goto Unlock;
+>  	}
+> 
+
