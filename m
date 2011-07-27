@@ -1,106 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012Ab1G0O6P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 10:58:15 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32829 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab1G0O6N convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 10:58:13 -0400
-Date: Wed, 27 Jul 2011 10:57:45 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andy Lutomirski <luto@mit.edu>
-Cc: x86@kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jeremy@goop.org, keir.xen@gmail.com, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 0/5] Collected vdso/vsyscall fixes for 3.1
-Message-ID: <20110727145745.GA11872@dumpdata.com>
-References: <cover.1311736366.git.luto@mit.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <cover.1311736366.git.luto@mit.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090208.4E30277B.00C5,ss=1,re=0.000,fgs=0
+	id S1752848Ab1G0PCO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 11:02:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34930 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750861Ab1G0PCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 11:02:12 -0400
+Subject: Re: list sort
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Don Mullis <don.mullis@gmail.com>, Dave Chinner <david@fromorbit.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4E3024A3.7010102@ladisch.de>
+References: <1311773014.2801.23.camel@menhir>  <4E3024A3.7010102@ladisch.de>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Wed, 27 Jul 2011 16:04:19 +0100
+Message-ID: <1311779059.2801.27.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 11:20:34PM -0400, Andy Lutomirski wrote:
-> This fixes various problems that cropped up with the vdso patches.
+Hi,
+
+On Wed, 2011-07-27 at 16:45 +0200, Clemens Ladisch wrote:
+> Steven Whitehouse wrote:
+> > There seems to be an issue with list_sort trying to compare an object to
+> > itself. [...]
+> > While it appears generally harmless, since the list does appear to be
+> > correctly sorted, it is doing extra work needlessly.
 > 
->  - Patch 1 fixes an information leak to userspace.
->  - Patches 2 and 3 fix the kernel build on gold.
->  - Patches 4 and 5 fix Xen (I hope).
+> There are sort algorithms where this happens naturally, and adding
+> an additional check to avoid calling the comparison function when the
+> pointers are equal would be more work overall than just calling cmp().
 > 
-> Konrad, could you could test these on Xen and run 'test_vsyscall test' [1]?
-
-They boot 64-bit guest succesfully.
-
-But I doesn't compile under 32-bit:
-
-home/konrad/ssd/linux/arch/x86/xen/enlighten.c:953: error: unknown field ‘extra_user_64bit_cs’ specified in initializer
-/home/konrad/ssd/linux/arch/x86/xen/enlighten.c:953: error: ‘FLAT_USER_CS64’ undeclared here (not in a function)
-
-Looks like it needs some #ifdef CONFIG_X86_64 magic.. and after
-applying that magic dust it compiles and it also boots as 32-bit
-(no surprise there).
-
-> I don't have a usable Xen setup.
-
-It is pretty easy to setup. Google for PVops Wiki and you will find wealth
-of information. FYI: I am gone next week so won't be able to test these
-patches.
-
+> This does not happen with list_sort()'s merge sort, but I've noticed
+> the following hack in merge_and_restore_back_links():
 > 
-> Also, I'd appreciate a review of patches 4 and 5 from some Xen/paravirt
-> people.
+> 	do {
+> 		/*
+> 		 * In worst cases this loop may run many iterations.
+> 		 * Continue callbacks to the client even though no
+> 		 * element comparison is needed, so the client's cmp()
+> 		 * routine can invoke cond_resched() periodically.
+> 		 */
+> 		(*cmp)(priv, tail->next, tail->next);
 > 
-> [1] https://gitorious.org/linux-test-utils/linux-clock-tests
+> 		tail->next->prev = tail;
+> 		tail = tail->next;
+> 	} while (tail->next);
+> 
+> When there is no cond_resched() call, this is indeed needless work.
+> 
+> However, if the list is so short that cond_resched() is not needed,
+> the additional comparisons should not hurt anyway.
+> 
+> 
+> Regards,
+> Clemens
 
-Grrrrr..
+Ah, I see now... that makes some kind of sense I think. I didn't expect
+the cmp routine to be dual purpose in that way,
 
-g++ -o test_vsyscall -std=gnu++0x -lrt -ldl -O2 -Wall -mavx -g test_vsyscall.cc
-test_vsyscall.cc: In function ‘int bench(int, char**)’:
-test_vsyscall.cc:205: error: expected primary-expression before ‘[’ token
-test_vsyscall.cc:205: error: expected primary-expression before ‘]’ token
-test_vsyscall.cc:206: error: expected primary-expression before ‘[’ token
-test_vsyscall.cc:206: error: expected primary-expression before ‘]’ token
-test_vsyscall.cc:207: error: expected primary-expression before ‘[’ token
-test_vsyscall.cc:207: error: expected primary-expression before ‘]’ token
-test_vsyscall.cc:211: error: expected primary-expression before ‘[’ token
-test_vsyscall.cc:211: error: expected primary-expression before ‘]’ token
-test_vsyscall.cc:213: error: expected primary-expression before ‘[’ token
-test_vsyscall.cc:213: error: expected primary-expression before ‘]’ token
-test_vsyscall.cc:214: error: expected primary-expression before ‘[’ token
-test_vsyscall.cc:214: error: expected primary-expression before ‘]’ token
-test_vsyscall.cc:218: error: expected primary-expression before ‘[’ token
-test_vsyscall.cc:218: error: expected primary-expression before ‘]’ token
-test_vsyscall.cc:219: error: expected primary-expression before ‘[’ token
-test_vsyscall.cc:219: error: expected primary-expression before ‘]’ token
-test_vsyscall.cc:222: error: expected primary-expression before ‘[’ token
-test_vsyscall.cc:222: error: expected primary-expression before ‘]’ token
-test_vsyscall.cc:203: warning: unused variable ‘tv’
-test_vsyscall.cc:204: warning: unused variable ‘tz’
-test_vsyscall.cc:210: warning: unused variable ‘t’
-test_vsyscall.cc:217: warning: unused variable ‘cpu’
-test_vsyscall.cc:217: warning: unused variable ‘node’
+Steve.
 
-Is there a specific version of GCC I should be using? I seem to be
-using: g++ (GCC) 4.4.4 20100503 (Red Hat 4.4.4-2)
 
-Anyhow, removed the benchmark code and ran it on 64-bit:
-
-sh-4.1# /test_vsyscall  test
-Testing gettimeofday...
-[  109.552261] test_vsyscall[2462] trap invalid opcode ip:400c8d sp:7fff84fab470 error:0 in test_vsyscall[400000+2000]
-Illegal instruction
-sh-4.1# /test_vsyscall  intcc
-About to execute int 0xcc from RIP = 400959
-[  114.137150] test_vsyscall[2463] illegal int 0xcc (exploit attempt?) ip:400959 cs:e033 sp:7fff8b328310 ax:2c si:0 di:7fff8b3280f0
-Caught SIGSEGV: Segmentation fault (Signal sent by the kernel [(nil)])RIP = 400959
-
-[This is on git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git #testing, which
-has todays linus/master and your patchset]
