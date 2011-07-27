@@ -1,87 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab1G0W5y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:57:54 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:45747 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446Ab1G0W5x (ORCPT
+	id S1755524Ab1G0XFT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 19:05:19 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52569 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753031Ab1G0XFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 18:57:53 -0400
-Subject: Re: [GIT PULL-v2] iscsi-target merge for v3.1-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
-        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Boaz Harrosh <openosd@gmail.com>, Mike Christie <michaelc@cs.wisc.edu>,
-        Dan Carpenter <error27@gmail.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>
-In-Reply-To: <1311732839.10646.132.camel@haakon2.linux-iscsi.org>
-References: <1311732839.10646.132.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain
-Date: Wed, 27 Jul 2011 15:48:31 -0700
-Message-Id: <1311806911.6931.65.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Jul 2011 19:05:17 -0400
+MIME-Version: 1.0
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Wed, 27 Jul 2011 15:58:24 -0700
+Message-ID: <CAB=NE6UpMSRh4JCA676O3nwObX9ftVvRKu=HcWKVUFBwTLTCQg@mail.gmail.com>
+Subject: [ANN] compat-wireless release for Linux 3.0
+To: linux-wireless <linux-wireless@vger.kernel.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-26 at 19:13 -0700, Nicholas A. Bellinger wrote:
-> Hi Linus,
-> 
-> Here is an updated pull request for an initial v3.1-rc1 merge of
-> iscsi_target including the updates to address some recent build breakage
-> with iscsi_proto.h in linux-next, and minor build warnings on 32-bit.
-> 
-> This also includes the DIV_ROUND_UP_SECTOR_T bit and associated change
-> for targte_core_mod from this morning that address the 32-bit unsigned
-> long long division build issues as per your direction on LKML.  This can
-> definately use some more discussion and testing in linux-next, so please
-> let me know if how you prefer to merge these.
-> 
-> The series is available directly here:
-> 
->   master.kernel.org:/pub/scm/linux/kernel/git/nab/target-pending.git for-next
-> 
-> This tree is also available from kernel.org mirrors at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
-> 
-> The series is based on the following mainline HEAD:
-> 
-> commit bbd9d6f7fbb0305c9a592bf05a32e87eb364a4ff
-> Merge: 8e20487 5a9a436
-> Author: Linus Torvalds <torvalds@linux-foundation.org>
-> Date:   Fri Jul 22 19:02:39 2011 -0700
-> 
->     Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6
-> 
-> Also just double checking, here the for-next branch is merge conflict
-> free on yesterdays linux-next (20110725), and latest mainline HEAD from
-> afternoon.
-> 
-> Thank you,
-> 
+Linus flushed out Linux 3.0, the respective backport of that release
+for the 802.11, Bluetooth and Networking subsystems is available now
+[1]. Thanks for all the contributions, below are the compat.git and
+compat-wireless.git contributions, for more details please refer to
+the complete ChangeLog [2], and the stable compat-wireless page page
+[3]. I've compile tested this against 2.6.38 and loaded iwlagn
+successfully.
 
-Hi Linus,
+To discuss if we want to expand this framework to include other
+subsystems we can talk about it in person at the 2011 Linux Plumbers
+conference [4], should the BoF proposal get accepted. Farewell 2.6.x
+days.
 
-Thank you for pulling in iscsi-target for an initial v3.1 merge!
+===============================================
+ChangeLog for compat-wireless for linux-3.0
+===============================================
 
-The for-next branch has been updated to address this morning's reported
-items with Dan's fixes and Randy's CONFIG_SMP=n + CONFIG_MODULES=n build
-breakage.
+This is the ChangeLog for the Linux kernel project compat-wireless.
+It provides a backport of a few Linux kernel subsystems down to
+older kernels:
 
-I'll keep queueing up v3.1-rc1 bugfixes in for-next and will follow up
-with a fixes-only pull request early next week, unless of course you
-want it earlier than that.  :)
+  * 802.11
+  * Bluetooth
+  * Ethernet
 
-Thanks again, and please let us know if you have any concerns,
+For more details refer to the home page:
 
---nab
+http://wireless.kernel.org/en/users/Download/stable/
 
+The compat-wireless project consists of code from three projects:
+
+  * The Linux kernel: linux-2.6-allstable.git
+  * Compat-wirelesS: compat-wireless.git
+  * Compat: compat.git
+
+The compat-wireless stable releases incorporates code from from
+each of these git trees for the respective upstream Linux kernel
+stable release. A branch called linux-2.6.3x.y exists for each
+stable release. Below we provide the ChangeLog of changes from
+the previous branched release to the new branched release.
+
+Release: linux-3.0
+
+
+Updates from the compat.git project:
+====================================
+
+git shortlog linux-2.6.39.y..linux-3.0.y
+
+Eliad Peller (1):
+      compat: add an empty implementation for pm_wakeup_event()
+
+Felix Fietkau (4):
+      compat: add an empty definition for __rcu
+      compat: backport rcu_dereference_protected
+      compat: backport rcu_access_pointer
+      compat: backport rtnl_dereference
+
+Hauke Mehrtens (23):
+      compat: backport netdev_refcnt_read.
+      compat: add support for kernel 2.6.39
+      compat: fix build for kernel < 2.6.29
+      compat: semaphore.h mpoved from asm/ to linux/
+      compat: integrate kfifo into compat.ko
+      compat: add kstrtox
+      compat: remove sdio_set_host_pm_flags
+      compat: add time_to_tm
+      compat: do not include kstrto* for kernel >= 2.6.38.4
+      compat: fix TASK_INTERRUPTIBLE missing
+      compat: backport vzalloc()
+      compat: handle fail of vmalloc()
+      compat: add missing include
+      compat: backport kfree_rcu
+      compat: backport ethtool_cmd_speed
+      compat: add header linux/printk.h
+      compat: backport rcu_dereference_raw
+      compat: backport RCU_INIT_POINTER
+      compat: remove wrong backport of kfree_rcu
+      compat: add support for kernel 3.0
+      compat: add device name in register_netdevice(dev)
+      compat: rename CONFIG_COMPAT_KERNEL_
+      compat: add KEY_WPS_BUTTON
+
+Luis R. Rodriguez (2):
+      compat: backport IRQ namespace cleanup
+      compat: empty commit for 3.0 tag changes
+
+Updates from the compat-wireless.git project:
+=============================================
+
+git shortlog linux-2.6.39.y..linux-3.0.y
+
+Hauke Mehrtens (29):
+      compat-wireless: add support for mwifiex
+      compat-wireless: backport threaded irq for wl12xx_spi
+      compat-wirless: deactivate PM support for libertas_spi for kernel < 2.6.29
+      compat-wireless: fix compile warning for wl12xx
+      compat-wireless: clean up the config file
+      compat-wireless: Remove extra config option for kfifo.
+      compat-wireless: make patches apply again
+      compat-wireless: remove ar9170
+      compat-wireless: make patches apply again
+      compat-wireless: fix build of atheros Ethernet drivers.
+      compat-wireless: update config options
+      compat-wireless: use function for setting queue_mapping
+      compat-wireless: fix compile problem with IRQF_ONESHOT
+      compat-wireless: backport multicast filter in p54 for kernel < 2.6.35
+      compat-wireless: make patches apply again
+      compat-wireless: add RTL8192SE driver
+      compat-wireless: enable RT33XX support.
+      compat-wireless: make patches apply again
+      compat-wireless: set CONFIG_COMPAT_STAGING=m
+      compat-wireless: fix building of brcm80211
+      Revert "compat-wireless: fix rfkill patches from applying"
+      compat-wireless: adapt rename of dev to sdev in b43
+      compat-wireless: revert usage of kfree_rcu
+      compat-wireless: rename CONFIG_COMPAT_KERNEL_
+      compat-wireless: add support for kernel 3.XX
+      compat-wireless: activate CARL9170_WPC by default
+      compat-wireless: activate CONFIG_RT2800{USB,PCI}_RT35XX by default.
+      compat-wireless: sync atheros-debug.mk with config.mk
+      compat-wireless: update enable-older-kernels patches
+
+Johannes Berg (1):
+      The sched_scan patches changed context for a patch.
+
+Luis R. Rodriguez (19):
+      compat-wireless: fix compilation warning for wl12xx
+      compat-wireless: refresh patches for next-20110414
+      compat-wireless: fix patches/09-threaded-irq.patch
+      compat-wireless: refresh patches
+      compat-wireless: refresh patches
+      compat-wireless: refresh patches
+      compat-wireless: refresh patches
+      compat-wireless: fix patch dealing with lbs_pr_err() / pr_err()
+      compat-wireless: fix rfkill patches from applying
+      compat-wireless: fix applying of 09-threaded-irq.patch
+      compat-wireless: refresh patches
+      compat-wireless: patch updates for updates for 3.0.1-rc1 release
+      compat-wireless: fixes for making 3.0 stable compat-wireless releases
+      compat-wireless: refresh patches for 3.0-rc3
+      compat-wireless: fix usb/Makefile patch for 3.0-rc4 release
+      compat-wireless: refresh patches for 3.0-rc4
+      compat-wireless: fix script for generating releases
+      compat-wireless: refresh patches for 3.0 final release
+      compat-wireless: dummy update for -2 release
+
+[1] http://www.orbit-lab.org/kernel/compat-wireless-3.0-stable/v3.0/compat-wireless-3.0-2.tar.bz2
+[2] http://www.orbit-lab.org/kernel/compat-wireless-3.0-stable/v3.0/ChangeLog-3.0-wireless
+[3] http://wireless.kernel.org/en/users/Download/stable
+[4] http://www.linuxplumbersconf.org/2011/ocw/proposals/771
+
+  Luis
