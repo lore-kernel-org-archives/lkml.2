@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754394Ab1G0OeU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 10:34:20 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:54422 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753564Ab1G0OeS (ORCPT
+	id S1754536Ab1G0OhT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 10:37:19 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:57474 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753292Ab1G0OhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 10:34:18 -0400
-Message-ID: <4E3021E6.30409@gmail.com>
-Date: Wed, 27 Jul 2011 16:34:14 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	Wed, 27 Jul 2011 10:37:18 -0400
+Message-ID: <4E302299.2070309@lwfinger.net>
+Date: Wed, 27 Jul 2011 09:37:13 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Darren Hart <dvhart@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: rt_mutex: restore wait_lock init in __rt_mutex_init
-References: <1311754711-19577-1-git-send-email-dvhart@linux.intel.com> <alpine.LFD.2.02.1107271130280.2660@ionos>
-In-Reply-To: <alpine.LFD.2.02.1107271130280.2660@ionos>
-Content-Type: text/plain; charset=ISO-8859-1
+To: hubert Liao <liao.hubertt@gmail.com>
+CC: Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Oops when insmod rtl8192ce
+References: <CAMzZzFGqPv6Nbw8J8JGNKcLA76sAs3oD6+hH9NPCjwA33fYpOQ@mail.gmail.com> <CAMzZzFGpDiFAhsLAb+SQxjbGMzBoOStF_Lr7Eb3PT6Drcf=VdA@mail.gmail.com>
+In-Reply-To: <CAMzZzFGpDiFAhsLAb+SQxjbGMzBoOStF_Lr7Eb3PT6Drcf=VdA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2011 11:37 AM, Thomas Gleixner wrote:
-> On Wed, 27 Jul 2011, Darren Hart wrote:
->
->> Without the raw_spin_lock_init(), the wait_lock does not get properly
->> initialized with CONFIG_DEBUG_SPINLOCK. This can manifest in a BUG() in the
->> futex requeue_pi path when the pi_state->pi_mutex->wait_lock fails the magic
->> test in rt_mutex_start_proxy_lock()->raw_spin_lock(&lock->wait_lock).
-> That's actively wrong. You reinitialize the lock for all other cases
-> which call this via rt_mutex_init(). There is a reason why I moved the
-> spin lock initializer out of __rt_mutex_init() into
-> rt_mutex_init(). The lock name stuff for lockdep ends up to be
-> "lock->wait_lock" for all rt_mutexes, which is pretty useless when you
-> have to analyze a lockdep splat. Thanks for finding it nevertheless.
->
-> So the correct fix is:
->
-> Index: linux-2.6/kernel/rtmutex.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/rtmutex.c
-> +++ linux-2.6/kernel/rtmutex.c
-> @@ -1296,7 +1296,7 @@ EXPORT_SYMBOL_GPL(__rt_mutex_init);
->  void rt_mutex_init_proxy_locked(struct rt_mutex *lock,
->  				struct task_struct *proxy_owner)
->  {
-> -	__rt_mutex_init(lock, NULL);
-> +	rt_mutex_init(lock);
->  	debug_rt_mutex_proxy_lock(lock, proxy_owner);
->  	rt_mutex_set_owner(lock, proxy_owner);
->  	rt_mutex_deadlock_account_lock(lock, proxy_owner);
->
->  
-Seems to work. I no longer get a warning from pulseaudio either.
-Also darren, at least on fedora 15 glibc supports requeue_pi.
-support for that is in nptl/sysdeps/unix/sysv/linux/x86_64/pthread_cond_*.S
+On 07/27/2011 04:26 AM, hubert Liao wrote:
+> Hi,
+> We got an oops when insmod rtl8192ce module (the board is an ARM soc),
+> accroding the oops message, find it's because in rtl_pci_probe()
+> called _rtl_pci_find_adapter(),
+> in this funcation, the  pdev->bus->self is a NULL pointer .
+> static boot _rtl_pci_find_adapter(strcut pci_dev *dev,
+>                struct ieee80211_hw *hw)
+> {
+> struct pci_dev *bridge_pdev = pdev->bus->self;   //line 1601
+> ...
+> pcipriv->ndis_adapter.pcibridge_vendorid = bridge_pdev->vendor;<--
+> [oops here] line 1700
+> ...
+> }
+> here, I just want to know why the bus->self  is NULL?
+> ----
+> [  148.186632] Unable to handle kernel NULL pointer dereference at
+> virtual address 00000020
 
-Cheers,
-Maarten
+As John Linville suggested, please open a bugzilla report.
+
+I would also like some additional information. What kernel are you using? In 
+addition, please post the 'lspci -nnk' information for your card.
+
+I also think that pdev->bus should have been setup before the initialization 
+code in rtl8192ce was called. I have not tested the driver on other than x86 and 
+x86_64 architectures because of hardware availability, thus ARM may expose some 
+problems. Is this soc little-endian?
+
+Thanks,
+Larry
+
