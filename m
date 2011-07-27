@@ -1,98 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab1G0H6u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 03:58:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52985 "EHLO mx2.suse.de"
+	id S1754003Ab1G0IAF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 04:00:05 -0400
+Received: from gate.crashing.org ([63.228.1.57]:49330 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753626Ab1G0H6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 03:58:48 -0400
-Date: Wed, 27 Jul 2011 09:58:45 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Igor Mammedov <imammedo@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
-        linux-mm@kvack.org, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        Tim Deegan <Tim.Deegan@citrix.com>
-Subject: Re: [PATCH] memcg: do not expose uninitialized mem_cgroup_per_node
- to world
-Message-ID: <20110727075845.GA4024@tiehlicka.suse.cz>
-References: <20110601152039.GG4266@tiehlicka.suse.cz>
- <4DE66BEB.7040502@redhat.com>
- <BANLkTimbqHPeUdue=_Z31KVdPwcXtbLpeg@mail.gmail.com>
- <4DE8D50F.1090406@redhat.com>
- <BANLkTinMamg_qesEffGxKu3QkT=zyQ2MRQ@mail.gmail.com>
- <4DEE26E7.2060201@redhat.com>
- <20110608123527.479e6991.kamezawa.hiroyu@jp.fujitsu.com>
- <20110608140951.115ab1dd.akpm@linux-foundation.org>
- <4DF24D04.1080802@redhat.com>
- <20110726141754.c69b96c6.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110726141754.c69b96c6.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753386Ab1G0IAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 04:00:03 -0400
+Subject: Re: [RFC/PATCH] mm/futex: Fix futex writes on archs with SW
+ tracking of dirty & young
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Shan Hai <haishan.bai@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, paulus@samba.org,
+        tglx@linutronix.de, walken@google.com, dhowells@redhat.com,
+        cmetcalf@tilera.com, tony.luck@intel.com, akpm@linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org
+In-Reply-To: <CAMjpGUdxpaYBFfKjBEPFOJohnKoXfagLUHvhrst+NembeabxcA@mail.gmail.com>
+References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>
+	 <1310717238-13857-2-git-send-email-haishan.bai@gmail.com>
+	 <1310725418.2586.309.camel@twins> <4E21A526.8010904@gmail.com>
+	 <1310860194.25044.17.camel@pasglop>
+	 <4b337921-d430-4b63-bc36-ad31753cf800@email.android.com>
+	 <1310912990.25044.203.camel@pasglop> <1310944453.25044.262.camel@pasglop>
+	 <1310961691.25044.274.camel@pasglop> <4E23D728.7090406@gmail.com>
+	 <1310972462.25044.292.camel@pasglop> <4E23E02C.8090401@gmail.com>
+	 <1310974591.25044.298.camel@pasglop> <4E24FA51.70602@gmail.com>
+	 <1311049762.25044.392.camel@pasglop>
+	 <CAMjpGUdxpaYBFfKjBEPFOJohnKoXfagLUHvhrst+NembeabxcA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Jul 2011 17:58:33 +1000
+Message-ID: <1311753513.25044.663.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 26-07-11 14:17:54, Andrew Morton wrote:
-> On Fri, 10 Jun 2011 18:57:40 +0200
-> Igor Mammedov <imammedo@redhat.com> wrote:
+On Tue, 2011-07-26 at 23:50 -0700, Mike Frysinger wrote:
+> On Mon, Jul 18, 2011 at 21:29, Benjamin Herrenschmidt wrote:
+> > The futex code currently attempts to write to user memory within
+> > a pagefault disabled section, and if that fails, tries to fix it
+> > up using get_user_pages().
+> >
+> > This doesn't work on archs where the dirty and young bits are
+> > maintained by software, since they will gate access permission
+> > in the TLB, and will not be updated by gup().
+> >
+> > In addition, there's an expectation on some archs that a
+> > spurious write fault triggers a local TLB flush, and that is
+> > missing from the picture as well.
+> >
+> > I decided that adding those "features" to gup() would be too much
+> > for this already too complex function, and instead added a new
+> > simpler fixup_user_fault() which is essentially a wrapper around
+> > handle_mm_fault() which the futex code can call.
 > 
-> > On 06/08/2011 11:09 PM, Andrew Morton wrote:
-> > > The original patch:
-> > >
-> > > --- a/mm/memcontrol.c
-> > > +++ b/mm/memcontrol.c
-> > > @@ -4707,7 +4707,6 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
-> > >   	if (!pn)
-> > >   		return 1;
-> > >
-> > > -	mem->info.nodeinfo[node] = pn;
-> > >   	for (zone = 0; zone<  MAX_NR_ZONES; zone++) {
-> > >   		mz =&pn->zoneinfo[zone];
-> > >   		for_each_lru(l)
-> > > @@ -4716,6 +4715,7 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
-> > >   		mz->on_tree = false;
-> > >   		mz->mem = mem;
-> > >   	}
-> > > +	mem->info.nodeinfo[node] = pn;
-> > >   	return 0;
-> > >   }
-> > >
-> > > looks like a really good idea.  But it needs a new changelog and I'd be
-> > > a bit reluctant to merge it as it appears that the aptch removes our
-> > > only known way of reproducing a bug.
-> > >
-> > > So for now I think I'll queue the patch up unchangelogged so the issue
-> > > doesn't get forgotten about.
-> > >
-> > Problem was in rhel's xen hv.
-> > It was missing fix for imul emulation.
-> > Details here 
-> > http://lists.xensource.com/archives/html/xen-devel/2011-06/msg00801.html
-> > Thanks to Tim Deegan and everyone who was involved in the discussion.
-> 
-> I really don't want to trawl through a lengthy xen bug report
+> unfortunately, this breaks all nommu ports.  you added
+> fixup_user_fault() to mm/memory.c only which is not used by nommu
 
-The bug turned out to be Xen specific and this patch just hidden the bug
-in Xen.
+Argh. Andrew, do you want to send a fix ? I won't be able to do that
+tonight, I have to go.
 
-> and write your changelog for you.
-> 
-> We still have no changelog for this patch.  Please send one.
+What should nommu do anyways ? it's not like there's much it can do
+right ? It should never even hit the fault path to start with ...
 
-Appart from a better programming style is there any other reason for
-taking it?  If applied it might hide potential bugs when somebody is
-touching data too early.
+Cheers,
+Ben.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+
