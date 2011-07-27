@@ -1,288 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482Ab1G0CVC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 22:21:02 -0400
+	id S1753656Ab1G0CVO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 22:21:14 -0400
 Received: from wolverine01.qualcomm.com ([199.106.114.254]:8694 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073Ab1G0CU6 (ORCPT
+	with ESMTP id S1753005Ab1G0CU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 22:20:58 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6419"; a="106131147"
+	Tue, 26 Jul 2011 22:20:59 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6419"; a="106131149"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        David Brown <davidb@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: [PATCHv3 1/2] ARM: Set proper TEXT_OFFSET for newer MSMs
-Date: Tue, 26 Jul 2011 19:20:54 -0700
-Message-Id: <1311733255-25207-1-git-send-email-sboyd@codeaurora.org>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, David Brown <davidb@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCHv3 2/2] ARM: P2V: Remove ARM_PATCH_PHYS_VIRT_16BIT
+Date: Tue, 26 Jul 2011 19:20:55 -0700
+Message-Id: <1311733255-25207-2-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.7.6.233.gd79bc
+In-Reply-To: <1311733255-25207-1-git-send-email-sboyd@codeaurora.org>
+References: <1311733255-25207-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MSMs post 8x50 have 2Mb at the beginning of RAM reserved for
-shared memory. Since the kernel hasn't typically been told this
-RAM exists, PHYS_OFFSET has been set to 0xN0200000 and the memory
-atags passed to the kernel have matched. This doesn't play nicely
-with things such as AUTO_ZRELADDR, which doesn't work at all, and
-dynamic phys to virt, which requires an MSM specific workaround.
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
 
-Work around these issues by telling the kernel RAM starts at
-0xN0000000 (it actually does) and fixup the atags from the
-bootloader (if necessary) to say the same. In addition, make sure
-to set TEXT_OFFSET at least 2Mb beyond the start of RAM so that
-the kernel doesn't end up being decompressed into shared memory.
+Now that MSM targets no longer need the 16-bit offsets for P2V, this
+code can be removed.
 
-After doing this, AUTO_ZRELADDR should work on MSM with no
-problems and ARM_PATCH_PHYS_VIRT_16BIT should no longer be
-necessary.
-
+Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 ---
 
-I don't know what tree to send this through, so I'm sending it
-to LAKML and letting other people figure it out.
-
 Changes since v2:
- - None
 
-Changes since v1:
+ - Remove the 16bit p2v code
 
- - Add 2MB to the fixed-up atag's size
+ arch/arm/Kconfig              |   11 +-------
+ arch/arm/include/asm/memory.h |    7 -----
+ arch/arm/kernel/head.S        |   61 +++++++++--------------------------------
+ 3 files changed, 14 insertions(+), 65 deletions(-)
 
- arch/arm/Makefile                       |    3 +++
- arch/arm/mach-msm/board-msm7x30.c       |   22 ++++++++++++++++++++++
- arch/arm/mach-msm/board-msm8960.c       |   22 ++++++++++++++++++++++
- arch/arm/mach-msm/board-msm8x60.c       |   25 +++++++++++++++++++++++++
- arch/arm/mach-msm/include/mach/memory.h |    6 +++---
- 5 files changed, 75 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index f5b2b39..44b1d02 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -128,6 +128,9 @@ textofs-$(CONFIG_PM_H1940)      := 0x00108000
- ifeq ($(CONFIG_ARCH_SA1100),y)
- textofs-$(CONFIG_SA1111) := 0x00208000
- endif
-+textofs-$(CONFIG_ARCH_MSM7X30) := 0x00208000
-+textofs-$(CONFIG_ARCH_MSM8X60) := 0x00208000
-+textofs-$(CONFIG_ARCH_MSM8960) := 0x00208000
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 8944874..c856684 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -205,16 +205,7 @@ config ARM_PATCH_PHYS_VIRT
+ 	  kernel in system memory.
  
- # Machine directory name.  This list is sorted alphanumerically
- # by CONFIG_* macro name.
-diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
-index b7a8496..d1e4cc8 100644
---- a/arch/arm/mach-msm/board-msm7x30.c
-+++ b/arch/arm/mach-msm/board-msm7x30.c
-@@ -24,6 +24,7 @@
- #include <linux/smsc911x.h>
- #include <linux/usb/msm_hsusb.h>
- #include <linux/clkdev.h>
-+#include <linux/memblock.h>
+ 	  This can only be used with non-XIP MMU kernels where the base
+-	  of physical memory is at a 16MB boundary, or theoretically 64K
+-	  for the MSM machine class.
+-
+-config ARM_PATCH_PHYS_VIRT_16BIT
+-	def_bool y
+-	depends on ARM_PATCH_PHYS_VIRT && ARCH_MSM
+-	help
+-	  This option extends the physical to virtual translation patching
+-	  to allow physical memory down to a theoretical minimum of 64K
+-	  boundaries.
++	  of physical memory is at a 16MB boundary.
  
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -42,6 +43,21 @@
+ source "init/Kconfig"
  
- extern struct sys_timer msm_timer;
+diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
+index b8de516..441fc4f 100644
+--- a/arch/arm/include/asm/memory.h
++++ b/arch/arm/include/asm/memory.h
+@@ -160,7 +160,6 @@
+  * so that all we need to do is modify the 8-bit constant field.
+  */
+ #define __PV_BITS_31_24	0x81000000
+-#define __PV_BITS_23_16	0x00810000
  
-+static void __init msm7x30_fixup(struct machine_desc *desc, struct tag *tag,
-+			 char **cmdline, struct meminfo *mi)
-+{
-+	for (; tag->hdr.size; tag = tag_next(tag))
-+		if (tag->hdr.tag == ATAG_MEM && tag->u.mem.start == 0x200000) {
-+			tag->u.mem.start = 0;
-+			tag->u.mem.size += SZ_2M;
-+		}
-+}
-+
-+static void __init msm7x30_reserve(void)
-+{
-+	memblock_remove(0x0, SZ_2M);
-+}
-+
- static int hsusb_phy_init_seq[] = {
- 	0x30, 0x32,	/* Enable and set Pre-Emphasis Depth to 20% */
- 	0x02, 0x36,	/* Disable CDR Auto Reset feature */
-@@ -107,6 +123,8 @@ static void __init msm7x30_map_io(void)
- 
- MACHINE_START(MSM7X30_SURF, "QCT MSM7X30 SURF")
- 	.boot_params = PLAT_PHYS_OFFSET + 0x100,
-+	.fixup = msm7x30_fixup,
-+	.reserve = msm7x30_reserve,
- 	.map_io = msm7x30_map_io,
- 	.init_irq = msm7x30_init_irq,
- 	.init_machine = msm7x30_init,
-@@ -115,6 +133,8 @@ MACHINE_END
- 
- MACHINE_START(MSM7X30_FFA, "QCT MSM7X30 FFA")
- 	.boot_params = PLAT_PHYS_OFFSET + 0x100,
-+	.fixup = msm7x30_fixup,
-+	.reserve = msm7x30_reserve,
- 	.map_io = msm7x30_map_io,
- 	.init_irq = msm7x30_init_irq,
- 	.init_machine = msm7x30_init,
-@@ -123,6 +143,8 @@ MACHINE_END
- 
- MACHINE_START(MSM7X30_FLUID, "QCT MSM7X30 FLUID")
- 	.boot_params = PLAT_PHYS_OFFSET + 0x100,
-+	.fixup = msm7x30_fixup,
-+	.reserve = msm7x30_reserve,
- 	.map_io = msm7x30_map_io,
- 	.init_irq = msm7x30_init_irq,
- 	.init_machine = msm7x30_init,
-diff --git a/arch/arm/mach-msm/board-msm8960.c b/arch/arm/mach-msm/board-msm8960.c
-index 35c7cee..b04468e 100644
---- a/arch/arm/mach-msm/board-msm8960.c
-+++ b/arch/arm/mach-msm/board-msm8960.c
-@@ -20,16 +20,34 @@
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/clkdev.h>
-+#include <linux/memblock.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
- #include <asm/hardware/gic.h>
-+#include <asm/setup.h>
- 
- #include <mach/board.h>
- #include <mach/msm_iomap.h>
- 
- #include "devices.h"
- 
-+static void __init msm8960_fixup(struct machine_desc *desc, struct tag *tag,
-+			 char **cmdline, struct meminfo *mi)
-+{
-+	for (; tag->hdr.size; tag = tag_next(tag))
-+		if (tag->hdr.tag == ATAG_MEM &&
-+				tag->u.mem.start == 0x40200000) {
-+			tag->u.mem.start = 0x40000000;
-+			tag->u.mem.size += SZ_2M;
-+		}
-+}
-+
-+static void __init msm8960_reserve(void)
-+{
-+	memblock_remove(0x40000000, SZ_2M);
-+}
-+
- static void __init msm8960_map_io(void)
+ extern unsigned long __pv_phys_offset;
+ #define PHYS_OFFSET __pv_phys_offset
+@@ -178,9 +177,6 @@ static inline unsigned long __virt_to_phys(unsigned long x)
  {
- 	msm_map_msm8960_io();
-@@ -76,6 +94,8 @@ static void __init msm8960_rumi3_init(void)
+ 	unsigned long t;
+ 	__pv_stub(x, t, "add", __PV_BITS_31_24);
+-#ifdef CONFIG_ARM_PATCH_PHYS_VIRT_16BIT
+-	__pv_stub(t, t, "add", __PV_BITS_23_16);
+-#endif
+ 	return t;
  }
  
- MACHINE_START(MSM8960_SIM, "QCT MSM8960 SIMULATOR")
-+	.fixup = msm8960_fixup,
-+	.reserve = msm8960_reserve,
- 	.map_io = msm8960_map_io,
- 	.init_irq = msm8960_init_irq,
- 	.timer = &msm_timer,
-@@ -83,6 +103,8 @@ MACHINE_START(MSM8960_SIM, "QCT MSM8960 SIMULATOR")
- MACHINE_END
- 
- MACHINE_START(MSM8960_RUMI3, "QCT MSM8960 RUMI3")
-+	.fixup = msm8960_fixup,
-+	.reserve = msm8960_reserve,
- 	.map_io = msm8960_map_io,
- 	.init_irq = msm8960_init_irq,
- 	.timer = &msm_timer,
-diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
-index 1163b6f..9221f54 100644
---- a/arch/arm/mach-msm/board-msm8x60.c
-+++ b/arch/arm/mach-msm/board-msm8x60.c
-@@ -20,14 +20,31 @@
- #include <linux/platform_device.h>
- #include <linux/io.h>
- #include <linux/irq.h>
-+#include <linux/memblock.h>
- 
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
- #include <asm/hardware/gic.h>
-+#include <asm/setup.h>
- 
- #include <mach/board.h>
- #include <mach/msm_iomap.h>
- 
-+static void __init msm8x60_fixup(struct machine_desc *desc, struct tag *tag,
-+			 char **cmdline, struct meminfo *mi)
-+{
-+	for (; tag->hdr.size; tag = tag_next(tag))
-+		if (tag->hdr.tag == ATAG_MEM &&
-+				tag->u.mem.start == 0x40200000) {
-+			tag->u.mem.start = 0x40000000;
-+			tag->u.mem.size += SZ_2M;
-+		}
-+}
-+
-+static void __init msm8x60_reserve(void)
-+{
-+	memblock_remove(0x40000000, SZ_2M);
-+}
- 
- static void __init msm8x60_map_io(void)
+@@ -188,9 +184,6 @@ static inline unsigned long __phys_to_virt(unsigned long x)
  {
-@@ -65,6 +82,8 @@ static void __init msm8x60_init(void)
+ 	unsigned long t;
+ 	__pv_stub(x, t, "sub", __PV_BITS_31_24);
+-#ifdef CONFIG_ARM_PATCH_PHYS_VIRT_16BIT
+-	__pv_stub(t, t, "sub", __PV_BITS_23_16);
+-#endif
+ 	return t;
  }
- 
- MACHINE_START(MSM8X60_RUMI3, "QCT MSM8X60 RUMI3")
-+	.fixup = msm8x60_fixup,
-+	.reserve = msm8x60_reserve,
- 	.map_io = msm8x60_map_io,
- 	.init_irq = msm8x60_init_irq,
- 	.init_machine = msm8x60_init,
-@@ -72,6 +91,8 @@ MACHINE_START(MSM8X60_RUMI3, "QCT MSM8X60 RUMI3")
- MACHINE_END
- 
- MACHINE_START(MSM8X60_SURF, "QCT MSM8X60 SURF")
-+	.fixup = msm8x60_fixup,
-+	.reserve = msm8x60_reserve,
- 	.map_io = msm8x60_map_io,
- 	.init_irq = msm8x60_init_irq,
- 	.init_machine = msm8x60_init,
-@@ -79,6 +100,8 @@ MACHINE_START(MSM8X60_SURF, "QCT MSM8X60 SURF")
- MACHINE_END
- 
- MACHINE_START(MSM8X60_SIM, "QCT MSM8X60 SIMULATOR")
-+	.fixup = msm8x60_fixup,
-+	.reserve = msm8x60_reserve,
- 	.map_io = msm8x60_map_io,
- 	.init_irq = msm8x60_init_irq,
- 	.init_machine = msm8x60_init,
-@@ -86,6 +109,8 @@ MACHINE_START(MSM8X60_SIM, "QCT MSM8X60 SIMULATOR")
- MACHINE_END
- 
- MACHINE_START(MSM8X60_FFA, "QCT MSM8X60 FFA")
-+	.fixup = msm8x60_fixup,
-+	.reserve = msm8x60_reserve,
- 	.map_io = msm8x60_map_io,
- 	.init_irq = msm8x60_init_irq,
- 	.init_machine = msm8x60_init,
-diff --git a/arch/arm/mach-msm/include/mach/memory.h b/arch/arm/mach-msm/include/mach/memory.h
-index f2f8d29..58d5e7e 100644
---- a/arch/arm/mach-msm/include/mach/memory.h
-+++ b/arch/arm/mach-msm/include/mach/memory.h
-@@ -22,11 +22,11 @@
- #elif defined(CONFIG_ARCH_QSD8X50)
- #define PLAT_PHYS_OFFSET		UL(0x20000000)
- #elif defined(CONFIG_ARCH_MSM7X30)
--#define PLAT_PHYS_OFFSET		UL(0x00200000)
-+#define PLAT_PHYS_OFFSET		UL(0x00000000)
- #elif defined(CONFIG_ARCH_MSM8X60)
--#define PLAT_PHYS_OFFSET		UL(0x40200000)
-+#define PLAT_PHYS_OFFSET		UL(0x40000000)
- #elif defined(CONFIG_ARCH_MSM8960)
--#define PLAT_PHYS_OFFSET		UL(0x40200000)
-+#define PLAT_PHYS_OFFSET		UL(0x40000000)
  #else
- #define PLAT_PHYS_OFFSET		UL(0x10000000)
+diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+index 742b610..136abb6 100644
+--- a/arch/arm/kernel/head.S
++++ b/arch/arm/kernel/head.S
+@@ -488,13 +488,8 @@ __fixup_pv_table:
+ 	add	r5, r5, r3	@ adjust table end address
+ 	add	r7, r7, r3	@ adjust __pv_phys_offset address
+ 	str	r8, [r7]	@ save computed PHYS_OFFSET to __pv_phys_offset
+-#ifndef CONFIG_ARM_PATCH_PHYS_VIRT_16BIT
+ 	mov	r6, r3, lsr #24	@ constant for add/sub instructions
+ 	teq	r3, r6, lsl #24 @ must be 16MiB aligned
+-#else
+-	mov	r6, r3, lsr #16	@ constant for add/sub instructions
+-	teq	r3, r6, lsl #16	@ must be 64kiB aligned
+-#endif
+ THUMB(	it	ne		@ cross section branch )
+ 	bne	__error
+ 	str	r6, [r7, #4]	@ save to __pv_offset
+@@ -510,20 +505,8 @@ ENDPROC(__fixup_pv_table)
+ 	.text
+ __fixup_a_pv_table:
+ #ifdef CONFIG_THUMB2_KERNEL
+-#ifdef CONFIG_ARM_PATCH_PHYS_VIRT_16BIT
+-	lsls	r0, r6, #24
+-	lsr	r6, #8
+-	beq	1f
+-	clz	r7, r0
+-	lsr	r0, #24
+-	lsl	r0, r7
+-	bic	r0, 0x0080
+-	lsrs	r7, #1
+-	orrcs   r0, #0x0080
+-	orr	r0, r0, r7, lsl #12
+-#endif
+-1:	lsls	r6, #24
+-	beq	4f
++	lsls	r6, #24
++	beq	2f
+ 	clz	r7, r6
+ 	lsr	r6, #24
+ 	lsl	r6, r7
+@@ -532,43 +515,25 @@ __fixup_a_pv_table:
+ 	orrcs	r6, #0x0080
+ 	orr	r6, r6, r7, lsl #12
+ 	orr	r6, #0x4000
+-	b	4f
+-2:	@ at this point the C flag is always clear
+-	add     r7, r3
+-#ifdef CONFIG_ARM_PATCH_PHYS_VIRT_16BIT
+-	ldrh	ip, [r7]
+-	tst	ip, 0x0400	@ the i bit tells us LS or MS byte
+-	beq	3f
+-	cmp	r0, #0		@ set C flag, and ...
+-	biceq	ip, 0x0400	@ immediate zero value has a special encoding
+-	streqh	ip, [r7]	@ that requires the i bit cleared
+-#endif
+-3:	ldrh	ip, [r7, #2]
++	b	2f
++1:	add     r7, r3
++	ldrh	ip, [r7, #2]
+ 	and	ip, 0x8f00
+-	orrcc	ip, r6	@ mask in offset bits 31-24
+-	orrcs	ip, r0	@ mask in offset bits 23-16
++	orr	ip, r6	@ mask in offset bits 31-24
+ 	strh	ip, [r7, #2]
+-4:	cmp	r4, r5
++2:	cmp	r4, r5
+ 	ldrcc	r7, [r4], #4	@ use branch for delay slot
+-	bcc	2b
++	bcc	1b
+ 	bx	lr
+ #else
+-#ifdef CONFIG_ARM_PATCH_PHYS_VIRT_16BIT
+-	and	r0, r6, #255	@ offset bits 23-16
+-	mov	r6, r6, lsr #8	@ offset bits 31-24
+-#else
+-	mov	r0, #0		@ just in case...
+-#endif
+-	b	3f
+-2:	ldr	ip, [r7, r3]
++	b	2f
++1:	ldr	ip, [r7, r3]
+ 	bic	ip, ip, #0x000000ff
+-	tst	ip, #0x400	@ rotate shift tells us LS or MS byte
+-	orrne	ip, ip, r6	@ mask in offset bits 31-24
+-	orreq	ip, ip, r0	@ mask in offset bits 23-16
++	orr	ip, ip, r6	@ mask in offset bits 31-24
+ 	str	ip, [r7, r3]
+-3:	cmp	r4, r5
++2:	cmp	r4, r5
+ 	ldrcc	r7, [r4], #4	@ use branch for delay slot
+-	bcc	2b
++	bcc	1b
+ 	mov	pc, lr
  #endif
+ ENDPROC(__fixup_a_pv_table)
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
