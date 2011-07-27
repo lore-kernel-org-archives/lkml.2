@@ -1,129 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab1G0J57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 05:57:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60644 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754138Ab1G0J5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 05:57:53 -0400
-Date: Wed, 27 Jul 2011 11:57:47 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
-        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
-        linux-mm@kvack.org, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        Tim Deegan <Tim.Deegan@citrix.com>
-Subject: Re: [PATCH] memcg: do not expose uninitialized mem_cgroup_per_node
- to world
-Message-ID: <20110727095747.GA6430@tiehlicka.suse.cz>
-References: <BANLkTimbqHPeUdue=_Z31KVdPwcXtbLpeg@mail.gmail.com>
- <4DE8D50F.1090406@redhat.com>
- <BANLkTinMamg_qesEffGxKu3QkT=zyQ2MRQ@mail.gmail.com>
- <4DEE26E7.2060201@redhat.com>
- <20110608123527.479e6991.kamezawa.hiroyu@jp.fujitsu.com>
- <20110608140951.115ab1dd.akpm@linux-foundation.org>
- <4DF24D04.1080802@redhat.com>
- <20110726141754.c69b96c6.akpm@linux-foundation.org>
- <20110727075845.GA4024@tiehlicka.suse.cz>
- <4E2FDAA0.5020702@redhat.com>
+	id S1754533Ab1G0J6E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 05:58:04 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:48341 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754138Ab1G0J6A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 05:58:00 -0400
+Date: Wed, 27 Jul 2011 12:55:57 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: dagenaisj@sonatest.com
+Cc: Evgeniy Polyakov <johnpol@2ka.mipt.ru>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] w1: off by one in w1_f29_remove_slave()
+Message-ID: <20110727095557.GL3824@shale.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E2FDAA0.5020702@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 27-07-11 11:30:08, Igor Mammedov wrote:
-> On 07/27/2011 09:58 AM, Michal Hocko wrote:
-> >On Tue 26-07-11 14:17:54, Andrew Morton wrote:
-> >>On Fri, 10 Jun 2011 18:57:40 +0200
-> >>Igor Mammedov<imammedo@redhat.com>  wrote:
-> >>
-> >>>On 06/08/2011 11:09 PM, Andrew Morton wrote:
-> >>>>The original patch:
-> >>>>
-> >>>>--- a/mm/memcontrol.c
-> >>>>+++ b/mm/memcontrol.c
-> >>>>@@ -4707,7 +4707,6 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
-> >>>>   	if (!pn)
-> >>>>   		return 1;
-> >>>>
-> >>>>-	mem->info.nodeinfo[node] = pn;
-> >>>>   	for (zone = 0; zone<   MAX_NR_ZONES; zone++) {
-> >>>>   		mz =&pn->zoneinfo[zone];
-> >>>>   		for_each_lru(l)
-> >>>>@@ -4716,6 +4715,7 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
-> >>>>   		mz->on_tree = false;
-> >>>>   		mz->mem = mem;
-> >>>>   	}
-> >>>>+	mem->info.nodeinfo[node] = pn;
-> >>>>   	return 0;
-> >>>>   }
-> >>>>
-> >>>>looks like a really good idea.  But it needs a new changelog and I'd be
-> >>>>a bit reluctant to merge it as it appears that the aptch removes our
-> >>>>only known way of reproducing a bug.
-> >>>>
-> >>>>So for now I think I'll queue the patch up unchangelogged so the issue
-> >>>>doesn't get forgotten about.
-> >>>>
-> >>>Problem was in rhel's xen hv.
-> >>>It was missing fix for imul emulation.
-> >>>Details here
-> >>>http://lists.xensource.com/archives/html/xen-devel/2011-06/msg00801.html
-> >>>Thanks to Tim Deegan and everyone who was involved in the discussion.
-> >>
-> >>I really don't want to trawl through a lengthy xen bug report
-> >
-> >The bug turned out to be Xen specific and this patch just hidden the bug
-> >in Xen.
-> 
-> The problem was in incorrect imul instruction emulation in xen and as
-> consequence incorrect attempt to initialize list at invalid memory location.
-> 
-> >
-> >>and write your changelog for you.
-> >>
-> >>We still have no changelog for this patch.  Please send one.
-> >
-> >Appart from a better programming style is there any other reason for
-> >taking it?  If applied it might hide potential bugs when somebody is
-> >touching data too early.
-> >
-> 
-> If it ever happens and somebody is touching data too early, it would be
-> a bit easier to diagnose a problem when dereferencing NULL at
-> mem->info.nodeinfo[node] than wondering at partly initialized
-> mem_cgroup_per_zone. 
+This reads past the end of the w1_f29_sysfs_bin_files[] array.  I
+don't have this hardware, but I assume it crashes every time the
+function is called.
 
-Bahh, I have mixed zero initialized with NULL that would blow up. You
-are right of course, sorry for confusion.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-> Aside from that it is purely cosmetic change.
-> 
-> Here is proposed change log:
-> 
-> Subject: Cleanup: memcg: Expose only initialized mem_cgroup_per_node to world
-> 
-> If somebody is touching data too early, it might be easier to diagnose
-> a problem when dereferencing NULL at mem->info.nodeinfo[node] than
-> trying to understand why mem_cgroup_per_zone is [un|partly]initialized.
-> 
-> 
-> Michal will you agree with such commit message?
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-Thanks.
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+diff --git a/drivers/w1/slaves/w1_ds2408.c b/drivers/w1/slaves/w1_ds2408.c
+index c377818..0da4e97 100644
+--- a/drivers/w1/slaves/w1_ds2408.c
++++ b/drivers/w1/slaves/w1_ds2408.c
+@@ -373,7 +373,7 @@ static int w1_f29_add_slave(struct w1_slave *sl)
+ static void w1_f29_remove_slave(struct w1_slave *sl)
+ {
+ 	int i;
+-	for (i = NB_SYSFS_BIN_FILES; i <= 0; --i)
++	for (i = NB_SYSFS_BIN_FILES - 1; i <= 0; --i)
+ 		sysfs_remove_bin_file(&sl->dev.kobj,
+ 			&(w1_f29_sysfs_bin_files[i]));
+ }
