@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab1G0UgL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 16:36:11 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41459 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754807Ab1G0UgK (ORCPT
+	id S1755186Ab1G0UhG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 16:37:06 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:57031 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754807Ab1G0UhD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 16:36:10 -0400
-Date: Wed, 27 Jul 2011 22:36:04 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Sven Eckelmann <sven@narfation.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCHv4 04/11] PM: Use *_dec_not_zero instead of *_add_unless
-Message-ID: <20110727203604.GA8468@elf.ucw.cz>
-References: <1311760070-21532-1-git-send-email-sven@narfation.org>
- <1311760070-21532-4-git-send-email-sven@narfation.org>
- <201107272150.37962.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201107272150.37962.rjw@sisk.pl>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 27 Jul 2011 16:37:03 -0400
+X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
+   d="scan'208";a="566042738"
+Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Christoph Hellwig <hch@infradead.org>,
+        Bryan Schumaker <bjschuma@netapp.com>
+Cc: Justin Piszcz <jpiszcz@lucidpixels.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Date: Wed, 27 Jul 2011 16:37:01 -0400
+In-Reply-To: <20110727194722.GA9345@infradead.org>
+References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>
+	 <20110727160752.GC974@fieldses.org>
+	 <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
+	 <20110727181111.GA23009@infradead.org>
+	 <alpine.DEB.2.02.1107271530340.1451@p34.internal.lan>
+	 <20110727193937.GA5354@infradead.org>
+	 <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>
+	 <20110727194722.GA9345@infradead.org>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Message-ID: <1311799021.25645.41.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-OriginalArrivalTime: 27 Jul 2011 20:37:02.0728 (UTC) FILETIME=[F0E88080:01CC4C9C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > atomic_dec_not_zero is defined for each architecture through
-> > <linux/atomic.h> to provide the functionality of
-> > atomic_add_unless(x, -1, 0).
+On Wed, 2011-07-27 at 15:47 -0400, Christoph Hellwig wrote: 
+> On Wed, Jul 27, 2011 at 03:44:20PM -0400, Justin Piszcz wrote:
 > > 
-> > Signed-off-by: Sven Eckelmann <sven@narfation.org>
-> > Cc: Len Brown <len.brown@intel.com>
-> > Cc: Pavel Machek <pavel@ucw.cz>
-> > Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> > Cc: linux-pm@lists.linux-foundation.org
-> 
-> Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> > ---
-> >  drivers/base/power/runtime.c |    4 ++--
-> >  include/linux/pm_runtime.h   |    2 +-
-> >  kernel/power/hibernate.c     |    4 ++--
-> >  kernel/power/user.c          |    2 +-
-> >  4 files changed, 6 insertions(+), 6 deletions(-)
 > > 
-> > diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-> > index 8dc247c..bda10d9 100644
-> > --- a/drivers/base/power/runtime.c
-> > +++ b/drivers/base/power/runtime.c
-> > @@ -401,7 +401,7 @@ static int rpm_suspend(struct device *dev, int rpmflags)
-> >  
-> >  		if (dev->parent) {
-> >  			parent = dev->parent;
-> > -			atomic_add_unless(&parent->power.child_count, -1, 0);
-> > +  atomic_dec_not_zero(&parent->power.child_count);
+> > On Wed, 27 Jul 2011, Christoph Hellwig wrote:
+> > 
+> > >On Wed, Jul 27, 2011 at 03:35:01PM -0400, Justin Piszcz wrote:
+> > >>Currently I do not see any dupes, however I have a script that moves
+> > >>images out of the directory once an hour:
+> > >>0 * * * * /usr/local/bin/move_to_old2.sh > /dev/null 2>&1
+> > >
+> > >Do you keep adding files to the directory while you move files out?
+> > Yes, otherwise there are too many files in the directory and viewers, e.g.,
+> > each geeqie (picture viewer) will use > 4-6GB of memory, so I try to keep
+> > it around 5,000 pictures or less.
+> > 
+> > >What's the rate of additions/removals to the directory?
+> > Additions it depends, around 5,000 over a 12hr period, 416/hr, current:
+> > 
+> > atom:/d1/motion# find cam1|wc
+> >    5215    5215  166853
+> > atom:/d1/motion# find cam2|wc
+> >    5069    5069  162181
+> > atom:/d1/motion# find cam3|wc
+> >    5594    5594  178981
+> > atom:/d1/motion#
+> 
+> This sounds a lot like xfs simply filling up the directory index slots
+> of files that you just moved out with new files, and nfs falsely
+> claiming that this is a problem.
 
-I'd like to understand... Why not atomic_dec in the first place? Count
-should be exact, anyway, or we run into problems, right?
+Yep. There is an existing bugzilla report for this bug at
 
+   https://bugzilla.kernel.org/show_bug.cgi?id=38572
+
+I have a preliminary patch there that attempts to turn off the loop
+detection when the directory is seen to change, however that patch still
+appears to have a bug in it, and I haven't had time to figure out what
+is wrong yet.
+
+Can you perhaps take a look, Bryan?
+
+Cheers
+  Trond
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
