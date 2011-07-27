@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab1G0WED (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:04:03 -0400
-Received: from mga01.intel.com ([192.55.52.88]:12903 "EHLO mga01.intel.com"
+	id S1756152Ab1G0WEh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:04:37 -0400
+Received: from mga03.intel.com ([143.182.124.21]:17376 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755487Ab1G0Vsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:48:38 -0400
+	id S1755521Ab1G0Vsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:48:36 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,279,1309762800"; 
-   d="scan'208";a="33043629"
+X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
+   d="scan'208";a="32274653"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: hughd@google.com, viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [39/99] mm: fix ENOSPC returned by handle_mm_fault()
-Message-Id: <20110727214838.080A02403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:48:38 -0700 (PDT)
+To: namhyung@gmail.com, Laurent.Vivier@bull.net, Paul.Clements@steeleye.com,
+        jaxboe@fusionio.com, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [36/99] nbd: limit module parameters to a sane value
+Message-Id: <20110727214834.EEF092403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:48:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,38 +25,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Hugh Dickins <hughd@google.com>
+From: Namhyung Kim <namhyung@gmail.com>
 
-commit e0dcd8a05be438b3d2e49ef61441ea3a463663f8 upstream.
+commit 3b2710824e00d238554c13b5add347e6c701ab1a upstream.
 
-Al Viro observes that in the hugetlb case, handle_mm_fault() may return
-a value of the kind ENOSPC when its caller is expecting a value of the
-kind VM_FAULT_SIGBUS: fix alloc_huge_page()'s failure returns.
+The 'max_part' parameter controls the number of maximum partition
+a nbd device can have. However if a user specifies very large
+value it would exceed the limitation of device minor number and
+can cause a kernel oops (or, at least, produce invalid device
+nodes in some cases).
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Acked-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+In addition, specifying large 'nbds_max' value causes same
+problem for the same reason.
+
+On my desktop, following command results to the kernel bug:
+
+$ sudo modprobe nbd max_part=100000
+ kernel BUG at /media/Linux_Data/project/linux/fs/sysfs/group.c:65!
+ invalid opcode: 0000 [#1] SMP
+ last sysfs file: /sys/devices/virtual/block/nbd4/range
+ CPU 1
+ Modules linked in: nbd(+) bridge stp llc kvm_intel kvm asus_atk0110 sg sr_mod cdrom
+
+ Pid: 2522, comm: modprobe Tainted: G        W   2.6.39-leonard+ #159 System manufacturer System Product Name/P5G41TD-M PRO
+ RIP: 0010:[<ffffffff8115aa08>]  [<ffffffff8115aa08>] internal_create_group+0x2f/0x166
+ RSP: 0018:ffff8801009f1de8  EFLAGS: 00010246
+ RAX: 00000000ffffffef RBX: ffff880103920478 RCX: 00000000000a7bd3
+ RDX: ffffffff81a2dbe0 RSI: 0000000000000000 RDI: ffff880103920478
+ RBP: ffff8801009f1e38 R08: ffff880103920468 R09: ffff880103920478
+ R10: ffff8801009f1de8 R11: ffff88011eccbb68 R12: ffffffff81a2dbe0
+ R13: ffff880103920468 R14: 0000000000000000 R15: ffff880103920400
+ FS:  00007f3c49de9700(0000) GS:ffff88011f800000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 00007f3b7fe7c000 CR3: 00000000cd58d000 CR4: 00000000000406e0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Process modprobe (pid: 2522, threadinfo ffff8801009f0000, task ffff8801009a93a0)
+ Stack:
+  ffff8801009f1e58 ffffffff812e8f6e ffff8801009f1e58 ffffffff812e7a80
+  ffff880000000010 ffff880103920400 ffff8801002fd0c0 ffff880103920468
+  0000000000000011 ffff880103920400 ffff8801009f1e48 ffffffff8115ab6a
+ Call Trace:
+  [<ffffffff812e8f6e>] ? device_add+0x4f1/0x5e4
+  [<ffffffff812e7a80>] ? dev_set_name+0x41/0x43
+  [<ffffffff8115ab6a>] sysfs_create_group+0x13/0x15
+  [<ffffffff810b857e>] blk_trace_init_sysfs+0x14/0x16
+  [<ffffffff811ee58b>] blk_register_queue+0x4c/0xfd
+  [<ffffffff811f3bdf>] add_disk+0xe4/0x29c
+  [<ffffffffa007e2ab>] nbd_init+0x2ab/0x30d [nbd]
+  [<ffffffffa007e000>] ? 0xffffffffa007dfff
+  [<ffffffff8100020f>] do_one_initcall+0x7f/0x13e
+  [<ffffffff8107ab0a>] sys_init_module+0xa1/0x1e3
+  [<ffffffff814f3542>] system_call_fastpath+0x16/0x1b
+ Code: 41 57 41 56 41 55 41 54 53 48 83 ec 28 0f 1f 44 00 00 48 89 fb 41 89 f6 49 89 d4 48 85 ff 74 0b 85 f6 75 0b 48 83
+  7f 30 00 75 14 <0f> 0b eb fe b9 ea ff ff ff 48 83 7f 30 00 0f 84 09 01 00 00 49
+ RIP  [<ffffffff8115aa08>] internal_create_group+0x2f/0x166
+  RSP <ffff8801009f1de8>
+ ---[ end trace 753285ffbf72c57c ]---
+
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Laurent Vivier <Laurent.Vivier@bull.net>
+Cc: Paul Clements <Paul.Clements@steeleye.com>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- mm/hugetlb.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/nbd.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Index: linux-2.6.35.y/mm/hugetlb.c
+Index: linux-2.6.35.y/drivers/block/nbd.c
 ===================================================================
---- linux-2.6.35.y.orig/mm/hugetlb.c
-+++ linux-2.6.35.y/mm/hugetlb.c
-@@ -1030,10 +1030,10 @@ static struct page *alloc_huge_page(stru
- 	 */
- 	chg = vma_needs_reservation(h, vma, addr);
- 	if (chg < 0)
--		return ERR_PTR(chg);
-+		return ERR_PTR(-VM_FAULT_OOM);
- 	if (chg)
- 		if (hugetlb_get_quota(inode->i_mapping, chg))
--			return ERR_PTR(-ENOSPC);
-+			return ERR_PTR(-VM_FAULT_SIGBUS);
+--- linux-2.6.35.y.orig/drivers/block/nbd.c
++++ linux-2.6.35.y/drivers/block/nbd.c
+@@ -755,6 +755,12 @@ static int __init nbd_init(void)
+ 	if (max_part > 0)
+ 		part_shift = fls(max_part);
  
- 	spin_lock(&hugetlb_lock);
- 	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
++	if ((1UL << part_shift) > DISK_MAX_PARTS)
++		return -EINVAL;
++
++	if (nbds_max > 1UL << (MINORBITS - part_shift))
++		return -EINVAL;
++
+ 	for (i = 0; i < nbds_max; i++) {
+ 		struct gendisk *disk = alloc_disk(1 << part_shift);
+ 		if (!disk)
