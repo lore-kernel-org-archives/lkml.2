@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab1G0V5Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 17:57:24 -0400
-Received: from mga09.intel.com ([134.134.136.24]:53542 "EHLO mga09.intel.com"
+	id S1755988Ab1G0V5k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 17:57:40 -0400
+Received: from mga01.intel.com ([192.55.52.88]:48866 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755695Ab1G0VtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:49:15 -0400
+	id S1755694Ab1G0VtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:49:14 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
-   d="scan'208";a="30900996"
+X-IronPort-AV: E=Sophos;i="4.67,279,1309762800"; 
+   d="scan'208";a="35258384"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: florian@openwrt.org, wim@iguana.be, gregkh@suse.de, ak@linux.intel.com,
+To: sjoerd.simons@collabora.co.uk, laurent.pinchart@ideasonboard.com,
+        mchehab@redhat.com, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [75/99] watchdog: mtx1-wdt: request gpio before using it
-Message-Id: <20110727214914.A2F0F2403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:49:14 -0700 (PDT)
+Subject: [PATCH] [74/99] uvcvideo: Remove buffers from the queues when freeing
+Message-Id: <20110727214913.9EA3D2403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:49:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,48 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Florian Fainelli <florian@openwrt.org>
+From: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
 
-commit 9b19d40aa3ebaf1078779da10555da2ab8512422 upstream.
+commit 8ca2c80b170c47eeb55f0c2a0f2b8edf85f35d49 upstream.
 
-Otherwise, the gpiolib autorequest feature will produce a WARN_ON():
+When freeing memory for the video buffers also remove them from the
+irq & main queues.
 
-WARNING: at drivers/gpio/gpiolib.c:101 0x8020ec6c()
-autorequest GPIO-215
-[...]
+This fixes an oops when doing the following:
 
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+open ("/dev/video", ..)
+VIDIOC_REQBUFS
+VIDIOC_QBUF
+VIDIOC_REQBUFS
+close ()
+
+As the second VIDIOC_REQBUFS will cause the list entries of the buffers
+to be cleared while they still hang around on the main and irc queues
+
+Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/watchdog/mtx-1_wdt.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/media/video/uvc/uvc_queue.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Index: linux-2.6.35.y/drivers/watchdog/mtx-1_wdt.c
+Index: linux-2.6.35.y/drivers/media/video/uvc/uvc_queue.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/watchdog/mtx-1_wdt.c
-+++ linux-2.6.35.y/drivers/watchdog/mtx-1_wdt.c
-@@ -211,6 +211,12 @@ static int __devinit mtx1_wdt_probe(stru
- 	int ret;
- 
- 	mtx1_wdt_device.gpio = pdev->resource[0].start;
-+	ret = gpio_request_one(mtx1_wdt_device.gpio,
-+				GPIOF_OUT_INIT_HIGH, "mtx1-wdt");
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to request gpio");
-+		return ret;
-+	}
- 
- 	spin_lock_init(&mtx1_wdt_device.lock);
- 	init_completion(&mtx1_wdt_device.stop);
-@@ -236,6 +242,8 @@ static int __devexit mtx1_wdt_remove(str
- 		mtx1_wdt_device.queue = 0;
- 		wait_for_completion(&mtx1_wdt_device.stop);
+--- linux-2.6.35.y.orig/drivers/media/video/uvc/uvc_queue.c
++++ linux-2.6.35.y/drivers/media/video/uvc/uvc_queue.c
+@@ -165,6 +165,8 @@ int uvc_free_buffers(struct uvc_video_qu
  	}
-+
-+	gpio_free(mtx1_wdt_device.gpio);
- 	misc_deregister(&mtx1_wdt_misc);
- 	return 0;
- }
+ 
+ 	if (queue->count) {
++		uvc_queue_cancel(queue, 0);
++		INIT_LIST_HEAD(&queue->mainqueue);
+ 		vfree(queue->mem);
+ 		queue->count = 0;
+ 	}
