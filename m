@@ -1,135 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab1G0J0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 05:26:53 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:47580 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754036Ab1G0J0w convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 05:26:52 -0400
+	id S1754314Ab1G0Jap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 05:30:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12945 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752766Ab1G0Jan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 05:30:43 -0400
+Message-ID: <4E2FDAA0.5020702@redhat.com>
+Date: Wed, 27 Jul 2011 11:30:08 +0200
+From: Igor Mammedov <imammedo@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Red Hat/3.1.11-2.el6_1 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <CAMzZzFGqPv6Nbw8J8JGNKcLA76sAs3oD6+hH9NPCjwA33fYpOQ@mail.gmail.com>
-References: <CAMzZzFGqPv6Nbw8J8JGNKcLA76sAs3oD6+hH9NPCjwA33fYpOQ@mail.gmail.com>
-Date: Wed, 27 Jul 2011 17:26:50 +0800
-Message-ID: <CAMzZzFGpDiFAhsLAb+SQxjbGMzBoOStF_Lr7Eb3PT6Drcf=VdA@mail.gmail.com>
-Subject: Oops when insmod rtl8192ce
-From: hubert Liao <liao.hubertt@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Michal Hocko <mhocko@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
+        linux-mm@kvack.org, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        Tim Deegan <Tim.Deegan@citrix.com>
+Subject: Re: [PATCH] memcg: do not expose uninitialized mem_cgroup_per_node
+ to world
+References: <20110601152039.GG4266@tiehlicka.suse.cz> <4DE66BEB.7040502@redhat.com> <BANLkTimbqHPeUdue=_Z31KVdPwcXtbLpeg@mail.gmail.com> <4DE8D50F.1090406@redhat.com> <BANLkTinMamg_qesEffGxKu3QkT=zyQ2MRQ@mail.gmail.com> <4DEE26E7.2060201@redhat.com> <20110608123527.479e6991.kamezawa.hiroyu@jp.fujitsu.com> <20110608140951.115ab1dd.akpm@linux-foundation.org> <4DF24D04.1080802@redhat.com> <20110726141754.c69b96c6.akpm@linux-foundation.org> <20110727075845.GA4024@tiehlicka.suse.cz>
+In-Reply-To: <20110727075845.GA4024@tiehlicka.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-We got an oops when insmod rtl8192ce module (the board is an ARM soc),
-accroding the oops message, find it's because in rtl_pci_probe()
-called _rtl_pci_find_adapter(),
-in this funcation, the  pdev->bus->self is a NULL pointer .
-static boot _rtl_pci_find_adapter(strcut pci_dev *dev,
-              struct ieee80211_hw *hw)
-{
-struct pci_dev *bridge_pdev = pdev->bus->self;   //line 1601
-...
-pcipriv->ndis_adapter.pcibridge_vendorid = bridge_pdev->vendor; <--
-[oops here] line 1700
-...
-}
-here, I just want to know why the bus->self  is NULL?
-----
-[  148.186632] Unable to handle kernel NULL pointer dereference at
-virtual address 00000020
-[  148.195255] pgd = cfb40000
-[  148.198178] [00000020] *pgd=0e54d831, *pte=00000000, *ppte=00000000
-[  148.204743] Internal error: Oops: 17 [#1] PREEMPT
-[  148.209426] Modules linked in: rtl8192ce(+) rtl8192c_common rtlwifi
-[  148.215702] CPU: 0    Not tainted  (3.0.0-05684-ge371d46 #34)
-[  148.221453] PC is at rtl_pci_probe+0x398/0x1bd8 [rtlwifi]
-[  148.226827] LR is at 0x4
-[  148.229356] pc : [<bf00fdc0>]    lr : [<00000004>]    psr: 80000013
-[  148.229364] sp : cfb37d10  ip : bf012606  fp : ce518dc0
-[  148.240800] r10: ce51abbc  r9 : 00008178  r8 : cf807000
-[  148.246001] r7 : 00004000  r6 : 00000000  r5 : 00000000  r4 : 1fff7fff
-[  148.252498] r3 : 0000037c  r2 : 00000000  r1 : bf012584  r0 : 00000000
-[  148.258997] Flags: Nzcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-[  148.266108] Control: 0005397f  Table: 0fb40000  DAC: 00000015
-[  148.271826] Process insmod (pid: 650, stack limit = 0xcfb36270)
-[  148.277718] Stack: (0xcfb37d10 to 0xcfb38000)
-[  148.282061] 7d00:                                     00000000
-c018928c 00000000 ce54f870
-[  148.290212] 7d20: 00000001 cf804680 bf012584 ce518240 ce518dc0
-ce51abbc cf807060 000010ec
-[  148.298368] 7d40: 00000000 ce54f810 cfb37d90 c00f2194 00000000
-000012c7 cfb37d90 ce54f810
-[  148.306524] 7d60: cfb37d90 c00f22f8 00000109 01000000 cfb37d90
-bf043c80 cf807000 00000000
-[  148.314672] 7d80: bf043c50 cfa7df00 c054ba00 bf043c80 bf049000
-c01a8d80 bf043c80 c01a901c
-[  148.322828] 7da0: cf807068 bf043c50 cf807000 bf0439b0 bf043c80
-cf807060 cf807060 bf043c80
-[  148.330984] 7dc0: c01dce54 c01dcd04 cf807060 cf807094 bf043c80
-c01dce54 cfa7df00 c04bb780
-[  148.339140] 7de0: 00000000 c01dcee0 00000000 cfb37df8 bf043c80
-c01dc4f8 cf805c38 cf87c810
-[  148.347296] 7e00: bf043c50 cf81cb00 bf043c80 bf043c80 c04a4f0c
-c01dbd00 bf0437ac 00000000
-[  148.355452] 7e20: bf043c50 bf043c50 bf043c80 bf043c80 c04a4f0c
-cfb36000 c004e388 c01dd284
-[  148.363609] 7e40: bf043c50 cfb0c540 bf043c80 c04a4f0c cfb36000
-c01a92dc 00000001 cfb0c540
-[  148.371765] 7e60: 00000001 bf04642c cfb36000 bf049014 00000001
-c0008578 c004e460 c037204c
-[  148.379920] 7e80: c049d93c 00000000 bf04642c ffffffff 00000001
-c003d1f8 00000000 ce51e240
-[  148.388069] 7ea0: 00000001 00000001 cfb0c540 00000001 bf04642c
-00000010 bf046474 c004e388
-[  148.396225] 7ec0: c004e460 c004f62c bf046438 00000001 cfb36000
-bf046438 d0c0d6da d0bcbcfc
-[  148.404381] 7ee0: bf046550 c03786cc d0ad7000 00136709 d0bcb554
-d0bcb368 d0c0c554 cfa6a800
-[  148.412536] 7f00: 0001156c 0001225c 00000000 00000000 00000031
-00000032 00000018 00000000
-[  148.420683] 7f20: 00000010 00000000 776c7472 00696669 00000000
-00000000 00000000 00000000
-[  148.428831] 7f40: 00000000 00000000 00000000 00000000 00000000
-00000000 00000000 00000000
-[  148.436978] 7f60: 00000000 00000000 00000000 00000000 00000000
-00000000 00000000 c009b170
-[  148.445127] 7f80: 00000003 40085000 bedf0db4 00000069 00000080
-c0008ec4 cfb36000 00000000
-[  148.453283] 7fa0: 00000000 c0008d40 40085000 bedf0db4 40389008
-00136709 000b72df 00000000
-[  148.461439] 7fc0: 40085000 bedf0db4 00000069 00000080 bedf0db8
-000b72df bedf0db8 00000000
-[  148.469587] 7fe0: 00000001 bedf0a5c 0001c7e8 40326ac4 60000010
-40389008 00000000 00000000
-[  148.477783] [<bf00fdc0>] (rtl_pci_probe+0x398/0x1bd8 [rtlwifi])
-from [<c01a8d80>] (local_pci_probe+0x18/0x1c)
-[  148.487677] [<c01a8d80>] (local_pci_probe+0x18/0x1c) from
-[<c01a901c>] (pci_device_probe+0x6c/0x90)
-[  148.496701] [<c01a901c>] (pci_device_probe+0x6c/0x90) from
-[<c01dcd04>] (driver_probe_device+0x80/0x1d0)
-[  148.506156] [<c01dcd04>] (driver_probe_device+0x80/0x1d0) from
-[<c01dcee0>] (__driver_attach+0x8c/0x90)
-[  148.515521] [<c01dcee0>] (__driver_attach+0x8c/0x90) from
-[<c01dc4f8>] (bus_for_each_dev+0x60/0x94)
-[  148.524541] [<c01dc4f8>] (bus_for_each_dev+0x60/0x94) from
-[<c01dbd00>] (bus_add_driver+0xa0/0x25c)
-[  148.533561] [<c01dbd00>] (bus_add_driver+0xa0/0x25c) from
-[<c01dd284>] (driver_register+0x6c/0x154)
-[  148.542581] [<c01dd284>] (driver_register+0x6c/0x154) from
-[<c01a92dc>] (__pci_register_driver+0x38/0xa8)
-[  148.552148] [<c01a92dc>] (__pci_register_driver+0x38/0xa8) from
-[<bf049014>] (rtl92ce_module_init+0x14/0x58 [rtl8192ce])
-[  148.563007] [<bf049014>] (rtl92ce_module_init+0x14/0x58
-[rtl8192ce]) from [<c0008578>] (do_one_initcall+0x34/0x19c)
-[  148.573413] [<c0008578>] (do_one_initcall+0x34/0x19c) from
-[<c004f62c>] (sys_init_module+0xf4/0x13a4)
-[  148.582609] [<c004f62c>] (sys_init_module+0xf4/0x13a4) from
-[<c0008d40>] (ret_fast_syscall+0x0/0x2c)
-[  148.591713] Code: e598201c e2022007 e5ca2377 e59d0030 (e1d002b0)
-[  148.602704] ---[ end trace be518a2fa6d9a905 ]---
+On 07/27/2011 09:58 AM, Michal Hocko wrote:
+> On Tue 26-07-11 14:17:54, Andrew Morton wrote:
+>> On Fri, 10 Jun 2011 18:57:40 +0200
+>> Igor Mammedov<imammedo@redhat.com>  wrote:
+>>
+>>> On 06/08/2011 11:09 PM, Andrew Morton wrote:
+>>>> The original patch:
+>>>>
+>>>> --- a/mm/memcontrol.c
+>>>> +++ b/mm/memcontrol.c
+>>>> @@ -4707,7 +4707,6 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
+>>>>    	if (!pn)
+>>>>    		return 1;
+>>>>
+>>>> -	mem->info.nodeinfo[node] = pn;
+>>>>    	for (zone = 0; zone<   MAX_NR_ZONES; zone++) {
+>>>>    		mz =&pn->zoneinfo[zone];
+>>>>    		for_each_lru(l)
+>>>> @@ -4716,6 +4715,7 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
+>>>>    		mz->on_tree = false;
+>>>>    		mz->mem = mem;
+>>>>    	}
+>>>> +	mem->info.nodeinfo[node] = pn;
+>>>>    	return 0;
+>>>>    }
+>>>>
+>>>> looks like a really good idea.  But it needs a new changelog and I'd be
+>>>> a bit reluctant to merge it as it appears that the aptch removes our
+>>>> only known way of reproducing a bug.
+>>>>
+>>>> So for now I think I'll queue the patch up unchangelogged so the issue
+>>>> doesn't get forgotten about.
+>>>>
+>>> Problem was in rhel's xen hv.
+>>> It was missing fix for imul emulation.
+>>> Details here
+>>> http://lists.xensource.com/archives/html/xen-devel/2011-06/msg00801.html
+>>> Thanks to Tim Deegan and everyone who was involved in the discussion.
+>>
+>> I really don't want to trawl through a lengthy xen bug report
+>
+> The bug turned out to be Xen specific and this patch just hidden the bug
+> in Xen.
+
+The problem was in incorrect imul instruction emulation in xen and as
+consequence incorrect attempt to initialize list at invalid memory location.
+
+>
+>> and write your changelog for you.
+>>
+>> We still have no changelog for this patch.  Please send one.
+>
+> Appart from a better programming style is there any other reason for
+> taking it?  If applied it might hide potential bugs when somebody is
+> touching data too early.
+>
+
+If it ever happens and somebody is touching data too early, it would be
+a bit easier to diagnose a problem when dereferencing NULL at
+mem->info.nodeinfo[node] than wondering at partly initialized
+mem_cgroup_per_zone. Aside from that it is purely cosmetic change.
+
+Here is proposed change log:
+
+Subject: Cleanup: memcg: Expose only initialized mem_cgroup_per_node to world
+
+If somebody is touching data too early, it might be easier to diagnose
+a problem when dereferencing NULL at mem->info.nodeinfo[node] than
+trying to understand why mem_cgroup_per_zone is [un|partly]initialized.
+
+
+Michal will you agree with such commit message?
+
+-- 
+Thanks,
+  Igor
