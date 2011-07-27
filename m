@@ -1,125 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab1G0HRR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 03:17:17 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61772 "EHLO
+	id S1753732Ab1G0H1r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 03:27:47 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42965 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178Ab1G0HRO convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751862Ab1G0H1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 03:17:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <1311740499.1536.56.camel@vkoul-udesk3>
-References: <1311185906-7813-1-git-send-email-jaswinder.singh@linaro.org>
-	<1311220903-2545-1-git-send-email-jaswinder.singh@linaro.org>
-	<CACRpkdbWHmob3EWJc6u5=yh=rNwVSR5hu9-Xud5kvQNU9-POtA@mail.gmail.com>
-	<CAJe_Zhc4uJB8N9i2w38zzP3+XxcYF2v-zwsrhERWSi-yObV-6A@mail.gmail.com>
-	<CABE8wwt7dkwgeahYBSUufOvJmVNfYyTss6U5qBgjJk9RVLBkYg@mail.gmail.com>
-	<CAJe_ZhdYg4EpaNbBW+dayjSORqM=E6myT3oOG5VTsiQnh3erTA@mail.gmail.com>
-	<CABE8wwt8J_r9cExG+EAqqK=XVmAyLYhv+-T49Rr9hhKudD8n2g@mail.gmail.com>
-	<CAJe_ZheVyLk-yqyF_XO80xX3j7_7mDPnv-me+n=X_hNWycSLwg@mail.gmail.com>
-	<CABE8wwtkSnaJ5fvi=4bq7zye3W0SmErHAZeWAcHuYvLgvqy=_Q@mail.gmail.com>
-	<CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com>
-	<CABE8wwv2XQ_aJ8O2TUAz1LgJorBwDbgyQQv7jeAn06Q2AcqH+Q@mail.gmail.com>
-	<CAJe_ZhcNM7m-eWA0nDUrOrHxeAhNS00gewf=txmvOFL_uOPhrw@mail.gmail.com>
-	<1311740499.1536.56.camel@vkoul-udesk3>
-Date: Wed, 27 Jul 2011 12:47:13 +0530
-Message-ID: <CAJe_ZhfaPfobs5P+q+t-kRSK4fAvm-v_brYgqmco8fwOOBeT8A@mail.gmail.com>
-Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
-From: Jaswinder Singh <jaswinder.singh@linaro.org>
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        rmk+kernel@arm.linux.org.uk, linus.walleij@stericsson.com,
-        per.friden@stericsson.com, wei.zhang@freescale.com,
-        ebony.zhu@freescale.com, iws@ovro.caltech.edu, s.hauer@pengutronix.de,
-        maciej.sosnowski@intel.com, saeed@marvell.com, shawn.guo@freescale.com,
-        yur@emcraft.com, agust@denx.de, iwamatsu.nobuhiro@renesas.com,
-        per.forlin@stericsson.com, jonas.aberg@stericsson.com,
-        anemo@mba.ocn.ne.jp
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Jul 2011 03:27:46 -0400
+Subject: [PATCH] platform-drivers-x86: ideapad-laptop: add missing
+ ideapad_input_exit in ideapad_acpi_add error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ike Panhc <ike.pan@canonical.com>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Jul 2011 15:27:34 +0800
+Message-ID: <1311751654.4818.2.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 July 2011 09:51, Koul, Vinod <vinod.koul@intel.com> wrote:
-> On Tue, 2011-07-26 at 23:42 +0530, Jaswinder Singh wrote:
->> On 26 July 2011 20:59, Williams, Dan J <dan.j.williams@intel.com> wrote:
->> > On Tue, Jul 26, 2011 at 7:30 AM, Jaswinder Singh
->> > <jaswinder.singh@linaro.org> wrote:
->> >> On 26 July 2011 01:38, Williams, Dan J <dan.j.williams@intel.com> wrote:
->> >>> Correct, it is meant that chan_id is only a sysfs property.  Any
->> >>> driver usage that is assuming chan_id is anything more than a
->> >>> guaranteed unique number within a given dma_device's list of channels
->> >>> is probably inferring too much.
->> >>
->> >> So you mean dmac/client drivers are wrong if they make use of chan_id.
->> >> They shouldn't count upon it's value - which is set by DMA API for a completely
->> >> independent purpose, i.e, creating contiguous sysfs entries.
->> >
->> > They can count on it being unique, and maybe the fact that it is in
->> > the same order as dma_device.channels.
->> The latter implies the former. And it is already the dmac driver that
->> decides the
->> rank of a channel in the list.
->>
->> >
->> >>
->> >> Since "chan_id is only a sysfs property" and the fact that it is used
->> >> only _once_
->> >> by the DMA API
->> >>
->> >> In drivers/dma/dmaengine.c
->> >>
->> >>      chan->chan_id = chancnt++;
->> >>      dev_set_name(&chan->dev->device, "dma%dchan%d",
->> >>                             device->dev_id, chan->chan_id);
->> >>
->> >>
->> >> Can't we do away with chan_id altogether ? by having
->> >>
->> >>      dev_set_name(&chan->dev->device, "dma%dchan%d",
->> >>                             device->dev_id, chancnt++);
->> >>
->> >> I mean why make every instance of dma_chan bigger by 4bytes ?
->> >>
->> >> So why shouldn't we remove chan_id completely from the DMA API ?
->> >
->> > Good point...  Let's remove chan_id from the core and push it into the
->> > drivers that need it.
->> >
->> If you agree, I would preserve the chan_id in 'struct dma_chan' but remove
->> any assignment to it in dmaengine.c  and let the dmac drivers use it freely.
->> That would:-
->> a) Let dmac drivers decide what numbers they want to show up in sysfs.
->> b) chan_id is easily reachable by client drivers, so it is better this way.
->> c) It would mean lesser and simpler changes to extant users of it.
-> But this can cause conflict between two controllers who think they are
-> assigning unique numbers.
-Could you please clarify, which two controllers ?
+In the case of ideapad_backlight_init() failure,
+we need to free the resources allocated by ideapad_input_init().
 
-> IMO sysfs representation needs to be with
-> dmaengine only. How do we guarantee uniqueness b/w two controllers?
-Again, how is chan_id currently unique between two controllers ?
+Aslo drop __devexit annotation for ideapad_input_exit() because
+we also call it in ideapad_acpi_add() error path.
 
-Btw, do you not want to keep chan_id in dma_chan or do you not want to change
-anything at all ?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/platform/x86/ideapad-laptop.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
->
-> Also I am not sure about the approach: The whole point is to make filter
-> function select based on some channel number "x", but you should filter
-> channels based on controller you want and capability of a channel. If
-> caps is not enough to filter we should add more flags but asking that I
-> need channel 'y' doesn't sound right to me.
-> This is all coming from that fact that some drivers assume channel 'a'
-> is for this type of transfer and channel 'b' for something else, for a
-> dma controller that really doesn't matter, as all channels have similar
-> capabilities and can do similar things so you should
-> _get_channel_based_on_caps rather than on some numbering.
->
-> Lastly, why do you need a channel reserved for some type of transfer, is
-> it for assigning h/w interface for dma transfer, if so that can be
-> achieved in different ways as well
+diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
+index 8811c68..0c59541 100644
+--- a/drivers/platform/x86/ideapad-laptop.c
++++ b/drivers/platform/x86/ideapad-laptop.c
+@@ -406,7 +406,7 @@ err_free_dev:
+ 	return error;
+ }
+ 
+-static void __devexit ideapad_input_exit(struct ideapad_private *priv)
++static void ideapad_input_exit(struct ideapad_private *priv)
+ {
+ 	sparse_keymap_free(priv->inputdev);
+ 	input_unregister_device(priv->inputdev);
+@@ -563,6 +563,7 @@ static int __devinit ideapad_acpi_add(struct acpi_device *adevice)
+ backlight_failed:
+ 	for (i = 0; i < IDEAPAD_RFKILL_DEV_NUM; i++)
+ 		ideapad_unregister_rfkill(adevice, i);
++	ideapad_input_exit(priv);
+ input_failed:
+ 	ideapad_platform_exit(priv);
+ platform_failed:
+-- 
+1.7.4.1
 
-Please look at this patch from POV of utility of chan_id, which isn't much
-currently as explainined.
+
+
