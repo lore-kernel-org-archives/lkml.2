@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab1G0Oz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 10:55:28 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:64333 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897Ab1G0OzZ (ORCPT
+	id S1754651Ab1G0Ozj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 10:55:39 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:31066 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753897Ab1G0Ozf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 10:55:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [RFC] ARM Subarchitecture group maintainership
-Date: Wed, 27 Jul 2011 16:55:11 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Nicolas Pitre <nico@fluxnic.net>
-References: <201105181047.17309.arnd@arndb.de> <4E2F0176.1080403@codeaurora.org>
-In-Reply-To: <4E2F0176.1080403@codeaurora.org>
+	Wed, 27 Jul 2011 10:55:35 -0400
+Message-ID: <4E3026DD.3030109@oracle.com>
+Date: Wed, 27 Jul 2011 09:55:25 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110628 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] jfs update
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107271655.12044.arnd@arndb.de>
-X-Provags-ID: V02:K0:jHoY542nF53CWnr0aPZglmHCMgq7o52OV6iOLJL4KKS
- /0meq6Ao1WIxbTh77DV3mDWpwdZbNsfj7hY/15JR65y3zvWUAM
- 7vfU6FaPNbJ4qyVOSUava5Lr3iFl/BUO5NpbHaccQ4ULlSktxZ
- 6vZPmdSrtPjgE9nyPop4QvVlfZYQNQN1giWjdq9Cv9GNmTqBFN
- 2MuNLbn2D+pirNZ7exHrw==
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090205.4E3026E4.00A8,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 26 July 2011, Stephen Boyd wrote:
-> Is this patch (or something similar) going to be merged now that the ARM
-> SoC tree is up and running? Also, is the arm@kernel.org alias working?
+Linus, please pull from
 
-I should make a new version and post that. I totally forgot that one
-with all the other patches coming in.
+git://git.kernel.org/pub/scm/linux/kernel/git/shaggy/jfs-2.6.git for-linus
 
-	Arnd
+This will update the following files:
+
+ fs/jfs/jfs_dmap.c   |    5 +----
+ fs/jfs/jfs_txnmgr.c |    6 ++----
+ fs/jfs/namei.c      |    3 +--
+ 3 files changed, 4 insertions(+), 10 deletions(-)
+
+through this ChangeSet:
+
+commit 7c6f49b9de29a8f60aa985a114cbd20687773247
+Author: Dave Kleikamp <dave.kleikamp@oracle.com>
+Date:   Mon Jun 20 13:00:27 2011 -0500
+
+    jfs: clean up some compiler warnings
+    
+    jfs has a few variables being set but never used.
+    
+    Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
