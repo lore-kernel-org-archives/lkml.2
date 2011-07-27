@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab1G0WA5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:00:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:18770 "EHLO mga09.intel.com"
+	id S1755637Ab1G0Vs7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 17:48:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:36327 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755666Ab1G0VtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:49:09 -0400
+	id S1755568Ab1G0Vsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:48:52 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
-   d="scan'208";a="30900795"
+X-IronPort-AV: E=Sophos;i="4.67,279,1309762800"; 
+   d="scan'208";a="35258278"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: namhyung@gmail.com, neilb@suse.de, gregkh@suse.de, ak@linux.intel.com,
+To: crimsun@ubuntu.com, tiwai@suse.de, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [56/99] md/raid5: fix raid5_set_bi_hw_segments
-Message-Id: <20110727214855.530AD2403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:48:55 -0700 (PDT)
+Subject: [PATCH] [52/99] ALSA: hda: Fix quirk for Dell Inspiron 910
+Message-Id: <20110727214851.423CB2403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:48:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,37 +24,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Namhyung Kim <namhyung@gmail.com>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 9b2dc8b665932a8e681a7ab3237f60475e75e161 upstream.
+commit 0a1896b27b030529ec770aefd790544a1bdb7d5a upstream.
 
-The @bio->bi_phys_segments consists of active stripes count in the
-lower 16 bits and processed stripes count in the upper 16 bits. So
-logical-OR operator should be bitwise one.
+BugLink: https://launchpad.net/bugs/792712
 
-This bug has been present since 2.6.27 and the fix is suitable for any
--stable kernel since then.  Fortunately the bad code is only used on
-error paths and is relatively unlikely to be hit.
+The original reporter states that sound from the internal speakers is
+inaudible until using the model=auto quirk. This symptom is due to an
+existing quirk mask for 0x102802b* that uses the model=dell quirk. To
+limit the possible regressions, leave the existing quirk mask but add
+a higher priority specific mask for the reporter's PCI SSID.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Reported-and-tested-by: rodni hipp
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/md/raid5.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Index: linux-2.6.35.y/drivers/md/raid5.c
+Index: linux-2.6.35.y/sound/pci/hda/patch_realtek.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/md/raid5.c
-+++ linux-2.6.35.y/drivers/md/raid5.c
-@@ -129,7 +129,7 @@ static inline int raid5_dec_bi_hw_segmen
- 
- static inline void raid5_set_bi_hw_segments(struct bio *bio, unsigned int cnt)
- {
--	bio->bi_phys_segments = raid5_bi_phys_segments(bio) || (cnt << 16);
-+	bio->bi_phys_segments = raid5_bi_phys_segments(bio) | (cnt << 16);
- }
- 
- /* Find first data disk in a raid6 stripe */
+--- linux-2.6.35.y.orig/sound/pci/hda/patch_realtek.c
++++ linux-2.6.35.y/sound/pci/hda/patch_realtek.c
+@@ -13296,6 +13296,7 @@ static struct snd_pci_quirk alc268_cfg_t
+ 	SND_PCI_QUIRK(0x1025, 0x015b, "Acer Aspire One",
+ 						ALC268_ACER_ASPIRE_ONE),
+ 	SND_PCI_QUIRK(0x1028, 0x0253, "Dell OEM", ALC268_DELL),
++	SND_PCI_QUIRK(0x1028, 0x02b0, "Dell Inspiron 910", ALC268_AUTO),
+ 	SND_PCI_QUIRK_MASK(0x1028, 0xfff0, 0x02b0,
+ 			"Dell Inspiron Mini9/Vostro A90", ALC268_DELL),
+ 	/* almost compatible with toshiba but with optional digital outs;
