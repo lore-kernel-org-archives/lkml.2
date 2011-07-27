@@ -1,187 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab1G0G6M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 02:58:12 -0400
-Received: from caexchgw.virident.com ([209.31.25.116]:3117 "EHLO
-	caexchgw.virident.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab1G0G6L (ORCPT
+	id S1753702Ab1G0G7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 02:59:20 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56361 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210Ab1G0G7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 02:58:11 -0400
-X-Greylist: delayed 332 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Jul 2011 02:58:10 EDT
-Message-ID: <4E2FB5AD.8040908@virident.com>
-Date: Wed, 27 Jul 2011 12:22:29 +0530
-From: Gangadhar Mylapuram <gangadharm@virident.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Wed, 27 Jul 2011 02:59:17 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: PROBLEM: kernel panic in do_direct_IO
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 27 Jul 2011 06:52:37.0024 (UTC) FILETIME=[C50D1200:01CC4C29]
+In-Reply-To: <20110723154916.391682000@linutronix.de>
+References: <20110723154916.391682000@linutronix.de>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Tue, 26 Jul 2011 23:58:57 -0700
+X-Google-Sender-Auth: QE3B8J67--Iv7PBmuqEK4ftR_0w
+Message-ID: <CAMjpGUdDYQiX+UwWbKYsGWRZv1q=XL7m8G=kz_Rk5cgL+oAo_Q@mail.gmail.com>
+Subject: Re: [patch] blackfin: Fixup bogus ioresource init
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Javier Herrero <jherrero@hvsistemas.es>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Jul 23, 2011 at 08:51, Thomas Gleixner wrote:
+> IRQF_SHARED is not part of the IORESOURCE_IRQ bits. It's expressed by
+> IORESOURCE_IRQ_SHAREABLE.
+>
+> IORESOURCE_IRQ_HIGHEDGE and IRQF_TRIGGER_HIGH are contradicting
+> values, an interrupt can hardly be configured for both level and edge
+> at the same time. This was introduced in commit 45138439(Blackfin
+> arch: flash memory map and dm9000 resources updating) of course
+> without any hint in the changelog what the heck this is supposed to
+> do.
 
-I am not sure whom to contact with respect to this panic. Sending it to 
-linux-kernel@vger.kernel.org. Please cc me in all your communication.
-
-
-Here are the problem details:
-
-[1.] One line summary of the problem:
-
-The following panic message is seen with below script.
-
-
-  [<ffffffff800e3e35>] blkdev_direct_IO+0x32/0x37
-  [<ffffffff800e3d6d>] blkdev_get_blocks+0x0/0x96
-  [<ffffffff800c4c91>] generic_file_direct_IO+0xff/0x119
-  [<ffffffff8001edd1>] generic_file_direct_write+0x60/0xf2
-  [<ffffffff8001646e>] __generic_file_aio_write_nolock+0x2b8/0x3b6
-  [<ffffffff800e3e35>] blkdev_direct_IO+0x32/0x37
-  [<ffffffff800e3d6d>] blkdev_get_blocks+0x0/0x96
-  [<ffffffff800c4e16>] generic_file_aio_write_nolock+0x20/0x6c
-  [<ffffffff800c51ed>] generic_file_write_nolock+0x8f/0xa8
-  [<ffffffff800c5145>] generic_file_read+0xac/0xc5
-  [<ffffffff8009f6c1>] autoremove_wake_function+0x0/0x2e
-  [<ffffffff80062fc8>] thread_return+0x62/0xfe
-  [<ffffffff800e2c34>] blkdev_file_write+0x1a/0x1f
-  [<ffffffff80016927>] vfs_write+0xce/0x174
-  [<ffffffff80043e1d>] sys_pwrite64+0x50/0x70
-  [<ffffffff8005d229>] tracesys+0x71/0xe0
-  [<ffffffff8005d28d>] tracesys+0xd5/0xe0
-------------------------------------------------
-#!/bin/bash
-
-device="/dev/hdc"
-rwmix=100
-no_of_threads=128
-  /usr/local/bin/fio --name=job --filename=$device  --end_fsync=0 
---norandommap --randrepeat=0 --time_based --invalidate=1 
---group_reporting --eta=never --bsrange="512-2M"
---rw=randrw --rwmixwrite=$rwmix --ioengine=psync --iodepth=1 --thread 
---numjobs=$no_of_threads --direct=1 --runtime=3600 &
-  /usr/local/bin/fio --name=job --filename=$device --end_fsync=0 
---norandommap --randrepeat=0 --time_based --invalidate=1 
---group_reporting --eta=never --bsrange="512-2M"
---rw=randrw --rwmixwrite=$rwmix --ioengine=psync --iodepth=1 --thread 
---numjobs=$no_of_threads --direct=1 --runtime=3600 &
-sleep 10
-echo "mkfs on $device"
-! mkfs -t ext3 $device &&  echo "mkfs failed" && exit 1
-echo "mount on $device"
-! mount -t ext3 $device /mnt -o rw &&  echo "mount failed" && exit 1
-exit 0
-------------------------------------
-[2.] Full description of the problem/report:
-[3.] Keywords (i.e., modules, networking, kernel): direct IO, 
-blk_dev_direct_IO
-[4.] Kernel version (from /proc/version):
-
-# uname -r
-2.6.18-128.el5
-
-]# cat /etc/redhat-release
-CentOS release 5.3 (Final)
-
-
-[5.] Output of Oops.. message (if applicable) with symbolic information
-      resolved (see Documentation/oops-tracing.txt)
-
-Kernel BUG at fs/direct-io.c:914
-invalid opcode: 0000 [1] SMP
-last sysfs file: /block/vgca0/stat
-CPU 3
-
-Pid: 28959, comm: fio Tainted: P      2.6.18-164.el5 #1
-RIP: 0010:[<ffffffff800f2600>]  [<ffffffff800f2600>] 
-__blockdev_direct_IO+0x6a1/0xa35
-RSP: 0018:ffff8101a7805bc8  EFLAGS: 00010246
-RAX: 0000000000000000 RBX: 0000000000000000 RCX: ffff810171dbb409
-RDX: 0000000000000005 RSI: 0000000000000000 RDI: ffff8101bcb02c40
-RBP: ffff810171dbb400 R08: 0000000000000003 R09: ffff810171dbb488
-R10: ffff810001000000 R11: ffff810001000000 R12: ffff810105bf2248
-R13: 0000000000000600 R14: 0000000000000000 R15: 0000000000000003
-FS:  00000000537ce940(0063) GS:ffff81010631fdc0(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00002b32dd2a70d0 CR3: 000000010d7e3000 CR4: 00000000000006e0
-Process fio (pid: 28959, threadinfo ffff8101a7804000, task ffff810161d13080)
-Stack:  0000000004ade4d0 0000000260d36e00 ffff8101a7805ef8 ffff8101bcb02d28
-  0000000900000011 0000000000000000 ffff8101a7805ef8 ffff810171dbb488
-  ffff810100000008 ffff810101461290 ffff8101014612c8 0000000000000009
-Call Trace:
-  [<ffffffff800e3e35>] blkdev_direct_IO+0x32/0x37
-  [<ffffffff800e3d6d>] blkdev_get_blocks+0x0/0x96
-  [<ffffffff800c4c91>] generic_file_direct_IO+0xff/0x119
-  [<ffffffff8001edd1>] generic_file_direct_write+0x60/0xf2
-  [<ffffffff8001646e>] __generic_file_aio_write_nolock+0x2b8/0x3b6
-  [<ffffffff800e3e35>] blkdev_direct_IO+0x32/0x37
-  [<ffffffff800e3d6d>] blkdev_get_blocks+0x0/0x96
-  [<ffffffff800c4e16>] generic_file_aio_write_nolock+0x20/0x6c
-  [<ffffffff800c51ed>] generic_file_write_nolock+0x8f/0xa8
-  [<ffffffff800c5145>] generic_file_read+0xac/0xc5
-  [<ffffffff8009f6c1>] autoremove_wake_function+0x0/0x2e
-  [<ffffffff80062fc8>] thread_return+0x62/0xfe
-  [<ffffffff800e2c34>] blkdev_file_write+0x1a/0x1f
-  [<ffffffff80016927>] vfs_write+0xce/0x174
-  [<ffffffff80043e1d>] sys_pwrite64+0x50/0x70
-  [<ffffffff8005d229>] tracesys+0x71/0xe0
-  [<ffffffff8005d28d>] tracesys+0xd5/0xe0
-
-Code: 0f 0b 68 e9 b3 2a 80 c2 92 03 48 8b 54 24 38 4c 8b 85 80 00
-RIP  [<ffffffff800f2600>] __blockdev_direct_IO+0x6a1/0xa35
-  RSP <ffff8101a7805bc8>
-
-direct-io.c: do_direct_IO
-
-     908                         if (this_chunk_blocks > u)
-     909                                 this_chunk_blocks = u;
-     910                         u = dio->final_block_in_request - 
-dio->block_in_file;
-     911                         if (this_chunk_blocks > u)
-     912                                 this_chunk_blocks = u;
-     913                         this_chunk_bytes = this_chunk_blocks << 
-blkbits;
-     914                         BUG_ON(this_chunk_bytes == 0);
-     915
-     916                         dio->boundary = buffer_boundary(map_bh);
-     917                         ret = submit_page_section(dio, page, 
-offset_in_page,
-     918                                 this_chunk_bytes, 
-dio->next_block_for_io);
-
-
-[6.] A small shell script or example program which triggers the
-      problem (if possible)
-
-
-------------------------------------------------
-#!/bin/bash
-
-device="/dev/hdc"
-rwmix=100
-no_of_threads=128
-  /usr/local/bin/fio --name=job --filename=$device  --end_fsync=0 
---norandommap --randrepeat=0 --time_based --invalidate=1 
---group_reporting --eta=never --bsrange="512-2M"
---rw=randrw --rwmixwrite=$rwmix --ioengine=psync --iodepth=1 --thread 
---numjobs=$no_of_threads --direct=1 --runtime=3600 &
-  /usr/local/bin/fio --name=job --filename=$device --end_fsync=0 
---norandommap --randrepeat=0 --time_based --invalidate=1 
---group_reporting --eta=never --bsrange="512-2M"
---rw=randrw --rwmixwrite=$rwmix --ioengine=psync --iodepth=1 --thread 
---numjobs=$no_of_threads --direct=1 --runtime=3600 &
-sleep 10
-echo "mkfs on $device"
-! mkfs -t ext3 $device &&  echo "mkfs failed" && exit 1
-echo "mount on $device"
-! mount -t ext3 $device /mnt -o rw &&  echo "mount failed" && exit 1
-exit 0
-------------------------------------
-
-
-Thanks,
-Gangadhar
-
+makes sense to me.  if Javier doesnt have a problem with it, i'll pick
+it up in a while (traveling atm).
+-mike
