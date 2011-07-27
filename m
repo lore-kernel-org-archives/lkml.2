@@ -1,40 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab1G0JNY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 05:13:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26585 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754013Ab1G0JNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 05:13:23 -0400
-Message-ID: <4E2FD6AD.5010902@redhat.com>
-Date: Wed, 27 Jul 2011 12:13:17 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 09/11] KVM: MMU: remove the mismatch shadow page
-References: <4E2EA3DB.7040403@cn.fujitsu.com> <4E2EA58B.1030503@cn.fujitsu.com> <4E2FD65C.9000402@redhat.com>
-In-Reply-To: <4E2FD65C.9000402@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754261Ab1G0JNo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 05:13:44 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:49081 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188Ab1G0JNm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 05:13:42 -0400
+X-AuditID: cbfee61b-b7c3dae000002cb8-23-4e2fd6c42f1c
+Date: Wed, 27 Jul 2011 18:12:57 +0900
+From: Donggeun Kim <dg77.kim@samsung.com>
+Subject: [PATCH v2] backlight/platform_lcd: change set power function parameter
+ in plat_lcd_data
+To: linux-fbdev@vger.kernel.org
+Cc: rpurdie@rpsys.net, lethal@linux-sh.org, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, dh09.lee@samsung.com, dg77.kim@samsung.com
+Message-id: <1311757977-12694-1-git-send-email-dg77.kim@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+Content-transfer-encoding: 7BIT
+X-OriginalArrivalTime: 27 Jul 2011 09:14:01.0692 (UTC)
+ FILETIME=[864EA9C0:01CC4C3D]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2011 12:11 PM, Avi Kivity wrote:
-> On 07/26/2011 02:31 PM, Xiao Guangrong wrote:
->> If the shadow page has different cpu mode with current vcpu, we do 
->> better
->> remove them since the OS does not changes cpu mode frequently
->>
->
-> This is true
+The set_power function in platdata for platform_lcd driver
+has originally two parameters.
+The first parameter type is struct plat_lcd_data * and
+the second parameter type is unsigned int .
 
-It's actually not true.  With nested virtualization the cpu changes 
-modes all the time.
+In some cases, it is needed to get pointer typed 'struct device'
+in order to call regulator_* functions.
+This patch allows users to define a set_power function
+which control regulators related to platform_lcd device.
 
+Currently, variables in struct plat_lcd_data are not used
+in several set_power functions which are defined at arch/arm/ directory.
+
+Changes since v1 :
+* Remove compile warning message by including another heeder file
+
+Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+Signed-off-by: Donghwa Lee <dh09.lee@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+
+---
+ drivers/video/backlight/platform_lcd.c |    2 +-
+ include/video/platform_lcd.h           |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/video/backlight/platform_lcd.c b/drivers/video/backlight/platform_lcd.c
+index 302330a..cf23a3f 100644
+--- a/drivers/video/backlight/platform_lcd.c
++++ b/drivers/video/backlight/platform_lcd.c
+@@ -49,7 +49,7 @@ static int platform_lcd_set_power(struct lcd_device *lcd, int power)
+ 	if (power == FB_BLANK_POWERDOWN || plcd->suspended)
+ 		lcd_power = 0;
+ 
+-	plcd->pdata->set_power(plcd->pdata, lcd_power);
++	plcd->pdata->set_power(lcd, lcd_power);
+ 	plcd->power = power;
+ 
+ 	return 0;
+diff --git a/include/video/platform_lcd.h b/include/video/platform_lcd.h
+index ad3bdfe..5d7e943 100644
+--- a/include/video/platform_lcd.h
++++ b/include/video/platform_lcd.h
+@@ -10,12 +10,13 @@
+  * published by the Free Software Foundation.
+  *
+ */
++#include <linux/lcd.h>
+ 
+ struct plat_lcd_data;
+ struct fb_info;
+ 
+ struct plat_lcd_data {
+-	void	(*set_power)(struct plat_lcd_data *, unsigned int power);
++	void	(*set_power)(struct lcd_device *, unsigned int power);
+ 	int	(*match_fb)(struct plat_lcd_data *, struct fb_info *);
+ };
+ 
 -- 
-error compiling committee.c: too many arguments to function
+1.7.4.1
 
