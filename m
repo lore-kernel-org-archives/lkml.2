@@ -1,141 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab1G0URb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 16:17:31 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35084 "EHLO hera.kernel.org"
+	id S1755076Ab1G0URo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 16:17:44 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35086 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753581Ab1G0UR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 16:17:28 -0400
+	id S1754754Ab1G0URa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 16:17:30 -0400
 From: Wim Van Sebroeck <wim@iguana.be>
 To: LKML <linux-kernel@vger.kernel.org>,
         Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>
 Cc: Wim Van Sebroeck <wim@iguana.be>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>
-Subject: [PATCH 7/9] watchdog: WatchDog Timer Driver Core - Add nowayout feature
-Date: Wed, 27 Jul 2011 20:16:38 +0000
-Message-Id: <1311797800-2706-7-git-send-email-wim@iguana.be>
+Subject: [PATCH 5/9] watchdog: WatchDog Timer Driver Core - Add WDIOC_SETTIMEOUT and WDIOC_GETTIMEOUT ioctl
+Date: Wed, 27 Jul 2011 20:16:36 +0000
+Message-Id: <1311797800-2706-5-git-send-email-wim@iguana.be>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1311797800-2706-1-git-send-email-wim@iguana.be>
 References: <20110727201537.GA13819@infomag.iguana.be>
  <1311797800-2706-1-git-send-email-wim@iguana.be>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 27 Jul 2011 20:17:11 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 27 Jul 2011 20:17:10 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the nowayout feature to the
-WatchDog Timer Driver Core framework.
-This feature prevents the watchdog timer from being
-stopped.
+This part add's the WDIOC_SETTIMEOUT and WDIOC_GETTIMEOUT ioctl
+functionality to the WatchDog Timer Driver Core framework.
 
 Signed-off-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
 Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 ---
- Documentation/watchdog/watchdog-kernel-api.txt |   13 ++++++++-----
- drivers/watchdog/watchdog_dev.c                |   18 +++++++++++++-----
- include/linux/watchdog.h                       |    1 +
- 3 files changed, 22 insertions(+), 10 deletions(-)
+ Documentation/watchdog/watchdog-kernel-api.txt |   10 ++++++++++
+ drivers/watchdog/watchdog_dev.c                |   20 ++++++++++++++++++++
+ include/linux/watchdog.h                       |    4 ++++
+ 3 files changed, 34 insertions(+), 0 deletions(-)
 
 diff --git a/Documentation/watchdog/watchdog-kernel-api.txt b/Documentation/watchdog/watchdog-kernel-api.txt
-index 41d5526..785fa0c 100644
+index 429f81b..acdee39 100644
 --- a/Documentation/watchdog/watchdog-kernel-api.txt
 +++ b/Documentation/watchdog/watchdog-kernel-api.txt
-@@ -59,8 +59,8 @@ It contains following fields:
-   watchdog_get_drvdata routines.
- * status: this field contains a number of status bits that give extra
-   information about the status of the device (Like: is the watchdog timer
--  running/active, is the device opened via the /dev/watchdog interface or not,
--  ...).
-+  running/active, is the nowayout bit set, is the device opened via
-+  the /dev/watchdog interface or not, ...).
- 
- The list of watchdog operations is defined as:
- 
-@@ -130,10 +130,13 @@ bit-operations. The status bits that are defined are:
- * WDOG_ALLOW_RELEASE: this bit stores whether or not the magic close character
-   has been sent (so that we can support the magic close feature).
-   (This bit should only be used by the WatchDog Timer Driver Core).
-+* WDOG_NO_WAY_OUT: this bit stores the nowayout setting for the watchdog.
-+  If this bit is set then the watchdog timer will not be able to stop.
- 
--Note: The WatchDog Timer Driver Core supports the magic close feature. To use
--the magic close feature you must set the WDIOF_MAGICCLOSE bit in the options
--field of the watchdog's info structure.
-+Note: The WatchDog Timer Driver Core supports the magic close feature and
-+the nowayout feature. To use the magic close feature you must set the
-+WDIOF_MAGICCLOSE bit in the options field of the watchdog's info structure.
-+The nowayout feature will overrule the magic close feature.
- 
- To get or set driver specific data the following two helper functions should be
- used:
-diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
-index db40c6c..ac20f92 100644
---- a/drivers/watchdog/watchdog_dev.c
-+++ b/drivers/watchdog/watchdog_dev.c
-@@ -98,11 +98,18 @@ static int watchdog_start(struct watchdog_device *wddev)
-  *	Stop the watchdog if it is still active and unmark it active.
-  *	This function returns zero on success or a negative errno code for
-  *	failure.
-+ *	If the 'nowayout' feature was set, the watchdog cannot be stopped.
-  */
- 
- static int watchdog_stop(struct watchdog_device *wddev)
- {
--	int err;
-+	int err = -EBUSY;
-+
-+	if (test_bit(WDOG_NO_WAY_OUT, &wdd->status)) {
-+		pr_info("%s: nowayout prevents watchdog to be stopped!\n",
-+							wdd->info->identity);
-+		return err;
-+	}
- 
- 	if (test_bit(WDOG_ACTIVE, &wdd->status)) {
- 		err = wddev->ops->stop(wddev);
-@@ -123,7 +130,7 @@ static int watchdog_stop(struct watchdog_device *wddev)
-  *
-  *	A write to a watchdog device is defined as a keepalive ping.
-  *	Writing the magic 'V' sequence allows the next close to turn
-- *	off the watchdog.
-+ *	off the watchdog (if 'nowayout' is not set).
-  */
- 
- static ssize_t watchdog_write(struct file *file, const char __user *data,
-@@ -271,8 +278,8 @@ out:
-  *      @file: file handle to device
-  *
-  *	This is the code for when /dev/watchdog gets closed. We will only
-- *	stop the watchdog when we have received the magic char, else the
-- *	watchdog will keep running.
-+ *	stop the watchdog when we have received the magic char (and nowayout
-+ *	was not set), else the watchdog will keep running.
-  */
- 
- static int watchdog_release(struct inode *inode, struct file *file)
-@@ -281,7 +288,8 @@ static int watchdog_release(struct inode *inode, struct file *file)
- 
- 	/*
- 	 * We only stop the watchdog if we received the magic character
--	 * or if WDIOF_MAGICCLOSE is not set
-+	 * or if WDIOF_MAGICCLOSE is not set. If nowayout was set then
-+	 * watchdog_stop will fail.
- 	 */
- 	if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
- 	    !(wdd->info->options & WDIOF_MAGICCLOSE))
-diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
-index e9881ca..f719883 100644
---- a/include/linux/watchdog.h
-+++ b/include/linux/watchdog.h
-@@ -113,6 +113,7 @@ struct watchdog_device {
- #define WDOG_ACTIVE		0	/* Is the watchdog running/active */
- #define WDOG_DEV_OPEN		1	/* Opened via /dev/watchdog ? */
- #define WDOG_ALLOW_RELEASE	2	/* Did we receive the magic char ? */
-+#define WDOG_NO_WAY_OUT		3	/* Is 'nowayout' feature set ? */
+@@ -42,6 +42,7 @@ struct watchdog_device {
+ 	const struct watchdog_info *info;
+ 	const struct watchdog_ops *ops;
+ 	unsigned int bootstatus;
++	unsigned int timeout;
+ 	void *driver_data;
+ 	unsigned long status;
+ };
+@@ -50,6 +51,7 @@ It contains following fields:
+ * info: a pointer to a watchdog_info structure. This structure gives some
+   additional information about the watchdog timer itself. (Like it's unique name)
+ * ops: a pointer to the list of watchdog operations that the watchdog supports.
++* timeout: the watchdog timer's timeout value (in seconds).
+ * bootstatus: status of the device after booting (reported with watchdog
+   WDIOF_* status bits).
+ * driver_data: a pointer to the drivers private data of a watchdog device.
+@@ -70,6 +72,7 @@ struct watchdog_ops {
+ 	/* optional operations */
+ 	int (*ping)(struct watchdog_device *);
+ 	unsigned int (*status)(struct watchdog_device *);
++	int (*set_timeout)(struct watchdog_device *, unsigned int);
  };
  
- /* Use the following functions to manipulate watchdog driver specific data */
+ It is important that you first define the module owner of the watchdog timer
+@@ -107,6 +110,13 @@ they are supported. These optional routines/operations are:
+   info structure).
+ * status: this routine checks the status of the watchdog timer device. The
+   status of the device is reported with watchdog WDIOF_* status flags/bits.
++* set_timeout: this routine checks and changes the timeout of the watchdog
++  timer device. It returns 0 on success, -EINVAL for "parameter out of range"
++  and -EIO for "could not write value to the watchdog". On success the timeout
++  value of the watchdog_device will be changed to the value that was just used
++  to re-program the watchdog timer device.
++  (Note: the WDIOF_SETTIMEOUT needs to be set in the options field of the
++  watchdog's info structure).
+ 
+ The status bits should (preferably) be set with the set_bit and clear_bit alike
+ bit-operations. The status bits that are defined are:
+diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
+index 9f5550e..2c0289d 100644
+--- a/drivers/watchdog/watchdog_dev.c
++++ b/drivers/watchdog/watchdog_dev.c
+@@ -190,6 +190,26 @@ static long watchdog_ioctl(struct file *file, unsigned int cmd,
+ 			return -EOPNOTSUPP;
+ 		watchdog_ping(wdd);
+ 		return 0;
++	case WDIOC_SETTIMEOUT:
++		if ((wdd->ops->set_timeout == NULL) ||
++		    !(wdd->info->options & WDIOF_SETTIMEOUT))
++			return -EOPNOTSUPP;
++		if (get_user(val, p))
++			return -EFAULT;
++		err = wdd->ops->set_timeout(wdd, val);
++		if (err < 0)
++			return err;
++		wdd->timeout = val;
++		/* If the watchdog is active then we send a keepalive ping
++		 * to make sure that the watchdog keep's running (and if
++		 * possible that it takes the new timeout) */
++		watchdog_ping(wdd);
++		/* Fall */
++	case WDIOC_GETTIMEOUT:
++		/* timeout == 0 means that we don't know the timeout */
++		if (wdd->timeout == 0)
++			return -EOPNOTSUPP;
++		return put_user(wdd->timeout, p);
+ 	default:
+ 		return -ENOTTY;
+ 	}
+diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
+index db46fe8..9f33efe 100644
+--- a/include/linux/watchdog.h
++++ b/include/linux/watchdog.h
+@@ -69,6 +69,7 @@ struct watchdog_device;
+  * @stop:	The routine for stopping the watchdog device.
+  * @ping:	The routine that sends a keepalive ping to the watchdog device.
+  * @status:	The routine that shows the status of the watchdog device.
++ * @set_timeout:The routine for setting the watchdog devices timeout value.
+  *
+  * The watchdog_ops structure contains a list of low-level operations
+  * that control a watchdog device. It also contains the module that owns
+@@ -83,6 +84,7 @@ struct watchdog_ops {
+ 	/* optional operations */
+ 	int (*ping)(struct watchdog_device *);
+ 	unsigned int (*status)(struct watchdog_device *);
++	int (*set_timeout)(struct watchdog_device *, unsigned int);
+ };
+ 
+ /** struct watchdog_device - The structure that defines a watchdog device
+@@ -90,6 +92,7 @@ struct watchdog_ops {
+  * @info:	Pointer to a watchdog_info structure.
+  * @ops:	Pointer to the list of watchdog operations.
+  * @bootstatus:	Status of the watchdog device at boot.
++ * @timeout:	The watchdog devices timeout value.
+  * @driver-data:Pointer to the drivers private data.
+  * @status:	Field that contains the devices internal status bits.
+  *
+@@ -103,6 +106,7 @@ struct watchdog_device {
+ 	const struct watchdog_info *info;
+ 	const struct watchdog_ops *ops;
+ 	unsigned int bootstatus;
++	unsigned int timeout;
+ 	void *driver_data;
+ 	unsigned long status;
+ /* Bit numbers for status flags */
 -- 
 1.7.6
 
