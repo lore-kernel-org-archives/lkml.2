@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456Ab1G0WSA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:18:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44881 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755304Ab1G0WR4 (ORCPT
+	id S1755392Ab1G0W2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:28:16 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:38849
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753031Ab1G0W2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 18:17:56 -0400
-Date: Thu, 28 Jul 2011 00:17:42 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Christoph Lameter <cl@linux.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, eric.dumazet@gmail.com
-Subject: Re: per-cpu operation madness vs validation
-In-Reply-To: <alpine.DEB.2.00.1107271542530.17752@router.home>
-Message-ID: <alpine.LFD.2.02.1107280006510.2660@ionos>
-References: <1311714410.24752.404.camel@twins>  <alpine.DEB.2.00.1107261624210.10273@router.home>  <1311768693.24752.488.camel@twins>  <alpine.DEB.2.00.1107270904290.9418@router.home> <1311783616.5890.178.camel@twins> <alpine.DEB.2.00.1107271204260.13058@router.home>
- <alpine.LFD.2.02.1107271919500.2660@ionos> <alpine.DEB.2.00.1107271542530.17752@router.home>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 27 Jul 2011 18:28:14 -0400
+X-SpamScore: -15
+X-BigFish: VPS-15(zzbb2dK103dK1432N98dKzz1202hzzz2fh668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPVD:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4E3090E3.7000100@am.sony.com>
+Date: Wed, 27 Jul 2011 15:27:47 -0700
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [ANNOUNCE] 3.0-rt4
+References: <alpine.LFD.2.02.1107272222420.2660@ionos> <4E3089BC.1080001@am.sony.com> <alpine.LFD.2.02.1107280004410.2660@ionos>
+In-Reply-To: <alpine.LFD.2.02.1107280004410.2660@ionos>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jul 2011, Christoph Lameter wrote:
-> On Wed, 27 Jul 2011, Thomas Gleixner wrote:
+On 07/27/11 15:05, Thomas Gleixner wrote:
+> On Wed, 27 Jul 2011, Frank Rowand wrote:
 > 
-> > > The key issue is that the -rt kernel has always had grave issues with
-> > > performance when it comes to per cpu data access. Solving that by forcing
-> > > the kernel to go slow it not the right approach.
-> >
-> > Nobody want's the kernel to go slow. All we want and we consider that
-> > also a benefit for mainline is: proper annotation of the per cpu data
-> > access, like we have for RCU and for locking.
+>> On 07/27/11 14:37, Thomas Gleixner wrote:
+>>> Dear RT Folks,
+>>>
+>>> I'm pleased to announce the 3.0-rt4 release.
+>>
+>> ARM panda board, PREEMPT_RT_FULL
+>>
+>> -rt3 compiled OK.  -rt4 compile fails:
+>>
+>>
+>> mm/init-mm.c:24: error: unknown field 'lock' specified in initializer
+>> mm/init-mm.c:24: error: unknown field 'wait_lock' specified in initializer
+>> mm/init-mm.c:24: error: incompatible types in initialization
+>> mm/init-mm.c:24: error: unknown field 'save_state' specified in initializer
+>> mm/init-mm.c:24: warning: excess elements in struct initializer
+>> mm/init-mm.c:24: warning: (near initialization for 'init_mm.context.id_lock.raw_lock')
 > 
-> I love that stuff.
+> Bah, that's what I get for trying to vanish. Fix below.
 > 
-> > For -rt this lack of documentation and the lack of verification,
-> > debugability and traceability is a major PITA, but that's true for
-> > non-rt as well, just the PITA is gradually smaller and the bugs which
-> > are there today are just extremly hard to trigger.
-> 
-> Right. Sure wish there would be better checks. Or things would not have so
-> many flavors.
-> 
-> > And Peters idea of per_cpu_lock*() annotations will boil down to the
-> > exact same thing which is there today when you compile the kernel w/o
-> > lockdep enabled for per_cpu data correctness. We don't want to change
-> > anything or impose any slowness, we just want a proper way to document
-> > and verify that maze. That's really not too much of a request.
-> 
-> No problem with that. The per cpu atomic ops are made to mostly stand on
-> their own. However, the correctness is affected by placementin the per cpu
-> sections that may start with get_cpu() or a preempt_disable().
-> 
-> The reason that I switched from get_cpu() to preempt_disable() in some
-> functions was because the this_cpu operations eliminated the need to pass
-> the cpu number to a function. Thus the cpu variable is not needed anymore.
-> Preempt_disable() doesnt provide it and so I thought that was the proper
-> function to use.
+> --- linux-2.6.orig/arch/arm/include/asm/mmu.h
+> +++ linux-2.6/arch/arm/include/asm/mmu.h
+> @@ -16,7 +16,7 @@ typedef struct {
+>  
+>  /* init_mm.context.id_lock should be initialized. */
+>  #define INIT_MM_CONTEXT(name)                                                 \
+> -	.context.id_lock    = __SPIN_LOCK_UNLOCKED(name.context.id_lock),
+> +	.context.id_lock    = __RAW_SPIN_LOCK_UNLOCKED(name.context.id_lock),
+>  #else
+>  #define ASID(mm)	(0)
+>  #endif
 
-Yes, you had no other choice, but that does not make them more obvious
-in terms of debugability and verification.
+Thanks!
 
-We just have to understand, that preempt_disable, bh_disable,
-irq_disable are cpu local BKLs with very subtle semantics which are
-pretty close to the original BKL horror. All these mechanisms are per
-cpu locks in fact and we need to get some annotation in place which
-will help understandability and debugability in the first place. The
-side effect that it will help RT to deal with that is - of course
-desired from our side - but not the primary goal of that excercise.
+Compiles and boots.
 
-Thanks,
+-Frank
 
-	tglx
