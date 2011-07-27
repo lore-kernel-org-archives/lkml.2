@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab1G0U32 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 16:29:28 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40841 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab1G0U3Z convert rfc822-to-8bit (ORCPT
+	id S1754947Ab1G0U3b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 16:29:31 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33052 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754860Ab1G0U33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 16:29:25 -0400
+	Wed, 27 Jul 2011 16:29:29 -0400
+Date: Wed, 27 Jul 2011 21:28:59 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Jaswinder Singh <jaswinder.singh@linaro.org>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, per.friden@stericsson.com,
+        wei.zhang@freescale.com, ebony.zhu@freescale.com, iws@ovro.caltech.edu,
+        s.hauer@pengutronix.de, maciej.sosnowski@intel.com, saeed@marvell.com,
+        shawn.guo@freescale.com, yur@emcraft.com, agust@denx.de,
+        iwamatsu.nobuhiro@renesas.com, per.forlin@stericsson.com,
+        jonas.aberg@stericsson.com, anemo@mba.ocn.ne.jp
+Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
+Message-ID: <20110727202859.GA5028@flint.arm.linux.org.uk>
+References: <CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com> <CABE8wwv2XQ_aJ8O2TUAz1LgJorBwDbgyQQv7jeAn06Q2AcqH+Q@mail.gmail.com> <CAJe_ZhcNM7m-eWA0nDUrOrHxeAhNS00gewf=txmvOFL_uOPhrw@mail.gmail.com> <1311740499.1536.56.camel@vkoul-udesk3> <CAJe_ZhfaPfobs5P+q+t-kRSK4fAvm-v_brYgqmco8fwOOBeT8A@mail.gmail.com> <1311757347.1536.103.camel@vkoul-udesk3> <20110727095909.GB16623@intel.com> <CAJe_ZhdkPpVSyCyiUsFhOUUms8=JSQOiC33ztFzriW8jQHaa_w@mail.gmail.com> <CABE8wwuAFMYHH67sjEuy7whiZD+QBmU6bvzUUzEqJQFaYpkgdQ@mail.gmail.com> <CAJe_Zhfm5k9gNPaTfpZdQ__cp9fKLZoiSvG0GPciVFbkkU=QCw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110727201904.GA30198@n2100.arm.linux.org.uk>
-References: <20110727120826.ea1227276707790e162dee18@canb.auug.org.au>
- <1311736331.1536.45.camel@vkoul-udesk3> <438BB0150E931F4B9CE701519A4463010871EAC8BD@bgsmsx502.gar.corp.intel.com>
- <20110727201904.GA30198@n2100.arm.linux.org.uk>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 27 Jul 2011 14:29:04 -0600
-X-Google-Sender-Auth: _TdwEB2q73aQqqtYWWbxwpffODo
-Message-ID: <CACxGe6vEuggs6Ku6we==zbAh2bJvAARPTZLtAq1eog75rheEJA@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the slave-dma tree with Linus' tree
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Koul, Vinod" <vinod.koul@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJe_Zhfm5k9gNPaTfpZdQ__cp9fKLZoiSvG0GPciVFbkkU=QCw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 2:19 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Jul 27, 2011 at 09:55:44PM +0530, Koul, Vinod wrote:
->> >
->> > On Wed, 2011-07-27 at 12:08 +1000, Stephen Rothwell wrote:
->> > > Hi Vinod,
->> > >
->> > > Today's linux-next merge of the slave-dma tree got a conflict in
->> > > drivers/spi/spi-pl022.c (called drivers/spi/amba-pl022.c in the sleav-dma
->> > > tree) between commit 083be3f05371 ("spi/pl022: initialize burstsize from
->> > > FIFO trigger level") from Linus' tree and commit 001b0585ff16 ("Improve
->> > > slave/cyclic DMA engine documentation") from the slave-dma tree.
->> > >
->> > > I fixed it up (see below) anc acn carry the fix as necessary.
->> >
->> > The correct fix would be:
->> >
->> > diff --cc drivers/spi/spi-pl022.c
->> > index eba88c7,99e7880..0000000
->> > --- a/drivers/spi/spi-pl022.c
->> > +++ b/drivers/spi/spi-pl022.c
->> > @@@ -910,11 -908,11 +910,9 @@@ static int configure_dma(struct pl022 *
->> >   {
->> >         struct dma_slave_config rx_conf = {
->> >                 .src_addr = SSP_DR(pl022->phybase),
->> > +                   .direction = DMA_TO_DEVICE,
->> >         };
->> >         struct dma_slave_config tx_conf = {
->> >                 .dst_addr = SSP_DR(pl022->phybase),
->> >                 .direction = DMA_TO_DEVICE,
->> >  -              .dst_maxburst = pl022->vendor->fifodepth >> 1,
->> >         };
->> >         unsigned int pages;
->> >         int ret;
->> >
->> Grant, Russell,
->> Can you please ack this fix before I apply in my tree to resolve this conflict
->
-> I don't see why I need to - my documentation patch should only be touching
-> Documentation/dmaengine.txt, not drivers/spi/spi-pl022.c.  So it really
-> should not be causing a conflict in this file.
+On Wed, Jul 27, 2011 at 10:44:53PM +0530, Jaswinder Singh wrote:
+> 1) What I propose
+>        http://lists.infradead.org/pipermail/linux-arm-kernel/2011-July/059212.html
+> 
+> 2) Why RMK thinks I am the biggest idiot on earth
+>        http://lists.infradead.org/pipermail/linux-arm-kernel/2011-July/059217.html
+> 
+> 3) How I ask for better proof of that
+>       http://lists.infradead.org/pipermail/linux-arm-kernel/2011-July/059223.html
 
-The commit includes 3 stray hunks not in the original patch.  Sounds
-like it got borked on commit.
+Look, your idea is completely mad and insane - you just can't represent
+the matching stuff as capabilities.
 
-g.
+How do you deal with a peripheral being linked to a _specific_ DMA
+engine on a _specific_ DMA request signal?  What if your system has
+two DMA engines, each with 32 request signals?  Are you going to have
+something like a 128-bit capability mask?
 
+Peripheral drivers don't know what DMA signal the SoC designer may have
+chosen.  Peripheral drivers don't know what DMA engine they're connected
+to.  Yet again, I say, the only place which knows that is data associated
+with the _platform_.  The platform has to be involved with binding the
+DMA engine plus DMA channel with the peripheral.  You can't get away from
+that.  Not with capabilities.  Not with stuff from the peripheral driver
+saying "I want a M2P channel" in a capability field, etc
+
+So I think your idea is totally unworkable, and it doesn't come close to
+fitting with any DMA setup I've seen.
+
+If that means you think I'm calling you an idiot, then so be it.  I just
+think you're wrong on a purely technical level.
 
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
