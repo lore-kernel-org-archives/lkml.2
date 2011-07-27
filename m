@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169Ab1G0Afl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 20:35:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:7312 "EHLO mga09.intel.com"
+	id S1754101Ab1G0Afa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 20:35:30 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52724 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754106Ab1G0Afc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 20:35:32 -0400
+	id S1753966Ab1G0AfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 20:35:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,272,1309762800"; 
-   d="scan'208";a="30471239"
+   d="scan'208";a="30471175"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110726534.972201586@firstfloor.org>
 In-Reply-To: <20110726534.972201586@firstfloor.org>
-To: Warns@pre-sense.de, warns@pre-sense.de, stable@kernel.org,
-        ak@linux.intel.com, torvalds@linux-foundation.org, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH] [38/98] Fix corrupted OSF partition table parsing
-Message-Id: <20110727003530.A09992403FF@tassilo.jf.intel.com>
-Date: Tue, 26 Jul 2011 17:35:30 -0700 (PDT)
+To: ebiederm@xmission.com, dan@aloni.org, davem@davemloft.net, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: [PATCH] [26/98] af_unix: Only allow recv on connected seqpacket sockets.
+Message-Id: <20110727003518.6DA772403FF@tassilo.jf.intel.com>
+Date: Tue, 26 Jul 2011 17:35:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,74 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Timo Warns <Warns@pre-sense.de>
+From: Eric W. Biederman <ebiederm@xmission.com>
 
-commit 1eafbfeb7bdf59cfe173304c76188f3fd5f1fd05 upstream.
+commit a05d2ad1c1f391c7f514a1d1e09b5417968a7d07 upstream.
 
-The kernel automatically evaluates partition tables of storage devices.
-The code for evaluating OSF partitions contains a bug that leaks data
-from kernel heap memory to userspace for certain corrupted OSF
-partitions.
+This fixes the following oops discovered by Dan Aloni:
+> Anyway, the following is the output of the Oops that I got on the
+> Ubuntu kernel on which I first detected the problem
+> (2.6.37-12-generic). The Oops that followed will be more useful, I
+> guess.
 
-In more detail:
+>[ 5594.669852] BUG: unable to handle kernel NULL pointer dereference
+> at           (null)
+> [ 5594.681606] IP: [<ffffffff81550b7b>] unix_dgram_recvmsg+0x1fb/0x420
+> [ 5594.687576] PGD 2a05d067 PUD 2b951067 PMD 0
+> [ 5594.693720] Oops: 0002 [#1] SMP
+> [ 5594.699888] last sysfs file:
 
-  for (i = 0 ; i < le16_to_cpu(label->d_npartitions); i++, partition++) {
+The bug was that unix domain sockets use a pseduo packet for
+connecting and accept uses that psudo packet to get the socket.
+In the buggy seqpacket case we were allowing unconnected
+sockets to call recvmsg and try to receive the pseudo packet.
 
-iterates from 0 to d_npartitions - 1, where d_npartitions is read from
-the partition table without validation and partition is a pointer to an
-array of at most 8 d_partitions.
+That is always wrong and as of commit 7361c36c5 the pseudo
+packet had become enough different from a normal packet
+that the kernel started oopsing.
 
-Add the proper and obvious validation.
+Do for seqpacket_recv what was done for seqpacket_send in 2.5
+and only allow it on connected seqpacket sockets.
 
-Signed-off-by: Timo Warns <warns@pre-sense.de>
-Cc: stable@kernel.org
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-[ Changed the patch trivially to not repeat the whole le16_to_cpu()
-  thing, and to use an explicit constant for the magic value '8' ]
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Tested-by: Dan Aloni <dan@aloni.org>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- fs/partitions/osf.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Index: linux-2.6.35.y/fs/partitions/osf.c
+---
+ net/unix/af_unix.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+
+Index: linux-2.6.35.y/net/unix/af_unix.c
 ===================================================================
---- linux-2.6.35.y.orig/fs/partitions/osf.c
-+++ linux-2.6.35.y/fs/partitions/osf.c
-@@ -10,10 +10,13 @@
- #include "check.h"
- #include "osf.h"
+--- linux-2.6.35.y.orig/net/unix/af_unix.c
++++ linux-2.6.35.y/net/unix/af_unix.c
+@@ -504,6 +504,8 @@ static int unix_dgram_connect(struct soc
+ 			      int, int);
+ static int unix_seqpacket_sendmsg(struct kiocb *, struct socket *,
+ 				  struct msghdr *, size_t);
++static int unix_seqpacket_recvmsg(struct kiocb *, struct socket *,
++				  struct msghdr *, size_t, int);
  
-+#define MAX_OSF_PARTITIONS 8
+ static const struct proto_ops unix_stream_ops = {
+ 	.family =	PF_UNIX,
+@@ -563,7 +565,7 @@ static const struct proto_ops unix_seqpa
+ 	.setsockopt =	sock_no_setsockopt,
+ 	.getsockopt =	sock_no_getsockopt,
+ 	.sendmsg =	unix_seqpacket_sendmsg,
+-	.recvmsg =	unix_dgram_recvmsg,
++	.recvmsg =	unix_seqpacket_recvmsg,
+ 	.mmap =		sock_no_mmap,
+ 	.sendpage =	sock_no_sendpage,
+ };
+@@ -1676,6 +1678,18 @@ static int unix_seqpacket_sendmsg(struct
+ 	return unix_dgram_sendmsg(kiocb, sock, msg, len);
+ }
+ 
++static int unix_seqpacket_recvmsg(struct kiocb *iocb, struct socket *sock,
++			      struct msghdr *msg, size_t size,
++			      int flags)
++{
++	struct sock *sk = sock->sk;
 +
- int osf_partition(struct parsed_partitions *state)
++	if (sk->sk_state != TCP_ESTABLISHED)
++		return -ENOTCONN;
++
++	return unix_dgram_recvmsg(iocb, sock, msg, size, flags);
++}
++
+ static void unix_copy_addr(struct msghdr *msg, struct sock *sk)
  {
- 	int i;
- 	int slot = 1;
-+	unsigned int npartitions;
- 	Sector sect;
- 	unsigned char *data;
- 	struct disklabel {
-@@ -45,7 +48,7 @@ int osf_partition(struct parsed_partitio
- 			u8  p_fstype;
- 			u8  p_frag;
- 			__le16 p_cpg;
--		} d_partitions[8];
-+		} d_partitions[MAX_OSF_PARTITIONS];
- 	} * label;
- 	struct d_partition * partition;
- 
-@@ -63,7 +66,12 @@ int osf_partition(struct parsed_partitio
- 		put_dev_sector(sect);
- 		return 0;
- 	}
--	for (i = 0 ; i < le16_to_cpu(label->d_npartitions); i++, partition++) {
-+	npartitions = le16_to_cpu(label->d_npartitions);
-+	if (npartitions > MAX_OSF_PARTITIONS) {
-+		put_dev_sector(sect);
-+		return 0;
-+	}
-+	for (i = 0 ; i < npartitions; i++, partition++) {
- 		if (slot == state->limit)
- 		        break;
- 		if (le32_to_cpu(partition->p_size))
+ 	struct unix_sock *u = unix_sk(sk);
