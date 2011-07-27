@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab1G0JwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 05:52:04 -0400
-Received: from home.keithp.com ([63.227.221.253]:33783 "EHLO keithp.com"
+	id S1753966Ab1G0Jw2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 05:52:28 -0400
+Received: from mga01.intel.com ([192.55.52.88]:6798 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828Ab1G0JwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 05:52:01 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org
-Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm pull for -rc1
-In-Reply-To: <alpine.DEB.2.00.1107261254260.29862@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1107261254260.29862@skynet.skynet.ie>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 27 Jul 2011 02:51:50 -0700
-Message-ID: <yunvcuokq4p.fsf@aiko.keithp.com>
+	id S1750861Ab1G0Jw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 05:52:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,275,1309762800"; 
+   d="scan'208";a="34999524"
+Date: Wed, 27 Jul 2011 11:53:28 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
+        parthab@india.ti.com, kishon@ti.com
+Subject: Re: [PATCH] mfd: omap-usb-host: fix clock API usage on
+ usbhs_disable()
+Message-ID: <20110727095328.GC26275@sortiz-mobl>
+References: <1311340170-28773-1-git-send-email-keshava_mgowda@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311340170-28773-1-git-send-email-keshava_mgowda@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Hi Keshava,
 
-On Tue, 26 Jul 2011 13:02:35 +0100 (IST), Dave Airlie <airlied@linux.ie> wr=
-ote:
+On Fri, Jul 22, 2011 at 06:39:30PM +0530, Keshava Munegowda wrote:
+> From: Keshava Munegowda <Keshava_mgowda@ti.com>
+> 
+> usbhs_disable function was invoking clk_enable() instead of
+> clk_disable(), thus only increasing the clock usage counter and
+> preventing this particular clock from being ever turned off.
+> Because of this, the power domain of omap4 the USB Host subsystem
+> would never reach lower power states.This patch calls clk_disable()
+> in usbhs_disable function
+I applied this patch now, thanks.
 
-> (and btw I know Keith has a lot of fixes into next merges, its hard to=20
-> balance the requirement about not merging with the fact his QA team need=
-=20
-> to test merged trees and I want to pull what the QA team has tested).
+Cheers,
+Samuel.
 
-Yeah, sorry 'bout that -- all of the stuff on -fixes that got pulled in
-are bug-fixes that would have been reasonable to pull in past -rc1. I'd
-hope to merge them after Dave's -next merge, but that took longer than I
-expected.
-
-Let me know if this isn't what you want me to do and I'll build a
-separate tree for fixes while -next is pending a merge.
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOL9+2Qp8BWwlsTdMRAvY5AJ4iXLtApq4YXCxUevoMIBtEug8h9ACfXbUH
-bTSMtnCQ6QAC7Qp2gprehCI=
-=jYvn
------END PGP SIGNATURE-----
---=-=-=--
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
