@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab1G0WQe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:16:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1115 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754138Ab1G0WQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 18:16:30 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Dan Ehrenberg <dehrenberg@google.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dio: Fast-path for page-aligned IOs
-References: <1308611855-18096-1-git-send-email-dehrenberg@google.com>
-	<20110727210828.GB12714@infradead.org>
-	<20110727141415.a67cafb8.akpm@linux-foundation.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 27 Jul 2011 18:15:53 -0400
-In-Reply-To: <20110727141415.a67cafb8.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Wed, 27 Jul 2011 14:14:15 -0700")
-Message-ID: <x49vcuns73a.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1755456Ab1G0WSA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:18:00 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44881 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755304Ab1G0WR4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 18:17:56 -0400
+Date: Thu, 28 Jul 2011 00:17:42 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Christoph Lameter <cl@linux.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, eric.dumazet@gmail.com
+Subject: Re: per-cpu operation madness vs validation
+In-Reply-To: <alpine.DEB.2.00.1107271542530.17752@router.home>
+Message-ID: <alpine.LFD.2.02.1107280006510.2660@ionos>
+References: <1311714410.24752.404.camel@twins>  <alpine.DEB.2.00.1107261624210.10273@router.home>  <1311768693.24752.488.camel@twins>  <alpine.DEB.2.00.1107270904290.9418@router.home> <1311783616.5890.178.camel@twins> <alpine.DEB.2.00.1107271204260.13058@router.home>
+ <alpine.LFD.2.02.1107271919500.2660@ionos> <alpine.DEB.2.00.1107271542530.17752@router.home>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+On Wed, 27 Jul 2011, Christoph Lameter wrote:
+> On Wed, 27 Jul 2011, Thomas Gleixner wrote:
+> 
+> > > The key issue is that the -rt kernel has always had grave issues with
+> > > performance when it comes to per cpu data access. Solving that by forcing
+> > > the kernel to go slow it not the right approach.
+> >
+> > Nobody want's the kernel to go slow. All we want and we consider that
+> > also a benefit for mainline is: proper annotation of the per cpu data
+> > access, like we have for RCU and for locking.
+> 
+> I love that stuff.
+> 
+> > For -rt this lack of documentation and the lack of verification,
+> > debugability and traceability is a major PITA, but that's true for
+> > non-rt as well, just the PITA is gradually smaller and the bugs which
+> > are there today are just extremly hard to trigger.
+> 
+> Right. Sure wish there would be better checks. Or things would not have so
+> many flavors.
+> 
+> > And Peters idea of per_cpu_lock*() annotations will boil down to the
+> > exact same thing which is there today when you compile the kernel w/o
+> > lockdep enabled for per_cpu data correctness. We don't want to change
+> > anything or impose any slowness, we just want a proper way to document
+> > and verify that maze. That's really not too much of a request.
+> 
+> No problem with that. The per cpu atomic ops are made to mostly stand on
+> their own. However, the correctness is affected by placementin the per cpu
+> sections that may start with get_cpu() or a preempt_disable().
+> 
+> The reason that I switched from get_cpu() to preempt_disable() in some
+> functions was because the this_cpu operations eliminated the need to pass
+> the cpu number to a function. Thus the cpu variable is not needed anymore.
+> Preempt_disable() doesnt provide it and so I thought that was the proper
+> function to use.
 
-> On Wed, 27 Jul 2011 17:08:28 -0400
-> Christoph Hellwig <hch@infradead.org> wrote:
->
->> On Mon, Jun 20, 2011 at 04:17:35PM -0700, Dan Ehrenberg wrote:
->> > The fast path does not apply for operations of the wrong size
->> > or alignmnent, or for operations on raw drives with 512-byte sectors.
->> > It might be possible to make this special case a little more general
->> > while maintaining its performance benefits, but I do not believe that
->> > the full performance benefits can be achieved without resorting to
->> > special handling of simple cases, as is done in this patch.
->> 
->> Did you check how this compares to Andis small optimizations?
->> 
->> Also operations on raw disks are something people with fast devices
->> care about a lot.  We often hear about benchmark regressions due to
->> stupid little things in the direct I/O code.
->> 
->> If we want to special case something that would be a very easy target,
->> with a 1:1 mapping of logical to physical blocks and thus no need
->> to call the allocator first, and no need for any kind of locking
->> or alignment handling.
->
-> Ken did this back in 2006
-> (http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=e61c90188b9956edae1105eef361d8981a352fcd)
-> but we reverted that shortly afterwards for some reason.
+Yes, you had no other choice, but that does not make them more obvious
+in terms of debugability and verification.
 
-For this reason:
+We just have to understand, that preempt_disable, bh_disable,
+irq_disable are cpu local BKLs with very subtle semantics which are
+pretty close to the original BKL horror. All these mechanisms are per
+cpu locks in fact and we need to get some annotation in place which
+will help understandability and debugability in the first place. The
+side effect that it will help RT to deal with that is - of course
+desired from our side - but not the primary goal of that excercise.
 
-commit b2e895dbd80c420bfc0937c3729b4afe073b3848
-Author: Andrew Morton <akpm@osdl.org>
-Date:   Sat Feb 3 01:14:01 2007 -0800
+Thanks,
 
-    [PATCH] revert blockdev direct io back to 2.6.19 version
-    
-    Andrew Vasquez is reporting as-iosched oopses and a 65% throughput
-    slowdown due to the recent special-casing of direct-io against
-    blockdevs.  We don't know why either of these things are occurring.
-    
-    The patch minimally reverts us back to the 2.6.19 code for a 2.6.20
-    release.
+	tglx
