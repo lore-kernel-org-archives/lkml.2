@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433Ab1G0J6k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 05:58:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14334 "EHLO mx1.redhat.com"
+	id S1754455Ab1G0J6x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 05:58:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33696 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754026Ab1G0J6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 05:58:38 -0400
-Subject: GFS2: Pull request (fixes)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Wed, 27 Jul 2011 11:00:04 +0100
-Message-ID: <1311760804.2801.13.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754026Ab1G0J6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 05:58:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,275,1309762800"; 
+   d="scan'208";a="32548041"
+Date: Wed, 27 Jul 2011 12:59:09 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: Jaswinder Singh <jaswinder.singh@linaro.org>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        rmk+kernel@arm.linux.org.uk, linus.walleij@stericsson.com,
+        per.friden@stericsson.com, wei.zhang@freescale.com,
+        ebony.zhu@freescale.com, iws@ovro.caltech.edu, s.hauer@pengutronix.de,
+        maciej.sosnowski@intel.com, saeed@marvell.com, shawn.guo@freescale.com,
+        yur@emcraft.com, agust@denx.de, iwamatsu.nobuhiro@renesas.com,
+        per.forlin@stericsson.com, jonas.aberg@stericsson.com,
+        anemo@mba.ocn.ne.jp
+Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
+Message-ID: <20110727095909.GB16623@intel.com>
+References: <CAJe_ZhdYg4EpaNbBW+dayjSORqM=E6myT3oOG5VTsiQnh3erTA@mail.gmail.com>
+ <CABE8wwt8J_r9cExG+EAqqK=XVmAyLYhv+-T49Rr9hhKudD8n2g@mail.gmail.com>
+ <CAJe_ZheVyLk-yqyF_XO80xX3j7_7mDPnv-me+n=X_hNWycSLwg@mail.gmail.com>
+ <CABE8wwtkSnaJ5fvi=4bq7zye3W0SmErHAZeWAcHuYvLgvqy=_Q@mail.gmail.com>
+ <CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com>
+ <CABE8wwv2XQ_aJ8O2TUAz1LgJorBwDbgyQQv7jeAn06Q2AcqH+Q@mail.gmail.com>
+ <CAJe_ZhcNM7m-eWA0nDUrOrHxeAhNS00gewf=txmvOFL_uOPhrw@mail.gmail.com>
+ <1311740499.1536.56.camel@vkoul-udesk3>
+ <CAJe_ZhfaPfobs5P+q+t-kRSK4fAvm-v_brYgqmco8fwOOBeT8A@mail.gmail.com>
+ <1311757347.1536.103.camel@vkoul-udesk3>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311757347.1536.103.camel@vkoul-udesk3>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jul 27, 2011 at 02:32:26PM +0530, Koul, Vinod wrote:
+> Can you please help me understand why channel number "x" is important
+> and strictly needed by some client?
 
-Please consider pulling the following patch. Since it is only one
-small patch I attached it below rather than posting it separately
-as usual,
+At least in ep93xx we have even channel numbers for TX and odd for RX (or
+vice versa, can't rememeber). This is a hardware restriction. So the client
+code then filters the channels based on that using ->chan_id.
 
-Steve.
-
---------------------------------------------------------------------
-The following changes since commit e08dc1325feaf49eec392ee52feb2974ec3f5155:
-
-  p9: avoid unused variable warning (2011-07-25 23:43:53 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-2.6-fixes.git master
-
-Steven Whitehouse (1):
-      GFS2: Fix mount hang caused by certain access pattern to sysfs files
-
- fs/gfs2/ops_fstype.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
---------------------------------------------------------------
-
->From 19237039919088781b4191a00bdc1284d8fea1dd Mon Sep 17 00:00:00 2001
-From: Steven Whitehouse <swhiteho@redhat.com>
-Date: Tue, 26 Jul 2011 09:15:45 +0100
-Subject: [PATCH] GFS2: Fix mount hang caused by certain access pattern to sysfs files
-
-Depending upon the order of userspace/kernel during the
-mount process, this can result in a hang without the
-_all version of the completion.
-
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-
-diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
-index 516516e..3bc073a 100644
---- a/fs/gfs2/ops_fstype.c
-+++ b/fs/gfs2/ops_fstype.c
-@@ -1018,13 +1018,13 @@ hostdata_error:
- 		fsname++;
- 	if (lm->lm_mount == NULL) {
- 		fs_info(sdp, "Now mounting FS...\n");
--		complete(&sdp->sd_locking_init);
-+		complete_all(&sdp->sd_locking_init);
- 		return 0;
- 	}
- 	ret = lm->lm_mount(sdp, fsname);
- 	if (ret == 0)
- 		fs_info(sdp, "Joined cluster. Now mounting FS...\n");
--	complete(&sdp->sd_locking_init);
-+	complete_all(&sdp->sd_locking_init);
- 	return ret;
- }
- 
--- 
-1.7.4
-
-
-
-
+As the caps are not per channel, that is the only way I was able to make it
+work.
