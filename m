@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab1G0WAQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:00:16 -0400
-Received: from mga01.intel.com ([192.55.52.88]:48866 "EHLO mga01.intel.com"
+	id S1756076Ab1G0WAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:00:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17198 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755667Ab1G0VtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755676Ab1G0VtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Jul 2011 17:49:10 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,279,1309762800"; 
-   d="scan'208";a="35258344"
+X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
+   d="scan'208";a="30900857"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: sarah.a.sharp@linux.intel.com, gregkh@suse.de, ak@linux.intel.com,
+To: ian.campbell@citrix.com, jeremy.fitzhardinge@citrix.com,
+        stefan.bader@canonical.com, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [70/99] xhci: Reject double add of active endpoints.
-Message-Id: <20110727214909.8D6EC2403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:49:09 -0700 (PDT)
+Subject: [PATCH] [60/99] xen: events: do not unmask event channels on resume
+Message-Id: <20110727214859.644862403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:48:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,84 +25,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Ian Campbell <ian.campbell@citrix.com>
 
-commit fa75ac379e63c2864e9049b5e8615e40f65c1e70 upstream.
+commit 6903591f314b8947d0e362bda7715e90eb9df75e upstream.
 
-While trying to switch a UAS device from the BOT configuration to the UAS
-configuration via the bConfigurationValue file, Tanya ran into an issue in
-the USB core.  usb_disable_device() sets entries in udev->ep_out and
-udev->ep_out to NULL, but doesn't call into the xHCI bandwidth management
-functions to remove the BOT configuration endpoints from the xHCI host's
-internal structures.
+The IRQ core code will take care of disabling and reenabling
+interrupts over suspend resume automatically, therefore we do not need
+to do this in the Xen event channel code.
 
-The USB core would then attempt to add endpoints for the UAS
-configuration, and some of the endpoints had the same address as endpoints
-in the BOT configuration.  The xHCI driver blindly added the endpoints
-again, but the xHCI host controller rejected the Configure Endpoint
-command because active endpoints were added without being dropped.
+The only exception is those event channels marked IRQF_NO_SUSPEND
+which the IRQ core ignores. We must unmask these ourselves, taking
+care to obey the current IRQ_DISABLED status. Failure check for
+IRQ_DISABLED leads to enabling polled only event channels, such as
+that associated with the pv spinlocks, which must never be enabled:
 
-Make the xHCI driver reject calls to xhci_add_endpoint() that attempt to
-add active endpoints without first calling xhci_drop_endpoint().
+[   21.970432] ------------[ cut here ]------------
+[   21.970432] kernel BUG at arch/x86/xen/spinlock.c:343!
+[   21.970432] invalid opcode: 0000 [#1] SMP
+[   21.970432] last sysfs file: /sys/devices/virtual/net/lo/operstate
+[   21.970432] Modules linked in:
+[   21.970432]
+[   21.970432] Pid: 0, comm: swapper Not tainted (2.6.32.24-x86_32p-xen-01034-g787c727 #34)
+[   21.970432] EIP: 0061:[<c102e209>] EFLAGS: 00010046 CPU: 3
+[   21.970432] EIP is at dummy_handler+0x3/0x7
+[   21.970432] EAX: 0000021c EBX: dfc16880 ECX: 0000001a EDX: 00000000
+[   21.970432] ESI: dfc02c00 EDI: 00000001 EBP: dfc47e10 ESP: dfc47e10
+[   21.970432]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0069
+[   21.970432] Process swapper (pid: 0, ti=dfc46000 task=dfc39440 task.ti=dfc46000)
+[   21.970432] Stack:
+[   21.970432]  dfc47e30 c10a39f0 0000021c 00000000 00000000 dfc16880 0000021c 00000001
+[   21.970432] <0> dfc47e40 c10a4f08 0000021c 00000000 dfc47e78 c12240a7 c1839284 c1839284
+[   21.970432] <0> 00000200 00000000 00000000 f5720000 c1f3d028 c1f3d02c 00000180 dfc47e90
+[   21.970432] Call Trace:
+[   21.970432]  [<c10a39f0>] ? handle_IRQ_event+0x5f/0x122
+[   21.970432]  [<c10a4f08>] ? handle_percpu_irq+0x2f/0x55
+[   21.970432]  [<c12240a7>] ? __xen_evtchn_do_upcall+0xdb/0x15f
+[   21.970432]  [<c122481e>] ? xen_evtchn_do_upcall+0x20/0x30
+[   21.970432]  [<c1030d47>] ? xen_do_upcall+0x7/0xc
+[   21.970432]  [<c102007b>] ? apic_reg_read+0xd3/0x22d
+[   21.970432]  [<c1002227>] ? hypercall_page+0x227/0x1005
+[   21.970432]  [<c102d30b>] ? xen_force_evtchn_callback+0xf/0x14
+[   21.970432]  [<c102da7c>] ? check_events+0x8/0xc
+[   21.970432]  [<c102da3b>] ? xen_irq_enable_direct_end+0x0/0x1
+[   21.970432]  [<c105e485>] ? finish_task_switch+0x62/0xba
+[   21.970432]  [<c14e3f84>] ? schedule+0x808/0x89d
+[   21.970432]  [<c1084dc5>] ? hrtimer_start_expires+0x1a/0x22
+[   21.970432]  [<c1085154>] ? tick_nohz_restart_sched_tick+0x15a/0x162
+[   21.970432]  [<c102f43a>] ? cpu_idle+0x6d/0x6f
+[   21.970432]  [<c14db29e>] ? cpu_bringup_and_idle+0xd/0xf
+[   21.970432] Code: 5d 0f 95 c0 0f b6 c0 c3 55 66 83 78 02 00 89 e5 5d 0f 95 \
+c0 0f b6 c0 c3 55 b2 01 86 10 31 c0 84 d2 89 e5 0f 94 c0 5d c3 55 89 e5 <0f> 0b \
+eb fe 55 80 3d 4c ce 84 c1 00 89 e5 57 56 89 c6 53 74 15
+[   21.970432] EIP: [<c102e209>] dummy_handler+0x3/0x7 SS:ESP 0069:dfc47e10
+[   21.970432] ---[ end trace c0b71f7e12cf3011 ]---
 
-This should be backported to kernels as old as 2.6.31.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Tanya Brokhman <tlinder@codeaurora.org>
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/usb/host/xhci.c |   22 ++++++++++++++++++----
- 1 file changed, 18 insertions(+), 4 deletions(-)
+ drivers/xen/events.c |   25 ++++++++++++++++++-------
+ 1 file changed, 18 insertions(+), 7 deletions(-)
 
-Index: linux-2.6.35.y/drivers/usb/host/xhci.c
+Index: linux-2.6.35.y/drivers/xen/events.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/usb/host/xhci.c
-+++ linux-2.6.35.y/drivers/usb/host/xhci.c
-@@ -1016,6 +1016,7 @@ int xhci_add_endpoint(struct usb_hcd *hc
- 	u32 added_ctxs;
- 	unsigned int last_ctx;
- 	u32 new_add_flags, new_drop_flags, new_slot_info;
-+	struct xhci_virt_device *virt_dev;
- 	int ret = 0;
- 
- 	ret = xhci_check_args(hcd, udev, ep, 1, __func__);
-@@ -1044,11 +1045,25 @@ int xhci_add_endpoint(struct usb_hcd *hc
- 		return -EINVAL;
+--- linux-2.6.35.y.orig/drivers/xen/events.c
++++ linux-2.6.35.y/drivers/xen/events.c
+@@ -819,9 +819,6 @@ static void restore_cpu_virqs(unsigned i
+ 		evtchn_to_irq[evtchn] = irq;
+ 		irq_info[irq] = mk_virq_info(evtchn, virq);
+ 		bind_evtchn_to_cpu(evtchn, cpu);
+-
+-		/* Ready for use. */
+-		unmask_evtchn(evtchn);
  	}
+ }
  
--	in_ctx = xhci->devs[udev->slot_id]->in_ctx;
--	out_ctx = xhci->devs[udev->slot_id]->out_ctx;
-+	virt_dev = xhci->devs[udev->slot_id];
-+	in_ctx = virt_dev->in_ctx;
-+	out_ctx = virt_dev->out_ctx;
- 	ctrl_ctx = xhci_get_input_control_ctx(xhci, in_ctx);
- 	ep_index = xhci_get_endpoint_index(&ep->desc);
- 	ep_ctx = xhci_get_ep_ctx(xhci, out_ctx, ep_index);
+@@ -847,10 +844,6 @@ static void restore_cpu_ipis(unsigned in
+ 		evtchn_to_irq[evtchn] = irq;
+ 		irq_info[irq] = mk_ipi_info(evtchn, ipi);
+ 		bind_evtchn_to_cpu(evtchn, cpu);
+-
+-		/* Ready for use. */
+-		unmask_evtchn(evtchn);
+-
+ 	}
+ }
+ 
+@@ -903,6 +896,7 @@ void xen_poll_irq(int irq)
+ void xen_irq_resume(void)
+ {
+ 	unsigned int cpu, irq, evtchn;
++	struct irq_desc *desc;
+ 
+ 	init_evtchn_cpu_bindings();
+ 
+@@ -921,6 +915,23 @@ void xen_irq_resume(void)
+ 		restore_cpu_virqs(cpu);
+ 		restore_cpu_ipis(cpu);
+ 	}
 +
-+	/* If this endpoint is already in use, and the upper layers are trying
-+	 * to add it again without dropping it, reject the addition.
++	/*
++	 * Unmask any IRQF_NO_SUSPEND IRQs which are enabled. These
++	 * are not handled by the IRQ core.
 +	 */
-+	if (virt_dev->eps[ep_index].ring &&
-+			!(le32_to_cpu(ctrl_ctx->drop_flags) &
-+				xhci_get_endpoint_flag(&ep->desc))) {
-+		xhci_warn(xhci, "Trying to add endpoint 0x%x "
-+				"without dropping it.\n",
-+				(unsigned int) ep->desc.bEndpointAddress);
-+		return -EINVAL;
-+	}
++	for_each_irq_desc(irq, desc) {
++		if (!desc->action || !(desc->action->flags & IRQF_NO_SUSPEND))
++			continue;
++		if (desc->status & IRQ_DISABLED)
++			continue;
 +
- 	/* If the HCD has already noted the endpoint is enabled,
- 	 * ignore this request.
- 	 */
-@@ -1063,8 +1078,7 @@ int xhci_add_endpoint(struct usb_hcd *hc
- 	 * process context, not interrupt context (or so documenation
- 	 * for usb_set_interface() and usb_set_configuration() claim).
- 	 */
--	if (xhci_endpoint_init(xhci, xhci->devs[udev->slot_id],
--				udev, ep, GFP_NOIO) < 0) {
-+	if (xhci_endpoint_init(xhci, virt_dev, udev, ep, GFP_NOIO) < 0) {
- 		dev_dbg(&udev->dev, "%s - could not initialize ep %#x\n",
- 				__func__, ep->desc.bEndpointAddress);
- 		return -ENOMEM;
++		evtchn = evtchn_from_irq(irq);
++		if (evtchn == -1)
++			continue;
++
++		unmask_evtchn(evtchn);
++	}
+ }
+ 
+ static struct irq_chip xen_dynamic_chip __read_mostly = {
