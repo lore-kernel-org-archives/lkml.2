@@ -1,103 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab1G0SLU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 14:11:20 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:57263
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753565Ab1G0SLR (ORCPT
+	id S1754815Ab1G0SMM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 14:12:12 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:52029 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753565Ab1G0SMK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 14:11:17 -0400
-Date: Wed, 27 Jul 2011 14:11:11 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
-Message-ID: <20110727181111.GA23009@infradead.org>
-References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>
- <20110727160752.GC974@fieldses.org>
- <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
+	Wed, 27 Jul 2011 14:12:10 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="ibTvN161/egqYuK8"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20110727110740.GB300@sirena.org.uk>
+References: <marcus.folkesson@gmail.com>
+	<1311762767-20263-1-git-send-email-marcus.folkesson@gmail.com>
+	<1311762767-20263-3-git-send-email-marcus.folkesson@gmail.com>
+	<20110727110740.GB300@sirena.org.uk>
+Date: Wed, 27 Jul 2011 20:12:09 +0200
+Message-ID: <CAM8FrKJPYU3n1EEhEMoJNeQhBYnJzqwK0HOtjt1-0TEhr9NaFA@mail.gmail.com>
+Subject: Re: [PATCH 2/3] regulator: tps65023: Setting correct core regulator
+ for tps65021
+From: Marcus Folkesson <marcus.folkesson@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2011/7/27 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Wed, Jul 27, 2011 at 12:32:46PM +0200, Marcus Folkesson wrote:
+>> TPS65023 is using VDCDC1 as core regulator and TPS65021 is using VDCDC3.
+>
+> What is "core regulator" to the regulator chip itself?
 
---ibTvN161/egqYuK8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The tps6502x has 3 step down converters, VDCDC[1-3], which two has
+fixed voltages and the third is adjustable with the i2c interface.
+The adjustable converter is for controlling the core-voltage to a
+processor and is referred as "core" in the datasheet. Therefore a
+"core regulator".
 
-Justin,
-
-can you please run the attached test program on the affected directory
-on the server, and see if you see duplicates in the d_off colum.  Unless
-you have privacy concerns I would also love to see the full output.
+A better name for "core regulator" should be "core converter" or
+something. I'm apologize for the confusing name.
 
 
---ibTvN161/egqYuK8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="getdents.c"
+>> Core-regulator, voltage-tables and size of voltage-table may differ between
+>> different regulators. All those three is now passed as driver data.
+>
+> No, the driver should be able to figure out for itself what regulators
+> are on the chip purely by knowing what chip it's talking to.  If there
+> is some configuration on the board from selection of passives or similar
+> the platform data should reflect how that's done (eg, supply the
+> relevant values for the passives).
+>
 
-#define _GNU_SOURCE
-
-#include <dirent.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/syscall.h>
-
-#define handle_error(msg) \
-               do { perror(msg); exit(EXIT_FAILURE); } while (0)
-
-struct linux_dirent64 {
-	unsigned long long d_ino;
-	long long d_off;
-	unsigned short d_reclen;
-	unsigned char d_type;
-	char d_name[];
-};
-
-#define BUF_SIZE 131072
-
-int main(int argc, char *argv[])
-{
-	int fd, nread;
-	char buf[BUF_SIZE];
-	struct linux_dirent64 *d;
-	int bpos;
-
-	fd = open(argc > 1 ? argv[1] : ".", O_RDONLY | O_DIRECTORY);
-	if (fd == -1)
-		handle_error("open");
-
-	for (;;) {
-		nread = syscall(SYS_getdents64, fd, buf, BUF_SIZE);
-		if (nread == -1)
-			handle_error("getdents");
-
-		if (nread == 0)
-			break;
-
-		printf("--------------- nread=%d ---------------\n", nread);
-		printf("i-node#          type  d_reclen  d_off   d_name\n");
-		for (bpos = 0; bpos < nread;) {
-			d = (struct linux_dirent64 *)(buf + bpos);
-			printf("%16lld  ", d->d_ino);
-			printf("%4d %10lld  %s\n", d->d_reclen,
-			       d->d_off, d->d_name);
-			bpos += d->d_reclen;
-		}
-	}
-
-	exit(EXIT_SUCCESS);
-}
-
---ibTvN161/egqYuK8--
+The information is passed by the driver_data field in the device
+table, so the driver itself knows what chip it is talking to.
+In the original driver, only the voltage table was passed this way, I
+just added the "core_regulator" and the size of voltage-table in the
+same way.
