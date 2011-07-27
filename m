@@ -1,133 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab1G0MMD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 08:12:03 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36815 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab1G0ML7 convert rfc822-to-8bit (ORCPT
+	id S1754068Ab1G0MMU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 08:12:20 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:43541 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353Ab1G0MMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 08:11:59 -0400
-Subject: Re: per-cpu operation madness vs validation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <alpine.DEB.2.00.1107261624210.10273@router.home>
-References: <1311714410.24752.404.camel@twins>
-	 <alpine.DEB.2.00.1107261624210.10273@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 27 Jul 2011 14:11:33 +0200
-Message-ID: <1311768693.24752.488.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 27 Jul 2011 08:12:18 -0400
+Message-ID: <4E30009E.3080702@fedoraproject.org>
+Date: Wed, 27 Jul 2011 14:12:14 +0200
+From: Michel Alexandre Salim <salimma@fedoraproject.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+MIME-Version: 1.0
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Intel graphics <Intel-gfx@lists.freedesktop.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        DRI devel <dri-devel@lists.freedesktop.org>
+Subject: Re: [PATCH] drm/i915: Add quirk to disable SSC on Sony Vaio Y2
+References: <4E2FFE8B.6060904@fedoraproject.org>
+In-Reply-To: <4E2FFE8B.6060904@fedoraproject.org>
+X-Enigmail-Version: 1.2
+Content-Type: multipart/mixed;
+ boundary="------------080000080306000604040506"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-26 at 16:32 -0500, Christoph Lameter wrote:
+This is a multi-part message in MIME format.
+--------------080000080306000604040506
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 
-> Those all fold to the same operation on x86. The x86 cpu operations with
-> segment prefix are interrupt and preempt safe. The context issues come
-> into play in fallback scenarios where other architectures do not have
-> instructions that can perform the same things as x86.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Right, but that doesn't help us much if anything.
+On 07/27/2011 02:03 PM, Michel Alexandre Salim wrote:
+> Using the new quirk added to support disabling SSC on Lenovo U160
+> (#36656, commit 435793dfb8aec7b2e19f72d5bce8a22fd0b57839), also
+> register the Vaio as a special case and disable SSC for it.
+>
+Apologies; Thunderbird mangled the patch. I'm attaching it to make sure
+it arrives intact.
 
-> > Now the reason is of course that -rt changes some things, even when
-> > using migrate_disable() it might be multiple processes might try and
-> > access the per-cpu variable, needing serialization.
-> 
-> On x86 these operations are rt safe by the pure fact that all these
-> operations are the same interrupt safe instruction.
+- -- 
+Michel Alexandre Salim
+µblog:      http://identi.ca/hircus
+            http://twitter.com/hircus
+GPG key ID: 78884778
 
-The number of instructions has nothing what so ever to do with things.
-And while the individual ops might be preempt/irq/nmi safe, that doesn't
-say anything at all about the piece of code they're used in.
+()  ascii ribbon campaign - against html e-mail
+/\  www.asciiribbon.org   - against proprietary attachments
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
->  The difficulties come in for other
-> architectures. In those cases preemption or interrupts need to be
-> disabled.
+iEYEARECAAYFAk4wAJ4ACgkQNd069XiIR3gN3QCfehYUPl1e46D/0fahZkwwMOyp
+i7AAnRhqEZOVfigArWU00dS+tr4HMOvC
+=Y243
+-----END PGP SIGNATURE-----
 
-Irrelevant.
+--------------080000080306000604040506
+Content-Type: text/plain;
+ name="0001-drm-i915-Add-quirk-to-disable-SSC-on-Sony-Vaio-Y2.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-drm-i915-Add-quirk-to-disable-SSC-on-Sony-Vaio-Y2.patch"
 
-> > The point of course is, how are we going to go about doing this, I'm
-> > sure adding a proper conditional to each and every per-cpu op is going
-> > to be a herculean task, and most of it utterly boring.
-> 
-> Basically we need to track the contexts in which references to a certain
-> per cpu variable are established. Then constraints can be enforced. For
-> example:
-> 
-> 1. A variable used in an interupt context with __this_cpu ops requires
-> irqsafe_cpu_xxx when used in context where interrupts are enabled.
-> 
-> 2. A variable used in a non-preemptible context with __this_cpu ops
-> requires this_cpu ops in a preemptible context.
+>From dc5ed070efda5e4d3c8aed79f9b3e2c97c489fcb Mon Sep 17 00:00:00 2001
+From: Michel Alexandre Salim <salimma@fedoraproject.org>
+Date: Wed, 27 Jul 2011 10:08:25 +0200
+Subject: [PATCH] drm/i915: Add quirk to disable SSC on Sony Vaio Y2
 
-And doesn't solve the larger issue of multiple per-cpu variables forming
-a consistent piece of data.
+Using the new quirk added to support disabling SSC on Lenovo U160
+(#36656, commit 435793dfb8aec7b2e19f72d5bce8a22fd0b57839), also register
+the Vaio as a special case and disable SSC for it.
 
-Suppose there's two per-cpu variables, a and b, and we have an invariant
-that says that a-b := 5. Then the following code:
+This patch fixes #34437 on fdo bugzilla:
+https://bugs.freedesktop.org/show_bug.cgi?id=34437
+---
+ drivers/gpu/drm/i915/intel_display.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-preempt_disable();
-__this_cpu_inc(a);
-__this_cpu_inc(b);
-preempt_enable();
-
-is only correct when used from task context, an IRQ user can easily
-observe our invariant failing and none of your above validations will
-catch this.
-
-Now move to -rt where the above will likely end up looking something
-like:
-
-migrate_disable();
-__this_cpu_inc(a);
-__this_cpu_inc(b);
-migrate_enable();
-
-and everybody can see the invariant failing.
-
-Now clearly my example is very artificial but not far fetched at all,
-there's lots of code like this, and -rt gets to try and unravel all
-this. Basically preempt_disable()/local_bh_disable()/local_irq_disable()
-are the next BKL, there is no context what so ever to reconstruct what
-invariants certain pieces of code expect.
-
-Hence my suggestion to do something like:
-
-struct foo {
-	percpu_lock_t lock;
-	int a;
-	int b;
-}
-
-DEFINE_PER_CPU(struct foo, foo);
-
-percpu_lock(&foo.lock);
-__this_cpu_inc(foo.a);
-__this_cpu_inc(foo.b);
-percpu_unlock(&foo.lock);
-
-That would get us (aside from a shitload of work to make it so):
-
- - clear boundaries of where the data structure atomicy lie
- - validation, for if the above piece of code was also ran from IRQ
-   context we could get lockdep complaining about IRQ unsafe locks used
-   from IRQ context.
-
-Now for !-rt percpu_lock will not emit more than
-preempt_disable/local_bh_disable/local_irq_disable, depending on what
-variant is used, and the data type percpu_lock_t would be empty (except
-when enabling lockdep of course).
-
-Possibly we could reduce all this percpu madness back to one form
-(__this_cpu_*) and require that when used a lock of the percpu_lock_t is
-taken.
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 0f1c799..11eb831 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7851,6 +7851,9 @@ struct intel_quirk intel_quirks[] = {
+ 
+ 	/* Lenovo U160 cannot use SSC on LVDS */
+ 	{ 0x0046, 0x17aa, 0x3920, quirk_ssc_force_disable },
++
++	/* Sony Vaio Y cannot use SSC on LVDS */
++	{ 0x0046, 0x104d, 0x9076, quirk_ssc_force_disable },
+ };
+ 
+ static void intel_init_quirks(struct drm_device *dev)
+-- 
+1.7.6
 
 
+--------------080000080306000604040506--
