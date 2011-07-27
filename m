@@ -1,60 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303Ab1G0OUH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 10:20:07 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:31204 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751025Ab1G0OUF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 10:20:05 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: NNke70MVM1l4JkjiViPsIM1Yh.mKAf8Nq0tTsDCd7FsT7Rc
- .r7YLfsyZI06Ro6EfNvZ_VVudpLxNmRlKeR6QToK1WMktvij6xbUzcDqmq4i
- nH_r2P3jrFi6tdsEhdcMo.Uwo8JvBDDPP3TlvNv4WFbJv0JYGzwfEgIFvwJk
- d194Av.eJaSHNrQuwByKnCvtFKnfxjaclQTIoa1rf.yMjD6lbxNBIAA42DRd
- .kJQaMO9BZ.1BXJJAIJ967sFlDbDZPT49eVhPQXqZDz5F2zJWuF2.p1XSU9.
- J_.HE.kl2oF9_0BMZEhG4Yhv22QPQmbO6ew2SLywPBTVZHa0beyy7RwmWFH0
- u4bfVv_MjIN1s9PtxaO5cTIno
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 27 Jul 2011 09:20:01 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: per-cpu operation madness vs validation
-In-Reply-To: <1311771677.24752.495.camel@twins>
-Message-ID: <alpine.DEB.2.00.1107270916240.9418@router.home>
-References: <1311714410.24752.404.camel@twins>  <alpine.DEB.2.00.1107261624210.10273@router.home>  <1311768693.24752.488.camel@twins> <1311771677.24752.495.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754402Ab1G0OYL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 10:24:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57544 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754265Ab1G0OYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 10:24:08 -0400
+Date: Wed, 27 Jul 2011 16:24:05 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [patch 4/5] mm: writeback: throttle __GFP_WRITE on per-zone
+ dirty limits
+Message-ID: <20110727142405.GG4024@tiehlicka.suse.cz>
+References: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
+ <1311625159-13771-5-git-send-email-jweiner@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311625159-13771-5-git-send-email-jweiner@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jul 2011, Peter Zijlstra wrote:
+On Mon 25-07-11 22:19:18, Johannes Weiner wrote:
+[...]
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 41dc871..ce673ec 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -378,6 +390,24 @@ int bdi_set_max_ratio(struct backing_dev_info *bdi, unsigned max_ratio)
+>  }
+>  EXPORT_SYMBOL(bdi_set_max_ratio);
+>  
+> +static void sanitize_dirty_limits(unsigned long *pbackground,
+> +				  unsigned long *pdirty)
+> +{
+> +	unsigned long background = *pbackground;
+> +	unsigned long dirty = *pdirty;
+> +	struct task_struct *tsk;
+> +
+> +	if (background >= dirty)
+> +		background = dirty / 2;
+> +	tsk = current;
+> +	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
+> +		background += background / 4;
+> +		dirty += dirty / 4;
+> +	}
+> +	*pbackground = background;
+> +	*pdirty = dirty;
+> +}
+> +
+>  /*
+>   * global_dirty_limits - background-writeback and dirty-throttling thresholds
+>   *
+> @@ -389,33 +419,52 @@ EXPORT_SYMBOL(bdi_set_max_ratio);
+>   */
+>  void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+>  {
+> -	unsigned long background;
+> -	unsigned long dirty;
+>  	unsigned long uninitialized_var(available_memory);
+> -	struct task_struct *tsk;
+>  
+>  	if (!vm_dirty_bytes || !dirty_background_bytes)
+>  		available_memory = determine_dirtyable_memory();
+>  
+>  	if (vm_dirty_bytes)
+> -		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
+> +		*pdirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
+>  	else
+> -		dirty = (vm_dirty_ratio * available_memory) / 100;
+> +		*pdirty = vm_dirty_ratio * available_memory / 100;
+>  
+>  	if (dirty_background_bytes)
+> -		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
+> +		*pbackground = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
+>  	else
+> -		background = (dirty_background_ratio * available_memory) / 100;
+> +		*pbackground = dirty_background_ratio * available_memory / 100;
+>  
+> -	if (background >= dirty)
+> -		background = dirty / 2;
+> -	tsk = current;
+> -	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
+> -		background += background / 4;
+> -		dirty += dirty / 4;
+> -	}
+> -	*pbackground = background;
+> -	*pdirty = dirty;
+> +	sanitize_dirty_limits(pbackground, pdirty);
+> +}
 
-> > Possibly we could reduce all this percpu madness back to one form
-> > (__this_cpu_*) and require that when used a lock of the percpu_lock_t is
-> > taken.
->
-> get_cpu_var()/put_cpu_var() were supposed to provide such delineation as
-> well, but you've been actively destroying things like that with the
-> recent per-cpu work.
+Hmm, wouldn't be the patch little bit easier to read if this was
+outside in a separate (cleanup) one?
 
-The per cpu work is *not* focused on sections that access per cpu data, so
-how could it destroy that? Nothing is changed there so far. The this_cpu
-ops are introducing per cpu atomic operations that are safe and cheap
-regardless of the execution context. The primary initial motivation was
-incrementing per cpu counters without having to disabling interrupts
-and/or preemption and it grew from there.
-
-The atomic per cpu operations (like the this_cpu_cmpxchg) allow the
-construction of cheap sections that would satisfy your goals too (with
-some work and the use of transaction ids instead of locking). See the slub
-fastpath f.e.
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
