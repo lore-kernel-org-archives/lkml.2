@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab1G0NiU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 09:38:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52488 "EHLO mx2.suse.de"
+	id S1754431Ab1G0Niq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 09:38:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52499 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752772Ab1G0NiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 09:38:18 -0400
-Date: Wed, 27 Jul 2011 15:38:13 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/5] mm: writeback: remove seriously stale comment on
- dirty limits
-Message-ID: <20110727133813.GF4024@tiehlicka.suse.cz>
-References: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
- <1311625159-13771-4-git-send-email-jweiner@redhat.com>
+	id S1752772Ab1G0Nio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 09:38:44 -0400
+Message-ID: <4E3014E2.40501@suse.cz>
+Date: Wed, 27 Jul 2011 15:38:42 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311625159-13771-4-git-send-email-jweiner@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        linux-kbuild@vger.kernel.org, sam@ravnborg.org,
+        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
+Subject: Re: [RFC][PATCH 1/2] kconfig: Introduce KCONFIG(), KCONFIG_BUILTIN()
+ and KCONFIG_MODULE()
+References: <4E1D9C25.8080300@suse.cz> <1311634718-32588-1-git-send-email-mmarek@suse.cz> <CAM_iQpUEfYrrtpcRLTekSHMHrTTka6ir=z_GUUbnxuQKfY+OXA@mail.gmail.com> <4E2EBF63.8050208@suse.cz> <20110726080443.62196869.rdunlap@xenotime.net> <4E2F0735.1070403@suse.cz> <20110726112824.b357c756.rdunlap@xenotime.net> <CACqU3MWOjjB0RiWLWS8yf0u0gRqOL3JP0StyrtP1kbA+i92SfA@mail.gmail.com> <CACqU3MWopoJcd+5ELWEDp6_GvVpEjOHLnkcj4s_fHT5unp+MtA@mail.gmail.com> <20110726213536.1f56f0e3.rdunlap@xenotime.net> <4E2FCE2A.3000909@suse.cz> <CACqU3MX7p-3sM=L3MQygyr9=sBkpSHcvk9ponxJTh2i=c=YiKA@mail.gmail.com>
+In-Reply-To: <CACqU3MX7p-3sM=L3MQygyr9=sBkpSHcvk9ponxJTh2i=c=YiKA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 25-07-11 22:19:17, Johannes Weiner wrote:
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+On 27.7.2011 15:31, Arnaud Lacombe wrote:
+> Hi,
+>
+> On Wed, Jul 27, 2011 at 4:36 AM, Michal Marek<mmarek@suse.cz>  wrote:
+>> On 27.7.2011 06:35, Randy Dunlap wrote:
+>>>
+>>> On Tue, 26 Jul 2011 20:42:04 -0400 Arnaud Lacombe wrote:
+>>>>
+>>>> On Tue, Jul 26, 2011 at 2:48 PM, Arnaud Lacombe<lacombar@gmail.com>
+>>>>   wrote:
+>>>>>
+>>>>> On Tue, Jul 26, 2011 at 2:28 PM, Randy Dunlap<rdunlap@xenotime.net>
+>>>>>   wrote:
+>>>>>>
+>>>>>> I guess I prefer your ENABLED() syntax then.
+>>>>>>
+>>>>> we need to be careful about namespace pollution/collision.
+>>>>>
+>>>> For the sake of having numbers:
+>>>>
+>>>> % git grep -w ENABLED . | wc -l
+>>>>      116
+>>>> % git grep -w CONFIGURED . | wc -l
+>>>>       11
+>>>> % git grep -w KCONFIG . | wc -l
+>>>>        1
+>>>
+>>> OK.  Then I would go back to a predicate like the original patch had,
+>>> e.g.:
+>>>         IS_ENABLED(CONFIG_NUMA)
+>>
+>> Good idea. Is anyone against
+>> IS_ENABLED(CONFIG_FOO)
+>> IS_ENABLED_BUILTIN(CONFIG_FOO)
+>> IS_ENABLED_MODULE(CONFIG_FOO)
+>> ?
+>>
+> I'm good with the naming, but how would you define those ? I may have
+> trouble to discern between IS_ENABLED() and IS_ENABLED_BUILTIN().
 
-Indeed outdated a lot.
+IS_ENABLED() would mean not disabled, i.e. either 'y' or 'm'. 
+IS_ENABLED_BUILTIN() would mean 'y' and only 'y' and IS_ENABLED_MODULE() 
+would mean 'm'. For boolean options, IS_ENABLED() would be equivalent to 
+IS_ENABLED_BUILTIN() and IS_ENABLED_MODULE() would be always false.
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-if it makes any sense for comment removal like this.
-
-> ---
->  mm/page-writeback.c |   18 ------------------
->  1 files changed, 0 insertions(+), 18 deletions(-)
-> 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index a4de005..41dc871 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -379,24 +379,6 @@ int bdi_set_max_ratio(struct backing_dev_info *bdi, unsigned max_ratio)
->  EXPORT_SYMBOL(bdi_set_max_ratio);
->  
->  /*
-> - * Work out the current dirty-memory clamping and background writeout
-> - * thresholds.
-> - *
-> - * The main aim here is to lower them aggressively if there is a lot of mapped
-> - * memory around.  To avoid stressing page reclaim with lots of unreclaimable
-> - * pages.  It is better to clamp down on writers than to start swapping, and
-> - * performing lots of scanning.
-> - *
-> - * We only allow 1/2 of the currently-unmapped memory to be dirtied.
-> - *
-> - * We don't permit the clamping level to fall below 5% - that is getting rather
-> - * excessive.
-> - *
-> - * We make sure that the background writeout level is below the adjusted
-> - * clamping level.
-> - */
-> -
-> -/*
->   * global_dirty_limits - background-writeback and dirty-throttling thresholds
->   *
->   * Calculate the dirty thresholds based on sysctl parameters
-> -- 
-> 1.7.6
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Michal
