@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab1G0MuP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 08:50:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47069 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752246Ab1G0MuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 08:50:13 -0400
-Date: Wed, 27 Jul 2011 14:50:08 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/5] mm: page_alloc: increase __GFP_BITS_SHIFT to include
- __GFP_OTHER_NODE
-Message-ID: <20110727125007.GD4024@tiehlicka.suse.cz>
-References: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
- <1311625159-13771-2-git-send-email-jweiner@redhat.com>
+	id S1754186Ab1G0Mzu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 08:55:50 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:49548 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628Ab1G0Mzs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 08:55:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Will Newton <will.newton@gmail.com>
+Subject: Re: [PATCH] bitops: Use volatile in generic atomic bitops.
+Date: Wed, 27 Jul 2011 14:55:39 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>, stable@kernel.org
+References: <CAFbHwiQaYeQSwRykhKp57rQ8xLKSst9MXF7YJoQjEm0V+WN4Qw@mail.gmail.com>
+In-Reply-To: <CAFbHwiQaYeQSwRykhKp57rQ8xLKSst9MXF7YJoQjEm0V+WN4Qw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311625159-13771-2-git-send-email-jweiner@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107271455.39511.arnd@arndb.de>
+X-Provags-ID: V02:K0:iEPYDMGcIPfAZV18nrXCgi8MqHOK5HNydKyBRaisnpi
+ DVuzP4NInXBUZ0vZVZLMnnQmF1PSL41U6enxruFuJHe0nDoi5U
+ Sv+FA9pgYXCWAYndedsObEtnVg4y0I6KimmlriVLxBV9mYYfvH
+ WYocVovxk7g1V/3o55JiHFO+iK94UBIprOQUCOlAIjQPr8bLmF
+ VpyZkkIMHafevxpBk8Qog==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 25-07-11 22:19:15, Johannes Weiner wrote:
-> From: Johannes Weiner <hannes@cmpxchg.org>
+On Wednesday 27 July 2011, Will Newton wrote:
+> The generic atomic bitops currently explicitly cast away the
+> volatile from the pointer passed to them. This will allow the
+> access to the bitfield to happen outside of the critical section
+> thus making the bitops no longer interrupt-safe. Remove this cast
+> and add a volatile keyword to make sure all accesses to the
+> bitfield happen inside the critical section.
 > 
-> __GFP_OTHER_NODE is used for NUMA allocations on behalf of other
-> nodes.  It's supposed to be passed through from the page allocator to
-> zone_statistics(), but it never gets there as gfp_allowed_mask is not
-> wide enough and masks out the flag early in the allocation path.
-> 
-> The result is an accounting glitch where successful NUMA allocations
-> by-agent are not properly attributed as local.
-> 
-> Increase __GFP_BITS_SHIFT so that it includes __GFP_OTHER_NODE.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Signed-off-by: Will Newton <will.newton@imgtec.com>
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Have you observed this behavior? The interrupt disable/enable should
+always come with a barrier that should prevent the bitops from
+leaking out, so I don't see how this causes problems in practice.
 
-> ---
->  include/linux/gfp.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-> index cb40892..3a76faf 100644
-> --- a/include/linux/gfp.h
-> +++ b/include/linux/gfp.h
-> @@ -92,7 +92,7 @@ struct vm_area_struct;
->   */
->  #define __GFP_NOTRACK_FALSE_POSITIVE (__GFP_NOTRACK)
->  
-> -#define __GFP_BITS_SHIFT 23	/* Room for 23 __GFP_FOO bits */
-> +#define __GFP_BITS_SHIFT 24	/* Room for N __GFP_FOO bits */
->  #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
->  
->  /* This equals 0, but use constants in case they ever change */
-> -- 
-> 1.7.6
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+	Arnd
