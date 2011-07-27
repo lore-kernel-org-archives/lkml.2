@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387Ab1G0VsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 17:48:09 -0400
-Received: from mga03.intel.com ([143.182.124.21]:9080 "EHLO mga03.intel.com"
+	id S1755370Ab1G0VsH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 17:48:07 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23542 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755331Ab1G0VsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:48:00 -0400
+	id S1754760Ab1G0VsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:48:01 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
-   d="scan'208";a="32274413"
+   d="scan'208";a="30900315"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: ostr@amd64.org, ak@linux.intel.com, borislav.petkov@amd.com,
-        Hans.Rosenfeld@amd.com, Andreas.Herrmann3@amd.com, cebbert@redhat.com,
-        hpa@linux.intel.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [1/99] x86, amd: Do not enable ARAT feature on AMD processors below
-Message-Id: <20110727214759.581CD2403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:47:59 -0700 (PDT)
+To: fweisbec@gmail.com, paulmck@linux.vnet.ibm.com, mingo@elte.hu,
+        a.p.zijlstra@chello.nl, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [3/99] rcu: Fix unpaired rcu_irq_enter() from locking selftests
+Message-Id: <20110727214801.610A42403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:48:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,51 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Boris Ostrovsky <ostr@amd64.org>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-commit e9cdd343a5e42c43bcda01e609fa23089e026470 upstream.
+commit ba9f207c9f82115aba4ce04b22e0081af0ae300f upstream.
 
-Commit b87cf80af3ba4b4c008b4face3c68d604e1715c6 added support for
-ARAT (Always Running APIC timer) on AMD processors that are not
-affected by erratum 400. This erratum is present on certain processor
-families and prevents APIC timer from waking up the CPU when it
-is in a deep C state, including C1E state.
+HARDIRQ_ENTER() maps to irq_enter() which calls rcu_irq_enter().
+But HARDIRQ_EXIT() maps to __irq_exit() which doesn't call
+rcu_irq_exit().
 
-Determining whether a processor is affected by this erratum may
-have some corner cases and handling these cases is somewhat
-complicated. In the interest of simplicity we won't claim ARAT
-support on processor families below 0x12 and will go back to
-broadcasting timer when going idle.
+So for every locking selftest that simulates hardirq disabled,
+we create an imbalance in the rcu extended quiescent state
+internal state.
 
-Signed-off-by: Boris Ostrovsky <ostr@amd64.org>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/1306423192-19774-1-git-send-email-ostr@amd64.org
-Tested-by: Boris Petkov <borislav.petkov@amd.com>
-Cc: Hans Rosenfeld <Hans.Rosenfeld@amd.com>
-Cc: Andreas Herrmann <Andreas.Herrmann3@amd.com>
-Cc: Chuck Ebbert <cebbert@redhat.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+As a result, after the first missing rcu_irq_exit(), subsequent
+irqs won't exit dyntick-idle mode after leaving the interrupt
+handler.  This means that RCU won't see the affected CPU as being
+in an extended quiescent state, resulting in long grace-period
+delays (as in grace periods extending for hours).
+
+To fix this, just use __irq_enter() to simulate the hardirq
+context. This is sufficient for the locking selftests as we
+don't need to exit any extended quiescent state or perform
+any check that irqs normally do when they wake up from idle.
+
+As a side effect, this patch makes it possible to restore
+"rcu: Decrease memory-barrier usage based on semi-formal proof",
+which eventually helped finding this bug.
+
+Reported-and-tested-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- arch/x86/kernel/cpu/amd.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ lib/locking-selftest.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/arch/x86/kernel/cpu/amd.c
+Index: linux-2.6.35.y/lib/locking-selftest.c
 ===================================================================
---- linux-2.6.35.y.orig/arch/x86/kernel/cpu/amd.c
-+++ linux-2.6.35.y/arch/x86/kernel/cpu/amd.c
-@@ -565,8 +565,11 @@ static void __cpuinit init_amd(struct cp
- 	}
- #endif
+--- linux-2.6.35.y.orig/lib/locking-selftest.c
++++ linux-2.6.35.y/lib/locking-selftest.c
+@@ -144,7 +144,7 @@ static void init_shared_classes(void)
  
--	/* As a rule processors have APIC timer running in deep C states */
--	if (c->x86 > 0xf && !cpu_has_amd_erratum(amd_erratum_400))
-+	/*
-+	 * Family 0x12 and above processors have APIC timer
-+	 * running in deep C states.
-+	 */
-+	if (c->x86 > 0x11)
- 		set_cpu_cap(c, X86_FEATURE_ARAT);
+ #define HARDIRQ_ENTER()				\
+ 	local_irq_disable();			\
+-	irq_enter();				\
++	__irq_enter();				\
+ 	WARN_ON(!in_irq());
  
- 	/*
+ #define HARDIRQ_EXIT()				\
