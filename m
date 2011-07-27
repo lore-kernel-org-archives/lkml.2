@@ -1,169 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab1G0MVX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 08:21:23 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35034 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937Ab1G0MVV (ORCPT
+	id S1754195Ab1G0MWH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 08:22:07 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:62608 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754093Ab1G0MWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 08:21:21 -0400
+	Wed, 27 Jul 2011 08:22:06 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [PATCH V2 1/3] dmaengine: at_hdmac: replace spin_lock* with irqsave variants
+Date: Wed, 27 Jul 2011 14:21:28 +0200
+Message-Id: <3c302a7166c2aa6ae4b6d7b7cdfe21e640b73603.1311627477.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1311677514.24316.6.camel@vkoul-mobl4>
+References: <1311677514.24316.6.camel@vkoul-mobl4>
 MIME-Version: 1.0
-Date: Wed, 27 Jul 2011 13:21:19 +0100
-Message-ID: <CAFbHwiQaYeQSwRykhKp57rQ8xLKSst9MXF7YJoQjEm0V+WN4Qw@mail.gmail.com>
-Subject: [PATCH] bitops: Use volatile in generic atomic bitops.
-From: Will Newton <will.newton@gmail.com>
-To: Linux Kernel list <linux-kernel@vger.kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, stable@kernel.org
-Content-Type: multipart/mixed; boundary=000e0cd47cecf1cd8904a90c158a
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd47cecf1cd8904a90c158a
-Content-Type: text/plain; charset=ISO-8859-1
+dmaengine routines can be called from interrupt context and with
+interrupts disabled. Whereas spin_unlock_bh can't be called from
+such contexts. So this patch converts all spin_lock* routines
+to irqsave variants.
 
-The generic atomic bitops currently explicitly cast away the
-volatile from the pointer passed to them. This will allow the
-access to the bitfield to happen outside of the critical section
-thus making the bitops no longer interrupt-safe. Remove this cast
-and add a volatile keyword to make sure all accesses to the
-bitfield happen inside the critical section.
+Also, spin_lock() used in tasklet is converted to irqsave variants,
+as tasklet can be interrupted, and dma requests from such interruptions
+may also call spin_lock.
 
-Signed-off-by: Will Newton <will.newton@imgtec.com>
+Idea from dw_dmac patch by Viresh Kumar.
+
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- include/asm-generic/bitops/atomic.h |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+V2: no change but resent to ease the patch series understanding
 
-diff --git a/include/asm-generic/bitops/atomic.h
-b/include/asm-generic/bitops/atomic.h
-index ecc44a8..57e4b1f 100644
---- a/include/asm-generic/bitops/atomic.h
-+++ b/include/asm-generic/bitops/atomic.h
-@@ -65,7 +65,7 @@ extern arch_spinlock_t
-__atomic_hash[ATOMIC_HASH_SIZE] __lock_aligned;
- static inline void set_bit(int nr, volatile unsigned long *addr)
+ drivers/dma/at_hdmac.c |   52 +++++++++++++++++++++++++++--------------------
+ 1 files changed, 30 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index 36144f8..6ee8f1c 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -107,10 +107,11 @@ static struct at_desc *atc_desc_get(struct at_dma_chan *atchan)
  {
- 	unsigned long mask = BIT_MASK(nr);
--	unsigned long *p = ((unsigned long *)addr) + BIT_WORD(nr);
-+	volatile unsigned long *p = addr + BIT_WORD(nr);
- 	unsigned long flags;
-
- 	_atomic_spin_lock_irqsave(p, flags);
-@@ -86,7 +86,7 @@ static inline void set_bit(int nr, volatile unsigned
-long *addr)
- static inline void clear_bit(int nr, volatile unsigned long *addr)
+ 	struct at_desc *desc, *_desc;
+ 	struct at_desc *ret = NULL;
++	unsigned long flags;
+ 	unsigned int i = 0;
+ 	LIST_HEAD(tmp_list);
+ 
+-	spin_lock_bh(&atchan->lock);
++	spin_lock_irqsave(&atchan->lock, flags);
+ 	list_for_each_entry_safe(desc, _desc, &atchan->free_list, desc_node) {
+ 		i++;
+ 		if (async_tx_test_ack(&desc->txd)) {
+@@ -121,7 +122,7 @@ static struct at_desc *atc_desc_get(struct at_dma_chan *atchan)
+ 		dev_dbg(chan2dev(&atchan->chan_common),
+ 				"desc %p not ACKed\n", desc);
+ 	}
+-	spin_unlock_bh(&atchan->lock);
++	spin_unlock_irqrestore(&atchan->lock, flags);
+ 	dev_vdbg(chan2dev(&atchan->chan_common),
+ 		"scanned %u descriptors on freelist\n", i);
+ 
+@@ -129,9 +130,9 @@ static struct at_desc *atc_desc_get(struct at_dma_chan *atchan)
+ 	if (!ret) {
+ 		ret = atc_alloc_descriptor(&atchan->chan_common, GFP_ATOMIC);
+ 		if (ret) {
+-			spin_lock_bh(&atchan->lock);
++			spin_lock_irqsave(&atchan->lock, flags);
+ 			atchan->descs_allocated++;
+-			spin_unlock_bh(&atchan->lock);
++			spin_unlock_irqrestore(&atchan->lock, flags);
+ 		} else {
+ 			dev_err(chan2dev(&atchan->chan_common),
+ 					"not enough descriptors available\n");
+@@ -150,8 +151,9 @@ static void atc_desc_put(struct at_dma_chan *atchan, struct at_desc *desc)
  {
- 	unsigned long mask = BIT_MASK(nr);
--	unsigned long *p = ((unsigned long *)addr) + BIT_WORD(nr);
-+	volatile unsigned long *p = addr + BIT_WORD(nr);
- 	unsigned long flags;
-
- 	_atomic_spin_lock_irqsave(p, flags);
-@@ -107,7 +107,7 @@ static inline void clear_bit(int nr, volatile
-unsigned long *addr)
- static inline void change_bit(int nr, volatile unsigned long *addr)
+ 	if (desc) {
+ 		struct at_desc *child;
++		unsigned long flags;
+ 
+-		spin_lock_bh(&atchan->lock);
++		spin_lock_irqsave(&atchan->lock, flags);
+ 		list_for_each_entry(child, &desc->tx_list, desc_node)
+ 			dev_vdbg(chan2dev(&atchan->chan_common),
+ 					"moving child desc %p to freelist\n",
+@@ -160,7 +162,7 @@ static void atc_desc_put(struct at_dma_chan *atchan, struct at_desc *desc)
+ 		dev_vdbg(chan2dev(&atchan->chan_common),
+ 			 "moving desc %p to freelist\n", desc);
+ 		list_add(&desc->desc_node, &atchan->free_list);
+-		spin_unlock_bh(&atchan->lock);
++		spin_unlock_irqrestore(&atchan->lock, flags);
+ 	}
+ }
+ 
+@@ -471,8 +473,9 @@ static void atc_handle_cyclic(struct at_dma_chan *atchan)
+ static void atc_tasklet(unsigned long data)
  {
- 	unsigned long mask = BIT_MASK(nr);
--	unsigned long *p = ((unsigned long *)addr) + BIT_WORD(nr);
-+	volatile unsigned long *p = addr + BIT_WORD(nr);
- 	unsigned long flags;
-
- 	_atomic_spin_lock_irqsave(p, flags);
-@@ -127,7 +127,7 @@ static inline void change_bit(int nr, volatile
-unsigned long *addr)
- static inline int test_and_set_bit(int nr, volatile unsigned long *addr)
+ 	struct at_dma_chan *atchan = (struct at_dma_chan *)data;
++	unsigned long flags;
+ 
+-	spin_lock(&atchan->lock);
++	spin_lock_irqsave(&atchan->lock, flags);
+ 	if (test_and_clear_bit(ATC_IS_ERROR, &atchan->status))
+ 		atc_handle_error(atchan);
+ 	else if (test_bit(ATC_IS_CYCLIC, &atchan->status))
+@@ -480,7 +483,7 @@ static void atc_tasklet(unsigned long data)
+ 	else
+ 		atc_advance_work(atchan);
+ 
+-	spin_unlock(&atchan->lock);
++	spin_unlock_irqrestore(&atchan->lock, flags);
+ }
+ 
+ static irqreturn_t at_dma_interrupt(int irq, void *dev_id)
+@@ -539,8 +542,9 @@ static dma_cookie_t atc_tx_submit(struct dma_async_tx_descriptor *tx)
+ 	struct at_desc		*desc = txd_to_at_desc(tx);
+ 	struct at_dma_chan	*atchan = to_at_dma_chan(tx->chan);
+ 	dma_cookie_t		cookie;
++	unsigned long		flags;
+ 
+-	spin_lock_bh(&atchan->lock);
++	spin_lock_irqsave(&atchan->lock, flags);
+ 	cookie = atc_assign_cookie(atchan, desc);
+ 
+ 	if (list_empty(&atchan->active_list)) {
+@@ -554,7 +558,7 @@ static dma_cookie_t atc_tx_submit(struct dma_async_tx_descriptor *tx)
+ 		list_add_tail(&desc->desc_node, &atchan->queue);
+ 	}
+ 
+-	spin_unlock_bh(&atchan->lock);
++	spin_unlock_irqrestore(&atchan->lock, flags);
+ 
+ 	return cookie;
+ }
+@@ -927,28 +931,29 @@ static int atc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
+ 	struct at_dma		*atdma = to_at_dma(chan->device);
+ 	int			chan_id = atchan->chan_common.chan_id;
++	unsigned long		flags;
+ 
+ 	LIST_HEAD(list);
+ 
+ 	dev_vdbg(chan2dev(chan), "atc_control (%d)\n", cmd);
+ 
+ 	if (cmd == DMA_PAUSE) {
+-		spin_lock_bh(&atchan->lock);
++		spin_lock_irqsave(&atchan->lock, flags);
+ 
+ 		dma_writel(atdma, CHER, AT_DMA_SUSP(chan_id));
+ 		set_bit(ATC_IS_PAUSED, &atchan->status);
+ 
+-		spin_unlock_bh(&atchan->lock);
++		spin_unlock_irqrestore(&atchan->lock, flags);
+ 	} else if (cmd == DMA_RESUME) {
+ 		if (!test_bit(ATC_IS_PAUSED, &atchan->status))
+ 			return 0;
+ 
+-		spin_lock_bh(&atchan->lock);
++		spin_lock_irqsave(&atchan->lock, flags);
+ 
+ 		dma_writel(atdma, CHDR, AT_DMA_RES(chan_id));
+ 		clear_bit(ATC_IS_PAUSED, &atchan->status);
+ 
+-		spin_unlock_bh(&atchan->lock);
++		spin_unlock_irqrestore(&atchan->lock, flags);
+ 	} else if (cmd == DMA_TERMINATE_ALL) {
+ 		struct at_desc	*desc, *_desc;
+ 		/*
+@@ -957,7 +962,7 @@ static int atc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 		 * channel. We still have to poll the channel enable bit due
+ 		 * to AHB/HSB limitations.
+ 		 */
+-		spin_lock_bh(&atchan->lock);
++		spin_lock_irqsave(&atchan->lock, flags);
+ 
+ 		/* disabling channel: must also remove suspend state */
+ 		dma_writel(atdma, CHDR, AT_DMA_RES(chan_id) | atchan->mask);
+@@ -978,7 +983,7 @@ static int atc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 		/* if channel dedicated to cyclic operations, free it */
+ 		clear_bit(ATC_IS_CYCLIC, &atchan->status);
+ 
+-		spin_unlock_bh(&atchan->lock);
++		spin_unlock_irqrestore(&atchan->lock, flags);
+ 	} else {
+ 		return -ENXIO;
+ 	}
+@@ -1004,9 +1009,10 @@ atc_tx_status(struct dma_chan *chan,
+ 	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
+ 	dma_cookie_t		last_used;
+ 	dma_cookie_t		last_complete;
++	unsigned long		flags;
+ 	enum dma_status		ret;
+ 
+-	spin_lock_bh(&atchan->lock);
++	spin_lock_irqsave(&atchan->lock, flags);
+ 
+ 	last_complete = atchan->completed_cookie;
+ 	last_used = chan->cookie;
+@@ -1021,7 +1027,7 @@ atc_tx_status(struct dma_chan *chan,
+ 		ret = dma_async_is_complete(cookie, last_complete, last_used);
+ 	}
+ 
+-	spin_unlock_bh(&atchan->lock);
++	spin_unlock_irqrestore(&atchan->lock, flags);
+ 
+ 	if (ret != DMA_SUCCESS)
+ 		dma_set_tx_state(txstate, last_complete, last_used,
+@@ -1046,6 +1052,7 @@ atc_tx_status(struct dma_chan *chan,
+ static void atc_issue_pending(struct dma_chan *chan)
  {
- 	unsigned long mask = BIT_MASK(nr);
--	unsigned long *p = ((unsigned long *)addr) + BIT_WORD(nr);
-+	volatile unsigned long *p = addr + BIT_WORD(nr);
- 	unsigned long old;
- 	unsigned long flags;
-
-@@ -151,7 +151,7 @@ static inline int test_and_set_bit(int nr,
-volatile unsigned long *addr)
- static inline int test_and_clear_bit(int nr, volatile unsigned long *addr)
- {
- 	unsigned long mask = BIT_MASK(nr);
--	unsigned long *p = ((unsigned long *)addr) + BIT_WORD(nr);
-+	volatile unsigned long *p = addr + BIT_WORD(nr);
- 	unsigned long old;
- 	unsigned long flags;
-
-@@ -174,7 +174,7 @@ static inline int test_and_clear_bit(int nr,
-volatile unsigned long *addr)
- static inline int test_and_change_bit(int nr, volatile unsigned long *addr)
- {
- 	unsigned long mask = BIT_MASK(nr);
--	unsigned long *p = ((unsigned long *)addr) + BIT_WORD(nr);
-+	volatile unsigned long *p = addr + BIT_WORD(nr);
- 	unsigned long old;
- 	unsigned long flags;
-
+ 	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
++	unsigned long		flags;
+ 
+ 	dev_vdbg(chan2dev(chan), "issue_pending\n");
+ 
+@@ -1053,11 +1060,11 @@ static void atc_issue_pending(struct dma_chan *chan)
+ 	if (test_bit(ATC_IS_CYCLIC, &atchan->status))
+ 		return;
+ 
+-	spin_lock_bh(&atchan->lock);
++	spin_lock_irqsave(&atchan->lock, flags);
+ 	if (!atc_chan_is_enabled(atchan)) {
+ 		atc_advance_work(atchan);
+ 	}
+-	spin_unlock_bh(&atchan->lock);
++	spin_unlock_irqrestore(&atchan->lock, flags);
+ }
+ 
+ /**
+@@ -1073,6 +1080,7 @@ static int atc_alloc_chan_resources(struct dma_chan *chan)
+ 	struct at_dma		*atdma = to_at_dma(chan->device);
+ 	struct at_desc		*desc;
+ 	struct at_dma_slave	*atslave;
++	unsigned long		flags;
+ 	int			i;
+ 	u32			cfg;
+ 	LIST_HEAD(tmp_list);
+@@ -1116,11 +1124,11 @@ static int atc_alloc_chan_resources(struct dma_chan *chan)
+ 		list_add_tail(&desc->desc_node, &tmp_list);
+ 	}
+ 
+-	spin_lock_bh(&atchan->lock);
++	spin_lock_irqsave(&atchan->lock, flags);
+ 	atchan->descs_allocated = i;
+ 	list_splice(&tmp_list, &atchan->free_list);
+ 	atchan->completed_cookie = chan->cookie = 1;
+-	spin_unlock_bh(&atchan->lock);
++	spin_unlock_irqrestore(&atchan->lock, flags);
+ 
+ 	/* channel parameters */
+ 	channel_writel(atchan, CFG, cfg);
 -- 
-1.7.3.4
+1.7.4.1
 
---000e0cd47cecf1cd8904a90c158a
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-bitops-Use-volatile-in-generic-atomic-bitops.patch"
-Content-Disposition: attachment; 
-	filename="0001-bitops-Use-volatile-in-generic-atomic-bitops.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gqm67bl20
-
-RnJvbSA2MmZmMTMwMjM1MGQ4OGZjZTFmN2MzMDcyNzA0NmFlYTI2OGZkOTg5IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBXaWxsIE5ld3RvbiA8d2lsbC5uZXd0b25AaW1ndGVjLmNvbT4K
-RGF0ZTogV2VkLCAyNyBKdWwgMjAxMSAxMTo0MDoyOSArMDEwMApTdWJqZWN0OiBbUEFUQ0hdIGJp
-dG9wczogVXNlIHZvbGF0aWxlIGluIGdlbmVyaWMgYXRvbWljIGJpdG9wcy4KClRoZSBnZW5lcmlj
-IGF0b21pYyBiaXRvcHMgY3VycmVudGx5IGV4cGxpY2l0bHkgY2FzdCBhd2F5IHRoZQp2b2xhdGls
-ZSBmcm9tIHRoZSBwb2ludGVyIHBhc3NlZCB0byB0aGVtLiBUaGlzIHdpbGwgYWxsb3cgdGhlCmFj
-Y2VzcyB0byB0aGUgYml0ZmllbGQgdG8gaGFwcGVuIG91dHNpZGUgb2YgdGhlIGNyaXRpY2FsIHNl
-Y3Rpb24KdGh1cyBtYWtpbmcgdGhlIGJpdG9wcyBubyBsb25nZXIgaW50ZXJydXB0LXNhZmUuIFJl
-bW92ZSB0aGlzIGNhc3QKYW5kIGFkZCBhIHZvbGF0aWxlIGtleXdvcmQgdG8gbWFrZSBzdXJlIGFs
-bCBhY2Nlc3NlcyB0byB0aGUKYml0ZmllbGQgaGFwcGVuIGluc2lkZSB0aGUgY3JpdGljYWwgc2Vj
-dGlvbi4KClNpZ25lZC1vZmYtYnk6IFdpbGwgTmV3dG9uIDx3aWxsLm5ld3RvbkBpbWd0ZWMuY29t
-PgotLS0KIGluY2x1ZGUvYXNtLWdlbmVyaWMvYml0b3BzL2F0b21pYy5oIHwgICAxMiArKysrKyst
-LS0tLS0KIDEgZmlsZXMgY2hhbmdlZCwgNiBpbnNlcnRpb25zKCspLCA2IGRlbGV0aW9ucygtKQoK
-ZGlmZiAtLWdpdCBhL2luY2x1ZGUvYXNtLWdlbmVyaWMvYml0b3BzL2F0b21pYy5oIGIvaW5jbHVk
-ZS9hc20tZ2VuZXJpYy9iaXRvcHMvYXRvbWljLmgKaW5kZXggZWNjNDRhOC4uNTdlNGIxZiAxMDA2
-NDQKLS0tIGEvaW5jbHVkZS9hc20tZ2VuZXJpYy9iaXRvcHMvYXRvbWljLmgKKysrIGIvaW5jbHVk
-ZS9hc20tZ2VuZXJpYy9iaXRvcHMvYXRvbWljLmgKQEAgLTY1LDcgKzY1LDcgQEAgZXh0ZXJuIGFy
-Y2hfc3BpbmxvY2tfdCBfX2F0b21pY19oYXNoW0FUT01JQ19IQVNIX1NJWkVdIF9fbG9ja19hbGln
-bmVkOwogc3RhdGljIGlubGluZSB2b2lkIHNldF9iaXQoaW50IG5yLCB2b2xhdGlsZSB1bnNpZ25l
-ZCBsb25nICphZGRyKQogewogCXVuc2lnbmVkIGxvbmcgbWFzayA9IEJJVF9NQVNLKG5yKTsKLQl1
-bnNpZ25lZCBsb25nICpwID0gKCh1bnNpZ25lZCBsb25nICopYWRkcikgKyBCSVRfV09SRChucik7
-CisJdm9sYXRpbGUgdW5zaWduZWQgbG9uZyAqcCA9IGFkZHIgKyBCSVRfV09SRChucik7CiAJdW5z
-aWduZWQgbG9uZyBmbGFnczsKIAogCV9hdG9taWNfc3Bpbl9sb2NrX2lycXNhdmUocCwgZmxhZ3Mp
-OwpAQCAtODYsNyArODYsNyBAQCBzdGF0aWMgaW5saW5lIHZvaWQgc2V0X2JpdChpbnQgbnIsIHZv
-bGF0aWxlIHVuc2lnbmVkIGxvbmcgKmFkZHIpCiBzdGF0aWMgaW5saW5lIHZvaWQgY2xlYXJfYml0
-KGludCBuciwgdm9sYXRpbGUgdW5zaWduZWQgbG9uZyAqYWRkcikKIHsKIAl1bnNpZ25lZCBsb25n
-IG1hc2sgPSBCSVRfTUFTSyhucik7Ci0JdW5zaWduZWQgbG9uZyAqcCA9ICgodW5zaWduZWQgbG9u
-ZyAqKWFkZHIpICsgQklUX1dPUkQobnIpOworCXZvbGF0aWxlIHVuc2lnbmVkIGxvbmcgKnAgPSBh
-ZGRyICsgQklUX1dPUkQobnIpOwogCXVuc2lnbmVkIGxvbmcgZmxhZ3M7CiAKIAlfYXRvbWljX3Nw
-aW5fbG9ja19pcnFzYXZlKHAsIGZsYWdzKTsKQEAgLTEwNyw3ICsxMDcsNyBAQCBzdGF0aWMgaW5s
-aW5lIHZvaWQgY2xlYXJfYml0KGludCBuciwgdm9sYXRpbGUgdW5zaWduZWQgbG9uZyAqYWRkcikK
-IHN0YXRpYyBpbmxpbmUgdm9pZCBjaGFuZ2VfYml0KGludCBuciwgdm9sYXRpbGUgdW5zaWduZWQg
-bG9uZyAqYWRkcikKIHsKIAl1bnNpZ25lZCBsb25nIG1hc2sgPSBCSVRfTUFTSyhucik7Ci0JdW5z
-aWduZWQgbG9uZyAqcCA9ICgodW5zaWduZWQgbG9uZyAqKWFkZHIpICsgQklUX1dPUkQobnIpOwor
-CXZvbGF0aWxlIHVuc2lnbmVkIGxvbmcgKnAgPSBhZGRyICsgQklUX1dPUkQobnIpOwogCXVuc2ln
-bmVkIGxvbmcgZmxhZ3M7CiAKIAlfYXRvbWljX3NwaW5fbG9ja19pcnFzYXZlKHAsIGZsYWdzKTsK
-QEAgLTEyNyw3ICsxMjcsNyBAQCBzdGF0aWMgaW5saW5lIHZvaWQgY2hhbmdlX2JpdChpbnQgbnIs
-IHZvbGF0aWxlIHVuc2lnbmVkIGxvbmcgKmFkZHIpCiBzdGF0aWMgaW5saW5lIGludCB0ZXN0X2Fu
-ZF9zZXRfYml0KGludCBuciwgdm9sYXRpbGUgdW5zaWduZWQgbG9uZyAqYWRkcikKIHsKIAl1bnNp
-Z25lZCBsb25nIG1hc2sgPSBCSVRfTUFTSyhucik7Ci0JdW5zaWduZWQgbG9uZyAqcCA9ICgodW5z
-aWduZWQgbG9uZyAqKWFkZHIpICsgQklUX1dPUkQobnIpOworCXZvbGF0aWxlIHVuc2lnbmVkIGxv
-bmcgKnAgPSBhZGRyICsgQklUX1dPUkQobnIpOwogCXVuc2lnbmVkIGxvbmcgb2xkOwogCXVuc2ln
-bmVkIGxvbmcgZmxhZ3M7CiAKQEAgLTE1MSw3ICsxNTEsNyBAQCBzdGF0aWMgaW5saW5lIGludCB0
-ZXN0X2FuZF9zZXRfYml0KGludCBuciwgdm9sYXRpbGUgdW5zaWduZWQgbG9uZyAqYWRkcikKIHN0
-YXRpYyBpbmxpbmUgaW50IHRlc3RfYW5kX2NsZWFyX2JpdChpbnQgbnIsIHZvbGF0aWxlIHVuc2ln
-bmVkIGxvbmcgKmFkZHIpCiB7CiAJdW5zaWduZWQgbG9uZyBtYXNrID0gQklUX01BU0sobnIpOwot
-CXVuc2lnbmVkIGxvbmcgKnAgPSAoKHVuc2lnbmVkIGxvbmcgKilhZGRyKSArIEJJVF9XT1JEKG5y
-KTsKKwl2b2xhdGlsZSB1bnNpZ25lZCBsb25nICpwID0gYWRkciArIEJJVF9XT1JEKG5yKTsKIAl1
-bnNpZ25lZCBsb25nIG9sZDsKIAl1bnNpZ25lZCBsb25nIGZsYWdzOwogCkBAIC0xNzQsNyArMTc0
-LDcgQEAgc3RhdGljIGlubGluZSBpbnQgdGVzdF9hbmRfY2xlYXJfYml0KGludCBuciwgdm9sYXRp
-bGUgdW5zaWduZWQgbG9uZyAqYWRkcikKIHN0YXRpYyBpbmxpbmUgaW50IHRlc3RfYW5kX2NoYW5n
-ZV9iaXQoaW50IG5yLCB2b2xhdGlsZSB1bnNpZ25lZCBsb25nICphZGRyKQogewogCXVuc2lnbmVk
-IGxvbmcgbWFzayA9IEJJVF9NQVNLKG5yKTsKLQl1bnNpZ25lZCBsb25nICpwID0gKCh1bnNpZ25l
-ZCBsb25nICopYWRkcikgKyBCSVRfV09SRChucik7CisJdm9sYXRpbGUgdW5zaWduZWQgbG9uZyAq
-cCA9IGFkZHIgKyBCSVRfV09SRChucik7CiAJdW5zaWduZWQgbG9uZyBvbGQ7CiAJdW5zaWduZWQg
-bG9uZyBmbGFnczsKIAotLSAKMS43LjMuNAoK
---000e0cd47cecf1cd8904a90c158a--
