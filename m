@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab1G0Usv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 16:48:51 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:39276 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753282Ab1G0Ust (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 16:48:49 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: tI66ORsVM1mfZlK4.LMe1kEeHiBIrMUf8c5H42sRCBK7OaK
- _w7YBDysMy0V6he0o7E61diHrKKNifUuevKkhWoL47LU73pB2aatYqRO9UKG
- UUsJZbAGdG02hDFb3ai6HHWRKCNsioEVeUEqlBfHFzOg5wozI7K4CchQyUQ7
- b4uyfQFK6XzogEwiMygZdSSVQ_.xUyj33V89ruOwofsKOGrKenhvQcMkd3wt
- .JHm2JBvz97nke5ivTqR5orofliO3BEcZ565UB5zpstbWbdByvnxvvNoqPX8
- TVOy_Gb0IVANj0n7VYa7foSub_uC8knD4GQLU9FweUu5l0jm.
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 27 Jul 2011 15:48:45 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, eric.dumazet@gmail.com
-Subject: Re: per-cpu operation madness vs validation
-In-Reply-To: <alpine.LFD.2.02.1107271919500.2660@ionos>
-Message-ID: <alpine.DEB.2.00.1107271542530.17752@router.home>
-References: <1311714410.24752.404.camel@twins>  <alpine.DEB.2.00.1107261624210.10273@router.home>  <1311768693.24752.488.camel@twins>  <alpine.DEB.2.00.1107270904290.9418@router.home> <1311783616.5890.178.camel@twins> <alpine.DEB.2.00.1107271204260.13058@router.home>
- <alpine.LFD.2.02.1107271919500.2660@ionos>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754993Ab1G0Utv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 16:49:51 -0400
+Received: from csmtp2.one.com ([91.198.169.22]:41379 "EHLO csmtp2.one.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753839Ab1G0Uts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 16:49:48 -0400
+From: Eric Andersson <eric.andersson@unixphere.com>
+To: dmitry.torokhov@gmail.com
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
+        alan@lxorguk.ukuu.org.uk, jic23@cam.ac.uk,
+        Eric Andersson <eric.andersson@unixphere.com>
+Subject: [PATCH v6 0/1] input: add driver for Bosch Sensortec's BMA150 accelerometer
+Date: Wed, 27 Jul 2011 22:53:46 +0200
+Message-Id: <1311800027-25982-1-git-send-email-eric.andersson@unixphere.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jul 2011, Thomas Gleixner wrote:
+This is version 6 of the driver for Bosch Sensortec's accelerometers BMA150
+and SMB380.
 
-> > The key issue is that the -rt kernel has always had grave issues with
-> > performance when it comes to per cpu data access. Solving that by forcing
-> > the kernel to go slow it not the right approach.
->
-> Nobody want's the kernel to go slow. All we want and we consider that
-> also a benefit for mainline is: proper annotation of the per cpu data
-> access, like we have for RCU and for locking.
+Here is the changelog:
+* community review: request ONESHOT irq.
+* community review: replaced ABS_MISC event registration with EV_ABS only.
+* community review: updated runtime_pm in open/close.
+* community review: added units in range and bandwidth parameter description.
+* community review: fixed weird spacing.
+* community review: moved register address macros from h- to c-file.
+* community review: changed handling of platform_data cfg settings.
+* community review: replaced driver pm-struct with UNIVERSAL_DEV_PM_OPS.
+* community review: empty line between variable declaration and code.
+* community review: replace existing driver mutex in favor of the input mutex.
+* community review: added missing __devinits and __devexit.
+* Updated the default_cfg settings according to the EEPROM values.
+* Removed const and added __initdata to the default_cfg struct.
 
-I love that stuff.
+--
+Best regards,
+ Eric
 
-> For -rt this lack of documentation and the lack of verification,
-> debugability and traceability is a major PITA, but that's true for
-> non-rt as well, just the PITA is gradually smaller and the bugs which
-> are there today are just extremly hard to trigger.
+ http://www.unixphere.com
 
-Right. Sure wish there would be better checks. Or things would not have so
-many flavors.
+Eric Andersson (1):
+  input: add driver for Bosch Sensortec's BMA150 accelerometer
 
-> And Peters idea of per_cpu_lock*() annotations will boil down to the
-> exact same thing which is there today when you compile the kernel w/o
-> lockdep enabled for per_cpu data correctness. We don't want to change
-> anything or impose any slowness, we just want a proper way to document
-> and verify that maze. That's really not too much of a request.
+ drivers/input/misc/Kconfig  |   11 +
+ drivers/input/misc/Makefile |    1 +
+ drivers/input/misc/bma150.c |  654 +++++++++++++++++++++++++++++++++++++++++++
+ include/linux/bma150.h      |   47 +++
+ 4 files changed, 713 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/misc/bma150.c
+ create mode 100644 include/linux/bma150.h
 
-No problem with that. The per cpu atomic ops are made to mostly stand on
-their own. However, the correctness is affected by placementin the per cpu
-sections that may start with get_cpu() or a preempt_disable().
-
-The reason that I switched from get_cpu() to preempt_disable() in some
-functions was because the this_cpu operations eliminated the need to pass
-the cpu number to a function. Thus the cpu variable is not needed anymore.
-Preempt_disable() doesnt provide it and so I thought that was the proper
-function to use.
+-- 
+1.7.3.4
 
