@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab1G0Vsa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 17:48:30 -0400
-Received: from mga03.intel.com ([143.182.124.21]:17376 "EHLO mga03.intel.com"
+	id S1755967Ab1G0WGt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:06:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46879 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754830Ab1G0VsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:48:25 -0400
+	id S1755491Ab1G0Vsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:48:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
-   d="scan'208";a="32274613"
+   d="scan'208";a="30900532"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: tero.kristo@nokia.com, len.brown@intel.com, gregkh@suse.de,
+To: hemantp@ti.com, jbarnes@virtuousgeek.org, gregkh@suse.de,
         ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
         tim.bird@am.sony.com
-Subject: [PATCH] [26/99] cpuidle: menu: fixed wrapping timers at 4.294 seconds
-Message-Id: <20110727214824.C36E82403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:48:24 -0700 (PDT)
+Subject: [PATCH] [32/99] PCI: Add quirk for setting valid class for TI816X Endpoint
+Message-Id: <20110727214830.DD75A2403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:48:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,45 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Tero Kristo <tero.kristo@nokia.com>
+From: Hemant Pedanekar <hemantp@ti.com>
 
-commit 7467571f4480b273007517b26297c07154c73924 upstream.
+commit 63c4408074cbcc070ac17fc10e524800eb9bd0b0 upstream.
 
-Cpuidle menu governor is using u32 as a temporary datatype for storing
-nanosecond values which wrap around at 4.294 seconds. This causes errors
-in predicted sleep times resulting in higher than should be C state
-selection and increased power consumption. This also breaks cpuidle
-state residency statistics.
+TI816X (common name for DM816x/C6A816x/AM389x family) devices configured
+to boot as PCIe Endpoint have class code = 0. This makes kernel PCI bus
+code to skip allocating BARs to these devices resulting into following
+type of error when trying to enable them:
 
-Signed-off-by: Tero Kristo <tero.kristo@nokia.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+"Device 0000:01:00.0 not available because of resource collisions"
+
+The device cannot be operated because of the above issue.
+
+This patch adds a ID specific (TI VENDOR ID and 816X DEVICE ID based)
+'early' fixup quirk to replace class code with
+PCI_CLASS_MULTIMEDIA_VIDEO as class.
+
+Signed-off-by: Hemant Pedanekar <hemantp@ti.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/cpuidle/governors/menu.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/pci/quirks.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-Index: linux-2.6.35.y/drivers/cpuidle/governors/menu.c
+Index: linux-2.6.35.y/drivers/pci/quirks.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/cpuidle/governors/menu.c
-+++ linux-2.6.35.y/drivers/cpuidle/governors/menu.c
-@@ -236,6 +236,7 @@ static int menu_select(struct cpuidle_de
- 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
- 	int i;
- 	int multiplier;
-+	struct timespec t;
+--- linux-2.6.35.y.orig/drivers/pci/quirks.c
++++ linux-2.6.35.y/drivers/pci/quirks.c
+@@ -2727,6 +2727,16 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_IN
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x3c28, vtd_mask_spec_errors);
+ #endif
  
- 	if (data->needs_update) {
- 		menu_update(dev);
-@@ -250,8 +251,9 @@ static int menu_select(struct cpuidle_de
- 		return 0;
- 
- 	/* determine the expected residency time, round up */
-+	t = ktime_to_timespec(tick_nohz_get_sleep_length());
- 	data->expected_us =
--	    DIV_ROUND_UP((u32)ktime_to_ns(tick_nohz_get_sleep_length()), 1000);
-+		t.tv_sec * USEC_PER_SEC + t.tv_nsec / NSEC_PER_USEC;
- 
- 
- 	data->bucket = which_bucket(data->expected_us);
++static void __devinit fixup_ti816x_class(struct pci_dev* dev)
++{
++	/* TI 816x devices do not have class code set when in PCIe boot mode */
++	if (dev->class == PCI_CLASS_NOT_DEFINED) {
++		dev_info(&dev->dev, "Setting PCI class for 816x PCIe device\n");
++		dev->class = PCI_CLASS_MULTIMEDIA_VIDEO;
++	}
++}
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_TI, 0xb800, fixup_ti816x_class);
++
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+ 			  struct pci_fixup *end)
+ {
