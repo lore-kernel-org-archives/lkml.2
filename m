@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab1G0AiS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 20:38:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:18089 "EHLO mga02.intel.com"
+	id S1754204Ab1G0Aiw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 20:38:52 -0400
+Received: from mga01.intel.com ([192.55.52.88]:17764 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753995Ab1G0AfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 20:35:20 -0400
+	id S1753907Ab1G0AfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 20:35:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,272,1309762800"; 
-   d="scan'208";a="32380489"
+   d="scan'208";a="34855731"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110726534.972201586@firstfloor.org>
 In-Reply-To: <20110726534.972201586@firstfloor.org>
-To: sprabhu@redhat.com, bfields@redhat.com, gregkh@suse.de, ak@linux.intel.com,
+To: cjb@laptop.org, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com,
         linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH] [28/98] Open with O_CREAT flag set fails to open existing files on non writable directories
-Message-Id: <20110727003520.761392403FF@tassilo.jf.intel.com>
-Date: Tue, 26 Jul 2011 17:35:20 -0700 (PDT)
+Subject: [PATCH] [23/98] mmc: sdhci: Check mrq != NULL in sdhci_tasklet_finish
+Message-Id: <20110727003515.6092B2403FF@tassilo.jf.intel.com>
+Date: Tue, 26 Jul 2011 17:35:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,56 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Sachin Prabhu <sprabhu@redhat.com>
+From: Chris Ball <cjb@laptop.org>
 
-commit 1574dff8996ab1ed92c09012f8038b5566fce313 upstream.
+commit 0c9c99a765321104cc5f9c97f949382a9ba4927e upstream.
 
-An open on a NFS4 share using the O_CREAT flag on an existing file for
-which we have permissions to open but contained in a directory with no
-write permissions will fail with EACCES.
+It seems that under certain circumstances the sdhci_tasklet_finish()
+call can be entered with mrq set to NULL, causing the system to crash
+with a NULL pointer de-reference.
 
-A tcpdump shows that the client had set the open mode to UNCHECKED which
-indicates that the file should be created if it doesn't exist and
-encountering an existing flag is not an error. Since in this case the
-file exists and can be opened by the user, the NFS server is wrong in
-attempting to check create permissions on the parent directory.
+Seen on S3C6410 system.  Based on a patch by Dimitris Papastamos.
 
-The patch adds a conditional statement to check for create permissions
-only if the file doesn't exist.
-
-Signed-off-by: Sachin S. Prabhu <sprabhu@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reported-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/nfsd/vfs.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/mmc/host/sdhci.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Index: linux-2.6.35.y/fs/nfsd/vfs.c
+Index: linux-2.6.35.y/drivers/mmc/host/sdhci.c
 ===================================================================
---- linux-2.6.35.y.orig/fs/nfsd/vfs.c
-+++ linux-2.6.35.y/fs/nfsd/vfs.c
-@@ -1386,7 +1386,7 @@ nfsd_create_v3(struct svc_rqst *rqstp, s
- 		goto out;
- 	if (!(iap->ia_valid & ATTR_MODE))
- 		iap->ia_mode = 0;
--	err = fh_verify(rqstp, fhp, S_IFDIR, NFSD_MAY_CREATE);
-+	err = fh_verify(rqstp, fhp, S_IFDIR, NFSD_MAY_EXEC);
- 	if (err)
- 		goto out;
+--- linux-2.6.35.y.orig/drivers/mmc/host/sdhci.c
++++ linux-2.6.35.y/drivers/mmc/host/sdhci.c
+@@ -1278,6 +1278,13 @@ static void sdhci_tasklet_finish(unsigne
  
-@@ -1408,6 +1408,13 @@ nfsd_create_v3(struct svc_rqst *rqstp, s
- 	if (IS_ERR(dchild))
- 		goto out_nfserr;
+ 	host = (struct sdhci_host*)param;
  
-+	/* If file doesn't exist, check for permissions to create one */
-+	if (!dchild->d_inode) {
-+		err = fh_verify(rqstp, fhp, S_IFDIR, NFSD_MAY_CREATE);
-+		if (err)
-+			goto out;
-+	}
++        /*
++         * If this tasklet gets rescheduled while running, it will
++         * be run again afterwards but without any active request.
++         */
++	if (!host->mrq)
++		return;
 +
- 	err = fh_compose(resfhp, fhp->fh_export, dchild, fhp);
- 	if (err)
- 		goto out;
+ 	spin_lock_irqsave(&host->lock, flags);
+ 
+ 	del_timer(&host->timer);
