@@ -1,131 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976Ab1G0URk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 16:17:40 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35090 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754821Ab1G0URg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 16:17:36 -0400
-From: Wim Van Sebroeck <wim@iguana.be>
-To: LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>
-Cc: Wim Van Sebroeck <wim@iguana.be>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>
-Subject: [PATCH 6/9] watchdog: WatchDog Timer Driver Core - Add Magic Close feature
-Date: Wed, 27 Jul 2011 20:16:37 +0000
-Message-Id: <1311797800-2706-6-git-send-email-wim@iguana.be>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1311797800-2706-1-git-send-email-wim@iguana.be>
-References: <20110727201537.GA13819@infomag.iguana.be>
- <1311797800-2706-1-git-send-email-wim@iguana.be>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 27 Jul 2011 20:17:10 +0000 (UTC)
+	id S1755061Ab1G0UTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 16:19:43 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37553 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754589Ab1G0UTl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 16:19:41 -0400
+Date: Wed, 27 Jul 2011 21:19:04 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+Subject: Re: linux-next: manual merge of the slave-dma tree with Linus' tree
+Message-ID: <20110727201904.GA30198@n2100.arm.linux.org.uk>
+References: <20110727120826.ea1227276707790e162dee18@canb.auug.org.au> <1311736331.1536.45.camel@vkoul-udesk3> <438BB0150E931F4B9CE701519A4463010871EAC8BD@bgsmsx502.gar.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <438BB0150E931F4B9CE701519A4463010871EAC8BD@bgsmsx502.gar.corp.intel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the Magic Close feature to the
-WatchDog Timer Driver Core framework.
+On Wed, Jul 27, 2011 at 09:55:44PM +0530, Koul, Vinod wrote:
+> > 
+> > On Wed, 2011-07-27 at 12:08 +1000, Stephen Rothwell wrote:
+> > > Hi Vinod,
+> > >
+> > > Today's linux-next merge of the slave-dma tree got a conflict in
+> > > drivers/spi/spi-pl022.c (called drivers/spi/amba-pl022.c in the sleav-dma
+> > > tree) between commit 083be3f05371 ("spi/pl022: initialize burstsize from
+> > > FIFO trigger level") from Linus' tree and commit 001b0585ff16 ("Improve
+> > > slave/cyclic DMA engine documentation") from the slave-dma tree.
+> > >
+> > > I fixed it up (see below) anc acn carry the fix as necessary.
+> > 
+> > The correct fix would be:
+> > 
+> > diff --cc drivers/spi/spi-pl022.c
+> > index eba88c7,99e7880..0000000
+> > --- a/drivers/spi/spi-pl022.c
+> > +++ b/drivers/spi/spi-pl022.c
+> > @@@ -910,11 -908,11 +910,9 @@@ static int configure_dma(struct pl022 *
+> >   {
+> >         struct dma_slave_config rx_conf = {
+> >                 .src_addr = SSP_DR(pl022->phybase),
+> > +			.direction = DMA_TO_DEVICE,
+> >         };
+> >         struct dma_slave_config tx_conf = {
+> >                 .dst_addr = SSP_DR(pl022->phybase),
+> >                 .direction = DMA_TO_DEVICE,
+> >  -              .dst_maxburst = pl022->vendor->fifodepth >> 1,
+> >         };
+> >         unsigned int pages;
+> >         int ret;
+> > 
+> Grant, Russell,
+> Can you please ack this fix before I apply in my tree to resolve this conflict
 
-Signed-off-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
----
- Documentation/watchdog/watchdog-kernel-api.txt |    7 ++++++
- drivers/watchdog/watchdog_dev.c                |   27 +++++++++++++++++++++--
- include/linux/watchdog.h                       |    1 +
- 3 files changed, 32 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/watchdog/watchdog-kernel-api.txt b/Documentation/watchdog/watchdog-kernel-api.txt
-index acdee39..41d5526 100644
---- a/Documentation/watchdog/watchdog-kernel-api.txt
-+++ b/Documentation/watchdog/watchdog-kernel-api.txt
-@@ -127,6 +127,13 @@ bit-operations. The status bits that are defined are:
- * WDOG_DEV_OPEN: this status bit shows whether or not the watchdog device
-   was opened via /dev/watchdog.
-   (This bit should only be used by the WatchDog Timer Driver Core).
-+* WDOG_ALLOW_RELEASE: this bit stores whether or not the magic close character
-+  has been sent (so that we can support the magic close feature).
-+  (This bit should only be used by the WatchDog Timer Driver Core).
-+
-+Note: The WatchDog Timer Driver Core supports the magic close feature. To use
-+the magic close feature you must set the WDIOF_MAGICCLOSE bit in the options
-+field of the watchdog's info structure.
- 
- To get or set driver specific data the following two helper functions should be
- used:
-diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
-index 2c0289d..db40c6c 100644
---- a/drivers/watchdog/watchdog_dev.c
-+++ b/drivers/watchdog/watchdog_dev.c
-@@ -122,6 +122,8 @@ static int watchdog_stop(struct watchdog_device *wddev)
-  *	@ppos: pointer to the file offset
-  *
-  *	A write to a watchdog device is defined as a keepalive ping.
-+ *	Writing the magic 'V' sequence allows the next close to turn
-+ *	off the watchdog.
-  */
- 
- static ssize_t watchdog_write(struct file *file, const char __user *data,
-@@ -133,9 +135,18 @@ static ssize_t watchdog_write(struct file *file, const char __user *data,
- 	if (len == 0)
- 		return 0;
- 
-+	/*
-+	 * Note: just in case someone wrote the magic character
-+	 * five months ago...
-+	 */
-+	clear_bit(WDOG_ALLOW_RELEASE, &wdd->status);
-+
-+	/* scan to see whether or not we got the magic character */
- 	for (i = 0; i != len; i++) {
- 		if (get_user(c, data + i))
- 			return -EFAULT;
-+		if (c == 'V')
-+			set_bit(WDOG_ALLOW_RELEASE, &wdd->status);
- 	}
- 
- 	/* someone wrote to us, so we send the watchdog a keepalive ping */
-@@ -259,14 +270,24 @@ out:
-  *      @inode: inode of device
-  *      @file: file handle to device
-  *
-- *	This is the code for when /dev/watchdog gets closed.
-+ *	This is the code for when /dev/watchdog gets closed. We will only
-+ *	stop the watchdog when we have received the magic char, else the
-+ *	watchdog will keep running.
-  */
- 
- static int watchdog_release(struct inode *inode, struct file *file)
- {
--	int err;
-+	int err = -EBUSY;
-+
-+	/*
-+	 * We only stop the watchdog if we received the magic character
-+	 * or if WDIOF_MAGICCLOSE is not set
-+	 */
-+	if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
-+	    !(wdd->info->options & WDIOF_MAGICCLOSE))
-+		err = watchdog_stop(wdd);
- 
--	err = watchdog_stop(wdd);
-+	/* If the watchdog was not stopped, send a keepalive ping */
- 	if (err < 0) {
- 		pr_crit("%s: watchdog did not stop!\n", wdd->info->identity);
- 		watchdog_ping(wdd);
-diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
-index 9f33efe..e9881ca 100644
---- a/include/linux/watchdog.h
-+++ b/include/linux/watchdog.h
-@@ -112,6 +112,7 @@ struct watchdog_device {
- /* Bit numbers for status flags */
- #define WDOG_ACTIVE		0	/* Is the watchdog running/active */
- #define WDOG_DEV_OPEN		1	/* Opened via /dev/watchdog ? */
-+#define WDOG_ALLOW_RELEASE	2	/* Did we receive the magic char ? */
- };
- 
- /* Use the following functions to manipulate watchdog driver specific data */
--- 
-1.7.6
-
+I don't see why I need to - my documentation patch should only be touching
+Documentation/dmaengine.txt, not drivers/spi/spi-pl022.c.  So it really
+should not be causing a conflict in this file.
