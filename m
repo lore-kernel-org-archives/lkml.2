@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab1G0WBA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:01:00 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17198 "EHLO mga09.intel.com"
+	id S1756098Ab1G0WA5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:00:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:18770 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755664Ab1G0VtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755666Ab1G0VtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Jul 2011 17:49:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
-   d="scan'208";a="30900745"
+   d="scan'208";a="30900795"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: robert.richter@amd.com, gregkh@suse.de, ak@linux.intel.com,
+To: namhyung@gmail.com, neilb@suse.de, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [53/99] oprofile, dcookies: Fix possible circular locking dependency
-Message-Id: <20110727214852.4626C2403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:48:52 -0700 (PDT)
+Subject: [PATCH] [56/99] md/raid5: fix raid5_set_bi_hw_segments
+Message-Id: <20110727214855.530AD2403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:48:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,97 +24,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Robert Richter <robert.richter@amd.com>
+From: Namhyung Kim <namhyung@gmail.com>
 
-commit fe47ae7f53e179d2ef6771024feb000cbb86640f upstream.
+commit 9b2dc8b665932a8e681a7ab3237f60475e75e161 upstream.
 
-The lockdep warning below detects a possible A->B/B->A locking
-dependency of mm->mmap_sem and dcookie_mutex. The order in
-sync_buffer() is mm->mmap_sem/dcookie_mutex, while in
-sys_lookup_dcookie() it is vice versa.
+The @bio->bi_phys_segments consists of active stripes count in the
+lower 16 bits and processed stripes count in the upper 16 bits. So
+logical-OR operator should be bitwise one.
 
-Fixing it in sys_lookup_dcookie() by unlocking dcookie_mutex before
-copy_to_user().
+This bug has been present since 2.6.27 and the fix is suitable for any
+-stable kernel since then.  Fortunately the bad code is only used on
+error paths and is relatively unlikely to be hit.
 
-oprofiled/4432 is trying to acquire lock:
- (&mm->mmap_sem){++++++}, at: [<ffffffff810b444b>] might_fault+0x53/0xa3
-
-but task is already holding lock:
- (dcookie_mutex){+.+.+.}, at: [<ffffffff81124d28>] sys_lookup_dcookie+0x45/0x149
-
-which lock already depends on the new lock.
-
-the existing dependency chain (in reverse order) is:
-
--> #1 (dcookie_mutex){+.+.+.}:
-       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
-       [<ffffffff814634f0>] mutex_lock_nested+0x63/0x309
-       [<ffffffff81124e5c>] get_dcookie+0x30/0x144
-       [<ffffffffa0000fba>] sync_buffer+0x196/0x3ec [oprofile]
-       [<ffffffffa0001226>] task_exit_notify+0x16/0x1a [oprofile]
-       [<ffffffff81467b96>] notifier_call_chain+0x37/0x63
-       [<ffffffff8105803d>] __blocking_notifier_call_chain+0x50/0x67
-       [<ffffffff81058068>] blocking_notifier_call_chain+0x14/0x16
-       [<ffffffff8105a718>] profile_task_exit+0x1a/0x1c
-       [<ffffffff81039e8f>] do_exit+0x2a/0x6fc
-       [<ffffffff8103a5e4>] do_group_exit+0x83/0xae
-       [<ffffffff8103a626>] sys_exit_group+0x17/0x1b
-       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
-
--> #0 (&mm->mmap_sem){++++++}:
-       [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
-       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
-       [<ffffffff810b4478>] might_fault+0x80/0xa3
-       [<ffffffff81124de7>] sys_lookup_dcookie+0x104/0x149
-       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
-
-other info that might help us debug this:
-
-1 lock held by oprofiled/4432:
- #0:  (dcookie_mutex){+.+.+.}, at: [<ffffffff81124d28>] sys_lookup_dcookie+0x45/0x149
-
-stack backtrace:
-Pid: 4432, comm: oprofiled Not tainted 2.6.39-00008-ge5a450d #9
-Call Trace:
- [<ffffffff81063193>] print_circular_bug+0xae/0xbc
- [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
- [<ffffffff8102ef13>] ? get_parent_ip+0x11/0x42
- [<ffffffff810b444b>] ? might_fault+0x53/0xa3
- [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
- [<ffffffff810b444b>] ? might_fault+0x53/0xa3
- [<ffffffff810d7d54>] ? path_put+0x22/0x27
- [<ffffffff810b4478>] might_fault+0x80/0xa3
- [<ffffffff810b444b>] ? might_fault+0x53/0xa3
- [<ffffffff81124de7>] sys_lookup_dcookie+0x104/0x149
- [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=13809
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- fs/dcookies.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/md/raid5.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/fs/dcookies.c
+Index: linux-2.6.35.y/drivers/md/raid5.c
 ===================================================================
---- linux-2.6.35.y.orig/fs/dcookies.c
-+++ linux-2.6.35.y/fs/dcookies.c
-@@ -178,6 +178,8 @@ SYSCALL_DEFINE(lookup_dcookie)(u64 cooki
- 	/* FIXME: (deleted) ? */
- 	path = d_path(&dcs->path, kbuf, PAGE_SIZE);
+--- linux-2.6.35.y.orig/drivers/md/raid5.c
++++ linux-2.6.35.y/drivers/md/raid5.c
+@@ -129,7 +129,7 @@ static inline int raid5_dec_bi_hw_segmen
  
-+	mutex_unlock(&dcookie_mutex);
-+
- 	if (IS_ERR(path)) {
- 		err = PTR_ERR(path);
- 		goto out_free;
-@@ -194,6 +196,7 @@ SYSCALL_DEFINE(lookup_dcookie)(u64 cooki
+ static inline void raid5_set_bi_hw_segments(struct bio *bio, unsigned int cnt)
+ {
+-	bio->bi_phys_segments = raid5_bi_phys_segments(bio) || (cnt << 16);
++	bio->bi_phys_segments = raid5_bi_phys_segments(bio) | (cnt << 16);
+ }
  
- out_free:
- 	kfree(kbuf);
-+	return err;
- out:
- 	mutex_unlock(&dcookie_mutex);
- 	return err;
+ /* Find first data disk in a raid6 stripe */
