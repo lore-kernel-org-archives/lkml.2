@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab1G0Afj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 20:35:39 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48912 "EHLO mga11.intel.com"
+	id S1754169Ab1G0Afl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 20:35:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:7312 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753689Ab1G0Af2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 20:35:28 -0400
+	id S1754106Ab1G0Afc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 20:35:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,272,1309762800"; 
-   d="scan'208";a="34855907"
+   d="scan'208";a="30471239"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110726534.972201586@firstfloor.org>
 In-Reply-To: <20110726534.972201586@firstfloor.org>
-To: andyc.bluearc@gmail.com, Trond.Myklebust@netapp.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: [PATCH] [35/98] SUNRPC: fix NFS client over TCP hangs due to packet loss (Bug 16494)
-Message-Id: <20110727003527.940292403FF@tassilo.jf.intel.com>
-Date: Tue, 26 Jul 2011 17:35:27 -0700 (PDT)
+To: Warns@pre-sense.de, warns@pre-sense.de, stable@kernel.org,
+        ak@linux.intel.com, torvalds@linux-foundation.org, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH] [38/98] Fix corrupted OSF partition table parsing
+Message-Id: <20110727003530.A09992403FF@tassilo.jf.intel.com>
+Date: Tue, 26 Jul 2011 17:35:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,68 +26,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Andy Chittenden <andyc.bluearc@gmail.com>
+From: Timo Warns <Warns@pre-sense.de>
 
-commit 669502ff31d7dba1849aec7ee2450a3c61f57d39 upstream.
+commit 1eafbfeb7bdf59cfe173304c76188f3fd5f1fd05 upstream.
 
-When reusing a TCP connection, ensure that it's aborted if a previous
-shutdown attempt has been made on that connection so that the RPC over
-TCP recovery mechanism succeeds.
+The kernel automatically evaluates partition tables of storage devices.
+The code for evaluating OSF partitions contains a bug that leaks data
+from kernel heap memory to userspace for certain corrupted OSF
+partitions.
 
-Signed-off-by: Andy Chittenden <andyc.bluearc@gmail.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+In more detail:
+
+  for (i = 0 ; i < le16_to_cpu(label->d_npartitions); i++, partition++) {
+
+iterates from 0 to d_npartitions - 1, where d_npartitions is read from
+the partition table without validation and partition is a pointer to an
+array of at most 8 d_partitions.
+
+Add the proper and obvious validation.
+
+Signed-off-by: Timo Warns <warns@pre-sense.de>
+Cc: stable@kernel.org
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
+[ Changed the patch trivially to not repeat the whole le16_to_cpu()
+  thing, and to use an explicit constant for the magic value '8' ]
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/sunrpc/xprtsock.c |   28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
+ fs/partitions/osf.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-Index: linux-2.6.35.y/net/sunrpc/xprtsock.c
+Index: linux-2.6.35.y/fs/partitions/osf.c
 ===================================================================
---- linux-2.6.35.y.orig/net/sunrpc/xprtsock.c
-+++ linux-2.6.35.y/net/sunrpc/xprtsock.c
-@@ -1307,10 +1307,11 @@ static void xs_tcp_state_change(struct s
- 	if (!(xprt = xprt_from_sock(sk)))
- 		goto out;
- 	dprintk("RPC:       xs_tcp_state_change client %p...\n", xprt);
--	dprintk("RPC:       state %x conn %d dead %d zapped %d\n",
-+	dprintk("RPC:       state %x conn %d dead %d zapped %d sk_shutdown %d\n",
- 			sk->sk_state, xprt_connected(xprt),
- 			sock_flag(sk, SOCK_DEAD),
--			sock_flag(sk, SOCK_ZAPPED));
-+			sock_flag(sk, SOCK_ZAPPED),
-+			sk->sk_shutdown);
+--- linux-2.6.35.y.orig/fs/partitions/osf.c
++++ linux-2.6.35.y/fs/partitions/osf.c
+@@ -10,10 +10,13 @@
+ #include "check.h"
+ #include "osf.h"
  
- 	switch (sk->sk_state) {
- 	case TCP_ESTABLISHED:
-@@ -1781,10 +1782,25 @@ static void xs_tcp_reuse_connection(stru
++#define MAX_OSF_PARTITIONS 8
++
+ int osf_partition(struct parsed_partitions *state)
  {
- 	unsigned int state = transport->inet->sk_state;
+ 	int i;
+ 	int slot = 1;
++	unsigned int npartitions;
+ 	Sector sect;
+ 	unsigned char *data;
+ 	struct disklabel {
+@@ -45,7 +48,7 @@ int osf_partition(struct parsed_partitio
+ 			u8  p_fstype;
+ 			u8  p_frag;
+ 			__le16 p_cpg;
+-		} d_partitions[8];
++		} d_partitions[MAX_OSF_PARTITIONS];
+ 	} * label;
+ 	struct d_partition * partition;
  
--	if (state == TCP_CLOSE && transport->sock->state == SS_UNCONNECTED)
--		return;
--	if ((1 << state) & (TCPF_ESTABLISHED|TCPF_SYN_SENT))
--		return;
-+	if (state == TCP_CLOSE && transport->sock->state == SS_UNCONNECTED) {
-+		/* we don't need to abort the connection if the socket
-+		 * hasn't undergone a shutdown
-+		 */
-+		if (transport->inet->sk_shutdown == 0)
-+			return;
-+		dprintk("RPC:       %s: TCP_CLOSEd and sk_shutdown set to %d\n",
-+				__func__, transport->inet->sk_shutdown);
+@@ -63,7 +66,12 @@ int osf_partition(struct parsed_partitio
+ 		put_dev_sector(sect);
+ 		return 0;
+ 	}
+-	for (i = 0 ; i < le16_to_cpu(label->d_npartitions); i++, partition++) {
++	npartitions = le16_to_cpu(label->d_npartitions);
++	if (npartitions > MAX_OSF_PARTITIONS) {
++		put_dev_sector(sect);
++		return 0;
 +	}
-+	if ((1 << state) & (TCPF_ESTABLISHED|TCPF_SYN_SENT)) {
-+		/* we don't need to abort the connection if the socket
-+		 * hasn't undergone a shutdown
-+		 */
-+		if (transport->inet->sk_shutdown == 0)
-+			return;
-+		dprintk("RPC:       %s: ESTABLISHED/SYN_SENT "
-+				"sk_shutdown set to %d\n",
-+				__func__, transport->inet->sk_shutdown);
-+	}
- 	xs_abort_connection(xprt, transport);
- }
- 
++	for (i = 0 ; i < npartitions; i++, partition++) {
+ 		if (slot == state->limit)
+ 		        break;
+ 		if (le32_to_cpu(partition->p_size))
