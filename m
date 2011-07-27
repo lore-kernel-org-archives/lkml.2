@@ -1,152 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab1G0PS4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 11:18:56 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:59152 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab1G0PSz convert rfc822-to-8bit (ORCPT
+	id S1754295Ab1G0PVM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 11:21:12 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37173 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab1G0PVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 11:18:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E302BC4.5060003@suse.cz>
-References: <4E1D9C25.8080300@suse.cz>
-	<1311634718-32588-1-git-send-email-mmarek@suse.cz>
-	<CACqU3MX3=edNJSNXYLVP=nYFx+bDnBs-zi3A3uYCPLNUrJiMyA@mail.gmail.com>
-	<4E302BC4.5060003@suse.cz>
-Date: Wed, 27 Jul 2011 11:18:54 -0400
-Message-ID: <CACqU3MX7Lip=2wCVs0o0PWkGFVHry4fte_eoadR4SzN00NB-pw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 1/2] kconfig: Introduce KCONFIG(), KCONFIG_BUILTIN()
- and KCONFIG_MODULE()
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, sam@ravnborg.org,
-        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Jul 2011 11:21:10 -0400
+Subject: [PATCH] vfs: avoid taking locks if inode not in lists
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        David Miller <davem@davemloft.net>, Andi Kleen <andi@firstfloor.org>,
+        Matthew Wilcox <matthew@wil.cx>, Anton Blanchard <anton@samba.org>,
+        npiggin@kernel.dk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <1311672994.2355.17.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <20110718155141.GA11013@ZenIV.linux.org.uk>
+	 <1311093158.2707.75.camel@schen9-DESK>
+	 <20110721204042.GB31405@ZenIV.linux.org.uk>
+	 <1311294452.2576.18.camel@schen9-DESK>
+	 <20110723132411.GA22183@infradead.org>
+	 <1311633550.2576.33.camel@schen9-DESK>
+	 <20110725225154.GD22133@ZenIV.linux.org.uk>
+	 <1311636178.2576.34.camel@schen9-DESK>
+	 <1311660013.2996.6.camel@edumazet-laptop>
+	 <1311668466.2355.12.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <20110726090357.GA13013@infradead.org>
+	 <1311672994.2355.17.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Jul 2011 17:21:05 +0200
+Message-ID: <1311780065.2356.18.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Le mardi 26 juillet 2011 Ã  11:36 +0200, Eric Dumazet a Ã©crit :
+> Le mardi 26 juillet 2011 Ã  05:03 -0400, Christoph Hellwig a Ã©crit :
+> > On Tue, Jul 26, 2011 at 10:21:06AM +0200, Eric Dumazet wrote:
+> > > Well, not 'last' contention point, as we still hit remove_inode_hash(),
+> > 
+> > There should be no ned to put pipe or anon inodes on the inode hash.
+> > Probably sockets don't need it either, but I'd need to look at it in
+> > detail.
+> > 
+> > > inode_wb_list_del()
+> > 
+> > The should never be on the wb list either, doing an unlocked check for
+> > actually beeing on the list before taking the lock should help you.
+> 
+> Yes, it might even help regular inodes ;)
+> 
+> > 
+> > > inode_lru_list_del(),
+> > 
+> > No real need to keep inodes in the LRU if we only allocate them using
+> > new_inode but never look them up either.  You might want to try setting
+> > .drop_inode to generic_delete_inode for these.
+> 
+> Yes, I'll take a look, thanks.
 
-On Wed, Jul 27, 2011 at 11:16 AM, Michal Marek <mmarek@suse.cz> wrote:
-> On 27.7.2011 17:09, Arnaud Lacombe wrote:
->>
->> Hi,
->>
->> On Mon, Jul 25, 2011 at 6:58 PM, Michal Marek<mmarek@suse.cz>  wrote:
->>>
->>> Replace the config_is_*() macros with a variant that allows for grepping
->>> for usage of CONFIG_* options in the code. Usage:
->>>
->>>  if (KCONFIG(CONFIG_NUMA))
->>>
->>> or
->>>
->>>  #if KCONFIG(CONFIG_NUMA)
->>>
->>> The KCONFIG() macro evaluates to 1 if the argument is set (to either 'y'
->>> or 'm'), KCONFIG_BUILTIN() and KCONFIG_MODULE() test if the respective
->>> option is 'y' and 'm', respectively.
->>>
->>> Signed-off-by: Michal Marek<mmarek@suse.cz>
->>> ---
->>>  Makefile                   |    2 +-
->>>  include/linux/kconfig.h    |   24 +++++++++++++++
->>>  scripts/kconfig/confdata.c |   70
->>> ++++++++-----------------------------------
->>>  3 files changed, 38 insertions(+), 58 deletions(-)
->>>  create mode 100644 include/linux/kconfig.h
->>>
->>> diff --git a/Makefile b/Makefile
->>> index afb8e0d..bd7629b 100644
->>> --- a/Makefile
->>> +++ b/Makefile
->>> @@ -360,7 +360,7 @@ CFLAGS_GCOV = -fprofile-arcs -ftest-coverage
->>>  LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
->>>                    -Iarch/$(hdr-arch)/include/generated -Iinclude \
->>>                    $(if $(KBUILD_SRC), -I$(srctree)/include) \
->>> -                   -include include/generated/autoconf.h
->>> +                   -include $(srctree)/include/linux/kconfig.h
->>>
->>>  KBUILD_CPPFLAGS := -D__KERNEL__
->>>
->>> diff --git a/include/linux/kconfig.h b/include/linux/kconfig.h
->>> new file mode 100644
->>> index 0000000..fe80348
->>> --- /dev/null
->>> +++ b/include/linux/kconfig.h
->>> @@ -0,0 +1,24 @@
->>> +#ifndef __LINUX_KCONFIG_H
->>> +#define __LINUX_KCONFIG_H
->>> +
->>> +#include<generated/autoconf.h>
->>> +
->>> +/*
->>> + * Evaluates to 1 if CONFIG_option is set to 'y', 0 otherwise
->>> + */
->>> +#define KCONFIG_BUILTIN(option) __enabled_ ## option
->>> +
->>> +/*
->>> + * Evaluates to 1 if CONFIG_option is set to 'm', 0 otherwise
->>> + */
->>> +#define KCONFIG_MODULE(option) __enabled_ ## option ## _MODULE
->>> +
->>> +/*
->>> + * Evaluates to 1 if CONFIG_option is set to 'y' or 'm', 0 otherwise
->>> + *
->>> + */
->>> +#define KCONFIG(option) \
->>> +       (__enabled_ ## option || __enabled_ ## option ## _MODULE)
->>> +
->>> +
->>> +#endif /* __LINUX_KCONFIG_H */
->>> diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
->>> index df629ec..3bab40a 100644
->>> --- a/scripts/kconfig/confdata.c
->>> +++ b/scripts/kconfig/confdata.c
->>> @@ -495,15 +495,24 @@ header_print_symbol(FILE *fp, struct symbol *sym,
->>> const char *value, void *arg)
->>>
->>>                switch (*value) {
->>>                case 'n':
->>> -                       return;
->>> +                       break;
->>>                case 'm':
->>>                        suffix = "_MODULE";
->>>                        /* fall through */
->>>                default:
->>> -                       value = "1";
->>> +                       fprintf(fp, "#define %s%s%s 1\n",
->>> +                           CONFIG_, sym->name, suffix);
->>>                }
->>> -               fprintf(fp, "#define %s%s%s %s\n",
->>> -                   CONFIG_, sym->name, suffix, value);
->>> +               /*
->>> +                * Generate the __enabled_CONFIG_* and
->>> +                * __enabled_CONFIG_*_MODULE macros for use by the
->>> KCONFIG*()
->>> +                * macros. The _MODULE variant is generated even for
->>> booleans
->>> +                * so that the KCONFIG() macro works.
->>> +                */
->>> +               fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
->>> +                               sym->name, (*value == 'y'));
->>> +               fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE
->>> %d\n",
->>> +                               sym->name, (*value == 'm'));
->>>                break;
->>>        }
->>>        case S_HEX: {
->>
->> Just to comment on the patch itself, it will certainly not apply
->> against kbuild/kconfig as I changed header_print_symbol() to fix the
->> S_HEX prefix issue.
->
-> If course it applies, the "case S_HEX: {" context line you are quoting was
-> added by your commit:
-> http://git.kernel.org/?p=linux/kernel/git/mmarek/kbuild-2.6.git;a=commitdiff;h=eb4cf5a642f6430cffff7ba5d8d9bd46ea409281
->
-@#$... morning... I was looking at the wrong place, sorry.
+If I am not mistaken, we can add unlocked checks on the three hot spots.
 
- - Arnaud
+After following patch, a close(socket(PF_INET, SOCK_DGRAM, 0)) pair on
+my dev machine takes ~3us instead of ~9us.
+
+Maybe its better to split it in three patches, just let me know.
+
+22us -> 3us, thats a nice patch series ;)
+
+Thanks
+
+[PATCH] vfs: avoid taking locks if inode not in lists
+
+sockets and pipes inodes destruction hits three possibly contended
+locks :
+
+system-wide inode_hash_lock in remove_inode_hash()
+superblock s_inode_lru_lock in inode_lru_list_del()
+bdi wb.list_lock in inode_wb_list_del()
+
+Before even taking locks, we can perform an unlocked test to check if
+inode can possibly be in the lists.
+
+On a 2x4x2 machine, a close(socket()) pair can be 200% faster with these
+changes.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ fs/fs-writeback.c |   10 ++++++----
+ fs/inode.c        |    6 ++++++
+ 2 files changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 1599aa9..8b90bdb 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -182,11 +182,13 @@ void bdi_start_background_writeback(struct backing_dev_info *bdi)
+  */
+ void inode_wb_list_del(struct inode *inode)
+ {
+-	struct backing_dev_info *bdi = inode_to_bdi(inode);
++	if (!list_empty(&inode->i_wb_list)) {
++		struct backing_dev_info *bdi = inode_to_bdi(inode);
+ 
+-	spin_lock(&bdi->wb.list_lock);
+-	list_del_init(&inode->i_wb_list);
+-	spin_unlock(&bdi->wb.list_lock);
++		spin_lock(&bdi->wb.list_lock);
++		list_del_init(&inode->i_wb_list);
++		spin_unlock(&bdi->wb.list_lock);
++	}
+ }
+ 
+ /*
+diff --git a/fs/inode.c b/fs/inode.c
+index d0c72ff..796a420 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -338,6 +338,9 @@ static void inode_lru_list_add(struct inode *inode)
+ 
+ static void inode_lru_list_del(struct inode *inode)
+ {
++	if (list_empty(&inode->i_lru))
++		return;
++
+ 	spin_lock(&inode->i_sb->s_inode_lru_lock);
+ 	if (!list_empty(&inode->i_lru)) {
+ 		list_del_init(&inode->i_lru);
+@@ -406,6 +409,9 @@ EXPORT_SYMBOL(__insert_inode_hash);
+  */
+ void remove_inode_hash(struct inode *inode)
+ {
++	if (inode_unhashed(inode))
++		return;
++
+ 	spin_lock(&inode_hash_lock);
+ 	spin_lock(&inode->i_lock);
+ 	hlist_del_init(&inode->i_hash);
+
+
