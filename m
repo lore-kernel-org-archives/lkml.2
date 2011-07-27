@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755637Ab1G0Vs7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 17:48:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36327 "EHLO mga11.intel.com"
+	id S1756119Ab1G0WBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:01:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50745 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755568Ab1G0Vsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:48:52 -0400
+	id S1755623Ab1G0Vs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:48:56 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,279,1309762800"; 
-   d="scan'208";a="35258278"
+   d="scan'208";a="32826388"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: crimsun@ubuntu.com, tiwai@suse.de, gregkh@suse.de, ak@linux.intel.com,
+To: sledz@dresearch-fe.de, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [52/99] ALSA: hda: Fix quirk for Dell Inspiron 910
-Message-Id: <20110727214851.423CB2403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:48:51 -0700 (PDT)
+Subject: [PATCH] [50/99] USB: serial: add another 4N-GALAXY.DE PID to ftdi_sio driver
+Message-Id: <20110727214849.399042403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:48:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,37 +24,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Daniel T Chen <crimsun@ubuntu.com>
+From: Steffen Sledz <sledz@dresearch-fe.de>
 
-commit 0a1896b27b030529ec770aefd790544a1bdb7d5a upstream.
+commit a26d31cef06f43a76327c21235e75450869df2b8 upstream.
 
-BugLink: https://launchpad.net/bugs/792712
+E.g. newer CAN 2.0 A/B <=> USB 2.0 converters report idProduct=f3c2.
 
-The original reporter states that sound from the internal speakers is
-inaudible until using the model=auto quirk. This symptom is due to an
-existing quirk mask for 0x102802b* that uses the model=dell quirk. To
-limit the possible regressions, leave the existing quirk mask but add
-a higher priority specific mask for the reporter's PCI SSID.
-
-Reported-and-tested-by: rodni hipp
-Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Steffen Sledz <sledz@dresearch-fe.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    1 +
+ 2 files changed, 2 insertions(+)
 
-Index: linux-2.6.35.y/sound/pci/hda/patch_realtek.c
+Index: linux-2.6.35.y/drivers/usb/serial/ftdi_sio.c
 ===================================================================
---- linux-2.6.35.y.orig/sound/pci/hda/patch_realtek.c
-+++ linux-2.6.35.y/sound/pci/hda/patch_realtek.c
-@@ -13296,6 +13296,7 @@ static struct snd_pci_quirk alc268_cfg_t
- 	SND_PCI_QUIRK(0x1025, 0x015b, "Acer Aspire One",
- 						ALC268_ACER_ASPIRE_ONE),
- 	SND_PCI_QUIRK(0x1028, 0x0253, "Dell OEM", ALC268_DELL),
-+	SND_PCI_QUIRK(0x1028, 0x02b0, "Dell Inspiron 910", ALC268_AUTO),
- 	SND_PCI_QUIRK_MASK(0x1028, 0xfff0, 0x02b0,
- 			"Dell Inspiron Mini9/Vostro A90", ALC268_DELL),
- 	/* almost compatible with toshiba but with optional digital outs;
+--- linux-2.6.35.y.orig/drivers/usb/serial/ftdi_sio.c
++++ linux-2.6.35.y/drivers/usb/serial/ftdi_sio.c
+@@ -646,6 +646,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, EVER_ECO_PRO_CDS) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_1_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_2_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_3_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_0_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_1_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_2_PID) },
+Index: linux-2.6.35.y/drivers/usb/serial/ftdi_sio_ids.h
+===================================================================
+--- linux-2.6.35.y.orig/drivers/usb/serial/ftdi_sio_ids.h
++++ linux-2.6.35.y/drivers/usb/serial/ftdi_sio_ids.h
+@@ -351,6 +351,7 @@
+  */
+ #define FTDI_4N_GALAXY_DE_1_PID	0xF3C0
+ #define FTDI_4N_GALAXY_DE_2_PID	0xF3C1
++#define FTDI_4N_GALAXY_DE_3_PID	0xF3C2
+ 
+ /*
+  * Linx Technologies product ids
