@@ -1,113 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab1G0ROG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 13:14:06 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:30944 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755184Ab1G0ROE (ORCPT
+	id S1755220Ab1G0RO4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 13:14:56 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38825 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754879Ab1G0ROy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 13:14:04 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Ab3t7XUVM1nydc.dHBm8ipJ4LwjXeNcMOn7eOtbwIRIMc7W
- 6waqrXKT9Oq22e5Ik1hoU1uZmoWK7xx7bncApGa8U0lUJiv1h7mADnhIAC0R
- iA0t8aJRAA3d6kCYRnClZ.aIXlWb3EnwydbVuKdnjNy0VhDZpQ_id..9ehaU
- DlUuj4mA3agb_248vbmlns339I_I.TygIbqGlBfCEd7Wnemvgt8Urbe6I73Q
- kZtEG9EIpkA31A8Dxsid7L5Zqn45EU1Gx2aJs_VmxuIJAfU2P6_7tnZy7hpK
- KAQuAtoQiAiYJnqOJwa_r_M0QrXxFdjgJPVpn77jxGy4eIAI5MjnLW5buF9u
- v_o4x5WnLCbP05vCQFnRMjEOp
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 27 Jul 2011 12:13:59 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, eric.dumazet@gmail.com
-Subject: Re: per-cpu operation madness vs validation
-In-Reply-To: <1311783616.5890.178.camel@twins>
-Message-ID: <alpine.DEB.2.00.1107271204260.13058@router.home>
-References: <1311714410.24752.404.camel@twins>  <alpine.DEB.2.00.1107261624210.10273@router.home>  <1311768693.24752.488.camel@twins>  <alpine.DEB.2.00.1107270904290.9418@router.home> <1311783616.5890.178.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 27 Jul 2011 13:14:54 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CABE8wwuAFMYHH67sjEuy7whiZD+QBmU6bvzUUzEqJQFaYpkgdQ@mail.gmail.com>
+References: <CAJe_ZhdYg4EpaNbBW+dayjSORqM=E6myT3oOG5VTsiQnh3erTA@mail.gmail.com>
+	<CABE8wwt8J_r9cExG+EAqqK=XVmAyLYhv+-T49Rr9hhKudD8n2g@mail.gmail.com>
+	<CAJe_ZheVyLk-yqyF_XO80xX3j7_7mDPnv-me+n=X_hNWycSLwg@mail.gmail.com>
+	<CABE8wwtkSnaJ5fvi=4bq7zye3W0SmErHAZeWAcHuYvLgvqy=_Q@mail.gmail.com>
+	<CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com>
+	<CABE8wwv2XQ_aJ8O2TUAz1LgJorBwDbgyQQv7jeAn06Q2AcqH+Q@mail.gmail.com>
+	<CAJe_ZhcNM7m-eWA0nDUrOrHxeAhNS00gewf=txmvOFL_uOPhrw@mail.gmail.com>
+	<1311740499.1536.56.camel@vkoul-udesk3>
+	<CAJe_ZhfaPfobs5P+q+t-kRSK4fAvm-v_brYgqmco8fwOOBeT8A@mail.gmail.com>
+	<1311757347.1536.103.camel@vkoul-udesk3>
+	<20110727095909.GB16623@intel.com>
+	<CAJe_ZhdkPpVSyCyiUsFhOUUms8=JSQOiC33ztFzriW8jQHaa_w@mail.gmail.com>
+	<CABE8wwuAFMYHH67sjEuy7whiZD+QBmU6bvzUUzEqJQFaYpkgdQ@mail.gmail.com>
+Date: Wed, 27 Jul 2011 22:44:53 +0530
+Message-ID: <CAJe_Zhfm5k9gNPaTfpZdQ__cp9fKLZoiSvG0GPciVFbkkU=QCw@mail.gmail.com>
+Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
+From: Jaswinder Singh <jaswinder.singh@linaro.org>
+To: "Williams, Dan J" <dan.j.williams@intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        rmk+kernel@arm.linux.org.uk, linus.walleij@stericsson.com,
+        per.friden@stericsson.com, wei.zhang@freescale.com,
+        ebony.zhu@freescale.com, iws@ovro.caltech.edu, s.hauer@pengutronix.de,
+        maciej.sosnowski@intel.com, saeed@marvell.com, shawn.guo@freescale.com,
+        yur@emcraft.com, agust@denx.de, iwamatsu.nobuhiro@renesas.com,
+        per.forlin@stericsson.com, jonas.aberg@stericsson.com,
+        anemo@mba.ocn.ne.jp
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jul 2011, Peter Zijlstra wrote:
-
-> On Wed, 2011-07-27 at 09:16 -0500, Christoph Lameter wrote:
+On 27 July 2011 22:06, Williams, Dan J <dan.j.williams@intel.com> wrote:
+> On Wed, Jul 27, 2011 at 7:50 AM, Jaswinder Singh
+> <jaswinder.singh@linaro.org> wrote:
+>> On 27 July 2011 15:29, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+>>
+>>> As the caps are not per channel, that is the only way I was able to make it
+>>> work.
+>> FWIW, my proposal(in other thread) tags capabilities to a channel.
+>>
 >
-> > Well yes these are multiple operations that have a sort of atomicity
-> > requirement together. You want both variables to be updated together and
-> > therefore the individual RMV operations wont do the trick. The algorithm
-> > would have to be changed to take advantage of the this_cpu ops or you will
-> > have to take the penalty of higher synchronization costs.
+> Where is that other thread?
 >
-> You're still not getting it, synchronization cost isn't the point.
 
-It is for me.
+<copied from my reply to vinod >
 
-> > What you can do is what the slub fastpath does in order to allow updates
-> > without caring about preemption or interrupts.
->
-> > 1. You get a reference to the current per cpu data.
-> > 2. You obtain a transaction id that is cpu specific and operation specifc.
-> > 3. Speculatively access an object and work with the information of that
-> > object. Do not change anything.
->
-> Pretty hard when the whole point if changing stuff.
+I request you to please have a look at
 
-Essentially you have a pointer to play with. Not unlike a special form of
-RCU.
+1) What I propose
+       http://lists.infradead.org/pipermail/linux-arm-kernel/2011-July/059212.html
 
-> > 4. Calculate the next transaction id
-> > 4. Replace pointer and transaction id with a new object pointer and new
-> > tranaction id. If there is no match restart at 1.
->
-> Which is utter crap, ease up on the the drugs. That mandates a
-> read-copy-update like approach to all per-cpu data.
+2) Why RMK thinks I am the biggest idiot on earth
+       http://lists.infradead.org/pipermail/linux-arm-kernel/2011-July/059217.html
 
-If one wants performance you can get it that way.
+3) How I ask for better proof of that
+      http://lists.infradead.org/pipermail/linux-arm-kernel/2011-July/059223.html
 
-> > So now you have a per cpu access that is fully immunte from interrupt and
-> > preemption issues.
->
-> And suffers from allocation issues.. allocating a new piece of data,
-> copying over the old one, modifying it, installing the new pointer,
-> managing references to the old pointer etc.. You're on crack, that's
-> often way too much trouble for nearly no gain.
 
-Maybe you just do not know how to handle it? The allocators (even the page
-allocator) have been playing tricks with per cpu data for a very long
-time.
+Please give more serious look to what I called 'overall approach' in
+the first post.
+Implementation is secondary.
 
-> > percpu sections are very performance critical components of the kernel.
-> > Taking locks could be avoided with serialization through transaction ids
-> > f.e.
->
-> Not the fucking point! This isn't about making things go faster, this is
-> about breaking up the horrid implicit preempt/bh/irq assumptions all
-> over the place. It really is no different from killing the BKL.
-
-There is no breaking of anything. These assumptions already exist
-throughout the kernel and the issues with access to variables in
-different preemption context/interrupt context already exist. Nothing was
-changed there.
-
-> You'll need this even if you're going to rewrite the kernel with your
-> cmpxchg_double wankery simply because you need to know how stuff is
-> supposed to work.
->
-> All this is simply about de-obfuscating all per-cpu assumptions. This is
-> about verification and traceability/debuggability.
-
-Ok verification  and traceability are good but they should not
-be in the way of making core functionality high performance and low
-latency.
-
-The key issue is that the -rt kernel has always had grave issues with
-performance when it comes to per cpu data access. Solving that by forcing
-the kernel to go slow it not the right approach.
+Thanks,
+Jassi
