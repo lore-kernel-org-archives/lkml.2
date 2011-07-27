@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab1G0Jvk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 05:51:40 -0400
-Received: from mga11.intel.com ([192.55.52.93]:65287 "EHLO mga11.intel.com"
+	id S1753392Ab1G0JwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 05:52:04 -0400
+Received: from home.keithp.com ([63.227.221.253]:33783 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752100Ab1G0Jvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 05:51:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,275,1309762800"; 
-   d="scan'208";a="34999369"
-Date: Wed, 27 Jul 2011 11:52:48 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Subject: Re: [PATCH] mfd: avoid two assignments if failures happen in
- tps65910_i2c_probe
-Message-ID: <20110727095248.GB26275@sortiz-mobl>
-References: <alpine.LNX.2.00.1107132319020.22281@swampdragon.chaosbits.net>
+	id S1750828Ab1G0JwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 05:52:01 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org
+Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [git pull] drm pull for -rc1
+In-Reply-To: <alpine.DEB.2.00.1107261254260.29862@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1107261254260.29862@skynet.skynet.ie>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Wed, 27 Jul 2011 02:51:50 -0700
+Message-ID: <yunvcuokq4p.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1107132319020.22281@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jesper,
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jul 13, 2011 at 11:22:26PM +0200, Jesper Juhl wrote:
-> In drivers/mfd/tps65910.c:tps65910_i2c_probe() there's potential for a
-> tiny optimization.
-> 
-> We assign to init_data->irq and init_data->irq_base long before we
-> need them, and there are two potential exits from the function before
-> they are needed.
-> 
-> Moving the assignments below these two potential exits means we
-> completely avoid doing them in these two (failure) cases.
-Patch applied, thanks.
+On Tue, 26 Jul 2011 13:02:35 +0100 (IST), Dave Airlie <airlied@linux.ie> wr=
+ote:
 
-Cheers,
-Samuel.
+> (and btw I know Keith has a lot of fixes into next merges, its hard to=20
+> balance the requirement about not merging with the fact his QA team need=
+=20
+> to test merged trees and I want to pull what the QA team has tested).
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Yeah, sorry 'bout that -- all of the stuff on -fixes that got pulled in
+are bug-fixes that would have been reasonable to pull in past -rc1. I'd
+hope to merge them after Dave's -next merge, but that took longer than I
+expected.
+
+Let me know if this isn't what you want me to do and I'll build a
+separate tree for fixes while -next is pending a merge.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOL9+2Qp8BWwlsTdMRAvY5AJ4iXLtApq4YXCxUevoMIBtEug8h9ACfXbUH
+bTSMtnCQ6QAC7Qp2gprehCI=
+=jYvn
+-----END PGP SIGNATURE-----
+--=-=-=--
