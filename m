@@ -1,156 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab1G0QhS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 12:37:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64632 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754897Ab1G0QhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 12:37:14 -0400
-Date: Wed, 27 Jul 2011 18:34:12 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 7/8] vfork: make it stoppable/traceable
-Message-ID: <20110727163412.GG23793@redhat.com>
-References: <20110727163159.GA23785@redhat.com>
+	id S1755007Ab1G0QhB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 12:37:01 -0400
+Received: from mga12.intel.com ([143.182.124.36]:52776 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754796Ab1G0Qg5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 12:36:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110727163159.GA23785@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAJe_ZhdkPpVSyCyiUsFhOUUms8=JSQOiC33ztFzriW8jQHaa_w@mail.gmail.com>
+References: <CAJe_ZhdYg4EpaNbBW+dayjSORqM=E6myT3oOG5VTsiQnh3erTA@mail.gmail.com>
+	<CABE8wwt8J_r9cExG+EAqqK=XVmAyLYhv+-T49Rr9hhKudD8n2g@mail.gmail.com>
+	<CAJe_ZheVyLk-yqyF_XO80xX3j7_7mDPnv-me+n=X_hNWycSLwg@mail.gmail.com>
+	<CABE8wwtkSnaJ5fvi=4bq7zye3W0SmErHAZeWAcHuYvLgvqy=_Q@mail.gmail.com>
+	<CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com>
+	<CABE8wwv2XQ_aJ8O2TUAz1LgJorBwDbgyQQv7jeAn06Q2AcqH+Q@mail.gmail.com>
+	<CAJe_ZhcNM7m-eWA0nDUrOrHxeAhNS00gewf=txmvOFL_uOPhrw@mail.gmail.com>
+	<1311740499.1536.56.camel@vkoul-udesk3>
+	<CAJe_ZhfaPfobs5P+q+t-kRSK4fAvm-v_brYgqmco8fwOOBeT8A@mail.gmail.com>
+	<1311757347.1536.103.camel@vkoul-udesk3>
+	<20110727095909.GB16623@intel.com>
+	<CAJe_ZhdkPpVSyCyiUsFhOUUms8=JSQOiC33ztFzriW8jQHaa_w@mail.gmail.com>
+Date: Wed, 27 Jul 2011 09:36:54 -0700
+Message-ID: <CABE8wwuAFMYHH67sjEuy7whiZD+QBmU6bvzUUzEqJQFaYpkgdQ@mail.gmail.com>
+Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: Jaswinder Singh <jaswinder.singh@linaro.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        rmk+kernel@arm.linux.org.uk, linus.walleij@stericsson.com,
+        per.friden@stericsson.com, wei.zhang@freescale.com,
+        ebony.zhu@freescale.com, iws@ovro.caltech.edu, s.hauer@pengutronix.de,
+        maciej.sosnowski@intel.com, saeed@marvell.com, shawn.guo@freescale.com,
+        yur@emcraft.com, agust@denx.de, iwamatsu.nobuhiro@renesas.com,
+        per.forlin@stericsson.com, jonas.aberg@stericsson.com,
+        anemo@mba.ocn.ne.jp
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make vfork() stoppable/traceable.
+On Wed, Jul 27, 2011 at 7:50 AM, Jaswinder Singh
+<jaswinder.singh@linaro.org> wrote:
+> On 27 July 2011 15:29, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+>
+>> As the caps are not per channel, that is the only way I was able to make it
+>> work.
+> FWIW, my proposal(in other thread) tags capabilities to a channel.
+>
 
-Change clone_vfork_finish() paths to block all signals except
-SIGKILL | SIGSTOP and do wait_for_completion_interruptible().
+Where is that other thread?
 
-This means we should restart after the stop/ptrace_attach or
-the spurious wakeup, implement clone_vfork_restart().
+>> At least in ep93xx we have even channel numbers for TX and odd for RX (or
+>> vice versa, can't rememeber). This is a hardware restriction. So the client
+>> code then filters the channels based on that using ->chan_id.
+> This should be a piece of cake to handle by my proposal.
+>
+> If interested please get involved in that thread and help check if it
+> can make things better.
 
--ERESTART_RESTARTBLOCK is safe, we can never dequeue a signal
-which has a handler, thus we can never return to the user-space.
-Unless the debugger changes regs of course, but this is fine.
+I think it is fine for chan_id to be disconnected from sysfs and given
+to drivers as common field for some other purpose (not convinced that
+1:N client-to-driver is a valid use for this single id, hence why I'd
+like to see the full proposal).
 
-Note:
+But it definitely should not be a field that drivers control in
+non-uniform ways and gets exposed to sysfs.  The chan_id for the class
+device is just an opaque integer just like the host number for scsi
+hba's.  If the user wants to know device specific details about that
+channel that information can be retrieved by following the device
+link.
 
-	- This changes the "killable" behavior, the vforking task
-	  doesn't react to the fatal signals except SIGKILL. See
-	  the next patch
+For example:
+# cat /sys/class/dma/dma0chan0/device/device
+0x3c20
 
-	- The code asks for the final cleanups, for example we
-	  should move put_task_struct() into clone_vfork_finish()
-	  and simplify the usage of ->restart_block. Will be done
-	  later
+That is the actual hardware specific channel identification.  The
+class device is not the hardware device, and having drivers set
+chan_id to something hardware device specific conflates that fact.
+Now, if you want a new/separate attribute of a class device that is
+set in some uniform fashion that is a different discussion, but it's
+not clear to me why sysfs would need to expose these details?
 
-	- We use ->saved_sigmask to record the original sigmask.
-	  This is safe, nobody should play with it, we do not do.
-	  set_restore_sigmask(). Still it would be more clean to
-	  use restart_block->vfork, but then we should somehow
-	  export sigset_t for thread_info.h
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
-
- include/linux/thread_info.h |    4 ++++
- kernel/fork.c               |   37 +++++++++++++++++++++++++++++++++++--
- 2 files changed, 39 insertions(+), 2 deletions(-)
-
---- 3.1/include/linux/thread_info.h~7_vfork_restart	2011-07-27 15:27:38.000000000 +0200
-+++ 3.1/include/linux/thread_info.h	2011-07-27 15:28:43.000000000 +0200
-@@ -44,6 +44,10 @@ struct restart_block {
- 			unsigned long tv_sec;
- 			unsigned long tv_nsec;
- 		} poll;
-+
-+		struct {
-+			long pid;
-+		} vfork;
- 	};
- };
- 
---- 3.1/kernel/fork.c~7_vfork_restart	2011-07-27 15:27:38.000000000 +0200
-+++ 3.1/kernel/fork.c	2011-07-27 16:01:01.000000000 +0200
-@@ -1454,18 +1454,24 @@ static void complete_vfork_done(struct t
- 		complete(vfork_done);
- }
- 
-+static long clone_vfork_restart(struct restart_block *);
-+
- static long clone_vfork_finish(struct task_struct *child, long pid)
- {
-+	struct restart_block *restart = &current_thread_info()->restart_block;
- 	struct completion vfork_done;
- 	int killed;
- 
-+	if (!child || child->real_parent != current)
-+		goto done;
-+
- 	init_completion(&vfork_done);
- 
- 	/* complete_vfork_done() was already called? */
- 	if (xchg(&child->vfork_done, &vfork_done) == NULL)
- 		goto done;
- 
--	killed = wait_for_completion_killable(&vfork_done);
-+	killed = wait_for_completion_interruptible(&vfork_done);
- 	if (killed) {
- 		struct completion *steal = xchg(&child->vfork_done,
- 							VFORK_DONE_NOP);
-@@ -1473,14 +1479,40 @@ static long clone_vfork_finish(struct ta
- 		if (unlikely(!steal))
- 			wait_for_completion(&vfork_done);
- 
--		return -EINTR;
-+		restart->fn = clone_vfork_restart;
-+		restart->vfork.pid = pid;
-+
-+		return -ERESTART_RESTARTBLOCK;
- 	}
- 
- done:
-+	restart->fn = do_no_restart_syscall; /* not really needed */
-+	set_current_blocked(&current->saved_sigmask);
- 	ptrace_event(PTRACE_EVENT_VFORK_DONE, pid);
- 	return pid;
- }
- 
-+static long clone_vfork_restart(struct restart_block *restart)
-+{
-+	long pid = restart->vfork.pid;
-+	struct task_struct *child = find_get_task_by_vpid(pid);
-+	long ret;
-+
-+	ret = clone_vfork_finish(child, pid);
-+	if (child)
-+		put_task_struct(child);
-+	return ret;
-+}
-+
-+static void clone_vfork_prepare(void)
-+{
-+	sigset_t vfork_mask;
-+
-+	current->saved_sigmask = current->blocked;
-+	siginitsetinv(&vfork_mask, sigmask(SIGKILL) | sigmask(SIGSTOP));
-+	set_current_blocked(&vfork_mask);
-+}
-+
- /*
-  *  Ok, this is the main fork-routine.
-  *
-@@ -1567,6 +1599,7 @@ long do_fork(unsigned long clone_flags,
- 			ptrace_event(trace, nr);
- 
- 		if (clone_flags & CLONE_VFORK) {
-+			clone_vfork_prepare();
- 			nr = clone_vfork_finish(p, nr);
- 			put_task_struct(p);
- 		}
-
+--
+Dan
