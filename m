@@ -1,94 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab1G0CQQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 22:16:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38740 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751532Ab1G0CQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 22:16:12 -0400
-Date: Wed, 27 Jul 2011 12:15:49 +1000
-From: NeilBrown <neilb@suse.de>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: kernel-hardening@lists.openwall.com, Solar Designer <solar@openwall.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
-        Sebastian Krahmer <krahmer@suse.de>
-Subject: Re: [patch v2] move RLIMIT_NPROC check from set_user() to
- do_execve_common()
-Message-ID: <20110727121549.67a84d18@notabene.brown>
-In-Reply-To: <20110726144848.GA7133@albatros>
-References: <1310759683.30257.123.camel@moss-pluto>
-	<20110721140936.632d2c8b@notabene.brown>
-	<20110721124830.GA1325@openwall.com>
-	<CA+55aFy4ybatb0McQr2f4A56ympZVLqK2sbp2=73idu58_4RxQ@mail.gmail.com>
-	<20110721193939.GA3914@openwall.com>
-	<20110725171423.GA3739@albatros>
-	<20110725234013.GB24110@openwall.com>
-	<20110726104713.37273143@notabene.brown>
-	<20110726011629.GA24610@openwall.com>
-	<20110726141118.32f948e0@notabene.brown>
-	<20110726144848.GA7133@albatros>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753482Ab1G0CVC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 22:21:02 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:8694 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073Ab1G0CU6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 22:20:58 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6419"; a="106131147"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        David Brown <davidb@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: [PATCHv3 1/2] ARM: Set proper TEXT_OFFSET for newer MSMs
+Date: Tue, 26 Jul 2011 19:20:54 -0700
+Message-Id: <1311733255-25207-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.6.233.gd79bc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Jul 2011 18:48:48 +0400 Vasiliy Kulikov <segoon@openwall.com>
-wrote:
+MSMs post 8x50 have 2Mb at the beginning of RAM reserved for
+shared memory. Since the kernel hasn't typically been told this
+RAM exists, PHYS_OFFSET has been set to 0xN0200000 and the memory
+atags passed to the kernel have matched. This doesn't play nicely
+with things such as AUTO_ZRELADDR, which doesn't work at all, and
+dynamic phys to virt, which requires an MSM specific workaround.
 
-> Neil, Solar,
-> 
-> On Tue, Jul 26, 2011 at 14:11 +1000, NeilBrown wrote:
-> > I don't really see that failing mmap is any more hackish than failing execve.
-> > 
-> > Both are certainly hacks.  It is setuid that should fail, but that is
-> > problematic.
-> > 
-> > We seem to agree that it is acceptable to delay the failure until the process
-> > actually tries to run some code for the user.  I just think that
-> > mapping-a-file-for-exec is a more direct measure of "trying to run some code
-> > for the user" than "execve" is.
-> > 
-> > So they are both hacks, but one it more thorough than the other.  In the
-> > world of security I would hope that "thorough" would win.
-> 
-> Well, I don't mind against something more generic than the check in
-> execve(), however, the usefulness of the check in mmap() is unclear to
-> me.  You want to make more programs fail after setuid(), but does mmap
-> stops really many programs?  Do you know any program doing mmap/dlopen
-> after setuid() call?  What if the program will not do any mmap/dlopen
-> and e.g. start to handle network connections or do some computations?
-> I suppose the latter case is much more often than mmap/dlopen.
+Work around these issues by telling the kernel RAM starts at
+0xN0000000 (it actually does) and fixup the atags from the
+bootloader (if necessary) to say the same. In addition, make sure
+to set TEXT_OFFSET at least 2Mb beyond the start of RAM so that
+the kernel doesn't end up being decompressed into shared memory.
 
-I think I didn't make myself clear.
-I don't mean we should intercept the mmap system call.
+After doing this, AUTO_ZRELADDR should work on MSM with no
+problems and ARM_PATCH_PHYS_VIRT_16BIT should no longer be
+necessary.
 
-I mean we could intercept the internal kernel function do_mmap_pgoff.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+---
 
-This is used by the mmap system call but also (and more importantly) by the
-execve system call and the uselib system call.
+I don't know what tree to send this through, so I'm sending it
+to LAKML and letting other people figure it out.
 
-So any attempt to map a file and execute the code in that file - whether via
-exec or via mapping a shared object - will go through do_mmap_pgoff.
+Changes since v2:
+ - None
 
-So if we disable do_mmap_pgoff() requests which ask for execute permission
-when a setuid has caused RLIMIT_NPROC to be exceeded, then we catch every
-attempt to run the user's code as the user.
+Changes since v1:
 
-I won't catch a situation where an interpreter is already loaded into the
-root-owned process and the setuid is followed by loading a script and running
-that, it is isn't perfect.  But I think it is more general than just trapping
-in execve.
+ - Add 2MB to the fixed-up atag's size
 
-NeilBrown
+ arch/arm/Makefile                       |    3 +++
+ arch/arm/mach-msm/board-msm7x30.c       |   22 ++++++++++++++++++++++
+ arch/arm/mach-msm/board-msm8960.c       |   22 ++++++++++++++++++++++
+ arch/arm/mach-msm/board-msm8x60.c       |   25 +++++++++++++++++++++++++
+ arch/arm/mach-msm/include/mach/memory.h |    6 +++---
+ 5 files changed, 75 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index f5b2b39..44b1d02 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -128,6 +128,9 @@ textofs-$(CONFIG_PM_H1940)      := 0x00108000
+ ifeq ($(CONFIG_ARCH_SA1100),y)
+ textofs-$(CONFIG_SA1111) := 0x00208000
+ endif
++textofs-$(CONFIG_ARCH_MSM7X30) := 0x00208000
++textofs-$(CONFIG_ARCH_MSM8X60) := 0x00208000
++textofs-$(CONFIG_ARCH_MSM8960) := 0x00208000
+ 
+ # Machine directory name.  This list is sorted alphanumerically
+ # by CONFIG_* macro name.
+diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
+index b7a8496..d1e4cc8 100644
+--- a/arch/arm/mach-msm/board-msm7x30.c
++++ b/arch/arm/mach-msm/board-msm7x30.c
+@@ -24,6 +24,7 @@
+ #include <linux/smsc911x.h>
+ #include <linux/usb/msm_hsusb.h>
+ #include <linux/clkdev.h>
++#include <linux/memblock.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+@@ -42,6 +43,21 @@
+ 
+ extern struct sys_timer msm_timer;
+ 
++static void __init msm7x30_fixup(struct machine_desc *desc, struct tag *tag,
++			 char **cmdline, struct meminfo *mi)
++{
++	for (; tag->hdr.size; tag = tag_next(tag))
++		if (tag->hdr.tag == ATAG_MEM && tag->u.mem.start == 0x200000) {
++			tag->u.mem.start = 0;
++			tag->u.mem.size += SZ_2M;
++		}
++}
++
++static void __init msm7x30_reserve(void)
++{
++	memblock_remove(0x0, SZ_2M);
++}
++
+ static int hsusb_phy_init_seq[] = {
+ 	0x30, 0x32,	/* Enable and set Pre-Emphasis Depth to 20% */
+ 	0x02, 0x36,	/* Disable CDR Auto Reset feature */
+@@ -107,6 +123,8 @@ static void __init msm7x30_map_io(void)
+ 
+ MACHINE_START(MSM7X30_SURF, "QCT MSM7X30 SURF")
+ 	.boot_params = PLAT_PHYS_OFFSET + 0x100,
++	.fixup = msm7x30_fixup,
++	.reserve = msm7x30_reserve,
+ 	.map_io = msm7x30_map_io,
+ 	.init_irq = msm7x30_init_irq,
+ 	.init_machine = msm7x30_init,
+@@ -115,6 +133,8 @@ MACHINE_END
+ 
+ MACHINE_START(MSM7X30_FFA, "QCT MSM7X30 FFA")
+ 	.boot_params = PLAT_PHYS_OFFSET + 0x100,
++	.fixup = msm7x30_fixup,
++	.reserve = msm7x30_reserve,
+ 	.map_io = msm7x30_map_io,
+ 	.init_irq = msm7x30_init_irq,
+ 	.init_machine = msm7x30_init,
+@@ -123,6 +143,8 @@ MACHINE_END
+ 
+ MACHINE_START(MSM7X30_FLUID, "QCT MSM7X30 FLUID")
+ 	.boot_params = PLAT_PHYS_OFFSET + 0x100,
++	.fixup = msm7x30_fixup,
++	.reserve = msm7x30_reserve,
+ 	.map_io = msm7x30_map_io,
+ 	.init_irq = msm7x30_init_irq,
+ 	.init_machine = msm7x30_init,
+diff --git a/arch/arm/mach-msm/board-msm8960.c b/arch/arm/mach-msm/board-msm8960.c
+index 35c7cee..b04468e 100644
+--- a/arch/arm/mach-msm/board-msm8960.c
++++ b/arch/arm/mach-msm/board-msm8960.c
+@@ -20,16 +20,34 @@
+ #include <linux/io.h>
+ #include <linux/irq.h>
+ #include <linux/clkdev.h>
++#include <linux/memblock.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+ #include <asm/hardware/gic.h>
++#include <asm/setup.h>
+ 
+ #include <mach/board.h>
+ #include <mach/msm_iomap.h>
+ 
+ #include "devices.h"
+ 
++static void __init msm8960_fixup(struct machine_desc *desc, struct tag *tag,
++			 char **cmdline, struct meminfo *mi)
++{
++	for (; tag->hdr.size; tag = tag_next(tag))
++		if (tag->hdr.tag == ATAG_MEM &&
++				tag->u.mem.start == 0x40200000) {
++			tag->u.mem.start = 0x40000000;
++			tag->u.mem.size += SZ_2M;
++		}
++}
++
++static void __init msm8960_reserve(void)
++{
++	memblock_remove(0x40000000, SZ_2M);
++}
++
+ static void __init msm8960_map_io(void)
+ {
+ 	msm_map_msm8960_io();
+@@ -76,6 +94,8 @@ static void __init msm8960_rumi3_init(void)
+ }
+ 
+ MACHINE_START(MSM8960_SIM, "QCT MSM8960 SIMULATOR")
++	.fixup = msm8960_fixup,
++	.reserve = msm8960_reserve,
+ 	.map_io = msm8960_map_io,
+ 	.init_irq = msm8960_init_irq,
+ 	.timer = &msm_timer,
+@@ -83,6 +103,8 @@ MACHINE_START(MSM8960_SIM, "QCT MSM8960 SIMULATOR")
+ MACHINE_END
+ 
+ MACHINE_START(MSM8960_RUMI3, "QCT MSM8960 RUMI3")
++	.fixup = msm8960_fixup,
++	.reserve = msm8960_reserve,
+ 	.map_io = msm8960_map_io,
+ 	.init_irq = msm8960_init_irq,
+ 	.timer = &msm_timer,
+diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
+index 1163b6f..9221f54 100644
+--- a/arch/arm/mach-msm/board-msm8x60.c
++++ b/arch/arm/mach-msm/board-msm8x60.c
+@@ -20,14 +20,31 @@
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/irq.h>
++#include <linux/memblock.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+ #include <asm/hardware/gic.h>
++#include <asm/setup.h>
+ 
+ #include <mach/board.h>
+ #include <mach/msm_iomap.h>
+ 
++static void __init msm8x60_fixup(struct machine_desc *desc, struct tag *tag,
++			 char **cmdline, struct meminfo *mi)
++{
++	for (; tag->hdr.size; tag = tag_next(tag))
++		if (tag->hdr.tag == ATAG_MEM &&
++				tag->u.mem.start == 0x40200000) {
++			tag->u.mem.start = 0x40000000;
++			tag->u.mem.size += SZ_2M;
++		}
++}
++
++static void __init msm8x60_reserve(void)
++{
++	memblock_remove(0x40000000, SZ_2M);
++}
+ 
+ static void __init msm8x60_map_io(void)
+ {
+@@ -65,6 +82,8 @@ static void __init msm8x60_init(void)
+ }
+ 
+ MACHINE_START(MSM8X60_RUMI3, "QCT MSM8X60 RUMI3")
++	.fixup = msm8x60_fixup,
++	.reserve = msm8x60_reserve,
+ 	.map_io = msm8x60_map_io,
+ 	.init_irq = msm8x60_init_irq,
+ 	.init_machine = msm8x60_init,
+@@ -72,6 +91,8 @@ MACHINE_START(MSM8X60_RUMI3, "QCT MSM8X60 RUMI3")
+ MACHINE_END
+ 
+ MACHINE_START(MSM8X60_SURF, "QCT MSM8X60 SURF")
++	.fixup = msm8x60_fixup,
++	.reserve = msm8x60_reserve,
+ 	.map_io = msm8x60_map_io,
+ 	.init_irq = msm8x60_init_irq,
+ 	.init_machine = msm8x60_init,
+@@ -79,6 +100,8 @@ MACHINE_START(MSM8X60_SURF, "QCT MSM8X60 SURF")
+ MACHINE_END
+ 
+ MACHINE_START(MSM8X60_SIM, "QCT MSM8X60 SIMULATOR")
++	.fixup = msm8x60_fixup,
++	.reserve = msm8x60_reserve,
+ 	.map_io = msm8x60_map_io,
+ 	.init_irq = msm8x60_init_irq,
+ 	.init_machine = msm8x60_init,
+@@ -86,6 +109,8 @@ MACHINE_START(MSM8X60_SIM, "QCT MSM8X60 SIMULATOR")
+ MACHINE_END
+ 
+ MACHINE_START(MSM8X60_FFA, "QCT MSM8X60 FFA")
++	.fixup = msm8x60_fixup,
++	.reserve = msm8x60_reserve,
+ 	.map_io = msm8x60_map_io,
+ 	.init_irq = msm8x60_init_irq,
+ 	.init_machine = msm8x60_init,
+diff --git a/arch/arm/mach-msm/include/mach/memory.h b/arch/arm/mach-msm/include/mach/memory.h
+index f2f8d29..58d5e7e 100644
+--- a/arch/arm/mach-msm/include/mach/memory.h
++++ b/arch/arm/mach-msm/include/mach/memory.h
+@@ -22,11 +22,11 @@
+ #elif defined(CONFIG_ARCH_QSD8X50)
+ #define PLAT_PHYS_OFFSET		UL(0x20000000)
+ #elif defined(CONFIG_ARCH_MSM7X30)
+-#define PLAT_PHYS_OFFSET		UL(0x00200000)
++#define PLAT_PHYS_OFFSET		UL(0x00000000)
+ #elif defined(CONFIG_ARCH_MSM8X60)
+-#define PLAT_PHYS_OFFSET		UL(0x40200000)
++#define PLAT_PHYS_OFFSET		UL(0x40000000)
+ #elif defined(CONFIG_ARCH_MSM8960)
+-#define PLAT_PHYS_OFFSET		UL(0x40200000)
++#define PLAT_PHYS_OFFSET		UL(0x40000000)
+ #else
+ #define PLAT_PHYS_OFFSET		UL(0x10000000)
+ #endif
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
