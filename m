@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab1G0R3Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 13:29:16 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:59175 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862Ab1G0R3O convert rfc822-to-8bit (ORCPT
+	id S1753837Ab1G0Rd2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 13:33:28 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60785 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787Ab1G0Rd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 13:29:14 -0400
+	Wed, 27 Jul 2011 13:33:26 -0400
+Date: Wed, 27 Jul 2011 19:33:14 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Christoph Lameter <cl@linux.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, eric.dumazet@gmail.com
+Subject: Re: per-cpu operation madness vs validation
+In-Reply-To: <alpine.DEB.2.00.1107271204260.13058@router.home>
+Message-ID: <alpine.LFD.2.02.1107271919500.2660@ionos>
+References: <1311714410.24752.404.camel@twins>  <alpine.DEB.2.00.1107261624210.10273@router.home>  <1311768693.24752.488.camel@twins>  <alpine.DEB.2.00.1107270904290.9418@router.home> <1311783616.5890.178.camel@twins>
+ <alpine.DEB.2.00.1107271204260.13058@router.home>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <87k4b3iw91.wl%ysato@users.sourceforge.jp>
-References: <CA+55aFxakA2U+oMJ1T7awTYa+p6xp9N0aCbfrUqgkF7BJ8gnQw@mail.gmail.com>
-	<CACqU3MX1ovaEO-n0TLXdfuCYkSO0+DedkBKuycmrc-t1FLa91w@mail.gmail.com>
-	<87r55fdrs0.wl%ysato@users.sourceforge.jp>
-	<CACqU3MWuZUG3XDxTRgBztyJa5rj-GQDcCDrLX1M-AThxtxfXRA@mail.gmail.com>
-	<87k4b3iw91.wl%ysato@users.sourceforge.jp>
-Date: Wed, 27 Jul 2011 13:29:13 -0400
-Message-ID: <CACqU3MXj8-fD+RE6g_s8fHX0g_xMQRH40itHFCvFswvNLBqNaA@mail.gmail.com>
-Subject: Re: Linux 3.0 release
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Yoshinori Sato <ysato@users.sourceforge.jp>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 27 Jul 2011, Christoph Lameter wrote:
+> On Wed, 27 Jul 2011, Peter Zijlstra wrote:
+> > All this is simply about de-obfuscating all per-cpu assumptions. This is
+> > about verification and traceability/debuggability.
+> 
+> Ok verification  and traceability are good but they should not
+> be in the way of making core functionality high performance and low
+> latency.
+> 
+> The key issue is that the -rt kernel has always had grave issues with
+> performance when it comes to per cpu data access. Solving that by forcing
+> the kernel to go slow it not the right approach.
 
-On Wed, Jul 27, 2011 at 11:22 AM, Yoshinori Sato
-<ysato@users.sourceforge.jp> wrote:
-> At Mon, 25 Jul 2011 11:50:43 -0400,
->> [...]
->> With this patch, it configures, at least, but build fails with:
->>
->> In file included from /src/linux/linux/include/linux/mempolicy.h:70:0,
->>                  from /src/linux/linux/init/main.c:49:
->> /src/linux/linux/include/linux/pagemap.h: In function 'fault_in_pages_readable':
->> /src/linux/linux/include/linux/pagemap.h:444:2: error: assignment of
->> read-only variable '__gu_val'
->> /src/linux/linux/include/linux/pagemap.h:450:5: error: assignment of
->> read-only variable '__gu_val'
->> make[2]: *** [init/main.o] Error 1
->> make[1]: *** [init] Error 2
->> make: *** [sub-make] Error 2
->
-> OK.
-> I pushing latest code in here.
-> git.kernel.org/pub/scm/linux/kernel/git/ysato/h8300.git
-> Please try it.
-> I using gcc is v4.5.3
->
-hum, official gcc seem to have plenty of instability with h8300. gcc
-4.5.4 (20110726) goes further in the build, but triggers an ICE while
-building `fs/read_write.c'.
+Nobody want's the kernel to go slow. All we want and we consider that
+also a benefit for mainline is: proper annotation of the per cpu data
+access, like we have for RCU and for locking.
 
-Reported to upstream as http://gcc.gnu.org/bugzilla/show_bug.cgi?id=49874.
+Right now everything else than the "atomic" this_cpu stuff needs
+protection of some sort, but it's nowhere documented and we have no
+way to prove the correctness.
 
- - Arnaud
+That has absolutely nothing to do with -rt. We already had cases in
+mainline where per cpu data structures were accessed without or with
+wrong protections because the logic changed over time or people made
+the wrong assumptions.
 
->> Cross-toolchain is baremetal binutils and gcc for their respective trunk:
->>
->> $ /src/h8300/obj/destdir/bin/h8300-elf-gcc -v
->> Using built-in specs.
->> COLLECT_GCC=/src/h8300/obj/destdir/bin/h8300-elf-gcc
->> COLLECT_LTO_WRAPPER=/src/h8300/obj/destdir/libexec/gcc/h8300-elf/4.7.0/lto-wrapper
->> Target: h8300-elf
->> Configured with: ../gcc/configure --prefix=/src/h8300/obj/destdir
->> --target=h8300-elf --enable-languages=c
->> Thread model: single
->> gcc version 4.7.0 20110609 (experimental) (GCC)
->>
->>  - Arnaud
->>
->> > --
->> > Yoshinori Sato
->> > <ysato@users.sourceforge.jp>
->> >
->
-> --
-> Yoshinori Sato
-> <ysato@users.sourceforge.jp>
->
+For -rt this lack of documentation and the lack of verification,
+debugability and traceability is a major PITA, but that's true for
+non-rt as well, just the PITA is gradually smaller and the bugs which
+are there today are just extremly hard to trigger.
+
+And Peters idea of per_cpu_lock*() annotations will boil down to the
+exact same thing which is there today when you compile the kernel w/o
+lockdep enabled for per_cpu data correctness. We don't want to change
+anything or impose any slowness, we just want a proper way to document
+and verify that maze. That's really not too much of a request.
+
+Thanks,
+
+	tglx
+
