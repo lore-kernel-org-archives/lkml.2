@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab1G0Vtd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 17:49:33 -0400
-Received: from mga01.intel.com ([192.55.52.88]:49110 "EHLO mga01.intel.com"
+	id S1755840Ab1G0Vts (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 17:49:48 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43559 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755755Ab1G0Vt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:49:28 -0400
+	id S1755752Ab1G0Vt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:49:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,279,1309762800"; 
-   d="scan'208";a="33043913"
+   d="scan'208";a="33043907"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: rjw@sisk.pl, ak@linux.intel.com, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [88/99] PM / Hibernate: Fix free_unnecessary_pages()
-Message-Id: <20110727214927.DB52E2403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:49:27 -0700 (PDT)
+To: roland@redhat.com, jdike@addtoit.com, viro@zeniv.linux.org.uk,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [86/99] uml: fix CONFIG_STATIC_LINK=y build failure with newer glibc
+Message-Id: <20110727214925.D2C3C2403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:49:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,47 +26,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+From: Roland McGrath <roland@redhat.com>
 
-commit 4d4cf23cdde2f8f9324f5684a7f349e182039529 upstream.
+commit aa5fb4dbfd121296ca97c68cf90043a7ea97579d upstream.
 
-There is a bug in free_unnecessary_pages() that causes it to
-attempt to free too many pages in some cases, which triggers the
-BUG_ON() in memory_bm_clear_bit() for copy_bm.  Namely, if
-count_data_pages() is initially greater than alloc_normal, we get
-to_free_normal equal to 0 and "save" greater from 0.  In that case,
-if the sum of "save" and count_highmem_pages() is greater than
-alloc_highmem, we subtract a positive number from to_free_normal.
-Hence, since to_free_normal was 0 before the subtraction and is
-an unsigned int, the result is converted to a huge positive number
-that is used as the number of pages to free.
+With glibc 2.11 or later that was built with --enable-multi-arch, the UML
+link fails with undefined references to __rel_iplt_start and similar
+symbols.  In recent binutils, the default linker script defines these
+symbols (see ld --verbose).  Fix the UML linker scripts to match the new
+defaults for these sections.
 
-Fix this bug by checking if to_free_normal is actually greater
-than or equal to the number we're going to subtract from it.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Reported-and-tested-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Roland McGrath <roland@redhat.com>
+Cc: Jeff Dike <jdike@addtoit.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- kernel/power/snapshot.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ arch/um/kernel/dyn.lds.S |   14 ++++++++++++--
+ arch/um/kernel/uml.lds.S |   17 +++++++++++++++++
+ 2 files changed, 29 insertions(+), 2 deletions(-)
 
-Index: linux-2.6.35.y/kernel/power/snapshot.c
+Index: linux-2.6.35.y/arch/um/kernel/dyn.lds.S
 ===================================================================
---- linux-2.6.35.y.orig/kernel/power/snapshot.c
-+++ linux-2.6.35.y/kernel/power/snapshot.c
-@@ -1199,7 +1199,11 @@ static void free_unnecessary_pages(void)
- 		to_free_highmem = alloc_highmem - save;
- 	} else {
- 		to_free_highmem = 0;
--		to_free_normal -= save - alloc_highmem;
-+		save -= alloc_highmem;
-+		if (to_free_normal > save)
-+			to_free_normal -= save;
-+		else
-+			to_free_normal = 0;
- 	}
+--- linux-2.6.35.y.orig/arch/um/kernel/dyn.lds.S
++++ linux-2.6.35.y/arch/um/kernel/dyn.lds.S
+@@ -50,8 +50,18 @@ SECTIONS
+   .rela.got       : { *(.rela.got) }
+   .rel.bss        : { *(.rel.bss .rel.bss.* .rel.gnu.linkonce.b.*) }
+   .rela.bss       : { *(.rela.bss .rela.bss.* .rela.gnu.linkonce.b.*) }
+-  .rel.plt        : { *(.rel.plt) }
+-  .rela.plt       : { *(.rela.plt) }
++  .rel.plt : {
++	*(.rel.plt)
++	PROVIDE_HIDDEN(__rel_iplt_start = .);
++	*(.rel.iplt)
++	PROVIDE_HIDDEN(__rel_iplt_end = .);
++  }
++  .rela.plt : {
++	*(.rela.plt)
++	PROVIDE_HIDDEN(__rela_iplt_start = .);
++	*(.rela.iplt)
++	PROVIDE_HIDDEN(__rela_iplt_end = .);
++  }
+   .init           : {
+     KEEP (*(.init))
+   } =0x90909090
+Index: linux-2.6.35.y/arch/um/kernel/uml.lds.S
+===================================================================
+--- linux-2.6.35.y.orig/arch/um/kernel/uml.lds.S
++++ linux-2.6.35.y/arch/um/kernel/uml.lds.S
+@@ -43,6 +43,23 @@ SECTIONS
+ 	__syscall_stub_end = .;
+   }
  
- 	memory_bm_position_reset(&copy_bm);
++  /*
++   * These are needed even in a static link, even if they wind up being empty.
++   * Newer glibc needs these __rel{,a}_iplt_{start,end} symbols.
++   */
++  .rel.plt : {
++	*(.rel.plt)
++	PROVIDE_HIDDEN(__rel_iplt_start = .);
++	*(.rel.iplt)
++	PROVIDE_HIDDEN(__rel_iplt_end = .);
++  }
++  .rela.plt : {
++	*(.rela.plt)
++	PROVIDE_HIDDEN(__rela_iplt_start = .);
++	*(.rela.iplt)
++	PROVIDE_HIDDEN(__rela_iplt_end = .);
++  }
++
+   #include "asm/common.lds.S"
+ 
+   init.data : { INIT_DATA }
