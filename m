@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab1G0AfG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 20:35:06 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6474 "EHLO mga01.intel.com"
+	id S1754231Ab1G0Aky (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 20:40:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52724 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753482Ab1G0Ae7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 20:34:59 -0400
+	id S1753546Ab1G0AfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 20:35:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,272,1309762800"; 
-   d="scan'208";a="32659161"
+   d="scan'208";a="30471056"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110726534.972201586@firstfloor.org>
 In-Reply-To: <20110726534.972201586@firstfloor.org>
-To: jim876@xs4all.nl, andi@firstfloor.org, schwab@linux-m68k.org,
-        torvalds@linux-foundation.org, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH] [7/98] i8k: Tell gcc that *regs gets clobbered
-Message-Id: <20110727003459.1BD952403FF@tassilo.jf.intel.com>
-Date: Tue, 26 Jul 2011 17:34:59 -0700 (PDT)
+To: James.Bottomley@HansenPartnership.com, rientjes@google.com,
+        penberg@kernel.org, James.Bottomley@suse.de, gregkh@suse.de,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: [PATCH] [12/98] slub: fix panic with DISCONTIGMEM
+Message-Id: <20110727003504.30F242403FF@tassilo.jf.intel.com>
+Date: Tue, 26 Jul 2011 17:35:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,46 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Jim Bos <jim876@xs4all.nl>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-[ upstream commit 6b4e81db2552bad04100e7d5ddeed7e848f53b48 ]
+commit 4a5fa3590f09999f6db41bc386bce40848fa9f63 upstream.
 
-More recent GCC caused the i8k driver to stop working, on Slackware
-compiler was upgraded from gcc-4.4.4 to gcc-4.5.1 after which it didn't
-work anymore, meaning the driver didn't load or gave total nonsensical
-output.
+Slub makes assumptions about page_to_nid() which are violated by
+DISCONTIGMEM and !NUMA.  This violation results in a panic because
+page_to_nid() can be non-zero for pages in the discontiguous ranges and
+this leads to a null return by get_node().  The assertion by the
+maintainer is that DISCONTIGMEM should only be allowed when NUMA is also
+defined.  However, at least six architectures: alpha, ia64, m32r, m68k,
+mips, parisc violate this.  The panic is a regression against slab, so
+just mark slub broken in the problem configuration to prevent users
+reporting these panics.
 
-As it turned out the asm(..) statement forgot to mention it modifies the
-*regs variable.
-
-Credits to Andi Kleen and Andreas Schwab for providing the fix.
-
-Signed-off-by: Jim Bos <jim876@xs4all.nl>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Andreas Schwab <schwab@linux-m68k.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Index: linux-2.6.35.y/drivers/char/i8k.c
+---
+ init/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-2.6.35.y/init/Kconfig
 ===================================================================
---- linux-2.6.35.y.orig/drivers/char/i8k.c
-+++ linux-2.6.35.y/drivers/char/i8k.c
-@@ -141,7 +141,7 @@ static int i8k_smm(struct smm_regs *regs
- 		"lahf\n\t"
- 		"shrl $8,%%eax\n\t"
- 		"andl $1,%%eax\n"
--		:"=a"(rc)
-+		:"=a"(rc), "+m" (*regs)
- 		:    "a"(regs)
- 		:    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
- #else
-@@ -166,7 +166,8 @@ static int i8k_smm(struct smm_regs *regs
- 	    "movl %%edx,0(%%eax)\n\t"
- 	    "lahf\n\t"
- 	    "shrl $8,%%eax\n\t"
--	    "andl $1,%%eax\n":"=a"(rc)
-+	    "andl $1,%%eax\n"
-+	    :"=a"(rc), "+m" (*regs)
- 	    :    "a"(regs)
- 	    :    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
- #endif
+--- linux-2.6.35.y.orig/init/Kconfig
++++ linux-2.6.35.y/init/Kconfig
+@@ -1087,6 +1087,7 @@ config SLAB
+ 	  per cpu and per node queues.
+ 
+ config SLUB
++	depends on BROKEN || NUMA || !DISCONTIGMEM
+ 	bool "SLUB (Unqueued Allocator)"
+ 	help
+ 	   SLUB is a slab allocator that minimizes cache line usage
