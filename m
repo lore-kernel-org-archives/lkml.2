@@ -1,77 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab1G0SyM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 14:54:12 -0400
-Received: from mga11.intel.com ([192.55.52.93]:55736 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751202Ab1G0SyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 14:54:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
-   d="scan'208";a="32984487"
-Message-ID: <4E305EDC.3030602@linux.intel.com>
-Date: Wed, 27 Jul 2011 11:54:20 -0700
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110628 Thunderbird/5.0
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        torvalds <torvalds@linux-foundation.org>
-Subject: Re: [patch] Re: linux-next: Tree for July 27 (misc/pti)
-References: <20110727141151.d31e3da6a8d21a255473293c@canb.auug.org.au> <20110727092740.2228dd94.rdunlap@xenotime.net>
-In-Reply-To: <20110727092740.2228dd94.rdunlap@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753711Ab1G0S6M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 14:58:12 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:53974 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab1G0S6K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 14:58:10 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=HgMmF88zyPMYd0isvGuCyzeSo16tssUvAeGDl9aJ/wuxjBFJLPvNzzrJuyvxBSr9G
+	O4evMRKsK69RuGZenm1Bg==
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH v2 4/6] trace: Add tracepoints to reschedule interrupt handler
+Date: Wed, 27 Jul 2011 11:57:16 -0700
+Message-Id: <1311793038-15155-5-git-send-email-vnagarnaik@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1310679495-29104-1-git-send-email-vnagarnaik@google.com>
+References: <1310679495-29104-1-git-send-email-vnagarnaik@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2011 09:27 AM, Randy Dunlap wrote:
-> On Wed, 27 Jul 2011 14:11:51 +1000 Stephen Rothwell wrote:
->
->> Hi all,
->
->
-> I am still applying the drivers/misc/ patch below that was posted on July 7.
-> Is there a drivers/misc/ maintainer?  Andrew?
->
-> Hm, this patch needs to be applied to mainline.
->
+This is a part of overall effort to trace all the interrupts happening
+in a system. This shows how the interrupts are interacting with other
+events and what time is spent in kernel space versus user space.
 
-This one too:
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+---
+ include/trace/events/irq.h |   45 ++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched.c             |    3 ++
+ 2 files changed, 48 insertions(+), 0 deletions(-)
 
-http://marc.info/?l=linux-next&m=131016084730837&w=2
-
-> ---
-> From: J Freyensee<james_p_freyensee@linux.intel.com>
->
-> Intel-Atom implementation of PTI will not work with PCI
-> configured off, so the pti driver should not be compiled
-> in the event someone does not enable PCI in the linux kernel.
->
-> Signed-off-by: J Freyensee<james_p_freyensee@linux.intel.com>
-> Acked-by: Randy Dunlap<randy.dunlap@oracle.com>
-> Acked-by: Stephen Rothwell<sfr@canb.auug.org.au>
-> ---
->   drivers/misc/Kconfig |    1 +
->   1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index 4e349cd..7fd32a6 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -146,6 +146,7 @@ config PHANTOM
->
->   config INTEL_MID_PTI
->   	tristate "Parallel Trace Interface for MIPI P1149.7 cJTAG standard"
-> +	depends on PCI
->   	default n
->   	help
->   	  The PTI (Parallel Trace Interface) driver directs
-
-
+diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
+index d8fab89..a2a0a49 100644
+--- a/include/trace/events/irq.h
++++ b/include/trace/events/irq.h
+@@ -339,6 +339,51 @@ DEFINE_EVENT(irq_work, irq_work_run_exit,
+ 	TP_ARGS(ignore)
+ );
+ 
++DECLARE_EVENT_CLASS(reschedule_interrupt,
++
++	TP_PROTO(unsigned int ignore),
++
++	TP_ARGS(ignore),
++
++	TP_STRUCT__entry(
++		__field(	unsigned int,	ignore	)
++	),
++
++	TP_fast_assign(
++		__entry->ignore = ignore;
++	),
++
++	TP_printk("%u", __entry->ignore)
++);
++
++/**
++ * reschedule_interrupt_entry - called immediately after entering the
++ * reschedule interrupt handler
++ *
++ * When used in combination with the reschedule_interrupt_exit tracepoint
++ * we can determine the reschedule interrupt handler runtime.
++ */
++DEFINE_EVENT(reschedule_interrupt, reschedule_interrupt_entry,
++
++	TP_PROTO(unsigned int ignore),
++
++	TP_ARGS(ignore)
++);
++
++/**
++ * reschedule_interrupt_exit - called just before the reschedule interrupt
++ * handler returns
++ *
++ * When used in combination with the reschedule_interrupt_entry tracepoint
++ * we can determine the reschedule interrupt handler runtime.
++ */
++DEFINE_EVENT(reschedule_interrupt, reschedule_interrupt_exit,
++
++	TP_PROTO(unsigned int ignore),
++
++	TP_ARGS(ignore)
++);
++
+ #endif /*  _TRACE_IRQ_H */
+ 
+ /* This part must be outside protection */
+diff --git a/kernel/sched.c b/kernel/sched.c
+index ccacdbd..f48b5aa 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -82,6 +82,7 @@
+ #include "sched_cpupri.h"
+ #include "workqueue_sched.h"
+ #include "sched_autogroup.h"
++#include <trace/events/irq.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/sched.h>
+@@ -2578,6 +2579,7 @@ static void sched_ttwu_pending(void)
+ 	struct rq *rq = this_rq();
+ 	struct task_struct *list = xchg(&rq->wake_list, NULL);
+ 
++	trace_reschedule_interrupt_entry(0);
+ 	if (!list)
+ 		return;
+ 
+@@ -2610,6 +2612,7 @@ void scheduler_ipi(void)
+ 	irq_enter();
+ 	sched_ttwu_do_pending(list);
+ 	irq_exit();
++	trace_reschedule_interrupt_exit(0);
+ }
+ 
+ static void ttwu_queue_remote(struct task_struct *p, int cpu)
 -- 
-J (James/Jay) Freyensee
-Storage Technology Group
-Intel Corporation
+1.7.3.1
+
