@@ -1,42 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab1G0LIf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 07:08:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47122 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754460Ab1G0LIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 07:08:34 -0400
-Message-ID: <4E2FF1AA.3020507@redhat.com>
-Date: Wed, 27 Jul 2011 14:08:26 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+	id S1754604Ab1G0LJM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 07:09:12 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55385 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754574Ab1G0LJK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 07:09:10 -0400
+Date: Wed, 27 Jul 2011 12:09:08 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Marcus Folkesson <marcus.folkesson@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] regulator: tps65023: Fixes i2c configuration issues
+Message-ID: <20110727110908.GC300@sirena.org.uk>
+References: <marcus.folkesson@gmail.com>
+ <1311762767-20263-1-git-send-email-marcus.folkesson@gmail.com>
+ <1311762767-20263-2-git-send-email-marcus.folkesson@gmail.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 11/11] KVM: MMU: improve write flooding detected
-References: <4E2EA3DB.7040403@cn.fujitsu.com> <4E2EA5D2.8040804@cn.fujitsu.com> <4E2FD8F7.40303@redhat.com> <4E2FE674.8070202@cn.fujitsu.com>
-In-Reply-To: <4E2FE674.8070202@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311762767-20263-2-git-send-email-marcus.folkesson@gmail.com>
+X-Cookie: If your bread is stale, make toast.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2011 01:20 PM, Xiao Guangrong wrote:
-> >>    }
-> >
-> >  I think this is a little dangerous.  A guest kernel may be instantiating multiple gptes on a page fault, but guest userspace hits only one of them (the one which caused the page fault) - I think Windows does this, but I'm not sure.
-> >
->
-> I think this case is not bad: if the guest kernel need to write multiple gptes (>=3),
-> it will cause many page fault, we do better zap the shadow page and let it become writable as
-> soon as possible.
-> (And, we have pte-fetch, it can quickly establish the mapping for a new shadow page)
+On Wed, Jul 27, 2011 at 12:32:45PM +0200, Marcus Folkesson wrote:
+> The original driver is missing the following:
+> * Allow i2c core voltage adjustments by clearing CORE ADJ Allowed bit in CTRL2
+> * Setting the GO bit in CTRL2 for updating the core voltage
 
-Actually, what should save us is unsync pages.  Why are we hitting this 
-path at all?
+These appear to be two separate changes and should rreally have been
+split but
 
--- 
-error compiling committee.c: too many arguments to function
-
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
