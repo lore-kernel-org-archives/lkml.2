@@ -1,79 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab1G0GVj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 02:21:39 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54555 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab1G0GVg (ORCPT
+	id S1753706Ab1G0GVh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 02:21:37 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:11079 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab1G0GVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Jul 2011 02:21:36 -0400
-Date: Wed, 27 Jul 2011 08:21:20 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@amd64.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-Message-ID: <20110727062120.GA5272@aftab>
-References: <1311340547-7861-1-git-send-email-bp@amd64.org>
- <4E2F0068.1080001@redhat.com>
- <20110726181304.GD32536@aftab>
- <4E2F0498.8050005@zytor.com>
- <20110726183721.GF32536@aftab>
- <4E2F09BB.9060605@zytor.com>
- <4E2F1889.8030708@amd.com>
- <4E2F90A2.4030409@redhat.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6419"; a="105950878"
+Message-ID: <a9d8b0f164cdb51e88125d8432644213.squirrel@www.codeaurora.org>
+In-Reply-To: <8bcfda19cbc633e011e6b28a6183e68b.squirrel@www.codeaurora.org>
+References: <1308231068-24038-2-git-send-email-tlinder@codeaurora.org>
+    <1308231068-24038-6-git-send-email-tlinder@codeaurora.org>
+    <20110630174538.GA7979@xanatos>
+    <8bcfda19cbc633e011e6b28a6183e68b.squirrel@www.codeaurora.org>
+Date: Tue, 26 Jul 2011 23:21:35 -0700 (PDT)
+Subject: Re: [PATCH/RFC 5/5] usb: Add support for streams alloc/dealloc to  
+         devio.c
+From: "Amit Blay" <ablay@codeaurora.org>
+To: "Sarah Sharp" <sarah.a.sharp@linux.intel.com>
+Cc: "Tatyana Brokhman" <tlinder@codeaurora.org>, greg@kroah.com,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
+        ablay@codeaurora.org, "Amit Blay" <ablay@qualcomm.com>,
+        "open list" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E2F90A2.4030409@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 12:14:26AM -0400, Avi Kivity wrote:
-> On 07/26/2011 10:42 PM, Andre Przywara wrote:
-> >
-> > There is no need to determine it by calculating, because it caused by 
-> > the special design of the BD L1 cache and thus fixed.
-> > And a calculation would be even more confusing:
-> >
-> > The L1I is virtually indexed, but physically tagged.
-> > 64KB L1I cache, 64 Bytes per Cacheline = 1024 cache lines
-> > 1024 lines / 2 way associative = 512 indexes
-> > 64 Bytes per Cacheline (6 bits) + 512 indexes (9 bits) = bits [14:0]
-> > virtual and physical addresses are the same for bits [11:0], which 
-> > leaves the remaining 14:12 susceptible for aliasing.
-> >
-> > So bit 12 comes from PAGESIZE and yes, the 14 could be derived from 
-> > the CPUID cache info, but I don't see much value in breaking this down 
-> > this way.
-> > But I agree that there should be some comment in the patch which at 
-> > least notes that bits [14:12] are due to the L1I design, maybe we can 
-> > copy a nicer version of the above math in the commit message for 
-> > reference.
-> >
-> 
-> If among the 12,432.8 cpuid leaves exposed by the cpu we had a bit that 
-> said L1I was shared, and another that said it was virtually indexed, and 
-> others describing the cache size, cache line size, and number of ways, 
-> then we could perform the arithmetic at runtime, yes?
-> 
-> That means that if the caches grow or increase their associativity, then 
-> we don't need to patch the kernel again.
+Hi Sarah,
 
-Yeah, actually the idea is to patch the kernel only this one time and
-never ever be needing to do this for future CPUs, for this matter.
+A gentle reminder, can you please take a look at the proposed solution
+below for stream alloc/dealloc in devio.c? I responded to your comments
+about the original patch.
+
+On Tue, July 19, 2011 2:12 am, Amit Blay wrote:
+> Hi Sarah,
+>
+> I apologize for the delay responding to the thread. Thanks for your
+> comments. I would like to continue and fix the previous patch according to
+> the comments.
+> Also, I would like to split this patch, and implement the actual usage of
+> streams for bulk EP transfers (passing the stream ID with the URB) to a
+> different patch.
+>
+>>
+>> It looks like userspace doesn't have a way to specify the number of
+>> streams USBFS needs to allocate.  Not all userspace applications are
+>
+>> You probably also need a way to communicate back to userspace how many
+>> streams were actually allocated.  The program could choose to free
+>
+>> So you're just taking the max_streams from the first endpoint that has
+>> streams?  What if other endpoints have varying numbers of max streams?
+>
+>> What if you have endpoints on an interface that don't support streams?
+>
+>> So it seems like you also need a way for userspace to specify which
+>> endpoints get streams, and which endpoints have streams freed.  I will
+>
+> What I have in mind is user space passing a structure holding:
+>
+> 1. Interface number [IN]
+> 2. Bitmap indicating which EP to allocate streams for [IN]
+> 3. Number of streams to allocate, one number [IN}
+> 4. Number of streams actually allocated, one number  [OUT]
+>
+> The devio alloc function will double check if all EPs belong to the
+> interface passed by the user space.
+> Then it will call the HCI alloc function with the required number of
+> streams. It will return the number of streams actually allocated by the
+> HCD. Items 3 & 4 can be merged to one IN/OUT parameter.
+>
+> No error checking will be done in devio for number of required streams
+> (i.e, comparing it with the reported max streams). This kind of error
+> checking is already done by the xHCI driver.
+>
+> Please let me know if the solution is acceptable.
+>
+> Thanks,
+> Amit.
 
 -- 
-Regards/Gruss,
-Boris.
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
