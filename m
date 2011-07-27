@@ -1,45 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab1G0SKD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 14:10:03 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:4914 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752382Ab1G0SKC (ORCPT
+	id S1754780Ab1G0SLU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 14:11:20 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:57263
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753565Ab1G0SLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 14:10:02 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6420"; a="106299763"
-Date: Wed, 27 Jul 2011 11:10:00 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, David Brown <davidb@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCHv3 2/2] ARM: P2V: Remove ARM_PATCH_PHYS_VIRT_16BIT
-Message-ID: <20110727181000.GA10758@huya.qualcomm.com>
-References: <1311733255-25207-1-git-send-email-sboyd@codeaurora.org>
- <1311733255-25207-2-git-send-email-sboyd@codeaurora.org>
+	Wed, 27 Jul 2011 14:11:17 -0400
+Date: Wed, 27 Jul 2011 14:11:11 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
+Message-ID: <20110727181111.GA23009@infradead.org>
+References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>
+ <20110727160752.GC974@fieldses.org>
+ <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="ibTvN161/egqYuK8"
 Content-Disposition: inline
-In-Reply-To: <1311733255-25207-2-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 07:20:55PM -0700, Stephen Boyd wrote:
-> From: Nicolas Pitre <nicolas.pitre@linaro.org>
-> 
-> Now that MSM targets no longer need the 16-bit offsets for P2V, this
-> code can be removed.
 
-There's still a reference to CONFIG_ARM_PATCH_PHYS_VIRT_16BIT in
-arch/arm/include/asm/modules.h that should probably be removed as
-well.
+--ibTvN161/egqYuK8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-David
+Justin,
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+can you please run the attached test program on the affected directory
+on the server, and see if you see duplicates in the d_off colum.  Unless
+you have privacy concerns I would also love to see the full output.
+
+
+--ibTvN161/egqYuK8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="getdents.c"
+
+#define _GNU_SOURCE
+
+#include <dirent.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/syscall.h>
+
+#define handle_error(msg) \
+               do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
+struct linux_dirent64 {
+	unsigned long long d_ino;
+	long long d_off;
+	unsigned short d_reclen;
+	unsigned char d_type;
+	char d_name[];
+};
+
+#define BUF_SIZE 131072
+
+int main(int argc, char *argv[])
+{
+	int fd, nread;
+	char buf[BUF_SIZE];
+	struct linux_dirent64 *d;
+	int bpos;
+
+	fd = open(argc > 1 ? argv[1] : ".", O_RDONLY | O_DIRECTORY);
+	if (fd == -1)
+		handle_error("open");
+
+	for (;;) {
+		nread = syscall(SYS_getdents64, fd, buf, BUF_SIZE);
+		if (nread == -1)
+			handle_error("getdents");
+
+		if (nread == 0)
+			break;
+
+		printf("--------------- nread=%d ---------------\n", nread);
+		printf("i-node#          type  d_reclen  d_off   d_name\n");
+		for (bpos = 0; bpos < nread;) {
+			d = (struct linux_dirent64 *)(buf + bpos);
+			printf("%16lld  ", d->d_ino);
+			printf("%4d %10lld  %s\n", d->d_reclen,
+			       d->d_off, d->d_name);
+			bpos += d->d_reclen;
+		}
+	}
+
+	exit(EXIT_SUCCESS);
+}
+
+--ibTvN161/egqYuK8--
