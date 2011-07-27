@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab1G0S6S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 14:58:18 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:31879 "EHLO
+	id S1753000Ab1G0S6Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 14:58:16 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:31881 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753719Ab1G0S6N (ORCPT
+	with ESMTP id S1753769Ab1G0S6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Jul 2011 14:58:13 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=wszKEwuYjbKWX0bg39neoJHKmvRfdmJ+83dh+WxUMkoUn64vWO5IDggV8IWkxIeaD
-	FMidD78XFuUn13+N2YG7Q==
+	b=jCzfPo5HCmqGEXme5Ie34W3E1NbL+rbPnZtQb3To0rFV8yo3wTPlR4SDj4jZO2orv
+	6mR9HMzNufE18dtkfPJbA==
 From: Vaibhav Nagarnaik <vnagarnaik@google.com>
 To: Frederic Weisbecker <fweisbec@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -19,9 +19,9 @@ To: Frederic Weisbecker <fweisbec@gmail.com>,
 Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
         linux-kernel@vger.kernel.org, x86@kernel.org,
         Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH v2 2/6] trace: Add tracepoints to timer interrupt handlers
-Date: Wed, 27 Jul 2011 11:57:14 -0700
-Message-Id: <1311793038-15155-3-git-send-email-vnagarnaik@google.com>
+Subject: [PATCH v2 5/6] trace: Add tracepoints to call function interrupt handlers
+Date: Wed, 27 Jul 2011 11:57:17 -0700
+Message-Id: <1311793038-15155-6-git-send-email-vnagarnaik@google.com>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1310679495-29104-1-git-send-email-vnagarnaik@google.com>
 References: <1310679495-29104-1-git-send-email-vnagarnaik@google.com>
@@ -29,8 +29,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add tracepoints to generic kernel timer interrupt handlers to trace the
-hardware timer interrupts.
+Add tracepoints to call function and call function single interrupt
+handlers.
 
 This is a part of overall effort to trace all the interrupts happening
 in a system. This shows how the interrupts are interacting with other
@@ -38,22 +38,19 @@ events and what time is spent in kernel space versus user space.
 
 Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
 ---
- include/trace/events/irq.h   |  156 ++++++++++++++++++++++++++++++++++++++++++
- kernel/hrtimer.c             |    6 ++
- kernel/time/tick-broadcast.c |   16 ++++-
- kernel/time/tick-common.c    |    8 ++-
- kernel/time/tick-sched.c     |    4 +
- 5 files changed, 187 insertions(+), 3 deletions(-)
+ include/trace/events/irq.h |   73 ++++++++++++++++++++++++++++++++++++++++++++
+ kernel/smp.c               |    6 +++-
+ 2 files changed, 78 insertions(+), 1 deletions(-)
 
 diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
-index 4b4c7d9..e6e72e0 100644
+index a2a0a49..5e4f731 100644
 --- a/include/trace/events/irq.h
 +++ b/include/trace/events/irq.h
-@@ -139,6 +139,162 @@ DEFINE_EVENT(softirq, softirq_raise,
- 	TP_ARGS(vec_nr)
+@@ -384,6 +384,79 @@ DEFINE_EVENT(reschedule_interrupt, reschedule_interrupt_exit,
+ 	TP_ARGS(ignore)
  );
  
-+DECLARE_EVENT_CLASS(timer_interrupt,
++DECLARE_EVENT_CLASS(call_function_ipi,
 +
 +	TP_PROTO(unsigned int ignore),
 +
@@ -71,13 +68,13 @@ index 4b4c7d9..e6e72e0 100644
 +);
 +
 +/**
-+ * hrtimer_interrupt_entry - called immediately after entering the hrtimer
-+ * handler
++ * call_function_ipi_entry - called immediately after entering the
++ * call function interrupt handler
 + *
-+ * When used in combination with the hrtimer_interrupt_exit tracepoint
-+ * we can determine the hrtimer handler runtime.
++ * When used in combination with the call_function_ipi_exit tracepoint
++ * we can determine the call function interrupt handler runtime.
 + */
-+DEFINE_EVENT(timer_interrupt, hrtimer_interrupt_entry,
++DEFINE_EVENT(call_function_ipi, call_function_ipi_entry,
 +
 +	TP_PROTO(unsigned int ignore),
 +
@@ -85,12 +82,13 @@ index 4b4c7d9..e6e72e0 100644
 +);
 +
 +/**
-+ * hrtimer_interrupt_exit - called just before the hrtimer handler returns
++ * call_function_ipi_exit - called just before the call function interrupt
++ * handler returns
 + *
-+ * When used in combination with the hrtimer_interrupt_entry tracepoint
-+ * we can determine the hrtimer handler runtime.
++ * When used in combination with the call_function_ipi_entry tracepoint
++ * we can determine the call function interrupt handler runtime.
 + */
-+DEFINE_EVENT(timer_interrupt, hrtimer_interrupt_exit,
++DEFINE_EVENT(call_function_ipi, call_function_ipi_exit,
 +
 +	TP_PROTO(unsigned int ignore),
 +
@@ -98,13 +96,13 @@ index 4b4c7d9..e6e72e0 100644
 +);
 +
 +/**
-+ * timer_broadcast_entry - called immediately after entering the broadcast
-+ * timer handler
++ * call_function_single_ipi_entry - called immediately after entering the
++ * call function single interrupt handler
 + *
-+ * When used in combination with the timer_broadcast_exit tracepoint
-+ * we can determine the broadcast timer handler runtime.
++ * When used in combination with the call_function_single_ipi_exit tracepoint
++ * we can determine the call function single interrupt handler runtime.
 + */
-+DEFINE_EVENT(timer_interrupt, timer_broadcast_entry,
++DEFINE_EVENT(call_function_ipi, call_function_single_ipi_entry,
 +
 +	TP_PROTO(unsigned int ignore),
 +
@@ -112,97 +110,13 @@ index 4b4c7d9..e6e72e0 100644
 +);
 +
 +/**
-+ * timer_broadcast_exit - called just before the broadcast timer handler
-+ * returns
++ * call_function_single_ipi_exit - called just before the call function single
++ * interrupt handler returns
 + *
-+ * When used in combination with the timer_broadcast_entry tracepoint
-+ * we can determine the broadcast timer handler runtime.
++ * When used in combination with the call_function_single_ipi_entry tracepoint
++ * we can determine the call function single interrupt handler runtime.
 + */
-+DEFINE_EVENT(timer_interrupt, timer_broadcast_exit,
-+
-+	TP_PROTO(unsigned int ignore),
-+
-+	TP_ARGS(ignore)
-+);
-+
-+/**
-+ * timer_oneshot_entry - called immediately after entering the oneshot
-+ * timer handler
-+ *
-+ * When used in combination with the timer_oneshot_exit tracepoint
-+ * we can determine the oneshot timer handler runtime.
-+ */
-+DEFINE_EVENT(timer_interrupt, timer_oneshot_entry,
-+
-+	TP_PROTO(unsigned int ignore),
-+
-+	TP_ARGS(ignore)
-+);
-+
-+/**
-+ * timer_oneshot_exit - called just before the oneshot timer handler
-+ * returns
-+ *
-+ * When used in combination with the timer_oneshot_entry tracepoint
-+ * we can determine the oneshot timer handler runtime.
-+ */
-+DEFINE_EVENT(timer_interrupt, timer_oneshot_exit,
-+
-+	TP_PROTO(unsigned int ignore),
-+
-+	TP_ARGS(ignore)
-+);
-+
-+/**
-+ * timer_periodic_entry - called immediately after entering the periodic
-+ * timer handler
-+ *
-+ * When used in combination with the timer_periodic_exit tracepoint
-+ * we can determine the periodic timer handler runtime.
-+ */
-+DEFINE_EVENT(timer_interrupt, timer_periodic_entry,
-+
-+	TP_PROTO(unsigned int ignore),
-+
-+	TP_ARGS(ignore)
-+);
-+
-+/**
-+ * timer_periodic_exit - called just before the periodic timer handler
-+ * returns
-+ *
-+ * When used in combination with the timer_periodic_entry tracepoint
-+ * we can determine the periodic timer handler runtime.
-+ */
-+DEFINE_EVENT(timer_interrupt, timer_periodic_exit,
-+
-+	TP_PROTO(unsigned int ignore),
-+
-+	TP_ARGS(ignore)
-+);
-+
-+/**
-+ * timer_nohz_entry - called immediately after entering the nohz
-+ * timer handler
-+ *
-+ * When used in combination with the timer_nohz_exit tracepoint
-+ * we can determine the nohz timer handler runtime.
-+ */
-+DEFINE_EVENT(timer_interrupt, timer_nohz_entry,
-+
-+	TP_PROTO(unsigned int ignore),
-+
-+	TP_ARGS(ignore)
-+);
-+
-+/**
-+ * timer_nohz_exit - called just before the nohz timer handler
-+ * returns
-+ *
-+ * When used in combination with the timer_nohz_entry tracepoint
-+ * we can determine the nohz timer handler runtime.
-+ */
-+DEFINE_EVENT(timer_interrupt, timer_nohz_exit,
++DEFINE_EVENT(call_function_ipi, call_function_single_ipi_exit,
 +
 +	TP_PROTO(unsigned int ignore),
 +
@@ -212,178 +126,51 @@ index 4b4c7d9..e6e72e0 100644
  #endif /*  _TRACE_IRQ_H */
  
  /* This part must be outside protection */
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index a9205e3..3bf83d5 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -48,6 +48,7 @@
- 
- #include <asm/uaccess.h>
- 
-+#include <trace/events/irq.h>
- #include <trace/events/timer.h>
- 
- /*
-@@ -1244,6 +1245,8 @@ void hrtimer_interrupt(struct clock_event_device *dev)
- 	ktime_t expires_next, now, entry_time, delta;
- 	int i, retries = 0;
- 
-+	trace_hrtimer_interrupt_entry(0);
-+
- 	BUG_ON(!cpu_base->hres_active);
- 	cpu_base->nr_events++;
- 	dev->next_event.tv64 = KTIME_MAX;
-@@ -1316,6 +1319,7 @@ retry:
- 	if (expires_next.tv64 == KTIME_MAX ||
- 	    !tick_program_event(expires_next, 0)) {
- 		cpu_base->hang_detected = 0;
-+		trace_hrtimer_interrupt_exit(0);
- 		return;
- 	}
- 
-@@ -1355,6 +1359,8 @@ retry:
- 	tick_program_event(expires_next, 1);
- 	printk_once(KERN_WARNING "hrtimer: interrupt took %llu ns\n",
- 		    ktime_to_ns(delta));
-+
-+	trace_hrtimer_interrupt_exit(0);
- }
- 
- /*
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index c7218d1..fc3b9d6 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -20,6 +20,7 @@
- #include <linux/sched.h>
- 
- #include "tick-internal.h"
+diff --git a/kernel/smp.c b/kernel/smp.c
+index fb67dfa..4ea6769 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -12,6 +12,7 @@
+ #include <linux/gfp.h>
+ #include <linux/smp.h>
+ #include <linux/cpu.h>
 +#include <trace/events/irq.h>
  
- /*
-  * Broadcast support for broken x86 hardware, where the local apic
-@@ -176,13 +177,17 @@ static void tick_handle_periodic_broadcast(struct clock_event_device *dev)
- {
- 	ktime_t next;
- 
-+	trace_timer_broadcast_entry(0);
-+
- 	tick_do_periodic_broadcast();
- 
- 	/*
- 	 * The device is in periodic mode. No reprogramming necessary:
- 	 */
--	if (dev->mode == CLOCK_EVT_MODE_PERIODIC)
-+	if (dev->mode == CLOCK_EVT_MODE_PERIODIC) {
-+		trace_timer_broadcast_exit(0);
- 		return;
-+	}
- 
- 	/*
- 	 * Setup the next period for devices, which do not have
-@@ -194,10 +199,13 @@ static void tick_handle_periodic_broadcast(struct clock_event_device *dev)
- 	for (next = dev->next_event; ;) {
- 		next = ktime_add(next, tick_period);
- 
--		if (!clockevents_program_event(dev, next, ktime_get()))
-+		if (!clockevents_program_event(dev, next, ktime_get())) {
-+			trace_timer_broadcast_exit(0);
- 			return;
-+		}
- 		tick_do_periodic_broadcast();
- 	}
-+	trace_timer_broadcast_exit(0);
- }
- 
- /*
-@@ -404,6 +412,8 @@ static void tick_handle_oneshot_broadcast(struct clock_event_device *dev)
- 	ktime_t now, next_event;
- 	int cpu;
- 
-+	trace_timer_oneshot_entry(0);
-+
- 	raw_spin_lock(&tick_broadcast_lock);
- again:
- 	dev->next_event.tv64 = KTIME_MAX;
-@@ -443,6 +453,8 @@ again:
- 			goto again;
- 	}
- 	raw_spin_unlock(&tick_broadcast_lock);
-+
-+	trace_timer_oneshot_exit(0);
- }
- 
- /*
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 119528d..a7f81af 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -18,6 +18,7 @@
- #include <linux/percpu.h>
- #include <linux/profile.h>
- #include <linux/sched.h>
-+#include <trace/events/irq.h>
- 
- #include <asm/irq_regs.h>
- 
-@@ -84,6 +85,8 @@ void tick_handle_periodic(struct clock_event_device *dev)
+ #ifdef CONFIG_USE_GENERIC_SMP_HELPERS
+ static struct {
+@@ -172,6 +173,7 @@ void generic_smp_call_function_interrupt(void)
+ 	struct call_function_data *data;
  	int cpu = smp_processor_id();
- 	ktime_t next;
  
-+	trace_timer_periodic_entry(0);
-+
- 	tick_periodic(cpu);
- 
- 	if (dev->mode != CLOCK_EVT_MODE_ONESHOT)
-@@ -94,8 +97,10 @@ void tick_handle_periodic(struct clock_event_device *dev)
++	trace_call_function_ipi_entry(0);
+ 	/*
+ 	 * Shouldn't receive this interrupt on a cpu that is not yet online.
  	 */
- 	next = ktime_add(dev->next_event, tick_period);
- 	for (;;) {
--		if (!clockevents_program_event(dev, next, ktime_get()))
-+		if (!clockevents_program_event(dev, next, ktime_get())) {
-+			trace_timer_periodic_exit(0);
- 			return;
-+		}
- 		/*
- 		 * Have to be careful here. If we're in oneshot mode,
- 		 * before we call tick_periodic() in a loop, we need
-@@ -109,6 +114,7 @@ void tick_handle_periodic(struct clock_event_device *dev)
- 			tick_periodic(cpu);
- 		next = ktime_add(next, tick_period);
+@@ -239,7 +241,7 @@ void generic_smp_call_function_interrupt(void)
+ 
+ 		csd_unlock(&data->csd);
  	}
-+	trace_timer_periodic_exit(0);
+-
++	trace_call_function_ipi_exit(0);
  }
  
  /*
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index d5097c4..54e7b07 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -20,6 +20,7 @@
- #include <linux/profile.h>
- #include <linux/sched.h>
- #include <linux/module.h>
-+#include <trace/events/irq.h>
+@@ -252,6 +254,7 @@ void generic_smp_call_function_single_interrupt(void)
+ 	unsigned int data_flags;
+ 	LIST_HEAD(list);
  
- #include <asm/irq_regs.h>
- 
-@@ -568,6 +569,8 @@ static void tick_nohz_handler(struct clock_event_device *dev)
- 	int cpu = smp_processor_id();
- 	ktime_t now = ktime_get();
- 
-+	trace_timer_nohz_entry(0);
-+
- 	dev->next_event.tv64 = KTIME_MAX;
- 
++	trace_call_function_single_ipi_entry(0);
  	/*
-@@ -604,6 +607,7 @@ static void tick_nohz_handler(struct clock_event_device *dev)
- 		now = ktime_get();
- 		tick_do_update_jiffies64(now);
+ 	 * Shouldn't receive this interrupt on a cpu that is not yet online.
+ 	 */
+@@ -282,6 +285,7 @@ void generic_smp_call_function_single_interrupt(void)
+ 		if (data_flags & CSD_FLAG_LOCK)
+ 			csd_unlock(data);
  	}
-+	trace_timer_nohz_exit(0);
++	trace_call_function_single_ipi_exit(0);
  }
  
- /**
+ static DEFINE_PER_CPU_SHARED_ALIGNED(struct call_single_data, csd_data);
 -- 
 1.7.3.1
 
