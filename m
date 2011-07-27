@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220Ab1G0RO4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 13:14:56 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38825 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754879Ab1G0ROy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 13:14:54 -0400
+	id S1755247Ab1G0RP4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 13:15:56 -0400
+Received: from lucidpixels.com ([72.73.18.11]:38202 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754879Ab1G0RPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 13:15:54 -0400
+Date: Wed, 27 Jul 2011 13:15:53 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Bryan Schumaker <bjschuma@netapp.com>
+cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
+In-Reply-To: <4E303F6F.8010706@netapp.com>
+Message-ID: <alpine.DEB.2.02.1107271315290.1451@p34.internal.lan>
+References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan> <20110727160752.GC974@fieldses.org> <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan> <4E303F6F.8010706@netapp.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CABE8wwuAFMYHH67sjEuy7whiZD+QBmU6bvzUUzEqJQFaYpkgdQ@mail.gmail.com>
-References: <CAJe_ZhdYg4EpaNbBW+dayjSORqM=E6myT3oOG5VTsiQnh3erTA@mail.gmail.com>
-	<CABE8wwt8J_r9cExG+EAqqK=XVmAyLYhv+-T49Rr9hhKudD8n2g@mail.gmail.com>
-	<CAJe_ZheVyLk-yqyF_XO80xX3j7_7mDPnv-me+n=X_hNWycSLwg@mail.gmail.com>
-	<CABE8wwtkSnaJ5fvi=4bq7zye3W0SmErHAZeWAcHuYvLgvqy=_Q@mail.gmail.com>
-	<CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com>
-	<CABE8wwv2XQ_aJ8O2TUAz1LgJorBwDbgyQQv7jeAn06Q2AcqH+Q@mail.gmail.com>
-	<CAJe_ZhcNM7m-eWA0nDUrOrHxeAhNS00gewf=txmvOFL_uOPhrw@mail.gmail.com>
-	<1311740499.1536.56.camel@vkoul-udesk3>
-	<CAJe_ZhfaPfobs5P+q+t-kRSK4fAvm-v_brYgqmco8fwOOBeT8A@mail.gmail.com>
-	<1311757347.1536.103.camel@vkoul-udesk3>
-	<20110727095909.GB16623@intel.com>
-	<CAJe_ZhdkPpVSyCyiUsFhOUUms8=JSQOiC33ztFzriW8jQHaa_w@mail.gmail.com>
-	<CABE8wwuAFMYHH67sjEuy7whiZD+QBmU6bvzUUzEqJQFaYpkgdQ@mail.gmail.com>
-Date: Wed, 27 Jul 2011 22:44:53 +0530
-Message-ID: <CAJe_Zhfm5k9gNPaTfpZdQ__cp9fKLZoiSvG0GPciVFbkkU=QCw@mail.gmail.com>
-Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
-From: Jaswinder Singh <jaswinder.singh@linaro.org>
-To: "Williams, Dan J" <dan.j.williams@intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        rmk+kernel@arm.linux.org.uk, linus.walleij@stericsson.com,
-        per.friden@stericsson.com, wei.zhang@freescale.com,
-        ebony.zhu@freescale.com, iws@ovro.caltech.edu, s.hauer@pengutronix.de,
-        maciej.sosnowski@intel.com, saeed@marvell.com, shawn.guo@freescale.com,
-        yur@emcraft.com, agust@denx.de, iwamatsu.nobuhiro@renesas.com,
-        per.forlin@stericsson.com, jonas.aberg@stericsson.com,
-        anemo@mba.ocn.ne.jp
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 July 2011 22:06, Williams, Dan J <dan.j.williams@intel.com> wrote:
-> On Wed, Jul 27, 2011 at 7:50 AM, Jaswinder Singh
-> <jaswinder.singh@linaro.org> wrote:
->> On 27 July 2011 15:29, Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+
+
+On Wed, 27 Jul 2011, Bryan Schumaker wrote:
+
+> On 07/27/2011 12:28 PM, Justin Piszcz wrote:
 >>
->>> As the caps are not per channel, that is the only way I was able to make it
->>> work.
->> FWIW, my proposal(in other thread) tags capabilities to a channel.
 >>
+>> On Wed, 27 Jul 2011, J. Bruce Fields wrote:
+>>
+>>> On Wed, Jul 27, 2011 at 09:54:09AM -0400, Justin Piszcz wrote:
+>>>> Hi,
+>>>>
+>>>> Kernel 2.6.30 on client.
+>>>> Kernel 2.6.28 on server.
+>>>>
+>>>> p34 kernel: [92223.918892] NFS: directory motion/cam2 contains a
+>>>> readdir loop.  Please contact your server vendor.  Offending cookie: 10272
+>>>
+>>> What filesystem on the server are you exporting?
+>>
+>> Hi,
+>>
+>> xfs.
+>> /dev/sda1 on / type xfs (rw,noatime)
+>>
+>> Nothing special, thoughts?
 >
-> Where is that other thread?
->
+> Are there a lot of files in the directory you're exporting?  It looks like cookie 10272 is mapped to multiple files. When the client tries to resume reading from this cookie, xfs will reply from the first matching file and cause the client to enter a loop.
 
-<copied from my reply to vinod >
+Should I be using a different filesystem?
 
-I request you to please have a look at
+user@atom:/d1$ cd /d1/motion/cam1
+user@atom:/d1/motion/cam1$ ls|wc
+    5198    5198  140346
+user@atom:/d1/motion/cam1$
 
-1) What I propose
-       http://lists.infradead.org/pipermail/linux-arm-kernel/2011-July/059212.html
-
-2) Why RMK thinks I am the biggest idiot on earth
-       http://lists.infradead.org/pipermail/linux-arm-kernel/2011-July/059217.html
-
-3) How I ask for better proof of that
-      http://lists.infradead.org/pipermail/linux-arm-kernel/2011-July/059223.html
+Justin.
 
 
-Please give more serious look to what I called 'overall approach' in
-the first post.
-Implementation is secondary.
-
-Thanks,
-Jassi
