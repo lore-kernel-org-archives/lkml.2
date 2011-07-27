@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab1G0X2z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 19:28:55 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46239 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751900Ab1G0X2w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 19:28:52 -0400
-Date: Wed, 27 Jul 2011 16:28:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] tmpfs radix_tree: locate_item to speed up swapoff
-Message-Id: <20110727162819.b595e442.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LSU.2.00.1107191553040.1593@sister.anvils>
-References: <alpine.LSU.2.00.1107191549540.1593@sister.anvils>
-	<alpine.LSU.2.00.1107191553040.1593@sister.anvils>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753995Ab1G0XdH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 19:33:07 -0400
+Received: from lucidpixels.com ([72.73.18.11]:58674 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752337Ab1G0XdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 19:33:06 -0400
+Date: Wed, 27 Jul 2011 19:33:05 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org
+cc: linux-wireless@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
+Subject: 3.0: rt2800usb(Kernel PANIC) vs. rt2780sta(GOOD/2.6.38)
+Message-ID: <alpine.DEB.2.02.1107271851410.25432@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 19 Jul 2011 15:54:23 -0700 (PDT)
-Hugh Dickins <hughd@google.com> wrote:
+Hi,
 
-> We have already acknowledged that swapoff of a tmpfs file is slower
-> than it was before conversion to the generic radix_tree: a little
-> slower there will be acceptable, if the hotter paths are faster.
-> 
-> But it was a shock to find swapoff of a 500MB file 20 times slower
-> on my laptop, taking 10 minutes; and at that rate it significantly
-> slows down my testing.
+Kernel 3.0 (rt2800usb driver- horrid, and then it panics moments after, 
+see picture below)
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=301 ttl=64 time=146 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=302 ttl=64 time=274 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=303 ttl=64 time=197 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=304 ttl=64 time=115 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=305 ttl=64 time=243 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=306 ttl=64 time=265 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=307 ttl=64 time=183 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=308 ttl=64 time=201 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=309 ttl=64 time=236 ms
 
-So it used to take half a minute?  That was already awful.  Why?  Was
-it IO-bound?  It doesn't sound like it.
+Then it crashes if you use the network:
+http://home.comcast.net/~jpiszcz/20110727/photo.JPG
 
-> Now, most of that turned out to be overhead from PROVE_LOCKING and
-> PROVE_RCU: without those it was only 4 times slower than before;
-> and more realistic tests on other machines don't fare as badly.
+With the rt2870sta driver, the machine has been solid for months (2.6.38) 
+with consistent low pings:
 
-What's unrealistic about doing swapoff of a 500MB tmpfs file?
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=2 ttl=64 time=1.38 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=3 ttl=64 time=0.520 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=4 ttl=64 time=1.11 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=5 ttl=64 time=0.573 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=6 ttl=64 time=0.562 ms
 
-Also, confused.  You're talking about creating a regular file on tmpfs
-and then using that as a swapfile?  If so, that's a
-kernel-hacker-curiosity only?
+Can we please get the rt2870sta back into the kernel?
 
-> I've tried a number of things to improve it, including tagging the
-> swap entries, then doing lookup by tag: I'd expected that to halve
-> the time, but in practice it's erratic, and often counter-productive.
-> 
-> The only change I've so far found to make a consistent improvement,
-> is to short-circuit the way we go back and forth, gang lookup packing
-> entries into the array supplied, then shmem scanning that array for the
-> target entry.  Scanning in place doubles the speed, so it's now only
-> twice as slow as before (or three times slower when the PROVEs are on).
-> 
-> So, add radix_tree_locate_item() as an expedient, once-off, single-caller
-> hack to do the lookup directly in place.  #ifdef it on CONFIG_SHMEM and
-> CONFIG_SWAP, as much to document its limited applicability as save space
-> in other configurations.  And, sadly, #include sched.h for cond_resched().
-> 
+If not, can someone recommend a USB wireless stick that works in Linux 
+that is not based on RALINK that does not crash the kernel and gets as 
+good as pings as the one I have (most highest rated on Amazon that 
+everyone seems to buy) with the rt2870sta driver?
+http://www.amazon.com/Medialink-Wireless-Adapter-802-11n-Compatible/dp/B002RM08RE
 
-How much did that 10 minutes improve?
 
+Justin.
