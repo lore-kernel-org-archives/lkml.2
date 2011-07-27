@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab1G0WEh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:04:37 -0400
-Received: from mga03.intel.com ([143.182.124.21]:17376 "EHLO mga03.intel.com"
+	id S1755896Ab1G0WEf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:04:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:36287 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755521Ab1G0Vsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755324Ab1G0Vsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 27 Jul 2011 17:48:36 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
-   d="scan'208";a="32274653"
+X-IronPort-AV: E=Sophos;i="4.67,279,1309762800"; 
+   d="scan'208";a="35258213"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: namhyung@gmail.com, Laurent.Vivier@bull.net, Paul.Clements@steeleye.com,
-        jaxboe@fusionio.com, gregkh@suse.de, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [36/99] nbd: limit module parameters to a sane value
-Message-Id: <20110727214834.EEF092403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:48:34 -0700 (PDT)
+To: kevin.tian@intel.com, ak@linux.intel.com, tinnycloud@hotmail.com,
+        konrad.wilk@oracle.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [33/99] xen mmu: fix a race window causing leave_mm BUG()
+Message-Id: <20110727214831.E1DF82403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:48:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,89 +25,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Namhyung Kim <namhyung@gmail.com>
+From: "Tian, Kevin" <kevin.tian@intel.com>
 
-commit 3b2710824e00d238554c13b5add347e6c701ab1a upstream.
+commit 7899891c7d161752f29abcc9bc0a9c6c3a3af26c upstream.
 
-The 'max_part' parameter controls the number of maximum partition
-a nbd device can have. However if a user specifies very large
-value it would exceed the limitation of device minor number and
-can cause a kernel oops (or, at least, produce invalid device
-nodes in some cases).
+There's a race window in xen_drop_mm_ref, where remote cpu may exit
+dirty bitmap between the check on this cpu and the point where remote
+cpu handles drop request. So in drop_other_mm_ref we need check
+whether TLB state is still lazy before calling into leave_mm. This
+bug is rarely observed in earlier kernel, but exaggerated by the
+commit 831d52bc153971b70e64eccfbed2b232394f22f8
+("x86, mm: avoid possible bogus tlb entries by clearing prev mm_cpumask after switching mm")
+which clears bitmap after changing the TLB state. the call trace is as below:
 
-In addition, specifying large 'nbds_max' value causes same
-problem for the same reason.
-
-On my desktop, following command results to the kernel bug:
-
-$ sudo modprobe nbd max_part=100000
- kernel BUG at /media/Linux_Data/project/linux/fs/sysfs/group.c:65!
- invalid opcode: 0000 [#1] SMP
- last sysfs file: /sys/devices/virtual/block/nbd4/range
- CPU 1
- Modules linked in: nbd(+) bridge stp llc kvm_intel kvm asus_atk0110 sg sr_mod cdrom
-
- Pid: 2522, comm: modprobe Tainted: G        W   2.6.39-leonard+ #159 System manufacturer System Product Name/P5G41TD-M PRO
- RIP: 0010:[<ffffffff8115aa08>]  [<ffffffff8115aa08>] internal_create_group+0x2f/0x166
- RSP: 0018:ffff8801009f1de8  EFLAGS: 00010246
- RAX: 00000000ffffffef RBX: ffff880103920478 RCX: 00000000000a7bd3
- RDX: ffffffff81a2dbe0 RSI: 0000000000000000 RDI: ffff880103920478
- RBP: ffff8801009f1e38 R08: ffff880103920468 R09: ffff880103920478
- R10: ffff8801009f1de8 R11: ffff88011eccbb68 R12: ffffffff81a2dbe0
- R13: ffff880103920468 R14: 0000000000000000 R15: ffff880103920400
- FS:  00007f3c49de9700(0000) GS:ffff88011f800000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: 00007f3b7fe7c000 CR3: 00000000cd58d000 CR4: 00000000000406e0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process modprobe (pid: 2522, threadinfo ffff8801009f0000, task ffff8801009a93a0)
- Stack:
-  ffff8801009f1e58 ffffffff812e8f6e ffff8801009f1e58 ffffffff812e7a80
-  ffff880000000010 ffff880103920400 ffff8801002fd0c0 ffff880103920468
-  0000000000000011 ffff880103920400 ffff8801009f1e48 ffffffff8115ab6a
- Call Trace:
-  [<ffffffff812e8f6e>] ? device_add+0x4f1/0x5e4
-  [<ffffffff812e7a80>] ? dev_set_name+0x41/0x43
-  [<ffffffff8115ab6a>] sysfs_create_group+0x13/0x15
-  [<ffffffff810b857e>] blk_trace_init_sysfs+0x14/0x16
-  [<ffffffff811ee58b>] blk_register_queue+0x4c/0xfd
-  [<ffffffff811f3bdf>] add_disk+0xe4/0x29c
-  [<ffffffffa007e2ab>] nbd_init+0x2ab/0x30d [nbd]
-  [<ffffffffa007e000>] ? 0xffffffffa007dfff
-  [<ffffffff8100020f>] do_one_initcall+0x7f/0x13e
-  [<ffffffff8107ab0a>] sys_init_module+0xa1/0x1e3
-  [<ffffffff814f3542>] system_call_fastpath+0x16/0x1b
- Code: 41 57 41 56 41 55 41 54 53 48 83 ec 28 0f 1f 44 00 00 48 89 fb 41 89 f6 49 89 d4 48 85 ff 74 0b 85 f6 75 0b 48 83
-  7f 30 00 75 14 <0f> 0b eb fe b9 ea ff ff ff 48 83 7f 30 00 0f 84 09 01 00 00 49
- RIP  [<ffffffff8115aa08>] internal_create_group+0x2f/0x166
-  RSP <ffff8801009f1de8>
- ---[ end trace 753285ffbf72c57c ]---
-
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Laurent Vivier <Laurent.Vivier@bull.net>
-Cc: Paul Clements <Paul.Clements@steeleye.com>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
----
- drivers/block/nbd.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+---------------------------------
+kernel BUG at arch/x86/mm/tlb.c:61!
+invalid opcode: 0000 [#1] SMP
+last sysfs file: /sys/devices/system/xen_memory/xen_memory0/info/current_kb
+CPU 1
+Modules linked in: 8021q garp xen_netback xen_blkback blktap blkback_pagemap nbd bridge stp llc autofs4 ipmi_devintf ipmi_si ipmi_msghandler lockd sunrpc bonding ipv6 xenfs dm_multipath video output sbs sbshc parport_pc lp parport ses enclosure snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device serio_raw bnx2 snd_pcm_oss snd_mixer_oss snd_pcm snd_timer iTCO_wdt snd soundcore snd_page_alloc i2c_i801 iTCO_vendor_support i2c_core pcs pkr pata_acpi ata_generic ata_piix shpchp mptsas mptscsih mptbase [last unloaded: freq_table]
+Pid: 25581, comm: khelper Not tainted 2.6.32.36fixxen #1 Tecal RH2285
+RIP: e030:[<ffffffff8103a3cb>]  [<ffffffff8103a3cb>] leave_mm+0x15/0x46
+RSP: e02b:ffff88002805be48  EFLAGS: 00010046
+RAX: 0000000000000000 RBX: 0000000000000001 RCX: ffff88015f8e2da0
+RDX: ffff88002805be78 RSI: 0000000000000000 RDI: 0000000000000001
+RBP: ffff88002805be48 R08: ffff88009d662000 R09: dead000000200200
+R10: dead000000100100 R11: ffffffff814472b2 R12: ffff88009bfc1880
+R13: ffff880028063020 R14: 00000000000004f6 R15: 0000000000000000
+FS:  00007f62362d66e0(0000) GS:ffff880028058000(0000) knlGS:0000000000000000
+CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000003aabc11909 CR3: 000000009b8ca000 CR4: 0000000000002660
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 00000000000000 00
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process khelper (pid: 25581, threadinfo ffff88007691e000, task ffff88009b92db40)
+Stack:
+ ffff88002805be68 ffffffff8100e4ae 0000000000000001 ffff88009d733b88
+<0> ffff88002805be98 ffffffff81087224 ffff88002805be78 ffff88002805be78
+<0> ffff88015f808360 00000000000004f6 ffff88002805bea8 ffffffff81010108
+Call Trace:
+ <IRQ>
+ [<ffffffff8100e4ae>] drop_other_mm_ref+0x2a/0x53
+ [<ffffffff81087224>] generic_smp_call_function_single_interrupt+0xd8/0xfc
+ [<ffffffff81010108>] xen_call_function_single_interrupt+0x13/0x28
+ [<ffffffff810a936a>] handle_IRQ_event+0x66/0x120
+ [<ffffffff810aac5b>] handle_percpu_irq+0x41/0x6e
+ [<ffffffff8128c1c0>] __xen_evtchn_do_upcall+0x1ab/0x27d
+ [<ffffffff8128dd11>] xen_evtchn_do_upcall+0x33/0x46
+ [<ffffffff81013efe>] xen_do_hyper visor_callback+0x1e/0x30
+ <EOI>
+ [<ffffffff814472b2>] ? _spin_unlock_irqrestore+0x15/0x17
+ [<ffffffff8100f8cf>] ? xen_restore_fl_direct_end+0x0/0x1
+ [<ffffffff81113f71>] ? flush_old_exec+0x3ac/0x500
+ [<ffffffff81150dc5>] ? load_elf_binary+0x0/0x17ef
+ [<ffffffff81150dc5>] ? load_elf_binary+0x0/0x17ef
+ [<ffffffff8115115d>] ? load_elf_binary+0x398/0x17ef
+ [<ffffffff81042fcf>] ? need_resched+0x23/0x2d
+ [<ffffffff811f4648>] ? process_measurement+0xc0/0xd7
+ [<ffffffff81150dc5>] ? load_elf_binary+0x0/0x17ef
+ [<ffffffff81113094>] ? search_binary_handler+0xc8/0x255
+ [<ffffffff81114362>] ? do_execve+0x1c3/0x29e
+ [<ffffffff8101155d>] ? sys_execve+0x43/0x5d
+ [<ffffffff8106fc45>] ? __call_usermodehelper+0x0/0x6f
+ [<ffffffff81013e28>] ? kernel_execve+0x68/0xd0
+ [<ffffffff 8106fc45>] ? __call_usermodehelper+0x0/0x6f
+ [<ffffffff8100f8cf>] ? xen_restore_fl_direct_end+0x0/0x1
+ [<ffffffff8106fb64>] ? ____call_usermodehelper+0x113/0x11e
+ [<ffffffff81013daa>] ? child_rip+0xa/0x20
+ [<ffffffff8106fc45>] ? __call_usermodehelper+0x0/0x6f
+ [<ffffffff81012f91>] ? int_ret_from_sys_call+0x7/0x1b
+ [<ffffffff8101371d>] ? retint_restore_args+0x5/0x6
+ [<ffffffff81013da0>] ? child_rip+0x0/0x20
+Code: 41 5e 41 5f c9 c3 55 48 89 e5 0f 1f 44 00 00 e8 17 ff ff ff c9 c3 55 48 89 e5 0f 1f 44 00 00 65 8b 04 25 c8 55 01 00 ff c8 75 04 <0f> 0b eb fe 65 48 8b 34 25 c0 55 01 00 48 81 c6 b8 02 00 00 e8
+RIP  [<ffffffff8103a3cb>] leave_mm+0x15/0x46
+ RSP <ffff88002805be48>
+---[ end trace ce9cee6832a9c503 ]---
 
-Index: linux-2.6.35.y/drivers/block/nbd.c
+Tested-by: Maoxiaoyun<tinnycloud@hotmail.com>
+Signed-off-by: Kevin Tian <kevin.tian@intel.com>
+[v1: Fleshed out the git description a bit]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ arch/x86/xen/mmu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6.35.y/arch/x86/xen/mmu.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/block/nbd.c
-+++ linux-2.6.35.y/drivers/block/nbd.c
-@@ -755,6 +755,12 @@ static int __init nbd_init(void)
- 	if (max_part > 0)
- 		part_shift = fls(max_part);
+--- linux-2.6.35.y.orig/arch/x86/xen/mmu.c
++++ linux-2.6.35.y/arch/x86/xen/mmu.c
+@@ -1142,7 +1142,7 @@ static void drop_other_mm_ref(void *info
  
-+	if ((1UL << part_shift) > DISK_MAX_PARTS)
-+		return -EINVAL;
-+
-+	if (nbds_max > 1UL << (MINORBITS - part_shift))
-+		return -EINVAL;
-+
- 	for (i = 0; i < nbds_max; i++) {
- 		struct gendisk *disk = alloc_disk(1 << part_shift);
- 		if (!disk)
+ 	active_mm = percpu_read(cpu_tlbstate.active_mm);
+ 
+-	if (active_mm == mm)
++	if (active_mm == mm && percpu_read(cpu_tlbstate.state) != TLBSTATE_OK)
+ 		leave_mm(smp_processor_id());
+ 
+ 	/* If this cpu still has a stale cr3 reference, then make sure
