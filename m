@@ -1,83 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab1G0FG0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 01:06:26 -0400
-Received: from nm25.bullet.mail.ac4.yahoo.com ([98.139.52.222]:29625 "HELO
-	nm25.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750736Ab1G0FGY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 01:06:24 -0400
-X-Greylist: delayed 406 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Jul 2011 01:06:24 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 497026.40046.bm@omp1014.mail.ac4.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=Bi6xCTp6b26atii1xrZTvHzhV/ULD86uesCY+zP3+izCTmZo7CtuuqEtV0IN0UpvfkiWPEf7hnsjCU7k+RXG8zYI9mGgBkgf/gNGPSXuMIjsGhM82HSrTG4ujri/PraZ1nsabOgw7owR0bO6OglsHC9OCetYDqlxhjQ83ttEhsw=;
-X-YMail-OSG: WOGrV8cVM1n.10.vtwD4dr6XrnquekzhnEs4lGpsb8cE7.A
- qLkgesYoTOujeYshlmuueWYRU_rjiRpDyZSjeFzK6TBopjC5.fCJjgcdPoQX
- 0T_HKSq.q03PaW3g0vQ4DgusfGIxtOgF6A1Y1u87h9Z1hciR_BN8eCBowX2S
- jzrtsIMOZw8yyDmpn9DETXkhXYx3AVL3ouVWvtRphyJaE_PJ_FCS2p9ISbPH
- UF5E69hTd3N4pjDhE6ZiS.KFeA.mmM5Kg3E2u2JFHdOKjYs8szn1lBWvKQFL
- Lqba2vnHDSNKmEYyb3OVtNP3JiK162mbPRiuAli9CNMSFErZ5QlmywSGJhw6
- GdoVnkdft4O6YTdJZAVQIg1EBNBlbpHsvlBVUEfN1cIp2dFP_YOmhuzJKPKb
- kzf01oOwQ2Gzj
-X-Mailer: YahooMailWebService/0.8.113.313619
-References: <1311736140.88961.YahooMailNeo@web31805.mail.mud.yahoo.com> <3B54164438364A3A9A2F19AFF5A4DF0A@usish.com.cn>
-Message-ID: <1311742776.42252.YahooMailNeo@web31810.mail.mud.yahoo.com>
-Date: Tue, 26 Jul 2011 21:59:36 -0700 (PDT)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: Luben Tuikov <ltuikov@yahoo.com>
-Subject: Re: [PATCH] [SCSI] libsas: remove expander from dev list on error
-To: Jack Wang <jack_wang@usish.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "JBottomley@Parallels.com" <JBottomley@Parallels.com>
-In-Reply-To: <3B54164438364A3A9A2F19AFF5A4DF0A@usish.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752171Ab1G0FOo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 01:14:44 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:35476 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab1G0FOn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 01:14:43 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH] Staging: comedi: fix printk issue in amplc_pci230.c
+Date: Wed, 27 Jul 2011 10:58:07 +0530
+Message-Id: <1311744487-14136-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH]Staging: Comedi: fix printk issue in amplc_pci230.c>
+References: <[PATCH]Staging: Comedi: fix printk issue in amplc_pci230.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-> From: Jack Wang <jack_wang@usish.com>
-> To: 'Luben Tuikov' <ltuikov@yahoo.com>; 'James Bottomley' <James.Bottomley@suse.de>; linux-kernel@vger.kernel.org; linux-scsi@vger.kernel.org
-> Cc: 
-> Sent: Tuesday, July 26, 2011 8:26 PM
-> Subject: Re: [PATCH] [SCSI] libsas: remove expander from dev list on error
-> 
-> [PATCH] [SCSI] libsas: remove expander from dev list on error
->> 
->>  If expander discovery fails (sas_discover_expander()),
->>  remove the expander from the port device list
->>  (sas_ex_discover_expander()), before freeing it. Else
->>  the list is corrupted and, e.g., when we attempt to send
->>  SMP commands to other devices, the kernel oopses.
->> 
->>  Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
->>  ---
->>   drivers/scsi/libsas/sas_expander.c |    3 +++
->>   1 files changed, 3 insertions(+), 0 deletions(-)
->> 
->>  diff --git a/drivers/scsi/libsas/sas_expander.c
->>  b/drivers/scsi/libsas/sas_expander.c
->>  index 874e29d..f84084b 100644
->>  --- a/drivers/scsi/libsas/sas_expander.c
->>  +++ b/drivers/scsi/libsas/sas_expander.c
->>  @@ -849,6 +849,9 @@ static struct domain_device *sas_ex_discover_expander(
->> 
->>       res = sas_discover_expander(child);
->>       if (res) {
->>  +        spin_lock_irq(&parent->port->dev_list_lock);
->>  +        list_del(&child->dev_list_node);
->>  +        spin_unlock_irq(&parent->port->dev_list_lock);
->>           kfree(child);
->>           return NULL;
->>       }
->>  --
-> [Jack Wang] Looks reasonable, thanks for fix this.
-> You can add my Reviewed-by: Jack Wang <jack_wang@usish.com> if needed.
->
+This is a patch to the amplc_pci230.c file that fixes up a printk warning found by the checkpatch.pl tool
+
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/amplc_pci230.c |   38 ++++++++++++------------
+ 1 files changed, 19 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
+index 399148b..c6ecc21 100644
+--- a/drivers/staging/comedi/drivers/amplc_pci230.c
++++ b/drivers/staging/comedi/drivers/amplc_pci230.c
+@@ -767,8 +767,8 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	struct pci_dev *pci_dev = NULL;
+ 	int i = 0, irq_hdl, rc;
+ 
+-	printk("comedi%d: amplc_pci230: attach %s %d,%d\n", dev->minor,
+-	       thisboard->name, it->options[0], it->options[1]);
++	pr_info("comedi%d: amplc_pci230: attach %s %d,%d\n", dev->minor,
++		thisboard->name, it->options[0], it->options[1]);
+ 
+ 	/* Allocate the private structure area using alloc_private().
+ 	 * Macro defined in comedidev.h - memsets struct fields to 0. */
+@@ -842,8 +842,8 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		}
+ 	}
+ 	if (!pci_dev) {
+-		printk("comedi%d: No %s card found\n", dev->minor,
+-		       thisboard->name);
++		pr_err("comedi%d: No %s card found\n", dev->minor,
++		       thisboard->name);
+ 		return -EIO;
+ 	}
+ 	devpriv->pci_dev = pci_dev;
+@@ -855,8 +855,8 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 	/* Enable PCI device and reserve I/O spaces. */
+ 	if (comedi_pci_enable(pci_dev, "amplc_pci230") < 0) {
+-		printk("comedi%d: failed to enable PCI device "
+-		       "and request regions\n", dev->minor);
++		pr_err("comedi%d: failed to enable PCI device "
++		       "and request regions\n", dev->minor);
+ 		return -EIO;
+ 	}
+ 
+@@ -865,8 +865,8 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	iobase1 = pci_resource_start(pci_dev, 2);
+ 	iobase2 = pci_resource_start(pci_dev, 3);
+ 
+-	printk("comedi%d: %s I/O region 1 0x%04lx I/O region 2 0x%04lx\n",
+-	       dev->minor, dev->board_name, iobase1, iobase2);
++	pr_info("comedi%d: %s I/O region 1 0x%04lx I/O region 2 0x%04lx\n",
++		dev->minor, dev->board_name, iobase1, iobase2);
+ 
+ 	devpriv->iobase1 = iobase1;
+ 	dev->iobase = iobase2;
+@@ -881,10 +881,10 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ 		devpriv->hwver = inw(dev->iobase + PCI230P_HWVER);
+ 		if (devpriv->hwver < thisboard->min_hwver) {
+-			printk("comedi%d: %s - bad hardware version "
+-			       "- got %u, need %u\n", dev->minor,
+-			       dev->board_name, devpriv->hwver,
+-			       thisboard->min_hwver);
++			pr_err("comedi%d: %s - bad hardware version "
++			       "- got %u, need %u\n", dev->minor,
++			       dev->board_name, devpriv->hwver,
++			       thisboard->min_hwver);
+ 			return -EIO;
+ 		}
+ 		if (devpriv->hwver > 0) {
+@@ -932,13 +932,13 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	irq_hdl = request_irq(devpriv->pci_dev->irq, pci230_interrupt,
+ 			      IRQF_SHARED, "amplc_pci230", dev);
+ 	if (irq_hdl < 0) {
+-		printk("comedi%d: unable to register irq, "
+-		       "commands will not be available %d\n", dev->minor,
+-		       devpriv->pci_dev->irq);
++		pr_debug("comedi%d: unable to register irq, "
++			 "commands will not be available %d\n", dev->minor,
++			 devpriv->pci_dev->irq);
+ 		dev->irq = devpriv->pci_dev->irq;
+-		printk("comedi%d: registered irq %u\n", dev->minor,
+-		       devpriv->pci_dev->irq);
++		pr_debug("comedi%d: registered irq %u\n", dev->minor,
++			devpriv->pci_dev->irq);
+ 	}
+ 
+ 	/*
+@@ -1001,7 +1001,7 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		s->type = COMEDI_SUBD_UNUSED;
+ 	}
+ 
+-	printk("comedi%d: attached\n", dev->minor);
++	pr_info("comedi%d: attached\n", dev->minor);
+ 
+ 	return 1;
+ }
+@@ -1016,7 +1016,7 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+  */
+ static int pci230_detach(struct comedi_device *dev)
+ {
+-	printk("comedi%d: amplc_pci230: remove\n", dev->minor);
++	pr_info("comedi%d: amplc_pci230: remove\n", dev->minor);
+ 
+ 	if (dev->subdevices && thisboard->have_dio)
+ 		/* Clean up dio subdevice. */
+-- 
+1.6.5.2
+
