@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab1G0Cl4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 22:41:56 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:48591 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532Ab1G0Clx convert rfc822-to-8bit (ORCPT
+	id S1753920Ab1G0CpC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 22:45:02 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:50506 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752784Ab1G0Co7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 22:41:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110726163424.GC2576@osiris.boeblingen.de.ibm.com>
-References: <1311599418-1915-1-git-send-email-yong.zhang0@gmail.com>
-	<4E2E507F.7030607@jp.fujitsu.com>
-	<CAM2zO=CGkVCMNZS8F6LxFi-NdYXf0fDLB_AEc00xrPvO_D02qw@mail.gmail.com>
-	<4E2E6102.3060600@jp.fujitsu.com>
-	<CAM2zO=CxriXK4bqGbwhfkfdgSpGwe1mAJE=6cYpDAf0Hxji0sQ@mail.gmail.com>
-	<20110726163424.GC2576@osiris.boeblingen.de.ibm.com>
-Date: Wed, 27 Jul 2011 10:41:53 +0800
-Message-ID: <CAM2zO=BvgSeTiD16zVbb+3To418vkbZ3LEYzzsuZixZtEY-GSw@mail.gmail.com>
-Subject: Re: [PATCH] proc/softirqs: only show state for online cpus
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        kobayashi.kk@ncos.nec.co.jp
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 26 Jul 2011 22:44:59 -0400
+From: Marek Vasut <marek.vasut@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, linux-usb@vger.kernel.org, gregkh@suse.de,
+        Marek Vasut <marek.vasut@gmail.com>
+Subject: [PATCH 2/2] ASIX: Use only 11 bits of header for data size
+Date: Wed, 27 Jul 2011 04:44:47 +0200
+Message-Id: <1311734687-23551-2-git-send-email-marek.vasut@gmail.com>
+X-Mailer: git-send-email 1.7.5.3
+In-Reply-To: <1311734687-23551-1-git-send-email-marek.vasut@gmail.com>
+References: <1311734687-23551-1-git-send-email-marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 12:34 AM, Heiko Carstens
-<heiko.carstens@de.ibm.com> wrote:
-> On Tue, Jul 26, 2011 at 03:29:43PM +0800, Yong Zhang wrote:
->> > Offtopic, /proc/interrupt should be protected by get_online_cpus().
->> > Otherwise the header (i.e. cpu number) and the actual statistics fields
->> > can be mismatched likes following. Am I missing something?
->>
->> I think you are right. The reader could be preempted by cpu hotplug.
->>
->> After searching the whole tree, only s390 take cpu_hotplug.lock,
->> but its usage is not currect:
->>
->> arch/s390/kernel/irq.c:
->> int show_interrupts(struct seq_file *p, void *v)
->> {
->>           get_online_cpus();
->>           .........
->>           put_online_cpus();
->> }
->>
->> Because the reader will call show_interrupts nr_irqs times.
->> So get_online_cpus()/put_online_cpus() should be put upper,
->> maybe interrupts_open(). How do you think about it?
->
-> Indeed, it's broken. You're going to submit a patch?
->
+The AX88772B uses only 11 bits of the header for the actual size. The other bits
+are used for something else. This causes dmesg full of messages:
 
-Yeah, coming soon :)
+	asix_rx_fixup() Bad Header Length
 
-Thanks,
-Yong
+This patch trims the check to only 11 bits. I believe on older chips, the
+remaining 5 top bits are unused.
 
+Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+---
+ drivers/net/usb/asix.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
+NOTE: If possible, can someone test/verify this patch with other ASIX chips ?
+NOTE2: If Ack-ed, Greg, can you get this into -stable?
 
+diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
+index d5b62a4..c5c4b4d 100644
+--- a/drivers/net/usb/asix.c
++++ b/drivers/net/usb/asix.c
+@@ -314,11 +314,11 @@ static int asix_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ 	skb_pull(skb, 4);
+ 
+ 	while (skb->len > 0) {
+-		if ((header & 0xffff) != ((~header >> 16) & 0xffff))
++		if ((header & 0x07ff) != ((~header >> 16) & 0x07ff))
+ 			netdev_err(dev->net, "asix_rx_fixup() Bad Header Length\n");
+ 
+ 		/* get the packet length */
+-		size = (u16) (header & 0x0000ffff);
++		size = (u16) (header & 0x000007ff);
+ 
+ 		if ((skb->len) - ((size + 1) & 0xfffe) == 0) {
+ 			u8 alignment = (unsigned long)skb->data & 0x3;
 -- 
-Only stand for myself
+1.7.5.3
+
