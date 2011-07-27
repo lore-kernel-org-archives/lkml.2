@@ -1,53 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab1G0CIf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 22:08:35 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45461 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751223Ab1G0CId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 22:08:33 -0400
-Date: Wed, 27 Jul 2011 12:08:26 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: linux-next: manual merge of the slave-dma tree with Linus' tree
-Message-Id: <20110727120826.ea1227276707790e162dee18@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+	id S1753064Ab1G0CKv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 22:10:51 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:54342 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab1G0CKs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 22:10:48 -0400
+X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=1cqquHbWLGQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=ufHFDILaAAAA:8 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=QqmXBP8GPko3f0F5R2YA:9 a=8mZlSqgiQATRHn_skVIA:7 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=l7ZknGph1ugA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [PATCH v3 RESEND] cgroup/kmemcheck: Annotate alloc_page() for
+ cgroup allocations
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, containers@lists.linux-foundation.org
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, Michal Hocko <mhocko@suse.cz>,
+        Paul Menage <menage@google.com>, LiZefan <lizf@cn.fujitsu.com>
+In-Reply-To: <1311707088.21143.0.camel@gandalf.stny.rr.com>
+References: <1311699911.3526.87.camel@gandalf.stny.rr.com>
+	 <20110726173816.GA26597@tiehlicka.suse.cz>
+	 <1311702110.3526.98.camel@gandalf.stny.rr.com>
+	 <1311702244.3526.100.camel@gandalf.stny.rr.com>
+	 <1311704249.3526.106.camel@gandalf.stny.rr.com>
+	 <20110726184342.GB26597@tiehlicka.suse.cz>
+	 <1311707088.21143.0.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 26 Jul 2011 22:10:44 -0400
+Message-ID: <1311732644.21143.5.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
+[ Resending with CGROUP maintainers Cc'd this time ]
 
-Today's linux-next merge of the slave-dma tree got a conflict in
-drivers/spi/spi-pl022.c (called drivers/spi/amba-pl022.c in the sleav-dma
-tree) between commit 083be3f05371 ("spi/pl022: initialize burstsize from
-FIFO trigger level") from Linus' tree and commit 001b0585ff16 ("Improve
-slave/cyclic DMA engine documentation") from the slave-dma tree.
+When the cgroup base was allocated with kmalloc, it was necessary to
+annotate the variable with kmemcheck_not_leak(). But because it has
+recently been changed to be allocated with alloc_page() (which skips
+kmemleak checks) causes a warning on boot up.
 
-I fixed it up (see below) anc acn carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I was triggering this output:
 
-diff --cc drivers/spi/spi-pl022.c
-index eba88c7,99e7880..0000000
---- a/drivers/spi/spi-pl022.c
-+++ b/drivers/spi/spi-pl022.c
-@@@ -910,11 -908,11 +910,9 @@@ static int configure_dma(struct pl022 *
-  {
-  	struct dma_slave_config rx_conf = {
-  		.src_addr = SSP_DR(pl022->phybase),
-  	};
-  	struct dma_slave_config tx_conf = {
-  		.dst_addr = SSP_DR(pl022->phybase),
-- 		.direction = DMA_TO_DEVICE,
- -		.dst_maxburst = pl022->vendor->fifodepth >> 1,
-  	};
-  	unsigned int pages;
-  	int ret;
+allocated 8388608 bytes of page_cgroup
+please try 'cgroup_disable=memory' option if you don't want memory cgroups
+kmemleak: Trying to color unknown object at 0xf5840000 as Grey
+Pid: 0, comm: swapper Not tainted 3.0.0-test #12
+Call Trace:
+ [<c17e34e6>] ? printk+0x1d/0x1f^M
+ [<c10e2941>] paint_ptr+0x4f/0x78
+ [<c178ab57>] kmemleak_not_leak+0x58/0x7d
+ [<c108ae9f>] ? __rcu_read_unlock+0x9/0x7d
+ [<c1cdb462>] kmemleak_init+0x19d/0x1e9
+ [<c1cbf771>] start_kernel+0x346/0x3ec
+ [<c1cbf1b4>] ? loglevel+0x18/0x18
+ [<c1cbf0aa>] i386_start_kernel+0xaa/0xb0
+
+After a bit of debugging I tracked the object 0xf840000 (and others)
+down to the cgroup code. The change from allocating base with kmalloc to
+alloc_page() has the base not calling kmemleak_alloc() which adds the
+pointer to the object_tree_root, but kmemleak_not_leak() adds it to the
+crt_early_log[] table. On kmemleak_init(), the entry is found in the
+early_log[] but not the object_tree_root, and this error message is
+displayed.
+
+If alloc_page() fails then it defaults back to vmalloc() which still
+uses the kmemleak_alloc() which makes us still need the
+kmemleak_not_leak() call. The solution is to call the kmemleak_alloc()
+directly if the alloc_page() succeeds.
+
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+index 53bffc6..1eb534a 100644
+--- a/mm/page_cgroup.c
++++ b/mm/page_cgroup.c
+@@ -133,10 +133,13 @@ struct page *lookup_cgroup_page(struct page_cgroup *pc)
+ static void *__meminit alloc_page_cgroup(size_t size, int nid)
+ {
+ 	void *addr = NULL;
++	gfp_t flags = GFP_KERNEL | __GFP_NOWARN;
+ 
+-	addr = alloc_pages_exact_nid(nid, size, GFP_KERNEL | __GFP_NOWARN);
+-	if (addr)
++	addr = alloc_pages_exact_nid(nid, size, flags);
++	if (addr) {
++		kmemleak_alloc(addr, size, 1, flags);
+ 		return addr;
++	}
+ 
+ 	if (node_state(nid, N_HIGH_MEMORY))
+ 		addr = vmalloc_node(size, nid);
+
+
+
