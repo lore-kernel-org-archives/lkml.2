@@ -1,98 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab1G0Kdw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 06:33:52 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:41360 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab1G0KdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 06:33:08 -0400
-From: Marcus Folkesson <marcus.folkesson@gmail.com>
-To: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org,
-        Marcus Folkesson <marcus.folkesson@gmail.com>
-Subject: [PATCH 1/3] regulator: tps65023: Fixes i2c configuration issues
-Date: Wed, 27 Jul 2011 12:32:45 +0200
-Message-Id: <1311762767-20263-2-git-send-email-marcus.folkesson@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1311762767-20263-1-git-send-email-marcus.folkesson@gmail.com>
-References: <marcus.folkesson@gmail.com>
- <1311762767-20263-1-git-send-email-marcus.folkesson@gmail.com>
+	id S1754453Ab1G0Kf4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 06:35:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:60450 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753743Ab1G0Kfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 06:35:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,275,1309762800"; 
+   d="scan'208";a="32559264"
+Date: Wed, 27 Jul 2011 13:36:09 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: Jaswinder Singh <jaswinder.singh@linaro.org>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        rmk+kernel@arm.linux.org.uk, linus.walleij@stericsson.com,
+        per.friden@stericsson.com, wei.zhang@freescale.com,
+        ebony.zhu@freescale.com, iws@ovro.caltech.edu, s.hauer@pengutronix.de,
+        maciej.sosnowski@intel.com, saeed@marvell.com, shawn.guo@freescale.com,
+        yur@emcraft.com, agust@denx.de, iwamatsu.nobuhiro@renesas.com,
+        per.forlin@stericsson.com, jonas.aberg@stericsson.com,
+        anemo@mba.ocn.ne.jp
+Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
+Message-ID: <20110727103609.GC16623@intel.com>
+References: <CAJe_ZheVyLk-yqyF_XO80xX3j7_7mDPnv-me+n=X_hNWycSLwg@mail.gmail.com>
+ <CABE8wwtkSnaJ5fvi=4bq7zye3W0SmErHAZeWAcHuYvLgvqy=_Q@mail.gmail.com>
+ <CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com>
+ <CABE8wwv2XQ_aJ8O2TUAz1LgJorBwDbgyQQv7jeAn06Q2AcqH+Q@mail.gmail.com>
+ <CAJe_ZhcNM7m-eWA0nDUrOrHxeAhNS00gewf=txmvOFL_uOPhrw@mail.gmail.com>
+ <1311740499.1536.56.camel@vkoul-udesk3>
+ <CAJe_ZhfaPfobs5P+q+t-kRSK4fAvm-v_brYgqmco8fwOOBeT8A@mail.gmail.com>
+ <1311757347.1536.103.camel@vkoul-udesk3>
+ <20110727095909.GB16623@intel.com>
+ <1311759264.1536.113.camel@vkoul-udesk3>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311759264.1536.113.camel@vkoul-udesk3>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original driver is missing the following:
-* Allow i2c core voltage adjustments by clearing CORE ADJ Allowed bit in CTRL2
-* Setting the GO bit in CTRL2 for updating the core voltage
+On Wed, Jul 27, 2011 at 03:04:24PM +0530, Koul, Vinod wrote:
 
-Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
----
- drivers/regulator/tps65023-regulator.c |   29 +++++++++++++++++++++++++----
- 1 files changed, 25 insertions(+), 4 deletions(-)
+> Is this a dma controller limitation or due to the fact even channels get
+> assigned h/w interface corresponding to TX and so on.
 
-diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
-index 701a590..d43533b 100644
---- a/drivers/regulator/tps65023-regulator.c
-+++ b/drivers/regulator/tps65023-regulator.c
-@@ -63,6 +63,13 @@
- #define TPS65023_REG_CTRL_LDO2_EN	BIT(2)
- #define TPS65023_REG_CTRL_LDO1_EN	BIT(1)
- 
-+/* REG_CTRL2 bitfields */
-+#define TPS65023_REG_CTRL2_GO		BIT(7)
-+#define TPS65023_REG_CTRL2_CORE_ADJ	BIT(6)
-+#define TPS65023_REG_CTRL2_DCDC2	BIT(2)
-+#define TPS65023_REG_CTRL2_DCDC1	BIT(2)
-+#define TPS65023_REG_CTRL2_DCDC3	BIT(0)
-+
- /* LDO_CTRL bitfields */
- #define TPS65023_LDO_CTRL_LDOx_SHIFT(ldo_id)	((ldo_id)*4)
- #define TPS65023_LDO_CTRL_LDOx_MASK(ldo_id)	(0xF0 >> ((ldo_id)*4))
-@@ -270,6 +277,7 @@ static int tps65023_dcdc_set_voltage(struct regulator_dev *dev,
- 	struct tps_pmic *tps = rdev_get_drvdata(dev);
- 	int dcdc = rdev_get_id(dev);
- 	int vsel;
-+	int ret;
- 
- 	if (dcdc != TPS65023_DCDC_1)
- 		return -EINVAL;
-@@ -293,10 +301,19 @@ static int tps65023_dcdc_set_voltage(struct regulator_dev *dev,
- 	*selector = vsel;
- 
- 	/* write to the register in case we found a match */
--	if (vsel == tps->info[dcdc]->table_len)
--		return -EINVAL;
--	else
--		return tps_65023_reg_write(tps, TPS65023_REG_DEF_CORE, vsel);
-+	if (vsel == tps->info[dcdc]->table_len) {
-+		ret = -EINVAL;
-+	} else {
-+		ret = tps_65023_reg_write(tps, TPS65023_REG_DEF_CORE, vsel);
-+
-+		/* Tell the chip that we have changed the value in DEFCORE
-+		 * and its time to update the core voltage
-+		 */
-+		tps_65023_set_bits(tps, TPS65023_REG_CON_CTRL2,
-+							TPS65023_REG_CTRL2_GO);
-+	}
-+
-+	return ret;
- }
- 
- static int tps65023_ldo_get_voltage(struct regulator_dev *dev)
-@@ -475,6 +492,10 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
- 
- 	i2c_set_clientdata(client, tps);
- 
-+	/* Enable setting output voltage by I2C */
-+	tps_65023_clear_bits(tps, TPS65023_REG_CON_CTRL2,
-+						TPS65023_REG_CTRL2_CORE_ADJ);
-+
- 	return 0;
- 
-  fail:
--- 
-1.7.4.1
-
+I think the later but not sure how it is implemented in hw. The
+documentation only states that even channels are for TX and odd for RX.
+There is no way of changing the direction as far I can tell.
