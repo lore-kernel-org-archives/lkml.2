@@ -1,125 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164Ab1G0TNJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 15:13:09 -0400
-Received: from mail.cs.tu-berlin.de ([130.149.17.13]:55022 "EHLO
-	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755154Ab1G0TNG (ORCPT
+	id S1755178Ab1G0TN0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 15:13:26 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:40814 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754984Ab1G0TNW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 15:13:06 -0400
-From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Turner <pjt@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-Subject: [PATCH RFCv2 8/8] rcu: Rewrite and rename list_splice_init_rcu()
-Date: Wed, 27 Jul 2011 21:10:25 +0200
-Message-Id: <1311793825-31933-9-git-send-email-schnhrr@cs.tu-berlin.de>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1311793825-31933-1-git-send-email-schnhrr@cs.tu-berlin.de>
-References: <1311793825-31933-1-git-send-email-schnhrr@cs.tu-berlin.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 27 Jul 2011 15:13:22 -0400
+Date: Wed, 27 Jul 2011 12:13:20 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Takashi Iwai <tiwai@suse.de>, Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: Build regressions/improvements in v3.0-rc7 (sound/isa/)
+Message-Id: <20110727121320.f50b1e6b.rdunlap@xenotime.net>
+In-Reply-To: <20110725091003.c3453b8b.rdunlap@xenotime.net>
+References: <1310585610-434-1-git-send-email-geert@linux-m68k.org>
+	<20110724122624.324d10dc.rdunlap@xenotime.net>
+	<s5hy5zm3j5a.wl%tiwai@suse.de>
+	<20110725091003.c3453b8b.rdunlap@xenotime.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
+On Mon, 25 Jul 2011 09:10:03 -0700 Randy Dunlap wrote:
 
-Rewrite list_splice_init_rcu() to make use of the newly introduced
-__list_splice_rcu(). Also, add "_sync" to the name, so that we can
-differentiate whether the list to be spliced is allowed to have its own
-concurrent readers: with "_sync", readers not belonging to the
-destination list are allowed and the function will block; without
-"_sync", readers not belonging to the destination list are forbidden and
-the function will not block.
+> On Mon, 25 Jul 2011 09:37:53 +0200 Takashi Iwai wrote:
+> 
+> > At Sun, 24 Jul 2011 12:26:24 -0700,
+> > Randy Dunlap wrote:
+> > > 
+> > > On Wed, 13 Jul 2011 21:33:30 +0200 Geert Uytterhoeven wrote:
+> > > 
+> > > >   + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_disable':  => 544
+> > > >   + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 302
+> > > >   + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_program':  => 244
+> > > >   + src/sound/isa/es1688/es1688_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 509
+> > > >   + src/sound/isa/es1688/es1688_lib.c: error: implicit declaration of function 'snd_dma_program':  => 417
+> > > >   + src/sound/isa/gus/gus_dma.c: error: implicit declaration of function 'snd_dma_disable':  => 177
+> > > >   + src/sound/isa/gus/gus_dma.c: error: implicit declaration of function 'snd_dma_program':  => 79
+> > > >   + src/sound/isa/gus/gus_pcm.c: error: implicit declaration of function 'snd_dma_pointer':  => 619
+> > > >   + src/sound/isa/gus/gus_pcm.c: error: implicit declaration of function 'snd_dma_program':  => 591
+> > > >   + src/sound/isa/sb/sb16_main.c: error: implicit declaration of function 'snd_dma_pointer':  => 456
+> > > >   + src/sound/isa/sb/sb16_main.c: error: implicit declaration of function 'snd_dma_program':  => 276
+> > > >   + src/sound/isa/sb/sb8_main.c: error: implicit declaration of function 'snd_dma_pointer':  => 425
+> > > >   + src/sound/isa/sb/sb8_main.c: error: implicit declaration of function 'snd_dma_program':  => 172
+> > > >   + src/sound/isa/sscape.c: error: implicit declaration of function 'snd_dma_program':  => 481
+> > > >   + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_disable':  => 1695
+> > > >   + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 1160
+> > > >   + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_program':  => 1025
+> > > 
+> > > All of these source files do #include <sound/core.h>,
+> > > but these missing/implicit functions are conditional:
+> > > 
+> > > #ifdef CONFIG_ISA_DMA_API
+> > > #define DMA_MODE_NO_ENABLE	0x0100
+> > > 
+> > > void snd_dma_program(unsigned long dma, unsigned long addr, unsigned int size, unsigned short mode);
+> > > void snd_dma_disable(unsigned long dma);
+> > > unsigned int snd_dma_pointer(unsigned long dma, unsigned int size);
+> > > #endif
+> > > 
+> > > so should these drivers all depend on ISA_DMA_API ?
+> > 
+> > Yes, these are ISA sound cards, so they must have CONFIG_ISA and
+> > CONFIG_ISA_DMA.  Although CONFIG_SND_SB8_DSP, CONFIG_SND_SB16_DSP
+> > and CONFIG_SND_WSS_LIB have no direct dependency, but the drivers
+> > selecting these are all in "if SND_ISA" in sound/isa/Kconfig.
+> 
+> Hm, yes, they are.
+> 
+> > > or should only pieces of each driver depend on ISA_DMA_API ?
+> > 
+> > I wonder which configuration makes it possible.
+> > Did you see a similar problem with randconfig?
+> 
+> No.  This parisc allmodconfig file from linux-next builds has
+> CONFIG_SND_ISA=y but it does not have CONFIG_ISA_DMA_API enabled.  Weird.
+> 
+> Geert, do you know how this happens?
+> 
+> parisc config:  http://kisskb.ellerman.id.au/kisskb/buildresult/4323458/config/
+> from this failed build:  http://kisskb.ellerman.id.au/kisskb/buildresult/4323458/
 
-Signed-off-by: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
+Hi Stephen,
+How is CONFIG_ISA_DMA_API enabled in parisc allmodconfig?
+I don't see how that happens, and it's causing build errors...
+
 ---
- drivers/char/ipmi/ipmi_msghandler.c |    2 +-
- fs/btrfs/volumes.c                  |    2 +-
- include/linux/rculist.h             |   19 +++++++++----------
- 3 files changed, 11 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/char/ipmi/ipmi_msghandler.c b/drivers/char/ipmi/ipmi_msghandler.c
-index 58c0e63..62b48e8 100644
---- a/drivers/char/ipmi/ipmi_msghandler.c
-+++ b/drivers/char/ipmi/ipmi_msghandler.c
-@@ -502,7 +502,7 @@ static void clean_up_interface_data(ipmi_smi_t intf)
- 	 */
- 	mutex_lock(&intf->cmd_rcvrs_mutex);
- 	INIT_LIST_HEAD(&list);
--	list_splice_init_rcu(&intf->cmd_rcvrs, &list, synchronize_rcu);
-+	list_splice_init_rcu_sync(&intf->cmd_rcvrs, &list, synchronize_rcu);
- 	mutex_unlock(&intf->cmd_rcvrs_mutex);
- 
- 	list_for_each_entry_safe(rcvr, rcvr2, &list, link)
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 19450bc..e1d5149 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -1440,7 +1440,7 @@ static int btrfs_prepare_sprout(struct btrfs_trans_handle *trans,
- 	mutex_init(&seed_devices->device_list_mutex);
- 
- 	mutex_lock(&root->fs_info->fs_devices->device_list_mutex);
--	list_splice_init_rcu(&fs_devices->devices, &seed_devices->devices,
-+	list_splice_init_rcu_sync(&fs_devices->devices, &seed_devices->devices,
- 			      synchronize_rcu);
- 	mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
- 
-diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-index c5db505..b695e88 100644
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -277,7 +277,8 @@ static inline void list_splice_tail_init_rcu(struct list_head *list,
- }
- 
- /**
-- * list_splice_init_rcu - splice an RCU-protected list into an existing list.
-+ * list_splice_init_rcu_sync - splice an RCU-protected list into an existing
-+ *			       RCU-protected list.
-  * @list:	the RCU-protected list to splice
-  * @head:	the place in the list to splice the first list into
-  * @sync:	function to sync: synchronize_rcu(), synchronize_sched(), ...
-@@ -293,18 +294,19 @@ static inline void list_splice_tail_init_rcu(struct list_head *list,
-  *	based on call_rcu() could be created.  But only if -really-
-  *	needed -- there is no shortage of RCU API members.
-  */
--static inline void list_splice_init_rcu(struct list_head *list,
-+static inline void list_splice_init_rcu_sync(struct list_head *list,
- 					struct list_head *head,
- 					void (*sync)(void))
- {
--	struct list_head *first = list->next;
--	struct list_head *last = list->prev;
--	struct list_head *at = head->next;
-+	struct list_head tmp;
- 
- 	if (list_empty(head))
- 		return;
- 
--	/* "first" and "last" tracking list, so initialize it. */
-+	tmp.next = list->next;
-+	tmp.prev = list->prev;
-+
-+	/* "tmp" is tracking "list", so we can safely initialize "list". */
- 
- 	INIT_LIST_HEAD(list);
- 
-@@ -325,10 +327,7 @@ static inline void list_splice_init_rcu(struct list_head *list,
- 	 * this function.
- 	 */
- 
--	last->next = at;
--	rcu_assign_pointer(list_next_rcu(head), first);
--	first->prev = head;
--	at->prev = last;
-+	__list_splice_rcu(&tmp, head, head->next);
- }
- 
- /**
--- 
-1.7.6
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
