@@ -1,116 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab1G0QfZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 12:35:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54439 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754345Ab1G0QfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 12:35:23 -0400
-Date: Wed, 27 Jul 2011 18:32:21 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/8] vfork: introduce complete_vfork_done()
-Message-ID: <20110727163221.GA23793@redhat.com>
-References: <20110727163159.GA23785@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110727163159.GA23785@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754871Ab1G0Qfj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 12:35:39 -0400
+Received: from queue02.mail.zen.net.uk ([212.23.3.27]:44728 "EHLO
+	queue02.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab1G0Qfg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 12:35:36 -0400
+From: Andrew Bird <ajb@spheresystems.co.uk>
+To: gregkh@suse.de
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Bird <ajb@spheresystems.co.uk>
+Subject: [PATCH 1/4] USB: option driver: add PID for Vodafone-Huawei K3770
+Date: Wed, 27 Jul 2011 17:03:17 +0100
+Message-Id: <1311782600-13353-1-git-send-email-ajb@spheresystems.co.uk>
+X-Mailer: git-send-email 1.7.6
+X-Originating-Smarthost03-IP: [82.71.70.22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes.
+This patch adds the product ID of Huawei's Vodafone K3770 mobile broadband
+modem to option.c. This is necessary so that the driver gets loaded on demand
+without the intervention of usb_modeswitch. This has the benefit of it becoming
+available faster and also ensures that the option driver is not bound to a
+network interface that should be claimed by cdc_ether.
 
-Move the clear-and-complete-vfork_done code into the new trivial
-helper, complete_vfork_done().
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
 ---
+ drivers/usb/serial/option.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
- include/linux/sched.h |    1 +
- fs/exec.c             |    8 ++------
- kernel/fork.c         |   17 ++++++++++-------
- 3 files changed, 13 insertions(+), 13 deletions(-)
-
---- 3.1/include/linux/sched.h~1_complete_vfork_done	2011-07-26 15:50:14.000000000 +0200
-+++ 3.1/include/linux/sched.h	2011-07-26 17:11:40.000000000 +0200
-@@ -2253,6 +2253,7 @@ extern int do_execve(const char *,
- 		     const char __user * const __user *,
- 		     const char __user * const __user *, struct pt_regs *);
- extern long do_fork(unsigned long, unsigned long, struct pt_regs *, unsigned long, int __user *, int __user *);
-+extern void complete_vfork_done(struct task_struct *tsk);
- struct task_struct *fork_idle(int);
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 60b25d8..4dbce2d 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -148,6 +148,7 @@ static void option_instat_callback(struct urb *urb);
+ #define HUAWEI_PRODUCT_K4505			0x1464
+ #define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_E14AC			0x14AC
++#define HUAWEI_PRODUCT_K3770			0x14C9
+ #define HUAWEI_PRODUCT_ETS1220			0x1803
+ #define HUAWEI_PRODUCT_E353			0x1506
  
- extern void set_task_comm(struct task_struct *tsk, char *from);
---- 3.1/fs/exec.c~1_complete_vfork_done	2011-07-23 15:26:19.000000000 +0200
-+++ 3.1/fs/exec.c	2011-07-26 17:15:10.000000000 +0200
-@@ -1885,7 +1885,6 @@ static int coredump_wait(int exit_code, 
- {
- 	struct task_struct *tsk = current;
- 	struct mm_struct *mm = tsk->mm;
--	struct completion *vfork_done;
- 	int core_waiters = -EBUSY;
- 
- 	init_completion(&core_state->startup);
-@@ -1904,11 +1903,8 @@ static int coredump_wait(int exit_code, 
- 	 * Make sure nobody is waiting for us to release the VM,
- 	 * otherwise we can deadlock when we wait on each other
- 	 */
--	vfork_done = tsk->vfork_done;
--	if (vfork_done) {
--		tsk->vfork_done = NULL;
--		complete(vfork_done);
--	}
-+	if (tsk->vfork_done)
-+		complete_vfork_done(tsk);
- 
- 	if (core_waiters)
- 		wait_for_completion(&core_state->startup);
---- 3.1/kernel/fork.c~1_complete_vfork_done	2011-07-26 15:50:15.000000000 +0200
-+++ 3.1/kernel/fork.c	2011-07-26 17:32:22.000000000 +0200
-@@ -662,8 +662,6 @@ EXPORT_SYMBOL_GPL(get_task_mm);
-  */
- void mm_release(struct task_struct *tsk, struct mm_struct *mm)
- {
--	struct completion *vfork_done = tsk->vfork_done;
--
- 	/* Get rid of any futexes when releasing the mm */
- #ifdef CONFIG_FUTEX
- 	if (unlikely(tsk->robust_list)) {
-@@ -683,11 +681,8 @@ void mm_release(struct task_struct *tsk,
- 	/* Get rid of any cached register state */
- 	deactivate_mm(tsk, mm);
- 
--	/* notify parent sleeping on vfork() */
--	if (vfork_done) {
--		tsk->vfork_done = NULL;
--		complete(vfork_done);
--	}
-+	if (tsk->vfork_done)
-+		complete_vfork_done(tsk);
- 
- 	/*
- 	 * If we're exiting normally, clear a user-space tid field if
-@@ -1446,6 +1441,14 @@ struct task_struct * __cpuinit fork_idle
- 	return task;
- }
- 
-+void complete_vfork_done(struct task_struct *tsk)
-+{
-+	struct completion *vfork_done = tsk->vfork_done;
-+
-+	tsk->vfork_done = NULL;
-+	complete(vfork_done);
-+}
-+
- /*
-  *  Ok, this is the main fork-routine.
-  *
+@@ -547,6 +548,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x31) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E353, 0xff, 0x01, 0x01) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V640) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V620) },
+-- 
+1.7.6
 
