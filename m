@@ -1,94 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab1G0GRy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 02:17:54 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:65492 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab1G0GRw (ORCPT
+	id S1753621Ab1G0GSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 02:18:47 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:42014 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553Ab1G0GSp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 02:17:52 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH] Staging: comedi: fix printk issue in adv_pci_dio.c
-Date: Wed, 27 Jul 2011 12:01:24 +0530
-Message-Id: <1311748284-19756-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH]Staging: Comedi: fix printk issue in adv_pci_dio.c>
-References: <[PATCH]Staging: Comedi: fix printk issue in adv_pci_dio.c>
+	Wed, 27 Jul 2011 02:18:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <1311719817-11336-1-git-send-email-Gregory.Dietsche@cuw.edu>
+References: <CAAxaTiNJNXnn3PAcKWBSZ2wbMKBDD9yL6pyediEEBHnjNH-uaA@mail.gmail.com>
+	<1311719817-11336-1-git-send-email-Gregory.Dietsche@cuw.edu>
+Date: Wed, 27 Jul 2011 08:18:42 +0200
+X-Google-Sender-Auth: ya30MqdnD4N7Q_i-WhPoa12sFEg
+Message-ID: <CAAxaTiPVhXxZczhovbsB8osaP2T3v297z1OOO2YCJsaeVdryXw@mail.gmail.com>
+Subject: Re: [PATCH v2] coccicheck: add parallel execution
+From: Nicolas Palix <Nicolas.Palix@inria.fr>
+To: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Cc: joe@perches.com, julia@diku.dk, Gilles.Muller@lip6.fr,
+        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cocci@diku.dk, mmarek@suse.cz
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+On Wed, Jul 27, 2011 at 12:36 AM, Greg Dietsche
+<Gregory.Dietsche@cuw.edu> wrote:
+> For example to process 6 SmPL patches at the same time:
+>        make coccicheck PARALLEL=6
+>
+> Results are held in /tmp until the scripts finish. By doing this the
+> script is able to collate the results from each SmPL patch instead of
+> interleaving them in the output.
+>
+> Version 2: change pkill -P $$ to pkill -s 0
+>
+> Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Acked-by: Nicolas Palix <npalix.work@gmail.com>
+> ---
+>  scripts/coccicheck |   27 ++++++++++++++++++++++++++-
+>  1 files changed, 26 insertions(+), 1 deletions(-)
+>
+> diff --git a/scripts/coccicheck b/scripts/coccicheck
+> index 1bb1a1b..c2a04c2 100755
+> --- a/scripts/coccicheck
+> +++ b/scripts/coccicheck
+> @@ -97,10 +97,35 @@ coccinelle () {
+>
+>  }
+>
+> +parallel_cleanup () {
+> +       pkill -s 0 > /dev/null
+> +       rm /tmp/cocci_parallel_$$_* 2>/dev/null
+> +       exit
+> +}
+> +
+> +trap parallel_cleanup SIGINT
+> +PARALLEL_ID=0
+> +
+>  if [ "$COCCI" = "" ] ; then
+>     for f in `find $srctree/scripts/coccinelle/ -name '*.cocci' -type f | sort`; do
+> -       coccinelle $f
+> +       if [ "$PARALLEL" -eq "$PARALLEL" 2>/dev/null ] ; then
+> +               if [ "$ONLINE" = "0" ] ; then
+> +                       echo Processing: `basename $f`
+> +               fi
+> +               coccinelle $f>/tmp/cocci_parallel_$$_$PARALLEL_ID 2>&1 &
+> +               PARALLEL_ID=$(($PARALLEL_ID + 1))
+> +               while [ "`jobs -p | wc -l`" -ge "$PARALLEL" ] ; do
+> +                       sleep 3
+> +               done
+> +       else
+> +               coccinelle $f
+> +       fi
+>     done
+> +    wait
+> +    if [ "$PARALLEL_ID" -ge "0" ] ; then
+> +       cat /tmp/cocci_parallel_$$_*
+> +       parallel_cleanup
+> +    fi
+>  else
+>     coccinelle $COCCI
+>  fi
+> --
+> 1.7.2.5
+>
+>
 
-This is a patch to the adv_pci_dio.c file that fixes up a printk warning found by the checkpatch.pl tool
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/adv_pci_dio.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/adv_pci_dio.c b/drivers/staging/comedi/drivers/adv_pci_dio.c
-index d23799b..1d2261f 100644
---- a/drivers/staging/comedi/drivers/adv_pci_dio.c
-+++ b/drivers/staging/comedi/drivers/adv_pci_dio.c
-@@ -1106,11 +1106,11 @@ static int pci_dio_attach(struct comedi_device *dev,
- 	unsigned long iobase;
- 	struct pci_dev *pcidev = NULL;
- 
--	printk("comedi%d: adv_pci_dio: ", dev->minor);
-+	printk(KERN_INFO "comedi%d: adv_pci_dio: ", dev->minor);
- 
- 	ret = alloc_private(dev, sizeof(struct pci_dio_private));
- 	if (ret < 0) {
--		printk(", Error: Cann't allocate private memory!\n");
-+		printk(KERN_CONT ", Error: Cann't allocate private memory!\n");
- 		return -ENOMEM;
- 	}
- 
-@@ -1140,19 +1140,19 @@ static int pci_dio_attach(struct comedi_device *dev,
- 	}
- 
- 	if (!dev->board_ptr) {
--		printk(", Error: Requested type of the card was not found!\n");
-+		printk(KERN_ERR ", Error: Requested type of the card was not found!\n");
- 		return -EIO;
- 	}
- 
- 	if (comedi_pci_enable(pcidev, driver_pci_dio.driver_name)) {
- 		printk
--		    (", Error: Can't enable PCI device and request regions!\n");
-+		(KERN_ERR ", Error: Can't enable PCI device and request "
-+		"regions!\n");
- 		return -EIO;
- 	}
- 	iobase = pci_resource_start(pcidev, this_board->main_pci_region);
--	printk(", b:s:f=%d:%d:%d, io=0x%4lx",
--	       pcidev->bus->number, PCI_SLOT(pcidev->devfn),
--	       PCI_FUNC(pcidev->devfn), iobase);
-+	printk(KERN_INFO ", b:s:f=%d:%d:%d, io=0x%4lx",
-+	       pcidev->bus->number, PCI_SLOT(pcidev->devfn),
-+	       PCI_FUNC(pcidev->devfn), iobase);
- 
- 	dev->iobase = iobase;
- 	dev->board_name = this_board->name;
-@@ -1178,11 +1178,11 @@ static int pci_dio_attach(struct comedi_device *dev,
- 
- 	ret = alloc_subdevices(dev, n_subdevices);
- 	if (ret < 0) {
--		printk(", Error: Cann't allocate subdevice memory!\n");
-+		printk(KERN_CONT ", Error: Cann't allocate subdevice memory!\n");
- 		return ret;
- 	}
- 
--	printk(".\n");
-+	printk(KERN_CONT ".\n");
- 
- 	subdev = 0;
- 
 -- 
-1.6.5.2
-
+Nicolas Palix
+http://sardes.inrialpes.fr/~npalix/
