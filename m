@@ -1,133 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab1G0ANc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 20:13:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62681 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751824Ab1G0ANa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 20:13:30 -0400
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, Paul Menage <menage@google.com>,
-        lizf@cn.fujitsu.com, axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        wanlong.gao@gmail.com
-Subject: [PATCH v5] blk-cgroup:be able to remove the record of unplugged device
-Date: Wed, 27 Jul 2011 08:11:48 +0800
-Message-Id: <1311725508-4419-1-git-send-email-gaowanlong@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <20110726192441.GD13780@redhat.com>
-References: <20110726192441.GD13780@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-27 08:12:29,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-27 08:12:29,
-	Serialize complete at 2011-07-27 08:12:29
+	id S1752506Ab1G0A0s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 20:26:48 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:40119 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751064Ab1G0A0q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 20:26:46 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Colin Cross <ccross@android.com>
+Cc: linux-pm@lists.linux-foundation.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, Nishanth Menon <nm@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH v2] PM: runtime: add might_sleep to PM runtime functions
+Organization: Texas Instruments, Inc.
+References: <1311627344-8097-1-git-send-email-ccross@android.com>
+Date: Tue, 26 Jul 2011 17:26:42 -0700
+In-Reply-To: <1311627344-8097-1-git-send-email-ccross@android.com> (Colin
+	Cross's message of "Mon, 25 Jul 2011 13:55:44 -0700")
+Message-ID: <871uxcr2kd.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bug is we're not able to remove the device from blkio cgroup's
-per-device control files if it gets unplugged.
+Colin Cross <ccross@android.com> writes:
 
-To reproduce the bug:
+> Some of the entry points to pm runtime are not safe to
+> call in atomic context unless pm_runtime_irq_safe() has
+> been called.  Inspecting the code, it is not immediately
+> obvious that the functions sleep at all, as they run
+> inside a spin_lock_irqsave, but under some conditions
+> they can drop the lock and turn on irqs.
+>
+> If a driver incorrectly calls the pm_runtime apis, it can
+> cause sleeping and irq processing when it expects to stay
+> in atomic context.
+>
+> Add might_sleep_if to all the __pm_runtime_* entry points
+> to enforce correct usage.
 
-  # mount -t cgroup -o blkio xxx /cgroup
-  # cd /cgroup
-  # echo "8:0 1000" > blkio.throttle.read_bps_device
-  # unplug the device
-  # cat blkio.throttle.read_bps_device
-  8:0	1000
-  # echo "8:0 0" > blkio.throttle.read_bps_device
-  -bash: echo: write error: No such device
+Minor: s/all/most of/, or something similar since in v2, it doesn't
+annotate all of the functions anymore, just the main ones likely to be
+(mis)used by drivers.
 
-After patching, the device removal will succeed.
+Other than that, looks good...
 
-Thanks for the comments of Paul, Zefan, and Vivek.
+> Add pm_runtime_put_sync_autosuspend to the list of
+> functions that can be called in atomic context.
+>
+> Signed-off-by: Colin Cross <ccross@android.com>
 
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
----
- block/blk-cgroup.c |   37 ++++++++++++++++---------------------
- 1 files changed, 16 insertions(+), 21 deletions(-)
+Reviewed-by: Kevin Hilman <khilman@ti.com>
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index bcaf16e..b596e54 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -785,10 +785,10 @@ static int blkio_policy_parse_and_set(char *buf,
- {
- 	char *s[4], *p, *major_s = NULL, *minor_s = NULL;
- 	int ret;
--	unsigned long major, minor, temp;
-+	unsigned long major, minor;
- 	int i = 0;
- 	dev_t dev;
--	u64 bps, iops;
-+	u64 temp;
- 
- 	memset(s, 0, sizeof(s));
- 
-@@ -826,20 +826,23 @@ static int blkio_policy_parse_and_set(char *buf,
- 
- 	dev = MKDEV(major, minor);
- 
--	ret = blkio_check_dev_num(dev);
-+	ret = strict_strtoull(s[1], 10, &temp);
- 	if (ret)
--		return ret;
-+		return -EINVAL;
- 
--	newpn->dev = dev;
-+	/* For rule removal, do not check for device presence. */
-+	if (temp) {
-+		ret = blkio_check_dev_num(dev);
-+		if (ret)
-+			return ret;
-+	}
- 
--	if (s[1] == NULL)
--		return -EINVAL;
-+	newpn->dev = dev;
- 
- 	switch (plid) {
- 	case BLKIO_POLICY_PROP:
--		ret = strict_strtoul(s[1], 10, &temp);
--		if (ret || (temp < BLKIO_WEIGHT_MIN && temp > 0) ||
--			temp > BLKIO_WEIGHT_MAX)
-+		if ((temp < BLKIO_WEIGHT_MIN && temp > 0) ||
-+		     temp > BLKIO_WEIGHT_MAX)
- 			return -EINVAL;
- 
- 		newpn->plid = plid;
-@@ -850,26 +853,18 @@ static int blkio_policy_parse_and_set(char *buf,
- 		switch(fileid) {
- 		case BLKIO_THROTL_read_bps_device:
- 		case BLKIO_THROTL_write_bps_device:
--			ret = strict_strtoull(s[1], 10, &bps);
--			if (ret)
--				return -EINVAL;
--
- 			newpn->plid = plid;
- 			newpn->fileid = fileid;
--			newpn->val.bps = bps;
-+			newpn->val.bps = temp;
- 			break;
- 		case BLKIO_THROTL_read_iops_device:
- 		case BLKIO_THROTL_write_iops_device:
--			ret = strict_strtoull(s[1], 10, &iops);
--			if (ret)
--				return -EINVAL;
--
--			if (iops > THROTL_IOPS_MAX)
-+			if (temp > THROTL_IOPS_MAX)
- 				return -EINVAL;
- 
- 			newpn->plid = plid;
- 			newpn->fileid = fileid;
--			newpn->val.iops = (unsigned int)iops;
-+			newpn->val.iops = (unsigned int)temp;
- 			break;
- 		}
- 		break;
--- 
-1.7.6
-
+Kevin
