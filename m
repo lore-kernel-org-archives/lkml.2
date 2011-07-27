@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab1G0Qhs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 12:37:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63982 "EHLO mx1.redhat.com"
+	id S1753650Ab1G0QkT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 12:40:19 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:6033 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754978Ab1G0Qhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 12:37:43 -0400
-Date: Wed, 27 Jul 2011 18:34:41 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 9/8] kill PF_STARTING
-Message-ID: <20110727163441.GI23793@redhat.com>
-References: <20110727163159.GA23785@redhat.com>
+	id S1752667Ab1G0QkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 12:40:17 -0400
+X-IronPort-AV: E=Sophos;i="4.67,277,1309762800"; 
+   d="scan'208";a="565964901"
+Message-ID: <4E303F6F.8010706@netapp.com>
+Date: Wed, 27 Jul 2011 12:40:15 -0400
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110628 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110727163159.GA23785@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
+References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan> <20110727160752.GC974@fieldses.org> <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously it was (ab)used by utrace. Then it was wrongly used by
-the scheduler code.
+On 07/27/2011 12:28 PM, Justin Piszcz wrote:
+> 
+> 
+> On Wed, 27 Jul 2011, J. Bruce Fields wrote:
+> 
+>> On Wed, Jul 27, 2011 at 09:54:09AM -0400, Justin Piszcz wrote:
+>>> Hi,
+>>>
+>>> Kernel 2.6.30 on client.
+>>> Kernel 2.6.28 on server.
+>>>
+>>> p34 kernel: [92223.918892] NFS: directory motion/cam2 contains a
+>>> readdir loop.  Please contact your server vendor.  Offending cookie: 10272
+>>
+>> What filesystem on the server are you exporting?
+> 
+> Hi,
+> 
+> xfs.
+> /dev/sda1 on / type xfs (rw,noatime)
+> 
+> Nothing special, thoughts?
 
-Currently it is not used, kill it before it finds the new erroneous
-user.
+Are there a lot of files in the directory you're exporting?  It looks like cookie 10272 is mapped to multiple files. When the client tries to resume reading from this cookie, xfs will reply from the first matching file and cause the client to enter a loop.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
+- Bryan
 
- include/linux/sched.h |    1 -
- kernel/fork.c         |    9 ---------
- 2 files changed, 10 deletions(-)
-
---- 3.1/include/linux/sched.h~9_kill_pf_starting	2011-07-27 17:48:36.000000000 +0200
-+++ 3.1/include/linux/sched.h	2011-07-27 17:53:21.000000000 +0200
-@@ -1756,7 +1756,6 @@ extern void thread_group_times(struct ta
- /*
-  * Per process flags
-  */
--#define PF_STARTING	0x00000002	/* being created */
- #define PF_EXITING	0x00000004	/* getting shut down */
- #define PF_EXITPIDONE	0x00000008	/* pi exit done on shut down */
- #define PF_VCPU		0x00000010	/* I'm a virtual CPU */
---- 3.1/kernel/fork.c~9_kill_pf_starting	2011-07-27 17:51:54.000000000 +0200
-+++ 3.1/kernel/fork.c	2011-07-27 17:54:09.000000000 +0200
-@@ -992,7 +992,6 @@ static void copy_flags(unsigned long clo
- 
- 	new_flags &= ~(PF_SUPERPRIV | PF_WQ_WORKER);
- 	new_flags |= PF_FORKNOEXEC;
--	new_flags |= PF_STARTING;
- 	p->flags = new_flags;
- 	clear_freeze_flag(p);
- }
-@@ -1600,14 +1599,6 @@ long do_fork(unsigned long clone_flags,
- 
- 		audit_finish_fork(p);
- 
--		/*
--		 * We set PF_STARTING at creation in case tracing wants to
--		 * use this to distinguish a fully live task from one that
--		 * hasn't finished SIGSTOP raising yet.  Now we clear it
--		 * and set the child going.
--		 */
--		p->flags &= ~PF_STARTING;
--
- 		wake_up_new_task(p);
- 
- 		/* forking complete and child started to run, tell ptracer */
+> 
+> Justin.
+> 
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
