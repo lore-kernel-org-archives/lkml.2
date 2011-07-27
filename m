@@ -1,65 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404Ab1G0MDb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 08:03:31 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:56073 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab1G0MD2 (ORCPT
+	id S1753318Ab1G0MMD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 08:12:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36815 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353Ab1G0ML7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 08:03:28 -0400
-Message-ID: <4E2FFE8B.6060904@fedoraproject.org>
-Date: Wed, 27 Jul 2011 14:03:23 +0200
-From: Michel Alexandre Salim <salimma@fedoraproject.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Intel graphics <Intel-gfx@lists.freedesktop.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        DRI devel <dri-devel@lists.freedesktop.org>
-Subject: [PATCH] drm/i915: Add quirk to disable SSC on Sony Vaio Y2
-X-Enigmail-Version: 1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Jul 2011 08:11:59 -0400
+Subject: Re: per-cpu operation madness vs validation
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <alpine.DEB.2.00.1107261624210.10273@router.home>
+References: <1311714410.24752.404.camel@twins>
+	 <alpine.DEB.2.00.1107261624210.10273@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 27 Jul 2011 14:11:33 +0200
+Message-ID: <1311768693.24752.488.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Tue, 2011-07-26 at 16:32 -0500, Christoph Lameter wrote:
 
-Using the new quirk added to support disabling SSC on Lenovo U160
-(#36656, commit 435793dfb8aec7b2e19f72d5bce8a22fd0b57839), also register
-the Vaio as a special case and disable SSC for it.
+> Those all fold to the same operation on x86. The x86 cpu operations with
+> segment prefix are interrupt and preempt safe. The context issues come
+> into play in fallback scenarios where other architectures do not have
+> instructions that can perform the same things as x86.
 
-This patch fixes #34437 on fdo bugzilla:
-https://bugs.freedesktop.org/show_bug.cgi?id=34437
-- ---
- drivers/gpu/drm/i915/intel_display.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Right, but that doesn't help us much if anything.
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c
-b/drivers/gpu/drm/i915/intel_display.c
-index 0f1c799..11eb831 100644
-- --- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7851,6 +7851,9 @@ struct intel_quirk intel_quirks[] = {
+> > Now the reason is of course that -rt changes some things, even when
+> > using migrate_disable() it might be multiple processes might try and
+> > access the per-cpu variable, needing serialization.
+> 
+> On x86 these operations are rt safe by the pure fact that all these
+> operations are the same interrupt safe instruction.
 
-        /* Lenovo U160 cannot use SSC on LVDS */
-        { 0x0046, 0x17aa, 0x3920, quirk_ssc_force_disable },
-+
-+       /* Sony Vaio Y cannot use SSC on LVDS */
-+       { 0x0046, 0x104d, 0x9076, quirk_ssc_force_disable },
- };
+The number of instructions has nothing what so ever to do with things.
+And while the individual ops might be preempt/irq/nmi safe, that doesn't
+say anything at all about the piece of code they're used in.
 
- static void intel_init_quirks(struct drm_device *dev)
-- -- 
-1.7.6
+>  The difficulties come in for other
+> architectures. In those cases preemption or interrupts need to be
+> disabled.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+Irrelevant.
 
-iEYEARECAAYFAk4v/oUACgkQNd069XiIR3gZFgCfTcZBgVMmPfo5l2/Xxstl82fj
-05QAn3lbi1rNHjhbfgwdURV8oLgfQrZK
-=ghae
------END PGP SIGNATURE-----
+> > The point of course is, how are we going to go about doing this, I'm
+> > sure adding a proper conditional to each and every per-cpu op is going
+> > to be a herculean task, and most of it utterly boring.
+> 
+> Basically we need to track the contexts in which references to a certain
+> per cpu variable are established. Then constraints can be enforced. For
+> example:
+> 
+> 1. A variable used in an interupt context with __this_cpu ops requires
+> irqsafe_cpu_xxx when used in context where interrupts are enabled.
+> 
+> 2. A variable used in a non-preemptible context with __this_cpu ops
+> requires this_cpu ops in a preemptible context.
+
+And doesn't solve the larger issue of multiple per-cpu variables forming
+a consistent piece of data.
+
+Suppose there's two per-cpu variables, a and b, and we have an invariant
+that says that a-b := 5. Then the following code:
+
+preempt_disable();
+__this_cpu_inc(a);
+__this_cpu_inc(b);
+preempt_enable();
+
+is only correct when used from task context, an IRQ user can easily
+observe our invariant failing and none of your above validations will
+catch this.
+
+Now move to -rt where the above will likely end up looking something
+like:
+
+migrate_disable();
+__this_cpu_inc(a);
+__this_cpu_inc(b);
+migrate_enable();
+
+and everybody can see the invariant failing.
+
+Now clearly my example is very artificial but not far fetched at all,
+there's lots of code like this, and -rt gets to try and unravel all
+this. Basically preempt_disable()/local_bh_disable()/local_irq_disable()
+are the next BKL, there is no context what so ever to reconstruct what
+invariants certain pieces of code expect.
+
+Hence my suggestion to do something like:
+
+struct foo {
+	percpu_lock_t lock;
+	int a;
+	int b;
+}
+
+DEFINE_PER_CPU(struct foo, foo);
+
+percpu_lock(&foo.lock);
+__this_cpu_inc(foo.a);
+__this_cpu_inc(foo.b);
+percpu_unlock(&foo.lock);
+
+That would get us (aside from a shitload of work to make it so):
+
+ - clear boundaries of where the data structure atomicy lie
+ - validation, for if the above piece of code was also ran from IRQ
+   context we could get lockdep complaining about IRQ unsafe locks used
+   from IRQ context.
+
+Now for !-rt percpu_lock will not emit more than
+preempt_disable/local_bh_disable/local_irq_disable, depending on what
+variant is used, and the data type percpu_lock_t would be empty (except
+when enabling lockdep of course).
+
+Possibly we could reduce all this percpu madness back to one form
+(__this_cpu_*) and require that when used a lock of the percpu_lock_t is
+taken.
+
+
