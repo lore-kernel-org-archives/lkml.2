@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097Ab1G0I1a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 04:27:30 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:58072 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab1G0I10 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 04:27:26 -0400
-Date: Wed, 27 Jul 2011 01:27:30 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Mingming Cao <cmm@us.ibm.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] Add inode checksum support to ext4
-Message-ID: <20110727082730.GG20655@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110406224410.GB24354@tux1.beaverton.ibm.com> <1302290868.4461.7.camel@mingming-laptop>
+	id S1754055Ab1G0IhE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 04:37:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55025 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751615Ab1G0IhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 04:37:00 -0400
+Message-ID: <4E2FCE2A.3000909@suse.cz>
+Date: Wed, 27 Jul 2011 10:36:58 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1302290868.4461.7.camel@mingming-laptop>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Arnaud Lacombe <lacombar@gmail.com>,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        linux-kbuild@vger.kernel.org, sam@ravnborg.org,
+        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
+Subject: Re: [RFC][PATCH 1/2] kconfig: Introduce KCONFIG(), KCONFIG_BUILTIN()
+ and KCONFIG_MODULE()
+References: <4E1D9C25.8080300@suse.cz> <1311634718-32588-1-git-send-email-mmarek@suse.cz> <CAM_iQpUEfYrrtpcRLTekSHMHrTTka6ir=z_GUUbnxuQKfY+OXA@mail.gmail.com> <4E2EBF63.8050208@suse.cz> <20110726080443.62196869.rdunlap@xenotime.net> <4E2F0735.1070403@suse.cz> <20110726112824.b357c756.rdunlap@xenotime.net> <CACqU3MWOjjB0RiWLWS8yf0u0gRqOL3JP0StyrtP1kbA+i92SfA@mail.gmail.com> <CACqU3MWopoJcd+5ELWEDp6_GvVpEjOHLnkcj4s_fHT5unp+MtA@mail.gmail.com> <20110726213536.1f56f0e3.rdunlap@xenotime.net>
+In-Reply-To: <20110726213536.1f56f0e3.rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 08, 2011 at 12:27:48PM -0700, Mingming Cao wrote:
-> On Wed, 2011-04-06 at 15:44 -0700, Darrick J. Wong wrote:
-> > Hi all,
-> > 
-> > I spent last week analyzing a client's corrupted ext3 image to see if I could
-> > determine what had gone wrong and caused the filesystem to blow apart.  As best
-> > as I could tell, a data block got miswritten into a different sector ... which
-> > happened to be an indirect block.  Some time later the indirect block, which
-> > now pointed at one of the inode tables (among other things that shouldn't ever
-> > become file data) was loaded as part of a file write, which caused that inode
-> > table to be blown to smithereens.  Just for fun I tried reading from one of
-> > these busted-inode files and ... failed to encounter any errors.  Somehow, they
-> > didn't find it funny that ext3 would read block numbers from a table with the
-> > contents "ibm.com" with a straight face.  Fortunately there were backups. :)
-> > 
-> > The client at this point asked if ext4 would do a better job of sanity
-> > checking, which got me to wonder why ext4 checksums block groups but not
-> > inodes.  It's on Ted's todo list, but apparently nobody wrote any patch, so I
-> > did.  The following two patches are a first draft of adding inode checksum
-> > support to both the kernel driver and to the various e2fsprogs.
-> > 
-> 
-> We had some discussion about this week at SF (at the ext4 bof at the
-> linux colloboration summit). Beyond checksumming the inode itself, it
-> would be more useful to checksum the extent indexing blocks, as the ext3
-> corruption actually happen at the indirect block.  
-> 
-> The idea is to reduce the eh_max (the max # of extents stored in this
-> block) to save some space to store the checksums in the block, 
-> 
-> /*
->  * Each block (leaves and indexes), even inode-stored has header.
->  */
-> struct ext4_extent_header {
->         __le16  eh_magic;       /* probably will support different
-> formats */
->         __le16  eh_entries;     /* number of valid entries */
->         __le16  eh_max;         /* capacity of store in entries */
->         __le16  eh_depth;       /* has tree real underlying blocks? */
->         __le32  eh_generation;  /* generation of the tree */
+On 27.7.2011 06:35, Randy Dunlap wrote:
+> On Tue, 26 Jul 2011 20:42:04 -0400 Arnaud Lacombe wrote:
+>> On Tue, Jul 26, 2011 at 2:48 PM, Arnaud Lacombe<lacombar@gmail.com>  wrote:
+>>> On Tue, Jul 26, 2011 at 2:28 PM, Randy Dunlap<rdunlap@xenotime.net>  wrote:
+>>>> I guess I prefer your ENABLED() syntax then.
+>>>>
+>>> we need to be careful about namespace pollution/collision.
+>>>
+>> For the sake of having numbers:
+>>
+>> % git grep -w ENABLED . | wc -l
+>>      116
+>> % git grep -w CONFIGURED . | wc -l
+>>       11
+>> % git grep -w KCONFIG . | wc -l
+>>        1
+>
+> OK.  Then I would go back to a predicate like the original patch had,
+> e.g.:
+> 	IS_ENABLED(CONFIG_NUMA)
 
-Does anyone use eh_generation?  Linux 3.0 shows no users and it didn't look like
-the snapshot patches do either.  If nobody intends to start using this field,
-(part of) it could become eh_checksum.
+Good idea. Is anyone against
+IS_ENABLED(CONFIG_FOO)
+IS_ENABLED_BUILTIN(CONFIG_FOO)
+IS_ENABLED_MODULE(CONFIG_FOO)
+?
 
---D
+Michal
