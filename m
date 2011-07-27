@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596Ab1G0Dwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 23:52:39 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:52350 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792Ab1G0Dwh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 23:52:37 -0400
-Message-ID: <4E2F8B7B.80906@signal11.us>
-Date: Tue, 26 Jul 2011 23:52:27 -0400
-From: Alan Ott <alan@signal11.us>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Thunderbird/3.1.8
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-net@vger.kernel.org
-Subject: IP over 802.2 with LLC/SNAP
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753787Ab1G0Dyw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 23:54:52 -0400
+Received: from mga14.intel.com ([143.182.124.37]:23899 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753108Ab1G0Dyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 23:54:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,273,1309762800"; 
+   d="scan'208";a="31888338"
+Subject: Re: linux-next: manual merge of the slave-dma tree with Linus' tree
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linus.walleij@linaro.org
+In-Reply-To: <20110727120826.ea1227276707790e162dee18@canb.auug.org.au>
+References: <20110727120826.ea1227276707790e162dee18@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Jul 2011 08:42:11 +0530
+Message-ID: <1311736331.1536.45.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2011-07-27 at 12:08 +1000, Stephen Rothwell wrote:
+> Hi Vinod,
+> 
+> Today's linux-next merge of the slave-dma tree got a conflict in
+> drivers/spi/spi-pl022.c (called drivers/spi/amba-pl022.c in the sleav-dma
+> tree) between commit 083be3f05371 ("spi/pl022: initialize burstsize from
+> FIFO trigger level") from Linus' tree and commit 001b0585ff16 ("Improve
+> slave/cyclic DMA engine documentation") from the slave-dma tree.
+> 
+> I fixed it up (see below) anc acn carry the fix as necessary.
 
-What I have is a fairly straight-forward question, but takes a little 
-background to get there.
+The correct fix would be:
 
-I have an ancient computer (Gould 3267) that I'm trying to interface 
-with both a Windows computer and an embedded Linux computer over 
-UDP/Ethernet. Since the Gould doesn't have any IP support, I have to 
-make the IP packet myself. Also, because of the way the Gould's Ethernet 
-driver works, sent packets all use the type/length field in the Ethernet 
-header to represent the length and therefore are unable to specify that 
-the packet contains IP data in the Ethernet header. To get around this, 
-I added an 802.2 LLC/SNAP header to my packet[1]. My packet looks good 
-in Wireshark, and I have it working well communicating with the Windows 
-PC. However, I can't seem to get Linux to recognize the packet as IP, 
-and thus I am unable to receive it using the normal socket interface on 
-the Linux system.
+diff --cc drivers/spi/spi-pl022.c
+index eba88c7,99e7880..0000000
+--- a/drivers/spi/spi-pl022.c
++++ b/drivers/spi/spi-pl022.c
+@@@ -910,11 -908,11 +910,9 @@@ static int configure_dma(struct pl022 *
+  {
+        struct dma_slave_config rx_conf = {
+                .src_addr = SSP_DR(pl022->phybase),
++		.direction = DMA_TO_DEVICE,
+        };
+        struct dma_slave_config tx_conf = {
+                .dst_addr = SSP_DR(pl022->phybase),
+                .direction = DMA_TO_DEVICE,
+ -              .dst_maxburst = pl022->vendor->fifodepth >> 1,
+        };
+        unsigned int pages;
+        int ret;
 
-So the question is, does Linux support IP over 802.2 with LLC/SNAP? Is 
-there a sysfs/proc entry that I have to turn on to make this work (I 
-didn't find one)? I have the LLC2 module loaded, and I believe my packet 
-to be correct, since Windows recognizes it and since Wireshark doesn't 
-give any red flags on it. I've been unable to find anything about this 
-kind of thing in my searching.
+For now the direction flags remains to be set and checked is in both
+tree so should not cause conflict.
+I will rebase my tree tonight to 3.0, that should resolve conflict as
+well
 
-I put a sample capture file of the packets I'm sending at [2] for those 
-interested.
+-- 
+~Vinod
 
-Alan.
-
-[1] So the packet looks like this:
-  Ethernet Header
-  LLC/SNAP header
-  IP Header
-  UDP Header
-  data
-
-[2] www.signal11.us/~alan/testraw.pcap
