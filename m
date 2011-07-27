@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab1G0EFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 00:05:49 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:56824 "EHLO
+	id S1753659Ab1G0EFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 00:05:55 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:54902 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752860Ab1G0EFr (ORCPT
+	by vger.kernel.org with ESMTP id S1753108Ab1G0EFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 00:05:47 -0400
-X-Sasl-enc: TmK/hXwOOoMEd/YvfbunVR0otBSuwaZvEsFkCQ4Dq7mI 1311739546
+	Wed, 27 Jul 2011 00:05:50 -0400
+X-Sasl-enc: 52859Sw5jlICKW3UIcNBQJSSGCRj3D8x938RYH5b9Wr6 1311739549
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Axel Lin <axel.lin@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 08/11] firmware: gsmi: remove sysfs entries when unload the module
-Date: Tue, 26 Jul 2011 21:05:18 -0700
-Message-Id: <1311739521-11014-8-git-send-email-gregkh@suse.de>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Michal Simek <monstr@monstr.eu>,
+        Arnd Bergmann <arnd@arndb.de>,
+        John Williams <john.williams@petalogix.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 09/11] uio: uio_pdrv_genirq: Add OF support
+Date: Tue, 26 Jul 2011 21:05:19 -0700
+Message-Id: <1311739521-11014-9-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1311739521-11014-1-git-send-email-gregkh@suse.de>
 References: <20110726045707.GA2321@kroah.com>
@@ -22,75 +27,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Axel Lin <axel.lin@gmail.com>
+From: "Hans J. Koch" <hjk@hansjkoch.de>
 
-This patch removes sysfs entries in gsmi_exit() and gsmi_init() error path.
+Adding OF binding to genirq.
+Version string is setup to the "devicetree".
 
-Also move the driver successfully loaded message to the end of gsmi_init()
-and return proper error if register_efivars() fails.
+Compatible string is not setup for now but you can add your
+custom compatible string to uio_of_genirq_match structure.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+For example with "vendor,device" compatible string:
+static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
+	{ .compatible = "vendor,device", },
+	{ /* empty for now */ },
+};
+
+Signed-off-by: Michal Simek <monstr@monstr.eu>
+Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
+Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
+CC: Hans J. Koch <hjk@hansjkoch.de>
+CC: Arnd Bergmann <arnd@arndb.de>
+CC: John Williams <john.williams@petalogix.com>
+CC: Grant Likely <grant.likely@secretlab.ca>
+CC: Wolfram Sang <w.sang@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/firmware/google/gsmi.c |   19 +++++++++++++------
- 1 files changed, 13 insertions(+), 6 deletions(-)
+ drivers/uio/uio_pdrv_genirq.c |   43 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 43 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/firmware/google/gsmi.c b/drivers/firmware/google/gsmi.c
-index fa7f0b3..68810fd 100644
---- a/drivers/firmware/google/gsmi.c
-+++ b/drivers/firmware/google/gsmi.c
-@@ -869,8 +869,6 @@ static __init int gsmi_init(void)
- 		goto out_err;
- 	}
+diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+index 0f424af..f8f81db 100644
+--- a/drivers/uio/uio_pdrv_genirq.c
++++ b/drivers/uio/uio_pdrv_genirq.c
+@@ -23,6 +23,10 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/slab.h>
  
--	printk(KERN_INFO "gsmi version " DRIVER_VERSION " loaded\n");
--
- 	/* Register in the firmware directory */
- 	ret = -ENOMEM;
- 	gsmi_kobj = kobject_create_and_add("gsmi", firmware_kobj);
-@@ -890,12 +888,13 @@ static __init int gsmi_init(void)
- 	ret = sysfs_create_files(gsmi_kobj, gsmi_attrs);
- 	if (ret) {
- 		printk(KERN_INFO "gsmi: Failed to add attrs");
--		goto out_err;
-+		goto out_remove_bin_file;
- 	}
- 
--	if (register_efivars(&efivars, &efivar_ops, gsmi_kobj)) {
-+	ret = register_efivars(&efivars, &efivar_ops, gsmi_kobj);
-+	if (ret) {
- 		printk(KERN_INFO "gsmi: Failed to register efivars\n");
--		goto out_err;
-+		goto out_remove_sysfs_files;
- 	}
- 
- 	register_reboot_notifier(&gsmi_reboot_notifier);
-@@ -903,9 +902,15 @@ static __init int gsmi_init(void)
- 	atomic_notifier_chain_register(&panic_notifier_list,
- 				       &gsmi_panic_notifier);
- 
-+	printk(KERN_INFO "gsmi version " DRIVER_VERSION " loaded\n");
++#include <linux/of.h>
++#include <linux/of_platform.h>
++#include <linux/of_address.h>
 +
+ #define DRIVER_NAME "uio_pdrv_genirq"
+ 
+ struct uio_pdrv_genirq_platdata {
+@@ -97,6 +101,27 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+ 	int ret = -EINVAL;
+ 	int i;
+ 
++	if (!uioinfo) {
++		int irq;
++
++		/* alloc uioinfo for one device */
++		uioinfo = kzalloc(sizeof(*uioinfo), GFP_KERNEL);
++		if (!uioinfo) {
++			ret = -ENOMEM;
++			dev_err(&pdev->dev, "unable to kmalloc\n");
++			goto bad2;
++		}
++		uioinfo->name = pdev->dev.of_node->name;
++		uioinfo->version = "devicetree";
++
++		/* Multiple IRQs are not supported */
++		irq = platform_get_irq(pdev, 0);
++		if (irq == -ENXIO)
++			uioinfo->irq = UIO_IRQ_NONE;
++		else
++			uioinfo->irq = irq;
++	}
++
+ 	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
+ 		dev_err(&pdev->dev, "missing platform_data\n");
+ 		goto bad0;
+@@ -180,6 +205,10 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+ 	kfree(priv);
+ 	pm_runtime_disable(&pdev->dev);
+  bad0:
++	/* kfree uioinfo for OF */
++	if (pdev->dev.of_node)
++		kfree(uioinfo);
++ bad2:
+ 	return ret;
+ }
+ 
+@@ -193,6 +222,10 @@ static int uio_pdrv_genirq_remove(struct platform_device *pdev)
+ 	priv->uioinfo->handler = NULL;
+ 	priv->uioinfo->irqcontrol = NULL;
+ 
++	/* kfree uioinfo for OF */
++	if (pdev->dev.of_node)
++		kfree(priv->uioinfo);
++
+ 	kfree(priv);
  	return 0;
+ }
+@@ -219,6 +252,15 @@ static const struct dev_pm_ops uio_pdrv_genirq_dev_pm_ops = {
+ 	.runtime_resume = uio_pdrv_genirq_runtime_nop,
+ };
  
-- out_err:
-+out_remove_sysfs_files:
-+	sysfs_remove_files(gsmi_kobj, gsmi_attrs);
-+out_remove_bin_file:
-+	sysfs_remove_bin_file(gsmi_kobj, &eventlog_bin_attr);
-+out_err:
- 	kobject_put(gsmi_kobj);
- 	gsmi_buf_free(gsmi_dev.param_buf);
- 	gsmi_buf_free(gsmi_dev.data_buf);
-@@ -925,6 +930,8 @@ static void __exit gsmi_exit(void)
- 					 &gsmi_panic_notifier);
- 	unregister_efivars(&efivars);
++#ifdef CONFIG_OF
++static const struct of_device_id __devinitconst uio_of_genirq_match[] = {
++	{ /* empty for now */ },
++};
++MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
++#else
++# define uio_of_genirq_match NULL
++#endif
++
+ static struct platform_driver uio_pdrv_genirq = {
+ 	.probe = uio_pdrv_genirq_probe,
+ 	.remove = uio_pdrv_genirq_remove,
+@@ -226,6 +268,7 @@ static struct platform_driver uio_pdrv_genirq = {
+ 		.name = DRIVER_NAME,
+ 		.owner = THIS_MODULE,
+ 		.pm = &uio_pdrv_genirq_dev_pm_ops,
++		.of_match_table = uio_of_genirq_match,
+ 	},
+ };
  
-+	sysfs_remove_files(gsmi_kobj, gsmi_attrs);
-+	sysfs_remove_bin_file(gsmi_kobj, &eventlog_bin_attr);
- 	kobject_put(gsmi_kobj);
- 	gsmi_buf_free(gsmi_dev.param_buf);
- 	gsmi_buf_free(gsmi_dev.data_buf);
 -- 
 1.7.6
 
