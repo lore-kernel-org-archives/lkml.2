@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab1G0Lw6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 07:52:58 -0400
-Received: from narfation.org ([79.140.41.39]:48791 "EHLO v3-1039.vlinux.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751160Ab1G0Lw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 07:52:56 -0400
-From: Sven Eckelmann <sven@narfation.org>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: Re: [PATCHv4 10/11] drop_monitor: Use *_dec_not_zero instead of *_add_unless
-Date: Wed, 27 Jul 2011 13:52:50 +0200
-Message-ID: <2127465.xrCKehbL3A@sven-laptop.home.narfation.org>
-User-Agent: KMail/4.6.0 (Linux/2.6.39-2-686-pae; KDE/4.6.5; i686; ; )
-In-Reply-To: <20110727105907.GA19001@hmsreliant.think-freely.org>
-References: <1311760070-21532-1-git-send-email-sven@narfation.org> <1311760070-21532-10-git-send-email-sven@narfation.org> <20110727105907.GA19001@hmsreliant.think-freely.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart3686055.hEzUH6zKZp"; micalg="pgp-sha512"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7Bit
+	id S1753782Ab1G0Lxk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 07:53:40 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:61307 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213Ab1G0Lxh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 07:53:37 -0400
+Subject: Re: [GIT PATCH] STAGING patches for 3.1
+From: Daniel Morsing <daniel.morsing@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+In-Reply-To: <CA+55aFwOgkOXmY654-qbuiFFnUC1yXZ27DBDFR02JP12NxAF9w@mail.gmail.com>
+References: <20110726051533.GA2835@kroah.com>
+	 <CA+55aFwOgkOXmY654-qbuiFFnUC1yXZ27DBDFR02JP12NxAF9w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 27 Jul 2011 13:53:28 +0200
+Message-ID: <1311767608.9876.18.camel@morsingpad>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---nextPart3686055.hEzUH6zKZp
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-
-On Wednesday 27 July 2011 06:59:07 Neil Horman wrote:
-> On Wed, Jul 27, 2011 at 11:47:49AM +0200, Sven Eckelmann wrote:
-> > atomic_dec_not_zero is defined for each architecture through
-> > <linux/atomic.h> to provide the functionality of
-> > atomic_add_unless(x, -1, 0).
-> > 
-> > Signed-off-by: Sven Eckelmann <sven@narfation.org>
-> > Cc: Neil Horman <nhorman@tuxdriver.com>
-> > Cc: netdev@vger.kernel.org
-> > ---
-> > 
-> >  net/core/drop_monitor.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
-> > index 7f36b38..ef4a05d 100644
-> > --- a/net/core/drop_monitor.c
-> > +++ b/net/core/drop_monitor.c
-> > @@ -137,7 +137,7 @@ static void trace_drop_common(struct sk_buff *skb,
-> > void *location)
-> > 
-> >  	struct per_cpu_dm_data *data = &__get_cpu_var(dm_cpu_data);
-> > 
-> > -	if (!atomic_add_unless(&data->dm_hit_count, -1, 0)) {
-> > +	if (!atomic_dec_not_zero(&data->dm_hit_count)) {
-> > 
-> >  		/*
-> >  		
-> >  		 * we're already at zero, discard this hit
-> >  		 */
+On Mon, 2011-07-25 at 23:31 -0700, Linus Torvalds wrote:
 > 
-> Wheres the patch that creates the per arch definition of this function?  I
-> see the other posts in this series went to lkml, but the archives don't
-> have the first in the series anywhere, which ostensibly adds the
-> definition. Neil
+> So all merged and pushed out. Of course, maybe I made a mistake
+> somewhere, but none of it looked at all questionable (famous last
+> words ;)
+> 
+>                    Linus
+> 
 
-Most architectures don't use a per architecture definition anymore, but a 
-cross-architecture the definition in include/linux/atomic.h.
+I came across a double include of linux/interrupt.h in
+drivers/staging/brcm80211/brcmsmac/mac80211_if.h from this merge while
+trying to teach myself how to effectively use git as a tool for
+resolving merges. 
 
-The 01/11 can be found in different archives under the message id 
-1311760070-21532-1-git-send-email-sven@narfation.org ... for example gmane: 
-http://article.gmane.org/gmane.linux.ports.arm.kernel/126704
+The merge also added an include of linux/interrupt.h in mac80211_if.c
+which includes mac80211_if.h, but I left that in, since it explicitly
+shows the dependencies of the file.
 
-Kind regards,
-	Sven
---nextPart3686055.hEzUH6zKZp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
+Anyway, Here's the patch:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+---
+From: Daniel Morsing <daniel.morsing@gmail.com>
 
-iQIcBAABCgAGBQJOL/wSAAoJEF2HCgfBJntGNz8P/2wDmBhHkECns7OOuBVqlMOz
-r66gEhnNLTnztYkxL0GQ8/qH2OfsKDwfKF1i7tXkie0yqAhAxUtjMJUahxmX786G
-Ek2nanC8Qbt5EmTrwx/bpzxLDM0UrOaLu1OcxA0AjT8qu/hJlzwicgr4fEElaanM
-oL6VE0fTD2fk/7CYNEBC9omh4Om3pHWulj4pirEjR3pYqQ2/2mUO5RZ3blCNbts/
-MOMrcrRC/p9ZFP/VanETM8xXcjD1nRDeKnliuYC+S0ZYB0ns6apPXBpflXdw2+4A
-CVvfUcGk5ao0DaiggW6yaWxgshDSyT6gmy5fhXc/MKLvq6GswQKDBHjQZCO54fDM
-upV+2gIZa0ehPdDxjQbSvmwY50U50jK9eDp22H/s6WOO+30RMVRrPKpAjhs310lL
-Eql8hKRQP8/6xL27B9lbpIQvkUGNmFi1Uh/gS+kctOl6GUKONzmN40mHSyfS1+nf
-mSUs3+eBmNz1arazwTwzCVC4SibXdC7WV6CwfNXQkceAvkLfOedV6J+wLmDgTE+0
-mcdiIv7D3lnLdDOoyftlFkMOL0+hwAsg0MIhVaWE1BEL3zS4VoEyqI2ass7Vyw7U
-7tR89XaaQKL4+na/NjO4BPulO4DZEVzFh6orxLMaUAbZpZ77+yG90TO4dtSuu3rv
-ohcG9P/NR3n/KRZvxk1I
-=cQPZ
------END PGP SIGNATURE-----
+staging: brcm80211: Fix double include introduced by bad merge
 
---nextPart3686055.hEzUH6zKZp--
+A merge with Linus' tree added a double include of linux/interrupt.h.
+Fix by removing one of the includes.
+
+Signed-off-by: Daniel Morsing <daniel.morsing@gmail.com>
+---
+ drivers/staging/brcm80211/brcmsmac/mac80211_if.h |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/brcm80211/brcmsmac/mac80211_if.h
+b/drivers/staging/brcm80211/brcmsmac/mac80211_if.h
+index 5711e7c..40e3d37 100644
+--- a/drivers/staging/brcm80211/brcmsmac/mac80211_if.h
++++ b/drivers/staging/brcm80211/brcmsmac/mac80211_if.h
+@@ -24,8 +24,6 @@
+ #define BRCMS_SET_SHORTSLOT_OVERRIDE		146
+ 
+ 
+-#include <linux/interrupt.h>
+-
+ /* BMAC Note: High-only driver is no longer working in softirq context
+as it needs to block and
+  * sleep so perimeter lock has to be a semaphore instead of spinlock.
+This requires timers to be
+  * submitted to workqueue instead of being on kernel timer
+
+
+
+
 
