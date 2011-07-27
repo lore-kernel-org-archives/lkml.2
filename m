@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab1G0IPa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 04:15:30 -0400
-Received: from smtp-68.nebula.fi ([83.145.220.68]:46400 "EHLO
-	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427Ab1G0IP1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 04:15:27 -0400
-Date: Wed, 27 Jul 2011 11:15:22 +0300
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [PATCH] adp1653: check error code of adp1653_init_controls
-Message-ID: <20110727081522.GH32629@valkosipuli.localdomain>
-References: <1b238cd98e03909bc4955113ffbe7e0c9f0db4f8.1311753459.git.andriy.shevchenko@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1b238cd98e03909bc4955113ffbe7e0c9f0db4f8.1311753459.git.andriy.shevchenko@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753982Ab1G0IR0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 04:17:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:39585 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752280Ab1G0IRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 04:17:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,275,1309762800"; 
+   d="scan'208";a="32513677"
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: 
+Date: Wed, 27 Jul 2011 01:17:13 -0700
+Message-Id: <1311754633-19438-1-git-send-email-dvhart@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 10:58:02AM +0300, Andy Shevchenko wrote:
-> Potentially the adp1653_init_controls could return an error. In our case the
-> error was ignored, meanwhile it means incorrect initialization of V4L2
-> controls.
+Without the raw_spin_lock_init(), the wait_lock does not get properly
+initialized with CONFIG_DEBUG_SPINLOCK. This can manifest in a BUG() in the
+futex requeue_pi path when the pi_state->pi_mutex->wait_lock fails the magic
+test in rt_mutex_start_proxy_lock()->raw_spin_lock(&lock->wait_lock).
 
-Hi, Andy!
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Reported-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+CC: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Steven Rostedt <rostedt@goodmis.org>
 
-Many thanks for the another patch! I'll add this to my next pull req as
-well.
+---
+ rtmutex.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Just FYI: As this is clearly a regular patch for the V4L2 subsystem, I think
-cc'ing the linux-kernel list isn't necessary.
-
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> ---
->  drivers/media/video/adp1653.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/media/video/adp1653.c b/drivers/media/video/adp1653.c
-> index 8ad89ff..3379e6d 100644
-> --- a/drivers/media/video/adp1653.c
-> +++ b/drivers/media/video/adp1653.c
-> @@ -429,7 +429,11 @@ static int adp1653_probe(struct i2c_client *client,
->  	flash->subdev.internal_ops = &adp1653_internal_ops;
->  	flash->subdev.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
->  
-> -	adp1653_init_controls(flash);
-> +	ret = adp1653_init_controls(flash);
-> +	if (ret) {
-> +		kfree(flash);
-> +		return ret;
-> +	}
->  
->  	ret = media_entity_init(&flash->subdev.entity, 0, NULL, 0);
->  	if (ret < 0)
-> -- 
-> 1.7.5.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-Cheers,
-
--- 
-Sakari Ailus
-sakari.ailus@iki.fi
+Index: linux-3.0-rt/kernel/rtmutex.c
+===================================================================
+--- linux-3.0-rt.orig/kernel/rtmutex.c
++++ linux-3.0-rt/kernel/rtmutex.c
+@@ -1277,6 +1277,7 @@ EXPORT_SYMBOL_GPL(rt_mutex_destroy);
+ void __rt_mutex_init(struct rt_mutex *lock, const char *name)
+ {
+ 	lock->owner = NULL;
++	raw_spin_lock_init(&lock->wait_lock);
+ 	plist_head_init_raw(&lock->wait_list, &lock->wait_lock);
+ 
+ 	debug_rt_mutex_init(lock, name);
