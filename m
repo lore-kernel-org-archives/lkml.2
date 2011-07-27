@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076Ab1G0WAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:00:09 -0400
+	id S1756115Ab1G0WBA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:01:00 -0400
 Received: from mga09.intel.com ([134.134.136.24]:17198 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755676Ab1G0VtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:49:10 -0400
+	id S1755664Ab1G0VtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:49:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
-   d="scan'208";a="30900857"
+   d="scan'208";a="30900745"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: ian.campbell@citrix.com, jeremy.fitzhardinge@citrix.com,
-        stefan.bader@canonical.com, gregkh@suse.de, ak@linux.intel.com,
+To: robert.richter@amd.com, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [60/99] xen: events: do not unmask event channels on resume
-Message-Id: <20110727214859.644862403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:48:59 -0700 (PDT)
+Subject: [PATCH] [53/99] oprofile, dcookies: Fix possible circular locking dependency
+Message-Id: <20110727214852.4626C2403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:48:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,124 +24,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Ian Campbell <ian.campbell@citrix.com>
+From: Robert Richter <robert.richter@amd.com>
 
-commit 6903591f314b8947d0e362bda7715e90eb9df75e upstream.
+commit fe47ae7f53e179d2ef6771024feb000cbb86640f upstream.
 
-The IRQ core code will take care of disabling and reenabling
-interrupts over suspend resume automatically, therefore we do not need
-to do this in the Xen event channel code.
+The lockdep warning below detects a possible A->B/B->A locking
+dependency of mm->mmap_sem and dcookie_mutex. The order in
+sync_buffer() is mm->mmap_sem/dcookie_mutex, while in
+sys_lookup_dcookie() it is vice versa.
 
-The only exception is those event channels marked IRQF_NO_SUSPEND
-which the IRQ core ignores. We must unmask these ourselves, taking
-care to obey the current IRQ_DISABLED status. Failure check for
-IRQ_DISABLED leads to enabling polled only event channels, such as
-that associated with the pv spinlocks, which must never be enabled:
+Fixing it in sys_lookup_dcookie() by unlocking dcookie_mutex before
+copy_to_user().
 
-[   21.970432] ------------[ cut here ]------------
-[   21.970432] kernel BUG at arch/x86/xen/spinlock.c:343!
-[   21.970432] invalid opcode: 0000 [#1] SMP
-[   21.970432] last sysfs file: /sys/devices/virtual/net/lo/operstate
-[   21.970432] Modules linked in:
-[   21.970432]
-[   21.970432] Pid: 0, comm: swapper Not tainted (2.6.32.24-x86_32p-xen-01034-g787c727 #34)
-[   21.970432] EIP: 0061:[<c102e209>] EFLAGS: 00010046 CPU: 3
-[   21.970432] EIP is at dummy_handler+0x3/0x7
-[   21.970432] EAX: 0000021c EBX: dfc16880 ECX: 0000001a EDX: 00000000
-[   21.970432] ESI: dfc02c00 EDI: 00000001 EBP: dfc47e10 ESP: dfc47e10
-[   21.970432]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0069
-[   21.970432] Process swapper (pid: 0, ti=dfc46000 task=dfc39440 task.ti=dfc46000)
-[   21.970432] Stack:
-[   21.970432]  dfc47e30 c10a39f0 0000021c 00000000 00000000 dfc16880 0000021c 00000001
-[   21.970432] <0> dfc47e40 c10a4f08 0000021c 00000000 dfc47e78 c12240a7 c1839284 c1839284
-[   21.970432] <0> 00000200 00000000 00000000 f5720000 c1f3d028 c1f3d02c 00000180 dfc47e90
-[   21.970432] Call Trace:
-[   21.970432]  [<c10a39f0>] ? handle_IRQ_event+0x5f/0x122
-[   21.970432]  [<c10a4f08>] ? handle_percpu_irq+0x2f/0x55
-[   21.970432]  [<c12240a7>] ? __xen_evtchn_do_upcall+0xdb/0x15f
-[   21.970432]  [<c122481e>] ? xen_evtchn_do_upcall+0x20/0x30
-[   21.970432]  [<c1030d47>] ? xen_do_upcall+0x7/0xc
-[   21.970432]  [<c102007b>] ? apic_reg_read+0xd3/0x22d
-[   21.970432]  [<c1002227>] ? hypercall_page+0x227/0x1005
-[   21.970432]  [<c102d30b>] ? xen_force_evtchn_callback+0xf/0x14
-[   21.970432]  [<c102da7c>] ? check_events+0x8/0xc
-[   21.970432]  [<c102da3b>] ? xen_irq_enable_direct_end+0x0/0x1
-[   21.970432]  [<c105e485>] ? finish_task_switch+0x62/0xba
-[   21.970432]  [<c14e3f84>] ? schedule+0x808/0x89d
-[   21.970432]  [<c1084dc5>] ? hrtimer_start_expires+0x1a/0x22
-[   21.970432]  [<c1085154>] ? tick_nohz_restart_sched_tick+0x15a/0x162
-[   21.970432]  [<c102f43a>] ? cpu_idle+0x6d/0x6f
-[   21.970432]  [<c14db29e>] ? cpu_bringup_and_idle+0xd/0xf
-[   21.970432] Code: 5d 0f 95 c0 0f b6 c0 c3 55 66 83 78 02 00 89 e5 5d 0f 95 \
-c0 0f b6 c0 c3 55 b2 01 86 10 31 c0 84 d2 89 e5 0f 94 c0 5d c3 55 89 e5 <0f> 0b \
-eb fe 55 80 3d 4c ce 84 c1 00 89 e5 57 56 89 c6 53 74 15
-[   21.970432] EIP: [<c102e209>] dummy_handler+0x3/0x7 SS:ESP 0069:dfc47e10
-[   21.970432] ---[ end trace c0b71f7e12cf3011 ]---
+oprofiled/4432 is trying to acquire lock:
+ (&mm->mmap_sem){++++++}, at: [<ffffffff810b444b>] might_fault+0x53/0xa3
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+but task is already holding lock:
+ (dcookie_mutex){+.+.+.}, at: [<ffffffff81124d28>] sys_lookup_dcookie+0x45/0x149
+
+which lock already depends on the new lock.
+
+the existing dependency chain (in reverse order) is:
+
+-> #1 (dcookie_mutex){+.+.+.}:
+       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
+       [<ffffffff814634f0>] mutex_lock_nested+0x63/0x309
+       [<ffffffff81124e5c>] get_dcookie+0x30/0x144
+       [<ffffffffa0000fba>] sync_buffer+0x196/0x3ec [oprofile]
+       [<ffffffffa0001226>] task_exit_notify+0x16/0x1a [oprofile]
+       [<ffffffff81467b96>] notifier_call_chain+0x37/0x63
+       [<ffffffff8105803d>] __blocking_notifier_call_chain+0x50/0x67
+       [<ffffffff81058068>] blocking_notifier_call_chain+0x14/0x16
+       [<ffffffff8105a718>] profile_task_exit+0x1a/0x1c
+       [<ffffffff81039e8f>] do_exit+0x2a/0x6fc
+       [<ffffffff8103a5e4>] do_group_exit+0x83/0xae
+       [<ffffffff8103a626>] sys_exit_group+0x17/0x1b
+       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
+
+-> #0 (&mm->mmap_sem){++++++}:
+       [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
+       [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
+       [<ffffffff810b4478>] might_fault+0x80/0xa3
+       [<ffffffff81124de7>] sys_lookup_dcookie+0x104/0x149
+       [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
+
+other info that might help us debug this:
+
+1 lock held by oprofiled/4432:
+ #0:  (dcookie_mutex){+.+.+.}, at: [<ffffffff81124d28>] sys_lookup_dcookie+0x45/0x149
+
+stack backtrace:
+Pid: 4432, comm: oprofiled Not tainted 2.6.39-00008-ge5a450d #9
+Call Trace:
+ [<ffffffff81063193>] print_circular_bug+0xae/0xbc
+ [<ffffffff81064dfb>] __lock_acquire+0x1085/0x1711
+ [<ffffffff8102ef13>] ? get_parent_ip+0x11/0x42
+ [<ffffffff810b444b>] ? might_fault+0x53/0xa3
+ [<ffffffff8106557f>] lock_acquire+0xf8/0x11e
+ [<ffffffff810b444b>] ? might_fault+0x53/0xa3
+ [<ffffffff810d7d54>] ? path_put+0x22/0x27
+ [<ffffffff810b4478>] might_fault+0x80/0xa3
+ [<ffffffff810b444b>] ? might_fault+0x53/0xa3
+ [<ffffffff81124de7>] sys_lookup_dcookie+0x104/0x149
+ [<ffffffff8146ad4b>] system_call_fastpath+0x16/0x1b
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=13809
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/xen/events.c |   25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+ fs/dcookies.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Index: linux-2.6.35.y/drivers/xen/events.c
+Index: linux-2.6.35.y/fs/dcookies.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/xen/events.c
-+++ linux-2.6.35.y/drivers/xen/events.c
-@@ -819,9 +819,6 @@ static void restore_cpu_virqs(unsigned i
- 		evtchn_to_irq[evtchn] = irq;
- 		irq_info[irq] = mk_virq_info(evtchn, virq);
- 		bind_evtchn_to_cpu(evtchn, cpu);
--
--		/* Ready for use. */
--		unmask_evtchn(evtchn);
- 	}
- }
+--- linux-2.6.35.y.orig/fs/dcookies.c
++++ linux-2.6.35.y/fs/dcookies.c
+@@ -178,6 +178,8 @@ SYSCALL_DEFINE(lookup_dcookie)(u64 cooki
+ 	/* FIXME: (deleted) ? */
+ 	path = d_path(&dcs->path, kbuf, PAGE_SIZE);
  
-@@ -847,10 +844,6 @@ static void restore_cpu_ipis(unsigned in
- 		evtchn_to_irq[evtchn] = irq;
- 		irq_info[irq] = mk_ipi_info(evtchn, ipi);
- 		bind_evtchn_to_cpu(evtchn, cpu);
--
--		/* Ready for use. */
--		unmask_evtchn(evtchn);
--
- 	}
- }
- 
-@@ -903,6 +896,7 @@ void xen_poll_irq(int irq)
- void xen_irq_resume(void)
- {
- 	unsigned int cpu, irq, evtchn;
-+	struct irq_desc *desc;
- 
- 	init_evtchn_cpu_bindings();
- 
-@@ -921,6 +915,23 @@ void xen_irq_resume(void)
- 		restore_cpu_virqs(cpu);
- 		restore_cpu_ipis(cpu);
- 	}
++	mutex_unlock(&dcookie_mutex);
 +
-+	/*
-+	 * Unmask any IRQF_NO_SUSPEND IRQs which are enabled. These
-+	 * are not handled by the IRQ core.
-+	 */
-+	for_each_irq_desc(irq, desc) {
-+		if (!desc->action || !(desc->action->flags & IRQF_NO_SUSPEND))
-+			continue;
-+		if (desc->status & IRQ_DISABLED)
-+			continue;
-+
-+		evtchn = evtchn_from_irq(irq);
-+		if (evtchn == -1)
-+			continue;
-+
-+		unmask_evtchn(evtchn);
-+	}
- }
+ 	if (IS_ERR(path)) {
+ 		err = PTR_ERR(path);
+ 		goto out_free;
+@@ -194,6 +196,7 @@ SYSCALL_DEFINE(lookup_dcookie)(u64 cooki
  
- static struct irq_chip xen_dynamic_chip __read_mostly = {
+ out_free:
+ 	kfree(kbuf);
++	return err;
+ out:
+ 	mutex_unlock(&dcookie_mutex);
+ 	return err;
