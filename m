@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab1G0QCk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 12:02:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9358 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754724Ab1G0QCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 12:02:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,276,1309762800"; 
-   d="scan'208";a="30757165"
-Message-ID: <4E30369B.8030708@linux.intel.com>
-Date: Wed, 27 Jul 2011 09:02:35 -0700
-From: Andi Kleen <ak@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Tim Gardner <tim.gardner@canonical.com>
-CC: Andi Kleen <andi@firstfloor.org>, ebiederm@xmission.com, dan@aloni.org,
-        davem@davemloft.net, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        stable@kernel.org, tim.bird@am.sony.com, stable@vger.kernel.org
-Subject: Re: [stable] [PATCH] [26/98] af_unix: Only allow recv on connected
- seqpacket sockets.
-References: <20110726534.972201586@firstfloor.org> <20110727003518.6DA772403FF@tassilo.jf.intel.com> <4E3035BE.6090908@canonical.com>
-In-Reply-To: <4E3035BE.6090908@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754755Ab1G0QDo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 12:03:44 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:42134 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753452Ab1G0QDm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 12:03:42 -0400
+Date: Wed, 27 Jul 2011 09:03:31 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Dave Airlie <airlied@redhat.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Hold struct_mutex during hotplug
+ processing
+Message-ID: <20110727090331.60e0c5be@jbarnes-desktop>
+In-Reply-To: <yunk4b43wq3.fsf@aiko.keithp.com>
+References: <1311613829-4990-1-git-send-email-keithp@keithp.com>
+	<CAKMK7uHO1jqUNrnqC9sd=JJ9Vr=hmAjnJ06eDYxfeyTTFAMK1w@mail.gmail.com>
+	<yunsjpt2hi6.fsf@aiko.keithp.com>
+	<20110726121225.3ae7acce@jbarnes-desktop>
+	<yunk4b43wq3.fsf@aiko.keithp.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 27 Jul 2011 02:21:24 -0700
+Keith Packard <keithp@keithp.com> wrote:
 
-> Andi - Ubuntu has reverted this patch for both Lucid (2.6.32) and 
-> Natty (2.6.38) as it appears to cause a networking regression, though 
-> we never really figured out root cause. Empirically, reverting the 
-> patch solved the issue. Eric Biederman theorized that it uncovered a 
-> user space issue (trying to read before listen), but the bug reporter 
-> seems to have lost interest in testing kernels so we couldn't ever pin 
-> it down.
->
-> http://bugs.launchpad.net/bugs/791512
->
-> We also decided that reverting this patch was likely OK because we 
-> couldn't find any Launchpad reports of the Ooops mentioned in the 
-> patch commit log, nor does a google search turn up any hits.
+> On Tue, 26 Jul 2011 12:12:25 -0700, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> 
+> > I'd like to amend my reviewed by and say the lock shouldn't be held
+> > around the call to the drm helper function.  It queues some work that
+> > also takes the mode config lock, which will break.  So you can drop it
+> > before that...  Previously I had only checked our internal driver
+> > callbacks but missed that the lock was held across the helper too.
+> 
+> So the work may get executed immediately rather than being run later at
+> some point?
 
-Thanks for the heads-up. I'm dropping it.
+It sure looks that way... but I don't remember any rule about work
+queue items having inter dependencies like this.
 
--Andi
-
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
