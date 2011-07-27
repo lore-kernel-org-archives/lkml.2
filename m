@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab1G0P6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 11:58:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34203 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754427Ab1G0P6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 11:58:17 -0400
-Message-ID: <4E303579.4000903@redhat.com>
-Date: Wed, 27 Jul 2011 18:57:45 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+	id S1754702Ab1G0P7N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 11:59:13 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:57905 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753227Ab1G0P7L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 11:59:11 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Ingo Molnar <mingo@elte.hu>, "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-References: <4E2F0498.8050005@zytor.com> <20110726183721.GF32536@aftab> <4E2F09BB.9060605@zytor.com> <4E2F1889.8030708@amd.com> <4E2F90A2.4030409@redhat.com> <20110727062120.GA5272@aftab> <20110727065932.GA16555@elte.hu> <4E2FDAD0.8000809@redhat.com> <20110727153731.GA19477@aftab> <4E30327C.5020509@redhat.com> <20110727154957.GB19477@aftab>
-In-Reply-To: <20110727154957.GB19477@aftab>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201107271722.51179.arnd@arndb.de>
+References: <CAFbHwiQaYeQSwRykhKp57rQ8xLKSst9MXF7YJoQjEm0V+WN4Qw@mail.gmail.com>
+	<201107271628.29532.arnd@arndb.de>
+	<CAFbHwiRUKEuK_88+yfUpiWnRBgGKBTpH2Fm7EpzW-dJSiwhHLA@mail.gmail.com>
+	<201107271722.51179.arnd@arndb.de>
+Date: Wed, 27 Jul 2011 16:59:10 +0100
+Message-ID: <CAFbHwiQPQVF68=-Z315cE1DOj7bB4zVnnoXV6w3D9891FKi+GA@mail.gmail.com>
+Subject: Re: [PATCH] bitops: Use volatile in generic atomic bitops.
+From: Will Newton <will.newton@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2011 06:49 PM, Borislav Petkov wrote:
-> On Wed, Jul 27, 2011 at 11:45:00AM -0400, Avi Kivity wrote:
-> >  What about F21h processors?  I see you're not checking them.
-> >
-> >  Is there any reason the check should not be made based on topology?
+On Wed, Jul 27, 2011 at 4:22 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 27 July 2011, Will Newton wrote:
+>> Imagination Technologies META, which is a custom in-house
+>> architecture. No immediate plans to upstream unfortunately. :-/
 >
-> Because this patch addresses a performance improvement for the F15h
-> microarchitecture - that doesn't have anything to do with cache
-> topology.
+> Ah, interesting. We have a few other DSP architectures lined up
+> for upstream integration. Let me know when you get there as well.
+> Is there a git tree available somewhere?
 
-Okay.
+Not at the moment. It's something I would like to have though.
 
-Out of curiosity, what's the performance impact if the workaround is not 
-enabled?
+>> FWIW I checked all the in-tree architectures and it seems everyone
+>> else gets this right (although I got a bit lost with tile).
+>
+> Yes, I think that you get into a lot of other problems if you
+> mess up the basic synchronization primitives, so they would have
+> noticed at some point.
 
--- 
-error compiling committee.c: too many arguments to function
-
+On the contrary, the system was remarkably stable and the issue only
+showed up in one particular driver under heavy load. ;-)
