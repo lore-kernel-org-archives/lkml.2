@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab1G0Qrw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 12:47:52 -0400
-Received: from queue02.mail.zen.net.uk ([212.23.3.27]:36926 "EHLO
-	queue02.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282Ab1G0Qrt (ORCPT
+	id S1754878Ab1G0Qsu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 12:48:50 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:56481 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753784Ab1G0Qsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 12:47:49 -0400
-From: Andrew Bird <ajb@spheresystems.co.uk>
-To: gregkh@suse.de
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Bird <ajb@spheresystems.co.uk>
-Subject: [PATCH 2/4] USB: option driver: add PID for Vodafone-Huawei K3771
-Date: Wed, 27 Jul 2011 17:03:18 +0100
-Message-Id: <1311782600-13353-2-git-send-email-ajb@spheresystems.co.uk>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1311782600-13353-1-git-send-email-ajb@spheresystems.co.uk>
-References: <1311782600-13353-1-git-send-email-ajb@spheresystems.co.uk>
-X-Originating-Smarthost01-IP: [82.71.70.22]
+	Wed, 27 Jul 2011 12:48:47 -0400
+From: Andy Whitcroft <apw@canonical.com>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] oss: rename local change_bits to avoid powerpc bitsops.h definition
+Date: Wed, 27 Jul 2011 17:48:41 +0100
+Message-Id: <1311785321-23431-1-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the product ID of Huawei's Vodafone K3771 mobile broadband
-modem to option.c. This is necessary so that the driver gets loaded on demand
-without the intervention of usb_modeswitch. This has the benefit of it becoming
-available faster and also ensures that the option driver is not bound to a
-network interface that should be claimed by cdc_ether.
+This collides with powerpc exported functions from bitops.h.  Rename the
+local copy in the oss soundblaster mixer and ad1848 driver.
 
-Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
 ---
- drivers/usb/serial/option.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ sound/oss/ad1848.c   |    6 +++---
+ sound/oss/sb_mixer.c |    6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 4dbce2d..b9783b6 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -149,6 +149,7 @@ static void option_instat_callback(struct urb *urb);
- #define HUAWEI_PRODUCT_K3765			0x1465
- #define HUAWEI_PRODUCT_E14AC			0x14AC
- #define HUAWEI_PRODUCT_K3770			0x14C9
-+#define HUAWEI_PRODUCT_K3771			0x14CA
- #define HUAWEI_PRODUCT_ETS1220			0x1803
- #define HUAWEI_PRODUCT_E353			0x1506
+diff --git a/sound/oss/ad1848.c b/sound/oss/ad1848.c
+index 4d2a6ae..8415158 100644
+--- a/sound/oss/ad1848.c
++++ b/sound/oss/ad1848.c
+@@ -458,7 +458,7 @@ static int ad1848_set_recmask(ad1848_info * devc, int mask)
+ 	return mask;
+ }
  
-@@ -550,6 +551,8 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x31) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x31) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x32) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E353, 0xff, 0x01, 0x01) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V640) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V620) },
+-static void change_bits(ad1848_info * devc, unsigned char *regval,
++static void oss_change_bits(ad1848_info * devc, unsigned char *regval,
+ 			unsigned char *muteval, int dev, int chn, int newval)
+ {
+ 	unsigned char mask;
+@@ -516,10 +516,10 @@ static void ad1848_mixer_set_channel(ad1848_info *devc, int dev, int value, int
+ 
+ 	if (muteregoffs != regoffs) {
+ 		muteval = ad_read(devc, muteregoffs);
+-		change_bits(devc, &val, &muteval, dev, channel, value);
++		oss_change_bits(devc, &val, &muteval, dev, channel, value);
+ 	}
+ 	else
+-		change_bits(devc, &val, &val, dev, channel, value);
++		oss_change_bits(devc, &val, &val, dev, channel, value);
+ 
+ 	spin_lock_irqsave(&devc->lock,flags);
+ 	ad_write(devc, regoffs, val);
+diff --git a/sound/oss/sb_mixer.c b/sound/oss/sb_mixer.c
+index 2039d31..0266088 100644
+--- a/sound/oss/sb_mixer.c
++++ b/sound/oss/sb_mixer.c
+@@ -232,7 +232,7 @@ static int detect_mixer(sb_devc * devc)
+ 	return 1;
+ }
+ 
+-static void change_bits(sb_devc * devc, unsigned char *regval, int dev, int chn, int newval)
++static void oss_change_bits(sb_devc * devc, unsigned char *regval, int dev, int chn, int newval)
+ {
+ 	unsigned char mask;
+ 	int shift;
+@@ -284,7 +284,7 @@ int sb_common_mixer_set(sb_devc * devc, int dev, int left, int right)
+ 		return -EINVAL;
+ 
+ 	val = sb_getmixer(devc, regoffs);
+-	change_bits(devc, &val, dev, LEFT_CHN, left);
++	oss_change_bits(devc, &val, dev, LEFT_CHN, left);
+ 
+ 	if ((*devc->iomap)[dev][RIGHT_CHN].regno != regoffs)	/*
+ 								 * Change register
+@@ -304,7 +304,7 @@ int sb_common_mixer_set(sb_devc * devc, int dev, int left, int right)
+ 							 * Read the new one
+ 							 */
+ 	}
+-	change_bits(devc, &val, dev, RIGHT_CHN, right);
++	oss_change_bits(devc, &val, dev, RIGHT_CHN, right);
+ 
+ 	sb_setmixer(devc, regoffs, val);
+ 
 -- 
-1.7.6
+1.7.4.1
 
