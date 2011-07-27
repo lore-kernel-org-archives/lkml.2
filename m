@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab1G0TqY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 15:46:24 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:64036 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab1G0TqW convert rfc822-to-8bit (ORCPT
+	id S1754980Ab1G0Tr3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 15:47:29 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34348
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752681Ab1G0Tr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 15:46:22 -0400
+	Wed, 27 Jul 2011 15:47:27 -0400
+Date: Wed, 27 Jul 2011 15:47:22 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
+Message-ID: <20110727194722.GA9345@infradead.org>
+References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>
+ <20110727160752.GC974@fieldses.org>
+ <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
+ <20110727181111.GA23009@infradead.org>
+ <alpine.DEB.2.02.1107271530340.1451@p34.internal.lan>
+ <20110727193937.GA5354@infradead.org>
+ <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>
 MIME-Version: 1.0
-In-Reply-To: <CAC5umygDP6WCrHmhRqMSDBmnOyB1aw+3nuCqvyz9xGXg9QeePw@mail.gmail.com>
-References: <1311711119-6286-1-git-send-email-per.forlin@linaro.org>
-	<1311711119-6286-3-git-send-email-per.forlin@linaro.org>
-	<CAC5umygcfno0-=rA9G0OcxuVK2YK9UokfoYoy45qBT8w0+ytvg@mail.gmail.com>
-	<CAJ0pr19RWjCJAvnkVR+gL7y8_X4TSFfs7JqXgydWuWMAPPb1ZQ@mail.gmail.com>
-	<CAC5umygDP6WCrHmhRqMSDBmnOyB1aw+3nuCqvyz9xGXg9QeePw@mail.gmail.com>
-Date: Wed, 27 Jul 2011 21:46:21 +0200
-Message-ID: <CAJ0pr1_--ubHVW792iQP5juSzFFcJR2tTcnO4mLE4Sh=rX+Jhg@mail.gmail.com>
-Subject: Re: [PATCH v4 2/3] mmc: core: add random fault injection
-From: Per Forlin <per.forlin@linaro.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
-        Venkatraman S <svenkatr@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
-        Chris Ball <cjb@laptop.org>,
-        J Freyensee <james_p_freyensee@linux.intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 July 2011 18:08, Akinobu Mita <akinobu.mita@gmail.com> wrote:
-> 2011/7/27 Per Forlin <per.forlin@linaro.org>:
->
->> There is an issue with patch v4 now when fault_attr is per-host.
->> Without your patch the entry is still created at the root but there
->> are many instances of fault-attr. I think it's better to wait for your
->> patch to make it into the mmc-next tree before submitting my patch. I
->> will prepare a patch v5 that depends on your upcoming changes in
->> fault-inject with a note that states the dependency.
->
-> Or you can prepare a patch for -mm and ask Andrew to add it to the -mm
-> tree.
->
-Thanks for the tip,
+On Wed, Jul 27, 2011 at 03:44:20PM -0400, Justin Piszcz wrote:
+> 
+> 
+> On Wed, 27 Jul 2011, Christoph Hellwig wrote:
+> 
+> >On Wed, Jul 27, 2011 at 03:35:01PM -0400, Justin Piszcz wrote:
+> >>Currently I do not see any dupes, however I have a script that moves
+> >>images out of the directory once an hour:
+> >>0 * * * * /usr/local/bin/move_to_old2.sh > /dev/null 2>&1
+> >
+> >Do you keep adding files to the directory while you move files out?
+> Yes, otherwise there are too many files in the directory and viewers, e.g.,
+> each geeqie (picture viewer) will use > 4-6GB of memory, so I try to keep
+> it around 5,000 pictures or less.
+> 
+> >What's the rate of additions/removals to the directory?
+> Additions it depends, around 5,000 over a 12hr period, 416/hr, current:
+> 
+> atom:/d1/motion# find cam1|wc
+>    5215    5215  166853
+> atom:/d1/motion# find cam2|wc
+>    5069    5069  162181
+> atom:/d1/motion# find cam3|wc
+>    5594    5594  178981
+> atom:/d1/motion#
 
->> Would you mind adding "patch 1/3" (export_symbol_gpl) to your
->> patch-set since it depends on the new function names in your patch?
->> If not, I can resend the patch on top of your changes to match the new
->> function names if you prefer to have this patch separate.
->
-> I recommend it to be a part of your patchset.  The new function name
-> (fault_create_debugfs_attr) is not likely to change for a time.  You can
-> add Acked-by: Akinobu Mita <akinobu.mita@gmail.com>
->
-Beside fault_create_debugfs_attr() the other function is should_fail.
-I presume this name will be changed too, and start with the fault_?
+This sounds a lot like xfs simply filling up the directory index slots
+of files that you just moved out with new files, and nfs falsely
+claiming that this is a problem.
 
-Regards,
-Per
+Any chance to figure out if the file you hit the printk with was one
+that got either recently added or moved when you hit it?  (I can't
+follow the nfs code enough to check if it prints the first or second hit
+of the same cookie)
