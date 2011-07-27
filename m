@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755200Ab1G0RJn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 13:09:43 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:37635 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754879Ab1G0RJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 13:09:41 -0400
-X-IronPort-AV: E=Sophos;i="4.67,277,1309762800"; 
-   d="scan'208";a="565975147"
-Message-ID: <4E304652.5090708@netapp.com>
-Date: Wed, 27 Jul 2011 13:09:38 -0400
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110628 Thunderbird/5.0
+	id S1755213Ab1G0RKd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 13:10:33 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40158 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754914Ab1G0RKa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 13:10:30 -0400
+Date: Wed, 27 Jul 2011 19:10:15 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Borislav Petkov <bp@amd64.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Przywara, Andre" <Andre.Przywara@amd.com>,
+        "Pohlack, Martin" <Martin.Pohlack@amd.com>
+Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
+Message-ID: <20110727171015.GD19477@aftab>
+References: <1311340547-7861-1-git-send-email-bp@amd64.org>
+ <CA+55aFwL9Fwd9ouX3UMOayoBsZyZzTdDSySa6nZJxbpyLifbaQ@mail.gmail.com>
+ <20110724172222.GB12621@aftab>
+ <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com>
 MIME-Version: 1.0
-To: Ruediger Meier <sweet_f_a@gmx.de>
-CC: Justin Piszcz <jpiszcz@lucidpixels.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
-References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan> <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan> <4E303F6F.8010706@netapp.com> <201107271900.11091.sweet_f_a@gmx.de>
-In-Reply-To: <201107271900.11091.sweet_f_a@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2011 01:00 PM, Ruediger Meier wrote:
-> On Wednesday 27 July 2011, Bryan Schumaker wrote:
->> On 07/27/2011 12:28 PM, Justin Piszcz wrote:
->>> On Wed, 27 Jul 2011, J. Bruce Fields wrote:
->>>>
->>>> What filesystem on the server are you exporting?
->>>
->>> xfs.
->>> /dev/sda1 on / type xfs (rw,noatime)
->>>
->>> Nothing special, thoughts?
->>
->> Are there a lot of files in the directory you're exporting?  It looks
->> like cookie 10272 is mapped to multiple files.
+On Sun, Jul 24, 2011 at 01:39:25PM -0400, Linus Torvalds wrote:
+> > Yeah, I like the BITS() thing - will change. I actually have a similar
+> > macro GENMASK(o, hi) in <drivers/edac/amd64_edac.h> - I should move it
+> > to <linux/bitops.h> and rename it to BITS().
 > 
-> I thought xfs is immune to readdir loops!?
+> So it may be that BITS() is much too generic a name, and will cause
+> problems. A quick "git grep -w BITS" certainly finds a fair number of
+> hits. So I don't think it's usable as-is, it was meant more as
+> pseudo-code.
 
-I guess that depends how it generates the cookie... I want to try out the ext4 patches that were posted earlier today.  I'll double check xfs while I'm at it.
+How about something like the following instead - it should take care
+of all your bitmask generating needs. There are also a couple of
+GENMASK/BITMASK identical definitions around the tree which can be
+unified while I'm at it too.
 
-- Bryan
+diff --git a/include/linux/bitops.h b/include/linux/bitops.h
+index a3ef66a..b1970e3 100644
+--- a/include/linux/bitops.h
++++ b/include/linux/bitops.h
+@@ -6,6 +6,19 @@
+ #define BIT(nr)                        (1UL << (nr))
+ #define BIT_MASK(nr)           (1UL << ((nr) % BITS_PER_LONG))
+ #define BIT_WORD(nr)           ((nr) / BITS_PER_LONG)
++
++/*
++ * Create a contiguous bitmask starting at bit position @lo and ending at
++ * position @hi. For example
++ *
++ * GENMASK_ULL(21, 39) gives us the 64bit vector 0x000000ffffe00000.
++ */
++#define _GENMASK_T(cast, type, lo, hi) \
++       (((cast)(1##type << ((hi) - (lo) + 1)) - 1) << (lo))
++#define GENMASK(lo, hi)                _GENMASK_T(unsigned, U, lo, hi)
++#define GENMASK_UL(lo, hi)     _GENMASK_T(unsigned long, UL, lo, hi)
++#define GENMASK_ULL(lo, hi)    _GENMASK_T(unsigned long long, ULL, lo, hi)
++
+ #define BITS_PER_BYTE          8
+ #define BITS_TO_LONGS(nr)      DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
+ #endif
 
-> Is your export directory really located directly within / on /dev/sda1?
-> 
-> cu,
-> Rudi
+-- 
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
