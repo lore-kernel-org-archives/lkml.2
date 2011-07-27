@@ -1,67 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab1G0FrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 01:47:17 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40098 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab1G0FrQ (ORCPT
+	id S1752781Ab1G0FwC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 01:52:02 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39012 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210Ab1G0FwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 01:47:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E2FA002.2020302@jp.fujitsu.com>
-References: <20110726163424.GC2576@osiris.boeblingen.de.ibm.com>
-	<1311742583-18633-1-git-send-email-yong.zhang0@gmail.com>
-	<4E2FA002.2020302@jp.fujitsu.com>
-Date: Wed, 27 Jul 2011 13:47:15 +0800
-Message-ID: <CAM2zO=AiGqbyna8NeC8PZxGBJzHokLKyixE6wv6nac3-OjzcWQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] proc/insterrupts: make it cpu hotplug safe
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, kobayashi.kk@ncos.nec.co.jp,
-        heiko.carstens@de.ibm.com
-Content-Type: text/plain; charset=UTF-8
+	Wed, 27 Jul 2011 01:52:01 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 27 Jul 2011 14:44:38 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: [PATCH v4 0/5] memcg : make numa scanning better
+Message-Id: <20110727144438.a9fdfd5b.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/27 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
-> (2011/07/27 13:56), Yong Zhang wrote:
->> KOSAKI Motonhiro noticed that the reader of /proc/interrupts
->> could be preempted by cpu hotplug, thus the reader can get
->> broken result due to show_interrupts() iterate every online
->> cpu without any protection.
->>
->> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Keika Kobayashi <kobayashi.kk@ncos.nec.co.jp>
->> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
->
-> Looks good. but I have a question. On last thread, kobayashi-san
-> suggested to use for_each_possible_cpu() and you wrote "+1".
 
-Yeah, for_each_possible_cpu() will make code more cleaner.
-so I give it my support.
+When 889976db(memcg: reclaim memory from nodes in round-robin order) is
+pushed, I mentioned "But yes, a better algorithm is needed."
 
->
->>> At that time, I suggested to change
->>> from for_each_online_cpu() to for_each_possible_cpu(),
->>> in /proc/interrupts.
->>+1
->>Thus we could also avoid the issue pointed by KOSAKI Motonhiro.
->
-> Why do you decide to use another way?
+Here is one. 
 
-But, as kobayashi-san has also said:
-In conclusion, we decided to remain /proc/interrupts.
-because it had been the way for a long time.
+I already cut out some of pieces, which was in this set, and pushed to upstream.
+This series contains more fixes and a new core logic.
 
-So I don't want to raise an argument again :)
+The concept is to select a node with regard to page usages.
+This patch calculates weight of nodes and does scheduling proportionally
+fair to each node's weight. The weight is calculated in adaptive way
+considering the status of the whole memcg. In short, if a node contains
+much (inactive) file caches, the node will be a victim.
+
+
+As I did before, I did apache-bench test as following.
+
+Host
+   Host : Xeon 8cpu 
+   Memory: 24GB
+
+What test ?
+   access a CGI script which reads a file in random. And access it by
+   apatch-bench. The randomnes of file access is normalized.
+   Full working set is 600MB.
+   And run httpd under memcg. This will cause memory reclaim and read I/O.
+
+[Set limit as 300M]
+ 
+<mmotm-0709 + some merged bugfixes>
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.1      0       1
+Processing:    41   48  15.0     46    1161
+Waiting:       40   46  10.5     44     623
+Total:         41   48  15.0     46    1161
+
+scanned_pages_by_limit 410693
+elapsed_ns_by_limit 2393975561
+
+<mmotm-0709 + cpuset's page cache spread nodes>
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.1      0       1
+Processing:    42   48  16.9     46    1616
+Waiting:       40   46  14.7     44    1614
+Total:         42   48  16.9     46    1616
+
+scanned_pages_by_limit 271733
+elapsed_ns_by_limit 1415085661
+
+<patch>
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.0      0       1
+Processing:    41   46   7.5     45     706
+Waiting:       39   45   6.4     44     630
+Total:         41   46   7.5     45     706
+
+scanned_pages_by_limit 302282
+elapsed_ns_by_limit 1312758481
+
+<patch + cpuset's page cache spread nodes>
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.1      0       4
+Processing:    42   47  11.4     46     962
+Waiting:       40   45   8.7     44     493
+Total:         42   47  11.4     46     962
+
+scanned_pages_by_limit 349020
+elapsed_ns_by_limit 1594144061
+
+[Set Limit as 400M]
+<mmotm-0709>
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.0      0       3
+Processing:    40   45   4.7     45     467
+Waiting:       39   44   4.4     43     465
+Total:         40   45   4.7     45     467
+
+scanned_pages_by_limit 156279
+elapsed_ns_by_limit 1274982214
+
+<mmotm-0709 + cpuset's node spread>
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.1      0       1
+Processing:    41   46   6.9     45     458
+Waiting:       40   44   4.5     44     388
+Total:         41   46   6.9     45     459
+
+scanned_pages_by_limit 346534
+elapsed_ns_by_limit 2612352442
+
+
+<Patch>
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.0      0       1
+Processing:    42   45   5.1     45     467
+Waiting:       38   44   4.5     43     465
+Total:         42   45   5.1     45     467
+
+scanned_pages_by_limit 116307
+elapsed_ns_by_limit 624529569
+
+<patch+spread>
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.0      0       1
+Processing:    41   46   5.3     45     392
+Waiting:       39   44   4.1     43     388
+Total:         41   46   5.3     45     392
+
+scanned_pages_by_limit 154865
+elapsed_ns_by_limit 830638510
+
+
+In general, this patch set reduce memory reclaim scans and time and
+helps reclaiming memory in efficient way.
 
 Thanks,
-Yong
+-Kame
 
 
--- 
-Only stand for myself
+
+
+
+
+
+
+
