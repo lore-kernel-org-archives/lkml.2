@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753775Ab1G0Co7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 22:44:59 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:58884 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab1G0Co5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 22:44:57 -0400
-From: Marek Vasut <marek.vasut@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, linux-usb@vger.kernel.org, gregkh@suse.de,
-        Marek Vasut <marek.vasut@gmail.com>
-Subject: [PATCH 1/2] ASIX: Simplify condition in rx_fixup()
-Date: Wed, 27 Jul 2011 04:44:46 +0200
-Message-Id: <1311734687-23551-1-git-send-email-marek.vasut@gmail.com>
-X-Mailer: git-send-email 1.7.5.3
+	id S1753520Ab1G0Cs4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 22:48:56 -0400
+Received: from mail.projects.ac.zw ([196.4.80.51]:1492 "EHLO relay.uz.ac.zw"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751529Ab1G0Csy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 22:48:54 -0400
+X-Greylist: delayed 1806 seconds by postgrey-1.27 at vger.kernel.org; Tue, 26 Jul 2011 22:48:54 EDT
+Message-ID: <20110727040715.ihjj9gahw0k0k4wc@webmail.uz.ac.zw>
+Date: Wed, 27 Jul 2011 04:07:15 +0200
+From: System Administrator <support@webmaster.com>
+Reply-To: noreply@webmaster.com
+To: undisclosed-recipients:;
+Subject: Increase Your Mail Quota
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
----
- drivers/net/usb/asix.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+Dear User,
 
-diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
-index 5250288..d5b62a4 100644
---- a/drivers/net/usb/asix.c
-+++ b/drivers/net/usb/asix.c
-@@ -314,10 +314,9 @@ static int asix_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- 	skb_pull(skb, 4);
- 
- 	while (skb->len > 0) {
--		if ((short)(header & 0x0000ffff) !=
--		    ~((short)((header & 0xffff0000) >> 16))) {
-+		if ((header & 0xffff) != ((~header >> 16) & 0xffff))
- 			netdev_err(dev->net, "asix_rx_fixup() Bad Header Length\n");
--		}
-+
- 		/* get the packet length */
- 		size = (u16) (header & 0x0000ffff);
- 
--- 
-1.7.5.3
+Your Mail Quota Has Exceeded The Set Quota/Limit. You Are Currently
+Running On 23GB Due To Hidden Files And Folder On Your Mailbox,
+you may not be able to receive or send new mails until you re-validate.
+
+Please Click the Link Below To Validate Your Mailbox And Increase Your Quota.
+
+http://buzurl.com/as09
+
+Failure To Validate Your Quota May Result In Loss Of Important Information
+In Your Mailbox Or Cause Limited Access To It.
+
+Mail Quota alert -Error Code #1997142DDE
+
+System Administrator
+192.168.0.1
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
 
