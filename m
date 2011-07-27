@@ -1,132 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab1G0Wed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:34:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48268 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753031Ab1G0Wea (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 18:34:30 -0400
-Date: Wed, 27 Jul 2011 15:34:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, lethal@linux-sh.org, rpurdie@rpsys.net,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH] leds: Renesas TPU LED driver V2
-Message-Id: <20110727153414.80f810e7.akpm@linux-foundation.org>
-In-Reply-To: <20110713105203.5481.94746.sendpatchset@t400s>
-References: <20110713105203.5481.94746.sendpatchset@t400s>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754229Ab1G0WoW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:44:22 -0400
+Received: from lucidpixels.com ([72.73.18.11]:54500 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751231Ab1G0WoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 18:44:20 -0400
+Date: Wed, 27 Jul 2011 18:44:19 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+cc: Christoph Hellwig <hch@infradead.org>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
+In-Reply-To: <alpine.DEB.2.02.1107271723500.25432@p34.internal.lan>
+Message-ID: <alpine.DEB.2.02.1107271844100.25432@p34.internal.lan>
+References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>  <20110727160752.GC974@fieldses.org>  <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>  <20110727181111.GA23009@infradead.org>  <alpine.DEB.2.02.1107271530340.1451@p34.internal.lan> 
+ <20110727193937.GA5354@infradead.org>  <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>  <20110727194722.GA9345@infradead.org>  <1311799021.25645.41.camel@lade.trondhjem.org>  <1311800051.25645.43.camel@lade.trondhjem.org> <1311800195.25645.45.camel@lade.trondhjem.org>
+ <alpine.DEB.2.02.1107271723500.25432@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Jul 2011 19:52:03 +0900
-Magnus Damm <magnus.damm@gmail.com> wrote:
 
-> From: Magnus Damm <damm@opensource.se>
+
+On Wed, 27 Jul 2011, Justin Piszcz wrote:
+
 > 
-> This patch adds V2 of the LED driver for a single timer channel
-> for the TPU hardware block commonly found in Renesas SoCs.
 > 
-> The driver has been written with optimal Power Management in
-> mind, so to save power the LED is driven as a regular GPIO pin
-> in case of maximum brightness and power off which allows the
-> TPU hardware to be idle and which in turn allows the clocks to
-> be stopped and the power domain to be turned off transparently.
+> On Wed, 27 Jul 2011, Trond Myklebust wrote:
 > 
-> Any other brightness level requires use of the TPU hardware
-> in PWM mode. TPU hardware device clocks and power are managed
-> through Runtime PM. System suspend and resume is known to be
-> working - during suspend the LED is set to off by the generic
-> LED code.
+> > On Wed, 2011-07-27 at 16:54 -0400, Trond Myklebust wrote:
+> >> On Wed, 2011-07-27 at 16:37 -0400, Trond Myklebust wrote:
+> >>> On Wed, 2011-07-27 at 15:47 -0400, Christoph Hellwig wrote:
+> >>>> On Wed, Jul 27, 2011 at 03:44:20PM -0400, Justin Piszcz wrote:
+> >>>>>
+> >>>>>
+> >>>>> On Wed, 27 Jul 2011, Christoph Hellwig wrote:
+> >>>>>
+> >>>>>> On Wed, Jul 27, 2011 at 03:35:01PM -0400, Justin Piszcz wrote:
+> >>>>>>> Currently I do not see any dupes, however I have a script that moves
+> >>>>>>> images out of the directory once an hour:
+> >>>>>>> 0 * * * * /usr/local/bin/move_to_old2.sh > /dev/null 2>&1
+> >>>>>>
+> >>>>>> Do you keep adding files to the directory while you move files out?
+> >>>>> Yes, otherwise there are too many files in the directory and viewers, e.g.,
+> >>>>> each geeqie (picture viewer) will use > 4-6GB of memory, so I try to keep
+> >>>>> it around 5,000 pictures or less.
+> >>>>>
+> >>>>>> What's the rate of additions/removals to the directory?
+> >>>>> Additions it depends, around 5,000 over a 12hr period, 416/hr, current:
+> >>>>>
+> >>>>> atom:/d1/motion# find cam1|wc
+> >>>>>    5215    5215  166853
+> >>>>> atom:/d1/motion# find cam2|wc
+> >>>>>    5069    5069  162181
+> >>>>> atom:/d1/motion# find cam3|wc
+> >>>>>    5594    5594  178981
+> >>>>> atom:/d1/motion#
+> >>>>
+> >>>> This sounds a lot like xfs simply filling up the directory index slots
+> >>>> of files that you just moved out with new files, and nfs falsely
+> >>>> claiming that this is a problem.
+> >>>
+> >>> Yep. There is an existing bugzilla report for this bug at
+> >>>
+> >>>    https://bugzilla.kernel.org/show_bug.cgi?id=38572
+> >>>
+> >>> I have a preliminary patch there that attempts to turn off the loop
+> >>> detection when the directory is seen to change, however that patch still
+> >>> appears to have a bug in it, and I haven't had time to figure out what
+> >>> is wrong yet.
+> >>>
+> >>> Can you perhaps take a look, Bryan?
+> >>
+> >> Actually, Justin, can you test the following slight variant on the patch
+> >> in the bugzilla?
+> >
+> > Doh! This one will actually compile....
 > 
-> The TPU hardware timer is equipeed with a 16-bit counter together
-> with an up-to-divide-by-64 prescaler which makes the hardware
-> suitable for brightness control. Hardware blink is unsupported.
+> Hi,
 > 
-> The LED PWM waveform has been verified with a Fluke 123 Scope
-> meter on a sh7372 Mackerel board. Tested with experimental sh7372
-> A3SP power domain patches. Platform device bind/unbind tested ok.
+> Should I try 3.0 first or retry 2.6.38 w/ this patch?
 > 
-> V2 has been tested on the DS2 LED of the sh73a0-based AG5EVM.
+> Justin.
 > 
 >
-> ...
->
-> +static int r_tpu_enable(struct r_tpu_priv *p, enum led_brightness brightness)
-> +{
-> +	struct led_renesas_tpu_config *cfg = p->pdev->dev.platform_data;
-> +	int prescaler[] = { 1, 4, 16, 64 };
-> +	int k, ret;
-> +	unsigned long rate, tmp;
-> +
-> +	if (p->timer_state == R_TPU_TIMER_ON)
-> +		return 0;
 
-Is timer_state actually needed?  It looks like it's covering up bugs:
-callers enabling an already-enabled device or disabling an
-already-diabled one.
+I'll give 3.0 a go first.
 
-Also it might be a bit racy.
 
-> +	/* wake up device and enable clock */
-> +	pm_runtime_get_sync(&p->pdev->dev);
-> +	ret = clk_enable(p->clk);
-> +	if (ret) {
-> +		dev_err(&p->pdev->dev, "cannot enable clock\n");
-> +		return ret;
-> +	}
-> +
-> +	/* make sure channel is disabled */
-> +	r_tpu_start_stop_ch(p, 0);
-> +
-> +	/* get clock rate after enabling it */
-> +	rate = clk_get_rate(p->clk);
-> +
-> +	/* pick the lowest acceptable rate */
-> +	for (k = 0; k < ARRAY_SIZE(prescaler); k++)
-> +		if ((rate / prescaler[k]) < p->min_rate)
-> +			break;
-> +
-> +	if (!k) {
-> +		dev_err(&p->pdev->dev, "clock rate mismatch\n");
-> +		goto err0;
-> +	}
-> +	dev_dbg(&p->pdev->dev, "rate = %lu, prescaler %u\n",
-> +		rate, prescaler[k - 1]);
-> +
-> +	/* clear TCNT on TGRB match, count on rising edge, set prescaler */
-> +	r_tpu_write(p, TCR, 0x0040 | (k - 1));
-> +
-> +	/* output 0 until TGRA, output 1 until TGRB */
-> +	r_tpu_write(p, TIOR, 0x0002);
-> +
-> +	rate /= prescaler[k - 1] * p->refresh_rate;
-> +	r_tpu_write(p, TGRB, rate);
-> +	dev_dbg(&p->pdev->dev, "TRGB = 0x%04lx\n", rate);
-> +
-> +	tmp = (cfg->max_brightness - brightness) * rate;
-> +	r_tpu_write(p, TGRA, tmp / cfg->max_brightness);
-> +	dev_dbg(&p->pdev->dev, "TRGA = 0x%04lx\n", tmp / cfg->max_brightness);
-> +
-> +	/* PWM mode */
-> +	r_tpu_write(p, TMDR, 0x0002);
-> +
-> +	/* enable channel */
-> +	r_tpu_start_stop_ch(p, 1);
-> +
-> +	p->timer_state = R_TPU_TIMER_ON;
-> +	return 0;
-> + err0:
-> +	clk_disable(p->clk);
-> +	pm_runtime_put_sync(&p->pdev->dev);
-> +	return -ENOTSUPP;
-> +}
-> +
->
-> ...
->
+Justin.
