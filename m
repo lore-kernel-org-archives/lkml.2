@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab1G0Jw2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 05:52:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6798 "EHLO mga01.intel.com"
+	id S1754076Ab1G0Jwv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 05:52:51 -0400
+Received: from mga14.intel.com ([143.182.124.37]:57075 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750861Ab1G0Jw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 05:52:26 -0400
+	id S1752785Ab1G0Jws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 05:52:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,275,1309762800"; 
-   d="scan'208";a="34999524"
-Date: Wed, 27 Jul 2011 11:53:28 +0200
+   d="scan'208";a="31992554"
+Date: Wed, 27 Jul 2011 11:53:57 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Keshava Munegowda <keshava_mgowda@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
-        parthab@india.ti.com, kishon@ti.com
-Subject: Re: [PATCH] mfd: omap-usb-host: fix clock API usage on
- usbhs_disable()
-Message-ID: <20110727095328.GC26275@sortiz-mobl>
-References: <1311340170-28773-1-git-send-email-keshava_mgowda@ti.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, Hemanth V <hemanthv@ti.com>,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH] mfd: twl6030-pwm.c needs MODULE_LICENSE
+Message-ID: <20110727095357.GE26275@sortiz-mobl>
+References: <20110722171708.370b2cf5.rdunlap@xenotime.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1311340170-28773-1-git-send-email-keshava_mgowda@ti.com>
+In-Reply-To: <20110722171708.370b2cf5.rdunlap@xenotime.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Keshava,
+Hi Randy,
 
-On Fri, Jul 22, 2011 at 06:39:30PM +0530, Keshava Munegowda wrote:
-> From: Keshava Munegowda <Keshava_mgowda@ti.com>
+On Fri, Jul 22, 2011 at 05:17:08PM -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
 > 
-> usbhs_disable function was invoking clk_enable() instead of
-> clk_disable(), thus only increasing the clock usage counter and
-> preventing this particular clock from being ever turned off.
-> Because of this, the power domain of omap4 the USB Host subsystem
-> would never reach lower power states.This patch calls clk_disable()
-> in usbhs_disable function
-I applied this patch now, thanks.
+> twl6030_pwm: module license 'unspecified' taints kernel.
+Thanks, I applied this patch (with Felipe's ACK).
 
 Cheers,
 Samuel.
