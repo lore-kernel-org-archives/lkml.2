@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab1G0AfL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 20:35:11 -0400
-Received: from mga03.intel.com ([143.182.124.21]:40667 "EHLO mga03.intel.com"
+	id S1754086Ab1G0Ajc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 20:39:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18089 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753570Ab1G0AfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 20:35:06 -0400
+	id S1753604Ab1G0AfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 20:35:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,272,1309762800"; 
-   d="scan'208";a="31838638"
+   d="scan'208";a="32380349"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110726534.972201586@firstfloor.org>
 In-Reply-To: <20110726534.972201586@firstfloor.org>
-To: rientjes@google.com, James.Bottomley@suse.de, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: [PATCH] [13/98] set memory ranges in N_NORMAL_MEMORY when onlined
-Message-Id: <20110727003505.353822403FF@tassilo.jf.intel.com>
-Date: Tue, 26 Jul 2011 17:35:05 -0700 (PDT)
+To: James.Bottomley@suse.de, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [PATCH] [20/98] put stricter guards on queue dead checks
+Message-Id: <20110727003512.53DEF2403FF@tassilo.jf.intel.com>
+Date: Tue, 26 Jul 2011 17:35:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,61 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: David Rientjes <rientjes@google.com>
+From: James Bottomley <James.Bottomley@suse.de>
 
-commit d9b41e0b54fd7e164daf1e9c539c1070398aa02e upstream.
+commit 86cbfb5607d4b81b1a993ff689bbd2addd5d3a9b upstream.
 
-When a DISCONTIGMEM memory range is brought online as a NUMA node, it
-also needs to have its bet set in N_NORMAL_MEMORY.  This is necessary for
-generic kernel code that utilizes N_NORMAL_MEMORY as a subset of N_ONLINE
-for memory savings.
+SCSI uses request_queue->queuedata == NULL as a signal that the queue
+is dying.  We set this state in the sdev release function.  However,
+this allows a small window where we release the last reference but
+haven't quite got to this stage yet and so something will try to take
+a reference in scsi_request_fn and oops.  It's very rare, but we had a
+report here, so we're pushing this as a bug fix
 
-These types of hacks can hopefully be removed once DISCONTIGMEM is either
-removed or abstracted away from CONFIG_NUMA.
+The actual fix is to set request_queue->queuedata to NULL in
+scsi_remove_device() before we drop the reference.  This causes
+correct automatic rejects from scsi_request_fn as people who hold
+additional references try to submit work and prevents anything from
+getting a new reference to the sdev that way.
 
-Fixes a panic in the slub code which only initializes structures for
-N_NORMAL_MEMORY to save memory:
-
-	Backtrace:
-	 [<000000004021c938>] add_partial+0x28/0x98
-	 [<000000004021faa0>] __slab_free+0x1d0/0x1d8
-	 [<000000004021fd04>] kmem_cache_free+0xc4/0x128
-	 [<000000004033bf9c>] ida_get_new_above+0x21c/0x2c0
-	 [<00000000402a8980>] sysfs_new_dirent+0xd0/0x238
-	 [<00000000402a974c>] create_dir+0x5c/0x168
-	 [<00000000402a9ab0>] sysfs_create_dir+0x98/0x128
-	 [<000000004033d6c4>] kobject_add_internal+0x114/0x258
-	 [<000000004033d9ac>] kobject_add_varg+0x7c/0xa0
-	 [<000000004033df20>] kobject_add+0x50/0x90
-	 [<000000004033dfb4>] kobject_create_and_add+0x54/0xc8
-	 [<00000000407862a0>] cgroup_init+0x138/0x1f0
-	 [<000000004077ce50>] start_kernel+0x5a0/0x840
-	 [<000000004011fa3c>] start_parisc+0xa4/0xb8
-	 [<00000000404bb034>] packet_ioctl+0x16c/0x208
-	 [<000000004049ac30>] ip_mroute_setsockopt+0x260/0xf20
-
-Signed-off-by: David Rientjes <rientjes@google.com>
 Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- arch/parisc/mm/init.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/scsi/scsi_sysfs.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-Index: linux-2.6.35.y/arch/parisc/mm/init.c
+Index: linux-2.6.35.y/drivers/scsi/scsi_sysfs.c
 ===================================================================
---- linux-2.6.35.y.orig/arch/parisc/mm/init.c
-+++ linux-2.6.35.y/arch/parisc/mm/init.c
-@@ -266,8 +266,10 @@ static void __init setup_bootmem(void)
+--- linux-2.6.35.y.orig/drivers/scsi/scsi_sysfs.c
++++ linux-2.6.35.y/drivers/scsi/scsi_sysfs.c
+@@ -319,14 +319,8 @@ static void scsi_device_dev_release_user
+ 		kfree(evt);
  	}
- 	memset(pfnnid_map, 0xff, sizeof(pfnnid_map));
  
--	for (i = 0; i < npmem_ranges; i++)
-+	for (i = 0; i < npmem_ranges; i++) {
-+		node_set_state(i, N_NORMAL_MEMORY);
- 		node_set_online(i);
-+	}
- #endif
+-	if (sdev->request_queue) {
+-		sdev->request_queue->queuedata = NULL;
+-		/* user context needed to free queue */
+-		scsi_free_queue(sdev->request_queue);
+-		/* temporary expedient, try to catch use of queue lock
+-		 * after free of sdev */
+-		sdev->request_queue = NULL;
+-	}
++	/* NULL queue means the device can't be used */
++	sdev->request_queue = NULL;
  
- 	/*
+ 	scsi_target_reap(scsi_target(sdev));
+ 
+@@ -961,6 +955,12 @@ void __scsi_remove_device(struct scsi_de
+ 	if (sdev->host->hostt->slave_destroy)
+ 		sdev->host->hostt->slave_destroy(sdev);
+ 	transport_destroy_device(dev);
++
++	/* cause the request function to reject all I/O requests */
++	sdev->request_queue->queuedata = NULL;
++
++	/* Freeing the queue signals to block that we're done */
++	scsi_free_queue(sdev->request_queue);
+ 	put_device(dev);
+ }
+ 
