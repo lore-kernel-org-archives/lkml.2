@@ -1,39 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab1G0U0Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 16:26:25 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52547 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751435Ab1G0U0W (ORCPT
+	id S1754823Ab1G0U1L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 16:27:11 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:39113 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753454Ab1G0U1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 16:26:22 -0400
+	Wed, 27 Jul 2011 16:27:08 -0400
+X-Authenticated: #11967524
+X-Provags-ID: V01U2FsdGVkX1+bx+pXDPSb8yj2iaIXn17/nDkOBjn03WoPEbS8EO
+	SxmvzWJi72v+Va
+From: =?iso-8859-1?q?R=FCdiger_Meier?= <sweet_f_a@gmx.de>
+To: Christoph Hellwig <hch@infradead.org>
+Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
+Date: Wed, 27 Jul 2011 22:26:55 +0200
+User-Agent: KMail/1.9.10
+Cc: Bryan Schumaker <bjschuma@netapp.com>,
+        Justin Piszcz <jpiszcz@lucidpixels.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan> <4E306D09.5030704@netapp.com> <20110727200240.GA16054@infradead.org>
+In-Reply-To: <20110727200240.GA16054@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1107252025070.3090@tiger>
-References: <alpine.DEB.2.00.1107252025070.3090@tiger>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 27 Jul 2011 13:26:00 -0700
-Message-ID: <CA+55aFwgiE629MhByBaV0yWCceVbeVeej22VfSq0z6zhFp9iWw@mail.gmail.com>
-Subject: Re: [GIT PULL v2] Native Linux KVM tool for v3.1
-To: Pekka Enberg <penberg@kernel.org>
-Cc: mingo@elte.hu, avi@redhat.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201107272227.03265.sweet_f_a@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 10:27 AM, Pekka Enberg <penberg@kernel.org> wrote:
+On Wednesday 27 July 2011, Christoph Hellwig wrote:
+> On Wed, Jul 27, 2011 at 03:54:49PM -0400, Bryan Schumaker wrote:
+> > It should be printing on the second hit of a cookie.
 >
-> Here's the same pull request with a small fixlet for a compile-time problem
-> reported by Ingo Molnar.
+> But looking closer at it it only prints the directory name and not
+> that of any of the matching cookies, making it pretty useless to
+> debug any problem.  (and it makes my previous question to Justin look
+> stupid..).
+>
+>
+> But so far I still stick to my previous theory that this sounds like
+> a directory offset getting reused.  How is cache invalidation for
+> the array supposed to work?  And maybe more importantly, given that
+> he can only reproduce it with a .38 client did any bugs get fixed in
+> that code recently that might lead to issues with the cache
+> invalidation?
 
-Ok, having thought this over, I'm going to skip the KVM tool merge
-this merge window. You'll need to convince me it's really worthwhile,
-considering that you *can* do kernel testing with existing
-virtualization environments that are more powerful in other ways. But
-you'll get to do that next merge window, I'm afraid.
+At the time I've started this thread
+http://comments.gmane.org/gmane.linux.nfs/40863
+I had the feeling that the readdir cache changings in 2.6.37 have 
+something to do with these loop problems.
 
-I already decided to pull one controversial thing (the iscsi-target
-thing), I'm not doing two this merge window ;)
+After that thread I've accepted that's a general problem with 
+ext4/dirindex and nfs but seeing it again on xfs with just 5000 files 
+I'm in doubt again.
 
-             Linus
+cu,
+Rudi
