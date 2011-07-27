@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617Ab1G0Vsv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 17:48:51 -0400
-Received: from mga01.intel.com ([192.55.52.88]:12903 "EHLO mga01.intel.com"
+	id S1755771Ab1G0Vtd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 17:49:33 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49110 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755568Ab1G0Vsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:48:43 -0400
+	id S1755755Ab1G0Vt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:49:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,279,1309762800"; 
-   d="scan'208";a="35258250"
+   d="scan'208";a="33043913"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110727247.325703029@firstfloor.org>
 In-Reply-To: <20110727247.325703029@firstfloor.org>
-To: d.haid@gogi.tv, alexdeucher@gmail.com, airlied@redhat.com, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [44/99] drm/radeon/kms: fix for radeon on systems >4GB without
-Message-Id: <20110727214843.1E2CF2403FF@tassilo.jf.intel.com>
-Date: Wed, 27 Jul 2011 14:48:43 -0700 (PDT)
+To: rjw@sisk.pl, ak@linux.intel.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [88/99] PM / Hibernate: Fix free_unnecessary_pages()
+Message-Id: <20110727214927.DB52E2403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:49:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,43 +24,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Daniel Haid <d.haid@gogi.tv>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-commit 62fff811d73095bd95579d72f558f03c78f7914a upstream.
+commit 4d4cf23cdde2f8f9324f5684a7f349e182039529 upstream.
 
-On my x86_64 system with >4GB of ram and swiotlb instead of
-a hardware iommu (because I have a VIA chipset), the call
-to pci_set_dma_mask (see below) with 40bits returns an error.
+There is a bug in free_unnecessary_pages() that causes it to
+attempt to free too many pages in some cases, which triggers the
+BUG_ON() in memory_bm_clear_bit() for copy_bm.  Namely, if
+count_data_pages() is initially greater than alloc_normal, we get
+to_free_normal equal to 0 and "save" greater from 0.  In that case,
+if the sum of "save" and count_highmem_pages() is greater than
+alloc_highmem, we subtract a positive number from to_free_normal.
+Hence, since to_free_normal was 0 before the subtraction and is
+an unsigned int, the result is converted to a huge positive number
+that is used as the number of pages to free.
 
-But it seems that the radeon driver is designed to have
-need_dma32 = true exactly if pci_set_dma_mask is called
-with 32 bits and false if it is called with 40 bits.
+Fix this bug by checking if to_free_normal is actually greater
+than or equal to the number we're going to subtract from it.
 
-I have read somewhere that the default are 32 bits. So if the
-call fails I suppose that need_dma32 should be set to true.
-
-And indeed the patch fixes the problem I have had before
-and which I had described here:
-http://choon.net/forum/read.php?21,106131,115940
-
-Acked-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Reported-and-tested-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_device.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/power/snapshot.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-Index: linux-2.6.35.y/drivers/gpu/drm/radeon/radeon_device.c
+Index: linux-2.6.35.y/kernel/power/snapshot.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/gpu/drm/radeon/radeon_device.c
-+++ linux-2.6.35.y/drivers/gpu/drm/radeon/radeon_device.c
-@@ -645,6 +645,7 @@ int radeon_device_init(struct radeon_dev
- 	dma_bits = rdev->need_dma32 ? 32 : 40;
- 	r = pci_set_dma_mask(rdev->pdev, DMA_BIT_MASK(dma_bits));
- 	if (r) {
-+		rdev->need_dma32 = true;
- 		printk(KERN_WARNING "radeon: No suitable DMA available.\n");
+--- linux-2.6.35.y.orig/kernel/power/snapshot.c
++++ linux-2.6.35.y/kernel/power/snapshot.c
+@@ -1199,7 +1199,11 @@ static void free_unnecessary_pages(void)
+ 		to_free_highmem = alloc_highmem - save;
+ 	} else {
+ 		to_free_highmem = 0;
+-		to_free_normal -= save - alloc_highmem;
++		save -= alloc_highmem;
++		if (to_free_normal > save)
++			to_free_normal -= save;
++		else
++			to_free_normal = 0;
  	}
  
+ 	memory_bm_position_reset(&copy_bm);
