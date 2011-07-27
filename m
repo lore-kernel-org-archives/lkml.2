@@ -1,119 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab1G0Fy7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 01:54:59 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39110 "EHLO
+	id S1753388Ab1G0FzZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 01:55:25 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39178 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178Ab1G0Fy5 (ORCPT
+	with ESMTP id S1752553Ab1G0FzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 01:54:57 -0400
+	Wed, 27 Jul 2011 01:55:22 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 27 Jul 2011 14:47:42 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: [PATCH v4 2/5] memcg : pass scan nodemask
-Message-Id: <20110727144742.420cf69c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110727144438.a9fdfd5b.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110727144438.a9fdfd5b.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Message-ID: <4E2FA846.6000305@jp.fujitsu.com>
+Date: Wed, 27 Jul 2011 14:55:18 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+MIME-Version: 1.0
+To: yong.zhang0@gmail.com
+CC: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, kobayashi.kk@ncos.nec.co.jp,
+        heiko.carstens@de.ibm.com
+Subject: Re: [PATCH 1/2] proc/insterrupts: make it cpu hotplug safe
+References: <20110726163424.GC2576@osiris.boeblingen.de.ibm.com> <1311742583-18633-1-git-send-email-yong.zhang0@gmail.com> <4E2FA002.2020302@jp.fujitsu.com> <CAM2zO=AiGqbyna8NeC8PZxGBJzHokLKyixE6wv6nac3-OjzcWQ@mail.gmail.com>
+In-Reply-To: <CAM2zO=AiGqbyna8NeC8PZxGBJzHokLKyixE6wv6nac3-OjzcWQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2011/07/27 14:47), Yong Zhang wrote:
+> 2011/7/27 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
+>> (2011/07/27 13:56), Yong Zhang wrote:
+>>> KOSAKI Motonhiro noticed that the reader of /proc/interrupts
+>>> could be preempted by cpu hotplug, thus the reader can get
+>>> broken result due to show_interrupts() iterate every online
+>>> cpu without any protection.
+>>>
+>>> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+>>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>>> Cc: Keika Kobayashi <kobayashi.kk@ncos.nec.co.jp>
+>>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+>>
+>> Looks good. but I have a question. On last thread, kobayashi-san
+>> suggested to use for_each_possible_cpu() and you wrote "+1".
+> 
+> Yeah, for_each_possible_cpu() will make code more cleaner.
+> so I give it my support.
+> 
+>>
+>>>> At that time, I suggested to change
+>>>> from for_each_online_cpu() to for_each_possible_cpu(),
+>>>> in /proc/interrupts.
+>>> +1
+>>> Thus we could also avoid the issue pointed by KOSAKI Motonhiro.
+>>
+>> Why do you decide to use another way?
+> 
+> But, as kobayashi-san has also said:
+> In conclusion, we decided to remain /proc/interrupts.
+> because it had been the way for a long time.
+> 
+> So I don't want to raise an argument again :)
 
-pass memcg's nodemask to try_to_free_pages().
+Fair enough. thanks.
 
-try_to_free_pages can take nodemask as its argument but memcg
-doesn't pass it. Considering memcg can be used with cpuset on
-big NUMA, memcg should pass nodemask if available.
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Now, memcg maintain nodemask with periodic updates. pass it.
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/memcontrol.h |    2 +-
- mm/memcontrol.c            |    8 ++++++--
- mm/vmscan.c                |    3 ++-
- 3 files changed, 9 insertions(+), 4 deletions(-)
-
-Index: mmotm-0710/include/linux/memcontrol.h
-===================================================================
---- mmotm-0710.orig/include/linux/memcontrol.h
-+++ mmotm-0710/include/linux/memcontrol.h
-@@ -117,7 +117,7 @@ extern void mem_cgroup_end_migration(str
-  */
- int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg);
- int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg);
--int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
-+int mem_cgroup_select_victim_node(struct mem_cgroup *memcg, nodemask_t **mask);
- unsigned long mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg,
- 					int nid, int zid, unsigned int lrumask);
- struct zone_reclaim_stat *mem_cgroup_get_reclaim_stat(struct mem_cgroup *memcg,
-Index: mmotm-0710/mm/memcontrol.c
-===================================================================
---- mmotm-0710.orig/mm/memcontrol.c
-+++ mmotm-0710/mm/memcontrol.c
-@@ -1602,10 +1602,11 @@ static void mem_cgroup_may_update_nodema
-  *
-  * Now, we use round-robin. Better algorithm is welcomed.
-  */
--int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
-+int mem_cgroup_select_victim_node(struct mem_cgroup *mem, nodemask_t **mask)
- {
- 	int node;
- 
-+	*mask = NULL;
- 	mem_cgroup_may_update_nodemask(mem);
- 	node = mem->last_scanned_node;
- 
-@@ -1620,6 +1621,8 @@ int mem_cgroup_select_victim_node(struct
- 	 */
- 	if (unlikely(node == MAX_NUMNODES))
- 		node = numa_node_id();
-+	else
-+		*mask = &mem->scan_nodes;
- 
- 	mem->last_scanned_node = node;
- 	return node;
-@@ -1667,8 +1670,9 @@ static void mem_cgroup_numascan_init(str
- }
- 
- #else
--int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
-+int mem_cgroup_select_victim_node(struct mem_cgroup *mem, nodemask_t **mask)
- {
-+	*mask = NULL;
- 	return 0;
- }
- 
-Index: mmotm-0710/mm/vmscan.c
-===================================================================
---- mmotm-0710.orig/mm/vmscan.c
-+++ mmotm-0710/mm/vmscan.c
-@@ -2280,6 +2280,7 @@ unsigned long try_to_free_mem_cgroup_pag
- 	unsigned long nr_reclaimed;
- 	unsigned long start, end;
- 	int nid;
-+	nodemask_t *mask;
- 	struct scan_control sc = {
- 		.may_writepage = !laptop_mode,
- 		.may_unmap = 1,
-@@ -2302,7 +2303,7 @@ unsigned long try_to_free_mem_cgroup_pag
- 	 * take care of from where we get pages. So the node where we start the
- 	 * scan does not need to be the current node.
- 	 */
--	nid = mem_cgroup_select_victim_node(mem_cont);
-+	nid = mem_cgroup_select_victim_node(mem_cont, &mask);
- 
- 	zonelist = NODE_DATA(nid)->node_zonelists;
- 
 
