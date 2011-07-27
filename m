@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab1G0Vrh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 17:47:37 -0400
-Received: from void.printf.net ([89.145.121.20]:57988 "EHLO void.printf.net"
+	id S1755402Ab1G0VsL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 17:48:11 -0400
+Received: from mga11.intel.com ([192.55.52.93]:26104 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753952Ab1G0Vrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:47:33 -0400
-From: Chris Ball <cjb@laptop.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH 1/2] MMC / TMIO: Fix build issue related to struct scatterlist
-References: <201107262049.15333.rjw@sisk.pl> <201107262050.23379.rjw@sisk.pl>
-Date: Wed, 27 Jul 2011 17:47:01 -0400
-In-Reply-To: <201107262050.23379.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Tue, 26 Jul 2011 20:50:23 +0200")
-Message-ID: <m2pqkvl7l6.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755385Ab1G0VsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:48:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,278,1309762800"; 
+   d="scan'208";a="35258005"
+From: Andi Kleen <andi@firstfloor.org>
+References: <20110727247.325703029@firstfloor.org>
+In-Reply-To: <20110727247.325703029@firstfloor.org>
+To: abarry@cray.com, minchan.kim@gmail.com, riel@redhat.com, mgorman@suse.de,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        gregkh@suse.de, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [10/99] mm/page_alloc.c: prevent unending loop in
+Message-Id: <20110727214808.7F42A2403FF@tassilo.jf.intel.com>
+Date: Wed, 27 Jul 2011 14:48:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-On Tue, Jul 26 2011, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
->
-> Fix build issue caused by undefined struct scatterlist in
-> drivers/mmc/host/tmio_mmc.c.
->
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  drivers/mmc/host/tmio_mmc.h      |    1 +
->  drivers/usb/renesas_usbhs/fifo.c |    1 +
->  2 files changed, 2 insertions(+)
->
-> Index: linux-2.6/drivers/mmc/host/tmio_mmc.h
-> ===================================================================
-> --- linux-2.6.orig/drivers/mmc/host/tmio_mmc.h
-> +++ linux-2.6/drivers/mmc/host/tmio_mmc.h
-> @@ -21,6 +21,7 @@
->  #include <linux/mutex.h>
->  #include <linux/pagemap.h>
->  #include <linux/spinlock.h>
-> +#include <linux/scatterlist.h>
->  
->  /* Definitions for values the CTRL_SDIO_STATUS register can take. */
->  #define TMIO_SDIO_STAT_IOIRQ	0x0001
+------------------
+From: Andrew Barry <abarry@cray.com>
 
-I'm not able to reproduce the build failure here.
+commit cfa54a0fcfc1017c6f122b6f21aaba36daa07f71 upstream.
 
-drivers/mmc/host/tmio_mmc.c already performs "#include <linux/scatterlist.h>"
-itself (and always has done), so I'm confused about why this is necessary.
-Do you have a copy of your build log with the error?
+I believe I found a problem in __alloc_pages_slowpath, which allows a
+process to get stuck endlessly looping, even when lots of memory is
+available.
 
-Thanks,
+Running an I/O and memory intensive stress-test I see a 0-order page
+allocation with __GFP_IO and __GFP_WAIT, running on a system with very
+little free memory.  Right about the same time that the stress-test gets
+killed by the OOM-killer, the utility trying to allocate memory gets stuck
+in __alloc_pages_slowpath even though most of the systems memory was freed
+by the oom-kill of the stress-test.
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+The utility ends up looping from the rebalance label down through the
+wait_iff_congested continiously.  Because order=0,
+__alloc_pages_direct_compact skips the call to get_page_from_freelist.
+Because all of the reclaimable memory on the system has already been
+reclaimed, __alloc_pages_direct_reclaim skips the call to
+get_page_from_freelist.  Since there is no __GFP_FS flag, the block with
+__alloc_pages_may_oom is skipped.  The loop hits the wait_iff_congested,
+then jumps back to rebalance without ever trying to
+get_page_from_freelist.  This loop repeats infinitely.
+
+The test case is pretty pathological.  Running a mix of I/O stress-tests
+that do a lot of fork() and consume all of the system memory, I can pretty
+reliably hit this on 600 nodes, in about 12 hours.  32GB/node.
+
+Signed-off-by: Andrew Barry <abarry@cray.com>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: Rik van Riel<riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+---
+ mm/page_alloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6.35.y/mm/page_alloc.c
+===================================================================
+--- linux-2.6.35.y.orig/mm/page_alloc.c
++++ linux-2.6.35.y/mm/page_alloc.c
+@@ -2027,6 +2027,7 @@ restart:
+ 	 */
+ 	alloc_flags = gfp_to_alloc_flags(gfp_mask);
+ 
++rebalance:
+ 	/* This is the last chance, in general, before the goto nopage. */
+ 	page = get_page_from_freelist(gfp_mask, nodemask, order, zonelist,
+ 			high_zoneidx, alloc_flags & ~ALLOC_NO_WATERMARKS,
+@@ -2034,7 +2035,6 @@ restart:
+ 	if (page)
+ 		goto got_pg;
+ 
+-rebalance:
+ 	/* Allocate without watermarks if the context allows */
+ 	if (alloc_flags & ALLOC_NO_WATERMARKS) {
+ 		page = __alloc_pages_high_priority(gfp_mask, order,
