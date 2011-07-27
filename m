@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab1G0Agz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 26 Jul 2011 20:36:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:34282 "EHLO mga09.intel.com"
+	id S1754131Ab1G0AhL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 26 Jul 2011 20:37:11 -0400
+Received: from mga03.intel.com ([143.182.124.21]:31501 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753890Ab1G0Af0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 26 Jul 2011 20:35:26 -0400
+	id S1753884Ab1G0AfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 26 Jul 2011 20:35:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,272,1309762800"; 
-   d="scan'208";a="30471221"
+   d="scan'208";a="31838829"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110726534.972201586@firstfloor.org>
 In-Reply-To: <20110726534.972201586@firstfloor.org>
 To: ben@decadent.org.uk, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com,
         linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH] [33/98] Staging: rtl8192su: Fix procfs code for interfaces not named wlan0
-Message-Id: <20110727003525.8B6862403FF@tassilo.jf.intel.com>
-Date: Tue, 26 Jul 2011 17:35:25 -0700 (PDT)
+Subject: [PATCH] [32/98] Staging: rtl8192su: Clean up in case of an error in module initialisation
+Message-Id: <20110727003524.871262403FF@tassilo.jf.intel.com>
+Date: Tue, 26 Jul 2011 17:35:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,106 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 41a38d9e632f7c9ec5ad8fc627567d97f4302c4a upstream.
+commit 9a3dfa0555130952517b9a9c3918729495aa709a upstream.
 
-The current code creates directories in procfs named after interfaces,
-but doesn't handle renaming.  This can result in name collisions and
-consequent WARNINGs.  It also means that the interface name cannot
-reliably be used to remove the directory - in fact the current code
-doesn't even try, and always uses "wlan0"!
-
-Since the name of a proc_dir_entry is embedded in it, use that when
-removing it.
-
-Add a netdev notifier to catch interface renaming, and remove and
-re-add the directory at this point.
+Currently various resources may be leaked in case of an error.
 
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 ---
- drivers/staging/rtl8192su/r8192U_core.c |   35 +++++++++++++++++++++++++++++---
- 1 file changed, 32 insertions(+), 3 deletions(-)
+ drivers/staging/rtl8192su/r8192U_core.c |   43 ++++++++++++++++++++++++++------
+ 1 file changed, 36 insertions(+), 7 deletions(-)
 
 Index: linux-2.6.35.y/drivers/staging/rtl8192su/r8192U_core.c
 ===================================================================
 --- linux-2.6.35.y.orig/drivers/staging/rtl8192su/r8192U_core.c
 +++ linux-2.6.35.y/drivers/staging/rtl8192su/r8192U_core.c
-@@ -27,6 +27,7 @@
- #include <linux/vmalloc.h>
- #include <linux/slab.h>
- #include <linux/eeprom_93cx6.h>
-+#include <linux/notifier.h>
+@@ -991,10 +991,11 @@ static int proc_get_stats_rx(char *page,
+ 	return len;
+ }
  
- #undef LOOP_TEST
- #undef DUMP_RX
-@@ -162,6 +163,8 @@ MODULE_PARM_DESC(channels," Channel bitm
- static int __devinit rtl8192_usb_probe(struct usb_interface *intf,
- 			 const struct usb_device_id *id);
- static void __devexit rtl8192_usb_disconnect(struct usb_interface *intf);
-+static const struct net_device_ops rtl8192_netdev_ops;
-+static struct notifier_block proc_netdev_notifier;
- 
- static struct usb_driver rtl8192_usb_driver = {
- 	.name		= RTL819xU_MODULE_NAME,	          /* Driver name   */
-@@ -993,14 +996,22 @@ static int proc_get_stats_rx(char *page,
- 
- int rtl8192_proc_module_init(void)
+-void rtl8192_proc_module_init(void)
++int rtl8192_proc_module_init(void)
  {
-+	int ret;
-+
  	RT_TRACE(COMP_INIT, "Initializing proc filesystem");
  	rtl8192_proc=create_proc_entry(RTL819xU_MODULE_NAME, S_IFDIR, init_net.proc_net);
--	return rtl8192_proc ? 0 : -ENOMEM;
-+	if (!rtl8192_proc)
-+		return -ENOMEM;
-+	ret = register_netdevice_notifier(&proc_netdev_notifier);
-+	if (ret)
-+		remove_proc_entry(RTL819xU_MODULE_NAME, init_net.proc_net);
++	return rtl8192_proc ? 0 : -ENOMEM;
+ }
+ 
+ 
+@@ -7474,35 +7475,63 @@ static int __init rtl8192_usb_module_ini
+ 	ret = ieee80211_crypto_init();
+ 	if (ret) {
+ 		printk(KERN_ERR "ieee80211_crypto_init() failed %d\n", ret);
+-		return ret;
++		goto fail_crypto;
+ 	}
+ 
+ 	ret = ieee80211_crypto_tkip_init();
+ 	if (ret) {
+ 		printk(KERN_ERR "ieee80211_crypto_tkip_init() failed %d\n",
+ 			ret);
+-		return ret;
++		goto fail_crypto_tkip;
+ 	}
+ 
+ 	ret = ieee80211_crypto_ccmp_init();
+ 	if (ret) {
+ 		printk(KERN_ERR "ieee80211_crypto_ccmp_init() failed %d\n",
+ 			ret);
+-		return ret;
++		goto fail_crypto_ccmp;
+ 	}
+ 
+ 	ret = ieee80211_crypto_wep_init();
+ 	if (ret) {
+ 		printk(KERN_ERR "ieee80211_crypto_wep_init() failed %d\n", ret);
+-		return ret;
++		goto fail_crypto_wep;
+ 	}
+ 
+ 	printk(KERN_INFO "\nLinux kernel driver for RTL8192 based WLAN cards\n");
+ 	printk(KERN_INFO "Copyright (c) 2007-2008, Realsil Wlan\n");
+ 	RT_TRACE(COMP_INIT, "Initializing module");
+ 	RT_TRACE(COMP_INIT, "Wireless extensions version %d", WIRELESS_EXT);
+-	rtl8192_proc_module_init();
+-	return usb_register(&rtl8192_usb_driver);
++
++	ret = rtl8192_proc_module_init();
++	if (ret) {
++		pr_err("rtl8192_proc_module_init() failed %d\n", ret);
++		goto fail_proc;
++	}
++
++	ret = usb_register(&rtl8192_usb_driver);
++	if (ret) {
++		pr_err("usb_register() failed %d\n", ret);
++		goto fail_usb;
++	}
++
++	return 0;
++
++fail_usb:
++	rtl8192_proc_module_remove();
++fail_proc:
++	ieee80211_crypto_wep_exit();
++fail_crypto_wep:
++	ieee80211_crypto_ccmp_exit();
++fail_crypto_ccmp:
++	ieee80211_crypto_tkip_exit();
++fail_crypto_tkip:
++	ieee80211_crypto_deinit();
++fail_crypto:
++#ifdef CONFIG_IEEE80211_DEBUG
++	ieee80211_debug_exit();
++#endif
 +	return ret;
  }
  
  
- void rtl8192_proc_module_remove(void)
- {
-+	unregister_netdevice_notifier(&proc_netdev_notifier);
- 	remove_proc_entry(RTL819xU_MODULE_NAME, init_net.proc_net);
- }
- 
-@@ -1028,8 +1039,7 @@ void rtl8192_proc_remove_one(struct net_
- 		remove_proc_entry("registers-e", priv->dir_dev);
- 	//	remove_proc_entry("cck-registers",priv->dir_dev);
- 	//	remove_proc_entry("ofdm-registers",priv->dir_dev);
--		//remove_proc_entry(dev->name, rtl8192_proc);
--		remove_proc_entry("wlan0", rtl8192_proc);
-+		remove_proc_entry(priv->dir_dev->name, rtl8192_proc);
- 		priv->dir_dev = NULL;
- 	}
- }
-@@ -1146,6 +1156,25 @@ void rtl8192_proc_init_one(struct net_de
- 		      dev->name);
- 	}
- }
-+
-+static int proc_netdev_event(struct notifier_block *this,
-+			     unsigned long event, void *ptr)
-+{
-+	struct net_device *net_dev = ptr;
-+
-+	if (net_dev->netdev_ops == &rtl8192_netdev_ops &&
-+	    event == NETDEV_CHANGENAME) {
-+		rtl8192_proc_remove_one(net_dev);
-+		rtl8192_proc_init_one(net_dev);
-+	}
-+
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block proc_netdev_notifier = {
-+	.notifier_call = proc_netdev_event,
-+};
-+
- /****************************************************************************
-    -----------------------------MISC STUFF-------------------------
- *****************************************************************************/
