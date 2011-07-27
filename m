@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055Ab1G0IhE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 04:37:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55025 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751615Ab1G0IhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 04:37:00 -0400
-Message-ID: <4E2FCE2A.3000909@suse.cz>
-Date: Wed, 27 Jul 2011 10:36:58 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Arnaud Lacombe <lacombar@gmail.com>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        linux-kbuild@vger.kernel.org, sam@ravnborg.org,
-        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
-Subject: Re: [RFC][PATCH 1/2] kconfig: Introduce KCONFIG(), KCONFIG_BUILTIN()
- and KCONFIG_MODULE()
-References: <4E1D9C25.8080300@suse.cz> <1311634718-32588-1-git-send-email-mmarek@suse.cz> <CAM_iQpUEfYrrtpcRLTekSHMHrTTka6ir=z_GUUbnxuQKfY+OXA@mail.gmail.com> <4E2EBF63.8050208@suse.cz> <20110726080443.62196869.rdunlap@xenotime.net> <4E2F0735.1070403@suse.cz> <20110726112824.b357c756.rdunlap@xenotime.net> <CACqU3MWOjjB0RiWLWS8yf0u0gRqOL3JP0StyrtP1kbA+i92SfA@mail.gmail.com> <CACqU3MWopoJcd+5ELWEDp6_GvVpEjOHLnkcj4s_fHT5unp+MtA@mail.gmail.com> <20110726213536.1f56f0e3.rdunlap@xenotime.net>
-In-Reply-To: <20110726213536.1f56f0e3.rdunlap@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754105Ab1G0JAa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 05:00:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47116 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754013Ab1G0JA2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 05:00:28 -0400
+Subject: Re: [RFC/PATCH] mm/futex: Fix futex writes on archs with SW
+ tracking of dirty & young
+From: Peter Zijlstra <peterz@infradead.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Mike Frysinger <vapier.adi@gmail.com>, Shan Hai <haishan.bai@gmail.com>,
+        paulus@samba.org, tglx@linutronix.de, walken@google.com,
+        dhowells@redhat.com, cmetcalf@tilera.com, tony.luck@intel.com,
+        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
+In-Reply-To: <1311753513.25044.663.camel@pasglop>
+References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>
+	 <1310717238-13857-2-git-send-email-haishan.bai@gmail.com>
+	 <1310725418.2586.309.camel@twins> <4E21A526.8010904@gmail.com>
+	 <1310860194.25044.17.camel@pasglop>
+	 <4b337921-d430-4b63-bc36-ad31753cf800@email.android.com>
+	 <1310912990.25044.203.camel@pasglop> <1310944453.25044.262.camel@pasglop>
+	 <1310961691.25044.274.camel@pasglop> <4E23D728.7090406@gmail.com>
+	 <1310972462.25044.292.camel@pasglop> <4E23E02C.8090401@gmail.com>
+	 <1310974591.25044.298.camel@pasglop> <4E24FA51.70602@gmail.com>
+	 <1311049762.25044.392.camel@pasglop>
+	 <CAMjpGUdxpaYBFfKjBEPFOJohnKoXfagLUHvhrst+NembeabxcA@mail.gmail.com>
+	 <1311753513.25044.663.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 27 Jul 2011 10:59:50 +0200
+Message-ID: <1311757190.24752.406.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.7.2011 06:35, Randy Dunlap wrote:
-> On Tue, 26 Jul 2011 20:42:04 -0400 Arnaud Lacombe wrote:
->> On Tue, Jul 26, 2011 at 2:48 PM, Arnaud Lacombe<lacombar@gmail.com>  wrote:
->>> On Tue, Jul 26, 2011 at 2:28 PM, Randy Dunlap<rdunlap@xenotime.net>  wrote:
->>>> I guess I prefer your ENABLED() syntax then.
->>>>
->>> we need to be careful about namespace pollution/collision.
->>>
->> For the sake of having numbers:
->>
->> % git grep -w ENABLED . | wc -l
->>      116
->> % git grep -w CONFIGURED . | wc -l
->>       11
->> % git grep -w KCONFIG . | wc -l
->>        1
->
-> OK.  Then I would go back to a predicate like the original patch had,
-> e.g.:
-> 	IS_ENABLED(CONFIG_NUMA)
+On Wed, 2011-07-27 at 17:58 +1000, Benjamin Herrenschmidt wrote:
 
-Good idea. Is anyone against
-IS_ENABLED(CONFIG_FOO)
-IS_ENABLED_BUILTIN(CONFIG_FOO)
-IS_ENABLED_MODULE(CONFIG_FOO)
-?
+> What should nommu do anyways ? it's not like there's much it can do
+> right ? It should never even hit the fault path to start with ...
 
-Michal
+Something like the below makes a nommu arm config build.. David, is this
+indeed the correct thing to do for nommu?
+
+---
+Index: linux-2.6/mm/nommu.c
+===================================================================
+--- linux-2.6.orig/mm/nommu.c
++++ linux-2.6/mm/nommu.c
+@@ -190,6 +190,12 @@ int get_user_pages(struct task_struct *t
+ }
+ EXPORT_SYMBOL(get_user_pages);
+ 
++int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
++		     unsigned long address, unsigned int fault_flags)
++{
++	BUG(); /* nommu should never call this */
++}
++
+ /**
+  * follow_pfn - look up PFN at a user virtual address
+  * @vma: memory mapping
+
