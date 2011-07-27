@@ -1,46 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374Ab1G0OZZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 10:25:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49207 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751313Ab1G0OZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 10:25:22 -0400
-Message-ID: <4E301FCD.6060202@redhat.com>
-Date: Wed, 27 Jul 2011 10:25:17 -0400
-From: Josef Bacik <josef@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Lightning/1.0b2 Thunderbird/3.1.11
+	id S1754567Ab1G0OZk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 10:25:40 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:40188 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754521Ab1G0OZi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 10:25:38 -0400
+Date: Wed, 27 Jul 2011 10:25:22 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Sven Eckelmann <sven@narfation.org>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: Re: [PATCHv4 10/11] drop_monitor: Use *_dec_not_zero instead of
+ *_add_unless
+Message-ID: <20110727142521.GB19001@hmsreliant.think-freely.org>
+References: <1311760070-21532-1-git-send-email-sven@narfation.org>
+ <1311760070-21532-10-git-send-email-sven@narfation.org>
+ <20110727105907.GA19001@hmsreliant.think-freely.org>
+ <2127465.xrCKehbL3A@sven-laptop.home.narfation.org>
 MIME-Version: 1.0
-To: Andy Whitcroft <apw@canonical.com>
-CC: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] btrfs: btrfs_calc_avail_data_space cope with no read/write
- devices
-References: <1311764491-5687-1-git-send-email-apw@canonical.com>
-In-Reply-To: <1311764491-5687-1-git-send-email-apw@canonical.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2127465.xrCKehbL3A@sven-laptop.home.narfation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -1.4 (-)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2011 07:01 AM, Andy Whitcroft wrote:
-> When we mount a btrfs filesystem from read-only media there will be no
-> read/write devices; for example mounting an SD card with its lock enabled.
-> This triggers an immediate BUG during mount:
+On Wed, Jul 27, 2011 at 01:52:50PM +0200, Sven Eckelmann wrote:
+> On Wednesday 27 July 2011 06:59:07 Neil Horman wrote:
+> > On Wed, Jul 27, 2011 at 11:47:49AM +0200, Sven Eckelmann wrote:
+> > > atomic_dec_not_zero is defined for each architecture through
+> > > <linux/atomic.h> to provide the functionality of
+> > > atomic_add_unless(x, -1, 0).
+> > > 
+> > > Signed-off-by: Sven Eckelmann <sven@narfation.org>
+> > > Cc: Neil Horman <nhorman@tuxdriver.com>
+> > > Cc: netdev@vger.kernel.org
+> > > ---
+> > > 
+> > >  net/core/drop_monitor.c |    2 +-
+> > >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > > 
+> > > diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
+> > > index 7f36b38..ef4a05d 100644
+> > > --- a/net/core/drop_monitor.c
+> > > +++ b/net/core/drop_monitor.c
+> > > @@ -137,7 +137,7 @@ static void trace_drop_common(struct sk_buff *skb,
+> > > void *location)
+> > > 
+> > >  	struct per_cpu_dm_data *data = &__get_cpu_var(dm_cpu_data);
+> > > 
+> > > -	if (!atomic_add_unless(&data->dm_hit_count, -1, 0)) {
+> > > +	if (!atomic_dec_not_zero(&data->dm_hit_count)) {
+> > > 
+> > >  		/*
+> > >  		
+> > >  		 * we're already at zero, discard this hit
+> > >  		 */
+> > 
+> > Wheres the patch that creates the per arch definition of this function?  I
+> > see the other posts in this series went to lkml, but the archives don't
+> > have the first in the series anywhere, which ostensibly adds the
+> > definition. Neil
 > 
->   kernel BUG at .../fs/btrfs/super.c:984!
+> Most architectures don't use a per architecture definition anymore, but a 
+> cross-architecture the definition in include/linux/atomic.h.
 > 
-> This is triggered by statfs when calculating the free space in the
-> filesytem.  We bug if the number of read/write devices is 0.
+> The 01/11 can be found in different archives under the message id 
+> 1311760070-21532-1-git-send-email-sven@narfation.org ... for example gmane: 
+> http://article.gmane.org/gmane.linux.ports.arm.kernel/126704
 > 
-> It seems more appropriate to indicate we have no writable space.  Note
-> that this does make df return 0 free blocks on a read-only device.
-> Whether that is reasonable is debatable.
+> Kind regards,
+> 	Sven
+Ok, thank you, I just didn't see the patch that implemented it in the lkml
+archive at MARC, and wanted to be sure this wasn't proposed for a different tree
+than the patch with the definition.
 
-No it's not, it's wrong.  We should just look at the devices in general
-and not just the rw_devices.  We can still get the right info out, if
-you mount a ext* fs ro you still get the right output from df.  Thanks,
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
-Josef
+
+
