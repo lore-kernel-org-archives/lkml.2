@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706Ab1G0GVh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 02:21:37 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:11079 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab1G0GVg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 02:21:36 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6419"; a="105950878"
-Message-ID: <a9d8b0f164cdb51e88125d8432644213.squirrel@www.codeaurora.org>
-In-Reply-To: <8bcfda19cbc633e011e6b28a6183e68b.squirrel@www.codeaurora.org>
-References: <1308231068-24038-2-git-send-email-tlinder@codeaurora.org>
-    <1308231068-24038-6-git-send-email-tlinder@codeaurora.org>
-    <20110630174538.GA7979@xanatos>
-    <8bcfda19cbc633e011e6b28a6183e68b.squirrel@www.codeaurora.org>
-Date: Tue, 26 Jul 2011 23:21:35 -0700 (PDT)
-Subject: Re: [PATCH/RFC 5/5] usb: Add support for streams alloc/dealloc to  
-         devio.c
-From: "Amit Blay" <ablay@codeaurora.org>
-To: "Sarah Sharp" <sarah.a.sharp@linux.intel.com>
-Cc: "Tatyana Brokhman" <tlinder@codeaurora.org>, greg@kroah.com,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org, balbi@ti.com,
-        ablay@codeaurora.org, "Amit Blay" <ablay@qualcomm.com>,
-        "open list" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.17
+	id S1753553Ab1G0Gas (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 02:30:48 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62588 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752178Ab1G0Gap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 02:30:45 -0400
+Message-ID: <4E2FB10B.9080805@cn.fujitsu.com>
+Date: Wed, 27 Jul 2011 14:32:43 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+To: Gleb Natapov <gleb@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 03/11] KVM: x86: fast emulate repeat string write instructions
+References: <4E2EA3DB.7040403@cn.fujitsu.com> <4E2EA476.9070607@cn.fujitsu.com> <20110726122710.GM4404@redhat.com> <4E2F6E48.7030802@cn.fujitsu.com> <20110727042602.GA7966@redhat.com>
+In-Reply-To: <20110727042602.GA7966@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-27 14:29:48,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-27 14:29:49,
+	Serialize complete at 2011-07-27 14:29:49
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sarah,
-
-A gentle reminder, can you please take a look at the proposed solution
-below for stream alloc/dealloc in devio.c? I responded to your comments
-about the original patch.
-
-On Tue, July 19, 2011 2:12 am, Amit Blay wrote:
-> Hi Sarah,
->
-> I apologize for the delay responding to the thread. Thanks for your
-> comments. I would like to continue and fix the previous patch according to
-> the comments.
-> Also, I would like to split this patch, and implement the actual usage of
-> streams for bulk EP transfers (passing the stream ID with the URB) to a
-> different patch.
->
+On 07/27/2011 12:26 PM, Gleb Natapov wrote:
+> On Wed, Jul 27, 2011 at 09:47:52AM +0800, Xiao Guangrong wrote:
+>> On 07/26/2011 08:27 PM, Gleb Natapov wrote:
+>>> On Tue, Jul 26, 2011 at 07:26:46PM +0800, Xiao Guangrong wrote:
+>>>> We usually use repeat string instructions to clear the page, for example,
+>>> By "we" do you mean Linux guest?
+>>>
 >>
->> It looks like userspace doesn't have a way to specify the number of
->> streams USBFS needs to allocate.  Not all userspace applications are
->
->> You probably also need a way to communicate back to userspace how many
->> streams were actually allocated.  The program could choose to free
->
->> So you're just taking the max_streams from the first endpoint that has
->> streams?  What if other endpoints have varying numbers of max streams?
->
->> What if you have endpoints on an interface that don't support streams?
->
->> So it seems like you also need a way for userspace to specify which
->> endpoints get streams, and which endpoints have streams freed.  I will
->
-> What I have in mind is user space passing a structure holding:
->
-> 1. Interface number [IN]
-> 2. Bitmap indicating which EP to allocate streams for [IN]
-> 3. Number of streams to allocate, one number [IN}
-> 4. Number of streams actually allocated, one number  [OUT]
->
-> The devio alloc function will double check if all EPs belong to the
-> interface passed by the user space.
-> Then it will call the HCI alloc function with the required number of
-> streams. It will return the number of streams actually allocated by the
-> HCD. Items 3 & 4 can be merged to one IN/OUT parameter.
->
-> No error checking will be done in devio for number of required streams
-> (i.e, comparing it with the reported max streams). This kind of error
-> checking is already done by the xHCI driver.
->
-> Please let me know if the solution is acceptable.
->
-> Thanks,
-> Amit.
+>> I do not know other guests except linux, but, generally rep instruction is
+>> not used to update a page table which is been using.
+>>
+>>>> we call memset to clear a page table, stosb is used in this function, and 
+>>>> repeated for 1024 times, that means we should occupy mmu lock for 1024 times
+>>>> and walking shadow page cache for 1024 times, it is terrible
+>>>>
+>>>> In fact, if it is the repeat string instructions emulated and it is not a
+>>>> IO/MMIO access, we can zap all the corresponding shadow pages and return to the
+>>>> guest, then the mapping can became writable and directly write the page
+>>>>
+>>
+>>
+>>> So this patch does two independent things as far as I can see. First it
+>>> stops reentering guest if rep instruction is done on memory and second
+>>
+>> No.
+>> Oppositely, it enters guest as soon as possible if rep instruction is done
+>> on memory ;-)
+> Oops. Indeed. I read it other way around. So why not just return
+> X86EMUL_UNHANDLEABLE from emulator_write_emulated_onepage() which should
+> have the same effect?
+> 
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+It seams not, the count register(RCX) is not decreased, and redundant work
+need to be done by handling EMULATION_FAILED.
+So, emulator_write_emulated_onepage() is not a good place i think. :-)
 
