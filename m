@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab1G0K72 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 06:59:28 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:41814 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754492Ab1G0K7N (ORCPT
+	id S1754550Ab1G0LBi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 07:01:38 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:33408 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754496Ab1G0LBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 06:59:13 -0400
-Date: Wed, 27 Jul 2011 06:59:07 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Sven Eckelmann <sven@narfation.org>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCHv4 10/11] drop_monitor: Use *_dec_not_zero instead of
- *_add_unless
-Message-ID: <20110727105907.GA19001@hmsreliant.think-freely.org>
-References: <1311760070-21532-1-git-send-email-sven@narfation.org>
- <1311760070-21532-10-git-send-email-sven@narfation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311760070-21532-10-git-send-email-sven@narfation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -1.2 (-)
+	Wed, 27 Jul 2011 07:01:34 -0400
+From: Andy Whitcroft <apw@canonical.com>
+To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
+Subject: [PATCH 1/1] btrfs: btrfs_calc_avail_data_space cope with no read/write devices
+Date: Wed, 27 Jul 2011 12:01:31 +0100
+Message-Id: <1311764491-5687-1-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 11:47:49AM +0200, Sven Eckelmann wrote:
-> atomic_dec_not_zero is defined for each architecture through
-> <linux/atomic.h> to provide the functionality of
-> atomic_add_unless(x, -1, 0).
-> 
-> Signed-off-by: Sven Eckelmann <sven@narfation.org>
-> Cc: Neil Horman <nhorman@tuxdriver.com>
-> Cc: netdev@vger.kernel.org
-> ---
->  net/core/drop_monitor.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
-> index 7f36b38..ef4a05d 100644
-> --- a/net/core/drop_monitor.c
-> +++ b/net/core/drop_monitor.c
-> @@ -137,7 +137,7 @@ static void trace_drop_common(struct sk_buff *skb, void *location)
->  	struct per_cpu_dm_data *data = &__get_cpu_var(dm_cpu_data);
->  
->  
-> -	if (!atomic_add_unless(&data->dm_hit_count, -1, 0)) {
-> +	if (!atomic_dec_not_zero(&data->dm_hit_count)) {
->  		/*
->  		 * we're already at zero, discard this hit
->  		 */
-> -- 
-> 1.7.5.4
-> 
-> 
-Wheres the patch that creates the per arch definition of this function?  I see
-the other posts in this series went to lkml, but the archives don't have the
-first in the series anywhere, which ostensibly adds the definition.  
-Neil
+When we mount a btrfs filesystem from read-only media there will be no
+read/write devices; for example mounting an SD card with its lock enabled.
+This triggers an immediate BUG during mount:
+
+  kernel BUG at .../fs/btrfs/super.c:984!
+
+This is triggered by statfs when calculating the free space in the
+filesytem.  We bug if the number of read/write devices is 0.
+
+It seems more appropriate to indicate we have no writable space.  Note
+that this does make df return 0 free blocks on a read-only device.
+Whether that is reasonable is debatable.
+
+BugLink: http://bugs.launchpad.net/bugs/816770
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ fs/btrfs/super.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+index 15634d4..8d3f9b0 100644
+--- a/fs/btrfs/super.c
++++ b/fs/btrfs/super.c
+@@ -981,7 +981,10 @@ static int btrfs_calc_avail_data_space(struct btrfs_root *root, u64 *free_bytes)
+ 	int ret;
+ 
+ 	nr_devices = fs_info->fs_devices->rw_devices;
+-	BUG_ON(!nr_devices);
++	if (!nr_devices) {
++		*free_bytes = 0;
++		return 0;
++	}
+ 
+ 	devices_info = kmalloc(sizeof(*devices_info) * nr_devices,
+ 			       GFP_NOFS);
+-- 
+1.7.4.1
 
