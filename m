@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393Ab1G0EOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 00:14:46 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:33687 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754368Ab1G0EOp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 00:14:45 -0400
-X-Sasl-enc: YW4mm/vm9sEn03+UJT6Xw+g68Hvim+P3Uf+IvUFnRjsH 1311740083
-Date: Tue, 26 Jul 2011 21:14:11 -0700
-From: Greg KH <greg@kroah.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Greg KH <gregkh@suse.de>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [GIT PATCH] USB patches for 3.1
-Message-ID: <20110727041411.GA11797@kroah.com>
-References: <20110726045903.GA2354@kroah.com>
- <4E2E9F0E.4060703@ru.mvista.com>
+	id S1754428Ab1G0EPJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 00:15:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50993 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754387Ab1G0EPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 00:15:05 -0400
+Message-ID: <4E2F90A2.4030409@redhat.com>
+Date: Wed, 27 Jul 2011 07:14:26 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E2E9F0E.4060703@ru.mvista.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andre Przywara <andre.przywara@amd.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@amd64.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Pohlack, Martin" <Martin.Pohlack@amd.com>
+Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
+References: <1311340547-7861-1-git-send-email-bp@amd64.org> <4E2F0068.1080001@redhat.com> <20110726181304.GD32536@aftab> <4E2F0498.8050005@zytor.com> <20110726183721.GF32536@aftab> <4E2F09BB.9060605@zytor.com> <4E2F1889.8030708@amd.com>
+In-Reply-To: <4E2F1889.8030708@amd.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 03:03:42PM +0400, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 26-07-2011 8:59, Greg KH wrote:
-> 
-> >Here's the big USB pull request for your 3.1 tree.
-> 
-> >Note, there will be one conflict in the
-> >Documentation/feature-removal-schedule.txt file, when you merge this,
-> >but it's trivial to resolve.
-> 
-> >Please pull from:
-> >	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/ usb-next
-> 
-> >All of these patches have been in the linux-next and mm trees for a
-> >number of weeks.
-> 
-> >The full patches will be sent to the linux-usb mailing list, if anyone
-> >wants to see them.
-> 
->    Looks like those patches didn't reach the list...
+On 07/26/2011 10:42 PM, Andre Przywara wrote:
+>
+> There is no need to determine it by calculating, because it caused by 
+> the special design of the BD L1 cache and thus fixed.
+> And a calculation would be even more confusing:
+>
+> The L1I is virtually indexed, but physically tagged.
+> 64KB L1I cache, 64 Bytes per Cacheline = 1024 cache lines
+> 1024 lines / 2 way associative = 512 indexes
+> 64 Bytes per Cacheline (6 bits) + 512 indexes (9 bits) = bits [14:0]
+> virtual and physical addresses are the same for bits [11:0], which 
+> leaves the remaining 14:12 susceptible for aliasing.
+>
+> So bit 12 comes from PAGESIZE and yes, the 14 could be derived from 
+> the CPUID cache info, but I don't see much value in breaking this down 
+> this way.
+> But I agree that there should be some comment in the patch which at 
+> least notes that bits [14:12] are due to the L1I design, maybe we can 
+> copy a nicer version of the above math in the commit message for 
+> reference.
+>
 
-I just needed to get somewhere that I had a solid network connection
-that I could send them out.
+If among the 12,432.8 cpuid leaves exposed by the cpu we had a bit that 
+said L1I was shared, and another that said it was virtually indexed, and 
+others describing the cache size, cache line size, and number of ways, 
+then we could perform the arithmetic at runtime, yes?
 
-greg k-h
+That means that if the caches grow or increase their associativity, then 
+we don't need to patch the kernel again.
+
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
