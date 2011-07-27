@@ -1,55 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab1G0H6e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 03:58:34 -0400
-Received: from mga03.intel.com ([143.182.124.21]:60582 "EHLO mga03.intel.com"
+	id S1753991Ab1G0H6u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 03:58:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52985 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751826Ab1G0H6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 03:58:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,275,1309762800"; 
-   d="scan'208";a="31953067"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Sakari Ailus <sakari.ailus@iki.fi>
-Subject: [PATCH] adp1653: check error code of adp1653_init_controls
-Date: Wed, 27 Jul 2011 10:58:02 +0300
-Message-Id: <1b238cd98e03909bc4955113ffbe7e0c9f0db4f8.1311753459.git.andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1753626Ab1G0H6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 03:58:48 -0400
+Date: Wed, 27 Jul 2011 09:58:45 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Igor Mammedov <imammedo@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>,
+        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
+        linux-mm@kvack.org, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        Tim Deegan <Tim.Deegan@citrix.com>
+Subject: Re: [PATCH] memcg: do not expose uninitialized mem_cgroup_per_node
+ to world
+Message-ID: <20110727075845.GA4024@tiehlicka.suse.cz>
+References: <20110601152039.GG4266@tiehlicka.suse.cz>
+ <4DE66BEB.7040502@redhat.com>
+ <BANLkTimbqHPeUdue=_Z31KVdPwcXtbLpeg@mail.gmail.com>
+ <4DE8D50F.1090406@redhat.com>
+ <BANLkTinMamg_qesEffGxKu3QkT=zyQ2MRQ@mail.gmail.com>
+ <4DEE26E7.2060201@redhat.com>
+ <20110608123527.479e6991.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110608140951.115ab1dd.akpm@linux-foundation.org>
+ <4DF24D04.1080802@redhat.com>
+ <20110726141754.c69b96c6.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110726141754.c69b96c6.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Potentially the adp1653_init_controls could return an error. In our case the
-error was ignored, meanwhile it means incorrect initialization of V4L2
-controls.
+On Tue 26-07-11 14:17:54, Andrew Morton wrote:
+> On Fri, 10 Jun 2011 18:57:40 +0200
+> Igor Mammedov <imammedo@redhat.com> wrote:
+> 
+> > On 06/08/2011 11:09 PM, Andrew Morton wrote:
+> > > The original patch:
+> > >
+> > > --- a/mm/memcontrol.c
+> > > +++ b/mm/memcontrol.c
+> > > @@ -4707,7 +4707,6 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
+> > >   	if (!pn)
+> > >   		return 1;
+> > >
+> > > -	mem->info.nodeinfo[node] = pn;
+> > >   	for (zone = 0; zone<  MAX_NR_ZONES; zone++) {
+> > >   		mz =&pn->zoneinfo[zone];
+> > >   		for_each_lru(l)
+> > > @@ -4716,6 +4715,7 @@ static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
+> > >   		mz->on_tree = false;
+> > >   		mz->mem = mem;
+> > >   	}
+> > > +	mem->info.nodeinfo[node] = pn;
+> > >   	return 0;
+> > >   }
+> > >
+> > > looks like a really good idea.  But it needs a new changelog and I'd be
+> > > a bit reluctant to merge it as it appears that the aptch removes our
+> > > only known way of reproducing a bug.
+> > >
+> > > So for now I think I'll queue the patch up unchangelogged so the issue
+> > > doesn't get forgotten about.
+> > >
+> > Problem was in rhel's xen hv.
+> > It was missing fix for imul emulation.
+> > Details here 
+> > http://lists.xensource.com/archives/html/xen-devel/2011-06/msg00801.html
+> > Thanks to Tim Deegan and everyone who was involved in the discussion.
+> 
+> I really don't want to trawl through a lengthy xen bug report
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Sakari Ailus <sakari.ailus@iki.fi>
----
- drivers/media/video/adp1653.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+The bug turned out to be Xen specific and this patch just hidden the bug
+in Xen.
 
-diff --git a/drivers/media/video/adp1653.c b/drivers/media/video/adp1653.c
-index 8ad89ff..3379e6d 100644
---- a/drivers/media/video/adp1653.c
-+++ b/drivers/media/video/adp1653.c
-@@ -429,7 +429,11 @@ static int adp1653_probe(struct i2c_client *client,
- 	flash->subdev.internal_ops = &adp1653_internal_ops;
- 	flash->subdev.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
- 
--	adp1653_init_controls(flash);
-+	ret = adp1653_init_controls(flash);
-+	if (ret) {
-+		kfree(flash);
-+		return ret;
-+	}
- 
- 	ret = media_entity_init(&flash->subdev.entity, 0, NULL, 0);
- 	if (ret < 0)
+> and write your changelog for you.
+> 
+> We still have no changelog for this patch.  Please send one.
+
+Appart from a better programming style is there any other reason for
+taking it?  If applied it might hide potential bugs when somebody is
+touching data too early.
+
 -- 
-1.7.5.4
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
