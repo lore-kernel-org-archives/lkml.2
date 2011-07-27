@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab1G0LHr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 07:07:47 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:55367 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754441Ab1G0LHp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 07:07:45 -0400
-Date: Wed, 27 Jul 2011 12:07:41 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Marcus Folkesson <marcus.folkesson@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] regulator: tps65023: Setting correct core
- regulator for tps65021
-Message-ID: <20110727110740.GB300@sirena.org.uk>
-References: <marcus.folkesson@gmail.com>
- <1311762767-20263-1-git-send-email-marcus.folkesson@gmail.com>
- <1311762767-20263-3-git-send-email-marcus.folkesson@gmail.com>
+	id S1754591Ab1G0LIf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 07:08:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47122 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754460Ab1G0LIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 07:08:34 -0400
+Message-ID: <4E2FF1AA.3020507@redhat.com>
+Date: Wed, 27 Jul 2011 14:08:26 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311762767-20263-3-git-send-email-marcus.folkesson@gmail.com>
-X-Cookie: If your bread is stale, make toast.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 11/11] KVM: MMU: improve write flooding detected
+References: <4E2EA3DB.7040403@cn.fujitsu.com> <4E2EA5D2.8040804@cn.fujitsu.com> <4E2FD8F7.40303@redhat.com> <4E2FE674.8070202@cn.fujitsu.com>
+In-Reply-To: <4E2FE674.8070202@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 12:32:46PM +0200, Marcus Folkesson wrote:
-> TPS65023 is using VDCDC1 as core regulator and TPS65021 is using VDCDC3.
+On 07/27/2011 01:20 PM, Xiao Guangrong wrote:
+> >>    }
+> >
+> >  I think this is a little dangerous.  A guest kernel may be instantiating multiple gptes on a page fault, but guest userspace hits only one of them (the one which caused the page fault) - I think Windows does this, but I'm not sure.
+> >
+>
+> I think this case is not bad: if the guest kernel need to write multiple gptes (>=3),
+> it will cause many page fault, we do better zap the shadow page and let it become writable as
+> soon as possible.
+> (And, we have pte-fetch, it can quickly establish the mapping for a new shadow page)
 
-What is "core regulator" to the regulator chip itself?
+Actually, what should save us is unsync pages.  Why are we hitting this 
+path at all?
 
-> Core-regulator, voltage-tables and size of voltage-table may differ between
-> different regulators. All those three is now passed as driver data.
+-- 
+error compiling committee.c: too many arguments to function
 
-No, the driver should be able to figure out for itself what regulators
-are on the chip purely by knowing what chip it's talking to.  If there
-is some configuration on the board from selection of passives or similar
-the platform data should reflect how that's done (eg, supply the
-relevant values for the passives).
