@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab1G0LPO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 07:15:14 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:39326 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754492Ab1G0LPL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 07:15:11 -0400
+	id S1754642Ab1G0LQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 07:16:09 -0400
+Received: from trip.webair.com ([216.130.161.100]:4916 "EHLO trip.webair.com"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754482Ab1G0LQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 07:16:06 -0400
+Date: Wed, 27 Jul 2011 08:30:04 -0400 (EDT)
+Message-Id: <201107271230.p6RCU4L0086966@trip.webair.com>
+To: linux-kernel@vger.kernel.org
+Subject: Confirm Your E-Mail Details
+From: Information Technology <technology@Information.com>
+Reply-To: financialcons729@aol.com
 MIME-Version: 1.0
-In-Reply-To: <20110727095328.GC26275@sortiz-mobl>
-References: <1311340170-28773-1-git-send-email-keshava_mgowda@ti.com>
-	<20110727095328.GC26275@sortiz-mobl>
-Date: Wed, 27 Jul 2011 16:45:09 +0530
-Message-ID: <CAP05o4KrWZLGaPYL+ArXD2XPN6yvH+0NJMFAcT1UsnM59CrWUQ@mail.gmail.com>
-Subject: Re: [PATCH] mfd: omap-usb-host: fix clock API usage on usbhs_disable()
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
-        parthab@india.ti.com, kishon@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks samuel
+Update Your E-Mail Details Account
+Dear Email User
+This message is from Information Technology Services of This EMAIL to all our Staff. We are currently upgrading our database and e-mail center and this is our final notification to you.we have sent several messages to you without response.
+We are deleting all unused Mail account to create space for new accounts. In order not to be suspended, you will have to update your account by providing the information listed below:
+
+Confirm Your E-Mail Details..
+Email.......................
+User name: ..................
+Password:..............
+Re Confirm Password:.............
+
+If you fail to confirm your continuous usage of our services by confirming your email password now, your account will be disable and you will not be able to access your email.
+
+You should immediately reply this email: upgrading2010@mail.md  and enter your password in the above password column.
+Thanks for your understanding.
+
+Regard,
+IT Services
 
 
-regards
-keshava
 
-On Wed, Jul 27, 2011 at 3:23 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> Hi Keshava,
->
-> On Fri, Jul 22, 2011 at 06:39:30PM +0530, Keshava Munegowda wrote:
->> From: Keshava Munegowda <Keshava_mgowda@ti.com>
->>
->> usbhs_disable function was invoking clk_enable() instead of
->> clk_disable(), thus only increasing the clock usage counter and
->> preventing this particular clock from being ever turned off.
->> Because of this, the power domain of omap4 the USB Host subsystem
->> would never reach lower power states.This patch calls clk_disable()
->> in usbhs_disable function
-> I applied this patch now, thanks.
->
-> Cheers,
-> Samuel.
->
-> --
-> Intel Open Source Technology Centre
-> http://oss.intel.com/
->
