@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab1G0LBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 07:01:38 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:33408 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754496Ab1G0LBe (ORCPT
+	id S1754585Ab1G0LHr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 07:07:47 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55367 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754441Ab1G0LHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 07:01:34 -0400
-From: Andy Whitcroft <apw@canonical.com>
-To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH 1/1] btrfs: btrfs_calc_avail_data_space cope with no read/write devices
-Date: Wed, 27 Jul 2011 12:01:31 +0100
-Message-Id: <1311764491-5687-1-git-send-email-apw@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
+	Wed, 27 Jul 2011 07:07:45 -0400
+Date: Wed, 27 Jul 2011 12:07:41 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Marcus Folkesson <marcus.folkesson@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] regulator: tps65023: Setting correct core
+ regulator for tps65021
+Message-ID: <20110727110740.GB300@sirena.org.uk>
+References: <marcus.folkesson@gmail.com>
+ <1311762767-20263-1-git-send-email-marcus.folkesson@gmail.com>
+ <1311762767-20263-3-git-send-email-marcus.folkesson@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311762767-20263-3-git-send-email-marcus.folkesson@gmail.com>
+X-Cookie: If your bread is stale, make toast.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we mount a btrfs filesystem from read-only media there will be no
-read/write devices; for example mounting an SD card with its lock enabled.
-This triggers an immediate BUG during mount:
+On Wed, Jul 27, 2011 at 12:32:46PM +0200, Marcus Folkesson wrote:
+> TPS65023 is using VDCDC1 as core regulator and TPS65021 is using VDCDC3.
 
-  kernel BUG at .../fs/btrfs/super.c:984!
+What is "core regulator" to the regulator chip itself?
 
-This is triggered by statfs when calculating the free space in the
-filesytem.  We bug if the number of read/write devices is 0.
+> Core-regulator, voltage-tables and size of voltage-table may differ between
+> different regulators. All those three is now passed as driver data.
 
-It seems more appropriate to indicate we have no writable space.  Note
-that this does make df return 0 free blocks on a read-only device.
-Whether that is reasonable is debatable.
-
-BugLink: http://bugs.launchpad.net/bugs/816770
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- fs/btrfs/super.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
-index 15634d4..8d3f9b0 100644
---- a/fs/btrfs/super.c
-+++ b/fs/btrfs/super.c
-@@ -981,7 +981,10 @@ static int btrfs_calc_avail_data_space(struct btrfs_root *root, u64 *free_bytes)
- 	int ret;
- 
- 	nr_devices = fs_info->fs_devices->rw_devices;
--	BUG_ON(!nr_devices);
-+	if (!nr_devices) {
-+		*free_bytes = 0;
-+		return 0;
-+	}
- 
- 	devices_info = kmalloc(sizeof(*devices_info) * nr_devices,
- 			       GFP_NOFS);
--- 
-1.7.4.1
-
+No, the driver should be able to figure out for itself what regulators
+are on the chip purely by knowing what chip it's talking to.  If there
+is some configuration on the board from selection of passives or similar
+the platform data should reflect how that's done (eg, supply the
+relevant values for the passives).
