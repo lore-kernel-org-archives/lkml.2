@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab1G0UCx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 16:02:53 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38612
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752863Ab1G0UCu (ORCPT
+	id S1752993Ab1G0UE5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 16:04:57 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59718 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750955Ab1G0UEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 16:02:50 -0400
-Date: Wed, 27 Jul 2011 16:02:40 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Bryan Schumaker <bjschuma@netapp.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Justin Piszcz <jpiszcz@lucidpixels.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
-Message-ID: <20110727200240.GA16054@infradead.org>
-References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>
- <20110727160752.GC974@fieldses.org>
- <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
- <20110727181111.GA23009@infradead.org>
- <alpine.DEB.2.02.1107271530340.1451@p34.internal.lan>
- <20110727193937.GA5354@infradead.org>
- <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>
- <20110727194722.GA9345@infradead.org>
- <4E306D09.5030704@netapp.com>
+	Wed, 27 Jul 2011 16:04:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E306D09.5030704@netapp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20110727163159.GA23785@redhat.com>
+References: <20110727163159.GA23785@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 27 Jul 2011 12:39:00 -0700
+Message-ID: <CA+55aFy83CAZ+AVZNtYZc=NnOzaxsQxksuspqBHGVwLx4hvMCg@mail.gmail.com>
+Subject: Re: [PATCH 0/8] make vfork killable/restartable/traceable
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Matt Fleming <matt.fleming@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 03:54:49PM -0400, Bryan Schumaker wrote:
-> > Any chance to figure out if the file you hit the printk with was one
-> > that got either recently added or moved when you hit it?  (I can't
-> > follow the nfs code enough to check if it prints the first or second hit
-> > of the same cookie)
-> 
-> It should be printing on the second hit of a cookie.
+On Wed, Jul 27, 2011 at 9:31 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> CLONE_VFORK sleeps in TASK_INTERRUPTIBLE until the child exits/execs.
+> This is obviously not good, it is sooo simple to create the task which
+> doesn't react to SIGKILL/SIGSTOP.
 
-But looking closer at it it only prints the directory name and not that
-of any of the matching cookies, making it pretty useless to debug any
-problem.  (and it makes my previous question to Justin look stupid..).
+Well, I don't know how bad that is. You just kill the child instead.
+That's how vfork has always worked, not just on Linux.
 
+And quite frankly, I think your patches 1-3 are unbelievably ugly. If
+it was some simple and straightforward "use
+wait_for_completion_killable() instead", I wouldn't mind it. But I
+think you made a simple and clean sequence convoluted and annoying.
 
-But so far I still stick to my previous theory that this sounds like
-a directory offset getting reused.  How is cache invalidation for
-the array supposed to work?  And maybe more importantly, given that he
-can only reproduce it with a .38 client did any bugs get fixed in that
-code recently that might lead to issues with the cache invalidation?
+I *suspect* that the killable() thing could be done more nicely by
+moving the vfork_completion into the parent instead, and maybe the
+vfork cleanup could just use
+"complete(&task->parent->vfork_completion);" instead (so if the parent
+goes away, it completes some irrelevant init case instead).
 
+So *if* this can be done while still having straightforward code, I
+think it might be worth doing. But patches 1-3 just make me go "not
+worth the ugliness, especially since it's not a real problem".
+
+                               Linus
