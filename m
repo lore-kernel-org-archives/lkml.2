@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab1G0Xpb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 19:45:31 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54511 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751435Ab1G0Xp3 (ORCPT
+	id S1753519Ab1G0X4d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 19:56:33 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39512 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353Ab1G0X4b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 19:45:29 -0400
-Date: Wed, 27 Jul 2011 16:45:23 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Shaohua Li <shaohua.li@intel.com>, Minchan Kim <minchan.kim@gmail.com>,
-        "mgorman@suse.de" <mgorman@suse.de>, linux-mm <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]vmscan: add block plug for page reclaim
-Message-Id: <20110727164523.c2b1d569.akpm@linux-foundation.org>
-In-Reply-To: <4E2B17A6.6080602@fusionio.com>
-References: <1311130413.15392.326.camel@sli10-conroe>
-	<CAEwNFnDj30Bipuxrfe9upD-OyuL4v21tLs0ayUKYUfye5TcGyA@mail.gmail.com>
-	<1311142253.15392.361.camel@sli10-conroe>
-	<CAEwNFnD3iCMBpZK95Ks+Z7DYbrzbZbSTLf3t6WXDQdeHrE6bLQ@mail.gmail.com>
-	<1311144559.15392.366.camel@sli10-conroe>
-	<4E287EC0.4030208@fusionio.com>
-	<1311311695.15392.369.camel@sli10-conroe>
-	<4E2B17A6.6080602@fusionio.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Jul 2011 19:56:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <201107272247.50613.kernelmail.jms@gmail.com>
+References: <20110719224142.GT2357@linux.vnet.ibm.com> <CAM=x7SYYSPGhqYmEAUqe6pc2N=Djg-aG31P5nSmPGDsMORBmyA@mail.gmail.com>
+ <20110722022937.GB2408@linux.vnet.ibm.com> <201107272247.50613.kernelmail.jms@gmail.com>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Wed, 27 Jul 2011 19:56:10 -0400
+Message-ID: <CAGZ=bq+p0kNuj-2dAj40D1Hdru-S64vE_QEhL_mAphYY-0hqyw@mail.gmail.com>
+Subject: Re: Fw: RCU boot debug patch
+To: kernelmail.jms@gmail.com
+Cc: paulmck@linux.vnet.ibm.com, RKK <kulkarni.ravi4@gmail.com>,
+        linux-kernel@vger.kernel.org, cmm@us.ibm.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 23 Jul 2011 20:49:10 +0200
-Jens Axboe <jaxboe@fusionio.com> wrote:
+On Wed, Jul 27, 2011 at 17:47,  <kernelmail.jms@gmail.com> wrote:
+>>A debug patch to verify if there is RCU callbacks before the rcu scheduler is active
+> So something gives me the impression we may have an answer somewhere in this dmesg for this... ;-)
+>
+> Here is my dmesg (the whole thing):
+>
+> function free_object_rcu
+> [    0.166707] RCU scheduler is not active yet, Calling _call_rcu() with this function free_object_rcu
+> [....thousands of lines snipped...]
+> [    0.225223] RCU scheduler is not active yet, Calling _call_rcu() with this function free_object_rcu
 
-> > I can observe the average request size changes. Before the patch, the
-> > average request size is about 90k from iostat (but the variation is
-> > big). With the patch, the request size is about 100k and variation is
-> > small.
-> 
-> That's a good win right there, imho.
+Well this looks an awful lot like a smoking gun here...
 
-yup.  Reduced CPU consumption on that path isn't terribly exciting IMO,
-but improved request size is significant.
+I can only find one function called "free_object_rcu", and it seems to be a
+static function in mm/kmemleak.c, and it certainly does this:
+   call_rcu(&object->rcu, free_object_rcu);
 
-Using an additional 44 bytes of stack on that path is also
-significant(ly bad).  But we need to fix that problem anyway.  One way
-we could improve things in mm/vmscan.c is to move the blk_plug into
-scan_control then get the scan_control off the stack in some manner. 
-That's easy for kswapd: allocate one scan_control per kswapd at
-startup.  Doing it for direct-reclaim would be a bit trickier...
+So the next question for you would be:  Do all the messages go away if you
+turn off the kmemleak config option?
 
-
-
-And I have the usual maintainability whine.  If someone comes up to
-vmscan.c and sees it calling blk_start_plug(), how are they supposed to
-work out why that call is there?  They go look at the blk_start_plug()
-definition and it is undocumented.  I think we can do better than this?
+Cheers,
+Kyle Moffett
