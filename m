@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536Ab1G0OhT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 10:37:19 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:57474 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753292Ab1G0OhS (ORCPT
+	id S1754513Ab1G0OmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 10:42:20 -0400
+Received: from smtprelay01.ispgateway.de ([80.67.31.35]:41036 "EHLO
+	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753786Ab1G0OmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 10:37:18 -0400
-Message-ID: <4E302299.2070309@lwfinger.net>
-Date: Wed, 27 Jul 2011 09:37:13 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
+	Wed, 27 Jul 2011 10:42:18 -0400
+Message-ID: <4E3024A3.7010102@ladisch.de>
+Date: Wed, 27 Jul 2011 16:45:55 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-To: hubert Liao <liao.hubertt@gmail.com>
-CC: Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+To: Steven Whitehouse <swhiteho@redhat.com>
+CC: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Don Mullis <don.mullis@gmail.com>, Dave Chinner <david@fromorbit.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: Oops when insmod rtl8192ce
-References: <CAMzZzFGqPv6Nbw8J8JGNKcLA76sAs3oD6+hH9NPCjwA33fYpOQ@mail.gmail.com> <CAMzZzFGpDiFAhsLAb+SQxjbGMzBoOStF_Lr7Eb3PT6Drcf=VdA@mail.gmail.com>
-In-Reply-To: <CAMzZzFGpDiFAhsLAb+SQxjbGMzBoOStF_Lr7Eb3PT6Drcf=VdA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Subject: Re: list sort
+References: <1311773014.2801.23.camel@menhir>
+In-Reply-To: <1311773014.2801.23.camel@menhir>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2011 04:26 AM, hubert Liao wrote:
-> Hi,
-> We got an oops when insmod rtl8192ce module (the board is an ARM soc),
-> accroding the oops message, find it's because in rtl_pci_probe()
-> called _rtl_pci_find_adapter(),
-> in this funcation, the  pdev->bus->self is a NULL pointer .
-> static boot _rtl_pci_find_adapter(strcut pci_dev *dev,
->                struct ieee80211_hw *hw)
-> {
-> struct pci_dev *bridge_pdev = pdev->bus->self;   //line 1601
-> ...
-> pcipriv->ndis_adapter.pcibridge_vendorid = bridge_pdev->vendor;<--
-> [oops here] line 1700
-> ...
-> }
-> here, I just want to know why the bus->self  is NULL?
-> ----
-> [  148.186632] Unable to handle kernel NULL pointer dereference at
-> virtual address 00000020
+Steven Whitehouse wrote:
+> There seems to be an issue with list_sort trying to compare an object to
+> itself. [...]
+> While it appears generally harmless, since the list does appear to be
+> correctly sorted, it is doing extra work needlessly.
 
-As John Linville suggested, please open a bugzilla report.
+There are sort algorithms where this happens naturally, and adding
+an additional check to avoid calling the comparison function when the
+pointers are equal would be more work overall than just calling cmp().
 
-I would also like some additional information. What kernel are you using? In 
-addition, please post the 'lspci -nnk' information for your card.
+This does not happen with list_sort()'s merge sort, but I've noticed
+the following hack in merge_and_restore_back_links():
 
-I also think that pdev->bus should have been setup before the initialization 
-code in rtl8192ce was called. I have not tested the driver on other than x86 and 
-x86_64 architectures because of hardware availability, thus ARM may expose some 
-problems. Is this soc little-endian?
+	do {
+		/*
+		 * In worst cases this loop may run many iterations.
+		 * Continue callbacks to the client even though no
+		 * element comparison is needed, so the client's cmp()
+		 * routine can invoke cond_resched() periodically.
+		 */
+		(*cmp)(priv, tail->next, tail->next);
 
-Thanks,
-Larry
+		tail->next->prev = tail;
+		tail = tail->next;
+	} while (tail->next);
 
+When there is no cond_resched() call, this is indeed needless work.
+
+However, if the list is so short that cond_resched() is not needed,
+the additional comparisons should not hurt anyway.
+
+
+Regards,
+Clemens
