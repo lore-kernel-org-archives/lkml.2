@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650Ab1G0QkT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 12:40:19 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:6033 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752667Ab1G0QkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 12:40:17 -0400
-X-IronPort-AV: E=Sophos;i="4.67,277,1309762800"; 
-   d="scan'208";a="565964901"
-Message-ID: <4E303F6F.8010706@netapp.com>
-Date: Wed, 27 Jul 2011 12:40:15 -0400
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110628 Thunderbird/5.0
-MIME-Version: 1.0
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
-References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan> <20110727160752.GC974@fieldses.org> <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754732Ab1G0QlT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 12:41:19 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:47951 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752862Ab1G0QlR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 12:41:17 -0400
+Date: Wed, 27 Jul 2011 09:41:12 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Mingarelli <thomas.mingarelli@hp.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Subject: Re: linux-next: Tree for July 27 (watchdog/hpwdt)
+Message-Id: <20110727094112.89ab9901.rdunlap@xenotime.net>
+In-Reply-To: <20110727141151.d31e3da6a8d21a255473293c@canb.auug.org.au>
+References: <20110727141151.d31e3da6a8d21a255473293c@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2011 12:28 PM, Justin Piszcz wrote:
-> 
-> 
-> On Wed, 27 Jul 2011, J. Bruce Fields wrote:
-> 
->> On Wed, Jul 27, 2011 at 09:54:09AM -0400, Justin Piszcz wrote:
->>> Hi,
->>>
->>> Kernel 2.6.30 on client.
->>> Kernel 2.6.28 on server.
->>>
->>> p34 kernel: [92223.918892] NFS: directory motion/cam2 contains a
->>> readdir loop.  Please contact your server vendor.  Offending cookie: 10272
->>
->> What filesystem on the server are you exporting?
-> 
-> Hi,
-> 
-> xfs.
-> /dev/sda1 on / type xfs (rw,noatime)
-> 
-> Nothing special, thoughts?
+On Wed, 27 Jul 2011 14:11:51 +1000 Stephen Rothwell wrote:
 
-Are there a lot of files in the directory you're exporting?  It looks like cookie 10272 is mapped to multiple files. When the client tries to resume reading from this cookie, xfs will reply from the first matching file and cause the client to enter a loop.
-
-- Bryan
-
+> Hi all,
 > 
-> Justin.
-> 
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Just in case anyone needs reminding:  Please do not add anything destined
+> for v3.2 into linux-next included trees until after v3.1-rc1.
 
+
+When CONFIG_HPWDT_NMI_DECODING is not enabled:
+
+drivers/watchdog/hpwdt.c:833: error: 'allow_kdump' undeclared (first use in this function)
+drivers/watchdog/hpwdt.c:833: error: 'priority' undeclared (first use in this function)
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
