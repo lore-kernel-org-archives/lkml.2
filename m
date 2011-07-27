@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab1G0GTN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 02:19:13 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:42014 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752863Ab1G0GTL convert rfc822-to-8bit (ORCPT
+	id S1753832Ab1G0GVj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 02:21:39 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54555 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752900Ab1G0GVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 02:19:11 -0400
+	Wed, 27 Jul 2011 02:21:36 -0400
+Date: Wed, 27 Jul 2011 08:21:20 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Przywara, Andre" <Andre.Przywara@amd.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@amd64.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Pohlack, Martin" <Martin.Pohlack@amd.com>
+Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
+Message-ID: <20110727062120.GA5272@aftab>
+References: <1311340547-7861-1-git-send-email-bp@amd64.org>
+ <4E2F0068.1080001@redhat.com>
+ <20110726181304.GD32536@aftab>
+ <4E2F0498.8050005@zytor.com>
+ <20110726183721.GF32536@aftab>
+ <4E2F09BB.9060605@zytor.com>
+ <4E2F1889.8030708@amd.com>
+ <4E2F90A2.4030409@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1310520405-1558-3-git-send-email-Gregory.Dietsche@cuw.edu>
-References: <1310520405-1558-1-git-send-email-Gregory.Dietsche@cuw.edu>
-	<1310520405-1558-3-git-send-email-Gregory.Dietsche@cuw.edu>
-Date: Wed, 27 Jul 2011 08:19:11 +0200
-X-Google-Sender-Auth: AsmEFMG1ev5bkIVHi1atLL8RzbM
-Message-ID: <CAAxaTiNPCwF5atmufeTA8wGo=_v3asxj15fP46j4Xu9mjroj6A@mail.gmail.com>
-Subject: Re: [PATCH 2/3] coccinelle.txt: add documentation of PARALLEL= flag
-From: Nicolas Palix <Nicolas.Palix@inria.fr>
-To: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-Cc: julia@diku.dk, Gilles.Muller@lip6.fr, rdunlap@xenotime.net,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, cocci@diku.dk
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E2F90A2.4030409@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 3:26 AM, Greg Dietsche <Gregory.Dietsche@cuw.edu> wrote:
-> Document the new PARALLEL= option of Coccinelle which
-> allows running SmPL scripts in parallel.
->
-> Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-Acked-by: Nicolas Palix <npalix.work@gmail.com>
-> ---
->  Documentation/coccinelle.txt |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
->
-> diff --git a/Documentation/coccinelle.txt b/Documentation/coccinelle.txt
-> index 9495a4b..3bccb50 100644
-> --- a/Documentation/coccinelle.txt
-> +++ b/Documentation/coccinelle.txt
-> @@ -56,7 +56,7 @@ There are two ways to use Coccinelle with the Linux kernel.
->
->  There are a number of optional parameters that can be used with the build target.
->
-> -       make coccicheck MODE={patch,report,context,org} COCCI=? M=?
-> +       make coccicheck MODE={patch,report,context,org} COCCI=? M=? PARALLEL=?
->
->  MODE:
->        Determines what mode cocci operates in. If no mode is specified
-> @@ -71,6 +71,10 @@ M:
->        Limit cocci to a subset of directories. This is very similar to the
->        way the build system works when building modules.
->
-> +PARALLEL:
-> +       Number of *.cocci SmPL scripts found under scripts/coccinelle/ to run
-> +       at the same time.
-> +
->
->  Using Coccinelle on the Linux kernel
->  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> --
-> 1.7.2.5
->
->
+On Wed, Jul 27, 2011 at 12:14:26AM -0400, Avi Kivity wrote:
+> On 07/26/2011 10:42 PM, Andre Przywara wrote:
+> >
+> > There is no need to determine it by calculating, because it caused by 
+> > the special design of the BD L1 cache and thus fixed.
+> > And a calculation would be even more confusing:
+> >
+> > The L1I is virtually indexed, but physically tagged.
+> > 64KB L1I cache, 64 Bytes per Cacheline = 1024 cache lines
+> > 1024 lines / 2 way associative = 512 indexes
+> > 64 Bytes per Cacheline (6 bits) + 512 indexes (9 bits) = bits [14:0]
+> > virtual and physical addresses are the same for bits [11:0], which 
+> > leaves the remaining 14:12 susceptible for aliasing.
+> >
+> > So bit 12 comes from PAGESIZE and yes, the 14 could be derived from 
+> > the CPUID cache info, but I don't see much value in breaking this down 
+> > this way.
+> > But I agree that there should be some comment in the patch which at 
+> > least notes that bits [14:12] are due to the L1I design, maybe we can 
+> > copy a nicer version of the above math in the commit message for 
+> > reference.
+> >
+> 
+> If among the 12,432.8 cpuid leaves exposed by the cpu we had a bit that 
+> said L1I was shared, and another that said it was virtually indexed, and 
+> others describing the cache size, cache line size, and number of ways, 
+> then we could perform the arithmetic at runtime, yes?
+> 
+> That means that if the caches grow or increase their associativity, then 
+> we don't need to patch the kernel again.
 
-
+Yeah, actually the idea is to patch the kernel only this one time and
+never ever be needing to do this for future CPUs, for this matter.
 
 -- 
-Nicolas Palix
-http://sardes.inrialpes.fr/~npalix/
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
