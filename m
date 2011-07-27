@@ -1,42 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab1G0Slk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 14:41:40 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44780 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754558Ab1G0Slh convert rfc822-to-8bit (ORCPT
+	id S1754891Ab1G0SmQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 14:42:16 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:38495 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754543Ab1G0SmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 14:41:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAO+b5-rP+s7QgObFfudiM9wsVjfXVrVeWs9-OtTsp70rX-te+Q@mail.gmail.com>
-References: <1311630170-26057-1-git-send-email-jim.cromie@gmail.com>
- <1311630170-26057-22-git-send-email-jim.cromie@gmail.com> <CAO+b5-rP+s7QgObFfudiM9wsVjfXVrVeWs9-OtTsp70rX-te+Q@mail.gmail.com>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Wed, 27 Jul 2011 12:41:06 -0600
-Message-ID: <CAJfuBxwYxZ0FJNoZPkw3TH2yPLZMGNL0Mby7UHXwrgCJu52RfA@mail.gmail.com>
-Subject: Re: [PATCH 21/25] dynamic_debug: shrink struct pending query to size
- actually needed
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: jbaron@redhat.com, joe@perches.com, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, gnb@fmeh.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 27 Jul 2011 14:42:14 -0400
+Date: Wed, 27 Jul 2011 11:42:11 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Leendert van Doorn <leendert@watson.ibm.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        James Morris <jmorris@namei.org>, tpmdd-devel@lists.sourceforge.net
+Subject: [PATCH -next] tpm_tis: fix build when ACPI is not enabled
+Message-Id: <20110727114211.18be47cf.rdunlap@xenotime.net>
+In-Reply-To: <20110727141151.d31e3da6a8d21a255473293c@canb.auug.org.au>
+References: <20110727141151.d31e3da6a8d21a255473293c@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 1:32 AM, Bart Van Assche <bvanassche@acm.org> wrote:
-> On Mon, Jul 25, 2011 at 11:42 PM, Jim Cromie <jim.cromie@gmail.com> wrote:
->> -       pr_debug("query saved as pending %d\n", pending_ct);
->> +       pr_debug("query saved as pending %d, in %d+%d bytes\n",
->> +               pending_ct, sizeof(struct pending_query), buflen);
->
-> The proper format specifier for size_t is %zd, not %d. Does this mean
-> that this code has not yet been compiled on a 64-bit system ?
->
-> Bart.
->
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-this patch hadnt been compiled on 64,
-it has been now, and updated to my github repo,
-not resending it or others now, awaiting further comments.
+Fix tpm_tis.c build when CONFIG_ACPI is not enabled by providing
+a stub function.  Fixes many build errors/warnings:
+
+drivers/char/tpm/tpm_tis.c:89: error: dereferencing pointer to incomplete type
+drivers/char/tpm/tpm_tis.c:89: warning: type defaults to 'int' in declaration of 'type name'
+drivers/char/tpm/tpm_tis.c:89: error: request for member 'list' in something not a structure or union
+drivers/char/tpm/tpm_tis.c:89: warning: type defaults to 'int' in declaration of '__mptr'
+drivers/char/tpm/tpm_tis.c:89: error: dereferencing pointer to incomplete type
+drivers/char/tpm/tpm_tis.c:89: error: dereferencing pointer to incomplete type
+drivers/char/tpm/tpm_tis.c:89: error: dereferencing pointer to incomplete type
+drivers/char/tpm/tpm_tis.c:89: warning: type defaults to 'int' in declaration of 'type name'
+drivers/char/tpm/tpm_tis.c:89: error: request for member 'list' in something not a structure or union
+drivers/char/tpm/tpm_tis.c:89: warning: type defaults to 'int' in declaration of 'type name'
+drivers/char/tpm/tpm_tis.c:89: error: dereferencing pointer to incomplete type
+drivers/char/tpm/tpm_tis.c:89: error: dereferencing pointer to incomplete type
+drivers/char/tpm/tpm_tis.c:89: error: dereferencing pointer to incomplete type
+drivers/char/tpm/tpm_tis.c:89: warning: type defaults to 'int' in declaration of 'type name'
+drivers/char/tpm/tpm_tis.c:89: error: request for member 'list' in something not a structure or union
+drivers/char/tpm/tpm_tis.c:89: warning: type defaults to 'int' in declaration of '__mptr'
+drivers/char/tpm/tpm_tis.c:89: error: dereferencing pointer to incomplete type
+drivers/char/tpm/tpm_tis.c:89: error: dereferencing pointer to incomplete type
+drivers/char/tpm/tpm_tis.c:89: error: dereferencing pointer to incomplete type
+drivers/char/tpm/tpm_tis.c:89: warning: type defaults to 'int' in declaration of 'type name'
+drivers/char/tpm/tpm_tis.c:89: error: request for member 'list' in something not a structure or union
+drivers/char/tpm/tpm_tis.c:89: warning: type defaults to 'int' in declaration of 'type name'
+drivers/char/tpm/tpm_tis.c:90: error: dereferencing pointer to incomplete type
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Leendert van Doorn <leendert@watson.ibm.com>
+---
+ drivers/char/tpm/tpm_tis.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+--- linux-next-20110727.orig/drivers/char/tpm/tpm_tis.c
++++ linux-next-20110727/drivers/char/tpm/tpm_tis.c
+@@ -80,7 +80,7 @@ enum tis_defaults {
+ static LIST_HEAD(tis_chips);
+ static DEFINE_SPINLOCK(tis_lock);
+ 
+-#ifdef CONFIG_PNP
++#if defined(CONFIG_PNP) && defined(CONFIG_ACPI)
+ static int is_itpm(struct pnp_dev *dev)
+ {
+ 	struct acpi_device *acpi = pnp_acpi_device(dev);
+@@ -93,6 +93,11 @@ static int is_itpm(struct pnp_dev *dev)
+ 
+ 	return 0;
+ }
++#else
++static inline int is_itpm(struct pnp_dev *dev)
++{
++	return 0;
++}
+ #endif
+ 
+ static int check_locality(struct tpm_chip *chip, int l)
