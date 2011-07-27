@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab1G0JAa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 05:00:30 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47116 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754013Ab1G0JA2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 05:00:28 -0400
-Subject: Re: [RFC/PATCH] mm/futex: Fix futex writes on archs with SW
- tracking of dirty & young
-From: Peter Zijlstra <peterz@infradead.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Mike Frysinger <vapier.adi@gmail.com>, Shan Hai <haishan.bai@gmail.com>,
-        paulus@samba.org, tglx@linutronix.de, walken@google.com,
-        dhowells@redhat.com, cmetcalf@tilera.com, tony.luck@intel.com,
-        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
-In-Reply-To: <1311753513.25044.663.camel@pasglop>
-References: <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>
-	 <1310717238-13857-2-git-send-email-haishan.bai@gmail.com>
-	 <1310725418.2586.309.camel@twins> <4E21A526.8010904@gmail.com>
-	 <1310860194.25044.17.camel@pasglop>
-	 <4b337921-d430-4b63-bc36-ad31753cf800@email.android.com>
-	 <1310912990.25044.203.camel@pasglop> <1310944453.25044.262.camel@pasglop>
-	 <1310961691.25044.274.camel@pasglop> <4E23D728.7090406@gmail.com>
-	 <1310972462.25044.292.camel@pasglop> <4E23E02C.8090401@gmail.com>
-	 <1310974591.25044.298.camel@pasglop> <4E24FA51.70602@gmail.com>
-	 <1311049762.25044.392.camel@pasglop>
-	 <CAMjpGUdxpaYBFfKjBEPFOJohnKoXfagLUHvhrst+NembeabxcA@mail.gmail.com>
-	 <1311753513.25044.663.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 27 Jul 2011 10:59:50 +0200
-Message-ID: <1311757190.24752.406.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754165Ab1G0JAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 05:00:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51410 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754013Ab1G0JAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 05:00:40 -0400
+Message-ID: <4E2FD3AC.1000701@redhat.com>
+Date: Wed, 27 Jul 2011 12:00:28 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 01/11] KVM: MMU: avoid pte_list_desc run out in kvm_mmu_pte_write
+References: <4E2EA3DB.7040403@cn.fujitsu.com> <4E2EA41A.3080606@cn.fujitsu.com>
+In-Reply-To: <4E2EA41A.3080606@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-27 at 17:58 +1000, Benjamin Herrenschmidt wrote:
+On 07/26/2011 02:25 PM, Xiao Guangrong wrote:
+> kvm_mmu_pte_write is unsafe since we need to alloc pte_list_desc in the
+> function when spte is prefetched, unfortunately, we can not know how many
+> spte need to be prefetched on this path, that means we can use out of the
+> free  pte_list_desc object in the cache, and BUG_ON() is triggered, also some
+> path does not fill the cache, such as INS instruction emulated that does not
+> trigger page fault
+>
+>
+>   void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>   		       const u8 *new, int bytes,
+>   		       bool guest_initiated)
+> @@ -3583,6 +3596,7 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>   		break;
+>   	}
+>
+> +	mmu_topup_memory_caches(vcpu);
 
-> What should nommu do anyways ? it's not like there's much it can do
-> right ? It should never even hit the fault path to start with ...
+Please add a comment here describing why it's okay to ignore the error 
+return.
 
-Something like the below makes a nommu arm config build.. David, is this
-indeed the correct thing to do for nommu?
+>   	spin_lock(&vcpu->kvm->mmu_lock);
+>   	if (atomic_read(&vcpu->kvm->arch.invlpg_counter) != invlpg_counter)
+>   		gentry = 0;
+> @@ -3653,7 +3667,7 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>   			mmu_page_zap_pte(vcpu->kvm, sp, spte);
+>   			if (gentry&&
+>   			!((sp->role.word ^ vcpu->arch.mmu.base_role.word)
+> -			&  mask.word))
+> +			&  mask.word)&&  get_free_pte_list_desc_nr(vcpu))
+>   				mmu_pte_write_new_pte(vcpu, sp, spte,&gentry);
 
----
-Index: linux-2.6/mm/nommu.c
-===================================================================
---- linux-2.6.orig/mm/nommu.c
-+++ linux-2.6/mm/nommu.c
-@@ -190,6 +190,12 @@ int get_user_pages(struct task_struct *t
- }
- EXPORT_SYMBOL(get_user_pages);
- 
-+int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
-+		     unsigned long address, unsigned int fault_flags)
-+{
-+	BUG(); /* nommu should never call this */
-+}
-+
- /**
-  * follow_pfn - look up PFN at a user virtual address
-  * @vma: memory mapping
+Wow, this bug was here since 2.6.23.  Good catch.
+
+Please wrap or rename get_free_pte_list_desc_nr() in rmap_can_add(vcpu) 
+so it's clearer why we're doing this.
+
+
+-- 
+error compiling committee.c: too many arguments to function
 
