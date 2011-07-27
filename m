@@ -1,90 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307Ab1G0PPB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 11:15:01 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:35178 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750879Ab1G0PO7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 11:14:59 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18mBV0ixNomBS4x+LhK9tC+/kXvkoPN64OD4eeb24
-	reKCG6Sv/lpywp
-Subject: [patch] sched: fix broken SCHED_RESET_ON_FORK handling
-From: Mike Galbraith <efault@gmx.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 27 Jul 2011 17:14:55 +0200
-Message-ID: <1311779695.8691.2.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	id S1753259Ab1G0PQY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 11:16:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34177 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751491Ab1G0PQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 11:16:23 -0400
+Message-ID: <4E302BC4.5060003@suse.cz>
+Date: Wed, 27 Jul 2011 17:16:20 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+MIME-Version: 1.0
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, sam@ravnborg.org,
+        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
+Subject: Re: [RFC][PATCH 1/2] kconfig: Introduce KCONFIG(), KCONFIG_BUILTIN()
+ and KCONFIG_MODULE()
+References: <4E1D9C25.8080300@suse.cz> <1311634718-32588-1-git-send-email-mmarek@suse.cz> <CACqU3MX3=edNJSNXYLVP=nYFx+bDnBs-zi3A3uYCPLNUrJiMyA@mail.gmail.com>
+In-Reply-To: <CACqU3MX3=edNJSNXYLVP=nYFx+bDnBs-zi3A3uYCPLNUrJiMyA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 27.7.2011 17:09, Arnaud Lacombe wrote:
+> Hi,
+>
+> On Mon, Jul 25, 2011 at 6:58 PM, Michal Marek<mmarek@suse.cz>  wrote:
+>> Replace the config_is_*() macros with a variant that allows for grepping
+>> for usage of CONFIG_* options in the code. Usage:
+>>
+>>   if (KCONFIG(CONFIG_NUMA))
+>>
+>> or
+>>
+>>   #if KCONFIG(CONFIG_NUMA)
+>>
+>> The KCONFIG() macro evaluates to 1 if the argument is set (to either 'y'
+>> or 'm'), KCONFIG_BUILTIN() and KCONFIG_MODULE() test if the respective
+>> option is 'y' and 'm', respectively.
+>>
+>> Signed-off-by: Michal Marek<mmarek@suse.cz>
+>> ---
+>>   Makefile                   |    2 +-
+>>   include/linux/kconfig.h    |   24 +++++++++++++++
+>>   scripts/kconfig/confdata.c |   70 ++++++++-----------------------------------
+>>   3 files changed, 38 insertions(+), 58 deletions(-)
+>>   create mode 100644 include/linux/kconfig.h
+>>
+>> diff --git a/Makefile b/Makefile
+>> index afb8e0d..bd7629b 100644
+>> --- a/Makefile
+>> +++ b/Makefile
+>> @@ -360,7 +360,7 @@ CFLAGS_GCOV = -fprofile-arcs -ftest-coverage
+>>   LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
+>>                     -Iarch/$(hdr-arch)/include/generated -Iinclude \
+>>                     $(if $(KBUILD_SRC), -I$(srctree)/include) \
+>> -                   -include include/generated/autoconf.h
+>> +                   -include $(srctree)/include/linux/kconfig.h
+>>
+>>   KBUILD_CPPFLAGS := -D__KERNEL__
+>>
+>> diff --git a/include/linux/kconfig.h b/include/linux/kconfig.h
+>> new file mode 100644
+>> index 0000000..fe80348
+>> --- /dev/null
+>> +++ b/include/linux/kconfig.h
+>> @@ -0,0 +1,24 @@
+>> +#ifndef __LINUX_KCONFIG_H
+>> +#define __LINUX_KCONFIG_H
+>> +
+>> +#include<generated/autoconf.h>
+>> +
+>> +/*
+>> + * Evaluates to 1 if CONFIG_option is set to 'y', 0 otherwise
+>> + */
+>> +#define KCONFIG_BUILTIN(option) __enabled_ ## option
+>> +
+>> +/*
+>> + * Evaluates to 1 if CONFIG_option is set to 'm', 0 otherwise
+>> + */
+>> +#define KCONFIG_MODULE(option) __enabled_ ## option ## _MODULE
+>> +
+>> +/*
+>> + * Evaluates to 1 if CONFIG_option is set to 'y' or 'm', 0 otherwise
+>> + *
+>> + */
+>> +#define KCONFIG(option) \
+>> +       (__enabled_ ## option || __enabled_ ## option ## _MODULE)
+>> +
+>> +
+>> +#endif /* __LINUX_KCONFIG_H */
+>> diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+>> index df629ec..3bab40a 100644
+>> --- a/scripts/kconfig/confdata.c
+>> +++ b/scripts/kconfig/confdata.c
+>> @@ -495,15 +495,24 @@ header_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
+>>
+>>                 switch (*value) {
+>>                 case 'n':
+>> -                       return;
+>> +                       break;
+>>                 case 'm':
+>>                         suffix = "_MODULE";
+>>                         /* fall through */
+>>                 default:
+>> -                       value = "1";
+>> +                       fprintf(fp, "#define %s%s%s 1\n",
+>> +                           CONFIG_, sym->name, suffix);
+>>                 }
+>> -               fprintf(fp, "#define %s%s%s %s\n",
+>> -                   CONFIG_, sym->name, suffix, value);
+>> +               /*
+>> +                * Generate the __enabled_CONFIG_* and
+>> +                * __enabled_CONFIG_*_MODULE macros for use by the KCONFIG*()
+>> +                * macros. The _MODULE variant is generated even for booleans
+>> +                * so that the KCONFIG() macro works.
+>> +                */
+>> +               fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
+>> +                               sym->name, (*value == 'y'));
+>> +               fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE %d\n",
+>> +                               sym->name, (*value == 'm'));
+>>                 break;
+>>         }
+>>         case S_HEX: {
+> Just to comment on the patch itself, it will certainly not apply
+> against kbuild/kconfig as I changed header_print_symbol() to fix the
+> S_HEX prefix issue.
 
-sched: fix broken SCHED_RESET_ON_FORK handling
+If course it applies, the "case S_HEX: {" context line you are quoting 
+was added by your commit: 
+http://git.kernel.org/?p=linux/kernel/git/mmarek/kbuild-2.6.git;a=commitdiff;h=eb4cf5a642f6430cffff7ba5d8d9bd46ea409281
 
-Setting child->prio = current->normal_prio _after_ SCHED_RESET_ON_FORK has
-been handled for an RT parent gives birth to a deranged mutant child with
-non-RT policy, but RT prio and sched_class.
-
-Move PI leakage protection up, always set priorities and weight, and if the
-child is leaving RT class, reset rt_priority to the proper value.
-
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Cc: <stable@kernel.org>
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 0281f84..a3e65a0 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2804,19 +2804,23 @@ void sched_fork(struct task_struct *p)
- 	p->state = TASK_RUNNING;
- 
- 	/*
-+	 * Make sure we do not leak PI boosting priority to the child.
-+	 */
-+	p->prio = current->normal_prio;
-+
-+	/*
- 	 * Revert to default priority/policy on fork if requested.
- 	 */
- 	if (unlikely(p->sched_reset_on_fork)) {
--		if (p->policy == SCHED_FIFO || p->policy == SCHED_RR) {
-+		if (task_has_rt_policy(p)) {
- 			p->policy = SCHED_NORMAL;
--			p->normal_prio = p->static_prio;
--		}
--
--		if (PRIO_TO_NICE(p->static_prio) < 0) {
- 			p->static_prio = NICE_TO_PRIO(0);
--			p->normal_prio = p->static_prio;
--			set_load_weight(p);
--		}
-+			p->rt_priority = 0;
-+		} else if (PRIO_TO_NICE(p->static_prio) < 0)
-+			p->static_prio = NICE_TO_PRIO(0);
-+
-+		p->prio = p->normal_prio = __normal_prio(p);
-+		set_load_weight(p);
- 
- 		/*
- 		 * We don't need the reset flag anymore after the fork. It has
-@@ -2825,11 +2829,6 @@ void sched_fork(struct task_struct *p)
- 		p->sched_reset_on_fork = 0;
- 	}
- 
--	/*
--	 * Make sure we do not leak PI boosting priority to the child.
--	 */
--	p->prio = current->normal_prio;
--
- 	if (!rt_prio(p->prio))
- 		p->sched_class = &fair_sched_class;
- 
-
-
+Michal
