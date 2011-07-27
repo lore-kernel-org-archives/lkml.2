@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab1G0T5L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 15:57:11 -0400
-Received: from lucidpixels.com ([72.73.18.11]:40131 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754858Ab1G0T5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 15:57:09 -0400
-Date: Wed, 27 Jul 2011 15:57:07 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Christoph Hellwig <hch@infradead.org>
-cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+	id S1754612Ab1G0UCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 16:02:53 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38612
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752863Ab1G0UCu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 16:02:50 -0400
+Date: Wed, 27 Jul 2011 16:02:40 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Bryan Schumaker <bjschuma@netapp.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Justin Piszcz <jpiszcz@lucidpixels.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, xfs@oss.sgi.com
 Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
-In-Reply-To: <20110727194722.GA9345@infradead.org>
-Message-ID: <alpine.DEB.2.02.1107271553290.1451@p34.internal.lan>
-References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan> <20110727160752.GC974@fieldses.org> <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan> <20110727181111.GA23009@infradead.org> <alpine.DEB.2.02.1107271530340.1451@p34.internal.lan>
- <20110727193937.GA5354@infradead.org> <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan> <20110727194722.GA9345@infradead.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Message-ID: <20110727200240.GA16054@infradead.org>
+References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>
+ <20110727160752.GC974@fieldses.org>
+ <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
+ <20110727181111.GA23009@infradead.org>
+ <alpine.DEB.2.02.1107271530340.1451@p34.internal.lan>
+ <20110727193937.GA5354@infradead.org>
+ <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>
+ <20110727194722.GA9345@infradead.org>
+ <4E306D09.5030704@netapp.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E306D09.5030704@netapp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 27, 2011 at 03:54:49PM -0400, Bryan Schumaker wrote:
+> > Any chance to figure out if the file you hit the printk with was one
+> > that got either recently added or moved when you hit it?  (I can't
+> > follow the nfs code enough to check if it prints the first or second hit
+> > of the same cookie)
+> 
+> It should be printing on the second hit of a cookie.
+
+But looking closer at it it only prints the directory name and not that
+of any of the matching cookies, making it pretty useless to debug any
+problem.  (and it makes my previous question to Justin look stupid..).
 
 
-On Wed, 27 Jul 2011, Christoph Hellwig wrote:
-
-> On Wed, Jul 27, 2011 at 03:44:20PM -0400, Justin Piszcz wrote:
->>
->>
->> On Wed, 27 Jul 2011, Christoph Hellwig wrote:
->>
->>> On Wed, Jul 27, 2011 at 03:35:01PM -0400, Justin Piszcz wrote:
->>>> Currently I do not see any dupes, however I have a script that moves
->>>> images out of the directory once an hour:
->>>> 0 * * * * /usr/local/bin/move_to_old2.sh > /dev/null 2>&1
->>>
->>> Do you keep adding files to the directory while you move files out?
->> Yes, otherwise there are too many files in the directory and viewers, e.g.,
->> each geeqie (picture viewer) will use > 4-6GB of memory, so I try to keep
->> it around 5,000 pictures or less.
->>
->>> What's the rate of additions/removals to the directory?
->> Additions it depends, around 5,000 over a 12hr period, 416/hr, current:
->>
->> atom:/d1/motion# find cam1|wc
->>    5215    5215  166853
->> atom:/d1/motion# find cam2|wc
->>    5069    5069  162181
->> atom:/d1/motion# find cam3|wc
->>    5594    5594  178981
->> atom:/d1/motion#
->
-> This sounds a lot like xfs simply filling up the directory index slots
-> of files that you just moved out with new files, and nfs falsely
-> claiming that this is a problem.
->
-> Any chance to figure out if the file you hit the printk with was one
-> that got either recently added or moved when you hit it?  (I can't
-> follow the nfs code enough to check if it prints the first or second hit
-> of the same cookie)
->
-
-It seems to happen across all directories, these are from the past 24 hours.
-
-[41901.041923] NFS: directory motion/cam2 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 14368
-[41901.275284] NFS: directory motion/cam3 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 17435
-[45497.265250] NFS: directory motion/cam1 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 14488
-[45498.832696] NFS: directory motion/cam1 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 16416
-[45507.812712] NFS: directory motion/cam2 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 14778
-[45508.458785] NFS: directory motion/cam2 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 14778
-[92223.918892] NFS: directory motion/cam2 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 10272
-[99413.259688] NFS: directory motion/cam1 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 10272
-[113791.004006] NFS: directory motion/cam1 contains a readdir loop.  Please contact your server vendor.  Offending cookie: 6848
-
-Interestingly, I have two machines that perform this function, both XFS and it 
-only affects the client running 2.6.38:
-
-$ df -h
-2.6.38 - Has a kernel driver that was removed in 2.6.39 (rt2870sta) which
-works really well.
-atomw:/d1              30G   13G   18G  43% /nfs/atomw/d1
-
-2.6.39:
-d630w:/d1              75G  2.6G   72G   4% /nfs/d630w/d1
-
-However, to rule out any kernel issues I'll try 3.0 and see if the problem recurs with a newer version as it is _NOT_ happening with 2.6.39 (similar setup) on both; however:
-
-d630 => 32bit installation (core2duo t7500)
-atomw => 64-bit atom
-
-Justin.
+But so far I still stick to my previous theory that this sounds like
+a directory offset getting reused.  How is cache invalidation for
+the array supposed to work?  And maybe more importantly, given that he
+can only reproduce it with a .38 client did any bugs get fixed in that
+code recently that might lead to issues with the cache invalidation?
 
