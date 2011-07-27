@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab1G0NWq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 09:22:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31844 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751555Ab1G0NWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 09:22:44 -0400
-Subject: list sort
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Don Mullis <don.mullis@gmail.com>, Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Wed, 27 Jul 2011 14:23:34 +0100
-Message-ID: <1311773014.2801.23.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754025Ab1G0NYM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 09:24:12 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39150 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab1G0NYJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 09:24:09 -0400
+MIME-Version: 1.0
+Date: Wed, 27 Jul 2011 21:24:08 +0800
+Message-ID: <CAJd=RBCUekxXLEkn60G-4XC6A-H0i5QunGUNajub76kFZ2FAyg@mail.gmail.com>
+Subject: [RFC] sched: no preempt by RT task of throttled task group
+From: Hillf Danton <dhillf@gmail.com>
+To: Paul Turner <pjt@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Vinod Koul <vinod.koul@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+If the newly woken task is member of a throttled task group, the current task
+should not be preempted, since the woken task is not eligible for schedule.
 
-There seems to be an issue with list_sort trying to compare an object to
-itself. I spotted it first in a list for which I knew that I had unique
-keys, so had put a BUG() in the cmp function if the keys being compared
-were equal. While investigating I discovered that the objects themselves
-were equal (and hence the keys, also). The following addition to the
-list_sort test also triggers twice during the self test:
+Would you please, Paul, give ideas on defining throttled task group, say
 
-diff --git a/lib/list_sort.c b/lib/list_sort.c
-index d7325c6..afa4a97 100644
---- a/lib/list_sort.c
-+++ b/lib/list_sort.c
-@@ -198,6 +198,8 @@ static int __init cmp(void *priv, struct list_head *a, struct list_head *b)
+	task_group_throttled(task_group(task))
+
+for a given RT task, since it is too hard to understand the teaching that
+runqueue is never throttled but task group could.
+
+Thanks,
+Hillf
+---
+ kernel/sched_rt.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index 97540f0..c6762eb 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -1090,6 +1090,8 @@ static void check_preempt_equal_prio(struct rq
+*rq, struct task_struct *p)
+  */
+ static void check_preempt_curr_rt(struct rq *rq, struct task_struct
+*p, int flags)
  {
- 	struct debug_el *ela, *elb;
- 
-+	WARN_ON(a == b);
-+
- 	ela = container_of(a, struct debug_el, list);
- 	elb = container_of(b, struct debug_el, list);
- 
-
-While it appears generally harmless, since the list does appear to be
-correctly sorted, it is doing extra work needlessly.
-
-I couldn't find a listing in the maintainers' file for list_sort, so
-I used git to find those who'd worked on it recently,
-
-Steve.
-
-
-
++	if (rt_rq_throttled(rt_rq_of_se(&p->rt)))
++		return;
+ 	if (p->prio < rq->curr->prio) {
+ 		resched_task(rq->curr);
+ 		return;
