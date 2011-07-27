@@ -1,113 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab1G0WrM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 18:47:12 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:54241 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753985Ab1G0WrK (ORCPT
+	id S1755485Ab1G0W5y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 18:57:54 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:45747 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446Ab1G0W5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 18:47:10 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: linux-btrfs <linux-btrfs@vger.kernel.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs updates
-Date: Wed, 27 Jul 2011 18:46:53 -0400
-Message-Id: <1311805265-sup-502@shiny>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090205.4E309569.0048,ss=1,re=0.000,fgs=0
+	Wed, 27 Jul 2011 18:57:53 -0400
+Subject: Re: [GIT PULL-v2] iscsi-target merge for v3.1-rc1
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>,
+        Hannes Reinecke <hare@suse.de>, Roland Dreier <roland@kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Boaz Harrosh <openosd@gmail.com>, Mike Christie <michaelc@cs.wisc.edu>,
+        Dan Carpenter <error27@gmail.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+In-Reply-To: <1311732839.10646.132.camel@haakon2.linux-iscsi.org>
+References: <1311732839.10646.132.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain
+Date: Wed, 27 Jul 2011 15:48:31 -0700
+Message-Id: <1311806911.6931.65.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Tue, 2011-07-26 at 19:13 -0700, Nicholas A. Bellinger wrote:
+> Hi Linus,
+> 
+> Here is an updated pull request for an initial v3.1-rc1 merge of
+> iscsi_target including the updates to address some recent build breakage
+> with iscsi_proto.h in linux-next, and minor build warnings on 32-bit.
+> 
+> This also includes the DIV_ROUND_UP_SECTOR_T bit and associated change
+> for targte_core_mod from this morning that address the 32-bit unsigned
+> long long division build issues as per your direction on LKML.  This can
+> definately use some more discussion and testing in linux-next, so please
+> let me know if how you prefer to merge these.
+> 
+> The series is available directly here:
+> 
+>   master.kernel.org:/pub/scm/linux/kernel/git/nab/target-pending.git for-next
+> 
+> This tree is also available from kernel.org mirrors at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
+> 
+> The series is based on the following mainline HEAD:
+> 
+> commit bbd9d6f7fbb0305c9a592bf05a32e87eb364a4ff
+> Merge: 8e20487 5a9a436
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Fri Jul 22 19:02:39 2011 -0700
+> 
+>     Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6
+> 
+> Also just double checking, here the for-next branch is merge conflict
+> free on yesterdays linux-next (20110725), and latest mainline HEAD from
+> afternoon.
+> 
+> Thank you,
+> 
 
-The for-linus branch of the btrfs-unstable repo is reading for pulling:
+Hi Linus,
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git for-linus
+Thank you for pulling in iscsi-target for an initial v3.1 merge!
 
-This started off as a larger pull, but I had to pull out a number of
-cleanups from Fujitsu, Novell and a few others (sorry guys) while
-hunting a crash during stress.sh.  It looks like it is unrelated to
-those commits, but I had to pull out a bunch of them until I can be sure
-I understand the bug.
+The for-next branch has been updated to address this morning's reported
+items with Dan's fixes and Randy's CONFIG_SMP=n + CONFIG_MODULES=n build
+breakage.
 
-I'll have another pull request with the fully tested cleanups on Monday.
-Depending on how Linus does rc1, they might end up as the start of my
-3.2 branch.
+I'll keep queueing up v3.1-rc1 bugfixes in for-next and will follow up
+with a fixes-only pull request early next week, unless of course you
+want it earlier than that.  :)
 
-This pull has the commits that I've been able to run through extensive
-testing.  The biggest change here is switching the btrfs tree locks to a
-reader/writer lock.  This has been one of our biggest bottlenecks for
-some time, and it was consistently at the top of profiles on large
-machines.
+Thanks again, and please let us know if you have any concerns,
 
-The new locks do away with all the adaptive spinning inside of btrfs and
-rely on the spinning/blocking hints in the code to decide when it must
-block.
+--nab
 
-The reader/writer locks break the code I had in place to use kmap on
-metadata buffers, so all of our metadata is now in lowmem.  I did test
-this on a 32 bit VM, but x86-32 users will want to poke gently.
-
-I also adapted Tejun's lockdep fixes for the btrfs locks, and so far I
-haven't seen any lockdep warnings.
-
-Josef has a series of enospc fixes and tweaks here as well.  His bigger
-patch to start reworking the enospc reservations seems to be causing the
-corruptions during stress.sh, so it will wait for 3.2.
-
-Josef Bacik (11) commits (+320/-322):
-    Btrfs: use the normal checksumming infrastructure for free space cache (+59/-110)
-    Btrfs: do transaction space reservation before joining the transaction (+17/-42)
-    Btrfs: fix how we merge extent states and deal with cached states (+11/-12)
-    Btrfs: try to only do one btrfs_search_slot in do_setxattr (+42/-33)
-    Btrfs: use find_or_create_page instead of grab_cache_page (+9/-7)
-    Btrfs: serialize flushers in reserve_metadata_bytes (+51/-21)
-    Btrfs: fix deadlock when throttling transactions (+9/-2)
-    Btrfs: fix enospc problems with delalloc (+86/-60)
-    Btrfs: use a worker thread to do caching (+27/-29)
-    Btrfs: don't flush delalloc arbitrarily (+0/-3)
-    Btrfs: tag pages for writeback in sync (+9/-3)
-
-Chris Mason (7) commits (+642/-699):
-    Btrfs: make sure reserve_metadata_bytes doesn't leak out strange errors (+6/-1)
-    Btrfs: use the commit_root for reading free_space_inode crcs (+28/-19)
-    Btrfs: reduce extent_state lock contention for metadata (+41/-14)
-    Btrfs: switch the btrfs tree locks to reader/writer (+431/-218)
-    Btrfs: remove lockdep magic from btrfs_next_leaf (+5/-31)
-    Btrfs: stop using highmem for extent_buffers (+52/-378)
-    Btrfs: make a lockdep class for each root (+79/-38)
-
-Miao Xie (1) commits (+21/-7):
-    Btrfs: fix BUG_ON() caused by ENOSPC when relocating space
-
-Total: (19)
-
- fs/btrfs/btrfs_inode.h      |   16 ++-
- fs/btrfs/ctree.c            |  457 +++++++++++++++++++------------------------
- fs/btrfs/ctree.h            |   14 +-
- fs/btrfs/delayed-inode.c    |    2 +-
- fs/btrfs/dir-item.c         |    9 +-
- fs/btrfs/disk-io.c          |  116 ++++++++----
- fs/btrfs/disk-io.h          |   10 +-
- fs/btrfs/extent-tree.c      |  285 +++++++++++++++-------------
- fs/btrfs/extent_io.c        |  168 ++++++++--------
- fs/btrfs/extent_io.h        |   35 ++--
- fs/btrfs/file-item.c        |   41 +---
- fs/btrfs/file.c             |   11 +-
- fs/btrfs/free-space-cache.c |  173 ++++++-----------
- fs/btrfs/inode.c            |   90 ++++------
- fs/btrfs/ioctl.c            |    8 +-
- fs/btrfs/locking.c          |  280 ++++++++++++++-------------
- fs/btrfs/locking.h          |   36 ++++-
- fs/btrfs/relocation.c       |    3 +-
- fs/btrfs/struct-funcs.c     |  100 +++-------
- fs/btrfs/transaction.c      |   47 +++--
- fs/btrfs/tree-log.c         |    6 +-
- fs/btrfs/volumes.c          |    2 +-
- fs/btrfs/xattr.c            |   66 ++++---
- 23 files changed, 965 insertions(+), 1010 deletions(-)
