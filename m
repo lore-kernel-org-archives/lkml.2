@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab1G0VOv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 17:14:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33656 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753839Ab1G0VOt (ORCPT
+	id S1755278Ab1G0VRT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 17:17:19 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:46679 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755160Ab1G0VRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:14:49 -0400
-Date: Wed, 27 Jul 2011 14:14:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dan Ehrenberg <dehrenberg@google.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dio: Fast-path for page-aligned IOs
-Message-Id: <20110727141415.a67cafb8.akpm@linux-foundation.org>
-In-Reply-To: <20110727210828.GB12714@infradead.org>
-References: <1308611855-18096-1-git-send-email-dehrenberg@google.com>
-	<20110727210828.GB12714@infradead.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 27 Jul 2011 17:17:17 -0400
+X-Auth-Info: VOBltCvuxbxf9GSQl+t22kqDzLe4NhY58wlyxkp9CF0=
+To: Joe Perches <joe@perches.com>
+cc: Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Graeme Russ <graeme.russ@gmail.com>,
+        U-Boot Users <u-boot@lists.denx.de>, linux-kernel@vger.kernel.org
+From: Wolfgang Denk <wd@denx.de>
+Subject: Re: [U-Boot] [RFC PATCH] checkpatch.pl: Add ability to ignore various messages
+MIME-Version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 8bit
+In-reply-to: <b41636a5e5756917b07e50a4b8309dbb092b0a17.1303778411.git.joe@perches.com>
+References: <1303713156.1745.38.camel@Joe-Laptop> <b41636a5e5756917b07e50a4b8309dbb092b0a17.1303778411.git.joe@perches.com>
+Comments: In-reply-to Joe Perches <joe@perches.com>
+   message dated "Mon, 25 Apr 2011 17:43:22 -0700."
+Date: Wed, 27 Jul 2011 23:17:07 +0200
+Message-Id: <20110727211707.139ED15794C3@gemini.denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jul 2011 17:08:28 -0400
-Christoph Hellwig <hch@infradead.org> wrote:
+Dear Joe,
 
-> On Mon, Jun 20, 2011 at 04:17:35PM -0700, Dan Ehrenberg wrote:
-> > The fast path does not apply for operations of the wrong size
-> > or alignmnent, or for operations on raw drives with 512-byte sectors.
-> > It might be possible to make this special case a little more general
-> > while maintaining its performance benefits, but I do not believe that
-> > the full performance benefits can be achieved without resorting to
-> > special handling of simple cases, as is done in this patch.
+In message <b41636a5e5756917b07e50a4b8309dbb092b0a17.1303778411.git.joe@perches.com> you wrote:
+> Some users would like the ability to not emit some of the
+> messages that checkpatch produces.
 > 
-> Did you check how this compares to Andis small optimizations?
+> Add command line option to "--ignore" various message types.
+> Add .checkpatch.conf file to store a default set of "ignore" flags
+> Categorize all ERROR, WARN and CHK types with flags.
 > 
-> Also operations on raw disks are something people with fast devices
-> care about a lot.  We often hear about benchmark regressions due to
-> stupid little things in the direct I/O code.
-> 
-> If we want to special case something that would be a very easy target,
-> with a 1:1 mapping of logical to physical blocks and thus no need
-> to call the allocator first, and no need for any kind of locking
-> or alignment handling.
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  scripts/checkpatch.pl |  456 +++++++++++++++++++++++++++++++++++--------------
+>  1 files changed, 327 insertions(+), 129 deletions(-)
 
-Ken did this back in 2006
-(http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=e61c90188b9956edae1105eef361d8981a352fcd)
-but we reverted that shortly afterwards for some reason.
+Did you receive any feedback for your proposal, especially from Andrew
+Morton?
 
+This feature would be really useful for us, but I'd rather see this in
+mainline than starting a fork.
+
+Best regards,
+Viele Grüße,
+
+Wolfgang Denk
+
+-- 
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
+The IQ of the group is the lowest IQ of a member of the group divided
+by the number of people in the group.
