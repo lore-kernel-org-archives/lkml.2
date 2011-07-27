@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab1G0VYN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 17:24:13 -0400
-Received: from lucidpixels.com ([72.73.18.11]:57172 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755069Ab1G0VYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 17:24:10 -0400
-Date: Wed, 27 Jul 2011 17:24:09 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-cc: Christoph Hellwig <hch@infradead.org>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
-In-Reply-To: <1311800195.25645.45.camel@lade.trondhjem.org>
-Message-ID: <alpine.DEB.2.02.1107271723500.25432@p34.internal.lan>
-References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>  <20110727160752.GC974@fieldses.org>  <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>  <20110727181111.GA23009@infradead.org>  <alpine.DEB.2.02.1107271530340.1451@p34.internal.lan> 
- <20110727193937.GA5354@infradead.org>  <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>  <20110727194722.GA9345@infradead.org>  <1311799021.25645.41.camel@lade.trondhjem.org>  <1311800051.25645.43.camel@lade.trondhjem.org>
- <1311800195.25645.45.camel@lade.trondhjem.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755296Ab1G0Ver (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 17:34:47 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:65488 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875Ab1G0Veq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 17:34:46 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <CAO+b5-rpXrAZ6bAtWiy+rCaWEmRCwzMmNrqsRWQChM9nkdofiw@mail.gmail.com>
+References: <1311630170-26057-1-git-send-email-jim.cromie@gmail.com>
+ <1311630170-26057-4-git-send-email-jim.cromie@gmail.com> <CAO+b5-rpXrAZ6bAtWiy+rCaWEmRCwzMmNrqsRWQChM9nkdofiw@mail.gmail.com>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Wed, 27 Jul 2011 15:34:15 -0600
+Message-ID: <CAJfuBxzq67UM7i+EmDzdFCWfbEPM2cGad1Ed4cfCP5+v2QVgwg@mail.gmail.com>
+Subject: Re: [PATCH 03/25] dynamic_debug: use pr_debug instead of pr_info
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: jbaron@redhat.com, joe@perches.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, gnb@fmeh.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 27 Jul 2011, Trond Myklebust wrote:
-
-> On Wed, 2011-07-27 at 16:54 -0400, Trond Myklebust wrote:
->> On Wed, 2011-07-27 at 16:37 -0400, Trond Myklebust wrote:
->>> On Wed, 2011-07-27 at 15:47 -0400, Christoph Hellwig wrote:
->>>> On Wed, Jul 27, 2011 at 03:44:20PM -0400, Justin Piszcz wrote:
->>>>>
->>>>>
->>>>> On Wed, 27 Jul 2011, Christoph Hellwig wrote:
->>>>>
->>>>>> On Wed, Jul 27, 2011 at 03:35:01PM -0400, Justin Piszcz wrote:
->>>>>>> Currently I do not see any dupes, however I have a script that moves
->>>>>>> images out of the directory once an hour:
->>>>>>> 0 * * * * /usr/local/bin/move_to_old2.sh > /dev/null 2>&1
->>>>>>
->>>>>> Do you keep adding files to the directory while you move files out?
->>>>> Yes, otherwise there are too many files in the directory and viewers, e.g.,
->>>>> each geeqie (picture viewer) will use > 4-6GB of memory, so I try to keep
->>>>> it around 5,000 pictures or less.
->>>>>
->>>>>> What's the rate of additions/removals to the directory?
->>>>> Additions it depends, around 5,000 over a 12hr period, 416/hr, current:
->>>>>
->>>>> atom:/d1/motion# find cam1|wc
->>>>>    5215    5215  166853
->>>>> atom:/d1/motion# find cam2|wc
->>>>>    5069    5069  162181
->>>>> atom:/d1/motion# find cam3|wc
->>>>>    5594    5594  178981
->>>>> atom:/d1/motion#
->>>>
->>>> This sounds a lot like xfs simply filling up the directory index slots
->>>> of files that you just moved out with new files, and nfs falsely
->>>> claiming that this is a problem.
->>>
->>> Yep. There is an existing bugzilla report for this bug at
->>>
->>>    https://bugzilla.kernel.org/show_bug.cgi?id=38572
->>>
->>> I have a preliminary patch there that attempts to turn off the loop
->>> detection when the directory is seen to change, however that patch still
->>> appears to have a bug in it, and I haven't had time to figure out what
->>> is wrong yet.
->>>
->>> Can you perhaps take a look, Bryan?
+On Tue, Jul 26, 2011 at 1:08 AM, Bart Van Assche <bvanassche@acm.org> wrote:
+> On Mon, Jul 25, 2011 at 11:42 PM, Jim Cromie <jim.cromie@gmail.com> wrote:
+>> Replace almost all occurrences of "if (verbose) pr_info()" with
+>> pr_debug(), and get full control of output at each callsite.
+>> Leave a few sites unaltered:
 >>
->> Actually, Justin, can you test the following slight variant on the patch
->> in the bugzilla?
+>> 1st also uses pr_cont(), and theres no pr_debug_cont().
+>> 2nd is in ddebug_add_module(), which is called during arch_init,
+>> too early for callsite to be enabled when called.
+>>
+>> 3rd, pr_debug doesnt work in dynamic_debug_init(), its too early.
+>> Also move the print ddebug_setup_string prior to parsing, since
+>> afterwards it's been chopped up with '\0's, and only 1st word is seen.
+>>
+
 >
-> Doh! This one will actually compile....
+> Changing pr_info() into pr_debug() inside the dynamic_debug
+> implementation seems like a really bad idea to me. Such changes make
+> it hard to find out via source code reading whether or not there is a
+> risk that invoking one of these pr_debug() macros will cause infinite
+> recursion.
+>
+> Bart.
+>
 
-Hi,
+By inspection, all the pr_debug-ish code macros down to
 
-Should I try 3.0 first or retry 2.6.38 w/ this patch?
+ 430int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+ 431{
+ 432        va_list args
 
-Justin.
+which uses raw printk, KERN_DEBUG, KERN_CONT only.
+This is the "print-path" that Jason mentioned.
 
+IOW, this is more like "eating your own dogfood" than "eating your own tail"
+
+WRT earlier discussion (Joe, Jason):
+
+> I think these should be pr_debug.
+> I know you're only using the current style.
+>
+> Jason, any reason these can not be converted?
+>
+
+it should be ok, although we have to be careful not to use them in the
+printing path, since that will cause a recursion.
+
+Also, if there is an issue with the dynamic debug code, it makes it more
+of a pain to debug :)
+
+
+All conversions were to flag-management code
+The conversion was painless, and just worked,
+except for init code, where I used pr_info.
+
+wrt "pain to debug", Id suggest that "eating your own dogfood"
+provides an early test, especially when combined with following
+to enable the selftest at boot.
+
+    ddebug_query="module dynamic_debug +p ; module dynamic_debug line
+815-940 =_"
