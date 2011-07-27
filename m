@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455Ab1G0J6x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 05:58:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33696 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754026Ab1G0J6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 05:58:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,275,1309762800"; 
-   d="scan'208";a="32548041"
-Date: Wed, 27 Jul 2011 12:59:09 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: Jaswinder Singh <jaswinder.singh@linaro.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        rmk+kernel@arm.linux.org.uk, linus.walleij@stericsson.com,
-        per.friden@stericsson.com, wei.zhang@freescale.com,
-        ebony.zhu@freescale.com, iws@ovro.caltech.edu, s.hauer@pengutronix.de,
-        maciej.sosnowski@intel.com, saeed@marvell.com, shawn.guo@freescale.com,
-        yur@emcraft.com, agust@denx.de, iwamatsu.nobuhiro@renesas.com,
-        per.forlin@stericsson.com, jonas.aberg@stericsson.com,
-        anemo@mba.ocn.ne.jp
-Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
-Message-ID: <20110727095909.GB16623@intel.com>
-References: <CAJe_ZhdYg4EpaNbBW+dayjSORqM=E6myT3oOG5VTsiQnh3erTA@mail.gmail.com>
- <CABE8wwt8J_r9cExG+EAqqK=XVmAyLYhv+-T49Rr9hhKudD8n2g@mail.gmail.com>
- <CAJe_ZheVyLk-yqyF_XO80xX3j7_7mDPnv-me+n=X_hNWycSLwg@mail.gmail.com>
- <CABE8wwtkSnaJ5fvi=4bq7zye3W0SmErHAZeWAcHuYvLgvqy=_Q@mail.gmail.com>
- <CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com>
- <CABE8wwv2XQ_aJ8O2TUAz1LgJorBwDbgyQQv7jeAn06Q2AcqH+Q@mail.gmail.com>
- <CAJe_ZhcNM7m-eWA0nDUrOrHxeAhNS00gewf=txmvOFL_uOPhrw@mail.gmail.com>
- <1311740499.1536.56.camel@vkoul-udesk3>
- <CAJe_ZhfaPfobs5P+q+t-kRSK4fAvm-v_brYgqmco8fwOOBeT8A@mail.gmail.com>
- <1311757347.1536.103.camel@vkoul-udesk3>
+	id S1754376Ab1G0KCJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 06:02:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61375 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752252Ab1G0KCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 06:02:06 -0400
+Message-ID: <4E2FE295.5070905@cn.fujitsu.com>
+Date: Wed, 27 Jul 2011 18:04:05 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311757347.1536.103.camel@vkoul-udesk3>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 04/11] KVM: MMU: do not mark access bit on pte write path
+References: <4E2EA3DB.7040403@cn.fujitsu.com> <4E2EA4C8.5010103@cn.fujitsu.com> <4E2FD578.2090803@redhat.com>
+In-Reply-To: <4E2FD578.2090803@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-27 18:01:10,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-27 18:01:10,
+	Serialize complete at 2011-07-27 18:01:10
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 02:32:26PM +0530, Koul, Vinod wrote:
-> Can you please help me understand why channel number "x" is important
-> and strictly needed by some client?
+On 07/27/2011 05:08 PM, Avi Kivity wrote:
+> On 07/26/2011 02:28 PM, Xiao Guangrong wrote:
+>> In current code, the accessed bit is always set when page fault occurred,
+>> do not need to set it on pte write path
+>>
+> 
+> Is this true? a write with pte.w=pte.a=0 sets pte.a?
+> 
 
-At least in ep93xx we have even channel numbers for TX and odd for RX (or
-vice versa, can't rememeber). This is a hardware restriction. So the client
-code then filters the channels based on that using ->chan_id.
+Generally, we will call set_spte() with speculative = false, then Accessed bit
+is set on page fault path, but there has two case:
+- if pte.d = 1, everything is ok
+- if pte.d = 0, so this write can change pte.d = 1, the access permission of
+  shadow page can be changed from read-only to writable. So, we will find a
+  new sp to establish the mapping. In this case, the original spte is not
+  set Accessed bit.
 
-As the caps are not per channel, that is the only way I was able to make it
-work.
+However, we used Accessed bit to detect write flooding, so the first write can
+set the dirty bit, and the later write can not cause sp changed. I think it is
+not too bad.
