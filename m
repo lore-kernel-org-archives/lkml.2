@@ -1,110 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab1G0OYL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 10:24:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57544 "EHLO mx2.suse.de"
+	id S1754374Ab1G0OZZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 10:25:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49207 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754265Ab1G0OYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 10:24:08 -0400
-Date: Wed, 27 Jul 2011 16:24:05 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/5] mm: writeback: throttle __GFP_WRITE on per-zone
- dirty limits
-Message-ID: <20110727142405.GG4024@tiehlicka.suse.cz>
-References: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
- <1311625159-13771-5-git-send-email-jweiner@redhat.com>
+	id S1751313Ab1G0OZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 10:25:22 -0400
+Message-ID: <4E301FCD.6060202@redhat.com>
+Date: Wed, 27 Jul 2011 10:25:17 -0400
+From: Josef Bacik <josef@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311625159-13771-5-git-send-email-jweiner@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andy Whitcroft <apw@canonical.com>
+CC: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] btrfs: btrfs_calc_avail_data_space cope with no read/write
+ devices
+References: <1311764491-5687-1-git-send-email-apw@canonical.com>
+In-Reply-To: <1311764491-5687-1-git-send-email-apw@canonical.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 25-07-11 22:19:18, Johannes Weiner wrote:
-[...]
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 41dc871..ce673ec 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -378,6 +390,24 @@ int bdi_set_max_ratio(struct backing_dev_info *bdi, unsigned max_ratio)
->  }
->  EXPORT_SYMBOL(bdi_set_max_ratio);
->  
-> +static void sanitize_dirty_limits(unsigned long *pbackground,
-> +				  unsigned long *pdirty)
-> +{
-> +	unsigned long background = *pbackground;
-> +	unsigned long dirty = *pdirty;
-> +	struct task_struct *tsk;
-> +
-> +	if (background >= dirty)
-> +		background = dirty / 2;
-> +	tsk = current;
-> +	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
-> +		background += background / 4;
-> +		dirty += dirty / 4;
-> +	}
-> +	*pbackground = background;
-> +	*pdirty = dirty;
-> +}
-> +
->  /*
->   * global_dirty_limits - background-writeback and dirty-throttling thresholds
->   *
-> @@ -389,33 +419,52 @@ EXPORT_SYMBOL(bdi_set_max_ratio);
->   */
->  void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
->  {
-> -	unsigned long background;
-> -	unsigned long dirty;
->  	unsigned long uninitialized_var(available_memory);
-> -	struct task_struct *tsk;
->  
->  	if (!vm_dirty_bytes || !dirty_background_bytes)
->  		available_memory = determine_dirtyable_memory();
->  
->  	if (vm_dirty_bytes)
-> -		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
-> +		*pdirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
->  	else
-> -		dirty = (vm_dirty_ratio * available_memory) / 100;
-> +		*pdirty = vm_dirty_ratio * available_memory / 100;
->  
->  	if (dirty_background_bytes)
-> -		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
-> +		*pbackground = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
->  	else
-> -		background = (dirty_background_ratio * available_memory) / 100;
-> +		*pbackground = dirty_background_ratio * available_memory / 100;
->  
-> -	if (background >= dirty)
-> -		background = dirty / 2;
-> -	tsk = current;
-> -	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
-> -		background += background / 4;
-> -		dirty += dirty / 4;
-> -	}
-> -	*pbackground = background;
-> -	*pdirty = dirty;
-> +	sanitize_dirty_limits(pbackground, pdirty);
-> +}
+On 07/27/2011 07:01 AM, Andy Whitcroft wrote:
+> When we mount a btrfs filesystem from read-only media there will be no
+> read/write devices; for example mounting an SD card with its lock enabled.
+> This triggers an immediate BUG during mount:
+> 
+>   kernel BUG at .../fs/btrfs/super.c:984!
+> 
+> This is triggered by statfs when calculating the free space in the
+> filesytem.  We bug if the number of read/write devices is 0.
+> 
+> It seems more appropriate to indicate we have no writable space.  Note
+> that this does make df return 0 free blocks on a read-only device.
+> Whether that is reasonable is debatable.
 
-Hmm, wouldn't be the patch little bit easier to read if this was
-outside in a separate (cleanup) one?
+No it's not, it's wrong.  We should just look at the devices in general
+and not just the rw_devices.  We can still get the right info out, if
+you mount a ext* fs ro you still get the right output from df.  Thanks,
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Josef
