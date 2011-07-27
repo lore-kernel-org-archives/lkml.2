@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab1G0RFm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 13:05:42 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:40631 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754914Ab1G0RFj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 13:05:39 -0400
+	id S1755200Ab1G0RJn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 13:09:43 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:37635 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754879Ab1G0RJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 13:09:41 -0400
+X-IronPort-AV: E=Sophos;i="4.67,277,1309762800"; 
+   d="scan'208";a="565975147"
+Message-ID: <4E304652.5090708@netapp.com>
+Date: Wed, 27 Jul 2011 13:09:38 -0400
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110628 Thunderbird/5.0
 MIME-Version: 1.0
-In-Reply-To: <20110727165844.GA8064@dumpdata.com>
-References: <cover.1311736366.git.luto@mit.edu> <20110727145745.GA11872@dumpdata.com>
- <CAObL_7FT8QLg-wihasBahhAtS=pA7+KeU8E=E9x8NPZ0+QJ5iQ@mail.gmail.com>
- <20110727153015.GA16688@dumpdata.com> <CAObL_7GWGx4rYJFLpucEX=ozNpk+5ipyq0=vw16xcGetEXSuGQ@mail.gmail.com>
- <20110727154316.GA16909@dumpdata.com> <CAObL_7FncQ7DdNf2igFZW=ZzPFQLO3Vvp1c_y5EajA_KTt8iOg@mail.gmail.com>
- <20110727165844.GA8064@dumpdata.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 27 Jul 2011 13:05:18 -0400
-X-Google-Sender-Auth: CHwKRG_uQIhhwJKI7xWq517hspI
-Message-ID: <CAObL_7F4pqWGAFgrG8KiwCW4X+BOgvFfsdHNfkhhmVDqMOSuvQ@mail.gmail.com>
-Subject: Re: [Xen-devel] Re: [PATCH 0/5] Collected vdso/vsyscall fixes for 3.1
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: jeremy@goop.org, xen-devel@lists.xensource.com, x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        virtualization@lists.linux-foundation.org, keir.xen@gmail.com
+To: Ruediger Meier <sweet_f_a@gmx.de>
+CC: Justin Piszcz <jpiszcz@lucidpixels.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
+References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan> <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan> <4E303F6F.8010706@netapp.com> <201107271900.11091.sweet_f_a@gmx.de>
+In-Reply-To: <201107271900.11091.sweet_f_a@gmx.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 12:58 PM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
->> >> $ test_vsyscall test
->> >> Testing gettimeofday...
->> >>   vDSO offset = 0.000001s
->> >>   vsyscall offset = 0.000001s
->> >>
->> >> Testing time...
->> >>   vDSO offset = 0
->> >>   vsyscall offset = 0
->> >> Testing getcpu...
->> >>   ok!  cpu=6 node=0
->
->> I bet if you pull a new copy or remove -mavx from Makefile it will
->> work.  I got a grossly hacked-up Xen domU booted and everything seems
->> to work.
->
-> It did. Both Dom0 and DomU work on AMD and Intel.
->
-> In regards to the last pv-ops patch - is there no better way? The reason I am asking
-> is the pv-ops hook is just a bandaid for the problem. Is the Xen syscall suppose to
-> be doingsomething extra with the stack perhaps?
->
+On 07/27/2011 01:00 PM, Ruediger Meier wrote:
+> On Wednesday 27 July 2011, Bryan Schumaker wrote:
+>> On 07/27/2011 12:28 PM, Justin Piszcz wrote:
+>>> On Wed, 27 Jul 2011, J. Bruce Fields wrote:
+>>>>
+>>>> What filesystem on the server are you exporting?
+>>>
+>>> xfs.
+>>> /dev/sda1 on / type xfs (rw,noatime)
+>>>
+>>> Nothing special, thoughts?
+>>
+>> Are there a lot of files in the directory you're exporting?  It looks
+>> like cookie 10272 is mapped to multiple files.
+> 
+> I thought xfs is immune to readdir loops!?
 
-The Xen code in question is:
+I guess that depends how it generates the cookie... I want to try out the ext4 patches that were posted earlier today.  I'll double check xfs while I'm at it.
 
-restore_all_guest:
-        ASSERT_INTERRUPTS_DISABLED
-        RESTORE_ALL
-        testw $TRAP_syscall,4(%rsp)
-        jz    iret_exit_to_guest
+- Bryan
 
-        addq  $8,%rsp
-        popq  %rcx                    # RIP
-        popq  %r11                    # CS
-        cmpw  $FLAT_USER_CS32,%r11
-        popq  %r11                    # RFLAGS
-        popq  %rsp                    # RSP
-        je    1f
-        sysretq
-1:      sysretl
+> Is your export directory really located directly within / on /dev/sda1?
+> 
+> cu,
+> Rudi
 
-
-So with VCGF_in_syscall set, the ireq hypercall will return via
-sysretq if the saved CS is __USER_CS or FLAT_USER_CS64.  This is
-faster than iretq.
-
-The hypervisor doesn't allow the guest OS to override the values in
-MSR_STAR, so FLAT_USER_CS64 gets returned to userspace.  And sysretq
-is probably much faster than iretq, so unsetting VCGF_in_syscall is
-probably a bad idea.
-
-The ideal solution would be to allow the kernel to change MSR_STAR,
-but this would require changing the hypervisor and the kernel.
-
---Andy
