@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab1G1F7K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 01:59:10 -0400
-Received: from mail-vw0-f52.google.com ([209.85.212.52]:56372 "EHLO
-	mail-vw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab1G1F7E (ORCPT
+	id S1754745Ab1G1GGa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 02:06:30 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62216 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732Ab1G1GGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 01:59:04 -0400
-X-Greylist: delayed 492 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Jul 2011 01:59:04 EDT
-Date: Thu, 28 Jul 2011 13:50:43 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Carsten Emde <ce@ceag.ch>,
-        Clark Williams <williams@redhat.com>,
-        Kumar Gala <galak@gate.crashing.org>,
-        Ralf Baechle <ralf@linux-mips.org>, rostedt <rostedt@goodmis.org>,
-        Nicholas Mc Guire <der.herr@hofr.at>
-Subject: Re: On migrate_disable() and latencies
-Message-ID: <20110728055043.GA570@windriver.com>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1311329992.27400.23.camel@twins>
- <20110723003934.GP2382@linux.vnet.ibm.com>
- <1311582653.2617.49.camel@laptop>
- <20110725211706.GT2327@linux.vnet.ibm.com>
- <1311765198.24752.437.camel@twins>
- <20110727183008.GA2407@linux.vnet.ibm.com>
+	Thu, 28 Jul 2011 02:06:23 -0400
+From: Marek Vasut <marek.vasut@gmail.com>
+To: David Miller <davem@davemloft.net>
+Subject: Re: [PATCH 2/2] ASIX: Use only 11 bits of header for data size
+Date: Thu, 28 Jul 2011 08:06:18 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.39-1-amd64; KDE/4.6.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, gregkh@suse.de
+References: <1311734687-23551-1-git-send-email-marek.vasut@gmail.com> <1311734687-23551-2-git-send-email-marek.vasut@gmail.com> <20110727.224029.619127041796367339.davem@davemloft.net>
+In-Reply-To: <20110727.224029.619127041796367339.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110727183008.GA2407@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107280806.18813.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 11:30:08AM -0700, Paul E. McKenney wrote:
-> o	Tasks awakening outside of migrate-disable regions will pick
-> 	the CPU running the lowest-priority task, whether or not this
-> 	task is in migrate-disable state.  (At least I don't see
-> 	anything in 3.0-rt3 that looks like a scheduling decision
-> 	based on ->migrate_disable, perhaps due to blindness.)
+On Thursday, July 28, 2011 07:40:29 AM David Miller wrote:
+> From: Marek Vasut <marek.vasut@gmail.com>
+> Date: Wed, 27 Jul 2011 04:44:47 +0200
+> 
+> > The AX88772B uses only 11 bits of the header for the actual size. The
+> > other bits
+> > 
+> > are used for something else. This causes dmesg full of messages:
+> > 	asix_rx_fixup() Bad Header Length
+> > 
+> > This patch trims the check to only 11 bits. I believe on older chips, the
+> > remaining 5 top bits are unused.
+> > 
+> > Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+> 
+> Applied.
 
-I'm also confused here, seems we just disable migration for RT task.
-migrate_disable()
-{
-	...
-		if (p->sched_class->set_cpus_allowed)
-			p->sched_class->set_cpus_allowed(p, mask);
-		p->rt.nr_cpus_allowed =	cpumask_weight(mask);
-	...
-}
+Hi, did you test it ?
 
-Shouldn't we also forbid migration on !RT task?
+I left NOTEs outside the commit message:
 
-Thanks,
-Yong
+NOTE: If possible, can someone test/verify this patch with other ASIX chips ?
+NOTE2: If Ack-ed, Greg, can you get this into -stable?
 
--- 
-Only stand for myself
+I hope I won't have a horde of angry people at my door soon ;-)
