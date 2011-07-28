@@ -1,134 +1,419 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab1G1CH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 22:07:56 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:45248 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752674Ab1G1CHv (ORCPT
+	id S1753686Ab1G1CI7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 22:08:59 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46934 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751878Ab1G1CIx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 22:07:51 -0400
-Message-ID: <4E30C46F.2030903@canonical.com>
-Date: Wed, 27 Jul 2011 19:07:43 -0700
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Wed, 27 Jul 2011 22:08:53 -0400
 MIME-Version: 1.0
-To: Daniel Kurtz <djkurtz@chromium.org>
-CC: dmitry.torokhov@gmail.com, rydberg@euromail.se, rubini@cvml.unipv.it,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
-        olofj@chromium.org
-Subject: Re: [PATCH 7/9 v2] Input: synaptics - improved 2->3 finger transition
- handling
-References: <1311169146-20066-1-git-send-email-djkurtz@chromium.org> <1311169146-20066-8-git-send-email-djkurtz@chromium.org> <4E2A1ECD.3030302@canonical.com> <CAGS+omBCd=e0ACxxTwns8HVNitVOYF-xFrkVmhreOmHQTq_10A@mail.gmail.com> <4E2F4A66.1020207@canonical.com> <CAGS+omAwrXMC=U2Hx7EoJzUM+=PYyR4di0tDhq0oVnR_AAdEhQ@mail.gmail.com> <4E307F8A.6090707@canonical.com> <CAGS+omBr3adfENg5UDnbfPEFPg+0myKHFWb5qCSTt6wjVtvyeA@mail.gmail.com>
-In-Reply-To: <CAGS+omBr3adfENg5UDnbfPEFPg+0myKHFWb5qCSTt6wjVtvyeA@mail.gmail.com>
+In-Reply-To: <87k4b3iw91.wl%ysato@users.sourceforge.jp>
+References: <CA+55aFxakA2U+oMJ1T7awTYa+p6xp9N0aCbfrUqgkF7BJ8gnQw@mail.gmail.com>
+	<CACqU3MX1ovaEO-n0TLXdfuCYkSO0+DedkBKuycmrc-t1FLa91w@mail.gmail.com>
+	<87r55fdrs0.wl%ysato@users.sourceforge.jp>
+	<CACqU3MWuZUG3XDxTRgBztyJa5rj-GQDcCDrLX1M-AThxtxfXRA@mail.gmail.com>
+	<87k4b3iw91.wl%ysato@users.sourceforge.jp>
+Date: Wed, 27 Jul 2011 22:08:51 -0400
+Message-ID: <CACqU3MXh_c5Fr1Va5FxqQjR=+6L_ni_cGwzVqUrtu4oOeyFMpA@mail.gmail.com>
+Subject: Re: Linux 3.0 release
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Yoshinori Sato <ysato@users.sourceforge.jp>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg KH <greg@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2011 06:00 PM, Daniel Kurtz wrote:
-> On Thu, Jul 28, 2011 at 5:13 AM, Chase Douglas
-> <chase.douglas@canonical.com> wrote:
-> [...]
->>>>
->>>>> Would you prefer an implementation that continued to report count (via
->>>>> BTN_TOUCH*) correctly, but dropped down to 0 or 1 MT-B slots when for
->>>>> these cases where it could not determine the correct position or track_id
->>>>> to report?
->>>>
->>>> That may be doable, but I would prefer to just assume that tracking ids
->>>> are not valid when (tracked touches > reported touches).
->>>
->>> Userspace is free to make this assumption, of course, but, in fact,
->>> the image sensor trackpad actually does a pretty good job of tracking
->>> the fingers - it just has serious issues reporting them!
->>> Since a track_id change is how userspace is told that the identity of
->>> the reported finger is changing, if the track_id of a finger position
->>> datum is unknowable, I'd rather just discard it in the kernel than
->>> report it to userspace with the wrong track_id.
->>> Otherwise, the heuristics used in the userspace finger tracking
->>> algorithms would need to be overly aggressively tuned to handle this
->>> known error cases:
->>>   2->3 and 3->2 finger transitions look like 2nd finger motion,
->>> instead of reported finger changes.
->>>
->>>>
->>>>> It seems like it would be more work for userspace to handle this new way
->>>>> than the simulated number-of-touch transitions, where the transient
->>>>> states are all normal valid states.
->>>>
->>>> This harkens back to my earlier statements where I said this new
->>>> Synaptics protocol is worse than the previous one :).
->>>>
->>>> I agree that the implementation you gave here might be trickier for
->>>> userspace, so I'd rather table it unless you feel that the "tracking ids
->>>> are meaningless!" solution won't work. If you think there are problems
->>>> with that approach, we can re-evaluate.
->>>>
->>>> Thanks!
->>>>
->>>> -- Chase
->>>
->>> Yes, I feel there are problems with this approach, as I tried to explain above.
->>> Can you explain why you 'continuation gestures' can't handle 1->2->3
->>> finger transitions looking like 1->2->1->3, and 3->2->3 looking like
->>> 3->2->0->3?
->>>
->>> I think the only real point left to decide is what BTN_* events should
->>> signify during these rare transition states:
->>>   (a) the actually number of fingers on the pad,
->>>   (b) the number of fingers being reported via the slots
->>>
->>> The current patchset does (a).
->>> We could do (b), if that would get these patches accepted sooner :)
+Hi,
+
+On Wed, Jul 27, 2011 at 11:22 AM, Yoshinori Sato
+<ysato@users.sourceforge.jp> wrote:
+> At Mon, 25 Jul 2011 11:50:43 -0400,
+> Arnaud Lacombe wrote:
 >>
->> I was thinking that the current patchset does (b). I think (a) is
->> better, and if it really works that way then I'm fine with it. It's hard
->> for me to keep track of the flow of the logic across the patches :).
-> 
-> Argh, my bad.  You are correct.  Current patchset does (b)!
-> It reports the number of active slots, not the number of touches.
-> 
-> In any case, I really don't know why you need (a).  We are talking
-> about some degenerate transitions here.  Your userspace driver should
-> work just fine with the (b) driver, it just loses some really
-> complicated continued gestures for hardware that can't support them.
-
-To give userspace incorrect information about the number of touches on
-the device is always bad. Lets say the degenerate case is when you go
-from two touches to three (maybe Synaptics doesn't do this, but someone
-else might). When the user performs a three finger tap, we'd see two
-touches down, two lifted up, three touches down, three lifted up in
-short succession. Userspace is gonna get pretty confused about that :).
-
-(Please don't make me try to come up with a use case we already have in
-Unity that would be broken for Synaptics due to this. I could probably
-find one, but it would take quite a bit of thinking. :)
-
->> That said, merging this patchset as is effectively means that the number
->> of slots is completely decoupled from the number of touches on the
->> device. Previously, one could say that the number of touches on the
->> device was equal to the number of open slots or more if all slots were
->> open. With this approach, we could have 0 slots open during a transition
->> when there are still touches down.
+>> Hi,
 >>
->> While the distinction makes sense for these synaptics devices, I don't
->> want the semantics to hold for full multitouch devices. Otherwise, we
->> would have to add many more BTN_*TAPs. If we go this route, we must have
->> a way to tell userspace that this is a special device where the number
->> of active touches can only be determined from BTN_*TAP. Thus, we would
->> need a property for this exception to normal behavior.
-> 
-> Henrik & Dmitry roughly suggested "do not define a new property; let
-> userspace detect max BTN_*TAP > ABS_MT_SLOT.max to indicate that
-> BTN_*TAP carries the total number of touches".  I wish they would
-> chime in on this patchset...
+>> On Sun, Jul 24, 2011 at 10:21 PM, Yoshinori Sato
+>> <ysato@users.sourceforge.jp> wrote:
+>> > At Sun, 24 Jul 2011 18:04:59 -0400,
+>> > Arnaud Lacombe wrote:
+>> >>
+>> >> Hi,
+>> >>
+>> >> On Thu, Jul 21, 2011 at 10:59 PM, Linus Torvalds
+>> >> <torvalds@linux-foundation.org> wrote:
+>> >> >
+>> >> > So there it is. Gone are the 2.6.<bignum> days, and 3.0 is out.
+>> >> > [...]
+>> >> For the record, if anybody cares, arch/h8300 no longer configure since 2.6.38:
+>> >>
+>> >> % make ARCH=h8300 menuconfig
+>> >> make: h8300-elf-gcc: Command not found
+>> >>   HOSTCC  scripts/basic/fixdep
+>> >>   HOSTCC  scripts/kconfig/conf.o
+>> >>   HOSTCC  scripts/kconfig/lxdialog/checklist.o
+>> >>   HOSTCC  scripts/kconfig/lxdialog/inputbox.o
+>> >>   HOSTCC  scripts/kconfig/lxdialog/menubox.o
+>> >>   HOSTCC  scripts/kconfig/lxdialog/textbox.o
+>> >>   HOSTCC  scripts/kconfig/lxdialog/util.o
+>> >>   HOSTCC  scripts/kconfig/lxdialog/yesno.o
+>> >>   HOSTCC  scripts/kconfig/mconf.o
+>> >>   SHIPPED scripts/kconfig/zconf.tab.c
+>> >>   SHIPPED scripts/kconfig/lex.zconf.c
+>> >>   SHIPPED scripts/kconfig/zconf.hash.c
+>> >>   HOSTCC  scripts/kconfig/zconf.tab.o
+>> >>   HOSTLD  scripts/kconfig/mconf
+>> >> scripts/kconfig/mconf Kconfig
+>> >> arch/h8300/Kconfig:198: can't open file "drivers/serial/Kconfig"
+>> >> make[1]: *** [menuconfig] Error 1
+>> >> make: *** [menuconfig] Error 2
+>> >>
+>> >> Yes, I know I have no h8300-elf-gcc, but it does not change the fact
+>> >> that the arch tries to include a non-existent file. It's been broken
+>> >> by:
+>> >>
+>> >> commit ab4382d27412e7e3e7c936e8d50d8888dfac3df8
+>> >> Author: Greg Kroah-Hartman <gregkh@suse.de>
+>> >> Date:   Thu Jan 13 12:10:18 2011 -0800
+>> >>
+>> >>     tty: move drivers/serial/ to drivers/tty/serial/
+>> >>
+>> >>     The serial drivers are really just tty drivers, so move them to
+>> >>     drivers/tty/ to make things a bit neater overall.
+>> >>     This is part of the tty/serial driver movement proceedure as proposed by
+>> >>     Arnd Bergmann and approved by everyone involved a number of months ago.
+>> >>
+>> >>     Cc: Arnd Bergmann <arnd@arndb.de>
+>> >>     Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+>> >>     Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+>> >>     Cc: Rogier Wolff <R.E.Wolff@bitwizard.nl>
+>> >>     Cc: Michael H. Warfield <mhw@wittsend.com>
+>> >>     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+>> >>
+>> >>  - Arnaud
+>> >
+>> > Please try this fix.
+>> > Signed-off-by: Yoshinori Sato <ysato@users.sourceforge.jp>
+>> >
+>> > diff --git a/arch/h8300/Kconfig b/arch/h8300/Kconfig
+>> > index 091ed61..910e5ad 100644
+>> > --- a/arch/h8300/Kconfig
+>> > +++ b/arch/h8300/Kconfig
+>> > @@ -89,125 +89,7 @@ endmenu
+>> >
+>> >  source "net/Kconfig"
+>> >
+>> > -source "drivers/base/Kconfig"
+>> > -
+>> > -source "drivers/mtd/Kconfig"
+>> > -
+>> > -source "drivers/block/Kconfig"
+>> > -
+>> > -source "drivers/ide/Kconfig"
+>> > -
+>> > -source "arch/h8300/Kconfig.ide"
+>> > -
+>> > -source "drivers/net/Kconfig"
+>> > -
+>> > -#
+>> > -# input - input/joystick depends on it. As does USB.
+>> > -#
+>> > -source "drivers/input/Kconfig"
+>> > -
+>> > -menu "Character devices"
+>> > -
+>> > -config VT
+>> > -       bool "Virtual terminal"
+>> > -       ---help---
+>> > -         If you say Y here, you will get support for terminal devices with
+>> > -         display and keyboard devices. These are called "virtual" because you
+>> > -         can run several virtual terminals (also called virtual consoles) on
+>> > -         one physical terminal. This is rather useful, for example one
+>> > -         virtual terminal can collect system messages and warnings, another
+>> > -         one can be used for a text-mode user session, and a third could run
+>> > -         an X session, all in parallel. Switching between virtual terminals
+>> > -         is done with certain key combinations, usually Alt-<function key>.
+>> > -
+>> > -         The setterm command ("man setterm") can be used to change the
+>> > -         properties (such as colors or beeping) of a virtual terminal. The
+>> > -         man page console_codes(4) ("man console_codes") contains the special
+>> > -         character sequences that can be used to change those properties
+>> > -         directly. The fonts used on virtual terminals can be changed with
+>> > -         the setfont ("man setfont") command and the key bindings are defined
+>> > -         with the loadkeys ("man loadkeys") command.
+>> > -
+>> > -         You need at least one virtual terminal device in order to make use
+>> > -         of your keyboard and monitor. Therefore, only people configuring an
+>> > -         embedded system would want to say N here in order to save some
+>> > -         memory; the only way to log into such a system is then via a serial
+>> > -         or network connection.
+>> > -
+>> > -         If unsure, say Y, or else you won't be able to do much with your new
+>> > -         shiny Linux system :-)
+>> > -
+>> > -config VT_CONSOLE
+>> > -       bool "Support for console on virtual terminal"
+>> > -       depends on VT
+>> > -       ---help---
+>> > -         The system console is the device which receives all kernel messages
+>> > -         and warnings and which allows logins in single user mode. If you
+>> > -         answer Y here, a virtual terminal (the device used to interact with
+>> > -         a physical terminal) can be used as system console. This is the most
+>> > -         common mode of operations, so you should say Y here unless you want
+>> > -         the kernel messages be output only to a serial port (in which case
+>> > -         you should say Y to "Console on serial port", below).
+>> > -
+>> > -         If you do say Y here, by default the currently visible virtual
+>> > -         terminal (/dev/tty0) will be used as system console. You can change
+>> > -         that with a kernel command line option such as "console=tty3" which
+>> > -         would use the third virtual terminal as system console. (Try "man
+>> > -         bootparam" or see the documentation of your boot loader (lilo or
+>> > -         loadlin) about how to pass options to the kernel at boot time.)
+>> > -
+>> > -         If unsure, say Y.
+>> > -
+>> > -config HW_CONSOLE
+>> > -       bool
+>> > -       depends on VT && !S390 && !UM
+>> > -       default y
+>> > -
+>> > -comment "Unix98 PTY support"
+>> > -
+>> > -config UNIX98_PTYS
+>> > -       bool "Unix98 PTY support"
+>> > -       ---help---
+>> > -         A pseudo terminal (PTY) is a software device consisting of two
+>> > -         halves: a master and a slave. The slave device behaves identical to
+>> > -         a physical terminal; the master device is used by a process to
+>> > -         read data from and write data to the slave, thereby emulating a
+>> > -         terminal. Typical programs for the master side are telnet servers
+>> > -         and xterms.
+>> > -
+>> > -         Linux has traditionally used the BSD-like names /dev/ptyxx for
+>> > -         masters and /dev/ttyxx for slaves of pseudo terminals. This scheme
+>> > -         has a number of problems. The GNU C library glibc 2.1 and later,
+>> > -         however, supports the Unix98 naming standard: in order to acquire a
+>> > -         pseudo terminal, a process opens /dev/ptmx; the number of the pseudo
+>> > -         terminal is then made available to the process and the pseudo
+>> > -         terminal slave can be accessed as /dev/pts/<number>. What was
+>> > -         traditionally /dev/ttyp2 will then be /dev/pts/2, for example.
+>> > -
+>> > -         The entries in /dev/pts/ are created on the fly by a virtual
+>> > -         file system; therefore, if you say Y here you should say Y to
+>> > -         "/dev/pts file system for Unix98 PTYs" as well.
+>> > -
+>> > -         If you want to say Y here, you need to have the C library glibc 2.1
+>> > -         or later (equal to libc-6.1, check with "ls -l /lib/libc.so.*").
+>> > -         Read the instructions in <file:Documentation/Changes> pertaining to
+>> > -         pseudo terminals. It's safe to say N.
+>> > -
+>> > -source "drivers/char/pcmcia/Kconfig"
+>> > -
+>> > -source "drivers/serial/Kconfig"
+>> > -
+>> > -source "drivers/i2c/Kconfig"
+>> > -
+>> > -source "drivers/hwmon/Kconfig"
+>> > -
+>> > -source "drivers/usb/Kconfig"
+>> > -
+>> > -source "drivers/uwb/Kconfig"
+>> > -
+>> > -endmenu
+>> > -
+>> > -source "drivers/staging/Kconfig"
+>> > +source "drivers/Kconfig"
+>> >
+>> >  source "fs/Kconfig"
+>> >
+>> > diff --git a/arch/h8300/include/asm/types.h b/arch/h8300/include/asm/types.h
+>> > index bb2c91a..b9e79bc 100644
+>> > --- a/arch/h8300/include/asm/types.h
+>> > +++ b/arch/h8300/include/asm/types.h
+>> > @@ -1,29 +1 @@
+>> > -#ifndef _H8300_TYPES_H
+>> > -#define _H8300_TYPES_H
+>> > -
+>> > -#include <asm-generic/int-ll64.h>
+>> > -
+>> > -#if !defined(__ASSEMBLY__)
+>> > -
+>> > -/*
+>> > - * This file is never included by application software unless
+>> > - * explicitly requested (e.g., via linux/types.h) in which case the
+>> > - * application is Linux specific so (user-) name space pollution is
+>> > - * not a major issue.  However, for interoperability, libraries still
+>> > - * need to be careful to avoid a name clashes.
+>> > - */
+>> > -
+>> > -typedef unsigned short umode_t;
+>> > -
+>> > -/*
+>> > - * These aren't exported outside the kernel to avoid name space clashes
+>> > - */
+>> > -#ifdef __KERNEL__
+>> > -
+>> > -#define BITS_PER_LONG 32
+>> > -
+>> > -#endif /* __KERNEL__ */
+>> > -
+>> > -#endif /* __ASSEMBLY__ */
+>> > -
+>> > -#endif /* _H8300_TYPES_H */
+>> > +#include <asm-generic/types.h>
+>> > diff --git a/arch/h8300/include/asm/unistd.h b/arch/h8300/include/asm/unistd.h
+>> > index 2c3f8e6..7cdb4ea 100644
+>> > --- a/arch/h8300/include/asm/unistd.h
+>> > +++ b/arch/h8300/include/asm/unistd.h
+>> > @@ -325,11 +325,37 @@
+>> >  #define __NR_move_pages                317
+>> >  #define __NR_getcpu            318
+>> >  #define __NR_epoll_pwait       319
+>> > -#define __NR_setns             320
+>> > +#define __NR_utimensat         320
+>> > +#define __NR_signalfd          321
+>> > +#define __NR_timerfd_create    322
+>> > +#define __NR_eventfd           323
+>> > +#define __NR_fallocate         324
+>> > +#define __NR_timerfd_settime   325
+>> > +#define __NR_timerfd_gettime   326
+>> > +#define __NR_signalfd4         327
+>> > +#define __NR_eventfd2          328
+>> > +#define __NR_epoll_create1     329
+>> > +#define __NR_dup3              330
+>> > +#define __NR_pipe2             331
+>> > +#define __NR_inotify_init1     332
+>> > +#define __NR_preadv            333
+>> > +#define __NR_pwritev           334
+>> > +#define __NR_rt_tgsigqueueinfo 335
+>> > +#define __NR_perf_event_open   336
+>> > +#define __NR_recvmmsg          337
+>> > +#define __NR_fanotify_init     338
+>> > +#define __NR_fanotify_mark     339
+>> > +#define __NR_prlimit64         340
+>> > +#define __NR_name_to_handle_at 341
+>> > +#define __NR_open_by_handle_at  342
+>> > +#define __NR_clock_adjtime     343
+>> > +#define __NR_syncfs             344
+>> > +#define __NR_sendmmsg          345
+>> > +#define __NR_setns             346
+>> >
+>> >  #ifdef __KERNEL__
+>> >
+>> > -#define NR_syscalls 321
+>> > +#define NR_syscalls 347
+>> >
+>> >  #define __ARCH_WANT_IPC_PARSE_VERSION
+>> >  #define __ARCH_WANT_OLD_READDIR
+>> > diff --git a/arch/h8300/kernel/syscalls.S b/arch/h8300/kernel/syscalls.S
+>> > index f4b2e67..4cfe56c 100644
+>> > --- a/arch/h8300/kernel/syscalls.S
+>> > +++ b/arch/h8300/kernel/syscalls.S
+>> > @@ -333,8 +333,34 @@ SYMBOL_NAME_LABEL(sys_call_table)
+>> >        .long SYMBOL_NAME(sys_ni_syscall)       /* sys_move_pages */
+>> >        .long SYMBOL_NAME(sys_getcpu)
+>> >        .long SYMBOL_NAME(sys_ni_syscall)       /* sys_epoll_pwait */
+>> > -       .long SYMBOL_NAME(sys_setns)            /* 320 */
+>> > -
+>> > +       .long SYMBOL_NAME(sys_utimensat)                /* 320 */
+>> > +       .long SYMBOL_NAME(sys_signalfd)
+>> > +       .long SYMBOL_NAME(sys_timerfd_create)
+>> > +       .long SYMBOL_NAME(sys_eventfd)
+>> > +       .long SYMBOL_NAME(sys_fallocate)
+>> > +       .long SYMBOL_NAME(sys_timerfd_settime)  /* 325 */
+>> > +       .long SYMBOL_NAME(sys_timerfd_gettime)
+>> > +       .long SYMBOL_NAME(sys_signalfd4)
+>> > +       .long SYMBOL_NAME(sys_eventfd2)
+>> > +       .long SYMBOL_NAME(sys_epoll_create1)
+>> > +       .long SYMBOL_NAME(sys_dup3)                     /* 330 */
+>> > +       .long SYMBOL_NAME(sys_pipe2)
+>> > +       .long SYMBOL_NAME(sys_inotify_init1)
+>> > +       .long SYMBOL_NAME(sys_preadv)
+>> > +       .long SYMBOL_NAME(sys_pwritev)
+>> > +       .long SYMBOL_NAME(sys_rt_tgsigqueueinfo)        /* 335 */
+>> > +       .long SYMBOL_NAME(sys_perf_event_open)
+>> > +       .long SYMBOL_NAME(sys_recvmmsg)
+>> > +       .long SYMBOL_NAME(sys_fanotify_init)
+>> > +       .long SYMBOL_NAME(sys_fanotify_mark)
+>> > +       .long SYMBOL_NAME(sys_prlimit64)                /* 340 */
+>> > +       .long SYMBOL_NAME(sys_name_to_handle_at)
+>> > +       .long SYMBOL_NAME(sys_open_by_handle_at)
+>> > +       .long SYMBOL_NAME(sys_clock_adjtime)
+>> > +       .long SYMBOL_NAME(sys_syncfs)
+>> > +       .long SYMBOL_NAME(sys_sendmmsg)
+>> > +       .long SYMBOL_NAME(sys_setns)
+>> > +
+>> >        .macro  call_sp addr
+>> >        mov.l   #SYMBOL_NAME(\addr),er6
+>> >        bra     SYMBOL_NAME(syscall_trampoline):8
+>> >
+>> With this patch, it configures, at least, but build fails with:
+>>
+>> In file included from /src/linux/linux/include/linux/mempolicy.h:70:0,
+>>                  from /src/linux/linux/init/main.c:49:
+>> /src/linux/linux/include/linux/pagemap.h: In function 'fault_in_pages_readable':
+>> /src/linux/linux/include/linux/pagemap.h:444:2: error: assignment of
+>> read-only variable '__gu_val'
+>> /src/linux/linux/include/linux/pagemap.h:450:5: error: assignment of
+>> read-only variable '__gu_val'
+>> make[2]: *** [init/main.o] Error 1
+>> make[1]: *** [init] Error 2
+>> make: *** [sub-make] Error 2
+>
+> OK.
+> I pushing latest code in here.
+> git.kernel.org/pub/scm/linux/kernel/git/ysato/h8300.git
+> Please try it.
+> I using gcc is v4.5.3
+>
+just some upgrade. As stated on my previous mail, I got gcc 4.5.5 to
+ICE on fs/dcache.c.
 
-I think it sets a really bad precedent to obey the stated protocol in
-most cases, but disregard it in others if specific conditions are met,
-which are not documented and are not presented in a clear manner to
-userspace. At the *very least*, this change would need documentation to
-go in at the same time, but I strongly believe a property is merited here.
+Beside that I'm getting many of the following build error :
 
--- Chase
+make[2]: *** [drivers/tty] Error 2
+In file included from /src/linux/linux/include/linux/selection.h:11:0,
+                 from /src/linux/linux/drivers/video/console/vgacon.c:45:
+/src/linux/linux/include/linux/vt_buffer.h:18:21: fatal error:
+asm/vga.h: No such file or directory
+
+with the defconfig.
+
+Moreover, I gave gcc 4.7.0 another try. The previous error got fixed,
+but I'm getting 3 different ICE during the full build with today gcc's
+source. Two of them related to the one I got on gcc 4.5.5. All have
+been reported upstream.
+
+ - Arnaud
+
+ps: I do not really have a need of an h8300 kernel, all this is rather
+to probe the state of the arch :) If there is to be more discussion
+about this, maybe we should move on a dedicated thread.
+
+>> Cross-toolchain is baremetal binutils and gcc for their respective trunk:
+>>
+>> $ /src/h8300/obj/destdir/bin/h8300-elf-gcc -v
+>> Using built-in specs.
+>> COLLECT_GCC=/src/h8300/obj/destdir/bin/h8300-elf-gcc
+>> COLLECT_LTO_WRAPPER=/src/h8300/obj/destdir/libexec/gcc/h8300-elf/4.7.0/lto-wrapper
+>> Target: h8300-elf
+>> Configured with: ../gcc/configure --prefix=/src/h8300/obj/destdir
+>> --target=h8300-elf --enable-languages=c
+>> Thread model: single
+>> gcc version 4.7.0 20110609 (experimental) (GCC)
+>>
+>>  - Arnaud
+>>
+>> > --
+>> > Yoshinori Sato
+>> > <ysato@users.sourceforge.jp>
+>> >
+>
+> --
+> Yoshinori Sato
+> <ysato@users.sourceforge.jp>
+>
