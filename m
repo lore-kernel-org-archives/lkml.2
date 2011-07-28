@@ -1,104 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab1G1OgU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 10:36:20 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:46099 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754502Ab1G1OgR (ORCPT
+	id S1753686Ab1G1Oms (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 10:42:48 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33010 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007Ab1G1Omq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 10:36:17 -0400
-From: Liu Yuan <namei.unix@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH]vhost-blk: In-kernel accelerator for virtio block device
-Date: Thu, 28 Jul 2011 22:29:04 +0800
-Message-Id: <1311863346-4338-1-git-send-email-namei.unix@gmail.com>
-X-Mailer: git-send-email 1.7.5.1
+	Thu, 28 Jul 2011 10:42:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <1311853470.21232.31.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1311853470.21232.31.camel@mfleming-mobl1.ger.corp.intel.com>
+From: "KESHAV P.R." <skodabenz@gmail.com>
+Date: Thu, 28 Jul 2011 20:12:25 +0530
+Message-ID: <CAH0pPxRN_uQn74tsLyg6a-y427QAUmmFAksq2mO6K0-CEGJNgQ@mail.gmail.com>
+Subject: Re: [syslinux] efilinux release 0.8
+To: For discussion of Syslinux and tftp-hpa <syslinux@zytor.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[design idea]
+Hi,
+     Compile error in Archlinux x86_64 with gcc-multilib 4.6.1 ,
+gnu-efi 3.0k (x86_64 UEFI libs only) - GIT devel branch - snapshot
+http://git.kernel.org/?p=boot/efilinux/efilinux.git;a=snapshot;h=471830a5a7494b6ca59f914cc7e93e75ed4b2a88;sf=tgz
 
-        The vhost-blk uses two kernel threads to handle the guests' requests. One is tosubmit them via Linux kernel's internal AIO structs, and the other is signal the guests the completion of the IO requests.
-
-        The current qemu-kvm's native AIO in the user mode acctually just uses one io-thread to submitting and signalling. One more nuance is that qemu-kvm AIO signals the completion of the requests one by one.
-
-        Like vhost-net, the in-kernel vhost-blk module reduces the number of the system calls during the requests handling and the code path is shorter than the implementation of the qemu-kvm.
-
-[performance]
-
-        Currently, the fio benchmarking number is rather promising. The seq read is imporved as much as 16% for throughput and the latency is dropped up to 14%. For seq write, 13.5% and 13% respectively.
-
-sequential read:
-+-------------+-------------+---------------+---------------+
-| iodepth     | 1           |   2           |   3           |
-+-------------+-------------+---------------+----------------
-| virtio-blk  | 4116(214)   |   7814(222)   |   8867(306)   |
-+-------------+-------------+---------------+---------------+
-| vhost-blk   | 4755(183)   |   8645(202)   |   10084(266)  |
-+-------------+-------------+---------------+---------------+
-
-4116(214) means 4116 IOPS/s, the it is completion latency is 214 us.
-
-seqeuential write:
-+-------------+-------------+----------------+--------------+
-| iodepth     |  1          |    2           |  3           |
-+-------------+-------------+----------------+--------------+
-| virtio-blk  | 3848(228)   |   6505(275)    |  9335(291)   |
-+-------------+-------------+----------------+--------------+
-| vhost-blk   | 4370(198)   |   7009(249)    |  9938(264)   |
-+-------------+-------------+----------------+--------------+
-
-the fio command for sequential read:
-
-sudo fio -name iops -readonly -rw=read -runtime=120 -iodepth 1 -filename /dev/vda -ioengine libaio -direct=1 -bs=512
-
-and config file for sequential write is:
-
-dev@taobao:~$ cat rw.fio
--------------------------
-[test]
-
-rw=rw
-size=200M
-directory=/home/dev/data
-ioengine=libaio
-iodepth=1
-direct=1
-bs=512
--------------------------
-
-        These numbers are collected on my laptop with Intel Core i5 CPU, 2.67GHz, SATA harddisk with 7200 RPM. Both guest and host use Linux 3.0-rc6 kernel with ext4 filesystem.
-
-        I setup the Guest by:
-
-        sudo x86_64-softmmu/qemu-system-x86_64 -cpu host -m 512 -drive file=/dev/sda6,if=virtio,cache=none,aio=native -nographic
+cc -I. -I/usr/include/efi -I/usr/include/efi/x86_64
+-DEFI_FUNCTION_WRAPPER -fPIC -fshort-wchar -ffreestanding -Wall -Ifs/
+-Iloaders/ -Dx86_64 -Werror   -c -o entry.o entry.c
+In file included from entry.c:38:0:
+protocol.h: In function 'locate_protocol':
+protocol.h:62:31: error: 'EFI_BOOT_SERVICES' has no member named
+'LocateProtocol'
+make: *** [entry.o] Error 1
 
 
-        The patchset is very primitive and need much further improvement for both funtionality and performance.
+gnu-efi 3.0k File list (libs in /usr/lib/ not /usr/lib64 in Archlinux)
 
-        Inputs and suggestions are more than welcome.
+gnu-efi /usr/
+gnu-efi /usr/include/
+gnu-efi /usr/include/efi/
+gnu-efi /usr/include/efi/efi.h
+gnu-efi /usr/include/efi/efi_nii.h
+gnu-efi /usr/include/efi/efi_pxe.h
+gnu-efi /usr/include/efi/efiapi.h
+gnu-efi /usr/include/efi/eficon.h
+gnu-efi /usr/include/efi/efidebug.h
+gnu-efi /usr/include/efi/efidef.h
+gnu-efi /usr/include/efi/efidevp.h
+gnu-efi /usr/include/efi/efierr.h
+gnu-efi /usr/include/efi/efifs.h
+gnu-efi /usr/include/efi/efigpt.h
+gnu-efi /usr/include/efi/efilib.h
+gnu-efi /usr/include/efi/efilink.h
+gnu-efi /usr/include/efi/efinet.h
+gnu-efi /usr/include/efi/efipart.h
+gnu-efi /usr/include/efi/efiprot.h
+gnu-efi /usr/include/efi/efipxebc.h
+gnu-efi /usr/include/efi/efirtlib.h
+gnu-efi /usr/include/efi/efiser.h
+gnu-efi /usr/include/efi/efistdarg.h
+gnu-efi /usr/include/efi/efiui.h
+gnu-efi /usr/include/efi/libsmbios.h
+gnu-efi /usr/include/efi/pci22.h
+gnu-efi /usr/include/efi/protocol/
+gnu-efi /usr/include/efi/protocol/adapterdebug.h
+gnu-efi /usr/include/efi/protocol/eficonsplit.h
+gnu-efi /usr/include/efi/protocol/efidbg.h
+gnu-efi /usr/include/efi/protocol/efivar.h
+gnu-efi /usr/include/efi/protocol/intload.h
+gnu-efi /usr/include/efi/protocol/legacyboot.h
+gnu-efi /usr/include/efi/protocol/piflash64.h
+gnu-efi /usr/include/efi/protocol/vgaclass.h
+gnu-efi /usr/include/efi/romload.h
+gnu-efi /usr/include/efi/x86_64/
+gnu-efi /usr/include/efi/x86_64/efibind.h
+gnu-efi /usr/include/efi/x86_64/efilibplat.h
+gnu-efi /usr/include/efi/x86_64/pe.h
+gnu-efi /usr/lib/
+gnu-efi /usr/lib/crt0-efi-x86_64.o
+gnu-efi /usr/lib/elf_x86_64_efi.lds
+gnu-efi /usr/lib/libefi.a
+gnu-efi /usr/lib/libgnuefi.a
 
-Yuan
---
- drivers/vhost/Makefile |    3 +
- drivers/vhost/blk.c    |  568 ++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/vhost/vhost.h  |   11 +
- fs/aio.c               |   44 ++---
- fs/eventfd.c           |    1 +
- include/linux/aio.h    |   31 +++
- 6 files changed, 631 insertions(+), 27 deletions(-)
---
- Makefile.target |    2 +-
- hw/vhost_blk.c  |   84 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- hw/vhost_blk.h  |   44 ++++++++++++++++++++++++++++
- hw/virtio-blk.c |   74 ++++++++++++++++++++++++++++++++++++++----------
- hw/virtio-blk.h |   15 ++++++++++
- hw/virtio-pci.c |   12 ++++++-
- 6 files changed, 213 insertions(+), 18 deletions(-)
-                                                                                                                      
+Firmware to be used is Tianocore UDK/EDK2 DUET x86_64 (UEFI 2.3.1
+compliant reference implementation)
+https://gitorious.org/tianocore_uefi_duet_builds (wiki
+https://gitorious.org/tianocore_uefi_duet_builds/pages/Home ) and
+VirtualBox EFI firmware (based on Tianocore OVMF). I already boot
+grub2 (x86_64-efi platform) with it (including Linux 3.0 x86_64
+kernel).
 
-In-Reply-To: 
+Can this be built using Tianocore EDK2 libraries instead of gnu-efi.
+Also is this going to be syslinux UEFI bootloader or independent of
+it? Thanks for the program.
 
+Regards.
+
+Keshav
