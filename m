@@ -1,98 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab1G1RyQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 13:54:16 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36770 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab1G1RyN convert rfc822-to-8bit (ORCPT
+	id S1754423Ab1G1SER (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 14:04:17 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:49925 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535Ab1G1SEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 13:54:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110727203710.GB5028@flint.arm.linux.org.uk>
-References: <CABE8wwt8J_r9cExG+EAqqK=XVmAyLYhv+-T49Rr9hhKudD8n2g@mail.gmail.com>
-	<CAJe_ZheVyLk-yqyF_XO80xX3j7_7mDPnv-me+n=X_hNWycSLwg@mail.gmail.com>
-	<CABE8wwtkSnaJ5fvi=4bq7zye3W0SmErHAZeWAcHuYvLgvqy=_Q@mail.gmail.com>
-	<CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com>
-	<CABE8wwv2XQ_aJ8O2TUAz1LgJorBwDbgyQQv7jeAn06Q2AcqH+Q@mail.gmail.com>
-	<CAJe_ZhcNM7m-eWA0nDUrOrHxeAhNS00gewf=txmvOFL_uOPhrw@mail.gmail.com>
-	<1311740499.1536.56.camel@vkoul-udesk3>
-	<CAJe_ZhfaPfobs5P+q+t-kRSK4fAvm-v_brYgqmco8fwOOBeT8A@mail.gmail.com>
-	<1311757347.1536.103.camel@vkoul-udesk3>
-	<CAJe_Zhd+Z4-=xDzFrd3ARuKZkUAo6n_miQgdSADY9Uk6uhkqhw@mail.gmail.com>
-	<20110727203710.GB5028@flint.arm.linux.org.uk>
-Date: Thu, 28 Jul 2011 23:24:12 +0530
-Message-ID: <CAJe_ZhcggEW1wfF8EVy-qgfa194B+-qifongLOvPwVg5O9AcBg@mail.gmail.com>
-Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
-From: Jaswinder Singh <jaswinder.singh@linaro.org>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: "Koul, Vinod" <vinod.koul@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, per.friden@stericsson.com,
-        wei.zhang@freescale.com, ebony.zhu@freescale.com, iws@ovro.caltech.edu,
-        s.hauer@pengutronix.de, maciej.sosnowski@intel.com, saeed@marvell.com,
-        shawn.guo@freescale.com, yur@emcraft.com, agust@denx.de,
-        iwamatsu.nobuhiro@renesas.com, per.forlin@stericsson.com,
-        jonas.aberg@stericsson.com, anemo@mba.ocn.ne.jp
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 28 Jul 2011 14:04:14 -0400
+Subject: [PATCH] sunrpc: use better NUMA affinities
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        David Miller <davem@davemloft.net>, linux-nfs@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Jul 2011 20:04:09 +0200
+Message-ID: <1311876249.2346.39.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 July 2011 02:07, Russell King <rmk@arm.linux.org.uk> wrote:
->
->> On a serious note, my proposal, and the reply, shows the possibility
->> of having :-
->> a) Client drivers that are truly platform agnostic -- no platform_data
->> poking for
->>       channel selection
->
-> I really doubt that's even possible.  Take this setup:
+Use NUMA aware allocations to reduce latencies and increase throughput.
 
-I don't want to suggest anything wrong just because I didn't understand
-your h/w.
-I hope you will be kind enough to help me better understand your setup,
-so that I have a fair chance to present my proposal.
+sunrpc kthreads can use kthread_create_on_node() if pool_mode is
+"percpu" or "pernode", and svc_prepare_thread()/svc_init_buffer() can
+also take into account NUMA node affinity for memory allocations.
 
-A simple 'yes' or a 'no'(with clarification) is all I ask.
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Neil Brown <neilb@suse.de>
+CC: David Miller <davem@davemloft.net>
+---
+ fs/lockd/svc.c             |    2 +-
+ fs/nfs/callback.c          |    2 +-
+ include/linux/sunrpc/svc.h |    2 +-
+ net/sunrpc/svc.c           |   33 ++++++++++++++++++++++++---------
+ 4 files changed, 27 insertions(+), 12 deletions(-)
 
->
-> MMCI ---> DMAC
->
-> where the DMAC has 32 request signals, and 8 channels.
-The DMAC is similar to PL330.
-Only max 8 request-signals can be active at any time.
-Is my understanding right ?
+diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+index abfff9d..c061b9a 100644
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -282,7 +282,7 @@ int lockd_up(void)
+ 	/*
+ 	 * Create the kernel thread and wait for it to start.
+ 	 */
+-	nlmsvc_rqst = svc_prepare_thread(serv, &serv->sv_pools[0]);
++	nlmsvc_rqst = svc_prepare_thread(serv, &serv->sv_pools[0], NUMA_NO_NODE);
+ 	if (IS_ERR(nlmsvc_rqst)) {
+ 		error = PTR_ERR(nlmsvc_rqst);
+ 		nlmsvc_rqst = NULL;
+diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
+index e3d2942..ce620b5 100644
+--- a/fs/nfs/callback.c
++++ b/fs/nfs/callback.c
+@@ -125,7 +125,7 @@ nfs4_callback_up(struct svc_serv *serv)
+ 	else
+ 		goto out_err;
+ 
+-	return svc_prepare_thread(serv, &serv->sv_pools[0]);
++	return svc_prepare_thread(serv, &serv->sv_pools[0], NUMA_NO_NODE);
+ 
+ out_err:
+ 	if (ret == 0)
+diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
+index 223588a..a78a51e 100644
+--- a/include/linux/sunrpc/svc.h
++++ b/include/linux/sunrpc/svc.h
+@@ -404,7 +404,7 @@ struct svc_procedure {
+ struct svc_serv *svc_create(struct svc_program *, unsigned int,
+ 			    void (*shutdown)(struct svc_serv *));
+ struct svc_rqst *svc_prepare_thread(struct svc_serv *serv,
+-					struct svc_pool *pool);
++					struct svc_pool *pool, int node);
+ void		   svc_exit_thread(struct svc_rqst *);
+ struct svc_serv *  svc_create_pooled(struct svc_program *, unsigned int,
+ 			void (*shutdown)(struct svc_serv *),
+diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+index 6a69a11..30d70ab 100644
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -295,6 +295,18 @@ svc_pool_map_put(void)
+ }
+ 
+ 
++static int svc_pool_map_get_node(unsigned int pidx)
++{
++	const struct svc_pool_map *m = &svc_pool_map;
++
++	if (m->count) {
++		if (m->mode == SVC_POOL_PERCPU)
++			return cpu_to_node(m->pool_to[pidx]);
++		if (m->mode == SVC_POOL_PERNODE)
++			return m->pool_to[pidx];
++	}
++	return NUMA_NO_NODE;
++}
+ /*
+  * Set the given thread's cpus_allowed mask so that it
+  * will only run on cpus in the given pool.
+@@ -499,7 +511,7 @@ EXPORT_SYMBOL_GPL(svc_destroy);
+  * We allocate pages and place them in rq_argpages.
+  */
+ static int
+-svc_init_buffer(struct svc_rqst *rqstp, unsigned int size)
++svc_init_buffer(struct svc_rqst *rqstp, unsigned int size, int node)
+ {
+ 	unsigned int pages, arghi;
+ 
+@@ -513,7 +525,7 @@ svc_init_buffer(struct svc_rqst *rqstp, unsigned int size)
+ 	arghi = 0;
+ 	BUG_ON(pages > RPCSVC_MAXPAGES);
+ 	while (pages) {
+-		struct page *p = alloc_page(GFP_KERNEL);
++		struct page *p = alloc_pages_node(node, GFP_KERNEL, 0);
+ 		if (!p)
+ 			break;
+ 		rqstp->rq_pages[arghi++] = p;
+@@ -536,11 +548,11 @@ svc_release_buffer(struct svc_rqst *rqstp)
+ }
+ 
+ struct svc_rqst *
+-svc_prepare_thread(struct svc_serv *serv, struct svc_pool *pool)
++svc_prepare_thread(struct svc_serv *serv, struct svc_pool *pool, int node)
+ {
+ 	struct svc_rqst	*rqstp;
+ 
+-	rqstp = kzalloc(sizeof(*rqstp), GFP_KERNEL);
++	rqstp = kzalloc_node(sizeof(*rqstp), GFP_KERNEL, node);
+ 	if (!rqstp)
+ 		goto out_enomem;
+ 
+@@ -554,15 +566,15 @@ svc_prepare_thread(struct svc_serv *serv, struct svc_pool *pool)
+ 	rqstp->rq_server = serv;
+ 	rqstp->rq_pool = pool;
+ 
+-	rqstp->rq_argp = kmalloc(serv->sv_xdrsize, GFP_KERNEL);
++	rqstp->rq_argp = kmalloc_node(serv->sv_xdrsize, GFP_KERNEL, node);
+ 	if (!rqstp->rq_argp)
+ 		goto out_thread;
+ 
+-	rqstp->rq_resp = kmalloc(serv->sv_xdrsize, GFP_KERNEL);
++	rqstp->rq_resp = kmalloc_node(serv->sv_xdrsize, GFP_KERNEL, node);
+ 	if (!rqstp->rq_resp)
+ 		goto out_thread;
+ 
+-	if (!svc_init_buffer(rqstp, serv->sv_max_mesg))
++	if (!svc_init_buffer(rqstp, serv->sv_max_mesg, node))
+ 		goto out_thread;
+ 
+ 	return rqstp;
+@@ -647,6 +659,7 @@ svc_set_num_threads(struct svc_serv *serv, struct svc_pool *pool, int nrservs)
+ 	struct svc_pool *chosen_pool;
+ 	int error = 0;
+ 	unsigned int state = serv->sv_nrthreads-1;
++	int node;
+ 
+ 	if (pool == NULL) {
+ 		/* The -1 assumes caller has done a svc_get() */
+@@ -662,14 +675,16 @@ svc_set_num_threads(struct svc_serv *serv, struct svc_pool *pool, int nrservs)
+ 		nrservs--;
+ 		chosen_pool = choose_pool(serv, pool, &state);
+ 
+-		rqstp = svc_prepare_thread(serv, chosen_pool);
++		node = svc_pool_map_get_node(chosen_pool->sp_id);
++		rqstp = svc_prepare_thread(serv, chosen_pool, node);
+ 		if (IS_ERR(rqstp)) {
+ 			error = PTR_ERR(rqstp);
+ 			break;
+ 		}
+ 
+ 		__module_get(serv->sv_module);
+-		task = kthread_create(serv->sv_function, rqstp, serv->sv_name);
++		task = kthread_create_on_node(serv->sv_function, rqstp,
++					      node, serv->sv_name);
+ 		if (IS_ERR(task)) {
+ 			error = PTR_ERR(task);
+ 			module_put(serv->sv_module);
 
-> The MMCI is connected to two of them.
-I don't know anything about MMCI.
-So I assume it is just another third party MMC controller.
-It simply needs 2 dma channels(for RX, TX each) - be it from a DMAC
-that has a programmable RequestSignal->Peripheral map or a fixed map.
-Is my understanding right ?
 
-> The DMAC can supply any of its physical channels for MMCI.
-The RequestSignal->Peripheral map is decided during board design
-and can not be changed later.
-Is my understanding right ?
-
-> Board 1 has the MMCI connected to request signals #1 and #3.
-> Board 2 has the MMCI connected to request signals #8 and #22.
-Say,
- Board1
-     MMCI_RX  -> #1
-     MMCI_TX  -> #3
-
- Board2
-     MMCI_RX  -> #8
-     MMCI_TX  -> #22
-
-> Board 3 has the MMCI connected through an external FPGA mux, which can route the
-> MMCI requests to DMA request signals #1, #2 or #3.
-Say
- Board3
-     MMCI_RX  -> #{1,2,3}
-     MMCI_TX  -> #{1,2,3}
-And you can't change the route(mapping) after the dmac driver has been loaded.
-Is my understanding right ?
