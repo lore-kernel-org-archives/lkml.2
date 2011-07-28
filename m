@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab1G1Noe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 09:44:34 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55825 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755248Ab1G1Noc (ORCPT
+	id S1755568Ab1G1Nor (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 09:44:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45781 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab1G1Nop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 09:44:32 -0400
-Date: Thu, 28 Jul 2011 15:44:16 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-Message-ID: <20110728134416.GA26379@aftab>
-References: <1311340547-7861-1-git-send-email-bp@amd64.org>
- <CA+55aFwL9Fwd9ouX3UMOayoBsZyZzTdDSySa6nZJxbpyLifbaQ@mail.gmail.com>
- <20110724172222.GB12621@aftab>
- <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com>
- <20110727171015.GD19477@aftab>
- <4E3047D4.2000608@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E3047D4.2000608@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 28 Jul 2011 09:44:45 -0400
+Subject: Re: [PATCH v2 3/6] trace: Add tracepoints to IRQ work run handler
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+In-Reply-To: <20110728132938.GE11820@somewhere.redhat.com>
+References: <1310679495-29104-1-git-send-email-vnagarnaik@google.com>
+	 <1311793038-15155-4-git-send-email-vnagarnaik@google.com>
+	 <1311855171.2617.170.camel@laptop>
+	 <20110728132938.GE11820@somewhere.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Jul 2011 15:49:21 +0200
+Message-ID: <1311860961.2617.175.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 01:16:04PM -0400, H. Peter Anvin wrote:
-> > + * Create a contiguous bitmask starting at bit position @lo and ending at
-> > + * position @hi. For example
-> > + *
-> > + * GENMASK_ULL(21, 39) gives us the 64bit vector 0x000000ffffe00000.
-> > + */
-> > +#define _GENMASK_T(cast, type, lo, hi) \
-> > +       (((cast)(1##type << ((hi) - (lo) + 1)) - 1) << (lo))
-> > +#define GENMASK(lo, hi)                _GENMASK_T(unsigned, U, lo, hi)
-> > +#define GENMASK_UL(lo, hi)     _GENMASK_T(unsigned long, UL, lo, hi)
-> > +#define GENMASK_ULL(lo, hi)    _GENMASK_T(unsigned long long, ULL, lo, hi)
-> > +
+On Thu, 2011-07-28 at 15:29 +0200, Frederic Weisbecker wrote:
+> On Thu, Jul 28, 2011 at 02:12:51PM +0200, Peter Zijlstra wrote:
+> > On Wed, 2011-07-27 at 11:57 -0700, Vaibhav Nagarnaik wrote:
+> > > @@ -122,6 +123,7 @@ void irq_work_run(void)
+> > >  {
+> > >         struct irq_work *list;
+> > >  
+> > >        trace_irq_work_run_entry(0);
+> > >         if (this_cpu_read(irq_work_list) == NULL)
+> > >                 return;
+> > >  
+> > > @@ -149,6 +151,7 @@ void irq_work_run(void)
+> > >                               next_flags(NULL, IRQ_WORK_BUSY),
+> > >                               NULL);
+> > >         }
+> > > +       trace_irq_work_run_exit(0);
+> > >  }
+> > >  EXPORT_SYMBOL_GPL(irq_work_run); 
+> > 
+> > So what happens when we call irq_work_run() from the timer interrupt?
+> > 
 > 
-> These really need to be usable from assembly language, too (in which
-> case you of course need to not have the cast and suffix), so it probably
-> should be defined in <linux/const.h> with the other constant macros.
+> We probably need something like:
+> 
+> void irq_work_run_interrupt(void)
+> {
+> 	trace_irq_work_run_entry(0);
+> 	irq_work_run();
+> 	trace_irq_work_run_exit(0);
+> }
 
-How about that:
+No we don't. That lives in arch code and its up to the arch to decide
+where, when and how to call that.
 
-#define _GENMASK_T(cast, type, lo, hi) \
-	        ((_AT(cast, (_AC(1,type) << ((hi) - (lo) + 1))) - 1) << (lo))
-#define GENMASK(lo, hi)         _GENMASK_T(unsigned, U, lo, hi)
-#define GENMASK_UL(lo, hi)      _GENMASK_T(unsigned long, UL, lo, hi)
-#define GENMASK_ULL(lo, hi)     _GENMASK_T(unsigned long long, ULL, lo, hi)
+On PPC for example that's hooked of the timer interrupt.
 
-outside of __KERNEL__ scope?
+See here again your 'generalization' crap breaks down.
 
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
