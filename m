@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab1G1Mbq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 08:31:46 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:61329 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab1G1Mbn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 08:31:43 -0400
-Date: Thu, 28 Jul 2011 14:31:35 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH v2 0/6] Add tracepoints to trace all system IRQs
-Message-ID: <20110728123131.GA11820@somewhere.redhat.com>
-References: <1310679495-29104-1-git-send-email-vnagarnaik@google.com>
- <1311793038-15155-1-git-send-email-vnagarnaik@google.com>
- <1311855169.2617.168.camel@laptop>
+	id S1755210Ab1G1Min (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 08:38:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35462 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754106Ab1G1Mij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 08:38:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,282,1309762800"; 
+   d="scan'208";a="33084480"
+Date: Thu, 28 Jul 2011 15:38:42 +0300
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: power_supply: USB charging question
+Message-ID: <20110728123842.GA10955@xps8300>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1311855169.2617.168.camel@laptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 02:12:49PM +0200, Peter Zijlstra wrote:
-> On Wed, 2011-07-27 at 11:57 -0700, Vaibhav Nagarnaik wrote:
-> > This is a patch series aiming to trace all the system IRQs. The
-> > tracepoints make it easier to understand IRQ interaction with other
-> > system events and find out how much time is spent in kernel space versus
-> > user space.
-> 
-> That doesn't cover the actual rational, you can get that information by
-> using CONFIG_IRQ_TIME_ACCOUNTING.
-> 
-> > Patches 1-5 add tracepoints to the generic kernel IRQ handlers to
-> > benefit all the architectures, as suggested by Frederic. Patch#6 adds
-> > trace events to trace all platform specific interrupt vectors which do
-> > not have any generic handlers. This patch traces x86 IRQ vectors but can
-> > be used by other architectures to trace their vectors too.
-> > 
-> > Changelog v2-v1:
-> > * Fix patch#3 to trace IRQ work run vector even when the irq work list
-> >   is empty
-> > * Fix patch#5 to use updated trace event names,
-> >   call_function_ipi_(entry|exit) and
-> >   call_function_single_ipi_(entry|exit)
-> > * Rebase to 3.0
-> > * Update changelog
-> 
-> I still completely hate how you make new events for every interrupt
-> source. That's a massive pollution of the event space.
-> 
-> Also, since you do arch specific things anyway, why not from a single
-> tracepoint into the arch interrupt stubs and be done with it, no need to
-> puke all over the rest of the code.
+Hi,
 
-Because that requires to put the tracepoints in every interrupt sources
-for every archs instead of putting one in the generic space.
+I'm looking for a way to create generic USB charging support. I want
+to take advantage of the power supply class, but there is one problem.
+How do I get properties from the external power supply?
+
+The batteries need to get the CURRENT_MAX property from USB chargers.
+It's not enough to be aware are they supplied or not. We must obey the
+bMaxPower field from the USB configuration that the USB host has
+selected when charging from normal downstream port.
+
+There are several ways that I thought could solve this. Firstly,
+simply deliver the external power_supply with the
+external_power_changed hook and leave the problem to the drivers. This
+did not feel like an ideal solution.
+
+Next idea. Add functions for getting properties from the supplying
+power supply:
+
+static int power_supply_find_supplier(struct device *dev, void
+data)
+{
+       struct power_supply *psy = (struct power_supply *)data;
+       struct power_supply *epsy = dev_get_drvdata(dev);
+       int i;
+
+       for (i = 0; i < epsy->num_supplicants; i++)
+               if (!strcmp(epsy->supplied_to[i], psy->name))
+                       return 1;
+                       
+       return 0;
+}
+
+int power_supply_get_supplier_property(struct power_supply *psy,
+                                       enum power_supply_property psp,
+                                       union power_supply_propval *val);
+{
+       struct power_supply *epsy;
+       struct device *dev;
+
+       dev = class_find_device(power_supply_class, NULL, psy,
+                               power_supply_find_supplier);
+       if (!dev)
+               return 1;
+
+       epsy = dev_get_drvdata(dev);
+       put_device(dev);
+
+       return epsy->get_property(epsy, psp, &val);
+}
+EXPORT_SYMBOL_GPL(power_supply_get_supplier_property);
+
+
+Third idea. We only need to know how much are we allowed to draw, so
+add a function for that purpose only. Something like
+"power_supply_how_much_can_i_draw". Same as power_supply_am_i_supplied()
+except the property would be POWER_SUPPLY_PROP_CURRENT_MAX.
+
+How do you think this should be handled? What would be the best
+solution?
+
+-- 
+heikki
