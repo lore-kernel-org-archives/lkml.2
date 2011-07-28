@@ -1,38 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab1G1WKp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 18:10:45 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44440 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753774Ab1G1WKk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 18:10:40 -0400
+	id S1756085Ab1G1WMQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 18:12:16 -0400
+Received: from claw.goop.org ([74.207.240.146]:42943 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753774Ab1G1WMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 18:12:13 -0400
+Message-ID: <4E31DEB8.8070609@goop.org>
+Date: Thu, 28 Jul 2011 15:12:08 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-In-Reply-To: <4E271B72.3070909@gmx.de>
-References: <4DF7B0B4.4060002@gmx.de>
-	<1308337359-3480-1-git-send-email-FlorianSchandinat@gmx.de>
-	<4E271B72.3070909@gmx.de>
-Date: Fri, 29 Jul 2011 00:10:36 +0200
-Message-ID: <CAC9WiBidzYhuZMDS4VZpE7cTUdF0_NcAXFwEfCduKzge1CA4mw@mail.gmail.com>
-Subject: Re: [PATCH] fb: avoid possible deadlock caused by fb_set_suspend
-From: Francis Moreau <francis.moro@gmail.com>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: lethal@linux-sh.org, linux-fbdev@vger.kernel.org,
-        torvalds@linux-foundation.org, bonbons@linux-vserver.org,
-        linux-kernel@vger.kernel.org,
-        Herton Ronaldo Krzesinski <herton@mandriva.com.br>, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: [GIT PULL] Fix compile error when tracing is disabled
+X-Enigmail-Version: 1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 20, 2011 at 8:16 PM, Florian Tobias Schandinat
-<FlorianSchandinat@gmx.de> wrote:
-> what are your plans for the patch below? Do you queue it for 3.1?
+Hi Linus,
 
-Looks like someone else fixed it slightly differently:
+Please pull this to fix compilation when tracing is disabled.
 
-http://permalink.gmane.org/gmane.linux.kernel.stable/15187
+Thanks,
+    J
 
--- 
-Francis
+The following changes since commit 55f9c40ff632d03c527d6a6ceddcda0a224587a6:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc (2011-07-28 05:59:19 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/xen-tracing2
+
+Jeremy Fitzhardinge (1):
+      xen/tracing: fix compile errors when tracing is disabled.
+
+ arch/x86/xen/Makefile      |    4 +++-
+ include/trace/events/xen.h |    2 ++
+ 2 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
+index 6fdf366..ce69201 100644
+--- a/arch/x86/xen/Makefile
++++ b/arch/x86/xen/Makefile
+@@ -13,7 +13,9 @@ CFLAGS_mmu.o			:= $(nostackp)
+ obj-y		:= enlighten.o setup.o multicalls.o mmu.o irq.o \
+ 			time.o xen-asm.o xen-asm_$(BITS).o \
+ 			grant-table.o suspend.o platform-pci-unplug.o \
+-			p2m.o trace.o
++			p2m.o
++
++obj-$(CONFIG_FUNCTION_TRACER) += trace.o
+ 
+ obj-$(CONFIG_SMP)		+= smp.o
+ obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= spinlock.o
+diff --git a/include/trace/events/xen.h b/include/trace/events/xen.h
+index 44d8dec..92f1a79 100644
+--- a/include/trace/events/xen.h
++++ b/include/trace/events/xen.h
+@@ -8,6 +8,8 @@
+ #include <asm/paravirt_types.h>
+ #include <asm/xen/trace_types.h>
+ 
++struct multicall_entry;
++
+ /* Multicalls */
+ DECLARE_EVENT_CLASS(xen_mc__batch,
+ 	    TP_PROTO(enum paravirt_lazy_mode mode),
+
+
