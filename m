@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755075Ab1G1FR2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 01:17:28 -0400
-Received: from mail.windriver.com ([147.11.1.11]:51315 "EHLO
+	id S1754771Ab1G1FRu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 01:17:50 -0400
+Received: from mail.windriver.com ([147.11.1.11]:51309 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754606Ab1G1FQk (ORCPT
+	with ESMTP id S1754674Ab1G1FQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 01:16:40 -0400
+	Thu, 28 Jul 2011 01:16:37 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: mingo@elte.hu, torvalds@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
         linux-arch@vger.kernel.org
-Subject: [PATCH 10/11] include: convert various register fcns to macros to avoid include chaining
-Date: Thu, 28 Jul 2011 01:16:17 -0400
-Message-Id: <1311830178-30314-11-git-send-email-paul.gortmaker@windriver.com>
+Subject: [PATCH 11/11] include: replace linux/module.h with "struct module" wherever possible
+Date: Thu, 28 Jul 2011 01:16:18 -0400
+Message-Id: <1311830178-30314-12-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1311830178-30314-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1311830178-30314-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,280 +21,448 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original implementations reference THIS_MODULE in an inline.
-We could include <linux/export.h>, but it is better to avoid chaining.
+The <linux/module.h> pretty much brings in the kitchen sink along
+with it, so it should be avoided wherever reasonably possible in
+terms of being included from other commonly used <linux/something.h>
+files, as it results in a measureable increase on compile times.
 
-Fortunately someone else already thought of this, and made a similar
-inline into a #define in <linux/device.h> for device_schedule_callback(),
-[see commit 523ded71de0] so follow that precedent here.
+The worst culprit was probably device.h since it is used everywhere.
+This file also had an implicit dependency/usage of mutex.h which was
+masked by module.h, and is also fixed here at the same time.
 
-Also bubble up any __must_check that were used on the prev. wrapper inline
-functions up one to the real __register functions, to preserve any prev.
-sanity checks that were used in those instances.
+There are over a dozen other headers that simply declare the
+struct instead of pulling in the whole file, so follow their lead
+and simply make it a few more.
+
+Most of the implicit dependencies on module.h being present by
+these headers pulling it in have been now weeded out, so we can
+finally make this change with hopefully minimal breakage.
 
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/bcma/bcma.h   |    7 +++----
- include/linux/device.h      |   12 ++++++++----
- include/linux/gameport.h    |   17 ++++++++---------
- include/linux/hid.h         |    9 +++++----
- include/linux/i2c.h         |    7 +++----
- include/linux/pci_hotplug.h |   10 +++-------
- include/linux/serio.h       |   20 +++++++++++---------
- include/linux/ssb/ssb.h     |    7 +++----
- include/linux/uio_driver.h  |   10 +++++-----
- include/linux/usb.h         |    9 +++++----
- include/linux/uwb/umc.h     |    7 +++----
- 11 files changed, 57 insertions(+), 58 deletions(-)
+ include/drm/drmP.h              |    3 ++-
+ include/linux/blkdev.h          |    2 +-
+ include/linux/cpuidle.h         |    3 ++-
+ include/linux/device.h          |    3 ++-
+ include/linux/firmware.h        |    2 +-
+ include/linux/ftrace.h          |    2 +-
+ include/linux/i2c.h             |    3 ++-
+ include/linux/ipmi.h            |    3 ++-
+ include/linux/ipmi_smi.h        |    1 -
+ include/linux/mdio-bitbang.h    |    3 ++-
+ include/linux/mtd/mtd.h         |    3 ++-
+ include/linux/sunrpc/svc_xprt.h |    3 ++-
+ include/linux/textsearch.h      |    3 ++-
+ include/linux/uio_driver.h      |    2 +-
+ include/linux/vlynq.h           |    3 ++-
+ include/media/saa7146.h         |    3 ++-
+ include/media/v4l2-int-device.h |    3 ++-
+ include/net/lib80211.h          |    3 ++-
+ include/net/sock.h              |    2 +-
+ include/sound/core.h            |    2 +-
+ include/trace/define_trace.h    |    2 +-
+ include/trace/events/module.h   |    2 +-
+ 22 files changed, 34 insertions(+), 22 deletions(-)
 
-diff --git a/include/linux/bcma/bcma.h b/include/linux/bcma/bcma.h
-index 8c96654..1fb7166 100644
---- a/include/linux/bcma/bcma.h
-+++ b/include/linux/bcma/bcma.h
-@@ -165,10 +165,9 @@ struct bcma_driver {
- };
- extern
- int __bcma_driver_register(struct bcma_driver *drv, struct module *owner);
--static inline int bcma_driver_register(struct bcma_driver *drv)
--{
--	return __bcma_driver_register(drv, THIS_MODULE);
--}
-+#define bcma_driver_register(drv) \
-+	__bcma_driver_register(drv, THIS_MODULE)
-+
- extern void bcma_driver_unregister(struct bcma_driver *drv);
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index 9b7c2bb..7e447f8 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -42,7 +42,6 @@
+  * can build the DRM (part of PI DRI). 4/21/2000 S + B */
+ #include <asm/current.h>
+ #endif				/* __alpha__ */
+-#include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/miscdevice.h>
+ #include <linux/fs.h>
+@@ -80,6 +79,8 @@
+ #define __OS_HAS_AGP (defined(CONFIG_AGP) || (defined(CONFIG_AGP_MODULE) && defined(MODULE)))
+ #define __OS_HAS_MTRR (defined(CONFIG_MTRR))
  
- struct bcma_bus {
++struct module;
++
+ struct drm_file;
+ struct drm_device;
+ 
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 0e67c45..0e484b9 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -14,7 +14,6 @@
+ #include <linux/wait.h>
+ #include <linux/mempool.h>
+ #include <linux/bio.h>
+-#include <linux/module.h>
+ #include <linux/stringify.h>
+ #include <linux/gfp.h>
+ #include <linux/bsg.h>
+@@ -22,6 +21,7 @@
+ 
+ #include <asm/scatterlist.h>
+ 
++struct module;
+ struct scsi_ioctl_command;
+ 
+ struct request_queue;
+diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+index 36719ea..4263b02 100644
+--- a/include/linux/cpuidle.h
++++ b/include/linux/cpuidle.h
+@@ -13,7 +13,6 @@
+ 
+ #include <linux/percpu.h>
+ #include <linux/list.h>
+-#include <linux/module.h>
+ #include <linux/kobject.h>
+ #include <linux/completion.h>
+ 
+@@ -21,6 +20,8 @@
+ #define CPUIDLE_NAME_LEN	16
+ #define CPUIDLE_DESC_LEN	32
+ 
++struct module;
++
+ struct cpuidle_device;
+ 
+ 
 diff --git a/include/linux/device.h b/include/linux/device.h
-index c20dfbf..2ee926c 100644
+index 2ee926c..00b3588 100644
 --- a/include/linux/device.h
 +++ b/include/linux/device.h
-@@ -710,10 +710,14 @@ extern int dev_set_drvdata(struct device *dev, void *data);
-  */
- extern struct device *__root_device_register(const char *name,
- 					     struct module *owner);
--static inline struct device *root_device_register(const char *name)
--{
--	return __root_device_register(name, THIS_MODULE);
--}
-+
-+/*
-+ * This is a macro to avoid include problems with THIS_MODULE,
-+ * just as per what is done for device_schedule_callback() above.
-+ */
-+#define root_device_register(name) \
-+	__root_device_register(name, THIS_MODULE)
-+
- extern void root_device_unregister(struct device *root);
+@@ -20,7 +20,7 @@
+ #include <linux/lockdep.h>
+ #include <linux/compiler.h>
+ #include <linux/types.h>
+-#include <linux/module.h>
++#include <linux/mutex.h>
+ #include <linux/pm.h>
+ #include <linux/atomic.h>
+ #include <asm/device.h>
+@@ -29,6 +29,7 @@ struct device;
+ struct device_private;
+ struct device_driver;
+ struct driver_private;
++struct module;
+ struct class;
+ struct subsys_private;
+ struct bus_type;
+diff --git a/include/linux/firmware.h b/include/linux/firmware.h
+index 21b3e75..1e7c011 100644
+--- a/include/linux/firmware.h
++++ b/include/linux/firmware.h
+@@ -1,7 +1,6 @@
+ #ifndef _LINUX_FIRMWARE_H
+ #define _LINUX_FIRMWARE_H
  
- static inline void *dev_get_platdata(const struct device *dev)
-diff --git a/include/linux/gameport.h b/include/linux/gameport.h
-index b65a6f4..e74073e 100644
---- a/include/linux/gameport.h
-+++ b/include/linux/gameport.h
-@@ -71,10 +71,9 @@ void gameport_close(struct gameport *gameport);
- #if defined(CONFIG_GAMEPORT) || (defined(MODULE) && defined(CONFIG_GAMEPORT_MODULE))
+-#include <linux/module.h>
+ #include <linux/types.h>
+ #include <linux/compiler.h>
+ #include <linux/gfp.h>
+@@ -15,6 +14,7 @@ struct firmware {
+ 	struct page **pages;
+ };
  
- void __gameport_register_port(struct gameport *gameport, struct module *owner);
--static inline void gameport_register_port(struct gameport *gameport)
--{
--	__gameport_register_port(gameport, THIS_MODULE);
--}
-+/* use a define to avoid include chaining to get THIS_MODULE */
-+#define gameport_register_port(gameport) \
-+	__gameport_register_port(gameport, THIS_MODULE)
++struct module;
+ struct device;
  
- void gameport_unregister_port(struct gameport *gameport);
+ struct builtin_fw {
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index f0c0e8a..26eafce 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -10,7 +10,6 @@
+ #include <linux/kallsyms.h>
+ #include <linux/linkage.h>
+ #include <linux/bitops.h>
+-#include <linux/module.h>
+ #include <linux/ktime.h>
+ #include <linux/sched.h>
+ #include <linux/types.h>
+@@ -19,6 +18,7 @@
  
-@@ -145,12 +144,12 @@ static inline void gameport_unpin_driver(struct gameport *gameport)
- 	mutex_unlock(&gameport->drv_mutex);
- }
+ #include <asm/ftrace.h>
  
--int __gameport_register_driver(struct gameport_driver *drv,
-+int __must_check __gameport_register_driver(struct gameport_driver *drv,
- 				struct module *owner, const char *mod_name);
--static inline int __must_check gameport_register_driver(struct gameport_driver *drv)
--{
--	return __gameport_register_driver(drv, THIS_MODULE, KBUILD_MODNAME);
--}
-+
-+/* use a define to avoid include chaining to get THIS_MODULE & friends */
-+#define gameport_register_driver(drv) \
-+	__gameport_register_driver(drv, THIS_MODULE, KBUILD_MODNAME)
++struct module;
+ struct ftrace_hash;
  
- void gameport_unregister_driver(struct gameport_driver *drv);
- 
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 9cf8e7a..830632d 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -694,10 +694,11 @@ extern void hid_destroy_device(struct hid_device *);
- 
- extern int __must_check __hid_register_driver(struct hid_driver *,
- 		struct module *, const char *mod_name);
--static inline int __must_check hid_register_driver(struct hid_driver *driver)
--{
--	return __hid_register_driver(driver, THIS_MODULE, KBUILD_MODNAME);
--}
-+
-+/* use a define to avoid include chaining to get THIS_MODULE & friends */
-+#define hid_register_driver(driver) \
-+	__hid_register_driver(driver, THIS_MODULE, KBUILD_MODNAME)
-+
- extern void hid_unregister_driver(struct hid_driver *);
- 
- extern void hidinput_hid_event(struct hid_device *, struct hid_field *, struct hid_usage *, __s32);
+ #ifdef CONFIG_FUNCTION_TRACER
 diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index a6c652e..ce472e3 100644
+index ce472e3..3fad485 100644
 --- a/include/linux/i2c.h
 +++ b/include/linux/i2c.h
-@@ -434,10 +434,9 @@ extern int i2c_add_numbered_adapter(struct i2c_adapter *);
- extern int i2c_register_driver(struct module *, struct i2c_driver *);
- extern void i2c_del_driver(struct i2c_driver *);
+@@ -28,7 +28,6 @@
  
--static inline int i2c_add_driver(struct i2c_driver *driver)
--{
--	return i2c_register_driver(THIS_MODULE, driver);
--}
-+/* use a define to avoid include chaining to get THIS_MODULE */
-+#define i2c_add_driver(driver) \
-+	i2c_register_driver(THIS_MODULE, driver)
+ #include <linux/types.h>
+ #ifdef __KERNEL__
+-#include <linux/module.h>
+ #include <linux/mod_devicetable.h>
+ #include <linux/device.h>	/* for struct device */
+ #include <linux/sched.h>	/* for completion */
+@@ -48,6 +47,8 @@ struct i2c_driver;
+ union i2c_smbus_data;
+ struct i2c_board_info;
  
- extern struct i2c_client *i2c_use_client(struct i2c_client *client);
- extern void i2c_release_client(struct i2c_client *client);
-diff --git a/include/linux/pci_hotplug.h b/include/linux/pci_hotplug.h
-index 5d09cba..45fc162 100644
---- a/include/linux/pci_hotplug.h
-+++ b/include/linux/pci_hotplug.h
-@@ -132,13 +132,9 @@ extern int pci_hp_deregister(struct hotplug_slot *slot);
- extern int __must_check pci_hp_change_slot_info	(struct hotplug_slot *slot,
- 						 struct hotplug_slot_info *info);
- 
--static inline int pci_hp_register(struct hotplug_slot *slot,
--				  struct pci_bus *pbus,
--				  int devnr, const char *name)
--{
--	return __pci_hp_register(slot, pbus, devnr, name,
--				 THIS_MODULE, KBUILD_MODNAME);
--}
-+/* use a define to avoid include chaining to get THIS_MODULE & friends */
-+#define pci_hp_register(slot, pbus, devnr, name) \
-+	__pci_hp_register(slot, pbus, devnr, name, THIS_MODULE, KBUILD_MODNAME)
- 
- /* PCI Setting Record (Type 0) */
- struct hpp_type0 {
-diff --git a/include/linux/serio.h b/include/linux/serio.h
-index e26f478..c588f38 100644
---- a/include/linux/serio.h
-+++ b/include/linux/serio.h
-@@ -79,19 +79,21 @@ void serio_reconnect(struct serio *serio);
- irqreturn_t serio_interrupt(struct serio *serio, unsigned char data, unsigned int flags);
- 
- void __serio_register_port(struct serio *serio, struct module *owner);
--static inline void serio_register_port(struct serio *serio)
--{
--	__serio_register_port(serio, THIS_MODULE);
--}
++struct module;
 +
-+/* use a define to avoid include chaining to get THIS_MODULE */
-+#define serio_register_port(serio) \
-+	__serio_register_port(serio, THIS_MODULE)
+ #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
+ /*
+  * The master routines are the ones normally used to transmit data to devices
+diff --git a/include/linux/ipmi.h b/include/linux/ipmi.h
+index ca85cf8..bbd156b 100644
+--- a/include/linux/ipmi.h
++++ b/include/linux/ipmi.h
+@@ -220,10 +220,11 @@ struct kernel_ipmi_msg {
+  * The in-kernel interface.
+  */
+ #include <linux/list.h>
+-#include <linux/module.h>
+ #include <linux/device.h>
+ #include <linux/proc_fs.h>
  
- void serio_unregister_port(struct serio *serio);
- void serio_unregister_child_port(struct serio *serio);
- 
--int __serio_register_driver(struct serio_driver *drv, struct module *owner, const char *mod_name);
--static inline int __must_check serio_register_driver(struct serio_driver *drv)
--{
--	return __serio_register_driver(drv, THIS_MODULE, KBUILD_MODNAME);
--}
-+int __must_check __serio_register_driver(struct serio_driver *drv,
-+				struct module *owner, const char *mod_name);
++struct module;
 +
-+/* use a define to avoid include chaining to get THIS_MODULE & friends */
-+#define serio_register_driver(drv) \
-+	__serio_register_driver(drv, THIS_MODULE, KBUILD_MODNAME)
+ /* Opaque type for a IPMI message user.  One of these is needed to
+    send and receive messages. */
+ typedef struct ipmi_user *ipmi_user_t;
+diff --git a/include/linux/ipmi_smi.h b/include/linux/ipmi_smi.h
+index 204f9cd..3ef0d8b 100644
+--- a/include/linux/ipmi_smi.h
++++ b/include/linux/ipmi_smi.h
+@@ -36,7 +36,6 @@
+ 
+ #include <linux/ipmi_msgdefs.h>
+ #include <linux/proc_fs.h>
+-#include <linux/module.h>
+ #include <linux/device.h>
+ #include <linux/platform_device.h>
+ #include <linux/ipmi.h>
+diff --git a/include/linux/mdio-bitbang.h b/include/linux/mdio-bitbang.h
+index 8ea9a42..0fe00cd 100644
+--- a/include/linux/mdio-bitbang.h
++++ b/include/linux/mdio-bitbang.h
+@@ -2,7 +2,8 @@
+ #define __LINUX_MDIO_BITBANG_H
+ 
+ #include <linux/phy.h>
+-#include <linux/module.h>
 +
- void serio_unregister_driver(struct serio_driver *drv);
++struct module;
  
- static inline int serio_write(struct serio *serio, unsigned char data)
-diff --git a/include/linux/ssb/ssb.h b/include/linux/ssb/ssb.h
-index 8623217..4c5d09a 100644
---- a/include/linux/ssb/ssb.h
-+++ b/include/linux/ssb/ssb.h
-@@ -231,10 +231,9 @@ struct ssb_driver {
- #define drv_to_ssb_drv(_drv) container_of(_drv, struct ssb_driver, drv)
+ struct mdiobb_ctrl;
  
- extern int __ssb_driver_register(struct ssb_driver *drv, struct module *owner);
--static inline int ssb_driver_register(struct ssb_driver *drv)
--{
--	return __ssb_driver_register(drv, THIS_MODULE);
--}
-+#define ssb_driver_register(drv) \
-+	__ssb_driver_register(drv, THIS_MODULE)
+diff --git a/include/linux/mtd/mtd.h b/include/linux/mtd/mtd.h
+index 2541fb8..af31170 100644
+--- a/include/linux/mtd/mtd.h
++++ b/include/linux/mtd/mtd.h
+@@ -21,7 +21,6 @@
+ #define __MTD_MTD_H__
+ 
+ #include <linux/types.h>
+-#include <linux/module.h>
+ #include <linux/uio.h>
+ #include <linux/notifier.h>
+ #include <linux/device.h>
+@@ -41,6 +40,8 @@
+ 
+ #define MTD_FAIL_ADDR_UNKNOWN -1LL
+ 
++struct module;
 +
- extern void ssb_driver_unregister(struct ssb_driver *drv);
+ /* If the erase fails, fail_addr might indicate exactly which block failed.  If
+    fail_addr = MTD_FAIL_ADDR_UNKNOWN, the failure was not at the device level or was not
+    specific to any particular block. */
+diff --git a/include/linux/sunrpc/svc_xprt.h b/include/linux/sunrpc/svc_xprt.h
+index 7ad9751..8620f79 100644
+--- a/include/linux/sunrpc/svc_xprt.h
++++ b/include/linux/sunrpc/svc_xprt.h
+@@ -8,7 +8,8 @@
+ #define SUNRPC_SVC_XPRT_H
  
+ #include <linux/sunrpc/svc.h>
+-#include <linux/module.h>
++
++struct module;
  
+ struct svc_xprt_ops {
+ 	struct svc_xprt	*(*xpo_create)(struct svc_serv *,
+diff --git a/include/linux/textsearch.h b/include/linux/textsearch.h
+index d9a85d6..cfaee86 100644
+--- a/include/linux/textsearch.h
++++ b/include/linux/textsearch.h
+@@ -4,10 +4,11 @@
+ #include <linux/types.h>
+ #include <linux/list.h>
+ #include <linux/kernel.h>
+-#include <linux/module.h>
+ #include <linux/err.h>
+ #include <linux/slab.h>
+ 
++struct module;
++
+ struct ts_config;
+ 
+ #define TS_AUTOLOAD	1 /* Automatically load textsearch modules when needed */
 diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
-index 665517c..04cdc47 100644
+index 04cdc47..e01c233 100644
 --- a/include/linux/uio_driver.h
 +++ b/include/linux/uio_driver.h
-@@ -98,11 +98,11 @@ extern int __must_check
- 	__uio_register_device(struct module *owner,
- 			      struct device *parent,
- 			      struct uio_info *info);
--static inline int __must_check
--	uio_register_device(struct device *parent, struct uio_info *info)
--{
--	return __uio_register_device(THIS_MODULE, parent, info);
--}
-+
-+/* use a define to avoid include chaining to get THIS_MODULE */
-+#define uio_register_device(parent, info) \
-+	__uio_register_device(THIS_MODULE, parent, info)
-+
- extern void uio_unregister_device(struct uio_info *info);
- extern void uio_event_notify(struct uio_info *info);
+@@ -14,10 +14,10 @@
+ #ifndef _UIO_DRIVER_H_
+ #define _UIO_DRIVER_H_
  
-diff --git a/include/linux/usb.h b/include/linux/usb.h
-index 73c7df4..c454f5a 100644
---- a/include/linux/usb.h
-+++ b/include/linux/usb.h
-@@ -928,10 +928,11 @@ struct usb_class_driver {
+-#include <linux/module.h>
+ #include <linux/fs.h>
+ #include <linux/interrupt.h>
+ 
++struct module;
+ struct uio_map;
+ 
+ /**
+diff --git a/include/linux/vlynq.h b/include/linux/vlynq.h
+index 8f6a958..017d4a5 100644
+--- a/include/linux/vlynq.h
++++ b/include/linux/vlynq.h
+@@ -20,9 +20,10 @@
+ #define __VLYNQ_H__
+ 
+ #include <linux/device.h>
+-#include <linux/module.h>
+ #include <linux/types.h>
+ 
++struct module;
++
+ #define VLYNQ_NUM_IRQS 32
+ 
+ struct vlynq_mapping {
+diff --git a/include/media/saa7146.h b/include/media/saa7146.h
+index 7982714..6e84cde 100644
+--- a/include/media/saa7146.h
++++ b/include/media/saa7146.h
+@@ -1,7 +1,6 @@
+ #ifndef __SAA7146__
+ #define __SAA7146__
+ 
+-#include <linux/module.h>	/* for module-version */
+ #include <linux/delay.h>	/* for delay-stuff */
+ #include <linux/slab.h>		/* for kmalloc/kfree */
+ #include <linux/pci.h>		/* for pci-config-stuff, vendor ids etc. */
+@@ -47,6 +46,8 @@ extern unsigned int saa7146_debug;
+ #define SAA7146_ISR_CLEAR(x,y) \
+ 	saa7146_write(x, ISR, (y));
+ 
++struct module;
++
+ struct saa7146_dev;
+ struct saa7146_extension;
+ struct saa7146_vv;
+diff --git a/include/media/v4l2-int-device.h b/include/media/v4l2-int-device.h
+index fbf5855..e6aa231 100644
+--- a/include/media/v4l2-int-device.h
++++ b/include/media/v4l2-int-device.h
+@@ -25,7 +25,6 @@
+ #ifndef V4L2_INT_DEVICE_H
+ #define V4L2_INT_DEVICE_H
+ 
+-#include <linux/module.h>
+ #include <media/v4l2-common.h>
+ 
+ #define V4L2NAMESIZE 32
+@@ -41,6 +40,8 @@ enum v4l2_int_type {
+ 	v4l2_int_type_slave
+ };
+ 
++struct module;
++
+ struct v4l2_int_device;
+ 
+ struct v4l2_int_master {
+diff --git a/include/net/lib80211.h b/include/net/lib80211.h
+index b95bbb0..4e57543 100644
+--- a/include/net/lib80211.h
++++ b/include/net/lib80211.h
+@@ -25,7 +25,6 @@
+ 
+ #include <linux/types.h>
+ #include <linux/list.h>
+-#include <linux/module.h>
+ #include <linux/atomic.h>
+ #include <linux/if.h>
+ #include <linux/skbuff.h>
+@@ -42,6 +41,8 @@ enum {
+ 	IEEE80211_CRYPTO_TKIP_COUNTERMEASURES = (1 << 0),
+ };
+ 
++struct module;
++
+ struct lib80211_crypto_ops {
+ 	const char *name;
+ 	struct list_head list;
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 8e4062f..4aa706c 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -46,7 +46,6 @@
+ #include <linux/list_nulls.h>
+ #include <linux/timer.h>
+ #include <linux/cache.h>
+-#include <linux/module.h>
+ #include <linux/lockdep.h>
+ #include <linux/netdevice.h>
+ #include <linux/skbuff.h>	/* struct sk_buff */
+@@ -720,6 +719,7 @@ struct request_sock_ops;
+ struct timewait_sock_ops;
+ struct inet_hashinfo;
+ struct raw_hashinfo;
++struct module;
+ 
+ /* Networking protocol blocks we attach to sockets.
+  * socket layer -> transport layer interface
+diff --git a/include/sound/core.h b/include/sound/core.h
+index 1fa2407..a91d78e 100644
+--- a/include/sound/core.h
++++ b/include/sound/core.h
+@@ -22,7 +22,6 @@
+  *
   */
- extern int usb_register_driver(struct usb_driver *, struct module *,
- 			       const char *);
--static inline int usb_register(struct usb_driver *driver)
--{
--	return usb_register_driver(driver, THIS_MODULE, KBUILD_MODNAME);
--}
-+
-+/* use a define to avoid include chaining to get THIS_MODULE & friends */
-+#define usb_register(driver) \
-+	usb_register_driver(driver, THIS_MODULE, KBUILD_MODNAME)
-+
- extern void usb_deregister(struct usb_driver *);
  
- extern int usb_register_device_driver(struct usb_device_driver *,
-diff --git a/include/linux/uwb/umc.h b/include/linux/uwb/umc.h
-index 7b48420..891d1d5 100644
---- a/include/linux/uwb/umc.h
-+++ b/include/linux/uwb/umc.h
-@@ -111,10 +111,9 @@ int __must_check __umc_driver_register(struct umc_driver *umc_drv,
-  * umc_driver_register - register a UMC capabiltity driver.
-  * @umc_drv:  pointer to the driver.
-  */
--static inline int __must_check umc_driver_register(struct umc_driver *umc_drv)
--{
--	return __umc_driver_register(umc_drv, THIS_MODULE, KBUILD_MODNAME);
--}
-+#define umc_driver_register(umc_drv) \
-+	__umc_driver_register(umc_drv, THIS_MODULE, KBUILD_MODNAME)
-+
- void umc_driver_unregister(struct umc_driver *umc_drv);
+-#include <linux/module.h>
+ #include <linux/sched.h>		/* wake_up() */
+ #include <linux/mutex.h>		/* struct mutex */
+ #include <linux/rwsem.h>		/* struct rw_semaphore */
+@@ -43,6 +42,7 @@
+ #ifdef CONFIG_PCI
+ struct pci_dev;
+ #endif
++struct module;
  
+ /* device allocation stuff */
+ 
+diff --git a/include/trace/define_trace.h b/include/trace/define_trace.h
+index da39b22..4fd1de1 100644
+--- a/include/trace/define_trace.h
++++ b/include/trace/define_trace.h
+@@ -23,7 +23,7 @@
+ #include <linux/stringify.h>
  /*
+  * module.h includes tracepoints, and because ftrace.h
+- * pulls in module.h:
++ * used to pull in module.h via this path:
+  *  trace/ftrace.h -> linux/ftrace_event.h -> linux/perf_event.h ->
+  *  linux/ftrace.h -> linux/module.h
+  * we must include module.h here before we play with any of
+diff --git a/include/trace/events/module.h b/include/trace/events/module.h
+index 21a546d..1619327 100644
+--- a/include/trace/events/module.h
++++ b/include/trace/events/module.h
+@@ -1,6 +1,6 @@
+ /*
+  * Because linux/module.h has tracepoints in the header, and ftrace.h
+- * eventually includes this file, define_trace.h includes linux/module.h
++ * used to include this file, define_trace.h includes linux/module.h
+  * But we do not want the module.h to override the TRACE_SYSTEM macro
+  * variable that define_trace.h is processing, so we only set it
+  * when module events are being processed, which would happen when
 -- 
 1.7.6
 
