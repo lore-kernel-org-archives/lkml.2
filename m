@@ -1,53 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab1G1Orr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 10:47:47 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:47224
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751676Ab1G1Orp (ORCPT
+	id S1754572Ab1G1OyS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 10:54:18 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55369 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab1G1OyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 10:47:45 -0400
-Date: Thu, 28 Jul 2011 10:47:40 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Liu Yuan <namei.unix@gmail.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] vhost-blk: An in-kernel accelerator for virtio-blk
-Message-ID: <20110728144740.GA26744@infradead.org>
-References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com>
- <1311863346-4338-2-git-send-email-namei.unix@gmail.com>
+	Thu, 28 Jul 2011 10:54:15 -0400
+Date: Thu, 28 Jul 2011 16:54:10 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Paul Menage <menage@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>
+Subject: Re: [PATCH 6/7] cgroups: Add res counter common ancestor searching
+Message-ID: <20110728145406.GI11820@somewhere.redhat.com>
+References: <1310393706-321-1-git-send-email-fweisbec@gmail.com>
+ <1310393706-321-7-git-send-email-fweisbec@gmail.com>
+ <CAJniumUGC5-KS5Rbg0SkHv5xD4XtAifYAaEM1-X-W7zbgCwCcg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1311863346-4338-2-git-send-email-namei.unix@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJniumUGC5-KS5Rbg0SkHv5xD4XtAifYAaEM1-X-W7zbgCwCcg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 10:29:05PM +0800, Liu Yuan wrote:
-> From: Liu Yuan <tailai.ly@taobao.com>
+On Mon, Jul 25, 2011 at 06:05:00PM -0700, Paul Menage wrote:
+> On Mon, Jul 11, 2011 at 7:15 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > Add a new API to find the common ancestor between two resource
+> > counters. This includes the passed resource counter themselves.
+> >
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 > 
-> Vhost-blk driver is an in-kernel accelerator, intercepting the
-> IO requests from KVM virtio-capable guests. It is based on the
-> vhost infrastructure.
+> Acked-by: Paul Menage <menage@google.com>
 > 
-> This is supposed to be a module over latest kernel tree, but it
-> needs some symbols from fs/aio.c and fs/eventfd.c to compile with.
-> So currently, after applying the patch, you need to *recomplie*
-> the kernel.
+> There's something distasteful about doing an O(N^2) search on every
+> charge/uncharge operation, but I guess in general N isn't going to be
+> more than 2 or 3 so it's not worth optimizing.
 > 
-> Usage:
-> $kernel-src: make M=drivers/vhost
-> $kernel-src: sudo insmod drivers/vhost/vhost_blk.ko
-> 
-> After insmod, you'll see /dev/vhost-blk created. done!
+> If you wanted to avoid the N^2 search then you could add a "depth"
+> field in struct res_counter, which would be initialized to
+> parent->depth+1, and then easily get both r1 and r2 to the same depth
+> before proceeding up the tree in lock step, but that would bloat all
+> instances of res_counter, which might work out as more expensive in
+> the long run.
 
-You'll need to send the changes for existing code separately.
+Yeah it only happens on slow paths and probably cgroups hierarchies don't
+tend to be so deep.
 
-If you're going mostly for raw blockdevice access just calling
-submit_bio will shave even more overhead off, and simplify the
-code a lot.
+But if that's a problem we can still optimize the way you said, and perhaps
+move that depth field into the struct task_counter instead.
+
+Thanks.
+
+> 
+> Paul
+> 
+> > Cc: Paul Menage <menage@google.com>
+> > Cc: Li Zefan <lizf@cn.fujitsu.com>
+> > Cc: Johannes Weiner <hannes@cmpxchg.org>
+> > Cc: Aditya Kali <adityakali@google.com>
+> > ---
+> >  include/linux/res_counter.h |    2 ++
+> >  kernel/res_counter.c        |   19 +++++++++++++++++++
+> >  2 files changed, 21 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+> > index 8c421ac..354ed30 100644
+> > --- a/include/linux/res_counter.h
+> > +++ b/include/linux/res_counter.h
+> > @@ -139,6 +139,8 @@ void res_counter_uncharge_until(struct res_counter *counter, struct res_counter
+> >                                unsigned long val);
+> >  void res_counter_uncharge(struct res_counter *counter, unsigned long val);
+> >
+> > +struct res_counter *res_counter_common_ancestor(struct res_counter *l, struct res_counter *r);
+> > +
+> >  /**
+> >  * res_counter_margin - calculate chargeable space of a counter
+> >  * @cnt: the counter
+> > diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+> > index 39f2513..1b2efd6 100644
+> > --- a/kernel/res_counter.c
+> > +++ b/kernel/res_counter.c
+> > @@ -102,6 +102,25 @@ void res_counter_uncharge(struct res_counter *counter, unsigned long val)
+> >        res_counter_uncharge_until(counter, NULL, val);
+> >  }
+> >
+> > +struct res_counter *
+> > +res_counter_common_ancestor(struct res_counter *r1, struct res_counter *r2)
+> > +{
+> > +       struct res_counter *iter;
+> > +
+> > +       while (r1) {
+> > +               iter = r2;
+> > +               while (iter) {
+> > +                       if (iter == r1)
+> > +                               return iter;
+> > +                       iter = iter->parent;
+> > +               }
+> > +
+> > +               r1 = r1->parent;
+> > +       }
+> > +
+> > +       return NULL;
+> > +}
+> > +
+> >  static inline unsigned long long *
+> >  res_counter_member(struct res_counter *counter, int member)
+> >  {
+> > --
+> > 1.7.5.4
+> >
+> >
