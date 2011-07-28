@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801Ab1G1ODv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 10:03:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38304 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753123Ab1G1ODt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 10:03:49 -0400
-Message-ID: <4E316C06.2020609@zytor.com>
-Date: Thu, 28 Jul 2011 07:02:46 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1753572Ab1G1OFE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 10:05:04 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64791 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab1G1OFA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 10:05:00 -0400
+Date: Thu, 28 Jul 2011 16:04:55 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH v2 3/6] trace: Add tracepoints to IRQ work run handler
+Message-ID: <20110728140452.GF11820@somewhere.redhat.com>
+References: <1310679495-29104-1-git-send-email-vnagarnaik@google.com>
+ <1311793038-15155-4-git-send-email-vnagarnaik@google.com>
+ <1311855171.2617.170.camel@laptop>
+ <20110728132938.GE11820@somewhere.redhat.com>
+ <1311860961.2617.175.camel@laptop>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-References: <1311340547-7861-1-git-send-email-bp@amd64.org> <CA+55aFwL9Fwd9ouX3UMOayoBsZyZzTdDSySa6nZJxbpyLifbaQ@mail.gmail.com> <20110724172222.GB12621@aftab> <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com> <20110727171015.GD19477@aftab> <4E3047D4.2000608@zytor.com> <20110728134416.GA26379@aftab>
-In-Reply-To: <20110728134416.GA26379@aftab>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311860961.2617.175.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/2011 06:44 AM, Borislav Petkov wrote:
-> On Wed, Jul 27, 2011 at 01:16:04PM -0400, H. Peter Anvin wrote:
->>> + * Create a contiguous bitmask starting at bit position @lo and ending at
->>> + * position @hi. For example
->>> + *
->>> + * GENMASK_ULL(21, 39) gives us the 64bit vector 0x000000ffffe00000.
->>> + */
->>> +#define _GENMASK_T(cast, type, lo, hi) \
->>> +       (((cast)(1##type << ((hi) - (lo) + 1)) - 1) << (lo))
->>> +#define GENMASK(lo, hi)                _GENMASK_T(unsigned, U, lo, hi)
->>> +#define GENMASK_UL(lo, hi)     _GENMASK_T(unsigned long, UL, lo, hi)
->>> +#define GENMASK_ULL(lo, hi)    _GENMASK_T(unsigned long long, ULL, lo, hi)
->>> +
->>
->> These really need to be usable from assembly language, too (in which
->> case you of course need to not have the cast and suffix), so it probably
->> should be defined in <linux/const.h> with the other constant macros.
+On Thu, Jul 28, 2011 at 03:49:21PM +0200, Peter Zijlstra wrote:
+> On Thu, 2011-07-28 at 15:29 +0200, Frederic Weisbecker wrote:
+> > On Thu, Jul 28, 2011 at 02:12:51PM +0200, Peter Zijlstra wrote:
+> > > On Wed, 2011-07-27 at 11:57 -0700, Vaibhav Nagarnaik wrote:
+> > > > @@ -122,6 +123,7 @@ void irq_work_run(void)
+> > > >  {
+> > > >         struct irq_work *list;
+> > > >  
+> > > >        trace_irq_work_run_entry(0);
+> > > >         if (this_cpu_read(irq_work_list) == NULL)
+> > > >                 return;
+> > > >  
+> > > > @@ -149,6 +151,7 @@ void irq_work_run(void)
+> > > >                               next_flags(NULL, IRQ_WORK_BUSY),
+> > > >                               NULL);
+> > > >         }
+> > > > +       trace_irq_work_run_exit(0);
+> > > >  }
+> > > >  EXPORT_SYMBOL_GPL(irq_work_run); 
+> > > 
+> > > So what happens when we call irq_work_run() from the timer interrupt?
+> > > 
+> > 
+> > We probably need something like:
+> > 
+> > void irq_work_run_interrupt(void)
+> > {
+> > 	trace_irq_work_run_entry(0);
+> > 	irq_work_run();
+> > 	trace_irq_work_run_exit(0);
+> > }
 > 
-> How about that:
+> No we don't. That lives in arch code and its up to the arch to decide
+> where, when and how to call that.
 > 
-> #define _GENMASK_T(cast, type, lo, hi) \
-> 	        ((_AT(cast, (_AC(1,type) << ((hi) - (lo) + 1))) - 1) << (lo))
-> #define GENMASK(lo, hi)         _GENMASK_T(unsigned, U, lo, hi)
-> #define GENMASK_UL(lo, hi)      _GENMASK_T(unsigned long, UL, lo, hi)
-> #define GENMASK_ULL(lo, hi)     _GENMASK_T(unsigned long long, ULL, lo, hi)
+> On PPC for example that's hooked of the timer interrupt.
 > 
-> outside of __KERNEL__ scope?
-> 
+> See here again your 'generalization' crap breaks down.
 
-Then everything needs another underscore.
+Yeah, you're right.
 
-	-hpa
+I don't know very well other archs than x86 and probably did the
+mistake to generalize too much on top of its irq layout.
 
+Probably they should revert to something closer to the first iterations of that patchset.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Now I'm going to let Vaibhav and David choose whichever weapon they want to stab me if
+we meet up one day. Just not going to stay in a floor next to them with nobody
+around.
