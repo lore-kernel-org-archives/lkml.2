@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab1G1JsQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 05:48:16 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51931 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755355Ab1G1JsK (ORCPT
+	id S1755428Ab1G1Jt3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 05:49:29 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54924 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755366Ab1G1JtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 05:48:10 -0400
-From: Tommy Lin <tommy.lin.1101@gmail.com>
-To: Anton Vorontsov <avorontsov@mvista.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Magnus Damm <damm@opensource.se>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Tommy Lin <tommy.lin.1101@gmail.com>
-Subject: [PATCH 1/3] arch: arm: mach-cns3xxx: Fix compile error caused by hardware.h removed
-Date: Fri, 29 Jul 2011 01:14:46 +0800
-Message-Id: <1311873286-26035-1-git-send-email-tommy.lin.1101@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	Thu, 28 Jul 2011 05:49:22 -0400
+Date: Thu, 28 Jul 2011 11:49:19 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yong Zhang <yong.zhang0@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [ANNOUNCE] 3.0-rt4
+In-Reply-To: <20110728094159.GA24590@windriver.com>
+Message-ID: <alpine.LFD.2.02.1107281147450.2660@ionos>
+References: <alpine.LFD.2.02.1107272222420.2660@ionos> <20110728094159.GA24590@windriver.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1896718819-1311846560=:2660"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest version remove arch/arm/mach-cns3xxx/include/mach/hardware.h.
-This patch removes lines that refer to hardware.h.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Signed-off-by: Tommy Lin <tommy.lin.1101@gmail.com>
----
- arch/arm/mach-cns3xxx/include/mach/entry-macro.S |    1 -
- arch/arm/mach-cns3xxx/include/mach/system.h      |    1 -
- arch/arm/mach-cns3xxx/include/mach/uncompress.h  |    1 -
- 3 files changed, 0 insertions(+), 3 deletions(-)
+--8323328-1896718819-1311846560=:2660
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 
-diff --git a/arch/arm/mach-cns3xxx/include/mach/entry-macro.S b/arch/arm/mach-cns3xxx/include/mach/entry-macro.S
-index 6bd83ed..d87bfc3 100644
---- a/arch/arm/mach-cns3xxx/include/mach/entry-macro.S
-+++ b/arch/arm/mach-cns3xxx/include/mach/entry-macro.S
-@@ -8,7 +8,6 @@
-  * published by the Free Software Foundation.
-  */
- 
--#include <mach/hardware.h>
- #include <asm/hardware/entry-macro-gic.S>
- 
- 		.macro	disable_fiq
-diff --git a/arch/arm/mach-cns3xxx/include/mach/system.h b/arch/arm/mach-cns3xxx/include/mach/system.h
-index 58bb03a..4f16c9b 100644
---- a/arch/arm/mach-cns3xxx/include/mach/system.h
-+++ b/arch/arm/mach-cns3xxx/include/mach/system.h
-@@ -13,7 +13,6 @@
- 
- #include <linux/io.h>
- #include <asm/proc-fns.h>
--#include <mach/hardware.h>
- 
- static inline void arch_idle(void)
- {
-diff --git a/arch/arm/mach-cns3xxx/include/mach/uncompress.h b/arch/arm/mach-cns3xxx/include/mach/uncompress.h
-index de8ead9..a91b605 100644
---- a/arch/arm/mach-cns3xxx/include/mach/uncompress.h
-+++ b/arch/arm/mach-cns3xxx/include/mach/uncompress.h
-@@ -8,7 +8,6 @@
-  */
- 
- #include <asm/mach-types.h>
--#include <mach/hardware.h>
- #include <mach/cns3xxx.h>
- 
- #define AMBA_UART_DR(base)	(*(volatile unsigned char *)((base) + 0x00))
--- 
-1.7.6
+On Thu, 28 Jul 2011, Yong Zhang wrote:
 
+> On Wed, Jul 27, 2011 at 11:37:09PM +0200, Thomas Gleixner wrote:
+> > Dear RT Folks,
+> > 
+> > I'm pleased to announce the 3.0-rt4 release.
+> > 
+> 
+> Building error if !PREEMPT_RT:
+> 
+>   CC      kernel/hrtimer.o
+> kernel/hrtimer.c: In function ‘hrtimer_interrupt’:
+> kernel/hrtimer.c:1459:27: error: ‘hrtimer_wakeup’ undeclared (first use in this function)
+> kernel/hrtimer.c:1459:27: note: each undeclared identifier is reported only
+>   once for each function it appears in
+> make[1]: *** [kernel/hrtimer.o] Error 1
+> 
+> Patch is here and seems it could be scrolled into
+> hrtimer-fixup-hrtimer-callback-changes-for-preempt-r.patch :)
+
+Applied, thanks a lot !
+
+     tglx
+--8323328-1896718819-1311846560=:2660--
