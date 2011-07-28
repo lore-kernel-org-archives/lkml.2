@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab1G1Edh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 00:33:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63968 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467Ab1G1Edd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 00:33:33 -0400
-Date: Thu, 28 Jul 2011 00:33:27 -0400
-From: Dave Jones <davej@redhat.com>
-To: Joe Perches <joe@perches.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: broken checkpatch signature checking
-Message-ID: <20110728043327.GA21448@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Joe Perches <joe@perches.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1753484Ab1G1Ehn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 00:37:43 -0400
+Received: from webmailsend.kos.net ([199.246.2.252]:34504 "HELO kos.net"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751102Ab1G1Ehg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 00:37:36 -0400
+X-Greylist: delayed 1323 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Jul 2011 00:37:35 EDT
+Cc: recipient list not shown:;
+Message-ID: <47258add5772a51ad7d702a6b4a8fd8d.squirrel@www.kos.net>
+Date: Wed, 27 Jul 2011 23:59:14 -0400
+Subject: WARNING! REPLY TO UPGRADE YOUR teksavvy.com ACCOUNT
+From: "teksavvy.com" <upgradeteam@teksavvy.com>
+Reply-To: kimdh39@w.cn
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The signature checking patches in commit 2011247550 have broken one use-case for me.
-I pipe the git-commits mailing list to it and skim the summary once a day[*]
-
-Because git indents its changelogs, every single commit is now warning
-with this..
-
-WARNING: Do not use whitespace before Signed-off-by:
-#5252:
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+We are currently upgrading our Message Centre database. We are deleting
+all unused teksavvy.com accounts to create more space for new ones. In
+other for your account not to be suspended or deleted, you will have to
+update your account by providing the information listed below:
 
 
-	Dave
+Confirm Your teksavvy.com Account Details.
 
 
-[*] It's too noisy to do anything useful with right now, which is
-    why I'd like to filter out all the whitespace crap, but hopefully
-    that'll happen eventually.
+Email Address:
+Username:
+Password:
+Confirm Password:
+
+
+Please send your details to: kimdh39@w.cn
+
