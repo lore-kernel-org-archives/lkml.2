@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150Ab1G1Xom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 19:44:42 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29705 "EHLO mga02.intel.com"
+	id S932277Ab1G1Xr6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 19:47:58 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29735 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756177Ab1G1XoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 19:44:25 -0400
+	id S932092Ab1G1Xop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 19:44:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,285,1309762800"; 
-   d="scan'208";a="33352022"
+   d="scan'208";a="33352112"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110728444.299940435@firstfloor.org>
 In-Reply-To: <20110728444.299940435@firstfloor.org>
-To: stern@rowland.harvard.edu, Larry.Finger@lwfinger.net, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [20/50] USB: OHCI: fix another regression for NVIDIA controllers
-Message-Id: <20110728234424.A5EAD2403FF@tassilo.jf.intel.com>
-Date: Thu, 28 Jul 2011 16:44:24 -0700 (PDT)
+To: srostedt@redhat.com, rostedt@goodmis.org, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [40/50] tracing: Have "enable" file use refcounts like the "filter"
+Message-Id: <20110728234445.06FC52403FF@tassilo.jf.intel.com>
+Date: Thu, 28 Jul 2011 16:44:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,82 +24,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Steven Rostedt <srostedt@redhat.com>
 
-[ upstream commit 6ea12a04d295235ed67010a09fdea58c949e3eb0 ]
+[ upstream commit 40ee4dffff061399eb9358e0c8fcfbaf8de4c8fe ]
+ file
 
-The NVIDIA series of OHCI controllers continues to be troublesome.  A
-few people using the MCP67 chipset have reported that even with the
-most recent kernels, the OHCI controller fails to handle new
-connections and spams the system log with "unable to enumerate USB
-port" messages.  This is different from the other problems previously
-reported for NVIDIA OHCI controllers, although it is probably related.
+The "enable" file for the event system can be removed when a module
+is unloaded and the event system only has events from that module.
+As the event system nr_events count goes to zero, it may be freed
+if its ref_count is also set to zero.
 
-It turns out that the MCP67 controller does not like to be kept in the
-RESET state very long.  After only a few seconds, it decides not to
-work any more.  This patch (as1479) changes the PCI initialization
-quirk code so that NVIDIA controllers are switched into the SUSPEND
-state after 50 ms of RESET.  With no interrupts enabled and all the
-downstream devices reset, and thus unable to send wakeup requests,
-this should be perfectly safe (even for non-NVIDIA hardware).
+Like the "filter" file, the "enable" file may be opened by a task and
+referenced later, after a module has been unloaded and the events for
+that event system have been removed.
 
-The removal code in ohci-hcd hasn't been changed; it will still leave
-the controller in the RESET state.  As a result, if someone unloads
-ohci-hcd and then reloads it, the controller won't work again until
-the system is rebooted.  If anybody complains about this, the removal
-code can be updated similarly.
+Although the "filter" file referenced the event system structure,
+the "enable" file only references a pointer to the event system
+name. Since the name is freed when the event system is removed,
+it is possible that an access to the "enable" file may reference
+a freed pointer.
 
-This fixes Bugzilla #22052.
+Update the "enable" file to use the subsystem_open() routine that
+the "filter" file uses, to keep a reference to the event system
+structure while the "enable" file is opened.
 
-Tested-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: stable <stable@kernel.org>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: <stable@kernel.org>
+Reported-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Index: linux-2.6.35.y/drivers/usb/host/pci-quirks.c
+Index: linux-2.6.35.y/kernel/trace/trace_events.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/usb/host/pci-quirks.c
-+++ linux-2.6.35.y/drivers/usb/host/pci-quirks.c
-@@ -34,6 +34,8 @@
- #define OHCI_INTRSTATUS		0x0c
- #define OHCI_INTRENABLE		0x10
- #define OHCI_INTRDISABLE	0x14
-+#define OHCI_FMINTERVAL		0x34
-+#define OHCI_HCR		(1 << 0)	/* host controller reset */
- #define OHCI_OCR		(1 << 3)	/* ownership change request */
- #define OHCI_CTRL_RWC		(1 << 9)	/* remote wakeup connected */
- #define OHCI_CTRL_IR		(1 << 8)	/* interrupt routing */
-@@ -204,6 +206,32 @@ static void __devinit quirk_usb_handoff_
+--- linux-2.6.35.y.orig/kernel/trace/trace_events.c
++++ linux-2.6.35.y/kernel/trace/trace_events.c
+@@ -495,7 +495,7 @@ system_enable_read(struct file *filp, ch
+ 		   loff_t *ppos)
+ {
+ 	const char set_to_char[4] = { '?', '0', '1', 'X' };
+-	const char *system = filp->private_data;
++	struct event_subsystem *system = filp->private_data;
+ 	struct ftrace_event_call *call;
+ 	char buf[2];
+ 	int set = 0;
+@@ -507,7 +507,7 @@ system_enable_read(struct file *filp, ch
+ 		    (!call->class->probe && !call->class->reg))
+ 			continue;
  
- 	/* reset controller, preserving RWC (and possibly IR) */
- 	writel(control & OHCI_CTRL_MASK, base + OHCI_CONTROL);
-+	readl(base + OHCI_CONTROL);
-+
-+	/* Some NVIDIA controllers stop working if kept in RESET for too long */
-+	if (pdev->vendor == PCI_VENDOR_ID_NVIDIA) {
-+		u32 fminterval;
-+		int cnt;
-+
-+		/* drive reset for at least 50 ms (7.1.7.5) */
-+		msleep(50);
-+
-+		/* software reset of the controller, preserving HcFmInterval */
-+		fminterval = readl(base + OHCI_FMINTERVAL);
-+		writel(OHCI_HCR, base + OHCI_CMDSTATUS);
-+
-+		/* reset requires max 10 us delay */
-+		for (cnt = 30; cnt > 0; --cnt) {	/* ... allow extra time */
-+			if ((readl(base + OHCI_CMDSTATUS) & OHCI_HCR) == 0)
-+				break;
-+			udelay(1);
-+		}
-+		writel(fminterval, base + OHCI_FMINTERVAL);
-+
-+		/* Now we're in the SUSPEND state with all devices reset
-+		 * and wakeups and interrupts disabled
-+		 */
-+	}
+-		if (system && strcmp(call->class->system, system) != 0)
++		if (system && strcmp(call->class->system, system->name) != 0)
+ 			continue;
  
- 	/*
- 	 * disable interrupts
+ 		/*
+@@ -537,7 +537,8 @@ static ssize_t
+ system_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 		    loff_t *ppos)
+ {
+-	const char *system = filp->private_data;
++	struct event_subsystem *system = filp->private_data;
++	const char *name = NULL;
+ 	unsigned long val;
+ 	char buf[64];
+ 	ssize_t ret;
+@@ -561,7 +562,14 @@ system_enable_write(struct file *filp, c
+ 	if (val != 0 && val != 1)
+ 		return -EINVAL;
+ 
+-	ret = __ftrace_set_clr_event(NULL, system, NULL, val);
++	/*
++	 * Opening of "enable" adds a ref count to system,
++	 * so the name is safe to use.
++	 */
++	if (system)
++		name = system->name;
++
++	ret = __ftrace_set_clr_event(NULL, name, NULL, val);
+ 	if (ret)
+ 		goto out;
+ 
+@@ -740,6 +748,9 @@ static int subsystem_open(struct inode *
+ 	struct event_subsystem *system = NULL;
+ 	int ret;
+ 
++	if (!inode->i_private)
++		goto skip_search;
++
+ 	/* Make sure the system still exists */
+ 	mutex_lock(&event_mutex);
+ 	list_for_each_entry(system, &event_subsystems, list) {
+@@ -758,8 +769,9 @@ static int subsystem_open(struct inode *
+ 	if (system != inode->i_private)
+ 		return -ENODEV;
+ 
++ skip_search:
+ 	ret = tracing_open_generic(inode, filp);
+-	if (ret < 0)
++	if (ret < 0 && system)
+ 		put_system(system);
+ 
+ 	return ret;
+@@ -769,7 +781,8 @@ static int subsystem_release(struct inod
+ {
+ 	struct event_subsystem *system = inode->i_private;
+ 
+-	put_system(system);
++	if (system)
++		put_system(system);
+ 
+ 	return 0;
+ }
+@@ -913,9 +926,10 @@ static const struct file_operations ftra
+ };
+ 
+ static const struct file_operations ftrace_system_enable_fops = {
+-	.open = tracing_open_generic,
++	.open = subsystem_open,
+ 	.read = system_enable_read,
+ 	.write = system_enable_write,
++	.release = subsystem_release,
+ };
+ 
+ static const struct file_operations ftrace_show_header_fops = {
+@@ -1003,8 +1017,7 @@ event_subsystem_dir(const char *name, st
+ 			   "'%s/filter' entry\n", name);
+ 	}
+ 
+-	trace_create_file("enable", 0644, system->entry,
+-			  (void *)system->name,
++	trace_create_file("enable", 0644, system->entry, system,
+ 			  &ftrace_system_enable_fops);
+ 
+ 	return system->entry;
