@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809Ab1G1UJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 16:09:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:49626 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755189Ab1G1UJs (ORCPT
+	id S1755856Ab1G1UNg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 16:13:36 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:13575 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755719Ab1G1UNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 16:09:48 -0400
-Date: Thu, 28 Jul 2011 22:09:10 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH 1/2] MMC / TMIO: Fix build issue related to struct
- scatterlist
-In-Reply-To: <201107272356.16817.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.64.1107282205110.20737@axis700.grange>
-References: <201107262049.15333.rjw@sisk.pl> <201107262050.23379.rjw@sisk.pl>
- <Pine.LNX.4.64.1107272236510.7435@axis700.grange> <201107272356.16817.rjw@sisk.pl>
+	Thu, 28 Jul 2011 16:13:34 -0400
+Date: Thu, 28 Jul 2011 22:13:32 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: [RFC][PATCH] sched: take rt_rq->rt_runtime_lock around rt_rq->rt_runtime
+ modification
+Message-ID: <alpine.LNX.2.00.1107282211370.20477@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:DoqEfD51A8e1ITvVguAgL63ImDu885nEB3ENHoDZ46b
- cni+afITnB5DCwAVN+EIjfLpStyva89mQgKIRw56OXepo2gOUO
- M1mlFdtDsU7eCCoAs5tbiRcNSfvtTCR8SaS0LAY16/28axXYHQ
- 6iXZNo3G4G2Cu3/rwRfIEIW2Yd8xnjbtYcjgkuSs2GHFHwH6zW
- nlHQQPOxh4RIVFytQsY3QOLVMI/xFwL4Ban5KaoCqE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jul 2011, Rafael J. Wysocki wrote:
+Everywhere (that I could find) where we modify rt_rq->rt_runtime we hold 
+rt_rq->rt_runtime_lock except in alloc_rt_sched_group(). Shouldn't we do 
+so - as per this patch. ???
 
-> On Wednesday, July 27, 2011, Guennadi Liakhovetski wrote:
-> > (added MMC maintainer to CC:)
-> > 
-> > On Tue, 26 Jul 2011, Rafael J. Wysocki wrote:
-> > 
-> > > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > > 
-> > > Fix build issue caused by undefined struct scatterlist in
-> > > drivers/mmc/host/tmio_mmc.c.
-> > > 
-> > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > 
-> > A nitpick, if I may: sCatterlist comes before sPinlock in my versions of 
-> > most popular alphabets;-) Please, fix (or maybe Chris can fix it himself), 
-> 
-> I'm not sure what you mean exactly (perhaps it's too late).
-
-I mean, that the headers are atm sorted alphabetically and should remain 
-so, therefore you should add the new header one line higher. As for 
-compile failure or not: I haven't seen any compile failures myself, but 
-the patch is academically correct, because structs, declared in tmio_mmc.h 
-embed struct scatterlist, therefore the header has to be included in that 
-header too.
-
-Thanks
-Guennadi
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ kernel/sched.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index ccacdbd..d5a3737 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -8488,7 +8488,9 @@ int alloc_rt_sched_group(struct task_group *tg, struct task_group *parent)
+ 			goto err_free_rq;
+ 
+ 		init_rt_rq(rt_rq, cpu_rq(i));
++		raw_spin_lock(&rt_rq->rt_runtime_lock);
+ 		rt_rq->rt_runtime = tg->rt_bandwidth.rt_runtime;
++		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+ 		init_tg_rt_entry(tg, rt_rq, rt_se, i, parent->rt_se[i]);
+ 	}
+ 
+-- 
+1.7.6
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
