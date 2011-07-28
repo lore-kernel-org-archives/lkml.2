@@ -1,41 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab1G1K6z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 06:58:55 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64509 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754481Ab1G1K6y (ORCPT
+	id S1755386Ab1G1LCG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 07:02:06 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34540 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754366Ab1G1LCC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 06:58:54 -0400
-Message-ID: <4E3140D2.90608@ru.mvista.com>
-Date: Thu, 28 Jul 2011 14:58:26 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Thu, 28 Jul 2011 07:02:02 -0400
 MIME-Version: 1.0
-To: Andrew Bird <ajb@spheresystems.co.uk>
-CC: gregkh@suse.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] USB: option driver: add PID for Vodafone-Huawei K3770
-References: <1311782600-13353-1-git-send-email-ajb@spheresystems.co.uk>
-In-Reply-To: <1311782600-13353-1-git-send-email-ajb@spheresystems.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110727203710.GB5028@flint.arm.linux.org.uk>
+References: <CABE8wwt8J_r9cExG+EAqqK=XVmAyLYhv+-T49Rr9hhKudD8n2g@mail.gmail.com>
+	<CAJe_ZheVyLk-yqyF_XO80xX3j7_7mDPnv-me+n=X_hNWycSLwg@mail.gmail.com>
+	<CABE8wwtkSnaJ5fvi=4bq7zye3W0SmErHAZeWAcHuYvLgvqy=_Q@mail.gmail.com>
+	<CAJe_ZhfYvd6mdUMtzdAKKk4o1ythCBm7rut7ZCWRTxiWLP__Tg@mail.gmail.com>
+	<CABE8wwv2XQ_aJ8O2TUAz1LgJorBwDbgyQQv7jeAn06Q2AcqH+Q@mail.gmail.com>
+	<CAJe_ZhcNM7m-eWA0nDUrOrHxeAhNS00gewf=txmvOFL_uOPhrw@mail.gmail.com>
+	<1311740499.1536.56.camel@vkoul-udesk3>
+	<CAJe_ZhfaPfobs5P+q+t-kRSK4fAvm-v_brYgqmco8fwOOBeT8A@mail.gmail.com>
+	<1311757347.1536.103.camel@vkoul-udesk3>
+	<CAJe_Zhd+Z4-=xDzFrd3ARuKZkUAo6n_miQgdSADY9Uk6uhkqhw@mail.gmail.com>
+	<20110727203710.GB5028@flint.arm.linux.org.uk>
+Date: Thu, 28 Jul 2011 16:26:25 +0530
+Message-ID: <CAJe_ZhfNHQYOvG2_qr3FeZfL-PDmOX2TS9r=2LokoKq=U3UcLQ@mail.gmail.com>
+Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
+From: Jaswinder Singh <jaswinder.singh@linaro.org>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: "Koul, Vinod" <vinod.koul@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, per.friden@stericsson.com,
+        wei.zhang@freescale.com, ebony.zhu@freescale.com, iws@ovro.caltech.edu,
+        s.hauer@pengutronix.de, maciej.sosnowski@intel.com, saeed@marvell.com,
+        shawn.guo@freescale.com, yur@emcraft.com, agust@denx.de,
+        iwamatsu.nobuhiro@renesas.com, per.forlin@stericsson.com,
+        jonas.aberg@stericsson.com, anemo@mba.ocn.ne.jp
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 28 July 2011 02:07, Russell King <rmk@arm.linux.org.uk> wrote:
+> On Wed, Jul 27, 2011 at 08:00:23PM +0530, Jaswinder Singh wrote:
+>> On 27 July 2011 14:32, Koul, Vinod <vinod.koul@intel.com> wrote:
+>> > You can have two different DMACs in same system. At least I have two
+>> > from current intel_mid_dma which are used. Both give their channel id
+>> > starting from 0, 1....
+>> > Further as we integrate video, audio, spi, emmc dmacs possibility of
+>> > having multiple dmacs will increase in a system
+>>
+>> Most of Samsung's S5P series have 3 DMACs - 2 for peripherals and 1 for
+>> mem->mem But that is not the point.
+>>
+>> This patch in no way affects what values currently a dmac driver
+>> assigns to chan_id
+>
+> Then *explain* how the chan_id is used to match the channel which the
+> peripheral requires when you have three DMA controllers, each with
+> channels numbered 0 to 7.
+>
+>> > Sorry I didn't get you.
+>> > As I understand you are trying to simplify the filter function by
+>> > assigning unique ids to all channels,
+>>
+>> No dear. Let me put it precisely.
+>>
+>> Even if we make no further change to the dmaengine, this patch is the right
+>> thing to do today.
+>
+> You sound like a politician.  "the right thing to do" is a cop-out.  That
+> says "believe me, I know I'm right, but I can't say why I'm right, I just
+> am."  Basically, it means that the person saying it has no clue on the
+> subject they're talking about.
 
-On 27-07-2011 20:03, Andrew Bird wrote:
+Why don't you look at the _patch_ and see if it's correct or not ?
+Rather than passing judgement on my character.
 
-> This patch adds the product ID of Huawei's Vodafone K3770 mobile broadband
-> modem to option.c. This is necessary so that the driver gets loaded on demand
-> without the intervention of usb_modeswitch. This has the benefit of it becoming
-> available faster and also ensures that the option driver is not bound to a
-> network interface that should be claimed by cdc_ether.
-
-    You seem to be adding 4 product IDs with the identical patch descriptions. 
-Why not do it in a single patch?
-
-> Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
-
-WBR, Sergei
+>
+> If you do have a clue, then don't say that infuriating phrase, but give an
+> actual reason.
+>
+Please look at the first few posts in this thread.
+I and Dan have gone through it cleanly enough.
