@@ -1,165 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab1G1RGY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 13:06:24 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64486 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755737Ab1G1RGV convert rfc822-to-8bit (ORCPT
+	id S1755958Ab1G1RHe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 13:07:34 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:46968 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755737Ab1G1RHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 13:06:21 -0400
+	Thu, 28 Jul 2011 13:07:30 -0400
+Message-ID: <4E319742.6040208@gmail.com>
+Date: Thu, 28 Jul 2011 10:07:14 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-In-Reply-To: <20110728094418.3bd4e9df.rdunlap@xenotime.net>
-References: <1310585610-434-1-git-send-email-geert@linux-m68k.org>
-	<20110724122624.324d10dc.rdunlap@xenotime.net>
-	<s5hy5zm3j5a.wl%tiwai@suse.de>
-	<20110725091003.c3453b8b.rdunlap@xenotime.net>
-	<20110727121320.f50b1e6b.rdunlap@xenotime.net>
-	<20110728111709.8303f78c9b5f2b3aa3f391b0@canb.auug.org.au>
-	<20110728092116.cc318545.rdunlap@xenotime.net>
-	<CACqU3MXUt_Kcvu_uHmnS9Wm_hV73HaCgKcggAK350LBsL-EYbg@mail.gmail.com>
-	<20110728094418.3bd4e9df.rdunlap@xenotime.net>
-Date: Thu, 28 Jul 2011 13:06:19 -0400
-Message-ID: <CACqU3MVkOqGr0WVrCiVEU5QtfC0mcOiruCc9_rm8VL44SRFmiA@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.0-rc7 (sound/isa/)
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Takashi Iwai <tiwai@suse.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: BUG: scheduling while atomic: swapper/0/0x10000002
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+the kernel also barfed this up as well..:
 
-On Thu, Jul 28, 2011 at 12:44 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On Thu, 28 Jul 2011 12:36:27 -0400 Arnaud Lacombe wrote:
->
->> Hi,
->>
->> On Thu, Jul 28, 2011 at 12:21 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->> > On Thu, 28 Jul 2011 11:17:09 +1000 Stephen Rothwell wrote:
->> >
->> >> Hi Randy,
->> >>
->> >> On Wed, 27 Jul 2011 12:13:20 -0700 Randy Dunlap <rdunlap@xenotime.net> wrote:
->> >> >
->> >> > On Mon, 25 Jul 2011 09:10:03 -0700 Randy Dunlap wrote:
->> >> >
->> >> > > On Mon, 25 Jul 2011 09:37:53 +0200 Takashi Iwai wrote:
->> >> > >
->> >> > > > At Sun, 24 Jul 2011 12:26:24 -0700,
->> >> > > > Randy Dunlap wrote:
->> >> > > > >
->> >> > > > > On Wed, 13 Jul 2011 21:33:30 +0200 Geert Uytterhoeven wrote:
->> >> > > > >
->> >> > > > > >   + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_disable':  => 544
->> >> > > > > >   + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 302
->> >> > > > > >   + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_program':  => 244
->> >> > > > > >   + src/sound/isa/es1688/es1688_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 509
->> >> > > > > >   + src/sound/isa/es1688/es1688_lib.c: error: implicit declaration of function 'snd_dma_program':  => 417
->> >> > > > > >   + src/sound/isa/gus/gus_dma.c: error: implicit declaration of function 'snd_dma_disable':  => 177
->> >> > > > > >   + src/sound/isa/gus/gus_dma.c: error: implicit declaration of function 'snd_dma_program':  => 79
->> >> > > > > >   + src/sound/isa/gus/gus_pcm.c: error: implicit declaration of function 'snd_dma_pointer':  => 619
->> >> > > > > >   + src/sound/isa/gus/gus_pcm.c: error: implicit declaration of function 'snd_dma_program':  => 591
->> >> > > > > >   + src/sound/isa/sb/sb16_main.c: error: implicit declaration of function 'snd_dma_pointer':  => 456
->> >> > > > > >   + src/sound/isa/sb/sb16_main.c: error: implicit declaration of function 'snd_dma_program':  => 276
->> >> > > > > >   + src/sound/isa/sb/sb8_main.c: error: implicit declaration of function 'snd_dma_pointer':  => 425
->> >> > > > > >   + src/sound/isa/sb/sb8_main.c: error: implicit declaration of function 'snd_dma_program':  => 172
->> >> > > > > >   + src/sound/isa/sscape.c: error: implicit declaration of function 'snd_dma_program':  => 481
->> >> > > > > >   + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_disable':  => 1695
->> >> > > > > >   + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 1160
->> >> > > > > >   + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_program':  => 1025
->> >> > > > >
->> >> > > > > All of these source files do #include <sound/core.h>,
->> >> > > > > but these missing/implicit functions are conditional:
->> >> > > > >
->> >> > > > > #ifdef CONFIG_ISA_DMA_API
->> >> > > > > #define DMA_MODE_NO_ENABLE    0x0100
->> >> > > > >
->> >> > > > > void snd_dma_program(unsigned long dma, unsigned long addr, unsigned int size, unsigned short mode);
->> >> > > > > void snd_dma_disable(unsigned long dma);
->> >> > > > > unsigned int snd_dma_pointer(unsigned long dma, unsigned int size);
->> >> > > > > #endif
->> >> > > > >
->> >> > > > > so should these drivers all depend on ISA_DMA_API ?
->> >> > > >
->> >> > > > Yes, these are ISA sound cards, so they must have CONFIG_ISA and
->> >> > > > CONFIG_ISA_DMA.  Although CONFIG_SND_SB8_DSP, CONFIG_SND_SB16_DSP
->> >> > > > and CONFIG_SND_WSS_LIB have no direct dependency, but the drivers
->> >> > > > selecting these are all in "if SND_ISA" in sound/isa/Kconfig.
->> >> > >
->> >> > > Hm, yes, they are.
->> >> > >
->> >> > > > > or should only pieces of each driver depend on ISA_DMA_API ?
->> >> > > >
->> >> > > > I wonder which configuration makes it possible.
->> >> > > > Did you see a similar problem with randconfig?
->> >> > >
->> >> > > No.  This parisc allmodconfig file from linux-next builds has
->> >> > > CONFIG_SND_ISA=y but it does not have CONFIG_ISA_DMA_API enabled.  Weird.
->> >> > >
->> >> > > Geert, do you know how this happens?
->> >> > >
->> >> > > parisc config:  http://kisskb.ellerman.id.au/kisskb/buildresult/4323458/config/
->> >> > > from this failed build:  http://kisskb.ellerman.id.au/kisskb/buildresult/4323458/
->> >> >
->> >> > How is CONFIG_ISA_DMA_API enabled in parisc allmodconfig?
->> >> > I don't see how that happens, and it's causing build errors...
->> >>
->> >> Sorry, but I don't understand the question.  The problam is that
->> >> CONFIG_ISA_DMA_API is not enabled, right?  On parisc, it is just (from
->> >> arch/parisc/Kconfig)
->> >>
->> >> config ISA_DMA_API
->> >>       bool
->> >>
->> >> and nothing selects it.  However, I would have expected an allmodconfig
->> >> to set it to y.  Clearly I don't understan how allmodconfig works any
->> >> more :-(
->> >>
->> >> Michal, is my understanding correct?  Is this a bug in allmodconfig?
->> >
->> > When I do:
->> > $ make ARCH=parisc O=PAR allmodconfig
->> >
->> > I don't get CONFIG_ISA_DMA_API enabled, so the question is simply
->> > how is the linux-next build system ending up with CONFIG_ISA_DMA_API enabled?
->> >
->> Where do you see that "linux-next build system ending up with
->> CONFIG_ISA_DMA_API enabled" ?
->>
->> From what I understood of the problem, the issue is that
->> CONFIG_ISA_DMA_API does _not_ ends up enabled.
->
-> Thanks for catching me.
->
-> The problem (second try) is that ISA SND drivers are being built (on parisc)
-> even though ISA_DMA_API is not enabled -- and should not be enabled,
-> so the ISA SND drivers should not be built.  I think I have it right this time.
->
-> From the parisc .config file listed above:
->
-> CONFIG_SND_ISA=y
-> CONFIG_SND_ADLIB=m
-> CONFIG_SND_AD1816A=m
-> CONFIG_SND_AD1848=m
-> CONFIG_SND_ALS100=m
-> CONFIG_SND_AZT1605=m
-> CONFIG_SND_AZT2316=m
-> CONFIG_SND_AZT2320=m
-> CONFIG_SND_CMI8330=m
->
->
-> etc.  But none of these should be enabled.  AFAIK.
-> So how does this happen?
->
-warning: (RADIO_MIROPCM20) selects SND_ISA which has unmet direct
-dependencies (SOUND && !M68K && SND && ISA && ISA_DMA_API)
+  [    0.001006] Calibrating delay loop (skipped), value calculated 
+using timer frequency.. 4280.75 BogoMIPS (lpj=2140379)
+[    0.002175] pid_max: default: 32768 minimum: 301
+[    0.002611] BUG: scheduling while atomic: swapper/0/0x10000002
+[    0.002785] no locks held by swapper/0.
+[    0.003006] Modules linked in:
+[    0.003268] Pid: 0, comm: swapper Not tainted 3.0.0-06046-g55f9c40 #1
+[    0.003441] Call Trace:
+[    0.003627]  [<ffffffff814c8cf4>] __schedule_bug+0x75/0x7a
+[    0.003805]  [<ffffffff814d270d>] schedule+0x95/0x7b5
+[    0.004011]  [<ffffffff8106b30d>] ? kzalloc.constprop.3+0x29/0x2b
+[    0.005009]  [<ffffffff8104b77f>] __cond_resched+0x28/0x34
+[    0.005184]  [<ffffffff814d3045>] _cond_resched+0x19/0x22
+[    0.005361]  [<ffffffff81113fce>] slab_pre_alloc_hook+0x37/0x3d
+[    0.005537]  [<ffffffff811163c4>] kmem_cache_alloc_trace+0x2c/0xc0
+[    0.005713]  [<ffffffff8106b30d>] kzalloc.constprop.3+0x29/0x2b
+[    0.005892]  [<ffffffff81b908c1>] pidmap_init+0x81/0xc0
+[    0.006011]  [<ffffffff81b77b2a>] start_kernel+0x368/0x3fa
+[    0.006187]  [<ffffffff81b772c4>] x86_64_start_reservations+0xaf/0xb3
+[    0.006364]  [<ffffffff81b77140>] ? early_idt_handlers+0x140/0x140
+[    0.006539]  [<ffffffff81b773ca>] x86_64_start_kernel+0x102/0x111
+[    0.006805] Security Framework initialized
+[    0.007023] SELinux:  Initializing.
+[    0.007263] SELinux:  Starting in enforcing mode
 
-Q.E.D. ...
+system still booted up, and everything seems o.k.
+full dmesg:
+http://fpaste.org/8j2G/
 
- - Arnaud
+Justin P. Mattock
