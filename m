@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab1G1JjB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 05:39:01 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:64537 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab1G1Jix (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 05:38:53 -0400
-Subject: [PATCH] drivers/misc: fsa9480: fix a leak of the IRQ during init
- failure
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Donggeun Kim <dg77.kim@samsung.com>, Minkyu Kang <mk7.kang@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Jul 2011 17:38:43 +0800
-Message-ID: <1311845923.9100.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755345Ab1G1JkJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 05:40:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56854 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753248Ab1G1JkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 05:40:02 -0400
+Date: Thu, 28 Jul 2011 09:39:57 GMT
+From: tip-bot for Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Message-ID: <tip-f3637a5f2e2eb391ff5757bc83fb5de8f9726464@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        bigeasy@linutronix.de, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bigeasy@linutronix.de
+In-Reply-To: <1310070737-18514-1-git-send-email-bigeasy@linutronix.de>
+References: <1310070737-18514-1-git-send-email-bigeasy@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/urgent] irq: Always set IRQF_ONESHOT if no primary handler is specified
+Git-Commit-ID: f3637a5f2e2eb391ff5757bc83fb5de8f9726464
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 28 Jul 2011 09:39:57 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure we are passing the same cookie in all calls to request_threaded_irq()
-and free_irq().
+Commit-ID:  f3637a5f2e2eb391ff5757bc83fb5de8f9726464
+Gitweb:     http://git.kernel.org/tip/f3637a5f2e2eb391ff5757bc83fb5de8f9726464
+Author:     Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+AuthorDate: Thu, 7 Jul 2011 22:32:17 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 28 Jul 2011 11:23:21 +0200
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+irq: Always set IRQF_ONESHOT if no primary handler is specified
+
+If no primary handler is specified then a default one is assigned
+which always returns IRQ_WAKE_THREAD. This handler requires the
+IRQF_ONESHOT flag on LEVEL / EIO typed irqs because the source of
+interrupt is not disabled. Since it is required for those users and
+there is no difference for others it makes sense to add this flag
+unconditionally.
+
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Link: http://lkml.kernel.org/r/1310070737-18514-1-git-send-email-bigeasy@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/misc/fsa9480.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/irq/manage.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/misc/fsa9480.c b/drivers/misc/fsa9480.c
-index 5325a7e..27dc0d2 100644
---- a/drivers/misc/fsa9480.c
-+++ b/drivers/misc/fsa9480.c
-@@ -455,7 +455,7 @@ static int __devinit fsa9480_probe(struct i2c_client *client,
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 0a7840ae..3f9cd47 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1322,6 +1322,7 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
+ 		if (!thread_fn)
+ 			return -EINVAL;
+ 		handler = irq_default_primary_handler;
++		irqflags |= IRQF_ONESHOT;
+ 	}
  
- fail2:
- 	if (client->irq)
--		free_irq(client->irq, NULL);
-+		free_irq(client->irq, usbsw);
- fail1:
- 	i2c_set_clientdata(client, NULL);
- 	kfree(usbsw);
-@@ -466,7 +466,7 @@ static int __devexit fsa9480_remove(struct i2c_client *client)
- {
- 	struct fsa9480_usbsw *usbsw = i2c_get_clientdata(client);
- 	if (client->irq)
--		free_irq(client->irq, NULL);
-+		free_irq(client->irq, usbsw);
- 	i2c_set_clientdata(client, NULL);
- 
- 	sysfs_remove_group(&client->dev.kobj, &fsa9480_group);
--- 
-1.7.4.1
-
-
-
+ 	action = kzalloc(sizeof(struct irqaction), GFP_KERNEL);
