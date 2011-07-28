@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab1G1Uj7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 16:39:59 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:49716 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab1G1Uj5 (ORCPT
+	id S1755627Ab1G1UtX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 16:49:23 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55551 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755329Ab1G1UtV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 16:39:57 -0400
-Subject: Re: [PATCH 10/13] iscsi-target: Add iSCSI Error Recovery Hierarchy
-	support
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Fubo Chen <fubo.chen@gmail.com>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>
-In-Reply-To: <CAJAFBLCgOeqnrPae+GQyjnoOUkF632Nrn4Bh-3d4K3KXCezbqw@mail.gmail.com>
-References: <1311410747-29947-1-git-send-email-nab@linux-iscsi.org>
-	 <1311410747-29947-11-git-send-email-nab@linux-iscsi.org>
-	 <CAJAFBLCgOeqnrPae+GQyjnoOUkF632Nrn4Bh-3d4K3KXCezbqw@mail.gmail.com>
-Content-Type: text/plain
-Date: Thu, 28 Jul 2011 13:30:36 -0700
-Message-Id: <1311885036.6931.218.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Jul 2011 16:49:21 -0400
+Date: Thu, 28 Jul 2011 16:49:18 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: David Brown <davidb@codeaurora.org>
+cc: Russell King <linux@arm.linux.org.uk>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] ARM: msm: Remove PLAT_PHYS_OFFSETS from MSM
+ targets
+In-Reply-To: <1311884291-5409-2-git-send-email-davidb@codeaurora.org>
+Message-ID: <alpine.LFD.2.00.1107281647060.12766@xanadu.home>
+References: <1311794355-26988-2-git-send-email-sboyd@codeaurora.org> <1311884291-5409-1-git-send-email-davidb@codeaurora.org> <1311884291-5409-2-git-send-email-davidb@codeaurora.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-28 at 13:42 +0200, Fubo Chen wrote:
-> On Sat, Jul 23, 2011 at 10:45 AM, Nicholas A. Bellinger
-> <nab@linux-iscsi.org> wrote:
-> > This patch adds support for RFC-3720 compatiable ErrorRecoveryLevel
-> > support as defined in Section 6.1.5.  Error Recovery Hierarchy.
-> >
-> > This includes support for iSCSI session reinstatement, iSCSI within
-> > command and within connection recovery, and explict/implict connection
-> > recovery (CSM-E and CSM-I) from state machines in Section 7 of RFC-3720.
-> >
-> > These functions are called from iscsi_target.c to handle processing
-> > based on the negotiated session-wide ErrorRecoveryLevel parameter.
-> >
-> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+On Thu, 28 Jul 2011, David Brown wrote:
+
+> Now that MSM can boot with the phys offset patching, eliminate the
+> definitions of the phys offsets, and instead select
+> ARM_PATCH_PHYS_VIRT.
 > 
-> This is interesting. Is ERL2 similar to md ? If so, when should I use
-> md and when ERL2 ?
+> Signed-off-by: David Brown <davidb@codeaurora.org>
 > 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index ced9371..3a4d87c 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -618,6 +618,7 @@ config ARCH_MSM
+>  	select GENERIC_CLOCKEVENTS
+>  	select ARCH_REQUIRE_GPIOLIB
+>  	select CLKDEV_LOOKUP
+> +	select ARM_PATCH_PHYS_VIRT
+>  	help
+>  	  Support for Qualcomm MSM/QSD based systems.  This runs on the
+>  	  apps processor of the MSM/QSD and depends on a shared memory
+> diff --git a/arch/arm/mach-msm/include/mach/memory.h b/arch/arm/mach-msm/include/mach/memory.h
+> index 58d5e7e..deed41a 100644
+> --- a/arch/arm/mach-msm/include/mach/memory.h
+> +++ b/arch/arm/mach-msm/include/mach/memory.h
+> @@ -17,19 +17,12 @@
+>  #define __ASM_ARCH_MEMORY_H
+>  
+>  /* physical offset of RAM */
+> -#if defined(CONFIG_ARCH_QSD8X50) && defined(CONFIG_MSM_SOC_REV_A)
+> -#define PLAT_PHYS_OFFSET		UL(0x00000000)
+> -#elif defined(CONFIG_ARCH_QSD8X50)
+> -#define PLAT_PHYS_OFFSET		UL(0x20000000)
+> -#elif defined(CONFIG_ARCH_MSM7X30)
+> -#define PLAT_PHYS_OFFSET		UL(0x00000000)
+> -#elif defined(CONFIG_ARCH_MSM8X60)
+> -#define PLAT_PHYS_OFFSET		UL(0x40000000)
+> -#elif defined(CONFIG_ARCH_MSM8960)
+> -#define PLAT_PHYS_OFFSET		UL(0x40000000)
+> -#else
+> -#define PLAT_PHYS_OFFSET		UL(0x10000000)
+> -#endif
+> +#define QSD8X50A_PHYS_OFFSET		UL(0x00000000)
+> +#define QSD8X50_PHYS_OFFSET		UL(0x20000000)
+> +#define MSM7X30_PHYS_OFFSET		UL(0x00000000)
+> +#define MSM8X60_PHYS_OFFSET		UL(0x10000000)
+> +#define MSM8960_PHYS_OFFSET		UL(0x40000000)
+> +#define MSM7X01_PHYS_OFFSET		UL(0x10000000)
 
-I think you mean dm-multipath and not md RAID here..
+Do you really need those defines?  If you do I'd suggest moving them 
+elsewhere so your mach/memory.h can become empty.
 
-dm-multipath with TCM's ALUA multipath code provides a fabric
-independent (iSCSI, FCoE, FC, SRP, etc) method of path failover across
-multiple target ports for LUNs with a matching IEEE Extended Registered
-WWN.
 
-ERL=2 is a fabric dependent method of performing iSCSI connection
-recovery on one or more failed TCP connections, where outstanding I/O
-can be implictly retried and/or explictly migrated (TASK_REASSIGN) to an
-active connection without having to restart the iSCSI I_T Nexus, or
-notify the client side multipath layer that a I_T nexus has been lost.
-
-Their use is not mutually exclusive, and can be used together to
-complement one another.
-
---nab
-
+Nicolas
