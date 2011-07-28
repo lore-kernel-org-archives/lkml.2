@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab1G1Pz1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 11:55:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47204 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754882Ab1G1PzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 11:55:22 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 34/40] UAPI: Plumb the UAPI Kbuilds into the user header
- handling system [ver #3]
-To: torvalds@osdl.org
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Date: Thu, 28 Jul 2011 16:54:43 +0100
-Message-ID: <20110728155443.16618.38215.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20110728154920.16618.89358.stgit@warthog.procyon.org.uk>
-References: <20110728154920.16618.89358.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1756047Ab1G1P46 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 11:56:58 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:56581 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755549Ab1G1PzL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 11:55:11 -0400
+Date: Thu, 28 Jul 2011 08:55:08 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] First round of SCSI updates for 2.6.39 merge window
+Message-Id: <20110728085508.e8e00efe.rdunlap@xenotime.net>
+In-Reply-To: <1311842979.30253.29.camel@mulgrave>
+References: <1311441452.23720.17.camel@mulgrave>
+	<20110723102719.a7f26008.rdunlap@xenotime.net>
+	<1311842979.30253.29.camel@mulgrave>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Plumb the UAPI Kbuilds into the user header handling system.  As the headers
-are split the entries will be transferred across.
+On Thu, 28 Jul 2011 12:49:39 +0400 James Bottomley wrote:
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+> On Sat, 2011-07-23 at 10:27 -0700, Randy Dunlap wrote:
+> > On Sat, 23 Jul 2011 21:17:32 +0400 James Bottomley wrote:
+> > 
+> > > This represents the usual round of driver updates (fcoe, bfa, mpt2sas,
+> > > iscsi, bnx2fc) plus a couple of fixes that didn't make 3.0 including the
+> > > USB force eject oops.
+> > > 
+> > > The patch is available here:
+> > > 
+> > > master.kernel.org:/pub/scm/linux/kernel/git/jejb/scsi-misc-2.6.git
+> > 
+> > Hi James,
+> > 
+> > (please fix $subject)
+> 
+> Hmm, reusability gone too far
+> 
+> > What has happened to these 2 patches from 2011-June-21 ?
+> > 
+> > Subject: [PATCH] scsi: fix NCR_Q720 section mismatch warning
+> > Subject: [PATCH] scsi: fix sim710 section mismatch warnings
+> 
+> Ralf is reworking them.  Basically there's no point mucking with
+> creating work via the endless sectional annotators in obsolete drivers,
+> so he was just going to strip the annotations where they cause problems.
+
+Thanks for the info.
+
 ---
-
- Makefile |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index 91598e4..2c0bf71 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1069,6 +1069,10 @@ headers_install: __headers
- 	$(error Headers not exportable for the $(SRCARCH) architecture))
- 	$(Q)$(MAKE) $(hdr-inst)=include
- 	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/asm $(hdr-dst)
-+	$(if $(wildcard $(srctree)/arch/$(hdr-arch)/include/uapi/asm/Kbuild),, \
-+	$(error Headers not exportable for the $(SRCARCH) architecture))
-+	$(Q)$(MAKE) $(hdr-inst)=include/uapi
-+	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/uapi/asm $(hdr-dst)
- 
- PHONY += headers_check_all
- headers_check_all: headers_install_all
-@@ -1078,6 +1082,8 @@ PHONY += headers_check
- headers_check: headers_install
- 	$(Q)$(MAKE) $(hdr-inst)=include HDRCHECK=1
- 	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/asm $(hdr-dst) HDRCHECK=1
-+	$(Q)$(MAKE) $(hdr-inst)=include/uapi HDRCHECK=1
-+	$(Q)$(MAKE) $(hdr-inst)=arch/$(hdr-arch)/include/uapi/asm $(hdr-dst) HDRCHECK=1
- 
- # ---------------------------------------------------------------------------
- # Modules
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
