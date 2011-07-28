@@ -1,47 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769Ab1G1OTj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 10:19:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53014 "EHLO mail.zytor.com"
+	id S1753510Ab1G1OW5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 10:22:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1816 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007Ab1G1OTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 10:19:36 -0400
-Message-ID: <4E316FC5.7090201@zytor.com>
-Date: Thu, 28 Jul 2011 07:18:45 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>
-Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
-References: <1311340547-7861-1-git-send-email-bp@amd64.org> <CA+55aFwL9Fwd9ouX3UMOayoBsZyZzTdDSySa6nZJxbpyLifbaQ@mail.gmail.com> <20110724172222.GB12621@aftab> <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com> <20110727171015.GD19477@aftab> <4E3047D4.2000608@zytor.com> <20110728134416.GA26379@aftab> <4E316C06.2020609@zytor.com> <20110728141348.GB26379@aftab>
-In-Reply-To: <20110728141348.GB26379@aftab>
-Content-Type: text/plain; charset=UTF-8
+	id S1751007Ab1G1OW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 10:22:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,282,1309762800"; 
+   d="scan'208";a="33117617"
+Subject: Re: [PATCH] [64/99] Revert "iwlagn: Support new 5000 microcode."
+From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, "gregkh@suse.de" <gregkh@suse.de>,
+        "herton.krzesinski@canonical.com" <herton.krzesinski@canonical.com>,
+        "gengor@gentoo.org" <gengor@gentoo.org>,
+        "Fry, Donald H" <donald.h.fry@intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>,
+        "tim.bird@am.sony.com" <tim.bird@am.sony.com>
+In-Reply-To: <20110728082425.GA2207@redhat.com>
+References: <20110727247.325703029@firstfloor.org>
+	 <20110727214903.75C262403FF@tassilo.jf.intel.com>
+	 <20110728082425.GA2207@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Jul 2011 06:45:33 -0700
+Message-ID: <1311860733.5579.152.camel@wwguy-huron>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/2011 07:13 AM, Borislav Petkov wrote:
+On Thu, 2011-07-28 at 01:24 -0700, Stanislaw Gruszka wrote:
+> On Wed, Jul 27, 2011 at 02:49:03PM -0700, Andi Kleen wrote:
+> > 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > This reverts commit 6f63415fc1b690cb50c2ad48ba6e9e6e88e271b4.
+> > 
+> > It turns out this is not what we want to have happen for the .32 and
+> > .33-longterm kernels as it does not work properly at all.
 > 
-> You want them to be _GENMASK{,_UL,_ULL}? Why? Because they're "calling"
-> macros with a single underscore? Actually, I've always wondered on what
-> our exact rules on underscores are. I can deduce the nesting level of
-> macros based on number of underscores but what else?
+> Hmm, it does not work on .32 and .33 because they do not contain
+> the commit (which 2.6.35 has):
 > 
+> commit dd7a2509b3a79b290730a9c6a784bf03fedabb9a
+> Author: Johannes Berg <johannes.berg@intel.com>
+> Date:   Wed Apr 28 23:33:10 2010 -0700
+> 
+>     iwlagn: implement loading a new firmware file type
+> 
+> > This was reported by Gentoo, Arch, and Canonical developers as causing
+> > problems for their users:
+> > 	https://bugs.archlinux.org/task/24302
+> This is a bug about 2.6.32.
+> 
+> > 	http://bugs.gentoo.org/show_bug.cgi?id=359445
+> This looks like problem when only 8.83.5 (v5) firmware is available
+> on the system, but kernel is old and support only v2 version. This
+> should be solved by providing both old 8.24.2 (v2) and new 8.83.5 (v5)
+> firmware blobs in one package.
+> 
+> > 	https://bugs.launchpad.net/ubuntu/+source/linux/+bug/796336
+> Also 2.6.32 case.
+> 
+> There could be reasons for this change, but I do not see them here.
+> 
+The -5 version of firmware has addition TLV information in the firmware
+file which provide the firmware capabilities to the driver. it is
+important feature starting from -5 version of firmware; and it require
+driver to parsing the new file type.
 
-Internal symbols used in userspace-visible headers must be from the
-namespace:
+just like Gruszka mention, please include 
+commit dd7a2509b3a79b290730a9c6a784bf03fedabb9a
 
-	^_[A-Z_].*
 
-	-hpa
+Thanks
+ 
+Wey
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
 
