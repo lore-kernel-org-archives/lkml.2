@@ -1,18 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab1G1Mqc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 08:46:32 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:39760 "EHLO mgw2.diku.dk"
+	id S1755582Ab1G1MrF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 08:47:05 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:39732 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755438Ab1G1MqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 08:46:17 -0400
+	id S1755232Ab1G1MqN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 08:46:13 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Jaroslav Kysela <perex@perex.cz>
-Cc: kernel-janitors@vger.kernel.org, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] sound/core/pcm_compat.c: adjust array index
-Date: Thu, 28 Jul 2011 14:46:05 +0200
-Message-Id: <1311857165-14780-6-git-send-email-julia@diku.dk>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        =?UTF-8?q?Micha=C5=82=20Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 3/6] drivers/net/niu.c: adjust array index
+Date: Thu, 28 Jul 2011 14:46:03 +0200
+Message-Id: <1311857165-14780-4-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1311857165-14780-1-git-send-email-julia@diku.dk>
 References: <1311857165-14780-1-git-send-email-julia@diku.dk>
@@ -45,19 +50,28 @@ Signed-off-by: Julia Lawall <julia@diku.dk>
 ---
 Not tested.
 
- sound/core/pcm_compat.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/niu.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff -u -p a/sound/core/pcm_compat.c b/sound/core/pcm_compat.c
---- a/sound/core/pcm_compat.c
-+++ b/sound/core/pcm_compat.c
-@@ -342,7 +342,7 @@ static int snd_pcm_ioctl_xfern_compat(st
- 			kfree(bufs);
- 			return -EFAULT;
- 		}
--		bufs[ch] = compat_ptr(ptr);
-+		bufs[i] = compat_ptr(ptr);
- 		bufptr++;
- 	}
- 	if (dir == SNDRV_PCM_STREAM_PLAYBACK)
+diff -u -p a/drivers/net/niu.c b/drivers/net/niu.c
+--- a/drivers/net/niu.c
++++ b/drivers/net/niu.c
+@@ -9201,7 +9201,7 @@ static int __devinit niu_ldg_init(struct
+ 
+ 	first_chan = 0;
+ 	for (i = 0; i < port; i++)
+-		first_chan += parent->rxchan_per_port[port];
++		first_chan += parent->rxchan_per_port[i];
+ 	num_chan = parent->rxchan_per_port[port];
+ 
+ 	for (i = first_chan; i < (first_chan + num_chan); i++) {
+@@ -9217,7 +9217,7 @@ static int __devinit niu_ldg_init(struct
+ 
+ 	first_chan = 0;
+ 	for (i = 0; i < port; i++)
+-		first_chan += parent->txchan_per_port[port];
++		first_chan += parent->txchan_per_port[i];
+ 	num_chan = parent->txchan_per_port[port];
+ 	for (i = first_chan; i < (first_chan + num_chan); i++) {
+ 		err = niu_ldg_assign_ldn(np, parent,
 
