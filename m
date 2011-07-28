@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab1G1GGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 02:06:30 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62216 "EHLO
+	id S1754707Ab1G1GOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 02:14:40 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47967 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752732Ab1G1GGX (ORCPT
+	with ESMTP id S1751434Ab1G1GOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 02:06:23 -0400
-From: Marek Vasut <marek.vasut@gmail.com>
-To: David Miller <davem@davemloft.net>
-Subject: Re: [PATCH 2/2] ASIX: Use only 11 bits of header for data size
-Date: Thu, 28 Jul 2011 08:06:18 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39-1-amd64; KDE/4.6.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, gregkh@suse.de
-References: <1311734687-23551-1-git-send-email-marek.vasut@gmail.com> <1311734687-23551-2-git-send-email-marek.vasut@gmail.com> <20110727.224029.619127041796367339.davem@davemloft.net>
-In-Reply-To: <20110727.224029.619127041796367339.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107280806.18813.marek.vasut@gmail.com>
+	Thu, 28 Jul 2011 02:14:32 -0400
+Subject: Re: [PATCH] UBI: new module ubiblk: block layer on top of UBI
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: David Wagner <david.wagner@free-electrons.com>
+Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org,
+        linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org,
+        tim.bird@am.sony.com
+Date: Thu, 28 Jul 2011 09:14:18 +0300
+In-Reply-To: <1311683250-7921-1-git-send-email-david.wagner@free-electrons.com>
+References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com>
+	 <1311683250-7921-1-git-send-email-david.wagner@free-electrons.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 8bit
+Message-ID: <1311833667.2169.1.camel@koala>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 28, 2011 07:40:29 AM David Miller wrote:
-> From: Marek Vasut <marek.vasut@gmail.com>
-> Date: Wed, 27 Jul 2011 04:44:47 +0200
+On Tue, 2011-07-26 at 14:27 +0200, David Wagner wrote:
+>  * The numbering of devices is much easier with ubiblk than with
+>    gluebi+mtdblock_ro. With gluebi+mtdblock_ro, you get one additional
+>    MTD device for each UBI volume, so the number of MTD devices grows
+>    quite a lot and is a bit difficult to understand. For example,
+>    mtdblock[0-4] might be your real MTD partitions, while mtdblock[5-9]
+>    might be your UBI volumes.
+>    It also means that if a new real MTD
+>    partition is added, the number of all the MTD devices exposing UBI
+>    volumes will be incremented by one, which is a bit
+>    confusing/annoying.
+>    As well, if you add an UBI volume, the mtdblock devices that are
+>    emulated on top of volumes that come after this new one will have
+>    their ID incremented.
 > 
-> > The AX88772B uses only 11 bits of the header for the actual size. The
-> > other bits
-> > 
-> > are used for something else. This causes dmesg full of messages:
-> > 	asix_rx_fixup() Bad Header Length
-> > 
-> > This patch trims the check to only 11 bits. I believe on older chips, the
-> > remaining 5 top bits are unused.
-> > 
-> > Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
-> 
-> Applied.
+>  * The performance appears to be slightly better with ubiblk than
+>    gluebi+mtdblock_ro, according to our benchmarks (see
+>    http://elinux.org/Flash_Filesystem_Benchmarks_2.6.39)
 
-Hi, did you test it ?
+Hi, I am having vacation till the middle of August and I do not have a
+possibility to look at UBI/UBIFS/MTD stuff now, sorry. When I come back,
+I'll go through my e-mails and respond. Apologies again.
 
-I left NOTEs outside the commit message:
+-- 
+Best Regards,
+Artem Bityutskiy (Битюцкий Артём)
 
-NOTE: If possible, can someone test/verify this patch with other ASIX chips ?
-NOTE2: If Ack-ed, Greg, can you get this into -stable?
-
-I hope I won't have a horde of angry people at my door soon ;-)
