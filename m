@@ -1,92 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab1G1Kpz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 06:45:55 -0400
-Received: from mga11.intel.com ([192.55.52.93]:12820 "EHLO mga11.intel.com"
+	id S1755311Ab1G1K6U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 06:58:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46851 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753248Ab1G1Kpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 06:45:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,281,1309762800"; 
-   d="scan'208";a="35463146"
-Subject: Re: [PATCH] kswapd: assign new_order and new_classzone_idx after
- wakeup in sleeping
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andrea@cpushare.com" <andrea@cpushare.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-In-Reply-To: <20110728101943.GI3010@suse.de>
-References: <1311840688-11388-1-git-send-email-alex.shi@intel.com>
-	 <20110728101943.GI3010@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Jul 2011 18:47:09 +0800
-Message-ID: <1311850029.27358.2408.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1754481Ab1G1K6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 06:58:19 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1311761831.24752.413.camel@twins>
+References: <1311761831.24752.413.camel@twins> <1311757190.24752.406.camel@twins> <1310717238-13857-1-git-send-email-haishan.bai@gmail.com> <1310717238-13857-2-git-send-email-haishan.bai@gmail.com> <1310725418.2586.309.camel@twins> <4E21A526.8010904@gmail.com> <1310860194.25044.17.camel@pasglop> <4b337921-d430-4b63-bc36-ad31753cf800@email.android.com> <1310912990.25044.203.camel@pasglop> <1310944453.25044.262.camel@pasglop> <1310961691.25044.274.camel@pasglop> <4E23D728.7090406@gmail.com> <1310972462.25044.292.camel@pasglop> <4E23E02C.8090401@gmail.com> <1310974591.25044.298.camel@pasglop> <4E24FA51.70602@gmail.com> <1311049762.25044.392.camel@pasglop> <CAMjpGUdxpaYBFfKjBEPFOJohnKoXfagLUHvhrst+NembeabxcA@mail.gmail.com> <1311753513.25044.663.camel@pasglop> <20368.1311761379@redhat.com> 
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: dhowells@redhat.com, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        Shan Hai <haishan.bai@gmail.com>, paulus@samba.org, tglx@linutronix.de,
+        walken@google.com, cmetcalf@tilera.com, tony.luck@intel.com,
+        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
+Subject: Re: [RFC/PATCH] mm/futex: Fix futex writes on archs with SW tracking of dirty & young
+Date: Thu, 28 Jul 2011 11:55:50 +0100
+Message-ID: <5178.1311850550@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-28 at 18:19 +0800, Mel Gorman wrote:
-> On Thu, Jul 28, 2011 at 04:11:28PM +0800, Alex Shi wrote:
-> > There 2 place to read pgdat in kswapd. One is return from a successful
-> > balance, another is waked up from sleeping. But the new_order and
-> > new_classzone_idx are not assigned after kswapd_try_to_sleep(), that
-> > will cause a bug in the following scenario.
-> > 
-> > After the last time successful balance, kswapd goes to sleep. So the
-> > new_order and new_classzone_idx were assigned to 0 and MAX-1 since there
-> > is no new wakeup during last time balancing. Now, a new wakeup came and
-> > finish balancing successful with order > 0. But since new_order is still
-> > 0, this time successful balancing were judged as a failed balance. so,
-> > if there is another new wakeup coming during balancing, kswapd cann't
-> > read this and still want to try to sleep. And if the new wakeup is a
-> > tighter request, kswapd may goes to sleep, not to do balancing. That is
-> > incorrect.
-> > 
-> > So, to avoid above problem, the new_order and new_classzone_idx need to
-> > be assigned for later successful comparison.
-> > 
+Peter Zijlstra <peterz@infradead.org> wrote:
+
+> Subject: mm: Fix fixup_user_fault() for MMU=n 
 > 
-> Other than a different changelog, this is identical to
-> https://lkml.org/lkml/2011/6/30/157 so
-
-Oops, I didn't aware this, otherwise it will save me several hours to
-explain what the problem in current code to Shaohua and others. :) 
-In fact, I still hold another patch of kswapd and some idea of how to
-kswapd working that want to talk with you.
-
+> In commit 2efaca927 ("mm/futex: fix futex writes on archs with SW
+> tracking of dirty & young") we forgot about MMU=n. This patch fixes
+> that.
 > 
-> Acked-by: Mel Gorman <mgorman@suse.de>
-> 
-> It won't be merged to -stable until it goes to mainline though so
-> minimally you need to post this to linux-mm.
-> 
-> For -stable, you should explain why it is a candidate. I didn't push
-> the patch at the time because user problems were already resolved
-> and I wanted the merged for 3.0 before revisiting it. What problem
-> did you observe without this patch? With the lack of reference to
-> the other thread or the previous patch, I'm assuming you found and
-> solved the problem independently and I'd like to add a test case.
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Actually, our LKP testing didn't find this problem on this point. Even
-with the patch, performance has no change on our machines. I just find
-this by my eyes. 
-
-BTW, I have tracked our benchmarks for their hot path in kernel. The
-most exercised benchmark on kswapd is no more than 5% of system load.
-that is fio mmap rand write or randrw. 
-
-Do you have some benchmark can use kswapd much? 
-
-BTW, our project http://kernel-perf.sourceforge.net/ 
-> 
-> Thanks.
-> 
-
-
+Acked-by: David Howells <dhowells@redhat.com>
