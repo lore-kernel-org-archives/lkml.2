@@ -1,92 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab1G1WHw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 18:07:52 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41252 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753774Ab1G1WHu (ORCPT
+	id S1755981Ab1G1WKR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 18:10:17 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64183 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753774Ab1G1WKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 18:07:50 -0400
-Date: Thu, 28 Jul 2011 15:07:36 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Andreas Dilger <aedilger@gmail.com>, Mingming Cao <cmm@us.ibm.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] Add inode checksum support to ext4
-Message-ID: <20110728220735.GA27253@noexit.corp.google.com>
-Mail-Followup-To: "Darrick J. Wong" <djwong@us.ibm.com>,
-	Andreas Dilger <aedilger@gmail.com>, Mingming Cao <cmm@us.ibm.com>,
-	Theodore Ts'o <tytso@mit.edu>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	linux-ext4 <linux-ext4@vger.kernel.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>
-References: <20110406224410.GB24354@tux1.beaverton.ibm.com>
- <1302290868.4461.7.camel@mingming-laptop>
- <20110727082730.GG20655@tux1.beaverton.ibm.com>
- <EF1F2330-D8C4-427A-ABB9-D1E607D91A3D@gmail.com>
- <20110728165615.GI20655@tux1.beaverton.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110728165615.GI20655@tux1.beaverton.ibm.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 28 Jul 2011 18:10:14 -0400
+From: Vijay Chavan <vijaychavan007@gmail.com>
+To: gregkh@suse.de
+Cc: shardy@redhat.com, mge@arcor.de, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vijay Chavan <VijayChavan007@gmail.com>
+Subject: [PATCH] USB: Serial: Added device ID for Qualcomm Modem in Sagemcom's HiLo3G
+Date: Fri, 29 Jul 2011 03:39:43 +0530
+Message-Id: <1311890983-5506-1-git-send-email-VijayChavan007@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 09:56:15AM -0700, Darrick J. Wong wrote:
-> > the block. There of course is no reason to put an extent tail inside the
-> > inode itself.
-> 
-> Does anybody have any objection to using crc32c (which we can hardware
-> accelerate on new Intel boxen) over crc16?  I think it'll be pretty easy to use
+A new device ID pair is added for Qualcomm Modem present in Sagemcom's HiLo3G module.
+---
+ drivers/usb/serial/qcserial.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-	We use ethernet crc32 in ocfs2.  btrfs uses crc32c.  Frankly, I
-could have used crc32c if I'd really thought about the hardware
-acceleration benefits.  I think it's a good idea for ext4.
-
-> some of the reserved space in the group descriptor to store checksums of the
-> block and inode bitmaps.  Adding tails to the extent tree blocks seems a bit
-> trickier than that, but not a big deal, though I guess I'll have to reshuffle
-> the extent tree to free up space at the end of the block.
-> 
-> I was also wondering what people think of adding checksums to directory files?
-> I think that it's possible to put a checksum in each directory block -- for
-> blocks containing a linear array of actual directory entries, we could zero out
-> the space past the end of the array and put a checksum at the very end of the
-> block.  For the dx_node/dx_root blocks, we could probably use the space
-> occupied by the last dx_entry to store the checksum.  Obviously, we'd have to
-> move whatever's at the end of the block elsewhere, but then, we have to do that
-> for the extent tree too.  Basically, the last 4 bytes become the checksum after
-> whatever's occupying the space is relocated. :)
-
-	ocfs2 adds trailer entries to every dirblock for the checksum.
-We also do our dirindex free list there.  Since ocfs2 dirblocks are ext3
-dirblocks, I bet you can rip off a lot of that code, including the
-feature compatibility stuff.  See ocfs2_fs.h.
-
-> It looks like there's sufficient unused space in ext4_xattr_header to add a
-> checksum.
-> 
-> Also -- should I create separate rocompat feature flags for each metadata
-> object that I add checksums to?  Or just have one flag that covers them all?
-
-	I really think you should checksum every metadata block.  A few
-things will take some effort to shoehorn it in, but it is worth it.
-
-Joel
-
+diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
+index 54a9dab..27f9ae4 100644
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -45,6 +45,7 @@ static const struct usb_device_id id_table[] = {
+ 	{USB_DEVICE(0x05c6, 0x9203)},	/* Generic Gobi Modem device */
+ 	{USB_DEVICE(0x05c6, 0x9222)},	/* Generic Gobi Modem device */
+ 	{USB_DEVICE(0x05c6, 0x9008)},	/* Generic Gobi QDL device */
++	{USB_DEVICE(0x05c6, 0x9009)},	/* Generic Gobi Modem device */
+ 	{USB_DEVICE(0x05c6, 0x9201)},	/* Generic Gobi QDL device */
+ 	{USB_DEVICE(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
+ 	{USB_DEVICE(0x05c6, 0x9231)},	/* Generic Gobi QDL device */
 -- 
+1.7.1
 
-Life's Little Instruction Book #173
-
-	"Be kinder than necessary."
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
