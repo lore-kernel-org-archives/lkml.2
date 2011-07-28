@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062Ab1G1Xv0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 19:51:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29723 "EHLO mga02.intel.com"
+	id S932092Ab1G1Xv2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 19:51:28 -0400
+Received: from mga11.intel.com ([192.55.52.93]:55935 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932065Ab1G1Xoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 19:44:30 -0400
+	id S1755994Ab1G1Xo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 19:44:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,285,1309762800"; 
-   d="scan'208";a="33352051"
+   d="scan'208";a="33559478"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110728444.299940435@firstfloor.org>
 In-Reply-To: <20110728444.299940435@firstfloor.org>
-To: len.brown@intel.com, ak@linux.intel.com, rjw@sisk.pl, hpa@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [25/50] x86, intel, power: Initialize MSR_IA32_ENERGY_PERF_BIAS
-Message-Id: <20110728234429.BB4CD2403FF@tassilo.jf.intel.com>
-Date: Thu, 28 Jul 2011 16:44:29 -0700 (PDT)
+To: venki@google.com, ak@linux.intel.com, len.brown@intel.com,
+        hpa@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+        tim.bird@am.sony.com
+Subject: [PATCH] [24/50] x86: Look for IA32_ENERGY_PERF_BIAS support
+Message-Id: <20110728234428.B6FD82403FF@tassilo.jf.intel.com>
+Date: Thu, 28 Jul 2011 16:44:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,78 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Len Brown <len.brown@intel.com>
+From: Venkatesh Pallipadi <venki@google.com>
 
-[ upstream commit abe48b108247e9b90b4c6739662a2e5c765ed114 ]
+[ upstream commit 23016bf0 ]
 
-Since 2.6.36 (23016bf0d25), Linux prints the existence of "epb" in /proc/cpuinfo,
-Since 2.6.38 (d5532ee7b40), the x86_energy_perf_policy(8) utility has
-been available in-tree to update MSR_IA32_ENERGY_PERF_BIAS.
+The new IA32_ENERGY_PERF_BIAS MSR allows system software to give
+hardware a hint whether OS policy favors more power saving,
+or more performance.  This allows the OS to have some influence
+on internal hardware power/performance tradeoffs where the OS
+has previously had no influence.
 
-However, the typical BIOS fails to initialize the MSR, presumably
-because this is handled by high-volume shrink-wrap operating systems...
+The support for this feature is indicated by CPUID.06H.ECX.bit3,
+as documented in the Intel Architectures Software Developer's Manual.
 
-Linux distros, on the other hand, do not yet invoke x86_energy_perf_policy(8).
-As a result, WSM-EP, SNB, and later hardware from Intel will run in its
-default hardware power-on state (performance), which assumes that users
-care for performance at all costs and not for energy efficiency.
-While that is fine for performance benchmarks, the hardware's intended default
-operating point is "normal" mode...
+This patch discovers support of this feature and displays it
+as "epb" in /proc/cpuinfo.
 
-Initialize the MSR to the "normal" by default during kernel boot.
-
-x86_energy_perf_policy(8) is available to change the default after boot,
-should the user have a different preference.
-
-Signed-off-by: Len Brown <len.brown@intel.com>
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1107140051020.18606@x980
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+LKML-Reference: <alpine.LFD.2.00.1006032310160.6669@localhost.localdomain>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@kernel.org>
 
+Index: linux-2.6.35.y/arch/x86/include/asm/cpufeature.h
+===================================================================
+--- linux-2.6.35.y.orig/arch/x86/include/asm/cpufeature.h
++++ linux-2.6.35.y/arch/x86/include/asm/cpufeature.h
+@@ -162,6 +162,7 @@
+ #define X86_FEATURE_IDA		(7*32+ 0) /* Intel Dynamic Acceleration */
+ #define X86_FEATURE_ARAT	(7*32+ 1) /* Always Running APIC Timer */
+ #define X86_FEATURE_CPB		(7*32+ 2) /* AMD Core Performance Boost */
++#define X86_FEATURE_EPB		(7*32+ 3) /* IA32_ENERGY_PERF_BIAS support */
+ 
+ /* Virtualization flags: Linux defined */
+ #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
 Index: linux-2.6.35.y/arch/x86/include/asm/msr-index.h
 ===================================================================
 --- linux-2.6.35.y.orig/arch/x86/include/asm/msr-index.h
 +++ linux-2.6.35.y/arch/x86/include/asm/msr-index.h
-@@ -231,6 +231,11 @@
- #define THERM_INT_LOW_ENABLE		(1 << 0)
- #define THERM_INT_HIGH_ENABLE		(1 << 1)
+@@ -243,6 +243,8 @@
+ 
+ #define MSR_IA32_TEMPERATURE_TARGET	0x000001a2
  
 +#define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
-+#define ENERGY_PERF_BIAS_PERFORMANCE	0
-+#define ENERGY_PERF_BIAS_NORMAL		6
-+#define ENERGY_PERF_BIAS_POWERSWAVE	15
 +
- #define MSR_IA32_THERM_STATUS		0x0000019c
- 
- #define THERM_STATUS_PROCHOT		(1 << 0)
-Index: linux-2.6.35.y/arch/x86/kernel/cpu/intel.c
+ /* MISC_ENABLE bits: architectural */
+ #define MSR_IA32_MISC_ENABLE_FAST_STRING	(1ULL << 0)
+ #define MSR_IA32_MISC_ENABLE_TCC		(1ULL << 1)
+Index: linux-2.6.35.y/arch/x86/kernel/cpu/addon_cpuid_features.c
 ===================================================================
---- linux-2.6.35.y.orig/arch/x86/kernel/cpu/intel.c
-+++ linux-2.6.35.y/arch/x86/kernel/cpu/intel.c
-@@ -450,6 +450,24 @@ static void __cpuinit init_intel(struct 
- 
- 	if (cpu_has(c, X86_FEATURE_VMX))
- 		detect_vmx_virtcap(c);
-+
-+	/*
-+	 * Initialize MSR_IA32_ENERGY_PERF_BIAS if BIOS did not.
-+	 * x86_energy_perf_policy(8) is available to change it at run-time
-+	 */
-+	if (cpu_has(c, X86_FEATURE_EPB)) {
-+		u64 epb;
-+
-+		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
-+		if ((epb & 0xF) == 0) {
-+			printk_once(KERN_WARNING, "x86: updated energy_perf_bias"
-+				" to 'normal' from 'performance'\n"
-+				"You can view and update epb via utility,"
-+				" such as x86_energy_perf_policy(8)\n");
-+			epb = (epb & ~0xF) | ENERGY_PERF_BIAS_NORMAL;
-+			wrmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
-+		}
-+	}
- }
- 
- #ifdef CONFIG_X86_32
+--- linux-2.6.35.y.orig/arch/x86/kernel/cpu/addon_cpuid_features.c
++++ linux-2.6.35.y/arch/x86/kernel/cpu/addon_cpuid_features.c
+@@ -33,6 +33,7 @@ void __cpuinit init_scattered_cpuid_feat
+ 		{ X86_FEATURE_IDA,   		CR_EAX, 1, 0x00000006 },
+ 		{ X86_FEATURE_ARAT,  		CR_EAX, 2, 0x00000006 },
+ 		{ X86_FEATURE_APERFMPERF,	CR_ECX, 0, 0x00000006 },
++		{ X86_FEATURE_EPB,		CR_ECX, 3, 0x00000006 },
+ 		{ X86_FEATURE_CPB,   		CR_EDX, 9, 0x80000007 },
+ 		{ X86_FEATURE_NPT,   		CR_EDX, 0, 0x8000000a },
+ 		{ X86_FEATURE_LBRV,  		CR_EDX, 1, 0x8000000a },
