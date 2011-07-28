@@ -1,129 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab1G1Hnv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 03:43:51 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52960 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752732Ab1G1Hnq convert rfc822-to-8bit (ORCPT
+	id S1755140Ab1G1Hor (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 03:44:47 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56029 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754905Ab1G1Hon convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 03:43:46 -0400
+	Thu, 28 Jul 2011 03:44:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <1307926019-28958-1-git-send-email-ccross@android.com>
-References: <1307926019-28958-1-git-send-email-ccross@android.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Thu, 28 Jul 2011 15:43:25 +0800
-Message-ID: <CAGsJ_4xX=XhuyRZyMra+e1nuLXGYABcug49T8tYMwqkJ7urf7g@mail.gmail.com>
-Subject: Re: [PATCH] ARM: mm: cache-l2x0: Add support for re-enabling l2x0
-To: Colin Cross <ccross@android.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rongjun Ying <rongjun.ying@csr.com>, "yuping.luo" <yuping.luo@csr.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CACxGe6s8uDd_3+QyE7G5CetL0XySMZhCgg_NEn2PBRxDsGWcnA@mail.gmail.com>
+References: <CACxGe6s8uDd_3+QyE7G5CetL0XySMZhCgg_NEn2PBRxDsGWcnA@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 28 Jul 2011 01:44:21 -0600
+X-Google-Sender-Auth: ichYN3z3wVh7m0gudnPeYvKUyI8
+Message-ID: <CACxGe6vUTaRO8KwHqc=1c3gPDnM+X6boRQ85w1R7vxj=e2Z73A@mail.gmail.com>
+Subject: Re: [GIT PULL] Basic arm device tree support patches for v3.1
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/13 Colin Cross <ccross@android.com>:
-> Remove __init annotation from l2x0_init so it can be used to
-> reinitialize the l2x0 after it has been reset during suspend.
+Hi Arnd,
 
-__init before l2x0_init can be deleted and make it available after resume.
+Here's the updated pull request including dt board support for tegra
+and versatile.  It also includes the as-of-yet-unacked-by-tglx
+irq_domain patches, but it's pretty important to get these into
+mainline this cycle, and I've not gotten any response from him,
+positive or negative, and there needs to be some linux-next exposure
+before getting Linus to pull.
 
-We just tried the following flow for l2 cache on CSR SiRFprimaII, it
-seems to be working:
+g.
 
-suspend: sync and invalidate l2 cache, then disable L2
+The following changes since commit 95b6886526bb510b8370b625a49bc0ab3b8ff10f:
 
-        v7_flush_kern_cache_all
+  Merge branch 'for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6
+(2011-07-27 19:26:38 -0700)
 
-#ifdef CONFIG_CACHE_L2X0
-        ldr     r0, =SIRFSOC_L2CC_VA_BASE
-        ldr     r1, =L2X0_CLEAN_INV_WAY
-        mov     r2, #0xff
-        str     r2, [r0,r1]
-        mov     r2, #0
-1:
-        ldr     r3, [r0,r1]
-        cmp     r2,r3
-        bne     1b
-        ldr     r1, =L2X0_CACHE_SYNC
-        mov     r2, #0
-        str     r2, [r0,r1]
+are available in the git repository at:
 
-        ldr     r1, =L2X0_CTRL
-        mov     r2, #0
-        str     r2, [r0,r1]
-#endif
+  git://git.secretlab.ca/git/linux-2.6 devicetree/next-arm
 
-resume:  re-initilized l2x:
+Grant Likely (6):
+      arm/dt: Add dt machine definition
+      arm/dt: Add skeleton dtsi file
+      irq: add irq_domain translation infrastructure
+      dt/irq: add irq_domain_generate_simple() helper
+      arm/versatile: Add device tree support
+      arm/dt: tegra devicetree support
 
- l2x0_init((void __iomem *)SIRFSOC_L2CC_VA_BASE, 0x00040000, 0x00000000);
+Rob Herring (1):
+      arm/dt: Add dtb make rule
 
+ Documentation/devicetree/bindings/arm/arm-boards   |   20 ++
+ .../devicetree/bindings/i2c/arm-versatile.txt      |   10 +
+ .../devicetree/bindings/mtd/arm-versatile.txt      |    8 +
+ .../devicetree/bindings/net/smsc-lan91c111.txt     |   10 +
+ arch/arm/Kconfig                                   |    1 +
+ arch/arm/Makefile                                  |    7 +
+ arch/arm/boot/Makefile                             |    6 +
+ arch/arm/boot/dts/skeleton.dtsi                    |   13 ++
+ arch/arm/boot/dts/tegra-harmony.dts                |   70 +++++++
+ arch/arm/boot/dts/tegra-seaboard.dts               |   28 +++
+ arch/arm/boot/dts/tegra20.dtsi                     |  139 ++++++++++++++
+ arch/arm/boot/dts/versatile-ab.dts                 |  192 ++++++++++++++++++++
+ arch/arm/boot/dts/versatile-pb.dts                 |   48 +++++
+ arch/arm/include/asm/mach/arch.h                   |    7 +
+ arch/arm/include/asm/prom.h                        |    5 -
+ arch/arm/kernel/devtree.c                          |   14 --
+ arch/arm/mach-tegra/Kconfig                        |    6 +
+ arch/arm/mach-tegra/Makefile                       |    3 +
+ arch/arm/mach-tegra/Makefile.boot                  |    3 +
+ arch/arm/mach-tegra/board-dt.c                     |  119 ++++++++++++
+ arch/arm/mach-versatile/Kconfig                    |    8 +
+ arch/arm/mach-versatile/Makefile                   |    1 +
+ arch/arm/mach-versatile/core.c                     |   62 +++++++
+ arch/arm/mach-versatile/core.h                     |    4 +
+ arch/arm/mach-versatile/versatile_dt.c             |   51 +++++
+ include/linux/irq.h                                |    6 +
+ include/linux/irqdomain.h                          |   91 +++++++++
+ include/linux/of_irq.h                             |    4 +
+ kernel/irq/Kconfig                                 |    4 +
+ kernel/irq/Makefile                                |    1 +
+ kernel/irq/irqdomain.c                             |  180 ++++++++++++++++++
+ 31 files changed, 1102 insertions(+), 19 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/arm-boards
+ create mode 100644 Documentation/devicetree/bindings/i2c/arm-versatile.txt
+ create mode 100644 Documentation/devicetree/bindings/mtd/arm-versatile.txt
+ create mode 100644 Documentation/devicetree/bindings/net/smsc-lan91c111.txt
+ create mode 100644 arch/arm/boot/dts/skeleton.dtsi
+ create mode 100644 arch/arm/boot/dts/tegra-harmony.dts
+ create mode 100644 arch/arm/boot/dts/tegra-seaboard.dts
+ create mode 100644 arch/arm/boot/dts/tegra20.dtsi
+ create mode 100644 arch/arm/boot/dts/versatile-ab.dts
+ create mode 100644 arch/arm/boot/dts/versatile-pb.dts
+ create mode 100644 arch/arm/mach-tegra/board-dt.c
+ create mode 100644 arch/arm/mach-versatile/versatile_dt.c
+ create mode 100644 include/linux/irqdomain.h
+ create mode 100644 kernel/irq/irqdomain.c
+
+
+On Mon, Jul 25, 2011 at 9:56 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> Hi Arnd,
 >
-> Only print the init messages the first time l2x0_init is called.
+> Here are some of the basic DT patches that are needed for arm in v3.1.
+>  This isn't board support yet (need an ack on irq_domain first), but
+> it is some of the prerequisites.
 >
-> Add l2x0_enable to re-enable the l2x0 after l2x0_disable if
-> the l2x0 was not reset.
+> g.
 >
-> l2x0_disable cannot use writel, as writel calls wmb(), and wmb()
-> may call outer_cache_sync, which takes the same spinlock as
-> l2x0_disable.
+> The following changes since commit b6844e8f64920cdee620157252169ba63afb0c89:
 >
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
-> Â arch/arm/include/asm/hardware/cache-l2x0.h | Â  Â 3 ++-
-> Â arch/arm/mm/cache-l2x0.c Â  Â  Â  Â  Â  Â  Â  Â  Â  | Â  18 ++++++++++++++----
-> Â 2 files changed, 16 insertions(+), 5 deletions(-)
+>  Merge branch 'for-linus' of
+> master.kernel.org:/home/rmk/linux-2.6-arm (2011-07-24 10:20:54 -0700)
 >
-> diff --git a/arch/arm/include/asm/hardware/cache-l2x0.h b/arch/arm/include/asm/hardware/cache-l2x0.h
-> index 16bd480..8fd87fe 100644
-> --- a/arch/arm/include/asm/hardware/cache-l2x0.h
-> +++ b/arch/arm/include/asm/hardware/cache-l2x0.h
-> @@ -73,7 +73,8 @@
-> Â #define L2X0_AUX_CTRL_EARLY_BRESP_SHIFT Â  Â  Â  Â  Â  Â  Â  Â 30
+> are available in the git repository at:
 >
-> Â #ifndef __ASSEMBLY__
-> -extern void __init l2x0_init(void __iomem *base, __u32 aux_val, __u32 aux_mask);
-> +extern void l2x0_init(void __iomem *base, __u32 aux_val, __u32 aux_mask);
-> +extern void l2x0_enable(void);
-> Â #endif
+>  git://git.secretlab.ca/git/linux-2.6 devicetree/next-arm
 >
-> Â #endif
-> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-> index ef59099..4db0d9c 100644
-> --- a/arch/arm/mm/cache-l2x0.c
-> +++ b/arch/arm/mm/cache-l2x0.c
-> @@ -261,16 +261,26 @@ static void l2x0_flush_range(unsigned long start, unsigned long end)
-> Â  Â  Â  Â spin_unlock_irqrestore(&l2x0_lock, flags);
-> Â }
+> Grant Likely (2):
+>      arm/dt: Add dt machine definition
+>      arm/dt: Add skeleton dtsi file
 >
-> +/* enables l2x0 after l2x0_disable, does not invalidate */
-> +void l2x0_enable(void)
-> +{
-> + Â  Â  Â  unsigned long flags;
-> +
-> + Â  Â  Â  spin_lock_irqsave(&l2x0_lock, flags);
-> + Â  Â  Â  writel_relaxed(1, l2x0_base + L2X0_CTRL);
-> + Â  Â  Â  spin_unlock_irqrestore(&l2x0_lock, flags);
-> +}
-> +
-> Â static void l2x0_disable(void)
-> Â {
-> Â  Â  Â  Â unsigned long flags;
+> Rob Herring (1):
+>      arm/dt: Add dtb make rule
 >
-> Â  Â  Â  Â spin_lock_irqsave(&l2x0_lock, flags);
-> - Â  Â  Â  writel(0, l2x0_base + L2X0_CTRL);
-> + Â  Â  Â  writel_relaxed(0, l2x0_base + L2X0_CTRL);
-> Â  Â  Â  Â spin_unlock_irqrestore(&l2x0_lock, flags);
-> Â }
+>  arch/arm/Makefile                |    7 +++++++
+>  arch/arm/boot/Makefile           |    6 ++++++
+>  arch/arm/boot/dts/skeleton.dtsi  |   13 +++++++++++++
+>  arch/arm/include/asm/mach/arch.h |    7 +++++++
+>  4 files changed, 33 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/boot/dts/skeleton.dtsi
+>
+>
+> --
+> Grant Likely, B.Sc., P.Eng.
+> Secret Lab Technologies Ltd.
 >
 
-can you show your context calling l2x0_disable and l2x0_enable?
 
--barry
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
