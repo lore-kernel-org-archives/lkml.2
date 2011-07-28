@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab1G1Jam (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 05:30:42 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57116 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630Ab1G1Jag (ORCPT
+	id S1754990Ab1G1JbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 05:31:18 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52351 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835Ab1G1JbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 05:30:36 -0400
-Subject: Re: [PATCH 1/6] regulator: Fix WM831x regulator ID lookups for
- multiple WM831xs
-From: Liam Girdwood <lrg@kernel.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-In-Reply-To: <1311628834-31939-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1311628834-31939-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Jul 2011 10:30:30 +0100
-Message-ID: <1311845430.3283.9.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Jul 2011 05:31:11 -0400
+Date: Thu, 28 Jul 2011 11:31:03 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+cc: devicetree-discuss@lists.ozlabs.org, Russell King <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sebastian Sewior <bigeasy@linutronix.de>
+Subject: Re: [PATCH v3 0/2] Simple irq_domain implementation
+In-Reply-To: <20110726093141.12508.48108.stgit@ponder>
+Message-ID: <alpine.LFD.2.02.1107281127040.2660@ionos>
+References: <20110726093141.12508.48108.stgit@ponder>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-25 at 22:20 +0100, Mark Brown wrote:
-> With multiple wm831x devices the device IDs used for the regulators will
-> not always be contiguous so simply taking the modulus is not sufficient
-> to look up the ID, we need to reverse the way the ID is generated.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/regulator/wm831x-dcdc.c |   16 ++++++++++++++--
->  drivers/regulator/wm831x-ldo.c  |   25 ++++++++++++++++++++++---
->  2 files changed, 36 insertions(+), 5 deletions(-)
-> 
+On Tue, 26 Jul 2011, Grant Likely wrote:
 
-All Applied
+> In the interest of getting this infrastructure merged, I've reworked the
+> basic irq_domain patch to implement only what is required for ARM device
+> tree board support.  That means it doesn't affect any architectures other
+> than ARM, and I'll send follow-on patches targeted at v3.2 to migrate
+> MIPS, Microblaze, x86 embedded and PowerPC over to it.
 
-Thanks
+There is also this GPIO driver pending for quite some time ...
+ 
+> Thomas, can you please take a look?  I've got devicetree board support
+> queued up and ready to be merged but for this infrastructure.
 
-Liam
+Looks reasonable, please merge them through your tree.
 
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+
+Thanks,
+
+	tglx
