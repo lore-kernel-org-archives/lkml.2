@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232Ab1G1XxO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 19:53:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27791 "EHLO mga09.intel.com"
+	id S1756153Ab1G1XoW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 19:44:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:12959 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756090Ab1G1XoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 19:44:23 -0400
+	id S1756090Ab1G1XoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 19:44:16 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,285,1309762800"; 
-   d="scan'208";a="31552484"
+   d="scan'208";a="33351976"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110728444.299940435@firstfloor.org>
 In-Reply-To: <20110728444.299940435@firstfloor.org>
-To: kronos.it@gmail.com, khali@linux-fr.org, ak@linux.intel.com,
+To: wd@denx.de, gregkh@suse.de, ak@linux.intel.com,
         linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [19/50] hwmon: (asus_atk0110) Fix memory leak
-Message-Id: <20110728234423.A17542403FF@tassilo.jf.intel.com>
-Date: Thu, 28 Jul 2011 16:44:23 -0700 (PDT)
+Subject: [PATCH] [12/50] USB: serial: add IDs for WinChipHead USB->RS232 adapter
+Message-Id: <20110728234416.827BF2403FF@tassilo.jf.intel.com>
+Date: Thu, 28 Jul 2011 16:44:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,27 +24,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Luca Tettamanti <kronos.it@gmail.com>
+From: Wolfgang Denk <wd@denx.de>
 
-[ upstream commit 0b8e77f12cb6bfe2e5a67f2cdc8c7af23abc4ccf ]
+[ upstream commit 026dfaf18973404a01f488d6aa556a8c466e06a4 ]
 
-The object returned by atk_gitm is dynamically allocated and must be
-freed.
+Add ID 4348:5523 for WinChipHead USB->RS 232 adapter with
+Prolifec PL2303 chipset
 
-Signed-off-by: Luca Tettamanti <kronos.it@gmail.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: stable@kernel.org
+Signed-off-by: Wolfgang Denk <wd@denx.de>
+Cc: stable <stable@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Index: linux-2.6.35.y/drivers/hwmon/asus_atk0110.c
+Index: linux-2.6.35.y/drivers/usb/serial/pl2303.c
 ===================================================================
---- linux-2.6.35.y.orig/drivers/hwmon/asus_atk0110.c
-+++ linux-2.6.35.y/drivers/hwmon/asus_atk0110.c
-@@ -655,6 +655,7 @@ static int atk_debugfs_gitm_get(void *p,
- 	else
- 		err = -EIO;
+--- linux-2.6.35.y.orig/drivers/usb/serial/pl2303.c
++++ linux-2.6.35.y/drivers/usb/serial/pl2303.c
+@@ -91,6 +91,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
+ 	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
+ 	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
++	{ USB_DEVICE(WINCHIPHEAD_VENDOR_ID, WINCHIPHEAD_USBSER_PRODUCT_ID) },
+ 	{ }					/* Terminating entry */
+ };
  
-+	ACPI_FREE(ret);
- 	return err;
- }
- 
+Index: linux-2.6.35.y/drivers/usb/serial/pl2303.h
+===================================================================
+--- linux-2.6.35.y.orig/drivers/usb/serial/pl2303.h
++++ linux-2.6.35.y/drivers/usb/serial/pl2303.h
+@@ -144,3 +144,7 @@
+ /* ADLINK ND-6530 RS232,RS485 and RS422 adapter */
+ #define ADLINK_VENDOR_ID		0x0b63
+ #define ADLINK_ND6530_PRODUCT_ID	0x6530
++
++/* WinChipHead USB->RS 232 adapter */
++#define WINCHIPHEAD_VENDOR_ID		0x4348
++#define WINCHIPHEAD_USBSER_PRODUCT_ID	0x5523
