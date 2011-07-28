@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab1G1U31 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 16:29:27 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:33097 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755829Ab1G1U3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 16:29:25 -0400
-Date: Thu, 28 Jul 2011 13:29:23 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [ANNOUNCE] 3.0-rt4
-Message-ID: <20110728202923.GA14512@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LFD.2.02.1107272222420.2660@ionos>
- <20110728174123.GA10751@linux.vnet.ibm.com>
- <alpine.LFD.2.02.1107281942580.2660@ionos>
- <20110728183207.GR2403@linux.vnet.ibm.com>
- <alpine.LFD.2.02.1107282104360.2660@ionos>
- <20110728193422.GT2403@linux.vnet.ibm.com>
+	id S1755921Ab1G1Ufo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 16:35:44 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:13707 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755690Ab1G1Ufl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 16:35:41 -0400
+Date: Thu, 28 Jul 2011 22:35:40 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: netdev@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ion Badulescu <ionut@badula.org>, becker@scyld.com
+Subject: Dead code in Starfire driver (set_vlan_mode())
+Message-ID: <alpine.LNX.2.00.1107282229460.20477@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110728193422.GT2403@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 12:34:22PM -0700, Paul E. McKenney wrote:
-> On Thu, Jul 28, 2011 at 09:05:14PM +0200, Thomas Gleixner wrote:
-> > On Thu, 28 Jul 2011, Paul E. McKenney wrote:
-> > 
-> > > On Thu, Jul 28, 2011 at 07:43:43PM +0200, Thomas Gleixner wrote:
-> > > > 
-> > > > On Thu, 28 Jul 2011, Paul E. McKenney wrote:
-> > > > 
-> > > > > On Wed, Jul 27, 2011 at 11:37:09PM +0200, Thomas Gleixner wrote:
-> > > > > > Dear RT Folks,
-> > > > > > 
-> > > > > > I'm pleased to announce the 3.0-rt4 release.
-> > > > > 
-> > > > > 3.0-rt5 boots single-CPU under KVM on a 32-bit laptop.  Also with "-smp
-> > > > > 2".  It even survived a minute or so of rcutorture in both cases.  ;-)
-> > > > > 
-> > > > > Some weirdness with interactivity -- if the system is idle aside from
-> > > > > rcutorture, the rcutorture.stat_interval console messages don't come
-> > > > > out unless I hit "enter" on the console.  But if I run "top", they do
-> > > > > come out regularly.  Might well be KVM's fault, except that running
-> > > > > rcutorture on non-rt kernels doesn't exhibit this behavior.
-> > > > 
-> > > > Nah, that's my lazy "avoid printing from atomic context" hack :)
-> > > 
-> > > Well, then, that does seem to be working...  ;-)
-> > > 
-> > > Except that these printk()s are from process level -- rcu_torture_stats()
-> > > in kernel/rcutorture.c.
-> > > 
-> > > > > I guess I should try RCU_BOOST=y, then...
-> > > > 
-> > > > Good luck :)
-> > > 
-> > > Compiled without error and has been running rcutorture smp=2 for
-> > > about 30 minutes now.
-> > 
-> > Hmm, perhaps it was some weird interaction with NOHZ which is a
-> > separate issue.
-> 
-> OK, I guess I have no alternative but to try enabling NOHZ...
+In drivers/net/starfire.c::set_vlan_mode() there is this code:
 
-And the combination of RCU_BOOST and NO_HZ runs fine as well.  30 minutes
-of rcutorture and no complaints.
+...
+	if (vlan_count == 32) {
+		ret |= PerfectFilterVlan;
+		while (vlan_count < 32) {
+...
 
-I only enabled CONFIG_PREEMPT_RT_FULL.  Are there other related config
-variables I should be setting?
+We've just tested 'vlan_count' as being equal to '32', so it's a bit silly 
+to follow that up with a loop that's conditioned on the variable being 
+less than that - it will never execute.
 
-							Thanx, Paul
+Now I don't know this code at all, so I have no idea what the proper fix 
+is (just remove the loop? change the loop condition? something else?), but 
+I do know that the current code makes little sense ;-)
+
+Just for your information.
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
