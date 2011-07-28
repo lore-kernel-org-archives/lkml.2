@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab1G1UVX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 16:21:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9863 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755829Ab1G1UVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 16:21:20 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: "Namhyung Kim" <namhyung@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [PATCH] blktrace: add FLUSH/FUA support
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 28 Jul 2011 16:21:14 -0400
-Message-ID: <x494o26ma11.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755988Ab1G1U2h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 16:28:37 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:54243 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755829Ab1G1U2e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 16:28:34 -0400
+Subject: Re: [PATCH 12/13] iscsi-target: Add misc utility logic
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Fubo Chen <fubo.chen@gmail.com>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>
+In-Reply-To: <CAJAFBLCJVLA7RwmVBUPobzqV+j5T5GoV=uRoRqUDuQkJn41Qpw@mail.gmail.com>
+References: <1311410747-29947-1-git-send-email-nab@linux-iscsi.org>
+	 <1311410747-29947-13-git-send-email-nab@linux-iscsi.org>
+	 <CAJAFBLCJVLA7RwmVBUPobzqV+j5T5GoV=uRoRqUDuQkJn41Qpw@mail.gmail.com>
+Content-Type: text/plain
+Date: Thu, 28 Jul 2011 13:19:13 -0700
+Message-Id: <1311884353.6931.206.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Sorry, I don't have the original posting of this message, so I've just
-cut-n-paste from the archives on lkml.org:
-  https://lkml.org/lkml/2011/6/1/235
-
-The proposal was this:
-
-> Add FLUSH/FUA support to blktrace. As FLUSH precedes WRITE and/or
-> FUA follows WRITE, use the same 'F' flag for both cases and
-> distinguish them by their (relative) position. The end results
-> look like (other flags might be shown also):
+On Thu, 2011-07-28 at 13:30 +0200, Fubo Chen wrote:
+> On Sat, Jul 23, 2011 at 10:45 AM, Nicholas A. Bellinger
+> <nab@linux-iscsi.org> wrote:
+> > +static int iscsit_do_rx_data(
+> > +       struct iscsi_conn *conn,
+> > +       struct iscsi_data_count *count)
+> > +{
+> > +       int data = count->data_length, rx_loop = 0, total_rx = 0, iov_len;
+> > +       u32 rx_marker_val[count->ss_marker_count], rx_marker_iov = 0;
+> > +       struct kvec iov[count->ss_iov_count], *iov_p;
 > 
->  - WRITE:            W
->  - WRITE_FLUSH:      FW
->  - WRITE_FUA:        WF
->  - WRITE_FLUSH_FUA:  FWF
+> How big can count->ss_iov_count be ? Can this make a stack overflow ?
+> 
 
-I'm not sure I'll ever be able to keep that straight.  How about we use
-'F' for FUA, since FUA is capitalized anyway, and use 'f' for flush?
-Too subtle?
+This is set to zero when OFMarker and IFMarker are explictly disabled
+(the default), which is the case for the vast majority of initiators.
 
-Next...
+When this is enabled, the smallest this value for OFMarkInt and
+IFMarkInt can be is 512 bytes, which on 64-bit with a 131072
+MaxRecvDataSegmentLength would mean 3k of stack usage for iov[] above..
 
-> @@ -14,7 +14,7 @@
->  enum blktrace_cat {
->  	BLK_TC_READ	= 1 << 0,	/* reads */
->  	BLK_TC_WRITE	= 1 << 1,	/* writes */
-> -	BLK_TC_BARRIER	= 1 << 2,	/* barrier */
-> +	BLK_TC_FUA	= 1 << 2,	/* fua requests */
+In the end it might may more sense to just remove the OFMarker and
+IFMarker alltogether code than to worry about dynamic allocation here.
 
-I would prefer to replace BARRIER with FLUSH, as I think they are closer
-relatives.  Doing it the way you've suggested would mean that older
-blktrace user-space would report FUA as a Barrier.
+--nab
 
-Comments?  No matter what's agreed upon, we should get this in sooner
-rather than later, as it's a big missing piece in trying to diagnose
-performance issues!
-
-Cheers,
-Jeff
