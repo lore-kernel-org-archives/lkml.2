@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab1G1UAf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 16:00:35 -0400
-Received: from ext190.halfdog.net ([88.116.147.190]:46377 "EHLO
-	mail.halfdog.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754944Ab1G1UAd (ORCPT
+	id S1755760Ab1G1UEq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 16:04:46 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:62688 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755714Ab1G1UEn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 16:00:33 -0400
-X-Greylist: delayed 1939 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Jul 2011 16:00:33 EDT
-Message-ID: <4E31B80A.4050701@halfdog.net>
-Date: Thu, 28 Jul 2011 19:27:06 +0000
-From: halfdog <me@halfdog.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0a1) Gecko/20110706 Firefox/8.0a1 SeaMonkey/2.5a1
+	Thu, 28 Jul 2011 16:04:43 -0400
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] [57/99] exec: delay address limit change until point
- of no return
-References: <4E311559.60402@halfdog.net> <20110728173124.GI8006@one.firstfloor.org>
-In-Reply-To: <20110728173124.GI8006@one.firstfloor.org>
-X-Enigmail-Version: 1.3a1pre
-X-Enigmail-Draft-Status: 513
+In-Reply-To: <alpine.DEB.2.00.1107281406090.4352@tiger>
+References: <alpine.DEB.2.00.1107252025070.3090@tiger>
+	<CA+55aFwgiE629MhByBaV0yWCceVbeVeej22VfSq0z6zhFp9iWw@mail.gmail.com>
+	<CAJL_dMuE+mX1=nEBw-w=YdDy3eZtDB16gWyB4OwE1Fgs=papEA@mail.gmail.com>
+	<alpine.DEB.2.00.1107281406090.4352@tiger>
+Date: Thu, 28 Jul 2011 23:04:42 +0300
+Message-ID: <CAJL_dMtQ4tExO-hsAsTVVRW3zm3tY0UgLoaLZQ31bgrcXfcjTg@mail.gmail.com>
+Subject: Re: [GIT PULL v2] Native Linux KVM tool for v3.1
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Thu, Jul 28, 2011 at 2:08 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> On Thu, 28 Jul 2011, Anca Emanuel wrote:
+>>
+>> This is an interesting project. I think it needs more documentation.
+>
+> If you have specific needs, let me know.
+>
+> On Thu, 28 Jul 2011, Anca Emanuel wrote:
+>>
+>> Example: I want to test the latest linaro release.
+>
+> We don't support ARM nor do we support CPU emulation so you probably want to
+> use Qemu.
+>
+>                        Pekka
+>
 
-This should be continuation of http://lkml.org/lkml/2011/7/27/488
-
-Andi Kleen wrote:
-> On Thu, Jul 28, 2011 at 07:52:57AM +0000, halfdog wrote:
->> -----BEGIN PGP SIGNED MESSAGE----- Hash: SHA1
->> 
->> Hello Mr. Kleen,
->> 
->> I saw your posting on lkml. Currently, I have no deep enough 
->> understanding of kernel memory management, so do you think, that 
->> delaying could make a otherwise irrelevant timerace in exec arg
->> handling somehow problematic?
-> 
-> I guess it would be better to fix it. Can you post your analysis to
-> linux-kernel@vger.kernel.org ?  Feel free to cc me.
-
-Please see
-https://bugzilla.kernel.org/show_bug.cgi?id=39222
-for analysis (Timerace in sys_execve when copying argv/env data from
-userspace)
-
-Seems to be historic, but not critical timerace (POC available, but no
-crash, mem-leaks, ..).
-
-- From my opinion, it should be possible to make the argv ptr go over the
-0xc0000000 kernel/user split on x86 architectures, but I do not know if
-the patch in discussion would worsen the situation. Until now, I failed
-to trouble the kernel using this.
-
-- -- 
-http://www.halfdog.net/
-PGP: 156A AE98 B91F 0114 FE88  2BD8 C459 9386 feed a bee
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.6 (GNU/Linux)
-
-iD8DBQFOMbgIxFmThv7tq+4RAqckAJoCeYCAdrxzWk4UXWtklubfvGR1RwCeMG+J
-Yj6zC0mawHkthGGA3kEPEa4=
-=SLlm
------END PGP SIGNATURE-----
+Ok, then document what it can do.
+I am sure you want to add CPU emulation in the future.
