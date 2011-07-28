@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572Ab1G1OFE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 10:05:04 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64791 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab1G1OFA (ORCPT
+	id S1754054Ab1G1OFe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 10:05:34 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:38635 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753341Ab1G1OFc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 10:05:00 -0400
-Date: Thu, 28 Jul 2011 16:04:55 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH v2 3/6] trace: Add tracepoints to IRQ work run handler
-Message-ID: <20110728140452.GF11820@somewhere.redhat.com>
-References: <1310679495-29104-1-git-send-email-vnagarnaik@google.com>
- <1311793038-15155-4-git-send-email-vnagarnaik@google.com>
- <1311855171.2617.170.camel@laptop>
- <20110728132938.GE11820@somewhere.redhat.com>
- <1311860961.2617.175.camel@laptop>
+	Thu, 28 Jul 2011 10:05:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311860961.2617.175.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+Date: Thu, 28 Jul 2011 16:05:31 +0200
+Message-ID: <CA+icZUV7R5hqTupiuZZKWcsZ5LOBGmY6xgmMTM7W3ojJo0Sp4w@mail.gmail.com>
+Subject: Re: linux-next: Tree for July 28 (fs/binfmt_misc.ko)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 03:49:21PM +0200, Peter Zijlstra wrote:
-> On Thu, 2011-07-28 at 15:29 +0200, Frederic Weisbecker wrote:
-> > On Thu, Jul 28, 2011 at 02:12:51PM +0200, Peter Zijlstra wrote:
-> > > On Wed, 2011-07-27 at 11:57 -0700, Vaibhav Nagarnaik wrote:
-> > > > @@ -122,6 +123,7 @@ void irq_work_run(void)
-> > > >  {
-> > > >         struct irq_work *list;
-> > > >  
-> > > >        trace_irq_work_run_entry(0);
-> > > >         if (this_cpu_read(irq_work_list) == NULL)
-> > > >                 return;
-> > > >  
-> > > > @@ -149,6 +151,7 @@ void irq_work_run(void)
-> > > >                               next_flags(NULL, IRQ_WORK_BUSY),
-> > > >                               NULL);
-> > > >         }
-> > > > +       trace_irq_work_run_exit(0);
-> > > >  }
-> > > >  EXPORT_SYMBOL_GPL(irq_work_run); 
-> > > 
-> > > So what happens when we call irq_work_run() from the timer interrupt?
-> > > 
-> > 
-> > We probably need something like:
-> > 
-> > void irq_work_run_interrupt(void)
-> > {
-> > 	trace_irq_work_run_entry(0);
-> > 	irq_work_run();
-> > 	trace_irq_work_run_exit(0);
-> > }
-> 
-> No we don't. That lives in arch code and its up to the arch to decide
-> where, when and how to call that.
-> 
-> On PPC for example that's hooked of the timer interrupt.
-> 
-> See here again your 'generalization' crap breaks down.
+On Thu, Jul 28, 2011 at 5:57 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Just in case anyone needs reminding:  Please do not add anything destined
+> for v3.2 into linux-next included trees until after v3.1-rc1.
+>
+> The powerpc allyesconfig build (at least) still fails today.
+>
+> Changes since 20110727:
+>
+> Linus' tree still has its build failure from the staging tree which I
+> have still left.
+>
+> The slave-dma tree lost a conflict.
+>
+> The mfd tree lost its conflicts.
+>
+> The akpm tree lost its build failure.
+>
+> ----------------------------------------------------------------------------
+>
 
-Yeah, you're right.
+Hi,
 
-I don't know very well other archs than x86 and probably did the
-mistake to generalize too much on top of its irq layout.
+just see this build-break on the last mile:
 
-Probably they should revert to something closer to the first iterations of that patchset.
+[...]
+  OBJCOPY arch/x86/boot/compressed/vmlinux.bin
+  HOSTCC  arch/x86/boot/compressed/relocs
+  HOSTCC  arch/x86/boot/compressed/mkpiggy
+/mnt/sdb3/linux-kernel/linux-3.0/debian/build/source_i386_none/arch/x86/boot/compressed/relocs.c:
+In function 'print_absolute_symbols':
+/mnt/sdb3/linux-kernel/linux-3.0/debian/build/source_i386_none/arch/x86/boot/compressed/relocs.c:405:14:
+warning: variable 'sh_symtab' set but not used
+[-Wunused-but-set-variable]
+ERROR: "copy_from_user_overflow" [fs/binfmt_misc.ko] undefined!
+make[5]: *** [__modpost] Error 1
+make[4]: *** [modules] Error 2
+make[4]: *** Waiting for unfinished jobs....
+  RELOCS  arch/x86/boot/compressed/vmlinux.relocs
+  GZIP    arch/x86/boot/compressed/vmlinux.bin.gz
+  MKPIGGY arch/x86/boot/compressed/piggy.S
+  AS      arch/x86/boot/compressed/piggy.o
+  LD      arch/x86/boot/compressed/vmlinux
+  ZOFFSET arch/x86/boot/zoffset.h
+  OBJCOPY arch/x86/boot/vmlinux.bin
+  AS      arch/x86/boot/header.o
+  LD      arch/x86/boot/setup.elf
+  OBJCOPY arch/x86/boot/setup.bin
+  BUILD   arch/x86/boot/bzImage
+Setup is 15596 bytes (padded to 15872 bytes).
+System is 2471 kB
+CRC eb598167
+Kernel: arch/x86/boot/bzImage is ready  (#1)
+make[3]: *** [sub-make] Error 2
+make[2]: *** [all] Error 2
 
-Now I'm going to let Vaibhav and David choose whichever weapon they want to stab me if
-we meet up one day. Just not going to stay in a floor next to them with nobody
-around.
+I have these binfmt kernel-config options set:
+
+CONFIG_BINFMT_ELF=y
+# CONFIG_BINFMT_AOUT is not set
+CONFIG_BINFMT_MISC=m
+
+- Sedat -
