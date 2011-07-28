@@ -1,150 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668Ab1G1MNP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 08:13:15 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43505 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754481Ab1G1MNJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 08:13:09 -0400
+	id S1755119Ab1G1MRr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 08:17:47 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:43813 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753860Ab1G1MRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 08:17:45 -0400
+Date: Thu, 28 Jul 2011 05:17:41 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Ben Blum <bblum@andrew.cmu.edu>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Oleg Nesterov <oleg@tv-sign.ru>,
+        containers@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Possible race between cgroup_attach_proc and de_thread, and
+ questionable code in de_thread.
+Message-ID: <20110728121741.GB2427@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110727171101.5e32d8eb@notabene.brown>
+ <20110727150710.GB5242@unix33.andrew.cmu.edu>
+ <20110727234235.GA2318@linux.vnet.ibm.com>
+ <20110728110813.7ff84b13@notabene.brown>
 MIME-Version: 1.0
-In-Reply-To: <20110728101523.GA2690@pulham.picochip.com>
-References: <1311873401-26075-1-git-send-email-tommy.lin.1101@gmail.com>
-	<20110728101523.GA2690@pulham.picochip.com>
-Date: Thu, 28 Jul 2011 20:13:08 +0800
-Message-ID: <CAB8eogcbZNVvhnocF3vhseDmpQLurPGHqdMcCwNP2V7YhE_0_A@mail.gmail.com>
-Subject: Re: [PATCH 2/3] arch: arm: mach-cns3xxx: Add gpiolib support
-From: =?Big5?B?qkynu6Tl?= <tommy.lin.1101@gmail.com>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Anton Vorontsov <avorontsov@mvista.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110728110813.7ff84b13@notabene.brown>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jamie,
-  Thanks for your comments.
+On Thu, Jul 28, 2011 at 11:08:13AM +1000, NeilBrown wrote:
+> On Wed, 27 Jul 2011 16:42:35 -0700 "Paul E. McKenney"
+> <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > On Wed, Jul 27, 2011 at 11:07:10AM -0400, Ben Blum wrote:
+> > > On Wed, Jul 27, 2011 at 05:11:01PM +1000, NeilBrown wrote:
+> > 
+> > [ . . . ]
+> > 
+> > > >  The race as I understand it is with this code:
+> > > > 
+> > > > 
+> > > > 		list_replace_rcu(&leader->tasks, &tsk->tasks);
+> > > > 		list_replace_init(&leader->sibling, &tsk->sibling);
+> > > > 
+> > > > 		tsk->group_leader = tsk;
+> > > > 		leader->group_leader = tsk;
+> > > > 
+> > > > 
+> > > >  which seems to be called with only tasklist_lock held, which doesn't seem to
+> > > >  be held in the cgroup code.
+> > > > 
+> > > >  If the "thread_group_leader(leader)" call in cgroup_attach_proc() runs before
+> > > >  this chunk is run with the same value for 'leader', but the
+> > > >  while_each_thread is run after, then the while_read_thread() might loop
+> > > >  forever.  rcu_read_lock doesn't prevent this from happening.
+> > > 
+> > > Somehow I was under the impression that holding tasklist_lock (for
+> > > writing) provided exclusion from code that holds rcu_read_lock -
+> > > probably because there are other points in the kernel which do
+> > > while_each_thread with only RCU-read held (and not tasklist):
+> > > 
+> > > - kernel/hung_task.c, check_hung_uninterruptible_tasks()
+> > 
+> > This one looks OK to me.  The code is just referencing fields in each
+> > of the task structures, and appears to be making proper use of
+> > rcu_dereference().  All this code requires is that the task structures
+> > remain in existence through the full lifetime of the RCU read-side
+> > critical section, which is guaranteed because of the way the task_struct
+> > is freed.
+> 
+> I disagree.  It also requires - by virtue of the use of while_each_thread() -
+> that 'g' remains on the list that 't' is walking along.
 
-> [...]
->> +#define CONFIG_GPIO_CNS3XXX_DEBUG
->> +
->> +#ifdef CONFIG_GPIO_CNS3XXX_DEBUG
->> +#define __pr_debug(fmt, args...)     printk(KERN_ERR fmt, ##args)
->> +#else
->> +#define __pr_debug(fmt, args...)
->> +#endif
->
-> Could you use the kernel debug infrastructure for this? #define DEBUG
-> and pr_debug()?
-Ok I will do it.
+Doesn't the following code in the loop body deal with this possibilty?
 
->> +static struct proc_dir_entry *proc_cns3xxx_gpio;
->> +static struct irq_chip               cns3xxx_gpio_irq_chip;
->
-> I think debugfs would be preferred for this rather than proc.
-The proc entry is used in the old package, so I have to keep it.
-Can I keep it? Or should I move it to debugfs?
+	/* Exit if t or g was unhashed during refresh. */
+	if (t->state == TASK_DEAD || g->state == TASK_DEAD)
+		goto unlock;
 
->> +static int cns3xxx_request(struct gpio_chip *chip, unsigned offset)
->> +{
->> +     /* GPIOA4 is reserved for chip bonding configuration. Please don't use
->> +      * and configure GPIOA4.
->> +      */
->> +     if ((strcmp(chip->label, "GPIOA") == 0) && (offset == 4))
->> +             return -EINVAL;
->> +     return 0;
->> +}
->> +
->
-> The generic gpio (include/linux/basic_mmio_gpio.h) driver will support
-> all of these accessors and provide all of the value caching too.  You
-> can add your .request method in to make sure you can't access the bond
-> option pins but still use the other default accessors.
->> +static struct irq_chip cns3xxx_gpio_irq_chip = {
->> +     .name = "GPIO",
->> +     .irq_enable = cns3xxx_irq_enable,
->> +     .irq_disable = cns3xxx_irq_disable,
->> +     .irq_mask = cns3xxx_gpio_mask,
->> +     .irq_unmask = cns3xxx_gpio_unmask,
->> +     .irq_set_type = cns3xxx_gpio_set_irq_type,
->> +};
->
-> Thomas provided a generic irq chip infrastructure for this sort of thing
-> (struct irq_chip_generic) that would be useful here.
-I have to study how to use basic_mmio_gpio.h and irq_chip_generic.
+Yes, a concurrent dethread could cause some of the tasks to be skipped,
+but there really is a hung thread, it will still be there to be caught
+next time, right?
 
->> +     void __iomem *misc_reg;
->> +
->> +     cns3xxx_pwr_clk_en(0x1 << PM_CLK_GATE_REG_OFFSET_GPIO);
->
-> Should this be using the clk framework (clk_get() + clk_enable())?
-The platform device didn't implement these function yet! Maybe I should complete
-the work first.
+							Thanx, Paul
 
->> +     cns3xxx_pwr_soft_rst(0x1 << PM_CLK_GATE_REG_OFFSET_GPIO);
->> +
->> +     if (cns3xxx_proc_dir) {
->> +             proc_cns3xxx_gpio = create_proc_entry(GPIO_PROC_NAME,
->> +                             S_IFREG | S_IRUGO, cns3xxx_proc_dir) ;
->> +             if (proc_cns3xxx_gpio)
->> +                     proc_cns3xxx_gpio->read_proc = cns3xxx_gpio_read_proc;
->> +     }
->> +
->> +     res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "MISC");
->> +     if (res)
->> +             misc_reg = (void __iomem *)res->start;
->
-> request_mem_region() and ioremap().  IORESOURCE_MEM resources should be
-> physical addresses.
-The memory space is statically mapped when platform initialized so I
-just query virtual
-memory space here. Should I use ioremap() rather than static mapping?
-
->
->> +     else
->> +             return -ENODEV;
->> +
->> +     /* Scan and match GPIO resources */
->> +     for (i = 0; i < nr_banks; i++) {
->> +             /* Fetech GPIO base address */
->> +             res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
->> +                             cns3xxx_gchip[i].chip.label);
->> +             if (!res)
->> +                     continue;
->> +             cns3xxx_gchip[i].reg_base = (void __iomem *)res->start;
->
-> The same here.
->
->> +#ifdef CONFIG_PM
->> +static int gpio_cns3xxx_suspend(struct platform_device *dev, pm_message_t state)
->> +{
->> +     __pr_debug("%s,%s,%d\n", __FILE__, __func__, __LINE__);
->> +
->> +     return 0;
->> +}
->> +
->> +static int gpio_cns3xxx_resume(struct platform_device *dev)
->> +{
->> +     __pr_debug("%s,%s,%d\n", __FILE__, __func__, __LINE__);
->> +
->> +     return 0;
->> +}
->> +#endif /* CONFIG_PM */
->> +
->> +static struct platform_driver gpio_driver = {
->> +     .probe          = gpio_probe,
->> +#ifdef CONFIG_PM
->> +     .suspend        = gpio_cns3xxx_suspend,
->> +     .resume         = gpio_cns3xxx_resume,
->> +#endif /* CONFIG_PM */
->
-> You can put the power management operations in .dev_pm_ops, but as they
-> don't do anything you can just remove them.
-OK, I will remove it.
-
--- 
-Best Regards,
-Tommy
+> Now for a normal list, the head always stays on the list and is accessible
+> even from an rcu-removed entry.  But the thread_group list isn't a normal
+> list.  It doesn't have a distinct head.  It is a loop of all of the
+> 'task_structs' in a thread group.  One of them is designated the 'leader' but
+> de_thread() can change the 'leader' - though it doesn't remove the old leader.
+> 
+> __unhash_process in mm/exit.c looks like it could remove the leader from the
+> list and definitely could remove a non-leader.
+> 
+> So if a non-leader calls 'exec' and the leader calls 'exit', then a
+> task_struct that was the leader could become a non-leader and then be removed
+> from the list that kernel/hung_task could be walking along.
+> 
+> So I don't think that while_each_thread() is currently safe.  It depends on
+> the thread leader not disappearing and I think it can.
+> 
+> So I'm imagining a patch like this to ensure that while_each_thread() is
+> actually safe.  If it is always safe you can remove that extra check in
+> cgroup_attach_proc() which looked wrong.
+> 
+> I just hope someone who understands the process tree is listening..
+> The change in exit.c is the most uncertain part.
+> 
+> NeilBrown
+> 
+> diff --git a/fs/exec.c b/fs/exec.c
+> index 6075a1e..c9ea5f0 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -960,6 +960,9 @@ static int de_thread(struct task_struct *tsk)
+>  		list_replace_init(&leader->sibling, &tsk->sibling);
+> 
+>  		tsk->group_leader = tsk;
+> +		smp_mb(); /* ensure that any reader will always be able to see
+> +			   * a task that claims to be the group leader
+> +			   */
+>  		leader->group_leader = tsk;
+> 
+>  		tsk->exit_signal = SIGCHLD;
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 14a6c7b..13e0192 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -2267,8 +2267,10 @@ extern bool current_is_single_threaded(void);
+>  #define do_each_thread(g, t) \
+>  	for (g = t = &init_task ; (g = t = next_task(g)) != &init_task ; ) do
+> 
+> +/* Thread group leader can change, so stop loop when we see one
+> + * even if it isn't 'g' */
+>  #define while_each_thread(g, t) \
+> -	while ((t = next_thread(t)) != g)
+> +	while ((t = next_thread(t)) != g && !thread_group_leader(t))
+> 
+>  static inline int get_nr_threads(struct task_struct *tsk)
+>  {
+> diff --git a/kernel/exit.c b/kernel/exit.c
+> index f2b321b..d6cef25 100644
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -70,8 +70,13 @@ static void __unhash_process(struct task_struct *p, bool group_dead)
+>  		list_del_rcu(&p->tasks);
+>  		list_del_init(&p->sibling);
+>  		__this_cpu_dec(process_counts);
+> -	}
+> -	list_del_rcu(&p->thread_group);
+> +	} else
+> +		/* only remove members from the thread group.
+> +		 * The thread group leader must stay so that
+> +		 * while_each_thread() uses can see the end of
+> +		 * the list and stop.
+> +		 */
+> +		list_del_rcu(&p->thread_group);
+>  }
+> 
+>  /*
+> 
