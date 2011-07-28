@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089Ab1G1Xob (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 19:44:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27791 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756093Ab1G1XoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 19:44:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,285,1309762800"; 
-   d="scan'208";a="31552449"
-From: Andi Kleen <andi@firstfloor.org>
-References: <20110728444.299940435@firstfloor.org>
-In-Reply-To: <20110728444.299940435@firstfloor.org>
-To: manfred@colorfullife.com, eric.dumazet@gmail.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: [PATCH] [5/50] ipc/sem.c: fix race with concurrent semtimedop() timeouts
-Message-Id: <20110728234409.640422403FF@tassilo.jf.intel.com>
-Date: Thu, 28 Jul 2011 16:44:09 -0700 (PDT)
+	id S932122Ab1G1Xva (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 19:51:30 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:58504 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932096Ab1G1Xv2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 19:51:28 -0400
+Date: Thu, 28 Jul 2011 18:51:19 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: Vasiliy Kulikov <segooon@gmail.com>
+Cc: Serge Hallyn <serge@hallyn.com>, dhowells@redhat.com,
+        netdev@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com
+Subject: Re: [PATCH 05/14] userns: clamp down users of cap_raised
+Message-ID: <20110728235119.GA8167@sergelap>
+References: <1311706717-7398-1-git-send-email-serge@hallyn.com>
+ <1311706717-7398-6-git-send-email-serge@hallyn.com>
+ <20110728232337.GA9186@albatros>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110728232337.GA9186@albatros>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-longterm review patch.  If anyone has any objections, please let me know.
+Quoting Vasiliy Kulikov (segooon@gmail.com):
+> On Tue, Jul 26, 2011 at 18:58 +0000, Serge Hallyn wrote:
+> > From: Serge E. Hallyn <serge.hallyn@canonical.com>
+> > 
+> > A few modules are using cap_raised(current_cap(), cap) to authorize
+> > actions, but the privilege should be applicable against the initial
+> > user namespace.  Refuse privilege if the caller is not in init_user_ns.
+> > 
+> > Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+> > Cc: Eric W. Biederman <ebiederm@xmission.com>
+> > ---
+> >  drivers/block/drbd/drbd_nl.c           |    5 +++++
+> >  drivers/md/dm-log-userspace-transfer.c |    3 +++
+> >  drivers/staging/pohmelfs/config.c      |    3 +++
+> >  drivers/video/uvesafb.c                |    3 +++
+> >  4 files changed, 14 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+> > index 515bcd9..7717f8a 100644
+> > --- a/drivers/block/drbd/drbd_nl.c
+> > +++ b/drivers/block/drbd/drbd_nl.c
+> > @@ -2297,6 +2297,11 @@ static void drbd_connector_callback(struct cn_msg *req, struct netlink_skb_parms
+> >  		return;
+> >  	}
+> >  
+> > +	if (current_user_ns() != &init_user_ns) {
+> [...]
+> >  	if (!cap_raised(current_cap(), CAP_SYS_ADMIN)) {
+> [...]
+> 
+> Looks like it is an often pattern.  Maybe move both checks to a
+> function?
 
-------------------
-From: Manfred Spraul <manfred@colorfullife.com>
+This pattern is used 4 times (IIRC).  The reason I didn't break it out is
+that it's very close to just 'capable(CAP_SYS_ADMIN)', which also checks
+for CAP_SYS_ADMIN to the init_user_ns.  But the above, rightly or wrongly,
+does not set the PF_SUPERPRIV task flag.  I don't want to advocate usage
+of the above, and creating a helper for the above would both further
+pollute the capability-related function namespace, and make the above
+look more legitimate than I think it is.
 
-[ upstream commit d694ad62bf539dbb20a0899ac2a954555f9e4a83 ]
- and IPC_RMID
+Imo 'cap-raised(current_cap(), X)' should not be used at all.  But I
+didn't want to deal with that here, just make it user-ns safe.
 
-If a semaphore array is removed and in parallel a sleeping task is woken
-up (signal or timeout, does not matter), then the woken up task does not
-wait until wake_up_sem_queue_do() is completed.  This will cause crashes,
-because wake_up_sem_queue_do() will read from a stale pointer.
-
-The fix is simple: Regardless of anything, always call get_queue_result().
-This function waits until wake_up_sem_queue_do() has finished it's task.
-
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=27142
-
-Reported-by: Yuriy Yevtukhov <yuriy@ucoz.com>
-Reported-by: Harald Laabs <kernel@dasr.de>
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: <stable@kernel.org>		[2.6.35+]
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-
-Index: linux-2.6.35.y/ipc/sem.c
-===================================================================
---- linux-2.6.35.y.orig/ipc/sem.c
-+++ linux-2.6.35.y/ipc/sem.c
-@@ -1452,15 +1452,24 @@ SYSCALL_DEFINE4(semtimedop, int, semid, 
- 	}
- 
- 	sma = sem_lock(ns, semid);
-+
-+	/*
-+	 * Wait until it's guaranteed that no wakeup_sem_queue_do() is ongoing.
-+	 */
-+	error = get_queue_result(&queue);
-+
-+	/*
-+	 * Array removed? If yes, leave without sem_unlock().
-+	 */
- 	if (IS_ERR(sma)) {
- 		error = -EIDRM;
- 		goto out_free;
- 	}
- 
--	error = get_queue_result(&queue);
- 
- 	/*
--	 * If queue.status != -EINTR we are woken up by another process
-+	 * If queue.status != -EINTR we are woken up by another process.
-+	 * Leave without unlink_queue(), but with sem_unlock().
- 	 */
- 
- 	if (error != -EINTR) {
+-serge
