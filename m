@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab1G1Tg7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 15:36:59 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57868 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508Ab1G1Tgz (ORCPT
+	id S1754983Ab1G1Tot (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 15:44:49 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:60378 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565Ab1G1Tos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 15:36:55 -0400
-Date: Thu, 28 Jul 2011 21:36:52 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [ANNOUNCE] 3.0-rt4
-In-Reply-To: <4E31B59F.1000607@localhost>
-Message-ID: <alpine.LFD.2.02.1107282123380.2660@ionos>
-References: <alpine.LFD.2.02.1107272222420.2660@ionos> <4E31B59F.1000607@localhost>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 28 Jul 2011 15:44:48 -0400
+Message-ID: <4E31BC2D.50306@2net.co.uk>
+Date: Thu, 28 Jul 2011 20:44:45 +0100
+From: Chris Simmonds <chris.simmonds@2net.co.uk>
+Reply-To: chris@2net.co.uk
+Organization: 2net
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Chris <chris@2net.co.uk>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        mingo@redhat.com
+Subject: Re: [RFC] [PATCH] Lightweight kernel condition variables: faster
+ code, fewer bugs
+References: <Pine.LNX.4.44L0.1107281256240.1990-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1107281256240.1990-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:Lf5/ZqapVEQ1FcdRwX0GhcylFU4AVac1VIYT9ZbHOki
+ gQYaUwMFaU1vVBFutlHj/a0RAY3TQe2G81+epmLnLe4sO5xSpU
+ 5LrKbD59qnsv/v8n61Tu/Isawbthrg8REoFDTjkFIPLKpv6SJd
+ 8G896zF+FcnARDKGqFizc+i0uArWOXGn9tDKOklcH+sj0LW75x
+ pIBA+hU7W3XbjpZmfGZQzTmdj1UTfH2Kyqu8RNP9s4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Jul 2011, Fernando Lopez-Lezcano wrote:
+On 28/07/11 18:00, Alan Stern wrote:
+> On Wed, 27 Jul 2011, Chris Simmonds wrote:
+>
+>> Hi,
+>>
+>> This patch adds lightweight condition variables to the kernel to reduce
+>> complexity and improve the efficiency of some synchronisation tasks.
+>> They are very similar to POSIX condition variables.
+>
+> It seems like a reasonable sort of thing to do, as far as I can see.
+>
 
-> On 07/27/2011 02:37 PM, Thomas Gleixner wrote:
-> > Dear RT Folks,
-> > 
-> > I'm pleased to announce the 3.0-rt4 release.
-> 
-> Testing rt5 (lenovo dual core laptop running fc15, kernel based on koji's
-> 3.0.0 build plus rt5)...
-> ----
-> [    0.000000] =============================================
-> [    0.000000] [ INFO: possible recursive locking detected ]
-> [    0.000000] 3.0.0-1.rt5.1.fc15.ccrma.i686.rtPAE #1
-> [    0.000000] ---------------------------------------------
-> [    0.000000] swapper/0 is trying to acquire lock:
-> [    0.000000]  (&parent->list_lock){+.+...}, at: [<c04fb406>]
-> __cache_free+0x43/0xc3
-> [    0.000000]
-> [    0.000000] but task is already holding lock:
-> [    0.000000]  (&parent->list_lock){+.+...}, at: [<c04fc538>]
-> do_tune_cpucache+0xf2/0x2bb
-> [    0.000000]
-> [    0.000000] other info that might help us debug this:
-> [    0.000000]  Possible unsafe locking scenario:
-> [    0.000000]
-> [    0.000000]        CPU0
-> [    0.000000]        ----
-> [    0.000000]   lock(&parent->list_lock);
-> [    0.000000]   lock(&parent->list_lock);
+Thanks, and thank you for the review.
 
-That's a know issue. Fix is being worked on. I can't find the thread
-right now, but it's weird some interaction of debug options
-(DEBUG_OBJECTS, DEBUG_SLAB ...) Peter ???
- 
-> (I guess because HIGHMEM is disabled the computer only finds 800M+ of LOWMEM
-> and that is all top reports - total installed is 4G)
+> One little problem here.  These routines may well be large enough
+> that it's inefficient to inline them.  In that case they should be
+> declared in wait.h but defined somewhere else, such as kernel/wait.c.
+> Conversely, if you do think they deserve to be inlined then they should
+> be marked as such.
 
-Yes, that's the state for now until someone fixes it :)
+I was not planning to make them inline. I will change the patch to do as 
+you say.
 
-Thanks,
+>
+> P.S.: Does this come through checkpatch.pl unscathed?
+>
 
-	tglx
+In truth, no. The next one will.
+
+Chris.
