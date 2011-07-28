@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab1G1Kkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 06:40:46 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55210 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab1G1Kkp (ORCPT
+	id S1755408Ab1G1KnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 06:43:25 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:5844 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753248Ab1G1KnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 06:40:45 -0400
-Date: Thu, 28 Jul 2011 13:40:36 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tiger
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: torvalds@linux-foundation.org, cl@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [GIT PULL] SLAB changes for v3.1-rc0
-In-Reply-To: <1311576942.6669.20.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.2.00.1107281337470.2841@tiger>
-References: <alpine.DEB.2.00.1107221108190.2996@tiger> <1311576942.6669.20.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1827813833-1311849641=:2841"
+	Thu, 28 Jul 2011 06:43:24 -0400
+X-Greylist: delayed 2392 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Jul 2011 06:43:24 EDT
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host p6SA3ROE015931
+Subject: Re: [Q] compiler no longer warning about undeclared struct?
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 28 Jul 2011 12:03:27 +0200
+In-Reply-To: <Pine.LNX.4.64.1107271947490.7435@axis700.grange>
+References: <Pine.LNX.4.64.1107271947490.7435@axis700.grange>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1311847409.3897.23.camel@thorin>
+Mime-Version: 1.0
+X-DCC-dcc1-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi!
 
---8323329-1827813833-1311849641=:2841
-Content-Type: TEXT/PLAIN; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+On Mit, 2011-07-27 at 19:57 +0200, Guennadi Liakhovetski wrote:
+[....]
+> I just ran across a driver in the kernel (drivers/media/video/ov2640.c, 
+> struct ov2640_priv::info), that does something like
+> 
+> struct xx {
+> 	struct yy *y;
+> };
+> 
+> static void z(void)
+> {
+> 	struct xx *x;
+> 	void *p;
+> 
+> 	x = ...;
+> 	p = ...;
+> 	x->y = p;
+> }
+> 
+> where "struct yy" is nowhere declared, and the compiler happily swallows 
+> this... Shouldn't it complain? Didn't it complain before?
 
-Le vendredi 22 juillet 2011 à 11:08 +0300, Pekka Enberg a écrit :
->> Here's batch of slab/slub/slob changes accumulated over the past few months.
->> The biggest changes are alignment unification from Christoph Lameter and SLUB
->> debugging improvements from Ben Greear. Also notable is SLAB 'struct
->> kmem_cache' shrinkage from Eric Dumazet that helps large SMP systems.
+It's normal C behaviour: As long as the compiler doesn't need the size
+or fields of struct yy, it doesn't complain that it doesn't know the
+details.
 
-On Mon, 25 Jul 2011, Eric Dumazet wrote:
->> Please note that the SLUB lockless slowpath patches will be sent in a separate
->> pull request.
->>
->>                          Pekka
->
-> Hi Pekka
->
-> Could we also merge in 3.1 following "simple enough" patch ?
->
-> Thanks
->
-> [PATCH] slab: remove one NR_CPUS dependency
->
-> Reduce high order allocations in do_tune_cpucache() for some setups.
-> (NR_CPUS=4096 -> we need 64KB)
->
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Acked-by: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@kernel.org>
+Otherwise you could not define recursive structures as in
+----  snip  ----
+struct a {
+	struct *b;
+};
+struct b {
+	struct *a;
+};
+----  snip  ----
 
-Sorry for the delay. I applied the patch and will send it to Linus within 
-few days.
+Kind regards,
+	Bernd
+-- 
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
 
- 			Pekka
---8323329-1827813833-1311849641=:2841--
