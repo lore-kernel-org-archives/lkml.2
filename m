@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471Ab1G1OIR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 10:08:17 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34846 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab1G1OIP (ORCPT
+	id S1753351Ab1G1OMn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 10:12:43 -0400
+Received: from vint.altlinux.org ([194.107.17.35]:52310 "EHLO
+	vint.altlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007Ab1G1OMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 10:08:15 -0400
-Date: Thu, 28 Jul 2011 16:08:10 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH v2 0/6] Add tracepoints to trace all system IRQs
-Message-ID: <20110728140808.GG11820@somewhere.redhat.com>
-References: <1310679495-29104-1-git-send-email-vnagarnaik@google.com>
- <1311793038-15155-1-git-send-email-vnagarnaik@google.com>
- <1311855169.2617.168.camel@laptop>
- <20110728123131.GA11820@somewhere.redhat.com>
- <1311862204.2617.179.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311862204.2617.179.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 28 Jul 2011 10:12:41 -0400
+X-Greylist: delayed 423 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Jul 2011 10:12:41 EDT
+Date: Thu, 28 Jul 2011 18:05:35 +0400
+From: "Anton V. Boyarshinov" <boyarsh@altlinux.org>
+To: Peter Feuerer <peter@piie.net>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] acerhdf.c: spaces in aliased changed to *
+Message-ID: <20110728180535.51dce58d@boyarsh.office.altlinux.ru>
+Organization: ALTLinux
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.5; x86_64-alt-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 04:10:04PM +0200, Peter Zijlstra wrote:
-> On Thu, 2011-07-28 at 14:31 +0200, Frederic Weisbecker wrote:
-> > 
-> > Because that requires to put the tracepoints in every interrupt sources
-> > for every archs instead of putting one in the generic space. 
-> 
-> To sum up from IRC, yes that's exactly what you need to do, because this
-> patch set assumes two things:
-> 
->  1) that there is a 1:1 mapping between interrupt sources and generic
-> handlers, and
-> 
->  2) that there is a neglectable amount of arch specific code for each
-> generic handler.
-> 
-> Both are false in generic. Therefore there is no option but to
-> instrument each and every arch specific interrupt handler.
-> 
-> Also, please use a single tracepoint for all that instead of this horrid
-> forest of random crap. Use something like arch_interrupt_enter(line_nr),
-> arch_interrupt_exit(line_nr).
+It seems that aliases shouldn't contain spaces, as 
+module-init-tools uses them as delimeters in module.alias file
 
-Right, so I guess the first iteration of the patchset was good in fact.
+Signed-off-by: Anton V. Boyarshinov <boyarsh@altlinux.org>
+---
+ drivers/platform/x86/acerhdf.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+index fca3489..7a8568b 100644
+--- a/drivers/platform/x86/acerhdf.c
++++ b/drivers/platform/x86/acerhdf.c
+@@ -703,15 +703,15 @@ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Peter Feuerer");
+ MODULE_DESCRIPTION("Aspire One temperature and fan driver");
+ MODULE_ALIAS("dmi:*:*Acer*:pnAOA*:");
+-MODULE_ALIAS("dmi:*:*Acer*:pnAspire 1410*:");
+-MODULE_ALIAS("dmi:*:*Acer*:pnAspire 1810*:");
++MODULE_ALIAS("dmi:*:*Acer*:pnAspire*1410*:");
++MODULE_ALIAS("dmi:*:*Acer*:pnAspire*1810*:");
+ MODULE_ALIAS("dmi:*:*Acer*:pnAO531*:");
+ MODULE_ALIAS("dmi:*:*Gateway*:pnAOA*:");
+ MODULE_ALIAS("dmi:*:*Gateway*:pnLT31*:");
+-MODULE_ALIAS("dmi:*:*Packard Bell*:pnAOA*:");
+-MODULE_ALIAS("dmi:*:*Packard Bell*:pnDOA*:");
+-MODULE_ALIAS("dmi:*:*Packard Bell*:pnDOTMU*:");
+-MODULE_ALIAS("dmi:*:*Packard Bell*:pnDOTMA*:");
++MODULE_ALIAS("dmi:*:*Packard*Bell*:pnAOA*:");
++MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOA*:");
++MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOTMU*:");
++MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOTMA*:");
+ 
+ module_init(acerhdf_init);
+ module_exit(acerhdf_exit);
+-- 
+1.7.2.2
+
