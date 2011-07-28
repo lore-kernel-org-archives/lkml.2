@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab1G1Xyi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 19:54:38 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:54790 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756303Ab1G1Xyg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 19:54:36 -0400
-Date: Fri, 29 Jul 2011 01:54:34 +0200
+	id S1756283Ab1G1Xy3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 19:54:29 -0400
+Received: from mga14.intel.com ([143.182.124.37]:11646 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756136Ab1G1XoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 19:44:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,285,1309762800"; 
+   d="scan'208";a="32808889"
 From: Andi Kleen <andi@firstfloor.org>
-To: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
-Cc: Andi Kleen <andi@firstfloor.org>, pablo@netfilter.org, gregkh@suse.de,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
-        tim.bird@am.sony.com
-Subject: Re: [PATCH] [59/99] netfilter: IPv6: fix DSCP mangle code
-Message-ID: <20110728235434.GL8006@one.firstfloor.org>
-References: <20110727247.325703029@firstfloor.org> <20110727214858.5FECE2403FF@tassilo.jf.intel.com> <1311817873.2707.5.camel@nausicaa>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311817873.2707.5.camel@nausicaa>
-User-Agent: Mutt/1.4.2.2i
+References: <20110728444.299940435@firstfloor.org>
+In-Reply-To: <20110728444.299940435@firstfloor.org>
+To: manoj.iyer@canonical.com, cjb@laptop.org, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [8/50] mmc: Add PCI fixup quirks for Ricoh 1180:e823 reader
+Message-Id: <20110728234412.714AF2403FF@tassilo.jf.intel.com>
+Date: Thu, 28 Jul 2011 16:44:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 10:51:13AM +0900, Fernando Luis Vazquez Cao wrote:
-> Hi Andi,
-> 
-> Thank you for picking up patches 58/99 (netfilter: IPv6: initialize TOS
-> field in REJECT target module) and 59/99 (netfilter: IPv6: fix DSCP
-> mangle code).
-> 
-> I would really appreciate it if you could also apply two IGMP snooping
-> fixes that are already upstream, without them multicast bridging does
-> not work at all in certain configurations. I will be replying to this
-> email with the patches.
+2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
-Added thanks.
--Andi
+------------------
+From: Manoj Iyer <manoj.iyer@canonical.com>
+
+[ upstream commit be98ca652faa6468916a9b7608befff215a8ca70 ]
+
+Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+Cc: <stable@kernel.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+Index: linux-2.6.35.y/drivers/pci/quirks.c
+===================================================================
+--- linux-2.6.35.y.orig/drivers/pci/quirks.c
++++ linux-2.6.35.y/drivers/pci/quirks.c
+@@ -2701,6 +2701,8 @@ static void ricoh_mmc_fixup_r5c832(struc
+ }
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
+ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
++DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
+ #endif /*CONFIG_MMC_RICOH_MMC*/
+ 
+ #if defined(CONFIG_DMAR) || defined(CONFIG_INTR_REMAP)
+Index: linux-2.6.35.y/include/linux/pci_ids.h
+===================================================================
+--- linux-2.6.35.y.orig/include/linux/pci_ids.h
++++ linux-2.6.35.y/include/linux/pci_ids.h
+@@ -1524,6 +1524,7 @@
+ #define PCI_DEVICE_ID_RICOH_RL5C476	0x0476
+ #define PCI_DEVICE_ID_RICOH_RL5C478	0x0478
+ #define PCI_DEVICE_ID_RICOH_R5C822	0x0822
++#define PCI_DEVICE_ID_RICOH_R5CE823	0xe823
+ #define PCI_DEVICE_ID_RICOH_R5C832	0x0832
+ #define PCI_DEVICE_ID_RICOH_R5C843	0x0843
+ 
