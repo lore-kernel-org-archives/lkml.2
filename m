@@ -1,116 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221Ab1G1XTf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 19:19:35 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:33586 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031Ab1G1XTc (ORCPT
+	id S1755720Ab1G1XXw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 19:23:52 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54663 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755121Ab1G1XXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 19:19:32 -0400
-Subject: Re: [PATCH] blktrace: add FLUSH/FUA support
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <jaxboe@fusionio.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-btrace@vger.kernel.org
-In-Reply-To: <x494o26ma11.fsf@segfault.boston.devel.redhat.com>
-References: <x494o26ma11.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 29 Jul 2011 08:19:24 +0900
-Message-ID: <1311895164.1913.57.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 28 Jul 2011 19:23:44 -0400
+Date: Fri, 29 Jul 2011 03:23:37 +0400
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: Serge Hallyn <serge@hallyn.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        containers@lists.linux-foundation.org, dhowells@redhat.com,
+        ebiederm@xmission.com
+Subject: Re: [PATCH 05/14] userns: clamp down users of cap_raised
+Message-ID: <20110728232337.GA9186@albatros>
+References: <1311706717-7398-1-git-send-email-serge@hallyn.com>
+ <1311706717-7398-6-git-send-email-serge@hallyn.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311706717-7398-6-git-send-email-serge@hallyn.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011-07-28 (목), 16:21 -0400, Jeff Moyer:
-> Hi,
+On Tue, Jul 26, 2011 at 18:58 +0000, Serge Hallyn wrote:
+> From: Serge E. Hallyn <serge.hallyn@canonical.com>
 > 
-> Sorry, I don't have the original posting of this message, so I've just
-> cut-n-paste from the archives on lkml.org:
->   https://lkml.org/lkml/2011/6/1/235
+> A few modules are using cap_raised(current_cap(), cap) to authorize
+> actions, but the privilege should be applicable against the initial
+> user namespace.  Refuse privilege if the caller is not in init_user_ns.
 > 
-
-Hello, Jeff.
-
-Thanks for finding and replying to this :)
-
-
-> The proposal was this:
+> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> ---
+>  drivers/block/drbd/drbd_nl.c           |    5 +++++
+>  drivers/md/dm-log-userspace-transfer.c |    3 +++
+>  drivers/staging/pohmelfs/config.c      |    3 +++
+>  drivers/video/uvesafb.c                |    3 +++
+>  4 files changed, 14 insertions(+), 0 deletions(-)
 > 
-> > Add FLUSH/FUA support to blktrace. As FLUSH precedes WRITE and/or
-> > FUA follows WRITE, use the same 'F' flag for both cases and
-> > distinguish them by their (relative) position. The end results
-> > look like (other flags might be shown also):
-> > 
-> >  - WRITE:            W
-> >  - WRITE_FLUSH:      FW
-> >  - WRITE_FUA:        WF
-> >  - WRITE_FLUSH_FUA:  FWF
-> 
-> I'm not sure I'll ever be able to keep that straight.  How about we use
-> 'F' for FUA, since FUA is capitalized anyway, and use 'f' for flush?
-> Too subtle?
-> 
+> diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+> index 515bcd9..7717f8a 100644
+> --- a/drivers/block/drbd/drbd_nl.c
+> +++ b/drivers/block/drbd/drbd_nl.c
+> @@ -2297,6 +2297,11 @@ static void drbd_connector_callback(struct cn_msg *req, struct netlink_skb_parms
+>  		return;
+>  	}
+>  
+> +	if (current_user_ns() != &init_user_ns) {
+[...]
+>  	if (!cap_raised(current_cap(), CAP_SYS_ADMIN)) {
+[...]
 
-Either way is fine to me. Jens?
-
-
-> Next...
-> 
-> > @@ -14,7 +14,7 @@
-> >  enum blktrace_cat {
-> >  	BLK_TC_READ	= 1 << 0,	/* reads */
-> >  	BLK_TC_WRITE	= 1 << 1,	/* writes */
-> > -	BLK_TC_BARRIER	= 1 << 2,	/* barrier */
-> > +	BLK_TC_FUA	= 1 << 2,	/* fua requests */
-> 
-> I would prefer to replace BARRIER with FLUSH, as I think they are closer
-> relatives.  Doing it the way you've suggested would mean that older
-> blktrace user-space would report FUA as a Barrier.
-> 
-
-I thought about that too. But as I said in the changelog, it led to a
-negative number at the rhs of MASC_TC_BIT calculation, so the end result
-was not good.
-
-In the meantime, I found that Matthew Wilcox posted a patch which
-relocates some REQ_ flags to appropriate positions.
-
-https://lkml.org/lkml/2011/6/2/324
-
-With the patch, it seems ok to replace BARRIER with FLUSH. However it
-looks like the patch isn't included into the tree yet.
-
-BTW, I'm thinking about user-space again. I'm not sure it's ok if older
-blktrace tool reports FLUSH/FUA as BARRIER. Actually I posted a patch
-that treats FLUSH as BARRIER [1], and Jens and others commented we
-should not do that.
-
-To end that, I could leave BLK_TC_BARRIER as is, and add
-BLK_TC_{FLUSH,FUA} at the end of blktrace_cat. But as we exhause space
-in the 16-bit act_mask, it would require a substantial change.
-
-Any thoughts?
+Looks like it is an often pattern.  Maybe move both checks to a
+function?
 
 
-> Comments?  No matter what's agreed upon, we should get this in sooner
-> rather than later, as it's a big missing piece in trying to diagnose
-> performance issues!
-> 
-> Cheers,
-> Jeff
-
-Thanks.
-
-[1] https://lkml.org/lkml/2011/5/27/206
-
+Thanks,
 
 -- 
-Regards,
-Namhyung Kim
-
-
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
