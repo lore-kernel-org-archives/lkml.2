@@ -1,151 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab1G1G0p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 02:26:45 -0400
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.95]:41441 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753814Ab1G1G0j (ORCPT
+	id S1754804Ab1G1Gbg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 02:31:36 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8573 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752732Ab1G1Gbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 02:26:39 -0400
-Date: Thu, 28 Jul 2011 02:26:16 -0400
-From: Ben Blum <bblum@andrew.cmu.edu>
-To: NeilBrown <neilb@suse.de>
-Cc: paulmck@linux.vnet.ibm.com, Ben Blum <bblum@andrew.cmu.edu>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Oleg Nesterov <oleg@tv-sign.ru>, containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Possible race between cgroup_attach_proc and de_thread, and
- questionable code in de_thread.
-Message-ID: <20110728062616.GC15204@unix33.andrew.cmu.edu>
-References: <20110727171101.5e32d8eb@notabene.brown>
- <20110727150710.GB5242@unix33.andrew.cmu.edu>
- <20110727234235.GA2318@linux.vnet.ibm.com>
- <20110728110813.7ff84b13@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110728110813.7ff84b13@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.5.19.222118
-X-SMTP-Spam-Clean: 8% (
- BODY_SIZE_4000_4999 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __ANY_URI 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __FRAUD_REFNUM 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS , __USER_AGENT 0)
-X-SMTP-Spam-Score: 8%
+	Thu, 28 Jul 2011 02:31:31 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 27 Jul 2011 23:31:31 -0700
+From: wni@nvidia.com
+To: sameo@linux.intel.com, mike@compulab.co.il, gking@nvidia.com,
+        nkumbhar@nvidia.com
+Cc: linux-kernel@vger.kernel.org, Wei Ni <wni@nvidia.com>
+Subject: [PATCH] mfd: tps6586x: add api to power off tps6586x
+Date: Thu, 28 Jul 2011 14:30:36 +0800
+Message-Id: <1311834636-15940-1-git-send-email-wni@nvidia.com>
+X-Mailer: git-send-email 1.7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 11:08:13AM +1000, NeilBrown wrote:
-> On Wed, 27 Jul 2011 16:42:35 -0700 "Paul E. McKenney"
-> <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > On Wed, Jul 27, 2011 at 11:07:10AM -0400, Ben Blum wrote:
-> > > On Wed, Jul 27, 2011 at 05:11:01PM +1000, NeilBrown wrote:
-> > 
-> > [ . . . ]
-> > 
-> > > >  The race as I understand it is with this code:
-> > > > 
-> > > > 
-> > > > 		list_replace_rcu(&leader->tasks, &tsk->tasks);
-> > > > 		list_replace_init(&leader->sibling, &tsk->sibling);
-> > > > 
-> > > > 		tsk->group_leader = tsk;
-> > > > 		leader->group_leader = tsk;
-> > > > 
-> > > > 
-> > > >  which seems to be called with only tasklist_lock held, which doesn't seem to
-> > > >  be held in the cgroup code.
-> > > > 
-> > > >  If the "thread_group_leader(leader)" call in cgroup_attach_proc() runs before
-> > > >  this chunk is run with the same value for 'leader', but the
-> > > >  while_each_thread is run after, then the while_read_thread() might loop
-> > > >  forever.  rcu_read_lock doesn't prevent this from happening.
-> > > 
-> > > Somehow I was under the impression that holding tasklist_lock (for
-> > > writing) provided exclusion from code that holds rcu_read_lock -
-> > > probably because there are other points in the kernel which do
-> > > while_each_thread with only RCU-read held (and not tasklist):
-> > > 
-> > > - kernel/hung_task.c, check_hung_uninterruptible_tasks()
-> > 
-> > This one looks OK to me.  The code is just referencing fields in each
-> > of the task structures, and appears to be making proper use of
-> > rcu_dereference().  All this code requires is that the task structures
-> > remain in existence through the full lifetime of the RCU read-side
-> > critical section, which is guaranteed because of the way the task_struct
-> > is freed.
-> 
-> I disagree.  It also requires - by virtue of the use of while_each_thread() -
-> that 'g' remains on the list that 't' is walking along.
-> 
-> Now for a normal list, the head always stays on the list and is accessible
-> even from an rcu-removed entry.  But the thread_group list isn't a normal
-> list.  It doesn't have a distinct head.  It is a loop of all of the
-> 'task_structs' in a thread group.  One of them is designated the 'leader' but
-> de_thread() can change the 'leader' - though it doesn't remove the old leader.
-> 
-> __unhash_process in mm/exit.c looks like it could remove the leader from the
-> list and definitely could remove a non-leader.
-> 
-> So if a non-leader calls 'exec' and the leader calls 'exit', then a
-> task_struct that was the leader could become a non-leader and then be removed
-> from the list that kernel/hung_task could be walking along.
+From: Wei Ni <wni@nvidia.com>
 
-That agrees with my understanding.
+Add an api to put tps6586x in sleep mode by resetting EXITSLREQ and
+setting SLEEP_MODE in SUPPLYENE register. It will power off ldos.
 
-> 
-> So I don't think that while_each_thread() is currently safe.  It depends on
-> the thread leader not disappearing and I think it can.
+Signed-off-by: Wei Ni <wni@nvidia.com>
+Signed-off-by: Nitin Kumbhar <nkumbhar@nvidia.com>
+---
+ drivers/mfd/tps6586x.c       |   29 +++++++++++++++++++++++++++++
+ include/linux/mfd/tps6586x.h |    1 +
+ 2 files changed, 30 insertions(+), 0 deletions(-)
 
-I think that while_each_thread is perfectly safe, it just needs to be
-protected properly while used. it reads the tasklist, and both competing
-paths (__unhash_process and de_thread) are done with tasklist_lock write
-locked, so read-locking ought to suffice. all it needs is to be better
-documented.
+diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+index bba26d9..d0eaa0a 100644
+--- a/drivers/mfd/tps6586x.c
++++ b/drivers/mfd/tps6586x.c
+@@ -27,6 +27,10 @@
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/tps6586x.h>
+ 
++#define TPS6586X_SUPPLYENE	0x14
++#define EXITSLREQ_BIT		BIT(1) /* Exit sleep mode request */
++#define SLEEP_MODE_BIT		BIT(3) /* Sleep mode */
++
+ /* GPIO control registers */
+ #define TPS6586X_GPIOSET1	0x5d
+ #define TPS6586X_GPIOSET2	0x5e
+@@ -251,6 +255,29 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(tps6586x_update);
+ 
++static struct i2c_client *tps6586x_i2c_client;
++int tps6586x_power_off(void)
++{
++	struct device *dev = NULL;
++	int ret = -EINVAL;
++
++	if (!tps6586x_i2c_client)
++		return ret;
++
++	dev = &tps6586x_i2c_client->dev;
++
++	ret = tps6586x_clr_bits(dev, TPS6586X_SUPPLYENE, EXITSLREQ_BIT);
++	if (ret)
++		return ret;
++
++	ret = tps6586x_set_bits(dev, TPS6586X_SUPPLYENE, SLEEP_MODE_BIT);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(tps6586x_power_off);
++
+ static int tps6586x_gpio_get(struct gpio_chip *gc, unsigned offset)
+ {
+ 	struct tps6586x *tps6586x = container_of(gc, struct tps6586x, gpio);
+@@ -525,6 +552,8 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
+ 		goto err_add_devs;
+ 	}
+ 
++	tps6586x_i2c_client = client;
++
+ 	return 0;
+ 
+ err_add_devs:
+diff --git a/include/linux/mfd/tps6586x.h b/include/linux/mfd/tps6586x.h
+index b6bab1b..cfbf387 100644
+--- a/include/linux/mfd/tps6586x.h
++++ b/include/linux/mfd/tps6586x.h
+@@ -74,5 +74,6 @@ extern int tps6586x_set_bits(struct device *dev, int reg, uint8_t bit_mask);
+ extern int tps6586x_clr_bits(struct device *dev, int reg, uint8_t bit_mask);
+ extern int tps6586x_update(struct device *dev, int reg, uint8_t val,
+ 			   uint8_t mask);
++extern int tps6586x_power_off(void);
+ 
+ #endif /*__LINUX_MFD_TPS6586X_H */
+-- 
+1.7.0
 
-> [...]
-> 
-> +/* Thread group leader can change, so stop loop when we see one
-> + * even if it isn't 'g' */
->  #define while_each_thread(g, t) \
-> -	while ((t = next_thread(t)) != g)
-> +	while ((t = next_thread(t)) != g && !thread_group_leader(t))
-
-this is semantically wrong: it will stop as soon as it finds a thread
-that has newly become the leader, and not run the loop body code in that
-thread's case. so the thread that just execed would not get run on, and
-in the case of my code, would "escape" the cgroup migration.
-
-but I argue it is also organisationally wrong. while_each_thread's
-purpose is just to worry about the structure of the process list, not to
-account for behavioural details of de_thread. this check belongs outside
-of the macro, and it should be protected by tasklist_lock in the same
-critical section in which while_each_thread is used.
-
--- Ben
-
->  
->  static inline int get_nr_threads(struct task_struct *tsk)
->  {
-> diff --git a/kernel/exit.c b/kernel/exit.c
-> index f2b321b..d6cef25 100644
-> --- a/kernel/exit.c
-> +++ b/kernel/exit.c
-> @@ -70,8 +70,13 @@ static void __unhash_process(struct task_struct *p, bool group_dead)
->  		list_del_rcu(&p->tasks);
->  		list_del_init(&p->sibling);
->  		__this_cpu_dec(process_counts);
-> -	}
-> -	list_del_rcu(&p->thread_group);
-> +	} else
-> +		/* only remove members from the thread group.
-> +		 * The thread group leader must stay so that
-> +		 * while_each_thread() uses can see the end of
-> +		 * the list and stop.
-> +		 */
-> +		list_del_rcu(&p->thread_group);
->  }
->  
->  /*
-> 
-> 
