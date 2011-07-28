@@ -1,106 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab1G1QSg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 12:18:36 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:58936 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755287Ab1G1QSe (ORCPT
+	id S1755525Ab1G1QV0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 12:21:26 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:57100 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754147Ab1G1QVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 12:18:34 -0400
-Message-ID: <4E318BD0.40202@lwfinger.net>
-Date: Thu, 28 Jul 2011 11:18:24 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Justin Piszcz <jpiszcz@lucidpixels.com>, Ivo van Doorn <IvDoorn@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>,
-        "users@rt2x00.serialmonkey.com" <users@rt2x00.serialmonkey.com>
-Subject: Re: 3.0: rt2800usb(Kernel PANIC) vs. rt2780sta(GOOD/2.6.38)
-References: <alpine.DEB.2.02.1107271851410.25432@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.02.1107271851410.25432@p34.internal.lan>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 28 Jul 2011 12:21:23 -0400
+Date: Thu, 28 Jul 2011 09:21:16 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Takashi Iwai <tiwai@suse.de>, Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Subject: Re: Build regressions/improvements in v3.0-rc7 (sound/isa/)
+Message-Id: <20110728092116.cc318545.rdunlap@xenotime.net>
+In-Reply-To: <20110728111709.8303f78c9b5f2b3aa3f391b0@canb.auug.org.au>
+References: <1310585610-434-1-git-send-email-geert@linux-m68k.org>
+	<20110724122624.324d10dc.rdunlap@xenotime.net>
+	<s5hy5zm3j5a.wl%tiwai@suse.de>
+	<20110725091003.c3453b8b.rdunlap@xenotime.net>
+	<20110727121320.f50b1e6b.rdunlap@xenotime.net>
+	<20110728111709.8303f78c9b5f2b3aa3f391b0@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2011 06:33 PM, Justin Piszcz wrote:
-> Hi,
->
-> Kernel 3.0 (rt2800usb driver- horrid, and then it panics moments after, see
-> picture below)
-> 64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=301 ttl=64 time=146 ms
-> 64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=302 ttl=64 time=274 ms
-> 64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=303 ttl=64 time=197 ms
-> 64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=304 ttl=64 time=115 ms
-> 64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=305 ttl=64 time=243 ms
-> 64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=306 ttl=64 time=265 ms
-> 64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=307 ttl=64 time=183 ms
-> 64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=308 ttl=64 time=201 ms
-> 64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=309 ttl=64 time=236 ms
->
-> Then it crashes if you use the network:
-> http://home.comcast.net/~jpiszcz/20110727/photo.JPG
->
-> With the rt2870sta driver, the machine has been solid for months (2.6.38) with
-> consistent low pings:
->
-> 64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=2 ttl=64 time=1.38 ms
-> 64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=3 ttl=64 time=0.520 ms
-> 64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=4 ttl=64 time=1.11 ms
-> 64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=5 ttl=64 time=0.573 ms
-> 64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=6 ttl=64 time=0.562 ms
->
-> Can we please get the rt2870sta back into the kernel?
+On Thu, 28 Jul 2011 11:17:09 +1000 Stephen Rothwell wrote:
 
-No. One of the reasons for deleting rt2870sta was that having it around was 
-preventing the use of rt2800usb and it was not getting debugged.
+> Hi Randy,
+> 
+> On Wed, 27 Jul 2011 12:13:20 -0700 Randy Dunlap <rdunlap@xenotime.net> wrote:
+> >
+> > On Mon, 25 Jul 2011 09:10:03 -0700 Randy Dunlap wrote:
+> > 
+> > > On Mon, 25 Jul 2011 09:37:53 +0200 Takashi Iwai wrote:
+> > > 
+> > > > At Sun, 24 Jul 2011 12:26:24 -0700,
+> > > > Randy Dunlap wrote:
+> > > > > 
+> > > > > On Wed, 13 Jul 2011 21:33:30 +0200 Geert Uytterhoeven wrote:
+> > > > > 
+> > > > > >   + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_disable':  => 544
+> > > > > >   + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 302
+> > > > > >   + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_program':  => 244
+> > > > > >   + src/sound/isa/es1688/es1688_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 509
+> > > > > >   + src/sound/isa/es1688/es1688_lib.c: error: implicit declaration of function 'snd_dma_program':  => 417
+> > > > > >   + src/sound/isa/gus/gus_dma.c: error: implicit declaration of function 'snd_dma_disable':  => 177
+> > > > > >   + src/sound/isa/gus/gus_dma.c: error: implicit declaration of function 'snd_dma_program':  => 79
+> > > > > >   + src/sound/isa/gus/gus_pcm.c: error: implicit declaration of function 'snd_dma_pointer':  => 619
+> > > > > >   + src/sound/isa/gus/gus_pcm.c: error: implicit declaration of function 'snd_dma_program':  => 591
+> > > > > >   + src/sound/isa/sb/sb16_main.c: error: implicit declaration of function 'snd_dma_pointer':  => 456
+> > > > > >   + src/sound/isa/sb/sb16_main.c: error: implicit declaration of function 'snd_dma_program':  => 276
+> > > > > >   + src/sound/isa/sb/sb8_main.c: error: implicit declaration of function 'snd_dma_pointer':  => 425
+> > > > > >   + src/sound/isa/sb/sb8_main.c: error: implicit declaration of function 'snd_dma_program':  => 172
+> > > > > >   + src/sound/isa/sscape.c: error: implicit declaration of function 'snd_dma_program':  => 481
+> > > > > >   + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_disable':  => 1695
+> > > > > >   + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 1160
+> > > > > >   + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_program':  => 1025
+> > > > > 
+> > > > > All of these source files do #include <sound/core.h>,
+> > > > > but these missing/implicit functions are conditional:
+> > > > > 
+> > > > > #ifdef CONFIG_ISA_DMA_API
+> > > > > #define DMA_MODE_NO_ENABLE	0x0100
+> > > > > 
+> > > > > void snd_dma_program(unsigned long dma, unsigned long addr, unsigned int size, unsigned short mode);
+> > > > > void snd_dma_disable(unsigned long dma);
+> > > > > unsigned int snd_dma_pointer(unsigned long dma, unsigned int size);
+> > > > > #endif
+> > > > > 
+> > > > > so should these drivers all depend on ISA_DMA_API ?
+> > > > 
+> > > > Yes, these are ISA sound cards, so they must have CONFIG_ISA and
+> > > > CONFIG_ISA_DMA.  Although CONFIG_SND_SB8_DSP, CONFIG_SND_SB16_DSP
+> > > > and CONFIG_SND_WSS_LIB have no direct dependency, but the drivers
+> > > > selecting these are all in "if SND_ISA" in sound/isa/Kconfig.
+> > > 
+> > > Hm, yes, they are.
+> > > 
+> > > > > or should only pieces of each driver depend on ISA_DMA_API ?
+> > > > 
+> > > > I wonder which configuration makes it possible.
+> > > > Did you see a similar problem with randconfig?
+> > > 
+> > > No.  This parisc allmodconfig file from linux-next builds has
+> > > CONFIG_SND_ISA=y but it does not have CONFIG_ISA_DMA_API enabled.  Weird.
+> > > 
+> > > Geert, do you know how this happens?
+> > > 
+> > > parisc config:  http://kisskb.ellerman.id.au/kisskb/buildresult/4323458/config/
+> > > from this failed build:  http://kisskb.ellerman.id.au/kisskb/buildresult/4323458/
+> > 
+> > How is CONFIG_ISA_DMA_API enabled in parisc allmodconfig?
+> > I don't see how that happens, and it's causing build errors...
+> 
+> Sorry, but I don't understand the question.  The problam is that
+> CONFIG_ISA_DMA_API is not enabled, right?  On parisc, it is just (from
+> arch/parisc/Kconfig)
+> 
+> config ISA_DMA_API
+> 	bool
+> 
+> and nothing selects it.  However, I would have expected an allmodconfig
+> to set it to y.  Clearly I don't understan how allmodconfig works any
+> more :-(
+> 
+> Michal, is my understanding correct?  Is this a bug in allmodconfig?
 
-This problem does not happen on my device.
+When I do:
+$ make ARCH=parisc O=PAR allmodconfig
 
-Bus 001 Device 004: ID 148f:3070 Ralink Technology, Corp. RT2870/RT3070 Wireless 
-Adapter
+I don't get CONFIG_ISA_DMA_API enabled, so the question is simply
+how is the linux-next build system ending up with CONFIG_ISA_DMA_API enabled?
+What commands are used to cause this?
 
-That device is an unbranded USB stick that I got from Ebay for $2.59. My pings are
 
-PING sonylap (192.168.1.50) 56(84) bytes of data.
-64 bytes from sonylap (192.168.1.50): icmp_req=1 ttl=64 time=13.2 ms
-64 bytes from sonylap (192.168.1.50): icmp_req=2 ttl=64 time=11.3 ms
-64 bytes from sonylap (192.168.1.50): icmp_req=3 ttl=64 time=10.3 ms
-64 bytes from sonylap (192.168.1.50): icmp_req=4 ttl=64 time=10.5 ms
-64 bytes from sonylap (192.168.1.50): icmp_req=5 ttl=64 time=11.6 ms
-64 bytes from sonylap (192.168.1.50): icmp_req=6 ttl=64 time=11.2 ms
-64 bytes from sonylap (192.168.1.50): icmp_req=7 ttl=64 time=10.1 ms
-64 bytes from sonylap (192.168.1.50): icmp_req=8 ttl=64 time=11.7 ms
-64 bytes from sonylap (192.168.1.50): icmp_req=9 ttl=64 time=10.7 ms
-64 bytes from sonylap (192.168.1.50): icmp_req=10 ttl=64 time=13.2 ms
-64 bytes from sonylap (192.168.1.50): icmp_req=11 ttl=64 time=10.2 ms
-64 bytes from sonylap (192.168.1.50): icmp_req=12 ttl=64 time=11.6 ms
-64 bytes from sonylap (192.168.1.50): icmp_req=13 ttl=64 time=10.7 ms
-64 bytes from sonylap (192.168.1.50): icmp_req=14 ttl=64 time=10.6 ms
-64 bytes from sonylap (192.168.1.50): icmp_req=15 ttl=64 time=16.0 ms
-64 bytes from sonylap (192.168.1.50): icmp_req=16 ttl=64 time=10.3 ms
-^C
---- sonylap ping statistics ---
-16 packets transmitted, 16 received, 0% packet loss, time 15025ms
-rtt min/avg/max/mdev = 10.194/11.499/16.075/1.502 ms
-
-Performance is adequate, but not sparkling. Using tcpperf, I get 6 Mbps upload 
-speed on an 802.11n network. The output of iwconfig says that I have a speed of 
-121.5 Mbps set, but I'm only getting 1/10th of the transmit rate that I would 
-expect for that setting.
-
-@Ivo: I don't know if you saw this or not. From the photo, the kernel panics on 
-a page fault in interrupt mode. The traceback is to rt2800usb_write_tx_desc+0x4, 
-which seems to implicate the inline routine get_skb_frame_desc(). The offending 
-statement is
-
-return (struct skb_frame_desc *)&IEEE80211_SKB_CB(skb)->driver_data;
-
-Any thoughts on how either the skb or the driver_data member might not be setup 
-correctly?
-
-Thanks,
-
-Larry
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
