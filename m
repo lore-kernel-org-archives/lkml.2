@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab1G1KQP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 06:16:15 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:52188 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab1G1KQH (ORCPT
+	id S1755182Ab1G1KSC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 06:18:02 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:52635 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838Ab1G1KSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 06:16:07 -0400
-Date: Thu, 28 Jul 2011 12:16:04 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [Q] compiler no longer warning about undeclared struct?
-In-Reply-To: <1311847409.3897.23.camel@thorin>
-Message-ID: <Pine.LNX.4.64.1107281211120.20737@axis700.grange>
-References: <Pine.LNX.4.64.1107271947490.7435@axis700.grange>
- <1311847409.3897.23.camel@thorin>
+	Thu, 28 Jul 2011 06:18:00 -0400
+Date: Thu, 28 Jul 2011 12:17:55 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Karel Zak <kzak@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] loop: add management interface for on-demand device
+ allocation
+Message-ID: <20110728101755.GH2622@htj.dyndns.org>
+References: <1311681033.1325.4.camel@mop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:J2bjqk6dP6dI7ByS7V7mUVGhNP51jluU94gIHzr3TGZ
- HIypjMZhVn9jVRuokAgAE7kIQmOPd7lIRkQvgovjRUoTEU7qhG
- JCdbgVJ/Gqb/DhTY/sJpkbwBiZAIdvX8ZZ0VBQvh8mt90dMdGy
- bC6W0+CgnSIaTkSwAdmyzPXPNaMWHbyWYqzCKYYYOHA8nymUT7
- fGQOiBuoBT5HKcewoQI1VkX6QEz9fx8QYCtNEA646M=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311681033.1325.4.camel@mop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Jul 2011, Bernd Petrovitsch wrote:
+Hello, Kay.
 
-> Hi!
+On Tue, Jul 26, 2011 at 01:50:30PM +0200, Kay Sievers wrote:
+> From: Kay Sievers <kay.sievers@vrfy.org>
+> Subject: loop: add management interface for on-demand device allocation
 > 
-> On Mit, 2011-07-27 at 19:57 +0200, Guennadi Liakhovetski wrote:
-> [....]
-> > I just ran across a driver in the kernel (drivers/media/video/ov2640.c, 
-> > struct ov2640_priv::info), that does something like
-> > 
-> > struct xx {
-> > 	struct yy *y;
-> > };
-> > 
-> > static void z(void)
-> > {
-> > 	struct xx *x;
-> > 	void *p;
-> > 
-> > 	x = ...;
-> > 	p = ...;
-> > 	x->y = p;
-> > }
-> > 
-> > where "struct yy" is nowhere declared, and the compiler happily swallows 
-> > this... Shouldn't it complain? Didn't it complain before?
-> 
-> It's normal C behaviour: As long as the compiler doesn't need the size
-> or fields of struct yy, it doesn't complain that it doesn't know the
-> details.
+> Loop devices today have a fixed pre-allocated number of usually 8.
+> The number can only be changed at init time. To find a free device
+> to use, /dev/loop%i needs to be scanned and all devices need to be
+> opened.
 
-I always thought you need forward declarations for those, as in
+It generally looks good to me but I really hope it were split into
+multiple patches.  I think it's a bit too big and doing too many
+different things.  Can you please split it up?
 
-struct yy;
+> +static int loop_lookup(struct loop_device **lo, int nr);
+> +static int loop_add(struct loop_device **lo, int nr);
 
-before declaring struct xx above.
+Also, can't these return loop_device * and ERR_PTR() value on errors?
 
-> Otherwise you could not define recursive structures as in
-> ----  snip  ----
-> struct a {
-> 	struct *b;
-> };
-> struct b {
-> 	struct *a;
-> };
-> ----  snip  ----
+Thanks.
 
-I would add a "struct b;" forward declaration before "struct a".
-
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+-- 
+tejun
