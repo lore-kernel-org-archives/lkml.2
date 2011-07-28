@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab1G1XJK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 19:09:10 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38848 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754753Ab1G1XJJ (ORCPT
+	id S1755418Ab1G1XJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 19:09:58 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:38918 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754757Ab1G1XJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 19:09:09 -0400
-Date: Thu, 28 Jul 2011 16:08:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: James Nuss <jamesnuss@nanometrics.ca>
-Cc: Rodolfo Giometti <giometti@linux.it>, Ricardo Martins <rasm@fe.up.pt>,
-        Ben Gardiner <bengardiner@nanometrics.ca>,
-        linux-kernel@vger.kernel.org, linuxpps@ml.enneenne.com,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Igor Plyatov <plyatov@gmail.com>
-Subject: Re: [PATCH v4 0/2] New PPS client driver using GPIO
-Message-Id: <20110728160835.aad5bd31.akpm@linux-foundation.org>
-In-Reply-To: <1311353744-16405-1-git-send-email-jamesnuss@nanometrics.ca>
-References: <1311353744-16405-1-git-send-email-jamesnuss@nanometrics.ca>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 28 Jul 2011 19:09:56 -0400
+From: jhbird.choi@samsung.com
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [PATCH] mm/memblock: small function definition fixes
+Date: Fri, 29 Jul 2011 08:01:20 +0900
+Message-Id: <1311894080-10231-1-git-send-email-jhbird.choi@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 22 Jul 2011 12:55:42 -0400
-James Nuss <jamesnuss@nanometrics.ca> wrote:
+From: Jonghwan Choi <jhbird.choi@samsung.com>
 
-> This patchset contains 2 patches.  It is based on the work done by
-> Ricardo Martins <rasm@fe.up.pt> who submitted an initial implementation [1]
-> of a PPS IRQ client driver to the linuxpps mailing-list on Dec 3 2010.
+warning: function 'memblock_memory_can_coalesce'
+with external linkage has definition.
 
-In which case it is rather desirable that we have Ricardo's Signed-off-by:
-for these patches, please.
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+---
+ mm/memblock.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/mm/memblock.c b/mm/memblock.c
+index ccbf973..3314cb4 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -267,7 +267,7 @@ static int __init_memblock memblock_double_array(struct memblock_type *type)
+ 	return 0;
+ }
+ 
+-extern int __init_memblock __weak memblock_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
++int __init_memblock __weak memblock_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
+ 					  phys_addr_t addr2, phys_addr_t size2)
+ {
+ 	return 1;
+-- 
+1.7.0
+
