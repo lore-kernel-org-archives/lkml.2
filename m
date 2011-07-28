@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971Ab1G1HWj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 03:22:39 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:39868 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754387Ab1G1HWf (ORCPT
+	id S1755031Ab1G1HlM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 03:41:12 -0400
+Received: from lvk-gate.cmc.msu.ru ([212.192.248.233]:59130 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753384Ab1G1HlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 03:22:35 -0400
-Message-ID: <4E310C44.9050002@gmail.com>
-Date: Thu, 28 Jul 2011 15:14:12 +0800
-From: gmail <teawater@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Thu, 28 Jul 2011 03:41:06 -0400
+X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Jul 2011 03:41:06 EDT
+X-Spam-ASN: 
+From: "Nikita V. Youshchenko" <yoush@cs.msu.su>
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [ANNOUNCE] 3.0-rt4
+Date: Thu, 28 Jul 2011 11:33:06 +0400
+User-Agent: KMail/1.9.9
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Jason Wessel <jason.wessel@windriver.com>, lasaine@lvk.cs.msu.su
+References: <alpine.LFD.2.02.1107272222420.2660@ionos>
+In-Reply-To: <alpine.LFD.2.02.1107272222420.2660@ionos>
 MIME-Version: 1.0
-To: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix a argument WARN bug of scripts/checkpatch.pl
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201107281133.09107@zigzag.lvk.cs.msu.su>
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry the prev patch have the format error.  So I re-send it.
+> The list of disabled config option is now:
+>
+>  - CONFIG_HIGHMEM [ see the mess it created in 33-rt ]
 
-Get following error with a patch that have min_t error:
-Use of uninitialized value in concatenation (.) or string at
-scripts/checkpatch.pl line 1256.
-WARNING:
-This is because:
-				}
-				WARN("$call() should probably be ${call}_t($cast, $arg1, $arg2)\n" . $herecurr);
-			}
-It lost the first argument.
-So make a patch to fix it.
+Could someone please point me to information on this?
 
-Signed-off-by: Hui Zhu <teawater@gmail.com>
----
- scripts/checkpatch.pl |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+In our setup, we do use PREEMPT_RT + HIGHMEM, on .33 for now (but want to 
+upgrade because of new hardware support issues with .33).  Up to now, we 
+did not face any issues related to PREEMPT_RT + HIGHMEM combination.
 
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2574,7 +2574,8 @@ sub process {
- 				} else {
- 					$cast = $cast2;
- 				}
--				WARN("$call() should probably be ${call}_t($cast, $arg1, $arg2)\n" . $herecurr);
-+				WARN("MINMAX",
-+				     "$call() should probably be ${call}_t($cast, $arg1, $arg2)\n" . $herecurr);
- 			}
- 		}
- 
+Nikita
