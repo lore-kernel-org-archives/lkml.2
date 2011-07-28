@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855Ab1G1RBB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 13:01:01 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:45885 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755807Ab1G1RBA (ORCPT
+	id S1755911Ab1G1RBi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 13:01:38 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:42878 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755745Ab1G1RBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 13:01:00 -0400
-Date: Thu, 28 Jul 2011 13:00:59 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Chris <chris@2net.co.uk>
-cc: Linux Kernel <linux-kernel@vger.kernel.org>, <mingo@redhat.com>
-Subject: Re: [RFC] [PATCH] Lightweight kernel condition variables: faster
- code, fewer bugs
-In-Reply-To: <4E2FE47F.1080406@2net.co.uk>
-Message-ID: <Pine.LNX.4.44L0.1107281256240.1990-100000@iolanthe.rowland.org>
+	Thu, 28 Jul 2011 13:01:37 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:x-system-of-record;
+	b=rt2NDrUqN/NySWe4L9yPVe+IV6Bg8DGAffRMZqSQLF7fvZnYDpIMKzohp0hyBBxTY
+	1a4Kgoje2IjgBbi9GQclw==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1311852512-7340-2-git-send-email-dengcheng.zhu@gmail.com>
+References: <1311852512-7340-1-git-send-email-dengcheng.zhu@gmail.com> <1311852512-7340-2-git-send-email-dengcheng.zhu@gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 28 Jul 2011 09:59:03 -0600
+Message-ID: <CAErSpo5hZGAzc17GApEfuzduvzh6haVLBKRvizcRxGLnh8ebuA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] PCI: make pci_claim_resource() work with conflict
+ resources as appropriate
+To: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+Cc: jbarnes@virtuousgeek.org, torvalds@linux-foundation.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, eyal@mips.com, zenon@mips.com,
+        Ralf Baechle <ralph@linux-mips.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 27 Jul 2011, Chris Simmonds wrote:
+On Thu, Jul 28, 2011 at 5:28 AM, Deng-Cheng Zhu <dengcheng.zhu@gmail.com> wrote:
+> In resolving a network driver issue with the MIPS Malta platform, the root
+> cause was traced into pci_claim_resource():
+>
+> MIPS System Controller's PCI I/O resources stay in 0x1000-0xffffff. When
+> PCI quirks start claiming resources using request_resource_conflict(),
+> collisions happen and -EBUSY is returned, thereby rendering the onboard AMD
+> PCnet32 NIC unaware of quirks' region and preventing the NIC from functioning.
+> For PCI quirks, PIIX4 ACPI is expected to claim 0x1000-0x103f, and PIIX4 SMB to
+> claim 0x1100-0x110f, both of which fall into the MSC I/O range. Certainly, we
+> can increase the start point of this range in arch/mips/mti-malta/malta-pci.c to
+> avoid the collisions. But a fix in here looks more justified, though it seems to
+> have a wider impact. Using insert_xxx as opposed to request_xxx will register
+> PCI quirks' resources as children of MSC I/O and return OK, instead of seeing
+> collisions which are actually resolvable.
 
-> Hi,
-> 
-> This patch adds lightweight condition variables to the kernel to reduce 
-> complexity and improve the efficiency of some synchronisation tasks. 
-> They are very similar to POSIX condition variables.
+What's the collision?  Can we see the dmesg log (which should have
+that information) and maybe the /proc/ioports contents?  Did something
+change the order in which we claim resources, so things that used to
+work now cause conflicts?
 
-...
+I think insert_resource() (where the newly-inserted resource can
+become the parent of something that was previously inserted) is sort
+of a hack, and the fact that we need it is telling us that we're doing
+things in the wrong order.  It's nicer when we can discover and claim
+resources in a top-down hierarchical way.  But I recognize that may
+not always be possible, or at least not convenient.
 
-> To wake up a thread sleeping on a condition variable you just use the 
-> normal wakeup calls, nothing new there. Except of course that you need 
-> to consider the locking round the variables (condition) that was just 
-> modified, but that should be in place already. There are many other 
-> examples in the code which could be improved in this way.
-> 
-> The patch that follows implements condition variables using mutexes and 
-> various sorts of spinlock as the locking primitive. I am aware that I 
-> have not covered all possibilities and that the code could be neater. At 
-> this point I just want to show the idea and get feedback.
-
-It seems like a reasonable sort of thing to do, as far as I can see.
-
-> diff --git a/include/linux/wait.h b/include/linux/wait.h
-> index 3efc9f3..76f9c25 100644
-> --- a/include/linux/wait.h
-> +++ b/include/linux/wait.h
-> @@ -662,7 +662,89 @@ static inline int wait_on_bit_lock(void *word, int bit,
->   		return 0;
->   	return out_of_line_wait_on_bit_lock(word, bit, action, mode);
->   }
-> -	
-> +
-> +/**
-> + * cond_wait - wait for a condition variable
-> + * @wq: the wait queue to wait on
-> + * @mutex: a locked mutex
-> + *
-> + * Safely put the calling task into a non-interruptible sleep on the
-> + * wait queue then unlock the mutex. Re-acquire the mutex after waking up
-> + */
-> +void cond_wait (wait_queue_head_t *wq, struct mutex *mutex)
-> +{
-> +	DEFINE_WAIT(__wait);
-> +
-> +	prepare_to_wait(wq, &__wait, TASK_UNINTERRUPTIBLE);
-> +	mutex_unlock (mutex);
-> +	schedule();
-> +	mutex_lock (mutex);
-> +	finish_wait(wq, &__wait);
-> +}
-
-One little problem here.  These routines may well be large enough
-that it's inefficient to inline them.  In that case they should be 
-declared in wait.h but defined somewhere else, such as kernel/wait.c.  
-Conversely, if you do think they deserve to be inlined then they should 
-be marked as such.
-
-Alan Stern
-
-P.S.: Does this come through checkpatch.pl unscathed?
-
+Bjorn
