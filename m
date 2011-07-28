@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092Ab1G1Xv2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 19:51:28 -0400
-Received: from mga11.intel.com ([192.55.52.93]:55935 "EHLO mga11.intel.com"
+	id S1756008Ab1G1Xo2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 19:44:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30203 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755994Ab1G1Xo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 19:44:29 -0400
+	id S1755994Ab1G1XoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 19:44:10 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,285,1309762800"; 
-   d="scan'208";a="33559478"
+   d="scan'208";a="33351749"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110728444.299940435@firstfloor.org>
 In-Reply-To: <20110728444.299940435@firstfloor.org>
-To: venki@google.com, ak@linux.intel.com, len.brown@intel.com,
-        hpa@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
+To: cooldavid@cooldavid.org, chrisw@sous-sol.org, davem@davemloft.net,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, stable@kernel.org,
         tim.bird@am.sony.com
-Subject: [PATCH] [24/50] x86: Look for IA32_ENERGY_PERF_BIAS support
-Message-Id: <20110728234428.B6FD82403FF@tassilo.jf.intel.com>
-Date: Thu, 28 Jul 2011 16:44:28 -0700 (PDT)
+Subject: [PATCH] [6/50] jme: Fix unmap error (Causing system freeze)
+Message-Id: <20110728234410.686042403FF@tassilo.jf.intel.com>
+Date: Thu, 28 Jul 2011 16:44:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,62 +25,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Venkatesh Pallipadi <venki@google.com>
+From: Guo-Fu Tseng <cooldavid@cooldavid.org>
 
-[ upstream commit 23016bf0 ]
+[ upstream commit 94c5b41b327e08de0ddf563237855f55080652a1 ]
 
-The new IA32_ENERGY_PERF_BIAS MSR allows system software to give
-hardware a hint whether OS policy favors more power saving,
-or more performance.  This allows the OS to have some influence
-on internal hardware power/performance tradeoffs where the OS
-has previously had no influence.
+This patch add the missing dma_unmap().
+Which solved the critical issue of system freeze on heavy load.
 
-The support for this feature is indicated by CPUID.06H.ECX.bit3,
-as documented in the Intel Architectures Software Developer's Manual.
+Michal Miroslaw's rejected patch:
+[PATCH v2 10/46] net: jme: convert to generic DMA API
+Pointed out the issue also, thank you Michal.
+But the fix was incorrect. It would unmap needed address
+when low memory.
 
-This patch discovers support of this feature and displays it
-as "epb" in /proc/cpuinfo.
+Got lots of feedback from End user and Gentoo Bugzilla.
+https://bugs.gentoo.org/show_bug.cgi?id=373109
+Thank you all. :)
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+Cc: stable@kernel.org
+Signed-off-by: Guo-Fu Tseng <cooldavid@cooldavid.org>
+Acked-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
-LKML-Reference: <alpine.LFD.2.00.1006032310160.6669@localhost.localdomain>
-Signed-off-by: Len Brown <len.brown@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 
-Index: linux-2.6.35.y/arch/x86/include/asm/cpufeature.h
+Index: linux-2.6.35.y/drivers/net/jme.c
 ===================================================================
---- linux-2.6.35.y.orig/arch/x86/include/asm/cpufeature.h
-+++ linux-2.6.35.y/arch/x86/include/asm/cpufeature.h
-@@ -162,6 +162,7 @@
- #define X86_FEATURE_IDA		(7*32+ 0) /* Intel Dynamic Acceleration */
- #define X86_FEATURE_ARAT	(7*32+ 1) /* Always Running APIC Timer */
- #define X86_FEATURE_CPB		(7*32+ 2) /* AMD Core Performance Boost */
-+#define X86_FEATURE_EPB		(7*32+ 3) /* IA32_ENERGY_PERF_BIAS support */
+--- linux-2.6.35.y.orig/drivers/net/jme.c
++++ linux-2.6.35.y/drivers/net/jme.c
+@@ -678,20 +678,28 @@ jme_make_new_rx_buf(struct jme_adapter *
+ 	struct jme_ring *rxring = &(jme->rxring[0]);
+ 	struct jme_buffer_info *rxbi = rxring->bufinf + i;
+ 	struct sk_buff *skb;
++	dma_addr_t mapping;
  
- /* Virtualization flags: Linux defined */
- #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
-Index: linux-2.6.35.y/arch/x86/include/asm/msr-index.h
-===================================================================
---- linux-2.6.35.y.orig/arch/x86/include/asm/msr-index.h
-+++ linux-2.6.35.y/arch/x86/include/asm/msr-index.h
-@@ -243,6 +243,8 @@
+ 	skb = netdev_alloc_skb(jme->dev,
+ 		jme->dev->mtu + RX_EXTRA_LEN);
+ 	if (unlikely(!skb))
+ 		return -ENOMEM;
  
- #define MSR_IA32_TEMPERATURE_TARGET	0x000001a2
- 
-+#define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
++	mapping = pci_map_page(jme->pdev, virt_to_page(skb->data),
++			       offset_in_page(skb->data), skb_tailroom(skb),
++			       PCI_DMA_FROMDEVICE);
++	if (unlikely(pci_dma_mapping_error(jme->pdev, mapping))) {
++		dev_kfree_skb(skb);
++		return -ENOMEM;
++	}
 +
- /* MISC_ENABLE bits: architectural */
- #define MSR_IA32_MISC_ENABLE_FAST_STRING	(1ULL << 0)
- #define MSR_IA32_MISC_ENABLE_TCC		(1ULL << 1)
-Index: linux-2.6.35.y/arch/x86/kernel/cpu/addon_cpuid_features.c
-===================================================================
---- linux-2.6.35.y.orig/arch/x86/kernel/cpu/addon_cpuid_features.c
-+++ linux-2.6.35.y/arch/x86/kernel/cpu/addon_cpuid_features.c
-@@ -33,6 +33,7 @@ void __cpuinit init_scattered_cpuid_feat
- 		{ X86_FEATURE_IDA,   		CR_EAX, 1, 0x00000006 },
- 		{ X86_FEATURE_ARAT,  		CR_EAX, 2, 0x00000006 },
- 		{ X86_FEATURE_APERFMPERF,	CR_ECX, 0, 0x00000006 },
-+		{ X86_FEATURE_EPB,		CR_ECX, 3, 0x00000006 },
- 		{ X86_FEATURE_CPB,   		CR_EDX, 9, 0x80000007 },
- 		{ X86_FEATURE_NPT,   		CR_EDX, 0, 0x8000000a },
- 		{ X86_FEATURE_LBRV,  		CR_EDX, 1, 0x8000000a },
++	if (likely(rxbi->mapping))
++		pci_unmap_page(jme->pdev, rxbi->mapping,
++			       rxbi->len, PCI_DMA_FROMDEVICE);
++
+ 	rxbi->skb = skb;
+ 	rxbi->len = skb_tailroom(skb);
+-	rxbi->mapping = pci_map_page(jme->pdev,
+-					virt_to_page(skb->data),
+-					offset_in_page(skb->data),
+-					rxbi->len,
+-					PCI_DMA_FROMDEVICE);
+-
++	rxbi->mapping = mapping;
+ 	return 0;
+ }
+ 
