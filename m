@@ -1,97 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076Ab1G1BzF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 21:55:05 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:41535 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753517Ab1G1By4 convert rfc822-to-8bit (ORCPT
+	id S1753951Ab1G1CH4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 22:07:56 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:45248 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752674Ab1G1CHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 21:54:56 -0400
+	Wed, 27 Jul 2011 22:07:51 -0400
+Message-ID: <4E30C46F.2030903@canonical.com>
+Date: Wed, 27 Jul 2011 19:07:43 -0700
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1107271446460.406@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1107221210160.21367@cl320.eecs.utk.edu>
-	<alpine.DEB.2.00.1107271446460.406@cl320.eecs.utk.edu>
-Date: Thu, 28 Jul 2011 09:54:55 +0800
-Message-ID: <CAF1ivSZkC71V+ownS+k0Qmi3S_HfETBkK3D+U4FYFZ=cojmoGg@mail.gmail.com>
-Subject: Re: [perf] overflow/perf_count_sw_cpu_clock crashes recent kernels
-From: Lin Ming <minggr@gmail.com>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        ming.m.lin@intel.com
+To: Daniel Kurtz <djkurtz@chromium.org>
+CC: dmitry.torokhov@gmail.com, rydberg@euromail.se, rubini@cvml.unipv.it,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
+        olofj@chromium.org
+Subject: Re: [PATCH 7/9 v2] Input: synaptics - improved 2->3 finger transition
+ handling
+References: <1311169146-20066-1-git-send-email-djkurtz@chromium.org> <1311169146-20066-8-git-send-email-djkurtz@chromium.org> <4E2A1ECD.3030302@canonical.com> <CAGS+omBCd=e0ACxxTwns8HVNitVOYF-xFrkVmhreOmHQTq_10A@mail.gmail.com> <4E2F4A66.1020207@canonical.com> <CAGS+omAwrXMC=U2Hx7EoJzUM+=PYyR4di0tDhq0oVnR_AAdEhQ@mail.gmail.com> <4E307F8A.6090707@canonical.com> <CAGS+omBr3adfENg5UDnbfPEFPg+0myKHFWb5qCSTt6wjVtvyeA@mail.gmail.com>
+In-Reply-To: <CAGS+omBr3adfENg5UDnbfPEFPg+0myKHFWb5qCSTt6wjVtvyeA@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 2:51 AM, Vince Weaver <vweaver1@eecs.utk.edu> wrote:
-> Hello
->
->> With 3.0.0 the PAPI "overflow_allcounters" test reliably locks up my
->> Nehalem system.
->
-> I finally managed to narrow this down to a small test, which is attached.
->
-> Basically measuring overflow on the perf::perf_count_sw_cpu_clock
-> event will potentially *lock up* your system from user-space.
->
-> This seems to be a long standing bug.  It will quickly lock solid
-> my Nehalem test box on 3.0, 2.6.39 and 2.6.38.
->
-> On a Core2 2.6.32 box the crash testing program will wedge and become
-> unkillable, but it doesn't actually kill the machine.
+On 07/27/2011 06:00 PM, Daniel Kurtz wrote:
+> On Thu, Jul 28, 2011 at 5:13 AM, Chase Douglas
+> <chase.douglas@canonical.com> wrote:
+> [...]
+>>>>
+>>>>> Would you prefer an implementation that continued to report count (via
+>>>>> BTN_TOUCH*) correctly, but dropped down to 0 or 1 MT-B slots when for
+>>>>> these cases where it could not determine the correct position or track_id
+>>>>> to report?
+>>>>
+>>>> That may be doable, but I would prefer to just assume that tracking ids
+>>>> are not valid when (tracked touches > reported touches).
+>>>
+>>> Userspace is free to make this assumption, of course, but, in fact,
+>>> the image sensor trackpad actually does a pretty good job of tracking
+>>> the fingers - it just has serious issues reporting them!
+>>> Since a track_id change is how userspace is told that the identity of
+>>> the reported finger is changing, if the track_id of a finger position
+>>> datum is unknowable, I'd rather just discard it in the kernel than
+>>> report it to userspace with the wrong track_id.
+>>> Otherwise, the heuristics used in the userspace finger tracking
+>>> algorithms would need to be overly aggressively tuned to handle this
+>>> known error cases:
+>>>   2->3 and 3->2 finger transitions look like 2nd finger motion,
+>>> instead of reported finger changes.
+>>>
+>>>>
+>>>>> It seems like it would be more work for userspace to handle this new way
+>>>>> than the simulated number-of-touch transitions, where the transient
+>>>>> states are all normal valid states.
+>>>>
+>>>> This harkens back to my earlier statements where I said this new
+>>>> Synaptics protocol is worse than the previous one :).
+>>>>
+>>>> I agree that the implementation you gave here might be trickier for
+>>>> userspace, so I'd rather table it unless you feel that the "tracking ids
+>>>> are meaningless!" solution won't work. If you think there are problems
+>>>> with that approach, we can re-evaluate.
+>>>>
+>>>> Thanks!
+>>>>
+>>>> -- Chase
+>>>
+>>> Yes, I feel there are problems with this approach, as I tried to explain above.
+>>> Can you explain why you 'continuation gestures' can't handle 1->2->3
+>>> finger transitions looking like 1->2->1->3, and 3->2->3 looking like
+>>> 3->2->0->3?
+>>>
+>>> I think the only real point left to decide is what BTN_* events should
+>>> signify during these rare transition states:
+>>>   (a) the actually number of fingers on the pad,
+>>>   (b) the number of fingers being reported via the slots
+>>>
+>>> The current patchset does (a).
+>>> We could do (b), if that would get these patches accepted sooner :)
+>>
+>> I was thinking that the current patchset does (b). I think (a) is
+>> better, and if it really works that way then I'm fine with it. It's hard
+>> for me to keep track of the flow of the logic across the patches :).
+> 
+> Argh, my bad.  You are correct.  Current patchset does (b)!
+> It reports the number of active slots, not the number of touches.
+> 
+> In any case, I really don't know why you need (a).  We are talking
+> about some degenerate transitions here.  Your userspace driver should
+> work just fine with the (b) driver, it just loses some really
+> complicated continued gestures for hardware that can't support them.
 
-Tried on my Nehalem machine, the testing program also becomes unkillable.
+To give userspace incorrect information about the number of touches on
+the device is always bad. Lets say the degenerate case is when you go
+from two touches to three (maybe Synaptics doesn't do this, but someone
+else might). When the user performs a three finger tap, we'd see two
+touches down, two lifted up, three touches down, three lifted up in
+short succession. Userspace is gonna get pretty confused about that :).
 
-[147868.734111] WARNING: at
-/home/zhyan/sources/linux-2.6/kernel/smp.c:320
-smp_call_function_single+0x68/0x104()
-[147868.734113] Hardware name: Studio XPS 8000
-[147868.734115] Modules linked in: ebtable_nat ebtables ipt_MASQUERADE
-iptable_nat nf_nat bridge stp llc rmd160 crypto_null camellia lzo
-cast6 cast5 deflate zlib_deflate cts ctr gcm ccm serpent blowfish
-twofish_generic twofish_i586 twofish_common ecb xcbc cbc
-sha256_generic sha512_generic des_generic aes_i586 geode_aes
-aes_generic ah6 ah4 esp6 esp4 xfrm4_mode_beet xfrm4_tunnel tunnel4
-xfrm4_mode_tunnel xfrm4_mode_transport xfrm6_mode_transport
-xfrm6_mode_ro xfrm6_mode_beet xfrm6_mode_tunnel ipcomp ipcomp6
-xfrm_ipcomp xfrm6_tunnel tunnel6 af_key sunrpc ip6t_REJECT
-nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables ipv6
-kvm_intel kvm uinput snd_hda_codec_hdmi snd_hda_codec_realtek
-snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device radeon
-snd_pcm snd_timer ttm drm_kms_helper drm snd broadcom tg3
-firewire_ohci firewire_core crc_itu_t i2c_i801 i2c_algo_bit soundcore
-serio_raw i2c_core snd_page_alloc usb_storage iTCO_wdt
-iTCO_vendor_support joydev dcdbas microcod
-e pcspkr [last unloaded: mperf]
-[147868.734175] Pid: 12152, comm: oflo_sw_cpu_clo Not tainted 3.0.0 #38
-[147868.734176] Call Trace:
-[147868.734180]  [<c043b29f>] warn_slowpath_common+0x6a/0x7f
-[147868.734183]  [<c0464440>] ? smp_call_function_single+0x68/0x104
-[147868.734186]  [<c04a5bc8>] ? perf_event_tid+0x21/0x21
-[147868.734189]  [<c043b2c8>] warn_slowpath_null+0x14/0x18
-[147868.734191]  [<c0464440>] smp_call_function_single+0x68/0x104
-[147868.734193]  [<c04a5c3c>] task_function_call+0x37/0x40
-[147868.734196]  [<c04a68e7>] ? __perf_event_exit_context+0x7e/0x7e
-[147868.734199]  [<c04a5cf0>] perf_event_disable+0x38/0x75
-[147868.734201]  [<c04a9e13>] __perf_event_overflow+0x15a/0x209
-[147868.734205]  [<c0432f5e>] ? get_parent_ip+0xb/0x31
-[147868.734209]  [<c0457fc8>] ? local_clock+0x22/0x2b
-[147868.734211]  [<c04aa461>] perf_event_overflow+0x11/0x13
-[147868.734214]  [<c04aa4f8>] perf_swevent_hrtimer+0x95/0xed
-[147868.734218]  [<c05d1291>] ? timerqueue_del+0x49/0x56
-[147868.734221]  [<c0455a8c>] ? __remove_hrtimer+0x58/0x75
-[147868.734223]  [<c0455cea>] __run_hrtimer+0xb0/0x12f
-[147868.734226]  [<c04aa463>] ? perf_event_overflow+0x13/0x13
-[147868.734228]  [<c0456691>] hrtimer_interrupt+0xe9/0x1ce
-[147868.734233]  [<c04198cb>] smp_apic_timer_interrupt+0x5d/0x70
-[147868.734236]  [<c07cf1ad>] apic_timer_interrupt+0x31/0x38
-[147868.734238] ---[ end trace a164f652f8bfd400 ]---
-[147928.569073] INFO: rcu_preempt_state detected stalls on CPUs/tasks:
-{ 6} (detected by 7, t=60002 jiffies)
-[147930.784928] INFO: rcu_bh_state detected stalls on CPUs/tasks: { 6}
-(detected by 4, t=60002 jiffies)
+(Please don't make me try to come up with a use case we already have in
+Unity that would be broken for Synaptics due to this. I could probably
+find one, but it would take quite a bit of thinking. :)
 
-Lin Ming
+>> That said, merging this patchset as is effectively means that the number
+>> of slots is completely decoupled from the number of touches on the
+>> device. Previously, one could say that the number of touches on the
+>> device was equal to the number of open slots or more if all slots were
+>> open. With this approach, we could have 0 slots open during a transition
+>> when there are still touches down.
+>>
+>> While the distinction makes sense for these synaptics devices, I don't
+>> want the semantics to hold for full multitouch devices. Otherwise, we
+>> would have to add many more BTN_*TAPs. If we go this route, we must have
+>> a way to tell userspace that this is a special device where the number
+>> of active touches can only be determined from BTN_*TAP. Thus, we would
+>> need a property for this exception to normal behavior.
+> 
+> Henrik & Dmitry roughly suggested "do not define a new property; let
+> userspace detect max BTN_*TAP > ABS_MT_SLOT.max to indicate that
+> BTN_*TAP carries the total number of touches".  I wish they would
+> chime in on this patchset...
+
+I think it sets a really bad precedent to obey the stated protocol in
+most cases, but disregard it in others if specific conditions are met,
+which are not documented and are not presented in a clear manner to
+userspace. At the *very least*, this change would need documentation to
+go in at the same time, but I strongly believe a property is merited here.
+
+-- Chase
