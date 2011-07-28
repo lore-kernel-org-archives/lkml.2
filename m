@@ -1,105 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab1G1CNf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 22:13:35 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:49431 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751517Ab1G1CNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 22:13:30 -0400
-Date: Thu, 28 Jul 2011 02:13:29 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        containers@lists.linux-foundation.org, dhowells@redhat.com
-Subject: Re: [PATCH 02/14] allow root in container to copy namespaces
-Message-ID: <20110728021329.GA3774@hallyn.com>
-References: <1311706717-7398-1-git-send-email-serge@hallyn.com>
- <1311706717-7398-3-git-send-email-serge@hallyn.com>
- <m1hb67fh9l.fsf@fess.ebiederm.org>
+	id S1752017Ab1G1CdY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 22:33:24 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38842 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753103Ab1G1CdR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 22:33:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1hb67fh9l.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LRH.2.00.1107281209010.4722@tundra.namei.org>
+References: <alpine.LRH.2.00.1107281209010.4722@tundra.namei.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 27 Jul 2011 19:32:53 -0700
+Message-ID: <CA+55aFzhg+W86y7TNQ6iqFEibfy+L9irxEHLd9VOy2+mTdWTSA@mail.gmail.com>
+Subject: Re: [GIT] Security subsystem changes for 3.1
+To: James Morris <jmorris@namei.org>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> Serge Hallyn <serge@hallyn.com> writes:
-> 
-> > From: Serge E. Hallyn <serge.hallyn@canonical.com>
-> >
-> > Othewise nested containers with user namespaces won't be possible.
-> >
-> > It's true that user namespaces are not yet fully isolated, but for
-> > that same reason there are far worse things that root in a child
-> > user ns can do.  Spawning a child user ns is not in itself bad.
-> >
-> > This patch also allows setns for root in a container:
-> > @Eric Biederman: are there gotchas in allowing setns from child
-> > userns?
-> 
-> Yes.  We need to ensure that the target namespaces are namespaces
-> that have been created in from user_namespace or from a child of this
-> user_namespace.
-> 
-> Aka we need to ensure that we have CAP_SYS_ADMIN for the new namespace.
+On Wed, Jul 27, 2011 at 7:13 PM, James Morris <jmorris@namei.org> wrote:
+> Please pull.
+>
+> Highlights for this window are a major upgrade to Tomoyo and a whole bunch
+> of TPM fixes.  Fairly quiet otherwise.
 
-Thanks - so the last hunk in this patch is wrong.
+Argh. Please don't pre-resolve conflicts outside of your subsystem.
 
-> Eric
-> 
-> > Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> > Cc: Eric W. Biederman <ebiederm@xmission.com>
-> > ---
-> >  kernel/fork.c    |    4 ++--
-> >  kernel/nsproxy.c |    6 +++---
-> >  2 files changed, 5 insertions(+), 5 deletions(-)
-> >
-> > diff --git a/kernel/fork.c b/kernel/fork.c
-> > index 17bf7c8..22d0cf0 100644
-> > --- a/kernel/fork.c
-> > +++ b/kernel/fork.c
-> > @@ -1473,8 +1473,8 @@ long do_fork(unsigned long clone_flags,
-> >  		/* hopefully this check will go away when userns support is
-> >  		 * complete
-> >  		 */
-> > -		if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SETUID) ||
-> > -				!capable(CAP_SETGID))
-> > +		if (!nsown_capable(CAP_SYS_ADMIN) || !nsown_capable(CAP_SETUID) ||
-> > +				!nsown_capable(CAP_SETGID))
-> >  			return -EPERM;
-> >  	}
-> >  
-> > diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-> > index 9aeab4b..f50542d 100644
-> > --- a/kernel/nsproxy.c
-> > +++ b/kernel/nsproxy.c
-> > @@ -134,7 +134,7 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
-> >  				CLONE_NEWPID | CLONE_NEWNET)))
-> >  		return 0;
-> >  
-> > -	if (!capable(CAP_SYS_ADMIN)) {
-> > +	if (!nsown_capable(CAP_SYS_ADMIN)) {
-> >  		err = -EPERM;
-> >  		goto out;
-> >  	}
-> > @@ -191,7 +191,7 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
-> >  			       CLONE_NEWNET)))
-> >  		return 0;
-> >  
-> > -	if (!capable(CAP_SYS_ADMIN))
-> > +	if (!nsown_capable(CAP_SYS_ADMIN))
-> >  		return -EPERM;
-> >  
-> >  	*new_nsp = create_new_namespaces(unshare_flags, current,
-> > @@ -241,7 +241,7 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
-> >  	struct file *file;
-> >  	int err;
-> >  
-> > -	if (!capable(CAP_SYS_ADMIN))
-> > +	if (!nsown_capable(CAP_SYS_ADMIN))
-> >  		return -EPERM;
-> >  
-> >  	file = proc_ns_fget(fd);
+I *want* to see conflicts. I want to see who is stepping on whose
+toes, and where problems occur.
+
+If you know it's some complicated conflict (this one really wasn't), I
+do appreciate if it people do a "I have a pre-resolved branch in xyz,
+so you can verify the end result from there, or just take it if you
+are lazy", but even that isn't really required. If it really ends up
+being too complicated for me, and no such branch exists, I'll let you
+know. It happens, although it's pretty rare.
+
+So I took the unresolved branch instead of your merge,
+
+                              Linus
