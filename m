@@ -1,62 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab1G1Tsc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 15:48:32 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:13414 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754565Ab1G1Ts3 (ORCPT
+	id S1755425Ab1G1T4O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 15:56:14 -0400
+Received: from mss-uk.mssgmbh.com ([217.174.251.109]:46877 "EHLO
+	mss-uk.mssgmbh.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919Ab1G1T4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 15:48:29 -0400
-Date: Thu, 28 Jul 2011 21:48:27 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: alsa-devel@alsa-project.org, Joe Perches <joe@perches.com>,
-        Eliot Blennerhassett <eblennerhassett@audioscience.com>,
-        Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
-        support@audioscience.com
-Subject: [PATCH] Sound: AudioScience HPI: Don't leak firmware if mem alloc
- fails
-Message-ID: <alpine.LNX.2.00.1107282145230.20477@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 28 Jul 2011 15:56:13 -0400
+To: Patrick McHardy <kaber@trash.net>
+Cc: Rainer Weikusat <rweikusat@mobileactivedefense.com>,
+        netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] netfilter: add per-namespace logging to nfnetlink_log.c (updated again)
+In-Reply-To: <4E310918.2040504@trash.net> (Patrick McHardy's message of "Thu\, 28 Jul 2011 09\:00\:40 +0200")
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+References: <8739i3fp6s.fsf@sapphire.mobileactivedefense.com>
+	<20110718191956.GA2489@p183.telecom.by>
+	<87hb6je5nh.fsf@sapphire.mobileactivedefense.com>
+	<20110718.124638.30010338187296272.davem@davemloft.net>
+	<87d3h7e43n.fsf@sapphire.mobileactivedefense.com>
+	<alpine.LNX.2.01.1107182218170.9579@frira.zrqbmnf.qr>
+	<878vruymq6.fsf@sapphire.mobileactivedefense.com>
+	<87sjq1xab8.fsf_-_@sapphire.mobileactivedefense.com>
+	<87y5zlgtmh.fsf_-_@sapphire.mobileactivedefense.com>
+	<4E310918.2040504@trash.net>
+From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
+Date: Thu, 28 Jul 2011 20:56:03 +0100
+Message-ID: <87fwlqch7w.fsf@sapphire.mobileactivedefense.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We leak the memory allocated to 'firmware' when we fail to
-release_firmware() after a kmalloc() failure in hpi_dsp_code_open().
-This patch should take care of the leak.
+Patrick McHardy <kaber@trash.net> writes:
+> On 26.07.2011 13:37, Rainer Weikusat wrote:
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- sound/pci/asihpi/hpidspcd.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+[...]
 
-	Build tested only.
+>> +static inline struct nfulnl_instances *instances_for_net(struct net *net)
+>> +{
+>> +	return net_generic(net, nfulnl_net_id);
+>> +}
+>> +#else
+>> +static inline struct nfulnl_instances *instances_for_net(struct net *net)
+>> +{
+>> +	return instances;
+>> +}
+>> +#endif
+>
+> We use net_generic unconditionally everywhere else, there's no reason
+> for nfnetlink_log not to.
 
-diff --git a/sound/pci/asihpi/hpidspcd.c b/sound/pci/asihpi/hpidspcd.c
-index 3a7afa3..8d261ef 100644
---- a/sound/pci/asihpi/hpidspcd.c
-+++ b/sound/pci/asihpi/hpidspcd.c
-@@ -85,8 +85,10 @@ short hpi_dsp_code_open(u32 adapter, void *os_data, struct dsp_code *dsp_code,
- 
- 	HPI_DEBUG_LOG(DEBUG, "dsp code %s opened\n", fw_name);
- 	dsp_code->pvt = kmalloc(sizeof(*dsp_code->pvt), GFP_KERNEL);
--	if (!dsp_code->pvt)
-+	if (!dsp_code->pvt) {
-+		release_firmware(firmware);
- 		return HPI_ERROR_MEMORY_ALLOC;
-+	}
- 
- 	dsp_code->pvt->dev = dev;
- 	dsp_code->pvt->firmware = firmware;
--- 
-1.7.6
+I don't really care for the non-netns per-packet overhead, at least
+not at the moment, so that's fine with me.
 
+>>> +static struct nfulnl_instances *instances_via_skb(struct sk_buff const *skb)
+>> +{
+>> +	struct net *net;
+>> +
+>> +	net = skb->sk ? sock_net(skb->sk) :
+>> +		(skb->dev ? dev_net(skb->dev) : &init_net);
+>
+> You don't need to manually handle init_net, the *_net functions will
+> do the right thing.
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+The code of dev_net is
 
+	static inline
+	struct net *dev_net(const struct net_device *dev)
+	{
+	        return read_pnet(&dev->nd_net);
+	}
+
+and read_pnet is
+
+	static inline struct net *read_pnet(struct net * const *pnet)
+	{
+	        return *pnet;
+	}
+
+consequently, this will happily derefences an invalid pointer (namely
+0 + offsetof(struct net_device, nd_net).         
+
+> I'd suggest to use dev_net(skb->dev ? skb->dev : skb_dst(skb)->dev).
+
+I've checked that this should actually work and changed the code
+accordingly.
+
+> This function is also only used once and doesn't really make things
+> easier to read, please get rid of it and open code.
+
+Open-coded, this looks like this:
+
+	inst = instance_lookup_get(instances_for_net(
+					dev_net(skb->dev ?
+						skb->dev : skb_dst(skb)->dev)),
+				li->u.ulog.group);
+
+and I disagree with the assessment that 'helper functions with
+descriptive names' should be avoided, especially since they are free
+(and I'm just quoting CodingStyle.txt because I happen to agree with
+this opinion).
+
+>>  static struct nfulnl_instance *
+>> -instance_lookup_get(u_int16_t group_num)
+>> +instance_lookup_get(struct nfulnl_instances *instances, u_int16_t group_num)
+>
+> I'd suggest to pass the net * pointer to this function instead of doing
+> the lookup in the calling functions. Should save a bit of code and also
+> is a more common pattern used with namespaces.
+
+It actually requires more code because the instances_for_net/
+net_generic code then needs to appear in __instance_lookup,
+instance_create and instances_destroy while it is presently only once
+in nfulnl_recv_config. The really ugly one would be _create which
+would need to lookup the per-netns instances table and pass the struct
+net * on to a function called by it so that this function can do the
+same lookup again.
+
+[...]
+
+>> -static int __init nfnetlink_log_init(void)
+>> +static int nfulnl_net_init(struct net *net)
+>>  {
+>> -	int i, status = -ENOMEM;
+>> +	struct nfulnl_instances *insts;
+>> +	int i;
+>>  
+>> -	for (i = 0; i < INSTANCE_BUCKETS; i++)
+>> -		INIT_HLIST_HEAD(&instance_table[i]);
+>> +	insts = net_generic(net, nfulnl_net_id);
+>> +	insts->net = net;
+>> +	spin_lock_init(&insts->lock);
+>> +
+>> +	i = INSTANCE_BUCKETS;
+>> +	do INIT_HLIST_HEAD(insts->table + --i); while (i);
+>
+> Don't put this on one line and please choose a slightly
+> more readable construct than + --i while (i).
+
+I also disagree with the assessment that the clumsy
+
+	for (i = 0; i < INSTANCE_BUCKETS; ++i)
+		INIT_HLIST_HEAD(&insts->table[i]);
+
+is inherently more 'readable' than a variant which uses features that
+are available in C (but not in Pascal. Oh dear ...) in order to
+express the algorithm which is actually needed in a more direct way.
+But if in Rome ...
+
+I've changed the code as you suggested, except distributing
+net_generic/ instances_for_net calls all over the file instead of
+doing this once in an upper layer function. Please feel to drop this
+on the floor until someone with more 'Linux kernel street credibility'
+reimplements it. I need this to work. I don't need my name in the
+kernel changelog. I've made a copy of it available in order to be
+'nice to others', since this seemed the right thing to do but I cannot
+(and won't) spend an eternity on doing practical penance for the fact
+that the way I use C (and structure code) is different from the way
+you use C (and structure code).
