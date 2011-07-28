@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab1G1GOk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 02:14:40 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47967 "EHLO
+	id S1753570Ab1G1GSB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 02:18:01 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38970 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab1G1GOc (ORCPT
+	with ESMTP id S1751434Ab1G1GRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 02:14:32 -0400
-Subject: Re: [PATCH] UBI: new module ubiblk: block layer on top of UBI
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: David Wagner <david.wagner@free-electrons.com>
-Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org,
-        tim.bird@am.sony.com
-Date: Thu, 28 Jul 2011 09:14:18 +0300
-In-Reply-To: <1311683250-7921-1-git-send-email-david.wagner@free-electrons.com>
-References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com>
-	 <1311683250-7921-1-git-send-email-david.wagner@free-electrons.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 8bit
-Message-ID: <1311833667.2169.1.camel@koala>
-Mime-Version: 1.0
+	Thu, 28 Jul 2011 02:17:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <1309984979-8847-2-git-send-email-robherring2@gmail.com>
+References: <1309984979-8847-1-git-send-email-robherring2@gmail.com> <1309984979-8847-2-git-send-email-robherring2@gmail.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Thu, 28 Jul 2011 14:17:33 +0800
+Message-ID: <CAGsJ_4zXY4HVF6=e4w0ja90HrQzwaaokoSM6tEt06amFMZYMHg@mail.gmail.com>
+Subject: Re: [PATCH v4 2/2] ARM: l2x0: Add OF based initialization
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        linux@arm.linux.org.uk, workgroup.linux@csr.com,
+        Olof Johansson <olof@lixom.net>, tglx@linutronix.de,
+        weizeng.he@csr.com, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-26 at 14:27 +0200, David Wagner wrote:
->  * The numbering of devices is much easier with ubiblk than with
->    gluebi+mtdblock_ro. With gluebi+mtdblock_ro, you get one additional
->    MTD device for each UBI volume, so the number of MTD devices grows
->    quite a lot and is a bit difficult to understand. For example,
->    mtdblock[0-4] might be your real MTD partitions, while mtdblock[5-9]
->    might be your UBI volumes.
->    It also means that if a new real MTD
->    partition is added, the number of all the MTD devices exposing UBI
->    volumes will be incremented by one, which is a bit
->    confusing/annoying.
->    As well, if you add an UBI volume, the mtdblock devices that are
->    emulated on top of volumes that come after this new one will have
->    their ID incremented.
-> 
->  * The performance appears to be slightly better with ubiblk than
->    gluebi+mtdblock_ro, according to our benchmarks (see
->    http://elinux.org/Flash_Filesystem_Benchmarks_2.6.39)
+2011/7/7 Rob Herring <robherring2@gmail.com>:
+> From: Rob Herring <rob.herring@calxeda.com>
+>
+> This adds probing for ARM L2x0 cache controllers via device tree. Support
+> includes the L210, L220, and PL310 controllers. The binding allows setting
+> up cache RAM latencies and filter addresses (PL310 only).
+>
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
 
-Hi, I am having vacation till the middle of August and I do not have a
-possibility to look at UBI/UBIFS/MTD stuff now, sorry. When I come back,
-I'll go through my e-mails and respond. Apologies again.
+Acked-by: Barry Song <21cnbao@gmail.com>
 
--- 
-Best Regards,
-Artem Bityutskiy (Битюцкий Артём)
-
+-barry
