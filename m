@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042Ab1G1IXH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 04:23:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24014 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754263Ab1G1IXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 04:23:01 -0400
-Date: Thu, 28 Jul 2011 10:24:26 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: gregkh@suse.de, herton.krzesinski@canonical.com, gengor@gentoo.org,
-        donald.h.fry@intel.com, wey-yi.w.guy@intel.com, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: Re: [PATCH] [64/99] Revert "iwlagn: Support new 5000 microcode."
-Message-ID: <20110728082425.GA2207@redhat.com>
-References: <20110727247.325703029@firstfloor.org>
- <20110727214903.75C262403FF@tassilo.jf.intel.com>
+	id S1755090Ab1G1IYy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 04:24:54 -0400
+Received: from lvk-gate.cmc.msu.ru ([212.192.248.233]:59632 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754547Ab1G1IYs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 04:24:48 -0400
+X-Spam-ASN: 
+From: "Nikita V. Youshchenko" <yoush@cs.msu.su>
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [ANNOUNCE] 3.0-rt4
+Date: Thu, 28 Jul 2011 12:24:41 +0400
+User-Agent: KMail/1.9.9
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Jason Wessel <jason.wessel@windriver.com>, lasaine@lvk.cs.msu.su
+References: <alpine.LFD.2.02.1107272222420.2660@ionos> <201107281133.09107@zigzag.lvk.cs.msu.su> <alpine.LFD.2.02.1107280945080.2660@ionos>
+In-Reply-To: <alpine.LFD.2.02.1107280945080.2660@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20110727214903.75C262403FF@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Message-Id: <201107281224.44323@zigzag.lvk.cs.msu.su>
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 02:49:03PM -0700, Andi Kleen wrote:
-> 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> This reverts commit 6f63415fc1b690cb50c2ad48ba6e9e6e88e271b4.
-> 
-> It turns out this is not what we want to have happen for the .32 and
-> .33-longterm kernels as it does not work properly at all.
+> On Thu, 28 Jul 2011, Nikita V. Youshchenko wrote:
+> > > The list of disabled config option is now:
+> > >
+> > >  - CONFIG_HIGHMEM [ see the mess it created in 33-rt ]
+> >
+> > Could someone please point me to information on this?
+> >
+> > In our setup, we do use PREEMPT_RT + HIGHMEM, on .33 for now (but want
+> > to upgrade because of new hardware support issues with .33).  Up to
+> > now, we did not face any issues related to PREEMPT_RT + HIGHMEM
+> > combination.
+>
+> Yes, it works in 33-rt, but the way it's implemented is a horrible
+> hack. I had not enough capacity to implement that cleanly for 3.0-rt,
+> so I simply dropped it for now. The preliminary patches are there
+> (mainly distangling the disable_pagefault logic), so it should not be
+> that hard.
 
-Hmm, it does not work on .32 and .33 because they do not contain
-the commit (which 2.6.35 has):
+Thanks Thomas.
 
-commit dd7a2509b3a79b290730a9c6a784bf03fedabb9a
-Author: Johannes Berg <johannes.berg@intel.com>
-Date:   Wed Apr 28 23:33:10 2010 -0700
+Since we do need PREEMPT_RT + HIGHMEM for our use case (*), I can ask one 
+of our engineers to look into this. But for that, I need to get better 
+understanding of what the issue is. Could you please explain in a few 
+sentences, or point me to some information from where I could get the 
+picture?
 
-    iwlagn: implement loading a new firmware file type
+Nikita
 
-> This was reported by Gentoo, Arch, and Canonical developers as causing
-> problems for their users:
-> 	https://bugs.archlinux.org/task/24302
-This is a bug about 2.6.32.
-
-> 	http://bugs.gentoo.org/show_bug.cgi?id=359445
-This looks like problem when only 8.83.5 (v5) firmware is available
-on the system, but kernel is old and support only v2 version. This
-should be solved by providing both old 8.24.2 (v2) and new 8.83.5 (v5)
-firmware blobs in one package.
-
-> 	https://bugs.launchpad.net/ubuntu/+source/linux/+bug/796336
-Also 2.6.32 case.
-
-There could be reasons for this change, but I do not see them here.
-
-Stanislaw
+(*) we need >1G of memory for data buffers, and have too much legacy 
+software components so moving to 64bit system is not practical within 
+available resource
