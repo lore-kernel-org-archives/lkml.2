@@ -1,312 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab1G1Uty (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 16:49:54 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:32160 "EHLO mx2.netapp.com"
+	id S1755745Ab1G1U4O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 16:56:14 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:55716 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754748Ab1G1Utx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 16:49:53 -0400
-X-IronPort-AV: E=Sophos;i="4.67,284,1309762800"; 
-   d="scan'208";a="566370722"
-Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Date: Thu, 28 Jul 2011 16:48:57 -0400
-In-Reply-To: <alpine.DEB.2.02.1107271844100.25432@p34.internal.lan>
-References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>
-	  <20110727160752.GC974@fieldses.org>
-	  <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
-	  <20110727181111.GA23009@infradead.org>
-	  <alpine.DEB.2.02.1107271530340.1451@p34.internal.lan>
-	  <20110727193937.GA5354@infradead.org>
-	  <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>
-	  <20110727194722.GA9345@infradead.org>
-	  <1311799021.25645.41.camel@lade.trondhjem.org>
-	  <1311800051.25645.43.camel@lade.trondhjem.org>
-	 <1311800195.25645.45.camel@lade.trondhjem.org>
-	 <alpine.DEB.2.02.1107271723500.25432@p34.internal.lan>
-	 <alpine.DEB.2.02.1107271844100.25432@p34.internal.lan>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Message-ID: <1311886137.27285.2.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-OriginalArrivalTime: 28 Jul 2011 20:48:58.0952 (UTC) FILETIME=[C6395C80:01CC4D67]
+	id S1755413Ab1G1U4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 16:56:11 -0400
+Date: Thu, 28 Jul 2011 13:56:00 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, David Miller <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Mike Frysinger <vapier@gentoo.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 0/3] rcu: Fix some rcu uses in extended quiescent state
+Message-ID: <20110728205600.GU2403@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1310416472-2554-1-git-send-email-fweisbec@gmail.com>
+ <20110715233203.GM2327@linux.vnet.ibm.com>
+ <20110715234154.GC6590@somewhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110715234154.GC6590@somewhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-27 at 18:44 -0400, Justin Piszcz wrote: 
+On Sat, Jul 16, 2011 at 01:41:56AM +0200, Frederic Weisbecker wrote:
+> On Fri, Jul 15, 2011 at 04:32:03PM -0700, Paul E. McKenney wrote:
+> > On Mon, Jul 11, 2011 at 10:34:29PM +0200, Frederic Weisbecker wrote:
+> > > Hi,
+> > > 
+> > > First patch lays the ground to fix rcu uses in dyntick idle mode
+> > > by splitting rcu extended qs state logic from tick nohz one.
+> > > 
+> > > The rest fixes the misuses that RCU has detected for me in x86.
+> > 
+> > These look good to me -- I have queued them and will try testing
+> > them out.
+> > 
+> > > I'll try to fix those Paul has detected in PowerPc.
+> > 
+> > Looking forward to that one as well.  ;-)
+> > 
+> > It would be really cool if this approach could serve as RCU's idle-CPU
+> > detection regardless of whether or not CONFIG_NO_HZ was set.  For one
+> > thing, this would simplify the RCU code that treats idle tasks as extended
+> > quiescent states.  Except during boot time.  :-/
 > 
-> On Wed, 27 Jul 2011, Justin Piszcz wrote:
-> 
-> > 
-> > 
-> > On Wed, 27 Jul 2011, Trond Myklebust wrote:
-> > 
-> > > On Wed, 2011-07-27 at 16:54 -0400, Trond Myklebust wrote:
-> > >> On Wed, 2011-07-27 at 16:37 -0400, Trond Myklebust wrote:
-> > >>> On Wed, 2011-07-27 at 15:47 -0400, Christoph Hellwig wrote:
-> > >>>> On Wed, Jul 27, 2011 at 03:44:20PM -0400, Justin Piszcz wrote:
-> > >>>>>
-> > >>>>>
-> > >>>>> On Wed, 27 Jul 2011, Christoph Hellwig wrote:
-> > >>>>>
-> > >>>>>> On Wed, Jul 27, 2011 at 03:35:01PM -0400, Justin Piszcz wrote:
-> > >>>>>>> Currently I do not see any dupes, however I have a script that moves
-> > >>>>>>> images out of the directory once an hour:
-> > >>>>>>> 0 * * * * /usr/local/bin/move_to_old2.sh > /dev/null 2>&1
-> > >>>>>>
-> > >>>>>> Do you keep adding files to the directory while you move files out?
-> > >>>>> Yes, otherwise there are too many files in the directory and viewers, e.g.,
-> > >>>>> each geeqie (picture viewer) will use > 4-6GB of memory, so I try to keep
-> > >>>>> it around 5,000 pictures or less.
-> > >>>>>
-> > >>>>>> What's the rate of additions/removals to the directory?
-> > >>>>> Additions it depends, around 5,000 over a 12hr period, 416/hr, current:
-> > >>>>>
-> > >>>>> atom:/d1/motion# find cam1|wc
-> > >>>>>    5215    5215  166853
-> > >>>>> atom:/d1/motion# find cam2|wc
-> > >>>>>    5069    5069  162181
-> > >>>>> atom:/d1/motion# find cam3|wc
-> > >>>>>    5594    5594  178981
-> > >>>>> atom:/d1/motion#
-> > >>>>
-> > >>>> This sounds a lot like xfs simply filling up the directory index slots
-> > >>>> of files that you just moved out with new files, and nfs falsely
-> > >>>> claiming that this is a problem.
-> > >>>
-> > >>> Yep. There is an existing bugzilla report for this bug at
-> > >>>
-> > >>>    https://bugzilla.kernel.org/show_bug.cgi?id=38572
-> > >>>
-> > >>> I have a preliminary patch there that attempts to turn off the loop
-> > >>> detection when the directory is seen to change, however that patch still
-> > >>> appears to have a bug in it, and I haven't had time to figure out what
-> > >>> is wrong yet.
-> > >>>
-> > >>> Can you perhaps take a look, Bryan?
-> > >>
-> > >> Actually, Justin, can you test the following slight variant on the patch
-> > >> in the bugzilla?
-> > >
-> > > Doh! This one will actually compile....
-> > 
-> > Hi,
-> > 
-> > Should I try 3.0 first or retry 2.6.38 w/ this patch?
-> > 
-> > Justin.
-> > 
-> >
-> 
-> I'll give 3.0 a go first.
+> For that we could just build rcu_enter_nohz() things on CONFIG_NO_HZ || CONFIG_PROVE_RCU.
 
-I had Bryan do some more tests, which revealed a couple more issues. The
-attached patch should fix those, and has resisted everything we've
-thrown at it so far. It should apply to 2.6.39 and newer.
+Actually, it would be really cool if RCU could just rely on those
+callbacks to detect idle regardless of the configuration.  Might not
+be practical, but it would be nice.  ;-)
 
-Cheers
-  Trond
-8<----------------------------------------------------------------------- 
->From 75c0387540737a6663338d4ec0538bd6fb724173 Mon Sep 17 00:00:00 2001
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date: Thu, 28 Jul 2011 16:34:33 -0400
-Subject: [PATCH v3] NFS: Fix spurious readdir cookie loop messages
+							Thanx, Paul
 
-If the directory contents change, then we have to accept that the
-file->f_pos value may shrink if we do a 'search-by-cookie'. In that
-case, we should turn off the loop detection and let the NFS client
-try to recover.
-
-The patch also fixes a second loop detection bug by ensuring
-that after turning on the ctx->duped flag, we read at least one new
-cookie into ctx->dir_cookie before attempting to match with
-ctx->dup_cookie.
-
-Reported-by: Petr Vandrovec <petr@vandrovec.name>
-Cc: stable@kernel.org [2.6.39+]
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
----
- fs/nfs/dir.c           |   56 ++++++++++++++++++++++++++++-------------------
- include/linux/nfs_fs.h |    3 +-
- 2 files changed, 35 insertions(+), 24 deletions(-)
-
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 57f578e..d23108b 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -134,18 +134,19 @@ const struct inode_operations nfs4_dir_inode_operations = {
- 
- #endif /* CONFIG_NFS_V4 */
- 
--static struct nfs_open_dir_context *alloc_nfs_open_dir_context(struct rpc_cred *cred)
-+static struct nfs_open_dir_context *alloc_nfs_open_dir_context(struct inode *dir, struct rpc_cred *cred)
- {
- 	struct nfs_open_dir_context *ctx;
- 	ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
- 	if (ctx != NULL) {
- 		ctx->duped = 0;
-+		ctx->attr_gencount = NFS_I(dir)->attr_gencount;
- 		ctx->dir_cookie = 0;
- 		ctx->dup_cookie = 0;
- 		ctx->cred = get_rpccred(cred);
--	} else
--		ctx = ERR_PTR(-ENOMEM);
--	return ctx;
-+		return ctx;
-+	}
-+	return  ERR_PTR(-ENOMEM);
- }
- 
- static void put_nfs_open_dir_context(struct nfs_open_dir_context *ctx)
-@@ -173,7 +174,7 @@ nfs_opendir(struct inode *inode, struct file *filp)
- 	cred = rpc_lookup_cred();
- 	if (IS_ERR(cred))
- 		return PTR_ERR(cred);
--	ctx = alloc_nfs_open_dir_context(cred);
-+	ctx = alloc_nfs_open_dir_context(inode, cred);
- 	if (IS_ERR(ctx)) {
- 		res = PTR_ERR(ctx);
- 		goto out;
-@@ -323,7 +324,6 @@ int nfs_readdir_search_for_pos(struct nfs_cache_array *array, nfs_readdir_descri
- {
- 	loff_t diff = desc->file->f_pos - desc->current_index;
- 	unsigned int index;
--	struct nfs_open_dir_context *ctx = desc->file->private_data;
- 
- 	if (diff < 0)
- 		goto out_eof;
-@@ -336,7 +336,6 @@ int nfs_readdir_search_for_pos(struct nfs_cache_array *array, nfs_readdir_descri
- 	index = (unsigned int)diff;
- 	*desc->dir_cookie = array->array[index].cookie;
- 	desc->cache_entry_index = index;
--	ctx->duped = 0;
- 	return 0;
- out_eof:
- 	desc->eof = 1;
-@@ -349,14 +348,33 @@ int nfs_readdir_search_for_cookie(struct nfs_cache_array *array, nfs_readdir_des
- 	int i;
- 	loff_t new_pos;
- 	int status = -EAGAIN;
--	struct nfs_open_dir_context *ctx = desc->file->private_data;
- 
- 	for (i = 0; i < array->size; i++) {
- 		if (array->array[i].cookie == *desc->dir_cookie) {
-+			struct nfs_inode *nfsi = NFS_I(desc->file->f_path.dentry->d_inode);
-+			struct nfs_open_dir_context *ctx = desc->file->private_data;
-+
- 			new_pos = desc->current_index + i;
--			if (new_pos < desc->file->f_pos) {
-+			if (ctx->attr_gencount != nfsi->attr_gencount
-+			    || (nfsi->cache_validity & (NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA))) {
-+				ctx->duped = 0;
-+				ctx->attr_gencount = nfsi->attr_gencount;
-+			} else if (new_pos < desc->file->f_pos) {
-+				if (ctx->duped > 0
-+				    && ctx->dup_cookie == *desc->dir_cookie) {
-+					if (printk_ratelimit()) {
-+						pr_notice("NFS: directory %s/%s contains a readdir loop."
-+								"Please contact your server vendor.  "
-+								"Offending cookie: %llu\n",
-+								desc->file->f_dentry->d_parent->d_name.name,
-+								desc->file->f_dentry->d_name.name,
-+								*desc->dir_cookie);
-+					}
-+					status = -ELOOP;
-+					goto out;
-+				}
- 				ctx->dup_cookie = *desc->dir_cookie;
--				ctx->duped = 1;
-+				ctx->duped = -1;
- 			}
- 			desc->file->f_pos = new_pos;
- 			desc->cache_entry_index = i;
-@@ -368,6 +386,7 @@ int nfs_readdir_search_for_cookie(struct nfs_cache_array *array, nfs_readdir_des
- 		if (*desc->dir_cookie == array->last_cookie)
- 			desc->eof = 1;
- 	}
-+out:
- 	return status;
- }
- 
-@@ -740,19 +759,6 @@ int nfs_do_filldir(nfs_readdir_descriptor_t *desc, void *dirent,
- 	struct nfs_cache_array *array = NULL;
- 	struct nfs_open_dir_context *ctx = file->private_data;
- 
--	if (ctx->duped != 0 && ctx->dup_cookie == *desc->dir_cookie) {
--		if (printk_ratelimit()) {
--			pr_notice("NFS: directory %s/%s contains a readdir loop.  "
--				"Please contact your server vendor.  "
--				"Offending cookie: %llu\n",
--				file->f_dentry->d_parent->d_name.name,
--				file->f_dentry->d_name.name,
--				*desc->dir_cookie);
--		}
--		res = -ELOOP;
--		goto out;
--	}
--
- 	array = nfs_readdir_get_array(desc->page);
- 	if (IS_ERR(array)) {
- 		res = PTR_ERR(array);
-@@ -774,6 +780,8 @@ int nfs_do_filldir(nfs_readdir_descriptor_t *desc, void *dirent,
- 			*desc->dir_cookie = array->array[i+1].cookie;
- 		else
- 			*desc->dir_cookie = array->last_cookie;
-+		if (ctx->duped != 0)
-+			ctx->duped = 1;
- 	}
- 	if (array->eof_index >= 0)
- 		desc->eof = 1;
-@@ -805,6 +813,7 @@ int uncached_readdir(nfs_readdir_descriptor_t *desc, void *dirent,
- 	struct page	*page = NULL;
- 	int		status;
- 	struct inode *inode = desc->file->f_path.dentry->d_inode;
-+	struct nfs_open_dir_context *ctx = desc->file->private_data;
- 
- 	dfprintk(DIRCACHE, "NFS: uncached_readdir() searching for cookie %Lu\n",
- 			(unsigned long long)*desc->dir_cookie);
-@@ -818,6 +827,7 @@ int uncached_readdir(nfs_readdir_descriptor_t *desc, void *dirent,
- 	desc->page_index = 0;
- 	desc->last_cookie = *desc->dir_cookie;
- 	desc->page = page;
-+	ctx->duped = 0;
- 
- 	status = nfs_readdir_xdr_to_array(desc, page, inode);
- 	if (status < 0)
-diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
-index 8b579be..b96fb99 100644
---- a/include/linux/nfs_fs.h
-+++ b/include/linux/nfs_fs.h
-@@ -99,9 +99,10 @@ struct nfs_open_context {
- 
- struct nfs_open_dir_context {
- 	struct rpc_cred *cred;
-+	unsigned long attr_gencount;
- 	__u64 dir_cookie;
- 	__u64 dup_cookie;
--	int duped;
-+	signed char duped;
- };
- 
- /*
--- 
-1.7.6
-
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+> > > Frederic Weisbecker (3):
+> > >   nohz: Split extended quiescent state handling from nohz switch
+> > >   x86: Enter rcu extended qs after idle notifier call
+> > >   x86: Call idle notifier after irq_enter()
+> > > 
+> > >  arch/arm/kernel/process.c                |    4 +-
+> > >  arch/avr32/kernel/process.c              |    4 +-
+> > >  arch/blackfin/kernel/process.c           |    4 +-
+> > >  arch/microblaze/kernel/process.c         |    4 +-
+> > >  arch/mips/kernel/process.c               |    4 +-
+> > >  arch/powerpc/kernel/idle.c               |    4 +-
+> > >  arch/powerpc/platforms/iseries/setup.c   |    8 +++---
+> > >  arch/s390/kernel/process.c               |    4 +-
+> > >  arch/sh/kernel/idle.c                    |    2 +-
+> > >  arch/sparc/kernel/process_64.c           |    4 +-
+> > >  arch/tile/kernel/process.c               |    4 +-
+> > >  arch/um/kernel/process.c                 |    4 +-
+> > >  arch/unicore32/kernel/process.c          |    4 +-
+> > >  arch/x86/kernel/apic/apic.c              |    6 ++--
+> > >  arch/x86/kernel/apic/io_apic.c           |    2 +-
+> > >  arch/x86/kernel/cpu/mcheck/mce.c         |    2 +-
+> > >  arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
+> > >  arch/x86/kernel/cpu/mcheck/threshold.c   |    2 +-
+> > >  arch/x86/kernel/irq.c                    |    6 ++--
+> > >  arch/x86/kernel/process_32.c             |    4 +-
+> > >  arch/x86/kernel/process_64.c             |    5 ++++
+> > >  include/linux/tick.h                     |   10 +++++--
+> > >  kernel/time/tick-sched.c                 |   36 ++++++++++++++++++++++++++---
+> > >  23 files changed, 83 insertions(+), 46 deletions(-)
+> > > 
+> > > -- 
+> > > 1.7.5.4
+> > > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
