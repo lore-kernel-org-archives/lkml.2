@@ -1,104 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab1G1U4O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 16:56:14 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:55716 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755413Ab1G1U4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 16:56:11 -0400
-Date: Thu, 28 Jul 2011 13:56:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Mike Frysinger <vapier@gentoo.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 0/3] rcu: Fix some rcu uses in extended quiescent state
-Message-ID: <20110728205600.GU2403@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1310416472-2554-1-git-send-email-fweisbec@gmail.com>
- <20110715233203.GM2327@linux.vnet.ibm.com>
- <20110715234154.GC6590@somewhere>
+	id S1755820Ab1G1VAp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 17:00:45 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:39360 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754520Ab1G1VAn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 17:00:43 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6421"; a="106424260"
+Date: Thu, 28 Jul 2011 14:00:41 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: David Brown <davidb@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] ARM: msm: Remove PLAT_PHYS_OFFSETS from MSM targets
+Message-ID: <20110728210041.GA7983@huya.qualcomm.com>
+References: <1311794355-26988-2-git-send-email-sboyd@codeaurora.org>
+ <1311884291-5409-1-git-send-email-davidb@codeaurora.org>
+ <1311884291-5409-2-git-send-email-davidb@codeaurora.org>
+ <alpine.LFD.2.00.1107281647060.12766@xanadu.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110715234154.GC6590@somewhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1107281647060.12766@xanadu.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 16, 2011 at 01:41:56AM +0200, Frederic Weisbecker wrote:
-> On Fri, Jul 15, 2011 at 04:32:03PM -0700, Paul E. McKenney wrote:
-> > On Mon, Jul 11, 2011 at 10:34:29PM +0200, Frederic Weisbecker wrote:
-> > > Hi,
-> > > 
-> > > First patch lays the ground to fix rcu uses in dyntick idle mode
-> > > by splitting rcu extended qs state logic from tick nohz one.
-> > > 
-> > > The rest fixes the misuses that RCU has detected for me in x86.
-> > 
-> > These look good to me -- I have queued them and will try testing
-> > them out.
-> > 
-> > > I'll try to fix those Paul has detected in PowerPc.
-> > 
-> > Looking forward to that one as well.  ;-)
-> > 
-> > It would be really cool if this approach could serve as RCU's idle-CPU
-> > detection regardless of whether or not CONFIG_NO_HZ was set.  For one
-> > thing, this would simplify the RCU code that treats idle tasks as extended
-> > quiescent states.  Except during boot time.  :-/
+On Thu, Jul 28, 2011 at 04:49:18PM -0400, Nicolas Pitre wrote:
+> On Thu, 28 Jul 2011, David Brown wrote:
 > 
-> For that we could just build rcu_enter_nohz() things on CONFIG_NO_HZ || CONFIG_PROVE_RCU.
+> > Now that MSM can boot with the phys offset patching, eliminate the
+> > definitions of the phys offsets, and instead select
+> > ARM_PATCH_PHYS_VIRT.
+> > 
+> > Signed-off-by: David Brown <davidb@codeaurora.org>
+> > 
+> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > index ced9371..3a4d87c 100644
+> > --- a/arch/arm/Kconfig
+> > +++ b/arch/arm/Kconfig
+> > @@ -618,6 +618,7 @@ config ARCH_MSM
+> >  	select GENERIC_CLOCKEVENTS
+> >  	select ARCH_REQUIRE_GPIOLIB
+> >  	select CLKDEV_LOOKUP
+> > +	select ARM_PATCH_PHYS_VIRT
+> >  	help
+> >  	  Support for Qualcomm MSM/QSD based systems.  This runs on the
+> >  	  apps processor of the MSM/QSD and depends on a shared memory
+> > diff --git a/arch/arm/mach-msm/include/mach/memory.h b/arch/arm/mach-msm/include/mach/memory.h
+> > index 58d5e7e..deed41a 100644
+> > --- a/arch/arm/mach-msm/include/mach/memory.h
+> > +++ b/arch/arm/mach-msm/include/mach/memory.h
+> > @@ -17,19 +17,12 @@
+> >  #define __ASM_ARCH_MEMORY_H
+> >  
+> >  /* physical offset of RAM */
+> > -#if defined(CONFIG_ARCH_QSD8X50) && defined(CONFIG_MSM_SOC_REV_A)
+> > -#define PLAT_PHYS_OFFSET		UL(0x00000000)
+> > -#elif defined(CONFIG_ARCH_QSD8X50)
+> > -#define PLAT_PHYS_OFFSET		UL(0x20000000)
+> > -#elif defined(CONFIG_ARCH_MSM7X30)
+> > -#define PLAT_PHYS_OFFSET		UL(0x00000000)
+> > -#elif defined(CONFIG_ARCH_MSM8X60)
+> > -#define PLAT_PHYS_OFFSET		UL(0x40000000)
+> > -#elif defined(CONFIG_ARCH_MSM8960)
+> > -#define PLAT_PHYS_OFFSET		UL(0x40000000)
+> > -#else
+> > -#define PLAT_PHYS_OFFSET		UL(0x10000000)
+> > -#endif
+> > +#define QSD8X50A_PHYS_OFFSET		UL(0x00000000)
+> > +#define QSD8X50_PHYS_OFFSET		UL(0x20000000)
+> > +#define MSM7X30_PHYS_OFFSET		UL(0x00000000)
+> > +#define MSM8X60_PHYS_OFFSET		UL(0x10000000)
+> > +#define MSM8960_PHYS_OFFSET		UL(0x40000000)
+> > +#define MSM7X01_PHYS_OFFSET		UL(0x10000000)
+> 
+> Do you really need those defines?  If you do I'd suggest moving them 
+> elsewhere so your mach/memory.h can become empty.
 
-Actually, it would be really cool if RCU could just rely on those
-callbacks to detect idle regardless of the configuration.  Might not
-be practical, but it would be nice.  ;-)
+Currently, they aren't needed at all.  I'll just remove them entirely
+until something needs them.  The values will be in the history.
 
-							Thanx, Paul
+Thanks,
+David
 
-> > > Frederic Weisbecker (3):
-> > >   nohz: Split extended quiescent state handling from nohz switch
-> > >   x86: Enter rcu extended qs after idle notifier call
-> > >   x86: Call idle notifier after irq_enter()
-> > > 
-> > >  arch/arm/kernel/process.c                |    4 +-
-> > >  arch/avr32/kernel/process.c              |    4 +-
-> > >  arch/blackfin/kernel/process.c           |    4 +-
-> > >  arch/microblaze/kernel/process.c         |    4 +-
-> > >  arch/mips/kernel/process.c               |    4 +-
-> > >  arch/powerpc/kernel/idle.c               |    4 +-
-> > >  arch/powerpc/platforms/iseries/setup.c   |    8 +++---
-> > >  arch/s390/kernel/process.c               |    4 +-
-> > >  arch/sh/kernel/idle.c                    |    2 +-
-> > >  arch/sparc/kernel/process_64.c           |    4 +-
-> > >  arch/tile/kernel/process.c               |    4 +-
-> > >  arch/um/kernel/process.c                 |    4 +-
-> > >  arch/unicore32/kernel/process.c          |    4 +-
-> > >  arch/x86/kernel/apic/apic.c              |    6 ++--
-> > >  arch/x86/kernel/apic/io_apic.c           |    2 +-
-> > >  arch/x86/kernel/cpu/mcheck/mce.c         |    2 +-
-> > >  arch/x86/kernel/cpu/mcheck/therm_throt.c |    2 +-
-> > >  arch/x86/kernel/cpu/mcheck/threshold.c   |    2 +-
-> > >  arch/x86/kernel/irq.c                    |    6 ++--
-> > >  arch/x86/kernel/process_32.c             |    4 +-
-> > >  arch/x86/kernel/process_64.c             |    5 ++++
-> > >  include/linux/tick.h                     |   10 +++++--
-> > >  kernel/time/tick-sched.c                 |   36 ++++++++++++++++++++++++++---
-> > >  23 files changed, 83 insertions(+), 46 deletions(-)
-> > > 
-> > > -- 
-> > > 1.7.5.4
-> > > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
