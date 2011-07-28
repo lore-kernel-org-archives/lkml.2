@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807Ab1G1BVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 21:21:31 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:39725 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752863Ab1G1BVZ convert rfc822-to-8bit (ORCPT
+	id S1754185Ab1G1BVu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 21:21:50 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:56200 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754853Ab1G1BVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 21:21:25 -0400
+	Wed, 27 Jul 2011 21:21:40 -0400
+Message-ID: <4E30B9CE.4010800@gmail.com>
+Date: Wed, 27 Jul 2011 18:22:22 -0700
+From: William King <quentusrex@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <4E302299.2070309@lwfinger.net>
-References: <CAMzZzFGqPv6Nbw8J8JGNKcLA76sAs3oD6+hH9NPCjwA33fYpOQ@mail.gmail.com>
-	<CAMzZzFGpDiFAhsLAb+SQxjbGMzBoOStF_Lr7Eb3PT6Drcf=VdA@mail.gmail.com>
-	<4E302299.2070309@lwfinger.net>
-Date: Thu, 28 Jul 2011 09:21:23 +0800
-Message-ID: <CAMzZzFHoQV9wo31sbEMUOv-OQZE1p1WfT8WMGnKJVjNHKvLmQw@mail.gmail.com>
-Subject: Re: Oops when insmod rtl8192ce
-From: hubert Liao <liao.hubertt@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Seagate harddrives problems with SB7x0 AHCI
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/27 Larry Finger <Larry.Finger@lwfinger.net>:
-> On 07/27/2011 04:26 AM, hubert Liao wrote:
->>
->> Hi,
->> We got an oops when insmod rtl8192ce module (the board is an ARM soc),
->> accroding the oops message, find it's because in rtl_pci_probe()
->> called _rtl_pci_find_adapter(),
->> in this funcation, the  pdev->bus->self is a NULL pointer .
->> static boot _rtl_pci_find_adapter(strcut pci_dev *dev,
->>               struct ieee80211_hw *hw)
->> {
->> struct pci_dev *bridge_pdev = pdev->bus->self;   //line 1601
->> ...
->> pcipriv->ndis_adapter.pcibridge_vendorid = bridge_pdev->vendor;<--
->> [oops here] line 1700
->> ...
->> }
->> here, I just want to know why the bus->self  is NULL?
->> ----
->> [  148.186632] Unable to handle kernel NULL pointer dereference at
->> virtual address 00000020
->
-> As John Linville suggested, please open a bugzilla report.
->
-Ok, I'll try it, but I am not familiar with it.
-> I would also like some additional information. What kernel are you using? In
-> addition, please post the 'lspci -nnk' information for your card.
->
-The kernel is from the latest linus kernel git tree(3.0.0-05684-ge371d46-dirty),
-I also have tested the 2.6.38.8 stable release, it has the same problem.
+Problem:
+I have run into what appears to be a driver problem with the Seagate 
+Barracuda 7200.12 drives. The symptom is io load of 10-15 times the load 
+for other drives. To the point the box becomes fully io-bound and 
+unresponsive when even installing apt packages or rsync of a 100MB file.
 
-lspci -nnk
-00:00.0 Class [0580]: Device [11ab:6192] (rev 03)
-        Subsystem: Device [11ab:11ab]
-00:01.0 Class [0280]: Device [10ec:8178] (rev 01)
-        Subsystem: Device [1a3b:1178]
+Background:
+I have two servers with nearly identical hardware: Alpha has Seagate 
+Barracuda 7200.12 1TB drives model: ST31000528AS and Bravo that has 
+Western Digital Cavaliar Black 1TB model: 'WDC WD1001FALS-0'. Both 
+servers have Ubuntu 11.04 64bit server installed, and have fully updated 
+to the 2.3.38-10 kernel. More hardware info and logs can be located 
+here: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/815540
 
-> I also think that pdev->bus should have been setup before the initialization
-> code in rtl8192ce was called. I have not tested the driver on other than x86
-> and x86_64 architectures because of hardware availability, thus ARM may
-> expose some problems. Is this soc little-endian?
->
-Yes ,it is little-endian
+The server hardware manufacturer page is:
+http://www.supermicro.com/Aplus/system/1U/1042/AS-1042G-TF.cfm
 
-cat /proc/cpuinfo
-Processor       : Feroceon 88FR131 rev 1 (v5l)
-BogoMIPS        : 789.70
-Features        : swp half thumb fastmult edsp
-CPU implementer : 0x56
-CPU architecture: 5TE
-CPU variant     : 0x2
-CPU part        : 0x131
-CPU revision    : 1
+Command outputs:
+# lspci |grep SATA
+00:11.0 SATA controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 SATA 
+Controller [AHCI mode]
 
-Hardware        : Marvell RD-88F6192-NAS Development Board
-Revision        : 0000
-Serial          : 0000000000000000
+# uname -a
+Linux alpha-mule 2.6.38-10-server #46-Ubuntu SMP Tue Jun 28 16:31:00 UTC 
+2011 x86_64 x86_64 x86_64 GNU/Linux
 
-> Thanks,
-> Larry
->
->
+
+Steps to confirm/reproduce and narrow scope:
+I have taken the hard drives from Bravo, put them into Alpha reinstalled 
+and there is no problem. Also I have placed some older Seagate Barracuda 
+7200.9 80GB drives in Alpha and the problem does not exist then either. 
+I used iotop and iostats to watch the reported io load as well as the 
+read/write speeds to the disk. I then used rsync with a bandwidth 
+limitation to measure the performance difference between the two servers 
+in terms of server load and iotop reported IO%.
+
+A cat of /proc/interrupts show an order of magnitude more interrupts for 
+ahci on Alpha than Bravo for the same amount of traffic during an rsync.
+
+I have hdparm -t /dev/sda test and have seen a performance of ~50MB/s on 
+the Seagate 7200.12 drive while the specs and other benchmarks claim 
+speeds of up to 140MB/s. The Western Digital in the same hardware are 
+able to reach speeds of ~105MB/s and the Seagate 7200.9 gets ~65MB/s. 
+The hard drive was not in use at the time of the hdparm test.
+
+I took a perf capture of a fio random read test on each machines. The 
+test completes in 4 seconds on Alpha and 2 minutes 45 seconds on Bravo 
+and the perf stats show all the extra time being spent in the kernel 
+scheduler section.
+
+I initially had the Seagate hard drives on firmware CC46 then updated 
+them to the latest firmware of CC49. No change detected between firmwares.
+
+I have setup alpha to be able to rebuild the Ubuntu Kernel with patches 
+so I can easily test new changes. Also I have the linux kernel git tree 
+cloned so while it would be possible, I would be more comfortable 
+testing on the Ubuntu version of the 2.6.38-10 kernel.
+
+-William King
