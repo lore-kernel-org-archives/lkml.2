@@ -1,164 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab1G1JuH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 05:50:07 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53880 "EHLO
+	id S1755439Ab1G1JvU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 05:51:20 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54216 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755366Ab1G1JuD (ORCPT
+	with ESMTP id S1755366Ab1G1JvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 05:50:03 -0400
+	Thu, 28 Jul 2011 05:51:15 -0400
 From: Tommy Lin <tommy.lin.1101@gmail.com>
 To: Russell King <linux@arm.linux.org.uk>,
         Anton Vorontsov <avorontsov@mvista.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Tommy Lin <tommy.lin.1101@gmail.com>
-Subject: [PATCH 2/3] arch: arm: mach-cns3xxx: Add gpiolib support
-Date: Fri, 29 Jul 2011 01:16:41 +0800
-Message-Id: <1311873401-26075-1-git-send-email-tommy.lin.1101@gmail.com>
+Subject: [PATCH 3/3] arch: arm: mach-cns3xxx: Add external interrupt pin demo program
+Date: Fri, 29 Jul 2011 01:17:55 +0800
+Message-Id: <1311873475-26111-1-git-send-email-tommy.lin.1101@gmail.com>
 X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes CNS3XXX platform support gpiolib. Users can
-configure GPIO via gpiolib APIs easily on CNS3XXX platform.
+Add external interrupt pin configuration demo program to CNS3XXX
+platform. The external interrupt pins are dedicate input pins that
+direct connect to ARM MPCore GIC module.
 
 Signed-off-by: Tommy Lin <tommy.lin.1101@gmail.com>
 ---
- arch/arm/Kconfig                             |    1 +
- arch/arm/configs/cns3420vb_defconfig         |    1 +
- arch/arm/mach-cns3xxx/Makefile               |    1 +
- arch/arm/mach-cns3xxx/cns3420vb.c            |   48 ++
- arch/arm/mach-cns3xxx/gpio.c                 |  692 ++++++++++++++++++++++++++
- arch/arm/mach-cns3xxx/include/mach/cns3xxx.h |   10 +-
- arch/arm/mach-cns3xxx/include/mach/gpio.h    |   63 +++
- 7 files changed, 814 insertions(+), 2 deletions(-)
- create mode 100644 arch/arm/mach-cns3xxx/gpio.c
- create mode 100644 arch/arm/mach-cns3xxx/include/mach/gpio.h
+ arch/arm/configs/cns3420vb_defconfig |    1 +
+ arch/arm/mach-cns3xxx/Kconfig        |   11 ++
+ arch/arm/mach-cns3xxx/Makefile       |    1 +
+ arch/arm/mach-cns3xxx/ext_intr.c     |  194 ++++++++++++++++++++++++++++++++++
+ 4 files changed, 207 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-cns3xxx/ext_intr.c
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 09ebf0b..ea48dd0 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -333,6 +333,7 @@ config ARCH_CNS3XXX
- 	select ARM_GIC
- 	select MIGHT_HAVE_PCI
- 	select PCI_DOMAINS if PCI
-+	select ARCH_REQUIRE_GPIOLIB
- 	help
- 	  Support for Cavium Networks CNS3XXX platform.
- 
 diff --git a/arch/arm/configs/cns3420vb_defconfig b/arch/arm/configs/cns3420vb_defconfig
-index 313627a..c83d14c 100644
+index c83d14c..6eefa7e 100644
 --- a/arch/arm/configs/cns3420vb_defconfig
 +++ b/arch/arm/configs/cns3420vb_defconfig
-@@ -52,6 +52,7 @@ CONFIG_SERIAL_8250_CONSOLE=y
- CONFIG_LEGACY_PTY_COUNT=16
- # CONFIG_HW_RANDOM is not set
- # CONFIG_HWMON is not set
-+CONFIG_GPIO_SYSFS=y
- # CONFIG_VGA_CONSOLE is not set
- # CONFIG_HID_SUPPORT is not set
- # CONFIG_USB_SUPPORT is not set
+@@ -21,6 +21,7 @@ CONFIG_MODVERSIONS=y
+ CONFIG_IOSCHED_CFQ=m
+ CONFIG_ARCH_CNS3XXX=y
+ CONFIG_MACH_CNS3420VB=y
++CONFIG_CNS3XXX_EXT_INTR_DEMO=m
+ CONFIG_AEABI=y
+ CONFIG_ZBOOT_ROM_TEXT=0x0
+ CONFIG_ZBOOT_ROM_BSS=0x0
+diff --git a/arch/arm/mach-cns3xxx/Kconfig b/arch/arm/mach-cns3xxx/Kconfig
+index 29b13f2..b4736e6 100644
+--- a/arch/arm/mach-cns3xxx/Kconfig
++++ b/arch/arm/mach-cns3xxx/Kconfig
+@@ -10,4 +10,15 @@ config MACH_CNS3420VB
+ 	  This is a platform with an on-board ARM11 MPCore and has support
+ 	  for USB, USB-OTG, MMC/SD/SDIO, SATA, PCI-E, etc.
+ 
++config CNS3XXX_EXT_INTR_DEMO
++        tristate "External interrupt demo program"
++        depends on MACH_CNS3420VB
++        help
++	  This program hook interrupt service routine to external interrupts
++	  0 ~ 3.
++	    Name	EVB		Trigger		ISR
++	    Ext_Int0			Rising edge
++	    Ext_Int1	Push button S3	Rising edge	Toggle LED D6
++	    Ext_Int2	Push button S4	High level	Toggle LED D7
++
+ endmenu
 diff --git a/arch/arm/mach-cns3xxx/Makefile b/arch/arm/mach-cns3xxx/Makefile
-index 11033f1..7bb9c88 100644
+index 7bb9c88..a610c59 100644
 --- a/arch/arm/mach-cns3xxx/Makefile
 +++ b/arch/arm/mach-cns3xxx/Makefile
-@@ -1,3 +1,4 @@
-+obj-y					+= gpio.o
+@@ -2,3 +2,4 @@ obj-y					+= gpio.o
  obj-$(CONFIG_ARCH_CNS3XXX)		+= core.o pm.o devices.o
  obj-$(CONFIG_PCI)			+= pcie.o
  obj-$(CONFIG_MACH_CNS3420VB)		+= cns3420vb.o
-diff --git a/arch/arm/mach-cns3xxx/cns3420vb.c b/arch/arm/mach-cns3xxx/cns3420vb.c
-index 3e7d149..34c4a87 100644
---- a/arch/arm/mach-cns3xxx/cns3420vb.c
-+++ b/arch/arm/mach-cns3xxx/cns3420vb.c
-@@ -24,6 +24,7 @@
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/physmap.h>
- #include <linux/mtd/partitions.h>
-+#include <linux/proc_fs.h>
- #include <asm/setup.h>
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
-@@ -158,10 +159,55 @@ static struct platform_device cns3xxx_usb_ohci_device = {
- 	},
- };
- 
-+/* GPIO */
-+static struct resource cns3xxx_gpio_resources[] = {
-+	[0] = {
-+		.start = IRQ_CNS3XXX_GPIOA,
-+		.end   = IRQ_CNS3XXX_GPIOA,
-+		.flags = IORESOURCE_IRQ,
-+		.name  = "GPIOA"
-+	},
-+	[1] = {
-+		.start = CNS3XXX_GPIOA_BASE_VIRT,
-+		.end   = CNS3XXX_GPIOA_BASE_VIRT + 0x44,
-+		.flags = IORESOURCE_MEM,
-+		.name  = "GPIOA",
-+	},
-+	[2] = {
-+		.start = IRQ_CNS3XXX_GPIOB,
-+		.end   = IRQ_CNS3XXX_GPIOB,
-+		.flags = IORESOURCE_IRQ,
-+		.name  = "GPIOB"
-+	},
-+	[3] = {
-+		.start = CNS3XXX_GPIOB_BASE_VIRT,
-+		.end   = CNS3XXX_GPIOB_BASE_VIRT + 0x44,
-+		.flags = IORESOURCE_MEM,
-+		.name  = "GPIOB",
-+	},
-+	[4] = {
-+		.start = CNS3XXX_MISC_BASE_VIRT,
-+		.end   = CNS3XXX_MISC_BASE_VIRT + 0x800,
-+		.flags = IORESOURCE_MEM,
-+		.name  = "MISC"
-+	},
-+};
-+
-+static struct platform_device cns3xxx_gpio_device = {
-+	.name		= "cns3xxx-gpio",
-+	.id		= -1,
-+	.num_resources	= ARRAY_SIZE(cns3xxx_gpio_resources),
-+	.resource	= cns3xxx_gpio_resources,
-+};
-+
-+
-+struct proc_dir_entry *cns3xxx_proc_dir;
-+
- /*
-  * Initialization
-  */
- static struct platform_device *cns3420_pdevs[] __initdata = {
-+	&cns3xxx_gpio_device,
- 	&cns3420_nor_pdev,
- 	&cns3xxx_usb_ehci_device,
- 	&cns3xxx_usb_ohci_device,
-@@ -176,6 +222,8 @@ static void __init cns3420_init(void)
- 	cns3xxx_ahci_init();
- 	cns3xxx_sdhci_init();
- 
-+	cns3xxx_proc_dir = proc_mkdir("cns3xxx", NULL);
-+
- 	pm_power_off = cns3xxx_power_off;
- }
- 
-diff --git a/arch/arm/mach-cns3xxx/gpio.c b/arch/arm/mach-cns3xxx/gpio.c
++obj-$(CONFIG_CNS3XXX_EXT_INTR_DEMO)	+= ext_intr.o
+diff --git a/arch/arm/mach-cns3xxx/ext_intr.c b/arch/arm/mach-cns3xxx/ext_intr.c
 new file mode 100644
-index 0000000..cafb65f
+index 0000000..5127860
 --- /dev/null
-+++ b/arch/arm/mach-cns3xxx/gpio.c
-@@ -0,0 +1,692 @@
++++ b/arch/arm/mach-cns3xxx/ext_intr.c
+@@ -0,0 +1,194 @@
 +/*******************************************************************************
 + *
-+ *  arch/arm/mach-cns3xxx/gpio.c
++ *  arch/arm/mach-cns3xxx/ext_intr.c
 + *
-+ *  GPIO driver for the CNS3XXX SOCs
++ *  External interrupt driver for the CNS3XXX SOCs
 + *
 + *  Copyright (c) 2011 Cavium
++ *		       Tommy Lin <tommy.lin@caviumnetworks.com>
 + *
 + *  This file is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License, Version 2, as
@@ -179,761 +108,171 @@ index 0000000..cafb65f
 + *
 + ******************************************************************************/
 +
-+#include <linux/platform_device.h>
-+#include <linux/proc_fs.h>
-+#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
 +
 +#include <mach/gpio.h>
 +#include <mach/cns3xxx.h>
 +
-+#include <asm/mach/irq.h>
 +
-+#define CONFIG_GPIO_CNS3XXX_DEBUG
-+
-+#ifdef CONFIG_GPIO_CNS3XXX_DEBUG
-+#define __pr_debug(fmt, args...)	printk(KERN_ERR fmt, ##args)
-+#else
-+#define __pr_debug(fmt, args...)
-+#endif
-+
-+
-+#ifdef CONFIG_DEBUG_FS
-+static void cns3xxx_dbg_show(struct seq_file *s, struct gpio_chip *chip);
-+#else
-+#define cns3xxx_dbg_show	NULL
-+#endif
-+
-+#define GPIO_PROC_NAME		"gpio"
-+static struct proc_dir_entry	*proc_cns3xxx_gpio;
-+static struct irq_chip		cns3xxx_gpio_irq_chip;
-+
-+struct chog_gpio_chip {
-+	struct gpio_chip	chip;
-+	int			irq;
-+	void __iomem		*reg_base;
-+	void __iomem		*reg_sharepin_en;
-+};
-+
-+#define INIT_CHOG_GPIO_CHIP(name, base_no, nr_gpio)			\
-+	{								\
-+		.chip = {						\
-+			.label			= name,			\
-+			.owner			= THIS_MODULE,		\
-+			.request		= cns3xxx_request,	\
-+			.direction_input	= cns3xxx_direction_in,	\
-+			.direction_output	= cns3xxx_direction_out,\
-+			.get			= cns3xxx_get,		\
-+			.set			= cns3xxx_set,		\
-+			.to_irq			= cns3xxx_to_irq,	\
-+			.dbg_show		= cns3xxx_dbg_show,	\
-+			.base			= base_no,		\
-+			.ngpio			= nr_gpio,		\
-+			.can_sleep		= 0,			\
-+		},							\
-+	}
-+
-+
-+#define to_chog_gpio_chip(c)	container_of(c, struct chog_gpio_chip, chip)
-+#define nr_banks	(sizeof(cns3xxx_gchip)/sizeof(struct chog_gpio_chip))
-+
-+/* The CNS3XXX GPIO pins are shard with special functions which is described in
-+ * the following table. "none" in this table represent the corresponding pins
-+ * are dedicate GPIO.
++/*   CNS3XXX has three external interrupt pins, Ext_Intr0, Ext_Intr1 and
++ * Ext_Intr3. Each pin has its own interrupt ID which is not shared with other
++ * function. It is not like 32 gpio pins in group A or B shared one irq. The
++ * external interrupt pins are special functions that shared with GPIOB[27:29].
++ * Users could turn on shared pin function to enable external interrupt pin with
++ * cns3xxx_sharepin_request API.
++ *
++ *   The external interrupt trigger method is controlled by ARM MPCore GIC. GIC
++ * only suppot high active level trigger and rising edge trigger. Configure GIC
++ * with other trigger type will have no effect.
++ *
++ *   Name	irq	Shared gpio pin
++ *   Ext_Intr0	93	GPIOB[29]
++ *   Ext_Intr1	94	GPIOB[28]
++ *   Ext_Intr2	95	GPIOB[27]
 + */
-+const char *sharepin_desc[] = {
-+	/* GPIOA group */
-+/*  0 */ "none",	"none",		"SD_PWR_ON",	"OTG_DRV_VBUS",
-+/*  4 */ "Don't use",	"none",		"none",		"none",
-+/*  8 */ "CIM_nOE",	"LCD_Power",	"SMI_nCS3",	"SMI_nCS2",
-+/* 12 */ "SMI_Clk",	"SMI_nADV",	"SMI_CRE",	"SMI_Addr[26]",
-+/* 16 */ "SD_nCD",	"SD_nWP",	"SD_CLK",	"SD_CMD",
-+/* 20 */ "SD_DT[7]",	"SD_DT[6]",	"SD_DT[5]",	"SD_DT[4]",
-+/* 24 */ "SD_DT[3]",	"SD_DT[2]",	"SD_DT[1]",	"SD_DT[0]",
-+/* 28 */ "SD_LED",	"UR_RXD1",	"UR_TXD1",	"UR_RTS2",
-+	/* GPIOB group */
-+/*  0 */ "UR_CTS2",	"UR_RXD2",	"UR_TXD2",	"PCMCLK",
-+/*  4 */ "PCMFS",	"PCMDT",	"PCMDR",	"SPInCS1",
-+/*  8 */ "SPInCS2",	"SPICLK",	"SPIDT",	"SPIDR",
-+/* 12 */ "SCL",		"SDA",		"GMII2_CRS",	"GMII2_COL",
-+/* 16 */ "RGMII1_CRS",	"RGMII1_COL",	"RGMII0_CRS",	"RGMII0_COL",
-+/* 20 */ "MDC",		"MDIO",		"I2SCLK",	"I2SFS",
-+/* 24 */ "I2SDT",	"I2SDR",	"ClkOut",	"Ext_Intr2",
-+/* 28 */ "Ext_Intr1",	"Ext_Intr0",	"SATA_LED1",	"SATA_LED0",
++
++#define hw_debug(fmt, args...)		printk(KERN_ERR ">>>>>> %s\t"\
++						fmt, __func__, ##args)
++
++struct ext_intr_data {
++	int		irq;
++	unsigned	gpio;
++	char		*name;
++	char		*alias;
 +};
 +
-+struct cns3xxx_regs {
-+	char *name;
-+	void __iomem *addr;
-+	u32 offset;
++static unsigned led_D6 = GPIOA(6);
++static unsigned led_D7 = GPIOA(5);
++
++static struct ext_intr_data eintr_data[] = {
++	{IRQ_CNS3XXX_EXTERNAL_PIN0, GPIOB(29), "Ext_Intr0", "HIB_REQ"},
++	{IRQ_CNS3XXX_EXTERNAL_PIN1, GPIOB(28), "Ext_Intr1", "Push Button S3"},
++	{IRQ_CNS3XXX_EXTERNAL_PIN2, GPIOB(27), "Ext_Intr2", "Push Button S4"},
 +};
 +
-+struct cns3xxx_regs gpio_regs[] =  {
-+	{"Data Out",			0, GPIO_OUTPUT_OFFSET},
-+	{"Data In",			0, GPIO_INPUT_OFFSET},
-+	{"Direction",			0, GPIO_DIR_OFFSET},
-+	{"Interrupt Enable",		0, GPIO_INTR_ENABLE_OFFSET},
-+	{"Interrupt Raw Status",	0, GPIO_INTR_RAW_STATUS_OFFSET},
-+	{"Interrupt Masked Status",	0, GPIO_INTR_MASKED_STATUS_OFFSET},
-+	{"Interrupt Level Trigger",	0, GPIO_INTR_TRIGGER_METHOD_OFFSET},
-+	{"Interrupt Both Edge",		0, GPIO_INTR_TRIGGER_BOTH_EDGES_OFFSET},
-+	{"Interrupt Falling Edge",	0, GPIO_INTR_TRIGGER_TYPE_OFFSET},
-+	{"Interrupt MASKED",		0, GPIO_INTR_MASK_OFFSET},
-+	{"GPIO Bounce Enable",		0, GPIO_BOUNCE_ENABLE_OFFSET},
-+	{"GPIO Bounce Prescale",	0, GPIO_BOUNCE_PRESCALE_OFFSET},
-+};
-+
-+struct cns3xxx_regs misc_regs[] =  {
-+	{"Drive Strength Register A",	MISC_IO_PAD_DRIVE_STRENGTH_CTRL_A},
-+	{"Drive Strength Register B",	MISC_IO_PAD_DRIVE_STRENGTH_CTRL_B},
-+	{"Pull Up/Down Ctrl A[15:0]",	MISC_GPIOA_15_0_PULL_CTRL_REG},
-+	{"Pull Up/Down Ctrl A[31:16]",	MISC_GPIOA_16_31_PULL_CTRL_REG},
-+	{"Pull Up/Down Ctrl B[15:0]",	MISC_GPIOB_15_0_PULL_CTRL_REG},
-+	{"Pull Up/Down Ctrl B[31:16]",	MISC_GPIOB_16_31_PULL_CTRL_REG},
-+};
-+
-+
-+static int cns3xxx_request(struct gpio_chip *chip, unsigned offset)
++static irqreturn_t cns3xxx_ext_intr0_handler(int irq, void *dev_id)
 +{
-+	/* GPIOA4 is reserved for chip bonding configuration. Please don't use
-+	 * and configure GPIOA4.
-+	 */
-+	if ((strcmp(chip->label, "GPIOA") == 0) && (offset == 4))
-+		return -EINVAL;
-+	return 0;
++	struct ext_intr_data *data = dev_id;
++
++	printk(KERN_WARNING "%s detected!\n", data->alias);
++
++	return IRQ_HANDLED;
 +}
 +
-+/*
-+ * Configure the GPIO line as an input.
-+ */
-+static int cns3xxx_direction_in(struct gpio_chip *chip, unsigned offset)
++static irqreturn_t cns3xxx_ext_intr1_handler(int irq, void *dev_id)
 +{
-+	struct chog_gpio_chip *cns3xxx_gpio = to_chog_gpio_chip(chip);
-+	u32 reg;
++	int value;
 +
-+	/* Clear corresponding register bit to set as input pin. */
-+	reg = readl(cns3xxx_gpio->reg_base + GPIO_DIR_OFFSET);
-+	reg &= ~(1 << offset);
-+	writel(reg, cns3xxx_gpio->reg_base + GPIO_DIR_OFFSET);
++	value = gpio_get_value(led_D6);
 +
-+	return 0;
++	disable_irq_nosync(irq);
++
++	gpio_set_value(led_D6, !value);
++
++	enable_irq(irq);
++
++	return IRQ_HANDLED;
 +}
 +
-+/*
-+ * Set the state of an output GPIO line.
-+ */
-+static void cns3xxx_set(struct gpio_chip *chip, unsigned offset, int value)
++static irqreturn_t cns3xxx_ext_intr2_handler(int irq, void *dev_id)
 +{
-+	struct chog_gpio_chip *cns3xxx_gpio = to_chog_gpio_chip(chip);
++	int value;
 +
-+	if (value)
-+		/* Write 1 to set corresponding bit output "HIGH"
-+		 * Multi-bit write is allowed. Write 0 makes no change.
-+		 */
-+		writel(1 << offset,
-+				cns3xxx_gpio->reg_base + GPIO_BIT_SET_OFFSET);
-+	else
-+		/* Write 1 to set corresponding bit output "LOW"
-+		 * Multi-bit write is allowed. Write 0 makes no change.
-+		 */
-+		writel(1 << offset,
-+				cns3xxx_gpio->reg_base + GPIO_BIT_CLEAR_OFFSET);
++	value = gpio_get_value(led_D7);
++
++	disable_irq_nosync(irq);
++
++	gpio_set_value(led_D7, !value);
++
++	enable_irq(irq);
++
++	return IRQ_HANDLED;
 +}
 +
-+/*
-+ * Configure the GPIO line as an output, with default state.
-+ */
-+static int cns3xxx_direction_out(struct gpio_chip *chip,
-+		unsigned offset, int value)
++int __init cns3xxx_eintr_init(void)
 +{
-+	struct chog_gpio_chip *cns3xxx_gpio = to_chog_gpio_chip(chip);
-+	u32 reg;
-+
-+	/* Set corresponding register bit to set as output pin. */
-+	reg = readl(cns3xxx_gpio->reg_base + GPIO_DIR_OFFSET);
-+	reg |= 1 << offset;
-+	writel(reg, cns3xxx_gpio->reg_base + GPIO_DIR_OFFSET);
-+
-+	cns3xxx_set(chip, offset, value);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Read the state of a GPIO line.
-+ */
-+static int cns3xxx_get(struct gpio_chip *chip, unsigned offset)
-+{
-+	struct chog_gpio_chip *cns3xxx_gpio = to_chog_gpio_chip(chip);
-+	u32 reg;
 +	int ret;
 +
-+	reg = readl(cns3xxx_gpio->reg_base + GPIO_INPUT_OFFSET);
-+	ret = reg & (1 << offset);
++	ret = gpio_request(led_D6, "INTR Test LED(D6)");
++	if (ret)
++		goto err1;
++	gpio_direction_output(led_D6, 0);
 +
++	ret = gpio_request(led_D7, "INTR Test LED(D7)");
++	if (ret)
++		goto err2;
++	gpio_direction_output(led_D7, 0);
++
++	/************ Ext_Intr0 ************/
++	ret = cns3xxx_sharepin_request(eintr_data[0].gpio, eintr_data[0].alias);
++	if (ret)
++		goto err3;
++
++	ret = request_irq(eintr_data[0].irq, cns3xxx_ext_intr0_handler,
++			IRQF_SHARED | IRQF_TRIGGER_RISING,
++			eintr_data[0].name, &eintr_data[0]);
++	if (ret)
++		goto err4;
++
++	/************ Ext_Intr1 ************/
++	ret = cns3xxx_sharepin_request(eintr_data[1].gpio, eintr_data[1].alias);
++	if (ret)
++		goto err5;
++
++	ret = request_irq(eintr_data[1].irq, cns3xxx_ext_intr1_handler,
++			IRQF_SHARED | IRQF_TRIGGER_RISING,
++			eintr_data[1].name, &eintr_data[1]);
++	if (ret)
++		goto err6;
++
++	/************ Ext_Intr2 ************/
++	ret = cns3xxx_sharepin_request(eintr_data[2].gpio, eintr_data[2].alias);
++	if (ret)
++		goto err7;
++
++	ret = request_irq(eintr_data[2].irq, cns3xxx_ext_intr2_handler,
++			IRQF_SHARED | IRQF_TRIGGER_HIGH,
++			eintr_data[2].name, &eintr_data[2]);
++	if (ret)
++		goto err8;
++
++	return 0;
++
++err8:
++	cns3xxx_sharepin_free(eintr_data[2].gpio);
++err7:
++	free_irq(eintr_data[1].irq, &eintr_data[1]);
++err6:
++	cns3xxx_sharepin_free(eintr_data[1].gpio);
++err5:
++	free_irq(eintr_data[0].irq, &eintr_data[0]);
++err4:
++	cns3xxx_sharepin_free(eintr_data[0].gpio);
++err3:
++	gpio_free(led_D7);
++err2:
++	gpio_free(led_D6);
++err1:
 +	return ret;
 +}
 +
-+/*
-+ * GPIO interrtups are remapped to unused irq number.
-+ * The remapped GPIO IRQ number start from NR_IRQS_CNS3XXX (96). Here is the
-+ * table of GPIO to irq mapping table.
-+ *
-+ *	GPIOA	GPIOB	|	GPIOA	GPIOB
-+ * No.	IRQ	IRQ	|  No.	IRQ	IRQ
-+ *  0	 96	128	|  16	112	144
-+ *  1	 97	129	|  17	113	145
-+ *  2	 98	130	|  18	114	146
-+ *  3	 99	131	|  19	115	147
-+ *  4	100	132	|  20	116	148
-+ *  5	101	133	|  21	117	149
-+ *  6	102	134	|  22	118	150
-+ *  7	103	135	|  23	119	151
-+ *  8	104	136	|  24	120	152
-+ *  9	105	137	|  25	121	153
-+ * 10	106	138	|  26	122	154
-+ * 11	107	139	|  27	123	155
-+ * 12	108	140	|  28	124	156
-+ * 13	109	141	|  29	125	157
-+ * 14	110	142	|  30	126	158
-+ * 15	111	143	|  31	127	159
-+ */
-+static int cns3xxx_to_irq(struct gpio_chip *chip, unsigned offset)
++void __exit cns3xxx_eintr_exit(void)
 +{
-+	struct chog_gpio_chip *cns3xxx_gpio = to_chog_gpio_chip(chip);
-+
-+	return offset + NR_IRQS_CNS3XXX + cns3xxx_gpio->chip.base;
++	free_irq(eintr_data[2].irq, &eintr_data[2]);
++	free_irq(eintr_data[1].irq, &eintr_data[1]);
++	free_irq(eintr_data[0].irq, &eintr_data[0]);
++	cns3xxx_sharepin_free(eintr_data[2].gpio);
++	cns3xxx_sharepin_free(eintr_data[1].gpio);
++	cns3xxx_sharepin_free(eintr_data[0].gpio);
++	gpio_free(led_D7);
++	gpio_free(led_D6);
 +}
 +
-+static unsigned cns3xxx_irq_to_gpio_offset(struct gpio_chip *chip, int irq)
-+{
-+	struct chog_gpio_chip *cns3xxx_gpio = to_chog_gpio_chip(chip);
-+
-+	return irq - NR_IRQS_CNS3XXX - cns3xxx_gpio->chip.base;
-+}
-+
-+int cns3xxx_gpio_set_irq_type(struct irq_data *data, unsigned int type)
-+{
-+	struct gpio_chip *chip = data->chip_data;
-+	void __iomem *base = to_chog_gpio_chip(chip)->reg_base;
-+	unsigned offset;
-+	u32 reg_level, reg_both, reg_low, index;
-+
-+	offset = cns3xxx_irq_to_gpio_offset(chip, data->irq);
-+	index = 1 << offset;
-+
-+	reg_level = readl(base + GPIO_INTR_TRIGGER_METHOD_OFFSET);
-+	reg_both = readl(base + GPIO_INTR_TRIGGER_BOTH_EDGES_OFFSET);
-+	reg_low = readl(base + GPIO_INTR_TRIGGER_TYPE_OFFSET);
-+
-+	switch (type) {
-+	case IRQ_TYPE_EDGE_RISING:
-+		reg_level &= ~index;
-+		reg_both &= ~index;
-+		reg_low &= ~index;
-+		break;
-+	case IRQ_TYPE_EDGE_FALLING:
-+		reg_level &= ~index;
-+		reg_both &= ~index;
-+		reg_low |= index;
-+		break;
-+	case IRQ_TYPE_EDGE_BOTH:
-+		reg_level &= ~index;
-+		reg_both |= index;
-+		break;
-+	case IRQ_TYPE_LEVEL_LOW:
-+		reg_level |= index;
-+		reg_low |= index;
-+		break;
-+	case IRQ_TYPE_LEVEL_HIGH:
-+		reg_level |= index;
-+		reg_low &= ~index;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	cns3xxx_direction_in(chip, offset);
-+	writel(reg_level, base + GPIO_INTR_TRIGGER_METHOD_OFFSET);
-+	writel(reg_both, base + GPIO_INTR_TRIGGER_BOTH_EDGES_OFFSET);
-+	writel(reg_low, base + GPIO_INTR_TRIGGER_TYPE_OFFSET);
-+
-+	return 0;
-+}
-+
-+static void cns3xxx_irq_enable(struct irq_data *data)
-+{
-+	struct gpio_chip *chip = data->chip_data;
-+	void __iomem *base = to_chog_gpio_chip(chip)->reg_base;
-+	unsigned offset = cns3xxx_irq_to_gpio_offset(chip, data->irq);
-+	u32 reg;
-+
-+	reg = readl(base + GPIO_INTR_ENABLE_OFFSET);
-+	reg |= (1 << offset);
-+	writel(reg, base + GPIO_INTR_ENABLE_OFFSET);
-+}
-+
-+static void cns3xxx_irq_disable(struct irq_data *data)
-+{
-+	struct gpio_chip *chip = data->chip_data;
-+	void __iomem *base = to_chog_gpio_chip(chip)->reg_base;
-+	unsigned offset = cns3xxx_irq_to_gpio_offset(chip, data->irq);
-+	u32 reg;
-+
-+	reg = readl(base + GPIO_INTR_ENABLE_OFFSET);
-+	reg &= ~(1 << offset);
-+	writel(reg, base + GPIO_INTR_ENABLE_OFFSET);
-+}
-+
-+static void cns3xxx_gpio_mask(struct irq_data *data)
-+{
-+	struct gpio_chip *chip = data->chip_data;
-+	void __iomem *base = to_chog_gpio_chip(chip)->reg_base;
-+	unsigned offset = cns3xxx_irq_to_gpio_offset(chip, data->irq);
-+	u32 reg;
-+
-+	reg = readl(base + GPIO_INTR_MASK_OFFSET);
-+	reg |= (1 << offset);
-+	writel(reg, base + GPIO_INTR_MASK_OFFSET);
-+}
-+
-+static void cns3xxx_gpio_unmask(struct irq_data *data)
-+{
-+	struct gpio_chip *chip = data->chip_data;
-+	void __iomem *base = to_chog_gpio_chip(chip)->reg_base;
-+	unsigned offset = cns3xxx_irq_to_gpio_offset(chip, data->irq);
-+	u32 reg;
-+
-+	reg = readl(base + GPIO_INTR_MASK_OFFSET);
-+	reg &= ~(1 << offset);
-+	writel(reg, base + GPIO_INTR_MASK_OFFSET);
-+}
-+
-+static struct irq_chip cns3xxx_gpio_irq_chip = {
-+	.name = "GPIO",
-+	.irq_enable = cns3xxx_irq_enable,
-+	.irq_disable = cns3xxx_irq_disable,
-+	.irq_mask = cns3xxx_gpio_mask,
-+	.irq_unmask = cns3xxx_gpio_unmask,
-+	.irq_set_type = cns3xxx_gpio_set_irq_type,
-+};
-+
-+static struct chog_gpio_chip cns3xxx_gchip[] = {
-+			  /* label,  base,	   ngpio */
-+	INIT_CHOG_GPIO_CHIP("GPIOA", 0x00,	   MAX_GPIOA_NO),
-+	INIT_CHOG_GPIO_CHIP("GPIOB", MAX_GPIOA_NO, MAX_GPIOB_NO),
-+};
-+
-+
-+static int cns3xxx_gpio_read_proc(char *page, char **start,  off_t off,
-+		int count, int *eof, void *data)
-+{
-+	int num = 0, i, nr_regs;
-+
-+	nr_regs = sizeof(gpio_regs)/sizeof(struct cns3xxx_regs);
-+	num += sprintf(page + num,
-+			"Register Description        GPIOA     GPIOB\n"
-+			"====================        =====     =====\n");
-+	num += sprintf(page + num, "%-26.26s: %08x  %08x\n", "GPIO Disable",
-+		readl(cns3xxx_gchip[0].reg_sharepin_en),
-+		readl(cns3xxx_gchip[1].reg_sharepin_en));
-+	for (i = 0; i < nr_regs; i++) {
-+		num += sprintf(page + num, "%-26.26s: %08x  %08x\n",
-+			gpio_regs[i].name,
-+			readl(cns3xxx_gchip[0].reg_base + gpio_regs[i].offset),
-+			readl(cns3xxx_gchip[1].reg_base + gpio_regs[i].offset));
-+	}
-+
-+	num += sprintf(page + num, "\n"
-+			"Register Description        Value\n"
-+			"====================        =====\n");
-+	nr_regs = sizeof(misc_regs)/sizeof(struct cns3xxx_regs);
-+	for (i = 0; i < nr_regs; i++) {
-+		num += sprintf(page + num, "%-26.26s: %08x\n",
-+			misc_regs[i].name,
-+			readl(misc_regs[i].addr));
-+	}
-+
-+	return num;
-+}
-+
-+/*
-+ * Turn on corresponding shared pin function.
-+ * Turn on shared pin function will also disable GPIO function. Related GPIO
-+ * control registers are still accessable but not reflect to pin.
-+ */
-+int cns3xxx_sharepin_request(unsigned gpio, const char *label)
-+{
-+	struct gpio_chip *chip;
-+	int i, reg, ret, offset = gpio;
-+
-+	ret = gpio_request(gpio, label);
-+	if (ret) {
-+		__pr_debug("gpio%d(%s) already in use! Err=%d\n",
-+				gpio, label, ret);
-+		return ret;
-+	}
-+
-+	for (i = 0; i < nr_banks; i++) {
-+		chip = &cns3xxx_gchip[i].chip;
-+		if (offset > chip->ngpio) {
-+			offset -= chip->ngpio;
-+			continue;
-+		}
-+		reg = readl(cns3xxx_gchip[i].reg_sharepin_en);
-+		reg |= (1 << offset);
-+		writel(reg, cns3xxx_gchip[i].reg_sharepin_en);
-+		__pr_debug("%s[%d] is occupied by %s function!\n",
-+				chip->label, offset, sharepin_desc[gpio]);
-+		break;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(cns3xxx_sharepin_request);
-+
-+/*
-+ * Turn off corresponding share pin function.
-+ */
-+void cns3xxx_sharepin_free(unsigned gpio)
-+{
-+	struct gpio_chip *chip;
-+	int i, reg, offset = gpio;
-+
-+	gpio_free(gpio);
-+
-+	for (i = 0; i < nr_banks; i++) {
-+		chip = &cns3xxx_gchip[i].chip;
-+		if (offset > chip->ngpio) {
-+			offset -= chip->ngpio;
-+			continue;
-+		}
-+		reg = readl(cns3xxx_gchip[i].reg_sharepin_en);
-+		reg &= ~(1 << offset);
-+		writel(reg, cns3xxx_gchip[i].reg_sharepin_en);
-+		printk(KERN_INFO "%s[%d] share pin function (%s) disabled!\n",
-+				chip->label, offset, sharepin_desc[gpio]);
-+		break;
-+	}
-+}
-+EXPORT_SYMBOL(cns3xxx_sharepin_free);
-+
-+
-+#ifdef CONFIG_DEBUG_FS
-+
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
-+
-+static void cns3xxx_dbg_show(struct seq_file *s, struct gpio_chip *chip)
-+{
-+	struct chog_gpio_chip *cns3xxx_gpio = to_chog_gpio_chip(chip);
-+	int i, is_out;
-+	unsigned gpio;
-+	const char *gpio_label;
-+
-+	for (i = 0; i < chip->ngpio; i++) {
-+		gpio = chip->base + i;
-+		gpio_label = gpiochip_is_requested(chip, i);
-+		if (!gpio_label)
-+			continue;
-+		is_out = test_bit(i, cns3xxx_gpio->reg_base + GPIO_DIR_OFFSET);
-+		seq_printf(s, " gpio-%-3d [%-20.20s] %s %s (%s%-2d)\n",
-+			gpio, gpio_label,
-+			is_out ? "out" : "in ",
-+			chip->get(chip, i) ? "hi" : "lo",
-+			chip->label, i);
-+	}
-+}
-+
-+static int cns3xxx_dbg_gpio_show_all(struct seq_file *s, void *unused)
-+{
-+	int i, j, is_out, disabled;
-+	unsigned gpio;
-+	const char *gpio_label;
-+	struct gpio_chip *chip;
-+
-+	for (j = 0; j < nr_banks; j++) {
-+		chip = &cns3xxx_gchip[j].chip;
-+		seq_printf(s, "           Label                 Mode      Dir Value Note\n");
-+		seq_printf(s, " ============================================================\n");
-+		for (i = 0; i < chip->ngpio; i++) {
-+			gpio = chip->base + i;
-+			disabled = test_bit(i, cns3xxx_gchip[j].reg_sharepin_en);
-+			gpio_label = gpiochip_is_requested(chip, i);
-+			if (!gpio_label) {
-+				if (disabled)
-+					gpio_label = sharepin_desc[gpio];
-+				else
-+					gpio_label = "Not requested";
-+			}
-+			is_out = test_bit(i, cns3xxx_gchip[j].reg_base + GPIO_DIR_OFFSET);
-+			seq_printf(s, " gpio-%-3d [%-20.20s] %-10.10s%s %s   (%s%-2d)\n",
-+				gpio, gpio_label,
-+				disabled ? "Function" : "GPIO",
-+				is_out ? "out" : "in ",
-+				chip->get(chip, i) ? "hi" : "lo",
-+				chip->label, i);
-+		}
-+		seq_printf(s, "\n");
-+	}
-+
-+	return 0;
-+}
-+
-+static int dbg_gpio_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, cns3xxx_dbg_gpio_show_all, &inode->i_private);
-+}
-+
-+static const struct file_operations debug_fops = {
-+	.open		= dbg_gpio_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static int __init cns3xxx_gpio_debuginit(void)
-+{
-+	(void) debugfs_create_file("gpio-cns3xxx", S_IRUGO,
-+			NULL, NULL, &debug_fops);
-+	return 0;
-+}
-+late_initcall(cns3xxx_gpio_debuginit);
-+
-+#endif /* CONFIG_DEBUG_FS */
-+
-+static void chained_gpio_irq_handler(unsigned irq, struct irq_desc *desc)
-+{
-+	struct chog_gpio_chip *chip = irq_get_handler_data(irq);
-+	struct irq_chip *ichip = irq_desc_get_chip(desc);
-+	unsigned i;
-+	int target_irq;
-+	u32 status;
-+
-+	chained_irq_enter(ichip, desc);
-+
-+	status = readl(chip->reg_base + GPIO_INTR_MASKED_STATUS_OFFSET);
-+
-+	/* Clean System irq status */
-+	writel(status, chip->reg_base + GPIO_INTR_CLEAR_OFFSET);
-+
-+	for (i = 0; i < chip->chip.ngpio; i++) {
-+		if (status & (1 << i)) {
-+			target_irq = cns3xxx_to_irq(&chip->chip, i);
-+			printk(KERN_INFO "Invoke cascaded irq %d from irq %d\n",
-+					target_irq, chip->irq);
-+			generic_handle_irq(target_irq);
-+		}
-+	}
-+
-+	chained_irq_exit(ichip, desc);
-+}
-+
-+static int __devinit gpio_probe(struct platform_device *pdev)
-+{
-+	int i, j, nr_gpios = 0, irq = 0;
-+	struct resource *res;
-+	void __iomem *misc_reg;
-+
-+	cns3xxx_pwr_clk_en(0x1 << PM_CLK_GATE_REG_OFFSET_GPIO);
-+	cns3xxx_pwr_soft_rst(0x1 << PM_CLK_GATE_REG_OFFSET_GPIO);
-+
-+	if (cns3xxx_proc_dir) {
-+		proc_cns3xxx_gpio = create_proc_entry(GPIO_PROC_NAME,
-+				S_IFREG | S_IRUGO, cns3xxx_proc_dir) ;
-+		if (proc_cns3xxx_gpio)
-+			proc_cns3xxx_gpio->read_proc = cns3xxx_gpio_read_proc;
-+	}
-+
-+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "MISC");
-+	if (res)
-+		misc_reg = (void __iomem *)res->start;
-+	else
-+		return -ENODEV;
-+
-+	/* Scan and match GPIO resources */
-+	for (i = 0; i < nr_banks; i++) {
-+		/* Fetech GPIO base address */
-+		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
-+				cns3xxx_gchip[i].chip.label);
-+		if (!res)
-+			continue;
-+		cns3xxx_gchip[i].reg_base = (void __iomem *)res->start;
-+
-+		/* Fetech GPIO interrupt number */
-+		res = platform_get_resource_byname(pdev, IORESOURCE_IRQ,
-+				cns3xxx_gchip[i].chip.label);
-+		if (!res)
-+			continue;
-+		irq = res->start;
-+		cns3xxx_gchip[i].irq = irq;
-+		__pr_debug("%s base=0x%08x, irq=%d",
-+				cns3xxx_gchip[i].chip.label,
-+				(u32)cns3xxx_gchip[i].reg_base, irq);
-+
-+		cns3xxx_gchip[i].chip.dev = &pdev->dev;
-+		cns3xxx_gchip[i].reg_sharepin_en = misc_reg + 0x14 + i * 4;
-+
-+		gpiochip_add(&cns3xxx_gchip[i].chip);
-+
-+		/* Clear All Interrupt Status */
-+		writel(0xFFFFFFFF, cns3xxx_gchip[i].reg_base +
-+				GPIO_INTR_CLEAR_OFFSET);
-+
-+		/* Initial irq_chip to handle virtual GPIO irqs. */
-+		for (j = 0; j < cns3xxx_gchip[i].chip.ngpio; j++) {
-+			irq = cns3xxx_to_irq(&cns3xxx_gchip[i].chip, j);
-+			irq_set_chip_and_handler(irq, &cns3xxx_gpio_irq_chip,
-+				handle_simple_irq);
-+			set_irq_flags(irq, IRQF_VALID);
-+			irq_set_chip_data(irq, &cns3xxx_gchip[i]);
-+		}
-+		irq_set_chained_handler(cns3xxx_gchip[i].irq,
-+				chained_gpio_irq_handler);
-+		irq_set_handler_data(cns3xxx_gchip[i].irq,
-+				&cns3xxx_gchip[i]);
-+
-+		nr_gpios += cns3xxx_gchip[i].chip.ngpio;
-+		if (nr_gpios >= MAX_GPIO_NO)
-+			break;
-+	}
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM
-+static int gpio_cns3xxx_suspend(struct platform_device *dev, pm_message_t state)
-+{
-+	__pr_debug("%s,%s,%d\n", __FILE__, __func__, __LINE__);
-+
-+	return 0;
-+}
-+
-+static int gpio_cns3xxx_resume(struct platform_device *dev)
-+{
-+	__pr_debug("%s,%s,%d\n", __FILE__, __func__, __LINE__);
-+
-+	return 0;
-+}
-+#endif /* CONFIG_PM */
-+
-+static struct platform_driver gpio_driver = {
-+	.probe		= gpio_probe,
-+#ifdef CONFIG_PM
-+	.suspend	= gpio_cns3xxx_suspend,
-+	.resume		= gpio_cns3xxx_resume,
-+#endif /* CONFIG_PM */
-+	.driver		= {
-+		.owner	= THIS_MODULE,
-+		.name	= "cns3xxx-gpio",
-+	},
-+};
-+
-+int __init cns3xxx_gpio_init(void)
-+{
-+	return platform_driver_probe(&gpio_driver, gpio_probe);
-+}
-+
-+void __exit cns3xxx_gpio_exit(void)
-+{
-+	if (proc_cns3xxx_gpio)
-+		remove_proc_entry(GPIO_PROC_NAME, cns3xxx_proc_dir);
-+}
-+
-+module_init(cns3xxx_gpio_init);
-+module_exit(cns3xxx_gpio_exit);
++module_init(cns3xxx_eintr_init);
++module_exit(cns3xxx_eintr_exit);
 +
 +MODULE_LICENSE("GPL");
-+
-diff --git a/arch/arm/mach-cns3xxx/include/mach/cns3xxx.h b/arch/arm/mach-cns3xxx/include/mach/cns3xxx.h
-index 191c8e5..217bb4d 100644
---- a/arch/arm/mach-cns3xxx/include/mach/cns3xxx.h
-+++ b/arch/arm/mach-cns3xxx/include/mach/cns3xxx.h
-@@ -624,9 +624,15 @@ int cns3xxx_cpu_clock(void);
- 
- #define NR_IRQS_CNS3XXX			(IRQ_TC11MP_GIC_START + 64)
- 
--#if !defined(NR_IRQS) || (NR_IRQS < NR_IRQS_CNS3XXX)
-+#define MAX_GPIOA_NO			32
-+#define MAX_GPIOB_NO			32
-+#define MAX_GPIO_NO			(MAX_GPIOA_NO + MAX_GPIOB_NO)
-+
-+#if !defined(NR_IRQS) || (NR_IRQS < (NR_IRQS_CNS3XXX + MAX_GPIO_NO))
- #undef NR_IRQS
--#define NR_IRQS				NR_IRQS_CNS3XXX
-+#define NR_IRQS				(NR_IRQS_CNS3XXX + MAX_GPIO_NO)
- #endif
- 
-+extern struct proc_dir_entry *cns3xxx_proc_dir;
-+
- #endif	/* __MACH_BOARD_CNS3XXX_H */
-diff --git a/arch/arm/mach-cns3xxx/include/mach/gpio.h b/arch/arm/mach-cns3xxx/include/mach/gpio.h
-new file mode 100644
-index 0000000..22efca8
---- /dev/null
-+++ b/arch/arm/mach-cns3xxx/include/mach/gpio.h
-@@ -0,0 +1,63 @@
-+/*******************************************************************************
-+ *
-+ *  Copyright (c) 2011 Cavium
-+ *
-+ *  This file is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License, Version 2, as
-+ *  published by the Free Software Foundation.
-+ *
-+ *  This file is distributed in the hope that it will be useful,
-+ *  but AS-IS and WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE, TITLE, or
-+ *  NONINFRINGEMENT.  See the GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this file; if not, write to the Free Software
-+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA or
-+ *  visit http://www.gnu.org/licenses/.
-+ *
-+ *  This file may also be available under a different license from Cavium.
-+ *  Contact Cavium for more information
-+ *
-+ ******************************************************************************/
-+
-+#ifndef	_CNS3XXX_GPIO_H_
-+#define	_CNS3XXX_GPIO_H_
-+
-+#include <mach/cns3xxx.h>
-+
-+#define ARCH_NR_GPIOS				MAX_GPIO_NO
-+
-+#include <asm-generic/gpio.h>
-+
-+#define GPIO_OUTPUT_OFFSET			0x00
-+#define GPIO_INPUT_OFFSET			0x04
-+#define GPIO_DIR_OFFSET				0x08
-+#define GPIO_BIT_SET_OFFSET			0x10
-+#define GPIO_BIT_CLEAR_OFFSET			0x14
-+#define GPIO_INTR_ENABLE_OFFSET			0x20
-+#define GPIO_INTR_RAW_STATUS_OFFSET		0x24
-+#define GPIO_INTR_MASKED_STATUS_OFFSET		0x28
-+#define GPIO_INTR_MASK_OFFSET			0x2C
-+#define GPIO_INTR_CLEAR_OFFSET			0x30
-+#define GPIO_INTR_TRIGGER_METHOD_OFFSET		0x34
-+#define GPIO_INTR_TRIGGER_BOTH_EDGES_OFFSET	0x38
-+#define GPIO_INTR_TRIGGER_TYPE_OFFSET		0x3C
-+#define GPIO_BOUNCE_ENABLE_OFFSET		0x40
-+#define GPIO_BOUNCE_PRESCALE_OFFSET		0x44
-+
-+
-+#define gpio_get_value				__gpio_get_value
-+#define gpio_set_value				__gpio_set_value
-+#define gpio_cansleep				__gpio_cansleep
-+#define gpio_to_irq				__gpio_to_irq
-+
-+#define GPIOA(n)				n
-+#define GPIOB(n)				(MAX_GPIOA_NO + n)
-+
-+/* Function prototype */
-+int cns3xxx_sharepin_request(unsigned gpio, const char *label);
-+void cns3xxx_sharepin_free(unsigned gpio);
-+
-+#endif
 +
 -- 
 1.7.6
