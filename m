@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab1G1AC5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 20:02:57 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:56624 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435Ab1G1AC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 20:02:56 -0400
-Date: Wed, 27 Jul 2011 17:02:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Kyle Moffett <kyle@moffetthome.net>
-Cc: kernelmail.jms@gmail.com, RKK <kulkarni.ravi4@gmail.com>,
-        linux-kernel@vger.kernel.org, cmm@us.ibm.com
-Subject: Re: Fw: RCU boot debug patch
-Message-ID: <20110728000254.GB2318@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110719224142.GT2357@linux.vnet.ibm.com>
- <CAM=x7SYYSPGhqYmEAUqe6pc2N=Djg-aG31P5nSmPGDsMORBmyA@mail.gmail.com>
- <20110722022937.GB2408@linux.vnet.ibm.com>
- <201107272247.50613.kernelmail.jms@gmail.com>
- <CAGZ=bq+p0kNuj-2dAj40D1Hdru-S64vE_QEhL_mAphYY-0hqyw@mail.gmail.com>
+	id S1754661Ab1G1ASc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 20:18:32 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59671 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753084Ab1G1AS3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 20:18:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGZ=bq+p0kNuj-2dAj40D1Hdru-S64vE_QEhL_mAphYY-0hqyw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1311762043.25044.679.camel@pasglop>
+References: <1311757190.24752.406.camel@twins> <1310717238-13857-1-git-send-email-haishan.bai@gmail.com>
+ <1310717238-13857-2-git-send-email-haishan.bai@gmail.com> <1310725418.2586.309.camel@twins>
+ <4E21A526.8010904@gmail.com> <1310860194.25044.17.camel@pasglop>
+ <4b337921-d430-4b63-bc36-ad31753cf800@email.android.com> <1310912990.25044.203.camel@pasglop>
+ <1310944453.25044.262.camel@pasglop> <1310961691.25044.274.camel@pasglop>
+ <4E23D728.7090406@gmail.com> <1310972462.25044.292.camel@pasglop>
+ <4E23E02C.8090401@gmail.com> <1310974591.25044.298.camel@pasglop>
+ <4E24FA51.70602@gmail.com> <1311049762.25044.392.camel@pasglop>
+ <CAMjpGUdxpaYBFfKjBEPFOJohnKoXfagLUHvhrst+NembeabxcA@mail.gmail.com>
+ <1311753513.25044.663.camel@pasglop> <20368.1311761379@redhat.com>
+ <1311761831.24752.413.camel@twins> <1311762043.25044.679.camel@pasglop>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 27 Jul 2011 17:12:32 -0700
+Message-ID: <CAMjpGUdXfzt5HuDgspf6Bijm3xOPcck_JR38-AV2FSK0t99MTQ@mail.gmail.com>
+Subject: Re: [RFC/PATCH] mm/futex: Fix futex writes on archs with SW tracking
+ of dirty & young
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, David Howells <dhowells@redhat.com>,
+        Shan Hai <haishan.bai@gmail.com>, paulus@samba.org, tglx@linutronix.de,
+        walken@google.com, cmetcalf@tilera.com, tony.luck@intel.com,
+        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 07:56:10PM -0400, Kyle Moffett wrote:
-> On Wed, Jul 27, 2011 at 17:47,  <kernelmail.jms@gmail.com> wrote:
-> >>A debug patch to verify if there is RCU callbacks before the rcu scheduler is active
-> > So something gives me the impression we may have an answer somewhere in this dmesg for this... ;-)
-> >
-> > Here is my dmesg (the whole thing):
-> >
-> > function free_object_rcu
-> > [    0.166707] RCU scheduler is not active yet, Calling _call_rcu() with this function free_object_rcu
-> > [....thousands of lines snipped...]
-> > [    0.225223] RCU scheduler is not active yet, Calling _call_rcu() with this function free_object_rcu
+On Wed, Jul 27, 2011 at 03:20, Benjamin Herrenschmidt wrote:
+> Hoping the BUG() isn't trippable by userspace but then it's no mmu, it's
+> not like we care what userspace can do right :-)
 
-Thank you, Julie!
+side note ... common misconception that "no mmu" == "no memory
+protection".  a few of the nommu processors have memory protection,
+just no virtual<->physical translation.
 
-> Well this looks an awful lot like a smoking gun here...
-> 
-> I can only find one function called "free_object_rcu", and it seems to be a
-> static function in mm/kmemleak.c, and it certainly does this:
->    call_rcu(&object->rcu, free_object_rcu);
-> 
-> So the next question for you would be:  Do all the messages go away if you
-> turn off the kmemleak config option?
-
-Hello, Kyle,
-
-This is not at all showing a problem in free_object_rcu(), but rather
-as a sanity-check for a shoot-from-the-hip fix.  The fix seemed to
-work, but my paranoia dictated that I check that my guess was correct.
-Which it appears that it was.
-
-So again, these messages do not indicate a problem in free_object_rcu().
-
-							Thanx, Paul
+thanks for the patch !
+-mike
