@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024Ab1G1Rjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 13:39:44 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:61053 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755820Ab1G1Rjm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 13:39:42 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=RpK3mFOnRRDh3mJIOhB3QrsZyGagKN6X3WDnuqEkPVr2m0fihDPOiUPtSmYNc5/un
-	txN9J9csqwFzM8JgLBulA==
-MIME-Version: 1.0
-In-Reply-To: <20110728140808.GG11820@somewhere.redhat.com>
-References: <1310679495-29104-1-git-send-email-vnagarnaik@google.com>
- <1311793038-15155-1-git-send-email-vnagarnaik@google.com> <1311855169.2617.168.camel@laptop>
- <20110728123131.GA11820@somewhere.redhat.com> <1311862204.2617.179.camel@laptop>
- <20110728140808.GG11820@somewhere.redhat.com>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Thu, 28 Jul 2011 10:39:09 -0700
-Message-ID: <CAL26m8K7uOBKpBH4DNHV=ZJUtf0Wh_Pz7ZyVA12bH=B35K7AXQ@mail.gmail.com>
-Subject: Re: [PATCH v2 0/6] Add tracepoints to trace all system IRQs
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+	id S1756030Ab1G1Rla (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 13:41:30 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:43774 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755820Ab1G1Rl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 13:41:27 -0400
+Date: Thu, 28 Jul 2011 10:41:23 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [ANNOUNCE] 3.0-rt4
+Message-ID: <20110728174123.GA10751@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.LFD.2.02.1107272222420.2660@ionos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1107272222420.2660@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 7:08 AM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Thu, Jul 28, 2011 at 04:10:04PM +0200, Peter Zijlstra wrote:
->> On Thu, 2011-07-28 at 14:31 +0200, Frederic Weisbecker wrote:
->> >
->> > Because that requires to put the tracepoints in every interrupt sources
->> > for every archs instead of putting one in the generic space.
->>
->> To sum up from IRC, yes that's exactly what you need to do, because this
->> patch set assumes two things:
->>
->>  1) that there is a 1:1 mapping between interrupt sources and generic
->> handlers, and
->>
->>  2) that there is a neglectable amount of arch specific code for each
->> generic handler.
->>
->> Both are false in generic. Therefore there is no option but to
->> instrument each and every arch specific interrupt handler.
->>
->> Also, please use a single tracepoint for all that instead of this horrid
->> forest of random crap. Use something like arch_interrupt_enter(line_nr),
->> arch_interrupt_exit(line_nr).
->
-> Right, so I guess the first iteration of the patchset was good in fact.
->
+On Wed, Jul 27, 2011 at 11:37:09PM +0200, Thomas Gleixner wrote:
+> Dear RT Folks,
+> 
+> I'm pleased to announce the 3.0-rt4 release.
 
-Frederic and Peter
+3.0-rt5 boots single-CPU under KVM on a 32-bit laptop.  Also with "-smp
+2".  It even survived a minute or so of rcutorture in both cases.  ;-)
 
-Thanks for reviewing the patch series. I will post the first iteration
-of this patch rebased to the latest HEAD.
+Some weirdness with interactivity -- if the system is idle aside from
+rcutorture, the rcutorture.stat_interval console messages don't come
+out unless I hit "enter" on the console.  But if I run "top", they do
+come out regularly.  Might well be KVM's fault, except that running
+rcutorture on non-rt kernels doesn't exhibit this behavior.
 
+I guess I should try RCU_BOOST=y, then...
 
-Vaibhav Nagarnaik
+							Thanx, Paul
