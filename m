@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755742Ab1G1Nu4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 09:50:56 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:18618
+	id S1755766Ab1G1Nu7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 09:50:59 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:43414
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755520Ab1G1Nul (ORCPT
+	by vger.kernel.org with ESMTP id S1755492Ab1G1Nul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 28 Jul 2011 09:50:41 -0400
-X-SpamScore: 4
-X-BigFish: VPS4(zz853kzz1202hzz8275bhz32i668h839h61h)
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h61h)
 X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LP1QGC-01-3U1-02
+X-WSS-ID: 0LP1QGD-01-3U5-02
 X-M-MSG: 
 From: Robert Richter <robert.richter@amd.com>
 To: Peter Zijlstra <peterz@infradead.org>
 CC: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 7/7] perf, x86: Implement 64 bit counter support for IBS
-Date: Thu, 28 Jul 2011 15:46:52 +0200
-Message-ID: <1311860812-28748-8-git-send-email-robert.richter@amd.com>
+Subject: [PATCH 6/7] perf, x86: Example code for AMD IBS
+Date: Thu, 28 Jul 2011 15:46:51 +0200
+Message-ID: <1311860812-28748-7-git-send-email-robert.richter@amd.com>
 X-Mailer: git-send-email 1.7.5.3
 In-Reply-To: <1311860812-28748-1-git-send-email-robert.richter@amd.com>
 References: <1311860812-28748-1-git-send-email-robert.richter@amd.com>
@@ -31,337 +31,534 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements 64 bit counter support for IBS. The sampling
-period is no longer limited to the hw counter width.
+This patch includes an example to use IBS via perf_event.
 
-The functions perf_event_set_period() and perf_event_try_update() can
-be used as generic functions. They can replace similar code that is
-duplicate across architectures.
+usage: ibs [-h]
+       ibs ibs_fetch | ibs_op [-s] [-C CPU] [-m BUFFERPAGES] <command>
+
+        <command>
+                Command to execute.
+
+        -e CONFIG
+                64 bit configuration value, refers to msrs
+                IbsFetchCtl (0xC0011030) or IbsOpCtl (0xC0011033).
+                The default sample period is set to 100000.
+
+        -c COUNT
+                Event period to sample (default: 100000).
+
+        -h
+                Print help.
+
+        -s
+                system wide profiling (set per default)
+
+        -C CPU
+                profile on CPU (not yet implemented)
+
+        -m BUFFERPAGES
+                Per-cpu buffer pages to allocate.
 
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- arch/x86/include/asm/perf_event.h        |    2 +
- arch/x86/kernel/cpu/perf_event_amd_ibs.c |  204 +++++++++++++++++++++++++++---
- 2 files changed, 185 insertions(+), 21 deletions(-)
+ tools/perf/Documentation/examples/Makefile |   44 +++
+ tools/perf/Documentation/examples/ibs.c    |  436 ++++++++++++++++++++++++++++
+ 2 files changed, 480 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/Documentation/examples/Makefile
+ create mode 100644 tools/perf/Documentation/examples/ibs.c
 
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index e7d2f15..cc44a1a 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -150,6 +150,8 @@ union cpuid10_edx {
- #define IBS_FETCH_MAX_CNT	0x0000FFFFULL
- 
- /* IbsOpCtl bits */
-+/* lower 4 bits of the current count are ignored: */
-+#define IBS_OP_CUR_CNT		(0xFFFF0ULL<<32)
- #define IBS_OP_CNT_CTL		(1ULL<<19)
- #define IBS_OP_VAL		(1ULL<<18)
- #define IBS_OP_ENABLE		(1ULL<<17)
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-index ea9f360..bd78994 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
-@@ -40,10 +40,84 @@ struct perf_ibs {
- 	u64		cnt_mask;
- 	u64		enable_mask;
- 	u64		valid_mask;
-+	u64		max_period;
- 	int		reg_count;
- 	struct cpu_perf_ibs __percpu *pcpu;
-+	u64		(*get_count)(u64 config);
- };
- 
-+static int
-+perf_event_set_period(struct hw_perf_event *hwc, u64 min, u64 max, u64 *count)
+diff --git a/tools/perf/Documentation/examples/Makefile b/tools/perf/Documentation/examples/Makefile
+new file mode 100644
+index 0000000..cfc9647
+--- /dev/null
++++ b/tools/perf/Documentation/examples/Makefile
+@@ -0,0 +1,44 @@
++all:	ibs
++
++CFLAGS += -I../..
++CFLAGS += -I../../util/include
++CFLAGS += -DNO_NEWT_SUPPORT
++
++LIB_FILE=../../libperf.a
++
++INSTALL = install
++
++ifeq ("$(origin O)", "command line")
++	OUTPUT := $(O)/
++endif
++
++ifneq ($(OUTPUT),)
++# check that the output directory actually exists
++OUTDIR := $(shell cd $(OUTPUT) && /bin/pwd)
++$(if $(OUTDIR),, $(error output directory "$(OUTPUT)" does not exist))
++endif
++
++ifndef DESTDIR
++prefix = $(HOME)
++endif
++bindir_relative = bin
++bindir = $(prefix)/$(bindir_relative)
++
++DESTDIR_SQ = $(subst ','\'',$(DESTDIR))
++bindir_SQ = $(subst ','\'',$(bindir))
++
++../../libperf.a:
++	$(MAKE) CFLAGS="-DNO_NEWT_SUPPORT" -C ../.. libperf.a
++
++$(OUTPUT)ibs: ibs.c $(LIB_FILE)
++	$(CC) $(CFLAGS) $^ -o $@
++
++clean:
++	$(MAKE) -C ../.. clean
++	$(RM) ibs
++
++install: all
++	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
++	$(INSTALL) $(OUTPUT)ibs '$(DESTDIR_SQ)$(bindir_SQ)'
++
++.PHONY:	all clean install
+diff --git a/tools/perf/Documentation/examples/ibs.c b/tools/perf/Documentation/examples/ibs.c
+new file mode 100644
+index 0000000..3d4e334
+--- /dev/null
++++ b/tools/perf/Documentation/examples/ibs.c
+@@ -0,0 +1,436 @@
++/*
++ * IBS sampling example
++ *
++ *  Copyright (C) 2011 Advanced Micro Devices, Inc., Robert Richter
++ *
++ * Sample code that attaches an event to a specified PMU.
++ *
++ * Compiling:
++ *
++ *  $ cd linux         # Linux kernel source dir
++ *  $ make -C tools/perf/Documentation/examples ibs
++ *
++ * Running:
++ *
++ *  $ ./ibs ibs_fetch -s -m 256 <command>
++ *
++ */
++
++#include <errno.h>
++#include <fcntl.h>
++#include <string.h>
++#include <stdio.h>
++#include <poll.h>
++#include <stdlib.h>
++#include <sys/ptrace.h>
++#include <signal.h>
++#include <setjmp.h>
++#include <inttypes.h>
++
++#include "util/evsel.h"
++#include "util/evlist.h"
++#include "util/cpumap.h"
++#include "util/thread_map.h"
++
++struct perf_config {
++	uint64_t	config;
++	uint64_t	sample_period;
++	char		*sysfs;
++	int		pid;
++	int		cpu;
++	int		mmap_pages;
++	char		**argv;
++};
++
++static uint64_t collected_samples, lost_samples, sum_period;
++
++static void usage(void)
 +{
-+	s64 left = local64_read(&hwc->period_left);
-+	s64 period = hwc->sample_period;
-+	int overflow = 0;
-+
-+	/*
-+	 * If we are way outside a reasonable range then just skip forward:
-+	 */
-+	if (unlikely(left <= -period)) {
-+		left = period;
-+		local64_set(&hwc->period_left, left);
-+		hwc->last_period = period;
-+		overflow = 1;
-+	}
-+
-+	if (unlikely(left <= 0)) {
-+		left += period;
-+		local64_set(&hwc->period_left, left);
-+		hwc->last_period = period;
-+		overflow = 1;
-+	}
-+
-+	if (unlikely(left < min))
-+		left = min;
-+
-+	if (left > max)
-+		left = max;
-+
-+	*count = (u64)left;
-+
-+	return overflow;
++	printf(
++"usage: ibs [-h]\n"
++"       ibs ibs_fetch | ibs_op [-s] [-C CPU] [-m BUFFERPAGES] <command>\n"
++"\n"
++"        <command>\n"
++"                Command to execute.\n"
++"\n"
++"        -e CONFIG\n"
++"                64 bit configuration value, refers to msrs\n"
++"                IbsFetchCtl (0xC0011030) or IbsOpCtl (0xC0011033).\n"
++"                The default sample period is set to 100000.\n"
++"\n"
++"        -c COUNT\n"
++"                Event period to sample (default: 100000).\n"
++"\n"
++"        -h\n"
++"                Print help.\n"
++"\n"
++"        -s\n"
++"                system wide profiling (set per default)\n"
++"\n"
++"        -C CPU\n"
++"                profile on CPU (not yet implemented)\n"
++"\n"
++"        -m BUFFERPAGES\n"
++"                Per-cpu buffer pages to allocate.\n"
++);
++	exit(0);
 +}
 +
-+static  int
-+perf_event_try_update(struct perf_event *event, u64 new_raw_count, int width)
-+{
-+	struct hw_perf_event *hwc = &event->hw;
-+	int shift = 64 - width;
-+	u64 prev_raw_count;
-+	u64 delta;
++#define IBS_FETCH_DEFAULT	((1ULL<<57)|(100000ULL>>4))
++#define IBS_OP_DEFAULT		((0ULL<<19)|(100000ULL>>4))
 +
-+	/*
-+	 * Careful: an NMI might modify the previous event value.
-+	 *
-+	 * Our tactic to handle this is to first atomically read and
-+	 * exchange a new raw count - then add that new-prev delta
-+	 * count to the generic event atomically:
-+	 */
-+	prev_raw_count = local64_read(&hwc->prev_count);
-+	if (local64_cmpxchg(&hwc->prev_count, prev_raw_count,
-+					new_raw_count) != prev_raw_count)
++#define IBS_MAX_CNT		0x0000FFFFULL
++
++#define IBS_FETCH_SYSFS "/sys/bus/event_source/devices/ibs_fetch/type"
++#define IBS_OP_SYSFS    "/sys/bus/event_source/devices/ibs_op/type"
++
++static int ibs_config(struct perf_config *config, int argc, char **argv)
++{
++	int c;
++
++	memset(config, 0, sizeof(*config));
++	config->pid = -1;	/* support for system wide profiling only */
++	config->cpu = -1;
++	config->mmap_pages = 1; /* need buffer for ibs */
++
++	c = getopt(argc, argv,"+h");
++	if (c != -1 || !argv[optind]) {
++		usage();
++		exit(0);
++	}
++
++	if (!strcmp(argv[optind], "ibs_fetch")) {
++		config->sysfs  = IBS_FETCH_SYSFS;
++		config->config = IBS_FETCH_DEFAULT;
++	} else if (!strcmp(argv[optind], "ibs_op")) {
++		config->sysfs  = IBS_OP_SYSFS;
++		config->config = IBS_OP_DEFAULT;
++	} else {
++		errx(1, "specify ibs_fetch or ibs_op\n");
++	}
++
++	optind++;
++
++	while (1) {
++		c = getopt(argc, argv,"+he:c:sC:m:v");
++		if (c == -1)
++			break;
++		switch (c) {
++		case 'h':
++			usage();
++			exit(0);
++		case 'e':
++			/* event configuration */
++			config->config = atoll(optarg);
++			break;
++		case 'c':
++			/* sample period */
++			config->sample_period = atoll(optarg);
++			config->config &= ~IBS_MAX_CNT;
++			if (!config->sample_period)
++				errx(1, "invalid sample period");
++			break;
++		case 's':
++			/* system wide profiling */
++			if (config->pid)
++				break;
++			config->pid = -1;
++			config->cpu = -1;
++			break;
++		case 'C':
++			/* profile cpu */
++			config->pid = -1;
++			config->cpu = atoi(optarg);
++			break;
++		case 'm':
++			config->mmap_pages = atoi(optarg);
++			break;
++		default:
++			errx(1, "unknown option");
++		}
++	}
++
++	if (!argv[optind])
++		errx(1, "you must specify a command to execute\n");
++
++	config->argv = argv + optind;
++
++	if (config->mmap_pages > 1 && ((config->mmap_pages) & 0x1))
++		errx(1, "number of pages must be power of 2\n");
++
++	return 0;
++}
++
++#define BUFSIZ_ATOI	32
++
++static int get_pmu_type(char *sysfs)
++{	int pmu, ret = 0;
++	char buf[BUFSIZ_ATOI];
++	size_t size;
++
++	pmu = open(sysfs, O_RDONLY);
++	if (pmu == -1)
++		return -errno;
++	size = read(pmu, buf, BUFSIZ - 1);
++	if (size < 0)
++		ret = -errno;
++	close(pmu);
++
++	if (ret)
++		return ret;
++
++	buf[size] = '0';
++
++	return atoi(buf);
++}
++
++static volatile int done = 0;
++
++static void cld_handler(int n)
++{
++	done = 1;
++}
++
++static int child(char **arg)
++{
++	ptrace(PTRACE_TRACEME, 0, NULL, NULL);
++	execvp(arg[0], arg);
++	return -1;
++}
++
++static void print_ibs_fetch(int cpu, uint64_t *ibs)
++{
++	printf("IBS_fetch sample on cpu%d\tIBS0: 0x%016"PRIx64" IBS1: 0x%016"PRIx64" IBS2:0x%016"PRIx64"\n",
++	       cpu, ibs[0], ibs[1], ibs[2]);
++}
++
++static void print_ibs_op(int cpu, uint64_t *ibs)
++{
++	printf("IBS_OP sample on cpu%d\t"
++	       "\t IBS0: 0x%016"PRIx64" IBS1: 0x%016"PRIx64" IBS2: 0x%016"PRIx64"\n"
++	        "\tIBS3: 0x%016"PRIx64" IBS4: 0x%016"PRIx64" IBS5: 0x%016"PRIx64" IBS6: 0x%016"PRIx64"\n",
++	       cpu, ibs[0], ibs[1], ibs[2], ibs[3], ibs[4], ibs[5], ibs[6]);
++}
++
++#define MSR_AMD64_IBSFETCH_SIZE		3
++#define MSR_AMD64_IBSOP_SIZE		7
++
++static int print_ibs(struct perf_sample *sample)
++{
++	switch (sample->raw_size >> 3) {
++	case MSR_AMD64_IBSFETCH_SIZE:
++		print_ibs_fetch(sample->cpu, sample->raw_data);
 +		return 0;
-+
-+	/*
-+	 * Now we have the new raw value and have updated the prev
-+	 * timestamp already. We can now calculate the elapsed delta
-+	 * (event-)time and add that to the generic event.
-+	 *
-+	 * Careful, not all hw sign-extends above the physical width
-+	 * of the count.
-+	 */
-+	delta = (new_raw_count << shift) - (prev_raw_count << shift);
-+	delta >>= shift;
-+
-+	local64_add(delta, &event->count);
-+	local64_sub(delta, &hwc->period_left);
-+
-+	return 1;
++	case MSR_AMD64_IBSOP_SIZE:
++		print_ibs_op(sample->cpu, sample->raw_data);
++		return 0;
++	default:
++		printf("invalid: raw_size = %d, p = %p\n",
++		       sample->raw_size, (u64*)sample->raw_data);
++		return -EINVAL;
++	}
 +}
 +
- static struct perf_ibs perf_ibs_fetch;
- static struct perf_ibs perf_ibs_op;
- 
-@@ -77,18 +151,14 @@ static int perf_ibs_init(struct perf_event *event)
- 		if (hwc->sample_period & 0x0f)
- 			/* lower 4 bits can not be set in ibs max cnt */
- 			return -EINVAL;
--		max_cnt = hwc->sample_period >> 4;
--		if (max_cnt & ~perf_ibs->cnt_mask)
--			/* out of range */
--			return -EINVAL;
--		config |= max_cnt;
- 	} else {
- 		max_cnt = config & perf_ibs->cnt_mask;
-+		config &= ~perf_ibs->cnt_mask;
- 		event->attr.sample_period = max_cnt << 4;
- 		hwc->sample_period = event->attr.sample_period;
- 	}
- 
--	if (!max_cnt)
-+	if (!hwc->sample_period)
- 		return -EINVAL;
- 
- 	hwc->config_base = perf_ibs->msr;
-@@ -97,16 +167,71 @@ static int perf_ibs_init(struct perf_event *event)
- 	return 0;
- }
- 
-+static int perf_ibs_set_period(struct perf_ibs *perf_ibs,
-+			       struct hw_perf_event *hwc, u64 *period)
++static void print_event(union perf_event *event)
 +{
-+	int ret;
++	int idx, size = event->sample.header.size;
++	u64 *val = event->sample.array;
 +
-+	/* ignore lower 4 bits in min count: */
-+	ret = perf_event_set_period(hwc, 1<<4, perf_ibs->max_period, period);
-+	local64_set(&hwc->prev_count, 0);
++	printf("unrecognized event, type = %d, size = %d, header = 0x%016"PRIx64":\n",
++	       event->sample.header.type, size, *(u64*)&event->sample.header);
++
++	for (idx = 1; size > 0; idx++, size -= 8) {
++		printf(" 0x%016"PRIx64, *val++);
++		if (!(idx % 8))
++			printf("\n");
++	}
++	printf("\n");
++}
++
++static int ibs_run(struct perf_config *config)
++{
++	struct perf_event_attr attr;
++	struct perf_sample sample;
++	struct perf_evsel *evsel = NULL;
++	struct perf_evlist *evlist = NULL;
++	struct cpu_map *cpus = NULL;
++	struct thread_map *threads = NULL;
++	struct perf_evsel *pos, *n;
++	union perf_event *event;
++	pid_t pid = config->pid;
++	char cpu_list[8];
++	int type, idx, status, ready = 0;
++	int ret = -ENOMEM;
++	static uint64_t ovfl_count; /* static to avoid setjmp issue */
++
++	type = get_pmu_type(config->sysfs);
++	if (type < 0) {
++		fprintf(stderr, "Failed to get pmu type: %d\n", type);
++		return type;
++	}
++
++	memset(&attr, 0, sizeof(attr));
++	attr.type = type;
++	attr.sample_type   = PERF_SAMPLE_CPU | PERF_SAMPLE_RAW;
++	attr.sample_period = config->sample_period;
++	attr.config        = config->config;
++
++	evsel = perf_evsel__new(&attr, 0);
++
++	if (config->cpu == -1) {
++		cpus = cpu_map__new(NULL);
++	} else {
++		snprintf(cpu_list, sizeof(cpu_list), "%d", config->cpu);
++		cpus = cpu_map__new(cpu_list);
++	}
++
++	threads = thread_map__new(pid, pid);
++
++	evlist = perf_evlist__new(cpus, threads);
++
++	if (!evsel || !evlist || !cpus || !threads)
++		goto out;
++
++	ret = perf_evsel__alloc_counts(evsel, cpus->nr);
++	if (ret < 0)
++		goto out;
++
++	perf_evlist__add(evlist, evsel);
++
++	list_for_each_entry(pos, &evlist->entries, node) {
++		if (perf_evsel__open(pos, evlist->cpus, evlist->threads, 0) < 0) {
++			ret = -errno;
++			fprintf(stderr, "cannot open events, %d\n", ret);
++			goto out;
++		}
++	}
++
++	if (perf_evlist__mmap(evlist, config->mmap_pages, false) < 0) {
++		ret = -errno;
++		fprintf(stderr, "failed to mmap with %d (%s)\n",
++			ret, strerror(ret));
++		goto out;
++	}
++
++	/*
++	 * Create the child task
++	 */
++	if ((pid=fork()) == -1) {
++		ret = -errno;
++		fprintf(stderr, "cannot fork process\n");
++		goto out;
++	}
++
++	if (pid == 0)
++		exit(child(config->argv));
++
++	/*
++	 * wait for the child to exec
++	 */
++	ret = waitpid(pid, &status, WUNTRACED);
++	if (ret == -1)
++		err(1, "waitpid failed");
++
++	if (WIFEXITED(status))
++		errx(1, "task %s [%d] exited already status %d\n",
++		     config->argv[0], pid, WEXITSTATUS(status));
++
++	/*
++	 * effectively activate monitoring
++	 */
++	ptrace(PTRACE_DETACH, pid, NULL, 0);
++
++	signal(SIGCHLD, cld_handler);
++
++	/*
++	 * core loop
++	 */
++	for (ret = 0; !ret; ) {
++		if (done && ready)
++			break;
++		ready = done;
++
++		ret = poll(evlist->pollfd, evlist->nr_fds, done ? 0 : -1);
++
++		if (ret > 0) {
++			ovfl_count += ret;
++		} else if (ret < 0) {
++			ret = -errno;
++			if (ret != -EINTR)
++				break;
++			ret = 0;
++		}
++
++		list_for_each_entry(pos, &evlist->entries, node) {
++			if (ret < 0)
++				break;
++			ret = __perf_evsel__read(pos, evlist->cpus->nr,
++						 evlist->threads->nr, false);
++		}
++
++		for (idx = 0; !ret, idx < evlist->nr_fds; idx++) {
++			if (done)
++				ioctl(evlist->pollfd[idx].fd,
++				      PERF_EVENT_IOC_DISABLE);
++			while (event = perf_evlist__mmap_read(evlist, idx)) {
++				ready = 0;
++				ret = perf_event__parse_sample(event,
++							       evsel->attr.sample_type,
++							       perf_evsel__sample_size(evsel),
++							       false, &sample);
++				if (ret)
++					break;
++				collected_samples++;
++				if (print_ibs(&sample))
++					print_event(event);
++			}
++		}
++	}
++
++	/*
++	 * cleanup child
++	 */
++	waitpid(pid, &status, 0);
++
++	printf("%"PRIu64" samples collected in %"PRIu64" poll events, %"PRIu64" lost samples\n",
++		collected_samples, ovfl_count, lost_samples);
++	if (collected_samples)
++		printf("avg period=%"PRIu64"\n", sum_period / collected_samples);
++out:
++	if (evlist) {
++		perf_evlist__munmap(evlist);
++		list_for_each_entry_safe(pos, n, &evlist->entries, node) {
++			perf_evsel__close_fd(pos, evlist->cpus->nr,
++					     evlist->threads->nr);
++			list_del(&pos->node);
++		}
++		free(evsel->counts);
++		evsel->counts = NULL;
++		perf_evlist__delete_maps(evlist);
++		cpus = NULL;
++		threads = NULL;
++	}
++	free(evsel);
++	free(evlist);
++	free(cpus);
++	free(threads);
 +
 +	return ret;
 +}
 +
-+static u64 get_ibs_fetch_count(u64 config)
++int main(int argc, char **argv)
 +{
-+	return (config & IBS_FETCH_CNT) >> 12;
++	struct perf_config config;
++	int ret;
++
++	ret = ibs_config(&config, argc, argv);
++	if (ret)
++		goto fail;
++	ret = ibs_run(&config);
++	if (ret)
++		goto fail;
++	return 0;
++fail:
++	printf("An error occurred: %d (%s)\n", -ret, strerror(-ret));
++	return -1;
 +}
-+
-+static u64 get_ibs_op_count(u64 config)
-+{
-+	return (config & IBS_OP_CUR_CNT) >> 32;
-+}
-+
-+static void
-+perf_ibs_event_update(struct perf_ibs *perf_ibs, struct perf_event *event,
-+		      u64 config)
-+{
-+	u64 count = perf_ibs->get_count(config);
-+
-+	while (!perf_event_try_update(event, count, 20)) {
-+		rdmsrl(event->hw.config_base, config);
-+		count = perf_ibs->get_count(config);
-+	}
-+}
-+
-+/* Note: The enable mask must be encoded in the config argument. */
-+static inline void perf_ibs_enable_event(struct hw_perf_event *hwc, u64 config)
-+{
-+	wrmsrl(hwc->config_base, hwc->config | config);
-+}
-+
-+/*
-+ * We cannot restore the ibs pmu state, so we always needs to update
-+ * the event while stopping it and then reset the state when starting
-+ * again. Thus, ignoring PERF_EF_RELOAD and PERF_EF_UPDATE flags in
-+ * perf_ibs_start()/perf_ibs_stop() and instead always do it.
-+ */
- static void perf_ibs_start(struct perf_event *event, int flags)
- {
- 	struct hw_perf_event *hwc = &event->hw;
- 	struct perf_ibs *perf_ibs = container_of(event->pmu, struct perf_ibs, pmu);
- 	struct cpu_perf_ibs *pcpu = this_cpu_ptr(perf_ibs->pcpu);
-+	u64 config;
- 
--	if (test_and_set_bit(IBS_STARTED, pcpu->state))
-+	if (WARN_ON_ONCE(!(hwc->state & PERF_HES_STOPPED)))
- 		return;
- 
--	wrmsrl(hwc->config_base, hwc->config | perf_ibs->enable_mask);
-+	WARN_ON_ONCE(!(hwc->state & PERF_HES_UPTODATE));
-+	hwc->state = 0;
-+
-+	perf_ibs_set_period(perf_ibs, hwc, &config);
-+	config = (config >> 4) | perf_ibs->enable_mask;
-+	set_bit(IBS_STARTED, pcpu->state);
-+	perf_ibs_enable_event(hwc, config);
-+
-+	perf_event_update_userpage(event);
- }
- 
- static void perf_ibs_stop(struct perf_event *event, int flags)
-@@ -115,15 +240,28 @@ static void perf_ibs_stop(struct perf_event *event, int flags)
- 	struct perf_ibs *perf_ibs = container_of(event->pmu, struct perf_ibs, pmu);
- 	struct cpu_perf_ibs *pcpu = this_cpu_ptr(perf_ibs->pcpu);
- 	u64 val;
-+	int stopping;
- 
--	if (!test_and_clear_bit(IBS_STARTED, pcpu->state))
--		return;
-+	stopping = test_and_clear_bit(IBS_STARTED, pcpu->state);
- 
--	set_bit(IBS_STOPPING, pcpu->state);
-+	if (!stopping && (hwc->state & PERF_HES_UPTODATE))
-+		return;
- 
- 	rdmsrl(hwc->config_base, val);
--	val &= ~perf_ibs->enable_mask;
--	wrmsrl(hwc->config_base, val);
-+
-+	if (stopping) {
-+		set_bit(IBS_STOPPING, pcpu->state);
-+		val &= ~perf_ibs->enable_mask;
-+		wrmsrl(hwc->config_base, val);
-+		WARN_ON_ONCE(hwc->state & PERF_HES_STOPPED);
-+		hwc->state |= PERF_HES_STOPPED;
-+	}
-+
-+	if (hwc->state & PERF_HES_UPTODATE)
-+		return;
-+
-+	perf_ibs_event_update(perf_ibs, event, val);
-+	hwc->state |= PERF_HES_UPTODATE;
- }
- 
- static int perf_ibs_add(struct perf_event *event, int flags)
-@@ -134,6 +272,8 @@ static int perf_ibs_add(struct perf_event *event, int flags)
- 	if (test_and_set_bit(IBS_ENABLED, pcpu->state))
- 		return -ENOSPC;
- 
-+	event->hw.state = PERF_HES_UPTODATE | PERF_HES_STOPPED;
-+
- 	pcpu->event = event;
- 
- 	if (flags & PERF_EF_START)
-@@ -150,9 +290,11 @@ static void perf_ibs_del(struct perf_event *event, int flags)
- 	if (!test_and_clear_bit(IBS_ENABLED, pcpu->state))
- 		return;
- 
--	perf_ibs_stop(event, 0);
-+	perf_ibs_stop(event, PERF_EF_UPDATE);
- 
- 	pcpu->event = NULL;
-+
-+	perf_event_update_userpage(event);
- }
- 
- static void perf_ibs_read(struct perf_event *event) { }
-@@ -171,7 +313,10 @@ static struct perf_ibs perf_ibs_fetch = {
- 	.cnt_mask		= IBS_FETCH_MAX_CNT,
- 	.enable_mask		= IBS_FETCH_ENABLE,
- 	.valid_mask		= IBS_FETCH_VAL,
-+	.max_period		= IBS_FETCH_MAX_CNT << 4,
- 	.reg_count		= MSR_AMD64_IBSFETCH_REG_COUNT,
-+
-+	.get_count		= get_ibs_fetch_count,
- };
- 
- static struct perf_ibs perf_ibs_op = {
-@@ -188,7 +333,10 @@ static struct perf_ibs perf_ibs_op = {
- 	.cnt_mask		= IBS_OP_MAX_CNT,
- 	.enable_mask		= IBS_OP_ENABLE,
- 	.valid_mask		= IBS_OP_VAL,
-+	.max_period		= IBS_OP_MAX_CNT << 4,
- 	.reg_count		= MSR_AMD64_IBSOP_REG_COUNT,
-+
-+	.get_count		= get_ibs_op_count,
- };
- 
- static int perf_ibs_handle_irq(struct perf_ibs *perf_ibs, struct pt_regs *iregs)
-@@ -200,9 +348,9 @@ static int perf_ibs_handle_irq(struct perf_ibs *perf_ibs, struct pt_regs *iregs)
- 	struct perf_raw_record raw;
- 	struct pt_regs regs;
- 	u64 buffer[MSR_AMD64_IBS_REG_COUNT_MAX];
--	int i;
-+	int i, overflow, reenable;
- 	unsigned int msr;
--	u64 *buf;
-+	u64 *buf, config;
- 
- 	if (!test_bit(IBS_STARTED, pcpu->state)) {
- 		/* Catch spurious interrupts after stopping IBS: */
-@@ -229,11 +377,25 @@ static int perf_ibs_handle_irq(struct perf_ibs *perf_ibs, struct pt_regs *iregs)
- 
- 	regs = *iregs; /* XXX: update ip from ibs sample */
- 
--	if (perf_event_overflow(event, &data, &regs))
--		; /* stop */
--	else
--		/* reenable */
--		wrmsrl(hwc->config_base, hwc->config | perf_ibs->enable_mask);
-+	/*
-+	 * Emulate IbsOpCurCnt in MSRC001_1033 (IbsOpCtl), not
-+	 * supported in all cpus. As this triggered an interrupt, we
-+	 * set the current count to the max count.
-+	 */
-+	config = buffer[0];
-+	if (perf_ibs == &perf_ibs_op) {
-+		config &= ~IBS_OP_CUR_CNT;
-+		config |= (config & IBS_OP_MAX_CNT) << 36;
-+	}
-+
-+	perf_ibs_event_update(perf_ibs, event, config);
-+
-+	overflow = perf_ibs_set_period(perf_ibs, hwc, &config);
-+	reenable = !(overflow && perf_event_overflow(event, &data, &regs));
-+	config = (config >> 4) | (reenable ? perf_ibs->enable_mask : 0);
-+	perf_ibs_enable_event(hwc, config);
-+
-+	perf_event_update_userpage(event);
- 
- 	return 1;
- }
 -- 
 1.7.5.3
 
