@@ -1,95 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755857Ab1G1Q4T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 12:56:19 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:48141 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755836Ab1G1Q4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 12:56:16 -0400
-Date: Thu, 28 Jul 2011 09:56:15 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Andreas Dilger <aedilger@gmail.com>
-Cc: Mingming Cao <cmm@us.ibm.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] Add inode checksum support to ext4
-Message-ID: <20110728165615.GI20655@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110406224410.GB24354@tux1.beaverton.ibm.com> <1302290868.4461.7.camel@mingming-laptop> <20110727082730.GG20655@tux1.beaverton.ibm.com> <EF1F2330-D8C4-427A-ABB9-D1E607D91A3D@gmail.com>
+	id S1755855Ab1G1RBB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 13:01:01 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:45885 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755807Ab1G1RBA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 13:01:00 -0400
+Date: Thu, 28 Jul 2011 13:00:59 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Chris <chris@2net.co.uk>
+cc: Linux Kernel <linux-kernel@vger.kernel.org>, <mingo@redhat.com>
+Subject: Re: [RFC] [PATCH] Lightweight kernel condition variables: faster
+ code, fewer bugs
+In-Reply-To: <4E2FE47F.1080406@2net.co.uk>
+Message-ID: <Pine.LNX.4.44L0.1107281256240.1990-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <EF1F2330-D8C4-427A-ABB9-D1E607D91A3D@gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 03:16:12AM -0600, Andreas Dilger wrote:
-> On 2011-07-27, at 2:27 AM, "Darrick J. Wong" <djwong@us.ibm.com> wrote:
-> > On Fri, Apr 08, 2011 at 12:27:48PM -0700, Mingming Cao wrote:
-> >> Beyond checksumming the inode itself, it
-> >> would be more useful to checksum the extent indexing blocks, as the ext3
-> >> corruption actually happen at the indirect block.  
-> >> 
-> >> The idea is to reduce the eh_max (the max # of extents stored in this
-> >> block) to save some space to store the checksums in the block, 
-> >> 
-> >> /*
-> >> * Each block (leaves and indexes), even inode-stored has header.
-> >> */
-> >> struct ext4_extent_header {
-> >>        __le16  eh_magic;       /* probably will support different
-> >> formats */
-> >>        __le16  eh_entries;     /* number of valid entries */
-> >>        __le16  eh_max;         /* capacity of store in entries */
-> >>        __le16  eh_depth;       /* has tree real underlying blocks? */
-> >>        __le32  eh_generation;  /* generation of the tree */
-> > 
-> > Does anyone use eh_generation?  Linux 3.0 shows no users and it didn't look like
-> > the snapshot patches do either.  If nobody intends to start using this field,
-> > (part of) it could become eh_checksum
+On Wed, 27 Jul 2011, Chris Simmonds wrote:
+
+> Hi,
 > 
-> We use eh_generation in Lustre to detect if the extent tree is being changed
-> while it is unlocked.
+> This patch adds lightweight condition variables to the kernel to reduce 
+> complexity and improve the efficiency of some synchronisation tasks. 
+> They are very similar to POSIX condition variables.
+
+...
+
+> To wake up a thread sleeping on a condition variable you just use the 
+> normal wakeup calls, nothing new there. Except of course that you need 
+> to consider the locking round the variables (condition) that was just 
+> modified, but that should be in place already. There are many other 
+> examples in the code which could be improved in this way.
 > 
-> In the past, the discussion about adding checksums to the index and extent
-> blocks was about using an ext4_extent_tail that contained not only the
-> checksum of the block, but also a back-pointer to the inode/generation of the
-> inode using this block.
-> 
-> That would allow e2fsck to verify that it is using the correct index/extent
-> blocks and not pointing to a stale block that belonged to some other inode.
-> 
-> Since the header and index/extent entries are always 3 *__u32 in size, the
-> extent tail can always be 4 * __u32 in size yet only consume a single slot in
-> the block. There of course is no reason to put an extent tail inside the
-> inode itself.
+> The patch that follows implements condition variables using mutexes and 
+> various sorts of spinlock as the locking primitive. I am aware that I 
+> have not covered all possibilities and that the code could be neater. At 
+> this point I just want to show the idea and get feedback.
 
-Does anybody have any objection to using crc32c (which we can hardware
-accelerate on new Intel boxen) over crc16?  I think it'll be pretty easy to use
-some of the reserved space in the group descriptor to store checksums of the
-block and inode bitmaps.  Adding tails to the extent tree blocks seems a bit
-trickier than that, but not a big deal, though I guess I'll have to reshuffle
-the extent tree to free up space at the end of the block.
+It seems like a reasonable sort of thing to do, as far as I can see.
 
-I was also wondering what people think of adding checksums to directory files?
-I think that it's possible to put a checksum in each directory block -- for
-blocks containing a linear array of actual directory entries, we could zero out
-the space past the end of the array and put a checksum at the very end of the
-block.  For the dx_node/dx_root blocks, we could probably use the space
-occupied by the last dx_entry to store the checksum.  Obviously, we'd have to
-move whatever's at the end of the block elsewhere, but then, we have to do that
-for the extent tree too.  Basically, the last 4 bytes become the checksum after
-whatever's occupying the space is relocated. :)
+> diff --git a/include/linux/wait.h b/include/linux/wait.h
+> index 3efc9f3..76f9c25 100644
+> --- a/include/linux/wait.h
+> +++ b/include/linux/wait.h
+> @@ -662,7 +662,89 @@ static inline int wait_on_bit_lock(void *word, int bit,
+>   		return 0;
+>   	return out_of_line_wait_on_bit_lock(word, bit, action, mode);
+>   }
+> -	
+> +
+> +/**
+> + * cond_wait - wait for a condition variable
+> + * @wq: the wait queue to wait on
+> + * @mutex: a locked mutex
+> + *
+> + * Safely put the calling task into a non-interruptible sleep on the
+> + * wait queue then unlock the mutex. Re-acquire the mutex after waking up
+> + */
+> +void cond_wait (wait_queue_head_t *wq, struct mutex *mutex)
+> +{
+> +	DEFINE_WAIT(__wait);
+> +
+> +	prepare_to_wait(wq, &__wait, TASK_UNINTERRUPTIBLE);
+> +	mutex_unlock (mutex);
+> +	schedule();
+> +	mutex_lock (mutex);
+> +	finish_wait(wq, &__wait);
+> +}
 
-It looks like there's sufficient unused space in ext4_xattr_header to add a
-checksum.
+One little problem here.  These routines may well be large enough
+that it's inefficient to inline them.  In that case they should be 
+declared in wait.h but defined somewhere else, such as kernel/wait.c.  
+Conversely, if you do think they deserve to be inlined then they should 
+be marked as such.
 
-Also -- should I create separate rocompat feature flags for each metadata
-object that I add checksums to?  Or just have one flag that covers them all?
+Alan Stern
 
-Ok, enough crazy ideas for now...
+P.S.: Does this come through checkpatch.pl unscathed?
 
---D
