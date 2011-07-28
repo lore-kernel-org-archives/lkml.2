@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab1G1BVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 21:21:50 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:56200 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754853Ab1G1BVk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 21:21:40 -0400
-Message-ID: <4E30B9CE.4010800@gmail.com>
-Date: Wed, 27 Jul 2011 18:22:22 -0700
-From: William King <quentusrex@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Seagate harddrives problems with SB7x0 AHCI
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754854Ab1G1Be7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 21:34:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:40445 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753473Ab1G1Bey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 27 Jul 2011 21:34:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,279,1309762800"; 
+   d="scan'208";a="35321941"
+Subject: Re: [PATCH]vmscan: add block plug for page reclaim
+From: Shaohua Li <shaohua.li@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Minchan Kim <minchan.kim@gmail.com>,
+        "mgorman@suse.de" <mgorman@suse.de>, linux-mm <linux-mm@kvack.org>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110727181527.c4f6d806.akpm@linux-foundation.org>
+References: <1311130413.15392.326.camel@sli10-conroe>
+	 <CAEwNFnDj30Bipuxrfe9upD-OyuL4v21tLs0ayUKYUfye5TcGyA@mail.gmail.com>
+	 <1311142253.15392.361.camel@sli10-conroe>
+	 <CAEwNFnD3iCMBpZK95Ks+Z7DYbrzbZbSTLf3t6WXDQdeHrE6bLQ@mail.gmail.com>
+	 <1311144559.15392.366.camel@sli10-conroe>	<4E287EC0.4030208@fusionio.com>
+	 <1311311695.15392.369.camel@sli10-conroe>	<4E2B17A6.6080602@fusionio.com>
+	 <20110727164523.c2b1d569.akpm@linux-foundation.org>
+	 <1311815060.15392.375.camel@sli10-conroe>
+	 <20110727181527.c4f6d806.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 28 Jul 2011 09:34:52 +0800
+Message-ID: <1311816892.15392.379.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Problem:
-I have run into what appears to be a driver problem with the Seagate 
-Barracuda 7200.12 drives. The symptom is io load of 10-15 times the load 
-for other drives. To the point the box becomes fully io-bound and 
-unresponsive when even installing apt packages or rsync of a 100MB file.
+On Thu, 2011-07-28 at 09:15 +0800, Andrew Morton wrote:
+> On Thu, 28 Jul 2011 09:04:20 +0800 Shaohua Li <shaohua.li@intel.com> wrote:
+> 
+> > > Using an additional 44 bytes of stack on that path is also
+> > > significant(ly bad).  But we need to fix that problem anyway.  One way
+> > > we could improve things in mm/vmscan.c is to move the blk_plug into
+> > > scan_control then get the scan_control off the stack in some manner. 
+> > > That's easy for kswapd: allocate one scan_control per kswapd at
+> > > startup.  Doing it for direct-reclaim would be a bit trickier...
+> > unfortunately, the direct-reclaim case is what cares about stack.
+> > 
+> > BTW, the scan_control can be dieted. may_unmap/may_swap/may_writepage
+> > can be a bit. swappiness < 100, so can be a char. order <= 11, can be a
+> > char. should I do it to cut the size?
+> 
+> All five will fit in a 32-bit word, at some expense in code size.
+oh, I missed the code size will increase, so it's not good then.
 
-Background:
-I have two servers with nearly identical hardware: Alpha has Seagate 
-Barracuda 7200.12 1TB drives model: ST31000528AS and Bravo that has 
-Western Digital Cavaliar Black 1TB model: 'WDC WD1001FALS-0'. Both 
-servers have Ubuntu 11.04 64bit server installed, and have fully updated 
-to the 2.3.38-10 kernel. More hardware info and logs can be located 
-here: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/815540
+> But I think first it would be better to work on a way of getting it all
+> off the stack, along with the blk_plug.
+> 
+> Could be done with a per-cpu array and CPU pinning, but CPU pinning is
+> a bit expensive nowadays.  Could put a scan_control* into the
+> tack_struct, but that's dopey.
+looks it should be per task, as reclaim could sleep. either putting it
+to task_struct or allocating it, both are not good.
 
-The server hardware manufacturer page is:
-http://www.supermicro.com/Aplus/system/1U/1042/AS-1042G-TF.cfm
+Thanks,
+Shaohua
 
-Command outputs:
-# lspci |grep SATA
-00:11.0 SATA controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 SATA 
-Controller [AHCI mode]
-
-# uname -a
-Linux alpha-mule 2.6.38-10-server #46-Ubuntu SMP Tue Jun 28 16:31:00 UTC 
-2011 x86_64 x86_64 x86_64 GNU/Linux
-
-
-Steps to confirm/reproduce and narrow scope:
-I have taken the hard drives from Bravo, put them into Alpha reinstalled 
-and there is no problem. Also I have placed some older Seagate Barracuda 
-7200.9 80GB drives in Alpha and the problem does not exist then either. 
-I used iotop and iostats to watch the reported io load as well as the 
-read/write speeds to the disk. I then used rsync with a bandwidth 
-limitation to measure the performance difference between the two servers 
-in terms of server load and iotop reported IO%.
-
-A cat of /proc/interrupts show an order of magnitude more interrupts for 
-ahci on Alpha than Bravo for the same amount of traffic during an rsync.
-
-I have hdparm -t /dev/sda test and have seen a performance of ~50MB/s on 
-the Seagate 7200.12 drive while the specs and other benchmarks claim 
-speeds of up to 140MB/s. The Western Digital in the same hardware are 
-able to reach speeds of ~105MB/s and the Seagate 7200.9 gets ~65MB/s. 
-The hard drive was not in use at the time of the hdparm test.
-
-I took a perf capture of a fio random read test on each machines. The 
-test completes in 4 seconds on Alpha and 2 minutes 45 seconds on Bravo 
-and the perf stats show all the extra time being spent in the kernel 
-scheduler section.
-
-I initially had the Seagate hard drives on firmware CC46 then updated 
-them to the latest firmware of CC49. No change detected between firmwares.
-
-I have setup alpha to be able to rebuild the Ubuntu Kernel with patches 
-so I can easily test new changes. Also I have the linux kernel git tree 
-cloned so while it would be possible, I would be more comfortable 
-testing on the Ubuntu version of the 2.6.38-10 kernel.
-
--William King
