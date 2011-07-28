@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942Ab1G1USX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 16:18:23 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:48490 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755797Ab1G1USV (ORCPT
+	id S1755977Ab1G1UTh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 16:19:37 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:38272 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755797Ab1G1UTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 16:18:21 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6421"; a="106412279"
-From: David Brown <davidb@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: [PATCH 2/2] ARM: msm: Remove PLAT_PHYS_OFFSETS from MSM targets
-Date: Thu, 28 Jul 2011 13:18:11 -0700
-Message-Id: <1311884291-5409-2-git-send-email-davidb@codeaurora.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1311884291-5409-1-git-send-email-davidb@codeaurora.org>
-References: <1311794355-26988-2-git-send-email-sboyd@codeaurora.org>
- <1311884291-5409-1-git-send-email-davidb@codeaurora.org>
+	Thu, 28 Jul 2011 16:19:34 -0400
+Subject: Re: [PATCH -next] target: iscsi_target depends on NET
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, scsi <linux-scsi@vger.kernel.org>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        target-devel@vger.kernel.org
+In-Reply-To: <20110728094819.22e19fe9.rdunlap@xenotime.net>
+References: <20110728135707.44ae2d79ecdda9b50d73adc9@canb.auug.org.au>
+	 <20110728094819.22e19fe9.rdunlap@xenotime.net>
+Content-Type: text/plain
+Date: Thu, 28 Jul 2011 13:10:13 -0700
+Message-Id: <1311883813.6931.196.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that MSM can boot with the phys offset patching, eliminate the
-definitions of the phys offsets, and instead select
-ARM_PATCH_PHYS_VIRT.
+On Thu, 2011-07-28 at 09:48 -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> iscsi target code uses lots on network interface functions, so it
+> should depend on NET.  Fixes many build errors when NET is not enabled:
+> 
+> ERROR: "kernel_sendmsg" [drivers/target/iscsi/iscsi_target_mod.ko] undefined!
+> ERROR: "in_aton" [drivers/target/iscsi/iscsi_target_mod.ko] undefined!
+> ERROR: "sock_release" [drivers/target/iscsi/iscsi_target_mod.ko] undefined!
+> ERROR: "kernel_listen" [drivers/target/iscsi/iscsi_target_mod.ko] undefined!
+> ERROR: "kernel_setsockopt" [drivers/target/iscsi/iscsi_target_mod.ko] undefined!
+> ERROR: "kernel_recvmsg" [drivers/target/iscsi/iscsi_target_mod.ko] undefined!
+> ERROR: "kernel_accept" [drivers/target/iscsi/iscsi_target_mod.ko] undefined!
+> ERROR: "sock_create" [drivers/target/iscsi/iscsi_target_mod.ko] undefined!
+> ERROR: "kernel_bind" [drivers/target/iscsi/iscsi_target_mod.ko] undefined!
+> ERROR: "in6_pton" [drivers/target/iscsi/iscsi_target_mod.ko] undefined!
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> ---
+>  drivers/target/iscsi/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- linux-next-20110728.orig/drivers/target/iscsi/Kconfig
+> +++ linux-next-20110728/drivers/target/iscsi/Kconfig
+> @@ -1,5 +1,6 @@
+>  config ISCSI_TARGET
+>  	tristate "Linux-iSCSI.org iSCSI Target Mode Stack"
+> +	depends on NET
+>  	select CRYPTO
+>  	select CRYPTO_CRC32C
+>  	select CRYPTO_CRC32C_INTEL if X86
 
-Signed-off-by: David Brown <davidb@codeaurora.org>
+Committed as d52a10d00 and pushed into target-pending.git/for-next.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index ced9371..3a4d87c 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -618,6 +618,7 @@ config ARCH_MSM
- 	select GENERIC_CLOCKEVENTS
- 	select ARCH_REQUIRE_GPIOLIB
- 	select CLKDEV_LOOKUP
-+	select ARM_PATCH_PHYS_VIRT
- 	help
- 	  Support for Qualcomm MSM/QSD based systems.  This runs on the
- 	  apps processor of the MSM/QSD and depends on a shared memory
-diff --git a/arch/arm/mach-msm/include/mach/memory.h b/arch/arm/mach-msm/include/mach/memory.h
-index 58d5e7e..deed41a 100644
---- a/arch/arm/mach-msm/include/mach/memory.h
-+++ b/arch/arm/mach-msm/include/mach/memory.h
-@@ -17,19 +17,12 @@
- #define __ASM_ARCH_MEMORY_H
- 
- /* physical offset of RAM */
--#if defined(CONFIG_ARCH_QSD8X50) && defined(CONFIG_MSM_SOC_REV_A)
--#define PLAT_PHYS_OFFSET		UL(0x00000000)
--#elif defined(CONFIG_ARCH_QSD8X50)
--#define PLAT_PHYS_OFFSET		UL(0x20000000)
--#elif defined(CONFIG_ARCH_MSM7X30)
--#define PLAT_PHYS_OFFSET		UL(0x00000000)
--#elif defined(CONFIG_ARCH_MSM8X60)
--#define PLAT_PHYS_OFFSET		UL(0x40000000)
--#elif defined(CONFIG_ARCH_MSM8960)
--#define PLAT_PHYS_OFFSET		UL(0x40000000)
--#else
--#define PLAT_PHYS_OFFSET		UL(0x10000000)
--#endif
-+#define QSD8X50A_PHYS_OFFSET		UL(0x00000000)
-+#define QSD8X50_PHYS_OFFSET		UL(0x20000000)
-+#define MSM7X30_PHYS_OFFSET		UL(0x00000000)
-+#define MSM8X60_PHYS_OFFSET		UL(0x10000000)
-+#define MSM8960_PHYS_OFFSET		UL(0x40000000)
-+#define MSM7X01_PHYS_OFFSET		UL(0x10000000)
- 
- #endif
- 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thanks Randy!
+
+--nab
 
