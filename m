@@ -1,40 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab1G1K6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 06:58:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46851 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754481Ab1G1K6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 06:58:19 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1311761831.24752.413.camel@twins>
-References: <1311761831.24752.413.camel@twins> <1311757190.24752.406.camel@twins> <1310717238-13857-1-git-send-email-haishan.bai@gmail.com> <1310717238-13857-2-git-send-email-haishan.bai@gmail.com> <1310725418.2586.309.camel@twins> <4E21A526.8010904@gmail.com> <1310860194.25044.17.camel@pasglop> <4b337921-d430-4b63-bc36-ad31753cf800@email.android.com> <1310912990.25044.203.camel@pasglop> <1310944453.25044.262.camel@pasglop> <1310961691.25044.274.camel@pasglop> <4E23D728.7090406@gmail.com> <1310972462.25044.292.camel@pasglop> <4E23E02C.8090401@gmail.com> <1310974591.25044.298.camel@pasglop> <4E24FA51.70602@gmail.com> <1311049762.25044.392.camel@pasglop> <CAMjpGUdxpaYBFfKjBEPFOJohnKoXfagLUHvhrst+NembeabxcA@mail.gmail.com> <1311753513.25044.663.camel@pasglop> <20368.1311761379@redhat.com> 
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: dhowells@redhat.com, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        Shan Hai <haishan.bai@gmail.com>, paulus@samba.org, tglx@linutronix.de,
-        walken@google.com, cmetcalf@tilera.com, tony.luck@intel.com,
-        akpm@linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [RFC/PATCH] mm/futex: Fix futex writes on archs with SW tracking of dirty & young
-Date: Thu, 28 Jul 2011 11:55:50 +0100
-Message-ID: <5178.1311850550@redhat.com>
+	id S1755454Ab1G1K6z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 06:58:55 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64509 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754481Ab1G1K6y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 06:58:54 -0400
+Message-ID: <4E3140D2.90608@ru.mvista.com>
+Date: Thu, 28 Jul 2011 14:58:26 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+MIME-Version: 1.0
+To: Andrew Bird <ajb@spheresystems.co.uk>
+CC: gregkh@suse.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] USB: option driver: add PID for Vodafone-Huawei K3770
+References: <1311782600-13353-1-git-send-email-ajb@spheresystems.co.uk>
+In-Reply-To: <1311782600-13353-1-git-send-email-ajb@spheresystems.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> wrote:
+Hello.
 
-> Subject: mm: Fix fixup_user_fault() for MMU=n 
-> 
-> In commit 2efaca927 ("mm/futex: fix futex writes on archs with SW
-> tracking of dirty & young") we forgot about MMU=n. This patch fixes
-> that.
-> 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+On 27-07-2011 20:03, Andrew Bird wrote:
 
-Acked-by: David Howells <dhowells@redhat.com>
+> This patch adds the product ID of Huawei's Vodafone K3770 mobile broadband
+> modem to option.c. This is necessary so that the driver gets loaded on demand
+> without the intervention of usb_modeswitch. This has the benefit of it becoming
+> available faster and also ensures that the option driver is not bound to a
+> network interface that should be claimed by cdc_ether.
+
+    You seem to be adding 4 product IDs with the identical patch descriptions. 
+Why not do it in a single patch?
+
+> Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
+
+WBR, Sergei
