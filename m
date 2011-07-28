@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab1G1Xth (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 19:49:37 -0400
-Received: from mga14.intel.com ([143.182.124.37]:50848 "EHLO mga14.intel.com"
+	id S1756201Ab1G1Xof (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 19:44:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:8198 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932108Ab1G1Xog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 19:44:36 -0400
+	id S1756105Ab1G1XoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 19:44:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,285,1309762800"; 
-   d="scan'208";a="32808999"
+   d="scan'208";a="35732396"
 From: Andi Kleen <andi@firstfloor.org>
 References: <20110728444.299940435@firstfloor.org>
 In-Reply-To: <20110728444.299940435@firstfloor.org>
-To: rmanohar@qca.qualcomm.com, linville@tuxdriver.com, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [31/50] mac80211: Restart STA timers only on associated state
-Message-Id: <20110728234435.D421B2403FF@tassilo.jf.intel.com>
-Date: Thu, 28 Jul 2011 16:44:35 -0700 (PDT)
+To: andi@firstfloor.org, ak@linux.intel.com, linux-kernel@vger.kernel.org,
+        stable@kernel.org, tim.bird@am.sony.com
+Subject: [PATCH] [10/50] Drop -Werror in perf
+Message-Id: <20110728234414.79DED2403FF@tassilo.jf.intel.com>
+Date: Thu, 28 Jul 2011 16:44:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -24,30 +24,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.35-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
-From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+From: Andi Kleen <andi@firstfloor.org>
 
-[ upstream commit 676b58c27475a9defccc025fea1cbd2b141ee539 ]
+Drop -Werror in perf Makefile. This fixes the build with gcc 4.5.x
 
-A panic was observed when the device is failed to resume properly,
-and there are no running interfaces. ieee80211_reconfig tries
-to restart STA timers on unassociated state.
-
-Cc: stable@kernel.org
-Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Not in mainline.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-Index: linux-2.6.35.y/net/mac80211/mlme.c
+Index: linux-2.6.35.y/tools/perf/Makefile
 ===================================================================
---- linux-2.6.35.y.orig/net/mac80211/mlme.c
-+++ linux-2.6.35.y/net/mac80211/mlme.c
-@@ -1995,6 +1995,9 @@ void ieee80211_sta_restart(struct ieee80
- {
- 	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
+--- linux-2.6.35.y.orig/tools/perf/Makefile
++++ linux-2.6.35.y/tools/perf/Makefile
+@@ -225,7 +225,7 @@ ifndef PERF_DEBUG
+   CFLAGS_OPTIMIZE = -O6
+ endif
  
-+	if (!ifmgd->associated)
-+		return;
-+
- 	if (test_and_clear_bit(TMR_RUNNING_TIMER, &ifmgd->timers_running))
- 		add_timer(&ifmgd->timer);
- 	if (test_and_clear_bit(TMR_RUNNING_CHANSW, &ifmgd->timers_running))
+-CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
++CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
+ EXTLIBS = -lpthread -lrt -lelf -lm
+ ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
+ ALL_LDFLAGS = $(LDFLAGS)
