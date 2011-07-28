@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab1G1U2h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 16:28:37 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:54243 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755829Ab1G1U2e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 16:28:34 -0400
-Subject: Re: [PATCH 12/13] iscsi-target: Add misc utility logic
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Fubo Chen <fubo.chen@gmail.com>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>, Andy Grover <agrover@redhat.com>
-In-Reply-To: <CAJAFBLCJVLA7RwmVBUPobzqV+j5T5GoV=uRoRqUDuQkJn41Qpw@mail.gmail.com>
-References: <1311410747-29947-1-git-send-email-nab@linux-iscsi.org>
-	 <1311410747-29947-13-git-send-email-nab@linux-iscsi.org>
-	 <CAJAFBLCJVLA7RwmVBUPobzqV+j5T5GoV=uRoRqUDuQkJn41Qpw@mail.gmail.com>
-Content-Type: text/plain
-Date: Thu, 28 Jul 2011 13:19:13 -0700
-Message-Id: <1311884353.6931.206.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1756005Ab1G1U31 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 16:29:27 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:33097 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755829Ab1G1U3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 16:29:25 -0400
+Date: Thu, 28 Jul 2011 13:29:23 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [ANNOUNCE] 3.0-rt4
+Message-ID: <20110728202923.GA14512@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.LFD.2.02.1107272222420.2660@ionos>
+ <20110728174123.GA10751@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1107281942580.2660@ionos>
+ <20110728183207.GR2403@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1107282104360.2660@ionos>
+ <20110728193422.GT2403@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110728193422.GT2403@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-28 at 13:30 +0200, Fubo Chen wrote:
-> On Sat, Jul 23, 2011 at 10:45 AM, Nicholas A. Bellinger
-> <nab@linux-iscsi.org> wrote:
-> > +static int iscsit_do_rx_data(
-> > +       struct iscsi_conn *conn,
-> > +       struct iscsi_data_count *count)
-> > +{
-> > +       int data = count->data_length, rx_loop = 0, total_rx = 0, iov_len;
-> > +       u32 rx_marker_val[count->ss_marker_count], rx_marker_iov = 0;
-> > +       struct kvec iov[count->ss_iov_count], *iov_p;
+On Thu, Jul 28, 2011 at 12:34:22PM -0700, Paul E. McKenney wrote:
+> On Thu, Jul 28, 2011 at 09:05:14PM +0200, Thomas Gleixner wrote:
+> > On Thu, 28 Jul 2011, Paul E. McKenney wrote:
+> > 
+> > > On Thu, Jul 28, 2011 at 07:43:43PM +0200, Thomas Gleixner wrote:
+> > > > 
+> > > > On Thu, 28 Jul 2011, Paul E. McKenney wrote:
+> > > > 
+> > > > > On Wed, Jul 27, 2011 at 11:37:09PM +0200, Thomas Gleixner wrote:
+> > > > > > Dear RT Folks,
+> > > > > > 
+> > > > > > I'm pleased to announce the 3.0-rt4 release.
+> > > > > 
+> > > > > 3.0-rt5 boots single-CPU under KVM on a 32-bit laptop.  Also with "-smp
+> > > > > 2".  It even survived a minute or so of rcutorture in both cases.  ;-)
+> > > > > 
+> > > > > Some weirdness with interactivity -- if the system is idle aside from
+> > > > > rcutorture, the rcutorture.stat_interval console messages don't come
+> > > > > out unless I hit "enter" on the console.  But if I run "top", they do
+> > > > > come out regularly.  Might well be KVM's fault, except that running
+> > > > > rcutorture on non-rt kernels doesn't exhibit this behavior.
+> > > > 
+> > > > Nah, that's my lazy "avoid printing from atomic context" hack :)
+> > > 
+> > > Well, then, that does seem to be working...  ;-)
+> > > 
+> > > Except that these printk()s are from process level -- rcu_torture_stats()
+> > > in kernel/rcutorture.c.
+> > > 
+> > > > > I guess I should try RCU_BOOST=y, then...
+> > > > 
+> > > > Good luck :)
+> > > 
+> > > Compiled without error and has been running rcutorture smp=2 for
+> > > about 30 minutes now.
+> > 
+> > Hmm, perhaps it was some weird interaction with NOHZ which is a
+> > separate issue.
 > 
-> How big can count->ss_iov_count be ? Can this make a stack overflow ?
-> 
+> OK, I guess I have no alternative but to try enabling NOHZ...
 
-This is set to zero when OFMarker and IFMarker are explictly disabled
-(the default), which is the case for the vast majority of initiators.
+And the combination of RCU_BOOST and NO_HZ runs fine as well.  30 minutes
+of rcutorture and no complaints.
 
-When this is enabled, the smallest this value for OFMarkInt and
-IFMarkInt can be is 512 bytes, which on 64-bit with a 131072
-MaxRecvDataSegmentLength would mean 3k of stack usage for iov[] above..
+I only enabled CONFIG_PREEMPT_RT_FULL.  Are there other related config
+variables I should be setting?
 
-In the end it might may more sense to just remove the OFMarker and
-IFMarker alltogether code than to worry about dynamic allocation here.
-
---nab
-
+							Thanx, Paul
