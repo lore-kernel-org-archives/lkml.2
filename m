@@ -1,36 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328Ab1G1XzI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 19:55:08 -0400
-Received: from mga14.intel.com ([143.182.124.37]:11646 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756115Ab1G1XoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 19:44:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,285,1309762800"; 
-   d="scan'208";a="32808846"
-From: Andi Kleen <andi@firstfloor.org>
-Message-Id: <20110728444.299940435@firstfloor.org>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: [PATCH] [0/50] 2.6.35.14 longterm review
-Date: Thu, 28 Jul 2011 16:44:04 -0700 (PDT)
+	id S932115Ab1G1Xzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 19:55:40 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:53585 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756162Ab1G1Xze (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 19:55:34 -0400
+Subject: block: part_discard_alignment_show patch/unpatch
+From: Max Asbock <masbock@linux.vnet.ibm.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: jaxboe@fusionio.com, boyu.mt@taobao.com
+Content-Type: text/plain
+Date: Thu, 28 Jul 2011 16:56:52 -0700
+Message-Id: <1311897412.11874.5.camel@w-amax.beaverton.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Several months a patch was posted to remove the discard_alignment field
+in hd_struct. And a change was made to part_discard_alignment_show to
+calculate this value when queried. This patch caused crashes and was
+removed again. It seems to me that the patch failed because the struct
+gendisk should have been obtained like this:
+struct gendisk *disk = dev_to_disk(dev->parent);
+instead of 
+struct gendisk *disk = dev_to_disk(dev);
 
-This is the start of the longterm review cycle for the 2.6.35.14 release.
-There are a large number of patches in this series, which will be posted as a 
-response to this one.  If anyone has any issues with these being applied, 
-please let me know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+Here is part of the original patch by Tao Ma:
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c 
+index ac54697..ec4f4ae 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -255,7 +255,12 @@ ssize_t part_discard_alignment_show(struct device *dev,
+ 				   struct device_attribute *attr, char *buf)
+ {
+ 	struct hd_struct *p = dev_to_part(dev);
+-	return sprintf(buf, "%u\n", p->discard_alignment);
++	struct gendisk *disk = dev_to_disk(dev);
++
++	return sprintf(buf, "%u\n",
++		       (unsigned long long)queue_limit_discard_alignment(
++							&disk->queue->limits,
++							p->start_sect));
+ }
+ 
+The struct device that is passed in is not embedded in a struct gendisk.
+Therefore de-referencing disk->queue will cause a crash. dev->parent is
+embedded in a struct gendisk.
 
-I'm posting the patches in 100 patch chunks to not overload the mailing
-list. The next chunk will come tomorrow.
+This may not be relevant for the current main-line kernel as this patch
+has been backed out.
+Disclaimer: I am not really familiar with this code, I just happened to
+experience a crash with a (non-mainline) kernel that had this patch and
+started to look at it.
 
-The full quilt queue can be found at
-git://git.kernel.org/pub/scm/linux/kernel/git/longterm/longterm-queue-2.6.35
+- Max 
 
-Responses should be made within 48 hours.
 
--Andi
+
+
+
+
