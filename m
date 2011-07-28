@@ -1,119 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab1G1WG4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 18:06:56 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54794 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754352Ab1G1WGy (ORCPT
+	id S1754765Ab1G1WHw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 18:07:52 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41252 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753774Ab1G1WHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 18:06:54 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: torvalds@linux-foundation.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [GIT PULL] arm soc cleanups for 3.1, part 2
-Date: Fri, 29 Jul 2011 00:04:14 +0200
-Message-ID: <1516952.7OUnxdoZRc@wuerfel>
-User-Agent: KMail/4.6.0 (Linux/3.0.0-rc1nosema+; KDE/4.6.90; x86_64; ; )
+	Thu, 28 Jul 2011 18:07:50 -0400
+Date: Thu, 28 Jul 2011 15:07:36 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Andreas Dilger <aedilger@gmail.com>, Mingming Cao <cmm@us.ibm.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] Add inode checksum support to ext4
+Message-ID: <20110728220735.GA27253@noexit.corp.google.com>
+Mail-Followup-To: "Darrick J. Wong" <djwong@us.ibm.com>,
+	Andreas Dilger <aedilger@gmail.com>, Mingming Cao <cmm@us.ibm.com>,
+	Theodore Ts'o <tytso@mit.edu>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	linux-ext4 <linux-ext4@vger.kernel.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <20110406224410.GB24354@tux1.beaverton.ibm.com>
+ <1302290868.4461.7.camel@mingming-laptop>
+ <20110727082730.GG20655@tux1.beaverton.ibm.com>
+ <EF1F2330-D8C4-427A-ABB9-D1E607D91A3D@gmail.com>
+ <20110728165615.GI20655@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Pp4nZe4QL6u+CegbJmaYEdAzATLHjqTJsO8URNRDgCp
- WEFFyfaYs/i1UOzk6IMaEX3F4TnPjysg5+7zRaw72WuxcsbPWZ
- ewTrSoge4wuXL8LLaCMJyo2MvLHL48QknqJwM/lZr6SLYLRmHA
- 6IbEvWVM005vQrdQejsE6C03vQNYkY5WdxsmHF2u3MkMjV90gc
- gH/GFk5M58VEU8cBjd58Q==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110728165615.GI20655@tux1.beaverton.ibm.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Jul 28, 2011 at 09:56:15AM -0700, Darrick J. Wong wrote:
+> > the block. There of course is no reason to put an extent tail inside the
+> > inode itself.
+> 
+> Does anybody have any objection to using crc32c (which we can hardware
+> accelerate on new Intel boxen) over crc16?  I think it'll be pretty easy to use
 
-This is a late set of cleanups that I got from Jean-Christophe after you
-had already merged all the other patches. I already told him that it's too
-late for 3.1, but it seems a bit unfair when I'm also pushing the device
-tree rework now.
+	We use ethernet crc32 in ocfs2.  btrfs uses crc32c.  Frankly, I
+could have used crc32c if I'd really thought about the hardware
+acceleration benefits.  I think it's a good idea for ext4.
 
-Please pull if you really feel like it.
+> some of the reserved space in the group descriptor to store checksums of the
+> block and inode bitmaps.  Adding tails to the extent tree blocks seems a bit
+> trickier than that, but not a big deal, though I guess I'll have to reshuffle
+> the extent tree to free up space at the end of the block.
+> 
+> I was also wondering what people think of adding checksums to directory files?
+> I think that it's possible to put a checksum in each directory block -- for
+> blocks containing a linear array of actual directory entries, we could zero out
+> the space past the end of the array and put a checksum at the very end of the
+> block.  For the dx_node/dx_root blocks, we could probably use the space
+> occupied by the last dx_entry to store the checksum.  Obviously, we'd have to
+> move whatever's at the end of the block elsewhere, but then, we have to do that
+> for the extent tree too.  Basically, the last 4 bytes become the checksum after
+> whatever's occupying the space is relocated. :)
 
-	Arnd
+	ocfs2 adds trailer entries to every dirblock for the checksum.
+We also do our dirindex free list there.  Since ocfs2 dirblocks are ext3
+dirblocks, I bet you can rip off a lot of that code, including the
+feature compatibility stuff.  See ocfs2_fs.h.
 
-The following changes since commit 95b6886526bb510b8370b625a49bc0ab3b8ff10f:
+> It looks like there's sufficient unused space in ext4_xattr_header to add a
+> checksum.
+> 
+> Also -- should I create separate rocompat feature flags for each metadata
+> object that I add checksums to?  Or just have one flag that covers them all?
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6 (2011-07-27 19:26:38 -0700)
+	I really think you should checksum every metadata block.  A few
+things will take some effort to shoehorn it in, but it is worth it.
 
-are available in the git repository at:
+Joel
 
-  git+ssh://master.kernel.org/pub/scm/linux/kernel/git/arm/linux-arm-soc.git/ at91/cleanup
+-- 
 
-Jean-Christophe PLAGNIOL-VILLARD (8):
-      at91: introduce commom AT91_BASE_SYS
-      at91: factorize at91 interrupts init to soc
-      at91: remove AT91_DBGU offset from dbgu register macro
-      at91: use structure to store the current soc
-      at91: move clock subsystem init to soc generic init
-      at91: move register clocks to soc generic init
-      at91: factorize sram init
-      at91: add arch specific ioremap support
+Life's Little Instruction Book #173
 
- arch/arm/mach-at91/Makefile                   |    2 +-
- arch/arm/mach-at91/at91cap9.c                 |   45 +---
- arch/arm/mach-at91/at91rm9200.c               |   47 +---
- arch/arm/mach-at91/at91sam9260.c              |  100 ++-------
- arch/arm/mach-at91/at91sam9261.c              |   62 +-----
- arch/arm/mach-at91/at91sam9263.c              |   51 +----
- arch/arm/mach-at91/at91sam9g45.c              |   45 +---
- arch/arm/mach-at91/at91sam9rl.c               |   59 +----
- arch/arm/mach-at91/board-1arm.c               |   11 +-
- arch/arm/mach-at91/board-afeb-9260v1.c        |   12 +-
- arch/arm/mach-at91/board-cam60.c              |   12 +-
- arch/arm/mach-at91/board-cap9adk.c            |   12 +-
- arch/arm/mach-at91/board-carmeva.c            |   11 +-
- arch/arm/mach-at91/board-cpu9krea.c           |   11 +-
- arch/arm/mach-at91/board-cpuat91.c            |   11 +-
- arch/arm/mach-at91/board-csb337.c             |   11 +-
- arch/arm/mach-at91/board-csb637.c             |   11 +-
- arch/arm/mach-at91/board-eb9200.c             |   11 +-
- arch/arm/mach-at91/board-ecbat91.c            |   11 +-
- arch/arm/mach-at91/board-eco920.c             |   11 +-
- arch/arm/mach-at91/board-flexibity.c          |   11 +-
- arch/arm/mach-at91/board-foxg20.c             |   12 +-
- arch/arm/mach-at91/board-gsia18s.c            |    9 +-
- arch/arm/mach-at91/board-kafa.c               |   11 +-
- arch/arm/mach-at91/board-kb9202.c             |   11 +-
- arch/arm/mach-at91/board-neocore926.c         |   12 +-
- arch/arm/mach-at91/board-pcontrol-g20.c       |   11 +-
- arch/arm/mach-at91/board-picotux200.c         |   11 +-
- arch/arm/mach-at91/board-qil-a9260.c          |   12 +-
- arch/arm/mach-at91/board-rm9200dk.c           |   11 +-
- arch/arm/mach-at91/board-rm9200ek.c           |   11 +-
- arch/arm/mach-at91/board-sam9-l9260.c         |   12 +-
- arch/arm/mach-at91/board-sam9260ek.c          |   12 +-
- arch/arm/mach-at91/board-sam9261ek.c          |   12 +-
- arch/arm/mach-at91/board-sam9263ek.c          |   12 +-
- arch/arm/mach-at91/board-sam9g20ek.c          |   16 +-
- arch/arm/mach-at91/board-sam9m10g45ek.c       |   12 +-
- arch/arm/mach-at91/board-sam9rlek.c           |   12 +-
- arch/arm/mach-at91/board-snapper9260.c        |   11 +-
- arch/arm/mach-at91/board-stamp9g20.c          |   16 +-
- arch/arm/mach-at91/board-usb-a9260.c          |   12 +-
- arch/arm/mach-at91/board-usb-a9263.c          |   12 +-
- arch/arm/mach-at91/board-yl-9200.c            |   12 +-
- arch/arm/mach-at91/generic.h                  |   34 +--
- arch/arm/mach-at91/include/mach/at91_dbgu.h   |   27 ++-
- arch/arm/mach-at91/include/mach/at91cap9.h    |    1 -
- arch/arm/mach-at91/include/mach/at91rm9200.h  |    1 -
- arch/arm/mach-at91/include/mach/at91sam9260.h |    1 -
- arch/arm/mach-at91/include/mach/at91sam9261.h |    1 -
- arch/arm/mach-at91/include/mach/at91sam9263.h |    1 -
- arch/arm/mach-at91/include/mach/at91sam9g45.h |    1 -
- arch/arm/mach-at91/include/mach/at91sam9rl.h  |    1 -
- arch/arm/mach-at91/include/mach/cpu.h         |  159 ++++++++------
- arch/arm/mach-at91/include/mach/debug-macro.S |   14 +-
- arch/arm/mach-at91/include/mach/hardware.h    |   14 ++
- arch/arm/mach-at91/include/mach/io.h          |   11 +-
- arch/arm/mach-at91/setup.c                    |  297 +++++++++++++++++++++++++
- arch/arm/mach-at91/soc.h                      |   59 +++++
- 58 files changed, 696 insertions(+), 745 deletions(-)
- create mode 100644 arch/arm/mach-at91/setup.c
- create mode 100644 arch/arm/mach-at91/soc.h
+	"Be kinder than necessary."
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
