@@ -1,101 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686Ab1G1Oms (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 10:42:48 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33010 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab1G1Omq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 10:42:46 -0400
+	id S1754443Ab1G1Oqs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 10:46:48 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:55691 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751676Ab1G1Oqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 10:46:46 -0400
+Date: Thu, 28 Jul 2011 07:46:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: tglx@linutronix.de, pzijlstr@redhat.com, seakeel@gmail.com,
+        linux-kernel@vger.kernel.org, tim.c.chen@intel.com
+Subject: Re: [PATCH] nohz:remove nohz_cpu_mask
+Message-ID: <20110728144634.GB2403@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1311836172-10278-1-git-send-email-alex.shi@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1311853470.21232.31.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <1311853470.21232.31.camel@mfleming-mobl1.ger.corp.intel.com>
-From: "KESHAV P.R." <skodabenz@gmail.com>
-Date: Thu, 28 Jul 2011 20:12:25 +0530
-Message-ID: <CAH0pPxRN_uQn74tsLyg6a-y427QAUmmFAksq2mO6K0-CEGJNgQ@mail.gmail.com>
-Subject: Re: [syslinux] efilinux release 0.8
-To: For discussion of Syslinux and tftp-hpa <syslinux@zytor.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311836172-10278-1-git-send-email-alex.shi@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-     Compile error in Archlinux x86_64 with gcc-multilib 4.6.1 ,
-gnu-efi 3.0k (x86_64 UEFI libs only) - GIT devel branch - snapshot
-http://git.kernel.org/?p=boot/efilinux/efilinux.git;a=snapshot;h=471830a5a7494b6ca59f914cc7e93e75ed4b2a88;sf=tgz
+On Thu, Jul 28, 2011 at 02:56:12PM +0800, Alex Shi wrote:
+> From: Shi, Alex <alex.shi@intel.com>
+> 
+> The rcu didn't use this global variable now. Currently no user on it.
+> Since no clear usage of this variable, why not remove it? That can save
+> a cache-line in all cpus and reduce atomic variable sync contention.
 
-cc -I. -I/usr/include/efi -I/usr/include/efi/x86_64
--DEFI_FUNCTION_WRAPPER -fPIC -fshort-wchar -ffreestanding -Wall -Ifs/
--Iloaders/ -Dx86_64 -Werror   -c -o entry.o entry.c
-In file included from entry.c:38:0:
-protocol.h: In function 'locate_protocol':
-protocol.h:62:31: error: 'EFI_BOOT_SERVICES' has no member named
-'LocateProtocol'
-make: *** [entry.o] Error 1
+I have queued this for the moment.  If no one else takes it, I
+will push it for 3.2.
 
+							Thanx, Paul
 
-gnu-efi 3.0k File list (libs in /usr/lib/ not /usr/lib64 in Archlinux)
-
-gnu-efi /usr/
-gnu-efi /usr/include/
-gnu-efi /usr/include/efi/
-gnu-efi /usr/include/efi/efi.h
-gnu-efi /usr/include/efi/efi_nii.h
-gnu-efi /usr/include/efi/efi_pxe.h
-gnu-efi /usr/include/efi/efiapi.h
-gnu-efi /usr/include/efi/eficon.h
-gnu-efi /usr/include/efi/efidebug.h
-gnu-efi /usr/include/efi/efidef.h
-gnu-efi /usr/include/efi/efidevp.h
-gnu-efi /usr/include/efi/efierr.h
-gnu-efi /usr/include/efi/efifs.h
-gnu-efi /usr/include/efi/efigpt.h
-gnu-efi /usr/include/efi/efilib.h
-gnu-efi /usr/include/efi/efilink.h
-gnu-efi /usr/include/efi/efinet.h
-gnu-efi /usr/include/efi/efipart.h
-gnu-efi /usr/include/efi/efiprot.h
-gnu-efi /usr/include/efi/efipxebc.h
-gnu-efi /usr/include/efi/efirtlib.h
-gnu-efi /usr/include/efi/efiser.h
-gnu-efi /usr/include/efi/efistdarg.h
-gnu-efi /usr/include/efi/efiui.h
-gnu-efi /usr/include/efi/libsmbios.h
-gnu-efi /usr/include/efi/pci22.h
-gnu-efi /usr/include/efi/protocol/
-gnu-efi /usr/include/efi/protocol/adapterdebug.h
-gnu-efi /usr/include/efi/protocol/eficonsplit.h
-gnu-efi /usr/include/efi/protocol/efidbg.h
-gnu-efi /usr/include/efi/protocol/efivar.h
-gnu-efi /usr/include/efi/protocol/intload.h
-gnu-efi /usr/include/efi/protocol/legacyboot.h
-gnu-efi /usr/include/efi/protocol/piflash64.h
-gnu-efi /usr/include/efi/protocol/vgaclass.h
-gnu-efi /usr/include/efi/romload.h
-gnu-efi /usr/include/efi/x86_64/
-gnu-efi /usr/include/efi/x86_64/efibind.h
-gnu-efi /usr/include/efi/x86_64/efilibplat.h
-gnu-efi /usr/include/efi/x86_64/pe.h
-gnu-efi /usr/lib/
-gnu-efi /usr/lib/crt0-efi-x86_64.o
-gnu-efi /usr/lib/elf_x86_64_efi.lds
-gnu-efi /usr/lib/libefi.a
-gnu-efi /usr/lib/libgnuefi.a
-
-Firmware to be used is Tianocore UDK/EDK2 DUET x86_64 (UEFI 2.3.1
-compliant reference implementation)
-https://gitorious.org/tianocore_uefi_duet_builds (wiki
-https://gitorious.org/tianocore_uefi_duet_builds/pages/Home ) and
-VirtualBox EFI firmware (based on Tianocore OVMF). I already boot
-grub2 (x86_64-efi platform) with it (including Linux 3.0 x86_64
-kernel).
-
-Can this be built using Tianocore EDK2 libraries instead of gnu-efi.
-Also is this going to be syslinux UEFI bootloader or independent of
-it? Thanks for the program.
-
-Regards.
-
-Keshav
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  include/linux/sched.h    |    1 -
+>  kernel/sched.c           |   11 -----------
+>  kernel/time/tick-sched.c |    6 ------
+>  3 files changed, 0 insertions(+), 18 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index ed766ad..28da5c2 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -270,7 +270,6 @@ extern void init_idle_bootup_task(struct task_struct *idle);
+> 
+>  extern int runqueue_is_locked(int cpu);
+> 
+> -extern cpumask_var_t nohz_cpu_mask;
+>  #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ)
+>  extern void select_nohz_load_balancer(int stop_tick);
+>  extern int get_nohz_timer_target(void);
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 751a7cc..7936fb8 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -5970,15 +5970,6 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
+>  }
+> 
+>  /*
+> - * In a system that switches off the HZ timer nohz_cpu_mask
+> - * indicates which cpus entered this state. This is used
+> - * in the rcu update to wait only for active cpus. For system
+> - * which do not switch off the HZ timer nohz_cpu_mask should
+> - * always be CPU_BITS_NONE.
+> - */
+> -cpumask_var_t nohz_cpu_mask;
+> -
+> -/*
+>   * Increase the granularity value when there are more CPUs,
+>   * because with more CPUs the 'effective latency' as visible
+>   * to users decreases. But the relationship is not linear,
+> @@ -8189,8 +8180,6 @@ void __init sched_init(void)
+>  	 */
+>  	current->sched_class = &fair_sched_class;
+> 
+> -	/* Allocate the nohz_cpu_mask if CONFIG_CPUMASK_OFFSTACK */
+> -	zalloc_cpumask_var(&nohz_cpu_mask, GFP_NOWAIT);
+>  #ifdef CONFIG_SMP
+>  	zalloc_cpumask_var(&sched_domains_tmpmask, GFP_NOWAIT);
+>  #ifdef CONFIG_NO_HZ
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index d5097c4..eb98e55 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -139,7 +139,6 @@ static void tick_nohz_update_jiffies(ktime_t now)
+>  	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+>  	unsigned long flags;
+> 
+> -	cpumask_clear_cpu(cpu, nohz_cpu_mask);
+>  	ts->idle_waketime = now;
+> 
+>  	local_irq_save(flags);
+> @@ -389,9 +388,6 @@ void tick_nohz_stop_sched_tick(int inidle)
+>  		else
+>  			expires.tv64 = KTIME_MAX;
+> 
+> -		if (delta_jiffies > 1)
+> -			cpumask_set_cpu(cpu, nohz_cpu_mask);
+> -
+>  		/* Skip reprogram of event if its not changed */
+>  		if (ts->tick_stopped && ktime_equal(expires, dev->next_event))
+>  			goto out;
+> @@ -441,7 +437,6 @@ void tick_nohz_stop_sched_tick(int inidle)
+>  		 * softirq.
+>  		 */
+>  		tick_do_update_jiffies64(ktime_get());
+> -		cpumask_clear_cpu(cpu, nohz_cpu_mask);
+>  	}
+>  	raise_softirq_irqoff(TIMER_SOFTIRQ);
+>  out:
+> @@ -524,7 +519,6 @@ void tick_nohz_restart_sched_tick(void)
+>  	/* Update jiffies first */
+>  	select_nohz_load_balancer(0);
+>  	tick_do_update_jiffies64(now);
+> -	cpumask_clear_cpu(cpu, nohz_cpu_mask);
+> 
+>  #ifndef CONFIG_VIRT_CPU_ACCOUNTING
+>  	/*
+> -- 
+> 1.6.3.3
+> 
