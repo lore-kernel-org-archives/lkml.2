@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756081Ab1G1VMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 17:12:03 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:45738 "EHLO
+	id S1756049Ab1G1VL6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 17:11:58 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:45733 "EHLO
 	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755952Ab1G1VLl (ORCPT
+	with ESMTP id S1755948Ab1G1VLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 17:11:41 -0400
+	Thu, 28 Jul 2011 17:11:40 -0400
 From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>, mjg@redhat.com,
-        platform-driver-x86@vger.kernel.org,
-        Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Subject: [RESEND][PATCH 3/5] leds: add support for TS-5500 LED
-Date: Thu, 28 Jul 2011 17:10:48 -0400
-Message-Id: <1311887450-22235-4-git-send-email-vivien.didelot@savoirfairelinux.com>
+Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>, mjg@redhat.com,
+        platform-driver-x86@vger.kernel.org, sean@mess.org
+Subject: [RESEND][PATCH 5/5] mtd: move support for TS-5500 MTD
+Date: Thu, 28 Jul 2011 17:10:50 -0400
+Message-Id: <1311887450-22235-6-git-send-email-vivien.didelot@savoirfairelinux.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1311887450-22235-1-git-send-email-vivien.didelot@savoirfairelinux.com>
 References: <1311887450-22235-1-git-send-email-vivien.didelot@savoirfairelinux.com>
@@ -22,263 +21,385 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
-
-Add support for the TS-5500 on-board LED
+This patch moves the existing driver for the TS-5500 Flash from
+drivers/mtd/maps/ts5500_flash.c to arch/x86/platform/ts5500/, to regroup every
+TS-5500 drivers under the same platform directory.
 
 Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 ---
- MAINTAINERS                            |    1 +
- arch/x86/platform/ts5500/Kconfig       |    7 ++
- arch/x86/platform/ts5500/Makefile      |    3 +-
- arch/x86/platform/ts5500/ts5500.c      |   41 ++++++++++
- arch/x86/platform/ts5500/ts5500_leds.c |  133 ++++++++++++++++++++++++++++++++
- 5 files changed, 184 insertions(+), 1 deletions(-)
- create mode 100644 arch/x86/platform/ts5500/ts5500_leds.c
+ MAINTAINERS                             |    1 +
+ arch/x86/platform/ts5500/Kconfig        |   20 +++++
+ arch/x86/platform/ts5500/Makefile       |    1 +
+ arch/x86/platform/ts5500/ts5500.c       |    5 ++
+ arch/x86/platform/ts5500/ts5500_flash.c |  118 ++++++++++++++++++++++++++++++
+ drivers/mtd/maps/Kconfig                |   18 -----
+ drivers/mtd/maps/Makefile               |    1 -
+ drivers/mtd/maps/ts5500_flash.c         |  121 -------------------------------
+ 8 files changed, 145 insertions(+), 140 deletions(-)
+ create mode 100644 arch/x86/platform/ts5500/ts5500_flash.c
+ delete mode 100644 drivers/mtd/maps/ts5500_flash.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index c6cf870..034a25f 100644
+index 967f5cc..5789eca 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -6142,6 +6142,7 @@ F:  arch/x86/platform/ts5500/Makefile
- F:  arch/x86/platform/ts5500/ts5500.c
- F:  arch/x86/platform/ts5500/ts5500_gpio.c
- F:  arch/x86/platform/ts5500/ts5500_gpio.h
-+F:  arch/x86/platform/ts5500/ts5500_leds.c
+@@ -6145,6 +6145,7 @@ F:  arch/x86/platform/ts5500/ts5500_gpio.h
+ F:  arch/x86/platform/ts5500/ts5500_leds.c
+ F:  arch/x86/platform/ts5500/ts5500_adc.c
+ F:  arch/x86/platform/ts5500/ts5500_adc.h
++F:  arch/x86/platform/ts5500/ts5500_flash.c
  
  TEGRA SUPPORT
  M:	Colin Cross <ccross@android.com>
 diff --git a/arch/x86/platform/ts5500/Kconfig b/arch/x86/platform/ts5500/Kconfig
-index bb4ef81..e7fbf34 100644
+index f38c8b6..b7e4cd0 100644
 --- a/arch/x86/platform/ts5500/Kconfig
 +++ b/arch/x86/platform/ts5500/Kconfig
-@@ -12,3 +12,10 @@ config TS5500_GPIO
- 	default y
- 	help
- 	  This enables support for the DIO headers for GPIO usage.
-+
-+config TS5500_LEDS
-+	bool "TS-5500 LED Support"
-+	depends on TS5500 && LEDS_CLASS
-+	default y
+@@ -6,6 +6,26 @@ config TS5500
+ 
+ 	  If you have a TS-5500, say Y here.
+ 
++config TS5500_MTD
++	tristate "JEDEC Flash device mapped on TS-5500"
++	depends on TS5500 && MTD
++	select MTD_PARTITIONS
++	select MTD_JEDECPROBE
++	select MTD_CFI_AMDSTD
++	select CONFIG_RFD_FTL
 +	help
-+	  This option enables support for the on-chip LED.
++	  This provides a driver for the on-board flash of the Technologic
++	  System's TS-5500 board. The 2MB flash is split into 3 partitions
++	  which are accessed as separate MTD devices.
++
++	  mtd0 and mtd2 are the two BIOS drives, which use the resident
++	  flash disk (RFD) flash translation layer.
++
++	  mtd1 allows you to reprogram your BIOS. BE VERY CAREFUL.
++
++	  Note that jumper 3 ("Write Enable Drive A") must be set
++	  otherwise detection won't succeed.
++
+ config TS5500_GPIO
+ 	bool "TS-5500 GPIO support"
+ 	depends on TS5500
 diff --git a/arch/x86/platform/ts5500/Makefile b/arch/x86/platform/ts5500/Makefile
-index 9eb93fe..4d23812 100644
+index 79b8d10..249f0de 100644
 --- a/arch/x86/platform/ts5500/Makefile
 +++ b/arch/x86/platform/ts5500/Makefile
-@@ -1,2 +1,3 @@
- obj-$(CONFIG_TS5500)			+= ts5500.o
--obj-$(CONFIG_TS5500_GPIO)		+= ts5500_gpio.o
-\ No newline at end of file
-+obj-$(CONFIG_TS5500_GPIO)		+= ts5500_gpio.o
-+obj-$(CONFIG_TS5500_LEDS)		+= ts5500_leds.o
+@@ -2,3 +2,4 @@ obj-$(CONFIG_TS5500)			+= ts5500.o
+ obj-$(CONFIG_TS5500_GPIO)		+= ts5500_gpio.o
+ obj-$(CONFIG_TS5500_LEDS)		+= ts5500_leds.o
+ obj-$(CONFIG_TS5500_ADC)		+= ts5500_adc.o
++obj-$(CONFIG_TS5500_MTD)		+= ts5500_flash.o
 \ No newline at end of file
 diff --git a/arch/x86/platform/ts5500/ts5500.c b/arch/x86/platform/ts5500/ts5500.c
-index 1ed0097..a455178 100644
+index d0c496a..960066ae 100644
 --- a/arch/x86/platform/ts5500/ts5500.c
 +++ b/arch/x86/platform/ts5500/ts5500.c
-@@ -24,6 +24,7 @@
- #include <linux/io.h>
- #include <linux/slab.h>
- #include <asm/processor.h>
-+#include <linux/leds.h>
- #include <linux/gpio.h>
- #include "ts5500_gpio.h"
+@@ -417,6 +417,11 @@ static int __init ts5500_init(void)
+ 	if (ret)
+ 		goto release_pdev;
  
-@@ -143,6 +144,43 @@ error:
- 
- #define TS5500_IS_JP_SET(sbc, jmp) (!!(sbc->jumpers & TS5500_JP##jmp))
- 
-+#ifdef CONFIG_TS5500_LEDS
-+static struct led_info ts5500_led_info = {
-+	.name = "ts5500_leds",
-+	.default_trigger = "ts5500_leds",
-+	.flags = TS5500_LED_FLAG
-+};
 +
-+static struct led_platform_data ts5500_led_platform_data = {
-+	.num_leds = 1,
-+	.leds = &ts5500_led_info
-+};
-+
-+static struct resource ts5500_led_resources[] = {
-+	{
-+		.name = "ts5500_leds",
-+		.start = TS5500_LED_JMPRS_REG,
-+		.end = TS5500_LED_JMPRS_REG,
-+		.flags = IORESOURCE_IO
-+	}
-+};
-+
-+static void ts5500_led_release(struct device *dev)
-+{
-+	/* noop */
-+}
-+
-+static struct platform_device ts5500_led_device = {
-+	.name = "ts5500_leds",
-+	.resource = ts5500_led_resources,
-+	.num_resources = ARRAY_SIZE(ts5500_led_resources),
-+	.id = -1,
-+	.dev = {
-+		.platform_data = &ts5500_led_platform_data,
-+		.release = ts5500_led_release
-+	}
-+};
++#ifdef CONFIG_TS5500_MTD
++	if (!TS5500_IS_JP_SET(ts5500, 3))
++		pr_warn("Jumper 3 is not set, Flash drive A is read-only.");
 +#endif
+ 	return 0;
  
- #ifdef CONFIG_TS5500_GPIO
- /* Callback for releasing resources */
-@@ -160,6 +198,9 @@ static struct platform_device ts5500_gpio_device = {
- };
- #endif
- static struct platform_device *ts5500_devices[] __initdata = {
-+#ifdef CONFIG_TS5500_LEDS
-+	&ts5500_led_device,
-+#endif
- #ifdef CONFIG_TS5500_GPIO
- 	&ts5500_gpio_device,
- #endif
-diff --git a/arch/x86/platform/ts5500/ts5500_leds.c b/arch/x86/platform/ts5500/ts5500_leds.c
+ release_pdev:
+diff --git a/arch/x86/platform/ts5500/ts5500_flash.c b/arch/x86/platform/ts5500/ts5500_flash.c
 new file mode 100644
-index 0000000..b6be116
+index 0000000..3472e77
 --- /dev/null
-+++ b/arch/x86/platform/ts5500/ts5500_leds.c
-@@ -0,0 +1,133 @@
++++ b/arch/x86/platform/ts5500/ts5500_flash.c
+@@ -0,0 +1,118 @@
 +/*
-+ * Technologic Systems TS-5500 boards - LED driver
++ * ts5500_flash.c -- MTD map driver for Technology Systems TS-5500 board
 + *
-+ * Copyright (c) 2010 Savoir-faire Linux Inc.
-+ *	Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>
-+ *
-+ * Portions Copyright (c) 2008 Compulab, Ltd.
-+ *	Mike Rapoport <mike@compulab.co.il>
-+ *
-+ * Portions Copyright (c) 2006-2008 Marvell International Ltd.
-+ *	Eric Miao <eric.miao@marvell.com>
-+ *
-+ * Based on drivers/leds/leds-da903x.c from linux-2.6.32.8.
++ * Copyright (C) 2004 Sean Young <sean@mess.org>
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
++ *
++ * Note:
++ * - In order for detection to work, jumper 3 must be set.
++ * - Drive A and B use the resident flash disk (RFD) flash translation layer.
++ * - If you have created your own jffs file system and the bios overwrites
++ *   it during boot, try disabling Drive A: and B: in the boot order.
 + */
 +
++#include <linux/init.h>
 +#include <linux/module.h>
 +#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/workqueue.h>
-+#include <linux/io.h>
-+#include <linux/leds.h>
++#include <linux/mtd/map.h>
++#include <linux/mtd/mtd.h>
++#include <linux/mtd/partitions.h>
++#include <linux/types.h>
 +
-+/**
-+ * struct ts5500_led - LED structure
-+ * @cdev:		LED class device structure.
-+ * @work:		Work structure.
-+ * @new_brightness:	LED brightness.
-+ * @ioaddr:		LED I/O address.
-+ */
-+struct ts5500_led {
-+	struct led_classdev	cdev;
-+	struct work_struct	work;
-+	enum led_brightness	new_brightness;
-+	int			ioaddr;
-+	int			bit;
++#define WINDOW_ADDR	0x09400000
++#define WINDOW_SIZE	0x00200000
++
++static struct map_info ts5500_map = {
++	.name = "TS-5500 Flash",
++	.size = WINDOW_SIZE,
++	.bankwidth = 1,
++	.phys = WINDOW_ADDR
 +};
 +
-+static void ts5500_led_work(struct work_struct *work)
++static struct mtd_partition ts5500_partitions[] = {
++	{
++		.name = "Drive A",
++		.offset = 0,
++		.size = 0x0e0000
++	},
++	{
++		.name = "BIOS",
++		.offset = 0x0e0000,
++		.size = 0x020000,
++	},
++	{
++		.name = "Drive B",
++		.offset = 0x100000,
++		.size = 0x100000
++	}
++};
++
++#define NUM_PARTITIONS ARRAY_SIZE(ts5500_partitions)
++
++static struct mtd_info *mymtd;
++
++static int __init init_ts5500_map(void)
 +{
-+	struct ts5500_led *led = container_of(work, struct ts5500_led, work);
-+	u8 val = led->new_brightness ? led->bit : 0;
++	int rc = 0;
 +
-+	outb(val, led->ioaddr);
-+}
++	ts5500_map.virt = ioremap_nocache(ts5500_map.phys, ts5500_map.size);
 +
-+static void ts5500_led_set(struct led_classdev *led_cdev,
-+			   enum led_brightness value)
-+{
-+	struct ts5500_led *led = container_of(led_cdev, struct ts5500_led,
-+					      cdev);
-+
-+	led->new_brightness = value;
-+	schedule_work(&led->work);
-+}
-+
-+static int __devinit ts5500_led_probe(struct platform_device *pdev)
-+{
-+	struct led_platform_data *pdata = pdev->dev.platform_data;
-+	struct ts5500_led *led;
-+	struct resource *res;
-+	int ret;
-+
-+	if (pdata == NULL || !pdata->num_leds) {
-+		dev_err(&pdev->dev, "No platform data available\n");
-+		return -ENODEV;
++	if (!ts5500_map.virt) {
++		printk(KERN_ERR "Failed to ioremap_nocache\n");
++		rc = -EIO;
++		goto err2;
 +	}
 +
-+	res = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "Failed to get I/O resource\n");
-+		return -EBUSY;
++	simple_map_init(&ts5500_map);
++
++	mymtd = do_map_probe("jedec_probe", &ts5500_map);
++	if (!mymtd)
++		mymtd = do_map_probe("map_rom", &ts5500_map);
++
++	if (!mymtd) {
++		rc = -ENXIO;
++		goto err1;
 +	}
 +
-+	led = kzalloc(sizeof(struct ts5500_led), GFP_KERNEL);
-+	if (led == NULL) {
-+		dev_err(&pdev->dev, "Failed to alloc memory for LED device\n");
-+		return -ENOMEM;
-+	}
++	mymtd->owner = THIS_MODULE;
++	mtd_device_register(mymtd, ts5500_partitions, NUM_PARTITIONS);
 +
-+	led->cdev.name = pdata->leds[0].name;
-+	led->cdev.default_trigger = pdata->leds[0].default_trigger;
-+	led->cdev.brightness_set = ts5500_led_set;
-+	led->cdev.brightness = LED_OFF;
-+
-+	led->ioaddr = res->start;
-+	led->bit = pdata->leds[0].flags;
-+	led->new_brightness = LED_OFF;
-+
-+	INIT_WORK(&led->work, ts5500_led_work);
-+
-+	ret = led_classdev_register(pdev->dev.parent, &led->cdev);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to register LED\n");
-+		goto err;
-+	}
-+
-+	platform_set_drvdata(pdev, led);
 +	return 0;
 +
-+err:
-+	kfree(led);
-+	return ret;
++err1:
++	iounmap(ts5500_map.virt);
++err2:
++	return rc;
 +}
++module_init(init_ts5500_map);
 +
-+static struct platform_driver ts5500_led_driver = {
-+	.driver = {
-+		.name = "ts5500_leds",
-+		.owner = THIS_MODULE
-+	},
-+	.probe = ts5500_led_probe
-+};
-+
-+static const struct platform_device_id ts5500_devices[] = {
-+	{ "ts5500_leds", 0 },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(platform, ts5500_devices);
-+
-+static int __init ts5500_led_init(void)
++static void __exit cleanup_ts5500_map(void)
 +{
-+	return platform_driver_register(&ts5500_led_driver);
++	if (mymtd) {
++		mtd_device_unregister(mymtd);
++		map_destroy(mymtd);
++	}
++
++	if (ts5500_map.virt) {
++		iounmap(ts5500_map.virt);
++		ts5500_map.virt = NULL;
++	}
 +}
-+module_init(ts5500_led_init);
++module_exit(cleanup_ts5500_map);
 +
 +MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Jonas Fonseca <jonas.fonseca@savoirfairelinux.com>");
-+MODULE_DESCRIPTION("LED driver for Technologic Systems TS-5500");
++MODULE_AUTHOR("Sean Young <sean@mess.org>");
++MODULE_DESCRIPTION("MTD map driver for Techology Systems TS-5500 board");
+diff --git a/drivers/mtd/maps/Kconfig b/drivers/mtd/maps/Kconfig
+index c0c328c..41cb511 100644
+--- a/drivers/mtd/maps/Kconfig
++++ b/drivers/mtd/maps/Kconfig
+@@ -127,24 +127,6 @@ config MTD_NETSC520
+ 	  demonstration board. If you have one of these boards and would like
+ 	  to use the flash chips on it, say 'Y'.
+ 
+-config MTD_TS5500
+-	tristate "JEDEC Flash device mapped on Technologic Systems TS-5500"
+-	depends on X86
+-	select MTD_JEDECPROBE
+-	select MTD_CFI_AMDSTD
+-	help
+-	  This provides a driver for the on-board flash of the Technologic
+-	  System's TS-5500 board. The 2MB flash is split into 3 partitions
+-	  which are accessed as separate MTD devices.
+-
+-	  mtd0 and mtd2 are the two BIOS drives, which use the resident
+-	  flash disk (RFD) flash translation layer.
+-
+-	  mtd1 allows you to reprogram your BIOS. BE VERY CAREFUL.
+-
+-	  Note that jumper 3 ("Write Enable Drive A") must be set
+-	  otherwise detection won't succeed.
+-
+ config MTD_SBC_GXX
+ 	tristate "CFI Flash device mapped on Arcom SBC-GXx boards"
+ 	depends on X86 && MTD_CFI_INTELEXT && MTD_COMPLEX_MAPPINGS
+diff --git a/drivers/mtd/maps/Makefile b/drivers/mtd/maps/Makefile
+index cb48b11..f999fa3 100644
+--- a/drivers/mtd/maps/Makefile
++++ b/drivers/mtd/maps/Makefile
+@@ -32,7 +32,6 @@ obj-$(CONFIG_MTD_SA1100)	+= sa1100-flash.o
+ obj-$(CONFIG_MTD_SBC_GXX)	+= sbc_gxx.o
+ obj-$(CONFIG_MTD_SC520CDP)	+= sc520cdp.o
+ obj-$(CONFIG_MTD_NETSC520)	+= netsc520.o
+-obj-$(CONFIG_MTD_TS5500)	+= ts5500_flash.o
+ obj-$(CONFIG_MTD_SUN_UFLASH)	+= sun_uflash.o
+ obj-$(CONFIG_MTD_VMAX)		+= vmax301.o
+ obj-$(CONFIG_MTD_SCx200_DOCFLASH)+= scx200_docflash.o
+diff --git a/drivers/mtd/maps/ts5500_flash.c b/drivers/mtd/maps/ts5500_flash.c
+deleted file mode 100644
+index d1d671d..0000000
+--- a/drivers/mtd/maps/ts5500_flash.c
++++ /dev/null
+@@ -1,121 +0,0 @@
+-/*
+- * ts5500_flash.c -- MTD map driver for Technology Systems TS-5500 board
+- *
+- * Copyright (C) 2004 Sean Young <sean@mess.org>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
+- *
+- * Note:
+- * - In order for detection to work, jumper 3 must be set.
+- * - Drive A and B use the resident flash disk (RFD) flash translation layer.
+- * - If you have created your own jffs file system and the bios overwrites
+- *   it during boot, try disabling Drive A: and B: in the boot order.
+- */
+-
+-#include <linux/init.h>
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <linux/mtd/map.h>
+-#include <linux/mtd/mtd.h>
+-#include <linux/mtd/partitions.h>
+-#include <linux/types.h>
+-
+-
+-#define WINDOW_ADDR	0x09400000
+-#define WINDOW_SIZE	0x00200000
+-
+-static struct map_info ts5500_map = {
+-	.name = "TS-5500 Flash",
+-	.size = WINDOW_SIZE,
+-	.bankwidth = 1,
+-	.phys = WINDOW_ADDR
+-};
+-
+-static struct mtd_partition ts5500_partitions[] = {
+-	{
+-		.name = "Drive A",
+-		.offset = 0,
+-		.size = 0x0e0000
+-	},
+-	{
+-		.name = "BIOS",
+-		.offset = 0x0e0000,
+-		.size = 0x020000,
+-	},
+-	{
+-		.name = "Drive B",
+-		.offset = 0x100000,
+-		.size = 0x100000
+-	}
+-};
+-
+-#define NUM_PARTITIONS ARRAY_SIZE(ts5500_partitions)
+-
+-static struct mtd_info *mymtd;
+-
+-static int __init init_ts5500_map(void)
+-{
+-	int rc = 0;
+-
+-	ts5500_map.virt = ioremap_nocache(ts5500_map.phys, ts5500_map.size);
+-
+-	if (!ts5500_map.virt) {
+-		printk(KERN_ERR "Failed to ioremap_nocache\n");
+-		rc = -EIO;
+-		goto err2;
+-	}
+-
+-	simple_map_init(&ts5500_map);
+-
+-	mymtd = do_map_probe("jedec_probe", &ts5500_map);
+-	if (!mymtd)
+-		mymtd = do_map_probe("map_rom", &ts5500_map);
+-
+-	if (!mymtd) {
+-		rc = -ENXIO;
+-		goto err1;
+-	}
+-
+-	mymtd->owner = THIS_MODULE;
+-	mtd_device_register(mymtd, ts5500_partitions, NUM_PARTITIONS);
+-
+-	return 0;
+-
+-err1:
+-	iounmap(ts5500_map.virt);
+-err2:
+-	return rc;
+-}
+-
+-static void __exit cleanup_ts5500_map(void)
+-{
+-	if (mymtd) {
+-		mtd_device_unregister(mymtd);
+-		map_destroy(mymtd);
+-	}
+-
+-	if (ts5500_map.virt) {
+-		iounmap(ts5500_map.virt);
+-		ts5500_map.virt = NULL;
+-	}
+-}
+-
+-module_init(init_ts5500_map);
+-module_exit(cleanup_ts5500_map);
+-
+-MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("Sean Young <sean@mess.org>");
+-MODULE_DESCRIPTION("MTD map driver for Techology Systems TS-5500 board");
+-
 -- 
 1.7.6
 
