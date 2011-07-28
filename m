@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148Ab1G1ORB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 10:17:01 -0400
+	id S1754018Ab1G1ORQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 10:17:16 -0400
 Received: from mail-gx0-f174.google.com ([209.85.161.174]:36231 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007Ab1G1OQ7 (ORCPT
+	with ESMTP id S1753537Ab1G1ORO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 10:16:59 -0400
-Subject: [PATCH RESEND] gpio: ab8500: fix MODULE_ALIAS for ab8500
+	Thu, 28 Jul 2011 10:17:14 -0400
+Subject: [PATCH] drivers/misc: fix modalias for ab8500-pwm
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: BIBEK BASU <bibek.basu@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>
+Cc: Arun Murthy <arun.murthy@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Jul 2011 22:16:49 +0800
-Message-ID: <1311862609.2419.3.camel@phoenix>
+Date: Thu, 28 Jul 2011 22:17:07 +0800
+Message-ID: <1311862627.2419.4.camel@phoenix>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
@@ -26,24 +26,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Since 43cc71eed1250755986da4c0f9898f9a635cb3bf (platform: prefix MODALIAS
 with "platform:"), the platform modalias is prefixed with "platform:".
 
-This patch changes the MODULE_ALIAS to "platform:ab8500-gpio".
+This patch changes the MODULE_ALIAS to "platform:ab8500-pwm".
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/gpio/gpio-ab8500.c |    2 +-
+ drivers/misc/ab8500-pwm.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/gpio/gpio-ab8500.c b/drivers/gpio/gpio-ab8500.c
-index ed795e6..050c05d 100644
---- a/drivers/gpio/gpio-ab8500.c
-+++ b/drivers/gpio/gpio-ab8500.c
-@@ -516,5 +516,5 @@ module_exit(ab8500_gpio_exit);
- 
- MODULE_AUTHOR("BIBEK BASU <bibek.basu@stericsson.com>");
- MODULE_DESCRIPTION("Driver allows to use AB8500 unused pins to be used as GPIO");
--MODULE_ALIAS("AB8500 GPIO driver");
-+MODULE_ALIAS("platform:ab8500-gpio");
+diff --git a/drivers/misc/ab8500-pwm.c b/drivers/misc/ab8500-pwm.c
+index 54e3d05..3590315 100644
+--- a/drivers/misc/ab8500-pwm.c
++++ b/drivers/misc/ab8500-pwm.c
+@@ -164,5 +164,5 @@ subsys_initcall(ab8500_pwm_init);
+ module_exit(ab8500_pwm_exit);
+ MODULE_AUTHOR("Arun MURTHY <arun.murthy@stericsson.com>");
+ MODULE_DESCRIPTION("AB8500 Pulse Width Modulation Driver");
+-MODULE_ALIAS("AB8500 PWM driver");
++MODULE_ALIAS("platform:ab8500-pwm");
  MODULE_LICENSE("GPL v2");
 -- 
 1.7.4.1
