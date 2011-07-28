@@ -1,76 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab1G1WuK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 18:50:10 -0400
-Received: from home.keithp.com ([63.227.221.253]:60621 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753498Ab1G1WuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 18:50:05 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Daniel Vetter <daniel@ffwll.ch>, Dave Airlie <airlied@redhat.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Hold struct_mutex during hotplug processing
-In-Reply-To: <20110727090331.60e0c5be@jbarnes-desktop>
-References: <1311613829-4990-1-git-send-email-keithp@keithp.com> <CAKMK7uHO1jqUNrnqC9sd=JJ9Vr=hmAjnJ06eDYxfeyTTFAMK1w@mail.gmail.com> <yunsjpt2hi6.fsf@aiko.keithp.com> <20110726121225.3ae7acce@jbarnes-desktop> <yunk4b43wq3.fsf@aiko.keithp.com> <20110727090331.60e0c5be@jbarnes-desktop>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Thu, 28 Jul 2011 15:50:00 -0700
-Message-ID: <yun39hqc95z.fsf@aiko.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S932071Ab1G1Wyj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 18:54:39 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:51848 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753498Ab1G1Wyh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 18:54:37 -0400
+Date: Thu, 28 Jul 2011 15:54:32 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [GIT PULL] Fix compile error when tracing is disabled
+Message-Id: <20110728155432.1e9d24ff.rdunlap@xenotime.net>
+In-Reply-To: <4E31DEB8.8070609@goop.org>
+References: <4E31DEB8.8070609@goop.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Thu, 28 Jul 2011 15:12:08 -0700 Jeremy Fitzhardinge wrote:
 
-On Wed, 27 Jul 2011 09:03:31 -0700, Jesse Barnes <jbarnes@virtuousgeek.org>=
- wrote:
-> On Wed, 27 Jul 2011 02:21:24 -0700
-> Keith Packard <keithp@keithp.com> wrote:
->=20
-> > On Tue, 26 Jul 2011 12:12:25 -0700, Jesse Barnes <jbarnes@virtuousgeek.=
-org> wrote:
-> >=20
-> > > I'd like to amend my reviewed by and say the lock shouldn't be held
-> > > around the call to the drm helper function.  It queues some work that
-> > > also takes the mode config lock, which will break.  So you can drop it
-> > > before that...  Previously I had only checked our internal driver
-> > > callbacks but missed that the lock was held across the helper too.
-> >=20
-> > So the work may get executed immediately rather than being run later at
-> > some point?
->=20
-> It sure looks that way... but I don't remember any rule about work
-> queue items having inter dependencies like this.
+> Hi Linus,
+> 
+> Please pull this to fix compilation when tracing is disabled.
+> 
+> Thanks,
+>     J
 
-Sounds fine; I've stuck a fixup that moves the mutex_unlock:
+and now
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
- 		if (encoder->hot_plug)
- 			encoder->hot_plug(encoder);
-=20
-+	mutex_unlock(&mode_config->mutex);
-+
- 	/* Just fire off a uevent and let userspace tell us what to do */
- 	drm_helper_hpd_irq_event(dev);
-=2D
-=2D	mutex_unlock(&mode_config->mutex);
- }
+Thanks.
 
-=2D-=20
-keith.packard@intel.com
+> The following changes since commit 55f9c40ff632d03c527d6a6ceddcda0a224587a6:
+> 
+>   Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc (2011-07-28 05:59:19 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/xen-tracing2
+> 
+> Jeremy Fitzhardinge (1):
+>       xen/tracing: fix compile errors when tracing is disabled.
+> 
+>  arch/x86/xen/Makefile      |    4 +++-
+>  include/trace/events/xen.h |    2 ++
+>  2 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
+> index 6fdf366..ce69201 100644
+> --- a/arch/x86/xen/Makefile
+> +++ b/arch/x86/xen/Makefile
+> @@ -13,7 +13,9 @@ CFLAGS_mmu.o			:= $(nostackp)
+>  obj-y		:= enlighten.o setup.o multicalls.o mmu.o irq.o \
+>  			time.o xen-asm.o xen-asm_$(BITS).o \
+>  			grant-table.o suspend.o platform-pci-unplug.o \
+> -			p2m.o trace.o
+> +			p2m.o
+> +
+> +obj-$(CONFIG_FUNCTION_TRACER) += trace.o
+>  
+>  obj-$(CONFIG_SMP)		+= smp.o
+>  obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= spinlock.o
+> diff --git a/include/trace/events/xen.h b/include/trace/events/xen.h
+> index 44d8dec..92f1a79 100644
+> --- a/include/trace/events/xen.h
+> +++ b/include/trace/events/xen.h
+> @@ -8,6 +8,8 @@
+>  #include <asm/paravirt_types.h>
+>  #include <asm/xen/trace_types.h>
+>  
+> +struct multicall_entry;
+> +
+>  /* Multicalls */
+>  DECLARE_EVENT_CLASS(xen_mc__batch,
+>  	    TP_PROTO(enum paravirt_lazy_mode mode),
+> 
+> 
 
---=-=-=
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOMeeYQp8BWwlsTdMRArD3AJ9VProGSHXs+9r3a4B1Rzz0z/UuYQCfXfnI
-gIdX3ZuxMYw0uy+uRg5NoNg=
-=SL4g
------END PGP SIGNATURE-----
---=-=-=--
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
