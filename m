@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211Ab1G1IGo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 04:06:44 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33150 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754880Ab1G1IGd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 04:06:33 -0400
-Date: Thu, 28 Jul 2011 10:06:26 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Nikita V. Youshchenko" <yoush@cs.msu.su>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Jason Wessel <jason.wessel@windriver.com>, lasaine@lvk.cs.msu.su
-Subject: Re: [ANNOUNCE] 3.0-rt4
-In-Reply-To: <201107281133.09107@zigzag.lvk.cs.msu.su>
-Message-ID: <alpine.LFD.2.02.1107280945080.2660@ionos>
-References: <alpine.LFD.2.02.1107272222420.2660@ionos> <201107281133.09107@zigzag.lvk.cs.msu.su>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1754963Ab1G1IKR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 04:10:17 -0400
+Received: from mga14.intel.com ([143.182.124.37]:6074 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754238Ab1G1IKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 04:10:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,281,1309762800"; 
+   d="scan'208";a="32451885"
+From: Alex Shi <alex.shi@intel.com>
+To: mgorman@suse.de
+Cc: minchan.kim@gmail.com, stable@kernel.org, linux-kernel@vger.kernel.org,
+        andrea@cpushare.com, tim.c.chen@intel.com, shaohua.li@intel.com
+Subject: [PATCH] kswapd: assign new_order and new_classzone_idx after wakeup in sleeping
+Date: Thu, 28 Jul 2011 16:11:28 +0800
+Message-Id: <1311840688-11388-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Jul 2011, Nikita V. Youshchenko wrote:
+There 2 place to read pgdat in kswapd. One is return from a successful
+balance, another is waked up from sleeping. But the new_order and
+new_classzone_idx are not assigned after kswapd_try_to_sleep(), that
+will cause a bug in the following scenario.
 
-> > The list of disabled config option is now:
-> >
-> >  - CONFIG_HIGHMEM [ see the mess it created in 33-rt ]
-> 
-> Could someone please point me to information on this?
-> 
-> In our setup, we do use PREEMPT_RT + HIGHMEM, on .33 for now (but want to 
-> upgrade because of new hardware support issues with .33).  Up to now, we 
-> did not face any issues related to PREEMPT_RT + HIGHMEM combination.
+After the last time successful balance, kswapd goes to sleep. So the
+new_order and new_classzone_idx were assigned to 0 and MAX-1 since there
+is no new wakeup during last time balancing. Now, a new wakeup came and
+finish balancing successful with order > 0. But since new_order is still
+0, this time successful balancing were judged as a failed balance. so,
+if there is another new wakeup coming during balancing, kswapd cann't
+read this and still want to try to sleep. And if the new wakeup is a
+tighter request, kswapd may goes to sleep, not to do balancing. That is
+incorrect.
 
-Yes, it works in 33-rt, but the way it's implemented is a horrible
-hack. I had not enough capacity to implement that cleanly for 3.0-rt,
-so I simply dropped it for now. The preliminary patches are there
-(mainly distangling the disable_pagefault logic), so it should not be
-that hard.
+So, to avoid above problem, the new_order and new_classzone_idx need to
+be assigned for later successful comparison.
 
-Thanks,
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ mm/vmscan.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-	tglx
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 7ef6912..eb7bcce 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2850,6 +2850,8 @@ static int kswapd(void *p)
+ 			kswapd_try_to_sleep(pgdat, order, classzone_idx);
+ 			order = pgdat->kswapd_max_order;
+ 			classzone_idx = pgdat->classzone_idx;
++			new_order = order;
++			new_classzone_idx = classzone_idx;
+ 			pgdat->kswapd_max_order = 0;
+ 			pgdat->classzone_idx = pgdat->nr_zones - 1;
+ 		}
+-- 
+1.6.3.3
+
