@@ -1,56 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab1G1C7z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 22:59:55 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:9667 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754851Ab1G1C7s convert rfc822-to-8bit (ORCPT
+	id S1754009Ab1G1DQN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 23:16:13 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:42819 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752674Ab1G1DQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 22:59:48 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=rISCUKgzHVp1SCG7VAoaEwV6h2IaAhejCKIQufYxj5pvKQT0/wNAEhtStoDYua1Rl
-	NS6j3k19LjuVe0vNaujlw==
+	Wed, 27 Jul 2011 23:16:08 -0400
+Date: Thu, 28 Jul 2011 11:16:00 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: migrate_disable() race with cpu hotplug?
+Message-ID: <20110728031600.GA338@windriver.com>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <CAM2zO=AxRYEG=iJqrefOL34GW5ukoQKxYQdJ02mez=s5UZPoJg@mail.gmail.com>
+ <alpine.LFD.2.02.1107272350560.2660@ionos>
 MIME-Version: 1.0
-In-Reply-To: <1311606041.24752.3.camel@twins>
-References: <20110721164325.231521704@google.com> <1311605881.24752.2.camel@twins>
- <1311606041.24752.3.camel@twins>
-From: Paul Turner <pjt@google.com>
-Date: Wed, 27 Jul 2011 19:59:15 -0700
-Message-ID: <CAPM31R+XduU0_8Oo5hKV3LS1Qb4cUT1oWnR-Zni1e+a=rsa_Vw@mail.gmail.com>
-Subject: Re: [patch 00/18] CFS Bandwidth Control v7.2
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Jason Baron <jbaron@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1107272350560.2660@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 25, 2011 at 8:00 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2011-07-25 at 16:58 +0200, Peter Zijlstra wrote:
->> +               rcu_read_lock();
->> +               ret = walk_tg_tree_from(tg, tg_set_cfs_period_down, NULL, &period);
->> +               rcu_read_unlock();
->
-> rcu over a mutex doesn't really work in mainline, bah..
->
+On Wed, Jul 27, 2011 at 11:52:18PM +0200, Thomas Gleixner wrote:
+> On Tue, 26 Jul 2011, Yong Zhang wrote:
+> 
+> > When reading the code, I'm afraid there is a race between migrate_disable()
+> > and cpu hotplug. A scenario will like below:
+> > 
+> > 	CPU0			CPU1
+> > _cpu_down();
+> >   cpu_unplug_begin();
+> >     wait_for_completion()
+> >   			sync_unplug_thread();
+> > 			  complete();
+> > 			race_window? /*
+> > 				      * migrate_disable() will
+> > 				      * not take effect since
+> > 				      * hotplug is in progress
+> > 				      */
+> 
+> Rightfully so. The caller will just block on the cpu_hotplug.lock
+> mutex until the unplug operation will be done.
 
-Isn't this the other way around though?  We already hold the mutex so
-we shouldn't be blocking within the RCU section.
+Yup, just notice the mutex_lock/mutex_unlock in pin_current_cpu().
 
-rcu_lock here is only to stop nodes in the tree from disappearing
-under us on the walk.
+But if the caller block on mutex_lock() then waked up, it's possible
+that it's been migrated to another cpu. So in the 'retry' loop, we
+should reget hotplug_pcp.
 
-(FWIW this is the same as the rt_schedulable case)
+Code like below?
+
+Thanks,
+Yong
+
+---
+From: Yong Zhang <yong.zhang0@gmail.com>
+Subject: [PATCH] kernel/cpu.c: re-acquire hotplug_pcp when pin_current_cpu() retry
+
+When 'retry' happen, it's possible that the task has been
+migrated to other cpu, and 'hotplug_pcp' is still pointing to
+the stale one.
+
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+---
+ kernel/cpu.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 53dd7ad..5f2382a 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -75,9 +75,11 @@ static DEFINE_PER_CPU(struct hotplug_pcp, hotplug_pcp);
+  */
+ void pin_current_cpu(void)
+ {
+-	struct hotplug_pcp *hp = &__get_cpu_var(hotplug_pcp);
++	struct hotplug_pcp *hp;
+ 
+ retry:
++	hp = &__get_cpu_var(hotplug_pcp);
++
+ 	if (!hp->unplug || hp->refcount || preempt_count() > 1 ||
+ 	    hp->unplug == current || (current->flags & PF_STOMPER)) {
+ 		hp->refcount++;
+-- 
+1.7.4.1
+
+-- 
+Only stand for myself
