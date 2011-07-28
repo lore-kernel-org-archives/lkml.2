@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab1G1C5U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 27 Jul 2011 22:57:20 -0400
-Received: from fed1rmfepi204.cox.net ([68.230.241.149]:38838 "EHLO
-	fed1rmfepi204.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111Ab1G1C5O (ORCPT
+	id S1754326Ab1G1C5z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 27 Jul 2011 22:57:55 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45057 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753473Ab1G1C5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 27 Jul 2011 22:57:14 -0400
-X-Greylist: delayed 839 seconds by postgrey-1.27 at vger.kernel.org; Wed, 27 Jul 2011 22:57:14 EDT
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A020201.4E30CCC1.0078,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=g1yQxBn6urlsaTUwI3YZx3Tbrw0dN6Kp/MqkgaK+ScQ=
- c=1 sm=1 a=G8Uczd0VNMoA:10 a=M58Ut_zYM0YA:10 a=vliaLNMj4CgA:10
- a=IkcTkHD0fZMA:10 a=Nsy38GzPsK+pH/SWhIhKog==:17 a=xPyCyP6oX8SPrTGT6fcA:9
- a=d-7es7kvgZ48koL9MNEA:7 a=QEXdDO2ut3YA:10 a=D-s1rR0MLVBZLBAa:21
- a=HrQCXbmGStslijbe:21 a=Nsy38GzPsK+pH/SWhIhKog==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20110727224313.NJO3K.332186.imail@fed1rmwml40>
-Date: Wed, 27 Jul 2011 19:43:13 -0700
-From: "Maj.Kevin Dawson" <wirewooldi005@cox.net>
-Reply-To: majorkevindawson@aol.com
-Subject: 
+	Wed, 27 Jul 2011 22:57:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <alpine.LRH.2.00.1107281240330.4840@tundra.namei.org>
+References: <alpine.LRH.2.00.1107281209010.4722@tundra.namei.org>
+ <CA+55aFzhg+W86y7TNQ6iqFEibfy+L9irxEHLd9VOy2+mTdWTSA@mail.gmail.com> <alpine.LRH.2.00.1107281240330.4840@tundra.namei.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 27 Jul 2011 19:57:26 -0700
+Message-ID: <CA+55aFyyROrBFuwKTWkEWpe=iF=E68bQicQcBpTFrx6Bj2RaBw@mail.gmail.com>
+Subject: Re: [GIT] Security subsystem changes for 3.1
+To: James Morris <jmorris@namei.org>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Major Kevin Dawson serving in the Engineering military unit here in Ba'qubah in Iraq,
+On Wed, Jul 27, 2011 at 7:42 PM, James Morris <jmorris@namei.org> wrote:
+>
+> Ok, but this conflict was in my subsystem.
 
+.. but it was a conflict that came from the VFS subsystem changes.
 
+So it was clearly a cross-subsystem conflict. The fact that the file
+was in what you consider your subsystem IS TOTALLY IRRELEVANT. Because
+clearly somebody ELSE considered the change that conflicted to be part
+of THEIR subsystem!
 
-We have some amount of money that we want to move out of the country
+See?
 
+So by definition, if you get conflicts with something that has come
+into my tree from somebody else, then it is a cross-subsystem
+conflict. What file it happens in (and whether you consider it "your"
+file or not) is entirely irrelevant - because the important part is
+that two different maintainers worked on the same area. That's the
+definition of 'cross-subsystem conflict'.
 
+In contrast, if you merge two different branches that you yourself
+maintain, and have conflicts there, that's an "internal" conflict as
+far as maintenance is concerned. I don't particularly care about those
+internal conflicts, but you might want to talk to the people you work
+with if you have lots of them..
 
-My partners and I need a good partner someone we can trust
-
-
-
-It is riskfree and legal. You will be given 30 percent of the deal
-
-
-Please do respond if you are interested.
-
-
-
-Regards,
-
-
-Maj.Kevin.
+                      Linus
