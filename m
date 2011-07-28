@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab1G1Lof (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 07:44:35 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:51481 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755219Ab1G1Lod (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 07:44:33 -0400
-Subject: efilinux release 0.8
-From: Matt Fleming <matt@console-pimps.org>
-To: linux-kernel@vger.kernel.org
-Cc: syslinux@zytor.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Jul 2011 12:44:30 +0100
-Message-ID: <1311853470.21232.31.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1755553Ab1G1Lxv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 07:53:51 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:40378 "EHLO linux-mips.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755244Ab1G1Lxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 07:53:49 -0400
+Date: Thu, 28 Jul 2011 12:53:30 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+Cc: jbarnes@virtuousgeek.org, torvalds@linux-foundation.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, eyal@mips.com, zenon@mips.com
+Subject: Re: [PATCH 1/2] PCI: make pci_claim_resource() work with conflict
+ resources as appropriate
+Message-ID: <20110728115330.GA29899@linux-mips.org>
+References: <1311852512-7340-1-git-send-email-dengcheng.zhu@gmail.com>
+ <1311852512-7340-2-git-send-email-dengcheng.zhu@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311852512-7340-2-git-send-email-dengcheng.zhu@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jul 28, 2011 at 07:28:31PM +0800, Deng-Cheng Zhu wrote:
 
-I'm pleased to announce release 0.8 of efilinux, a reference
-implementation of a minimal UEFI bootloader. This bootloader has no
-bells or whistles, it is simply a prototype with the minimum amount of
-smarts required to load a linux kernel (though loaders for other formats
-could be added).
+> In resolving a network driver issue with the MIPS Malta platform, the root
+> cause was traced into pci_claim_resource():
+> 
+> MIPS System Controller's PCI I/O resources stay in 0x1000-0xffffff. When
+> PCI quirks start claiming resources using request_resource_conflict(),
+> collisions happen and -EBUSY is returned, thereby rendering the onboard AMD
+> PCnet32 NIC unaware of quirks' region and preventing the NIC from functioning.
+> For PCI quirks, PIIX4 ACPI is expected to claim 0x1000-0x103f, and PIIX4 SMB to
+> claim 0x1100-0x110f, both of which fall into the MSC I/O range. Certainly, we
+> can increase the start point of this range in arch/mips/mti-malta/malta-pci.c to
+> avoid the collisions. But a fix in here looks more justified, though it seems to
+> have a wider impact. Using insert_xxx as opposed to request_xxx will register
+> PCI quirks' resources as children of MSC I/O and return OK, instead of seeing
+> collisions which are actually resolvable.
 
-Currently it only supports booting x86-64 bzImages but i386 support is
-planned for release 0.9, with a 1.0 release coming after a thorough
-round of testing.
+This used to work in the past; do you know which commit broke the resource
+handling for the NIC?
 
-If anyone has the time and inclination I'd really appreciate it if they
-could have a play with it on their machines and report any bugs. Testing
-has mainly been done under qemu up to this point so there are bound to
-be some lurking bugs that only show up on real hardware.
-
-As there is no configuration file parser all config is done via
-command-line arguments. To boot a kernel simply type,
-
-Shell> efilinux -l
-efilinux loader 0.8
-Devices:
-
-	0. "Acpi(PNP0A03,0)/Pci(1|1)/Ata(Primary,Master)"
-
-Shell> efilinux -f Acpi(PNP0A03,0)/Pci(1|1)/Ata(Primary,Master):\bzimage
-
-efilinux understands the LILO-style initrd= kernel command-line
-argument, but the full device path to the initrd is required. A kernel
-command-line can be passed at the end of the command-line, e.g.
-
-Shell> efilinux -f bzimage console=ttyS0 root=/dev/sdb
-
-The latest release is available at,
-
-	git://git.kernel.org/pub/scm/boot/efilinux/efilinux.git
-
-This project is a preview of the EFI stub patches that I hope to push
-into the kernel. The EFI stub will allow a bzImage to masquerade as an
-EFI application, such that the firmware will load the bzImage and jump
-to its entry point without requiring a bootloader at all.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
-
+  Ralf
