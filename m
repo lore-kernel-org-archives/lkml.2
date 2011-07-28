@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab1G1Min (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 08:38:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:35462 "EHLO mga09.intel.com"
+	id S1755479Ab1G1MqS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 08:46:18 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:39744 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754106Ab1G1Mij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 08:38:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,282,1309762800"; 
-   d="scan'208";a="33084480"
-Date: Thu, 28 Jul 2011 15:38:42 +0300
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: power_supply: USB charging question
-Message-ID: <20110728123842.GA10955@xps8300>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755309Ab1G1MqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 08:46:14 -0400
+From: Julia Lawall <julia@diku.dk>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: kernel-janitors@vger.kernel.org, Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/6] net: adjust array index
+Date: Thu, 28 Jul 2011 14:46:01 +0200
+Message-Id: <1311857165-14780-2-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1311857165-14780-1-git-send-email-julia@diku.dk>
+References: <1311857165-14780-1-git-send-email-julia@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Julia Lawall <julia@diku.dk>
 
-I'm looking for a way to create generic USB charging support. I want
-to take advantage of the power supply class, but there is one problem.
-How do I get properties from the external power supply?
+Convert array index from the loop bound to the loop index.
 
-The batteries need to get the CURRENT_MAX property from USB chargers.
-It's not enough to be aware are they supplied or not. We must obey the
-bMaxPower field from the USB configuration that the USB host has
-selected when charging from normal downstream port.
+A simplified version of the semantic patch that fixes this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-There are several ways that I thought could solve this. Firstly,
-simply deliver the external power_supply with the
-external_power_changed hook and leave the problem to the drivers. This
-did not feel like an ideal solution.
+// <smpl>
+@@
+expression e1,e2,ar;
+@@
 
-Next idea. Add functions for getting properties from the supplying
-power supply:
+for(e1 = 0; e1 < e2; e1++) { <...
+  ar[
+- e2
++ e1
+  ]
+  ...> }
+// </smpl>
 
-static int power_supply_find_supplier(struct device *dev, void
-data)
-{
-       struct power_supply *psy = (struct power_supply *)data;
-       struct power_supply *epsy = dev_get_drvdata(dev);
-       int i;
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-       for (i = 0; i < epsy->num_supplicants; i++)
-               if (!strcmp(epsy->supplied_to[i], psy->name))
-                       return 1;
-                       
-       return 0;
-}
+---
+Not tested.
 
-int power_supply_get_supplier_property(struct power_supply *psy,
-                                       enum power_supply_property psp,
-                                       union power_supply_propval *val);
-{
-       struct power_supply *epsy;
-       struct device *dev;
+ net/ipv4/igmp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-       dev = class_find_device(power_supply_class, NULL, psy,
-                               power_supply_find_supplier);
-       if (!dev)
-               return 1;
-
-       epsy = dev_get_drvdata(dev);
-       put_device(dev);
-
-       return epsy->get_property(epsy, psp, &val);
-}
-EXPORT_SYMBOL_GPL(power_supply_get_supplier_property);
-
-
-Third idea. We only need to know how much are we allowed to draw, so
-add a function for that purpose only. Something like
-"power_supply_how_much_can_i_draw". Same as power_supply_am_i_supplied()
-except the property would be POWER_SUPPLY_PROP_CURRENT_MAX.
-
-How do you think this should be handled? What would be the best
-solution?
-
--- 
-heikki
+diff -u -p a/net/ipv4/igmp.c b/net/ipv4/igmp.c
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -1718,7 +1718,7 @@ static int ip_mc_add_src(struct in_devic
+ 
+ 		pmc->sfcount[sfmode]--;
+ 		for (j=0; j<i; j++)
+-			(void) ip_mc_del1_src(pmc, sfmode, &psfsrc[i]);
++			(void) ip_mc_del1_src(pmc, sfmode, &psfsrc[j]);
+ 	} else if (isexclude != (pmc->sfcount[MCAST_EXCLUDE] != 0)) {
+ #ifdef CONFIG_IP_MULTICAST
+ 		struct ip_sf_list *psf;
