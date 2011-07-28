@@ -1,53 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab1G1WoR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 18:44:17 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50272 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756102Ab1G1WoP (ORCPT
+	id S1755285Ab1G1Wr7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 18:47:59 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45702 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754534Ab1G1Wr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 18:44:15 -0400
-Date: Thu, 28 Jul 2011 23:43:57 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Jaswinder Singh <jaswinder.singh@linaro.org>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, per.friden@stericsson.com,
-        wei.zhang@freescale.com, ebony.zhu@freescale.com, iws@ovro.caltech.edu,
-        s.hauer@pengutronix.de, maciej.sosnowski@intel.com, saeed@marvell.com,
-        shawn.guo@freescale.com, yur@emcraft.com, agust@denx.de,
-        iwamatsu.nobuhiro@renesas.com, per.forlin@stericsson.com,
-        jonas.aberg@stericsson.com, anemo@mba.ocn.ne.jp
-Subject: Re: [PATCHv2] DMAEngine: Let dmac drivers to set chan_id
-Message-ID: <20110728224357.GE829@flint.arm.linux.org.uk>
-References: <1311740499.1536.56.camel@vkoul-udesk3> <CAJe_ZhfaPfobs5P+q+t-kRSK4fAvm-v_brYgqmco8fwOOBeT8A@mail.gmail.com> <1311757347.1536.103.camel@vkoul-udesk3> <20110727095909.GB16623@intel.com> <CAJe_ZhdkPpVSyCyiUsFhOUUms8=JSQOiC33ztFzriW8jQHaa_w@mail.gmail.com> <CABE8wwuAFMYHH67sjEuy7whiZD+QBmU6bvzUUzEqJQFaYpkgdQ@mail.gmail.com> <CAJe_Zhfm5k9gNPaTfpZdQ__cp9fKLZoiSvG0GPciVFbkkU=QCw@mail.gmail.com> <20110727202859.GA5028@flint.arm.linux.org.uk> <CAJe_ZheB0uKn=Rk-i2y1rn5ZHJUJJy7D_3Pb6d4ggjNDhh+6VA@mail.gmail.com> <CACRpkdbauudu_GXfsaB23sSepf=_rzt577Hb7pA9rRRrEFYj-w@mail.gmail.com>
+	Thu, 28 Jul 2011 18:47:56 -0400
+Date: Fri, 29 Jul 2011 01:47:48 +0300 (EEST)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tiger
+To: torvalds@linux-foundation.org
+cc: cl@linux-foundation.org, akpm@linux-foundation.org, rientjes@google.com,
+        hughd@google.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
+Message-ID: <alpine.DEB.2.00.1107290145080.3279@tiger>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbauudu_GXfsaB23sSepf=_rzt577Hb7pA9rRRrEFYj-w@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 12:27:58AM +0200, Linus Walleij wrote:
-> +static struct pl08x_channel_data ab926ejs_chan_data[] = {
-> +	[0] = {
-> +		.bus_id = "aacirx",
-> +		.min_signal = 0,
-> +		.max_signal = 0,
-> +		.cctl = PRIMECELL_DEFAULT_CCTL,
-> +		.ccfg = PL080_FLOW_PER2MEM << PL080_CONFIG_FLOW_CONTROL_SHIFT,
+Hi Linus,
 
-Linus,
+This pull request has patches to make SLUB slowpaths lockless like we 
+already did for the fastpaths. They have been sitting in linux-next for a 
+while now and should be fine. David Rientjes reports improved performance:
 
-We really should sync our two implementations for this - all the ccfg
-stuff should be gone from these structures, esp. as its already long
-gone from the structure itself.
+   I ran slub/lockless through some stress testing and it seems to be quite
+   stable on my testing cluster.  There is about a 2.3% performance
+   improvement with the lockless slowpath on the netperf benchmark with
+   various thread counts on my 16-core 64GB Opterons, so I'd recommend it to
+   be merged into 3.1.
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+One possible gotcha, though, is that page struct gets bigger on x86_64. Hugh
+Dickins writes:
+
+   By the way, if you're thinking of lining up a pull request to Linus
+   for 3.1, please make it very clear in that request that these changes
+   enlarge the x86_64 struct page from 56 to 64 bytes, for slub alone.
+
+   I remain very uneasy about that (love the cache alignment but...),
+   the commit comment is rather vague about it, and I'm not sure that
+   anyone else has noticed yet (akpm?).
+
+   Given that Linus wouldn't let Kosaki add 4 bytes to the 32-bit
+   vm_area_struct in 3.0, telling him about this upfront does not
+   improve your chances that he will pull ;) but does protect you
+   from his wrath when he'd later find it sneaked in.
+
+We haven't come up with a solution to keep struct page size the same but 
+I think it's a reasonable trade-off.
+
+                         Pekka
+
+The following changes since commit 95b6886526bb510b8370b625a49bc0ab3b8ff10f:
+   Linus Torvalds (1):
+         Merge branch 'for-linus' of git://git.kernel.org/.../jmorris/security-testing-2.6
+
+are available in the git repository at:
+
+   ssh://master.kernel.org/pub/scm/linux/kernel/git/penberg/slab-2.6.git slub/lockless
+
+Christoph Lameter (20):
+       slub: Push irq disable into allocate_slab()
+       slub: Do not use frozen page flag but a bit in the page counters
+       slub: Move page->frozen handling near where the page->freelist handling occurs
+       mm: Rearrange struct page
+       slub: Add cmpxchg_double_slab()
+       slub: explicit list_lock taking
+       slub: Pass kmem_cache struct to lock and freeze slab
+       slub: Rework allocator fastpaths
+       slub: Invert locking and avoid slab lock
+       slub: Disable interrupts in free_debug processing
+       slub: Avoid disabling interrupts in free slowpath
+       slub: Get rid of the another_slab label
+       slub: Add statistics for the case that the current slab does not match the node
+       slub: fast release on full slab
+       slub: Not necessary to check for empty slab on load_freelist
+       slub: slabinfo update for cmpxchg handling
+       SLUB: Fix build breakage in linux/mm_types.h
+       Avoid duplicate _count variables in page_struct
+       slub: disable interrupts in cmpxchg_double_slab when falling back to pagelock
+       slub: When allocating a new slab also prep the first object
+
+Pekka Enberg (2):
+       Merge remote branch 'tip/x86/atomic' into slub/lockless
+       Revert "SLUB: Fix build breakage in linux/mm_types.h"
+
+  arch/x86/Kconfig.cpu              |    3 +
+  arch/x86/include/asm/cmpxchg_32.h |   48 +++
+  arch/x86/include/asm/cmpxchg_64.h |   45 +++
+  arch/x86/include/asm/cpufeature.h |    2 +
+  include/linux/mm_types.h          |   89 +++--
+  include/linux/page-flags.h        |    5 -
+  include/linux/slub_def.h          |    3 +
+  mm/slub.c                         |  764 +++++++++++++++++++++++++------------
+  tools/slub/slabinfo.c             |   59 ++-
+  9 files changed, 714 insertions(+), 304 deletions(-)
