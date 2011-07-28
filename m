@@ -1,216 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab1G1HAu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 03:00:50 -0400
-Received: from stinky.trash.net ([213.144.137.162]:57814 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753814Ab1G1HAn (ORCPT
+	id S1754935Ab1G1HBf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 03:01:35 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56897 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754144Ab1G1HBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 03:00:43 -0400
-Message-ID: <4E310918.2040504@trash.net>
-Date: Thu, 28 Jul 2011 09:00:40 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
+	Thu, 28 Jul 2011 03:01:30 -0400
+Date: Thu, 28 Jul 2011 09:01:23 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yong Zhang <yong.zhang0@gmail.com>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Carsten Emde <ce@ceag.ch>,
+        Clark Williams <williams@redhat.com>,
+        Kumar Gala <galak@gate.crashing.org>,
+        Ralf Baechle <ralf@linux-mips.org>, rostedt <rostedt@goodmis.org>,
+        Nicholas Mc Guire <der.herr@hofr.at>
+Subject: Re: On migrate_disable() and latencies
+In-Reply-To: <20110728055043.GA570@windriver.com>
+Message-ID: <alpine.LFD.2.02.1107280855220.2660@ionos>
+References: <1311329992.27400.23.camel@twins> <20110723003934.GP2382@linux.vnet.ibm.com> <1311582653.2617.49.camel@laptop> <20110725211706.GT2327@linux.vnet.ibm.com> <1311765198.24752.437.camel@twins> <20110727183008.GA2407@linux.vnet.ibm.com>
+ <20110728055043.GA570@windriver.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Rainer Weikusat <rweikusat@mobileactivedefense.com>
-CC: netfilter-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netfilter: add per-namespace logging to nfnetlink_log.c
- (updated again)
-References: <8739i3fp6s.fsf@sapphire.mobileactivedefense.com>	<20110718191956.GA2489@p183.telecom.by>	<87hb6je5nh.fsf@sapphire.mobileactivedefense.com>	<20110718.124638.30010338187296272.davem@davemloft.net>	<87d3h7e43n.fsf@sapphire.mobileactivedefense.com>	<alpine.LNX.2.01.1107182218170.9579@frira.zrqbmnf.qr>	<878vruymq6.fsf@sapphire.mobileactivedefense.com>	<87sjq1xab8.fsf_-_@sapphire.mobileactivedefense.com> <87y5zlgtmh.fsf_-_@sapphire.mobileactivedefense.com>
-In-Reply-To: <87y5zlgtmh.fsf_-_@sapphire.mobileactivedefense.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.07.2011 13:37, Rainer Weikusat wrote:
-> --- nf-2.6/net/netfilter/nfnetlink_log.c	2011-07-25 16:53:41.693829768 +0100
-> +++ nf-2.6.patched//net/netfilter/nfnetlink_log.c	2011-07-26 12:06:46.543418699 +0100
-> @@ -39,6 +39,9 @@
->  #include "../bridge/br_private.h"
->  #endif
->  
-> +#include <net/net_namespace.h>
-> +#include <net/netns/generic.h>
-> +
->  #define NFULNL_NLBUFSIZ_DEFAULT	NLMSG_GOODSIZE
->  #define NFULNL_TIMEOUT_DEFAULT 	100	/* every second */
->  #define NFULNL_QTHRESH_DEFAULT 	100	/* 100 packets */
-> @@ -47,6 +50,15 @@
->  #define PRINTR(x, args...)	do { if (net_ratelimit()) \
->  				     printk(x, ## args); } while (0);
->  
-> +#define INSTANCE_BUCKETS	16
-> +
-> +struct nfulnl_instances {
-> +	spinlock_t lock;
-> +	atomic_t global_seq;
-> +	struct hlist_head table[INSTANCE_BUCKETS];
-> +	struct net *net;
-> +};
-> +
->  struct nfulnl_instance {
->  	struct hlist_node hlist;	/* global list of instances */
->  	spinlock_t lock;
-> @@ -67,14 +79,39 @@ struct nfulnl_instance {
->  	u_int16_t flags;
->  	u_int8_t copy_mode;
->  	struct rcu_head rcu;
-> +	struct nfulnl_instances *instances;
->  };
->  
-> -static DEFINE_SPINLOCK(instances_lock);
-> -static atomic_t global_seq;
-> +static struct nfulnl_instances *instances;
-> +static int nfulnl_net_id;
->  
-> -#define INSTANCE_BUCKETS	16
-> -static struct hlist_head instance_table[INSTANCE_BUCKETS];
-> -static unsigned int hash_init;
-> +#ifdef CONFIG_NET_NS
-> +static inline struct nfulnl_instances *instances_for_net(struct net *net)
-> +{
-> +	return net_generic(net, nfulnl_net_id);
-> +}
-> +#else
-> +static inline struct nfulnl_instances *instances_for_net(struct net *net)
-> +{
-> +	return instances;
-> +}
-> +#endif
+On Thu, 28 Jul 2011, Yong Zhang wrote:
 
-We use net_generic unconditionally everywhere else, there's no reason
-for nfnetlink_log not to.
+> On Wed, Jul 27, 2011 at 11:30:08AM -0700, Paul E. McKenney wrote:
+> > o	Tasks awakening outside of migrate-disable regions will pick
+> > 	the CPU running the lowest-priority task, whether or not this
+> > 	task is in migrate-disable state.  (At least I don't see
+> > 	anything in 3.0-rt3 that looks like a scheduling decision
+> > 	based on ->migrate_disable, perhaps due to blindness.)
+> 
+> I'm also confused here, seems we just disable migration for RT task.
+> migrate_disable()
+> {
+> 	...
+> 		if (p->sched_class->set_cpus_allowed)
+> 			p->sched_class->set_cpus_allowed(p, mask);
+> 		p->rt.nr_cpus_allowed =	cpumask_weight(mask);
+> 	...
+> }
+> 
+> Shouldn't we also forbid migration on !RT task?
 
-> +static struct nfulnl_instances *instances_via_skb(struct sk_buff const *skb)
-> +{
-> +	struct net *net;
-> +
-> +	net = skb->sk ? sock_net(skb->sk) :
-> +		(skb->dev ? dev_net(skb->dev) : &init_net);
+We do. Just RT is the only sched class which has a set_cpus_allowed()
+callback implemented and want's an update to its rt.nr_cpus_allowed
+field.
 
-You don't need to manually handle init_net, the *_net functions will
-do the right thing. Also the common case is that skb->dev is non-NULL,
-I'd suggest to use dev_net(skb->dev ? skb->dev : skb_dst(skb)->dev).
+       if (!p->migrate_disable) {
+                if (p->sched_class && p->sched_class->set_cpus_allowed)
+                        p->sched_class->set_cpus_allowed(p, new_mask);
+                p->rt.nr_cpus_allowed = cpumask_weight(new_mask);
+        }
 
-This function is also only used once and doesn't really make things
-easier to read, please get rid of it and open code.
+The general part is here:
 
-> +
-> +	return instances_for_net(net);
-> +}
-> +
-> +static inline struct net *inst_net(struct nfulnl_instance *inst)
-> +{
-> +	return read_pnet(&inst->instances->net);
-> +
-> +}
+       cpumask_copy(&p->cpus_allowed, new_mask);
 
-Only used once, please get rid of it.
+And tsk_cpus_allowed() does:
+{
+        if (p->migrate_disable)
+                return cpumask_of(task_cpu(p));
 
+        return &p->cpus_allowed;
+}
 
->  static struct nfulnl_instance *
-> -instance_lookup_get(u_int16_t group_num)
-> +instance_lookup_get(struct nfulnl_instances *instances, u_int16_t group_num)
+which is the relevant information to keep any task independent of it's
+sched class pinned.
 
-I'd suggest to pass the net * pointer to this function instead of doing
-the lookup in the calling functions. Should save a bit of code and also
-is a more common pattern used with namespaces.
+Thanks,
 
->  {
->  	struct nfulnl_instance *inst;
->  
-> +	if (!instances)
-> +		return NULL;
-> +
->  	rcu_read_lock_bh();
-> -	inst = __instance_lookup(group_num);
-> +	inst = __instance_lookup(instances, group_num);
->  	if (inst && !atomic_inc_not_zero(&inst->use))
->  		inst = NULL;
->  	rcu_read_unlock_bh();
-> @@ -132,13 +172,14 @@ instance_put(struct nfulnl_instance *ins
->  static void nfulnl_timer(unsigned long data);
->  
->  static struct nfulnl_instance *
-> -instance_create(u_int16_t group_num, int pid)
-> +instance_create(struct nfulnl_instances *instances,
-> +		u_int16_t group_num, int pid)
-
-Same here.
-
->  {
->  	struct nfulnl_instance *inst;
->  	int err;
->  
-> -	spin_lock_bh(&instances_lock);
-> -	if (__instance_lookup(group_num)) {
-> +	spin_lock_bh(&instances->lock);
-> +	if (__instance_lookup(instances, group_num)) {
->  		err = -EEXIST;
->  		goto out_unlock;
->  	}
->  
-> @@ -208,11 +250,12 @@ __instance_destroy(struct nfulnl_instanc
->  }
->  
->  static inline void
-> -instance_destroy(struct nfulnl_instance *inst)
-> +instance_destroy(struct nfulnl_instances *instances,
-> +		struct nfulnl_instance *inst)
-
-And here.
-
->  {
-> -	spin_lock_bh(&instances_lock);
-> +	spin_lock_bh(&instances->lock);
->  	__instance_destroy(inst);
-> -	spin_unlock_bh(&instances_lock);
-> +	spin_unlock_bh(&instances->lock);
->  }
->  
->  static int
-
-> @@ -862,17 +914,27 @@ static const struct nfnetlink_subsystem
->  
->  #ifdef CONFIG_PROC_FS
->  struct iter_state {
-> +	struct nfulnl_instances *instances;
->  	unsigned int bucket;
->  };
->  
-> +static inline struct nfulnl_instances *instances_for_seq(void)
-> +{
-> +	return instances_for_net(&init_net);
-> +}
-
-Also used only once and hides the fact that we're only handling
-init_net. Please remove and open code.
-
-> -static int __init nfnetlink_log_init(void)
-> +static int nfulnl_net_init(struct net *net)
->  {
-> -	int i, status = -ENOMEM;
-> +	struct nfulnl_instances *insts;
-> +	int i;
->  
-> -	for (i = 0; i < INSTANCE_BUCKETS; i++)
-> -		INIT_HLIST_HEAD(&instance_table[i]);
-> +	insts = net_generic(net, nfulnl_net_id);
-> +	insts->net = net;
-> +	spin_lock_init(&insts->lock);
-> +
-> +	i = INSTANCE_BUCKETS;
-> +	do INIT_HLIST_HEAD(insts->table + --i); while (i);
-
-Don't put this on one line and please choose a slightly
-more readable construct than + --i while (i).
-
-> +
-> +	/* avoid 'runtime' net_generic for 'no netns' */
-> +	instances = insts;
-> +	return 0;
-> +}
-
+	tglx
