@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab1G1ORQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 10:17:16 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36231 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753537Ab1G1ORO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 10:17:14 -0400
-Subject: [PATCH] drivers/misc: fix modalias for ab8500-pwm
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arun Murthy <arun.murthy@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 28 Jul 2011 22:17:07 +0800
-Message-ID: <1311862627.2419.4.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1753769Ab1G1OTj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 10:19:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53014 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751007Ab1G1OTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 10:19:36 -0400
+Message-ID: <4E316FC5.7090201@zytor.com>
+Date: Thu, 28 Jul 2011 07:18:45 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Przywara, Andre" <Andre.Przywara@amd.com>,
+        "Pohlack, Martin" <Martin.Pohlack@amd.com>
+Subject: Re: [PATCH] x86, AMD: Correct F15h IC aliasing issue
+References: <1311340547-7861-1-git-send-email-bp@amd64.org> <CA+55aFwL9Fwd9ouX3UMOayoBsZyZzTdDSySa6nZJxbpyLifbaQ@mail.gmail.com> <20110724172222.GB12621@aftab> <CA+55aFze=w7tjmyGa2w=D8b6roDuL5O0gmDKkSzLKBLLYZ_a+A@mail.gmail.com> <20110727171015.GD19477@aftab> <4E3047D4.2000608@zytor.com> <20110728134416.GA26379@aftab> <4E316C06.2020609@zytor.com> <20110728141348.GB26379@aftab>
+In-Reply-To: <20110728141348.GB26379@aftab>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since 43cc71eed1250755986da4c0f9898f9a635cb3bf (platform: prefix MODALIAS
-with "platform:"), the platform modalias is prefixed with "platform:".
+On 07/28/2011 07:13 AM, Borislav Petkov wrote:
+> 
+> You want them to be _GENMASK{,_UL,_ULL}? Why? Because they're "calling"
+> macros with a single underscore? Actually, I've always wondered on what
+> our exact rules on underscores are. I can deduce the nesting level of
+> macros based on number of underscores but what else?
+> 
 
-This patch changes the MODULE_ALIAS to "platform:ab8500-pwm".
+Internal symbols used in userspace-visible headers must be from the
+namespace:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/misc/ab8500-pwm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+	^_[A-Z_].*
 
-diff --git a/drivers/misc/ab8500-pwm.c b/drivers/misc/ab8500-pwm.c
-index 54e3d05..3590315 100644
---- a/drivers/misc/ab8500-pwm.c
-+++ b/drivers/misc/ab8500-pwm.c
-@@ -164,5 +164,5 @@ subsys_initcall(ab8500_pwm_init);
- module_exit(ab8500_pwm_exit);
- MODULE_AUTHOR("Arun MURTHY <arun.murthy@stericsson.com>");
- MODULE_DESCRIPTION("AB8500 Pulse Width Modulation Driver");
--MODULE_ALIAS("AB8500 PWM driver");
-+MODULE_ALIAS("platform:ab8500-pwm");
- MODULE_LICENSE("GPL v2");
+	-hpa
+
 -- 
-1.7.4.1
-
-
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
