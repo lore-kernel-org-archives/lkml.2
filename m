@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab1G1LI6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 07:08:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35636 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753248Ab1G1LIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 07:08:55 -0400
-From: Andreas Schwab <schwab@redhat.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Q] compiler no longer warning about undeclared struct?
-References: <Pine.LNX.4.64.1107271947490.7435@axis700.grange>
-	<1311847409.3897.23.camel@thorin>
-	<Pine.LNX.4.64.1107281211120.20737@axis700.grange>
-X-Yow: It's a lot of fun being alive...  I wonder if my bed is made?!?
-Date: Thu, 28 Jul 2011 13:08:53 +0200
-In-Reply-To: <Pine.LNX.4.64.1107281211120.20737@axis700.grange> (Guennadi
-	Liakhovetski's message of "Thu, 28 Jul 2011 12:16:04 +0200 (CEST)")
-Message-ID: <m3ipqmek6y.fsf@hase.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1755447Ab1G1LKN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 07:10:13 -0400
+Received: from smarthost04.mail.zen.net.uk ([212.23.3.143]:48597 "EHLO
+	smarthost04.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753248Ab1G1LKL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 07:10:11 -0400
+From: "Andrew Bird (Sphere Systems)" <ajb@spheresystems.co.uk>
+Organization: Sphere Systems Ltd
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Subject: Re: [PATCH 1/4] USB: option driver: add PID for Vodafone-Huawei K3770
+Date: Thu, 28 Jul 2011 12:10:05 +0100
+User-Agent: KMail/1.13.7 (Linux/2.6.38.8-35.fc15.i686; KDE/4.6.5; i686; ; )
+Cc: gregkh@suse.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1311782600-13353-1-git-send-email-ajb@spheresystems.co.uk> <4E3140D2.90608@ru.mvista.com>
+In-Reply-To: <4E3140D2.90608@ru.mvista.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107281210.06455.ajb@spheresystems.co.uk>
+X-Originating-Smarthost04-IP: [82.71.70.22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guennadi Liakhovetski <g.liakhovetski@gmx.de> writes:
+Hi Sergei,
 
-> I always thought you need forward declarations for those, as in
->
-> struct yy;
->
-> before declaring struct xx above.
+On Thursday 28 July 2011, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 27-07-2011 20:03, Andrew Bird wrote:
+> > This patch adds the product ID of Huawei's Vodafone K3770 mobile
+> > broadband modem to option.c. This is necessary so that the driver gets
+> > loaded on demand without the intervention of usb_modeswitch. This has
+> > the benefit of it becoming available faster and also ensures that the
+> > option driver is not bound to a network interface that should be claimed
+> > by cdc_ether.
+> 
+>     You seem to be adding 4 product IDs with the identical patch
+> descriptions. Why not do it in a single patch?
+> 
+> > Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
+> 
+> WBR, Sergei
 
-You only need that if you would otherwise introduce the struct tag in a
-different scope, like prototype scope (which ends at the end of the
-prototype).
+	I'm pretty new to this, but I was following the one patch per change 
+idea, so as there are four devices I did a patch for each.
 
->> Otherwise you could not define recursive structures as in
->> ----  snip  ----
->> struct a {
->> 	struct *b;
->> };
->> struct b {
->> 	struct *a;
->> };
->> ----  snip  ----
->
-> I would add a "struct b;" forward declaration before "struct a".
+Happy to squash into one if that's more acceptable to people?
 
-You can do that, but since a struct definition doesn't introduce a new
-scope it is not necessary.
 
-Andreas.
-
--- 
-Andreas Schwab, schwab@redhat.com
-GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
-"And now for something completely different."
+Andrew
