@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab1G1Nun (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 09:50:43 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:33923
+	id S1755722Ab1G1Nuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 09:50:54 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:54859
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751814Ab1G1Nuj (ORCPT
+	by vger.kernel.org with ESMTP id S1755546Ab1G1Num (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 09:50:39 -0400
+	Thu, 28 Jul 2011 09:50:42 -0400
 X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h62h)
+X-Spam-TCS-SCL: 1:0
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LP1QGA-01-3TV-02
+X-WSS-ID: 0LP1QGC-01-3TZ-02
 X-M-MSG: 
 From: Robert Richter <robert.richter@amd.com>
 To: Peter Zijlstra <peterz@infradead.org>
 CC: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 1/7] perf, x86: share IBS macros between perf and oprofile
-Date: Thu, 28 Jul 2011 15:46:46 +0200
-Message-ID: <1311860812-28748-2-git-send-email-robert.richter@amd.com>
+Subject: [PATCH 3/7] perf, x86: Implement IBS event configuration
+Date: Thu, 28 Jul 2011 15:46:48 +0200
+Message-ID: <1311860812-28748-4-git-send-email-robert.richter@amd.com>
 X-Mailer: git-send-email 1.7.5.3
 In-Reply-To: <1311860812-28748-1-git-send-email-robert.richter@amd.com>
 References: <1311860812-28748-1-git-send-email-robert.richter@amd.com>
@@ -31,169 +31,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving IBS macros from oprofile to <asm/perf_event.h> to make it
-available to perf. No additional changes.
+This patch implements perf configuration for AMD IBS. The IBS pmu is
+selected using the type attribute in sysfs. There are two types of ibs
+pmus, for instruction fetch (IBS_FETCH) and for instruction execution
+(IBS_OP):
+
+ /sys/bus/event_source/devices/ibs_fetch/type
+ /sys/bus/event_source/devices/ibs_op/type
+
+Except for the sample period IBS can only be set up with raw config
+values and raw data samples. The event attributes for the syscall
+should be programmed like this (IBS_FETCH):
+
+        type = get_pmu_type("/sys/bus/event_source/devices/ibs_fetch/type");
+
+        memset(&attr, 0, sizeof(attr));
+        attr.type        = type;
+        attr.sample_type = PERF_SAMPLE_CPU | PERF_SAMPLE_RAW;
+        attr.config      = IBS_FETCH_CONFIG_DEFAULT;
+
+This implementation does not yet support 64 bit counters. It is
+limited to the hardware counter bit width which is 20 bits. 64 bit
+support can be added later.
 
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- arch/x86/include/asm/perf_event.h    |   38 +++++++++++++++++++++++++++++++--
- arch/x86/kernel/cpu/perf_event_amd.c |    4 +-
- arch/x86/oprofile/op_model_amd.c     |   37 ++------------------------------
- 3 files changed, 40 insertions(+), 39 deletions(-)
+ arch/x86/kernel/cpu/perf_event_amd_ibs.c |   99 ++++++++++++++++++++++++++----
+ 1 files changed, 87 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index 094fb30..bc801ac 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -43,14 +43,17 @@
- #define AMD64_RAW_EVENT_MASK		\
- 	(X86_RAW_EVENT_MASK          |  \
- 	 AMD64_EVENTSEL_EVENT)
-+#define AMD64_NUM_COUNTERS				4
-+#define AMD64_NUM_COUNTERS_F15H				6
-+#define AMD64_NUM_COUNTERS_MAX				AMD64_NUM_COUNTERS_F15H
+diff --git a/arch/x86/kernel/cpu/perf_event_amd_ibs.c b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+index cae9528..bd77209 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd_ibs.c
++++ b/arch/x86/kernel/cpu/perf_event_amd_ibs.c
+@@ -12,34 +12,108 @@
  
--#define ARCH_PERFMON_UNHALTED_CORE_CYCLES_SEL		      0x3c
-+#define ARCH_PERFMON_UNHALTED_CORE_CYCLES_SEL		0x3c
- #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_UMASK		(0x00 << 8)
--#define ARCH_PERFMON_UNHALTED_CORE_CYCLES_INDEX			 0
-+#define ARCH_PERFMON_UNHALTED_CORE_CYCLES_INDEX		0
- #define ARCH_PERFMON_UNHALTED_CORE_CYCLES_PRESENT \
- 		(1 << (ARCH_PERFMON_UNHALTED_CORE_CYCLES_INDEX))
+ #if defined(CONFIG_PERF_EVENTS) && defined(CONFIG_CPU_SUP_AMD)
  
--#define ARCH_PERFMON_BRANCH_MISSES_RETIRED			 6
-+#define ARCH_PERFMON_BRANCH_MISSES_RETIRED		6
- 
- /*
-  * Intel "Architectural Performance Monitoring" CPUID
-@@ -110,6 +113,35 @@ union cpuid10_edx {
-  */
- #define X86_PMC_IDX_FIXED_BTS				(X86_PMC_IDX_FIXED + 16)
- 
-+/*
-+ * IBS cpuid feature detection
-+ */
+-static struct pmu perf_ibs;
++#define IBS_FETCH_CONFIG_MASK	(IBS_FETCH_RAND_EN | IBS_FETCH_MAX_CNT)
++#define IBS_OP_CONFIG_MASK	IBS_OP_MAX_CNT
 +
-+#define IBS_CPUID_FEATURES		0x8000001b
++struct perf_ibs {
++	struct pmu	pmu;
++	unsigned int	msr;
++	u64		config_mask;
++	u64		cnt_mask;
++	u64		enable_mask;
++};
 +
-+/*
-+ * Same bit mask as for IBS cpuid feature flags (Fn8000_001B_EAX), but
-+ * bit 0 is used to indicate the existence of IBS.
-+ */
-+#define IBS_CAPS_AVAIL			(1U<<0)
-+#define IBS_CAPS_FETCHSAM		(1U<<1)
-+#define IBS_CAPS_OPSAM			(1U<<2)
-+#define IBS_CAPS_RDWROPCNT		(1U<<3)
-+#define IBS_CAPS_OPCNT			(1U<<4)
-+#define IBS_CAPS_BRNTRGT		(1U<<5)
-+#define IBS_CAPS_OPCNTEXT		(1U<<6)
++static struct perf_ibs perf_ibs_fetch;
++static struct perf_ibs perf_ibs_op;
 +
-+#define IBS_CAPS_DEFAULT		(IBS_CAPS_AVAIL		\
-+					 | IBS_CAPS_FETCHSAM	\
-+					 | IBS_CAPS_OPSAM)
++static struct perf_ibs *get_ibs_pmu(int type)
++{
++	if (perf_ibs_fetch.pmu.type == type)
++		return &perf_ibs_fetch;
++	if (perf_ibs_op.pmu.type == type)
++		return &perf_ibs_op;
++	return NULL;
++}
+ 
+ static int perf_ibs_init(struct perf_event *event)
+ {
+-	if (perf_ibs.type != event->attr.type)
++	struct hw_perf_event *hwc = &event->hw;
++	struct perf_ibs *perf_ibs;
++	u64 max_cnt, config;
 +
-+/*
-+ * IBS APIC setup
-+ */
-+#define IBSCTL				0x1cc
-+#define IBSCTL_LVT_OFFSET_VALID		(1ULL<<8)
-+#define IBSCTL_LVT_OFFSET_MASK		0x0F
++	perf_ibs = get_ibs_pmu(event->attr.type);
++	if (!perf_ibs)
+ 		return -ENOENT;
 +
- /* IbsFetchCtl bits/masks */
- #define IBS_FETCH_RAND_EN	(1ULL<<57)
- #define IBS_FETCH_VAL		(1ULL<<49)
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index 941caa2..a9e3047 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -392,7 +392,7 @@ static __initconst const struct x86_pmu amd_pmu = {
- 	.perfctr		= MSR_K7_PERFCTR0,
- 	.event_map		= amd_pmu_event_map,
- 	.max_events		= ARRAY_SIZE(amd_perfmon_event_map),
--	.num_counters		= 4,
-+	.num_counters		= AMD64_NUM_COUNTERS,
- 	.cntval_bits		= 48,
- 	.cntval_mask		= (1ULL << 48) - 1,
- 	.apic			= 1,
-@@ -556,7 +556,7 @@ static __initconst const struct x86_pmu amd_pmu_f15h = {
- 	.perfctr		= MSR_F15H_PERF_CTR,
- 	.event_map		= amd_pmu_event_map,
- 	.max_events		= ARRAY_SIZE(amd_perfmon_event_map),
--	.num_counters		= 6,
-+	.num_counters		= AMD64_NUM_COUNTERS_F15H,
- 	.cntval_bits		= 48,
- 	.cntval_mask		= (1ULL << 48) - 1,
- 	.apic			= 1,
-diff --git a/arch/x86/oprofile/op_model_amd.c b/arch/x86/oprofile/op_model_amd.c
-index 9cbb710..e947e5c 100644
---- a/arch/x86/oprofile/op_model_amd.c
-+++ b/arch/x86/oprofile/op_model_amd.c
-@@ -29,8 +29,6 @@
- #include "op_x86_model.h"
- #include "op_counter.h"
++	config = event->attr.config;
++	if (config & ~perf_ibs->config_mask)
++		return -EINVAL;
++
++	if (hwc->sample_period) {
++		if (config & perf_ibs->cnt_mask)
++			/* raw max_cnt may not be set */
++			return -EINVAL;
++		if (hwc->sample_period & 0x0f)
++			/* lower 4 bits can not be set in ibs max cnt */
++			return -EINVAL;
++		max_cnt = hwc->sample_period >> 4;
++		if (max_cnt & ~perf_ibs->cnt_mask)
++			/* out of range */
++			return -EINVAL;
++		config |= max_cnt;
++	} else {
++		max_cnt = config & perf_ibs->cnt_mask;
++		event->attr.sample_period = max_cnt << 4;
++		hwc->sample_period = event->attr.sample_period;
++	}
++
++	if (!max_cnt)
++		return -EINVAL;
++
++	hwc->config_base = perf_ibs->msr;
++	hwc->config = config;
++
+ 	pr_info("Found event %p (config=%016llx) for pmu %s (type=%d) on cpu %d\n",
+-		event, event->attr.config, perf_ibs.name, event->attr.type, event->oncpu);
++		event, event->attr.config, event->pmu->name, event->attr.type, event->oncpu);
++
+ 	return 0;
+ }
  
--#define NUM_COUNTERS		4
--#define NUM_COUNTERS_F15H	6
- #ifdef CONFIG_OPROFILE_EVENT_MULTIPLEX
- #define NUM_VIRT_COUNTERS	32
- #else
-@@ -70,35 +68,6 @@ static struct ibs_config ibs_config;
- static struct ibs_state ibs_state;
+ static int perf_ibs_add(struct perf_event *event, int flags)
+ {
+-	pr_info("Adding event %p (config=%016llx) to pmu %s (type=%d) on cpu %d\n",
+-		event, event->attr.config, perf_ibs.name, event->attr.type, event->oncpu);
++	pr_info("Adding event %p (config=%016llx) for pmu %p (name='%s', type=%d) on cpu %d\n",
++		event, event->attr.config, event->pmu, event->pmu->name, event->attr.type, event->oncpu);
+ 	return 0;
+ }
  
- /*
-- * IBS cpuid feature detection
-- */
--
--#define IBS_CPUID_FEATURES		0x8000001b
--
--/*
-- * Same bit mask as for IBS cpuid feature flags (Fn8000_001B_EAX), but
-- * bit 0 is used to indicate the existence of IBS.
-- */
--#define IBS_CAPS_AVAIL			(1U<<0)
--#define IBS_CAPS_FETCHSAM		(1U<<1)
--#define IBS_CAPS_OPSAM			(1U<<2)
--#define IBS_CAPS_RDWROPCNT		(1U<<3)
--#define IBS_CAPS_OPCNT			(1U<<4)
--#define IBS_CAPS_BRNTRGT		(1U<<5)
--#define IBS_CAPS_OPCNTEXT		(1U<<6)
--
--#define IBS_CAPS_DEFAULT		(IBS_CAPS_AVAIL		\
--					 | IBS_CAPS_FETCHSAM	\
--					 | IBS_CAPS_OPSAM)
--
--/*
-- * IBS APIC setup
-- */
--#define IBSCTL				0x1cc
--#define IBSCTL_LVT_OFFSET_VALID		(1ULL<<8)
--#define IBSCTL_LVT_OFFSET_MASK		0x0F
--
--/*
-  * IBS randomization macros
-  */
- #define IBS_RANDOM_BITS			12
-@@ -439,7 +408,7 @@ static int op_amd_fill_in_addresses(struct op_msrs * const msrs)
- 			goto fail;
- 		}
- 		/* both registers must be reserved */
--		if (num_counters == NUM_COUNTERS_F15H) {
-+		if (num_counters == AMD64_NUM_COUNTERS_F15H) {
- 			msrs->counters[i].addr = MSR_F15H_PERF_CTR + (i << 1);
- 			msrs->controls[i].addr = MSR_F15H_PERF_CTL + (i << 1);
- 		} else {
-@@ -741,9 +710,9 @@ static int op_amd_init(struct oprofile_operations *ops)
- 	ops->create_files = setup_ibs_files;
+ static void perf_ibs_del(struct perf_event *event, int flags)
+ {
+-	pr_info("Removing event %p (config=%016llx) to pmu %s (type=%d) on cpu %d\n",
+-		event, event->attr.config, perf_ibs.name, event->attr.type, event->oncpu);
++	pr_info("Removing event %p (config=%016llx) for pmu %p (name='%s', type=%d) on cpu %d\n",
++		event, event->attr.config, event->pmu, event->pmu->name, event->attr.type, event->oncpu);
+ }
  
- 	if (boot_cpu_data.x86 == 0x15) {
--		num_counters = NUM_COUNTERS_F15H;
-+		num_counters = AMD64_NUM_COUNTERS_F15H;
- 	} else {
--		num_counters = NUM_COUNTERS;
-+		num_counters = AMD64_NUM_COUNTERS;
- 	}
+-static struct pmu perf_ibs = {
+-	.event_init= perf_ibs_init,
+-	.add= perf_ibs_add,
+-	.del= perf_ibs_del,
++static struct perf_ibs perf_ibs_fetch = {
++	.pmu = {
++		.event_init	= perf_ibs_init,
++		.add		= perf_ibs_add,
++		.del		= perf_ibs_del,
++	},
++	.msr			= MSR_AMD64_IBSFETCHCTL,
++	.config_mask		= IBS_FETCH_CONFIG_MASK,
++	.cnt_mask		= IBS_FETCH_MAX_CNT,
++	.enable_mask		= IBS_FETCH_ENABLE,
++};
++
++static struct perf_ibs perf_ibs_op = {
++	.pmu = {
++		.event_init	= perf_ibs_init,
++		.add		= perf_ibs_add,
++		.del		= perf_ibs_del,
++	},
++	.msr			= MSR_AMD64_IBSOPCTL,
++	.config_mask		= IBS_OP_CONFIG_MASK,
++	.cnt_mask		= IBS_OP_MAX_CNT,
++	.enable_mask		= IBS_OP_ENABLE,
+ };
  
- 	op_amd_spec.num_counters = num_counters;
+ static __init int perf_event_ibs_init(void)
+@@ -50,7 +124,8 @@ static __init int perf_event_ibs_init(void)
+ 	if (!caps)
+ 		return -ENODEV;	/* ibs not supported by the cpu */
+ 
+-	perf_pmu_register(&perf_ibs, "ibs", -1);
++	perf_pmu_register(&perf_ibs_fetch.pmu, "ibs_fetch", -1);
++	perf_pmu_register(&perf_ibs_op.pmu, "ibs_op", -1);
+ 	printk(KERN_INFO "perf: AMD IBS detected (0x%08x)\n", caps);
+ 
+ 	return 0;
 -- 
 1.7.5.3
 
