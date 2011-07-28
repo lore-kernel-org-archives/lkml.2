@@ -1,141 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab1G1S5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 14:57:30 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:60601 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755249Ab1G1S51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 14:57:27 -0400
-Date: Thu, 28 Jul 2011 11:57:30 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Amir Goldstein <amir73il@gmail.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <aedilger@gmail.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>
-Subject: Re: [PATCH 0/2] Add inode checksum support to ext4
-Message-ID: <20110728185730.GJ20655@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20110406224410.GB24354@tux1.beaverton.ibm.com> <1302290868.4461.7.camel@mingming-laptop> <20110727082730.GG20655@tux1.beaverton.ibm.com> <EF1F2330-D8C4-427A-ABB9-D1E607D91A3D@gmail.com> <20110728165615.GI20655@tux1.beaverton.ibm.com> <CAOQ4uxiOpwX2-Nfh9wJ7wSmAnbj9bh1+d9C95-N5D-8saRr6ww@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOQ4uxiOpwX2-Nfh9wJ7wSmAnbj9bh1+d9C95-N5D-8saRr6ww@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1755492Ab1G1S6Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 14:58:24 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:33803 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755321Ab1G1S6T convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 14:58:19 -0400
+Date: Thu, 28 Jul 2011 11:58:14 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Subject: Re: Build regressions/improvements in v3.0-rc7 (sound/isa/)
+Message-Id: <20110728115814.07620295.rdunlap@xenotime.net>
+In-Reply-To: <CACqU3MUfGwDwWbszG22NJoakmXj1b4So_w2kd7B-DoREz3KE8w@mail.gmail.com>
+References: <1310585610-434-1-git-send-email-geert@linux-m68k.org>
+	<20110724122624.324d10dc.rdunlap@xenotime.net>
+	<s5hy5zm3j5a.wl%tiwai@suse.de>
+	<20110725091003.c3453b8b.rdunlap@xenotime.net>
+	<20110727121320.f50b1e6b.rdunlap@xenotime.net>
+	<20110728111709.8303f78c9b5f2b3aa3f391b0@canb.auug.org.au>
+	<20110728092116.cc318545.rdunlap@xenotime.net>
+	<CACqU3MXUt_Kcvu_uHmnS9Wm_hV73HaCgKcggAK350LBsL-EYbg@mail.gmail.com>
+	<20110728094418.3bd4e9df.rdunlap@xenotime.net>
+	<CACqU3MVkOqGr0WVrCiVEU5QtfC0mcOiruCc9_rm8VL44SRFmiA@mail.gmail.com>
+	<s5hzkjy5l7m.wl%tiwai@suse.de>
+	<CACqU3MUfGwDwWbszG22NJoakmXj1b4So_w2kd7B-DoREz3KE8w@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 08:07:17PM +0300, Amir Goldstein wrote:
-> On Jul 28, 2011 7:56 PM, "Darrick J. Wong" <djwong@us.ibm.com> wrote:
-> >
-> > On Wed, Jul 27, 2011 at 03:16:12AM -0600, Andreas Dilger wrote:
-> > > On 2011-07-27, at 2:27 AM, "Darrick J. Wong" <djwong@us.ibm.com> wrote:
-> > > > On Fri, Apr 08, 2011 at 12:27:48PM -0700, Mingming Cao wrote:
-> > > >> Beyond checksumming the inode itself, it
-> > > >> would be more useful to checksum the extent indexing blocks, as the
-> ext3
-> > > >> corruption actually happen at the indirect block.
-> > > >>
-> > > >> The idea is to reduce the eh_max (the max # of extents stored in this
-> > > >> block) to save some space to store the checksums in the block,
-> > > >>
-> > > >> /*
-> > > >> * Each block (leaves and indexes), even inode-stored has header.
-> > > >> */
-> > > >> struct ext4_extent_header {
-> > > >>        __le16  eh_magic;       /* probably will support different
-> > > >> formats */
-> > > >>        __le16  eh_entries;     /* number of valid entries */
-> > > >>        __le16  eh_max;         /* capacity of store in entries */
-> > > >>        __le16  eh_depth;       /* has tree real underlying blocks? */
-> > > >>        __le32  eh_generation;  /* generation of the tree */
-> > > >
-> > > > Does anyone use eh_generation?  Linux 3.0 shows no users and it didn't
-> look like
-> > > > the snapshot patches do either.  If nobody intends to start using this
-> field,
-> > > > (part of) it could become eh_checksum
-> > >
-> > > We use eh_generation in Lustre to detect if the extent tree is being
-> changed
-> > > while it is unlocked.
-> > >
-> > > In the past, the discussion about adding checksums to the index and
-> extent
-> > > blocks was about using an ext4_extent_tail that contained not only the
-> > > checksum of the block, but also a back-pointer to the inode/generation
-> of the
-> > > inode using this block.
-> > >
-> > > That would allow e2fsck to verify that it is using the correct
-> index/extent
-> > > blocks and not pointing to a stale block that belonged to some other
-> inode.
-> > >
-> > > Since the header and index/extent entries are always 3 *__u32 in size,
-> the
-> > > extent tail can always be 4 * __u32 in size yet only consume a single
-> slot in
-> > > the block. There of course is no reason to put an extent tail inside the
-> > > inode itself.
-> >
-> > Does anybody have any objection to using crc32c (which we can hardware
-> > accelerate on new Intel boxen) over crc16?  I think it'll be pretty easy
-> to use
-> > some of the reserved space in the group descriptor to store checksums of
-> the
-> > block and inode bitmaps.
+On Thu, 28 Jul 2011 14:24:49 -0400 Arnaud Lacombe wrote:
+
+> Hi,
 > 
-> On LSF Ted told me i can use 32bit from the group descriptor for exclude
-> bitmap block and that inode and block bitmap checksum would use 16bit each .
-
-I know;  as far as I know there's still 96 bits of free space in the group
-descriptor, which could be used to crc32 all three bitmaps.  But then that
-leaves the descriptors with no room for further expansion, unless we decide to
-expand them sort of like what was done for inodes.  Do we have a strategy for
-handling continued expansion of metadata objects in ext4?
-
-Besides "don't" or "use btrfs"? :)
-
---D
-
+> On Thu, Jul 28, 2011 at 2:11 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> > At Thu, 28 Jul 2011 13:06:19 -0400,
+> > Arnaud Lacombe wrote:
+> >>
+> >> Hi,
+> >>
+> >> On Thu, Jul 28, 2011 at 12:44 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> >> > On Thu, 28 Jul 2011 12:36:27 -0400 Arnaud Lacombe wrote:
+> >> >
+> >> >> Hi,
+> >> >>
+> >> >> On Thu, Jul 28, 2011 at 12:21 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> >> >> > On Thu, 28 Jul 2011 11:17:09 +1000 Stephen Rothwell wrote:
+> >> >> >
+> >> >> >> Hi Randy,
+> >> >> >>
+> >> >> >> On Wed, 27 Jul 2011 12:13:20 -0700 Randy Dunlap <rdunlap@xenotime.net> wrote:
+> >> >> >> >
+> >> >> >> > On Mon, 25 Jul 2011 09:10:03 -0700 Randy Dunlap wrote:
+> >> >> >> >
+> >> >> >> > > On Mon, 25 Jul 2011 09:37:53 +0200 Takashi Iwai wrote:
+> >> >> >> > >
+> >> >> >> > > > At Sun, 24 Jul 2011 12:26:24 -0700,
+> >> >> >> > > > Randy Dunlap wrote:
+> >> >> >> > > > >
+> >> >> >> > > > > On Wed, 13 Jul 2011 21:33:30 +0200 Geert Uytterhoeven wrote:
+> >> >> >> > > > >
+> >> >> >> > > > > >   + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_disable':  => 544
+> >> >> >> > > > > >   + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 302
+> >> >> >> > > > > >   + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_program':  => 244
+> >> >> >> > > > > >   + src/sound/isa/es1688/es1688_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 509
+> >> >> >> > > > > >   + src/sound/isa/es1688/es1688_lib.c: error: implicit declaration of function 'snd_dma_program':  => 417
+> >> >> >> > > > > >   + src/sound/isa/gus/gus_dma.c: error: implicit declaration of function 'snd_dma_disable':  => 177
+> >> >> >> > > > > >   + src/sound/isa/gus/gus_dma.c: error: implicit declaration of function 'snd_dma_program':  => 79
+> >> >> >> > > > > >   + src/sound/isa/gus/gus_pcm.c: error: implicit declaration of function 'snd_dma_pointer':  => 619
+> >> >> >> > > > > >   + src/sound/isa/gus/gus_pcm.c: error: implicit declaration of function 'snd_dma_program':  => 591
+> >> >> >> > > > > >   + src/sound/isa/sb/sb16_main.c: error: implicit declaration of function 'snd_dma_pointer':  => 456
+> >> >> >> > > > > >   + src/sound/isa/sb/sb16_main.c: error: implicit declaration of function 'snd_dma_program':  => 276
+> >> >> >> > > > > >   + src/sound/isa/sb/sb8_main.c: error: implicit declaration of function 'snd_dma_pointer':  => 425
+> >> >> >> > > > > >   + src/sound/isa/sb/sb8_main.c: error: implicit declaration of function 'snd_dma_program':  => 172
+> >> >> >> > > > > >   + src/sound/isa/sscape.c: error: implicit declaration of function 'snd_dma_program':  => 481
+> >> >> >> > > > > >   + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_disable':  => 1695
+> >> >> >> > > > > >   + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 1160
+> >> >> >> > > > > >   + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_program':  => 1025
+> >> >> >> > > > >
+> >> >> >> > > > > All of these source files do #include <sound/core.h>,
+> >> >> >> > > > > but these missing/implicit functions are conditional:
+> >> >> >> > > > >
+> >> >> >> > > > > #ifdef CONFIG_ISA_DMA_API
+> >> >> >> > > > > #define DMA_MODE_NO_ENABLE    0x0100
+> >> >> >> > > > >
+> >> >> >> > > > > void snd_dma_program(unsigned long dma, unsigned long addr, unsigned int size, unsigned short mode);
+> >> >> >> > > > > void snd_dma_disable(unsigned long dma);
+> >> >> >> > > > > unsigned int snd_dma_pointer(unsigned long dma, unsigned int size);
+> >> >> >> > > > > #endif
+> >> >> >> > > > >
+> >> >> >> > > > > so should these drivers all depend on ISA_DMA_API ?
+> >> >> >> > > >
+> >> >> >> > > > Yes, these are ISA sound cards, so they must have CONFIG_ISA and
+> >> >> >> > > > CONFIG_ISA_DMA.  Although CONFIG_SND_SB8_DSP, CONFIG_SND_SB16_DSP
+> >> >> >> > > > and CONFIG_SND_WSS_LIB have no direct dependency, but the drivers
+> >> >> >> > > > selecting these are all in "if SND_ISA" in sound/isa/Kconfig.
+> >> >> >> > >
+> >> >> >> > > Hm, yes, they are.
+> >> >> >> > >
+> >> >> >> > > > > or should only pieces of each driver depend on ISA_DMA_API ?
+> >> >> >> > > >
+> >> >> >> > > > I wonder which configuration makes it possible.
+> >> >> >> > > > Did you see a similar problem with randconfig?
+> >> >> >> > >
+> >> >> >> > > No.  This parisc allmodconfig file from linux-next builds has
+> >> >> >> > > CONFIG_SND_ISA=y but it does not have CONFIG_ISA_DMA_API enabled.  Weird.
+> >> >> >> > >
+> >> >> >> > > Geert, do you know how this happens?
+> >> >> >> > >
+> >> >> >> > > parisc config:  http://kisskb.ellerman.id.au/kisskb/buildresult/4323458/config/
+> >> >> >> > > from this failed build:  http://kisskb.ellerman.id.au/kisskb/buildresult/4323458/
+> >> >> >> >
+> >> >> >> > How is CONFIG_ISA_DMA_API enabled in parisc allmodconfig?
+> >> >> >> > I don't see how that happens, and it's causing build errors...
+> >> >> >>
+> >> >> >> Sorry, but I don't understand the question.  The problam is that
+> >> >> >> CONFIG_ISA_DMA_API is not enabled, right?  On parisc, it is just (from
+> >> >> >> arch/parisc/Kconfig)
+> >> >> >>
+> >> >> >> config ISA_DMA_API
+> >> >> >>       bool
+> >> >> >>
+> >> >> >> and nothing selects it.  However, I would have expected an allmodconfig
+> >> >> >> to set it to y.  Clearly I don't understan how allmodconfig works any
+> >> >> >> more :-(
+> >> >> >>
+> >> >> >> Michal, is my understanding correct?  Is this a bug in allmodconfig?
+> >> >> >
+> >> >> > When I do:
+> >> >> > $ make ARCH=parisc O=PAR allmodconfig
+> >> >> >
+> >> >> > I don't get CONFIG_ISA_DMA_API enabled, so the question is simply
+> >> >> > how is the linux-next build system ending up with CONFIG_ISA_DMA_API enabled?
+> >> >> >
+> >> >> Where do you see that "linux-next build system ending up with
+> >> >> CONFIG_ISA_DMA_API enabled" ?
+> >> >>
+> >> >> From what I understood of the problem, the issue is that
+> >> >> CONFIG_ISA_DMA_API does _not_ ends up enabled.
+> >> >
+> >> > Thanks for catching me.
+> >> >
+> >> > The problem (second try) is that ISA SND drivers are being built (on parisc)
+> >> > even though ISA_DMA_API is not enabled -- and should not be enabled,
+> >> > so the ISA SND drivers should not be built.  I think I have it right this time.
+> >> >
+> >> > From the parisc .config file listed above:
+> >> >
+> >> > CONFIG_SND_ISA=y
+> >> > CONFIG_SND_ADLIB=m
+> >> > CONFIG_SND_AD1816A=m
+> >> > CONFIG_SND_AD1848=m
+> >> > CONFIG_SND_ALS100=m
+> >> > CONFIG_SND_AZT1605=m
+> >> > CONFIG_SND_AZT2316=m
+> >> > CONFIG_SND_AZT2320=m
+> >> > CONFIG_SND_CMI8330=m
+> >> >
+> >> >
+> >> > etc.  But none of these should be enabled.  AFAIK.
+> >> > So how does this happen?
+> >> >
+> >> warning: (RADIO_MIROPCM20) selects SND_ISA which has unmet direct
+> >> dependencies (SOUND && !M68K && SND && ISA && ISA_DMA_API)
+> >
+> > Hm, I thought this was fixed by
+> > commit 4756fc64ecd628efa6f8296711d7dbcefabf25dd
+> > Author: Ralf Baechle <ralf@linux-mips.org>
+> > Date:   Fri Jun 24 10:30:09 2011 -0300
+> >
+> >    [media] MEDIA: Fix non-ISA_DMA_API link failure of sound code
+> >
+> > OK, it landed after 3.0-rc7, so this problem must be fixed now?
+> % git checkout v3.0-rc7
+> % make ARCH=parisc allmodconfig
+> [...]
+> warning: (RADIO_WL128X) selects TI_ST which has unmet direct
+> dependencies (MISC_DEVICES && NET && GPIOLIB)
+> warning: (RADIO_MIROPCM20) selects SND_ISA which has unmet direct
+> dependencies (SOUND && !M68K && SND && ISA && ISA_DMA_API)
+> warning: (LOCKDEP && FAULT_INJECTION_STACKTRACE_FILTER && LATENCYTOP
+> && FUNCTION_TRACER && KMEMCHECK) selects FRAME_POINTER which has unmet
+> direct dependencies (DEBUG_KERNEL && (CRIS || M68K || FRV || UML ||
+> AVR32 || SUPERH || BLACKFIN || MN10300) || ARCH_WANT_FRAME_POINTERS)
+> #
+> # configuration written to .config
+> #
+> % grep -c SND_ISA .config
+> 1
 > 
->  Adding tails to the extent tree blocks seems a bit
-> > trickier than that, but not a big deal, though I guess I'll have to
-> reshuffle
-> > the extent tree to free up space at the end of the block.
-> >
-> > I was also wondering what people think of adding checksums to directory
-> files?
-> > I think that it's possible to put a checksum in each directory block --
-> for
-> > blocks containing a linear array of actual directory entries, we could
-> zero out
-> > the space past the end of the array and put a checksum at the very end of
-> the
-> > block.  For the dx_node/dx_root blocks, we could probably use the space
-> > occupied by the last dx_entry to store the checksum.  Obviously, we'd have
-> to
-> > move whatever's at the end of the block elsewhere, but then, we have to do
-> that
-> > for the extent tree too.  Basically, the last 4 bytes become the checksum
-> after
-> > whatever's occupying the space is relocated. :)
-> >
-> > It looks like there's sufficient unused space in ext4_xattr_header to add
-> a
-> > checksum.
-> >
-> > Also -- should I create separate rocompat feature flags for each metadata
-> > object that I add checksums to?  Or just have one flag that covers them
-> all?
-> >
-> > Ok, enough crazy ideas for now...
-> >
-> > --D
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> % git checkout v3.0
+> Previous HEAD position was 620917d... Linux 3.0-rc7
+> HEAD is now at 02f8c6a... Linux 3.0
+> % make ARCH=parisc allmodconfig
+> [...]
+> warning: (RADIO_WL128X) selects TI_ST which has unmet direct
+> dependencies (MISC_DEVICES && NET && GPIOLIB)
+> warning: (LOCKDEP && FAULT_INJECTION_STACKTRACE_FILTER && LATENCYTOP
+> && FUNCTION_TRACER && KMEMCHECK) selects FRAME_POINTER which has unmet
+> direct dependencies (DEBUG_KERNEL && (CRIS || M68K || FRV || UML ||
+> AVR32 || SUPERH || BLACKFIN || MN10300) || ARCH_WANT_FRAME_POINTERS)
+> #
+> # configuration written to .config
+> #
+> % grep -c SND_ISA .config
+> 0
+> 
+> Look good to me.
+
+Great, thanks everyone.  Yes, I was working on old data.
+Sorry about that.  Anyway, lots of build errors now fixed by Ralf.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
