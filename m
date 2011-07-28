@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983Ab1G1Tot (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 15:44:49 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60378 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754565Ab1G1Tos (ORCPT
+	id S1755314Ab1G1Tsc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 15:48:32 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:13414 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565Ab1G1Ts3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 15:44:48 -0400
-Message-ID: <4E31BC2D.50306@2net.co.uk>
-Date: Thu, 28 Jul 2011 20:44:45 +0100
-From: Chris Simmonds <chris.simmonds@2net.co.uk>
-Reply-To: chris@2net.co.uk
-Organization: 2net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Thu, 28 Jul 2011 15:48:29 -0400
+Date: Thu, 28 Jul 2011 21:48:27 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: alsa-devel@alsa-project.org, Joe Perches <joe@perches.com>,
+        Eliot Blennerhassett <eblennerhassett@audioscience.com>,
+        Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
+        support@audioscience.com
+Subject: [PATCH] Sound: AudioScience HPI: Don't leak firmware if mem alloc
+ fails
+Message-ID: <alpine.LNX.2.00.1107282145230.20477@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Chris <chris@2net.co.uk>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        mingo@redhat.com
-Subject: Re: [RFC] [PATCH] Lightweight kernel condition variables: faster
- code, fewer bugs
-References: <Pine.LNX.4.44L0.1107281256240.1990-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1107281256240.1990-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:Lf5/ZqapVEQ1FcdRwX0GhcylFU4AVac1VIYT9ZbHOki
- gQYaUwMFaU1vVBFutlHj/a0RAY3TQe2G81+epmLnLe4sO5xSpU
- 5LrKbD59qnsv/v8n61Tu/Isawbthrg8REoFDTjkFIPLKpv6SJd
- 8G896zF+FcnARDKGqFizc+i0uArWOXGn9tDKOklcH+sj0LW75x
- pIBA+hU7W3XbjpZmfGZQzTmdj1UTfH2Kyqu8RNP9s4=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/07/11 18:00, Alan Stern wrote:
-> On Wed, 27 Jul 2011, Chris Simmonds wrote:
->
->> Hi,
->>
->> This patch adds lightweight condition variables to the kernel to reduce
->> complexity and improve the efficiency of some synchronisation tasks.
->> They are very similar to POSIX condition variables.
->
-> It seems like a reasonable sort of thing to do, as far as I can see.
->
+We leak the memory allocated to 'firmware' when we fail to
+release_firmware() after a kmalloc() failure in hpi_dsp_code_open().
+This patch should take care of the leak.
 
-Thanks, and thank you for the review.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ sound/pci/asihpi/hpidspcd.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-> One little problem here.  These routines may well be large enough
-> that it's inefficient to inline them.  In that case they should be
-> declared in wait.h but defined somewhere else, such as kernel/wait.c.
-> Conversely, if you do think they deserve to be inlined then they should
-> be marked as such.
+	Build tested only.
 
-I was not planning to make them inline. I will change the patch to do as 
-you say.
+diff --git a/sound/pci/asihpi/hpidspcd.c b/sound/pci/asihpi/hpidspcd.c
+index 3a7afa3..8d261ef 100644
+--- a/sound/pci/asihpi/hpidspcd.c
++++ b/sound/pci/asihpi/hpidspcd.c
+@@ -85,8 +85,10 @@ short hpi_dsp_code_open(u32 adapter, void *os_data, struct dsp_code *dsp_code,
+ 
+ 	HPI_DEBUG_LOG(DEBUG, "dsp code %s opened\n", fw_name);
+ 	dsp_code->pvt = kmalloc(sizeof(*dsp_code->pvt), GFP_KERNEL);
+-	if (!dsp_code->pvt)
++	if (!dsp_code->pvt) {
++		release_firmware(firmware);
+ 		return HPI_ERROR_MEMORY_ALLOC;
++	}
+ 
+ 	dsp_code->pvt->dev = dev;
+ 	dsp_code->pvt->firmware = firmware;
+-- 
+1.7.6
 
->
-> P.S.: Does this come through checkpatch.pl unscathed?
->
 
-In truth, no. The next one will.
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Chris.
