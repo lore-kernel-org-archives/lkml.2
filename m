@@ -1,76 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab1G2KoQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 06:44:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25977 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755946Ab1G2KoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 06:44:15 -0400
-Date: Fri, 29 Jul 2011 12:45:37 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: gregkh@suse.de, herton.krzesinski@canonical.com, gengor@gentoo.org,
-        donald.h.fry@intel.com, wey-yi.w.guy@intel.com, ak@linux.intel.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
-Subject: Re: [PATCH] [64/99] Revert "iwlagn: Support new 5000 microcode."
-Message-ID: <20110729104537.GB2106@redhat.com>
-References: <20110727247.325703029@firstfloor.org>
- <20110727214903.75C262403FF@tassilo.jf.intel.com>
- <20110728082425.GA2207@redhat.com>
- <20110728173241.GJ8006@one.firstfloor.org>
+	id S932147Ab1G2KuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 06:50:09 -0400
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:60442 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755931Ab1G2KuE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 06:50:04 -0400
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <linus.walleij@linaro.org>
+Cc: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux@arm.linux.org.uk>, <armando.visconti@st.com>,
+        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
+        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
+        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
+        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
+        <viresh.linux@gmail.com>
+Subject: [PATCH 10/18] dmaengine/amba-pl08x: Get rid of pl08x_pre_boundary()
+Date: Fri, 29 Jul 2011 16:19:20 +0530
+Message-ID: <c147ba3a755935e93fdb40b5531a6e18d34e0fd7.1311936524.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <cover.1311936523.git.viresh.kumar@st.com>
+References: <cover.1311936523.git.viresh.kumar@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110728173241.GJ8006@one.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 07:32:41PM +0200, Andi Kleen wrote:
-> > commit dd7a2509b3a79b290730a9c6a784bf03fedabb9a
-> > Author: Johannes Berg <johannes.berg@intel.com>
-> > Date:   Wed Apr 28 23:33:10 2010 -0700
-> > 
-> >     iwlagn: implement loading a new firmware file type
-> > 
-> > > This was reported by Gentoo, Arch, and Canonical developers as causing
-> > > problems for their users:
-> > > 	https://bugs.archlinux.org/task/24302
-> > This is a bug about 2.6.32.
-> > 
-> > > 	http://bugs.gentoo.org/show_bug.cgi?id=359445
-> > This looks like problem when only 8.83.5 (v5) firmware is available
-> > on the system, but kernel is old and support only v2 version. This
-> > should be solved by providing both old 8.24.2 (v2) and new 8.83.5 (v5)
-> > firmware blobs in one package.
-> > 
-> > > 	https://bugs.launchpad.net/ubuntu/+source/linux/+bug/796336
-> > Also 2.6.32 case.
-> 
-> I took them from .32. Should I drop them?
-Reverting support for v5 firmware in .32 is ok.
+Pl080 Manual says: "Bursts do not cross the 1KB address boundary"
 
-> > There could be reasons for this change, but I do not see them here.
-> 
-> Can you please clearly indicate which patches I should drop and which keep?
-You already decided to drop this patch for now, good.
+We can program the controller to cross 1 KB boundary on a burst and controller
+can take care of this boundary condition by itself.
 
-I can observe lot's of "Received BA when not expected" when new firmware
-is used, not happen with old firmware. So this commit should be picked
-from upstream:
+Following is the discussion with ARM Technical Support Guys (David):
+[Viresh] Manual says: "Bursts do not cross the 1KB address boundary"
 
-commit bfd36103ec26599557c2bd3225a1f1c9267f8fcb
-Author: Stanislaw Gruszka <sgruszka@redhat.com>
-Date:   Fri Apr 29 17:51:06 2011 +0200
+What does that actually mean? As, Maximum size transferable with a single LLI is
+4095 * 4 =16380 ~ 16KB. So, if we don't have src/dest address aligned to burst
+size, we can't use this big of an LLI.
 
-    iwlagn: fix "Received BA when not expected" 
+[David] There is a difference between bursts describing the total data
+transferred by the DMA controller and AHB bursts. Bursts described by the
+programmable parameters in the PL080 have no direct connection with the bursts
+that are seen on the AHB bus.
 
-However we already applied it on 2.6.35 based Fedora-14 kernel (together with
-some other iwlwifi patches), and get report about regression. So I need
-to figure this out. I'm going to look more at the issue, and possibly
-post some backport patches, when solve problems. For now, I think we should
-not do anything with iwlwifi in 2.6.35, as long nobody will report some
-regression.
+The statement that "Bursts do not cross the 1KB address boundary" in the TRM is
+referring to AHB bursts, where this limitation is a requirement of the AHB spec.
+You can still issue bursts within the PL080 that are in excess o f 1KB. The
+PL080 will make sure that its bursts are broken down into legal AHB bursts which
+will be formatted to ensure that no AHB burst crosses a 1KB boundary.
 
-Stanislaw
+Based on above discussion, this patch removes all code related to 1 KB boundary
+as we are not required to handle this in driver.
+
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+---
+ drivers/dma/amba-pl08x.c   |  136 ++++---------------------------------------
+ include/linux/amba/pl08x.h |    2 -
+ 2 files changed, 13 insertions(+), 125 deletions(-)
+
+diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+index b9137bc..04f7889 100644
+--- a/drivers/dma/amba-pl08x.c
++++ b/drivers/dma/amba-pl08x.c
+@@ -149,14 +149,6 @@ struct pl08x_driver_data {
+  * PL08X specific defines
+  */
+ 
+-/*
+- * Memory boundaries: the manual for PL08x says that the controller
+- * cannot read past a 1KiB boundary, so these defines are used to
+- * create transfer LLIs that do not cross such boundaries.
+- */
+-#define PL08X_BOUNDARY_SHIFT		(10)	/* 1KB 0x400 */
+-#define PL08X_BOUNDARY_SIZE		(1 << PL08X_BOUNDARY_SHIFT)
+-
+ /* Size (bytes) of each LLI buffer allocated for one transfer */
+ # define PL08X_LLI_TSFR_SIZE	0x2000
+ 
+@@ -561,18 +553,6 @@ static void pl08x_fill_lli_for_desc(struct pl08x_lli_build_data *bd,
+ }
+ 
+ /*
+- * Return number of bytes to fill to boundary, or len.
+- * This calculation works for any value of addr.
+- */
+-static inline size_t pl08x_pre_boundary(u32 addr, size_t len)
+-{
+-	size_t boundary_len = PL08X_BOUNDARY_SIZE -
+-			(addr & (PL08X_BOUNDARY_SIZE - 1));
+-
+-	return min(boundary_len, len);
+-}
+-
+-/*
+  * This fills in the table of LLIs for the transfer descriptor
+  * Note that we assume we never have to change the burst sizes
+  * Return 0 for error
+@@ -679,121 +659,30 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
+ 		 * width left
+ 		 */
+ 		while (bd.remainder > (mbus->buswidth - 1)) {
+-			size_t lli_len, target_len, tsize, odd_bytes;
++			size_t lli_len, tsize;
+ 
+ 			/*
+ 			 * If enough left try to send max possible,
+ 			 * otherwise try to send the remainder
+ 			 */
+-			target_len = min(bd.remainder, max_bytes_per_lli);
+-
++			lli_len = min(bd.remainder, max_bytes_per_lli);
+ 			/*
+-			 * Set bus lengths for incrementing buses to the
+-			 * number of bytes which fill to next memory boundary,
+-			 * limiting on the target length calculated above.
++			 * Check against minimum bus alignment: Calculate actual
++			 * transfer size in relation to bus width and get a
++			 * maximum remainder of the smallest bus width - 1
+ 			 */
+-			if (cctl & PL080_CONTROL_SRC_INCR)
+-				bd.srcbus.fill_bytes =
+-					pl08x_pre_boundary(bd.srcbus.addr,
+-						target_len);
+-			else
+-				bd.srcbus.fill_bytes = target_len;
+-
+-			if (cctl & PL080_CONTROL_DST_INCR)
+-				bd.dstbus.fill_bytes =
+-					pl08x_pre_boundary(bd.dstbus.addr,
+-						target_len);
+-			else
+-				bd.dstbus.fill_bytes = target_len;
+-
+-			/* Find the nearest */
+-			lli_len	= min(bd.srcbus.fill_bytes,
+-					bd.dstbus.fill_bytes);
+-
+-			BUG_ON(lli_len > bd.remainder);
+-
+-			if (lli_len <= 0) {
+-				dev_err(&pl08x->adev->dev,
+-					"%s lli_len is %zu, <= 0\n",
+-						__func__, lli_len);
+-				return 0;
+-			}
++			tsize = lli_len / min(mbus->buswidth, sbus->buswidth);
++			lli_len	= tsize * min(mbus->buswidth, sbus->buswidth);
+ 
+-			if (lli_len == target_len) {
+-				/*
+-				 * Can send what we wanted.
+-				 * Maintain alignment
+-				 */
+-				lli_len	= (lli_len/mbus->buswidth) *
+-							mbus->buswidth;
+-				odd_bytes = 0;
+-			} else {
+-				/*
+-				 * So now we know how many bytes to transfer
+-				 * to get to the nearest boundary. The next
+-				 * LLI will past the boundary. However, we
+-				 * may be working to a boundary on the slave
+-				 * bus. We need to ensure the master stays
+-				 * aligned, and that we are working in
+-				 * multiples of the bus widths.
+-				 */
+-				odd_bytes = lli_len % mbus->buswidth;
+-				lli_len -= odd_bytes;
+-			}
+-
+-			if (lli_len) {
+-				/*
+-				 * Check against minimum bus alignment:
+-				 * Calculate actual transfer size in relation
+-				 * to bus width an get a maximum remainder of
+-				 * the smallest bus width - 1
+-				 */
+-				/* FIXME: use round_down()? */
+-				tsize = lli_len / min(mbus->buswidth,
+-						sbus->buswidth);
+-				lli_len	= tsize * min(mbus->buswidth,
+-						sbus->buswidth);
+-
+-				if (target_len != lli_len) {
+-					dev_vdbg(&pl08x->adev->dev,
+-					"%s can't send what we want. Desired "
+-					"0x%08zx, lli of 0x%08zx bytes in txd "
+-					"of 0x%08zx\n", __func__, target_len,
+-					lli_len, txd->len);
+-				}
+-
+-				cctl = pl08x_cctl_bits(cctl,
+-						bd.srcbus.buswidth,
+-						bd.dstbus.buswidth,
+-						tsize);
+-
+-				dev_vdbg(&pl08x->adev->dev,
++			dev_vdbg(&pl08x->adev->dev,
+ 					"%s fill lli with single lli chunk of "
+ 					"size 0x%08zx (remainder 0x%08zx)\n",
+ 					__func__, lli_len, bd.remainder);
+-				pl08x_fill_lli_for_desc(&bd, num_llis++,
+-					lli_len, cctl);
+-				total_bytes += lli_len;
+-			}
+ 
+-			if (odd_bytes) {
+-				/*
+-				 * Creep past the boundary, maintaining
+-				 * master alignment
+-				 */
+-				int j;
+-				for (j = 0; (j < mbus->buswidth)
+-						&& (bd.remainder); j++) {
+-					cctl = pl08x_cctl_bits(cctl, 1, 1, 1);
+-					dev_vdbg(&pl08x->adev->dev,
+-						"%s align with boundary, single"
+-						" byte (remain 0x%08zx)\n",
+-						__func__, bd.remainder);
+-					pl08x_fill_lli_for_desc(&bd,
+-						num_llis++, 1, cctl);
+-					total_bytes++;
+-				}
+-			}
++			cctl = pl08x_cctl_bits(cctl, bd.srcbus.buswidth,
++					bd.dstbus.buswidth, tsize);
++			pl08x_fill_lli_for_desc(&bd, num_llis++, lli_len, cctl);
++			total_bytes += lli_len;
+ 		}
+ 
+ 		/*
+@@ -808,6 +697,7 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
+ 			total_bytes++;
+ 		}
+ 	}
++
+ 	if (total_bytes != txd->len) {
+ 		dev_err(&pl08x->adev->dev,
+ 			"%s size of encoded lli:s don't match total txd, "
+diff --git a/include/linux/amba/pl08x.h b/include/linux/amba/pl08x.h
+index 5509a50..98628a8 100644
+--- a/include/linux/amba/pl08x.h
++++ b/include/linux/amba/pl08x.h
+@@ -77,13 +77,11 @@ struct pl08x_channel_data {
+  * @addr: current address
+  * @maxwidth: the maximum width of a transfer on this bus
+  * @buswidth: the width of this bus in bytes: 1, 2 or 4
+- * @fill_bytes: bytes required to fill to the next bus memory boundary
+  */
+ struct pl08x_bus_data {
+ 	dma_addr_t addr;
+ 	u8 maxwidth;
+ 	u8 buswidth;
+-	size_t fill_bytes;
+ };
+ 
+ /**
+-- 
+1.7.2.2
+
