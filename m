@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab1G2Uzu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 16:55:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11413 "EHLO mx1.redhat.com"
+	id S1752972Ab1G2U7S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 16:59:18 -0400
+Received: from lucidpixels.com ([72.73.18.11]:41801 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752372Ab1G2Uzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 16:55:49 -0400
-Date: Fri, 29 Jul 2011 16:55:38 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: ZAK Magnus <zakmagnus@google.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH v3 2/2] Make hard lockup detection use timestamps
-Message-ID: <20110729205538.GD14343@redhat.com>
-References: <1311271873-10879-1-git-send-email-zakmagnus@google.com>
- <20110722195340.GF3765@redhat.com>
- <CAAuSN93tiSehpNXxjOgrq7oV-U+1ZPi2eqr+2dNSBG0yu0jxmA@mail.gmail.com>
- <20110725124451.GA2866@redhat.com>
- <CAAuSN93Qjk4eEAvm_Xn=O-0t+qhAyKmxy6HyPuyzJ35tX2u_CQ@mail.gmail.com>
+	id S1752372Ab1G2U7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 16:59:17 -0400
+Date: Fri, 29 Jul 2011 16:59:15 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Bryan Schumaker <bjschuma@netapp.com>
+cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
+In-Reply-To: <4E331D86.7060801@netapp.com>
+Message-ID: <alpine.DEB.2.02.1107291656340.25432@p34.internal.lan>
+References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>   <20110727160752.GC974@fieldses.org>   <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>   <20110727181111.GA23009@infradead.org>   <alpine.DEB.2.02.1107271530340.1451@p34.internal.lan>
+   <20110727193937.GA5354@infradead.org>   <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>   <20110727194722.GA9345@infradead.org>   <1311799021.25645.41.camel@lade.trondhjem.org>   <1311800051.25645.43.camel@lade.trondhjem.org> 
+ <1311800195.25645.45.camel@lade.trondhjem.org>  <alpine.DEB.2.02.1107271723500.25432@p34.internal.lan>  <alpine.DEB.2.02.1107271844100.25432@p34.internal.lan> <1311886137.27285.2.camel@lade.trondhjem.org> <4E331D86.7060801@netapp.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAuSN93Qjk4eEAvm_Xn=O-0t+qhAyKmxy6HyPuyzJ35tX2u_CQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 05:16:00PM -0700, ZAK Magnus wrote:
-> No news?
-> 
-> I've been testing and looking into issues and I realized dump_stack()
-> calls touch_nmi_watchdog(). That wrecks what the patch is trying to do
-> so I'm changing it to save the trace and print it later after the
-> stall has completed. This would also resolve some other things you
-> were saying weren't so good. Hopefully the logic is similar enough
-> that some things you may have learned still apply.
 
-So yeah, the acting of printing was resesting the softlockup counter and
-delaying it forever.  In parallel, rcu has its own stall detector that was
-going off after a minute or two.
+On Fri, 29 Jul 2011, Bryan Schumaker wrote:
 
-Once I routed the printk to trace_printk and disabled dump_stack,
-everything started working as expected.
+> How does this look for printing out more information when a cookie loop is detected?  Is there anything else that should be printed out?  My patch applies on top of Trond's from yesterday.
 
-Now the question is how to avoid shooting ourselves in the foot by
-printk'ing a message without resetting the hard/soft lock watchdogs.
 
-I'll have to think about how to do that.  If you can come up with any
-ideas let me know.
+Hi,
 
-We almost need a quiet dump_stack that dumps to a buffer instead of the
-console.  But I am not sure that is worth the effort.
+This fails against 2.6.38:
 
-Hmm.
+patching file fs/nfs/dir.c
+Hunk #1 FAILED at 134.
+Hunk #2 FAILED at 173.
+Hunk #3 FAILED at 323.
+Hunk #4 FAILED at 336.
+Hunk #5 FAILED at 349.
+Hunk #6 succeeded at 320 (offset -48 lines).
+Hunk #7 FAILED at 741.
+Hunk #8 succeeded at 716 (offset -59 lines).
+Hunk #9 succeeded at 749 (offset -59 lines).
+Hunk #10 succeeded at 763 (offset -59 lines).
+6 out of 10 hunks FAILED -- saving rejects to file fs/nfs/dir.c.rej
+patching file include/linux/nfs_fs.h
+Hunk #1 FAILED at 99.
+1 out of 1 hunk FAILED -- saving rejects to file include/linux/nfs_fs.h.rej
+atom:/usr/src/linux#
 
-Cheers,
-Don
+And the 3.0 kernel is broken for my wireless adapter:
+http://www.gossamer-threads.com/lists/linux/kernel/1411576
+
+If you can make a combined patch for 2.6.38 I can try it, 2.6.39+ have a
+horrible driver (rt2800usb) and 1 person emailed me as well stating the
+same thing off-list (they stick with the manufacturer's driver or the *sta
+one).
+
+Justin.
