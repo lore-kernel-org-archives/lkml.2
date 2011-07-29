@@ -1,212 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab1G2HHI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 03:07:08 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53047 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754238Ab1G2HHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 03:07:07 -0400
-Date: Fri, 29 Jul 2011 17:06:59 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the moduleh tree
-Message-Id: <20110729170659.91ad989caa407854c5e269a2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__29_Jul_2011_17_06_59_+1000_F1LlwRw.ET8pA3h="
+	id S1754909Ab1G2HIK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 03:08:10 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43390 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067Ab1G2HII (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 03:08:08 -0400
+Date: Fri, 29 Jul 2011 11:07:59 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: kernel-hardening@lists.openwall.com
+Cc: Solar Designer <solar@openwall.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
+        Sebastian Krahmer <krahmer@suse.de>
+Subject: Re: [kernel-hardening] Re: [patch v2] move RLIMIT_NPROC check from
+ set_user() to do_execve_common()
+Message-ID: <20110729070759.GA21583@albatros>
+References: <20110721124830.GA1325@openwall.com>
+ <CA+55aFy4ybatb0McQr2f4A56ympZVLqK2sbp2=73idu58_4RxQ@mail.gmail.com>
+ <20110721193939.GA3914@openwall.com>
+ <20110725171423.GA3739@albatros>
+ <20110725234013.GB24110@openwall.com>
+ <20110726104713.37273143@notabene.brown>
+ <20110726011629.GA24610@openwall.com>
+ <20110726141118.32f948e0@notabene.brown>
+ <20110726144848.GA7133@albatros>
+ <20110727121549.67a84d18@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110727121549.67a84d18@notabene.brown>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__29_Jul_2011_17_06_59_+1000_F1LlwRw.ET8pA3h=
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jul 27, 2011 at 12:15 +1000, NeilBrown wrote:
+> On Tue, 26 Jul 2011 18:48:48 +0400 Vasiliy Kulikov <segoon@openwall.com>
+> wrote:
+> > On Tue, Jul 26, 2011 at 14:11 +1000, NeilBrown wrote:
+> > > I don't really see that failing mmap is any more hackish than failing execve.
+> > > 
+> > > Both are certainly hacks.  It is setuid that should fail, but that is
+> > > problematic.
+> > > 
+> > > We seem to agree that it is acceptable to delay the failure until the process
+> > > actually tries to run some code for the user.  I just think that
+> > > mapping-a-file-for-exec is a more direct measure of "trying to run some code
+> > > for the user" than "execve" is.
+> > > 
+> > > So they are both hacks, but one it more thorough than the other.  In the
+> > > world of security I would hope that "thorough" would win.
+> > 
+> > Well, I don't mind against something more generic than the check in
+> > execve(), however, the usefulness of the check in mmap() is unclear to
+> > me.  You want to make more programs fail after setuid(), but does mmap
+> > stops really many programs?  Do you know any program doing mmap/dlopen
+> > after setuid() call?  What if the program will not do any mmap/dlopen
+> > and e.g. start to handle network connections or do some computations?
+> > I suppose the latter case is much more often than mmap/dlopen.
+> 
+> I think I didn't make myself clear.
+> I don't mean we should intercept the mmap system call.
+> 
+> I mean we could intercept the internal kernel function do_mmap_pgoff.
+> 
+> This is used by the mmap system call but also (and more importantly) by the
+> execve system call and the uselib system call.
 
-Hi Paul,
+Here I have 2 doubts:
 
-After merging the moduleh tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+1) uselib() after setuid() is a rare pattern.  If it doesn't catch
+relatively many programs, then it is only an additional complexity -
+addition the check deeply into mm rather than into obvious do_execve().
 
-drivers/mmc/host/sdhci-of-esdhc.c:110:1: warning: data definition has no ty=
-pe or storage class
-drivers/mmc/host/sdhci-of-esdhc.c:110:1: warning: type defaults to 'int' in=
- declaration of 'MODULE_DEVICE_TABLE'
-drivers/mmc/host/sdhci-of-esdhc.c:110:1: warning: parameter names (without =
-types) in function declaration
-drivers/mmc/host/sdhci-of-esdhc.c:115:12: error: 'THIS_MODULE' undeclared h=
-ere (not in a function)
-drivers/mmc/host/sdhci-of-esdhc.c:138:20: error: expected declaration speci=
-fiers or '...' before string constant
-drivers/mmc/host/sdhci-of-esdhc.c:138:1: warning: data definition has no ty=
-pe or storage class
-drivers/mmc/host/sdhci-of-esdhc.c:138:1: warning: type defaults to 'int' in=
- declaration of 'MODULE_DESCRIPTION'
-drivers/mmc/host/sdhci-of-esdhc.c:138:20: warning: function declaration isn=
-'t a prototype
-drivers/mmc/host/sdhci-of-esdhc.c:139:15: error: expected declaration speci=
-fiers or '...' before string constant
-drivers/mmc/host/sdhci-of-esdhc.c:139:1: warning: data definition has no ty=
-pe or storage class
-drivers/mmc/host/sdhci-of-esdhc.c:139:1: warning: type defaults to 'int' in=
- declaration of 'MODULE_AUTHOR'
-drivers/mmc/host/sdhci-of-esdhc.c:139:15: warning: function declaration isn=
-'t a prototype
-drivers/mmc/host/sdhci-of-esdhc.c:141:16: error: expected declaration speci=
-fiers or '...' before string constant
-drivers/mmc/host/sdhci-of-esdhc.c:141:1: warning: data definition has no ty=
-pe or storage class
-drivers/mmc/host/sdhci-of-esdhc.c:141:1: warning: type defaults to 'int' in=
- declaration of 'MODULE_LICENSE'
-drivers/mmc/host/sdhci-of-esdhc.c:141:16: warning: function declaration isn=
-'t a prototype
-drivers/mmc/host/sdhci-of-hlwd.c:82:1: warning: data definition has no type=
- or storage class
-drivers/mmc/host/sdhci-of-hlwd.c:82:1: warning: type defaults to 'int' in d=
-eclaration of 'MODULE_DEVICE_TABLE'
-drivers/mmc/host/sdhci-of-hlwd.c:82:1: warning: parameter names (without ty=
-pes) in function declaration
-drivers/mmc/host/sdhci-of-hlwd.c:87:12: error: 'THIS_MODULE' undeclared her=
-e (not in a function)
-drivers/mmc/host/sdhci-of-hlwd.c:110:20: error: expected declaration specif=
-iers or '...' before string constant
-drivers/mmc/host/sdhci-of-hlwd.c:110:1: warning: data definition has no typ=
-e or storage class
-drivers/mmc/host/sdhci-of-hlwd.c:110:1: warning: type defaults to 'int' in =
-declaration of 'MODULE_DESCRIPTION'
-drivers/mmc/host/sdhci-of-hlwd.c:110:20: warning: function declaration isn'=
-t a prototype
-drivers/mmc/host/sdhci-of-hlwd.c:111:15: error: expected declaration specif=
-iers or '...' before string constant
-drivers/mmc/host/sdhci-of-hlwd.c:111:1: warning: data definition has no typ=
-e or storage class
-drivers/mmc/host/sdhci-of-hlwd.c:111:1: warning: type defaults to 'int' in =
-declaration of 'MODULE_AUTHOR'
-drivers/mmc/host/sdhci-of-hlwd.c:111:15: warning: function declaration isn'=
-t a prototype
-drivers/mmc/host/sdhci-of-hlwd.c:112:16: error: expected declaration specif=
-iers or '...' before string constant
-drivers/mmc/host/sdhci-of-hlwd.c:112:1: warning: data definition has no typ=
-e or storage class
-drivers/mmc/host/sdhci-of-hlwd.c:112:1: warning: type defaults to 'int' in =
-declaration of 'MODULE_LICENSE'
-drivers/mmc/host/sdhci-of-hlwd.c:112:16: warning: function declaration isn'=
-t a prototype
-drivers/power/max8997_charger.c:185:12: error: 'THIS_MODULE' undeclared her=
-e (not in a function)
-drivers/power/max8997_charger.c:204:20: error: expected declaration specifi=
-ers or '...' before string constant
-drivers/power/max8997_charger.c:204:1: warning: data definition has no type=
- or storage class
-drivers/power/max8997_charger.c:204:1: warning: type defaults to 'int' in d=
-eclaration of 'MODULE_DESCRIPTION'
-drivers/power/max8997_charger.c:204:20: warning: function declaration isn't=
- a prototype
-drivers/power/max8997_charger.c:205:15: error: expected declaration specifi=
-ers or '...' before string constant
-drivers/power/max8997_charger.c:205:1: warning: data definition has no type=
- or storage class
-drivers/power/max8997_charger.c:205:1: warning: type defaults to 'int' in d=
-eclaration of 'MODULE_AUTHOR'
-drivers/power/max8997_charger.c:205:15: warning: function declaration isn't=
- a prototype
-drivers/power/max8997_charger.c:206:16: error: expected declaration specifi=
-ers or '...' before string constant
-drivers/power/max8997_charger.c:206:1: warning: data definition has no type=
- or storage class
-drivers/power/max8997_charger.c:206:1: warning: type defaults to 'int' in d=
-eclaration of 'MODULE_LICENSE'
-drivers/power/max8997_charger.c:206:16: warning: function declaration isn't=
- a prototype
-drivers/power/max8998_charger.c:196:12: error: 'THIS_MODULE' undeclared her=
-e (not in a function)
-drivers/power/max8998_charger.c:215:20: error: expected declaration specifi=
-ers or '...' before string constant
-drivers/power/max8998_charger.c:215:1: warning: data definition has no type=
- or storage class
-drivers/power/max8998_charger.c:215:1: warning: type defaults to 'int' in d=
-eclaration of 'MODULE_DESCRIPTION'
-drivers/power/max8998_charger.c:215:20: warning: function declaration isn't=
- a prototype
-drivers/power/max8998_charger.c:216:15: error: expected declaration specifi=
-ers or '...' before string constant
-drivers/power/max8998_charger.c:216:1: warning: data definition has no type=
- or storage class
-drivers/power/max8998_charger.c:216:1: warning: type defaults to 'int' in d=
-eclaration of 'MODULE_AUTHOR'
-drivers/power/max8998_charger.c:216:15: warning: function declaration isn't=
- a prototype
-drivers/power/max8998_charger.c:217:16: error: expected declaration specifi=
-ers or '...' before string constant
-drivers/power/max8998_charger.c:217:1: warning: data definition has no type=
- or storage class
-drivers/power/max8998_charger.c:217:1: warning: type defaults to 'int' in d=
-eclaration of 'MODULE_LICENSE'
-drivers/power/max8998_charger.c:217:16: warning: function declaration isn't=
- a prototype
-drivers/power/max8998_charger.c:218:14: error: expected declaration specifi=
-ers or '...' before string constant
-drivers/power/max8998_charger.c:218:1: warning: data definition has no type=
- or storage class
-drivers/power/max8998_charger.c:218:1: warning: type defaults to 'int' in d=
-eclaration of 'MODULE_ALIAS'
-drivers/power/max8998_charger.c:218:14: warning: function declaration isn't=
- a prototype
-drivers/regulator/aat2870-regulator.c:145:2: error: 'THIS_MODULE' undeclare=
-d here (not in a function)
-drivers/regulator/aat2870-regulator.c:212:3: error: initializer element is =
-not constant
-drivers/regulator/aat2870-regulator.c:212:3: error: (near initialization fo=
-r 'aat2870_regulator_driver.driver.owner')
-drivers/regulator/aat2870-regulator.c:230:20: error: expected declaration s=
-pecifiers or '...' before string constant
-drivers/regulator/aat2870-regulator.c:230:1: warning: data definition has n=
-o type or storage class
-drivers/regulator/aat2870-regulator.c:230:1: warning: type defaults to 'int=
-' in declaration of 'MODULE_DESCRIPTION'
-drivers/regulator/aat2870-regulator.c:230:20: warning: function declaration=
- isn't a prototype
-drivers/regulator/aat2870-regulator.c:231:16: error: expected declaration s=
-pecifiers or '...' before string constant
-drivers/regulator/aat2870-regulator.c:231:1: warning: data definition has n=
-o type or storage class
-drivers/regulator/aat2870-regulator.c:231:1: warning: type defaults to 'int=
-' in declaration of 'MODULE_LICENSE'
-drivers/regulator/aat2870-regulator.c:231:16: warning: function declaration=
- isn't a prototype
-drivers/regulator/aat2870-regulator.c:232:15: error: expected declaration s=
-pecifiers or '...' before string constant
-drivers/regulator/aat2870-regulator.c:232:1: warning: data definition has n=
-o type or storage class
-drivers/regulator/aat2870-regulator.c:232:1: warning: type defaults to 'int=
-' in declaration of 'MODULE_AUTHOR'
-drivers/regulator/aat2870-regulator.c:232:15: warning: function declaration=
- isn't a prototype
+2) As it touches mmap(), I'm afraid it could affect mmap-based heap
+allocations as well.  The problem is that it might be somewhat not
+predictable and not repeating event - one time the process did mmap() to
+increase the heap, one time it did not because of minor allocation
+differences.  The former process would be terminated just after mmap()
+failed, the latter would not.  I don't think such uncertainty is good
+(even if it is rare).
 
-I have just left these in fixed for now.  Please let me know if some of
-them can't be fixed in your tree and I will spin fixes for them in
-linux-next.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Fri__29_Jul_2011_17_06_59_+1000_F1LlwRw.ET8pA3h=
-Content-Type: application/pgp-signature
+So, I'm hesitating to call the check in do_mmap_pgoff() "simply more
+generic".
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJOMlwTAAoJEDMEi1NhKgbsiD0H/0ziiMZvLCtJelokGioJ9hxb
-wIoHhz6j+DdsGPfsSHkbhYlyGOMWiIYoO5Wp4+san7a2vS5PhQz/ATo6sjyhJ+gS
-jS7mcT5L99jAY3+PehGeLJz1S7E5TI8hqRpPPlm41e+lOj1oPc9j6vXeWwrntIxm
-otQiuymCMXsbPgIHpCxx+BLQPaIe4qbPM1gx6yyO/RAaYadvx3CcBhm+pcdS8bF6
-2vL1OKy+AVurjwHAgyVnD0TKpMijduyMBJNSjkaHYz4RwAqc9sKjfo893gRUlogx
-te35kqvDNDacbfvk6iHoQiYl+rfy8Ms8/ygpaM9aoMPZy4zTtkSIxcWLetXhnMU=
-=ebyw
------END PGP SIGNATURE-----
+Thanks,
 
---Signature=_Fri__29_Jul_2011_17_06_59_+1000_F1LlwRw.ET8pA3h=--
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
