@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557Ab1G2Ojw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 10:39:52 -0400
-Received: from stinky.trash.net ([213.144.137.162]:56561 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab1G2Oju (ORCPT
+	id S1751595Ab1G2Omb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 10:42:31 -0400
+Received: from fsing.rootsland.net ([62.141.37.30]:40475 "EHLO
+	fsing.rootsland.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297Ab1G2Oma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 10:39:50 -0400
-Message-ID: <4E32C633.5000205@trash.net>
-Date: Fri, 29 Jul 2011 16:39:47 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
+	Fri, 29 Jul 2011 10:42:30 -0400
+X-DKIM: OpenDKIM Filter v2.1.3 fsing.rootsland.net 3072512FC81AC
+Date: Fri, 29 Jul 2011 16:42:26 +0200
+From: Stephan Seitz <stse+lkml@fsing.rootsland.net>
+To: David Miller <davem@davemloft.net>
+Cc: stse+lkml@fsing.rootsland.net, maciej.rutecki@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: IP forwarding regression since 3.0-rc6
+Message-ID: <20110729T164027.GA.2e63c.stse@fsing.rootsland.net>
+Mail-Followup-To: Stephan Seitz <stse+lkml@fsing.rootsland.net>,
+	David Miller <davem@davemloft.net>, maciej.rutecki@gmail.com,
+	linux-kernel@vger.kernel.org
+References: <20110725T141145.GA.2ae38.stse@fsing.rootsland.net>
+ <201107281546.33227.maciej.rutecki@gmail.com>
+ <20110729T091342.GA.06bf4.stse@fsing.rootsland.net>
+ <20110729.003620.1377780539620085743.davem@davemloft.net>
 MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        coreteam@netfilter.org, netfilter@vger.kernel.org,
-        netfilter-devel@vger.kernel.org,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        James Morris <jmorris@namei.org>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH][RFC] netfilter: Fix small leak in ipq_build_packet_message()
-References: <alpine.LNX.2.00.1107171942400.32359@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1107171942400.32359@swampdragon.chaosbits.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JP+T4n/bALQSJXh8"
+Content-Disposition: inline
+In-Reply-To: <20110729.003620.1377780539620085743.davem@davemloft.net>
+Organization: Minas Tirith, Gondor
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.07.2011 19:46, Jesper Juhl wrote:
-> ipq_build_packet_message() in net/ipv4/netfilter/ip_queue.c and
-> net/ipv6/netfilter/ip6_queue.c contain a small potential mem leak as
-> far as I can tell.
-> 
-> We allocate memory for 'skb' with alloc_skb() annd then call
->  nlh = NLMSG_PUT(skb, 0, 0, IPQM_PACKET, size - sizeof(*nlh));
-> 
-> NLMSG_PUT is a macro
->  NLMSG_PUT(skb, pid, seq, type, len) \
->   		NLMSG_NEW(skb, pid, seq, type, len, 0)
-> 
-> that expands to NLMSG_NEW, which is also a macro which expands to:
->  NLMSG_NEW(skb, pid, seq, type, len, flags) \
->   	({	if (unlikely(skb_tailroom(skb) < (int)NLMSG_SPACE(len))) \
->   			goto nlmsg_failure; \
->   		__nlmsg_put(skb, pid, seq, type, len, flags); })
-> 
-> If we take the true branch of the 'if' statement and 'goto
-> nlmsg_failure', then we'll, at that point, return from
-> ipq_build_packet_message() without having assigned 'skb' to anything
-> and we'll leak the memory we allocated for it when it goes out of
-> scope.
-> 
-> Fix this by placing a 'kfree(skb)' at 'nlmsg_failure'.
-> 
-> I admit that I do not know how likely this to actually happen or even
-> if there's something that guarantees that it will never happen - I'm
-> not that familiar with this code, but if that is so, I've not been
-> able to spot it.
-> 
-> Please review and commit if you believe this is correct. Thanks.
-> 
 
-Looks correct, applied, thanks.
+--JP+T4n/bALQSJXh8
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Fri, Jul 29, 2011 at 12:36:20AM -0700, David Miller wrote:
+>I really think this bug will get a lot more traction if you report
+>it to netdev@vger.kernel.org which is where the networking developers
+>are actually listening.
+
+Thanks for the hint. Luckily, Eric Dumazet reported the bug already to=20
+netdev.
+
+Shade and sweet water!
+
+	Stephan
+
+--=20
+| Stephan Seitz             E-Mail: stse@fsing.rootsland.net |
+| PGP Public Keys: http://fsing.rootsland.net/~stse/pgp.html |
+
+--JP+T4n/bALQSJXh8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk4yxtIACgkQXse+NwPOAZ71VgCgrKZRUChTQnUIwBXaGUSawn/9
+NJsAoKBhBq6BkUi77NLx9tMxkcfaWmZN
+=/hZ0
+-----END PGP SIGNATURE-----
+
+--JP+T4n/bALQSJXh8--
