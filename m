@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab1G2LQd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 07:16:33 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:54570 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932178Ab1G2LQa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 07:16:30 -0400
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <linus.walleij@linaro.org>
-Cc: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux@arm.linux.org.uk>, <armando.visconti@st.com>,
-        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
-        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
-        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
-        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
-        <viresh.linux@gmail.com>
-Subject: [PATCH 14/18] dmaengine/amba-pl08x: Choose peripheral bus as master bus
-Date: Fri, 29 Jul 2011 16:19:24 +0530
-Message-ID: <c1cb9cd2abc64b4efdc3648896324a1821fdba3e.1311936524.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <cover.1311936523.git.viresh.kumar@st.com>
-References: <cover.1311936523.git.viresh.kumar@st.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932136Ab1G2LTW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 07:19:22 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39342 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756304Ab1G2LTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 07:19:20 -0400
+Date: Fri, 29 Jul 2011 21:19:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: atomic_set_mask duplication
+Message-Id: <20110729211906.a98b2965d30694df7e12191f@canb.auug.org.au>
+In-Reply-To: <CAMjpGUejy+p2+86DT8-LDMzWYxKKBp=2SQTNZ=7KaFoPMRiJ4A@mail.gmail.com>
+References: <CAMjpGUejy+p2+86DT8-LDMzWYxKKBp=2SQTNZ=7KaFoPMRiJ4A@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__29_Jul_2011_21_19_06_+1000_ropb2XVGds6nu/gi"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we have DMA transfers between peripheral and memory, then we shouldn't
-reduce width of peripheral at all, as that may be a strict requirement. But we
-can always reduce width of memory access, with some compromise in performance.
-Thus, we must select peripheral as master and not memory.
+--Signature=_Fri__29_Jul_2011_21_19_06_+1000_ropb2XVGds6nu/gi
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Also this rearranges code to make it shorter.
+Hi Mike,
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
- drivers/dma/amba-pl08x.c |   22 ++++++----------------
- 1 files changed, 6 insertions(+), 16 deletions(-)
+On Fri, 29 Jul 2011 00:47:03 -0700 Mike Frysinger <vapier.adi@gmail.com> wr=
+ote:
+>
+> seems that my atomic_set_mask() patch for asm-generic/atomic.h has
+> made it into linux-next but duplicated ?  any idea what's going on ?
+>=20
+> commit 00b3c28bd753 is correct.  but then we also have 49472be55954
+> which should not exist ...
 
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index 44f317a..6b0ca26 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -492,34 +492,24 @@ struct pl08x_lli_build_data {
- /*
-  * Autoselect a master bus to use for the transfer
-  * - prefers the destination bus if both available
-- * - if fixed address on one bus the other will be chosen
-+ * - prefers bus with fixed address (i.e. peripheral)
-  */
- static void pl08x_choose_master_bus(struct pl08x_lli_build_data *bd,
- 	struct pl08x_bus_data **mbus, struct pl08x_bus_data **sbus, u32 cctl)
- {
- 	if (!(cctl & PL080_CONTROL_DST_INCR)) {
--		*mbus = &bd->srcbus;
--		*sbus = &bd->dstbus;
--	} else if (!(cctl & PL080_CONTROL_SRC_INCR)) {
- 		*mbus = &bd->dstbus;
- 		*sbus = &bd->srcbus;
-+	} else if (!(cctl & PL080_CONTROL_SRC_INCR)) {
-+		*mbus = &bd->srcbus;
-+		*sbus = &bd->dstbus;
- 	} else {
--		if (bd->dstbus.buswidth == 4) {
--			*mbus = &bd->dstbus;
--			*sbus = &bd->srcbus;
--		} else if (bd->srcbus.buswidth == 4) {
--			*mbus = &bd->srcbus;
--			*sbus = &bd->dstbus;
--		} else if (bd->dstbus.buswidth == 2) {
-+		if (bd->dstbus.buswidth >= bd->srcbus.buswidth) {
- 			*mbus = &bd->dstbus;
- 			*sbus = &bd->srcbus;
--		} else if (bd->srcbus.buswidth == 2) {
-+		} else {
- 			*mbus = &bd->srcbus;
- 			*sbus = &bd->dstbus;
--		} else {
--			/* bd->srcbus.buswidth == 1 */
--			*mbus = &bd->dstbus;
--			*sbus = &bd->srcbus;
- 		}
- 	}
- }
--- 
-1.7.2.2
+Right.  The first one is in Linus' tree and the second is the one from
+Andrew's tree and git was fine about reapplying it :-(
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__29_Jul_2011_21_19_06_+1000_ropb2XVGds6nu/gi
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOMpcqAAoJEDMEi1NhKgbs9a0IAKA6D93kgTlTI26adL8/xWZu
+wshReUy6a1fCo/mS8zSn/EMdXy8pjF08dE0RmTlvmeuUlS5Vaa+hqahzGX820pGp
+BbUFz6T9Gab4BDZqz+cdjtsKR/vmnIsKTnBoiOR0lC0BrPrVYdTbTbNc6/RyhMh0
+7dgF3ihgE3MBUYXfQvKTvENwqNGn/+VPDMpw7urZHhP4ar8GC2C/9yx5fX1X6GRJ
+wRngxXts9PNh5CDdPtiUp8SH+8lYRVJ3Yc9VGZ2CWjDZ5u1Ykh9cWnh4hTPCxMox
+b4b5BnQctr0ko9nAGXTF9tG0dn2tnV6b83z/5RfPnowlmfyVOI8DopeQW0Jmxew=
+=F5fC
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__29_Jul_2011_21_19_06_+1000_ropb2XVGds6nu/gi--
