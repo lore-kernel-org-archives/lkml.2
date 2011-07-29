@@ -1,215 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab1G2GfP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 02:35:15 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:52879 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753005Ab1G2GfN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 02:35:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo5hZGAzc17GApEfuzduvzh6haVLBKRvizcRxGLnh8ebuA@mail.gmail.com>
-References: <1311852512-7340-1-git-send-email-dengcheng.zhu@gmail.com>
-	<1311852512-7340-2-git-send-email-dengcheng.zhu@gmail.com>
-	<CAErSpo5hZGAzc17GApEfuzduvzh6haVLBKRvizcRxGLnh8ebuA@mail.gmail.com>
-Date: Fri, 29 Jul 2011 14:35:12 +0800
-Message-ID: <CAOfQC9-0d+W0GyLAtEMEFFAzPpsZxpzZ0UPAqLo2AokF3zdfAw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] PCI: make pci_claim_resource() work with conflict
- resources as appropriate
-From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: jbarnes@virtuousgeek.org, torvalds@linux-foundation.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, eyal@mips.com, zenon@mips.com,
-        Ralf Baechle <ralf@linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755170Ab1G2Gsb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 02:48:31 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:37578 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755046Ab1G2Gs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 02:48:29 -0400
+Date: Fri, 29 Jul 2011 16:48:25 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the moduleh tree
+Message-Id: <20110729164825.4bccf9a2924de6d4fedabd6b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well, here are dmesg and /proc/ioports *BEFORE* applying the patch:
+Hi Paul,
 
-...
-...
-pci 0000:00:0a.0: [8086:7110] type 0 class 0x000601
-pci 0000:00:0a.1: [8086:7111] type 0 class 0x000101
-pci 0000:00:0a.1: reg 20: [io  0x1240-0x124f]
-pci 0000:00:0a.2: [8086:7112] type 0 class 0x000c03
-pci 0000:00:0a.2: reg 20: [io  0x1220-0x123f]
-pci 0000:00:0a.3: [8086:7113] type 0 class 0x000680
-pci 0000:00:0a.3: address space collision: [io  0x1000-0x103f]
-conflicts with MSC PCI I/O [io  0x1000-0xffffff]
-pci 0000:00:0a.3: address space collision: [io  0x1100-0x110f]
-conflicts with MSC PCI I/O [io  0x1000-0xffffff]
-pci 0000:00:0b.0: [1022:2000] type 0 class 0x000200
-pci 0000:00:0b.0: reg 10: [io  0x1200-0x121f]
-pci 0000:00:0b.0: reg 14: [mem 0x10000000-0x1000001f]
-pci 0000:00:0b.0: reg 30: [mem 0x00000000-0x000fffff pref]
-pci 0000:00:0b.0: PME# supported from D0 D3hot D3cold
-pci 0000:00:0b.0: PME# disabled
-pci 0000:00:11.0: [153f:0001] type 0 class 0x000600
-pci 0000:00:11.0: reg 10: [mem 0x00000000-0x0fffffff]
-pci 0000:00:0a.3: BAR 13: [io  0x1000-0x103f] has bogus alignment
-pci 0000:00:0a.3: BAR 14: [io  0x1100-0x110f] has bogus alignment
-pci 0000:00:0b.0: BAR 6: assigned [mem 0x10000000-0x100fffff pref]
-pci 0000:00:0a.2: BAR 4: assigned [io  0x1000-0x101f]
-pci 0000:00:0a.2: BAR 4: set to [io  0x1000-0x101f] (PCI address
-[0x1000-0x101f])
-pci 0000:00:0b.0: BAR 0: assigned [io  0x1020-0x103f]
-pci 0000:00:0b.0: BAR 0: set to [io  0x1020-0x103f] (PCI address
-[0x1020-0x103f])
-pci 0000:00:0b.0: BAR 1: assigned [mem 0x10100000-0x1010001f]
-pci 0000:00:0b.0: BAR 1: set to [mem 0x10100000-0x1010001f] (PCI
-address [0x10100000-0x1010001f])
-pci 0000:00:0a.1: BAR 4: assigned [io  0x1040-0x104f]
-pci 0000:00:0a.1: BAR 4: set to [io  0x1040-0x104f] (PCI address
-[0x1040-0x104f])
-...
-...
-pcnet32: pcnet32.c:v1.35 21.Apr.2008 tsbogend@alpha.franken.de
-pcnet32: No access methods
-...
-...
+After merging the moduleh tree, today's linux-next build (powerpc
+ppx44x_defconfig) failed like this:
 
--sh-4.0# cat /proc/ioports
-00000000-0000001f : dma1
-00000020-00000021 : pic1
-00000040-0000005f : timer
-00000060-0000006f : keyboard
-00000070-00000077 : rtc_cmos
-00000080-0000008f : dma page reg
-000000a0-000000a1 : pic2
-000000c0-000000df : dma2
-00000170-00000177 : piix
-000001f0-000001f7 : piix
-000002f8-000002ff : serial
-00000376-00000376 : piix
-000003f6-000003f6 : piix
-000003f8-000003ff : serial
-00001000-00ffffff : MSC PCI I/O
-  00001000-0000101f : 0000:00:0a.2
-  00001020-0000103f : 0000:00:0b.0
-  00001040-0000104f : 0000:00:0a.1
-    00001040-0000104f : piix
+cc1: warnings being treated as errors
+arch/powerpc/mm/tlb_nohash.c:137:1: error: data definition has no type or storage class
+arch/powerpc/mm/tlb_nohash.c:137:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/mm/tlb_nohash.c:137:1: error: parameter names (without types) in function declaration
+arch/powerpc/mm/tlb_nohash.c:156:1: error: data definition has no type or storage class
+arch/powerpc/mm/tlb_nohash.c:156:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/mm/tlb_nohash.c:156:1: error: parameter names (without types) in function declaration
+arch/powerpc/mm/tlb_nohash.c:301:1: error: data definition has no type or storage class
+arch/powerpc/mm/tlb_nohash.c:301:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/mm/tlb_nohash.c:301:1: error: parameter names (without types) in function declaration
+arch/powerpc/mm/tlb_nohash.c:315:1: error: data definition has no type or storage class
+arch/powerpc/mm/tlb_nohash.c:315:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/mm/tlb_nohash.c:315:1: error: parameter names (without types) in function declaration
+cc1: warnings being treated as errors
+arch/powerpc/platforms/44x/sam440ep.c:59:1: error: data definition has no type or storage class
+arch/powerpc/platforms/44x/sam440ep.c:59:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/platforms/44x/sam440ep.c:59:1: error: parameter names (without types) in function declaration
+arch/powerpc/sysdev/ppc4xx_msi.c:265:15: error: 'THIS_MODULE' undeclared here (not in a function)
+cc1: warnings being treated as errors
+arch/powerpc/platforms/44x/ppc44x_simple.c:83:1: error: data definition has no type or storage class
+arch/powerpc/platforms/44x/ppc44x_simple.c:83:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/platforms/44x/ppc44x_simple.c:83:1: error: parameter names (without types) in function declaration
+arch/powerpc/mm/dma-noncoherent.c:250:1: error: data definition has no type or storage class
+arch/powerpc/mm/dma-noncoherent.c:250:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/mm/dma-noncoherent.c:250:1: error: parameter names (without types) in function declaration
+arch/powerpc/mm/dma-noncoherent.c:312:1: error: data definition has no type or storage class
+arch/powerpc/mm/dma-noncoherent.c:312:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/mm/dma-noncoherent.c:312:1: error: parameter names (without types) in function declaration
+arch/powerpc/mm/dma-noncoherent.c:343:1: error: data definition has no type or storage class
+arch/powerpc/mm/dma-noncoherent.c:343:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/mm/dma-noncoherent.c:343:1: error: parameter names (without types) in function declaration
+arch/powerpc/mm/dma-noncoherent.c:401:1: error: data definition has no type or storage class
+arch/powerpc/mm/dma-noncoherent.c:401:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/mm/dma-noncoherent.c:401:1: error: parameter names (without types) in function declaration
+cc1: warnings being treated as errors
+arch/powerpc/platforms/44x/warp.c:57:1: error: data definition has no type or storage class
+arch/powerpc/platforms/44x/warp.c:57:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/platforms/44x/warp.c:57:1: error: parameter names (without types) in function declaration
+arch/powerpc/platforms/44x/warp.c:318:1: error: data definition has no type or storage classcc1: warnings being treated as errors
+arch/powerpc/platforms/44x/virtex.c:54:1: error: data definition has no type or storage class
+arch/powerpc/platforms/44x/virtex.c:54:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/platforms/44x/virtex.c:54:1: error: parameter names (without types) in function declaration
+cc1: warnings being treated as errors
+arch/powerpc/platforms/44x/ebony.c:62:1: error: data definition has no type or storage class
+arch/powerpc/platforms/44x/ebony.c:62:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/platforms/44x/ebony.c:62:1: error: parameter names (without types) in function declaration
+arch/powerpc/platforms/44x/warp.c:318:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/platforms/44x/warp.c:318:1: error: parameter names (without types) in function declaration
+arch/powerpc/platforms/44x/warp.c:319:1: error: data definition has no type or storage class
+arch/powerpc/platforms/44x/warp.c:319:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/platforms/44x/warp.c:319:1: error: parameter names (without types) in function declaration
+cc1: warnings being treated as errors
+arch/powerpc/platforms/44x/canyonlands.c:126:1: error: data definition has no type or storage class
+arch/powerpc/platforms/44x/canyonlands.c:126:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
+arch/powerpc/platforms/44x/canyonlands.c:126:1: error: parameter names (without types) in function declaration
+arch/powerpc/kvm/44x.c: In function 'kvmppc_44x_init':
+arch/powerpc/kvm/44x.c:168:59: error: 'THIS_MODULE' undeclared (first use in this function)
+arch/powerpc/kvm/44x.c:169:1: error: control reaches end of non-void function
 
-And *AFTER* applying the patch:
+I have added this patch for today:
 
-...
-...
-pci 0000:00:0a.0: [8086:7110] type 0 class 0x000601
-pci 0000:00:0a.1: [8086:7111] type 0 class 0x000101
-pci 0000:00:0a.1: reg 20: [io  0x1240-0x124f]
-pci 0000:00:0a.2: [8086:7112] type 0 class 0x000c03
-pci 0000:00:0a.2: reg 20: [io  0x1220-0x123f]
-pci 0000:00:0a.3: [8086:7113] type 0 class 0x000680
-pci 0000:00:0a.3: quirk: [io  0x1000-0x103f] claimed by PIIX4 ACPI
-pci 0000:00:0a.3: quirk: [io  0x1100-0x110f] claimed by PIIX4 SMB
-pci 0000:00:0b.0: [1022:2000] type 0 class 0x000200
-pci 0000:00:0b.0: reg 10: [io  0x1200-0x121f]
-pci 0000:00:0b.0: reg 14: [mem 0x10000000-0x1000001f]
-pci 0000:00:0b.0: reg 30: [mem 0x00000000-0x000fffff pref]
-pci 0000:00:0b.0: PME# supported from D0 D3hot D3cold
-pci 0000:00:0b.0: PME# disabled
-pci 0000:00:11.0: [153f:0001] type 0 class 0x000600
-pci 0000:00:11.0: reg 10: [mem 0x00000000-0x0fffffff]
-pci 0000:00:0b.0: BAR 6: assigned [mem 0x10000000-0x100fffff pref]
-pci 0000:00:0a.2: BAR 4: assigned [io  0x1040-0x105f]
-pci 0000:00:0a.2: BAR 4: set to [io  0x1040-0x105f] (PCI address
-[0x1040-0x105f])
-pci 0000:00:0b.0: BAR 0: assigned [io  0x1060-0x107f]
-pci 0000:00:0b.0: BAR 0: set to [io  0x1060-0x107f] (PCI address
-[0x1060-0x107f])
-pci 0000:00:0b.0: BAR 1: assigned [mem 0x10100000-0x1010001f]
-pci 0000:00:0b.0: BAR 1: set to [mem 0x10100000-0x1010001f] (PCI
-address [0x10100000-0x1010001f])
-pci 0000:00:0a.1: BAR 4: assigned [io  0x1080-0x108f]
-pci 0000:00:0a.1: BAR 4: set to [io  0x1080-0x108f] (PCI address
-[0x1080-0x108f])
-...
-...
-pcnet32: pcnet32.c:v1.35 21.Apr.2008 tsbogend@alpha.franken.de
-pcnet32: PCnet/FAST III 79C973 at 0x1060, 00:d0:a0:00:06:72 assigned IRQ 10
-pcnet32: Found PHY 0000:6b60 at address 30
-pcnet32: eth0: registered as PCnet/FAST III 79C973
-pcnet32: 1 cards_found
-...
-...
+>From a2af733fcb26084a9a79e16d127e84900c9094e4 Mon Sep 17 00:00:00 2001
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 29 Jul 2011 16:42:37 +1000
+Subject: [PATCH] powerpc/44x: include export.h for EXPORT_SYMBOL
 
--sh-4.0# cat /proc/ioports
-00000000-0000001f : dma1
-00000020-00000021 : pic1
-00000040-0000005f : timer
-00000060-0000006f : keyboard
-00000070-00000077 : rtc_cmos
-00000080-0000008f : dma page reg
-000000a0-000000a1 : pic2
-000000c0-000000df : dma2
-00000170-00000177 : piix
-000001f0-000001f7 : piix
-000002f8-000002ff : serial
-00000376-00000376 : piix
-000003f6-000003f6 : piix
-000003f8-000003ff : serial
-00001000-00ffffff : MSC PCI I/O
-  00001000-0000103f : 0000:00:0a.3
-  00001040-0000105f : 0000:00:0a.2
-  00001060-0000107f : 0000:00:0b.0
-    00001060-0000107f : pcnet32_probe_pci
-  00001080-0000108f : 0000:00:0a.1
-    00001080-0000108f : piix
-  00001100-0000110f : 0000:00:0a.3
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ arch/powerpc/include/asm/machdep.h |    1 +
+ arch/powerpc/kvm/44x.c             |    1 +
+ arch/powerpc/mm/dma-noncoherent.c  |    1 +
+ arch/powerpc/mm/tlb_nohash.c       |    1 +
+ arch/powerpc/platforms/44x/warp.c  |    1 +
+ arch/powerpc/sysdev/ppc4xx_msi.c   |    1 +
+ 6 files changed, 6 insertions(+), 0 deletions(-)
 
-> Did something change the order in which we claim resources, so things that
-> used to work now cause conflicts?
+diff --git a/arch/powerpc/include/asm/machdep.h b/arch/powerpc/include/asm/machdep.h
+index 47cacdd..7fa31ce 100644
+--- a/arch/powerpc/include/asm/machdep.h
++++ b/arch/powerpc/include/asm/machdep.h
+@@ -12,6 +12,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/init.h>
+ #include <linux/dma-mapping.h>
++#include <linux/export.h>
+ 
+ #include <asm/setup.h>
+ 
+diff --git a/arch/powerpc/kvm/44x.c b/arch/powerpc/kvm/44x.c
+index da3a122..94fc29c 100644
+--- a/arch/powerpc/kvm/44x.c
++++ b/arch/powerpc/kvm/44x.c
+@@ -20,6 +20,7 @@
+ #include <linux/kvm_host.h>
+ #include <linux/slab.h>
+ #include <linux/err.h>
++#include <linux/export.h>
+ 
+ #include <asm/reg.h>
+ #include <asm/cputable.h>
+diff --git a/arch/powerpc/mm/dma-noncoherent.c b/arch/powerpc/mm/dma-noncoherent.c
+index b42f76c..329be36 100644
+--- a/arch/powerpc/mm/dma-noncoherent.c
++++ b/arch/powerpc/mm/dma-noncoherent.c
+@@ -30,6 +30,7 @@
+ #include <linux/types.h>
+ #include <linux/highmem.h>
+ #include <linux/dma-mapping.h>
++#include <linux/export.h>
+ 
+ #include <asm/tlbflush.h>
+ 
+diff --git a/arch/powerpc/mm/tlb_nohash.c b/arch/powerpc/mm/tlb_nohash.c
+index d32ec64..ea9309e 100644
+--- a/arch/powerpc/mm/tlb_nohash.c
++++ b/arch/powerpc/mm/tlb_nohash.c
+@@ -36,6 +36,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/memblock.h>
+ #include <linux/of_fdt.h>
++#include <linux/export.h>
+ 
+ #include <asm/tlbflush.h>
+ #include <asm/tlb.h>
+diff --git a/arch/powerpc/platforms/44x/warp.c b/arch/powerpc/platforms/44x/warp.c
+index 8f77139..4cfa499 100644
+--- a/arch/powerpc/platforms/44x/warp.c
++++ b/arch/powerpc/platforms/44x/warp.c
+@@ -18,6 +18,7 @@
+ #include <linux/of_gpio.h>
+ #include <linux/of_i2c.h>
+ #include <linux/slab.h>
++#include <linux/export.h>
+ 
+ #include <asm/machdep.h>
+ #include <asm/prom.h>
+diff --git a/arch/powerpc/sysdev/ppc4xx_msi.c b/arch/powerpc/sysdev/ppc4xx_msi.c
+index 367af02..1c2d7af 100644
+--- a/arch/powerpc/sysdev/ppc4xx_msi.c
++++ b/arch/powerpc/sysdev/ppc4xx_msi.c
+@@ -27,6 +27,7 @@
+ #include <linux/msi.h>
+ #include <linux/of_platform.h>
+ #include <linux/interrupt.h>
++#include <linux/export.h>
+ #include <asm/prom.h>
+ #include <asm/hw_irq.h>
+ #include <asm/ppc-pci.h>
+-- 
+1.7.5.4
 
-It used to work (as I see on 2.6.29) because the function insert_resource() was
-used. The /proc/ioports of 2.6.29 has exactly the same contents as that of the
-patched kernel.
-
-> I think insert_resource() (where the newly-inserted resource can become the
-> parent of something that was previously inserted) is sort of a hack...
-
-Yes, agree, though in this case the newly-inserted resource actually becomes the
-child of a previously inserted one, the MIPS System Controller's PCI I/O. So,
-talking about sticking to using request_resource_conflict() as apposed to
-insert_resource_conflict(), the problem is, like what I mentioned in my reply to
-Ralf, why pci_find_parent_resource() does not return MSC PCI I/O but return the
-root. If MSC PCI I/O is supposed to be the parent of PCI quirks, then something
-is wrong somewhere else. Or else, the start point of MSC PCI I/O might be
-raised to avoid the collisions.
-
-
-Deng-Cheng
-
-2011/7/28 Bjorn Helgaas <bhelgaas@google.com>:
-> On Thu, Jul 28, 2011 at 5:28 AM, Deng-Cheng Zhu <dengcheng.zhu@gmail.com> wrote:
->> In resolving a network driver issue with the MIPS Malta platform, the root
->> cause was traced into pci_claim_resource():
->>
->> MIPS System Controller's PCI I/O resources stay in 0x1000-0xffffff. When
->> PCI quirks start claiming resources using request_resource_conflict(),
->> collisions happen and -EBUSY is returned, thereby rendering the onboard AMD
->> PCnet32 NIC unaware of quirks' region and preventing the NIC from functioning.
->> For PCI quirks, PIIX4 ACPI is expected to claim 0x1000-0x103f, and PIIX4 SMB to
->> claim 0x1100-0x110f, both of which fall into the MSC I/O range. Certainly, we
->> can increase the start point of this range in arch/mips/mti-malta/malta-pci.c to
->> avoid the collisions. But a fix in here looks more justified, though it seems to
->> have a wider impact. Using insert_xxx as opposed to request_xxx will register
->> PCI quirks' resources as children of MSC I/O and return OK, instead of seeing
->> collisions which are actually resolvable.
->
-> What's the collision?  Can we see the dmesg log (which should have
-> that information) and maybe the /proc/ioports contents?  Did something
-> change the order in which we claim resources, so things that used to
-> work now cause conflicts?
->
-> I think insert_resource() (where the newly-inserted resource can
-> become the parent of something that was previously inserted) is sort
-> of a hack, and the fact that we need it is telling us that we're doing
-> things in the wrong order.  It's nicer when we can discover and claim
-> resources in a top-down hierarchical way.  But I recognize that may
-> not always be possible, or at least not convenient.
->
-> Bjorn
->
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
