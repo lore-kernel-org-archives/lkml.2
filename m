@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515Ab1G2Ogx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 10:36:53 -0400
-Received: from void.printf.net ([89.145.121.20]:46962 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751187Ab1G2Ogw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 10:36:52 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: sdhci-s3c: Fix build for header change
-References: <1311950100-7508-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Date: Fri, 29 Jul 2011 10:36:47 -0400
-In-Reply-To: <1311950100-7508-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	(Mark Brown's message of "Fri, 29 Jul 2011 15:35:00 +0100")
-Message-ID: <m27h71cfwg.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S1751557Ab1G2Ojw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 10:39:52 -0400
+Received: from stinky.trash.net ([213.144.137.162]:56561 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab1G2Oju (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 10:39:50 -0400
+Message-ID: <4E32C633.5000205@trash.net>
+Date: Fri, 29 Jul 2011 16:39:47 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Jesper Juhl <jj@chaosbits.net>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        coreteam@netfilter.org, netfilter@vger.kernel.org,
+        netfilter-devel@vger.kernel.org,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        James Morris <jmorris@namei.org>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH][RFC] netfilter: Fix small leak in ipq_build_packet_message()
+References: <alpine.LNX.2.00.1107171942400.32359@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1107171942400.32359@swampdragon.chaosbits.net>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On 17.07.2011 19:46, Jesper Juhl wrote:
+> ipq_build_packet_message() in net/ipv4/netfilter/ip_queue.c and
+> net/ipv6/netfilter/ip6_queue.c contain a small potential mem leak as
+> far as I can tell.
+> 
+> We allocate memory for 'skb' with alloc_skb() annd then call
+>  nlh = NLMSG_PUT(skb, 0, 0, IPQM_PACKET, size - sizeof(*nlh));
+> 
+> NLMSG_PUT is a macro
+>  NLMSG_PUT(skb, pid, seq, type, len) \
+>   		NLMSG_NEW(skb, pid, seq, type, len, 0)
+> 
+> that expands to NLMSG_NEW, which is also a macro which expands to:
+>  NLMSG_NEW(skb, pid, seq, type, len, flags) \
+>   	({	if (unlikely(skb_tailroom(skb) < (int)NLMSG_SPACE(len))) \
+>   			goto nlmsg_failure; \
+>   		__nlmsg_put(skb, pid, seq, type, len, flags); })
+> 
+> If we take the true branch of the 'if' statement and 'goto
+> nlmsg_failure', then we'll, at that point, return from
+> ipq_build_packet_message() without having assigned 'skb' to anything
+> and we'll leak the memory we allocated for it when it goes out of
+> scope.
+> 
+> Fix this by placing a 'kfree(skb)' at 'nlmsg_failure'.
+> 
+> I admit that I do not know how likely this to actually happen or even
+> if there's something that guarantees that it will never happen - I'm
+> not that familiar with this code, but if that is so, I've not been
+> able to spot it.
+> 
+> Please review and commit if you believe this is correct. Thanks.
+> 
 
-On Fri, Jul 29 2011, Mark Brown wrote:
-> A header change has removed an implicit inclusion of module.h, breaking
-> the build due to the use of THIS_MODULE. Fix that.
->
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/mmc/host/sdhci-s3c.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
-> index 03da44a..2bd7bf4 100644
-> --- a/drivers/mmc/host/sdhci-s3c.c
-> +++ b/drivers/mmc/host/sdhci-s3c.c
-> @@ -19,6 +19,7 @@
->  #include <linux/clk.h>
->  #include <linux/io.h>
->  #include <linux/gpio.h>
-> +#include <linux/module.h>
->  
->  #include <linux/mmc/host.h>
-
-Thanks, pushed to mmc-next for 3.1.
-
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Looks correct, applied, thanks.
