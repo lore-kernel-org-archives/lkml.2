@@ -1,113 +1,440 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab1G2XtI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 19:49:08 -0400
-Received: from fieldses.org ([174.143.236.118]:34780 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753220Ab1G2XtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 19:49:06 -0400
-Date: Fri, 29 Jul 2011 19:48:57 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Greg Banks <gnb@fastmail.fm>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] sunrpc: use better NUMA affinities
-Message-ID: <20110729234857.GA30941@fieldses.org>
-References: <1311921035.7845.10.camel@edumazet-laptop>
- <4E3258E1.6020000@fastmail.fm>
- <20110729103634.GA12050@infradead.org>
- <5933F48C-49D6-492D-AB7B-B76A3ADDB6C6@fastmail.fm>
- <1311941491.2843.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <F67B6E82-9FA8-464E-B3FB-DC0D4EC18BB0@fastmail.fm>
- <20110729164836.GL23194@fieldses.org>
- <20110729165345.GM23194@fieldses.org>
- <F562C6F4-3FC2-4952-A903-8E87E9EF2D9D@fastmail.fm>
- <20110730093025.716f3f50@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110730093025.716f3f50@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753245Ab1G3ABR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 20:01:17 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:37420 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752771Ab1G3ABQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 20:01:16 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=OpJk3Y6kUt/TG1/K8yqiK8/3fdbJIMi/WMLNPawE+a1s8SdigrPJbkZwciGFRpS3d
+	sUKkWR7CucdLuTj4X1Q7A==
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>
+Subject: [PATCH 2/2] trace,x86: Add x86 irq vector entry/exit tracepoints
+Date: Fri, 29 Jul 2011 16:59:38 -0700
+Message-Id: <1311983978-10350-3-git-send-email-vnagarnaik@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1311983978-10350-1-git-send-email-vnagarnaik@google.com>
+References: <1311983978-10350-1-git-send-email-vnagarnaik@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 30, 2011 at 09:30:25AM +1000, NeilBrown wrote:
-> On Sat, 30 Jul 2011 06:34:44 +1000 Greg Banks <gnb@fastmail.fm> wrote:
-> 
-> > 
-> > 
-> > Sent from my iPhone
-> > 
-> > On 30/07/2011, at 2:53, "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> > 
-> > > On Fri, Jul 29, 2011 at 12:48:36PM -0400, bfields wrote:
-> > >> On Fri, Jul 29, 2011 at 11:30:05PM +1000, Greg Banks wrote:
-> > >>>
-> > >>>
-> > >>> Sent from my iPhone
-> > >>>
-> > >>> On 29/07/2011, at 22:11, Eric Dumazet <eric.dumazet@gmail.com>  
-> > >>> wrote:
-> > >>>
-> > >>>> Le vendredi 29 juillet 2011 à 21:58 +1000, Greg Banks a écrit :
-> > >>>>
-> > >>>>>
-> > >>>>> Sure, and a whole lot of the callsites are ("..._%d", cpu),  
-> > >>>>> hence the
-> > >>>>> unfortune :(
-> > >>>>
-> > >>>> BTW, we could name nfsd threads differently :
-> > >>>>
-> > >>>> Currently, they all are named : "nfsd"
-> > >>>>
-> > >>>> If SVC_POOL_PERCPU is selected, we could name them :
-> > >>>> nfsd_c0 -> nfsd_cN
-> > >>>>
-> > >>>> If SVC_POOL_PERNODE is selected, we could name them :
-> > >>>> nfsd_n0  -> nfsd_nN
-> > >>>>
-> > >>>> That would help to check with "ps aux" which cpu/nodes are under
-> > >>>> stress.
-> > >>>>
-> > >>>>
-> > >>>
-> > >>> I like it!
-> > >>
-> > >> Yup, patch welcomed.--b.
-> > >
-> > > (Annoying fact: some initscripts stop nfsd using a rough equivalent of
-> > > "killall nfsd".  So the name of the threads is arguably ABI.  I think
-> > > those initscripts are nuts and deserve what they get, but that may be
-> > > because I'm forgetting the reason they do that.)
-> > >
-> > 
-> > We had this discussion in May-June 2008; it's because the nfsds were  
-> > once  many many years ago userspace threads.
-> 
-> Even when they became kernel threads, 'kill' was the only way to kill them -
-> at first.
-> 
-> > 
-> > The "killall nfsd" semantics in those scripts are awful and lead to  
-> > problems shutting down when there are lots of threads. It would  
-> > probably be an improvement to provide a better shutdown mechanism and  
-> > force distros to use it.
-> 
-> rpc.nfsd 0
-> 
-> will stop all nfsd threads.  Follow with
-> 
->   exportfs -f
-> 
-> and you should be done.  I'm not 100% sure about the nfsv4 thread though -
-> would need to check.
+The current interrupt traces from irq_handler_entry and irq_handler_exit
+provide when an interrupt is handled. They provide good data about when
+the system has switched to kernel space and how it affects the currently
+running processes.
 
-Should be fine.
+There are some IRQ vectors which trigger the system into kernel space,
+which are not handled in generic IRQ handlers. Tracing such events gives
+us the information about IRQ interaction with other system events.
 
---b.
+The trace also tells where the system is spending its time. We want to
+know which cores are handling interrupts and how they are affecting
+other processes in the system. Also, the trace provides information
+about when the cores are idle and which interrupts are changing that
+state.
+
+The following patch adds the event definition and trace instrumentation
+for interrupt vectors. For x86, a lookup table is provided to print out
+readable IRQ vector names. The template can be used to provide interrupt
+vector lookup tables on other architectures.
+
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+---
+ arch/x86/include/asm/irq_vectors.h       |   50 ++++++++++++++++++++++++++
+ arch/x86/kernel/apic/apic.c              |    7 ++++
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |    3 ++
+ arch/x86/kernel/cpu/mcheck/threshold.c   |    3 ++
+ arch/x86/kernel/irq.c                    |    6 +++-
+ arch/x86/kernel/irq_work.c               |    3 ++
+ arch/x86/kernel/smp.c                    |    7 ++++
+ arch/x86/kernel/traps.c                  |    3 ++
+ arch/x86/mm/tlb.c                        |    3 ++
+ include/trace/events/irq_vectors.h       |   56 ++++++++++++++++++++++++++++++
+ 10 files changed, 140 insertions(+), 1 deletions(-)
+ create mode 100644 include/trace/events/irq_vectors.h
+
+diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
+index f9a3209..386b69e 100644
+--- a/arch/x86/include/asm/irq_vectors.h
++++ b/arch/x86/include/asm/irq_vectors.h
+@@ -181,4 +181,54 @@ static inline int invalid_vm86_irq(int irq)
+ # define NR_IRQS			NR_IRQS_LEGACY
+ #endif
+ 
++#define irq_vector_name(sirq) { sirq, #sirq }
++#define invalidate_tlb_vector_name(i) { INVALIDATE_TLB_VECTOR_END-31+i, \
++					"INVALIDATE_TLB_VECTOR" }
++
++#define irq_vector_name_table						\
++			irq_vector_name(NMI_VECTOR),			\
++			irq_vector_name(LOCAL_TIMER_VECTOR),		\
++			irq_vector_name(ERROR_APIC_VECTOR),		\
++			irq_vector_name(RESCHEDULE_VECTOR),		\
++			irq_vector_name(CALL_FUNCTION_VECTOR),		\
++			irq_vector_name(CALL_FUNCTION_SINGLE_VECTOR),	\
++			irq_vector_name(THERMAL_APIC_VECTOR),		\
++			irq_vector_name(THRESHOLD_APIC_VECTOR),		\
++			irq_vector_name(REBOOT_VECTOR),			\
++			irq_vector_name(SPURIOUS_APIC_VECTOR),		\
++			irq_vector_name(IRQ_WORK_VECTOR),		\
++			irq_vector_name(X86_PLATFORM_IPI_VECTOR),	\
++			invalidate_tlb_vector_name(0),			\
++			invalidate_tlb_vector_name(1),			\
++			invalidate_tlb_vector_name(2),			\
++			invalidate_tlb_vector_name(3),			\
++			invalidate_tlb_vector_name(4),			\
++			invalidate_tlb_vector_name(5),			\
++			invalidate_tlb_vector_name(6),			\
++			invalidate_tlb_vector_name(7),			\
++			invalidate_tlb_vector_name(8),			\
++			invalidate_tlb_vector_name(9),			\
++			invalidate_tlb_vector_name(10),			\
++			invalidate_tlb_vector_name(11),			\
++			invalidate_tlb_vector_name(12),			\
++			invalidate_tlb_vector_name(13),			\
++			invalidate_tlb_vector_name(14),			\
++			invalidate_tlb_vector_name(15),			\
++			invalidate_tlb_vector_name(16),			\
++			invalidate_tlb_vector_name(17),			\
++			invalidate_tlb_vector_name(18),			\
++			invalidate_tlb_vector_name(19),			\
++			invalidate_tlb_vector_name(20),			\
++			invalidate_tlb_vector_name(21),			\
++			invalidate_tlb_vector_name(22),			\
++			invalidate_tlb_vector_name(23),			\
++			invalidate_tlb_vector_name(24),			\
++			invalidate_tlb_vector_name(25),			\
++			invalidate_tlb_vector_name(26),			\
++			invalidate_tlb_vector_name(27),			\
++			invalidate_tlb_vector_name(28),			\
++			invalidate_tlb_vector_name(29),			\
++			invalidate_tlb_vector_name(30),			\
++			invalidate_tlb_vector_name(31)
++
+ #endif /* _ASM_X86_IRQ_VECTORS_H */
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 52fa563..0fe559f 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -34,6 +34,7 @@
+ #include <linux/dmi.h>
+ #include <linux/smp.h>
+ #include <linux/mm.h>
++#include <trace/events/irq_vectors.h>
+ 
+ #include <asm/perf_event.h>
+ #include <asm/x86_init.h>
+@@ -859,7 +860,9 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
+ 	 */
+ 	exit_idle();
+ 	irq_enter();
++	trace_irq_vector_entry(LOCAL_TIMER_VECTOR);
+ 	local_apic_timer_interrupt();
++	trace_irq_vector_exit(LOCAL_TIMER_VECTOR);
+ 	irq_exit();
+ 
+ 	set_irq_regs(old_regs);
+@@ -1793,6 +1796,7 @@ void smp_spurious_interrupt(struct pt_regs *regs)
+ 
+ 	exit_idle();
+ 	irq_enter();
++	trace_irq_vector_entry(SPURIOUS_APIC_VECTOR);
+ 	/*
+ 	 * Check if this really is a spurious interrupt and ACK it
+ 	 * if it is a vectored one.  Just in case...
+@@ -1807,6 +1811,7 @@ void smp_spurious_interrupt(struct pt_regs *regs)
+ 	/* see sw-dev-man vol 3, chapter 7.4.13.5 */
+ 	pr_info("spurious APIC interrupt on CPU#%d, "
+ 		"should never happen.\n", smp_processor_id());
++	trace_irq_vector_exit(SPURIOUS_APIC_VECTOR);
+ 	irq_exit();
+ }
+ 
+@@ -1830,6 +1835,7 @@ void smp_error_interrupt(struct pt_regs *regs)
+ 
+ 	exit_idle();
+ 	irq_enter();
++	trace_irq_vector_entry(ERROR_APIC_VECTOR);
+ 	/* First tickle the hardware, only then report what went on. -- REW */
+ 	v0 = apic_read(APIC_ESR);
+ 	apic_write(APIC_ESR, 0);
+@@ -1850,6 +1856,7 @@ void smp_error_interrupt(struct pt_regs *regs)
+ 
+ 	apic_printk(APIC_DEBUG, KERN_CONT "\n");
+ 
++	trace_irq_vector_exit(ERROR_APIC_VECTOR);
+ 	irq_exit();
+ }
+ 
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 27c6251..bd8fa96 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -23,6 +23,7 @@
+ #include <linux/init.h>
+ #include <linux/smp.h>
+ #include <linux/cpu.h>
++#include <trace/events/irq_vectors.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/system.h>
+@@ -398,8 +399,10 @@ asmlinkage void smp_thermal_interrupt(struct pt_regs *regs)
+ {
+ 	exit_idle();
+ 	irq_enter();
++	trace_irq_vector_entry(THERMAL_APIC_VECTOR);
+ 	inc_irq_stat(irq_thermal_count);
+ 	smp_thermal_vector();
++	trace_irq_vector_exit(THERMAL_APIC_VECTOR);
+ 	irq_exit();
+ 	/* Ack only at the end to avoid potential reentry */
+ 	ack_APIC_irq();
+diff --git a/arch/x86/kernel/cpu/mcheck/threshold.c b/arch/x86/kernel/cpu/mcheck/threshold.c
+index d746df2..ffde17b 100644
+--- a/arch/x86/kernel/cpu/mcheck/threshold.c
++++ b/arch/x86/kernel/cpu/mcheck/threshold.c
+@@ -3,6 +3,7 @@
+  */
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
++#include <trace/events/irq_vectors.h>
+ 
+ #include <asm/irq_vectors.h>
+ #include <asm/apic.h>
+@@ -21,8 +22,10 @@ asmlinkage void smp_threshold_interrupt(void)
+ {
+ 	exit_idle();
+ 	irq_enter();
++	trace_irq_vector_entry(THRESHOLD_APIC_VECTOR);
+ 	inc_irq_stat(irq_threshold_count);
+ 	mce_threshold_vector();
++	trace_irq_vector_exit(THRESHOLD_APIC_VECTOR);
+ 	irq_exit();
+ 	/* Ack only at the end to avoid potential reentry */
+ 	ack_APIC_irq();
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 6c0802e..3e4696b 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -17,6 +17,9 @@
+ #include <asm/mce.h>
+ #include <asm/hw_irq.h>
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/irq_vectors.h>
++
+ atomic_t irq_err_count;
+ 
+ /* Function pointer for generic interrupt vector handling */
+@@ -211,12 +214,13 @@ void smp_x86_platform_ipi(struct pt_regs *regs)
+ 	exit_idle();
+ 
+ 	irq_enter();
+-
++	trace_irq_vector_entry(X86_PLATFORM_IPI_VECTOR);
+ 	inc_irq_stat(x86_platform_ipis);
+ 
+ 	if (x86_platform_ipi_callback)
+ 		x86_platform_ipi_callback();
+ 
++	trace_irq_vector_exit(X86_PLATFORM_IPI_VECTOR);
+ 	irq_exit();
+ 
+ 	set_irq_regs(old_regs);
+diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c
+index ca8f703..107754c 100644
+--- a/arch/x86/kernel/irq_work.c
++++ b/arch/x86/kernel/irq_work.c
+@@ -8,13 +8,16 @@
+ #include <linux/irq_work.h>
+ #include <linux/hardirq.h>
+ #include <asm/apic.h>
++#include <trace/events/irq_vectors.h>
+ 
+ void smp_irq_work_interrupt(struct pt_regs *regs)
+ {
+ 	irq_enter();
+ 	ack_APIC_irq();
++	trace_irq_vector_entry(IRQ_WORK_VECTOR);
+ 	inc_irq_stat(apic_irq_work_irqs);
+ 	irq_work_run();
++	trace_irq_vector_exit(IRQ_WORK_VECTOR);
+ 	irq_exit();
+ }
+ 
+diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+index 013e7eb..1b0ac99 100644
+--- a/arch/x86/kernel/smp.c
++++ b/arch/x86/kernel/smp.c
+@@ -22,6 +22,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/cpu.h>
+ #include <linux/gfp.h>
++#include <trace/events/irq_vectors.h>
+ 
+ #include <asm/mtrr.h>
+ #include <asm/tlbflush.h>
+@@ -199,8 +200,10 @@ static void native_stop_other_cpus(int wait)
+ void smp_reschedule_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
++	trace_irq_vector_entry(RESCHEDULE_VECTOR);
+ 	inc_irq_stat(irq_resched_count);
+ 	scheduler_ipi();
++	trace_irq_vector_exit(RESCHEDULE_VECTOR);
+ 	/*
+ 	 * KVM uses this interrupt to force a cpu out of guest mode
+ 	 */
+@@ -210,8 +213,10 @@ void smp_call_function_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
+ 	irq_enter();
++	trace_irq_vector_entry(CALL_FUNCTION_VECTOR);
+ 	generic_smp_call_function_interrupt();
+ 	inc_irq_stat(irq_call_count);
++	trace_irq_vector_exit(CALL_FUNCTION_VECTOR);
+ 	irq_exit();
+ }
+ 
+@@ -219,8 +224,10 @@ void smp_call_function_single_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
+ 	irq_enter();
++	trace_irq_vector_entry(CALL_FUNCTION_SINGLE_VECTOR);
+ 	generic_smp_call_function_single_interrupt();
+ 	inc_irq_stat(irq_call_count);
++	trace_irq_vector_exit(CALL_FUNCTION_SINGLE_VECTOR);
+ 	irq_exit();
+ }
+ 
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index bf4aa79..d22dd48 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -31,6 +31,7 @@
+ #include <linux/mm.h>
+ #include <linux/smp.h>
+ #include <linux/io.h>
++#include <trace/events/irq_vectors.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/trap.h>
+@@ -447,12 +448,14 @@ dotraplinkage notrace __kprobes void
+ do_nmi(struct pt_regs *regs, long error_code)
+ {
+ 	nmi_enter();
++	trace_irq_vector_entry(NMI_VECTOR);
+ 
+ 	inc_irq_stat(__nmi_count);
+ 
+ 	if (!ignore_nmis)
+ 		default_do_nmi(regs);
+ 
++	trace_irq_vector_exit(NMI_VECTOR);
+ 	nmi_exit();
+ }
+ 
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index d6c0418..bf9475d 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -5,6 +5,7 @@
+ #include <linux/smp.h>
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
++#include <trace/events/irq_vectors.h>
+ #include <linux/cpu.h>
+ 
+ #include <asm/tlbflush.h>
+@@ -141,6 +142,7 @@ void smp_invalidate_interrupt(struct pt_regs *regs)
+ 	sender = ~regs->orig_ax - INVALIDATE_TLB_VECTOR_START;
+ 	f = &flush_state[sender];
+ 
++	trace_irq_vector_entry(INVALIDATE_TLB_VECTOR_START + sender);
+ 	if (!cpumask_test_cpu(cpu, to_cpumask(f->flush_cpumask)))
+ 		goto out;
+ 		/*
+@@ -167,6 +169,7 @@ out:
+ 	cpumask_clear_cpu(cpu, to_cpumask(f->flush_cpumask));
+ 	smp_mb__after_clear_bit();
+ 	inc_irq_stat(irq_tlb_count);
++	trace_irq_vector_exit(INVALIDATE_TLB_VECTOR_START + sender);
+ }
+ 
+ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+diff --git a/include/trace/events/irq_vectors.h b/include/trace/events/irq_vectors.h
+new file mode 100644
+index 0000000..699ddaa
+--- /dev/null
++++ b/include/trace/events/irq_vectors.h
+@@ -0,0 +1,56 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM irq_vectors
++
++#if !defined(_TRACE_IRQ_VECTORS_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_IRQ_VECTORS_H
++
++#include <linux/tracepoint.h>
++#include <asm/irq.h>
++
++#ifndef irq_vector_name_table
++#define irq_vector_name_table { -1, NULL }
++#endif
++
++DECLARE_EVENT_CLASS(irq_vector,
++
++	TP_PROTO(int irq),
++
++	TP_ARGS(irq),
++
++	TP_STRUCT__entry(
++		__field(	int,	irq	)
++	),
++
++	TP_fast_assign(
++		__entry->irq = irq;
++	),
++
++	TP_printk("irq=%d name=%s", __entry->irq,
++		__print_symbolic(__entry->irq, irq_vector_name_table))
++);
++
++/*
++ * irq_vector_entry - called before enterring a interrupt vector handler
++ */
++DEFINE_EVENT(irq_vector, irq_vector_entry,
++
++	TP_PROTO(int irq),
++
++	TP_ARGS(irq)
++);
++
++/*
++ * irq_vector_exit - called immediately after the interrupt vector
++ * handler returns
++ */
++DEFINE_EVENT(irq_vector, irq_vector_exit,
++
++	TP_PROTO(int irq),
++
++	TP_ARGS(irq)
++);
++
++#endif /*  _TRACE_IRQ_VECTORS_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+-- 
+1.7.3.1
+
