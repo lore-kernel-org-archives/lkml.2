@@ -1,180 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab1G2NqM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 09:46:12 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:32186 "EHLO relay.sw.ru"
+	id S1755319Ab1G2NwD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 09:52:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37244 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755302Ab1G2NqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 09:46:10 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        David Chinner <david@fromorbit.com>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH 4/4] parse options in the vfs level
-Date: Fri, 29 Jul 2011 17:44:19 +0400
-Message-Id: <1311947059-17209-5-git-send-email-glommer@parallels.com>
+	id S1754349Ab1G2NwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 09:52:01 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: linux-kbuild@vger.kernel.org
+Cc: xiyou.wangcong@gmail.com, rdunlap@xenotime.net, lacombar@gmail.com,
+        sam@ravnborg.org, linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
+Subject: [PATCH] kconfig: Introduce IS_ENABLED(), IS_BUILTIN() and IS_MODULE()
+Date: Fri, 29 Jul 2011 15:51:37 +0200
+Message-Id: <1311947497-4958-1-git-send-email-mmarek@suse.cz>
 X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1311947059-17209-1-git-send-email-glommer@parallels.com>
-References: <1311947059-17209-1-git-send-email-glommer@parallels.com>
+In-Reply-To: <1311634718-32588-1-git-send-email-mmarek@suse.cz>
+References: <1311634718-32588-1-git-send-email-mmarek@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a simple generic vfs option parser.
-Right now, the only option we have is to limit the size of the dcache.
+Replace the config_is_*() macros with a variant that allows for grepping
+for usage of CONFIG_* options in the code. Usage:
 
-So any user that wants to have a dcache entries limit, can specify:
+  if (IS_ENABLED(CONFIG_NUMA))
 
-  mount -o whatever_options,vfs_dcache_size=XXX <dev> <mntpoint>
+or
 
-It is supposed to work well with remounts, allowing it to change
-multiple over the course of the filesystem's lifecycle.
+  #if IS_ENABLED(CONFIG_NUMA)
 
-I find mount a natural interface for handling filesystem options,
-so that's what I've choosen. Feel free to yell at it at will if
-you disagree.
+The IS_ENABLED() macro evaluates to 1 if the argument is set (to either 'y'
+or 'm'), IS_BUILTIN() tests if the option is 'y' and IS_MODULE() test if
+the option is 'm'. Only boolean and tristate options are supported.
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- fs/namespace.c |   89 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 89 insertions(+), 0 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 22bfe82..11ce45d 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -31,6 +31,7 @@
- #include <linux/idr.h>
- #include <linux/fs_struct.h>
- #include <linux/fsnotify.h>
-+#include <linux/parser.h>
- #include <asm/uaccess.h>
- #include <asm/unistd.h>
- #include "pnode.h"
-@@ -2271,6 +2272,82 @@ int copy_mount_string(const void __user *data, char **where)
- 	return 0;
- }
+Everybody happy with the above naming?
+
+Michal
+
+---
+ Makefile                   |    2 +-
+ include/linux/kconfig.h    |   32 ++++++++++++++++++++
+ scripts/kconfig/confdata.c |   71 ++++++++-----------------------------------
+ 3 files changed, 47 insertions(+), 58 deletions(-)
+ create mode 100644 include/linux/kconfig.h
+
+diff --git a/Makefile b/Makefile
+index afb8e0d..bd7629b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -360,7 +360,7 @@ CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
+ LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
+                    -Iarch/$(hdr-arch)/include/generated -Iinclude \
+                    $(if $(KBUILD_SRC), -I$(srctree)/include) \
+-                   -include include/generated/autoconf.h
++                   -include $(srctree)/include/linux/kconfig.h
  
-+static const match_table_t tokens = {
-+	{1, "vfs_dcache_size=%u"},
-+};
+ KBUILD_CPPFLAGS := -D__KERNEL__
+ 
+diff --git a/include/linux/kconfig.h b/include/linux/kconfig.h
+new file mode 100644
+index 0000000..067eda0
+--- /dev/null
++++ b/include/linux/kconfig.h
+@@ -0,0 +1,32 @@
++#ifndef __LINUX_KCONFIG_H
++#define __LINUX_KCONFIG_H
 +
-+struct vfs_options {
-+	unsigned long vfs_dcache_size;
-+};
++#include <generated/autoconf.h>
 +
-+/**
-+ * Generic option parsing for the VFS.
-+ *
-+ * Since most of the filesystems already do their own option parsing, and with
-+ * very few code shared between them, this function strips out any options that
-+ * we succeed in parsing ourselves. Passing them forward would just give the
-+ * underlying fs an option it does not expect, leading it to fail.
-+ *
-+ * We don't yet have a pointer to the super block as well, since this is
-+ * pre-mount. We accumulate in struct vfs_options whatever data we collected,
-+ * and act on it later.
++/*
++ * Helper macros to use CONFIG_ options in C expressions. Note that
++ * these only work with boolean and tristate options.
 + */
-+static int vfs_parse_options(char *options, struct vfs_options *ops)
-+{
-+	substring_t args[MAX_OPT_ARGS];
-+	unsigned int option;
-+	char *p;
-+	char *opt;
-+	char *start = NULL;
-+	int ret;
-+	
-+	if (!options)
-+		return 0;
 +
-+	opt = kstrdup(options, GFP_KERNEL);
-+	if (!opt)
-+		return 1;
-+	
-+	ret = 1;
++/*
++ * IS_ENABLED(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y' or 'm',
++ * 0 otherwise.
++ *
++ */
++#define IS_ENABLED(option) \
++	(__enabled_ ## option || __enabled_ ## option ## _MODULE)
 +
-+	start = opt;
-+	while ((p = strsep(&opt, ",")) != NULL) {
-+		int token;
-+		if (!*p)
-+			continue;
++/*
++ * IS_BUILTIN(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y', 0
++ * otherwise. For boolean options, this is equivalent to
++ * IS_ENABLED(CONFIG_FOO).
++ */
++#define IS_BUILTIN(option) __enabled_ ## option
 +
++/*
++ * IS_MODULE(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'm', 0
++ * otherwise.
++ */
++#define IS_MODULE(option) __enabled_ ## option ## _MODULE
++
++#endif /* __LINUX_KCONFIG_H */
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index df629ec..59b667c 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -495,15 +495,25 @@ header_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
+ 
+ 		switch (*value) {
+ 		case 'n':
+-			return;
++			break;
+ 		case 'm':
+ 			suffix = "_MODULE";
+ 			/* fall through */
+ 		default:
+-			value = "1";
++			fprintf(fp, "#define %s%s%s 1\n",
++			    CONFIG_, sym->name, suffix);
+ 		}
+-		fprintf(fp, "#define %s%s%s %s\n",
+-		    CONFIG_, sym->name, suffix, value);
 +		/*
-+		 * Initialize args struct so we know whether arg was
-+		 * found; some options take optional arguments.
++		 * Generate the __enabled_CONFIG_* and
++		 * __enabled_CONFIG_*_MODULE macros for use by the
++		 * IS_{ENABLED,BUILTIN,MODULE} macros. The _MODULE variant is
++		 * generated even for booleans so that the IS_ENABLED() macro
++		 * works.
 +		 */
-+		args[0].to = args[0].from = 0;
-+		token = match_token(p, tokens, args);
-+		switch (token) {
-+		case 1:
-+			if (!args[0].from)
-+				break;
-+
-+			if (match_int(&args[0], &option))
-+				break;
-+			else
-+				ops->vfs_dcache_size = option;
-+
-+			ret = 0;
-+			if (!opt) /* it is the last option listed */
-+				*(options + (p - start)) = '\0';
-+			else
-+				strcpy(options + (p - start), opt);
-+			break;
-+		default:
-+			ret = 0;
-+			break;
-+		}
-+	}
-+
-+	kfree(start);
-+	return ret;
-+}
-+
++		fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
++				sym->name, (*value == 'y'));
++		fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE %d\n",
++				sym->name, (*value == 'm'));
+ 		break;
+ 	}
+ 	case S_HEX: {
+@@ -555,58 +565,6 @@ static struct conf_printer header_printer_cb =
+ };
+ 
  /*
-  * Flags is a 32-bit value that allows up to 31 non-fs dependent flags to
-  * be given to the mount() call (ie: read-only, no-dev, no-suid etc).
-@@ -2291,6 +2368,7 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
- 	struct path path;
- 	int retval = 0;
- 	int mnt_flags = 0;
-+	struct vfs_options vfs_options;
+- * Function-style header printer
+- *
+- * This printer is used to generate the config_is_xxx() function-style macros
+- * in `include/generated/autoconf.h' 
+- */
+-static void
+-header_function_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
+-{
+-	int val = 0;
+-	char c;
+-	char *tmp, *d;
+-
+-	switch (sym->type) {
+-	case S_BOOLEAN:
+-	case S_TRISTATE:
+-		break;
+-	default:
+-		return;
+-	}
+-	if (*value == 'm')
+-		val = 2;
+-	else if (*value == 'y')
+-		val = 1;
+-
+-	d = strdup(CONFIG_);
+-	tmp = d;
+-	while ((c = *d)) {
+-		*d = tolower(c);
+-		d++;
+-	}
+-
+-	fprintf(fp, "#define %sis_", tmp);
+-	free(tmp);
+-
+-	d = strdup(sym->name);
+-	tmp = d;
+-	while ((c = *d)) {
+-		*d = tolower(c);
+-		d++;
+-	}
+-	fprintf(fp, "%s%s() %d\n", tmp, (val > 1) ? "_module" : "",
+-		      val ? 1 : 0);
+-	free(tmp);
+-}
+-
+-static struct conf_printer header_function_printer_cb =
+-{
+-	.print_symbol = header_function_print_symbol,
+-};
+-
+-
+-/*
+  * Tristate printer
+  *
+  * This printer is used when generating the `include/config/tristate.conf' file.
+@@ -997,7 +955,6 @@ int conf_write_autoconf(void)
+ 		conf_write_symbol(tristate, sym, &tristate_printer_cb, (void *)1);
  
- 	/* Discard magic */
- 	if ((flags & MS_MGC_MSK) == MS_MGC_VAL)
-@@ -2318,6 +2396,12 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
- 	if (!(flags & MS_NOATIME))
- 		mnt_flags |= MNT_RELATIME;
- 
-+
-+	vfs_options.vfs_dcache_size = INT_MAX;
-+	retval = vfs_parse_options(data_page, &vfs_options);
-+	if (retval)
-+		goto dput_out;
-+
- 	/* Separate the per-mountpoint flags */
- 	if (flags & MS_NOSUID)
- 		mnt_flags |= MNT_NOSUID;
-@@ -2350,6 +2434,11 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
- 	else
- 		retval = do_new_mount(&path, type_page, flags, mnt_flags,
- 				      dev_name, data_page);
-+
-+	if (!retval)
-+		vfs_set_dcache_size(path.mnt->mnt_sb,
-+				    vfs_options.vfs_dcache_size);
-+			
- dput_out:
- 	path_put(&path);
- 	return retval;
+ 		conf_write_symbol(out_h, sym, &header_printer_cb, NULL);
+-		conf_write_symbol(out_h, sym, &header_function_printer_cb, NULL);
+ 	}
+ 	fclose(out);
+ 	fclose(tristate);
 -- 
 1.7.6
 
