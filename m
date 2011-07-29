@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab1G2WBo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 18:01:44 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:38472 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753004Ab1G2WBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 18:01:43 -0400
-From: Gene Heskett <gene.heskett@gmail.com>
-To: Keith Packard <keithp@keithp.com>, Ben Brewer <ben.brewer@codethink.co.uk>,
-        dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org,
+	id S1753179Ab1G2WCO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 18:02:14 -0400
+Received: from smtprelay03.ispgateway.de ([80.67.31.37]:38291 "EHLO
+	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992Ab1G2WCM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 18:02:12 -0400
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Jul 2011 18:02:12 EDT
+References: <20110728180535.51dce58d@boyarsh.office.altlinux.ru>
+Message-ID: <cone.1311976558.82572.3703.1000@deskpiie>
+X-Mailer: http://www.courier-mta.org/cone/
+From: Peter Feuerer <peter@piie.net>
+To: Anton =?UTF-8?B?Vi4=?= Boyarshinov <boyarsh@altlinux.org>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: i915 SSC Patch
-Date: Fri, 29 Jul 2011 18:01:39 -0400
-User-Agent: KMail/1.13.7 (Linux/2.6.38.8-pclos2.pae.bfs; KDE/4.6.5; i686; ; )
-References: <4E32ADC7.3080002@codethink.co.uk> <yunwrf1gc3b.fsf@aiko.keithp.com>
-In-Reply-To: <yunwrf1gc3b.fsf@aiko.keithp.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
+Subject: Re: [PATCH] acerhdf.c: spaces in aliased changed to *
+Date: Fri, 29 Jul 2011 23:55:58 +0200
+Mime-Version: 1.0
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107291801.40049.gene.heskett@gmail.com>
+X-Df-Sender: 404094
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 29, 2011, Keith Packard wrote:
->On Fri, 29 Jul 2011 13:55:35 +0100, Ben Brewer 
-<ben.brewer@codethink.co.uk> wrote:
->> I've added a global SSC (Spread Spectrum Clock) parameter to the i915
->> driver, since having SSC enabled breaks (distorts) VGA output on some
->> Core i5/i7 chips (see
->> https://bugs.freedesktop.org/show_bug.cgi?id=38750). SSC is still
->> enabled by default so the behaviour won't change but setting the
->> global_use_ssc parameter will turn this feature off and allow affected
->> devices to function correctly (notably the Dell Vostro 3300).
->
->The question I have is why is SSC enabled on the VGA output at all? I
->don't see any way VGA could ever tolerate it.
+Hi,
 
-Something does not make sense here Keith, so I'm with you, and my 
-background is from about 60 years in tv maintenance and 45 in broadcasting.
+Matthew, please apply, thanks.
 
-A pure digital output, where its a high speed serial transfer of bytes to 
-the monitor, is generally not going to be sensitive the any SS used unless 
-the baud rate slams around too much on a byte to byte basis.  Since SS is 
-generally just a few percent, even that should not be a problem.  But 
-feeding analog signals up a video cable to a vga monitor, and the pixel 
-time is wobbling by 2 to 5% and you won't have much of a viewable image 
-left.  The analog signals, vga etc, needs their own video clock, a dead 
-stable one.
+Anton V. Boyarshinov writes:
+> It seems that aliases shouldn't contain spaces, as 
+> module-init-tools uses them as delimeters in module.alias file
+> 
+> Signed-off-by: Anton V. Boyarshinov <boyarsh@altlinux.org>
 
-We used to spend $10k-30k$ just so we could take the signal from a 
-mechanically unstable vcr that only cost us $10k, and make it stable enough 
-to work on your home tv's without the top of the pix waving around like 
-hurricane Katrina was in the neighborhood.
+Acked-by: Peter Feuerer <peter@piie.net>
 
-Hardware design error in the Dell?
-
-Cheers, gene
--- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-"Apathy is not the problem, it's the solution"
+> ---
+>  drivers/platform/x86/acerhdf.c |   12 ++++++------
+>  1 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+> index fca3489..7a8568b 100644
+> --- a/drivers/platform/x86/acerhdf.c
+> +++ b/drivers/platform/x86/acerhdf.c
+> @@ -703,15 +703,15 @@ MODULE_LICENSE("GPL");
+>  MODULE_AUTHOR("Peter Feuerer");
+>  MODULE_DESCRIPTION("Aspire One temperature and fan driver");
+>  MODULE_ALIAS("dmi:*:*Acer*:pnAOA*:");
+> -MODULE_ALIAS("dmi:*:*Acer*:pnAspire 1410*:");
+> -MODULE_ALIAS("dmi:*:*Acer*:pnAspire 1810*:");
+> +MODULE_ALIAS("dmi:*:*Acer*:pnAspire*1410*:");
+> +MODULE_ALIAS("dmi:*:*Acer*:pnAspire*1810*:");
+>  MODULE_ALIAS("dmi:*:*Acer*:pnAO531*:");
+>  MODULE_ALIAS("dmi:*:*Gateway*:pnAOA*:");
+>  MODULE_ALIAS("dmi:*:*Gateway*:pnLT31*:");
+> -MODULE_ALIAS("dmi:*:*Packard Bell*:pnAOA*:");
+> -MODULE_ALIAS("dmi:*:*Packard Bell*:pnDOA*:");
+> -MODULE_ALIAS("dmi:*:*Packard Bell*:pnDOTMU*:");
+> -MODULE_ALIAS("dmi:*:*Packard Bell*:pnDOTMA*:");
+> +MODULE_ALIAS("dmi:*:*Packard*Bell*:pnAOA*:");
+> +MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOA*:");
+> +MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOTMU*:");
+> +MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOTMA*:");
+>  
+>  module_init(acerhdf_init);
+>  module_exit(acerhdf_exit);
+> -- 
+> 1.7.2.2
+> 
