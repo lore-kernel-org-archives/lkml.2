@@ -1,184 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab1G2UCa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 16:02:30 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:39705 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab1G2UC3 (ORCPT
+	id S1752764Ab1G2UOg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 16:14:36 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:57391 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752080Ab1G2UOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 16:02:29 -0400
-Message-ID: <4E3311D1.3000601@gmail.com>
-Date: Fri, 29 Jul 2011 22:02:25 +0200
-From: Marcus Folkesson <marcus.folkesson@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] regulator: tps65023: Added support for the similiar
- TPS65020 chip
-References: <marcus.folkesson@gmail.com> <1311762767-20263-1-git-send-email-marcus.folkesson@gmail.com> <1311762767-20263-4-git-send-email-marcus.folkesson@gmail.com> <20110729123420.GB22042@sirena.org.uk> <CAM8FrKL4-hn2rrazsCLrRoVY5zVkgR8A245ScfS48=O41jtffg@mail.gmail.com> <20110729140342.GB19118@opensource.wolfsonmicro.com>
-In-Reply-To: <20110729140342.GB19118@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 29 Jul 2011 16:14:35 -0400
+X-Sasl-enc: mDhNAMl0KerDfcysOkPJMSfVr6H8xv6/3kQaS3LGD0Vh 1311970474
+Date: Fri, 29 Jul 2011 15:14:33 -0500
+From: Paul Jackson <pj@usa.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arnaud Lacombe <lacombar@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        SergeySenozhatsky <sergey.senozhatsky@gmail.com>,
+        DaveJones <davej@redhat.com>
+Subject: Re: [06.5] Re: [GIT PULL] core/printk changes for v3.1
+Message-Id: <20110729151433.b8b6a3d9.pj@usa.net>
+In-Reply-To: <CA+55aFyqf6G2ZByfaTR5ZiKBVDMeiS2bC3r-WsSfc_M0bJViDg@mail.gmail.com>
+References: <20110722125934.GA25433@elte.hu>
+	<CACqU3MW-7_gCqNARdrPA5rZoZGLti+DMvkZsJN40VSDtU+VhpQ@mail.gmail.com>
+	<1311679697.24752.28.camel@twins>
+	<CACqU3MUghvskv4HrVn+w7rCTki0RkRwQfFUaaysHYOqB6V+q4A@mail.gmail.com>
+	<CA+55aFyqf6G2ZByfaTR5ZiKBVDMeiS2bC3r-WsSfc_M0bJViDg@mail.gmail.com>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2011 04:03 PM, Mark Brown wrote:
-> On Fri, Jul 29, 2011 at 03:08:54PM +0200, Marcus Folkesson wrote:
->> 2011/7/29 Mark Brown <broonie@opensource.wolfsonmicro.com>:
->>> On Wed, Jul 27, 2011 at 12:32:47PM +0200, Marcus Folkesson wrote:
-> 
->>>> +static struct tps_driver_data tps65020_drv_data = {
->>>> +             .info = (struct tps_info *) tps65020_regs,
-> 
->>> Why do you need the cast here?  I see it's in the original driver too
->>> but it looks like something that should be fixed.
-> 
->> I also thought about the line, It's only for avoiding warnings from gcc.
->> But I don't really understand why gcc is warning.
-> 
->> gcc output:  "warning: initialization discards qualifiers from pointer
->> target type".
-> 
-> It's complaining because the declaration of tps65020_regs doesn't match
-> up with that of .info.  Probably the struct member needs to be a const
-> pointer.
+On Tue, 26 Jul 2011 13:30:06 -0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
+> Sadly, the gmail web interface cannot *send* patches without
+> whitespace-mangling them. You have to send them as attachements, and
+> there is no way to say "do this attachement inline".
 
-Changes from original patch:
+I have updated my sendpatchset utility.  It works well with gmail's
+SMTP server.  It could be used by those with a gmail account instead
+of trying to send patches via their web interface.  Place one's
+gmail account information in the $HOME/.sendpatchset.ini file, as
+documented within the sendpatchset utility.
 
-@@ -681,19 +681,19 @@ static const struct tps_info tps65023_regs[] = {
- };
- 
- static struct tps_driver_data tps65020_drv_data = {
--		.info = (struct tps_info *) tps65020_regs,
-+		.info = tps65020_regs,
- 		.core_regulator = TPS65023_DCDC_3,
- 		.num_voltages = tps65020_num_voltages,
- };
- 
+It requires Python.
 
+You can find the latest sendpatchset at:
 
+    http://pauljackson.us/sendpatchset.py
+    http://pauljackson.us/COPYING
 
+It's released under GPL license, and is an update of the same
+sendpatchset that I published a few times back in 2004 - 2007,
+while I worked at Silicon Graphics.  I am the same Paul Jackson
+who worked on cpusets for a while, formerly known as pj AT sgi.com.
 
-
->From 9ad596ad019feade1e346bb4128819202b26c118 Mon Sep 17 00:00:00 2001
-From: Marcus Folkesson <marcus.folkesson@gmail.com>
-Date: Wed, 27 Jul 2011 11:34:43 +0200
-Subject: [PATCH 3/3] regulator: tps65023: Added support for the similiar TPS65020 chip
-
-Defines a new voltage-table and allows registering of the tps65020 device.
-
-Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
----
- drivers/regulator/tps65023-regulator.c |   63 ++++++++++++++++++++++++++++++++
- 1 files changed, 63 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
-index 5cc7344..a4c0583 100644
---- a/drivers/regulator/tps65023-regulator.c
-+++ b/drivers/regulator/tps65023-regulator.c
-@@ -103,8 +103,26 @@ static const u16 VCORE_VSEL_table[] = {
- 	1500, 1525, 1550, 1600,
- };
- 
-+/* Supported voltage values for LDO regulators for tps65020 */
-+static const u16 TPS65020_LDO1_VSEL_table[] = {
-+	1000, 1050, 1100, 1300,
-+	1800, 2500, 3000, 3300,
-+};
-+
-+static const u16 TPS65020_LDO2_VSEL_table[] = {
-+	1000, 1050, 1100, 1300,
-+	1800, 2500, 3000, 3300,
-+};
- 
- 
-+static unsigned int tps65020_num_voltages[] = {
-+				0,
-+				0,
-+				ARRAY_SIZE(VCORE_VSEL_table),
-+				ARRAY_SIZE(TPS65020_LDO1_VSEL_table),
-+				ARRAY_SIZE(TPS65020_LDO2_VSEL_table)
-+};
-+
- /* Supported voltage values for LDO regulators
-  * for tps65021 and tps65023 */
- static const u16 TPS65023_LDO1_VSEL_table[] = {
-@@ -553,6 +571,43 @@ static int __devexit tps_65023_remove(struct i2c_client *client)
- 	return 0;
- }
- 
-+static const struct tps_info tps65020_regs[] = {
-+	{
-+		.name = "VDCDC1",
-+		.min_uV = 3300000,
-+		.max_uV = 3300000,
-+		.fixed	= 1,
-+	},
-+	{
-+		.name = "VDCDC2",
-+		.min_uV =  1800000,
-+		.max_uV = 1800000,
-+		.fixed = 1,
-+	},
-+	{
-+		.name = "VDCDC3",
-+		.min_uV =  800000,
-+		.max_uV = 1600000,
-+		.table_len = ARRAY_SIZE(VCORE_VSEL_table),
-+		.table = VCORE_VSEL_table,
-+	},
-+
-+	{
-+		.name = "LDO1",
-+		.min_uV = 1000000,
-+		.max_uV = 3150000,
-+		.table_len = ARRAY_SIZE(TPS65020_LDO1_VSEL_table),
-+		.table = TPS65020_LDO1_VSEL_table,
-+	},
-+	{
-+		.name = "LDO2",
-+		.min_uV = 1050000,
-+		.max_uV = 3300000,
-+		.table_len = ARRAY_SIZE(TPS65020_LDO2_VSEL_table),
-+		.table = TPS65020_LDO2_VSEL_table,
-+	},
-+};
-+
- static const struct tps_info tps65021_regs[] = {
- 	{
- 		.name = "VDCDC1",
-@@ -625,6 +680,12 @@ static const struct tps_info tps65023_regs[] = {
- 	},
- };
-
-+static struct tps_driver_data tps65020_drv_data = {
-+		.info = tps65020_regs,
-+		.core_regulator = TPS65023_DCDC_3,
-+		.num_voltages = tps65020_num_voltages,
-+};
-+
- static struct tps_driver_data tps65021_drv_data = {
- 		.info = tps65021_regs,
- 		.core_regulator = TPS65023_DCDC_3,
-@@ -642,6 +703,8 @@ static const struct i2c_device_id tps_65023_id[] = {
- 	.driver_data = (unsigned long) &tps65023_drv_data},
- 	{.name = "tps65021",
- 	.driver_data = (unsigned long) &tps65021_drv_data,},
-+	{.name = "tps65020",
-+	.driver_data = (unsigned long) &tps65020_drv_data},
- 	{ },
- };
- 
 -- 
-1.7.4.1
-
-
-
-
-
-
-
-
+Paul Jackson <pj@usa.net>
