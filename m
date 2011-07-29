@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431Ab1G2LTj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 07:19:39 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56398 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932153Ab1G2LTh (ORCPT
+	id S932173Ab1G2LTs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 07:19:48 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:38051 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756467Ab1G2LTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 07:19:37 -0400
-Date: Fri, 29 Jul 2011 12:19:20 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: viresh kumar <viresh.kumar@st.com>
-Cc: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        Pratyush ANAND <pratyush.anand@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vipin KUMAR <vipin.kumar@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 00/18] dmaengine/amba-pl08x updates
-Message-ID: <20110729111920.GK25640@n2100.arm.linux.org.uk>
-References: <cover.1311936523.git.viresh.kumar@st.com> <20110729105759.GE25640@n2100.arm.linux.org.uk> <4E329616.2030505@st.com>
+	Fri, 29 Jul 2011 07:19:46 -0400
+Message-ID: <4E32974B.6060605@gmail.com>
+Date: Fri, 29 Jul 2011 19:19:39 +0800
+From: Liu Yuan <namei.unix@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E329616.2030505@st.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Christoph Hellwig <hch@infradead.org>
+CC: "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] vhost-blk: An in-kernel accelerator for virtio-blk
+References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com> <1311863346-4338-2-git-send-email-namei.unix@gmail.com> <20110728144740.GA26744@infradead.org>
+In-Reply-To: <20110728144740.GA26744@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 04:44:30PM +0530, viresh kumar wrote:
-> There can be two cases here:
-> 
-> - Memory addresses are contiguous and are not scattered.
-> Here, Only one sg will be passed by user driver, with memory address and
-> zero length. We pass this to controller and after the transfer it will
-> receive the last burst request from peripheral and so transfer finishes.
-> 
-> - Memory addresses are scattered and are not contiguous.
-> Here, Obviously as DMA controller doesn't know when a lli's transfer gets over,
-> it can't load next lli. So in this case, there has to be an assumption that only
-> one lli is supported. Thus, we can't have scattered addresses.
+On 07/28/2011 10:47 PM, Christoph Hellwig wrote:
+> On Thu, Jul 28, 2011 at 10:29:05PM +0800, Liu Yuan wrote:
+>> From: Liu Yuan<tailai.ly@taobao.com>
+>>
+>> Vhost-blk driver is an in-kernel accelerator, intercepting the
+>> IO requests from KVM virtio-capable guests. It is based on the
+>> vhost infrastructure.
+>>
+>> This is supposed to be a module over latest kernel tree, but it
+>> needs some symbols from fs/aio.c and fs/eventfd.c to compile with.
+>> So currently, after applying the patch, you need to *recomplie*
+>> the kernel.
+>>
+>> Usage:
+>> $kernel-src: make M=drivers/vhost
+>> $kernel-src: sudo insmod drivers/vhost/vhost_blk.ko
+>>
+>> After insmod, you'll see /dev/vhost-blk created. done!
+> You'll need to send the changes for existing code separately.
+>
+Thanks for reminding.
 
-Ok, so lets have the driver explicitly enforce one SG entry if peripheral
-flow is set.  It would also be a good idea to pass not zero length, but
-the real transfer size in the SG entry for the sake of having the API
-know the full information about the transfer.
+> If you're going mostly for raw blockdevice access just calling
+> submit_bio will shave even more overhead off, and simplify the
+> code a lot.
+Yes, sounds cool, I'll give it a try.
 
-(Ok, it already only supports one SG entry, but that's something else
-which needs fixing - which may be possible now that you've cleaned up
-the LLI creation code.)
+Yuan
