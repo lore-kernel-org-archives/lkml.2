@@ -1,188 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421Ab1G2IMH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 04:12:07 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37502 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123Ab1G2IMD (ORCPT
+	id S1755384Ab1G2ISL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 04:18:11 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42927 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754590Ab1G2ISJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 04:12:03 -0400
-Date: Fri, 29 Jul 2011 12:11:56 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: kernel-hardening@lists.openwall.com, Stephen Smalley <sds@tycho.nsa.gov>,
-        James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
-        Sebastian Krahmer <krahmer@suse.de>
-Subject: [patch v3] move RLIMIT_NPROC check from set_user() to
- do_execve_common()
-Message-ID: <20110729081156.GB2488@albatros>
-References: <20110721124830.GA1325@openwall.com>
- <CA+55aFy4ybatb0McQr2f4A56ympZVLqK2sbp2=73idu58_4RxQ@mail.gmail.com>
- <20110721193939.GA3914@openwall.com>
- <20110725171423.GA3739@albatros>
- <20110725234013.GB24110@openwall.com>
- <20110726104713.37273143@notabene.brown>
- <20110726011629.GA24610@openwall.com>
- <20110726141118.32f948e0@notabene.brown>
- <20110726144848.GA7133@albatros>
- <20110729080613.GA2488@albatros>
+	Fri, 29 Jul 2011 04:18:09 -0400
+Date: Fri, 29 Jul 2011 16:18:00 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Lin Ming <ming.m.lin@intel.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        lkml <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH] sched: Remove WAKEUP_PREEMPT feature check in entity_tick
+Message-ID: <20110729081800.GA12106@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1311846203.3938.1555.camel@minggr.sh.intel.com>
+ <20110729062158.GA8971@zhy>
+ <1311922180.3938.1573.camel@minggr.sh.intel.com>
+ <20110729070356.GA10420@zhy>
+ <1311924975.3938.1583.camel@minggr.sh.intel.com>
+ <20110729074635.GB10420@zhy>
+ <1311926218.5890.215.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110729080613.GA2488@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1311926218.5890.215.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch http://lkml.org/lkml/2003/7/13/226 introduced an RLIMIT_NPROC
-check in set_user() to check for NPROC exceeding via setuid() and
-similar functions.  Before the check there was a possibility to greatly
-exceed the allowed number of processes by an unprivileged user if the
-program relied on rlimit only.  But the check created new security
-threat: many poorly written programs simply don't check setuid() return
-code and believe it cannot fail if executed with root privileges.  So,
-the check is removed in this patch because of too often privilege
-escalations related to buggy programs.
+On Fri, Jul 29, 2011 at 09:56:58AM +0200, Peter Zijlstra wrote:
+> On Fri, 2011-07-29 at 15:46 +0800, Yong Zhang wrote:
+> > On Fri, Jul 29, 2011 at 03:36:15PM +0800, Lin Ming wrote:
+> > > >From another point of view, below !sched_feat(WAKEUP_PREEMPT) still
+> > > looks like duplicated.
+> > > 
+> > >         if (cfs_rq->nr_running > 1 || !sched_feat(WAKEUP_PREEMPT))
+> > >                 check_preempt_tick(cfs_rq, curr);
+> > > 
+> > > if "!sched_feat(WAKEUP_PREEMPT)" is run,
+> > > that implies cfs_rq->nr_running == 1.
+> > 
+> > That's true.
+> > 
+> > > 
+> > > Why do we need to call check_preempt_tick when there is only 1 task
+> > > runnable?
+> > 
+> > Just set_tsk_need_resched(p) if p's slice is over, thus:
+> > 
+> > 	(n tick)	--->		(n+1 tick)
+> > set_tsk_need_resched(p);
+> > 		another task Q is awaked
+> > 
+> > If we don't have !sched_feat(WAKEUP_PREEMPT), Q maybe will wait
+> > for tick coming to get scheduled. If we have
+> > !sched_feat(WAKEUP_PREEMPT), Q will get scheduled when some event
+> > happen, like IRQ.
+> 
+> Nah, if there is 1 runnable task it will always run, preemption simply
+> doesn't matter. There's nothing to preempt it with.
 
-The NPROC can still be enforced in the common code flow of daemons
-spawning user processes.  Most of daemons do fork()+setuid()+execve().
-The check introduced in execve() (1) enforces the same limit as in
-setuid() and (2) doesn't create similar security issues.
+Hmmm, so the newly waked task could be scheduled a little later.
+That means schedule tick judge everything.
 
-Neil Brown suggested to track what specific process has exceeded the
-limit by setting PF_NPROC_EXCEEDED process flag.  With the change only
-this process would fail on execve(), and other processes' execve()
-behaviour is not changed.
+Thanks,
+Yong
 
-Solar Designer suggested to re-check whether NPROC limit is still
-exceeded at the moment of execve().  If the process was sleeping for
-days between set*uid() and execve(), and the NPROC counter step down
-under the limit, the defered execve() failure because NPROC limit was
-exceeded days ago would be unexpected.  If the limit is not exceeded
-anymore, we clear the flag on successful calls to execve() and fork().
+> 
+> I've queued Lin's patch as I don't see the point of this thing either,
+> normally WAKEUP_PREEMPT is enabled so it says || 0 which is kinda
+> useless :-)
+> 
+> And I'm starting to think we should just kill all of WAKEUP_PREEMPT I
+> don't think we ever want to disable it anyway.. 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-The flag is also cleared on successful calls to set_user() as the limit
-was exceeded for the previous user, not the current one.
-
-Similar check was introduced in -ow patches (without the process flag).
-
-
-v3 - clear PF_NPROC_EXCEEDED on successful calls to set_user().
-
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- fs/exec.c             |   17 +++++++++++++++++
- include/linux/sched.h |    1 +
- kernel/cred.c         |    7 +++----
- kernel/fork.c         |    1 +
- kernel/sys.c          |   15 +++++++++++----
- 5 files changed, 33 insertions(+), 8 deletions(-)
-
----
-diff --git a/fs/exec.c b/fs/exec.c
-index 6075a1e..e8b7c1a 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1433,6 +1433,23 @@ static int do_execve_common(const char *filename,
- 	struct files_struct *displaced;
- 	bool clear_in_exec;
- 	int retval;
-+	const struct cred *cred = current_cred();
-+
-+	/*
-+	 * We move the actual failure in case of RLIMIT_NPROC excess from
-+	 * set*uid() to execve() because too many poorly written programs
-+	 * don't check setuid() return code.  Here we additionally recheck
-+	 * whether NPROC limit is still exceeded.
-+	 */
-+	if ((current->flags & PF_NPROC_EXCEEDED) &&
-+	    atomic_read(&cred->user->processes) > rlimit(RLIMIT_NPROC)) {
-+		retval = -EAGAIN;
-+		goto out_ret;
-+	}
-+
-+	/* If we steep below the limit, we don't want to make following
-+	 * execve() fail. */
-+	current->flags &= ~PF_NPROC_EXCEEDED;
- 
- 	retval = unshare_files(&displaced);
- 	if (retval)
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 496770a..f024c63 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1759,6 +1759,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
- #define PF_DUMPCORE	0x00000200	/* dumped core */
- #define PF_SIGNALED	0x00000400	/* killed by a signal */
- #define PF_MEMALLOC	0x00000800	/* Allocating memory */
-+#define PF_NPROC_EXCEEDED 0x00001000	/* set_user noticed that RLIMIT_NPROC was exceeded */
- #define PF_USED_MATH	0x00002000	/* if unset the fpu must be initialized before use */
- #define PF_FREEZING	0x00004000	/* freeze in progress. do not account to load */
- #define PF_NOFREEZE	0x00008000	/* this thread should not be frozen */
-diff --git a/kernel/cred.c b/kernel/cred.c
-index 174fa84..52f4342 100644
---- a/kernel/cred.c
-+++ b/kernel/cred.c
-@@ -508,11 +508,10 @@ int commit_creds(struct cred *new)
- 		key_fsgid_changed(task);
- 
- 	/* do it
--	 * - What if a process setreuid()'s and this brings the
--	 *   new uid over his NPROC rlimit?  We can check this now
--	 *   cheaply with the new uid cache, so if it matters
--	 *   we should be checking for it.  -DaveM
-+	 * RLIMIT_NPROC limits on user->processes have already been checked
-+	 * in set_user().
- 	 */
-+
- 	alter_cred_subscribers(new, 2);
- 	if (new->user != old->user)
- 		atomic_inc(&new->user->processes);
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 0276c30..de06c0a 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1110,6 +1110,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 		    p->real_cred->user != INIT_USER)
- 			goto bad_fork_free;
- 	}
-+	current->flags &= ~PF_NPROC_EXCEEDED;
- 
- 	retval = copy_creds(p, clone_flags);
- 	if (retval < 0)
-diff --git a/kernel/sys.c b/kernel/sys.c
-index e4128b2..a6a8a2d 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -591,11 +591,18 @@ static int set_user(struct cred *new)
- 	if (!new_user)
- 		return -EAGAIN;
- 
-+	/*
-+	 * We don't fail in case of NPROC limit excess here because too many
-+	 * poorly written programs don't check set*uid() return code, assuming
-+	 * it never fails if called by root.  We may still enforce NPROC limit
-+	 * for programs doing set*uid()+execve() by harmlessly defering the
-+	 * failure to the execve() stage.
-+	 */
- 	if (atomic_read(&new_user->processes) >= rlimit(RLIMIT_NPROC) &&
--			new_user != INIT_USER) {
--		free_uid(new_user);
--		return -EAGAIN;
--	}
-+			new_user != INIT_USER)
-+		current->flags |= PF_NPROC_EXCEEDED;
-+	else
-+		current->flags &= ~PF_NPROC_EXCEEDED;
- 
- 	free_uid(new->user);
- 	new->user = new_user;
----
+-- 
+Only stand for myself
