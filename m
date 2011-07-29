@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756358Ab1G2LqT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 07:46:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59296 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755622Ab1G2LqS convert rfc822-to-8bit (ORCPT
+	id S1755955Ab1G2L6d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 07:58:33 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:43976 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755192Ab1G2L6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 07:46:18 -0400
-Subject: Re: [PATCH] sched: Remove WAKEUP_PREEMPT feature check in
- entity_tick
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Lin Ming <ming.m.lin@intel.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        lkml <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>
-In-Reply-To: <20110729084637.GC12106@zhy>
-References: <1311846203.3938.1555.camel@minggr.sh.intel.com>
-	 <20110729062158.GA8971@zhy>
-	 <1311922180.3938.1573.camel@minggr.sh.intel.com>
-	 <20110729070356.GA10420@zhy>
-	 <1311924975.3938.1583.camel@minggr.sh.intel.com>
-	 <20110729074635.GB10420@zhy> <1311926218.5890.215.camel@twins>
-	 <20110729081800.GA12106@zhy> <1311927650.5890.217.camel@twins>
-	 <20110729084637.GC12106@zhy>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 29 Jul 2011 13:45:33 +0200
-Message-ID: <1311939933.5890.341.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 29 Jul 2011 07:58:31 -0400
+X-Sasl-enc: IiSFR7PyvPZmbbBoKVd+rE2YtjGAODnBZ42y8/P90+Ka 1311940710
+References: <20110729153207.17af3085@notabene.brown> <4E324DB4.7060600@fastmail.fm> <1311921035.7845.10.camel@edumazet-laptop> <4E3258E1.6020000@fastmail.fm> <20110729103634.GA12050@infradead.org>
+Message-Id: <5933F48C-49D6-492D-AB7B-B76A3ADDB6C6@fastmail.fm>
+From: Greg Banks <gnb@fastmail.fm>
+To: Christoph Hellwig <hch@infradead.org>
+In-Reply-To: <20110729103634.GA12050@infradead.org>
+Content-Type: text/plain;
+	charset=us-ascii;
+	format=flowed;
+	delsp=yes
+Content-Transfer-Encoding: 7bit
+X-Mailer: iPhone Mail (7C144)
+Mime-Version: 1.0 (iPhone Mail 7C144)
+Subject: Re: [PATCH] sunrpc: use better NUMA affinities
+Date: Fri, 29 Jul 2011 21:58:25 +1000
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, NeilBrown <neilb@suse.de>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-29 at 16:46 +0800, Yong Zhang wrote:
-> Let's take UP for example, we have cpu-hug task A and threadirq B.
-> 
->         n tick          --->            n+1 tick
-> set_tsk_need_resched(A);
->                 B comes in and
->                 wake up thread-B;
-> 
-> So for system on which we disable WAKEUP_PREEMPT,
-> if we don't have that check, thread-B will wait until n+1 tick comes
-> to get to run.
-> But if we have that check, thread-B will get to run after IRQ-B returns.
 
-But that's exactly what wakeup preemption is about, waking tasks don't
-get to preempt running tasks. So no doing that preemption is exactly
-right for !WAKEUP_PREEMPT.
 
-Anyway, I've queued the removal patch since that removes all
-confusion ;-)
+Sent from my iPhone
+
+On 29/07/2011, at 20:36, Christoph Hellwig <hch@infradead.org> wrote:
+
+> On Fri, Jul 29, 2011 at 04:53:21PM +1000, Greg Banks wrote:
+>>> Check commit 94dcf29a11b3d20a (kthread: use kthread_create_on_node 
+>>> ()) to
+>>> see how this strategy already was adopted for ksoftirqd, kworker,
+>>> migration, and pktgend kthreads.
+>>
+>> Ah, I see.  It's unfortunate that the kthread_create() API ends up
+>> being passed a CPU number but that's only used to format the name
+>> and not for sensible things :(
+>
+> kthread_create doesn't have a cpu argument - it has a printf-like  
+> format
+> string.
+>
+
+Sure, and a whole lot of the callsites are ("..._%d", cpu), hence the  
+unfortune :(
+
+Greg.
