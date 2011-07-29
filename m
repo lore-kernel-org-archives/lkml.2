@@ -1,53 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab1G2TnS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 15:43:18 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:55733 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751496Ab1G2TnQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 15:43:16 -0400
-Date: Fri, 29 Jul 2011 12:43:13 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -next] regulator: aat2870 needs module.h
-Message-Id: <20110729124313.2f2bb000.rdunlap@xenotime.net>
-In-Reply-To: <20110729173827.716f57ff6e00095a3efc6449@canb.auug.org.au>
-References: <20110729173827.716f57ff6e00095a3efc6449@canb.auug.org.au>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752668Ab1G2TqQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 15:46:16 -0400
+Received: from [41.78.77.123] ([41.78.77.123]:42978 "EHLO msu.ac.zw"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752193Ab1G2TqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 15:46:15 -0400
+Message-ID: <20110729214624.21031jog92cjtwr4@mail.msu.ac.zw>
+Date: Fri, 29 Jul 2011 21:46:24 +0200
+From: Western =?iso-8859-1?b?VW5pb26u?= <info@wu.com>
+Reply-to: western.unioncn@w.cn
+To: undisclosed-recipients:;
+Subject: Confirm your transfer!
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
 
-aat2870-regulator.c needs to include linux/module.h to fix multiple
-build errors.
 
-drivers/regulator/aat2870-regulator.c:145: error: 'THIS_MODULE' undeclared here (not in a function)
-drivers/regulator/aat2870-regulator.c:230: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
-drivers/regulator/aat2870-regulator.c:231: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
-drivers/regulator/aat2870-regulator.c:232: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+Confirm your transfer!! of $900,000.00 dollars from International  
+Monetary Fund(IMF)Contact Transfer Office with your  
+details;Email:western.unioncn@w.cn  Mr.Thomas Phil
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- drivers/regulator/aat2870-regulator.c |    1 +
- 1 file changed, 1 insertion(+)
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
 
---- linux-next-20110729.orig/drivers/regulator/aat2870-regulator.c
-+++ linux-next-20110729/drivers/regulator/aat2870-regulator.c
-@@ -22,6 +22,7 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/err.h>
-+#include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/delay.h>
- #include <linux/platform_device.h>
