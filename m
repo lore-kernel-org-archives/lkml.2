@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987Ab1G2KHN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 06:07:13 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39045 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755413Ab1G2KHL convert rfc822-to-8bit (ORCPT
+	id S1756136Ab1G2K0y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 06:26:54 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:16805 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756056Ab1G2K0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 06:07:11 -0400
+	Fri, 29 Jul 2011 06:26:53 -0400
+Date: Fri, 29 Jul 2011 12:26:51 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Andy Walls <awalls@md.metrocast.net>
+cc: Dan Carpenter <error27@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Jarod Wilson <jarod@redhat.com>,
+        Jerome Brock <jbrock@users.sourceforge.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Gerd Knorr <kraxel@goldbach.in-berlin.de>,
+        Jarod Wilson <jarod@wilsonet.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Thomas Reitmayr <treitmayr@yahoo.com>,
+        Michal Kochanowicz <mkochano@pld.org.pl>,
+        Christoph Bartelmus <lirc@bartelmus.de>, Mark Weaver <mark@npsl.co.uk>,
+        Ulrich Mueller <ulrich.mueller42@web.de>,
+        Stefan Jahn <stefan@lkcc.org>
+Subject: Re: [PATCH] staging; lirc, zilog: put_ir_rx may free 'rx' which can
+ lead to double free
+In-Reply-To: <f6f0d669-39e8-4435-839d-9c5525cbd8e9@email.android.com>
+Message-ID: <alpine.LNX.2.00.1107291225560.22532@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1107282345540.20477@swampdragon.chaosbits.net> <20110729060822.GF3752@shale.localdomain> <f6f0d669-39e8-4435-839d-9c5525cbd8e9@email.android.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4E314562.2000001@imgtec.com>
-References: <1311851023-3563-1-git-send-email-shashidharh@vayavyalabs.com>
-	<4E314562.2000001@imgtec.com>
-Date: Fri, 29 Jul 2011 11:07:09 +0100
-Message-ID: <CAFbHwiS9ESqXbHF8EnfMaMdR3JNCW+sPEtaAJvL0ptBY1OsFkQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] mmc: Fixed bug in IDMAC_SET_BUFFER1_SIZE Macro in dw_mmc.c
-From: Will Newton <will.newton@gmail.com>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Shashidhar Hiremath <shashidharh@vayavyalabs.com>,
-        Will Newton <will.newton@imgtec.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 12:17 PM, James Hogan <james.hogan@imgtec.com> wrote:
-> On 07/28/2011 12:03 PM, Shashidhar Hiremath wrote:
->> The mask used inside this macro was assuming Buffer_Size1's[BS1's] width to be 14 bits,
->> it is actually of 13 bits, Modified masks used in IDMAC_SET_BUFFER1_SIZE such that
->> they use only 13 bits instead of current 14.
->>
->> Signed-off-by: Shashidhar Hiremath <shashidharh@vayavyalabs.com>
->> ---
->>  drivers/mmc/host/dw_mmc.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
->> index 77f0b6b..f13bb49 100644
->> --- a/drivers/mmc/host/dw_mmc.c
->> +++ b/drivers/mmc/host/dw_mmc.c
->> @@ -62,7 +62,7 @@ struct idmac_desc {
->>
->>       u32             des1;   /* Buffer sizes */
->>  #define IDMAC_SET_BUFFER1_SIZE(d, s) \
->> -     ((d)->des1 = ((d)->des1 & 0x03ffc000) | ((s) & 0x3fff))
->> +     ((d)->des1 = ((d)->des1 & 0x03ffe000) | ((s) & 0x1fff))
->>
->>       u32             des2;   /* buffer 1 physical address */
->>
->
-> Yes, according to the TRM you appear to be correct
->
-> Reviewed-by: James Hogan <james.hogan@imgtec.com>
+On Fri, 29 Jul 2011, Andy Walls wrote:
 
-Yes, looks correct to me too (for some reason I didn't get the original mail).
+> Dan Carpenter <error27@gmail.com> wrote:
+> 
+> >On Thu, Jul 28, 2011 at 11:49:51PM +0200, Jesper Juhl wrote:
+> >> If calling put_ir_rx(rx, true); in
+> >> drivers/staging/lirc/lirc_zilog.c::ir_probe() returns true (1) then
+> >it
+> >> means that it has freed it's first argument. Subsequently jumping to
+> >> 'out_put_xx' will cause us to call put_ir_rx() once more since 'rx'
+> >is
+> >> not zero - leading to a double free.
+> >
+> >It would be better to just remove the first call to put_ir_rx().
+> >
+> >regards,
+> >dan carpenter
+> 
+> Jesper,
+> 
+> Could you forward your original patch email to me?  I never got it.
+> 
+> I was the one who added all the new ref counting to lirc_zilog and it was not fun to get right (well at least what I thought was right...).
+> 
 
-Acked-by: Will Newton <will.newton@imgtec.com>
+Sure. I've just forwarded both the original patch mail and the mail with 
+the updated version to  Andy Walls <awalls@md.metrocast.net>
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
