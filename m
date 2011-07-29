@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab1G2SvG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 14:51:06 -0400
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:45377 "EHLO
-	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392Ab1G2SvE (ORCPT
+	id S1752690Ab1G2S6G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 14:58:06 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:52644 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752580Ab1G2S6F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 14:51:04 -0400
-Subject: Re: recursive locking: epoll.
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Nelson Elhage <nelhage@ksplice.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, davidel@xmailserver.org,
-        Dave Jones <davej@redhat.com>
-Date: Fri, 29 Jul 2011 20:50:55 +0200
-In-Reply-To: <1311249346.2098.12.camel@t41.thuisdomein>
-References: <4E1FF63F.4040704@gmail.com> <20110715210420.GA22551@redhat.com>
-	 <1311249346.2098.12.camel@t41.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.3 (3.1.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1311965462.2351.28.camel@t41.thuisdomein>
-Mime-Version: 1.0
+	Fri, 29 Jul 2011 14:58:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110729112526.db528361.rdunlap@xenotime.net>
+References: <1311634718-32588-1-git-send-email-mmarek@suse.cz>
+	<1311947497-4958-1-git-send-email-mmarek@suse.cz>
+	<20110729112526.db528361.rdunlap@xenotime.net>
+Date: Fri, 29 Jul 2011 14:58:03 -0400
+Message-ID: <CACqU3MXWpkbyn9D23pk7mB5M_NeC0zieWXAmN4Cz=_PTJOaRrg@mail.gmail.com>
+Subject: Re: [PATCH] kconfig: Introduce IS_ENABLED(), IS_BUILTIN() and IS_MODULE()
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        xiyou.wangcong@gmail.com, sam@ravnborg.org,
+        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Sent to the addresses get_maintainer.pl suggested and to Davide and
-Nelson, because this is about code they cared about half a year ago.
-CC'ed to the addresses involved until now.)
+Hi,
 
-On Thu, 2011-07-21 at 13:55 +0200, Paul Bolle wrote:
-> That number turned out to be 722472
-> ( https://bugzilla.redhat.com/show_bug.cgi?id=722472 ).
+On Fri, Jul 29, 2011 at 2:25 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On Fri, 29 Jul 2011 15:51:37 +0200 Michal Marek wrote:
+>
+>> Replace the config_is_*() macros with a variant that allows for grepping
+>> for usage of CONFIG_* options in the code. Usage:
+>>
+>>   if (IS_ENABLED(CONFIG_NUMA))
+>>
+>> or
+>>
+>>   #if IS_ENABLED(CONFIG_NUMA)
+>>
+>> The IS_ENABLED() macro evaluates to 1 if the argument is set (to either 'y'
+>> or 'm'), IS_BUILTIN() tests if the option is 'y' and IS_MODULE() test if
+>> the option is 'm'. Only boolean and tristate options are supported.
+>>
+>> Signed-off-by: Michal Marek <mmarek@suse.cz>
+>> ---
+>>
+>> Everybody happy with the above naming?
+>
+> Yes here.
+>
+> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+>
+> These strings are being written to the .config file, right?
+>
+no, they are written to `include/generated/autoconf.h'
 
-0) This seems to be a lockdep false alarm. The cause is an epoll
-instance added to another epoll instance (ie, nesting epoll instances).
-Apparently lockdep isn't supplied enough information to determine what's
-going on here. Now there might be a number of ways to fix this. But
-after having looked at this for quite some time and updating the above
-bug report a number of times, I guessed that involving people outside
-those tracking that report might move things forward towards a solution.
-At least, I wasn't able to find a, well, clean solution.
+ - Arnaud
 
-1) The call chain triggering the warning with the nice
-    *** DEADLOCK ***
-
-line can be summarized like this:
-
-sys_epoll_ctl
-    mutex_lock                          epmutex
-    ep_call_nested
-        ep_loop_check_proc
-            mutex_lock                      ep->mtx
-            mutex_unlock                    ep->mtx
-    mutex_lock                              ep->mtx
-    ep_eventpoll_poll
-        ep_ptable_queue_proc
-        ep_call_nested
-            ep_poll_readyevents_pro
-                ep_scan_ready_list
-                    mutex_lock                  ep->mtx
-                    ep_read_events_proc
-                    mutex_unlock                ep->mtx
-    mutex_unlock                            ep->mtx
-    mutex_unlock                        epmutex
-
-2) When ep_scan_ready_list() calls mutex_lock(), lockdep notices
-recursive locking on ep->mtx. It is not supplied enough information to
-determine that the lock is related to two separate epoll instances (the
-outer instance and the nested instance). The solution appears to involve
-supplying lockdep that information (ie, "lockdep annotation"). 
-
-3) Please see the bugzilla.redhat.com report for further background.
-
-
-Paul Bolle
-
+>> +             /*
+>> +              * Generate the __enabled_CONFIG_* and
+>> +              * __enabled_CONFIG_*_MODULE macros for use by the
+>> +              * IS_{ENABLED,BUILTIN,MODULE} macros. The _MODULE variant is
+>> +              * generated even for booleans so that the IS_ENABLED() macro
+>> +              * works.
+>> +              */
+>> +             fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
+>> +                             sym->name, (*value == 'y'));
+>> +             fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE %d\n",
+>> +                             sym->name, (*value == 'm'));
+>>               break;
+>
+>
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
