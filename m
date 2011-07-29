@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751617Ab1G2PEm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 11:04:42 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:37336 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750844Ab1G2PEk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 11:04:40 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: BodVKmQVM1mswrpoPYiv6eygAnbWmGgwzD4Z64qJZo8SDq1
- .dU7zRQOvsGHH9JsWe2dCN4pQpx_J.CNYzC8lK2VKbj2vWlt3yIV0UKpDmr9
- AEoS1b1H26A2GDZxcYzNa4hf.AFDWiNtEfgEhPO3_FBgdXAQLzwwu_zZQnxC
- qrHWKVLCKB1o2fb0q7.xnf3ZJtiVBVRvduhrNC_UxZFzJcZis.6lCwIt0ewn
- a9KQ3sL7vrKzb1jPA8ndRraJxgRoAY_guZxtV1lWhFjWYWO5lJE2E2NHmwdJ
- s9DZd6rilXa5xO82vpD3t.WoGUyp2P5vu1yMR4Krlo..zCVmHNjAKSaj_ojM
- yxC7dwx2u_JW_fzIp5l_hgsqe
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 29 Jul 2011 10:04:36 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        rientjes@google.com, hughd@google.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
-In-Reply-To: <alpine.DEB.2.00.1107290145080.3279@tiger>
-Message-ID: <alpine.DEB.2.00.1107291002570.16178@router.home>
-References: <alpine.DEB.2.00.1107290145080.3279@tiger>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751294Ab1G2PI7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 11:08:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27290 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750828Ab1G2PI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 11:08:58 -0400
+Date: Fri, 29 Jul 2011 11:08:51 -0400
+From: Dave Jones <davej@redhat.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH] cpufreq: Fix build of s3c64xx cpufreq driver for header
+ change
+Message-ID: <20110729150851.GA9156@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Mark Brown <broonie@opensource.wolfsonmicro.com>,
+	linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+	Kukjin Kim <kgene.kim@samsung.com>
+References: <1311949618-919-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20110729144802.GB1422@redhat.com>
+ <20110729150144.GC19118@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110729150144.GC19118@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jul 2011, Pekka Enberg wrote:
+On Fri, Jul 29, 2011 at 04:01:44PM +0100, Mark Brown wrote:
+ > On Fri, Jul 29, 2011 at 10:48:02AM -0400, Dave Jones wrote:
+ > > On Fri, Jul 29, 2011 at 03:26:58PM +0100, Mark Brown wrote:
+ > >  > Some header change has removed an implicit include of module.h, breaking
+ > >  > the build due to the use of THIS_MODULE. Fix that.
+ > 
+ > > is this dependant on the module.h changes that just got merged in -next
+ > > from Paul Gortmaker ?  If so, it should probably get merged as part of that set.
+ > 
+ > Possibly, but there were a bunch of other failures in the Samsung
+ > specific stuff not related to module.h which appeared today. I did run
+ > into another non-samsung module.h failure, though.  Mostly I was just
+ > surprised stuff like this was showing up so late in the merge window, I
+ > didn't spend a lot of time investigating what broke.
 
-> We haven't come up with a solution to keep struct page size the same but I
-> think it's a reasonable trade-off.
+wait, confused. Were you building Linus' tree, or -next ?
 
-The change requires the page struct to be aligned to a double word
-boundary. There is actually no variable added to the page struct. Its just
-the alignment requirement that causes padding to be added after each page
-struct.
-
+	Dave
