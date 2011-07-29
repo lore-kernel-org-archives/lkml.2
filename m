@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab1G2S6G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 14:58:06 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:52644 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580Ab1G2S6F convert rfc822-to-8bit (ORCPT
+	id S1752745Ab1G2S6l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 14:58:41 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61825 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab1G2S6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 14:58:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110729112526.db528361.rdunlap@xenotime.net>
-References: <1311634718-32588-1-git-send-email-mmarek@suse.cz>
-	<1311947497-4958-1-git-send-email-mmarek@suse.cz>
-	<20110729112526.db528361.rdunlap@xenotime.net>
-Date: Fri, 29 Jul 2011 14:58:03 -0400
-Message-ID: <CACqU3MXWpkbyn9D23pk7mB5M_NeC0zieWXAmN4Cz=_PTJOaRrg@mail.gmail.com>
-Subject: Re: [PATCH] kconfig: Introduce IS_ENABLED(), IS_BUILTIN() and IS_MODULE()
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        xiyou.wangcong@gmail.com, sam@ravnborg.org,
-        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 29 Jul 2011 14:58:39 -0400
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Arnd Bergmann <arnd@arndb.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de
+Cc: Sedat Dilek <sedat.dilek@gmail.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -next] usercopy: Fixup patch to commit 4df97ff66a102a89ecfa2f88051e30bdd54ad864
+Date: Fri, 29 Jul 2011 20:58:12 +0200
+Message-Id: <1311965892-17026-1-git-send-email-sedat.dilek@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+When building with CONFIG_BINFMT_MISC=m linux-next (next-20110728) breaks:
+ERROR: "copy_from_user_overflow" [fs/binfmt_misc.ko] undefined!
 
-On Fri, Jul 29, 2011 at 2:25 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On Fri, 29 Jul 2011 15:51:37 +0200 Michal Marek wrote:
->
->> Replace the config_is_*() macros with a variant that allows for grepping
->> for usage of CONFIG_* options in the code. Usage:
->>
->>   if (IS_ENABLED(CONFIG_NUMA))
->>
->> or
->>
->>   #if IS_ENABLED(CONFIG_NUMA)
->>
->> The IS_ENABLED() macro evaluates to 1 if the argument is set (to either 'y'
->> or 'm'), IS_BUILTIN() tests if the option is 'y' and IS_MODULE() test if
->> the option is 'm'. Only boolean and tristate options are supported.
->>
->> Signed-off-by: Michal Marek <mmarek@suse.cz>
->> ---
->>
->> Everybody happy with the above naming?
->
-> Yes here.
->
-> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
->
-> These strings are being written to the .config file, right?
->
-no, they are written to `include/generated/autoconf.h'
+The issue was introduced by commit ab3b49d018924085e5d949c1af53fae0da9a8d94:
+"The help text for this config is duplicated across the x86, parisc, and s390 Kconfig.debug files."
 
- - Arnaud
+After reporting the issue to linux-next/LKML mailing-lists, Stephen Boyd
+told me he had already sent a fix [1] which should be folded into [2].
+Unfortunately, Stephen's fixup didn't get into Andrew's mmotm-tree and
+find its way from there to linux-next.
 
->> +             /*
->> +              * Generate the __enabled_CONFIG_* and
->> +              * __enabled_CONFIG_*_MODULE macros for use by the
->> +              * IS_{ENABLED,BUILTIN,MODULE} macros. The _MODULE variant is
->> +              * generated even for booleans so that the IS_ENABLED() macro
->> +              * works.
->> +              */
->> +             fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
->> +                             sym->name, (*value == 'y'));
->> +             fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE %d\n",
->> +                             sym->name, (*value == 'm'));
->>               break;
->
->
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->
+Tested on x86_64 (Randy) and i386 (Sedat).
+
+[1] https://lkml.org/lkml/2011/7/6/6
+[2] http://userweb.kernel.org/~akpm/mmotm/broken-out/consolidate-config_debug_strict_user_copy_checks.patch
+
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+Tested-by: Randy Dunlap <rdunlap@xenotime.net>
+Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+---
+ lib/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/lib/Makefile b/lib/Makefile
+index fbf4b06..4ac9e49b 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -14,7 +14,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
+ 	 is_single_threaded.o plist.o decompress.o find_next_bit.o
+ 
+-lib-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
++obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+ lib-$(CONFIG_MMU) += ioremap.o
+ lib-$(CONFIG_SMP) += cpumask.o
+ 
+-- 
+1.7.6
+
