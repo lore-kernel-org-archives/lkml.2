@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab1G2U2S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 16:28:18 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55282 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab1G2U2R convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 16:28:17 -0400
-Subject: Re: [patch] w1: off by one in w1_f29_remove_slave()
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=iso-8859-1
-From: =?iso-8859-1?Q?Jean-Fran=E7ois_Dagenais?= <jeff.dagenais@gmail.com>
-In-Reply-To: <20110727095557.GL3824@shale.localdomain>
-Date: Fri, 29 Jul 2011 16:28:12 -0400
-Cc: Evgeniy Polyakov <johnpol@2ka.mipt.ru>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
+	id S1752898Ab1G2Uev (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 16:34:51 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:50457 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752156Ab1G2Ueu convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 16:34:50 -0400
+X-Sasl-enc: TU5kmm2lsXcHoXLlEA/EpWAXY7SuUxku4fUpC9NkQYIH 1311971688
+References: <20110729153207.17af3085@notabene.brown> <4E324DB4.7060600@fastmail.fm> <1311921035.7845.10.camel@edumazet-laptop> <4E3258E1.6020000@fastmail.fm> <20110729103634.GA12050@infradead.org> <5933F48C-49D6-492D-AB7B-B76A3ADDB6C6@fastmail.fm> <1311941491.2843.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <F67B6E82-9FA8-464E-B3FB-DC0D4EC18BB0@fastmail.fm> <20110729164836.GL23194@fieldses.org> <20110729165345.GM23194@fieldses.org>
+Message-Id: <F562C6F4-3FC2-4952-A903-8E87E9EF2D9D@fastmail.fm>
+From: Greg Banks <gnb@fastmail.fm>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+In-Reply-To: <20110729165345.GM23194@fieldses.org>
+Content-Type: text/plain;
+	charset=utf-8;
+	format=flowed;
+	delsp=yes
 Content-Transfer-Encoding: 8BIT
-Message-Id: <9C2475AA-829E-4BB8-A3D2-2444803A33D3@gmail.com>
-References: <20110727095557.GL3824@shale.localdomain>
-To: Dan Carpenter <error27@gmail.com>
-X-Mailer: Apple Mail (2.1084)
+X-Mailer: iPhone Mail (7C144)
+Mime-Version: 1.0 (iPhone Mail 7C144)
+Subject: Re: [PATCH] sunrpc: use better NUMA affinities
+Date: Sat, 30 Jul 2011 06:34:44 +1000
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, NeilBrown <neilb@suse.de>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yup, confirmed, weird that I did not notice a crash, probably lucky shot in the environment I was using it.
 
-On 2011-07-27, at 05:55, Dan Carpenter wrote:
 
-> This reads past the end of the w1_f29_sysfs_bin_files[] array.  I
-> don't have this hardware, but I assume it crashes every time the
-> function is called.
-> 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-Acked-by: Jean-Fran�ois Dagenais <dagenaisj@sonatest.com>
-> 
-> diff --git a/drivers/w1/slaves/w1_ds2408.c b/drivers/w1/slaves/w1_ds2408.c
-> index c377818..0da4e97 100644
-> --- a/drivers/w1/slaves/w1_ds2408.c
-> +++ b/drivers/w1/slaves/w1_ds2408.c
-> @@ -373,7 +373,7 @@ static int w1_f29_add_slave(struct w1_slave *sl)
-> static void w1_f29_remove_slave(struct w1_slave *sl)
-> {
-> 	int i;
-> -	for (i = NB_SYSFS_BIN_FILES; i <= 0; --i)
-> +	for (i = NB_SYSFS_BIN_FILES - 1; i <= 0; --i)
-> 		sysfs_remove_bin_file(&sl->dev.kobj,
-> 			&(w1_f29_sysfs_bin_files[i]));
-> }
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Sent from my iPhone
 
+On 30/07/2011, at 2:53, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+
+> On Fri, Jul 29, 2011 at 12:48:36PM -0400, bfields wrote:
+>> On Fri, Jul 29, 2011 at 11:30:05PM +1000, Greg Banks wrote:
+>>>
+>>>
+>>> Sent from my iPhone
+>>>
+>>> On 29/07/2011, at 22:11, Eric Dumazet <eric.dumazet@gmail.com>  
+>>> wrote:
+>>>
+>>>> Le vendredi 29 juillet 2011 à 21:58 +1000, Greg Banks a écrit :
+>>>>
+>>>>>
+>>>>> Sure, and a whole lot of the callsites are ("..._%d", cpu),  
+>>>>> hence the
+>>>>> unfortune :(
+>>>>
+>>>> BTW, we could name nfsd threads differently :
+>>>>
+>>>> Currently, they all are named : "nfsd"
+>>>>
+>>>> If SVC_POOL_PERCPU is selected, we could name them :
+>>>> nfsd_c0 -> nfsd_cN
+>>>>
+>>>> If SVC_POOL_PERNODE is selected, we could name them :
+>>>> nfsd_n0  -> nfsd_nN
+>>>>
+>>>> That would help to check with "ps aux" which cpu/nodes are under
+>>>> stress.
+>>>>
+>>>>
+>>>
+>>> I like it!
+>>
+>> Yup, patch welcomed.--b.
+>
+> (Annoying fact: some initscripts stop nfsd using a rough equivalent of
+> "killall nfsd".  So the name of the threads is arguably ABI.  I think
+> those initscripts are nuts and deserve what they get, but that may be
+> because I'm forgetting the reason they do that.)
+>
+
+We had this discussion in May-June 2008; it's because the nfsds were  
+once  many many years ago userspace threads.
+
+The "killall nfsd" semantics in those scripts are awful and lead to  
+problems shutting down when there are lots of threads. It would  
+probably be an improvement to provide a better shutdown mechanism and  
+force distros to use it.
+
+Or, you could preserve the effective semantics by having a single  
+"nfsd" thread whose purpose is to notice that it's being signalled and  
+perform a clean shutdown (perhaps blocking the thread doing the kill()  
+call until the shutdown has completed).
+
+Greg.
