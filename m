@@ -1,106 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab1G2UXk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 16:23:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54499 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752493Ab1G2UXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 16:23:39 -0400
-Date: Fri, 29 Jul 2011 22:23:36 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lacombar@gmail.com, mmarek@suse.cz, plagnioj@jcrosoft.com,
-        rprabhu@wnohang.net, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] kbuild/kconfig for 3.1-rc1
-Message-ID: <20110729202336.GA1162@sepie.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752845Ab1G2UYT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 16:24:19 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:44141 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752156Ab1G2UYR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 16:24:17 -0400
+X-Sasl-enc: tTntE6DV5bj/k33NRiAFyvkV/ECwmo+1smD7BJKNYqPJ 1311971054
+References: <20110729153207.17af3085@notabene.brown> <4E324DB4.7060600@fastmail.fm> <1311921035.7845.10.camel@edumazet-laptop> <4E3258E1.6020000@fastmail.fm> <20110729164553.GJ23194@fieldses.org>
+Message-Id: <15F25127-70B3-4B42-86DA-E73629C4FE2B@fastmail.fm>
+From: Greg Banks <gnb@fastmail.fm>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+In-Reply-To: <20110729164553.GJ23194@fieldses.org>
+Content-Type: text/plain;
+	charset=utf-8;
+	format=flowed;
+	delsp=yes
+Content-Transfer-Encoding: 8BIT
+X-Mailer: iPhone Mail (7C144)
+Mime-Version: 1.0 (iPhone Mail 7C144)
+Subject: Re: [PATCH] sunrpc: use better NUMA affinities
+Date: Sat, 30 Jul 2011 06:24:09 +1000
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, NeilBrown <neilb@suse.de>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-here is the kconfig stuff for 3.1-rc1:
-* Lots of internal kconfig cleanup as well as bugfixes
-* New macros that allow to test CONFIG_ options in C expressions, this will
-  allow to convert some '#ifdef CONFIG_FOO' in the source to a more
-  readable variant 'if (IS_ENABLED(CONFIG_FOO))' in the future.
 
-Thanks,
-Michal
+Sent from my iPhone
 
-The following changes since commit 55922c9d1b84b89cb946c777fddccb3247e7df2c:
+On 30/07/2011, at 2:45, "J. Bruce Fields" <bfields@fieldses.org> wrote:
 
-  Linux 3.0-rc1 (2011-05-29 17:43:36 -0700)
+> On Fri, Jul 29, 2011 at 04:53:21PM +1000, Greg Banks wrote:
+>> On 29/07/11 16:30, Eric Dumazet wrote:
+>>> Le vendredi 29 juillet 2011 à 16:05 +1000, Greg Banks a écrit :
+>>>> On 29/07/11 15:32, NeilBrown wrote:
+>>>>
+>>>> I seem to remember coming to the conclusion that Jeff eventually
+>>>> addressed this problem...am I misremembering or did something  
+>>>> regress?
+>>>>
+>>> Currently, all nfsd kthreads use memory for their kernel stack and
+>>> various initial data from a _single_ node, even if you use
+>>> sunrpc.pool_mode=pernode  (or percpu)
+>>
+>> That's just plain broken and I'm very pleased to see you fix it.
+>
+> Should I take that as a "Reviewed-by"?
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git kconfig
+If you like.
 
-Arnaud Lacombe (20):
-      kconfig: annotate non-trivial fall-trough
-      kconfig: fix return code for invalid boolean symbol in conf_set_sym_val()
-      kconfig: add missing <stdarg.h> inclusion
-      kconfig: add missing <ctype.h> inclusion
-      kconfig: add missing <stdlib.h> inclusion
-      kconfig: nuke reference to SWIG
-      kconfig: nuke LKC_DIRECT_LINK cruft
-      kconfig/gconf: kill deadcode
-      kconfig/gconf: silent missing prototype warnings
-      kconfig: do not overwrite symbol direct dependency in assignment
-      kconfig: introduce specialized printer
-      kconfig: use calloc() for expr allocation
-      kconfig/conf: reduce the scope of `defconfig_file'
-      kconfig/conf: add command line options' description
-      kconfig: remove pending prototypes for kconfig_load()
-      kconfig/conf: mark xfgets() private
-      kconfig/nconf: use the generic menu_get_ext_help()
-      kconfig/nconf: prevent segfault on empty menu
-      kconfig/nconf: remove useless conditionnal
-      kconfig: fix missing "0x" prefix from S_HEX symbol in autoconf.h
+>
+>> [...] In ToT
+>> svc_pool_map_set_cpumask() is called *after* kthread_create() and
+>> applies to the child thread, *after* it's stack has been allocated
+>> on the wrong node.  In the working SGI code,
+>> svc_pool_map_set_cpumask() is called by the parent node on itself
+>> *before* calling kernel_thread() or doing any of the data structure
+>> allocations, thus ensuring that everything gets allocated using the
+>> default memory allocation policy, which on SGI NFS servers was
+>> globally tuned to be "node-local".
+>
+> OK, so would it be enough to just move the svc_pool_map_set_cpumask()
+> back a few lines, or do we want Eric's approach, in order to have
+> something that will work better with other memory allocation policies?
+>
 
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      kconfig: autogenerated config_is_xxx macro
+Relying on global policy was easy but not a great idea, I prefer  
+Eric's approach of doing it explicitly.
 
-Michal Marek (8):
-      Merge branch 'kbuild/kconfig-for-40' into kbuild/kconfig
-      kconfig: Only generate config_is_xxx for bool and tristate options
-      Merge branch 'kbuild/kconfig-for-40' into kbuild/kconfig
-      Merge commit 'v3.0-rc1' into kbuild/kconfig
-      Merge branch 'kconfig-trivial' of git://github.com/lacombar/linux-2.6 into kbuild/kconfig
-      Merge branch 'kconfig-trivial' of git://github.com/lacombar/linux-2.6 into kbuild/kconfig
-      xconfig: Abort close if configuration cannot be saved
-      kconfig: Introduce IS_ENABLED(), IS_BUILTIN() and IS_MODULE()
-
-Raghavendra D Prabhu (1):
-      nconfig: Avoid Wunused-but-set warning
-
- Makefile                            |    2 +-
- include/linux/kconfig.h             |   32 ++++
- scripts/kconfig/Makefile            |   23 +--
- scripts/kconfig/conf.c              |   48 +++++-
- scripts/kconfig/confdata.c          |  295 +++++++++++++++++++++++------------
- scripts/kconfig/expr.c              |   13 +-
- scripts/kconfig/expr.h              |    3 -
- scripts/kconfig/gconf.c             |   38 +-----
- scripts/kconfig/kconfig_load.c      |   35 ----
- scripts/kconfig/kxgettext.c         |    1 -
- scripts/kconfig/lex.zconf.c_shipped |    1 -
- scripts/kconfig/lkc.h               |   16 +--
- scripts/kconfig/lkc_proto.h         |    1 +
- scripts/kconfig/mconf.c             |    2 +-
- scripts/kconfig/menu.c              |    5 +-
- scripts/kconfig/nconf.c             |   30 +---
- scripts/kconfig/qconf.cc            |   17 ++-
- scripts/kconfig/qconf.h             |    2 +-
- scripts/kconfig/symbol.c            |   47 ++++++-
- scripts/kconfig/util.c              |    2 +
- scripts/kconfig/zconf.l             |    1 -
- scripts/kconfig/zconf.tab.c_shipped |    1 -
- scripts/kconfig/zconf.y             |    1 -
- 23 files changed, 356 insertions(+), 260 deletions(-)
- create mode 100644 include/linux/kconfig.h
- delete mode 100644 scripts/kconfig/kconfig_load.c
+Greg.
+>>
