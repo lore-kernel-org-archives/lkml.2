@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920Ab1G2P0X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 11:26:23 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57580 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751299Ab1G2P0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 11:26:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,287,1309762800"; 
-   d="scan'208";a="33562330"
-Subject: Re: [PATCH 4/8] coredump_wait: don't call complete_vfork_done()
-From: Matt Fleming <matt.fleming@linux.intel.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110729142555.GC3501@redhat.com>
-References: <20110727163159.GA23785@redhat.com>
-	 <20110727163311.GD23793@redhat.com>
-	 <1311944555.21232.68.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <20110729142555.GC3501@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 29 Jul 2011 16:26:15 +0100
-Message-ID: <1311953175.21232.70.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1751934Ab1G2Pa4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 11:30:56 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42022 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab1G2Paz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 11:30:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <1311941799.1536.532.camel@vkoul-udesk3>
+References: <cover.1311936523.git.viresh.kumar@st.com>
+	<9c81beb9cd84f84b58abbd24ebfae85dfe8d8ee1.1311936524.git.viresh.kumar@st.com>
+	<1311941799.1536.532.camel@vkoul-udesk3>
+Date: Fri, 29 Jul 2011 08:30:54 -0700
+Message-ID: <CAOh2x==_g+JQzTizgVTdH8Dyg_5+KpyYm+G_Ddu5mO15N6n-tw@mail.gmail.com>
+Subject: Re: [PATCH 09/18] dmaengine/amba-pl08x: Schedule tasklet in case of
+ error interrupt
+From: viresh kumar <viresh.linux@gmail.com>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: Viresh Kumar <viresh.kumar@st.com>, linus.walleij@linaro.org,
+        pratyush.anand@st.com, rajeev-dlh.kumar@st.com, linux@arm.linux.org.uk,
+        bhupesh.sharma@st.com, shiraz.hashim@st.com,
+        linux-kernel@vger.kernel.org, vipin.kumar@st.com,
+        armando.visconti@st.com, amit.virdi@st.com, vipulkumar.samar@st.com,
+        deepak.sikri@st.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-29 at 16:25 +0200, Oleg Nesterov wrote:
->
-> Please note that if ->vfork_done != NULL, then ->real_parent shares
-> ->mm with us, by definition of CLONE_VFORK.
-> 
-> In this case, with or without this patch, the parent was already
-> killed by zap_threads(). It can never do wait() or something else.
-> 
-> However. before 3/8, it was necessary to wakeup the TASK_UNINTERRUPTIBLE
-> parent, otherwise we deadlock. Once again, it can't do anything,
-> it will die immediately because of fatal_signal_pending().
+On 7/29/11, Koul, Vinod <vinod.koul@intel.com> wrote:
+> On Fri, 2011-07-29 at 16:19 +0530, Viresh Kumar wrote:
+>> +		dev_err(&pl08x->adev->dev, "%s error interrupt, register value"
+>> +				"0x%08x\n", __func__, err);
+> again this looks convoluted, and the stuff is quotes can be in single
+> line :)
 
-D'oh, yes. I see now, thanks!
+Will take care of this in all patches.
 
+> but in tasklet you will call the client callback, so how does the client
+> know if this was success or error? Did I miss anything?
+
+No you didn't. I couldn't find a way in framework to report back to
+client success or failure.
+Is there any way? For now i have only kept error prints.
+
+--
+viresh
