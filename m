@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839Ab1G2VQQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 17:16:16 -0400
-Received: from waste.org ([173.11.57.241]:51200 "EHLO waste.org"
+	id S1752830Ab1G2VRQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 17:17:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:58208 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751292Ab1G2VQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 17:16:15 -0400
-Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
-From: Matt Mackall <mpm@selenic.com>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1751292Ab1G2VRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 17:17:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,288,1309762800"; 
+   d="scan'208";a="32003048"
+Message-ID: <4E33235A.5050700@linux.intel.com>
+Date: Fri, 29 Jul 2011 14:17:14 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+MIME-Version: 1.0
+To: Jeff Garzik <jgarzik@pobox.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
         "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Fenghua Yu <fenghua.yu@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Matt Mackall <mpm@selenic.com>,
         Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jeff Garzik <jgarzik@pobox.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1311971867-25124-2-git-send-email-hpa@linux.intel.com>
-References: <1311971867-25124-1-git-send-email-hpa@linux.intel.com>
-	 <1311971867-25124-2-git-send-email-hpa@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 29 Jul 2011 16:16:11 -0500
-Message-ID: <1311974171.20898.393.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
+Subject: Re: [RFD] Direct support for the x86 RDRAND instruction
+References: <1311971867-25124-1-git-send-email-hpa@linux.intel.com> <4E3320A2.1040808@pobox.com>
+In-Reply-To: <4E3320A2.1040808@pobox.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-29 at 13:37 -0700, H. Peter Anvin wrote:
-> From: "H. Peter Anvin" <hpa@linux.intel.com>
+On 07/29/2011 02:05 PM, Jeff Garzik wrote:
 > 
-> Add support for architecture-specific hooks into either the blocking
-> or the nonblocking random pools.  These hooks are defined to return
-> the number of bytes of randomness produced (similar to a read() system
-> call.)  They could also potentialy be used to inject randomness on
-> demand while continuing to use the pool system, by calling a suitable
-> injection interface and returning 0.
+> This does not cover the one question I [predictably] have:  why not do 
+> this in rngd, rather than the kernel?
+> 
 
-I have already NAKed this approach in no uncertain terms.
+That is actually why I didn't do the /dev/random aspect of this.  I have
+an rngd enabling patch in the works as well.
 
-What if the next fancy hardware RNG with its own crypto hardening[1]
-that shows up is not a special CPU instruction or indeed not even
-arch-specific? It could just as easily be a USB or i2c or PCI device.
-There's no reason to think the two notions are connected AT ALL. Your
-whole notion of an 'architectural random source' is just plain wrong.
-The right way to do this is to add a generic extension to the existing
-hardware RNG design.
+The reason for not using RDRAND *only* in rngd is that it is a poor
+match -- RDRAND is designed as a /dev/urandom-type replacement, but it
+is *way* faster than the in-kernel system (since it is all in
+hardware)... plus it is reseeded far more frequently than what is
+possible in software (the architectural spec guarantees a reseed every
+512 reads; I am told by the hardware people that in reality it is way
+more frequent than that.)
 
-If you want to make forward progress, spend the half a day to implement
-a standard HWRNG driver so people with your hardware have basic
-functionality, then come back and we'll discuss implementing a trusted
-fast path API to HWRNG drivers. If you had done this weeks ago when I
-first asked you to do that, you would have had no problem getting basic
-support into the current merge window.
+For /dev/random, we do want to be hyper-conservative, though.  rngd in
+its current form doesn't deal with fractional entropy, which means
+boiling it down to guaranteed pure entropy; this is an enormous data
+reduction and about three orders of magnitude reduction in bandwidth.
+For /dev/random, I think that is just fine; after all, if you're asking
+for /dev/random, you're asking for security at every cost.
 
-[1] hopefully auditable without an electron microscope!
--- 
-Mathematics is the supreme nostalgia of our time.
+> Since many (all?) TPM chips include a random number generator, Dell has 
+> made sure that most distros have a useful copy of the rng-tools 
+> userspace pkg I've been maintaining.
+> 
+> It would seem straightforward to add this to rngd, and enable RDRAND on 
+> older distros and kernels, as well as current distros / kernels.  This 
+> also gets useful entropy to /dev/random as part of normal operation, 
+> rather than only merely speeding up /dev/urandom.
+> 
+> Though for the record, I do agree that this is a nice, small and clean 
+> kernel implementation.
 
+As previously stated, I have that patch in the works as well.
 
+	-hpa
