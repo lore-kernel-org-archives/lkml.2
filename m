@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab1G2TYG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 15:24:06 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54079 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239Ab1G2TYE (ORCPT
+	id S1752573Ab1G2TnS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 15:43:18 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:55733 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751496Ab1G2TnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 15:24:04 -0400
-Date: Fri, 29 Jul 2011 21:23:58 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] make vfork killable/restartable/traceable
-Message-ID: <20110729192358.GB31717@mtj.dyndns.org>
-References: <20110727163159.GA23785@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110727163159.GA23785@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 29 Jul 2011 15:43:16 -0400
+Date: Fri, 29 Jul 2011 12:43:13 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH -next] regulator: aat2870 needs module.h
+Message-Id: <20110729124313.2f2bb000.rdunlap@xenotime.net>
+In-Reply-To: <20110729173827.716f57ff6e00095a3efc6449@canb.auug.org.au>
+References: <20110729173827.716f57ff6e00095a3efc6449@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-On Wed, Jul 27, 2011 at 06:31:59PM +0200, Oleg Nesterov wrote:
-> 	- is it safe to exit/stop on !x86 machine???
-> 
-> 	  I do not know. May be this needs some #ifdef's around
-> 	  wait_for_completion_interruptible(). I am not sure that,
-> 	  say, arch_ptrace_stop() can't abuse the ->mm shared with
-> 	  the child.
->
-> 	  OTOH. This can happen anyway, do_fork() does ptrace_event()
-> 	  before wait_for_completion().
+aat2870-regulator.c needs to include linux/module.h to fix multiple
+build errors.
 
-The only affected architecture would be ia64 thanks to the rolling
-register stack.  I suspected it would unroll on fork but couldn't
-determine whether it actually does that.  At any rate, it should be
-safe as the child isn't allowed to return from the forking function
-and arch_ptrace_stop() unrolling the register stack shouldn't affect
-the child.  Eh... too much speculation, probably best to ask ia64 ppl.
+drivers/regulator/aat2870-regulator.c:145: error: 'THIS_MODULE' undeclared here (not in a function)
+drivers/regulator/aat2870-regulator.c:230: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
+drivers/regulator/aat2870-regulator.c:231: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+drivers/regulator/aat2870-regulator.c:232: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
 
-A wild, possibly bat-shit crazy idea about the whole series:
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ drivers/regulator/aat2870-regulator.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-If the current implementation is too nasty, an alternative approach
-could be handling vfork waiting as a type of job control stop.
-ie. while a task has vforked children, it's considered to have sticky
-STOP state and can't leave get_signal_to_deliver() unless killed.  I
-think this could be a bit more natural than trying to allow restart of
-vfork().
-
-So, very roughly, something like the following for the parent.
-
-* On vfork(), mark vfork child exists and set TIF_SIGPENDING.
-
-* When entering get_signal_to_deliver(), if vfork child exists, save
-  sigmask and block all blockable signals.
-
-* If dequeue_signal() returns 0 && vfork child exists, enter STOP.
-
-* When leaving get_signal_to_deliver(), restore sigmask if saved on
-  entry.
-
-Haven't really thought a lot about the details so this might end up
-uglier than the current attempt.  :)
-
-Thanks.
-
--- 
-tejun
+--- linux-next-20110729.orig/drivers/regulator/aat2870-regulator.c
++++ linux-next-20110729/drivers/regulator/aat2870-regulator.c
+@@ -22,6 +22,7 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/err.h>
++#include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/delay.h>
+ #include <linux/platform_device.h>
