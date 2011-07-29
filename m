@@ -1,69 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419Ab1G2H5X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 03:57:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42249 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755326Ab1G2H5W convert rfc822-to-8bit (ORCPT
+	id S1755451Ab1G2H6k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 03:58:40 -0400
+Received: from relay.parallels.com ([195.214.232.42]:56429 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758Ab1G2H6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 03:57:22 -0400
-Subject: Re: [PATCH] sched: Remove WAKEUP_PREEMPT feature check in
- entity_tick
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Lin Ming <ming.m.lin@intel.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        lkml <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>
-In-Reply-To: <20110729074635.GB10420@zhy>
-References: <1311846203.3938.1555.camel@minggr.sh.intel.com>
-	 <20110729062158.GA8971@zhy>
-	 <1311922180.3938.1573.camel@minggr.sh.intel.com>
-	 <20110729070356.GA10420@zhy>
-	 <1311924975.3938.1583.camel@minggr.sh.intel.com>
-	 <20110729074635.GB10420@zhy>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 29 Jul 2011 09:56:58 +0200
-Message-ID: <1311926218.5890.215.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 29 Jul 2011 03:58:39 -0400
+Subject: [PATCH] mm: add free_hot_cold_page_list helper
+To: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Fri, 29 Jul 2011 11:58:37 +0400
+Message-ID: <20110729075837.12274.58405.stgit@localhost6>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-29 at 15:46 +0800, Yong Zhang wrote:
-> On Fri, Jul 29, 2011 at 03:36:15PM +0800, Lin Ming wrote:
-> > >From another point of view, below !sched_feat(WAKEUP_PREEMPT) still
-> > looks like duplicated.
-> > 
-> >         if (cfs_rq->nr_running > 1 || !sched_feat(WAKEUP_PREEMPT))
-> >                 check_preempt_tick(cfs_rq, curr);
-> > 
-> > if "!sched_feat(WAKEUP_PREEMPT)" is run,
-> > that implies cfs_rq->nr_running == 1.
-> 
-> That's true.
-> 
-> > 
-> > Why do we need to call check_preempt_tick when there is only 1 task
-> > runnable?
-> 
-> Just set_tsk_need_resched(p) if p's slice is over, thus:
-> 
-> 	(n tick)	--->		(n+1 tick)
-> set_tsk_need_resched(p);
-> 		another task Q is awaked
-> 
-> If we don't have !sched_feat(WAKEUP_PREEMPT), Q maybe will wait
-> for tick coming to get scheduled. If we have
-> !sched_feat(WAKEUP_PREEMPT), Q will get scheduled when some event
-> happen, like IRQ.
+This patch adds helper free_hot_cold_page_list() to free list of 0-order pages.
+It frees pages directly from list without temporary page-vector.
+It also calls trace_mm_pagevec_free() to simulate pagevec_free() behaviour.
 
-Nah, if there is 1 runnable task it will always run, preemption simply
-doesn't matter. There's nothing to preempt it with.
+bloat-o-meter:
 
-I've queued Lin's patch as I don't see the point of this thing either,
-normally WAKEUP_PREEMPT is enabled so it says || 0 which is kinda
-useless :-)
+add/remove: 1/1 grow/shrink: 1/3 up/down: 267/-295 (-28)
+function                                     old     new   delta
+free_hot_cold_page_list                        -     264    +264
+get_page_from_freelist                      2129    2132      +3
+__pagevec_free                               243     239      -4
+split_free_page                              380     373      -7
+release_pages                                606     510     -96
+free_page_list                               188       -    -188
 
-And I'm starting to think we should just kill all of WAKEUP_PREEMPT I
-don't think we ever want to disable it anyway.. 
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ include/linux/gfp.h |    1 +
+ mm/page_alloc.c     |   12 ++++++++++++
+ mm/swap.c           |   14 +++-----------
+ mm/vmscan.c         |   20 +-------------------
+ 4 files changed, 17 insertions(+), 30 deletions(-)
+
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index cb40892..dd7b9cc 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -358,6 +358,7 @@ void *alloc_pages_exact_nid(int nid, size_t size, gfp_t gfp_mask);
+ extern void __free_pages(struct page *page, unsigned int order);
+ extern void free_pages(unsigned long addr, unsigned int order);
+ extern void free_hot_cold_page(struct page *page, int cold);
++extern void free_hot_cold_page_list(struct list_head *list, int cold);
+ 
+ #define __free_page(page) __free_pages((page), 0)
+ #define free_page(addr) free_pages((addr), 0)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 1dbcf88..af486e4 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1209,6 +1209,18 @@ out:
+ 	local_irq_restore(flags);
+ }
+ 
++void free_hot_cold_page_list(struct list_head *list, int cold)
++{
++	struct page *page, *next;
++
++	list_for_each_entry_safe(page, next, list, lru) {
++		trace_mm_pagevec_free(page, cold);
++		free_hot_cold_page(page, cold);
++	}
++
++	INIT_LIST_HEAD(list);
++}
++
+ /*
+  * split_page takes a non-compound higher-order page, and splits it into
+  * n (1<<order) sub-pages: page[0..n]
+diff --git a/mm/swap.c b/mm/swap.c
+index 3a442f1..b9138c7 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -562,11 +562,10 @@ int lru_add_drain_all(void)
+ void release_pages(struct page **pages, int nr, int cold)
+ {
+ 	int i;
+-	struct pagevec pages_to_free;
++	LIST_HEAD(pages_to_free);
+ 	struct zone *zone = NULL;
+ 	unsigned long uninitialized_var(flags);
+ 
+-	pagevec_init(&pages_to_free, cold);
+ 	for (i = 0; i < nr; i++) {
+ 		struct page *page = pages[i];
+ 
+@@ -597,19 +596,12 @@ void release_pages(struct page **pages, int nr, int cold)
+ 			del_page_from_lru(zone, page);
+ 		}
+ 
+-		if (!pagevec_add(&pages_to_free, page)) {
+-			if (zone) {
+-				spin_unlock_irqrestore(&zone->lru_lock, flags);
+-				zone = NULL;
+-			}
+-			__pagevec_free(&pages_to_free);
+-			pagevec_reinit(&pages_to_free);
+-  		}
++		list_add_tail(&page->lru, &pages_to_free);
+ 	}
+ 	if (zone)
+ 		spin_unlock_irqrestore(&zone->lru_lock, flags);
+ 
+-	pagevec_free(&pages_to_free);
++	free_hot_cold_page_list(&pages_to_free, cold);
+ }
+ EXPORT_SYMBOL(release_pages);
+ 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 7ef6912..47403c9 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -737,24 +737,6 @@ static enum page_references page_check_references(struct page *page,
+ 	return PAGEREF_RECLAIM;
+ }
+ 
+-static noinline_for_stack void free_page_list(struct list_head *free_pages)
+-{
+-	struct pagevec freed_pvec;
+-	struct page *page, *tmp;
+-
+-	pagevec_init(&freed_pvec, 1);
+-
+-	list_for_each_entry_safe(page, tmp, free_pages, lru) {
+-		list_del(&page->lru);
+-		if (!pagevec_add(&freed_pvec, page)) {
+-			__pagevec_free(&freed_pvec);
+-			pagevec_reinit(&freed_pvec);
+-		}
+-	}
+-
+-	pagevec_free(&freed_pvec);
+-}
+-
+ /*
+  * shrink_page_list() returns the number of reclaimed pages
+  */
+@@ -996,7 +978,7 @@ keep_lumpy:
+ 	if (nr_dirty && nr_dirty == nr_congested && scanning_global_lru(sc))
+ 		zone_set_flag(zone, ZONE_CONGESTED);
+ 
+-	free_page_list(&free_pages);
++	free_hot_cold_page_list(&free_pages, 1);
+ 
+ 	list_splice(&ret_pages, page_list);
+ 	count_vm_events(PGACTIVATE, pgactivate);
+
