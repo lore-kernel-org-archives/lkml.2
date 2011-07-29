@@ -1,102 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909Ab1G2HIK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 03:08:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43390 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754067Ab1G2HII (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 03:08:08 -0400
-Date: Fri, 29 Jul 2011 11:07:59 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com
-Cc: Solar Designer <solar@openwall.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
-        Sebastian Krahmer <krahmer@suse.de>
-Subject: Re: [kernel-hardening] Re: [patch v2] move RLIMIT_NPROC check from
- set_user() to do_execve_common()
-Message-ID: <20110729070759.GA21583@albatros>
-References: <20110721124830.GA1325@openwall.com>
- <CA+55aFy4ybatb0McQr2f4A56ympZVLqK2sbp2=73idu58_4RxQ@mail.gmail.com>
- <20110721193939.GA3914@openwall.com>
- <20110725171423.GA3739@albatros>
- <20110725234013.GB24110@openwall.com>
- <20110726104713.37273143@notabene.brown>
- <20110726011629.GA24610@openwall.com>
- <20110726141118.32f948e0@notabene.brown>
- <20110726144848.GA7133@albatros>
- <20110727121549.67a84d18@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110727121549.67a84d18@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755068Ab1G2HJr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 03:09:47 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51686 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754994Ab1G2HJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 03:09:46 -0400
+Date: Fri, 29 Jul 2011 17:09:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: linux-next: build failure after merge of the moduleh tree
+Message-Id: <20110729170933.b7bfc24dcf48201928bd5890@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__29_Jul_2011_17_09_33_+1000_PGtOVRsH+u9=Hp_/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 12:15 +1000, NeilBrown wrote:
-> On Tue, 26 Jul 2011 18:48:48 +0400 Vasiliy Kulikov <segoon@openwall.com>
-> wrote:
-> > On Tue, Jul 26, 2011 at 14:11 +1000, NeilBrown wrote:
-> > > I don't really see that failing mmap is any more hackish than failing execve.
-> > > 
-> > > Both are certainly hacks.  It is setuid that should fail, but that is
-> > > problematic.
-> > > 
-> > > We seem to agree that it is acceptable to delay the failure until the process
-> > > actually tries to run some code for the user.  I just think that
-> > > mapping-a-file-for-exec is a more direct measure of "trying to run some code
-> > > for the user" than "execve" is.
-> > > 
-> > > So they are both hacks, but one it more thorough than the other.  In the
-> > > world of security I would hope that "thorough" would win.
-> > 
-> > Well, I don't mind against something more generic than the check in
-> > execve(), however, the usefulness of the check in mmap() is unclear to
-> > me.  You want to make more programs fail after setuid(), but does mmap
-> > stops really many programs?  Do you know any program doing mmap/dlopen
-> > after setuid() call?  What if the program will not do any mmap/dlopen
-> > and e.g. start to handle network connections or do some computations?
-> > I suppose the latter case is much more often than mmap/dlopen.
-> 
-> I think I didn't make myself clear.
-> I don't mean we should intercept the mmap system call.
-> 
-> I mean we could intercept the internal kernel function do_mmap_pgoff.
-> 
-> This is used by the mmap system call but also (and more importantly) by the
-> execve system call and the uselib system call.
+--Signature=_Fri__29_Jul_2011_17_09_33_+1000_PGtOVRsH+u9=Hp_/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Here I have 2 doubts:
+Hi Paul,
 
-1) uselib() after setuid() is a rare pattern.  If it doesn't catch
-relatively many programs, then it is only an additional complexity -
-addition the check deeply into mm rather than into obvious do_execve().
+After merging the moduleh tree, today's linux-next build (sparc defconfig)
+failed like this:
 
-2) As it touches mmap(), I'm afraid it could affect mmap-based heap
-allocations as well.  The problem is that it might be somewhat not
-predictable and not repeating event - one time the process did mmap() to
-increase the heap, one time it did not because of minor allocation
-differences.  The former process would be terminated just after mmap()
-failed, the latter would not.  I don't think such uncertainty is good
-(even if it is rare).
+arch/sparc/mm/extable.c: In function 'trim_init_extable':
+arch/sparc/mm/extable.c:74:19: error: dereferencing pointer to incomplete t=
+ype
+arch/sparc/mm/extable.c:75:12: error: dereferencing pointer to incomplete t=
+ype
+arch/sparc/mm/extable.c:77:3: error: implicit declaration of function 'with=
+in_module_init'
+arch/sparc/mm/extable.c:77:27: error: dereferencing pointer to incomplete t=
+ype
+arch/sparc/mm/extable.c:78:5: error: dereferencing pointer to incomplete ty=
+pe
+arch/sparc/mm/extable.c:80:6: error: dereferencing pointer to incomplete ty=
+pe
+arch/sparc/mm/extable.c: In function 'search_extables_range':
+arch/sparc/mm/extable.c:93:2: error: implicit declaration of function 'sear=
+ch_exception_tables'
+cc1: warnings being treated as errors
+arch/sparc/mm/extable.c:93:8: error: assignment makes pointer from integer =
+without a cast
+cc1: warnings being treated as errors
+arch/sparc/mm/highmem.c:66:1: error: data definition has no type or storage=
+ class
+arch/sparc/mm/highmem.c:66:1: error: type defaults to 'int' in declaration =
+of 'EXPORT_SYMBOL'
+arch/sparc/mm/highmem.c:66:1: error: parameter names (without types) in fun=
+ction declaration
+arch/sparc/mm/highmem.c:111:1: error: data definition has no type or storag=
+e class
+arch/sparc/mm/highmem.c:111:1: error: type defaults to 'int' in declaration=
+ of 'EXPORT_SYMBOL'
+arch/sparc/mm/highmem.c:111:1: error: parameter names (without types) in fu=
+nction declaration
+cc1: warnings being treated as errors
+arch/sparc/kernel/traps_32.c:426:1: error: data definition has no type or s=
+torage class
+arch/sparc/kernel/traps_32.c:426:1: error: type defaults to 'int' in declar=
+ation of 'EXPORT_SYMBOL'
+arch/sparc/kernel/traps_32.c:426:1: error: parameter names (without types) =
+in function declaration
+cc1: warnings being treated as errors
+arch/sparc/kernel/irq_32.c:53:1: error: data definition has no type or stor=
+age class
+arch/sparc/kernel/irq_32.c:53:1: error: type defaults to 'int' in declarati=
+on of 'EXPORT_SYMBOL'
+arch/sparc/kernel/irq_32.c:53:1: error: parameter names (without types) in =
+function declaration
+arch/sparc/kernel/irq_32.c:69:1: error: data definition has no type or stor=
+age class
+arch/sparc/kernel/irq_32.c:69:1: error: type defaults to 'int' in declarati=
+on of 'EXPORT_SYMBOL'
+arch/sparc/kernel/irq_32.c:69:1: error: parameter names (without types) in =
+function declaration
+arch/sparc/kernel/irq_32.c:86:1: error: data definition has no type or stor=
+age class
+arch/sparc/kernel/irq_32.c:86:1: error: type defaults to 'int' in declarati=
+on of 'EXPORT_SYMBOL'
+arch/sparc/kernel/irq_32.c:86:1: error: parameter names (without types) in =
+function declaration
+cc1: warnings being treated as errors
+arch/sparc/kernel/setup_32.c:203:1: error: data definition has no type or s=
+torage class
+arch/sparc/kernel/setup_32.c:203:1: error: type defaults to 'int' in declar=
+ation of 'EXPORT_SYMBOL'
+arch/sparc/kernel/setup_32.c:203:1: error: parameter names (without types) =
+in function declaration
+arch/sparc/kernel/setup_32.c:332:1: error: data definition has no type or s=
+torage class
+arch/sparc/kernel/setup_32.c:332:1: error: type defaults to 'int' in declar=
+ation of 'EXPORT_SYMBOL'
+arch/sparc/kernel/setup_32.c:332:1: error: parameter names (without types) =
+in function declaration
+cc1: warnings being treated as errors
+arch/sparc/mm/generic_32.c:98:1: error: data definition has no type or stor=
+age class
+arch/sparc/mm/generic_32.c:98:1: error: type defaults to 'int' in declarati=
+on of 'EXPORT_SYMBOL'
+arch/sparc/mm/generic_32.c:98:1: error: parameter names (without types) in =
+function declaration
 
+Again, I have left these unfixed in linux-next today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-So, I'm hesitating to call the check in do_mmap_pgoff() "simply more
-generic".
+--Signature=_Fri__29_Jul_2011_17_09_33_+1000_PGtOVRsH+u9=Hp_/
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Thanks,
+iQEcBAEBAgAGBQJOMlytAAoJEDMEi1NhKgbs1hMH/0DUTZpQDF4re7iYtWgyRbyL
+lh6Q0G5uR1i1fHMcX//gLDKl6MwfikZ4wTqKIbVbIGu0LpwrE83pVq1H5fDZ5JRj
+HkwMxBYYISgJXeAKlP9jg8nT+3dV8qq9rr7j0Vfb37IWc60iKqUzz8lt5SH1WrLu
+7BwQ9HqZUbpfYulmioi5P6K+xE0gQbqAtC/KB+FVcYnd/jBlwttga3fe436sIoc3
+XpRKFtHualYl97oXC1+Ldf4iqvWAmkW7nkEJzGq7hFxkRrKevWi54vT+7g1HVJuh
+yuW8ESdv2VcgeMPwjzC7dN304oV4noVem3TV1a2uvffJ0u/nStUkFcEB/hzMxtA=
+=Q6Hp
+-----END PGP SIGNATURE-----
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+--Signature=_Fri__29_Jul_2011_17_09_33_+1000_PGtOVRsH+u9=Hp_/--
