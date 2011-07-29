@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751802Ab1G2Qes (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 12:34:48 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:34456 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab1G2Qeq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 12:34:46 -0400
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-next@vger.kernel.org, Arnaud Lacombe <lacombar@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Jeff Garzik <jgarzik@redhat.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH][-next] acpi/acpi_drivers.h: fix warnings when ACPI_DOCK is not enabled
-Date: Fri, 29 Jul 2011 12:34:38 -0400
-Message-Id: <1311957278-12290-1-git-send-email-lacombar@gmail.com>
-X-Mailer: git-send-email 1.7.6.153.g78432
+	id S1751608Ab1G2QmU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 12:42:20 -0400
+Received: from fieldses.org ([174.143.236.118]:59623 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750844Ab1G2QmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 12:42:19 -0400
+Date: Fri, 29 Jul 2011 12:42:14 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, Neil Brown <neilb@suse.de>,
+        David Miller <davem@davemloft.net>, linux-nfs@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg Banks <gnb@fastmail.fm>
+Subject: Re: [PATCH] sunrpc: use better NUMA affinities
+Message-ID: <20110729164214.GI23194@fieldses.org>
+References: <1311876249.2346.39.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311876249.2346.39.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/src/linux/linux/drivers/ata/libata-acpi.c: In function 'ata_acpi_associate':
-/src/linux/linux/drivers/ata/libata-acpi.c:266:11: warning: passing argument 2 of 'register_hotplug_dock_device' discards 'const' qualifier from pointer target type [enabled by default]
-/src/linux/linux/include/acpi/acpi_drivers.h:146:19: note: expected 'struct acpi_dock_ops *' but argument is of type 'const struct acpi_dock_ops *'
-/src/linux/linux/drivers/ata/libata-acpi.c:275:11: warning: passing argument 2 of 'register_hotplug_dock_device' discards 'const' qualifier from pointer target type [enabled by default]
-/src/linux/linux/include/acpi/acpi_drivers.h:146:19: note: expected 'struct acpi_dock_ops *' but argument is of type 'const struct acpi_dock_ops *'
+On Thu, Jul 28, 2011 at 08:04:09PM +0200, Eric Dumazet wrote:
+> Use NUMA aware allocations to reduce latencies and increase throughput.
+> 
+> sunrpc kthreads can use kthread_create_on_node() if pool_mode is
+> "percpu" or "pernode", and svc_prepare_thread()/svc_init_buffer() can
+> also take into account NUMA node affinity for memory allocations.
+...
+> @@ -662,14 +675,16 @@ svc_set_num_threads(struct svc_serv *serv, struct svc_pool *pool, int nrservs)
+>  		nrservs--;
+>  		chosen_pool = choose_pool(serv, pool, &state);
+>  
+> -		rqstp = svc_prepare_thread(serv, chosen_pool);
+> +		node = svc_pool_map_get_node(chosen_pool->sp_id);
+> +		rqstp = svc_prepare_thread(serv, chosen_pool, node);
 
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Jeff Garzik <jgarzik@redhat.com>
-Cc: Len Brown <len.brown@intel.com>
-Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
----
- include/acpi/acpi_drivers.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The only correct value for the third argument there is
+svc_pool_map_get_node(chosen_pool->sp_id), so let's have
+svc_prepare_thread() call that itself.
 
-diff --git a/include/acpi/acpi_drivers.h b/include/acpi/acpi_drivers.h
-index e49c36d..bb145e4 100644
---- a/include/acpi/acpi_drivers.h
-+++ b/include/acpi/acpi_drivers.h
-@@ -144,7 +144,7 @@ static inline void unregister_dock_notifier(struct notifier_block *nb)
- {
- }
- static inline int register_hotplug_dock_device(acpi_handle handle,
--					       struct acpi_dock_ops *ops,
-+					       const struct acpi_dock_ops *ops,
- 					       void *context)
- {
- 	return -ENODEV;
--- 
-1.7.6.153.g78432
+Seems OK otherwise.
 
+Any suggestions on how we should test this?
+
+--b.
+
+>  		if (IS_ERR(rqstp)) {
+>  			error = PTR_ERR(rqstp);
+>  			break;
+>  		}
+>  
+>  		__module_get(serv->sv_module);
+> -		task = kthread_create(serv->sv_function, rqstp, serv->sv_name);
+> +		task = kthread_create_on_node(serv->sv_function, rqstp,
+> +					      node, serv->sv_name);
+>  		if (IS_ERR(task)) {
+>  			error = PTR_ERR(task);
+>  			module_put(serv->sv_module);
+> 
+> 
