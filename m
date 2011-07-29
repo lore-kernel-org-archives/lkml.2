@@ -1,108 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab1G1X6f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 19:58:35 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42479 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753774Ab1G1X6e (ORCPT
+	id S1756110Ab1G2ABu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 20:01:50 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48149 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754799Ab1G2ABs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 19:58:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <5F531701-B760-45F0-989D-669013409FE8@tonyibbs.co.uk>
-References: <cover.1300450604.git.tibs@tonyibbs.co.uk>
-	<201105171050.38903.florian@openwrt.org>
-	<37F5AF18-99E5-4516-B31F-00F7BD348ADE@tonyibbs.co.uk>
-	<201107061815.36294.florian@openwrt.org>
-	<5F531701-B760-45F0-989D-669013409FE8@tonyibbs.co.uk>
-Date: Thu, 28 Jul 2011 19:58:32 -0400
-X-Google-Sender-Auth: kd1ORu3H5HtZII8AOmuY6mHEscQ
-Message-ID: <CADkLE3XRg6N2cWHXH_JsU56tfw5v5XmJJLfLBM_RtWJRMcZWtA@mail.gmail.com>
-Subject: Re: RFC: [Restatement] KBUS messaging subsystem
-From: Colin Walters <walters@verbum.org>
-To: Tony Ibbs <tibs@tonyibbs.co.uk>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Florian Fainelli <florian@openwrt.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linux-embedded <linux-embedded@vger.kernel.org>,
-        Tibs at Kynesim <tibs@kynesim.co.uk>,
-        Richard Watts <rrw@kynesim.co.uk>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 28 Jul 2011 20:01:48 -0400
+Subject: [PATCH] prctl: add PR_{SET,GET}_CHILD_REAPER to allow simple
+ process supervision
+From: Kay Sievers <kay.sievers@vrfy.org>
+To: linux-kernel@vger.kernel.org
+Cc: Lennart Poettering <lennart@poettering.net>
+Date: Fri, 29 Jul 2011 02:01:44 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.1.4 (3.1.4-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1311897706.16657.2.camel@mop>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Lennart Poettering <lennart@poettering.net>
+Subject: prctl: add PR_{SET,GET}_CHILD_REAPER to allow simple process supervision
 
-Quick background: I work on GNOME mainly, and have contributed various
-bits of code to DBUS and made some releases historically (though that
-is now in more capable hands).  I should also note I have no patches
-in the Linux kernel (but I'm trying to follow it more and participate,
-so here I am).
+Userspace service managers/supervisors need to track their started
+services. Many services daemonize by double-forking and get implicitely
+re-parented to PID 1. The process manager will no longer be able to
+receive the SIGCHLD signals for them.
 
-So, what I think your description of this project lacks is high-level
-technical requirements and goals; you mention basically just
-"deterministic ordering" and "easy API" (the latter being fairly
-subjective).  You don't mention what your performance requirements are
-(if any) for example.
+With this prctl, a service manager can mark itself as a sort of
+'sub-init' process, able to stay as the parent process for all processes
+created by the started services. All SIGCHLD signals will be delivered
+to the service manager.
 
-If you had a high-level requirements list it might be easier to
-compare with other things.  For example, you might ask "Why not SYSV
-IPC"?  Or  "why not drop files in a temporary directory and use
-inotify" etc.
+As a side effect, the relevant parent PID information does not get lost
+by a double-fork, which results in a more elaborate process tree and 'ps'
+output.
 
-My feeling as a DBus developer is that by far its most important
-feature is providing a dynamic naming service (the RequestName call).
-I don't know how one could sanely do a general-purpose operating
-system without a way for loosely-coupled components to find each other
-at runtime.  Things like Debian or Fedora where one can assemble
-arbitrary sets of packages basically demand the ability do to this -
-think things like X being able to talk to HAL, or Firefox being able
-to find NetworkManager.
+This is orthogonal to PID namespaces. PID namespaces are isolated
+from each other, while a service management process usually requires
+the serices to live in the same namespace, to be able to talk to each
+other.
 
-KBUS seems not to provide this (or at least, I'm not seeing it).
+Users of this will be the systemd per-user instance, which provides
+init-like functionality for the user's login session and D-Bus, which
+activates bus services on on-demand. Both will need init-like capabilities
+to be able to properly keep track of the services they start.
 
-The other key feature is signals, where userspace can multicast to
-userspace.  KBUS does provide this.
+Signed-off-by: Lennart Poettering <lennart@poettering.net>
+Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
+---
 
-DBus *does* have deterministic ordering too - I'm not sure why you say we don't.
+ include/linux/prctl.h |    3 +++
+ include/linux/sched.h |    2 ++
+ kernel/exit.c         |    9 ++++++++-
+ kernel/fork.c         |    2 ++
+ kernel/sys.c          |    7 +++++++
+ 5 files changed, 22 insertions(+), 1 deletion(-)
 
-DBus does have some flaws - for example, the resource controls were
-poorly thought out and basically useless.  If we were designing them
-today, we'd probably have DBus connections tied to Linux cgroups
-somehow.  Currently the system bus is limited to a configured amount
-of RAM in the XML config (and we don't even attempt to look at system
-memory size to limit it); if you have less than 1G (if i remember
-correctly) of phys+swap, you can make the bus OOM.
+diff --git a/include/linux/prctl.h b/include/linux/prctl.h
+index a3baeb2..716b7d3 100644
+--- a/include/linux/prctl.h
++++ b/include/linux/prctl.h
+@@ -102,4 +102,7 @@
+ 
+ #define PR_MCE_KILL_GET 34
+ 
++#define PR_SET_CHILD_REAPER 35
++#define PR_GET_CHILD_REAPER 36
++
+ #endif /* _LINUX_PRCTL_H */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 20b03bf..2dba23b 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1300,6 +1300,8 @@ struct task_struct {
+ 				 * execve */
+ 	unsigned in_iowait:1;
+ 
++	/* Reparent child processes to this process instead of pid 1. */
++	unsigned child_reaper:1;
+ 
+ 	/* Revert to default priority/policy when forking */
+ 	unsigned sched_reset_on_fork:1;
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 2913b35..61a80a4 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -700,7 +700,7 @@ static struct task_struct *find_new_reaper(struct task_struct *father)
+ 	__acquires(&tasklist_lock)
+ {
+ 	struct pid_namespace *pid_ns = task_active_pid_ns(father);
+-	struct task_struct *thread;
++	struct task_struct *thread, *reaper;
+ 
+ 	thread = father;
+ 	while_each_thread(father, thread) {
+@@ -711,6 +711,13 @@ static struct task_struct *find_new_reaper(struct task_struct *father)
+ 		return thread;
+ 	}
+ 
++	/* find the first ancestor which is marked as child_reaper */
++	for (reaper = father->parent;
++	     reaper != &init_task && reaper != pid_ns->child_reaper;
++	     reaper = reaper->parent)
++		if (reaper->child_reaper)
++			return reaper;
++
+ 	if (unlikely(pid_ns->child_reaper == father)) {
+ 		write_unlock_irq(&tasklist_lock);
+ 		if (unlikely(pid_ns == &init_pid_ns))
+diff --git a/kernel/fork.c b/kernel/fork.c
+index e7ceaca..863c5c7 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1326,6 +1326,8 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 		p->parent_exec_id = current->self_exec_id;
+ 	}
+ 
++	p->child_reaper = 0;
++
+ 	spin_lock(&current->sighand->siglock);
+ 
+ 	/*
+diff --git a/kernel/sys.c b/kernel/sys.c
+index a101ba3..9b41498 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1792,6 +1792,13 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 			else
+ 				error = PR_MCE_KILL_DEFAULT;
+ 			break;
++		case PR_SET_CHILD_REAPER:
++			me->child_reaper = !!arg2;
++			error = 0;
++			break;
++		case PR_GET_CHILD_REAPER:
++			error = put_user(me->child_reaper, (int __user *) arg2);
++			break;
+ 		default:
+ 			error = -EINVAL;
+ 			break;
 
-KBUS from what I can see shares this flaw, except that users allocate
-arbitrary amounts of kernel memory rather than in userspace in the
-system bus:
 
-static ssize_t kbus_write() {
-...
-		this->msg = kmalloc(sizeof(*(this->msg)), GFP_KERNEL);
-		if (!this->msg) {
-			retval = -ENOMEM;
-			goto done;
-		}
-...
-}
-
-A somewhat weaker but still useful part of DBus is that it has
-mandatory security controls; the policy can restrict which uids can
-talk to a given service on the bus, and also allows userspace to check
-the credentials of messages they receive (think SO_PEERCRED).  By
-having KBUS based on files you seem to lose this which you'd get from
-a socket API.
-
-On a different topic, I find myself really unconvinced by the length
-to which you go to claim the API is simple and easy to use.  I mean, I
-really can't imagine it'd be hard to write a userspace C library
-implementing the semantics you have here, and have it be as easy or
-easier.    Oh you actually do have a "libkbus" here:
-http://code.google.com/p/kbus/source/browse/libkbus/kbus.h
-
-You never mention what tradeoffs you might see from having that in
-userspace or whether you tried it for that matter.
