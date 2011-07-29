@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab1G2Qxo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 12:53:44 -0400
-Received: from caffeine.csclub.uwaterloo.ca ([129.97.134.17]:45282 "EHLO
-	caffeine.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751504Ab1G2Qxn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 12:53:43 -0400
-Date: Fri, 29 Jul 2011 12:53:42 -0400
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Breno Leitao <leitao@linux.vnet.ibm.com>
-Subject: Re: Very strange data loss with jsm driver
-Message-ID: <20110729165342.GB8566@caffeine.csclub.uwaterloo.ca>
-References: <20110729160416.GK8562@caffeine.csclub.uwaterloo.ca>
- <20110729172736.4b199d31@lxorguk.ukuu.org.uk>
+	id S1752594Ab1G2Qxw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 12:53:52 -0400
+Received: from fieldses.org ([174.143.236.118]:55745 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752552Ab1G2Qxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 12:53:50 -0400
+Date: Fri, 29 Jul 2011 12:53:45 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Greg Banks <gnb@fastmail.fm>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>, NeilBrown <neilb@suse.de>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH] sunrpc: use better NUMA affinities
+Message-ID: <20110729165345.GM23194@fieldses.org>
+References: <20110729153207.17af3085@notabene.brown>
+ <4E324DB4.7060600@fastmail.fm>
+ <1311921035.7845.10.camel@edumazet-laptop>
+ <4E3258E1.6020000@fastmail.fm>
+ <20110729103634.GA12050@infradead.org>
+ <5933F48C-49D6-492D-AB7B-B76A3ADDB6C6@fastmail.fm>
+ <1311941491.2843.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <F67B6E82-9FA8-464E-B3FB-DC0D4EC18BB0@fastmail.fm>
+ <20110729164836.GL23194@fieldses.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110729172736.4b199d31@lxorguk.ukuu.org.uk>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110729164836.GL23194@fieldses.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-From: lsorense@csclub.uwaterloo.ca (Lennart Sorensen)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 05:27:36PM +0100, Alan Cox wrote:
-> > The trigger point appears to be lines of up to 14 bytes, followed by
-> > a newline.  With 15 bytes or more per line it seems to be OK.
+On Fri, Jul 29, 2011 at 12:48:36PM -0400, bfields wrote:
+> On Fri, Jul 29, 2011 at 11:30:05PM +1000, Greg Banks wrote:
 > > 
-> > Anyone got a clue?
+> > 
+> > Sent from my iPhone
+> > 
+> > On 29/07/2011, at 22:11, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > 
+> > > Le vendredi 29 juillet 2011 à 21:58 +1000, Greg Banks a écrit :
+> > >
+> > >>
+> > >> Sure, and a whole lot of the callsites are ("..._%d", cpu), hence the
+> > >> unfortune :(
+> > >
+> > > BTW, we could name nfsd threads differently :
+> > >
+> > > Currently, they all are named : "nfsd"
+> > >
+> > > If SVC_POOL_PERCPU is selected, we could name them :
+> > > nfsd_c0 -> nfsd_cN
+> > >
+> > > If SVC_POOL_PERNODE is selected, we could name them :
+> > > nfsd_n0  -> nfsd_nN
+> > >
+> > > That would help to check with "ps aux" which cpu/nodes are under  
+> > > stress.
+> > >
+> > >
+> > 
+> > I like it!
 > 
-> FIFO size perhaps - and some kind of missed wakeup or tx handling bug ?
+> Yup, patch welcomed.--b.
 
-FIFO size is 64bytes, so that doesn't immediately sound related.
+(Annoying fact: some initscripts stop nfsd using a rough equivalent of
+"killall nfsd".  So the name of the threads is arguably ABI.  I think
+those initscripts are nuts and deserve what they get, but that may be
+because I'm forgetting the reason they do that.)
 
-The thing I find weird is that it thinks everything was sent right away.
-
-Also why should the newline have anything to do with it?  If you send
-100100 bytes should it matter where the newlines are unless the tty
-layer or the driver is interpreting the newlines for some reason.
-
--- 
-Len Sorensen
+--b.
