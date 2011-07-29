@@ -1,159 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab1G2H6k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 03:58:40 -0400
-Received: from relay.parallels.com ([195.214.232.42]:56429 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758Ab1G2H6j (ORCPT
+	id S1755481Ab1G2H6u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 03:58:50 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:23361 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758Ab1G2H6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 03:58:39 -0400
-Subject: [PATCH] mm: add free_hot_cold_page_list helper
-To: <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Date: Fri, 29 Jul 2011 11:58:37 +0400
-Message-ID: <20110729075837.12274.58405.stgit@localhost6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Fri, 29 Jul 2011 03:58:48 -0400
+From: Simon Glass <sjg@chromium.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Joe Perches <joe@perches.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Alexander Shishkin <virtuoso@slind.org>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Dave Martin <dave.martin@linaro.org>, Simon Glass <sjg@google.com>,
+        Simon Glass <sjg@chromium.org>
+Subject: [PATCH v5] ARM: Use generic BUG() handler
+Date: Fri, 29 Jul 2011 00:56:40 -0700
+Message-Id: <1311926200-24806-1-git-send-email-sjg@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds helper free_hot_cold_page_list() to free list of 0-order pages.
-It frees pages directly from list without temporary page-vector.
-It also calls trace_mm_pagevec_free() to simulate pagevec_free() behaviour.
+From: Simon Glass <sjg@google.com>
 
-bloat-o-meter:
+ARM uses its own BUG() handler which makes its output slightly different
+from other archtectures.
 
-add/remove: 1/1 grow/shrink: 1/3 up/down: 267/-295 (-28)
-function                                     old     new   delta
-free_hot_cold_page_list                        -     264    +264
-get_page_from_freelist                      2129    2132      +3
-__pagevec_free                               243     239      -4
-split_free_page                              380     373      -7
-release_pages                                606     510     -96
-free_page_list                               188       -    -188
+One of the problems is that the ARM implementation doesn't report the function
+with the BUG() in it, but always reports the PC being in __bug(). The generic
+implementation doesn't have this problem.
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Currently we get something like:
+
+kernel BUG at fs/proc/breakme.c:35!
+Unable to handle kernel NULL pointer dereference at virtual address 00000000
+...
+PC is at __bug+0x20/0x2c
+
+With this patch it displays:
+
+kernel BUG at fs/proc/breakme.c:35!
+Internal error: Oops - undefined instruction: 0 [#1] PREEMPT SMP
+...
+PC is at write_breakme+0xd0/0x1b4
+
+This implementation uses an undefined instruction to implement BUG, and sets up
+a bug table containing the relevant information. Many versions of gcc do not
+support %c properly for ARM (inserting a # when they shouldn't) so we work
+around this using distasteful macro magic.
+
+v1: Initial version to replace existing ARM BUG() implementation with something
+more similar to other architectures.
+
+v2: Add Thumb support, remove backtrace whitespace output changes. Change to
+use macros instead of requiring the asm %d flag to work (thanks to
+Dave Martin <dave.martin@linaro.org>)
+
+v3: Remove old BUG() implementation in favor of this one.
+Remove the Backtrace: message (will submit this separately).
+Use ARM_EXIT_KEEP() so that some architectures can dump exit text at link time
+thanks to Stephen Boyd <sboyd@codeaurora.org> (although since we always
+define GENERIC_BUG this might be academic.)
+Rebase to linux-2.6.git master.
+
+v4: Allow BUGS in modules (these were not reported correctly in v3)
+(thanks to Stephen Boyd <sboyd@codeaurora.org> for suggesting that.)
+Remove __bug() as this is no longer needed.
+
+v5: Add %progbits as the section flags.
+
+Change-Id: I07d77c832e816f5ad2390e25f466ddf750adecf4
+
+Signed-off-by: Simon Glass <sjg@chromium.org>
 ---
- include/linux/gfp.h |    1 +
- mm/page_alloc.c     |   12 ++++++++++++
- mm/swap.c           |   14 +++-----------
- mm/vmscan.c         |   20 +-------------------
- 4 files changed, 17 insertions(+), 30 deletions(-)
+ arch/arm/Kconfig              |    4 +++
+ arch/arm/include/asm/bug.h    |   55 ++++++++++++++++++++++++++++++++++------
+ arch/arm/kernel/traps.c       |   31 +++++++++++++++-------
+ arch/arm/kernel/vmlinux.lds.S |    3 +-
+ 4 files changed, 73 insertions(+), 20 deletions(-)
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index cb40892..dd7b9cc 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -358,6 +358,7 @@ void *alloc_pages_exact_nid(int nid, size_t size, gfp_t gfp_mask);
- extern void __free_pages(struct page *page, unsigned int order);
- extern void free_pages(unsigned long addr, unsigned int order);
- extern void free_hot_cold_page(struct page *page, int cold);
-+extern void free_hot_cold_page_list(struct list_head *list, int cold);
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 09ebf0b..4570473 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -216,6 +216,10 @@ config ARM_PATCH_PHYS_VIRT_16BIT
+ 	  to allow physical memory down to a theoretical minimum of 64K
+ 	  boundaries.
  
- #define __free_page(page) __free_pages((page), 0)
- #define free_page(addr) free_pages((addr), 0)
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 1dbcf88..af486e4 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1209,6 +1209,18 @@ out:
- 	local_irq_restore(flags);
++config GENERIC_BUG
++	def_bool y
++	depends on BUG
++
+ source "init/Kconfig"
+ 
+ source "kernel/Kconfig.freezer"
+diff --git a/arch/arm/include/asm/bug.h b/arch/arm/include/asm/bug.h
+index 4d88425..9abe7a0 100644
+--- a/arch/arm/include/asm/bug.h
++++ b/arch/arm/include/asm/bug.h
+@@ -3,21 +3,58 @@
+ 
+ 
+ #ifdef CONFIG_BUG
+-#ifdef CONFIG_DEBUG_BUGVERBOSE
+-extern void __bug(const char *file, int line) __attribute__((noreturn));
+-
+-/* give file/line information */
+-#define BUG()		__bug(__FILE__, __LINE__)
+ 
++/*
++ * Use a suitable undefined instruction to use for ARM/Thumb2 bug handling.
++ * We need to be careful not to conflict with those used by other modules and
++ * the register_undef_hook() system.
++ */
++#ifdef CONFIG_THUMB2_KERNEL
++#define BUG_INSTR_VALUE 0xde02
++#define BUG_INSTR_TYPE ".hword "
+ #else
++#define BUG_INSTR_VALUE 0xe7f001f2
++#define BUG_INSTR_TYPE ".word "
++#endif
+ 
+-/* this just causes an oops */
+-#define BUG()		do { *(int *)0 = 0; } while (1)
+ 
+-#endif
++#define BUG() _BUG(__FILE__, __LINE__, BUG_INSTR_VALUE)
++#define _BUG(file, line, value) __BUG(file, line, value)
++
++#ifdef CONFIG_DEBUG_BUGVERBOSE
++
++/*
++ * The extra indirection is to ensure that the __FILE__ string comes through
++ * OK. Many version of gcc do not support the asm %c parameter which would be
++ * preferable to this unpleasantness. We use mergeable string sections to
++ * avoid multiple copies of the string appearing in the kernel image.
++ */
++
++#define __BUG(__file, __line, __value)				\
++do {								\
++	BUILD_BUG_ON(sizeof(struct bug_entry) != 12);		\
++	asm volatile("1:\t" BUG_INSTR_TYPE #__value "\n"	\
++		".pushsection .rodata.str, \"aMS\", %progbits, 1\n" \
++		"2:\t.asciz " #__file "\n" 			\
++		".popsection\n" 				\
++		".pushsection __bug_table,\"a\"\n"		\
++		"3:\t.word 1b, 2b\n"				\
++		"\t.hword " #__line ", 0\n"			\
++		".popsection");					\
++	unreachable();						\
++} while (0)
++
++#else  /* not CONFIG_DEBUG_BUGVERBOSE */
++
++#define __BUG(__file, __line, __value)				\
++do {								\
++	asm volatile(BUG_INSTR_TYPE #__value);			\
++	unreachable();						\
++} while (0)
++#endif  /* CONFIG_DEBUG_BUGVERBOSE */
+ 
+ #define HAVE_ARCH_BUG
+-#endif
++#endif  /* CONFIG_BUG */
+ 
+ #include <asm-generic/bug.h>
+ 
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index bc9f9da..7496924 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -21,6 +21,7 @@
+ #include <linux/kdebug.h>
+ #include <linux/module.h>
+ #include <linux/kexec.h>
++#include <linux/bug.h>
+ #include <linux/delay.h>
+ #include <linux/init.h>
+ #include <linux/sched.h>
+@@ -270,6 +271,8 @@ void die(const char *str, struct pt_regs *regs, int err)
+ 	spin_lock_irq(&die_lock);
+ 	console_verbose();
+ 	bust_spinlocks(1);
++	if (!user_mode(regs))
++		report_bug(regs->ARM_pc, regs);
+ 	ret = __die(str, err, thread, regs);
+ 
+ 	if (regs && kexec_should_crash(thread->task))
+@@ -301,6 +304,24 @@ void arm_notify_die(const char *str, struct pt_regs *regs,
+ 	}
  }
  
-+void free_hot_cold_page_list(struct list_head *list, int cold)
++#ifdef CONFIG_GENERIC_BUG
++
++int is_valid_bugaddr(unsigned long pc)
 +{
-+	struct page *page, *next;
++#ifdef CONFIG_THUMB2_KERNEL
++	unsigned short bkpt;
++#else
++	unsigned long bkpt;
++#endif
 +
-+	list_for_each_entry_safe(page, next, list, lru) {
-+		trace_mm_pagevec_free(page, cold);
-+		free_hot_cold_page(page, cold);
-+	}
++	if (probe_kernel_address((unsigned *)pc, bkpt))
++		return 0;
 +
-+	INIT_LIST_HEAD(list);
++	return bkpt == BUG_INSTR_VALUE;
 +}
 +
- /*
-  * split_page takes a non-compound higher-order page, and splits it into
-  * n (1<<order) sub-pages: page[0..n]
-diff --git a/mm/swap.c b/mm/swap.c
-index 3a442f1..b9138c7 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -562,11 +562,10 @@ int lru_add_drain_all(void)
- void release_pages(struct page **pages, int nr, int cold)
- {
- 	int i;
--	struct pagevec pages_to_free;
-+	LIST_HEAD(pages_to_free);
- 	struct zone *zone = NULL;
- 	unsigned long uninitialized_var(flags);
++#endif
++
+ static LIST_HEAD(undef_hook);
+ static DEFINE_SPINLOCK(undef_lock);
  
--	pagevec_init(&pages_to_free, cold);
- 	for (i = 0; i < nr; i++) {
- 		struct page *page = pages[i];
- 
-@@ -597,19 +596,12 @@ void release_pages(struct page **pages, int nr, int cold)
- 			del_page_from_lru(zone, page);
- 		}
- 
--		if (!pagevec_add(&pages_to_free, page)) {
--			if (zone) {
--				spin_unlock_irqrestore(&zone->lru_lock, flags);
--				zone = NULL;
--			}
--			__pagevec_free(&pages_to_free);
--			pagevec_reinit(&pages_to_free);
--  		}
-+		list_add_tail(&page->lru, &pages_to_free);
- 	}
- 	if (zone)
- 		spin_unlock_irqrestore(&zone->lru_lock, flags);
- 
--	pagevec_free(&pages_to_free);
-+	free_hot_cold_page_list(&pages_to_free, cold);
- }
- EXPORT_SYMBOL(release_pages);
- 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 7ef6912..47403c9 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -737,24 +737,6 @@ static enum page_references page_check_references(struct page *page,
- 	return PAGEREF_RECLAIM;
+@@ -706,16 +727,6 @@ baddataabort(int code, unsigned long instr, struct pt_regs *regs)
+ 	arm_notify_die("unknown data abort code", regs, &info, instr, 0);
  }
  
--static noinline_for_stack void free_page_list(struct list_head *free_pages)
+-void __attribute__((noreturn)) __bug(const char *file, int line)
 -{
--	struct pagevec freed_pvec;
--	struct page *page, *tmp;
+-	printk(KERN_CRIT"kernel BUG at %s:%d!\n", file, line);
+-	*(int *)0 = 0;
 -
--	pagevec_init(&freed_pvec, 1);
--
--	list_for_each_entry_safe(page, tmp, free_pages, lru) {
--		list_del(&page->lru);
--		if (!pagevec_add(&freed_pvec, page)) {
--			__pagevec_free(&freed_pvec);
--			pagevec_reinit(&freed_pvec);
--		}
--	}
--
--	pagevec_free(&freed_pvec);
+-	/* Avoid "noreturn function does return" */
+-	for (;;);
 -}
+-EXPORT_SYMBOL(__bug);
 -
- /*
-  * shrink_page_list() returns the number of reclaimed pages
-  */
-@@ -996,7 +978,7 @@ keep_lumpy:
- 	if (nr_dirty && nr_dirty == nr_congested && scanning_global_lru(sc))
- 		zone_set_flag(zone, ZONE_CONGESTED);
+ void __readwrite_bug(const char *fn)
+ {
+ 	printk("%s called, but not implemented\n", fn);
+diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
+index bf977f8..7b2541e 100644
+--- a/arch/arm/kernel/vmlinux.lds.S
++++ b/arch/arm/kernel/vmlinux.lds.S
+@@ -21,7 +21,8 @@
+ #define ARM_CPU_KEEP(x)
+ #endif
  
--	free_page_list(&free_pages);
-+	free_hot_cold_page_list(&free_pages, 1);
- 
- 	list_splice(&ret_pages, page_list);
- 	count_vm_events(PGACTIVATE, pgactivate);
+-#if defined(CONFIG_SMP_ON_UP) && !defined(CONFIG_DEBUG_SPINLOCK)
++#if (defined(CONFIG_SMP_ON_UP) && !defined(CONFIG_DEBUG_SPINLOCK)) || \
++	defined(CONFIG_GENERIC_BUG)
+ #define ARM_EXIT_KEEP(x)	x
+ #else
+ #define ARM_EXIT_KEEP(x)
+-- 
+1.7.3.1
 
