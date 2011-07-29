@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab1G2XRA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 19:17:00 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13871 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753073Ab1G2XQ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 19:16:58 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 29 Jul 2011 16:16:57 -0700
-From: riyer@nvidia.com
-To: dmitry.torokhov@gmail.com
-Cc: rydberg@euromail.se, olof@lixom.net, amartin@nvidia.com,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Rakesh Iyer <riyer@nvidia.com>
-Subject: [PATCH v1] Input: tegra-kbc - fix computation of polling time
-Date: Fri, 29 Jul 2011 16:16:57 -0700
-Message-Id: <1311981417-31865-1-git-send-email-riyer@nvidia.com>
-X-Mailer: git-send-email 1.7.1
+	id S1753190Ab1G2XSm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 19:18:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38555 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752808Ab1G2XSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 19:18:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,289,1309762800"; 
+   d="scan'208";a="33176085"
+From: Andi Kleen <andi@firstfloor.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, rientjes@google.com, hughd@google.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
+References: <alpine.DEB.2.00.1107290145080.3279@tiger>
+	<alpine.DEB.2.00.1107291002570.16178@router.home>
+Date: Fri, 29 Jul 2011 16:18:37 -0700
+In-Reply-To: <alpine.DEB.2.00.1107291002570.16178@router.home> (Christoph
+	Lameter's message of "Fri, 29 Jul 2011 10:04:36 -0500 (CDT)")
+Message-ID: <m2pqksznea.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rakesh Iyer <riyer@nvidia.com>
+Christoph Lameter <cl@linux.com> writes:
 
-Fix a constant definition and computation of polling time.
+> On Fri, 29 Jul 2011, Pekka Enberg wrote:
+>
+>> We haven't come up with a solution to keep struct page size the same but I
+>> think it's a reasonable trade-off.
+>
+> The change requires the page struct to be aligned to a double word
+> boundary. 
 
-Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
----
- drivers/input/keyboard/tegra-kbc.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Why is that?
 
-diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
-index da3828f..263f6fc 100644
---- a/drivers/input/keyboard/tegra-kbc.c
-+++ b/drivers/input/keyboard/tegra-kbc.c
-@@ -37,7 +37,7 @@
- #define KBC_ROW_SCAN_DLY	5
- 
- /* KBC uses a 32KHz clock so a cycle = 1/32Khz */
--#define KBC_CYCLE_USEC	32
-+#define KBC_CYCLE_MS	32
- 
- /* KBC Registers */
- 
-@@ -647,7 +647,7 @@ static int __devinit tegra_kbc_probe(struct platform_device *pdev)
- 	debounce_cnt = min(pdata->debounce_cnt, KBC_MAX_DEBOUNCE_CNT);
- 	scan_time_rows = (KBC_ROW_SCAN_TIME + debounce_cnt) * num_rows;
- 	kbc->repoll_dly = KBC_ROW_SCAN_DLY + scan_time_rows + pdata->repeat_cnt;
--	kbc->repoll_dly = ((kbc->repoll_dly * KBC_CYCLE_USEC) + 999) / 1000;
-+	kbc->repoll_dly = (kbc->repoll_dly + KBC_CYCLE_MS - 1) / KBC_CYCLE_MS;
- 
- 	input_dev->name = pdev->name;
- 	input_dev->id.bustype = BUS_HOST;
+> There is actually no variable added to the page struct. Its just
+> the alignment requirement that causes padding to be added after each page
+> struct.
+
+These days with everyone using cgroups (and likely mcgroups too) 
+you could probably put the cgroups page pointer back there. It's
+currently external.
+
+-Andi
+
 -- 
-1.7.1
-
+ak@linux.intel.com -- Speaking for myself only
