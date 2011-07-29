@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540Ab1G2Smm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 14:42:42 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:33695 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191Ab1G2Smk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 14:42:40 -0400
-Message-ID: <4E32FF26.7010701@signal11.us>
-Date: Fri, 29 Jul 2011 14:42:46 -0400
-From: Alan Ott <alan@signal11.us>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+	id S1752639Ab1G2Spd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 14:45:33 -0400
+Received: from home.keithp.com ([63.227.221.253]:41708 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752392Ab1G2Spc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 14:45:32 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Ben Brewer <ben.brewer@codethink.co.uk>, dri-devel@lists.freedesktop.org,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: i915 SSC Patch
+In-Reply-To: <4E32ADC7.3080002@codethink.co.uk>
+References: <4E32ADC7.3080002@codethink.co.uk>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Fri, 29 Jul 2011 11:45:28 -0700
+Message-ID: <yunwrf1gc3b.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: IP over 802.2 with LLC/SNAP
-References: <4E2F8B7B.80906@signal11.us> <20110727133209.0d9dd6c4@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110727133209.0d9dd6c4@lxorguk.ukuu.org.uk>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2011 08:32 AM, Alan Cox wrote:
->> So the question is, does Linux support IP over 802.2 with LLC/SNAP? 
-> 
-> It should be a 'simple matter of hacking' and there are example devices
-> that fiddle with packets and add headers etc you can nick a lot of code
-> from.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-That sounds like it could be a fun project actually. It looks like I can
-use what net/ipx does as a pattern, at least to get the receive going.
-The send sounds a bit trickier but doable. I'll take a look when I get
-some time (but it'll be a couple weeks at least).
+On Fri, 29 Jul 2011 13:55:35 +0100, Ben Brewer <ben.brewer@codethink.co.uk>=
+ wrote:
 
-> I figure if you can write an IP stack for an ancient Gould system
-> you can probably do that.
+> I've added a global SSC (Spread Spectrum Clock) parameter to the i915=20
+> driver, since having SSC enabled breaks (distorts) VGA output on some=20
+> Core i5/i7 chips (see https://bugs.freedesktop.org/show_bug.cgi?id=3D3875=
+0).
+> SSC is still enabled by default so the behaviour won't change but=20
+> setting the global_use_ssc parameter will turn this feature off and=20
+> allow affected devices to function correctly (notably the Dell Vostro
+> 3300).
 
-I haven't written a fully-featured IP stack on the Gould, but it does
-handle sending/receiving of UDP, which is what I need for my purposes.
+The question I have is why is SSC enabled on the VGA output at all? I
+don't see any way VGA could ever tolerate it.
 
-> 
-> The other way is to use the Linux raw packet interfaces, open a raw
-> socket, push a BPF filter onto it to just get the frames for IP/SNAP and
-> ARP/SNAP then modify them and feed them to the kernel tun/tap interface.
-> 
+=2D-=20
+keith.packard@intel.com
 
-Since I just needed to read the one packet on the Linux side, I ended up
-just using libpcap to grab the raw packets and parse out the header for
-now to get it working.
+--=-=-=
+Content-Type: application/pgp-signature
 
-Thanks for the response and information,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Alan.
+iD8DBQFOMv/IQp8BWwlsTdMRAv3CAKDCG2F1d2oUZ9/CT9n3HgAW9awl5QCfc5A9
+hfiljjMp5pICsqib+90jBsQ=
+=TaiA
+-----END PGP SIGNATURE-----
+--=-=-=--
