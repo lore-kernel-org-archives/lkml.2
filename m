@@ -1,127 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456Ab1G2I1f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 04:27:35 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:41153 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755233Ab1G2I1c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 04:27:32 -0400
-Message-ID: <4E326D88.20701@gmail.com>
-Date: Fri, 29 Jul 2011 10:21:28 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Sergiu Iordache <sergiu@google.com>
-CC: Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/3] char drivers: ramoops debugfs entry
-References: <1309994990-4729-1-git-send-email-sergiu@chromium.org> <1309994990-4729-4-git-send-email-sergiu@chromium.org> <20110707130130.8dd02f01.akpm@linux-foundation.org> <CAGDaqBQMp0xyBF7Z=P5qBqNcceG3JfWNEUX=T=yMZH74UP5kxA@mail.gmail.com> <20110707155426.fd95445f.akpm@linux-foundation.org> <CAGDaqBT13wsz3AWbLy7_STT2_EY1O6w3h_bc2bFYhrLMQobefw@mail.gmail.com> <20110707162727.f361f053.akpm@linux-foundation.org> <20110707233335.GA15120@kroah.com> <CANGUGtCJpq32AYr5=3LGcxfCqAG5CbDVW6fxS824GdCi53Pr3g@mail.gmail.com> <CAGDaqBRcuF8nSd6ehGpbj4_uPuCC16ZPED8tvMXVkjprSaQB5Q@mail.gmail.com> <CANGUGtBSsfP+syCGQ4EVN_GYhU+S+tBB=gDf-bxVD3RfXKsHrg@mail.gmail.com> <CAGDaqBS0VE51XdWCgJWEu0OXAdSx5umayZ8Om2a1HjFQOvFWig@mail.gmail.com>
-In-Reply-To: <CAGDaqBS0VE51XdWCgJWEu0OXAdSx5umayZ8Om2a1HjFQOvFWig@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755412Ab1G2Ial (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 04:30:41 -0400
+Received: from mga11.intel.com ([192.55.52.93]:23175 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754681Ab1G2Iaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 04:30:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,286,1309762800"; 
+   d="scan'208";a="35854732"
+Subject: Re: [RFC PATCH] sched: Kill WAKEUP_PREEMPT
+From: Lin Ming <ming.m.lin@intel.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, "mingo@elte.hu" <mingo@elte.hu>,
+        lkml <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>
+In-Reply-To: <20110729082033.GB12106@zhy>
+References: <1311846203.3938.1555.camel@minggr.sh.intel.com>
+	 <20110729062158.GA8971@zhy>
+	 <1311922180.3938.1573.camel@minggr.sh.intel.com>
+	 <20110729070356.GA10420@zhy>
+	 <1311924975.3938.1583.camel@minggr.sh.intel.com>
+	 <20110729074635.GB10420@zhy> <1311926218.5890.215.camel@twins>
+	 <20110729082033.GB12106@zhy>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Jul 2011 16:30:37 +0800
+Message-ID: <1311928237.3938.1588.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 29/07/2011 02:15, Sergiu Iordache ha scritto:
-> On Mon, Jul 11, 2011 at 11:41 PM, Marco Stornelli
-> <marco.stornelli@gmail.com>  wrote:
->> 2011/7/11 Sergiu Iordache<sergiu@chromium.org>:
->>> On Thu, Jul 7, 2011 at 11:43 PM, Marco Stornelli
->>> <marco.stornelli@gmail.com>  wrote:
->>>> 2011/7/8 Greg KH<greg@kroah.com>:
->>>>> On Thu, Jul 07, 2011 at 04:27:27PM -0700, Andrew Morton wrote:
->>>>>> On Thu, 7 Jul 2011 16:16:43 -0700
->>>>>> Sergiu Iordache<sergiu@google.com>  wrote:
->>>>>>
->>>>>>> Ramoops currently dumps the log of a panic/oops in a memory area which
->>>>>>> is known not to be overwritten on restart (for example 1MB starting at
->>>>>>> 15MB). The way it works is by dividing the memory area in records of a
->>>>>>> set size (fixed at 4K before my patches, configurable after) and by
->>>>>>> dumping a record there for each oops/panic. The problem is that right
->>>>>>> now you have to access that memory area through other means, such as
->>>>>>> /dev/mem, which is not always possible.
->>>>>>>
->>>>>>> What my patch did was to add a debugfs entry which returns a valid
->>>>>>> record each time (a single dump done by ramoops). The first call
->>>>>>> returns the first dump. The first call after the last valid dump
->>>>>>> returns an empty buffer. .
->>>>>>
->>>>>> Please fully describe this "record" in the v2 patch changelog.  We'll
->>>>>> want to review it for endianness, 32/64-bit compat issues,
->>>>>> maintainability, extensibility, etc.
->>>>>>
->>>>>>> After it has returned nothing, the next
->>>>>>> calls return records from the start again.
->>>>>>
->>>>>> That sounds a bit weird.  One would expect it to keep returning zero,
->>>>>> requiring userspace to lseek or close/open.
->>>>>>
->>>>>>> The validity of a dump is
->>>>>>> checked by looking after the header. Any comments on this approach are
->>>>>>> welcome.
->>>>>>>
->>>>>>> Changing the entry from debugfs to sysfs wouldn't be a problem. If
->>>>>>> sysfs is a valid solution I'll come with a patch that updates the
->>>>>>> documentation as well along with the sysfs entry.
->>>>>>
->>>>>> sysfs sounds OK to me.  Then again, sysfs is supposed to be
->>>>>> one-value-per-file, so using it would be naughty.
->>>>>>
->>>>>> I dunno, I'd be inclined to abuse the sysfs rule and hope that nobody
->>>>>> notices rather than create a fake char device.  But there's certainly
->>>>>> plenty of precedent for the fake char driver.
->>>>>
->>>>> No, please don't abuse sysfs that way.
->>>>>
->>>>> Use debugfs or a char device node.
->>>>>
->>>>> thanks,
->>>>>
->>>>> greg k-h
->>>>>
->>>>
->>>> I agree with Greg. I asked to not break the existent way to read data
->>>> via /dev/mem because for me it's the right way to do this thing.
->>>> However to do an easy *debug* a debugfs entry can be useful. IMHO, a
->>>> "production" script/application that use debugfs instead of /dev/mem
->>>> in this case is simply broken because the debugfs can't be like a
->>>> system call or other kernel interaction mechanism. Debugfs should be
->>>> used only for debug.
->>>>
->>>> Marco
->>>
->>> Any consensus/decision on how to go on with this patch idea?
->>>
->>> The options that I see right now are:
->>> - keep access through /dev/mem only (but access to /dev/mem is
->>> sometimes restricted);
->>> - keep the debugfs entry as well(as in the patch);
->>> - remove the debugfs entry and add a char driver to access the memory
->>> using read and seek operations.
->>>
->>> + the rejected(?) options from before
->>>
->>> Sergiu
->>>
->>
->> For me the best option it's to use a sysfs/proc entry to export
->> (read-only) the memory address, record size etc. At that point we can
->> use a generic script/program to access via /dev/mem. However I let
->> Andrew/Greg say the last word.
->
-> Well, since the only method to read the dump data is /dev/mem,
-> exporting the record size/address/etc is needed in order to parse it
-> properly. But as far as I can see the data is already exported through
-> sysfs in /sys/module/ramoops/parameters/.
-> The current module still needs a patch to write the variables of the
-> module parameters from the platform data in case that is used, but is
-> there any reason why we would need other sysfs entries except these?
+On Fri, 2011-07-29 at 16:20 +0800, Yong Zhang wrote:
+> On Fri, Jul 29, 2011 at 09:56:58AM +0200, Peter Zijlstra wrote:
+> > I've queued Lin's patch as I don't see the point of this thing either,
+> > normally WAKEUP_PREEMPT is enabled so it says || 0 which is kinda
+> > useless :-)
+> > 
+> > And I'm starting to think we should just kill all of WAKEUP_PREEMPT I
+> > don't think we ever want to disable it anyway.. 
+> 
+> Someting like this?
+> 
+> ---
+> From: Yong Zhang <yong.zhang0@gmail.com>
+> Subject: [RFC PATCH] sched: Kill WAKEUP_PREEMPT
+> 
+> Per Peter Zijlstra:
+> > And I'm starting to think we should just kill all of WAKEUP_PREEMPT I
+> > don't think we ever want to disable it anyway..
+> 
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> ---
+>  kernel/sched_fair.c     |    8 +-------
+>  kernel/sched_features.h |    5 -----
+>  2 files changed, 1 insertions(+), 12 deletions(-)
+> 
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 46b7855..3c58042 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -1114,9 +1114,6 @@ check_preempt_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr)
+>  	 * narrow margin doesn't have to wait for a full slice.
+>  	 * This also mitigates buddy induced latencies under load.
+>  	 */
+> -	if (!sched_feat(WAKEUP_PREEMPT))
+> -		return;
+> -
 
-I'd say no. I think it's sufficient.
+-       /*
+-        * Ensure that a task that missed wakeup preemption by a
+-        * narrow margin doesn't have to wait for a full slice.
+-        * This also mitigates buddy induced latencies under load.
+-        */
+-       if (!sched_feat(WAKEUP_PREEMPT))
+-               return;
+-
 
-Marco
+Then remove the comments also.
+
