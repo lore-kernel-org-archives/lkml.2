@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995Ab1G2G2J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 02:28:09 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50074 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754590Ab1G2G2H (ORCPT
+	id S1755070Ab1G2Gan (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 02:30:43 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39915 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754723Ab1G2Gam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 02:28:07 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E3252E2.1030101@jp.fujitsu.com>
-Date: Fri, 29 Jul 2011 15:27:46 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: jj@chaosbits.net
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com,
-        minchan.kim@gmail.com, mgorman@suse.de, akpm@linux-foundation.org,
-        kanoj@sgi.com, sct@redhat.com
-Subject: Re: [PATCH] vmscan: Remove if statement that will never trigger
-References: <alpine.LNX.2.00.1107282302580.20477@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1107282302580.20477@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 29 Jul 2011 02:30:42 -0400
+Subject: Re: Fw: [PATCH] sunrpc: use better NUMA affinities
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Greg Banks <gnb@fastmail.fm>
+Cc: NeilBrown <neilb@suse.de>, linux-nfs@vger.kernel.org,
+        David Miller <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <4E324DB4.7060600@fastmail.fm>
+References: <20110729153207.17af3085@notabene.brown>
+	 <4E324DB4.7060600@fastmail.fm>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Jul 2011 08:30:35 +0200
+Message-ID: <1311921035.7845.10.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/07/29 6:05), Jesper Juhl wrote:
-> We have this code in mm/vmscan.c:shrink_slab() :
-> ...
-> 		if (total_scan < 0) {
-> 			printk(KERN_ERR "shrink_slab: %pF negative objects to "
-> 			       "delete nr=%ld\n",
-> 			       shrinker->shrink, total_scan);
-> 			total_scan = max_pass;
-> 		}
-> ...
-> but since 'total_scan' is of type 'unsigned long' it will never be
-> less than zero, so there is no way we'll ever enter the true branch of
-> this if statement - so let's just remove it.
+Le vendredi 29 juillet 2011 à 16:05 +1000, Greg Banks a écrit :
+> On 29/07/11 15:32, NeilBrown wrote:
+> >
+> > Hi Greg,
+> >   I saw this patch float past and thought of you... You may not be interested
+> >   any more, and it may be a perfectly good patch that does not need any
+> >   comment, but I thought I would let you know anyway.
 > 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  mm/vmscan.c |    6 ------
->  1 files changed, 0 insertions(+), 6 deletions(-)
+> Thanks Neil.
 > 
-> 	Compile tested only.
+> I've trimmed the cc list to limit the number of copies Trond and Bruce get:)
 > 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 7ef6912..c07d9b1 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -271,12 +271,6 @@ unsigned long shrink_slab(struct shrink_control *shrink,
->  		delta *= max_pass;
->  		do_div(delta, lru_pages + 1);
->  		total_scan += delta;
-> -		if (total_scan < 0) {
-> -			printk(KERN_ERR "shrink_slab: %pF negative objects to "
-> -			       "delete nr=%ld\n",
-> -			       shrinker->shrink, total_scan);
-> -			total_scan = max_pass;
-> -		}
->  
->  		/*
->  		 * We need to avoid excessive windup on filesystem shrinkers
+> > From: Eric Dumazet<eric.dumazet@gmail.com>
+> > To: Trond Myklebust<Trond.Myklebust@netapp.com>
+> > Cc: "J. Bruce Fields"<bfields@fieldses.org>, Neil Brown<neilb@suse.de>,
+> > David Miller<davem@davemloft.net>, linux-nfs@vger.kernel.org, netdev
+> > <netdev@vger.kernel.org>, linux-kernel<linux-kernel@vger.kernel.org>
+> > Subject: [PATCH] sunrpc: use better NUMA affinities
+> >
+> >
+> > Use NUMA aware allocations to reduce latencies and increase throughput.
+> 
+> 
+> Briefly looking at the patch, it doesn't seem wrong but I'm surprised 
+> it's (still) necessary.
+> 
+> Some years ago at SGI we encountered that same problem; we solved it by 
+> delaying all the allocation of data structures associated with a thread 
+> so that they were performed in the thread itself, after the thread had 
+> been limited to run on a certain set of CPUs.  Thus the thread's normal 
+> allocation behaviour resulted in all of it's allocations being from 
+> node-local pages.  It was a pretty ugly patch, but it worked and made a 
+> huge difference to NFS throughput on large NUMA boxes.
+> 
+> Later Jeff Layton converted the sunrpc svc startup code to use kthreads 
+> and at the time I read his patches, pointed out this problem, and posted 
+> my patch for comparison
+> 
+> http://linux-nfs.org/pipermail/nfsv4/2008-May/008760.html
+> 
+> I seem to remember coming to the conclusion that Jeff eventually 
+> addressed this problem...am I misremembering or did something regress?
+> 
 
-Good catch.
+Currently, all nfsd kthreads use memory for their kernel stack and
+various initial data from a _single_ node, even if you use
+sunrpc.pool_mode=pernode  (or percpu)
 
-However this seems intended to catch a overflow. So, I'd suggest to make proper
-overflow check instead.
+With my patch, we make sure each thread gets its stack from its local
+node.
+
+Check commit 94dcf29a11b3d20a (kthread: use kthread_create_on_node()) to
+see how this strategy already was adopted for ksoftirqd, kworker,
+migration, and pktgend kthreads.
+
+I only have small machines here (two nodes), so I cannot post
+significative bench results, but it seems quite obvious to expect a good
+increase.
+
 
 
