@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab1G2OBd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 10:01:33 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:48905 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098Ab1G2OBc (ORCPT
+	id S1755608Ab1G2ODF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 10:03:05 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:34464 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753774Ab1G2ODD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 10:01:32 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6421"; a="106592209"
-Date: Fri, 29 Jul 2011 07:01:27 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] ARM: msm: Remove PLAT_PHYS_OFFSETS from MSM targets
-Message-ID: <20110729140127.GA17137@huya.qualcomm.com>
-References: <1311794355-26988-2-git-send-email-sboyd@codeaurora.org>
- <1311884291-5409-1-git-send-email-davidb@codeaurora.org>
- <1311884291-5409-2-git-send-email-davidb@codeaurora.org>
- <20110729103239.GC25640@n2100.arm.linux.org.uk>
- <alpine.LFD.2.00.1107290841300.12766@xanadu.home>
+	Fri, 29 Jul 2011 10:03:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1107290841300.12766@xanadu.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E32BB6F.3090607@broadcom.com>
+References: <8d47115a01b74b768ea4850fb314b16d-mfwitten@gmail.com>
+ <768a3afa74c244e8b43a376dd4fb0df4-mfwitten@gmail.com> <4E32BB6F.3090607@broadcom.com>
+From: Michael Witten <mfwitten@gmail.com>
+Date: Fri, 29 Jul 2011 14:02:32 +0000
+Message-ID: <CAMOZ1Bt3BkNeVONXu_0xoAxx=tUFLryaaW9XtPt6AxhJmTF9GA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] Docs: Typo: coordinate{,s}
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Jiri Kosina <trivial@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 08:42:15AM -0400, Nicolas Pitre wrote:
-> On Fri, 29 Jul 2011, Russell King - ARM Linux wrote:
-> 
-> > On Thu, Jul 28, 2011 at 01:18:11PM -0700, David Brown wrote:
-> > > Now that MSM can boot with the phys offset patching, eliminate the
-> > > definitions of the phys offsets, and instead select
-> > > ARM_PATCH_PHYS_VIRT.
-> > 
-> > I think it may be better to remove the EXPERIMENTAL status of
-> > ARM_PATCH_PHYS_VIRT, and make the option default to 'y' now, so that
-> > we start building all kernels with this enabled.  If people don't
-> > want it (and know what they're doing) they can disable it manually
-> > (maybe make the option only appear for EXPERT).
-> 
-> One of my jumbo patch series is doing that.
-> 
-> > Lets see about that after this merge window is over.
+On Fri, Jul 29, 2011 at 13:53, Arend van Spriel <arend@broadcom.com> wrote:
+> On 07/29/2011 02:46 PM, Michael Witten wrote:
+>>
+>> Signed-off-by: Michael Witten<mfwitten@gmail.com>
+>> ---
+>>  include/linux/cordic.h |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/include/linux/cordic.h b/include/linux/cordic.h
+>> index f932093..de741da 100644
+>> --- a/include/linux/cordic.h
+>> +++ b/include/linux/cordic.h
+>> @@ -35,8 +35,8 @@ struct cordic_iq {
+>>   * @theta: angle in degrees for which i/q coordinate is to be calculated.
+>>   * @coord: function output parameter holding the i/q coordinate.
+>>   *
+>> - * The function calculates the i/q coordinate for a given angle using
+>> - * cordic algorithm. The coordinate consists of a real (i) and an
+>> + * The function calculates the i/q coordinates for a given angle using
+>> + * cordic algorithm. The coordinates consist of a real (i) and an
+>>   * imaginary (q) part. The real part is essentially the cosine of the
+>>   * angle and the imaginary part is the sine of the angle. The returned
+>>   * values are scaled by 2^16 for precision. The range for theta is
+>
+> Most patches in this series are fine by me. However, the function takes a
+> single angle as input and returns a single two-dimensional coordinate as
+> output. The coordinate itself is represented by the two axis i and q. So I
+> tend to say changing coordinate to coordinates is not justified here.
+> However, I not a native english speaker so I may be wrong here.
 
-In that case, I'll resend just the second of my patches after this
-series.
+Sure.
 
-Thanks,
-David
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Jiri, I'll send you a pull request later with the update(s).
