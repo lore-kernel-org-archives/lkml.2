@@ -1,90 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab1G2ESh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 00:18:37 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61785 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab1G2ESg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 00:18:36 -0400
+	id S1753316Ab1G2Eia (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 00:38:30 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:58904 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751256Ab1G2Ei3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 00:38:29 -0400
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon updates for 3.1
+Date: Thu, 28 Jul 2011 21:37:33 -0700
+Message-ID: <1311914253-1439-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.3.1
 MIME-Version: 1.0
-In-Reply-To: <20110729014247.692715109@goodmis.org>
-References: <20110729014215.328710900@goodmis.org>
-	<20110729014247.692715109@goodmis.org>
-Date: Fri, 29 Jul 2011 00:18:34 -0400
-Message-ID: <CAMzpN2jAKphUcp2eFfyVtn+ut+=oRqr40G3tTbDMziEg+TEuhw@mail.gmail.com>
-Subject: Re: [PATCH 1/5] x86: Do not differentiate between x86_64 and i386
- with init_per_cpu
-From: Brian Gerst <brgerst@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even though 32-bit doesn't currently use these macros, please keep the
-current define, since only 64-bit SMP is special in this regard.
-64-bit SMP uses a zero-based percpu segment, which requires the linker
-fixup for statically initialized percpu pointers.  This fixup isn't
-needed on 32-bit SMP (or UP).
+Hi Linus,
 
---
-Brian Gerst
+Please pull hwmon subsystem updates for Linux 3.1 from:
 
-On Thu, Jul 28, 2011 at 9:42 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
->
-> There's nothing different between the way x86_64 and x86_32
-> treate init_per_cpu.
->
-> Although only x86_64 uses INIT_PER_CPU_VAR() in the head.S file,
-> there is still no reason to keep the macro x86_64 only.
->
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  arch/x86/include/asm/percpu.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
-> index a0a9779..ab86813 100644
-> --- a/arch/x86/include/asm/percpu.h
-> +++ b/arch/x86/include/asm/percpu.h
-> @@ -33,7 +33,7 @@
->  #define PER_CPU_VAR(var)       var
->  #endif /* SMP */
->
-> -#ifdef CONFIG_X86_64_SMP
-> +#ifdef CONFIG_SMP
->  #define INIT_PER_CPU_VAR(var)  init_per_cpu__##var
->  #else
->  #define INIT_PER_CPU_VAR(var)  var
-> @@ -77,7 +77,7 @@
->  #define DECLARE_INIT_PER_CPU(var) \
->        extern typeof(var) init_per_cpu_var(var)
->
-> -#ifdef CONFIG_X86_64_SMP
-> +#ifdef CONFIG_SMP
->  #define init_per_cpu_var(var)  init_per_cpu__##var
->  #else
->  #define init_per_cpu_var(var)  var
-> --
-> 1.7.5.4
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
+
+Significant changes:
+Moved PMBus drivers into their own subdirectory.
+Added support for MAX1668, NTC thermistors, SA56004, LM95245,
+LM95231, ADP4000, NCP4200, NCP4208, LM25066, LM5064, and LM5066.
+
+Thanks,
+Guenter Roeck
+
+------
+
+The following changes since commit 95b6886526bb510b8370b625a49bc0ab3b8ff10f:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6 (2011-07-27 19:26:38 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
+
+Alexander Stein (1):
+      hwmon: LM95245 driver
+
+David George (1):
+      hwmon: Driver for MAX1668
+
+Donggeun Kim (1):
+      hwmon: Driver for NTC Thermistors
+
+Durgadoss R (1):
+      hwmon: (coretemp) Add core/pkg threshold support to Coretemp
+
+Guenter Roeck (16):
+      hwmon: (max1668) Add support for tempX_fault attributes
+      hwmon: (lm95241) Add support for LM95231
+      hwmon: (pmbus) Move PMBus drivers to drivers/hwmon/pmbus
+      hwmon: (pmbus) Add support for VID output voltage mode
+      hwmon: (pmbus) Add ADP4000, NCP4200 and NCP4208 to list of supported devices
+      hwmon: (pmbus) Increase attribute name size
+      hwmon: (pmbus) Support reading and writing of word registers in device specific code
+      hwmon: (pmbus) Add support for virtual pages
+      hwmon: (pmbus) Strengthen check for status register existence
+      hwmon: Add new attributes to sysfs ABI
+      hwmon: (pmbus) Add support for peak attributes
+      hwmon: (adm1275) Add support for peak attributes
+      hwmon: (max16064) Add support for peak attributes
+      hwmon: (max8688) Add support for peak attributes
+      hwmon: (max34440) Add support for peak attributes
+      hwmon: (pmbus) Add client driver for LM25066, LM5064, and LM5066
+
+Jean Delvare (3):
+      hwmon: (lm90) Simplify handling of extended local temp register
+      hwmon: (lm90) Make SA56004 detection more robust
+      hwmon: (lm90) Refactor reading of config2 register
+
+Stijn Devriendt (1):
+      hwmon: (lm90) Add support for Philips SA56004
+
+ Documentation/hwmon/adm1275                  |    8 +-
+ Documentation/hwmon/coretemp                 |    7 +
+ Documentation/hwmon/lm25066                  |   90 +++++
+ Documentation/hwmon/lm90                     |    9 +-
+ Documentation/hwmon/lm95245                  |   33 ++
+ Documentation/hwmon/max16064                 |    4 +
+ Documentation/hwmon/max1668                  |   60 +++
+ Documentation/hwmon/max34440                 |    6 +
+ Documentation/hwmon/max8688                  |    6 +
+ Documentation/hwmon/ntc_thermistor           |   93 +++++
+ Documentation/hwmon/pmbus                    |    7 +
+ Documentation/hwmon/sysfs-interface          |   46 +++
+ MAINTAINERS                                  |   18 +
+ drivers/hwmon/Kconfig                        |  127 ++-----
+ drivers/hwmon/Makefile                       |   13 +-
+ drivers/hwmon/coretemp.c                     |  177 +++++++---
+ drivers/hwmon/lm90.c                         |   65 ++-
+ drivers/hwmon/lm95241.c                      |   31 +-
+ drivers/hwmon/lm95245.c                      |  543 ++++++++++++++++++++++++++
+ drivers/hwmon/max1668.c                      |  502 ++++++++++++++++++++++++
+ drivers/hwmon/ntc_thermistor.c               |  453 +++++++++++++++++++++
+ drivers/hwmon/pmbus/Kconfig                  |  100 +++++
+ drivers/hwmon/pmbus/Makefile                 |   13 +
+ drivers/hwmon/{ => pmbus}/adm1275.c          |   66 +++-
+ drivers/hwmon/pmbus/lm25066.c                |  340 ++++++++++++++++
+ drivers/hwmon/{ => pmbus}/max16064.c         |   57 +++-
+ drivers/hwmon/{ => pmbus}/max34440.c         |   81 ++++-
+ drivers/hwmon/{ => pmbus}/max8688.c          |   69 +++-
+ drivers/hwmon/{ => pmbus}/pmbus.c            |   37 ++-
+ drivers/hwmon/{ => pmbus}/pmbus.h            |   48 +++-
+ drivers/hwmon/{ => pmbus}/pmbus_core.c       |  351 +++++++++++++----
+ drivers/hwmon/{ => pmbus}/ucd9000.c          |    0
+ drivers/hwmon/{ => pmbus}/ucd9200.c          |    0
+ include/linux/platform_data/ntc_thermistor.h |   53 +++
+ 34 files changed, 3229 insertions(+), 284 deletions(-)
+ create mode 100644 Documentation/hwmon/lm25066
+ create mode 100644 Documentation/hwmon/lm95245
+ create mode 100644 Documentation/hwmon/max1668
+ create mode 100644 Documentation/hwmon/ntc_thermistor
+ create mode 100644 drivers/hwmon/lm95245.c
+ create mode 100644 drivers/hwmon/max1668.c
+ create mode 100644 drivers/hwmon/ntc_thermistor.c
+ create mode 100644 drivers/hwmon/pmbus/Kconfig
+ create mode 100644 drivers/hwmon/pmbus/Makefile
+ rename drivers/hwmon/{ => pmbus}/adm1275.c (67%)
+ create mode 100644 drivers/hwmon/pmbus/lm25066.c
+ rename drivers/hwmon/{ => pmbus}/max16064.c (66%)
+ rename drivers/hwmon/{ => pmbus}/max34440.c (76%)
+ rename drivers/hwmon/{ => pmbus}/max8688.c (72%)
+ rename drivers/hwmon/{ => pmbus}/pmbus.c (89%)
+ rename drivers/hwmon/{ => pmbus}/pmbus.h (79%)
+ rename drivers/hwmon/{ => pmbus}/pmbus_core.c (84%)
+ rename drivers/hwmon/{ => pmbus}/ucd9000.c (100%)
+ rename drivers/hwmon/{ => pmbus}/ucd9200.c (100%)
+ create mode 100644 include/linux/platform_data/ntc_thermistor.h
