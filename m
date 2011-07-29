@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab1G2SCM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 14:02:12 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34280 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473Ab1G2SCK (ORCPT
+	id S1752655Ab1G2SGw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 14:06:52 -0400
+Received: from caffeine.csclub.uwaterloo.ca ([129.97.134.17]:35098 "EHLO
+	caffeine.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752476Ab1G2SGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 14:02:10 -0400
-Subject: Re: [PATCH] sunrpc: use better NUMA affinities
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, Neil Brown <neilb@suse.de>,
-        David Miller <davem@davemloft.net>, linux-nfs@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg Banks <gnb@fastmail.fm>
-In-Reply-To: <20110729164214.GI23194@fieldses.org>
-References: <1311876249.2346.39.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <20110729164214.GI23194@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 29 Jul 2011 20:02:05 +0200
-Message-ID: <1311962525.2873.6.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Fri, 29 Jul 2011 14:06:50 -0400
+Date: Fri, 29 Jul 2011 14:06:50 -0400
+To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Breno Leitao <leitao@linux.vnet.ibm.com>
+Subject: Re: Very strange data loss with jsm driver
+Message-ID: <20110729180650.GL8562@caffeine.csclub.uwaterloo.ca>
+References: <20110729160416.GK8562@caffeine.csclub.uwaterloo.ca>
+ <20110729172736.4b199d31@lxorguk.ukuu.org.uk>
+ <20110729165342.GB8566@caffeine.csclub.uwaterloo.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110729165342.GB8566@caffeine.csclub.uwaterloo.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: lsorense@csclub.uwaterloo.ca (Lennart Sorensen)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 29 juillet 2011 à 12:42 -0400, J. Bruce Fields a écrit :
-> On Thu, Jul 28, 2011 at 08:04:09PM +0200, Eric Dumazet wrote:
-> > Use NUMA aware allocations to reduce latencies and increase throughput.
+On Fri, Jul 29, 2011 at 12:53:42PM -0400, Lennart Sorensen wrote:
+> On Fri, Jul 29, 2011 at 05:27:36PM +0100, Alan Cox wrote:
+> > > The trigger point appears to be lines of up to 14 bytes, followed by
+> > > a newline.  With 15 bytes or more per line it seems to be OK.
+> > > 
+> > > Anyone got a clue?
 > > 
-> > sunrpc kthreads can use kthread_create_on_node() if pool_mode is
-> > "percpu" or "pernode", and svc_prepare_thread()/svc_init_buffer() can
-> > also take into account NUMA node affinity for memory allocations.
-> ...
-> > @@ -662,14 +675,16 @@ svc_set_num_threads(struct svc_serv *serv, struct svc_pool *pool, int nrservs)
-> >  		nrservs--;
-> >  		chosen_pool = choose_pool(serv, pool, &state);
-> >  
-> > -		rqstp = svc_prepare_thread(serv, chosen_pool);
-> > +		node = svc_pool_map_get_node(chosen_pool->sp_id);
-> > +		rqstp = svc_prepare_thread(serv, chosen_pool, node);
+> > FIFO size perhaps - and some kind of missed wakeup or tx handling bug ?
 > 
-> The only correct value for the third argument there is
-> svc_pool_map_get_node(chosen_pool->sp_id), so let's have
-> svc_prepare_thread() call that itself.
+> FIFO size is 64bytes, so that doesn't immediately sound related.
 > 
-
-I have no idea of what you mean ;)
-
-I need 'node' for the following kthread_create_on_node()
-
-
-> Seems OK otherwise.
+> The thing I find weird is that it thinks everything was sent right away.
 > 
-> Any suggestions on how we should test this?
+> Also why should the newline have anything to do with it?  If you send
+> 100100 bytes should it matter where the newlines are unless the tty
+> layer or the driver is interpreting the newlines for some reason.
 
-I did tests on my machine, seems good.
+Same breakage on 2.6.18.  I suspect this has always been broken.
 
-I checked that stacks were now correct using :
-"echo t > /proc/sysrq-trigger"
+Hmm.
 
+I noticed fifosize in the uart_port info is set to 16, even though the
+fifo size is actually 64 bytes as all actual driver bits know.  What is
+fifosize actually used for?
 
-
+-- 
+Len Sorensen
