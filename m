@@ -1,48 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252Ab1G2A6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 20:58:14 -0400
-Received: from titan.ufpe.br ([150.161.6.80]:52321 "EHLO titan.ufpe.br"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755002Ab1G2A6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 20:58:13 -0400
-X-Greylist: delayed 128866 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Jul 2011 20:58:13 EDT
-Date: Wed, 27 Jul 2011 10:06:41 -0300 (BRT)
-From: James Russell <bbn@ufpe.br>
-Reply-To: James Russell <jamesrussell1960@live.com>
-Message-ID: <1924139842.67255.1311772001155.JavaMail.root@hermes.ufpe.br>
-Subject: =?utf-8?B?0J/RgNC10LTQu9C+0LbQtdC90LjQtSDQutGA0LXQtNC40YI=?=
- =?utf-8?B?0LAg0L3QsCDQvdC40LfQutC+0Lwg0YPRgNC+0LLQvdC1?=
+	id S1755334Ab1G2BCP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 21:02:15 -0400
+Received: from smtp6.oregonstate.edu ([128.193.15.46]:52878 "EHLO
+	smtp6.oregonstate.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753730Ab1G2BCO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 21:02:14 -0400
+X-Greylist: delayed 348 seconds by postgrey-1.27 at vger.kernel.org; Thu, 28 Jul 2011 21:02:14 EDT
+Message-ID: <20110728175625.1595581wucy2hvr4@webmail.oregonstate.edu>
+Date: Thu, 28 Jul 2011 17:56:25 -0700
+From: uberj@onid.orst.edu
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix to excess pre-schedule migrating during Real Time 
+ overload on multiple CPUs.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Originating-IP: [178.73.198.130]
-X-Mailer: Zimbra 6.0.10_GA_2692 (zclient/6.0.10_GA_2692)
-To: undisclosed-recipients:;
-X-Spam-Score: undef - no license key found
-X-CanIt-Geo: ip=150.161.6.81; country=BR; region=30; city=Recife; latitude=-8.0500; longitude=-34.9000; http://maps.google.com/maps?q=-8.0500,-34.9000&z=6
-X-CanItPRO-Stream: SAIDA
-X-Canit-Stats-ID: Bayes signature not available
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+X-Originating-IP: 128.193.37.146
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p6T0wPNM014634
 
+ From cf87d70969357f46e5c28804ac39c2139652af8f Mon Sep 17 00:00:00 2001
+From: Jacques Uber <uberj@onid.orst.edu>
+Date: Thu, 28 Jul 2011 17:49:38 -0700
+Subject: [PATCH] Fix to excess pre-schedule migrating during Real Time
+  overload on multiple CPUs.
 
+If multiple processors are under real time overload there are situations where
+a processor will pull multiple tasks from multiple CPU's while trying to
+schedule the highest priority task within it's root domain. As an example, if
+there are four CPU's all under overload and the highest priority task on CPU3
+yields its time slice, CPU3 will try to pull the next highest priority  
+task onto
+its the runqueue. Without the patch, if tasks were ordered in ascending order
+on CPU[0-2], CPU3 would pull all the tasks, ruining any possibility of using
+cached data.
 
-кредитной заявки в размере 2% серьезные запросы, только если заинтересованные должны связаться с нами
- по адресу: jamesrussell1960@live.com
+The simple solution to this scenario is to maintain a "best choice"  
+for CPU3 to
+pull to it's run queue. Only after checking all the queued tasks and choosing
+which one should be ran, will it deactivate, set_task, and reactivate the task
+onto it's runqueue.
 
- со следующей информацией.
+This patch was inspired by a Linux Journal article about the Real Time  
+Scheduler.
+http://www.linuxjournal.com/magazine/real-time-linux-kernel-scheduler?page=0,3
 
- Полное имя:
- Сумма кредита Требуется:
- Займа Продолжительность:
- Номер телефона:
- Ежемесячный доход:
- Страна:
- Род занятий:
+Signed-off-by: Jacques Uber <uberj@onid.orst.edu>
+Signed-off-by: Kevin Strasser <strassek@onid.orst.edu>
+---
+  kernel/sched_rt.c |   11 ++++++++---
+  1 files changed, 8 insertions(+), 3 deletions(-)
 
- С уважением
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index 97540f0..067f159 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -1482,6 +1482,7 @@ static int pull_rt_task(struct rq *this_rq)
+  {
+         int this_cpu = this_rq->cpu, ret = 0, cpu;
+         struct task_struct *p;
++       struct task_struct *best = NULL;
+         struct rq *src_rq;
 
- Джеймс Рассел���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+         if (likely(!rt_overloaded(this_rq)))
+@@ -1540,9 +1541,10 @@ static int pull_rt_task(struct rq *this_rq)
+
+                         ret = 1;
+
+-                       deactivate_task(src_rq, p, 0);
+-                       set_task_cpu(p, this_cpu);
+-                       activate_task(this_rq, p, 0);
++            if(!best)
++                best = p;
++            else if(p->prio > best->prio)
++                best = p;
+                         /*
+                          * We continue with the search, just in
+                          * case there's an even higher prio task
+@@ -1550,6 +1552,9 @@ static int pull_rt_task(struct rq *this_rq)
+                          * but possible)
+                          */
+                 }
++        deactivate_task(src_rq, p, 0);
++        set_task_cpu(p, this_cpu);
++        activate_task(this_rq, p, 0);
+  skip:
+                 double_unlock_balance(this_rq, src_rq);
+         }
+-- 
+1.7.5.4
+
