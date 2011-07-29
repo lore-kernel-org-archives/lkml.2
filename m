@@ -1,101 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab1G2PVo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 11:21:44 -0400
-Received: from mga03.intel.com ([143.182.124.21]:53663 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751299Ab1G2PVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 11:21:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,287,1309762800"; 
-   d="scan'208";a="2353245"
-From: Alex Shi <alex.shi@intel.com>
-To: linux-mm@kvack.org, P@draigBrady.com
-Cc: mgorman@suse.de, linux-kernel@vger.kernel.org, andrea@cpushare.com,
-        tim.c.chen@intel.com, shaohua.li@intel.com, akpm@linux-foundation.org,
-        riel@redhat.com, luto@mit.edu
-Subject: [PATCH] kswapd: avoid unnecessary rebalance after an unsuccessful balancing
-Date: Fri, 29 Jul 2011 23:23:10 +0800
-Message-Id: <1311952990-3844-1-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1751834Ab1G2PWn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 11:22:43 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40675 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299Ab1G2PWm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 11:22:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110729124346.GL25640@n2100.arm.linux.org.uk>
+References: <cover.1311936523.git.viresh.kumar@st.com>
+	<20110729105759.GE25640@n2100.arm.linux.org.uk>
+	<4E329616.2030505@st.com>
+	<20110729111920.GK25640@n2100.arm.linux.org.uk>
+	<4E329848.7070606@st.com>
+	<20110729124346.GL25640@n2100.arm.linux.org.uk>
+Date: Fri, 29 Jul 2011 08:22:40 -0700
+Message-ID: <CAOh2x==-LY1qLnT=gunwbrfVe8zu0rVjHm6mGTXsE+CwE+4+_Q@mail.gmail.com>
+Subject: Re: [PATCH 00/18] dmaengine/amba-pl08x updates
+From: viresh kumar <viresh.linux@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: viresh kumar <viresh.kumar@st.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vipin KUMAR <vipin.kumar@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit 215ddd66, Mel Gorman said kswapd is better to sleep after a
-unsuccessful balancing if there is tighter reclaim request pending in
-the balancing. In this scenario, the 'order' and 'classzone_idx'
-that are checked for tighter request judgment is incorrect, since they
-aren't the one kswapd should read from new pgdat, but the last time pgdat
-value for just now balancing. Then kswapd will skip try_to_sleep func
-and rebalance the last pgdat request. It's not our expected behavior.
+On 7/29/11, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> On Fri, Jul 29, 2011 at 04:53:52PM +0530, viresh kumar wrote:
+>> On 07/29/2011 04:49 PM, Russell King - ARM Linux wrote:
+>> In my case, JPEG driver doesn't know how much data to transfer. So i have
+>> to
+>> send zero from there. Also, i am not sure why would peripheral needs to be
+>> flow controller if the peripherals driver already know how much to
+>> transfer?
+>
+> If the jpeg driver doesn't know how much data will be transferred, how
+> can it allocate a buffer for the device to DMA into?
+>
 
-So, I added new variables to distinguish the returned order/classzone_idx
-from last balancing, that can resolved above issue in that scenario.
+We can specify the upper limit to jpeg after which it stops the
+conversion and DMA transfer
+inbetween. At this time, we need to start a new DMA transfer with a
+separate buffer.
 
-I tested the patch on our LKP system with swap-cp/fio mmap randrw
-benchmarks. The performance has no change.
-
-Padraig Brady, would you like to test this patch for your scenario.
-
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Reviewed-by:  Tim Chen <tim.c.chen@linux.intel.com>
----
- mm/vmscan.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index eb7bcce..6380674 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2792,7 +2792,9 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
- static int kswapd(void *p)
- {
- 	unsigned long order, new_order;
-+	unsigned balanced_order;
- 	int classzone_idx, new_classzone_idx;
-+	int balanced_classzone_idx;
- 	pg_data_t *pgdat = (pg_data_t*)p;
- 	struct task_struct *tsk = current;
- 
-@@ -2823,7 +2825,9 @@ static int kswapd(void *p)
- 	set_freezable();
- 
- 	order = new_order = 0;
-+	balanced_order = 0;
- 	classzone_idx = new_classzone_idx = pgdat->nr_zones - 1;
-+	balanced_classzone_idx = classzone_idx;
- 	for ( ; ; ) {
- 		int ret;
- 
-@@ -2832,7 +2836,7 @@ static int kswapd(void *p)
- 		 * new request of a similar or harder type will succeed soon
- 		 * so consider going to sleep on the basis we reclaimed at
- 		 */
--		if (classzone_idx >= new_classzone_idx && order == new_order) {
-+		if (balanced_classzone_idx >= new_classzone_idx && balanced_order == new_order) {
- 			new_order = pgdat->kswapd_max_order;
- 			new_classzone_idx = pgdat->classzone_idx;
- 			pgdat->kswapd_max_order =  0;
-@@ -2847,7 +2851,7 @@ static int kswapd(void *p)
- 			order = new_order;
- 			classzone_idx = new_classzone_idx;
- 		} else {
--			kswapd_try_to_sleep(pgdat, order, classzone_idx);
-+			kswapd_try_to_sleep(pgdat, balanced_order, balanced_classzone_idx);
- 			order = pgdat->kswapd_max_order;
- 			classzone_idx = pgdat->classzone_idx;
- 			new_order = order;
-@@ -2866,7 +2870,8 @@ static int kswapd(void *p)
- 		 */
- 		if (!ret) {
- 			trace_mm_vmscan_kswapd_wake(pgdat->node_id, order);
--			order = balance_pgdat(pgdat, order, &classzone_idx);
-+			balanced_classzone_idx = classzone_idx;
-+			balanced_order = balance_pgdat(pgdat, order, &balanced_classzone_idx);
- 		}
- 	}
- 	return 0;
--- 
-1.6.3.3
-
+Obviously, for all packets leaving the last, this upper limit is the
+size of data transferred before
+stopping DMA. But for the last packet we don't how much data will be
+there (<= upper limit)
