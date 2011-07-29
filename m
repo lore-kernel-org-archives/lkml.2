@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756185Ab1G2KnL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 06:43:11 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:11754 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755946Ab1G2KnJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 06:43:09 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjgDAAONMk55LCkBgWdsb2JhbAA0AQEEAUAgJQUMCQMYOhQBKgMqFx4Cp0oVAQEWJiWIfL9sDoYzBKNv
-Date: Fri, 29 Jul 2011 20:43:05 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>, Shaohua Li <shaohua.li@intel.com>,
-        "mgorman@suse.de" <mgorman@suse.de>, linux-mm <linux-mm@kvack.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]vmscan: add block plug for page reclaim
-Message-ID: <20110729104305.GI5404@dastard>
-References: <1311130413.15392.326.camel@sli10-conroe>
- <CAEwNFnDj30Bipuxrfe9upD-OyuL4v21tLs0ayUKYUfye5TcGyA@mail.gmail.com>
- <1311142253.15392.361.camel@sli10-conroe>
- <CAEwNFnD3iCMBpZK95Ks+Z7DYbrzbZbSTLf3t6WXDQdeHrE6bLQ@mail.gmail.com>
- <1311144559.15392.366.camel@sli10-conroe>
- <4E287EC0.4030208@fusionio.com>
- <1311311695.15392.369.camel@sli10-conroe>
- <4E2B17A6.6080602@fusionio.com>
- <20110727164523.c2b1d569.akpm@linux-foundation.org>
- <20110729083847.GB1843@barrios-desktop>
+	id S1756205Ab1G2KoQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 06:44:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25977 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755946Ab1G2KoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 06:44:15 -0400
+Date: Fri, 29 Jul 2011 12:45:37 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: gregkh@suse.de, herton.krzesinski@canonical.com, gengor@gentoo.org,
+        donald.h.fry@intel.com, wey-yi.w.guy@intel.com, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com
+Subject: Re: [PATCH] [64/99] Revert "iwlagn: Support new 5000 microcode."
+Message-ID: <20110729104537.GB2106@redhat.com>
+References: <20110727247.325703029@firstfloor.org>
+ <20110727214903.75C262403FF@tassilo.jf.intel.com>
+ <20110728082425.GA2207@redhat.com>
+ <20110728173241.GJ8006@one.firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110729083847.GB1843@barrios-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110728173241.GJ8006@one.firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 05:38:47PM +0900, Minchan Kim wrote:
-> On Wed, Jul 27, 2011 at 04:45:23PM -0700, Andrew Morton wrote:
-> > Using an additional 44 bytes of stack on that path is also
-> > significant(ly bad).  But we need to fix that problem anyway.  One way
-> > we could improve things in mm/vmscan.c is to move the blk_plug into
-> > scan_control then get the scan_control off the stack in some manner. 
-> > That's easy for kswapd: allocate one scan_control per kswapd at
-> > startup.  Doing it for direct-reclaim would be a bit trickier...
+On Thu, Jul 28, 2011 at 07:32:41PM +0200, Andi Kleen wrote:
+> > commit dd7a2509b3a79b290730a9c6a784bf03fedabb9a
+> > Author: Johannes Berg <johannes.berg@intel.com>
+> > Date:   Wed Apr 28 23:33:10 2010 -0700
+> > 
+> >     iwlagn: implement loading a new firmware file type
+> > 
+> > > This was reported by Gentoo, Arch, and Canonical developers as causing
+> > > problems for their users:
+> > > 	https://bugs.archlinux.org/task/24302
+> > This is a bug about 2.6.32.
+> > 
+> > > 	http://bugs.gentoo.org/show_bug.cgi?id=359445
+> > This looks like problem when only 8.83.5 (v5) firmware is available
+> > on the system, but kernel is old and support only v2 version. This
+> > should be solved by providing both old 8.24.2 (v2) and new 8.83.5 (v5)
+> > firmware blobs in one package.
+> > 
+> > > 	https://bugs.launchpad.net/ubuntu/+source/linux/+bug/796336
+> > Also 2.6.32 case.
 > 
-> Stack diet in direct reclaim...
-> Of course, it's a matter as I pointed out in this patch
-> but frankly speaking, it's very annoying to consider stack usage
-> whenever we add something in direct reclaim path.
+> I took them from .32. Should I drop them?
+Reverting support for v5 firmware in .32 is ok.
 
-It's a fact of life that direct reclaim has to live with - memory
-allocation can occur with a lot of stack already consumed. If you
-don't want to care about stack usage, then lets increase the default
-stack size to 16k for x86-64.....
+> > There could be reasons for this change, but I do not see them here.
+> 
+> Can you please clearly indicate which patches I should drop and which keep?
+You already decided to drop this patch for now, good.
 
-> I think better solution is to avoid write in direct reclaim like the approach of Mel.
+I can observe lot's of "Received BA when not expected" when new firmware
+is used, not happen with old firmware. So this commit should be picked
+from upstream:
 
-Yeah, and we should probably stop swapping in the direct reclaim
-path, too, because I've seen the stack usage from memory allocation
-to swap IO issue exceed 4k on x86-64....
+commit bfd36103ec26599557c2bd3225a1f1c9267f8fcb
+Author: Stanislaw Gruszka <sgruszka@redhat.com>
+Date:   Fri Apr 29 17:51:06 2011 +0200
 
-Cheers,
+    iwlagn: fix "Received BA when not expected" 
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+However we already applied it on 2.6.35 based Fedora-14 kernel (together with
+some other iwlwifi patches), and get report about regression. So I need
+to figure this out. I'm going to look more at the issue, and possibly
+post some backport patches, when solve problems. For now, I think we should
+not do anything with iwlwifi in 2.6.35, as long nobody will report some
+regression.
+
+Stanislaw
