@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab1G2Ath (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 20:49:37 -0400
-Received: from void.printf.net ([89.145.121.20]:52322 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752452Ab1G2Atg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 20:49:36 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: matsumur@nts.ricoh.co.jp, ak@linux.intel.com,
-        daniel.manrique@canonical.com, jbarnes@virtuousgeek.org,
-        linux-kernel@vger.kernel.org, manoj.iyer@canonical.com,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: Re: [PATCH] [9/50] mmc: Added quirks for Ricoh 1180:e823 lower base clock
-References: <20110728234413.75CBB2403FF@tassilo.jf.intel.com>
-	<OFEA694ED7.D779260D-ON492578DB.00834494-492578DC.000262D4@mta.ricoh.co.jp>
-	<20110729003703.GM8006@one.firstfloor.org>
-Date: Thu, 28 Jul 2011 20:47:53 -0400
-In-Reply-To: <20110729003703.GM8006@one.firstfloor.org> (Andi Kleen's message
-	of "Fri, 29 Jul 2011 02:37:03 +0200")
-Message-ID: <m2r559di9y.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S1756199Ab1G2A4s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 20:56:48 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54841 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754754Ab1G2A4r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 20:56:47 -0400
+Date: Fri, 29 Jul 2011 02:56:43 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Peter W. Morreale" <pmorreale@novell.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [ANNOUNCE] 3.0-rt6
+In-Reply-To: <1311896020.2646.38.camel@hermosa.morreale.net>
+Message-ID: <alpine.LFD.2.02.1107290254080.31246@ionos>
+References: <alpine.LFD.2.02.1107282213000.31246@ionos> <1311896020.2646.38.camel@hermosa.morreale.net>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 28 Jul 2011, Peter W. Morreale wrote:
+> On Thu, 2011-07-28 at 23:43 +0200, Thomas Gleixner wrote:
+> > The split quilt queue is available at:
+> > 
+> >   http://www.kernel.org/pub/linux/kernel/projects/rt/patches-3.0-rt6.tar.bz2
+> > 
+> 
+> Hummm this url doesn't seem to work, looking at the dir, I only see
+> patches-3.0-rt6.tar.bz2.sign 
+> 
+> 
+> script issue?
 
-On Thu, Jul 28 2011, Andi Kleen wrote:
-> On Fri, Jul 29, 2011 at 09:27:56AM +0900, matsumur@nts.ricoh.co.jp wrote:
->> Dear Sir,
->> 
->> Ricoh 1180:e823 device is named R5U220/R5U232 (2 devices have the same
->> device ID ).
->> So, I think it should be declared to as PCI_DEVICE_ID_RICOH_R5U220.
->
-> Is that just the wrong name or will it actually cause misfunction?
-
-I don't think it could possibly cause misfunction; it's just a macro name.
-
-> BTW, does anyone know whether the current SDHCI-driver sets 200Mhz to
-> SD-CLK for UHS-I cards ?
-
-The Linux 3.1 SD driver will set the SD-CLK to 50MHz for every card on an
-e823 device, and older kernels will do so too once the commit has been
-applied to the stable trees.  See this commit:
-
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=15bed0f2fa8e1d7db201692532c210a7823d2d21
-
-Do you know of a better solution than always lowering the clock speed to
-50MHz for this controller?
+Nope. Pilot error. Should be fixed when the mirrors have synced in a
+few minutes.
 
 Thanks,
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+	tglx
