@@ -1,103 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab1G2HgS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 03:36:18 -0400
-Received: from mga03.intel.com ([143.182.124.21]:64056 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754488Ab1G2HgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 03:36:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,286,1309762800"; 
-   d="scan'208";a="2265857"
-Subject: Re: [PATCH] sched: Remove WAKEUP_PREEMPT feature check in
- entity_tick
-From: Lin Ming <ming.m.lin@intel.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, "mingo@elte.hu" <mingo@elte.hu>,
-        lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110729070356.GA10420@zhy>
-References: <1311846203.3938.1555.camel@minggr.sh.intel.com>
-	 <20110729062158.GA8971@zhy>
-	 <1311922180.3938.1573.camel@minggr.sh.intel.com>
-	 <20110729070356.GA10420@zhy>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 29 Jul 2011 15:36:15 +0800
-Message-ID: <1311924975.3938.1583.camel@minggr.sh.intel.com>
+	id S1755317Ab1G2Hha (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 03:37:30 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:42150 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754848Ab1G2Hh3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 03:37:29 -0400
+Date: Fri, 29 Jul 2011 00:36:20 -0700 (PDT)
+Message-Id: <20110729.003620.1377780539620085743.davem@davemloft.net>
+To: stse+lkml@fsing.rootsland.net
+Cc: maciej.rutecki@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: IP forwarding regression since 3.0-rc6
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110729T091342.GA.06bf4.stse@fsing.rootsland.net>
+References: <20110725T141145.GA.2ae38.stse@fsing.rootsland.net>
+	<201107281546.33227.maciej.rutecki@gmail.com>
+	<20110729T091342.GA.06bf4.stse@fsing.rootsland.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 29 Jul 2011 00:36:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-29 at 15:03 +0800, Yong Zhang wrote:
-> On Fri, Jul 29, 2011 at 02:49:40PM +0800, Lin Ming wrote:
-> > On Fri, 2011-07-29 at 14:21 +0800, Yong Zhang wrote:
-> > > On Thu, Jul 28, 2011 at 05:43:23PM +0800, Lin Ming wrote:
-> > > > Currently, entity_tick calls check_preempt_tick if WAKEUP_PREEMPT feature is
-> > > > disabled. That's wrong. It should do that if the feature is enabled.
-> > > 
-> > > Why is it wrong?
-> > > check_preempt_wakeup() is used for wakeup.
-> > 
-> > I guess you mean "check_preempt_tick" here, yes?
+From: Stephan Seitz <stse+lkml@fsing.rootsland.net>
+Date: Fri, 29 Jul 2011 09:15:46 +0200
+
+> On Thu, Jul 28, 2011 at 03:46:33PM +0200, Maciej Rutecki wrote:
+>>I created a Bugzilla entry at
+>>https://bugzilla.kernel.org/show_bug.cgi?id=40282
+>>for your bug report, please add your address to the CC list in there,
+>>thanks!
 > 
-> check_preempt_wakeup() excactly.
-> try_to_wake_up()
->   check_preempt_curr()
->     sched_fair->check_preempt_wakeup()  <========== [1]
+> Thank you for creating a bug report for me. I have added my address to
+> the CC list.
 > 
-> > 
-> > in entity_tick(...):
-> >         if (cfs_rq->nr_running > 1 || !sched_feat(WAKEUP_PREEMPT))
-> >                 check_preempt_tick(cfs_rq, curr);
-> > 
-> > Note that, above "if" statement says "if WAKEUP_PREEMPT feature is
-> > *disabled* then calls check_preempt_tick".
-> 
-> Yeah, if !sched_feat(WAKEUP_PREEMPT) [1] will just return;
-> thus new waked task will wait until the next tick to schedule.
-> 
-> > 
-> > Shouldn't it be "if WAKEUP_PREEMPT feature is *enabled* then ...."?
-> 
-> So no IMHO.
-> 
-> > 
-> > > 
-> > > > 
-> > > > And actually the check is duplicate because check_preempt_tick will do
-> > > > that. So just remove it from entity_tick.
-> > > 
-> > > It's not exactly duplicated. entity_tick() will resched_task(*p)
-> > > if p's slice is over. So if there is an following wakeup(say X),
-> > > then there is an opportunity for X to schedule quickly.
-> > 
-> > Understood this.
-> > 
-> > But what I mean is both "entity_tick" and "check_preempt_tick" check
-> > WAKEUP_PREEMPT feature. That's duplicated.
-> > 
-> > Only need to check it in "check_preempt_tick".
-> 
-> I think we need that check(!sched_feat(WAKEUP_PREEMPT)) in entity_tick()
-> to give new waked task better opportunity.
+> Shade and sweet water!
 
-Thanks for your explanation.
+I really think this bug will get a lot more traction if you report
+it to netdev@vger.kernel.org which is where the networking developers
+are actually listening.
 
->From another point of view, below !sched_feat(WAKEUP_PREEMPT) still
-looks like duplicated.
+They don't look over the bugzilla bugs for networking stuff.
+Sometimes people will forward bugzilla entries to them, but that is
+the exception rather than the rule.
 
-        if (cfs_rq->nr_running > 1 || !sched_feat(WAKEUP_PREEMPT))
-                check_preempt_tick(cfs_rq, curr);
+So if you want this bug properly looked at and fixed in a timely
+manner, please engage with netdev@vger.kernel.org  If it just
+stays in bugzilla it will likely just rot there until someone
+forwards it to the networking developer list.
 
-if "!sched_feat(WAKEUP_PREEMPT)" is run,
-that implies cfs_rq->nr_running == 1.
-
-Why do we need to call check_preempt_tick when there is only 1 task
-runnable?
-
-Thanks,
-Lin Ming
-
-
+Thank you.
