@@ -1,97 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932065Ab1G2Bif (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 21:38:35 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:65472 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755228Ab1G2Bie (ORCPT
+	id S1756366Ab1G2Bmy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 21:42:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:54952 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756315Ab1G2Bmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 21:38:34 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqwFAHIOMk55LCkBgWdsb2JhbAB8ICUaaQEqA0GYV48GFQEBFiYlymoOhVRfBKNv
-Date: Fri, 29 Jul 2011 11:38:30 +1000
-From: Dave Chinner <david@fromorbit.com>
+	Thu, 28 Jul 2011 21:42:52 -0400
+X-Authority-Analysis: v=1.1 cv=s3eDhkhcaTLnj7IEXy8aaXUiY7FbET0mf+/2Xe0elbc= c=1 sm=0 a=vhdKIqpQuCYA:10 a=Iul_llewWiMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=oGMlB6cnAAAA:8 a=meVymXHHAAAA:8 a=DCZZivdHKvpnAhJn2GoA:9 a=kvnfC0mMpJ_CQvjRA30A:7 a=jEp0ucaQiEUA:10 a=Zh68SRI7RUMA:10 a=CY6gl2JlH4YA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20110729014249.004019468@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 28 Jul 2011 21:42:20 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: luto@MIT.EDU, mingo@elte.hu
-Subject: [3.0-rc0 Regression]: legacy vsyscall emulation increases user CPU
- time by 20%
-Message-ID: <20110729013830.GC5404@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 5/5] x86: Clean up dumpstack_64.c code
+References: <20110729014215.328710900@goodmis.org>
+Content-Disposition: inline; filename=0005-x86-Clean-up-dumpstack_64.c-code.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks,
+From: Steven Rostedt <srostedt@redhat.com>
 
-It-s merge window again, which means I'm doing my usual "where did
-the XFS performance go" bisects again. The usual workload:
+The dump_trace() function in dumpstack_64.c is hard to follow.
+The test for exception stack is processed differently than the
+test for irq stack, and the normal stack is outside completely.
 
-$ time sudo mkfs.xfs -f -d agcount=32 -l size=131072b /dev/vda
-meta-data=/dev/vda               isize=256    agcount=32, agsize=134217728 blks
-         =                       sectsz=512   attr=2, projid32bit=0
-data     =                       bsize=4096   blocks=4294967296, imaxpct=5
-         =                       sunit=0      swidth=0 blks
-naming   =version 2              bsize=4096   ascii-ci=0
-log      =internal log           bsize=4096   blocks=131072, version=2
-         =                       sectsz=512   sunit=0 blks, lazy-count=1
-realtime =none                   extsz=4096   blocks=0, rtextents=0
+By restructuring this code to have all the stacks determined by
+a single function that returns an enum of the following:
 
-real    0m4.496s
-user    0m0.012s
-sys     0m0.196s
-$ sudo mount -o nobarrier,logbsize=262144,inode64 /dev/vda /mnt/scratch
-$ sudo chmod 777 /mnt/scratch
-$ cd /home/dave/src/fs_mark-3.3/
-$ /usr/bin/time ./fs_mark -D 10000 -S0 -n 100000 -s 0 -L 63 -d /mnt/scratch/0 -d /mnt/scratch/1 -d /mnt/scratch/2 -d /mnt/scratch/3 -d /mnt/scratch/4 -d /mnt/scratch/5 -d /mnt/scratch/6 -d /mnt/scratch/7
+ STACK_IS_NORMAL
+ STACK_IS_EXCEPTION
+ STACK_IS_IRQ
+ STACK_IS_UNKNOWN
 
-On a 8p 4GB RAM VM and a 16TB filesystem. On 3.0, this completes in:
+and has the logic of each within a switch statement.
+This should make the code much easier to read and understand.
 
-     0     48000000            0     110068.2          7165149
-     0     48800000            0     112275.1          7523326
-     0     49600000            0     111725.3          9002077
-     0     50400000            0     109074.4          7111665
-246.67user 2903.42system 8:16.96elapsed 633%CPU (0avgtext+0avgdata 82544maxresident)k
-0inputs+0outputs (1639major+2603202minor)pagefaults 0swaps
-$
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/x86/kernel/dumpstack_64.c |  121 ++++++++++++++++++++++++++++------------
+ 1 files changed, 85 insertions(+), 36 deletions(-)
 
-The completion time over multiple runs is ~8m10s +/-5s, and the user
-CPU time is roughly 245s +/-5s
-
-Enter 5cec93c2 ("x86-64: Emulate legacy vsyscalls") and the result
-ends up at:
-
-     0     48000000            0     108975.2          9507483
-     0     48800000            0     114676.5          8604471
-     0     49600000            0      98062.0          8921525
-     0     50400000            0     103864.7          8218302
-287.35user 2933.90system 8:33.11elapsed 627%CPU (0avgtext+0avgdata 82560maxresident)k
-0inputs+0outputs (1664major+2603457minor)pagefaults 0swaps
-
-Noticable slow wall time with more variance - it's at 8m30s +/-10s,
-and the user CPU time is at 290s +/-5s. So the benchmark is slower to
-complete and consumes 20% more CPU in userspace. The following commit
-c971294 x86-64: ("Improve vsyscall emulation CS and RIP handling")
-also contributes to the slowdown a bit.
-
-FYI, fs_mark does a lot of gettimeofday() calls - one before and
-after every syscall that does filesystem work so it can calculate
-the syscall times and the amount of time spent not doing syscalls.
-I'm assuming this is the problem based on the commit message.
-Issuing hundreds of thousands of getimeofday calls per second spread
-across multiple CPUs is not uncommon, especially in benchmark or
-performance measuring software. If that is the cause, then these
-commits add -significant- overhead to that process.
-
-Assuming this is the problem, can this be fixed without requiring
-the whole world having to wait for the current glibc dev tree to
-filter down into distro repositories?
-
-Cheers,
-
-Dave.
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index e71c98d..d0b2ace 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -132,6 +132,45 @@ fixup_bp_irq_link(unsigned long bp, unsigned long *stack,
+ 	return bp;
+ }
+ 
++static const unsigned long irq_stack_size =
++	(IRQ_STACK_SIZE - 64) / sizeof(unsigned long);
++
++enum stack_type {
++	STACK_IS_UNKNOWN,
++	STACK_IS_NORMAL,
++	STACK_IS_EXCEPTION,
++	STACK_IS_IRQ,
++};
++
++static enum stack_type
++analyze_stack(int cpu, struct task_struct *task,
++	      unsigned long *stack, unsigned long **stack_end, char **id)
++{
++	unsigned long *irq_stack;
++	unsigned long addr;
++	unsigned used = 0;
++
++	addr = ((unsigned long)stack & (~(THREAD_SIZE - 1)));
++	if ((unsigned long)task_stack_page(task) == addr)
++		return STACK_IS_NORMAL;
++
++	*stack_end = in_exception_stack(cpu, (unsigned long)stack,
++					 &used, id);
++	if (*stack_end)
++		return STACK_IS_EXCEPTION;
++
++	*stack_end = (unsigned long *)per_cpu(irq_stack_ptr, cpu);
++	if (!*stack_end)
++		return STACK_IS_UNKNOWN;
++
++	irq_stack = *stack_end - irq_stack_size;
++
++	if (in_irq_stack(stack, irq_stack, *stack_end))
++		return STACK_IS_IRQ;
++
++	return STACK_IS_UNKNOWN;
++}
++
+ /*
+  * x86-64 can have up to three kernel stacks:
+  * process stack
+@@ -144,12 +183,11 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
+ 		const struct stacktrace_ops *ops, void *data)
+ {
+ 	const unsigned cpu = get_cpu();
+-	unsigned long *irq_stack_end =
+-		(unsigned long *)per_cpu(irq_stack_ptr, cpu);
+-	unsigned used = 0;
+ 	struct thread_info *tinfo;
+-	int graph = 0;
++	unsigned long *irq_stack;
+ 	unsigned long dummy;
++	int graph = 0;
++	int done = 0;
+ 
+ 	if (!task)
+ 		task = current;
+@@ -168,51 +206,62 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
+ 	 * exceptions
+ 	 */
+ 	tinfo = task_thread_info(task);
+-	for (;;) {
++	while (!done) {
++		unsigned long *stack_end;
++		enum stack_type stype;
+ 		char *id;
+-		unsigned long *estack_end;
+-		estack_end = in_exception_stack(cpu, (unsigned long)stack,
+-						&used, &id);
+ 
+-		if (estack_end) {
++		stype = analyze_stack(cpu, task, stack, &stack_end, &id);
++
++		/* Default finish unless specified to continue */
++		done = 1;
++
++		switch (stype) {
++
++		/* Break out early if we are on the thread stack */
++		case STACK_IS_NORMAL:
++			break;
++
++		case STACK_IS_EXCEPTION:
++
+ 			if (ops->stack(data, id) < 0)
+ 				break;
+ 
+ 			bp = ops->walk_stack(tinfo, stack, bp, ops,
+-					     data, estack_end, &graph);
++					     data, stack_end, &graph);
+ 			ops->stack(data, "<EOE>");
+ 			/*
+ 			 * We link to the next stack via the
+ 			 * second-to-last pointer (index -2 to end) in the
+ 			 * exception stack:
+ 			 */
+-			stack = (unsigned long *) estack_end[-2];
+-			continue;
+-		}
+-		if (irq_stack_end) {
+-			unsigned long *irq_stack;
+-			irq_stack = irq_stack_end -
+-				(IRQ_STACK_SIZE - 64) / sizeof(*irq_stack);
+-
+-			if (in_irq_stack(stack, irq_stack, irq_stack_end)) {
+-				if (ops->stack(data, "IRQ") < 0)
+-					break;
+-				bp = ops->walk_stack(tinfo, stack, bp,
+-					ops, data, irq_stack_end, &graph);
+-				/*
+-				 * We link to the next stack (which would be
+-				 * the process stack normally) the last
+-				 * pointer (index -1 to end) in the IRQ stack:
+-				 */
+-				stack = (unsigned long *) (irq_stack_end[-1]);
+-				bp = fixup_bp_irq_link(bp, stack, irq_stack,
+-						       irq_stack_end);
+-				irq_stack_end = NULL;
+-				ops->stack(data, "EOI");
+-				continue;
+-			}
++			stack = (unsigned long *) stack_end[-2];
++			done = 0;
++			break;
++
++		case STACK_IS_IRQ:
++
++			if (ops->stack(data, "IRQ") < 0)
++				break;
++			bp = ops->walk_stack(tinfo, stack, bp,
++				     ops, data, stack_end, &graph);
++			/*
++			 * We link to the next stack (which would be
++			 * the process stack normally) the last
++			 * pointer (index -1 to end) in the IRQ stack:
++			 */
++			stack = (unsigned long *) (stack_end[-1]);
++			irq_stack = stack_end - irq_stack_size;
++			bp = fixup_bp_irq_link(bp, stack, irq_stack,
++					       stack_end);
++			ops->stack(data, "EOI");
++			done = 0;
++			break;
++
++		case STACK_IS_UNKNOWN:
++			ops->stack(data, "UNK");
++			break;
+ 		}
+-		break;
+ 	}
+ 
+ 	/*
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.5.4
+
+
