@@ -1,92 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab1G2WEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 18:04:15 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:23710 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753040Ab1G2WEN convert rfc822-to-8bit (ORCPT
+	id S1753154Ab1G2WMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 18:12:34 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:45754 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794Ab1G2WMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 18:04:13 -0400
-X-IronPort-AV: E=Sophos;i="4.67,289,1309762800"; 
-   d="scan'208";a="566673348"
-Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: Bryan Schumaker <bjschuma@netapp.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Date: Fri, 29 Jul 2011 18:03:36 -0400
-In-Reply-To: <alpine.DEB.2.02.1107291656340.25432@p34.internal.lan>
-References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>
-	   <20110727160752.GC974@fieldses.org>
-	   <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
-	   <20110727181111.GA23009@infradead.org>
-	   <alpine.DEB.2.02.1107271530340.1451@p34.internal.lan>
-	 <20110727193937.GA5354@infradead.org>
-	   <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>
-	   <20110727194722.GA9345@infradead.org>
-	   <1311799021.25645.41.camel@lade.trondhjem.org>
-	   <1311800051.25645.43.camel@lade.trondhjem.org>
-	  <1311800195.25645.45.camel@lade.trondhjem.org>
-	  <alpine.DEB.2.02.1107271723500.25432@p34.internal.lan>
-	  <alpine.DEB.2.02.1107271844100.25432@p34.internal.lan>
-	 <1311886137.27285.2.camel@lade.trondhjem.org> <4E331D86.7060801@netapp.com>
-	 <alpine.DEB.2.02.1107291656340.25432@p34.internal.lan>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Message-ID: <1311977016.16078.10.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-OriginalArrivalTime: 29 Jul 2011 22:03:58.0123 (UTC) FILETIME=[6A5A1FB0:01CC4E3B]
+	Fri, 29 Jul 2011 18:12:33 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6422"; a="106947196"
+Date: Fri, 29 Jul 2011 15:12:31 -0700
+From: Larry Bassel <lbassel@codeaurora.org>
+To: linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: questions about memory hotplug
+Message-ID: <20110729221230.GA3466@labbmf-linux.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-29 at 16:59 -0400, Justin Piszcz wrote: 
-> On Fri, 29 Jul 2011, Bryan Schumaker wrote:
-> 
-> > How does this look for printing out more information when a cookie loop is detected?  Is there anything else that should be printed out?  My patch applies on top of Trond's from yesterday.
-> 
-> 
-> Hi,
-> 
-> This fails against 2.6.38:
-> 
-> patching file fs/nfs/dir.c
-> Hunk #1 FAILED at 134.
-> Hunk #2 FAILED at 173.
-> Hunk #3 FAILED at 323.
-> Hunk #4 FAILED at 336.
-> Hunk #5 FAILED at 349.
-> Hunk #6 succeeded at 320 (offset -48 lines).
-> Hunk #7 FAILED at 741.
-> Hunk #8 succeeded at 716 (offset -59 lines).
-> Hunk #9 succeeded at 749 (offset -59 lines).
-> Hunk #10 succeeded at 763 (offset -59 lines).
-> 6 out of 10 hunks FAILED -- saving rejects to file fs/nfs/dir.c.rej
-> patching file include/linux/nfs_fs.h
-> Hunk #1 FAILED at 99.
-> 1 out of 1 hunk FAILED -- saving rejects to file include/linux/nfs_fs.h.rej
-> atom:/usr/src/linux#
-> 
-> And the 3.0 kernel is broken for my wireless adapter:
-> http://www.gossamer-threads.com/lists/linux/kernel/1411576
-> 
-> If you can make a combined patch for 2.6.38 I can try it, 2.6.39+ have a
-> horrible driver (rt2800usb) and 1 person emailed me as well stating the
-> same thing off-list (they stick with the manufacturer's driver or the *sta
-> one).
+We want to handle the following 2 use cases we have on
+some of our (ARM) platforms:
 
-I don't understand. The readdir loop detection code was first merged
-upstream in 2.6.39. 2.6.38 doesn't report any loops...
+1. A platform where part of the memory may be powered
+off. The location and size of this memory is not known
+until the kernel parses the memory tags (there aren't
+any non-standard tags used, but the memory layout and
+a memory bank size which is obtained from HW are used
+to figure out where and how large this memory is). All
+of this memory must either be on or off. For a given
+configuration the location of this memory can't be moved.
+
+2. A (different) platform where part of the memory
+is occasionally needed as a large physically contiguous 
+block, but usually is not (and then should be usable
+by the kernel as normal memory). When the memory is
+needed for the contiguous block, the pages in this
+range currently being used by the kernel will
+need to be migrated out.
+
+The size of this is known at compile time and can be
+placed at any reasonable place in memory (but should
+be SPARSEMEM section aligned -- its size may however
+not be a power of 2 and thus this memory could
+span more than one section). This memory will not be
+powered off, but must either be completely used for
+one purpose or the other.
+
+The size of memory in question for #1 is generally
+much larger than that of #2.
+
+Memory hotplug/hotremove (logical and physical for #1,
+only logical for #2) approximately solves these problems,
+but there is some functionality we need that AFAIK is
+not present:
+
+* The memory in #1 and #2 above must be in a movable
+zone so that the chance of migration is maximized.
+I'm familiar with the kernelcore= and movablecore=
+commandline options, but they don't do what is necessary
+here, because we need control on where the movable zone
+is formed as well as the size. Also the location and size
+of these special memory areas is not known until the
+kernel comes up (in #1 it is conceivable that the bootloader
+could locate the memory that can be powered on and off and
+pass it in via some commandline option, but AFAICT this won't
+work at all for #2).
+
+One could hack up find_zone_movable_pfns_for_nodes() presumably,
+but I wonder if there is an already existing way of doing
+this (or at least a clean extension to the current
+functionality that someone might suggest).
+
+Would CONFIG_ARCH_POPULATES_NODE_MAP help here? Does anyone
+use this? It doesn't seem to be in any defconfig or Kconfig
+on 3.0 (or earlier versions I've looked at).
+
+Perhaps CMA (which is not merged yet and AFAIK still has some
+issues on ARM) might handle #2 better than memory
+hotplug/hotremove. Or is there a better way to handle #2
+than either CMA or memory hotplug?
+
+Thanks.
+
+Larry
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
