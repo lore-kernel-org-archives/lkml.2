@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab1G2Kwd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 06:52:33 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:56294 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932125Ab1G2KuJ (ORCPT
+	id S1756356Ab1G2Kwu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 06:52:50 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:36665 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932108Ab1G2KuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 06:50:09 -0400
+	Fri, 29 Jul 2011 06:50:08 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <linus.walleij@linaro.org>
 Cc: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
@@ -17,9 +17,9 @@ Cc: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
         <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
         <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
         <viresh.linux@gmail.com>
-Subject: [PATCH 05/18] dmaengine/amba-pl08x: Changing few prints to dev_dbg from dev_info
-Date: Fri, 29 Jul 2011 16:19:15 +0530
-Message-ID: <7ef7d86e78a74b140c7c5a87fd2b7a117120ce6f.1311936524.git.viresh.kumar@st.com>
+Subject: [PATCH 03/18] dmaengine/amba-pl08x: Complete doc comment for struct pl08x_txd
+Date: Fri, 29 Jul 2011 16:19:13 +0530
+Message-ID: <d817757083b904cc347c960582f0ef33e539771c.1311936524.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1311936523.git.viresh.kumar@st.com>
 References: <cover.1311936523.git.viresh.kumar@st.com>
@@ -29,37 +29,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For 8 memory and 16 slave channels 35 boot print lines are printed. And that is
-too much. Most of this would be more useful for debugging. So moving few of them
-to dev_dbg instead of dev_info. Now only 3 prints will be printed.
+Doc comment for struct pl08x_txd was incomplete. Complete that.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- drivers/dma/amba-pl08x.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ include/linux/amba/pl08x.h |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index 4a64fdf..56a9670 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -1724,7 +1724,7 @@ static int pl08x_dma_init_virtual_channels(struct pl08x_driver_data *pl08x,
- 			kfree(chan);
- 			continue;
- 		}
--		dev_info(&pl08x->adev->dev,
-+		dev_dbg(&pl08x->adev->dev,
- 			 "initialize virtual channel \"%s\"\n",
- 			 chan->name);
+diff --git a/include/linux/amba/pl08x.h b/include/linux/amba/pl08x.h
+index 3e25825..5509a50 100644
+--- a/include/linux/amba/pl08x.h
++++ b/include/linux/amba/pl08x.h
+@@ -105,8 +105,16 @@ struct pl08x_phy_chan {
  
-@@ -1952,7 +1952,7 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
- 		spin_lock_init(&ch->lock);
- 		ch->serving = NULL;
- 		ch->signal = -1;
--		dev_info(&adev->dev,
-+		dev_dbg(&adev->dev,
- 			 "physical channel %d is %s\n", i,
- 			 pl08x_phy_channel_busy(ch) ? "BUSY" : "FREE");
- 	}
+ /**
+  * struct pl08x_txd - wrapper for struct dma_async_tx_descriptor
++ * @tx: async tx descriptor
++ * @node: node for txd list for channels
++ * @src_addr: src address of txd
++ * @dst_addr: dst address of txd
++ * @len: transfer len in bytes
++ * @direction: direction of transfer
+  * @llis_bus: DMA memory address (physical) start for the LLIs
+  * @llis_va: virtual memory address start for the LLIs
++ * @cctl: control reg values for current txd
++ * @ccfg: config reg values for current txd
+  */
+ struct pl08x_txd {
+ 	struct dma_async_tx_descriptor tx;
 -- 
 1.7.2.2
 
