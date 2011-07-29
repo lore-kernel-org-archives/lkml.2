@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab1G2HPj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 03:15:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49560 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754672Ab1G2HPi (ORCPT
+	id S1755136Ab1G2HPx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 03:15:53 -0400
+Received: from fsing.rootsland.net ([62.141.37.30]:32878 "EHLO
+	fsing.rootsland.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755011Ab1G2HPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 03:15:38 -0400
-Subject: [PATCH] IB/ehca: use kthread_create_on_node
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Hoang-Nam Nguyen <hnguyen@de.ibm.com>
-Cc: Christoph Raisch <raisch@de.ibm.com>, Roland Dreier <roland@kernel.org>,
-        Sean Hefty <sean.hefty@intel.com>, linux-rdma@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 29 Jul 2011 09:15:31 +0200
-Message-ID: <1311923731.7845.25.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 29 Jul 2011 03:15:52 -0400
+X-DKIM: OpenDKIM Filter v2.1.3 fsing.rootsland.net 6EFDB12FC81DC
+Date: Fri, 29 Jul 2011 09:15:46 +0200
+From: Stephan Seitz <stse+lkml@fsing.rootsland.net>
+To: Maciej Rutecki <maciej.rutecki@gmail.com>
+Cc: Stephan Seitz <stse+lkml@fsing.rootsland.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: IP forwarding regression since 3.0-rc6
+Message-ID: <20110729T091342.GA.06bf4.stse@fsing.rootsland.net>
+Mail-Followup-To: Stephan Seitz <stse+lkml@fsing.rootsland.net>,
+	Maciej Rutecki <maciej.rutecki@gmail.com>,
+	linux-kernel@vger.kernel.org
+References: <20110725T141145.GA.2ae38.stse@fsing.rootsland.net>
+ <201107281546.33227.maciej.rutecki@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EeQfGwPcQSOJBaQU"
+Content-Disposition: inline
+In-Reply-To: <201107281546.33227.maciej.rutecki@gmail.com>
+Organization: Minas Tirith, Gondor
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since create_comp_task() creates percpu kthread, it makes
-sense to use kthread_create_on_node() to get proper NUMA affinity for
-kthread stack.
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Hoang-Nam Nguyen <hnguyen@de.ibm.com>
-CC: Christoph Raisch <raisch@de.ibm.com>
-CC: Roland Dreier <roland@kernel.org>
-CC: Sean Hefty <sean.hefty@intel.com>
----
- drivers/infiniband/hw/ehca/ehca_irq.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+--EeQfGwPcQSOJBaQU
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/infiniband/hw/ehca/ehca_irq.c b/drivers/infiniband/hw/ehca/ehca_irq.c
-index e571e60..5358900 100644
---- a/drivers/infiniband/hw/ehca/ehca_irq.c
-+++ b/drivers/infiniband/hw/ehca/ehca_irq.c
-@@ -786,7 +786,8 @@ static struct task_struct *create_comp_task(struct ehca_comp_pool *pool,
- 	spin_lock_init(&cct->task_lock);
- 	INIT_LIST_HEAD(&cct->cq_list);
- 	init_waitqueue_head(&cct->wait_queue);
--	cct->task = kthread_create(comp_task, cct, "ehca_comp/%d", cpu);
-+	cct->task = kthread_create_on_node(comp_task, cct, cpu_to_node(cpu),
-+					   "ehca_comp/%d", cpu);
- 
- 	return cct->task;
- }
+On Thu, Jul 28, 2011 at 03:46:33PM +0200, Maciej Rutecki wrote:
+>I created a Bugzilla entry at
+>https://bugzilla.kernel.org/show_bug.cgi?id=3D40282
+>for your bug report, please add your address to the CC list in there, than=
+ks!
 
+Thank you for creating a bug report for me. I have added my address to=20
+the CC list.
 
+Shade and sweet water!
+
+	Stephan
+
+--=20
+| Stephan Seitz             E-Mail: stse@fsing.rootsland.net |
+| PGP Public Keys: http://fsing.rootsland.net/~stse/pgp.html |
+
+--EeQfGwPcQSOJBaQU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk4yXiIACgkQXse+NwPOAZ62nwCdHdsv0/W8dbhTUuM1Cz3RhNfH
+b7MAn2s80i13YLIdQDcfSzusEgCZnkGW
+=nIRL
+-----END PGP SIGNATURE-----
+
+--EeQfGwPcQSOJBaQU--
