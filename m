@@ -1,43 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab1G2PN2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 11:13:28 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38330 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750828Ab1G2PN0 (ORCPT
+	id S1751565Ab1G2PNZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 11:13:25 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:37062 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750828Ab1G2PNY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 11:13:26 -0400
-Date: Fri, 29 Jul 2011 16:13:24 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH] cpufreq: Fix build of s3c64xx cpufreq driver for header
- change
-Message-ID: <20110729151324.GD19118@opensource.wolfsonmicro.com>
-References: <1311949618-919-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20110729144802.GB1422@redhat.com>
- <20110729150144.GC19118@opensource.wolfsonmicro.com>
- <20110729150851.GA9156@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110729150851.GA9156@redhat.com>
-X-Cookie: Big book, big bore.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 29 Jul 2011 11:13:24 -0400
+Date: Fri, 29 Jul 2011 08:13:19 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: sedat.dilek@gmail.com
+Cc: Sedat Dilek <sedat.dilek@googlemail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>, Helge Deller <deller@gmx.de>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: linux-next: Tree for July 28 ("copy_from_user_overflow"
+ undefined)
+Message-Id: <20110729081319.0083b3ec.rdunlap@xenotime.net>
+In-Reply-To: <CA+icZUUZGfYasCCGKWNbFe5FFs1j15H+rc0jp_oO-uFqLVX=0A@mail.gmail.com>
+References: <CA+icZUV7R5hqTupiuZZKWcsZ5LOBGmY6xgmMTM7W3ojJo0Sp4w@mail.gmail.com>
+	<20110728160136.771e2c0a.rdunlap@xenotime.net>
+	<CA+icZUXLpThpEem+DPimemYVHqSKb5NAb5h_L-rMPWsD+WJTYg@mail.gmail.com>
+	<20110728220926.6d1a91f4.rdunlap@xenotime.net>
+	<CA+icZUVsJNSDzBvvH810POEydpaZxJZfM8J9bD+93+4d+88D_A@mail.gmail.com>
+	<CA+icZUX=qM+xhJkteXs=F_RJP+k-Tzf3+Cp4ZdeatZ0cgHegBw@mail.gmail.com>
+	<CA+icZUUZGfYasCCGKWNbFe5FFs1j15H+rc0jp_oO-uFqLVX=0A@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 11:08:51AM -0400, Dave Jones wrote:
-> On Fri, Jul 29, 2011 at 04:01:44PM +0100, Mark Brown wrote:
+On Fri, 29 Jul 2011 13:07:16 +0200 Sedat Dilek wrote:
 
->  > Possibly, but there were a bunch of other failures in the Samsung
->  > specific stuff not related to module.h which appeared today. I did run
->  > into another non-samsung module.h failure, though.  Mostly I was just
->  > surprised stuff like this was showing up so late in the merge window, I
->  > didn't spend a lot of time investigating what broke.
+> On Fri, Jul 29, 2011 at 11:45 AM, Sedat Dilek
+> <sedat.dilek@googlemail.com> wrote:
+> > On Fri, Jul 29, 2011 at 11:02 AM, Sedat Dilek
+> > <sedat.dilek@googlemail.com> wrote:
+> >> On Fri, Jul 29, 2011 at 7:09 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> >>> On Fri, 29 Jul 2011 03:34:26 +0200 Sedat Dilek wrote:
+> >>>
+> >>>> On Fri, Jul 29, 2011 at 1:01 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> >>>> > On Thu, 28 Jul 2011 16:05:31 +0200 Sedat Dilek wrote:
+> >>>> >
+> >>>> >> Hi,
+> >>>> >>
+> >>>> >> just see this build-break on the last mile:
+> >>>> >>
+> >>>> >> [...]
+> >>>> >>   OBJCOPY arch/x86/boot/compressed/vmlinux.bin
+> >>>> >>   HOSTCC  arch/x86/boot/compressed/relocs
+> >>>> >>   HOSTCC  arch/x86/boot/compressed/mkpiggy
+> >>>> >> /mnt/sdb3/linux-kernel/linux-3.0/debian/build/source_i386_none/arch/x86/boot/compressed/relocs.c:
+> >>>> >> In function 'print_absolute_symbols':
+> >>>> >> /mnt/sdb3/linux-kernel/linux-3.0/debian/build/source_i386_none/arch/x86/boot/compressed/relocs.c:405:14:
+> >>>> >> warning: variable 'sh_symtab' set but not used
+> >>>> >> [-Wunused-but-set-variable]
+> >>>> >> ERROR: "copy_from_user_overflow" [fs/binfmt_misc.ko] undefined!
+> >>>> >> make[5]: *** [__modpost] Error 1
+> >>>> >> make[4]: *** [modules] Error 2
+> >>>> >> make[4]: *** Waiting for unfinished jobs....
+> >>>> >>   RELOCS  arch/x86/boot/compressed/vmlinux.relocs
+> >>>> >>   GZIP    arch/x86/boot/compressed/vmlinux.bin.gz
+> >>>> >>   MKPIGGY arch/x86/boot/compressed/piggy.S
+> >>>> >>   AS      arch/x86/boot/compressed/piggy.o
+> >>>> >>   LD      arch/x86/boot/compressed/vmlinux
+> >>>> >>   ZOFFSET arch/x86/boot/zoffset.h
+> >>>> >>   OBJCOPY arch/x86/boot/vmlinux.bin
+> >>>> >>   AS      arch/x86/boot/header.o
+> >>>> >>   LD      arch/x86/boot/setup.elf
+> >>>> >>   OBJCOPY arch/x86/boot/setup.bin
+> >>>> >>   BUILD   arch/x86/boot/bzImage
+> >>>> >> Setup is 15596 bytes (padded to 15872 bytes).
+> >>>> >> System is 2471 kB
+> >>>> >> CRC eb598167
+> >>>> >> Kernel: arch/x86/boot/bzImage is ready  (#1)
+> >>>> >> make[3]: *** [sub-make] Error 2
+> >>>> >> make[2]: *** [all] Error 2
+> >>>> >>
+> >>>> >> I have these binfmt kernel-config options set:
+> >>>> >>
+> >>>> >> CONFIG_BINFMT_ELF=y
+> >>>> >> # CONFIG_BINFMT_AOUT is not set
+> >>>> >> CONFIG_BINFMT_MISC=m
+> >>>> >
+> >>>> > How does someone turn off this error message?
+> >>>> >
+> >>>> > I have:
+> >>>> > # CONFIG_DEBUG_STRICT_USER_COPY_CHECKS is not set
+> >>>> > # CONFIG_STRICT_DEVMEM is not set
+> >>>> >
+> >>>> > and I still cannot get this error to go away (on x86_64).
+> >>>> >
+> >>>> >
+> >>>> > ---
+> >>>> > ~Randy
+> >>>> > *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> >>>> >
+> >>>>
+> >>>> Can you say with which linux-next version you saw this first?
+> >>>> My last version was next-20110722 (which was OK).
+> >>>
+> >>> It looks like 2011-0727 has lots of these errors in my randconfig builds,
+> >>> but I can't say that they are all incorrect, so it's not very conclusive.
+> >>>
+> >>> ---
+> >>> ~Randy
+> >>> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> >>>
+> >>
+> >> I can confirm next-20110726 is fine.
+> >>
+> >> # egrep 'BINFMT|DEBUG_STRICT_USER_COPY_CHECKS|STRICT_DEVMEM'
+> >> /boot/config-3.0.0-next20110726.3-686-small
+> >> CONFIG_BINFMT_ELF=y
+> >> CONFIG_BINFMT_AOUT=m
+> >> CONFIG_BINFMT_MISC=m
+> >> CONFIG_STRICT_DEVMEM=y
+> >> # CONFIG_DEBUG_STRICT_USER_COPY_CHECKS is not set
+> >>
+> >> So, the binfmt_misc culprit was introduced between next-20110726
+> >> (good) and next-20110727 (bad).
+> >> I'll try to look into the diff, but can't promise.
+> >>
+> >> - Sedat -
+> >>
+> >
+> > [ CCing all people from 0416 patch ]
+> >
+> > OK, here a quick review and looking for suspicious commits:
+> >
+> > $ git format-patch next-20110726..next-20110727
+> >
+> > 487 patches in total.
+> >
+> > $ grep copy_from_user_overflow -nr *.patch
+> >
+> > 0389-x86_64-allmodconfig.patch
+> > 0414-Enabling-DEBUG_STRICT_USER_COPY_CHECKS-causes-the-fo.patch
+> > 0415-Strict-user-copy-checks-are-only-really-supported-on.patch
+> > 0416-The-help-text-for-this-config-is-duplicated-across-t.patch
+> >
+> > 0416 has thrown out...
+> >
+> > -void copy_from_user_overflow(void)
+> > -{
+> > -       WARN(1, "Buffer overflow detected!\n");
+> > -}
+> > -EXPORT_SYMBOL(copy_from_user_overflow);
+> >
+> > ...and consilidated that in...
+> >
+> > --- /dev/null
+> > +++ b/lib/usercopy.c
+> > @@ -0,0 +1,8 @@
+> > +#include <linux/module.h>
+> > +#include <linux/bug.h>
+> > +
+> > +void copy_from_user_overflow(void)
+> > +{
+> > +       WARN(1, "Buffer overflow detected!\n");
+> > +}
+> > +EXPORT_SYMBOL(copy_from_user_overflow);
+> >
+> > ...BUT builds usercopy.o only on
+> > CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS...
+> >
+> > -- a/lib/Makefile
+> > +++ b/lib/Makefile
+> > @@ -14,6 +14,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+> >         proportions.o prio_heap.o ratelimit.o show_mem.o \
+> >         is_single_threaded.o plist.o decompress.o find_next_bit.o
+> >
+> > +lib-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+> >  lib-$(CONFIG_MMU) += ioremap.o
+> >  lib-$(CONFIG_SMP) += cpumask.o
+> >
+> > So, I can rebuild next-201107{27,28} with
+> > CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS=y and look again if the
+> > build-breakage in binfmt_misc is gone.
+> >
+> > Any comments from x86 folk?
+> >
+> > - Sedat -
+> >
+> 
+> I was able to compile next-20110728 by reverting:
+> 
+> commit ab3b49d018924085e5d949c1af53fae0da9a8d94
+> "The help text for this config is duplicated across the x86, parisc,
+> and s390 Kconfig.debug files."
+> 
+> The revert-patch is attached, also my kernel-config.
+> 
+> Randy, can you test with it for x86_64, please?
+> Thanks in advance.
 
-> wait, confused. Were you building Linus' tree, or -next ?
+Yes, that works for me.  Thanks for your work on this problem.
 
--next (given that the merge window is still open it should be emptying
-out other than bug fixes...).
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
