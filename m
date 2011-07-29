@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab1G2JHI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 05:07:08 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:16380 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755681Ab1G2JHH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 05:07:07 -0400
-Date: Fri, 29 Jul 2011 11:07:04 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Takashi Iwai <tiwai@suse.de>
-cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Joe Perches <joe@perches.com>,
-        Eliot Blennerhassett <eblennerhassett@audioscience.com>,
-        Jaroslav Kysela <perex@perex.cz>, support@audioscience.com
-Subject: Re: [PATCH] Sound: AudioScience HPI: Don't leak firmware if mem
- alloc fails
-In-Reply-To: <s5hpqkt6425.wl%tiwai@suse.de>
-Message-ID: <alpine.LNX.2.00.1107291106300.22532@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107282145230.20477@swampdragon.chaosbits.net> <s5hpqkt6425.wl%tiwai@suse.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755979Ab1G2JH0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 05:07:26 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61050 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755944Ab1G2JHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 05:07:24 -0400
+Message-ID: <4E32780B.2090200@cn.fujitsu.com>
+Date: Fri, 29 Jul 2011 17:06:19 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: FNST
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110322 Red Hat/3.1.9-3.el6_0 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Li Zefan <lizf@cn.fujitsu.com>
+CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs:remove a no needed mutex_unlock in devtmpfs
+References: <1311928444-4848-1-git-send-email-gaowanlong@cn.fujitsu.com> <4E327776.3010903@cn.fujitsu.com>
+In-Reply-To: <4E327776.3010903@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-29 17:06:21,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-29 17:06:21,
+	Serialize complete at 2011-07-29 17:06:21
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jul 2011, Takashi Iwai wrote:
+On 07/29/2011 05:03 PM, Li Zefan wrote:
+> Wanlong Gao wrote:
+>> According ed75e95de574c99575e5f3e1d9ca59ea8c12a9cb, Al killed the
+>> lookup_create(), this function will return with an mutex locked,
+>> and it called by dev_mkdir() previously. then unlock this mutex
+>> in dev_mkdir(), but when lookup_create() is replaced by kern_path_create(),
+>> no locked mutex returned, so no need to unlock the mutex.
+>>
+>> Al, is it right?
+>
+> no.. kern_path_create() returns with i_mutex held.
+yeah, I hasn't seen the *return* when *dentry* is gotten successfully.
+Sorry for the noise
+>
+>> Thanks
+>>
+>> Signed-off-by: Wanlong Gao<gaowanlong@cn.fujitsu.com>
+>> ---
+>>   drivers/base/devtmpfs.c |    1 -
+>>   1 files changed, 0 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
+>> index b89fffc..5384883 100644
+>> --- a/drivers/base/devtmpfs.c
+>> +++ b/drivers/base/devtmpfs.c
+>> @@ -157,7 +157,6 @@ static int dev_mkdir(const char *name, mode_t mode)
+>>   		/* mark as kernel-created inode */
+>>   		dentry->d_inode->i_private =&thread;
+>>   	dput(dentry);
+>> -	mutex_unlock(&path.dentry->d_inode->i_mutex);
+>>   	path_put(&path);
+>>   	return err;
+>>   }
+>
 
-> At Thu, 28 Jul 2011 21:48:27 +0200 (CEST),
-> Jesper Juhl wrote:
-> > 
-> > We leak the memory allocated to 'firmware' when we fail to
-> > release_firmware() after a kmalloc() failure in hpi_dsp_code_open().
-> > This patch should take care of the leak.
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> >  sound/pci/asihpi/hpidspcd.c |    4 +++-
-> >  1 files changed, 3 insertions(+), 1 deletions(-)
-> > 
-> > 	Build tested only.
-> > 
-> > diff --git a/sound/pci/asihpi/hpidspcd.c b/sound/pci/asihpi/hpidspcd.c
-> > index 3a7afa3..8d261ef 100644
-> > --- a/sound/pci/asihpi/hpidspcd.c
-> > +++ b/sound/pci/asihpi/hpidspcd.c
-> > @@ -85,8 +85,10 @@ short hpi_dsp_code_open(u32 adapter, void *os_data, struct dsp_code *dsp_code,
-> >  
-> >  	HPI_DEBUG_LOG(DEBUG, "dsp code %s opened\n", fw_name);
-> >  	dsp_code->pvt = kmalloc(sizeof(*dsp_code->pvt), GFP_KERNEL);
-> > -	if (!dsp_code->pvt)
-> > +	if (!dsp_code->pvt) {
-> > +		release_firmware(firmware);
-> >  		return HPI_ERROR_MEMORY_ALLOC;
-> > +	}
-> 
-> IMO, it's better to use the same error handling like others, i.e.
-> "goto error2".  But you want to pass a different error code, so we'd
-> need to introduce an error code variable there...
-> 
-Thank you for the feedback. I'll cook up a better patch tonight.
 
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Thanks
+Best Regards
+Wanlong Gao
