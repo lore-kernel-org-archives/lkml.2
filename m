@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab1G2WCO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 18:02:14 -0400
-Received: from smtprelay03.ispgateway.de ([80.67.31.37]:38291 "EHLO
-	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992Ab1G2WCM (ORCPT
+	id S1753162Ab1G2WEP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 18:04:15 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:23710 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753040Ab1G2WEN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 18:02:12 -0400
-X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Jul 2011 18:02:12 EDT
-References: <20110728180535.51dce58d@boyarsh.office.altlinux.ru>
-Message-ID: <cone.1311976558.82572.3703.1000@deskpiie>
-X-Mailer: http://www.courier-mta.org/cone/
-From: Peter Feuerer <peter@piie.net>
-To: Anton =?UTF-8?B?Vi4=?= Boyarshinov <boyarsh@altlinux.org>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acerhdf.c: spaces in aliased changed to *
-Date: Fri, 29 Jul 2011 23:55:58 +0200
+	Fri, 29 Jul 2011 18:04:13 -0400
+X-IronPort-AV: E=Sophos;i="4.67,289,1309762800"; 
+   d="scan'208";a="566673348"
+Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: Bryan Schumaker <bjschuma@netapp.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Date: Fri, 29 Jul 2011 18:03:36 -0400
+In-Reply-To: <alpine.DEB.2.02.1107291656340.25432@p34.internal.lan>
+References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>
+	   <20110727160752.GC974@fieldses.org>
+	   <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>
+	   <20110727181111.GA23009@infradead.org>
+	   <alpine.DEB.2.02.1107271530340.1451@p34.internal.lan>
+	 <20110727193937.GA5354@infradead.org>
+	   <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>
+	   <20110727194722.GA9345@infradead.org>
+	   <1311799021.25645.41.camel@lade.trondhjem.org>
+	   <1311800051.25645.43.camel@lade.trondhjem.org>
+	  <1311800195.25645.45.camel@lade.trondhjem.org>
+	  <alpine.DEB.2.02.1107271723500.25432@p34.internal.lan>
+	  <alpine.DEB.2.02.1107271844100.25432@p34.internal.lan>
+	 <1311886137.27285.2.camel@lade.trondhjem.org> <4E331D86.7060801@netapp.com>
+	 <alpine.DEB.2.02.1107291656340.25432@p34.internal.lan>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Message-ID: <1311977016.16078.10.camel@lade.trondhjem.org>
 Mime-Version: 1.0
-Content-Type: text/plain; format=flowed; charset="US-ASCII"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: 404094
+X-OriginalArrivalTime: 29 Jul 2011 22:03:58.0123 (UTC) FILETIME=[6A5A1FB0:01CC4E3B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Matthew, please apply, thanks.
-
-Anton V. Boyarshinov writes:
-> It seems that aliases shouldn't contain spaces, as 
-> module-init-tools uses them as delimeters in module.alias file
+On Fri, 2011-07-29 at 16:59 -0400, Justin Piszcz wrote: 
+> On Fri, 29 Jul 2011, Bryan Schumaker wrote:
 > 
-> Signed-off-by: Anton V. Boyarshinov <boyarsh@altlinux.org>
-
-Acked-by: Peter Feuerer <peter@piie.net>
-
-> ---
->  drivers/platform/x86/acerhdf.c |   12 ++++++------
->  1 files changed, 6 insertions(+), 6 deletions(-)
+> > How does this look for printing out more information when a cookie loop is detected?  Is there anything else that should be printed out?  My patch applies on top of Trond's from yesterday.
 > 
-> diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
-> index fca3489..7a8568b 100644
-> --- a/drivers/platform/x86/acerhdf.c
-> +++ b/drivers/platform/x86/acerhdf.c
-> @@ -703,15 +703,15 @@ MODULE_LICENSE("GPL");
->  MODULE_AUTHOR("Peter Feuerer");
->  MODULE_DESCRIPTION("Aspire One temperature and fan driver");
->  MODULE_ALIAS("dmi:*:*Acer*:pnAOA*:");
-> -MODULE_ALIAS("dmi:*:*Acer*:pnAspire 1410*:");
-> -MODULE_ALIAS("dmi:*:*Acer*:pnAspire 1810*:");
-> +MODULE_ALIAS("dmi:*:*Acer*:pnAspire*1410*:");
-> +MODULE_ALIAS("dmi:*:*Acer*:pnAspire*1810*:");
->  MODULE_ALIAS("dmi:*:*Acer*:pnAO531*:");
->  MODULE_ALIAS("dmi:*:*Gateway*:pnAOA*:");
->  MODULE_ALIAS("dmi:*:*Gateway*:pnLT31*:");
-> -MODULE_ALIAS("dmi:*:*Packard Bell*:pnAOA*:");
-> -MODULE_ALIAS("dmi:*:*Packard Bell*:pnDOA*:");
-> -MODULE_ALIAS("dmi:*:*Packard Bell*:pnDOTMU*:");
-> -MODULE_ALIAS("dmi:*:*Packard Bell*:pnDOTMA*:");
-> +MODULE_ALIAS("dmi:*:*Packard*Bell*:pnAOA*:");
-> +MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOA*:");
-> +MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOTMU*:");
-> +MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOTMA*:");
->  
->  module_init(acerhdf_init);
->  module_exit(acerhdf_exit);
-> -- 
-> 1.7.2.2
 > 
+> Hi,
+> 
+> This fails against 2.6.38:
+> 
+> patching file fs/nfs/dir.c
+> Hunk #1 FAILED at 134.
+> Hunk #2 FAILED at 173.
+> Hunk #3 FAILED at 323.
+> Hunk #4 FAILED at 336.
+> Hunk #5 FAILED at 349.
+> Hunk #6 succeeded at 320 (offset -48 lines).
+> Hunk #7 FAILED at 741.
+> Hunk #8 succeeded at 716 (offset -59 lines).
+> Hunk #9 succeeded at 749 (offset -59 lines).
+> Hunk #10 succeeded at 763 (offset -59 lines).
+> 6 out of 10 hunks FAILED -- saving rejects to file fs/nfs/dir.c.rej
+> patching file include/linux/nfs_fs.h
+> Hunk #1 FAILED at 99.
+> 1 out of 1 hunk FAILED -- saving rejects to file include/linux/nfs_fs.h.rej
+> atom:/usr/src/linux#
+> 
+> And the 3.0 kernel is broken for my wireless adapter:
+> http://www.gossamer-threads.com/lists/linux/kernel/1411576
+> 
+> If you can make a combined patch for 2.6.38 I can try it, 2.6.39+ have a
+> horrible driver (rt2800usb) and 1 person emailed me as well stating the
+> same thing off-list (they stick with the manufacturer's driver or the *sta
+> one).
+
+I don't understand. The readdir loop detection code was first merged
+upstream in 2.6.39. 2.6.38 doesn't report any loops...
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
