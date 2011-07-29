@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714Ab1G2Gvh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 02:51:37 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:15614 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753648Ab1G2Gvf (ORCPT
+	id S1754631Ab1G2Gxc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 02:53:32 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:34806 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752574Ab1G2Gxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 02:51:35 -0400
-X-AuditID: cbfee61b-b7c3dae000002cb8-a6-4e325876212c
-To: undisclosed-recipients:;
-Date: Fri, 29 Jul 2011 15:51:33 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-Subject: Re: [PATCH 1/1] mmc: Fixed bug in IDMAC_SET_BUFFER1_SIZE Macro in
- dw_mmc.c
-In-reply-to: <4E321827.5020606@samsung.com>
-Cc: James Hogan <james.hogan@imgtec.com>,
-        Shashidhar Hiremath <shashidharh@vayavyalabs.com>,
-        Will Newton <will.newton@imgtec.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>
-Message-id: <4E325875.7040501@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-User-Agent: Thunderbird 2.0.0.24 (X11/20100623)
-References: <1311851023-3563-1-git-send-email-shashidharh@vayavyalabs.com>
- <4E314562.2000001@imgtec.com> <4E321827.5020606@samsung.com>
-X-OriginalArrivalTime: 29 Jul 2011 06:51:53.0076 (UTC)
- FILETIME=[FFAEA340:01CC4DBB]
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 29 Jul 2011 02:53:30 -0400
+X-Sasl-enc: 4z5BELCxf7uF+GXIi9fNtEmEexZYnHAZNRiy9sXs7Foh 1311922409
+Message-ID: <4E3258E1.6020000@fastmail.fm>
+Date: Fri, 29 Jul 2011 16:53:21 +1000
+From: Greg Banks <gnb@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: NeilBrown <neilb@suse.de>, linux-nfs@vger.kernel.org,
+        David Miller <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: Fw: [PATCH] sunrpc: use better NUMA affinities
+References: <20110729153207.17af3085@notabene.brown>	 <4E324DB4.7060600@fastmail.fm> <1311921035.7845.10.camel@edumazet-laptop>
+In-Reply-To: <1311921035.7845.10.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just add Chris to CC.
+On 29/07/11 16:30, Eric Dumazet wrote:
+> Le vendredi 29 juillet 2011 à 16:05 +1000, Greg Banks a écrit :
+>> On 29/07/11 15:32, NeilBrown wrote:
+>>
+>> I seem to remember coming to the conclusion that Jeff eventually
+>> addressed this problem...am I misremembering or did something regress?
+>>
+> Currently, all nfsd kthreads use memory for their kernel stack and
+> various initial data from a _single_ node, even if you use
+> sunrpc.pool_mode=pernode  (or percpu)
 
-Jaehoon Chung wrote:
-> Hi..
-> 
-> this patch is right.
-> 
-> Acked-by : Jaehoon Chung <jh80.chung@samsung.com>
-> 
-> Regards,
-> Jaehoon Chung
-> 
-> James Hogan wrote:
->> On 07/28/2011 12:03 PM, Shashidhar Hiremath wrote:
->>> The mask used inside this macro was assuming Buffer_Size1's[BS1's] width to be 14 bits,
->>> it is actually of 13 bits, Modified masks used in IDMAC_SET_BUFFER1_SIZE such that
->>> they use only 13 bits instead of current 14.
->>>
->>> Signed-off-by: Shashidhar Hiremath <shashidharh@vayavyalabs.com>
->>> ---
->>>  drivers/mmc/host/dw_mmc.c |    2 +-
->>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
->>> index 77f0b6b..f13bb49 100644
->>> --- a/drivers/mmc/host/dw_mmc.c
->>> +++ b/drivers/mmc/host/dw_mmc.c
->>> @@ -62,7 +62,7 @@ struct idmac_desc {
->>>  
->>>  	u32		des1;	/* Buffer sizes */
->>>  #define IDMAC_SET_BUFFER1_SIZE(d, s) \
->>> -	((d)->des1 = ((d)->des1 & 0x03ffc000) | ((s) & 0x3fff))
->>> +	((d)->des1 = ((d)->des1 & 0x03ffe000) | ((s) & 0x1fff))
->>>  
->>>  	u32		des2;	/* buffer 1 physical address */
->>>  
->> Yes, according to the TRM you appear to be correct
->>
->> Reviewed-by: James Hogan <james.hogan@imgtec.com>
->>
->> Thanks
->> James
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+That's just plain broken and I'm very pleased to see you fix it.
+
+I was just surprised that it was still broken and wondering how that 
+happened.  Looking at ToT I see that because I dropped the ball in 2008, 
+Jeff's patches didn't address the problem.  In ToT 
+svc_pool_map_set_cpumask() is called *after* kthread_create() and 
+applies to the child thread, *after* it's stack has been allocated on 
+the wrong node.  In the working SGI code, svc_pool_map_set_cpumask() is 
+called by the parent node on itself *before* calling kernel_thread() or 
+doing any of the data structure allocations, thus ensuring that 
+everything gets allocated using the default memory allocation policy, 
+which on SGI NFS servers was globally tuned to be "node-local".
+
+> With my patch, we make sure each thread gets its stack from its local
+> node.
+>
+> Check commit 94dcf29a11b3d20a (kthread: use kthread_create_on_node()) to
+> see how this strategy already was adopted for ksoftirqd, kworker,
+> migration, and pktgend kthreads.
+
+Ah, I see.  It's unfortunate that the kthread_create() API ends up being 
+passed a CPU number but that's only used to format the name and not for 
+sensible things :(
+
+-- 
+Greg.
 
