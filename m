@@ -1,38 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801Ab1G2SLp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 14:11:45 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52623 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750756Ab1G2SLn (ORCPT
+	id S1752468Ab1G2SMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 14:12:34 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:53923 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab1G2SMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 14:11:43 -0400
-Date: Fri, 29 Jul 2011 19:14:42 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: lsorense@csclub.uwaterloo.ca (Lennart Sorensen)
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Breno Leitao <leitao@linux.vnet.ibm.com>
-Subject: Re: Very strange data loss with jsm driver
-Message-ID: <20110729191442.35d09111@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110729180650.GL8562@caffeine.csclub.uwaterloo.ca>
-References: <20110729160416.GK8562@caffeine.csclub.uwaterloo.ca>
-	<20110729172736.4b199d31@lxorguk.ukuu.org.uk>
-	<20110729165342.GB8566@caffeine.csclub.uwaterloo.ca>
-	<20110729180650.GL8562@caffeine.csclub.uwaterloo.ca>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 29 Jul 2011 14:12:32 -0400
+Message-ID: <4E32F7F2.4080607@us.ibm.com>
+Date: Fri, 29 Jul 2011 11:12:02 -0700
+From: Badari Pulavarty <pbadari@us.ibm.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.16) Gecko/20101125 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Liu Yuan <namei.unix@gmail.com>
+CC: Stefan Hajnoczi <stefanha@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Khoa Huynh <khoa@us.ibm.com>
+Subject: Re: [RFC PATCH]vhost-blk: In-kernel accelerator for virtio block
+ device
+References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com> <CAJSP0QUKz7LFuARF_n2LcBi_uuSzfmkjrWsHAWrXXkEaQJKkEA@mail.gmail.com> <4E325F98.5090308@gmail.com>
+In-Reply-To: <4E325F98.5090308@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I noticed fifosize in the uart_port info is set to 16, even though the
-> fifo size is actually 64 bytes as all actual driver bits know.  What is
-> fifosize actually used for?
+Hi Liu Yuan,
 
-Only within the driver. The generic code merely knows how it as a
-configuration property but doesn't use it.
+I am glad to see that you started looking at vhost-blk.   I did an 
+attempt year ago to improve block
+performance using vhost-blk approach.
 
-Alan
+http://lwn.net/Articles/379864/
+http://lwn.net/Articles/382543/
+
+I will take a closer look at your patchset to find differences and 
+similarities.
+
+- I focused on using vfs interfaces in the kernel, so that I can use it 
+for file-backed devices.
+Our use-case scenario is mostly file-backed images.
+
+- In few cases, virtio-blk did outperform vhost-blk -- which was counter 
+intuitive - but
+couldn't exactly nail down. why ?
+
+- I had to implement my own threads for parellism. I see that you are 
+using aio infrastructure
+to get around it.
+
+- In our high scale performance testing, what we found is block-backed 
+device performance is
+pretty close to bare-metal (91% of bare-metal). vhost-blk didn't add any 
+major benefits to it.
+I am curious on your performance analysis & data on where you see the 
+gains and why ?
+
+Hence I prioritized my work low :(
+
+Now that you are interested in driving this, I am happy to work with you 
+and see what
+vhost-blk brings to the tables. (even if helps us improve virtio-blk).
+
+Thanks,
+Badari
+
+
