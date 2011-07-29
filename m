@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab1G2TXH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 15:23:07 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:4359 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751350Ab1G2TXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 15:23:05 -0400
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-Message-ID: <4E33088A.80903@broadcom.com>
-Date: Fri, 29 Jul 2011 12:22:50 -0700
-From: "Bhanu Prakash Gollapudi" <bprakash@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.18)
- Gecko/20110616 Thunderbird/3.1.11
+	id S1752714Ab1G2TYG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 15:24:06 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54079 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752239Ab1G2TYE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 15:24:04 -0400
+Date: Fri, 29 Jul 2011 21:23:58 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Matt Fleming <matt.fleming@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] make vfork killable/restartable/traceable
+Message-ID: <20110729192358.GB31717@mtj.dyndns.org>
+References: <20110727163159.GA23785@redhat.com>
 MIME-Version: 1.0
-To: "Eric Dumazet" <eric.dumazet@gmail.com>
-cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] bnx2fc: use kthread_create_on_node
-References: <1311923178.7845.21.camel@edumazet-laptop>
-In-Reply-To: <1311923178.7845.21.camel@edumazet-laptop>
-X-WSS-ID: 622DD64F4U83861119-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110727163159.GA23785@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/29/2011 12:06 AM, Eric Dumazet wrote:
-> Since bnx2fc_percpu_thread_create() creates percpu kthread, it makes
-> sense to use kthread_create_on_node() to get proper NUMA affinity for
-> kthread stack.
->
-> Signed-off-by: Eric Dumazet<eric.dumazet@gmail.com>
-> CC: "James E.J. Bottomley"<JBottomley@parallels.com>
+Hello, Oleg.
 
-Thanks Eric.
+On Wed, Jul 27, 2011 at 06:31:59PM +0200, Oleg Nesterov wrote:
+> 	- is it safe to exit/stop on !x86 machine???
+> 
+> 	  I do not know. May be this needs some #ifdef's around
+> 	  wait_for_completion_interruptible(). I am not sure that,
+> 	  say, arch_ptrace_stop() can't abuse the ->mm shared with
+> 	  the child.
+>
+> 	  OTOH. This can happen anyway, do_fork() does ptrace_event()
+> 	  before wait_for_completion().
 
-Acked-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+The only affected architecture would be ia64 thanks to the rolling
+register stack.  I suspected it would unroll on fork but couldn't
+determine whether it actually does that.  At any rate, it should be
+safe as the child isn't allowed to return from the forking function
+and arch_ptrace_stop() unrolling the register stack shouldn't affect
+the child.  Eh... too much speculation, probably best to ask ia64 ppl.
 
-> ---
->   drivers/scsi/bnx2fc/bnx2fc_fcoe.c |    6 +++---
->   1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-> index a97aff3..9843434 100644
-> --- a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-> +++ b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-> @@ -2161,9 +2161,9 @@ static void bnx2fc_percpu_thread_create(unsigned int cpu)
->
->   	p =&per_cpu(bnx2fc_percpu, cpu);
->
-> -	thread = kthread_create(bnx2fc_percpu_io_thread,
-> -				(void *)p,
-> -				"bnx2fc_thread/%d", cpu);
-> +	thread = kthread_create_on_node(bnx2fc_percpu_io_thread,
-> +					(void *)p, cpu_to_node(cpu),
-> +					"bnx2fc_thread/%d", cpu);
->   	/* bind thread to the cpu */
->   	if (likely(!IS_ERR(p->iothread))) {
->   		kthread_bind(thread, cpu);
->
->
->
+A wild, possibly bat-shit crazy idea about the whole series:
 
+If the current implementation is too nasty, an alternative approach
+could be handling vfork waiting as a type of job control stop.
+ie. while a task has vforked children, it's considered to have sticky
+STOP state and can't leave get_signal_to_deliver() unless killed.  I
+think this could be a bit more natural than trying to allow restart of
+vfork().
 
+So, very roughly, something like the following for the parent.
+
+* On vfork(), mark vfork child exists and set TIF_SIGPENDING.
+
+* When entering get_signal_to_deliver(), if vfork child exists, save
+  sigmask and block all blockable signals.
+
+* If dequeue_signal() returns 0 && vfork child exists, enter STOP.
+
+* When leaving get_signal_to_deliver(), restore sigmask if saved on
+  entry.
+
+Haven't really thought a lot about the details so this might end up
+uglier than the current attempt.  :)
+
+Thanks.
+
+-- 
+tejun
