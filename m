@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756097Ab1G2ODq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 10:03:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34525 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755541Ab1G2ODp (ORCPT
+	id S1751735Ab1G2OIu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 10:08:50 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59779 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750776Ab1G2OIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 10:03:45 -0400
-Date: Fri, 29 Jul 2011 15:03:42 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Marcus Folkesson <marcus.folkesson@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] regulator: tps65023: Added support for the similiar
- TPS65020 chip
-Message-ID: <20110729140342.GB19118@opensource.wolfsonmicro.com>
-References: <marcus.folkesson@gmail.com>
- <1311762767-20263-1-git-send-email-marcus.folkesson@gmail.com>
- <1311762767-20263-4-git-send-email-marcus.folkesson@gmail.com>
- <20110729123420.GB22042@sirena.org.uk>
- <CAM8FrKL4-hn2rrazsCLrRoVY5zVkgR8A245ScfS48=O41jtffg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAM8FrKL4-hn2rrazsCLrRoVY5zVkgR8A245ScfS48=O41jtffg@mail.gmail.com>
-X-Cookie: Big book, big bore.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 29 Jul 2011 10:08:49 -0400
+Subject: sungem: fix compile failure caused by trivial #include
+ consolidation
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: David Miller <davem@davemloft.net>, Vitaliy Ivanov <vitalivanov@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Parisc List <linux-parisc@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Jul 2011 18:08:44 +0400
+Message-ID: <1311948524.8190.39.camel@mulgrave>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 03:08:54PM +0200, Marcus Folkesson wrote:
-> 2011/7/29 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> > On Wed, Jul 27, 2011 at 12:32:47PM +0200, Marcus Folkesson wrote:
+This patch:
 
-> >> +static struct tps_driver_data tps65020_drv_data = {
-> >> +             .info = (struct tps_info *) tps65020_regs,
+commit e44ba033c5654dbfda53461c9b1f7dd9bd1d198f
+Author: Vitaliy Ivanov <vitalivanov@gmail.com>
+Date:   Mon Jun 20 16:08:07 2011 +0200
 
-> > Why do you need the cast here?  I see it's in the original driver too
-> > but it looks like something that should be fixed.
+    treewide: remove duplicate includes
 
-> I also thought about the line, It's only for avoiding warnings from gcc.
-> But I don't really understand why gcc is warning.
+Causes this compile failure on parisc:
 
-> gcc output:  "warning: initialization discards qualifiers from pointer
-> target type".
+  CC [M]  drivers/net/sungem.o
+drivers/net/sungem.c:49:22: error: asm/prom.h: No such file or directory
+make[2]: *** [drivers/net/sungem.o] Error 1
 
-It's complaining because the declaration of tps65020_regs doesn't match
-up with that of .info.  Probably the struct member needs to be a const
-pointer.
+Only Sparc and PPC actually have the asm/prom.h include, so you can't
+consolidate it outside of the ifdefs.
+
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+
+---
+
+This really shouldn't be happening with a trivial patch, since it's an
+obviously non-trivial transformation ... I assume the duplicate include
+checker isn't taking #ifdefs into account?
+
+James
+
+commit e44ba033c5654dbfda53461c9b1f7dd9bd1d198f
+Author: Vitaliy Ivanov <vitalivanov@gmail.com>
+Date:   Mon Jun 20 16:08:07 2011 +0200
+
+    treewide: remove duplicate includes
+    
+    Many stupid corrections of duplicated includes based on the output of
+    scripts/checkincludes.pl.
+    
+    Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
+    Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+
+diff --git a/drivers/net/sungem.c b/drivers/net/sungem.c
+index ab59300..70f018d 100644
+--- a/drivers/net/sungem.c
++++ b/drivers/net/sungem.c
+@@ -66,15 +66,14 @@
+ #include <asm/byteorder.h>
+ #include <asm/uaccess.h>
+ #include <asm/irq.h>
++#include <asm/prom.h>
+ 
+ #ifdef CONFIG_SPARC
+ #include <asm/idprom.h>
+-#include <asm/prom.h>
+ #endif
+ 
+ #ifdef CONFIG_PPC_PMAC
+ #include <asm/pci-bridge.h>
+-#include <asm/prom.h>
+ #include <asm/machdep.h>
+ #include <asm/pmac_feature.h>
+ #endif
+
+
