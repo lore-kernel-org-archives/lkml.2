@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab1G2ODF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 10:03:05 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:34464 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753774Ab1G2ODD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 10:03:03 -0400
+	id S1755758Ab1G2ODW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 10:03:22 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:58102 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755298Ab1G2ODU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 10:03:20 -0400
+Date: Fri, 29 Jul 2011 07:03:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [ANNOUNCE] 3.0-rt6
+Message-ID: <20110729140307.GB2460@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.LFD.2.02.1107282213000.31246@ionos>
 MIME-Version: 1.0
-In-Reply-To: <4E32BB6F.3090607@broadcom.com>
-References: <8d47115a01b74b768ea4850fb314b16d-mfwitten@gmail.com>
- <768a3afa74c244e8b43a376dd4fb0df4-mfwitten@gmail.com> <4E32BB6F.3090607@broadcom.com>
-From: Michael Witten <mfwitten@gmail.com>
-Date: Fri, 29 Jul 2011 14:02:32 +0000
-Message-ID: <CAMOZ1Bt3BkNeVONXu_0xoAxx=tUFLryaaW9XtPt6AxhJmTF9GA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] Docs: Typo: coordinate{,s}
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1107282213000.31246@ionos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 13:53, Arend van Spriel <arend@broadcom.com> wrote:
-> On 07/29/2011 02:46 PM, Michael Witten wrote:
->>
->> Signed-off-by: Michael Witten<mfwitten@gmail.com>
->> ---
->>  include/linux/cordic.h |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/linux/cordic.h b/include/linux/cordic.h
->> index f932093..de741da 100644
->> --- a/include/linux/cordic.h
->> +++ b/include/linux/cordic.h
->> @@ -35,8 +35,8 @@ struct cordic_iq {
->>   * @theta: angle in degrees for which i/q coordinate is to be calculated.
->>   * @coord: function output parameter holding the i/q coordinate.
->>   *
->> - * The function calculates the i/q coordinate for a given angle using
->> - * cordic algorithm. The coordinate consists of a real (i) and an
->> + * The function calculates the i/q coordinates for a given angle using
->> + * cordic algorithm. The coordinates consist of a real (i) and an
->>   * imaginary (q) part. The real part is essentially the cosine of the
->>   * angle and the imaginary part is the sine of the angle. The returned
->>   * values are scaled by 2^16 for precision. The range for theta is
->
-> Most patches in this series are fine by me. However, the function takes a
-> single angle as input and returns a single two-dimensional coordinate as
-> output. The coordinate itself is represented by the two axis i and q. So I
-> tend to say changing coordinate to coordinates is not justified here.
-> However, I not a native english speaker so I may be wrong here.
+On Thu, Jul 28, 2011 at 11:43:16PM +0200, Thomas Gleixner wrote:
+> Dear RT Folks,
+> 
+> I'm pleased to announce the 3.0-rt6 release.
+> 
+> Changes versus 3.0-rt4 (I pushed out a rt5 w/o announce)
+> 
+>   * pin_cpu fix (Yong Zhang)
+> 
+>   * Various compile fixes (Yong Zhang & myself)
+> 
+>   * Serial fix for omap
+> 
+>   * Clocksource lockless watchdog reset
+> 
+>   * Reenabled CONFIG_RCU_BOOST (problem is unreproducible and maybe
+>     related to NO_HZ, which is still disabled. Paul is working on it!)
 
-Sure.
+Once I remembered to fill in the CONFIG_INITRAMFS_SOURCE kernel parameter,
+-rt6 booted just fine with CONFIG_RCU_BOOST=y and CONFIG_NO_HZ=y.
+(Before that, the init process was whining bitterly about life in
+general and segmentation faults in particular.)  There are dyntick-idle
+periods happening, as can be seen from the first one-third of debugfs's
+rcu/rcudata file:
 
-Jiri, I'll send you a pull request later with the update(s).
+rcu_preempt:
+  0 c=225221 g=225222 pq=1 pqc=225221 qp=1 dt=7363/1/0 df=387 of=0 ri=0 ql=2 qs=..W. kt=0/W/0 ktl=96cc b=10 ci=2148054 co=0 ca=0
+  1 c=225221 g=225222 pq=1 pqc=225221 qp=1 dt=11677/1/0 df=1381 of=0 ri=0 ql=0 qs=.... kt=0/W/1 ktl=ba97 b=10 ci=1089926 co=0 ca=0
+
+The dt= fields count the number of times the corresponding CPU has
+transitioned to and from dyntick-idle mode.  There is also some RCU
+priority boosting happening:
+
+0:7 tasks=TN.. kt=W ntb=3 neb=0 nnb=3 j=1182 bt=12fc
+     balk: nt=0 egt=1750 bt=37 nb=2 ny=311044 nos=0
+
+The ntb= field tells us that there have been three priority-boost events,
+and nnb= tells us that they have all been for normal (as opposed to
+expedited) grace periods.  You need CONFIG_RCU_TRACE=y to enable these,
+in case you want to see them yourself.
+
+This has survived 45 minutes of rcutorture thus far.
+
+It might well be that a two-CPU 32-bit x86 environment is especially
+kind to -rt, but I nevertheless propose the following patch.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+nohz: Enable CONFIG_NO_HZ in -rt kernel builds
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+
+ Kconfig |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff -urpNa -X dontdiff linux-3.0-rt5/kernel/time/Kconfig linux-3.0-rt6/kernel/time/Kconfig
+--- linux-3.0-rt5/kernel/time/Kconfig	2011-07-28 15:47:04.000000000 -0700
++++ linux-3.0-rt6/kernel/time/Kconfig	2011-07-29 04:31:06.000000000 -0700
+@@ -7,7 +7,6 @@ config TICK_ONESHOT
+ config NO_HZ
+ 	bool "Tickless System (Dynamic Ticks)"
+ 	depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
+-	depends on !PREEMPT_RT_FULL
+ 	select TICK_ONESHOT
+ 	help
+ 	  This option enables a tickless system: timer interrupts will
