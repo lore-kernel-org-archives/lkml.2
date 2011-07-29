@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756264Ab1G2BVi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 21:21:38 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:50087 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755607Ab1G2BVh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 21:21:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E31788F.7000307@lwfinger.net>
-References: <CAMzZzFGqPv6Nbw8J8JGNKcLA76sAs3oD6+hH9NPCjwA33fYpOQ@mail.gmail.com>
-	<20110727135353.GA16431@tuxdriver.com>
-	<CAMzZzFH8xBdiEN-rV1XE-1ZhFbzO_tcnA75Hpx_AyJ6LtWq01A@mail.gmail.com>
-	<4E31788F.7000307@lwfinger.net>
-Date: Fri, 29 Jul 2011 09:21:35 +0800
-Message-ID: <CAMzZzFF2WYGxEi5dmVKmDLG2zq4O0ZFzi65TxYGp1nAUdaVLnA@mail.gmail.com>
-Subject: Re: Oops when insmod rtl8192ce
-From: Hubert Liao <liao.hubertt@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: "John W. Linville" <linville@tuxdriver.com>, wlanfae@realtek.com,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1756285Ab1G2BdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 21:33:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:62038 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755228Ab1G2BdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 21:33:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,285,1309762800"; 
+   d="scan'208";a="33589299"
+From: Alex Shi <alex.shi@intel.com>
+To: majordomo@kvack.org, P@draigBrady.com
+Cc: mgorman@suse.de, minchan.kim@gmail.com, linux-kernel@vger.kernel.org,
+        andrea@cpushare.com, tim.c.chen@intel.com, shaohua.li@intel.com,
+        akpm@linux-foundation.org, riel@redhat.com, luto@mit.edu
+Subject: [PATCH] kswapd: assign new_order and new_classzone_idx after wakeup in sleeping
+Date: Fri, 29 Jul 2011 09:34:42 +0800
+Message-Id: <1311903282-8539-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/28 Larry Finger <Larry.Finger@lwfinger.net>:
-> On 07/28/2011 02:06 AM, hubert Liao wrote:
->>
->> 2011/7/27 John W. Linville<linville@tuxdriver.com>:
->>>
->>> On Wed, Jul 27, 2011 at 05:20:15PM +0800, hubert Liao wrote:
->>>>
->>>> Hi,
->>>>
->>>> We got an oops when insmod rtl8192ce module (the board is an ARM soc),
->>>> accroding the oops message, find it's because in rtl_pci_probe() called
->>>> _rtl_pci_find_adapter(),
->>>> in this funcation, the  pdev->bus->self is a NULL pointer .
->>>>
->>>> static boot _rtl_pci_find_adapter(strcut pci_dev *dev,
->>>>               struct ieee80211_hw *hw)
->>>> {
->>>>
->>>> struct pci_dev *bridge_pdev = pdev->bus->self;   //line 1601
->>>> ...
->>>>
->>>> pcipriv->ndis_adapter.pcibridge_vendorid = bridge_pdev->vendor;<-- [oops
->>>> here] line 1700
->>>>
->>>> ...
->>>> }
->>>>
->>>> here, I just want to know why the bus->self  is NULL?
->>>
->>> pdev is coming straight from what is passed to the PCI probe routine.
->>> It seems like pdev->bus->self should already be set before that
->>> happens.
->>>
->> Yes, I think it should be initialized when added the pci bus bridge,
->> I have checked the mach-kirkwood(my board is arch/arm/mach-kirkwood)
->> pcie related code, and I think when system initialized should call
->> kirkwood_pcie_init() ->
->>             kirkwood_pcie_scan_bus() ->
->>                            pci_scan_bus() ->
->>                                     pci_bus_add_devices()
->> if the pci_bus->self  was initialized in pci_bus_add_devices()?
->> Maybe the code is too complex for me ,  I really can not find where
->> set the “->self" member?
->
-> I added a request to the bugzilla entry to post the full dmesg output there.
-> Perhaps there is some clue in the bus setup.
->
-I have added the full dmesg output on bugzilla.
-thanks.
-> Larry
->
->
+There 2 place to read pgdat in kswapd. One is return from a successful
+balance, another is waked up from sleeping. But the new_order and
+new_classzone_idx are not assigned after kswapd_try_to_sleep(), that
+will cause a bug in the following scenario.
+
+After the last time successful balance, kswapd goes to sleep. So the
+new_order and new_classzone_idx were assigned to 0 and MAX-1 since there
+is no new wakeup during last time balancing. Now, a new wakeup came and
+finish balancing successful with order > 0. But since new_order is still
+0, this time successful balancing were judged as a failed balance. so,
+if there is another new wakeup coming during balancing, kswapd cann't
+read this and still want to try to sleep. And if the new wakeup is a
+tighter request, kswapd may goes to sleep, not to do balancing. That is
+incorrect.
+
+So, to avoid above problem, the new_order and new_classzone_idx need to
+be assigned for later successful comparison.
+
+Paidrag Brady, Could like do a retry for your problem on this patch?
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/vmscan.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 7ef6912..eb7bcce 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2850,6 +2850,8 @@ static int kswapd(void *p)
+ 			kswapd_try_to_sleep(pgdat, order, classzone_idx);
+ 			order = pgdat->kswapd_max_order;
+ 			classzone_idx = pgdat->classzone_idx;
++			new_order = order;
++			new_classzone_idx = classzone_idx;
+ 			pgdat->kswapd_max_order = 0;
+ 			pgdat->classzone_idx = pgdat->nr_zones - 1;
+ 		}
+-- 
+1.6.3.3
+
