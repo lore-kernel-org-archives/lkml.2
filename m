@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab1G2Ctb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 22:49:31 -0400
-Received: from void.printf.net ([89.145.121.20]:52959 "EHLO void.printf.net"
+	id S1755631Ab1G2DNk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 23:13:40 -0400
+Received: from mga03.intel.com ([143.182.124.21]:17669 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755837Ab1G2Cta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 22:49:30 -0400
-From: Chris Ball <cjb@laptop.org>
-To: matsumur@nts.ricoh.co.jp
-Cc: ak@linux.intel.com, Andi Kleen <andi@firstfloor.org>,
-        daniel.manrique@canonical.com, jbarnes@virtuousgeek.org,
-        linux-kernel@vger.kernel.org, manoj.iyer@canonical.com,
-        stable@kernel.org, tim.bird@am.sony.com
-Subject: Re: [PATCH] [9/50] mmc: Added quirks for Ricoh 1180:e823 lower base clock
-References: <OF5CBC52FF.5B5957D9-ON492578DC.00093451-492578DC.000BCC8B@mta.ricoh.co.jp>
-Date: Thu, 28 Jul 2011 22:49:20 -0400
-In-Reply-To: <OF5CBC52FF.5B5957D9-ON492578DC.00093451-492578DC.000BCC8B@mta.ricoh.co.jp>
-	(matsumur@nts.ricoh.co.jp's message of "Fri, 29 Jul 2011 11:10:45
-	+0900")
-Message-ID: <m2ipqldcnj.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753462Ab1G2DNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 23:13:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,285,1309762800"; 
+   d="scan'208";a="32865424"
+Subject: [patch]block: document blk_plug
+From: Shaohua Li <shaohua.li@intel.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Jul 2011 11:13:35 +0800
+Message-ID: <1311909215.15392.418.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Andrew Morton is asking to document blk_plug, so here is my attempt.
 
-On Thu, Jul 28 2011, matsumur@nts.ricoh.co.jp wrote:
-> As you know, SD ver.1.1 and 2.0(SDHC) cards can be applied 50MHz SD-CLK..
-> SD 3.0 (UHS-I) cards also can be applied 50Mhz. However UHS-I cards are
-> available 200 or 100Mhz SD-CLK.
-> I would like to know if the current SD Host driver has the function of
-> setting SD-CLK to 200Mhz for SD ver3.0 compliant Host Controller.
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+---
+ include/linux/blkdev.h |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-Yes, we normally would set the higher clock rates for SDv3 controllers.
-We are only restricting to 50MHz on this Ricoh 0xe823 controller.
+Index: linux/include/linux/blkdev.h
+===================================================================
+--- linux.orig/include/linux/blkdev.h	2011-07-29 10:51:29.000000000 +0800
++++ linux/include/linux/blkdev.h	2011-07-29 11:07:49.000000000 +0800
+@@ -858,6 +858,17 @@ struct request_queue *blk_alloc_queue_no
+ extern void blk_put_queue(struct request_queue *);
+ 
+ /*
++ * blk_plug gives each task a request list. Since blk_start_plug() called,
++ * requests from the task will be added to the per-task list and then moved
++ * to global request_queue in a batch way at appropriate time(either
++ * blk_finish_plug() is called or task goes to sleep). blk_plug has some
++ * advantages:
++ * 1. Better request merge. The assumption here is requests from a task have
++ *    better chances to be merged.
++ * 2. Better scalability. Requests are moved from per-task list to global
++ *    request_queue in a batch way, so the total times grabing global
++ *    request_queue lock are reduced.
++ *
+  * Note: Code in between changing the blk_plug list/cb_list or element of such
+  * lists is preemptable, but such code can't do sleep (or be very careful),
+  * otherwise data is corrupted. For details, please check schedule() where
 
-We added support for the SDR104 UHS-1 speeds in Linux 3.0, thanks to
-a patchset from Arindam Nath.
 
-Thanks,
-
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
