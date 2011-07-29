@@ -1,70 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595Ab1G2Omb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 10:42:31 -0400
-Received: from fsing.rootsland.net ([62.141.37.30]:40475 "EHLO
-	fsing.rootsland.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab1G2Oma (ORCPT
+	id S1751665Ab1G2Op6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 10:45:58 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:36221 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab1G2Op5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 10:42:30 -0400
-X-DKIM: OpenDKIM Filter v2.1.3 fsing.rootsland.net 3072512FC81AC
-Date: Fri, 29 Jul 2011 16:42:26 +0200
-From: Stephan Seitz <stse+lkml@fsing.rootsland.net>
-To: David Miller <davem@davemloft.net>
-Cc: stse+lkml@fsing.rootsland.net, maciej.rutecki@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: IP forwarding regression since 3.0-rc6
-Message-ID: <20110729T164027.GA.2e63c.stse@fsing.rootsland.net>
-Mail-Followup-To: Stephan Seitz <stse+lkml@fsing.rootsland.net>,
-	David Miller <davem@davemloft.net>, maciej.rutecki@gmail.com,
-	linux-kernel@vger.kernel.org
-References: <20110725T141145.GA.2ae38.stse@fsing.rootsland.net>
- <201107281546.33227.maciej.rutecki@gmail.com>
- <20110729T091342.GA.06bf4.stse@fsing.rootsland.net>
- <20110729.003620.1377780539620085743.davem@davemloft.net>
+	Fri, 29 Jul 2011 10:45:57 -0400
+Message-ID: <4E32C79A.80606@gmail.com>
+Date: Fri, 29 Jul 2011 22:45:46 +0800
+From: Liu Yuan <namei.unix@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JP+T4n/bALQSJXh8"
-Content-Disposition: inline
-In-Reply-To: <20110729.003620.1377780539620085743.davem@davemloft.net>
-Organization: Minas Tirith, Gondor
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stefan Hajnoczi <stefanha@gmail.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Khoa Huynh <khoa@us.ibm.com>, Badari Pulavarty <pbadari@us.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFC PATCH]vhost-blk: In-kernel accelerator for virtio block
+ device
+References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com>	<CAJSP0QUKz7LFuARF_n2LcBi_uuSzfmkjrWsHAWrXXkEaQJKkEA@mail.gmail.com>	<4E325F98.5090308@gmail.com>	<CAJSP0QX=mXvkZyeMx28iwVNDrKEZZVAZxLLOFRv62pu7byo6gw@mail.gmail.com>	<4E32A105.6080509@gmail.com>	<CAJSP0QUV1C3O6SuXzFKMi5t61T+Qa-Yy2yWEevuuAvyQarJ47g@mail.gmail.com> <CAJSP0QUbZ=RAkn_kbDupeA9QYYnzGd+u5M2duEg==e8ACjAqXg@mail.gmail.com>
+In-Reply-To: <CAJSP0QUbZ=RAkn_kbDupeA9QYYnzGd+u5M2duEg==e8ACjAqXg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/29/2011 08:50 PM, Stefan Hajnoczi wrote:
+> I hit a weirdness yesterday, just want to mention it in case you notice it too.
+>
+> When running vanilla qemu-kvm I forgot to use aio=native.  When I
+> compared the results against virtio-blk-data-plane (which *always*
+> uses Linux AIO) I was surprised to find average 4k read latency was
+> lower and the standard deviation was also lower.
+>
+> So from now on I will run tests both with and without aio=native.
+> aio=native should be faster and if I can reproduce the reverse I'll
+> try to figure out why.
+>
+> Stefan
+On my laptop, I don't meet this weirdo. the emulated POSIX AIO is much 
+worse than the Linux AIO as expected. If iodepth goes deeper, the gap 
+gets wider.
 
---JP+T4n/bALQSJXh8
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If not set aio=none, qemu uses emulated posix aio interface to do the 
+IO. I peek at the posix-aio-compat.c,it uses thread pool and sync 
+preadv/pwritev to emulate the AIO behaviour. The sync IO interface would 
+even cause much poorer performance for random rw, since io-scheduler 
+would possibly never get a chance to merge the requests stream. 
+(blk_finish_plug->queue_unplugged->__blk_run_queue)
 
-On Fri, Jul 29, 2011 at 12:36:20AM -0700, David Miller wrote:
->I really think this bug will get a lot more traction if you report
->it to netdev@vger.kernel.org which is where the networking developers
->are actually listening.
-
-Thanks for the hint. Luckily, Eric Dumazet reported the bug already to=20
-netdev.
-
-Shade and sweet water!
-
-	Stephan
-
---=20
-| Stephan Seitz             E-Mail: stse@fsing.rootsland.net |
-| PGP Public Keys: http://fsing.rootsland.net/~stse/pgp.html |
-
---JP+T4n/bALQSJXh8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk4yxtIACgkQXse+NwPOAZ71VgCgrKZRUChTQnUIwBXaGUSawn/9
-NJsAoKBhBq6BkUi77NLx9tMxkcfaWmZN
-=/hZ0
------END PGP SIGNATURE-----
-
---JP+T4n/bALQSJXh8--
+Yuan
