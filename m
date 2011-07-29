@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037Ab1G2JQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 05:16:28 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:16547 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617Ab1G2JQ1 (ORCPT
+	id S1755833Ab1G2J0X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 05:26:23 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:46362 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755617Ab1G2J0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 05:16:27 -0400
-Date: Fri, 29 Jul 2011 11:16:25 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com,
-        minchan.kim@gmail.com, mgorman@suse.de, akpm@linux-foundation.org,
-        kanoj@sgi.com, sct@redhat.com
-Subject: Re: [PATCH] vmscan: Remove if statement that will never trigger
-In-Reply-To: <4E3252E2.1030101@jp.fujitsu.com>
-Message-ID: <alpine.LNX.2.00.1107291115080.22532@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107282302580.20477@swampdragon.chaosbits.net> <4E3252E2.1030101@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 29 Jul 2011 05:26:21 -0400
+Message-ID: <4E327C50.2010103@metafoo.de>
+Date: Fri, 29 Jul 2011 11:24:32 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110702 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Wim Van Sebroeck <wim@iguana.be>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 01/11] watchdog: WatchDog Timer Driver Core - Add basic
+ framework
+References: <1310392522-9949-1-git-send-email-wim@iguana.be> <4E1B8089.90103@metafoo.de> <20110722193211.GL31767@infomag.iguana.be> <4E2B987E.6070107@metafoo.de> <20110727202450.GB4227@infomag.iguana.be>
+In-Reply-To: <20110727202450.GB4227@infomag.iguana.be>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jul 2011, KOSAKI Motohiro wrote:
-
-> (2011/07/29 6:05), Jesper Juhl wrote:
-> > We have this code in mm/vmscan.c:shrink_slab() :
-> > ...
-> > 		if (total_scan < 0) {
-> > 			printk(KERN_ERR "shrink_slab: %pF negative objects to "
-> > 			       "delete nr=%ld\n",
-> > 			       shrinker->shrink, total_scan);
-> > 			total_scan = max_pass;
-> > 		}
-> > ...
-> > but since 'total_scan' is of type 'unsigned long' it will never be
-> > less than zero, so there is no way we'll ever enter the true branch of
-> > this if statement - so let's just remove it.
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> >  mm/vmscan.c |    6 ------
-> >  1 files changed, 0 insertions(+), 6 deletions(-)
-> > 
-> > 	Compile tested only.
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 7ef6912..c07d9b1 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -271,12 +271,6 @@ unsigned long shrink_slab(struct shrink_control *shrink,
-> >  		delta *= max_pass;
-> >  		do_div(delta, lru_pages + 1);
-> >  		total_scan += delta;
-> > -		if (total_scan < 0) {
-> > -			printk(KERN_ERR "shrink_slab: %pF negative objects to "
-> > -			       "delete nr=%ld\n",
-> > -			       shrinker->shrink, total_scan);
-> > -			total_scan = max_pass;
-> > -		}
-> >  
-> >  		/*
-> >  		 * We need to avoid excessive windup on filesystem shrinkers
+On 07/27/2011 10:24 PM, Wim Van Sebroeck wrote:
+> Hi Lars-Peter,
 > 
-> Good catch.
+>>>>> +int watchdog_dev_unregister(struct watchdog_device *watchdog)
+>>>>> +{
+>>>>> +	/* Check that a watchdog device was registered in the past */
+>>>>> +	if (!test_bit(0, &watchdog_dev_busy) || !wdd)
+>>>>> +		return -ENODEV;
+>>>>> +
+>>>>> +	/* We can only unregister the watchdog device that was registered */
+>>>>> +	if (watchdog != wdd) {
+>>>>> +		pr_err("%s: watchdog was not registered as /dev/watchdog.\n",
+>>>>> +			watchdog->info->identity);
+>>>>> +		return -ENODEV;
+>>>>> +	}
+>>>>> +
+>>>>> +	/* Unregister the miscdevice */
+>>>>> +	misc_deregister(&watchdog_miscdev);
+>>>>> +	wdd = NULL;
+>>>>> +	clear_bit(0, &watchdog_dev_busy);
+>>>>> +	return 0;
+>>>>> +}
+>>>>
+>>>> What happens if the watchdog gets unregistered if the device is still opened?
+>>>> Even though if you'd check wdd for not being NULL in the file callbacks there
+>>>> is still a chance for races if the devices is unregistered at the same time as
+>>>> the callback is running. You'd either need a big lock to protect from having a
+>>>> file callback and unregister running concurrently or add ref-counting to the
+>>>> watchdog_device, the later best done by embedding a struct device and using the
+>>>> device driver model.
+>>>
+>>> You cannot unload the watchdog-drivers module if /dev/watchdog is still open.
+>>> So if the watchdog_unregister function is in the exit function of the module
+>>> then we are safe. But I think you have a point if that is not the case.
+>>> Solution would be to return an error when the watchdog_unregister_device routine
+>>> is called and the WDOG_DEV_OPEN bit is set. Will create an extra patch for that.
+>>>
+>>
+>> The problem is, that this doesn't fit nicely into the linux device driver
+>> model, because it doesn't allow the removal of a device to fail. So you'll
+>> still end of with undefined behavior.
 > 
-> However this seems intended to catch a overflow. So, I'd suggest to make proper
-> overflow check instead.
+> It's not an issue now. But we will indeed have to tackle it, when we start using
+> the device driver model.
 > 
-Right. We probably shouldn't just remove it.
 
-I'll cook a new version of the patch tonight that properly checks for 
-overflow.
+Well, the framework itself might not be using the device driver model yet, but
+drivers using the framework do. For example for a driver using a platform
+device there would be no correct solution for handling an error from
+watchdog_unregister in the drivers remove callback.
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+- Lars
