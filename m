@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab1G2Kum (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 06:50:42 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:56597 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756108Ab1G2Kuk (ORCPT
+	id S1756237Ab1G2Kus (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 06:50:48 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:52530 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756108Ab1G2Kuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 06:50:40 -0400
+	Fri, 29 Jul 2011 06:50:46 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <linus.walleij@linaro.org>
 Cc: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
@@ -17,9 +17,9 @@ Cc: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
         <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
         <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
         <viresh.linux@gmail.com>
-Subject: [PATCH 01/18] ARM: asm/pl080.h: Protect against multiple inclusion of header file
-Date: Fri, 29 Jul 2011 16:19:11 +0530
-Message-ID: <cbd8c0a36115615ea0d80055de7a27ef1b8b7ce6.1311936524.git.viresh.kumar@st.com>
+Subject: [PATCH 08/18] dmaengine/amba-pl08x: No need to check "ch->signal < 0"
+Date: Fri, 29 Jul 2011 16:19:18 +0530
+Message-ID: <1e1f287888a2ce9affdcbded8f63028fa3f6b09b.1311936524.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1311936523.git.viresh.kumar@st.com>
 References: <cover.1311936523.git.viresh.kumar@st.com>
@@ -29,35 +29,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<asm/hardware/pl080.h> doesn't have protection to deal with multiple inclusion.
-And so we get compilation errors in cases where this file is included more than
-once. This patch adds #ifdefs at the top of file to protect it against multiple
-inclusions.
+We have just executed following in pl08x_get_phy_channel():
+	ch->signal = -1;
+
+We don't have to compare "ch->signal < 0", as this will always be true.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- arch/arm/include/asm/hardware/pl080.h |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/dma/amba-pl08x.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/include/asm/hardware/pl080.h b/arch/arm/include/asm/hardware/pl080.h
-index e4a04e4..33c78d7 100644
---- a/arch/arm/include/asm/hardware/pl080.h
-+++ b/arch/arm/include/asm/hardware/pl080.h
-@@ -21,6 +21,9 @@
-  * OneNAND features.
- */
- 
-+#ifndef ASM_PL080_H
-+#define ASM_PL080_H
-+
- #define PL080_INT_STATUS			(0x00)
- #define PL080_TC_STATUS				(0x04)
- #define PL080_TC_CLEAR				(0x08)
-@@ -138,3 +141,4 @@ struct pl080s_lli {
- 	u32	control1;
- };
- 
-+#endif /* ASM_PL080_H */
+diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+index f1a25cf..c4ce1a2 100644
+--- a/drivers/dma/amba-pl08x.c
++++ b/drivers/dma/amba-pl08x.c
+@@ -923,7 +923,7 @@ static int prep_phy_channel(struct pl08x_dma_chan *plchan,
+ 	 * need, but for slaves the physical signals may be muxed!
+ 	 * Can the platform allow us to use this channel?
+ 	 */
+-	if (plchan->slave && ch->signal < 0 && pl08x->pd->get_signal) {
++	if (plchan->slave && pl08x->pd->get_signal) {
+ 		ret = pl08x->pd->get_signal(plchan);
+ 		if (ret < 0) {
+ 			dev_dbg(&pl08x->adev->dev,
 -- 
 1.7.2.2
 
