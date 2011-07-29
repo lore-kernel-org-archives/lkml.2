@@ -1,109 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab1G2Jzd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 05:55:33 -0400
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:41600 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755372Ab1G2Jzb convert rfc822-to-8bit (ORCPT
+	id S1755476Ab1G2KAP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 06:00:15 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61698 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754677Ab1G2KAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 05:55:31 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=RoojVSJIJluF7nPEL/ZfEjhFDjN56szB521nsKvm9G4= c=1 sm=1
- a=S7acZvqNAhcA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
- a=ofbJNMp31UCpb4tbsbNzvA==:17 a=VwQbUJbxAAAA:8 a=85SyeJGuymdgS127JtcA:9
- a=jxb-zm7z3pteGJiwVbEA:7 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10
- a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH 0/2] Add inode checksum support to ext4
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger.kernel@dilger.ca>
-In-Reply-To: <20110728185730.GJ20655@tux1.beaverton.ibm.com>
-Date: Fri, 29 Jul 2011 03:55:30 -0600
-Cc: Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <aedilger@gmail.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4B7BD8E2-A1F3-4788-9753-20DC78620C5D@dilger.ca>
-References: <20110406224410.GB24354@tux1.beaverton.ibm.com> <1302290868.4461.7.camel@mingming-laptop> <20110727082730.GG20655@tux1.beaverton.ibm.com> <EF1F2330-D8C4-427A-ABB9-D1E607D91A3D@gmail.com> <20110728165615.GI20655@tux1.beaverton.ibm.com> <CAOQ4uxiOpwX2-Nfh9wJ7wSmAnbj9bh1+d9C95-N5D-8saRr6ww@mail.gmail.com> <20110728185730.GJ20655@tux1.beaverton.ibm.com>
-To: djwong@us.ibm.com
-X-Mailer: Apple Mail (2.1084)
+	Fri, 29 Jul 2011 06:00:13 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Russell King'" <rmk@arm.linux.org.uk>,
+        "'Ben Dooks'" <ben-linux@fluff.org>
+Subject: Re: Question about "Inconsistent kallsyms data"
+Date: Fri, 29 Jul 2011 12:00:07 +0200
+Message-ID: <15086105.RIkTVAqRk0@flatron>
+User-Agent: KMail/4.7.0  (Linux/3.0.0-gentoo; KDE/4.7.0; x86_64; ; )
+In-Reply-To: <02ae01cc4d91$aed71670$0c854350$%kim@samsung.com>
+References: <02ae01cc4d91$aed71670$0c854350$%kim@samsung.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-07-28, at 12:57 PM, Darrick J. Wong wrote:
->>> On Wed, Jul 27, 2011 at 03:16:12AM -0600, Andreas Dilger wrote:
->>>> In the past, the discussion about adding checksums to the index and
->>>> extent blocks was about using an ext4_extent_tail that contained not
->>>> only the checksum of the block, but also a back-pointer to the
->>>> inode/generation of the inode using this block.
->>>> 
->>>> That would allow e2fsck to verify that it is using the correct
->>>> index/extent blocks and not pointing to a stale block that belonged
->>>> to some other inode.
->>>> 
->>>> Since the header and index/extent entries are always 3 *__u32 in size,
->>>> the extent tail can always be 4 * __u32 in size yet only consume a
->>>> single slot in the block. There of course is no reason to put an extent
->>>> tail inside the inode itself.
->>> 
->>> Does anybody have any objection to using crc32c (which we can hardware
->>> accelerate on new Intel boxen) over crc16?  I think it'll be pretty easy
->>> to use some of the reserved space in the group descriptor to store
->>> checksums of the block and inode bitmaps.
->> 
->> On LSF Ted told me i can use 32bit from the group descriptor for exclude
->> bitmap block and that inode and block bitmap checksum would use 16bit each .
+Hi,
+
+On Friday 29 of July 2011 at 10:48:46, Kukjin Kim wrote:
+> Hi all,
 > 
-> I know;  as far as I know there's still 96 bits of free space in the group
-> descriptor, which could be used to crc32 all three bitmaps.  But then that
-> leaves the descriptors with no room for further expansion, unless we decide to
-> expand them sort of like what was done for inodes.  Do we have a strategy for
-> handling continued expansion of metadata objects in ext4?
+> When build with s5pc100_defconfig, happens following.
+> 
+> ...
+> KSYM    .tmp_kallsyms2.S
+> AS      .tmp_kallsyms2.o
+> LD      vmlinux
+> SYSMAP  System.map
+> SYSMAP  .tmp_System.map
+> Inconsistent kallsyms data
+> This is a bug - please report about it
+> Try make KALLSYMS_EXTRA_PASS=1 as a workaround
+> make[1]: *** [vmlinux] Error 1
+> make: *** [sub-make] Error 2
+> 
+> Its HEAD is following (current latest mainline)
+> (commit 55f9c40ff632d03c527d6a6ceddcda0a224587a6)
+> Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc
 
-One reason to stick to crc16 for the block checksums is that this would still
-fit inside the ext3_group_desc space, so upgraded filesystems could enable
-checksums.
+I can confirm that it also happens when building with s3c6400_defconfig and 
+HEAD at commit 5fd00b031530cc476240f654c078c930f1dcd6ea (Merge branch 'for-
+linus' of git://git.kernel.org/pub/scm/linux/kernel/git/shaggy/jfs-2.6).
 
->>> Adding tails to the extent tree blocks seems a bit trickier than that,
->>> but not a big deal, though I guess I'll have to reshuffle
->>> the extent tree to free up space at the end of the block.
+The suggested workaround (make KALLSYMS_EXTRA_PASS=1) helps, but it is only a 
+workaround and not a solution.
 
-I don't think reshuffling is necessary.  It should be OK to add it to blocks
-that fit, and skip blocks that don't have enough space.
+Any suggestions?
 
->>> I was also wondering what people think of adding checksums to directory
->> files?
->>> I think that it's possible to put a checksum in each directory block --
->> for
->>> blocks containing a linear array of actual directory entries, we could
->> zero out
->>> the space past the end of the array and put a checksum at the very end of
->> the
->>> block.  For the dx_node/dx_root blocks, we could probably use the space
->>> occupied by the last dx_entry to store the checksum.  Obviously, we'd have
->> to
->>> move whatever's at the end of the block elsewhere, but then, we have to do
->> that
->>> for the extent tree too.  Basically, the last 4 bytes become the checksum
->> after
->>> whatever's occupying the space is relocated. :)
->>> 
->>> It looks like there's sufficient unused space in ext4_xattr_header to add
->> a
->>> checksum.
->>> 
->>> Also -- should I create separate rocompat feature flags for each metadata
->>> object that I add checksums to?  Or just have one flag that covers them
->> all?
->>> 
->>> Ok, enough crazy ideas for now...
->>> 
->>> --D
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Best regards,
+Tomasz Figa
 
