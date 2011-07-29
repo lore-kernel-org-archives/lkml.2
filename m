@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037Ab1G2Pq2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 11:46:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45500 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751693Ab1G2Pq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 11:46:27 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] frv: remove unnecessary code
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Greg Dietsche <Gregory.Dietsche@cuw.edu>,
-        David Howells <dhowells@redhat.com>
-Date: Fri, 29 Jul 2011 16:46:16 +0100
-Message-ID: <20110729154616.24424.8362.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1752086Ab1G2PrK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 11:47:10 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58046 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab1G2PrI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 11:47:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1311941355.1536.529.camel@vkoul-udesk3>
+References: <cover.1311936523.git.viresh.kumar@st.com>
+	<e2c1bd6941e88f8988b1942c13c20cf436b3a963.1311936524.git.viresh.kumar@st.com>
+	<1311941355.1536.529.camel@vkoul-udesk3>
+Date: Fri, 29 Jul 2011 08:47:06 -0700
+Message-ID: <CAOh2x=kqa0GxRH9o=8faPhuyyLcqxH8+AOowBTK_gMaDgJyeVA@mail.gmail.com>
+Subject: Re: [PATCH 04/18] dmaengine/amba-pl08x: Remove redundant comment and
+ rewrite original
+From: viresh kumar <viresh.linux@gmail.com>
+To: "Koul, Vinod" <vinod.koul@intel.com>, linus.walleij@linaro.org,
+        linux@arm.linux.org.uk
+Cc: Viresh Kumar <viresh.kumar@st.com>, dan.j.williams@intel.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        armando.visconti@st.com, shiraz.hashim@st.com, vipin.kumar@st.com,
+        rajeev-dlh.kumar@st.com, deepak.sikri@st.com, vipulkumar.samar@st.com,
+        amit.virdi@st.com, pratyush.anand@st.com, bhupesh.sharma@st.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+On 7/29/11, Koul, Vinod <vinod.koul@intel.com> wrote:
+> On Fri, 2011-07-29 at 16:19 +0530, Viresh Kumar wrote:
+>>  /*
+>> - * Autoselect a master bus to use for the transfer this prefers the
+>> - * destination bus if both available if fixed address on one bus the
+>> - * other will be chosen
+>> + * Autoselect a master bus to use for the transfer
+>> + * - prefers the destination bus if both available
+>> + * - if fixed address on one bus the other will be chosen
+> Not sure I get it, English is not my first language :)
 
-remove unnecessary code that matches this coccinelle pattern
-	if (...)
-		return ret;
-	return ret;
+Nor mine either. :)
 
-Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Will give some more explanation.
 
- arch/frv/mm/pgalloc.c |    8 +-------
- 1 files changed, 1 insertions(+), 7 deletions(-)
+But before that i wanted to know the exact purpose of this
+master-slave concept here.
+Probably it is for choosing the victim for reduction of width, in case
+src and dest addresses
+are misaligned to each other.
+@Russell and Linus: Is this correct?
 
-
-diff --git a/arch/frv/mm/pgalloc.c b/arch/frv/mm/pgalloc.c
-index c42c83d..4fb63a3 100644
---- a/arch/frv/mm/pgalloc.c
-+++ b/arch/frv/mm/pgalloc.c
-@@ -133,13 +133,7 @@ void pgd_dtor(void *pgd)
- 
- pgd_t *pgd_alloc(struct mm_struct *mm)
- {
--	pgd_t *pgd;
--
--	pgd = quicklist_alloc(0, GFP_KERNEL, pgd_ctor);
--	if (!pgd)
--		return pgd;
--
--	return pgd;
-+	return quicklist_alloc(0, GFP_KERNEL, pgd_ctor);
- }
- 
- void pgd_free(struct mm_struct *mm, pgd_t *pgd)
-
+--
+viresh
