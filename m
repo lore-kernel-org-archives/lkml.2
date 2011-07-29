@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374Ab1G2SZa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 14:25:30 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:46570 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751765Ab1G2SZ3 (ORCPT
+	id S1752505Ab1G2Sbc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 14:31:32 -0400
+Received: from mail3.vodafone.ie ([213.233.128.45]:58595 "EHLO
+	mail3.vodafone.ie" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752210Ab1G2Sbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 14:25:29 -0400
-Date: Fri, 29 Jul 2011 11:25:26 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, xiyou.wangcong@gmail.com, lacombar@gmail.com,
-        sam@ravnborg.org, linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
-Subject: Re: [PATCH] kconfig: Introduce IS_ENABLED(), IS_BUILTIN() and
- IS_MODULE()
-Message-Id: <20110729112526.db528361.rdunlap@xenotime.net>
-In-Reply-To: <1311947497-4958-1-git-send-email-mmarek@suse.cz>
-References: <1311634718-32588-1-git-send-email-mmarek@suse.cz>
-	<1311947497-4958-1-git-send-email-mmarek@suse.cz>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Fri, 29 Jul 2011 14:31:31 -0400
+X-Greylist: delayed 579 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Jul 2011 14:31:30 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAKT5Mk5tTgZ2/2dsb2JhbAAMKAEBBTgBTBEMDQsJIg8JAwIBAgECUQcOAQ4BAfBXhkEEmB6LQA
+Message-ID: <4E32FA3D.5060100@draigBrady.com>
+Date: Fri, 29 Jul 2011 19:21:49 +0100
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+MIME-Version: 1.0
+To: Alex Shi <alex.shi@intel.com>
+CC: linux-mm@kvack.org, mgorman@suse.de, linux-kernel@vger.kernel.org,
+        andrea@cpushare.com, tim.c.chen@intel.com, shaohua.li@intel.com,
+        akpm@linux-foundation.org, riel@redhat.com, luto@mit.edu
+Subject: Re: [PATCH] kswapd: avoid unnecessary rebalance after an unsuccessful
+ balancing
+References: <1311952990-3844-1-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1311952990-3844-1-git-send-email-alex.shi@intel.com>
+X-Enigmail-Version: 1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jul 2011 15:51:37 +0200 Michal Marek wrote:
-
-> Replace the config_is_*() macros with a variant that allows for grepping
-> for usage of CONFIG_* options in the code. Usage:
+On 07/29/2011 04:23 PM, Alex Shi wrote:
+> In commit 215ddd66, Mel Gorman said kswapd is better to sleep after a
+> unsuccessful balancing if there is tighter reclaim request pending in
+> the balancing. In this scenario, the 'order' and 'classzone_idx'
+> that are checked for tighter request judgment is incorrect, since they
+> aren't the one kswapd should read from new pgdat, but the last time pgdat
+> value for just now balancing. Then kswapd will skip try_to_sleep func
+> and rebalance the last pgdat request. It's not our expected behavior.
 > 
->   if (IS_ENABLED(CONFIG_NUMA))
+> So, I added new variables to distinguish the returned order/classzone_idx
+> from last balancing, that can resolved above issue in that scenario.
 > 
-> or
+> I tested the patch on our LKP system with swap-cp/fio mmap randrw
+> benchmarks. The performance has no change.
 > 
->   #if IS_ENABLED(CONFIG_NUMA)
-> 
-> The IS_ENABLED() macro evaluates to 1 if the argument is set (to either 'y'
-> or 'm'), IS_BUILTIN() tests if the option is 'y' and IS_MODULE() test if
-> the option is 'm'. Only boolean and tristate options are supported.
-> 
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> ---
-> 
-> Everybody happy with the above naming?
+> Padraig Brady, would you like to test this patch for your scenario.
 
-Yes here.
+This
++ your previous 2 line patch
++ Mel's 3 patches
++ 2.6.38.4
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+still works fine for me.
 
-These strings are being written to the .config file, right?
-
-> +		/*
-> +		 * Generate the __enabled_CONFIG_* and
-> +		 * __enabled_CONFIG_*_MODULE macros for use by the
-> +		 * IS_{ENABLED,BUILTIN,MODULE} macros. The _MODULE variant is
-> +		 * generated even for booleans so that the IS_ENABLED() macro
-> +		 * works.
-> +		 */
-> +		fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
-> +				sym->name, (*value == 'y'));
-> +		fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE %d\n",
-> +				sym->name, (*value == 'm'));
->  		break;
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+cheers,
+Pádraig.
