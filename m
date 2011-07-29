@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756396Ab1G2LmA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 07:42:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:53412 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756042Ab1G2Ll7 (ORCPT
+	id S1756358Ab1G2LqT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 07:46:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59296 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755622Ab1G2LqS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 07:41:59 -0400
-X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=_gBd66nM058A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=s8sO8zdt2mzRrH7oFxoA:9 a=hmwDVxcxYHUnJoGQrZwA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 1/5] x86: Do not differentiate between x86_64 and i386
- with init_per_cpu
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Brian Gerst <brgerst@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <CAMzpN2jAKphUcp2eFfyVtn+ut+=oRqr40G3tTbDMziEg+TEuhw@mail.gmail.com>
-References: <20110729014215.328710900@goodmis.org>
-	 <20110729014247.692715109@goodmis.org>
-	 <CAMzpN2jAKphUcp2eFfyVtn+ut+=oRqr40G3tTbDMziEg+TEuhw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 29 Jul 2011 07:41:56 -0400
-Message-ID: <1311939716.21143.24.camel@gandalf.stny.rr.com>
+	Fri, 29 Jul 2011 07:46:18 -0400
+Subject: Re: [PATCH] sched: Remove WAKEUP_PREEMPT feature check in
+ entity_tick
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        lkml <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>
+In-Reply-To: <20110729084637.GC12106@zhy>
+References: <1311846203.3938.1555.camel@minggr.sh.intel.com>
+	 <20110729062158.GA8971@zhy>
+	 <1311922180.3938.1573.camel@minggr.sh.intel.com>
+	 <20110729070356.GA10420@zhy>
+	 <1311924975.3938.1583.camel@minggr.sh.intel.com>
+	 <20110729074635.GB10420@zhy> <1311926218.5890.215.camel@twins>
+	 <20110729081800.GA12106@zhy> <1311927650.5890.217.camel@twins>
+	 <20110729084637.GC12106@zhy>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 29 Jul 2011 13:45:33 +0200
+Message-ID: <1311939933.5890.341.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-29 at 00:18 -0400, Brian Gerst wrote:
-> Even though 32-bit doesn't currently use these macros, please keep the
-> current define, since only 64-bit SMP is special in this regard.
-> 64-bit SMP uses a zero-based percpu segment, which requires the linker
-> fixup for statically initialized percpu pointers.  This fixup isn't
-> needed on 32-bit SMP (or UP).
+On Fri, 2011-07-29 at 16:46 +0800, Yong Zhang wrote:
+> Let's take UP for example, we have cpu-hug task A and threadirq B.
+> 
+>         n tick          --->            n+1 tick
+> set_tsk_need_resched(A);
+>                 B comes in and
+>                 wake up thread-B;
+> 
+> So for system on which we disable WAKEUP_PREEMPT,
+> if we don't have that check, thread-B will wait until n+1 tick comes
+> to get to run.
+> But if we have that check, thread-B will get to run after IRQ-B returns.
 
-OK, fine, I'll remove this patch from the set and rebase.
+But that's exactly what wakeup preemption is about, waking tasks don't
+get to preempt running tasks. So no doing that preemption is exactly
+right for !WAKEUP_PREEMPT.
 
-Thanks,
-
--- Steve
-
-
+Anyway, I've queued the removal patch since that removes all
+confusion ;-)
