@@ -1,42 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379Ab1G2CCD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 22:02:03 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:54326 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755561Ab1G2CCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 22:02:01 -0400
-Date: Thu, 28 Jul 2011 22:01:58 -0400
-Message-Id: <E1QmcOk-0002gQ-6q@tytso-glaptop>
-To: linux-kernel@vger.kernel.org,
-        ksummit-2011-discuss@lists.linux-foundation.org
-Subject: Information about Kernel Summit invites and proposals
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1755019Ab1G2CIy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 22:08:54 -0400
+Received: from outgw02.ricoh.co.jp ([202.248.73.5]:41108 "EHLO
+	outgw02.ricoh.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754031Ab1G2CIx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 22:08:53 -0400
+In-Reply-To: <m2r559di9y.fsf@bob.laptop.org>
+Subject: Re: [PATCH] [9/50] mmc: Added quirks for Ricoh 1180:e823 lower base clock
+To: cjb@laptop.org
+Cc: ak@linux.intel.com, Andi Kleen <andi@firstfloor.org>,
+        daniel.manrique@canonical.com, jbarnes@virtuousgeek.org,
+        linux-kernel@vger.kernel.org, manoj.iyer@canonical.com,
+        stable@kernel.org, tim.bird@am.sony.com
+X-Mailer: Lotus Notes Release 7.0.2 September 26, 2006
+Message-ID: <OF5CBC52FF.5B5957D9-ON492578DC.00093451-492578DC.000BCC8B@mta.ricoh.co.jp>
+From: matsumur@nts.ricoh.co.jp
+Date: Fri, 29 Jul 2011 11:10:45 +0900
+X-MIMETrack: Serialize by Router on ZGMTA07/G/RGroup(Release 7.0.2FP1 HF237|April 25, 2007) at
+ 2011/07/29 11:08:51
+MIME-Version: 1.0
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hi Chris,
 
-My apologies the invites for this year's kernel summit have been going a
-little bit slowly.  The usual summer travel/vacation slowed us (well,
-me) down a bit.  The first round of invites will be going out by the end
-of this week, and the next round will be following shortly next week.
+> Do you know of a better solution than always lowering the clock speed to
+> 50MHz for this controller?
 
-In the mean time, because the schedule has slipped a little, and because
-we've only had three proposals submitted here:
+Yes, it is a better solution.
+As you know, SD ver.1.1 and 2.0(SDHC) cards can be applied 50MHz SD-CLK..
+SD 3.0 (UHS-I) cards also can be applied 50Mhz. However UHS-I cards are
+available 200 or 100Mhz SD-CLK.
+I would like to know if the current SD Host driver has the function of
+setting SD-CLK to 200Mhz for SD ver3.0 compliant Host Controller.
 
-	https://sites.google.com/site/kernelsummit2011/proposals
 
-We've extended the deadline by two weeks, to August 5, 2011.  Please
-note that people whose discussion or presentation proposals that we
-accept will be able to attend the invite-only 2nd day of the kernel
-summit.
+Thanks,
 
-Cheers!
 
-						- Ted
+Koji Matsumuro
+Ricoh Company,Ltd.
+
+
+Chris Ball <cjb@laptop.org> wrote on 2011/07/29 09:47:53:
+
+> Hi,
+
+> On Thu, Jul 28 2011, Andi Kleen wrote:
+> > On Fri, Jul 29, 2011 at 09:27:56AM +0900, matsumur@nts.ricoh.co.jp
+wrote:
+> >> Dear Sir,
+> >>
+> >> Ricoh 1180:e823 device is named R5U220/R5U232 (2 devices have the same
+> >> device ID ).
+> >> So, I think it should be declared to as PCI_DEVICE_ID_RICOH_R5U220.
+> >
+> > Is that just the wrong name or will it actually cause misfunction?
+
+> I don't think it could possibly cause misfunction; it's just a macro
+name.
+
+> > BTW, does anyone know whether the current SDHCI-driver sets 200Mhz to
+> > SD-CLK for UHS-I cards ?
+
+> The Linux 3.1 SD driver will set the SD-CLK to 50MHz for every card on an
+> e823 device, and older kernels will do so too once the commit has been
+> applied to the stable trees.  See this commit:
+
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;
+> a=commitdiff;h=15bed0f2fa8e1d7db201692532c210a7823d2d21
+
+> Do you know of a better solution than always lowering the clock speed to
+> 50MHz for this controller?
+
+> Thanks,
+
+> - Chris.
+> --
+> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+> One Laptop Per Child
+
