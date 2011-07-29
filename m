@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab1G2NUA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 09:20:00 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59606 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab1G2NT6 (ORCPT
+	id S1753758Ab1G2N0k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 09:26:40 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:52439 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145Ab1G2N0j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 09:19:58 -0400
-Date: Fri, 29 Jul 2011 06:19:38 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: "Darrick J. Wong" <djwong@us.ibm.com>, Andreas Dilger <aedilger@gmail.com>,
-        Mingming Cao <cmm@us.ibm.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] Add inode checksum support to ext4
-Message-ID: <20110729131937.GB5910@noexit.corp.google.com>
-Mail-Followup-To: Andreas Dilger <adilger.kernel@dilger.ca>,
-	"Darrick J. Wong" <djwong@us.ibm.com>,
-	Andreas Dilger <aedilger@gmail.com>, Mingming Cao <cmm@us.ibm.com>,
-	Theodore Ts'o <tytso@mit.edu>,
-	linux-ext4 <linux-ext4@vger.kernel.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>
-References: <20110406224410.GB24354@tux1.beaverton.ibm.com>
- <1302290868.4461.7.camel@mingming-laptop>
- <20110727082730.GG20655@tux1.beaverton.ibm.com>
- <EF1F2330-D8C4-427A-ABB9-D1E607D91A3D@gmail.com>
- <20110728165615.GI20655@tux1.beaverton.ibm.com>
- <20110728220735.GA27253@noexit.corp.google.com>
- <0E795C1D-AD1E-4CC4-9426-2B58D98B14DC@dilger.ca>
+	Fri, 29 Jul 2011 09:26:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0E795C1D-AD1E-4CC4-9426-2B58D98B14DC@dilger.ca>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAObL_7HCyS0aE2KKJR0rF48VKVqdeOruNVvsakAjzR5J6GHvPw@mail.gmail.com>
+References: <20110729013830.GC5404@dastard> <CAObL_7GdxD07-9_aYZBDqutQD6cVz2kYHXAcUwDWr6NkqRdByw@mail.gmail.com>
+ <20110729072426.GF5404@dastard> <CAObL_7HCyS0aE2KKJR0rF48VKVqdeOruNVvsakAjzR5J6GHvPw@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Fri, 29 Jul 2011 09:26:19 -0400
+X-Google-Sender-Auth: BlriIizHsyM2HYn5e5PEROfDxd8
+Message-ID: <CAObL_7G6rb23X2xAA0Aw6jT+TapynDvhAicNNeo91jD09S5UkQ@mail.gmail.com>
+Subject: Re: [3.0-rc0 Regression]: legacy vsyscall emulation increases user
+ CPU time by 20%
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 03:48:45AM -0600, Andreas Dilger wrote:
-> On 2011-07-28, at 4:07 PM, Joel Becker wrote:
-> > 	We use ethernet crc32 in ocfs2.  btrfs uses crc32c.  Frankly, I
-> > could have used crc32c if I'd really thought about the hardware
-> > acceleration benefits.  I think it's a good idea for ext4.
-> 
-> The problem with crc32[c] is that if you don't have hardware acceleration
-> it is terribly slow.
+On Fri, Jul 29, 2011 at 8:17 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+> On Fri, Jul 29, 2011 at 3:24 AM, Dave Chinner <david@fromorbit.com> wrote:
+>> On Thu, Jul 28, 2011 at 11:30:49PM -0400, Andrew Lutomirski wrote:
+>>> >
+>>> > Assuming this is the problem, can this be fixed without requiring
+>>> > the whole world having to wait for the current glibc dev tree to
+>>> > filter down into distro repositories?
+>>>
+>>> How old is your glibc?  gettimeofday has used the vdso since:
+>>
+>> It's 2.11 on the test machine, whatever that translates to. I
+>> haven't really changed the base userspace for about 12 months
+>> because if I do I invalidate all my historical benchmark results
+>> that I use for comparisons.
+>
+> 2.11 is from 2009 and appears to contain that commit.  Does your
+> workload call time() very frequently?  That's the largest slowdown.
+> With the old code, time() took 4-5 ns and with the new code time() is
+> about as slow as gettimeofday().  I suggested having a config option
+> to allow time() to stay fast until glibc 2.14 became widespread, but a
+> few other people disagreed.
 
-	We find ethernet crc32 just fine in ocfs2.  I use the kernel's
-implementation, which survives everyone's network traffic, and of course
-we added the triggers to jbd2 so we only have to do the calculations on
-read and write.
+*sigh*
 
-> Yes, it makes sense to just put a "fake" dirent at the end of the leaf block,
-> or similar.  I don't think it is necessary to modify existing directories or
-> extent blocks to add these structures in, if there is no room, but for new
-> blocks, or blocks with space it is enough.
+fs_mark: fs_mark.o lib_timing.o
+        ${CC} -static -o fs_mark fs_mark.o lib_timing.o
 
-	We have tunefs.ocfs2 code to adjust existing directories to add
-the trailer.  It's not too bad, really.
- 
-Joel
+Even brand-new glibc still issues vsyscalls when statically linked,
+and Ulrich has said [1] that he doesn't care that much about
+performance of statically linked code.
 
--- 
+How bad would it be to just remove the -static from the makefile?
 
-"People with narrow minds usually have broad tongues."
+[1] http://sourceware.org/bugzilla/show_bug.cgi?id=12813
 
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+--Andy
