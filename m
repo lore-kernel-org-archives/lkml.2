@@ -1,71 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab1G2Mk0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 08:40:26 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:34391 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755192Ab1G2MkV (ORCPT
+	id S1756261Ab1G2MkZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 08:40:25 -0400
+Received: from mtagate2.uk.ibm.com ([194.196.100.162]:43060 "EHLO
+	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754263Ab1G2MkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 29 Jul 2011 08:40:21 -0400
-Message-Id: <20110729124000.481435260@linux.vnet.ibm.com>
+Message-Id: <20110729123944.562622201@linux.vnet.ibm.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 29 Jul 2011 14:39:45 +0200
+Date: Fri, 29 Jul 2011 14:39:44 +0200
 From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 To: vgoyal@redhat.com
 Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
         oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: [patch 1/3] kdump: Add new machine_kexec_finish() architecture callback
-References: <20110729123944.562622201@linux.vnet.ibm.com>
-Content-Disposition: inline; filename=s390-kdump-common-kexec_finish.patch
+Subject: [patch 0/3] kdump: Add external kdump entry point for s390 stand-alone dump tools
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Hello Vivek,
 
-In order to be able to set the "kdump active" flag on s390, this patch adds
-the new kexec architecture callback "machine_kexec_finish()".
+I finished the patches that add the stand-alone dump tools support on
+top of the recently sent v2 patch series. The following three patches
+implement the program check idea that we have discussed recently:
 
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
----
- include/linux/kexec.h |    1 +
- kernel/kexec.c        |    8 ++++++++
- 2 files changed, 9 insertions(+)
+[1] kdump: Add new machine_kexec_finish() architecture callback
+[2] s390: Add external kdump entry point for s390 stand-alone dump tools
+[3] kexec-tools: Emit program check on s390 for checksum failure
 
---- a/include/linux/kexec.h
-+++ b/include/linux/kexec.h
-@@ -115,6 +115,7 @@ struct kimage {
- /* kexec interface functions */
- extern void machine_kexec(struct kimage *image);
- extern int machine_kexec_prepare(struct kimage *image);
-+extern void machine_kexec_finish(struct kimage *image, int flags);
- extern void machine_kexec_cleanup(struct kimage *image);
- extern asmlinkage long sys_kexec_load(unsigned long entry,
- 					unsigned long nr_segments,
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -1017,6 +1017,7 @@ SYSCALL_DEFINE4(kexec_load, unsigned lon
- 		kimage_terminate(image);
- 	}
- 	/* Install the new kernel, and  Uninstall the old */
-+	machine_kexec_finish(image, flags);
- 	image = xchg(dest_image, image);
- 
- out:
-@@ -1026,6 +1027,13 @@ out:
- 	return result;
- }
- 
-+/*
-+ * provide an empty default implementation here -- architecture
-+ * code may override this
-+ */
-+void __weak machine_kexec_finish(struct kimage *image, int flags)
-+{}
-+
- #ifdef CONFIG_COMPAT
- asmlinkage long compat_sys_kexec_load(unsigned long entry,
- 				unsigned long nr_segments,
+Thanks!
 
+Michael
