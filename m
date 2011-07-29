@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab1G2KDJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 06:03:09 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44931 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754677Ab1G2KDI (ORCPT
+	id S1755827Ab1G2KDu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 06:03:50 -0400
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:36868 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755685Ab1G2KDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 06:03:08 -0400
-Date: Fri, 29 Jul 2011 11:02:41 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        "'Ben Dooks'" <ben-linux@fluff.org>
-Subject: Re: Question about "Inconsistent kallsyms data"
-Message-ID: <20110729100241.GB25640@n2100.arm.linux.org.uk>
-References: <02ae01cc4d91$aed71670$0c854350$%kim@samsung.com> <15086105.RIkTVAqRk0@flatron>
+	Fri, 29 Jul 2011 06:03:48 -0400
+References: <alpine.LNX.2.00.1107282345540.20477@swampdragon.chaosbits.net> <20110729060822.GF3752@shale.localdomain>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20110729060822.GF3752@shale.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <15086105.RIkTVAqRk0@flatron>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] staging; lirc, zilog: put_ir_rx may free 'rx' which can lead to double free
+From: Andy Walls <awalls@md.metrocast.net>
+Date: Fri, 29 Jul 2011 06:03:10 -0400
+To: Dan Carpenter <error27@gmail.com>, Jesper Juhl <jj@chaosbits.net>
+CC: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Jarod Wilson <jarod@redhat.com>,
+        Jerome Brock <jbrock@users.sourceforge.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Gerd Knorr <kraxel@goldbach.in-berlin.de>,
+        Jarod Wilson <jarod@wilsonet.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Thomas Reitmayr <treitmayr@yahoo.com>,
+        Michal Kochanowicz <mkochano@pld.org.pl>,
+        Christoph Bartelmus <lirc@bartelmus.de>, Mark Weaver <mark@npsl.co.uk>,
+        Ulrich Mueller <ulrich.mueller42@web.de>,
+        Stefan Jahn <stefan@lkcc.org>
+Message-ID: <f6f0d669-39e8-4435-839d-9c5525cbd8e9@email.android.com>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.4.6813,1.0.211,0.0.0000
+ definitions=2011-07-28_06:2011-07-29,2011-07-28,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=2
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1012030000 definitions=main-1107280229
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 12:00:07PM +0200, Tomasz Figa wrote:
-> Hi,
-> 
-> On Friday 29 of July 2011 at 10:48:46, Kukjin Kim wrote:
-> > Hi all,
-> > 
-> > When build with s5pc100_defconfig, happens following.
-> > 
-> > ...
-> > KSYM    .tmp_kallsyms2.S
-> > AS      .tmp_kallsyms2.o
-> > LD      vmlinux
-> > SYSMAP  System.map
-> > SYSMAP  .tmp_System.map
-> > Inconsistent kallsyms data
-> > This is a bug - please report about it
-> > Try make KALLSYMS_EXTRA_PASS=1 as a workaround
-> > make[1]: *** [vmlinux] Error 1
-> > make: *** [sub-make] Error 2
-> > 
-> > Its HEAD is following (current latest mainline)
-> > (commit 55f9c40ff632d03c527d6a6ceddcda0a224587a6)
-> > Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc
-> 
-> I can confirm that it also happens when building with s3c6400_defconfig and 
-> HEAD at commit 5fd00b031530cc476240f654c078c930f1dcd6ea (Merge branch 'for-
-> linus' of git://git.kernel.org/pub/scm/linux/kernel/git/shaggy/jfs-2.6).
-> 
-> The suggested workaround (make KALLSYMS_EXTRA_PASS=1) helps, but it is only a 
-> workaround and not a solution.
-> 
-> Any suggestions?
+Dan Carpenter <error27@gmail.com> wrote:
 
-Someone want to try bisecting to find the commit?
+>On Thu, Jul 28, 2011 at 11:49:51PM +0200, Jesper Juhl wrote:
+>> If calling put_ir_rx(rx, true); in
+>> drivers/staging/lirc/lirc_zilog.c::ir_probe() returns true (1) then
+>it
+>> means that it has freed it's first argument. Subsequently jumping to
+>> 'out_put_xx' will cause us to call put_ir_rx() once more since 'rx'
+>is
+>> not zero - leading to a double free.
+>
+>It would be better to just remove the first call to put_ir_rx().
+>
+>regards,
+>dan carpenter
+
+Jesper,
+
+Could you forward your original patch email to me?  I never got it.
+
+I was the one who added all the new ref counting to lirc_zilog and it was not fun to get right (well at least what I thought was right...).
+
+Regards,
+Andy
