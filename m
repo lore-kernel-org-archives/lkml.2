@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758Ab1G2N0k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 09:26:40 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:52439 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145Ab1G2N0j convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 09:26:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAObL_7HCyS0aE2KKJR0rF48VKVqdeOruNVvsakAjzR5J6GHvPw@mail.gmail.com>
-References: <20110729013830.GC5404@dastard> <CAObL_7GdxD07-9_aYZBDqutQD6cVz2kYHXAcUwDWr6NkqRdByw@mail.gmail.com>
- <20110729072426.GF5404@dastard> <CAObL_7HCyS0aE2KKJR0rF48VKVqdeOruNVvsakAjzR5J6GHvPw@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Fri, 29 Jul 2011 09:26:19 -0400
-X-Google-Sender-Auth: BlriIizHsyM2HYn5e5PEROfDxd8
-Message-ID: <CAObL_7G6rb23X2xAA0Aw6jT+TapynDvhAicNNeo91jD09S5UkQ@mail.gmail.com>
-Subject: Re: [3.0-rc0 Regression]: legacy vsyscall emulation increases user
- CPU time by 20%
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754611Ab1G2N0w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 09:26:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20202 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754352Ab1G2N0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 09:26:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,287,1309762800"; 
+   d="scan'208";a="31813499"
+Subject: Re: [PATCH 13/18] dmaengine/amba-pl08x: Align lli_len to
+ max(src.width, dst.width)
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: linus.walleij@linaro.org, dan.j.williams@intel.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, armando.visconti@st.com, shiraz.hashim@st.com,
+        vipin.kumar@st.com, rajeev-dlh.kumar@st.com, deepak.sikri@st.com,
+        vipulkumar.samar@st.com, amit.virdi@st.com, pratyush.anand@st.com,
+        bhupesh.sharma@st.com, viresh.linux@gmail.com
+In-Reply-To: <afe9e5154d96c0f44c64c411c98b5db75969db6c.1311936524.git.viresh.kumar@st.com>
+References: <cover.1311936523.git.viresh.kumar@st.com>
+	 <afe9e5154d96c0f44c64c411c98b5db75969db6c.1311936524.git.viresh.kumar@st.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Jul 2011 18:13:47 +0530
+Message-ID: <1311943427.1536.551.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 8:17 AM, Andrew Lutomirski <luto@mit.edu> wrote:
-> On Fri, Jul 29, 2011 at 3:24 AM, Dave Chinner <david@fromorbit.com> wrote:
->> On Thu, Jul 28, 2011 at 11:30:49PM -0400, Andrew Lutomirski wrote:
->>> >
->>> > Assuming this is the problem, can this be fixed without requiring
->>> > the whole world having to wait for the current glibc dev tree to
->>> > filter down into distro repositories?
->>>
->>> How old is your glibc?  gettimeofday has used the vdso since:
->>
->> It's 2.11 on the test machine, whatever that translates to. I
->> haven't really changed the base userspace for about 12 months
->> because if I do I invalidate all my historical benchmark results
->> that I use for comparisons.
->
-> 2.11 is from 2009 and appears to contain that commit.  Does your
-> workload call time() very frequently?  That's the largest slowdown.
-> With the old code, time() took 4-5 ns and with the new code time() is
-> about as slow as gettimeofday().  I suggested having a config option
-> to allow time() to stay fast until glibc 2.14 became widespread, but a
-> few other people disagreed.
+On Fri, 2011-07-29 at 16:19 +0530, Viresh Kumar wrote:
+> Currently lli_len is aligned to min of two widths, which looks to be incorrect.
+> Instead it should be aligned to max of both widths.
+hmmm, not sure I follow you...
+In previous patch you said
 
-*sigh*
+"max_bytes_per_lli = bd.srcbus.buswidth *
+PL080_CONTROL_TRANSFER_SIZE_MASK;
+This is confirmed by ARM support guys."
 
-fs_mark: fs_mark.o lib_timing.o
-        ${CC} -static -o fs_mark fs_mark.o lib_timing.o
+So why should lli_len be related to max of both widths?
 
-Even brand-new glibc still issues vsyscalls when statically linked,
-and Ulrich has said [1] that he doesn't care that much about
-performance of statically linked code.
+-- 
+~Vinod
 
-How bad would it be to just remove the -static from the makefile?
-
-[1] http://sourceware.org/bugzilla/show_bug.cgi?id=12813
-
---Andy
