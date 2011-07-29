@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab1G2Ku3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 06:50:29 -0400
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:59448 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756142Ab1G2Ku0 (ORCPT
+	id S1756202Ab1G2Kum (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 06:50:42 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:56597 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756108Ab1G2Kuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 06:50:26 -0400
+	Fri, 29 Jul 2011 06:50:40 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <linus.walleij@linaro.org>
 Cc: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
@@ -17,9 +17,9 @@ Cc: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
         <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
         <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
         <viresh.linux@gmail.com>
-Subject: [PATCH 04/18] dmaengine/amba-pl08x: Remove redundant comment and rewrite original
-Date: Fri, 29 Jul 2011 16:19:14 +0530
-Message-ID: <e2c1bd6941e88f8988b1942c13c20cf436b3a963.1311936524.git.viresh.kumar@st.com>
+Subject: [PATCH 01/18] ARM: asm/pl080.h: Protect against multiple inclusion of header file
+Date: Fri, 29 Jul 2011 16:19:11 +0530
+Message-ID: <cbd8c0a36115615ea0d80055de7a27ef1b8b7ce6.1311936524.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1311936523.git.viresh.kumar@st.com>
 References: <cover.1311936523.git.viresh.kumar@st.com>
@@ -29,43 +29,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Similar comment is present over routine also pl08x_choose_master_bus(). Keeping
-one of them. Also rewrite that comment to convey message clearly.
+<asm/hardware/pl080.h> doesn't have protection to deal with multiple inclusion.
+And so we get compilation errors in cases where this file is included more than
+once. This patch adds #ifdefs at the top of file to protect it against multiple
+inclusions.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- drivers/dma/amba-pl08x.c |   11 +++--------
- 1 files changed, 3 insertions(+), 8 deletions(-)
+ arch/arm/include/asm/hardware/pl080.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index 1f7c510..4a64fdf 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -498,9 +498,9 @@ struct pl08x_lli_build_data {
+diff --git a/arch/arm/include/asm/hardware/pl080.h b/arch/arm/include/asm/hardware/pl080.h
+index e4a04e4..33c78d7 100644
+--- a/arch/arm/include/asm/hardware/pl080.h
++++ b/arch/arm/include/asm/hardware/pl080.h
+@@ -21,6 +21,9 @@
+  * OneNAND features.
+ */
+ 
++#ifndef ASM_PL080_H
++#define ASM_PL080_H
++
+ #define PL080_INT_STATUS			(0x00)
+ #define PL080_TC_STATUS				(0x04)
+ #define PL080_TC_CLEAR				(0x08)
+@@ -138,3 +141,4 @@ struct pl080s_lli {
+ 	u32	control1;
  };
  
- /*
-- * Autoselect a master bus to use for the transfer this prefers the
-- * destination bus if both available if fixed address on one bus the
-- * other will be chosen
-+ * Autoselect a master bus to use for the transfer
-+ * - prefers the destination bus if both available
-+ * - if fixed address on one bus the other will be chosen
-  */
- static void pl08x_choose_master_bus(struct pl08x_lli_build_data *bd,
- 	struct pl08x_bus_data **mbus, struct pl08x_bus_data **sbus, u32 cctl)
-@@ -626,11 +626,6 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
- 	/* We need to count this down to zero */
- 	bd.remainder = txd->len;
- 
--	/*
--	 * Choose bus to align to
--	 * - prefers destination bus if both available
--	 * - if fixed address on one bus chooses other
--	 */
- 	pl08x_choose_master_bus(&bd, &mbus, &sbus, cctl);
- 
- 	dev_vdbg(&pl08x->adev->dev, "src=0x%08x%s/%u dst=0x%08x%s/%u len=%zu "
++#endif /* ASM_PL080_H */
 -- 
 1.7.2.2
 
