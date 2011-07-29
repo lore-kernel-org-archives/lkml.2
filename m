@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab1G2VO6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 17:14:58 -0400
-Received: from smtp-out003.kontent.com ([81.88.40.217]:33294 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab1G2VO6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 17:14:58 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [linux-pm] better oopsing when frozen
-Date: Fri, 29 Jul 2011 23:17:42 +0200
-User-Agent: KMail/1.13.5 (Linux/3.0.0-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <201107251043.19932.oneukum@suse.de> <201107292304.10738.oliver@neukum.org> <201107292309.44877.rjw@sisk.pl>
-In-Reply-To: <201107292309.44877.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1752839Ab1G2VQQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 17:16:16 -0400
+Received: from waste.org ([173.11.57.241]:51200 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751292Ab1G2VQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 17:16:15 -0400
+Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
+From: Matt Mackall <mpm@selenic.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jeff Garzik <jgarzik@pobox.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1311971867-25124-2-git-send-email-hpa@linux.intel.com>
+References: <1311971867-25124-1-git-send-email-hpa@linux.intel.com>
+	 <1311971867-25124-2-git-send-email-hpa@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Jul 2011 16:16:11 -0500
+Message-ID: <1311974171.20898.393.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107292317.42737.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 29. Juli 2011, 23:09:44 schrieb Rafael J. Wysocki:
-> On Friday, July 29, 2011, Oliver Neukum wrote:
-> > Am Freitag, 29. Juli 2011, 22:27:54 schrieb Rafael J. Wysocki:
-> > > However, there's another problem I didn't think of before.  Namely,
-> > > we cannot thaw tasks before resuming devices in case we've already
-> > > suspended them, because that will defeat the very purpose of the
-> > > freezing in the first place.
-> > 
-> > That purpose is already defeated. The machine cannot be deader than dead.
+On Fri, 2011-07-29 at 13:37 -0700, H. Peter Anvin wrote:
+> From: "H. Peter Anvin" <hpa@linux.intel.com>
 > 
-> OK, so what exactly is the purpose of the thawing, then?
+> Add support for architecture-specific hooks into either the blocking
+> or the nonblocking random pools.  These hooks are defined to return
+> the number of bytes of randomness produced (similar to a read() system
+> call.)  They could also potentialy be used to inject randomness on
+> demand while continuing to use the pool system, by calling a suitable
+> injection interface and returning 0.
 
-We may be lucky enough to get the oops written out to disk. The oops may happen
-in a driver rarely used and be late in the sequence.
+I have already NAKed this approach in no uncertain terms.
 
-	Regards
-		Oliver
+What if the next fancy hardware RNG with its own crypto hardening[1]
+that shows up is not a special CPU instruction or indeed not even
+arch-specific? It could just as easily be a USB or i2c or PCI device.
+There's no reason to think the two notions are connected AT ALL. Your
+whole notion of an 'architectural random source' is just plain wrong.
+The right way to do this is to add a generic extension to the existing
+hardware RNG design.
+
+If you want to make forward progress, spend the half a day to implement
+a standard HWRNG driver so people with your hardware have basic
+functionality, then come back and we'll discuss implementing a trusted
+fast path API to HWRNG drivers. If you had done this weeks ago when I
+first asked you to do that, you would have had no problem getting basic
+support into the current merge window.
+
+[1] hopefully auditable without an electron microscope!
+-- 
+Mathematics is the supreme nostalgia of our time.
+
+
