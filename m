@@ -1,1340 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab1G2L7s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 07:59:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49822 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754318Ab1G2L7q convert rfc822-to-8bit (ORCPT
+	id S1756187Ab1G2MBS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 08:01:18 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52363 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754726Ab1G2MBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 07:59:46 -0400
-Subject: Re: [stable] [perf] overflow/perf_count_sw_cpu_clock crashes
- recent kernels
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Greg KH <greg@kroah.com>
-Cc: Vince Weaver <vweaver1@eecs.utk.edu>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        stable <stable@kernel.org>
-In-Reply-To: <20110729050514.GA24999@kroah.com>
-References: <alpine.DEB.2.00.1107221210160.21367@cl320.eecs.utk.edu>
-	 <alpine.DEB.2.00.1107271446460.406@cl320.eecs.utk.edu>
-	 <1311878830.2617.373.camel@laptop>  <20110729050514.GA24999@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 29 Jul 2011 13:59:10 +0200
-Message-ID: <1311940750.5890.348.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 29 Jul 2011 08:01:17 -0400
+Message-ID: <4E32A105.6080509@gmail.com>
+Date: Fri, 29 Jul 2011 20:01:09 +0800
+From: Liu Yuan <namei.unix@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Stefan Hajnoczi <stefanha@gmail.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Khoa Huynh <khoa@us.ibm.com>, Badari Pulavarty <pbadari@us.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [RFC PATCH]vhost-blk: In-kernel accelerator for virtio block
+ device
+References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com>	<CAJSP0QUKz7LFuARF_n2LcBi_uuSzfmkjrWsHAWrXXkEaQJKkEA@mail.gmail.com>	<4E325F98.5090308@gmail.com> <CAJSP0QX=mXvkZyeMx28iwVNDrKEZZVAZxLLOFRv62pu7byo6gw@mail.gmail.com>
+In-Reply-To: <CAJSP0QX=mXvkZyeMx28iwVNDrKEZZVAZxLLOFRv62pu7byo6gw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-28 at 22:05 -0700, Greg KH wrote:
-> 
-> What is that commit id so it can be properly referenced in the patch
-> below?  And what tree should this patch go into?  .39?  3.0?  Anything
-> newer? 
+On 07/29/2011 05:06 PM, Stefan Hajnoczi wrote:
+> I mean did you investigate *why* userspace virtio-blk has higher
+> latency?  Did you profile it and drill down on its performance?
+>
+> It's important to understand what is going on before replacing it with
+> another mechanism.  What I'm saying is, if I have a buggy program I
+> can sometimes rewrite it from scratch correctly but that doesn't tell
+> me what the bug was.
+>
+> Perhaps the inefficiencies in userspace virtio-blk can be solved by
+> adjusting the code (removing inefficient notification mechanisms,
+> introducing a dedicated thread outside of the QEMU iothread model,
+> etc).  Then we'd get the performance benefit for non-raw images and
+> perhaps non-virtio and non-Linux host platforms too.
+>
 
-.32+ in as far as anybody is still maintaining them, if it fails to
-apply to any of them (quite possible) do tell and I can provide
-backports etc..
+As Christoph mentioned, the unnecessary memory allocation and too much 
+cache line unfriendly
+function pointers might be culprit. For example, the read quests code 
+path for linux aio would be
 
-Upstream commit (which doesn't mention this issue because it wasn't
-known at the time and thus thinks its a cleanup only):
+     
+qemu_iohandler_poll->virtio_pci_host_notifier_read->virtio_queue_notify_vq->virtio_blk_handle_output
+->virtio_blk_handle_read->bdrv_aio_read->raw_aio_readv->bdrv_aio_readv(Yes 
+again nested called!)->raw_aio_readv->laio_submit->io_submit...
 
----
->From a8b0ca17b80e92faab46ee7179ba9e99ccb61233 Mon Sep 17 00:00:00 2001
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Mon, 27 Jun 2011 14:41:57 +0200
-Subject: [PATCH] perf: Remove the nmi parameter from the swevent and overflow
- interface
+Looking at this long list,most are function pointers that can not be 
+inlined, and the internal data structures used by these functions are 
+dozons. Leave aside code complexity, this long code path would really 
+need retrofit. As Christoph simply put, this kind of mess is inherent 
+all over the qemu code. So I am afraid, the 'retrofit'  would end up to 
+be a re-write the entire (sub)system. I have to admit that, I am 
+inclined to the MST's vhost approach, that write a new subsystem other 
+than tedious profiling and fixing, that would possibly goes as far as 
+actually re-writing it.
 
-The nmi parameter indicated if we could do wakeups from the current
-context, if not, we would set some state and self-IPI and let the
-resulting interrupt do the wakeup.
+>> Actually, the motivation to start vhost-blk is that, in our observation,
+>> KVM(virtio enabled) in RHEL 6 is worse than Xen(PV) in RHEL in disk IO
+>> perspective, especially for sequential read/write (around 20% gap).
+>>
+>> We'll deploy a large number of KVM-based systems as the infrastructure of
+>> some service and this gap is really unpleasant.
+>>
+>> By the design, IMHO, virtio performance is supposed to be comparable to the
+>> para-vulgarization solution if not better, because for KVM, guest and
+>> backend driver could sit in the same address space via mmaping. This would
+>> reduce the overhead involved in page table modification, thus speed up the
+>> buffer management and transfer a lot compared with Xen PV.
+> Yes, guest memory is just a region of QEMU userspace memory.  So it's
+> easy to reach inside and there are no page table tricks or copying
+> involved.
+>
+>> I am not in a qualified  position to talk about QEMU , but I think the
+>> surprised performance improvement by this very primitive vhost-blk simply
+>> manifest that, the internal structure for qemu io is the way bloated. I say
+>> it *surprised* because basically vhost just reduces the number of system
+>> calls, which is heavily tuned by chip manufacture for years. So, I guess the
+>> performance number vhost-blk gains mainly could possibly be contributed to
+>> *shorter and simpler* code path.
+> First we need to understand exactly what the latency overhead is.  If
+> we discover that it's simply not possible to do this equally well in
+> userspace, then it makes perfect sense to use vhost-blk.
+>
+> So let's gather evidence and learn what the overheads really are.
+> Last year I spent time looking at virtio-blk latency:
+> http://www.linux-kvm.org/page/Virtio/Block/Latency
+>
 
-For the various event classes:
+Nice stuff.
 
-  - hardware: nmi=0; PMI is in fact an NMI or we run irq_work_run from
-    the PMI-tail (ARM etc.)
-  - tracepoint: nmi=0; since tracepoint could be from NMI context.
-  - software: nmi=[0,1]; some, like the schedule thing cannot
-    perform wakeups, and hence need 0.
+> See especially this diagram:
+> http://www.linux-kvm.org/page/Image:Threads.png
+>
+> The goal wasn't specifically to reduce synchronous sequential I/O,
+> instead the aim was to reduce overheads for a variety of scenarios,
+> especially multithreaded workloads.
+>
+> In most cases it was helpful to move I/O submission out of the vcpu
+> thread by using the ioeventfd model just like vhost.  Ioeventfd for
+> userspace virtio-blk is now on by default in qemu-kvm.
+>
+> Try running the userspace virtio-blk benchmark with -drive
+> if=none,id=drive0,file=... -device
+> virtio-blk-pci,drive=drive0,ioeventfd=off.  This causes QEMU to do I/O
+> submission in the vcpu thread, which might reduce latency at the cost
+> of stealing guest time.
+>
+>> Anyway, IMHO, compared with user space approach, the in-kernel one would
+>> allow more flexibility and better integration with the kernel IO stack,
+>> since we don't need two IO stacks for guest OS.
+> I agree that there may be advantages to integrating with in-kernel I/O
+> mechanisms.  An interesting step would be to implement the
+> submit_bio() approach that Christoph suggested and seeing if that
+> improves things further.
+>
+> Push virtio-blk as far as you can and let's see what the performance is!
+>
+>>> I have a hacked up world here that basically implements vhost-blk in
+>>> userspace:
+>>>
+>>> http://repo.or.cz/w/qemu/stefanha.git/blob/refs/heads/virtio-blk-data-plane:/hw/virtio-blk.c
+>>>
+>>>   * A dedicated virtqueue thread sleeps on ioeventfd
+>>>   * Guest memory is pre-mapped and accessed directly (not using QEMU's
+>>> usually memory access functions)
+>>>   * Linux AIO is used, the QEMU block layer is bypassed
+>>>   * Completion interrupts are injected from the virtqueue thread using
+>>> ioctl
+>>>
+>>> I will try to rebase onto qemu-kvm.git/master (this work is several
+>>> months old).  Then we can compare to see how much of the benefit can
+>>> be gotten in userspace.
+>>>
+>> I don't really get you about vhost-blk in user space since vhost
+>> infrastructure itself means an in-kernel accelerator that implemented in
+>> kernel . I guess what you meant is somewhat a re-write of virtio-blk in user
+>> space with a dedicated thread handling requests, and shorter code path
+>> similar to vhost-blk.
+> Right - it's the same model as vhost: a dedicated thread listening for
+> ioeventfd virtqueue kicks and processing them out-of-line with the
+> guest and userspace QEMU's traditional vcpu and iothread.
+>
+> When you say "IOPS drops drastically" do you mean that it gets worse
+> than with queue-depth=1?
+>
 
-As one can see, there is very little nmi=1 usage, and the down-side of
-not using it is that on some platforms some software events can have a
-jiffy delay in wakeup (when arch_irq_work_raise isn't implemented).
+Yes, on my laptop, when iodepth = 3, IOPS in my host drops to about 
+3,500 from 13K! and so is iodepth = 4 in my guest during FIO seq read 
+test. This should never happen.
 
-The up-side however is that we can remove the nmi parameter and save a
-bunch of conditionals in fast paths.
+I think SATA on my laptop has something wrong that can not be 
+explainable. If not, The cause I could image is that the NCQ depth is 2 
+on my disk and when the kernel submit reqs more than this number, it 
+would cause severe scheduling overhead. Anyway, this is unrelated to 
+vhost-blk and would not be seen
+by others.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michael Cree <mcree@orcon.net.nz>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-Cc: Anton Blanchard <anton@samba.org>
-Cc: Eric B Munson <emunson@mgebm.net>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Link: http://lkml.kernel.org/n/tip-agjev8eu666tvknpb3iaj0fg@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/alpha/kernel/perf_event.c            |    2 
- arch/arm/kernel/perf_event_v6.c           |    2 
- arch/arm/kernel/perf_event_v7.c           |    2 
- arch/arm/kernel/perf_event_xscale.c       |    4 -
- arch/arm/kernel/ptrace.c                  |    2 
- arch/arm/kernel/swp_emulate.c             |    2 
- arch/arm/mm/fault.c                       |    6 +-
- arch/mips/kernel/perf_event.c             |    2 
- arch/mips/kernel/traps.c                  |    8 +--
- arch/mips/kernel/unaligned.c              |    5 --
- arch/mips/math-emu/cp1emu.c               |    3 -
- arch/mips/mm/fault.c                      |    8 +--
- arch/powerpc/include/asm/emulated_ops.h   |    4 -
- arch/powerpc/kernel/perf_event.c          |    6 +-
- arch/powerpc/kernel/perf_event_fsl_emb.c  |    6 +-
- arch/powerpc/kernel/ptrace.c              |    2 
- arch/powerpc/mm/fault.c                   |    6 +-
- arch/s390/mm/fault.c                      |    6 +-
- arch/sh/kernel/ptrace_32.c                |    2 
- arch/sh/kernel/traps_32.c                 |    2 
- arch/sh/kernel/traps_64.c                 |    8 +--
- arch/sh/math-emu/math.c                   |    2 
- arch/sh/mm/fault_32.c                     |    6 +-
- arch/sh/mm/tlbflush_64.c                  |    6 +-
- arch/sparc/kernel/perf_event.c            |    2 
- arch/sparc/kernel/unaligned_32.c          |    4 -
- arch/sparc/kernel/unaligned_64.c          |   12 ++---
- arch/sparc/kernel/visemul.c               |    2 
- arch/sparc/math-emu/math_32.c             |    2 
- arch/sparc/math-emu/math_64.c             |    2 
- arch/sparc/mm/fault_32.c                  |    8 +--
- arch/sparc/mm/fault_64.c                  |    8 +--
- arch/x86/kernel/cpu/perf_event.c          |    2 
- arch/x86/kernel/cpu/perf_event_intel.c    |    2 
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    4 -
- arch/x86/kernel/cpu/perf_event_p4.c       |    2 
- arch/x86/kernel/kgdb.c                    |    2 
- arch/x86/kernel/ptrace.c                  |    2 
- arch/x86/mm/fault.c                       |    6 +-
- include/linux/perf_event.h                |   18 +++-----
- kernel/events/core.c                      |   63 +++++++++++++-----------------
- kernel/events/internal.h                  |    1 
- kernel/events/ring_buffer.c               |   10 +---
- kernel/sched.c                            |    2 
- kernel/watchdog.c                         |    2 
- samples/hw_breakpoint/data_breakpoint.c   |    2 
- 46 files changed, 119 insertions(+), 141 deletions(-)
+> I hope that others are interested in running the benchmarks on their
+> systems so we can try out a range of storage devices.
+>
+> Stefan
 
-diff --git a/arch/alpha/kernel/perf_event.c b/arch/alpha/kernel/perf_event.c
-index 90561c4..8e47709 100644
---- a/arch/alpha/kernel/perf_event.c
-+++ b/arch/alpha/kernel/perf_event.c
-@@ -847,7 +847,7 @@ static void alpha_perf_event_irq_handler(unsigned long la_ptr,
- 	data.period = event->hw.last_period;
- 
- 	if (alpha_perf_event_set_period(event, hwc, idx)) {
--		if (perf_event_overflow(event, 1, &data, regs)) {
-+		if (perf_event_overflow(event, &data, regs)) {
- 			/* Interrupts coming too quickly; "throttle" the
- 			 * counter, i.e., disable it for a little while.
- 			 */
-diff --git a/arch/arm/kernel/perf_event_v6.c b/arch/arm/kernel/perf_event_v6.c
-index f1e8dd9..38dc4da 100644
---- a/arch/arm/kernel/perf_event_v6.c
-+++ b/arch/arm/kernel/perf_event_v6.c
-@@ -479,7 +479,7 @@ armv6pmu_handle_irq(int irq_num,
- 		if (!armpmu_event_set_period(event, hwc, idx))
- 			continue;
- 
--		if (perf_event_overflow(event, 0, &data, regs))
-+		if (perf_event_overflow(event, &data, regs))
- 			armpmu->disable(hwc, idx);
- 	}
- 
-diff --git a/arch/arm/kernel/perf_event_v7.c b/arch/arm/kernel/perf_event_v7.c
-index 4960686..6e5f875 100644
---- a/arch/arm/kernel/perf_event_v7.c
-+++ b/arch/arm/kernel/perf_event_v7.c
-@@ -787,7 +787,7 @@ static irqreturn_t armv7pmu_handle_irq(int irq_num, void *dev)
- 		if (!armpmu_event_set_period(event, hwc, idx))
- 			continue;
- 
--		if (perf_event_overflow(event, 0, &data, regs))
-+		if (perf_event_overflow(event, &data, regs))
- 			armpmu->disable(hwc, idx);
- 	}
- 
-diff --git a/arch/arm/kernel/perf_event_xscale.c b/arch/arm/kernel/perf_event_xscale.c
-index 39affbe..99b6b85 100644
---- a/arch/arm/kernel/perf_event_xscale.c
-+++ b/arch/arm/kernel/perf_event_xscale.c
-@@ -251,7 +251,7 @@ xscale1pmu_handle_irq(int irq_num, void *dev)
- 		if (!armpmu_event_set_period(event, hwc, idx))
- 			continue;
- 
--		if (perf_event_overflow(event, 0, &data, regs))
-+		if (perf_event_overflow(event, &data, regs))
- 			armpmu->disable(hwc, idx);
- 	}
- 
-@@ -583,7 +583,7 @@ xscale2pmu_handle_irq(int irq_num, void *dev)
- 		if (!armpmu_event_set_period(event, hwc, idx))
- 			continue;
- 
--		if (perf_event_overflow(event, 0, &data, regs))
-+		if (perf_event_overflow(event, &data, regs))
- 			armpmu->disable(hwc, idx);
- 	}
- 
-diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
-index 9726006..0c9b105 100644
---- a/arch/arm/kernel/ptrace.c
-+++ b/arch/arm/kernel/ptrace.c
-@@ -396,7 +396,7 @@ static long ptrace_hbp_idx_to_num(int idx)
- /*
-  * Handle hitting a HW-breakpoint.
-  */
--static void ptrace_hbptriggered(struct perf_event *bp, int unused,
-+static void ptrace_hbptriggered(struct perf_event *bp,
- 				     struct perf_sample_data *data,
- 				     struct pt_regs *regs)
- {
-diff --git a/arch/arm/kernel/swp_emulate.c b/arch/arm/kernel/swp_emulate.c
-index 40ee7e5..5f452f8 100644
---- a/arch/arm/kernel/swp_emulate.c
-+++ b/arch/arm/kernel/swp_emulate.c
-@@ -183,7 +183,7 @@ static int swp_handler(struct pt_regs *regs, unsigned int instr)
- 	unsigned int address, destreg, data, type;
- 	unsigned int res = 0;
- 
--	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, 0, regs, regs->ARM_pc);
-+	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, regs->ARM_pc);
- 
- 	if (current->pid != previous_pid) {
- 		pr_debug("\"%s\" (%ld) uses deprecated SWP{B} instruction\n",
-diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-index bc0e1d8..9ea4f7d 100644
---- a/arch/arm/mm/fault.c
-+++ b/arch/arm/mm/fault.c
-@@ -318,11 +318,11 @@ do_page_fault(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- 	fault = __do_page_fault(mm, addr, fsr, tsk);
- 	up_read(&mm->mmap_sem);
- 
--	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, 0, regs, addr);
-+	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
- 	if (fault & VM_FAULT_MAJOR)
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, 0, regs, addr);
-+		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, addr);
- 	else if (fault & VM_FAULT_MINOR)
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, 0, regs, addr);
-+		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, addr);
- 
- 	/*
- 	 * Handle the "normal" case first - VM_FAULT_MAJOR / VM_FAULT_MINOR
-diff --git a/arch/mips/kernel/perf_event.c b/arch/mips/kernel/perf_event.c
-index a824485..d0deaab 100644
---- a/arch/mips/kernel/perf_event.c
-+++ b/arch/mips/kernel/perf_event.c
-@@ -527,7 +527,7 @@ handle_associated_event(struct cpu_hw_events *cpuc,
- 	if (!mipspmu_event_set_period(event, hwc, idx))
- 		return;
- 
--	if (perf_event_overflow(event, 0, data, regs))
-+	if (perf_event_overflow(event, data, regs))
- 		mipspmu->disable_event(idx);
- }
- 
-diff --git a/arch/mips/kernel/traps.c b/arch/mips/kernel/traps.c
-index e9b3af2..b7517e3 100644
---- a/arch/mips/kernel/traps.c
-+++ b/arch/mips/kernel/traps.c
-@@ -578,12 +578,12 @@ static int simulate_llsc(struct pt_regs *regs, unsigned int opcode)
- {
- 	if ((opcode & OPCODE) == LL) {
- 		perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS,
--				1, 0, regs, 0);
-+				1, regs, 0);
- 		return simulate_ll(regs, opcode);
- 	}
- 	if ((opcode & OPCODE) == SC) {
- 		perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS,
--				1, 0, regs, 0);
-+				1, regs, 0);
- 		return simulate_sc(regs, opcode);
- 	}
- 
-@@ -602,7 +602,7 @@ static int simulate_rdhwr(struct pt_regs *regs, unsigned int opcode)
- 		int rd = (opcode & RD) >> 11;
- 		int rt = (opcode & RT) >> 16;
- 		perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS,
--				1, 0, regs, 0);
-+				1, regs, 0);
- 		switch (rd) {
- 		case 0:		/* CPU number */
- 			regs->regs[rt] = smp_processor_id();
-@@ -640,7 +640,7 @@ static int simulate_sync(struct pt_regs *regs, unsigned int opcode)
- {
- 	if ((opcode & OPCODE) == SPEC0 && (opcode & FUNC) == SYNC) {
- 		perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS,
--				1, 0, regs, 0);
-+				1, regs, 0);
- 		return 0;
- 	}
- 
-diff --git a/arch/mips/kernel/unaligned.c b/arch/mips/kernel/unaligned.c
-index cfea1ad..eb319b5 100644
---- a/arch/mips/kernel/unaligned.c
-+++ b/arch/mips/kernel/unaligned.c
-@@ -111,8 +111,7 @@ static void emulate_load_store_insn(struct pt_regs *regs,
- 	unsigned long value;
- 	unsigned int res;
- 
--	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS,
--		      1, 0, regs, 0);
-+	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, 0);
- 
- 	/*
- 	 * This load never faults.
-@@ -517,7 +516,7 @@ asmlinkage void do_ade(struct pt_regs *regs)
- 	mm_segment_t seg;
- 
- 	perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS,
--			1, 0, regs, regs->cp0_badvaddr);
-+			1, regs, regs->cp0_badvaddr);
- 	/*
- 	 * Did we catch a fault trying to load an instruction?
- 	 * Or are we running in MIPS16 mode?
-diff --git a/arch/mips/math-emu/cp1emu.c b/arch/mips/math-emu/cp1emu.c
-index d32cb05..dbf2f93 100644
---- a/arch/mips/math-emu/cp1emu.c
-+++ b/arch/mips/math-emu/cp1emu.c
-@@ -272,8 +272,7 @@ static int cop1Emulate(struct pt_regs *xcp, struct mips_fpu_struct *ctx,
- 	}
- 
-       emul:
--	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS,
--			1, 0, xcp, 0);
-+	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, xcp, 0);
- 	MIPS_FPU_EMU_INC_STATS(emulated);
- 	switch (MIPSInst_OPCODE(ir)) {
- 	case ldc1_op:{
-diff --git a/arch/mips/mm/fault.c b/arch/mips/mm/fault.c
-index 137ee76..937cf33 100644
---- a/arch/mips/mm/fault.c
-+++ b/arch/mips/mm/fault.c
-@@ -145,7 +145,7 @@ asmlinkage void __kprobes do_page_fault(struct pt_regs *regs, unsigned long writ
- 	 * the fault.
- 	 */
- 	fault = handle_mm_fault(mm, vma, address, write ? FAULT_FLAG_WRITE : 0);
--	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, 0, regs, address);
-+	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
- 	if (unlikely(fault & VM_FAULT_ERROR)) {
- 		if (fault & VM_FAULT_OOM)
- 			goto out_of_memory;
-@@ -154,12 +154,10 @@ asmlinkage void __kprobes do_page_fault(struct pt_regs *regs, unsigned long writ
- 		BUG();
- 	}
- 	if (fault & VM_FAULT_MAJOR) {
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ,
--				1, 0, regs, address);
-+		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, address);
- 		tsk->maj_flt++;
- 	} else {
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN,
--				1, 0, regs, address);
-+		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, address);
- 		tsk->min_flt++;
- 	}
- 
-diff --git a/arch/powerpc/include/asm/emulated_ops.h b/arch/powerpc/include/asm/emulated_ops.h
-index 4592167..2cc41c7 100644
---- a/arch/powerpc/include/asm/emulated_ops.h
-+++ b/arch/powerpc/include/asm/emulated_ops.h
-@@ -78,14 +78,14 @@ extern void ppc_warn_emulated_print(const char *type);
- #define PPC_WARN_EMULATED(type, regs)					\
- 	do {								\
- 		perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS,		\
--			1, 0, regs, 0);					\
-+			1, regs, 0);					\
- 		__PPC_WARN_EMULATED(type);				\
- 	} while (0)
- 
- #define PPC_WARN_ALIGNMENT(type, regs)					\
- 	do {								\
- 		perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS,		\
--			1, 0, regs, regs->dar);				\
-+			1, regs, regs->dar);				\
- 		__PPC_WARN_EMULATED(type);				\
- 	} while (0)
- 
-diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
-index 822f630..14967de 100644
---- a/arch/powerpc/kernel/perf_event.c
-+++ b/arch/powerpc/kernel/perf_event.c
-@@ -1207,7 +1207,7 @@ struct pmu power_pmu = {
-  * here so there is no possibility of being interrupted.
-  */
- static void record_and_restart(struct perf_event *event, unsigned long val,
--			       struct pt_regs *regs, int nmi)
-+			       struct pt_regs *regs)
- {
- 	u64 period = event->hw.sample_period;
- 	s64 prev, delta, left;
-@@ -1258,7 +1258,7 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
- 		if (event->attr.sample_type & PERF_SAMPLE_ADDR)
- 			perf_get_data_addr(regs, &data.addr);
- 
--		if (perf_event_overflow(event, nmi, &data, regs))
-+		if (perf_event_overflow(event, &data, regs))
- 			power_pmu_stop(event, 0);
- 	}
- }
-@@ -1346,7 +1346,7 @@ static void perf_event_interrupt(struct pt_regs *regs)
- 		if ((int)val < 0) {
- 			/* event has overflowed */
- 			found = 1;
--			record_and_restart(event, val, regs, nmi);
-+			record_and_restart(event, val, regs);
- 		}
- 	}
- 
-diff --git a/arch/powerpc/kernel/perf_event_fsl_emb.c b/arch/powerpc/kernel/perf_event_fsl_emb.c
-index b0dc8f7..0a6d2a9 100644
---- a/arch/powerpc/kernel/perf_event_fsl_emb.c
-+++ b/arch/powerpc/kernel/perf_event_fsl_emb.c
-@@ -568,7 +568,7 @@ static struct pmu fsl_emb_pmu = {
-  * here so there is no possibility of being interrupted.
-  */
- static void record_and_restart(struct perf_event *event, unsigned long val,
--			       struct pt_regs *regs, int nmi)
-+			       struct pt_regs *regs)
- {
- 	u64 period = event->hw.sample_period;
- 	s64 prev, delta, left;
-@@ -616,7 +616,7 @@ static void record_and_restart(struct perf_event *event, unsigned long val,
- 		perf_sample_data_init(&data, 0);
- 		data.period = event->hw.last_period;
- 
--		if (perf_event_overflow(event, nmi, &data, regs))
-+		if (perf_event_overflow(event, &data, regs))
- 			fsl_emb_pmu_stop(event, 0);
- 	}
- }
-@@ -644,7 +644,7 @@ static void perf_event_interrupt(struct pt_regs *regs)
- 			if (event) {
- 				/* event has overflowed */
- 				found = 1;
--				record_and_restart(event, val, regs, nmi);
-+				record_and_restart(event, val, regs);
- 			} else {
- 				/*
- 				 * Disabled counter is negative,
-diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-index cb22024..3177617 100644
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -882,7 +882,7 @@ void user_disable_single_step(struct task_struct *task)
- }
- 
- #ifdef CONFIG_HAVE_HW_BREAKPOINT
--void ptrace_triggered(struct perf_event *bp, int nmi,
-+void ptrace_triggered(struct perf_event *bp,
- 		      struct perf_sample_data *data, struct pt_regs *regs)
- {
- 	struct perf_event_attr attr;
-diff --git a/arch/powerpc/mm/fault.c b/arch/powerpc/mm/fault.c
-index 54f4fb9..dbc4825 100644
---- a/arch/powerpc/mm/fault.c
-+++ b/arch/powerpc/mm/fault.c
-@@ -173,7 +173,7 @@ int __kprobes do_page_fault(struct pt_regs *regs, unsigned long address,
- 		die("Weird page fault", regs, SIGSEGV);
- 	}
- 
--	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, 0, regs, address);
-+	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
- 
- 	/* When running in the kernel we expect faults to occur only to
- 	 * addresses in user space.  All other faults represent errors in the
-@@ -319,7 +319,7 @@ int __kprobes do_page_fault(struct pt_regs *regs, unsigned long address,
- 	}
- 	if (ret & VM_FAULT_MAJOR) {
- 		current->maj_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, 0,
-+		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
- 				     regs, address);
- #ifdef CONFIG_PPC_SMLPAR
- 		if (firmware_has_feature(FW_FEATURE_CMO)) {
-@@ -330,7 +330,7 @@ int __kprobes do_page_fault(struct pt_regs *regs, unsigned long address,
- #endif
- 	} else {
- 		current->min_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, 0,
-+		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
- 				     regs, address);
- 	}
- 	up_read(&mm->mmap_sem);
-diff --git a/arch/s390/mm/fault.c b/arch/s390/mm/fault.c
-index fe103e8..095f782 100644
---- a/arch/s390/mm/fault.c
-+++ b/arch/s390/mm/fault.c
-@@ -299,7 +299,7 @@ static inline int do_exception(struct pt_regs *regs, int access,
- 		goto out;
- 
- 	address = trans_exc_code & __FAIL_ADDR_MASK;
--	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, 0, regs, address);
-+	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
- 	flags = FAULT_FLAG_ALLOW_RETRY;
- 	if (access == VM_WRITE || (trans_exc_code & store_indication) == 0x400)
- 		flags |= FAULT_FLAG_WRITE;
-@@ -345,11 +345,11 @@ static inline int do_exception(struct pt_regs *regs, int access,
- 	if (flags & FAULT_FLAG_ALLOW_RETRY) {
- 		if (fault & VM_FAULT_MAJOR) {
- 			tsk->maj_flt++;
--			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, 0,
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
- 				      regs, address);
- 		} else {
- 			tsk->min_flt++;
--			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, 0,
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
- 				      regs, address);
- 		}
- 		if (fault & VM_FAULT_RETRY) {
-diff --git a/arch/sh/kernel/ptrace_32.c b/arch/sh/kernel/ptrace_32.c
-index 3d7b209..8051976 100644
---- a/arch/sh/kernel/ptrace_32.c
-+++ b/arch/sh/kernel/ptrace_32.c
-@@ -63,7 +63,7 @@ static inline int put_stack_long(struct task_struct *task, int offset,
- 	return 0;
- }
- 
--void ptrace_triggered(struct perf_event *bp, int nmi,
-+void ptrace_triggered(struct perf_event *bp,
- 		      struct perf_sample_data *data, struct pt_regs *regs)
- {
- 	struct perf_event_attr attr;
-diff --git a/arch/sh/kernel/traps_32.c b/arch/sh/kernel/traps_32.c
-index b51a171..d9006f8 100644
---- a/arch/sh/kernel/traps_32.c
-+++ b/arch/sh/kernel/traps_32.c
-@@ -393,7 +393,7 @@ int handle_unaligned_access(insn_size_t instruction, struct pt_regs *regs,
- 	 */
- 	if (!expected) {
- 		unaligned_fixups_notify(current, instruction, regs);
--		perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1, 0,
-+		perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1,
- 			      regs, address);
- 	}
- 
-diff --git a/arch/sh/kernel/traps_64.c b/arch/sh/kernel/traps_64.c
-index 6713ca9..67110be 100644
---- a/arch/sh/kernel/traps_64.c
-+++ b/arch/sh/kernel/traps_64.c
-@@ -434,7 +434,7 @@ static int misaligned_load(struct pt_regs *regs,
- 		return error;
- 	}
- 
--	perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1, 0, regs, address);
-+	perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1, regs, address);
- 
- 	destreg = (opcode >> 4) & 0x3f;
- 	if (user_mode(regs)) {
-@@ -512,7 +512,7 @@ static int misaligned_store(struct pt_regs *regs,
- 		return error;
- 	}
- 
--	perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1, 0, regs, address);
-+	perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1, regs, address);
- 
- 	srcreg = (opcode >> 4) & 0x3f;
- 	if (user_mode(regs)) {
-@@ -588,7 +588,7 @@ static int misaligned_fpu_load(struct pt_regs *regs,
- 		return error;
- 	}
- 
--	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, 0, regs, address);
-+	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, address);
- 
- 	destreg = (opcode >> 4) & 0x3f;
- 	if (user_mode(regs)) {
-@@ -665,7 +665,7 @@ static int misaligned_fpu_store(struct pt_regs *regs,
- 		return error;
- 	}
- 
--	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, 0, regs, address);
-+	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, address);
- 
- 	srcreg = (opcode >> 4) & 0x3f;
- 	if (user_mode(regs)) {
-diff --git a/arch/sh/math-emu/math.c b/arch/sh/math-emu/math.c
-index f76a509..9771952 100644
---- a/arch/sh/math-emu/math.c
-+++ b/arch/sh/math-emu/math.c
-@@ -620,7 +620,7 @@ int do_fpu_inst(unsigned short inst, struct pt_regs *regs)
- 	struct task_struct *tsk = current;
- 	struct sh_fpu_soft_struct *fpu = &(tsk->thread.xstate->softfpu);
- 
--	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, 0, regs, 0);
-+	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, 0);
- 
- 	if (!(task_thread_info(tsk)->status & TS_USEDFPU)) {
- 		/* initialize once. */
-diff --git a/arch/sh/mm/fault_32.c b/arch/sh/mm/fault_32.c
-index d4c34d7..7bebd04 100644
---- a/arch/sh/mm/fault_32.c
-+++ b/arch/sh/mm/fault_32.c
-@@ -160,7 +160,7 @@ asmlinkage void __kprobes do_page_fault(struct pt_regs *regs,
- 	if ((regs->sr & SR_IMASK) != SR_IMASK)
- 		local_irq_enable();
- 
--	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, 0, regs, address);
-+	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
- 
- 	/*
- 	 * If we're in an interrupt, have no user context or are running
-@@ -210,11 +210,11 @@ asmlinkage void __kprobes do_page_fault(struct pt_regs *regs,
- 	}
- 	if (fault & VM_FAULT_MAJOR) {
- 		tsk->maj_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, 0,
-+		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
- 				     regs, address);
- 	} else {
- 		tsk->min_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, 0,
-+		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
- 				     regs, address);
- 	}
- 
-diff --git a/arch/sh/mm/tlbflush_64.c b/arch/sh/mm/tlbflush_64.c
-index 7f5810f..e3430e0 100644
---- a/arch/sh/mm/tlbflush_64.c
-+++ b/arch/sh/mm/tlbflush_64.c
-@@ -116,7 +116,7 @@ asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long writeaccess,
- 	/* Not an IO address, so reenable interrupts */
- 	local_irq_enable();
- 
--	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, 0, regs, address);
-+	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
- 
- 	/*
- 	 * If we're in an interrupt or have no user
-@@ -200,11 +200,11 @@ asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long writeaccess,
- 
- 	if (fault & VM_FAULT_MAJOR) {
- 		tsk->maj_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, 0,
-+		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
- 				     regs, address);
- 	} else {
- 		tsk->min_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, 0,
-+		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
- 				     regs, address);
- 	}
- 
-diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
-index 2cb0e1c..0b32f2e 100644
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -1277,7 +1277,7 @@ static int __kprobes perf_event_nmi_handler(struct notifier_block *self,
- 		if (!sparc_perf_event_set_period(event, hwc, idx))
- 			continue;
- 
--		if (perf_event_overflow(event, 1, &data, regs))
-+		if (perf_event_overflow(event, &data, regs))
- 			sparc_pmu_stop(event, 0);
- 	}
- 
-diff --git a/arch/sparc/kernel/unaligned_32.c b/arch/sparc/kernel/unaligned_32.c
-index 4491f4c..7efbb2f 100644
---- a/arch/sparc/kernel/unaligned_32.c
-+++ b/arch/sparc/kernel/unaligned_32.c
-@@ -247,7 +247,7 @@ asmlinkage void kernel_unaligned_trap(struct pt_regs *regs, unsigned int insn)
- 		unsigned long addr = compute_effective_address(regs, insn);
- 		int err;
- 
--		perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1, 0, regs, addr);
-+		perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1, regs, addr);
- 		switch (dir) {
- 		case load:
- 			err = do_int_load(fetch_reg_addr(((insn>>25)&0x1f),
-@@ -338,7 +338,7 @@ asmlinkage void user_unaligned_trap(struct pt_regs *regs, unsigned int insn)
- 		}
- 
- 		addr = compute_effective_address(regs, insn);
--		perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1, 0, regs, addr);
-+		perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1, regs, addr);
- 		switch(dir) {
- 		case load:
- 			err = do_int_load(fetch_reg_addr(((insn>>25)&0x1f),
-diff --git a/arch/sparc/kernel/unaligned_64.c b/arch/sparc/kernel/unaligned_64.c
-index b2b019e..35cff16 100644
---- a/arch/sparc/kernel/unaligned_64.c
-+++ b/arch/sparc/kernel/unaligned_64.c
-@@ -317,7 +317,7 @@ asmlinkage void kernel_unaligned_trap(struct pt_regs *regs, unsigned int insn)
- 
- 		addr = compute_effective_address(regs, insn,
- 						 ((insn >> 25) & 0x1f));
--		perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1, 0, regs, addr);
-+		perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1, regs, addr);
- 		switch (asi) {
- 		case ASI_NL:
- 		case ASI_AIUPL:
-@@ -384,7 +384,7 @@ int handle_popc(u32 insn, struct pt_regs *regs)
- 	int ret, i, rd = ((insn >> 25) & 0x1f);
- 	int from_kernel = (regs->tstate & TSTATE_PRIV) != 0;
- 	                        
--	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, 0, regs, 0);
-+	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, 0);
- 	if (insn & 0x2000) {
- 		maybe_flush_windows(0, 0, rd, from_kernel);
- 		value = sign_extend_imm13(insn);
-@@ -431,7 +431,7 @@ int handle_ldf_stq(u32 insn, struct pt_regs *regs)
- 	int asi = decode_asi(insn, regs);
- 	int flag = (freg < 32) ? FPRS_DL : FPRS_DU;
- 
--	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, 0, regs, 0);
-+	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, 0);
- 
- 	save_and_clear_fpu();
- 	current_thread_info()->xfsr[0] &= ~0x1c000;
-@@ -554,7 +554,7 @@ void handle_ld_nf(u32 insn, struct pt_regs *regs)
- 	int from_kernel = (regs->tstate & TSTATE_PRIV) != 0;
- 	unsigned long *reg;
- 	                        
--	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, 0, regs, 0);
-+	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, 0);
- 
- 	maybe_flush_windows(0, 0, rd, from_kernel);
- 	reg = fetch_reg_addr(rd, regs);
-@@ -586,7 +586,7 @@ void handle_lddfmna(struct pt_regs *regs, unsigned long sfar, unsigned long sfsr
- 
- 	if (tstate & TSTATE_PRIV)
- 		die_if_kernel("lddfmna from kernel", regs);
--	perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1, 0, regs, sfar);
-+	perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1, regs, sfar);
- 	if (test_thread_flag(TIF_32BIT))
- 		pc = (u32)pc;
- 	if (get_user(insn, (u32 __user *) pc) != -EFAULT) {
-@@ -647,7 +647,7 @@ void handle_stdfmna(struct pt_regs *regs, unsigned long sfar, unsigned long sfsr
- 
- 	if (tstate & TSTATE_PRIV)
- 		die_if_kernel("stdfmna from kernel", regs);
--	perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1, 0, regs, sfar);
-+	perf_sw_event(PERF_COUNT_SW_ALIGNMENT_FAULTS, 1, regs, sfar);
- 	if (test_thread_flag(TIF_32BIT))
- 		pc = (u32)pc;
- 	if (get_user(insn, (u32 __user *) pc) != -EFAULT) {
-diff --git a/arch/sparc/kernel/visemul.c b/arch/sparc/kernel/visemul.c
-index 3635771..32b626c 100644
---- a/arch/sparc/kernel/visemul.c
-+++ b/arch/sparc/kernel/visemul.c
-@@ -802,7 +802,7 @@ int vis_emul(struct pt_regs *regs, unsigned int insn)
- 
- 	BUG_ON(regs->tstate & TSTATE_PRIV);
- 
--	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, 0, regs, 0);
-+	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, 0);
- 
- 	if (test_thread_flag(TIF_32BIT))
- 		pc = (u32)pc;
-diff --git a/arch/sparc/math-emu/math_32.c b/arch/sparc/math-emu/math_32.c
-index a3fccde..aa4d55b 100644
---- a/arch/sparc/math-emu/math_32.c
-+++ b/arch/sparc/math-emu/math_32.c
-@@ -164,7 +164,7 @@ int do_mathemu(struct pt_regs *regs, struct task_struct *fpt)
- 	int retcode = 0;                               /* assume all succeed */
- 	unsigned long insn;
- 
--	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, 0, regs, 0);
-+	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, 0);
- 
- #ifdef DEBUG_MATHEMU
- 	printk("In do_mathemu()... pc is %08lx\n", regs->pc);
-diff --git a/arch/sparc/math-emu/math_64.c b/arch/sparc/math-emu/math_64.c
-index 56d2c44..e575bd2 100644
---- a/arch/sparc/math-emu/math_64.c
-+++ b/arch/sparc/math-emu/math_64.c
-@@ -184,7 +184,7 @@ int do_mathemu(struct pt_regs *regs, struct fpustate *f)
- 
- 	if (tstate & TSTATE_PRIV)
- 		die_if_kernel("unfinished/unimplemented FPop from kernel", regs);
--	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, 0, regs, 0);
-+	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, 0);
- 	if (test_thread_flag(TIF_32BIT))
- 		pc = (u32)pc;
- 	if (get_user(insn, (u32 __user *) pc) != -EFAULT) {
-diff --git a/arch/sparc/mm/fault_32.c b/arch/sparc/mm/fault_32.c
-index 7543ddb..aa1c1b1 100644
---- a/arch/sparc/mm/fault_32.c
-+++ b/arch/sparc/mm/fault_32.c
-@@ -251,7 +251,7 @@ asmlinkage void do_sparc_fault(struct pt_regs *regs, int text_fault, int write,
-         if (in_atomic() || !mm)
-                 goto no_context;
- 
--	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, 0, regs, address);
-+	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
- 
- 	down_read(&mm->mmap_sem);
- 
-@@ -301,12 +301,10 @@ asmlinkage void do_sparc_fault(struct pt_regs *regs, int text_fault, int write,
- 	}
- 	if (fault & VM_FAULT_MAJOR) {
- 		current->maj_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, 0,
--			      regs, address);
-+		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, address);
- 	} else {
- 		current->min_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, 0,
--			      regs, address);
-+		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, address);
- 	}
- 	up_read(&mm->mmap_sem);
- 	return;
-diff --git a/arch/sparc/mm/fault_64.c b/arch/sparc/mm/fault_64.c
-index f92ce56..504c062 100644
---- a/arch/sparc/mm/fault_64.c
-+++ b/arch/sparc/mm/fault_64.c
-@@ -325,7 +325,7 @@ asmlinkage void __kprobes do_sparc64_fault(struct pt_regs *regs)
- 	if (in_atomic() || !mm)
- 		goto intr_or_no_mm;
- 
--	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, 0, regs, address);
-+	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
- 
- 	if (!down_read_trylock(&mm->mmap_sem)) {
- 		if ((regs->tstate & TSTATE_PRIV) &&
-@@ -433,12 +433,10 @@ asmlinkage void __kprobes do_sparc64_fault(struct pt_regs *regs)
- 	}
- 	if (fault & VM_FAULT_MAJOR) {
- 		current->maj_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, 0,
--			      regs, address);
-+		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs, address);
- 	} else {
- 		current->min_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, 0,
--			      regs, address);
-+		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, regs, address);
- 	}
- 	up_read(&mm->mmap_sem);
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 8a57f9a..5b86ec5 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1339,7 +1339,7 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
- 		if (!x86_perf_event_set_period(event))
- 			continue;
- 
--		if (perf_event_overflow(event, 1, &data, regs))
-+		if (perf_event_overflow(event, &data, regs))
- 			x86_pmu_stop(event, 0);
- 	}
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 41178c8..d38b002 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1003,7 +1003,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
- 
- 		data.period = event->hw.last_period;
- 
--		if (perf_event_overflow(event, 1, &data, regs))
-+		if (perf_event_overflow(event, &data, regs))
- 			x86_pmu_stop(event, 0);
- 	}
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index bab491b..0941f93 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -340,7 +340,7 @@ static int intel_pmu_drain_bts_buffer(void)
- 	 */
- 	perf_prepare_sample(&header, &data, event, &regs);
- 
--	if (perf_output_begin(&handle, event, header.size * (top - at), 1, 1))
-+	if (perf_output_begin(&handle, event, header.size * (top - at), 1))
- 		return 1;
- 
- 	for (; at < top; at++) {
-@@ -616,7 +616,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	else
- 		regs.flags &= ~PERF_EFLAGS_EXACT;
- 
--	if (perf_event_overflow(event, 1, &data, &regs))
-+	if (perf_event_overflow(event, &data, &regs))
- 		x86_pmu_stop(event, 0);
- }
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index f76fddf..d6e6a67 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -970,7 +970,7 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
- 
- 		if (!x86_perf_event_set_period(event))
- 			continue;
--		if (perf_event_overflow(event, 1, &data, regs))
-+		if (perf_event_overflow(event, &data, regs))
- 			x86_pmu_stop(event, 0);
- 	}
- 
-diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
-index 5f9ecff..98da6a7 100644
---- a/arch/x86/kernel/kgdb.c
-+++ b/arch/x86/kernel/kgdb.c
-@@ -608,7 +608,7 @@ int kgdb_arch_init(void)
- 	return register_die_notifier(&kgdb_notifier);
- }
- 
--static void kgdb_hw_overflow_handler(struct perf_event *event, int nmi,
-+static void kgdb_hw_overflow_handler(struct perf_event *event,
- 		struct perf_sample_data *data, struct pt_regs *regs)
- {
- 	struct task_struct *tsk = current;
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 807c2a2..11db2e9 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -528,7 +528,7 @@ static int genregs_set(struct task_struct *target,
- 	return ret;
- }
- 
--static void ptrace_triggered(struct perf_event *bp, int nmi,
-+static void ptrace_triggered(struct perf_event *bp,
- 			     struct perf_sample_data *data,
- 			     struct pt_regs *regs)
- {
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 2dbf6bf..4d09df0 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -1059,7 +1059,7 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 	if (unlikely(error_code & PF_RSVD))
- 		pgtable_bad(regs, error_code, address);
- 
--	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, 0, regs, address);
-+	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
- 
- 	/*
- 	 * If we're in an interrupt, have no user context or are running
-@@ -1161,11 +1161,11 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 	if (flags & FAULT_FLAG_ALLOW_RETRY) {
- 		if (fault & VM_FAULT_MAJOR) {
- 			tsk->maj_flt++;
--			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, 0,
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1,
- 				      regs, address);
- 		} else {
- 			tsk->min_flt++;
--			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, 0,
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1,
- 				      regs, address);
- 		}
- 		if (fault & VM_FAULT_RETRY) {
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 2f7b5d4..0946a8b 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -682,7 +682,7 @@ enum perf_event_active_state {
- struct file;
- struct perf_sample_data;
- 
--typedef void (*perf_overflow_handler_t)(struct perf_event *, int,
-+typedef void (*perf_overflow_handler_t)(struct perf_event *,
- 					struct perf_sample_data *,
- 					struct pt_regs *regs);
- 
-@@ -925,7 +925,6 @@ struct perf_output_handle {
- 	unsigned long			size;
- 	void				*addr;
- 	int				page;
--	int				nmi;
- 	int				sample;
- };
- 
-@@ -993,7 +992,7 @@ extern void perf_prepare_sample(struct perf_event_header *header,
- 				struct perf_event *event,
- 				struct pt_regs *regs);
- 
--extern int perf_event_overflow(struct perf_event *event, int nmi,
-+extern int perf_event_overflow(struct perf_event *event,
- 				 struct perf_sample_data *data,
- 				 struct pt_regs *regs);
- 
-@@ -1012,7 +1011,7 @@ static inline int is_software_event(struct perf_event *event)
- 
- extern struct jump_label_key perf_swevent_enabled[PERF_COUNT_SW_MAX];
- 
--extern void __perf_sw_event(u32, u64, int, struct pt_regs *, u64);
-+extern void __perf_sw_event(u32, u64, struct pt_regs *, u64);
- 
- #ifndef perf_arch_fetch_caller_regs
- static inline void perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip) { }
-@@ -1034,7 +1033,7 @@ static inline void perf_fetch_caller_regs(struct pt_regs *regs)
- }
- 
- static __always_inline void
--perf_sw_event(u32 event_id, u64 nr, int nmi, struct pt_regs *regs, u64 addr)
-+perf_sw_event(u32 event_id, u64 nr, struct pt_regs *regs, u64 addr)
- {
- 	struct pt_regs hot_regs;
- 
-@@ -1043,7 +1042,7 @@ perf_sw_event(u32 event_id, u64 nr, int nmi, struct pt_regs *regs, u64 addr)
- 			perf_fetch_caller_regs(&hot_regs);
- 			regs = &hot_regs;
- 		}
--		__perf_sw_event(event_id, nr, nmi, regs, addr);
-+		__perf_sw_event(event_id, nr, regs, addr);
- 	}
- }
- 
-@@ -1057,7 +1056,7 @@ static inline void perf_event_task_sched_in(struct task_struct *task)
- 
- static inline void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next)
- {
--	perf_sw_event(PERF_COUNT_SW_CONTEXT_SWITCHES, 1, 1, NULL, 0);
-+	perf_sw_event(PERF_COUNT_SW_CONTEXT_SWITCHES, 1, NULL, 0);
- 
- 	__perf_event_task_sched_out(task, next);
- }
-@@ -1119,7 +1118,7 @@ extern void perf_bp_event(struct perf_event *event, void *data);
- 
- extern int perf_output_begin(struct perf_output_handle *handle,
- 			     struct perf_event *event, unsigned int size,
--			     int nmi, int sample);
-+			     int sample);
- extern void perf_output_end(struct perf_output_handle *handle);
- extern void perf_output_copy(struct perf_output_handle *handle,
- 			     const void *buf, unsigned int len);
-@@ -1143,8 +1142,7 @@ static inline int perf_event_task_disable(void)				{ return -EINVAL; }
- static inline int perf_event_task_enable(void)				{ return -EINVAL; }
- 
- static inline void
--perf_sw_event(u32 event_id, u64 nr, int nmi,
--		     struct pt_regs *regs, u64 addr)			{ }
-+perf_sw_event(u32 event_id, u64 nr, struct pt_regs *regs, u64 addr)	{ }
- static inline void
- perf_bp_event(struct perf_event *event, void *data)			{ }
- 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 270e32f..dbd1ca7 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -3972,7 +3972,7 @@ void perf_prepare_sample(struct perf_event_header *header,
- 	}
- }
- 
--static void perf_event_output(struct perf_event *event, int nmi,
-+static void perf_event_output(struct perf_event *event,
- 				struct perf_sample_data *data,
- 				struct pt_regs *regs)
- {
-@@ -3984,7 +3984,7 @@ static void perf_event_output(struct perf_event *event, int nmi,
- 
- 	perf_prepare_sample(&header, data, event, regs);
- 
--	if (perf_output_begin(&handle, event, header.size, nmi, 1))
-+	if (perf_output_begin(&handle, event, header.size, 1))
- 		goto exit;
- 
- 	perf_output_sample(&handle, &header, data, event);
-@@ -4024,7 +4024,7 @@ perf_event_read_event(struct perf_event *event,
- 	int ret;
- 
- 	perf_event_header__init_id(&read_event.header, &sample, event);
--	ret = perf_output_begin(&handle, event, read_event.header.size, 0, 0);
-+	ret = perf_output_begin(&handle, event, read_event.header.size, 0);
- 	if (ret)
- 		return;
- 
-@@ -4067,7 +4067,7 @@ static void perf_event_task_output(struct perf_event *event,
- 	perf_event_header__init_id(&task_event->event_id.header, &sample, event);
- 
- 	ret = perf_output_begin(&handle, event,
--				task_event->event_id.header.size, 0, 0);
-+				task_event->event_id.header.size, 0);
- 	if (ret)
- 		goto out;
- 
-@@ -4204,7 +4204,7 @@ static void perf_event_comm_output(struct perf_event *event,
- 
- 	perf_event_header__init_id(&comm_event->event_id.header, &sample, event);
- 	ret = perf_output_begin(&handle, event,
--				comm_event->event_id.header.size, 0, 0);
-+				comm_event->event_id.header.size, 0);
- 
- 	if (ret)
- 		goto out;
-@@ -4351,7 +4351,7 @@ static void perf_event_mmap_output(struct perf_event *event,
- 
- 	perf_event_header__init_id(&mmap_event->event_id.header, &sample, event);
- 	ret = perf_output_begin(&handle, event,
--				mmap_event->event_id.header.size, 0, 0);
-+				mmap_event->event_id.header.size, 0);
- 	if (ret)
- 		goto out;
- 
-@@ -4546,7 +4546,7 @@ static void perf_log_throttle(struct perf_event *event, int enable)
- 	perf_event_header__init_id(&throttle_event.header, &sample, event);
- 
- 	ret = perf_output_begin(&handle, event,
--				throttle_event.header.size, 1, 0);
-+				throttle_event.header.size, 0);
- 	if (ret)
- 		return;
- 
-@@ -4559,7 +4559,7 @@ static void perf_log_throttle(struct perf_event *event, int enable)
-  * Generic event overflow handling, sampling.
-  */
- 
--static int __perf_event_overflow(struct perf_event *event, int nmi,
-+static int __perf_event_overflow(struct perf_event *event,
- 				   int throttle, struct perf_sample_data *data,
- 				   struct pt_regs *regs)
- {
-@@ -4602,34 +4602,28 @@ static int __perf_event_overflow(struct perf_event *event, int nmi,
- 	if (events && atomic_dec_and_test(&event->event_limit)) {
- 		ret = 1;
- 		event->pending_kill = POLL_HUP;
--		if (nmi) {
--			event->pending_disable = 1;
--			irq_work_queue(&event->pending);
--		} else
--			perf_event_disable(event);
-+		event->pending_disable = 1;
-+		irq_work_queue(&event->pending);
- 	}
- 
- 	if (event->overflow_handler)
--		event->overflow_handler(event, nmi, data, regs);
-+		event->overflow_handler(event, data, regs);
- 	else
--		perf_event_output(event, nmi, data, regs);
-+		perf_event_output(event, data, regs);
- 
- 	if (event->fasync && event->pending_kill) {
--		if (nmi) {
--			event->pending_wakeup = 1;
--			irq_work_queue(&event->pending);
--		} else
--			perf_event_wakeup(event);
-+		event->pending_wakeup = 1;
-+		irq_work_queue(&event->pending);
- 	}
- 
- 	return ret;
- }
- 
--int perf_event_overflow(struct perf_event *event, int nmi,
-+int perf_event_overflow(struct perf_event *event,
- 			  struct perf_sample_data *data,
- 			  struct pt_regs *regs)
- {
--	return __perf_event_overflow(event, nmi, 1, data, regs);
-+	return __perf_event_overflow(event, 1, data, regs);
- }
- 
- /*
-@@ -4678,7 +4672,7 @@ static u64 perf_swevent_set_period(struct perf_event *event)
- }
- 
- static void perf_swevent_overflow(struct perf_event *event, u64 overflow,
--				    int nmi, struct perf_sample_data *data,
-+				    struct perf_sample_data *data,
- 				    struct pt_regs *regs)
- {
- 	struct hw_perf_event *hwc = &event->hw;
-@@ -4692,7 +4686,7 @@ static void perf_swevent_overflow(struct perf_event *event, u64 overflow,
- 		return;
- 
- 	for (; overflow; overflow--) {
--		if (__perf_event_overflow(event, nmi, throttle,
-+		if (__perf_event_overflow(event, throttle,
- 					    data, regs)) {
- 			/*
- 			 * We inhibit the overflow from happening when
-@@ -4705,7 +4699,7 @@ static void perf_swevent_overflow(struct perf_event *event, u64 overflow,
- }
- 
- static void perf_swevent_event(struct perf_event *event, u64 nr,
--			       int nmi, struct perf_sample_data *data,
-+			       struct perf_sample_data *data,
- 			       struct pt_regs *regs)
- {
- 	struct hw_perf_event *hwc = &event->hw;
-@@ -4719,12 +4713,12 @@ static void perf_swevent_event(struct perf_event *event, u64 nr,
- 		return;
- 
- 	if (nr == 1 && hwc->sample_period == 1 && !event->attr.freq)
--		return perf_swevent_overflow(event, 1, nmi, data, regs);
-+		return perf_swevent_overflow(event, 1, data, regs);
- 
- 	if (local64_add_negative(nr, &hwc->period_left))
- 		return;
- 
--	perf_swevent_overflow(event, 0, nmi, data, regs);
-+	perf_swevent_overflow(event, 0, data, regs);
- }
- 
- static int perf_exclude_event(struct perf_event *event,
-@@ -4812,7 +4806,7 @@ find_swevent_head(struct swevent_htable *swhash, struct perf_event *event)
- }
- 
- static void do_perf_sw_event(enum perf_type_id type, u32 event_id,
--				    u64 nr, int nmi,
-+				    u64 nr,
- 				    struct perf_sample_data *data,
- 				    struct pt_regs *regs)
- {
-@@ -4828,7 +4822,7 @@ static void do_perf_sw_event(enum perf_type_id type, u32 event_id,
- 
- 	hlist_for_each_entry_rcu(event, node, head, hlist_entry) {
- 		if (perf_swevent_match(event, type, event_id, data, regs))
--			perf_swevent_event(event, nr, nmi, data, regs);
-+			perf_swevent_event(event, nr, data, regs);
- 	}
- end:
- 	rcu_read_unlock();
-@@ -4849,8 +4843,7 @@ inline void perf_swevent_put_recursion_context(int rctx)
- 	put_recursion_context(swhash->recursion, rctx);
- }
- 
--void __perf_sw_event(u32 event_id, u64 nr, int nmi,
--			    struct pt_regs *regs, u64 addr)
-+void __perf_sw_event(u32 event_id, u64 nr, struct pt_regs *regs, u64 addr)
- {
- 	struct perf_sample_data data;
- 	int rctx;
-@@ -4862,7 +4855,7 @@ void __perf_sw_event(u32 event_id, u64 nr, int nmi,
- 
- 	perf_sample_data_init(&data, addr);
- 
--	do_perf_sw_event(PERF_TYPE_SOFTWARE, event_id, nr, nmi, &data, regs);
-+	do_perf_sw_event(PERF_TYPE_SOFTWARE, event_id, nr, &data, regs);
- 
- 	perf_swevent_put_recursion_context(rctx);
- 	preempt_enable_notrace();
-@@ -5110,7 +5103,7 @@ void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
- 
- 	hlist_for_each_entry_rcu(event, node, head, hlist_entry) {
- 		if (perf_tp_event_match(event, &data, regs))
--			perf_swevent_event(event, count, 1, &data, regs);
-+			perf_swevent_event(event, count, &data, regs);
- 	}
- 
- 	perf_swevent_put_recursion_context(rctx);
-@@ -5203,7 +5196,7 @@ void perf_bp_event(struct perf_event *bp, void *data)
- 	perf_sample_data_init(&sample, bp->attr.bp_addr);
- 
- 	if (!bp->hw.state && !perf_exclude_event(bp, regs))
--		perf_swevent_event(bp, 1, 1, &sample, regs);
-+		perf_swevent_event(bp, 1, &sample, regs);
- }
- #endif
- 
-@@ -5232,7 +5225,7 @@ static enum hrtimer_restart perf_swevent_hrtimer(struct hrtimer *hrtimer)
- 
- 	if (regs && !perf_exclude_event(event, regs)) {
- 		if (!(event->attr.exclude_idle && current->pid == 0))
--			if (perf_event_overflow(event, 0, &data, regs))
-+			if (perf_event_overflow(event, &data, regs))
- 				ret = HRTIMER_NORESTART;
- 	}
- 
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index 114f27f..09097dd 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -27,7 +27,6 @@ struct ring_buffer {
- 	void				*data_pages[0];
- };
- 
--
- extern void rb_free(struct ring_buffer *rb);
- extern struct ring_buffer *
- rb_alloc(int nr_pages, long watermark, int cpu, int flags);
-diff --git a/kernel/events/ring_buffer.c b/kernel/events/ring_buffer.c
-index fc2701c..8b3b736 100644
---- a/kernel/events/ring_buffer.c
-+++ b/kernel/events/ring_buffer.c
-@@ -38,11 +38,8 @@ static void perf_output_wakeup(struct perf_output_handle *handle)
- {
- 	atomic_set(&handle->rb->poll, POLL_IN);
- 
--	if (handle->nmi) {
--		handle->event->pending_wakeup = 1;
--		irq_work_queue(&handle->event->pending);
--	} else
--		perf_event_wakeup(handle->event);
-+	handle->event->pending_wakeup = 1;
-+	irq_work_queue(&handle->event->pending);
- }
- 
- /*
-@@ -102,7 +99,7 @@ static void perf_output_put_handle(struct perf_output_handle *handle)
- 
- int perf_output_begin(struct perf_output_handle *handle,
- 		      struct perf_event *event, unsigned int size,
--		      int nmi, int sample)
-+		      int sample)
- {
- 	struct ring_buffer *rb;
- 	unsigned long tail, offset, head;
-@@ -127,7 +124,6 @@ int perf_output_begin(struct perf_output_handle *handle,
- 
- 	handle->rb	= rb;
- 	handle->event	= event;
--	handle->nmi	= nmi;
- 	handle->sample	= sample;
- 
- 	if (!rb->nr_pages)
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 3f2e502..d08d110 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2220,7 +2220,7 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
- 
- 	if (task_cpu(p) != new_cpu) {
- 		p->se.nr_migrations++;
--		perf_sw_event(PERF_COUNT_SW_CPU_MIGRATIONS, 1, 1, NULL, 0);
-+		perf_sw_event(PERF_COUNT_SW_CPU_MIGRATIONS, 1, NULL, 0);
- 	}
- 
- 	__set_task_cpu(p, new_cpu);
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 752b75b..a6708e6 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -211,7 +211,7 @@ static struct perf_event_attr wd_hw_attr = {
- };
- 
- /* Callback function for perf event subsystem */
--static void watchdog_overflow_callback(struct perf_event *event, int nmi,
-+static void watchdog_overflow_callback(struct perf_event *event,
- 		 struct perf_sample_data *data,
- 		 struct pt_regs *regs)
- {
-diff --git a/samples/hw_breakpoint/data_breakpoint.c b/samples/hw_breakpoint/data_breakpoint.c
-index 0636539..7b164d3 100644
---- a/samples/hw_breakpoint/data_breakpoint.c
-+++ b/samples/hw_breakpoint/data_breakpoint.c
-@@ -41,7 +41,7 @@ module_param_string(ksym, ksym_name, KSYM_NAME_LEN, S_IRUGO);
- MODULE_PARM_DESC(ksym, "Kernel symbol to monitor; this module will report any"
- 			" write operations on the kernel symbol");
- 
--static void sample_hbp_handler(struct perf_event *bp, int nmi,
-+static void sample_hbp_handler(struct perf_event *bp,
- 			       struct perf_sample_data *data,
- 			       struct pt_regs *regs)
- {
-
+Yuan
