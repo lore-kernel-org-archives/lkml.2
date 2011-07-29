@@ -1,204 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319Ab1G2NwD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 09:52:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37244 "EHLO mx2.suse.de"
+	id S1755187Ab1G2NyJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 09:54:09 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:3691 "EHLO MMS3.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754349Ab1G2NwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 09:52:01 -0400
-From: Michal Marek <mmarek@suse.cz>
-To: linux-kbuild@vger.kernel.org
-Cc: xiyou.wangcong@gmail.com, rdunlap@xenotime.net, lacombar@gmail.com,
-        sam@ravnborg.org, linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
-Subject: [PATCH] kconfig: Introduce IS_ENABLED(), IS_BUILTIN() and IS_MODULE()
-Date: Fri, 29 Jul 2011 15:51:37 +0200
-Message-Id: <1311947497-4958-1-git-send-email-mmarek@suse.cz>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1311634718-32588-1-git-send-email-mmarek@suse.cz>
-References: <1311634718-32588-1-git-send-email-mmarek@suse.cz>
+	id S1754766Ab1G2NyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 09:54:07 -0400
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+Message-ID: <4E32BB6F.3090607@broadcom.com>
+Date: Fri, 29 Jul 2011 15:53:51 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18)
+ Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: "Michael Witten" <mfwitten@gmail.com>
+cc: "Jiri Kosina" <trivial@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] Docs: Typo: coordinate{,s}
+References: <8d47115a01b74b768ea4850fb314b16d-mfwitten@gmail.com>
+ <768a3afa74c244e8b43a376dd4fb0df4-mfwitten@gmail.com>
+In-Reply-To: <768a3afa74c244e8b43a376dd4fb0df4-mfwitten@gmail.com>
+X-WSS-ID: 622C63133KO526056-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the config_is_*() macros with a variant that allows for grepping
-for usage of CONFIG_* options in the code. Usage:
+On 07/29/2011 02:46 PM, Michael Witten wrote:
+> Signed-off-by: Michael Witten<mfwitten@gmail.com>
+> ---
+>   include/linux/cordic.h |    4 ++--
+>   1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/include/linux/cordic.h b/include/linux/cordic.h
+> index f932093..de741da 100644
+> --- a/include/linux/cordic.h
+> +++ b/include/linux/cordic.h
+> @@ -35,8 +35,8 @@ struct cordic_iq {
+>    * @theta: angle in degrees for which i/q coordinate is to be calculated.
+>    * @coord: function output parameter holding the i/q coordinate.
+>    *
+> - * The function calculates the i/q coordinate for a given angle using
+> - * cordic algorithm. The coordinate consists of a real (i) and an
+> + * The function calculates the i/q coordinates for a given angle using
+> + * cordic algorithm. The coordinates consist of a real (i) and an
+>    * imaginary (q) part. The real part is essentially the cosine of the
+>    * angle and the imaginary part is the sine of the angle. The returned
+>    * values are scaled by 2^16 for precision. The range for theta is
 
-  if (IS_ENABLED(CONFIG_NUMA))
+Most patches in this series are fine by me. However, the function takes 
+a single angle as input and returns a single two-dimensional coordinate 
+as output. The coordinate itself is represented by the two axis i and q. 
+So I tend to say changing coordinate to coordinates is not justified 
+here. However, I not a native english speaker so I may be wrong here.
 
-or
+Gr. AvS
 
-  #if IS_ENABLED(CONFIG_NUMA)
-
-The IS_ENABLED() macro evaluates to 1 if the argument is set (to either 'y'
-or 'm'), IS_BUILTIN() tests if the option is 'y' and IS_MODULE() test if
-the option is 'm'. Only boolean and tristate options are supported.
-
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
-
-Everybody happy with the above naming?
-
-Michal
-
----
- Makefile                   |    2 +-
- include/linux/kconfig.h    |   32 ++++++++++++++++++++
- scripts/kconfig/confdata.c |   71 ++++++++-----------------------------------
- 3 files changed, 47 insertions(+), 58 deletions(-)
- create mode 100644 include/linux/kconfig.h
-
-diff --git a/Makefile b/Makefile
-index afb8e0d..bd7629b 100644
---- a/Makefile
-+++ b/Makefile
-@@ -360,7 +360,7 @@ CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
- LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
-                    -Iarch/$(hdr-arch)/include/generated -Iinclude \
-                    $(if $(KBUILD_SRC), -I$(srctree)/include) \
--                   -include include/generated/autoconf.h
-+                   -include $(srctree)/include/linux/kconfig.h
- 
- KBUILD_CPPFLAGS := -D__KERNEL__
- 
-diff --git a/include/linux/kconfig.h b/include/linux/kconfig.h
-new file mode 100644
-index 0000000..067eda0
---- /dev/null
-+++ b/include/linux/kconfig.h
-@@ -0,0 +1,32 @@
-+#ifndef __LINUX_KCONFIG_H
-+#define __LINUX_KCONFIG_H
-+
-+#include <generated/autoconf.h>
-+
-+/*
-+ * Helper macros to use CONFIG_ options in C expressions. Note that
-+ * these only work with boolean and tristate options.
-+ */
-+
-+/*
-+ * IS_ENABLED(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y' or 'm',
-+ * 0 otherwise.
-+ *
-+ */
-+#define IS_ENABLED(option) \
-+	(__enabled_ ## option || __enabled_ ## option ## _MODULE)
-+
-+/*
-+ * IS_BUILTIN(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y', 0
-+ * otherwise. For boolean options, this is equivalent to
-+ * IS_ENABLED(CONFIG_FOO).
-+ */
-+#define IS_BUILTIN(option) __enabled_ ## option
-+
-+/*
-+ * IS_MODULE(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'm', 0
-+ * otherwise.
-+ */
-+#define IS_MODULE(option) __enabled_ ## option ## _MODULE
-+
-+#endif /* __LINUX_KCONFIG_H */
-diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-index df629ec..59b667c 100644
---- a/scripts/kconfig/confdata.c
-+++ b/scripts/kconfig/confdata.c
-@@ -495,15 +495,25 @@ header_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
- 
- 		switch (*value) {
- 		case 'n':
--			return;
-+			break;
- 		case 'm':
- 			suffix = "_MODULE";
- 			/* fall through */
- 		default:
--			value = "1";
-+			fprintf(fp, "#define %s%s%s 1\n",
-+			    CONFIG_, sym->name, suffix);
- 		}
--		fprintf(fp, "#define %s%s%s %s\n",
--		    CONFIG_, sym->name, suffix, value);
-+		/*
-+		 * Generate the __enabled_CONFIG_* and
-+		 * __enabled_CONFIG_*_MODULE macros for use by the
-+		 * IS_{ENABLED,BUILTIN,MODULE} macros. The _MODULE variant is
-+		 * generated even for booleans so that the IS_ENABLED() macro
-+		 * works.
-+		 */
-+		fprintf(fp, "#define __enabled_" CONFIG_ "%s %d\n",
-+				sym->name, (*value == 'y'));
-+		fprintf(fp, "#define __enabled_" CONFIG_ "%s_MODULE %d\n",
-+				sym->name, (*value == 'm'));
- 		break;
- 	}
- 	case S_HEX: {
-@@ -555,58 +565,6 @@ static struct conf_printer header_printer_cb =
- };
- 
- /*
-- * Function-style header printer
-- *
-- * This printer is used to generate the config_is_xxx() function-style macros
-- * in `include/generated/autoconf.h' 
-- */
--static void
--header_function_print_symbol(FILE *fp, struct symbol *sym, const char *value, void *arg)
--{
--	int val = 0;
--	char c;
--	char *tmp, *d;
--
--	switch (sym->type) {
--	case S_BOOLEAN:
--	case S_TRISTATE:
--		break;
--	default:
--		return;
--	}
--	if (*value == 'm')
--		val = 2;
--	else if (*value == 'y')
--		val = 1;
--
--	d = strdup(CONFIG_);
--	tmp = d;
--	while ((c = *d)) {
--		*d = tolower(c);
--		d++;
--	}
--
--	fprintf(fp, "#define %sis_", tmp);
--	free(tmp);
--
--	d = strdup(sym->name);
--	tmp = d;
--	while ((c = *d)) {
--		*d = tolower(c);
--		d++;
--	}
--	fprintf(fp, "%s%s() %d\n", tmp, (val > 1) ? "_module" : "",
--		      val ? 1 : 0);
--	free(tmp);
--}
--
--static struct conf_printer header_function_printer_cb =
--{
--	.print_symbol = header_function_print_symbol,
--};
--
--
--/*
-  * Tristate printer
-  *
-  * This printer is used when generating the `include/config/tristate.conf' file.
-@@ -997,7 +955,6 @@ int conf_write_autoconf(void)
- 		conf_write_symbol(tristate, sym, &tristate_printer_cb, (void *)1);
- 
- 		conf_write_symbol(out_h, sym, &header_printer_cb, NULL);
--		conf_write_symbol(out_h, sym, &header_function_printer_cb, NULL);
- 	}
- 	fclose(out);
- 	fclose(tristate);
 -- 
-1.7.6
+Almost nobody dances sober, unless they happen to be insane.
+-- H.P. Lovecraft --
+
 
