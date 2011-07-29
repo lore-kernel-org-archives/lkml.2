@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab1G2Wep (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 18:34:45 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:65106 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753132Ab1G2Wen (ORCPT
+	id S1753178Ab1G2WpN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 18:45:13 -0400
+Received: from smtprelay05.ispgateway.de ([80.67.31.93]:47295 "EHLO
+	smtprelay05.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753127Ab1G2WpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 18:34:43 -0400
-Message-ID: <4E333566.9060508@kernel.org>
-Date: Fri, 29 Jul 2011 15:34:14 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>
-CC: Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/5] x86, ioapic: Print out irte with right ioapic index
-References: <4E1F0BC9.1040102@kernel.org> <CAErSpo5CzU2j81moWLsHDoRxTs5107=AEAWYi3ezy3Xfw86qiQ@mail.gmail.com> <4E29BEEA.4020600@kernel.org> <20110725072831.GB22518@elte.hu> <4E33334D.1030007@kernel.org>
-In-Reply-To: <4E33334D.1030007@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 29 Jul 2011 18:45:12 -0400
+Date: Sat, 30 Jul 2011 00:45:08 +0200
+From: Peter Feuerer <peter@piie.net>
+To: mjg@redhat.com
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <petkovbb@gmail.com>,
+        Peter Feuerer <peter@piie.net>
+Subject: [PATCH 1/3] acerhdf.c: spaces in aliased changed to *
+Message-Id: <20110730004508.911be745.peter@piie.net>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.5; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090207.4E333571.0070,ss=1,re=0.000,fgs=0
+X-Df-Sender: 650477
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Anton V. Boyarshinov" <boyarsh@altlinux.org>
 
-While checking irte dump in dmesg, the print out is confusing ioapic index
-with real io apic id.
+Subject: [PATCH 1/3] acerhdf.c: spaces in aliased changed to *
 
-IOAPIC[0]: Set routing entry (1-1 -> 0x31 -> IRQ 1 Mode:0 Active:0 Dest:1)
-IOAPIC[1]: Set IRTE entry (P:1 FPD:0 Dst_Mode:1 Redir_hint:1 Trig_Mode:0 Dlvry_Mode:1 Avail:0 Vector:31 Dest:00000001 SID:00FF SQ:0 SVT:1)
-IOAPIC[0]: Set routing entry (1-2 -> 0x30 -> IRQ 0 Mode:0 Active:0 Dest:1)
-IOAPIC[1]: Set IRTE entry (P:1 FPD:0 Dst_Mode:1 Redir_hint:1 Trig_Mode:0 Dlvry_Mode:1 Avail:0 Vector:30 Dest:00000001 SID:00FF SQ:0 SVT:1)
+It seems that aliases shouldn't contain spaces, as
+module-init-tools uses them as delimeters in module.alias file
 
-The system first ioapic id is 1.
-
-Those irte print out is from:
-| commit 3040db92ee1b6c5b6b6d73f8cdcad54c0da11563
-| Author: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
-| Date:   Tue Jul 12 21:17:41 2011 +0000
-|
-|    x86, ioapic: Print IRTE when IR is enabled
-it uses apic_id in setup_ioapic_entry(), and think it is ioapic idx.
-actually it is ioapic apic id.
-
-So need to use ioapic idx instead to get right printout.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
+Signed-off-by: Anton V. Boyarshinov <boyarsh@altlinux.org>
+Acked-by: Peter Feuerer <peter@piie.net>
+Cc: Borislav Petkov <petkovbb@gmail.com>
 ---
- arch/x86/kernel/apic/io_apic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/platform/x86/acerhdf.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux-2.6/arch/x86/kernel/apic/io_apic.c
-@@ -1289,7 +1289,7 @@ static int setup_ir_ioapic_entry(int irq
- 		"Redir_hint:%d Trig_Mode:%d Dlvry_Mode:%X "
- 		"Avail:%X Vector:%02X Dest:%08X "
- 		"SID:%04X SQ:%X SVT:%X)\n",
--		apic_id, irte.present, irte.fpd, irte.dst_mode,
-+		attr->ioapic, irte.present, irte.fpd, irte.dst_mode,
- 		irte.redir_hint, irte.trigger_mode, irte.dlvry_mode,
- 		irte.avail, irte.vector, irte.dest_id,
- 		irte.sid, irte.sq, irte.svt);
+diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+index fca3489..7a8568b 100644
+--- a/drivers/platform/x86/acerhdf.c
++++ b/drivers/platform/x86/acerhdf.c
+@@ -703,15 +703,15 @@ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Peter Feuerer");
+ MODULE_DESCRIPTION("Aspire One temperature and fan driver");
+ MODULE_ALIAS("dmi:*:*Acer*:pnAOA*:");
+-MODULE_ALIAS("dmi:*:*Acer*:pnAspire 1410*:");
+-MODULE_ALIAS("dmi:*:*Acer*:pnAspire 1810*:");
++MODULE_ALIAS("dmi:*:*Acer*:pnAspire*1410*:");
++MODULE_ALIAS("dmi:*:*Acer*:pnAspire*1810*:");
+ MODULE_ALIAS("dmi:*:*Acer*:pnAO531*:");
+ MODULE_ALIAS("dmi:*:*Gateway*:pnAOA*:");
+ MODULE_ALIAS("dmi:*:*Gateway*:pnLT31*:");
+-MODULE_ALIAS("dmi:*:*Packard Bell*:pnAOA*:");
+-MODULE_ALIAS("dmi:*:*Packard Bell*:pnDOA*:");
+-MODULE_ALIAS("dmi:*:*Packard Bell*:pnDOTMU*:");
+-MODULE_ALIAS("dmi:*:*Packard Bell*:pnDOTMA*:");
++MODULE_ALIAS("dmi:*:*Packard*Bell*:pnAOA*:");
++MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOA*:");
++MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOTMU*:");
++MODULE_ALIAS("dmi:*:*Packard*Bell*:pnDOTMA*:");
+ 
+ module_init(acerhdf_init);
+ module_exit(acerhdf_exit);
+-- 
+1.7.6
+
