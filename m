@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753139Ab1G2WeV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 18:34:21 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:52021 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab1G2WeU (ORCPT
+	id S1753207Ab1G2Weh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 18:34:37 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:65078 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753192Ab1G2Wef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 18:34:20 -0400
-Message-ID: <4E333544.8080604@kernel.org>
-Date: Fri, 29 Jul 2011 15:33:40 -0700
+	Fri, 29 Jul 2011 18:34:35 -0400
+Message-ID: <4E33355F.8000505@kernel.org>
+Date: Fri, 29 Jul 2011 15:34:07 -0700
 From: Yinghai Lu <yinghai@kernel.org>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
 MIME-Version: 1.0
@@ -17,30 +17,206 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 CC: Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
         Suresh Siddha <suresh.b.siddha@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/5] x86, ioapic: Clean up ioapic idx and apic id usage
-References: <4E1F0BC9.1040102@kernel.org> <CAErSpo5CzU2j81moWLsHDoRxTs5107=AEAWYi3ezy3Xfw86qiQ@mail.gmail.com> <4E29BEEA.4020600@kernel.org> <20110725072831.GB22518@elte.hu>
-In-Reply-To: <20110725072831.GB22518@elte.hu>
+Subject: [PATCH 2/5] x86, ioapic: Split setup_ioapic_entry for interrupt remapped
+ version
+References: <4E1F0BC9.1040102@kernel.org> <CAErSpo5CzU2j81moWLsHDoRxTs5107=AEAWYi3ezy3Xfw86qiQ@mail.gmail.com> <4E29BEEA.4020600@kernel.org> <20110725072831.GB22518@elte.hu> <4E33334D.1030007@kernel.org>
+In-Reply-To: <4E33334D.1030007@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090202.4E33355B.0075,ss=1,re=0.000,fgs=0
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090207.4E33356B.005A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please check x86/ioapic clean up patches.
 
-it will make sure ioapic_idx is used instead of ioapic or apic_idx to used as index.
+Ingo pointed out that setup_ioapic_entry is way too big now.
 
-[PATCH 1/5] x86, ioapic: Passing irq_attr struct pointer with setup_ioapic_irq()
-[PATCH 2/5] x86, ioapic: Split setup_ioapic_entry for interrupt remapped version
-[PATCH 3/5] x86, ioapic: Print out irte with right ioapic index
-[PATCH 4/5] x86, ioapic: Seperate print_IO_APIC() to only print one io apic
-[PATCH 5/5] x86, ioapic: Clean up ioapic/apic_id usage
+Try split into intr-remap related to setup_ir_ioapic_entry().
 
-patch1, 2, 4, 5 are cleanup related
-patch3 fixes the one idx printout.
+Also passing io_apic_irq_attr struct pointer instead of 5 parameters in those two
+functions.
 
-Thanks
+At last in setup_ir_ioapic_entry(), don't need to panic.
 
-Yinghai Lu
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/kernel/apic/io_apic.c |  147 +++++++++++++++++++++++------------------
+ 1 file changed, 84 insertions(+), 63 deletions(-)
+
+Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
++++ linux-2.6/arch/x86/kernel/apic/io_apic.c
+@@ -1255,72 +1255,95 @@ static void ioapic_register_intr(unsigne
+ 				      fasteoi ? "fasteoi" : "edge");
+ }
+ 
+-static int setup_ioapic_entry(int apic_id, int irq,
+-			      struct IO_APIC_route_entry *entry,
+-			      unsigned int destination, int trigger,
+-			      int polarity, int vector, int pin)
++
++static int setup_ir_ioapic_entry(int irq,
++			      struct IR_IO_APIC_route_entry *entry,
++			      unsigned int destination, int vector,
++			      struct io_apic_irq_attr *attr)
+ {
+-	/*
+-	 * add it to the IO-APIC irq-routing table:
+-	 */
+-	memset(entry,0,sizeof(*entry));
++	int index;
++	struct irte irte;
++	int apic_id = mpc_ioapic_id(attr->ioapic);
++	struct intel_iommu *iommu = map_ioapic_to_ir(apic_id);
++
++	if (!iommu) {
++		pr_warn("No mapping iommu for ioapic %d\n", apic_id);
++		return -ENODEV;
++	}
+ 
+-	if (intr_remapping_enabled) {
+-		struct intel_iommu *iommu = map_ioapic_to_ir(apic_id);
+-		struct irte irte;
+-		struct IR_IO_APIC_route_entry *ir_entry =
+-			(struct IR_IO_APIC_route_entry *) entry;
+-		int index;
+-
+-		if (!iommu)
+-			panic("No mapping iommu for ioapic %d\n", apic_id);
+-
+-		index = alloc_irte(iommu, irq, 1);
+-		if (index < 0)
+-			panic("Failed to allocate IRTE for ioapic %d\n", apic_id);
+-
+-		prepare_irte(&irte, vector, destination);
+-
+-		/* Set source-id of interrupt request */
+-		set_ioapic_sid(&irte, apic_id);
+-
+-		modify_irte(irq, &irte);
+-
+-		ir_entry->index2 = (index >> 15) & 0x1;
+-		ir_entry->zero = 0;
+-		ir_entry->format = 1;
+-		ir_entry->index = (index & 0x7fff);
+-		/*
+-		 * IO-APIC RTE will be configured with virtual vector.
+-		 * irq handler will do the explicit EOI to the io-apic.
+-		 */
+-		ir_entry->vector = pin;
+-
+-		apic_printk(APIC_VERBOSE, KERN_DEBUG "IOAPIC[%d]: "
+-			"Set IRTE entry (P:%d FPD:%d Dst_Mode:%d "
+-			"Redir_hint:%d Trig_Mode:%d Dlvry_Mode:%X "
+-			"Avail:%X Vector:%02X Dest:%08X "
+-			"SID:%04X SQ:%X SVT:%X)\n",
+-			apic_id, irte.present, irte.fpd, irte.dst_mode,
+-			irte.redir_hint, irte.trigger_mode, irte.dlvry_mode,
+-			irte.avail, irte.vector, irte.dest_id,
+-			irte.sid, irte.sq, irte.svt);
+-	} else {
+-		entry->delivery_mode = apic->irq_delivery_mode;
+-		entry->dest_mode = apic->irq_dest_mode;
+-		entry->dest = destination;
+-		entry->vector = vector;
++	index = alloc_irte(iommu, irq, 1);
++	if (index < 0) {
++		pr_warn("Failed to allocate IRTE for ioapic %d\n", apic_id);
++		return -ENOMEM;
+ 	}
+ 
+-	entry->mask = 0;				/* enable IRQ */
+-	entry->trigger = trigger;
+-	entry->polarity = polarity;
++	prepare_irte(&irte, vector, destination);
++
++	/* Set source-id of interrupt request */
++	set_ioapic_sid(&irte, apic_id);
++
++	modify_irte(irq, &irte);
++
++	apic_printk(APIC_VERBOSE, KERN_DEBUG "IOAPIC[%d]: "
++		"Set IRTE entry (P:%d FPD:%d Dst_Mode:%d "
++		"Redir_hint:%d Trig_Mode:%d Dlvry_Mode:%X "
++		"Avail:%X Vector:%02X Dest:%08X "
++		"SID:%04X SQ:%X SVT:%X)\n",
++		apic_id, irte.present, irte.fpd, irte.dst_mode,
++		irte.redir_hint, irte.trigger_mode, irte.dlvry_mode,
++		irte.avail, irte.vector, irte.dest_id,
++		irte.sid, irte.sq, irte.svt);
++
++	memset(entry, 0, sizeof(*entry));
++
++	entry->index2	= (index >> 15) & 0x1;
++	entry->zero	= 0;
++	entry->format	= 1;
++	entry->index	= (index & 0x7fff);
++	/*
++	 * IO-APIC RTE will be configured with virtual vector.
++	 * irq handler will do the explicit EOI to the io-apic.
++	 */
++	entry->vector	= attr->ioapic_pin;
++	entry->mask	= 0;			/* enable IRQ */
++	entry->trigger	= attr->trigger;
++	entry->polarity	= attr->polarity;
+ 
+ 	/* Mask level triggered irqs.
+ 	 * Use IRQ_DELAYED_DISABLE for edge triggered irqs.
+ 	 */
+-	if (trigger)
++	if (attr->trigger)
++		entry->mask = 1;
++
++	return 0;
++}
++
++static int setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
++			       unsigned int destination, int vector,
++			       struct io_apic_irq_attr *attr)
++{
++	if (intr_remapping_enabled)
++		return setup_ir_ioapic_entry(irq,
++			 (struct IR_IO_APIC_route_entry *)entry,
++			 destination, vector, attr);
++
++	memset(entry, 0, sizeof(*entry));
++
++	entry->delivery_mode = apic->irq_delivery_mode;
++	entry->dest_mode     = apic->irq_dest_mode;
++	entry->dest	     = destination;
++	entry->vector	     = vector;
++	entry->mask	     = 0;			/* enable IRQ */
++	entry->trigger	     = attr->trigger;
++	entry->polarity	     = attr->polarity;
++
++	/*
++	 * Mask level triggered irqs.
++	 * Use IRQ_DELAYED_DISABLE for edge triggered irqs.
++	 */
++	if (attr->trigger)
+ 		entry->mask = 1;
++
+ 	return 0;
+ }
+ 
+@@ -1351,13 +1374,11 @@ static void setup_ioapic_irq(unsigned in
+ 		    attr->ioapic, mpc_ioapic_id(attr->ioapic), attr->ioapic_pin,
+ 		    cfg->vector, irq, attr->trigger, attr->polarity, dest);
+ 
+-
+-	if (setup_ioapic_entry(mpc_ioapic_id(attr->ioapic), irq, &entry,
+-			       dest, attr->trigger, attr->polarity, cfg->vector,
+-			       attr->ioapic_pin)) {
+-		printk("Failed to setup ioapic entry for ioapic  %d, pin %d\n",
+-		       mpc_ioapic_id(attr->ioapic), attr->ioapic_pin);
++	if (setup_ioapic_entry(irq, &entry, dest, cfg->vector, attr)) {
++		pr_warn("Failed to setup ioapic entry for ioapic  %d, pin %d\n",
++			mpc_ioapic_id(attr->ioapic), attr->ioapic_pin);
+ 		__clear_irq_vector(irq, cfg);
++
+ 		return;
+ 	}
+ 
