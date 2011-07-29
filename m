@@ -1,90 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab1G2VcL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 17:32:11 -0400
-Received: from enyo.dsw2k3.info ([195.71.86.239]:48246 "EHLO enyo.dsw2k3.info"
+	id S1753090Ab1G2VhI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 17:37:08 -0400
+Received: from waste.org ([173.11.57.241]:59720 "EHLO waste.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752358Ab1G2VcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 17:32:10 -0400
-Date: Fri, 29 Jul 2011 23:31:56 +0200
-From: Matthias Schniedermeyer <ms@citd.de>
+	id S1752493Ab1G2VhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 17:37:05 -0400
+Subject: Re: Nanosecond fs timestamp support: sad
+From: Matt Mackall <mpm@selenic.com>
 To: Pavel Machek <pavel@ucw.cz>
-Cc: Luke Kenneth Casson Leighton <lkcl@lkcl.net>, linux-kernel@vger.kernel.org
-Subject: Re: ext3 hacked filesystem (by debian exim4 exploit) available for
- analysis and bugreporting
-Message-ID: <20110729213156.GA32685@citd.de>
-References: <CAPweEDzv+vByC1s2bWRjVQdVLqw4Xf2sUf_CQgVync_YcxtdvQ@mail.gmail.com>
- <20110725134533.GA23781@citd.de>
- <CAPweEDybuOpPVidJWg+rfs8rU8y=xo4d3H=P7XQJh_DiKrF4DQ@mail.gmail.com>
- <20110729195904.GC1720@ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110729195904.GC1720@ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: NeilBrown <neilb@suse.de>, "J. Bruce Fields" <bfields@fieldses.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110729194903.GA1720@ucw.cz>
+References: <m2pql2c0qz.fsf@firstfloor.org>
+	 <20110722163335.2df4f6ca@notabene.brown> <1311363269.14555.261.camel@calx>
+	 <20110722205922.GS8006@one.firstfloor.org>
+	 <1311369102.14555.268.camel@calx>
+	 <20110722214732.GW8006@one.firstfloor.org>
+	 <20110722221039.GB10749@fieldses.org> <20110722223158.GC10749@fieldses.org>
+	 <20110723085915.308ddc02@notabene.brown> <1311379661.20898.23.camel@calx>
+	 <20110729194903.GA1720@ucw.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Jul 2011 16:37:01 -0500
+Message-ID: <1311975421.20898.400.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.07.2011 21:59, Pavel Machek wrote:
-> On Mon 2011-07-25 22:08:24, Luke Kenneth Casson Leighton wrote:
-> > On Mon, Jul 25, 2011 at 2:45 PM, Matthias Schniedermeyer <ms@citd.de> wrote:
-> > > On 25.07.2011 13:08, Luke Kenneth Casson Leighton wrote:
-> > >> folks, hi,
-> > >>
-> > >> apart from anything, files which cannot be deleted (and cannot be
-> > >> detected as "corrupted" by fsck.ext3) is pretty damn serious.
-> > >
-> > > You did try lsattr and checked that the files aren't 'immutable'?
-> > 
-> >  i didn't! :)  didn't know about (but should have guessed) ext3
-> > attributes.  they are indeed - thank you matthias.
-> > 
-> > root@quietbaby:/mnt/horsebox/tmp3# lsattr *
-> > ----ia------------- bin3/kill
-> > ----ia------------- bin3/ps
-> > ----ia------------- c.pl
-> > ----ia------------- e.conf
-> > ----ia------------- sbin3/sysctl
-> > ----ia------------- usrbin3/uptime
-> > ----ia------------- usrbin3/tload
-> > ----ia------------- usrbin3/free
-> > ----ia------------- usrbin3/top
-> > ----ia------------- usrbin3/vmstat
-> > ----ia------------- usrbin3/watch
-> > ----ia------------- usrbin3/skill
-> > ----ia------------- usrbin3/pmap
-> > ----ia------------- usrbin3/pgrep
-> > ----ia------------- usrbin3/slabtop
-> > ----ia------------- usrbin3/pwdx
-> > ----ia------------- usrbin3/snice
-> > ----ia------------- usrbin3/pkill
-> > ----ia------------- usrbin3/w
-> > 
-> > so - looks like it's not as bad as i thought.
+On Fri, 2011-07-29 at 21:49 +0200, Pavel Machek wrote:
+> Hi!
 > 
-> Should ls -l be moddified to show something when file has immutable
-> (and friends) set?
+> > > If not, we probably should tell NFSv4 to use timestamps and focus on making
+> > > them work well.
+> > > ??
+> > > 
+> > > The timestamp used doesn't need to update ever nanosecond.  I think if it
+> > > were just updated on every userspace->kernel transition  (or effective
+> > > equivalents inside kernel threads) that would be enough capture all
+> > > causality.  I wonder how that would be achieved..  I wonder if RCU machinery
+> > > could help - doesn't it keep track of when threads schedule ... or something?
+> > 
+> > Sort of.
+> > 
+> > Some observations:
+> > 
+> > - we only need to go to higher resolution when two events happen in the
+> > same time quantum
+> > - this applies at both the level of seconds and jiffies
+> > - if the only file touched in a given quantum gets touched ago, we don't
+> > need to update its timestamp if stat wasn't also called on it in this
+> > quantum
+> 
+> parse error aroound 'ago'.
 
-AFAICT lsattr, in e2fsprogs, only does a 'stat'(lib/e2p/fgetflags.c) and 
-checks st_flags, which i can't see in the "man 2 stat"-man-page i have 
-installed, but nonetheless that is what it appears to do.
+This should read:
 
-So assuming there are no incompatibilites between filesystems, the 
-information appears to come "free" with the stat(s) that ls has to do 
-anyway. (In the sense that there doesn't appear to any excessive 
-overhead involved, especially no additional I/O).
+- if only one file is touched in a given quantum, we don't need to
+update its timestamp if stat wasn't called on it in the same quantum
 
-So i would say: definitly.
+> > - we never need to use a higher resolution than the global
+> > min(s_time_gran)
+> > 
+> > 
+> > For instance, if a machine is idle, except for writing to a single file
+> > once a second, 1s resolution suffices.
+> 
+> Are you sure? As soon as you get network communication...
 
+I don't think you can generally compare filesystem timestamps to other
+time sources reliably. For instance, network filesystems might have
+their own notions of current time.
 
+> > Any time two files are touched in the same second, the second one (and
+> > later files) needs jiffies resolution. Similarly, any time two files are
+> > touched in the same jiffy, the second one should use gtod().
+> 
+> For make. I don't see how this is globally true.
+> 
+> I do
+> 
+> ( date; > stamp; date ) | ( sleep 5; cat > counterexample )
+> 
+> I know timestamp should be between two dates, but it is not.
 
+You're claiming the timestamp on 'stamp' should be strictly between the
+two dates reported?
 
-Bis denn
+This is true today if and only if you measure in seconds (and your
+filesystem's clock is synced with your local clock). If you measure in
+resolutions greater than the filesystem resolution (currently limited to
+jiffies) even on a local filesystem, it will be wrong.
 
 -- 
-Real Programmers consider "what you see is what you get" to be just as 
-bad a concept in Text Editors as it is in women. No, the Real Programmer
-wants a "you asked for it, you got it" text editor -- complicated, 
-cryptic, powerful, unforgiving, dangerous.
+Mathematics is the supreme nostalgia of our time.
+
 
