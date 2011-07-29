@@ -1,92 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab1G2Ujl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 16:39:41 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:45281 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752358Ab1G2Ujj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 16:39:39 -0400
-X-Sasl-enc: w3csY0SRgTIJ9OYxEY0ZkmVFj8ikkBnpOTnBAuytdndq 1311971978
-References: <1311876249.2346.39.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20110729164214.GI23194@fieldses.org> <1311962525.2873.6.camel@edumazet-laptop> <20110729180844.GA28947@fieldses.org>
-Message-Id: <D2301275-8653-41CB-BADB-E927CF00BDB0@fastmail.fm>
-From: Greg Banks <gnb@fastmail.fm>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-In-Reply-To: <20110729180844.GA28947@fieldses.org>
-Content-Type: text/plain;
-	charset=utf-8;
-	format=flowed;
-	delsp=yes
-Content-Transfer-Encoding: 8BIT
-X-Mailer: iPhone Mail (7C144)
-Mime-Version: 1.0 (iPhone Mail 7C144)
-Subject: Re: [PATCH] sunrpc: use better NUMA affinities
-Date: Sat, 30 Jul 2011 06:39:34 +1000
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Neil Brown <neilb@suse.de>, David Miller <davem@davemloft.net>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "bmarson@redhat.com" <bmarson@redhat.com>
+	id S1752924Ab1G2UpF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 16:45:05 -0400
+Received: from vostochny.stro.at ([78.47.22.85]:44490 "EHLO vostochny.stro.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752358Ab1G2UpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 16:45:04 -0400
+Date: Fri, 29 Jul 2011 22:41:16 +0200
+From: Maximilian Attems <max@stro.at>
+To: Mike Waychison <mikew@google.com>
+Cc: "Andrew G. Morgan" <agm@google.com>, Eric Northup <digitaleric@google.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
+        Eric Paris <eparis@parisplace.org>, klibc@zytor.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 1/2] syscalls: Add capset and capget
+Message-ID: <20110729204116.GA3207@stro.at>
+References: <20110719203843.646.73383.stgit@mike2.sea.corp.google.com>
+ <20110719203848.646.62196.stgit@mike2.sea.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110719203848.646.62196.stgit@mike2.sea.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 19 Jul 2011, Mike Waychison wrote:
 
+> Add the capset and capget system calls to klibc so that userland can
+> invoke them.
+> 
+> Signed-off-by: Mike Waychison <mikew@google.com>
+> ---
+>  usr/include/sys/capability.h   |   10 ++++++++++
+>  usr/klibc/SYSCALLS.def         |    6 ++++++
+>  usr/klibc/syscalls/syscommon.h |    1 +
+>  3 files changed, 17 insertions(+), 0 deletions(-)
+>  create mode 100644 usr/include/sys/capability.h
+> 
+> diff --git a/usr/include/sys/capability.h b/usr/include/sys/capability.h
+> new file mode 100644
+> index 0000000..84ad419
+> --- /dev/null
+> +++ b/usr/include/sys/capability.h
+> @@ -0,0 +1,10 @@
+> +#ifndef _SYS_CAPABILITY_H
+> +#define _SYS_CAPABILITY_H
+> +
+> +#include <klibc/extern.h>
+> +#include <linux/capability.h>
+> +
+> +__extern int capget(cap_user_header_t hdrp, cap_user_data_t datap);
+> +__extern int capset(cap_user_header_t hdrp, const cap_user_data_t datap);
+> +
+> +#endif				/* _SYS_CAPABILITY_H */
+> diff --git a/usr/klibc/SYSCALLS.def b/usr/klibc/SYSCALLS.def
+> index d3279c7..ee3ffa9 100644
+> --- a/usr/klibc/SYSCALLS.def
+> +++ b/usr/klibc/SYSCALLS.def
+> @@ -77,6 +77,12 @@ int setfsgid32,setfsgid::setfsgid(gid_t);
+>  int setresuid32,setresuid::setresuid(int, uid_t, uid_t, uid_t);
+>  
+>  /*
+> + * POSIX Capabilities
+> + */
+> +int capget(cap_user_header_t, cap_user_data_t);
+> +int capset(cap_user_header_t, cap_user_data_t);
+> +
+> +/*
+>   * Filesystem-related system calls
+>   */
+>  int mount(const char *, const char *, const char *, unsigned long, const void *);
+> diff --git a/usr/klibc/syscalls/syscommon.h b/usr/klibc/syscalls/syscommon.h
+> index 0acae12..78f8858 100644
+> --- a/usr/klibc/syscalls/syscommon.h
+> +++ b/usr/klibc/syscalls/syscommon.h
+> @@ -12,6 +12,7 @@
+>  
+>  #include <poll.h>
+>  #include <sched.h>
+> +#include <sys/capability.h>
+>  #include <sys/dirent.h>
+>  #include <sys/klog.h>
+>  #include <sys/mman.h>
 
-Sent from my iPhone
+this looks good to me.
+thanks will add to klibc repo soonest.
 
-On 30/07/2011, at 4:08, "J. Bruce Fields" <bfields@fieldses.org> wrote:
-
-> On Fri, Jul 29, 2011 at 08:02:05PM +0200, Eric Dumazet wrote:
->> Le vendredi 29 juillet 2011 à 12:42 -0400, J. Bruce Fields a écri 
->> t :
->>> On Thu, Jul 28, 2011 at 08:04:09PM +0200, Eric Dumazet wrote:
->>>> Use NUMA aware allocations to reduce latencies and increase  
->>>> throughput.
->>>>
->>>> sunrpc kthreads can use kthread_create_on_node() if pool_mode is
->>>> "percpu" or "pernode", and svc_prepare_thread()/svc_init_buffer()  
->>>> can
->>>> also take into account NUMA node affinity for memory allocations.
->>> ...
->>>> @@ -662,14 +675,16 @@ svc_set_num_threads(struct svc_serv *serv,  
->>>> struct svc_pool *pool, int nrservs)
->>>>        nrservs--;
->>>>        chosen_pool = choose_pool(serv, pool, &state);
->>>>
->>>> -        rqstp = svc_prepare_thread(serv, chosen_pool);
->>>> +        node = svc_pool_map_get_node(chosen_pool->sp_id);
->>>> +        rqstp = svc_prepare_thread(serv, chosen_pool, node);
->>>
->>> The only correct value for the third argument there is
->>> svc_pool_map_get_node(chosen_pool->sp_id), so let's have
->>> svc_prepare_thread() call that itself.
->>>
->>
->> I have no idea of what you mean ;)
->>
->> I need 'node' for the following kthread_create_on_node()
->
-> Doh, of course--apologies.
->
->>> Seems OK otherwise.
->>>
->>> Any suggestions on how we should test this?
->>
->> I did tests on my machine, seems good.
->>
->> I checked that stacks were now correct using :
->> "echo t > /proc/sysrq-trigger"
->
-> I was wondering more about good tests of nfsd's performance on numa;
-> that might be more of a question for Greg.
->
-
-To really show a big difference you need a much bigger box, or slower  
-NUMA interconnects than today's. You also want network cards locally  
-attached to each node and a metadata heavy (i.e. high rpc call rate)  
-load.
-
-Greg.
+-- 
+maks
