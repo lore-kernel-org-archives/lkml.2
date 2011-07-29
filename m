@@ -1,62 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab1G2UOg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 16:14:36 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:57391 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752080Ab1G2UOf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 16:14:35 -0400
-X-Sasl-enc: mDhNAMl0KerDfcysOkPJMSfVr6H8xv6/3kQaS3LGD0Vh 1311970474
-Date: Fri, 29 Jul 2011 15:14:33 -0500
-From: Paul Jackson <pj@usa.net>
+	id S1752824Ab1G2UXk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 16:23:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54499 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752493Ab1G2UXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 16:23:39 -0400
+Date: Fri, 29 Jul 2011 22:23:36 +0200
+From: Michal Marek <mmarek@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnaud Lacombe <lacombar@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        SergeySenozhatsky <sergey.senozhatsky@gmail.com>,
-        DaveJones <davej@redhat.com>
-Subject: Re: [06.5] Re: [GIT PULL] core/printk changes for v3.1
-Message-Id: <20110729151433.b8b6a3d9.pj@usa.net>
-In-Reply-To: <CA+55aFyqf6G2ZByfaTR5ZiKBVDMeiS2bC3r-WsSfc_M0bJViDg@mail.gmail.com>
-References: <20110722125934.GA25433@elte.hu>
-	<CACqU3MW-7_gCqNARdrPA5rZoZGLti+DMvkZsJN40VSDtU+VhpQ@mail.gmail.com>
-	<1311679697.24752.28.camel@twins>
-	<CACqU3MUghvskv4HrVn+w7rCTki0RkRwQfFUaaysHYOqB6V+q4A@mail.gmail.com>
-	<CA+55aFyqf6G2ZByfaTR5ZiKBVDMeiS2bC3r-WsSfc_M0bJViDg@mail.gmail.com>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Cc: lacombar@gmail.com, mmarek@suse.cz, plagnioj@jcrosoft.com,
+        rprabhu@wnohang.net, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild/kconfig for 3.1-rc1
+Message-ID: <20110729202336.GA1162@sepie.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 26 Jul 2011 13:30:06 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Hi Linus,
 
-> Sadly, the gmail web interface cannot *send* patches without
-> whitespace-mangling them. You have to send them as attachements, and
-> there is no way to say "do this attachement inline".
+here is the kconfig stuff for 3.1-rc1:
+* Lots of internal kconfig cleanup as well as bugfixes
+* New macros that allow to test CONFIG_ options in C expressions, this will
+  allow to convert some '#ifdef CONFIG_FOO' in the source to a more
+  readable variant 'if (IS_ENABLED(CONFIG_FOO))' in the future.
 
-I have updated my sendpatchset utility.  It works well with gmail's
-SMTP server.  It could be used by those with a gmail account instead
-of trying to send patches via their web interface.  Place one's
-gmail account information in the $HOME/.sendpatchset.ini file, as
-documented within the sendpatchset utility.
+Thanks,
+Michal
 
-It requires Python.
+The following changes since commit 55922c9d1b84b89cb946c777fddccb3247e7df2c:
 
-You can find the latest sendpatchset at:
+  Linux 3.0-rc1 (2011-05-29 17:43:36 -0700)
 
-    http://pauljackson.us/sendpatchset.py
-    http://pauljackson.us/COPYING
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git kconfig
 
-It's released under GPL license, and is an update of the same
-sendpatchset that I published a few times back in 2004 - 2007,
-while I worked at Silicon Graphics.  I am the same Paul Jackson
-who worked on cpusets for a while, formerly known as pj AT sgi.com.
+Arnaud Lacombe (20):
+      kconfig: annotate non-trivial fall-trough
+      kconfig: fix return code for invalid boolean symbol in conf_set_sym_val()
+      kconfig: add missing <stdarg.h> inclusion
+      kconfig: add missing <ctype.h> inclusion
+      kconfig: add missing <stdlib.h> inclusion
+      kconfig: nuke reference to SWIG
+      kconfig: nuke LKC_DIRECT_LINK cruft
+      kconfig/gconf: kill deadcode
+      kconfig/gconf: silent missing prototype warnings
+      kconfig: do not overwrite symbol direct dependency in assignment
+      kconfig: introduce specialized printer
+      kconfig: use calloc() for expr allocation
+      kconfig/conf: reduce the scope of `defconfig_file'
+      kconfig/conf: add command line options' description
+      kconfig: remove pending prototypes for kconfig_load()
+      kconfig/conf: mark xfgets() private
+      kconfig/nconf: use the generic menu_get_ext_help()
+      kconfig/nconf: prevent segfault on empty menu
+      kconfig/nconf: remove useless conditionnal
+      kconfig: fix missing "0x" prefix from S_HEX symbol in autoconf.h
 
--- 
-Paul Jackson <pj@usa.net>
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      kconfig: autogenerated config_is_xxx macro
+
+Michal Marek (8):
+      Merge branch 'kbuild/kconfig-for-40' into kbuild/kconfig
+      kconfig: Only generate config_is_xxx for bool and tristate options
+      Merge branch 'kbuild/kconfig-for-40' into kbuild/kconfig
+      Merge commit 'v3.0-rc1' into kbuild/kconfig
+      Merge branch 'kconfig-trivial' of git://github.com/lacombar/linux-2.6 into kbuild/kconfig
+      Merge branch 'kconfig-trivial' of git://github.com/lacombar/linux-2.6 into kbuild/kconfig
+      xconfig: Abort close if configuration cannot be saved
+      kconfig: Introduce IS_ENABLED(), IS_BUILTIN() and IS_MODULE()
+
+Raghavendra D Prabhu (1):
+      nconfig: Avoid Wunused-but-set warning
+
+ Makefile                            |    2 +-
+ include/linux/kconfig.h             |   32 ++++
+ scripts/kconfig/Makefile            |   23 +--
+ scripts/kconfig/conf.c              |   48 +++++-
+ scripts/kconfig/confdata.c          |  295 +++++++++++++++++++++++------------
+ scripts/kconfig/expr.c              |   13 +-
+ scripts/kconfig/expr.h              |    3 -
+ scripts/kconfig/gconf.c             |   38 +-----
+ scripts/kconfig/kconfig_load.c      |   35 ----
+ scripts/kconfig/kxgettext.c         |    1 -
+ scripts/kconfig/lex.zconf.c_shipped |    1 -
+ scripts/kconfig/lkc.h               |   16 +--
+ scripts/kconfig/lkc_proto.h         |    1 +
+ scripts/kconfig/mconf.c             |    2 +-
+ scripts/kconfig/menu.c              |    5 +-
+ scripts/kconfig/nconf.c             |   30 +---
+ scripts/kconfig/qconf.cc            |   17 ++-
+ scripts/kconfig/qconf.h             |    2 +-
+ scripts/kconfig/symbol.c            |   47 ++++++-
+ scripts/kconfig/util.c              |    2 +
+ scripts/kconfig/zconf.l             |    1 -
+ scripts/kconfig/zconf.tab.c_shipped |    1 -
+ scripts/kconfig/zconf.y             |    1 -
+ 23 files changed, 356 insertions(+), 260 deletions(-)
+ create mode 100644 include/linux/kconfig.h
+ delete mode 100644 scripts/kconfig/kconfig_load.c
