@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab1G2Ruq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 13:50:46 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:47888 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab1G2Rup (ORCPT
+	id S1752453Ab1G2RxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 13:53:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:40914 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178Ab1G2RxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 13:50:45 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6422"; a="106669580"
-Message-ID: <4E32F2ED.4020000@codeaurora.org>
-Date: Fri, 29 Jul 2011 10:50:37 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: sedat.dilek@gmail.com
-CC: Sedat Dilek <sedat.dilek@googlemail.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>, Helge Deller <deller@gmx.de>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: linux-next: Tree for July 28 ("copy_from_user_overflow" undefined)
-References: <CA+icZUV7R5hqTupiuZZKWcsZ5LOBGmY6xgmMTM7W3ojJo0Sp4w@mail.gmail.com> <20110728160136.771e2c0a.rdunlap@xenotime.net> <CA+icZUXLpThpEem+DPimemYVHqSKb5NAb5h_L-rMPWsD+WJTYg@mail.gmail.com> <20110728220926.6d1a91f4.rdunlap@xenotime.net> <CA+icZUVsJNSDzBvvH810POEydpaZxJZfM8J9bD+93+4d+88D_A@mail.gmail.com> <CA+icZUX=qM+xhJkteXs=F_RJP+k-Tzf3+Cp4ZdeatZ0cgHegBw@mail.gmail.com>
-In-Reply-To: <CA+icZUX=qM+xhJkteXs=F_RJP+k-Tzf3+Cp4ZdeatZ0cgHegBw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 29 Jul 2011 13:53:22 -0400
+X-Authority-Analysis: v=1.1 cv=sbbt6Wn8j+VvNVI1Ftt/uHhinWyuFt+R57MN9Ty2Tys= c=1 sm=0 a=S531j9xFrh8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=YQSaZpGtGf7UDQfr9UAA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v2 1/4] trace-cmd: Add parse error checking target
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAL26m8Jmy=Rcg6fKghk9Epcj9U6Z2i9UM78hF5_r30U5Qvv9uw@mail.gmail.com>
+References: <1310785241-3799-1-git-send-email-vnagarnaik@google.com>
+	 <1311619188-4905-1-git-send-email-vnagarnaik@google.com>
+	 <1311949173.21143.43.camel@gandalf.stny.rr.com>
+	 <CAL26m8Jmy=Rcg6fKghk9Epcj9U6Z2i9UM78hF5_r30U5Qvv9uw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 29 Jul 2011 13:53:20 -0400
+Message-ID: <1311962000.21143.69.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2011 02:45 AM, Sedat Dilek wrote:
-> [ CCing all people from 0416 patch ]
->
-> OK, here a quick review and looking for suspicious commits:
-[snip]
-> -- a/lib/Makefile
-> +++ b/lib/Makefile
-> @@ -14,6 +14,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
->          proportions.o prio_heap.o ratelimit.o show_mem.o \
->          is_single_threaded.o plist.o decompress.o find_next_bit.o
->
-> +lib-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
->  lib-$(CONFIG_MMU) += ioremap.o
->  lib-$(CONFIG_SMP) += cpumask.o
->
-> So, I can rebuild next-201107{27,28} with
-> CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS=y and look again if the
-> build-breakage in binfmt_misc is gone.
->
-> Any comments from x86 folk?
+On Fri, 2011-07-29 at 10:41 -0700, Vaibhav Nagarnaik wrote:
 
-I already noticed this and sent a fixup patch to Andrew. Looks like he
-never picked it up. The real fix is to change that lib-$(CONFIG... to
-obj-$(CONFIG...
+> Thanks Steve. I will send the man page patch.
 
-See https://lkml.org/lkml/2011/7/6/6 for the patch.
+BTW, I played with this and I have a few issues. I'll still accept the
+patch as it's not that big of a deal. But here's some improvements that
+can be made.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
+It should load in the plugins. As the plugins can process failed events
+well. If you don't want the plugins than you can just do what we do with
+report, add a -N to prevent plugins from being loaded.
+
+It should also read a trace.dat file if one is provided on the command
+line. If you don't add a file then it will use the local events of the
+system, if possible.
+
+This would make it even more useful.
+
+Thanks!
+
+-- Steve
+
 
