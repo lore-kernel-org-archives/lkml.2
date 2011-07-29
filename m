@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489Ab1G2QNt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 12:13:49 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39536 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752430Ab1G2QNq (ORCPT
+	id S1752345Ab1G2QQk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 12:16:40 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:40580 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751897Ab1G2QQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 12:13:46 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 2/8] cgroups: New resource counter inheritance API
-Date: Fri, 29 Jul 2011 18:13:24 +0200
-Message-Id: <1311956010-32076-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1311956010-32076-1-git-send-email-fweisbec@gmail.com>
-References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com>
+	Fri, 29 Jul 2011 12:16:39 -0400
+Message-ID: <4E32DCE3.2040708@nanometrics.ca>
+Date: Fri, 29 Jul 2011 12:16:35 -0400
+From: James Nuss <jamesnuss@nanometrics.ca>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110627 Thunderbird/5.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Ricardo Martins <rasm@fe.up.pt>, Rodolfo Giometti <giometti@linux.it>,
+        Ben Gardiner <bengardiner@nanometrics.ca>,
+        linux-kernel@vger.kernel.org, linuxpps@ml.enneenne.com,
+        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
+        Igor Plyatov <plyatov@gmail.com>
+Subject: Re: [PATCH v4 0/2] New PPS client driver using GPIO
+References: <1311353744-16405-1-git-send-email-jamesnuss@nanometrics.ca> <20110728160835.aad5bd31.akpm@linux-foundation.org> <CAFqRFbfn==sVPdkw7LWa0M_XXXe+ry0Wi93bEP_gZz7fnYOz1A@mail.gmail.com>
+In-Reply-To: <CAFqRFbfn==sVPdkw7LWa0M_XXXe+ry0Wi93bEP_gZz7fnYOz1A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide an API to inherit a counter value from a parent.
-This can be useful to implement cgroup.clone_children on
-a resource counter.
+Hi Andrew,
 
-Still the resources of the children are limited by those
-of the parent, so this is only to provide a default setting
-behaviour when clone_children is set.
+On 07/29/2011 05:44 AM, Ricardo Martins wrote:
+> On 29 July 2011 01:08, Andrew Morton<akpm@linux-foundation.org>  wrote:
+>> On Fri, 22 Jul 2011 12:55:42 -0400
+>> James Nuss<jamesnuss@nanometrics.ca>  wrote:
+>>
+>>> This patchset contains 2 patches.  It is based on the work done by
+>>> Ricardo Martins<rasm@fe.up.pt>  who submitted an initial implementation [1]
+>>> of a PPS IRQ client driver to the linuxpps mailing-list on Dec 3 2010.
+>>
+>> In which case it is rather desirable that we have Ricardo's Signed-off-by:
+>> for these patches, please.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Menage <menage@google.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Aditya Kali <adityakali@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/res_counter.h |    2 ++
- kernel/res_counter.c        |   12 ++++++++++++
- 2 files changed, 14 insertions(+), 0 deletions(-)
+Absolutely, I should have added that from the beginning.
 
-diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
-index 1b3fe05..109d118 100644
---- a/include/linux/res_counter.h
-+++ b/include/linux/res_counter.h
-@@ -84,6 +84,8 @@ int res_counter_write(struct res_counter *counter, int member,
- 
- void res_counter_write_u64(struct res_counter *counter, int member, u64 val);
- 
-+void res_counter_inherit(struct res_counter *counter, int member);
-+
- /*
-  * the field descriptors. one for each member of res_counter
-  */
-diff --git a/kernel/res_counter.c b/kernel/res_counter.c
-index 806d041..10a901b 100644
---- a/kernel/res_counter.c
-+++ b/kernel/res_counter.c
-@@ -198,3 +198,15 @@ int res_counter_write(struct res_counter *counter, int member,
- 
- 	return 0;
- }
-+
-+void res_counter_inherit(struct res_counter *counter, int member)
-+{
-+	struct res_counter *parent;
-+	unsigned long long val;
-+
-+	parent = counter->parent;
-+	if (parent) {
-+		val = res_counter_read_u64(parent, member);
-+		res_counter_write_u64(counter, member, val);
-+	}
-+}
--- 
-1.7.5.4
+>
+> Signed-off-by: Ricardo Martins<rasm@fe.up.pt>
+>
+>>
+
+I see that you've introduced this patchset to the -mm tree with a minor 
+fixup also (thanks for that). They all look good to me so now that 
+Ricardo has approved the addition of his Signed-off-by, could you add 
+that and submit to Linus please? Otherwise I can submit another patchset 
+if that is necessary.
+
+Regards,
+James Nuss
+jamesnuss@nanometrics.ca
 
