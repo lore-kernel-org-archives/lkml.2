@@ -1,187 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab1G2GTf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 02:19:35 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53150 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753537Ab1G2GTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 02:19:34 -0400
-Date: Fri, 29 Jul 2011 16:19:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the moduleh tree
-Message-Id: <20110729161931.a9c9108c233640f3c2d7b24e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754920Ab1G2GWH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 02:22:07 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42566 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753847Ab1G2GWG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 02:22:06 -0400
+Date: Fri, 29 Jul 2011 14:21:58 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched: Remove WAKEUP_PREEMPT feature check in entity_tick
+Message-ID: <20110729062158.GA8971@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1311846203.3938.1555.camel@minggr.sh.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1311846203.3938.1555.camel@minggr.sh.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Thu, Jul 28, 2011 at 05:43:23PM +0800, Lin Ming wrote:
+> Currently, entity_tick calls check_preempt_tick if WAKEUP_PREEMPT feature is
+> disabled. That's wrong. It should do that if the feature is enabled.
 
-After merging the moduleh tree, today's linux-next build (powerpc
-allnoconfig) failed like this:
+Why is it wrong?
+check_preempt_wakeup() is used for wakeup.
 
-arch/powerpc/mm/mmu_context_hash32.c:76:1: error: data definition has no type or storage class
-arch/powerpc/mm/mmu_context_hash32.c:76:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-arch/powerpc/mm/mmu_context_hash32.c:76:1: error: parameter names (without types) in function declaration
-arch/powerpc/mm/mmu_context_hash32.c:95:1: error: data definition has no type or storage class
-arch/powerpc/mm/mmu_context_hash32.c:95:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-arch/powerpc/mm/mmu_context_hash32.c:95:1: error: parameter names (without types) in function declaration
-cc1: warnings being treated as errors
-arch/powerpc/mm/tlb_hash32.c:48:1: error: data definition has no type or storage class
-arch/powerpc/mm/tlb_hash32.c:48:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/mm/tlb_hash32.c:48:1: error: parameter names (without types) in function declaration
-arch/powerpc/mm/tlb_hash32.c:128:1: error: data definition has no type or storage class
-arch/powerpc/mm/tlb_hash32.c:128:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/mm/tlb_hash32.c:128:1: error: parameter names (without types) in function declaration
-arch/powerpc/mm/tlb_hash32.c:151:1: error: data definition has no type or storage class
-arch/powerpc/mm/tlb_hash32.c:151:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/mm/tlb_hash32.c:151:1: error: parameter names (without types) in function declaration
-arch/powerpc/mm/tlb_hash32.c:167:1: error: data definition has no type or storage class
-arch/powerpc/mm/tlb_hash32.c:167:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/mm/tlb_hash32.c:167:1: error: parameter names (without types) in function declaration
-arch/powerpc/mm/tlb_hash32.c:179:1: error: data definition has no type or storage class
-arch/powerpc/mm/tlb_hash32.c:179:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/mm/tlb_hash32.c:179:1: error: parameter names (without types) in function declaration
-cc1: warnings being treated as errors
-arch/powerpc/kernel/pci_32.c:51:1: error: data definition has no type or storage class
-arch/powerpc/kernel/pci_32.c:51:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-arch/powerpc/kernel/pci_32.c:51:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/pci_32.c:190:1: error: data definition has no type or storage class
-arch/powerpc/kernel/pci_32.c:190:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/pci_32.c:190:1: error: parameter names (without types) in function declaration
-cc1: warnings being treated as errors
-arch/powerpc/kernel/iomap.c:36:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:36:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:36:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:37:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:37:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:37:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:38:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:38:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:38:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:39:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:39:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:39:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:40:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:40:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:40:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:62:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:62:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:62:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:63:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:63:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:63:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:64:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:64:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:64:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:65:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:65:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:65:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:66:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:66:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:66:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:88:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:88:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:88:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:89:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:89:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:89:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:90:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:90:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:90:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:104:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:104:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:104:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:105:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:105:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:105:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:106:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:106:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:106:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:117:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:117:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:117:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:118:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:118:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:118:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:147:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:147:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:147:1: error: parameter names (without types) in function declaration
-arch/powerpc/kernel/iomap.c:148:1: error: data definition has no type or storage class
-arch/powerpc/kernel/iomap.c:148:1: error: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-arch/powerpc/kernel/iomap.c:148:1: error: parameter names (without types) in function declaration
+> 
+> And actually the check is duplicate because check_preempt_tick will do
+> that. So just remove it from entity_tick.
 
-I have added this patch for today:
+It's not exactly duplicated. entity_tick() will resched_task(*p)
+if p's slice is over. So if there is an following wakeup(say X),
+then there is an opportunity for X to schedule quickly.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 29 Jul 2011 16:15:26 +1000
-Subject: [PATCH] powerpc32: include export.h for EXPORT_SYMBOL
+Thanks,
+Yong
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/powerpc/kernel/iomap.c          |    1 +
- arch/powerpc/kernel/pci_32.c         |    1 +
- arch/powerpc/mm/mmu_context_hash32.c |    1 +
- arch/powerpc/mm/tlb_hash32.c         |    1 +
- 4 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/arch/powerpc/kernel/iomap.c b/arch/powerpc/kernel/iomap.c
-index 1577434..2735872 100644
---- a/arch/powerpc/kernel/iomap.c
-+++ b/arch/powerpc/kernel/iomap.c
-@@ -6,6 +6,7 @@
- #include <linux/init.h>
- #include <linux/pci.h>
- #include <linux/mm.h>
-+#include <linux/export.h>
- #include <asm/io.h>
- #include <asm/pci-bridge.h>
- 
-diff --git a/arch/powerpc/kernel/pci_32.c b/arch/powerpc/kernel/pci_32.c
-index bb15451..fdd1a3d 100644
---- a/arch/powerpc/kernel/pci_32.c
-+++ b/arch/powerpc/kernel/pci_32.c
-@@ -15,6 +15,7 @@
- #include <linux/list.h>
- #include <linux/of.h>
- #include <linux/slab.h>
-+#include <linux/export.h>
- 
- #include <asm/processor.h>
- #include <asm/io.h>
-diff --git a/arch/powerpc/mm/mmu_context_hash32.c b/arch/powerpc/mm/mmu_context_hash32.c
-index d0ee554..78fef67 100644
---- a/arch/powerpc/mm/mmu_context_hash32.c
-+++ b/arch/powerpc/mm/mmu_context_hash32.c
-@@ -24,6 +24,7 @@
- 
- #include <linux/mm.h>
- #include <linux/init.h>
-+#include <linux/export.h>
- 
- #include <asm/mmu_context.h>
- #include <asm/tlbflush.h>
-diff --git a/arch/powerpc/mm/tlb_hash32.c b/arch/powerpc/mm/tlb_hash32.c
-index 9a445f6..558e30c 100644
---- a/arch/powerpc/mm/tlb_hash32.c
-+++ b/arch/powerpc/mm/tlb_hash32.c
-@@ -27,6 +27,7 @@
- #include <linux/init.h>
- #include <linux/highmem.h>
- #include <linux/pagemap.h>
-+#include <linux/export.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/tlb.h>
--- 
-1.7.5.4
+> 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  kernel/sched_fair.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index bc8ee99..af2fe9d 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -1233,7 +1233,7 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
+>  		return;
+>  #endif
+>  
+> -	if (cfs_rq->nr_running > 1 || !sched_feat(WAKEUP_PREEMPT))
+> +	if (cfs_rq->nr_running > 1)
+>  		check_preempt_tick(cfs_rq, curr);
+>  }
+>  
+> -- 
+> 1.7.2.3
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Only stand for myself
