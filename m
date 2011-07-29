@@ -1,123 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab1G2Nbr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 09:31:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42732 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056Ab1G2Nbq (ORCPT
+	id S1754763Ab1G2NjI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 09:39:08 -0400
+Received: from auth.codethink.co.uk ([208.78.96.188]:48561 "EHLO
+	auth.codethink.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540Ab1G2NjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 09:31:46 -0400
-X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=U1bfttRP1WkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=ufHFDILaAAAA:8 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=Dgdb2dsZrN-3O5mmCdsA:9 a=B9aZ9RYxEGQFHp5ocRsA:7 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=l7ZknGph1ugA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH v3 RESEND] cgroup/kmemcheck: Annotate alloc_page() for
- cgroup allocations
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: containers@lists.linux-foundation.org,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, Michal Hocko <mhocko@suse.cz>,
-        Paul Menage <menage@google.com>, LiZefan <lizf@cn.fujitsu.com>
-In-Reply-To: <1311732644.21143.5.camel@gandalf.stny.rr.com>
-References: <1311699911.3526.87.camel@gandalf.stny.rr.com>
-	 <20110726173816.GA26597@tiehlicka.suse.cz>
-	 <1311702110.3526.98.camel@gandalf.stny.rr.com>
-	 <1311702244.3526.100.camel@gandalf.stny.rr.com>
-	 <1311704249.3526.106.camel@gandalf.stny.rr.com>
-	 <20110726184342.GB26597@tiehlicka.suse.cz>
-	 <1311707088.21143.0.camel@gandalf.stny.rr.com>
-	 <1311732644.21143.5.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 29 Jul 2011 09:31:41 -0400
-Message-ID: <1311946302.21143.37.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 29 Jul 2011 09:39:06 -0400
+X-Greylist: delayed 2603 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Jul 2011 09:39:05 EDT
+Message-ID: <4E32ADC7.3080002@codethink.co.uk>
+Date: Fri, 29 Jul 2011 13:55:35 +0100
+From: Ben Brewer <ben.brewer@codethink.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: i915 SSC Patch
+Content-Type: multipart/mixed;
+ boundary="------------040201080902020700050407"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
+This is a multi-part message in MIME format.
+--------------040201080902020700050407
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-On Tue, 2011-07-26 at 22:10 -0400, Steven Rostedt wrote:
-> [ Resending with CGROUP maintainers Cc'd this time ]
+I've added a global SSC (Spread Spectrum Clock) parameter to the i915 
+driver, since having SSC enabled breaks (distorts) VGA output on some 
+Core i5/i7 chips (see https://bugs.freedesktop.org/show_bug.cgi?id=38750).
+SSC is still enabled by default so the behaviour won't change but 
+setting the global_use_ssc parameter will turn this feature off and 
+allow affected devices to function correctly (notably the Dell Vostro 3300).
 
-Paul sent me a note saying that these patches usually go through -mm,
-want to take them?
+Numerous people have tested this and reported it working (as seen in the 
+bug report thread) which isn't surprising considering it's a basic 
+modification of Chris Wilsons work.
+
+Any comments, or anybody willing to include this patch?
 
 Thanks,
+Ben Brewer (CodeThink)
 
--- Steve
+--------------040201080902020700050407
+Content-Type: text/plain;
+ name="i915-nossc-2.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="i915-nossc-2.patch"
 
-> 
-> When the cgroup base was allocated with kmalloc, it was necessary to
-> annotate the variable with kmemcheck_not_leak(). But because it has
-> recently been changed to be allocated with alloc_page() (which skips
-> kmemleak checks) causes a warning on boot up.
-> 
-> I was triggering this output:
-> 
-> allocated 8388608 bytes of page_cgroup
-> please try 'cgroup_disable=memory' option if you don't want memory cgroups
-> kmemleak: Trying to color unknown object at 0xf5840000 as Grey
-> Pid: 0, comm: swapper Not tainted 3.0.0-test #12
-> Call Trace:
->  [<c17e34e6>] ? printk+0x1d/0x1f^M
->  [<c10e2941>] paint_ptr+0x4f/0x78
->  [<c178ab57>] kmemleak_not_leak+0x58/0x7d
->  [<c108ae9f>] ? __rcu_read_unlock+0x9/0x7d
->  [<c1cdb462>] kmemleak_init+0x19d/0x1e9
->  [<c1cbf771>] start_kernel+0x346/0x3ec
->  [<c1cbf1b4>] ? loglevel+0x18/0x18
->  [<c1cbf0aa>] i386_start_kernel+0xaa/0xb0
-> 
-> After a bit of debugging I tracked the object 0xf840000 (and others)
-> down to the cgroup code. The change from allocating base with kmalloc to
-> alloc_page() has the base not calling kmemleak_alloc() which adds the
-> pointer to the object_tree_root, but kmemleak_not_leak() adds it to the
-> crt_early_log[] table. On kmemleak_init(), the entry is found in the
-> early_log[] but not the object_tree_root, and this error message is
-> displayed.
-> 
-> If alloc_page() fails then it defaults back to vmalloc() which still
-> uses the kmemleak_alloc() which makes us still need the
-> kmemleak_not_leak() call. The solution is to call the kmemleak_alloc()
-> directly if the alloc_page() succeeds.
-> 
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-> index 53bffc6..1eb534a 100644
-> --- a/mm/page_cgroup.c
-> +++ b/mm/page_cgroup.c
-> @@ -133,10 +133,13 @@ struct page *lookup_cgroup_page(struct page_cgroup *pc)
->  static void *__meminit alloc_page_cgroup(size_t size, int nid)
->  {
->  	void *addr = NULL;
-> +	gfp_t flags = GFP_KERNEL | __GFP_NOWARN;
->  
-> -	addr = alloc_pages_exact_nid(nid, size, GFP_KERNEL | __GFP_NOWARN);
-> -	if (addr)
-> +	addr = alloc_pages_exact_nid(nid, size, flags);
-> +	if (addr) {
-> +		kmemleak_alloc(addr, size, 1, flags);
->  		return addr;
-> +	}
->  
->  	if (node_state(nid, N_HIGH_MEMORY))
->  		addr = vmalloc_node(size, nid);
-> 
-> 
+diff -uNr linux-2.6.38/drivers/gpu/drm/i915/i915_drv.c linux-2.6.38-nossc/drivers/gpu/drm/i915/i915_drv.c
+--- linux-2.6.38/drivers/gpu/drm/i915/i915_drv.c	2011-03-15 01:20:32.000000000 +0000
++++ linux-2.6.38-nossc/drivers/gpu/drm/i915/i915_drv.c	2011-07-26 15:06:34.762058717 +0100
+@@ -55,7 +55,10 @@
+ unsigned int i915_lvds_downclock = 0;
+ module_param_named(lvds_downclock, i915_lvds_downclock, int, 0400);
+ 
+-unsigned int i915_panel_use_ssc = 1;
++unsigned int i915_use_ssc = 1;
++module_param_named(global_use_ssc, i915_use_ssc, int, 0600);
++
++unsigned int i915_panel_use_ssc = 1;
+ module_param_named(lvds_use_ssc, i915_panel_use_ssc, int, 0600);
+ 
+ bool i915_try_reset = true;
+diff -uNr linux-2.6.38/drivers/gpu/drm/i915/i915_drv.h linux-2.6.38-nossc/drivers/gpu/drm/i915/i915_drv.h
+--- linux-2.6.38/drivers/gpu/drm/i915/i915_drv.h	2011-03-15 01:20:32.000000000 +0000
++++ linux-2.6.38-nossc/drivers/gpu/drm/i915/i915_drv.h	2011-07-26 13:50:31.198058201 +0100
+@@ -344,6 +344,7 @@
+ 	unsigned int lvds_vbt:1;
+ 	unsigned int int_crt_support:1;
+ 	unsigned int lvds_use_ssc:1;
++	unsigned int display_clock_mode:1;
+ 	int lvds_ssc_freq;
+ 	struct {
+ 		int rate;
+@@ -958,6 +959,7 @@
+ extern unsigned int i915_powersave;
+ extern unsigned int i915_semaphores;
+ extern unsigned int i915_lvds_downclock;
++extern unsigned int i915_use_ssc;
+ extern unsigned int i915_panel_use_ssc;
+ extern unsigned int i915_enable_rc6;
+ 
+diff -uNr linux-2.6.38/drivers/gpu/drm/i915/intel_bios.c linux-2.6.38-nossc/drivers/gpu/drm/i915/intel_bios.c
+--- linux-2.6.38/drivers/gpu/drm/i915/intel_bios.c	2011-03-15 01:20:32.000000000 +0000
++++ linux-2.6.38-nossc/drivers/gpu/drm/i915/intel_bios.c	2011-07-20 12:53:52.281036594 +0100
+@@ -270,6 +270,8 @@
+ 			dev_priv->lvds_ssc_freq = general->ssc_freq ? 100 : 120;
+ 		else
+ 			dev_priv->lvds_ssc_freq = general->ssc_freq ? 100 : 96;
++
++		dev_priv->display_clock_mode = general->display_clock_mode;
+ 	}
+ }
+ 
+diff -uNr linux-2.6.38/drivers/gpu/drm/i915/intel_bios.h linux-2.6.38-nossc/drivers/gpu/drm/i915/intel_bios.h
+--- linux-2.6.38/drivers/gpu/drm/i915/intel_bios.h	2011-03-15 01:20:32.000000000 +0000
++++ linux-2.6.38-nossc/drivers/gpu/drm/i915/intel_bios.h	2011-07-20 12:52:50.309036565 +0100
+@@ -120,7 +120,9 @@
+ 	u8 ssc_freq:1;
+ 	u8 enable_lfp_on_override:1;
+ 	u8 disable_ssc_ddt:1;
+-	u8 rsvd8:3; /* finish byte */
++	u8 rsvd7:1;
++	u8 display_clock_mode:1;
++	u8 rsvd8:1; /* finish byte */
+ 
+         /* bits 3 */
+ 	u8 disable_smooth_vision:1;
+diff -uNr linux-2.6.38/drivers/gpu/drm/i915/intel_display.c linux-2.6.38-nossc/drivers/gpu/drm/i915/intel_display.c
+--- linux-2.6.38/drivers/gpu/drm/i915/intel_display.c	2011-07-25 10:12:09.904820505 +0100
++++ linux-2.6.38-nossc/drivers/gpu/drm/i915/intel_display.c	2011-07-26 14:05:07.298058301 +0100
+@@ -3924,7 +3924,7 @@
+ 
+ static inline bool intel_panel_use_ssc(struct drm_i915_private *dev_priv)
+ {
+-	return dev_priv->lvds_use_ssc && i915_panel_use_ssc;
++	return dev_priv->lvds_use_ssc && i915_panel_use_ssc && i915_use_ssc;
+ }
+ 
+ static int intel_crtc_mode_set(struct drm_crtc *crtc,
+@@ -4153,39 +4153,59 @@
+ 	 */
+ 	if (HAS_PCH_SPLIT(dev)) {
+ 		temp = I915_READ(PCH_DREF_CONTROL);
+-		/* Always enable nonspread source */
+ 		temp &= ~DREF_NONSPREAD_SOURCE_MASK;
+-		temp |= DREF_NONSPREAD_SOURCE_ENABLE;
+ 		temp &= ~DREF_SSC_SOURCE_MASK;
+-		temp |= DREF_SSC_SOURCE_ENABLE;
++		if (i915_use_ssc) {
++			/* Always enable nonspread source */
++			temp |= DREF_NONSPREAD_SOURCE_ENABLE;
++			temp |= DREF_SSC_SOURCE_ENABLE;
++		} else {
++			temp &= ~DREF_SSC1_ENABLE;
++			temp &= ~DREF_SSC4_ENABLE;
++			temp &= ~DREF_SUPERSPREAD_SOURCE_ENABLE;
++			temp &= ~DREF_CPU_SOURCE_OUTPUT_MASK;
++		}
+ 		I915_WRITE(PCH_DREF_CONTROL, temp);
+ 
+ 		POSTING_READ(PCH_DREF_CONTROL);
+ 		udelay(200);
+ 
+-		if (has_edp_encoder) {
+-			if (intel_panel_use_ssc(dev_priv)) {
+-				temp |= DREF_SSC1_ENABLE;
++		if (i915_use_ssc) {
++			if (has_edp_encoder) {
++				if (intel_panel_use_ssc(dev_priv)) {
++					temp |= DREF_SSC1_ENABLE;
++					I915_WRITE(PCH_DREF_CONTROL, temp);
++					POSTING_READ(PCH_DREF_CONTROL);
++					udelay(200);
++				}
++				temp &= ~DREF_CPU_SOURCE_OUTPUT_MASK;
++				
++				/* Enable CPU source on attached eDP */
++				if (!intel_encoder_is_pch_edp(&has_edp_encoder->base)) {
++					if (intel_panel_use_ssc(dev_priv))
++						temp |= DREF_CPU_SOURCE_OUTPUT_DOWNSPREAD;
++					else
++						temp |= DREF_CPU_SOURCE_OUTPUT_NONSPREAD;
++				} else {
++					/* Enable SSC on PCH eDP if needed */
++					if (intel_panel_use_ssc(dev_priv)) {
++						DRM_ERROR("enabling SSC on PCH\n");
++						temp |= DREF_SUPERSPREAD_SOURCE_ENABLE;
++					}
++				}
+ 				I915_WRITE(PCH_DREF_CONTROL, temp);
+-
+ 				POSTING_READ(PCH_DREF_CONTROL);
+ 				udelay(200);
+ 			}
+-			temp &= ~DREF_CPU_SOURCE_OUTPUT_MASK;
++		} else {
++			if (dev_priv->display_clock_mode)
++				temp |= DREF_NONSPREAD_CK505_ENABLE;
++			else
++				temp |= DREF_NONSPREAD_SOURCE_ENABLE;
++			if (has_edp_encoder &&
++				!intel_encoder_is_pch_edp(&has_edp_encoder->base))
++				temp |= DREF_CPU_SOURCE_OUTPUT_NONSPREAD;
+ 
+-			/* Enable CPU source on CPU attached eDP */
+-			if (!intel_encoder_is_pch_edp(&has_edp_encoder->base)) {
+-				if (intel_panel_use_ssc(dev_priv))
+-					temp |= DREF_CPU_SOURCE_OUTPUT_DOWNSPREAD;
+-				else
+-					temp |= DREF_CPU_SOURCE_OUTPUT_NONSPREAD;
+-			} else {
+-				/* Enable SSC on PCH eDP if needed */
+-				if (intel_panel_use_ssc(dev_priv)) {
+-					DRM_ERROR("enabling SSC on PCH\n");
+-					temp |= DREF_SUPERSPREAD_SOURCE_ENABLE;
+-				}
+-			}
+ 			I915_WRITE(PCH_DREF_CONTROL, temp);
+ 			POSTING_READ(PCH_DREF_CONTROL);
+ 			udelay(200);
 
-
+--------------040201080902020700050407--
