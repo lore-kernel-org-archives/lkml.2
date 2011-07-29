@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab1G2U7S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 16:59:18 -0400
-Received: from lucidpixels.com ([72.73.18.11]:41801 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752372Ab1G2U7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 16:59:17 -0400
-Date: Fri, 29 Jul 2011 16:59:15 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Bryan Schumaker <bjschuma@netapp.com>
-cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: 2.6.xx: NFS: directory motion/cam2 contains a readdir loop
-In-Reply-To: <4E331D86.7060801@netapp.com>
-Message-ID: <alpine.DEB.2.02.1107291656340.25432@p34.internal.lan>
-References: <alpine.DEB.2.02.1107270952270.1451@p34.internal.lan>   <20110727160752.GC974@fieldses.org>   <alpine.DEB.2.02.1107271227340.1451@p34.internal.lan>   <20110727181111.GA23009@infradead.org>   <alpine.DEB.2.02.1107271530340.1451@p34.internal.lan>
-   <20110727193937.GA5354@infradead.org>   <alpine.DEB.2.02.1107271540100.1451@p34.internal.lan>   <20110727194722.GA9345@infradead.org>   <1311799021.25645.41.camel@lade.trondhjem.org>   <1311800051.25645.43.camel@lade.trondhjem.org> 
- <1311800195.25645.45.camel@lade.trondhjem.org>  <alpine.DEB.2.02.1107271723500.25432@p34.internal.lan>  <alpine.DEB.2.02.1107271844100.25432@p34.internal.lan> <1311886137.27285.2.camel@lade.trondhjem.org> <4E331D86.7060801@netapp.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752983Ab1G2VB1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 17:01:27 -0400
+Received: from smtp-out002.kontent.com ([81.88.40.216]:52774 "EHLO
+	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752831Ab1G2VBZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 17:01:25 -0400
+From: Oliver Neukum <oliver@neukum.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [linux-pm] better oopsing when frozen
+Date: Fri, 29 Jul 2011 23:04:10 +0200
+User-Agent: KMail/1.13.5 (Linux/3.0.0-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <201107251043.19932.oneukum@suse.de> <20110729195430.GB1720@ucw.cz> <201107292227.54948.rjw@sisk.pl>
+In-Reply-To: <201107292227.54948.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107292304.10738.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Freitag, 29. Juli 2011, 22:27:54 schrieb Rafael J. Wysocki:
+> However, there's another problem I didn't think of before.  Namely,
+> we cannot thaw tasks before resuming devices in case we've already
+> suspended them, because that will defeat the very purpose of the
+> freezing in the first place.
 
-On Fri, 29 Jul 2011, Bryan Schumaker wrote:
+That purpose is already defeated. The machine cannot be deader than dead.
+We could try to go through the device tree. But the machine just oopsed
+quite likely doing just that, so this doesn't seem wise to me.
 
-> How does this look for printing out more information when a cookie loop is detected?  Is there anything else that should be printed out?  My patch applies on top of Trond's from yesterday.
+IMHO if we oops while frozen, chances are the system is going to die.
+It certainly dies now. However, we must certainly not thaw if a valid
+image is already on disk, lest we corrupt a filesystem.
 
-
-Hi,
-
-This fails against 2.6.38:
-
-patching file fs/nfs/dir.c
-Hunk #1 FAILED at 134.
-Hunk #2 FAILED at 173.
-Hunk #3 FAILED at 323.
-Hunk #4 FAILED at 336.
-Hunk #5 FAILED at 349.
-Hunk #6 succeeded at 320 (offset -48 lines).
-Hunk #7 FAILED at 741.
-Hunk #8 succeeded at 716 (offset -59 lines).
-Hunk #9 succeeded at 749 (offset -59 lines).
-Hunk #10 succeeded at 763 (offset -59 lines).
-6 out of 10 hunks FAILED -- saving rejects to file fs/nfs/dir.c.rej
-patching file include/linux/nfs_fs.h
-Hunk #1 FAILED at 99.
-1 out of 1 hunk FAILED -- saving rejects to file include/linux/nfs_fs.h.rej
-atom:/usr/src/linux#
-
-And the 3.0 kernel is broken for my wireless adapter:
-http://www.gossamer-threads.com/lists/linux/kernel/1411576
-
-If you can make a combined patch for 2.6.38 I can try it, 2.6.39+ have a
-horrible driver (rt2800usb) and 1 person emailed me as well stating the
-same thing off-list (they stick with the manufacturer's driver or the *sta
-one).
-
-Justin.
+	Regards
+		Oliver
