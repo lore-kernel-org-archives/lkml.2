@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751474Ab1G2Ofb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 10:35:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9536 "EHLO mx1.redhat.com"
+	id S1751515Ab1G2Ogx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 10:36:53 -0400
+Received: from void.printf.net ([89.145.121.20]:46962 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751187Ab1G2Ofa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 10:35:30 -0400
-Date: Fri, 29 Jul 2011 16:32:54 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matt Fleming <matt.fleming@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	id S1751187Ab1G2Ogw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 10:36:52 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Ben Dooks <ben-linux@fluff.org>, linux-mmc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/8] vfork: make it killable
-Message-ID: <20110729143254.GD3501@redhat.com>
-References: <20110727163159.GA23785@redhat.com> <20110727163254.GC23793@redhat.com> <1311944530.21232.67.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH] mmc: sdhci-s3c: Fix build for header change
+References: <1311950100-7508-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Date: Fri, 29 Jul 2011 10:36:47 -0400
+In-Reply-To: <1311950100-7508-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	(Mark Brown's message of "Fri, 29 Jul 2011 15:35:00 +0100")
+Message-ID: <m27h71cfwg.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311944530.21232.67.camel@mfleming-mobl1.ger.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29, Matt Fleming wrote:
->
-> On Wed, 2011-07-27 at 18:32 +0200, Oleg Nesterov wrote:
->
-> [...]
->
-> >  static long clone_vfork_finish(struct task_struct *child,
-> >  				struct completion *vfork_done, long pid)
-> >  {
-> > -	freezer_do_not_count();
-> > -	wait_for_completion(vfork_done);
-> > -	freezer_count();
-> > +	int killed = wait_for_completion_killable(vfork_done);
-> > +
-> > +	if (killed) {
-> > +		struct completion *steal = xchg(&child->vfork_done, NULL);
-> > +		/* if we race with complete_vfork_done() we have to wait */
-> > +		if (unlikely(!steal))
-> > +			wait_for_completion(vfork_done);
-> > +
-> > +		return -EINTR;
-> > +	}
->
-> Hmm.. isn't this inherently racy anyway? Why go to the trouble of trying
-> to handle this race at all?
+Hi Mark,
 
-Suppose the child does xchg() and sees vfork_done != NULL. In this
-case the parent shouldn't return from do_fork() until the child
-does complete(), this "struct completion" was allocated on parent's
-stack.
+On Fri, Jul 29 2011, Mark Brown wrote:
+> A header change has removed an implicit inclusion of module.h, breaking
+> the build due to the use of THIS_MODULE. Fix that.
+>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mmc/host/sdhci-s3c.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
+> index 03da44a..2bd7bf4 100644
+> --- a/drivers/mmc/host/sdhci-s3c.c
+> +++ b/drivers/mmc/host/sdhci-s3c.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/clk.h>
+>  #include <linux/io.h>
+>  #include <linux/gpio.h>
+> +#include <linux/module.h>
+>  
+>  #include <linux/mmc/host.h>
 
-OK, I am starting to agree this looks overcomplicated, task_lock()
-can make the code look simpler (see 0/8).
+Thanks, pushed to mmc-next for 3.1.
 
-Oleg.
-
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
