@@ -1,256 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481Ab1G2H6u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 03:58:50 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:23361 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758Ab1G2H6s (ORCPT
+	id S1755506Ab1G2IAE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 04:00:04 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:33854 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758Ab1G2IAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 03:58:48 -0400
-From: Simon Glass <sjg@chromium.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Joe Perches <joe@perches.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Dave Martin <dave.martin@linaro.org>, Simon Glass <sjg@google.com>,
-        Simon Glass <sjg@chromium.org>
-Subject: [PATCH v5] ARM: Use generic BUG() handler
-Date: Fri, 29 Jul 2011 00:56:40 -0700
-Message-Id: <1311926200-24806-1-git-send-email-sjg@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
+	Fri, 29 Jul 2011 04:00:01 -0400
+Message-ID: <4E326879.9050009@gmail.com>
+Date: Fri, 29 Jul 2011 15:59:53 +0800
+From: Liu Yuan <namei.unix@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Stefan Hajnoczi <stefanha@gmail.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Khoa Huynh <khoa@us.ibm.com>, Badari Pulavarty <pbadari@us.ibm.com>
+Subject: Re: [RFC PATCH]vhost-blk: In-kernel accelerator for virtio block
+ device
+References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com>	<CAJSP0QUKz7LFuARF_n2LcBi_uuSzfmkjrWsHAWrXXkEaQJKkEA@mail.gmail.com> <CAJSP0QVH8RgwdtVRtowbkJ0KHiDs8np=mcfP8LWX6=NdDsAJcQ@mail.gmail.com>
+In-Reply-To: <CAJSP0QVH8RgwdtVRtowbkJ0KHiDs8np=mcfP8LWX6=NdDsAJcQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Simon Glass <sjg@google.com>
+Hi
+On 07/29/2011 12:48 PM, Stefan Hajnoczi wrote:
+> On Thu, Jul 28, 2011 at 4:44 PM, Stefan Hajnoczi<stefanha@gmail.com>  wrote:
+>> On Thu, Jul 28, 2011 at 3:29 PM, Liu Yuan<namei.unix@gmail.com>  wrote:
+>>
+>> Did you investigate userspace virtio-blk performance?  If so, what
+>> issues did you find?
+>>
+>> I have a hacked up world here that basically implements vhost-blk in userspace:
+>> http://repo.or.cz/w/qemu/stefanha.git/blob/refs/heads/virtio-blk-data-plane:/hw/virtio-blk.c
+>>
+>>   * A dedicated virtqueue thread sleeps on ioeventfd
+>>   * Guest memory is pre-mapped and accessed directly (not using QEMU's
+>> usually memory access functions)
+>>   * Linux AIO is used, the QEMU block layer is bypassed
+>>   * Completion interrupts are injected from the virtqueue thread using ioctl
+>>
+>> I will try to rebase onto qemu-kvm.git/master (this work is several
+>> months old).  Then we can compare to see how much of the benefit can
+>> be gotten in userspace.
+> Here is the rebased virtio-blk-data-plane tree:
+> http://repo.or.cz/w/qemu-kvm/stefanha.git/shortlog/refs/heads/virtio-blk-data-plane
+>
+> When I run it on my laptop with an Intel X-25M G2 SSD I see a latency
+> reduction compared to mainline userspace virtio-blk.  I'm not posting
+> results because I did quick fio runs without ensuring a quiet
+> benchmarking environment.
+>
+> There are a couple of things that could be modified:
+>   * I/O request merging is done to mimic bdrv_aio_multiwrite() - but
+> vhost-blk does not do this.  Try turning it off?
 
-ARM uses its own BUG() handler which makes its output slightly different
-from other archtectures.
+I noted bdrv_aio_multiwrite() do the murging job, but  I am not sure if 
+this trick is really needed since we have an io scheduler down the path 
+that is in a much more better position to murge requests. I think the 
+duplicate *pre-mature* merging of bdrv_aio_multiwrite is the result of  
+laio_submit()'s lack of submitting the requests in a batch mode. 
+io_submit() in the fs/aio.c says that every time we call laio_submit(), 
+it will submit the very request into the driver's request queue, which 
+would be run when we blk_finish_plug(). IMHO, you can simply batch 
+io_submit() requests instead of this tricks if you already bypass the 
+QEMU block layer.
 
-One of the problems is that the ARM implementation doesn't report the function
-with the BUG() in it, but always reports the PC being in __bug(). The generic
-implementation doesn't have this problem.
+>   * epoll(2) is used but perhaps select(2)/poll(2) have lower latency
+> for this use case.  Try another event mechanism.
+>
+> Let's see how it compares to vhost-blk first.  I can tweak it if we
+> want to investigate further.
+>
+> Yuan: Do you want to try the virtio-blk-data-plane tree?  You don't
+> need to change the qemu-kvm command-line options.
+>
+> Stefan
+Yes, please, sounds interesting. BTW, I think the user space would 
+achieve the same performance gain if you bypass qemu io layer all the 
+way down to the system calls in a request handling cycle, compared to 
+the current vhost-blk implementation that uses linux AIO. But hey, I 
+would go further to optimise it with block layer and other resources in 
+the mind. ;) and I don't add complexity to the current qemu io layer.
 
-Currently we get something like:
-
-kernel BUG at fs/proc/breakme.c:35!
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-...
-PC is at __bug+0x20/0x2c
-
-With this patch it displays:
-
-kernel BUG at fs/proc/breakme.c:35!
-Internal error: Oops - undefined instruction: 0 [#1] PREEMPT SMP
-...
-PC is at write_breakme+0xd0/0x1b4
-
-This implementation uses an undefined instruction to implement BUG, and sets up
-a bug table containing the relevant information. Many versions of gcc do not
-support %c properly for ARM (inserting a # when they shouldn't) so we work
-around this using distasteful macro magic.
-
-v1: Initial version to replace existing ARM BUG() implementation with something
-more similar to other architectures.
-
-v2: Add Thumb support, remove backtrace whitespace output changes. Change to
-use macros instead of requiring the asm %d flag to work (thanks to
-Dave Martin <dave.martin@linaro.org>)
-
-v3: Remove old BUG() implementation in favor of this one.
-Remove the Backtrace: message (will submit this separately).
-Use ARM_EXIT_KEEP() so that some architectures can dump exit text at link time
-thanks to Stephen Boyd <sboyd@codeaurora.org> (although since we always
-define GENERIC_BUG this might be academic.)
-Rebase to linux-2.6.git master.
-
-v4: Allow BUGS in modules (these were not reported correctly in v3)
-(thanks to Stephen Boyd <sboyd@codeaurora.org> for suggesting that.)
-Remove __bug() as this is no longer needed.
-
-v5: Add %progbits as the section flags.
-
-Change-Id: I07d77c832e816f5ad2390e25f466ddf750adecf4
-
-Signed-off-by: Simon Glass <sjg@chromium.org>
----
- arch/arm/Kconfig              |    4 +++
- arch/arm/include/asm/bug.h    |   55 ++++++++++++++++++++++++++++++++++------
- arch/arm/kernel/traps.c       |   31 +++++++++++++++-------
- arch/arm/kernel/vmlinux.lds.S |    3 +-
- 4 files changed, 73 insertions(+), 20 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 09ebf0b..4570473 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -216,6 +216,10 @@ config ARM_PATCH_PHYS_VIRT_16BIT
- 	  to allow physical memory down to a theoretical minimum of 64K
- 	  boundaries.
- 
-+config GENERIC_BUG
-+	def_bool y
-+	depends on BUG
-+
- source "init/Kconfig"
- 
- source "kernel/Kconfig.freezer"
-diff --git a/arch/arm/include/asm/bug.h b/arch/arm/include/asm/bug.h
-index 4d88425..9abe7a0 100644
---- a/arch/arm/include/asm/bug.h
-+++ b/arch/arm/include/asm/bug.h
-@@ -3,21 +3,58 @@
- 
- 
- #ifdef CONFIG_BUG
--#ifdef CONFIG_DEBUG_BUGVERBOSE
--extern void __bug(const char *file, int line) __attribute__((noreturn));
--
--/* give file/line information */
--#define BUG()		__bug(__FILE__, __LINE__)
- 
-+/*
-+ * Use a suitable undefined instruction to use for ARM/Thumb2 bug handling.
-+ * We need to be careful not to conflict with those used by other modules and
-+ * the register_undef_hook() system.
-+ */
-+#ifdef CONFIG_THUMB2_KERNEL
-+#define BUG_INSTR_VALUE 0xde02
-+#define BUG_INSTR_TYPE ".hword "
- #else
-+#define BUG_INSTR_VALUE 0xe7f001f2
-+#define BUG_INSTR_TYPE ".word "
-+#endif
- 
--/* this just causes an oops */
--#define BUG()		do { *(int *)0 = 0; } while (1)
- 
--#endif
-+#define BUG() _BUG(__FILE__, __LINE__, BUG_INSTR_VALUE)
-+#define _BUG(file, line, value) __BUG(file, line, value)
-+
-+#ifdef CONFIG_DEBUG_BUGVERBOSE
-+
-+/*
-+ * The extra indirection is to ensure that the __FILE__ string comes through
-+ * OK. Many version of gcc do not support the asm %c parameter which would be
-+ * preferable to this unpleasantness. We use mergeable string sections to
-+ * avoid multiple copies of the string appearing in the kernel image.
-+ */
-+
-+#define __BUG(__file, __line, __value)				\
-+do {								\
-+	BUILD_BUG_ON(sizeof(struct bug_entry) != 12);		\
-+	asm volatile("1:\t" BUG_INSTR_TYPE #__value "\n"	\
-+		".pushsection .rodata.str, \"aMS\", %progbits, 1\n" \
-+		"2:\t.asciz " #__file "\n" 			\
-+		".popsection\n" 				\
-+		".pushsection __bug_table,\"a\"\n"		\
-+		"3:\t.word 1b, 2b\n"				\
-+		"\t.hword " #__line ", 0\n"			\
-+		".popsection");					\
-+	unreachable();						\
-+} while (0)
-+
-+#else  /* not CONFIG_DEBUG_BUGVERBOSE */
-+
-+#define __BUG(__file, __line, __value)				\
-+do {								\
-+	asm volatile(BUG_INSTR_TYPE #__value);			\
-+	unreachable();						\
-+} while (0)
-+#endif  /* CONFIG_DEBUG_BUGVERBOSE */
- 
- #define HAVE_ARCH_BUG
--#endif
-+#endif  /* CONFIG_BUG */
- 
- #include <asm-generic/bug.h>
- 
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index bc9f9da..7496924 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -21,6 +21,7 @@
- #include <linux/kdebug.h>
- #include <linux/module.h>
- #include <linux/kexec.h>
-+#include <linux/bug.h>
- #include <linux/delay.h>
- #include <linux/init.h>
- #include <linux/sched.h>
-@@ -270,6 +271,8 @@ void die(const char *str, struct pt_regs *regs, int err)
- 	spin_lock_irq(&die_lock);
- 	console_verbose();
- 	bust_spinlocks(1);
-+	if (!user_mode(regs))
-+		report_bug(regs->ARM_pc, regs);
- 	ret = __die(str, err, thread, regs);
- 
- 	if (regs && kexec_should_crash(thread->task))
-@@ -301,6 +304,24 @@ void arm_notify_die(const char *str, struct pt_regs *regs,
- 	}
- }
- 
-+#ifdef CONFIG_GENERIC_BUG
-+
-+int is_valid_bugaddr(unsigned long pc)
-+{
-+#ifdef CONFIG_THUMB2_KERNEL
-+	unsigned short bkpt;
-+#else
-+	unsigned long bkpt;
-+#endif
-+
-+	if (probe_kernel_address((unsigned *)pc, bkpt))
-+		return 0;
-+
-+	return bkpt == BUG_INSTR_VALUE;
-+}
-+
-+#endif
-+
- static LIST_HEAD(undef_hook);
- static DEFINE_SPINLOCK(undef_lock);
- 
-@@ -706,16 +727,6 @@ baddataabort(int code, unsigned long instr, struct pt_regs *regs)
- 	arm_notify_die("unknown data abort code", regs, &info, instr, 0);
- }
- 
--void __attribute__((noreturn)) __bug(const char *file, int line)
--{
--	printk(KERN_CRIT"kernel BUG at %s:%d!\n", file, line);
--	*(int *)0 = 0;
--
--	/* Avoid "noreturn function does return" */
--	for (;;);
--}
--EXPORT_SYMBOL(__bug);
--
- void __readwrite_bug(const char *fn)
- {
- 	printk("%s called, but not implemented\n", fn);
-diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
-index bf977f8..7b2541e 100644
---- a/arch/arm/kernel/vmlinux.lds.S
-+++ b/arch/arm/kernel/vmlinux.lds.S
-@@ -21,7 +21,8 @@
- #define ARM_CPU_KEEP(x)
- #endif
- 
--#if defined(CONFIG_SMP_ON_UP) && !defined(CONFIG_DEBUG_SPINLOCK)
-+#if (defined(CONFIG_SMP_ON_UP) && !defined(CONFIG_DEBUG_SPINLOCK)) || \
-+	defined(CONFIG_GENERIC_BUG)
- #define ARM_EXIT_KEEP(x)	x
- #else
- #define ARM_EXIT_KEEP(x)
--- 
-1.7.3.1
-
+Yuan
