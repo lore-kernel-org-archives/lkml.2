@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab1G2JzK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 05:55:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55197 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751930Ab1G2JzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 05:55:09 -0400
-Date: Fri, 29 Jul 2011 10:55:04 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Keiichi KII <k-keiichi@bx.jp.nec.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Tom Zanussi <tzanussi@gmail.com>, "riel@redhat.com" <riel@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "BA, Moussa" <Moussa.BA@numonyx.com>
-Subject: Re: [RFC PATCH -tip 2/5] tracing/mm: add header event for object
- collections
-Message-ID: <20110729095504.GQ3010@suse.de>
-References: <4E24A61D.4060702@bx.jp.nec.com>
- <4E24A6F5.2080706@bx.jp.nec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4E24A6F5.2080706@bx.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755527Ab1G2Jzd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 05:55:33 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:41600 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372Ab1G2Jzb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 05:55:31 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=RoojVSJIJluF7nPEL/ZfEjhFDjN56szB521nsKvm9G4= c=1 sm=1
+ a=S7acZvqNAhcA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
+ a=ofbJNMp31UCpb4tbsbNzvA==:17 a=VwQbUJbxAAAA:8 a=85SyeJGuymdgS127JtcA:9
+ a=jxb-zm7z3pteGJiwVbEA:7 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH 0/2] Add inode checksum support to ext4
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger.kernel@dilger.ca>
+In-Reply-To: <20110728185730.GJ20655@tux1.beaverton.ibm.com>
+Date: Fri, 29 Jul 2011 03:55:30 -0600
+Cc: Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <aedilger@gmail.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4B7BD8E2-A1F3-4788-9753-20DC78620C5D@dilger.ca>
+References: <20110406224410.GB24354@tux1.beaverton.ibm.com> <1302290868.4461.7.camel@mingming-laptop> <20110727082730.GG20655@tux1.beaverton.ibm.com> <EF1F2330-D8C4-427A-ABB9-D1E607D91A3D@gmail.com> <20110728165615.GI20655@tux1.beaverton.ibm.com> <CAOQ4uxiOpwX2-Nfh9wJ7wSmAnbj9bh1+d9C95-N5D-8saRr6ww@mail.gmail.com> <20110728185730.GJ20655@tux1.beaverton.ibm.com>
+To: djwong@us.ibm.com
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 05:34:45PM -0400, Keiichi KII wrote:
-> From: Keiichi Kii <k-keiichi@bx.jp.nec.com>
+On 2011-07-28, at 12:57 PM, Darrick J. Wong wrote:
+>>> On Wed, Jul 27, 2011 at 03:16:12AM -0600, Andreas Dilger wrote:
+>>>> In the past, the discussion about adding checksums to the index and
+>>>> extent blocks was about using an ext4_extent_tail that contained not
+>>>> only the checksum of the block, but also a back-pointer to the
+>>>> inode/generation of the inode using this block.
+>>>> 
+>>>> That would allow e2fsck to verify that it is using the correct
+>>>> index/extent blocks and not pointing to a stale block that belonged
+>>>> to some other inode.
+>>>> 
+>>>> Since the header and index/extent entries are always 3 *__u32 in size,
+>>>> the extent tail can always be 4 * __u32 in size yet only consume a
+>>>> single slot in the block. There of course is no reason to put an extent
+>>>> tail inside the inode itself.
+>>> 
+>>> Does anybody have any objection to using crc32c (which we can hardware
+>>> accelerate on new Intel boxen) over crc16?  I think it'll be pretty easy
+>>> to use some of the reserved space in the group descriptor to store
+>>> checksums of the block and inode bitmaps.
+>> 
+>> On LSF Ted told me i can use 32bit from the group descriptor for exclude
+>> bitmap block and that inode and block bitmap checksum would use 16bit each .
 > 
-> We can use this "dump_header" event to separate trace data
-> for the object collections.
-> 
+> I know;  as far as I know there's still 96 bits of free space in the group
+> descriptor, which could be used to crc32 all three bitmaps.  But then that
+> leaves the descriptors with no room for further expansion, unless we decide to
+> expand them sort of like what was done for inodes.  Do we have a strategy for
+> handling continued expansion of metadata objects in ext4?
 
-dump_header is a very generic name. A "header" could apply to almost
-anything. Network packets have headers but is unrelated to this.
+One reason to stick to crc16 for the block checksums is that this would still
+fit inside the ext3_group_desc space, so upgraded filesystems could enable
+checksums.
 
-> Usage and Sample output:
-> 
-> zsh  2815 [001]  8819.880776: dump_header: object=mm/pages/walk-fs input=/
-> zsh  2815 [001]  8819.880786: dump_inode: ino=139161 size=507416 cached=507904 age=29 dirty=7 dev=254:0 file=strchr
-> zsh  2815 [001]  8819.880790: dump_pagecache_range: index=0 len=1 flags=4000000000000878 count=2 mapcount=0
-> zsh  2815 [001]  8819.880793: dump_pagecache_range: index=1 len=18 flags=400000000000087c count=2 mapcount=0
-> zsh  2815 [001]  8819.880795: dump_pagecache_range: index=19 len=1 flags=400000000000083c count=2 mapcount=0
-> zsh  2815 [001]  8819.880796: dump_pagecache_range: index=20 len=2 flags=400000000000087c count=2 mapcount=0
-> ...
-> zsh  2816 [001]  8820.XXXXXX: dump_header: object=mm/pages/walk-fs input=/
+>>> Adding tails to the extent tree blocks seems a bit trickier than that,
+>>> but not a big deal, though I guess I'll have to reshuffle
+>>> the extent tree to free up space at the end of the block.
 
-Is it possible for other trace information to appear in the middle of
-this? In particular, is it possible for a new "dump_header" to appear in
-the middle of an existing dump?
+I don't think reshuffling is necessary.  It should be OK to add it to blocks
+that fit, and skip blocks that don't have enough space.
 
-> Signed-off-by: Keiichi Kii <k-keiichi@bx.jp.nec.com>
-> ---
-> 
->  include/trace/events/mm.h |   19 +++++++++++++++++++
->  kernel/trace/trace_mm.c   |    9 +++++++++
->  2 files changed, 28 insertions(+), 0 deletions(-)
-> 
+>>> I was also wondering what people think of adding checksums to directory
+>> files?
+>>> I think that it's possible to put a checksum in each directory block --
+>> for
+>>> blocks containing a linear array of actual directory entries, we could
+>> zero out
+>>> the space past the end of the array and put a checksum at the very end of
+>> the
+>>> block.  For the dx_node/dx_root blocks, we could probably use the space
+>>> occupied by the last dx_entry to store the checksum.  Obviously, we'd have
+>> to
+>>> move whatever's at the end of the block elsewhere, but then, we have to do
+>> that
+>>> for the extent tree too.  Basically, the last 4 bytes become the checksum
+>> after
+>>> whatever's occupying the space is relocated. :)
+>>> 
+>>> It looks like there's sufficient unused space in ext4_xattr_header to add
+>> a
+>>> checksum.
+>>> 
+>>> Also -- should I create separate rocompat feature flags for each metadata
+>>> object that I add checksums to?  Or just have one flag that covers them
+>> all?
+>>> 
+>>> Ok, enough crazy ideas for now...
+>>> 
+>>> --D
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Where are these files? Your leader makes reference to latest linux-tip
-but there are a few trees called linux-tip. Even then, which latest
-branch? I dug through Ingo's linux-tip tree but couldn't find where the
-dump_inode tracepoint was to look at it so I couldn't review the
-changes. Sorry if I missed something obvious :(
-
--- 
-Mel Gorman
-SUSE Labs
