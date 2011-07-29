@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab1G2TO2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 15:14:28 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:26319 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822Ab1G2TO0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 15:14:26 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:x-system-of-record;
-	b=Svd7rVKbyV2SODlatcoUyuhkq7oKYuo0vLn3x1oMWBZpLrkwJjd9N93G9Oc9fJj1s
-	+KmIhJv9ttdfFbt/lsWFQ==
+	id S1752527Ab1G2TXH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 15:23:07 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:4359 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751350Ab1G2TXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 15:23:05 -0400
+X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
+Message-ID: <4E33088A.80903@broadcom.com>
+Date: Fri, 29 Jul 2011 12:22:50 -0700
+From: "Bhanu Prakash Gollapudi" <bprakash@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.18)
+ Gecko/20110616 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <1311963247.21143.76.camel@gandalf.stny.rr.com>
-References: <1311721194-12164-1-git-send-email-vnagarnaik@google.com>
- <1311721194-12164-4-git-send-email-vnagarnaik@google.com> <1311963247.21143.76.camel@gandalf.stny.rr.com>
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Fri, 29 Jul 2011 12:13:53 -0700
-Message-ID: <CAL26m8Jb-PO7z0+gcwhkxB0q36pA7Fe9Tz=Pimq8kua8yahvgA@mail.gmail.com>
-Subject: Re: [PATCH 3/5] trace: Add per_cpu ring buffer control files
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: "Eric Dumazet" <eric.dumazet@gmail.com>
+cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] bnx2fc: use kthread_create_on_node
+References: <1311923178.7845.21.camel@edumazet-laptop>
+In-Reply-To: <1311923178.7845.21.camel@edumazet-laptop>
+X-WSS-ID: 622DD64F4U83861119-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 11:14 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 2011-07-26 at 15:59 -0700, Vaibhav Nagarnaik wrote:
->> Add a debugfs entry under per_cpu/ folder for each cpu called
->> buffer_size_kb to control the ring buffer size for each CPU
->> independently.
->>
->> If the global file buffer_size_kb is used to set size, the individual
->> ring buffers will be adjusted to the given size. The buffer_size_kb will
->> report the common size to maintain backward compatibility.
->>
->> If the buffer_size_kb file under the per_cpu/ directory is used to
->> change buffer size for a specific CPU, only the size of the respective
->> ring buffer is updated. When tracing/buffer_size_kb is read, it reports
->> the ring buffer sizes of all the CPUs at that point.
+On 7/29/2011 12:06 AM, Eric Dumazet wrote:
+> Since bnx2fc_percpu_thread_create() creates percpu kthread, it makes
+> sense to use kthread_create_on_node() to get proper NUMA affinity for
+> kthread stack.
 >
-> No, buffer_size_kb should not change in the what it reports. This is why
-> you have a buffer_total_size_kb. Use that. If the per_cpu buffers are
-> changed, then this should just report "various" or something to that
-> affect. This will be a good way to know if the per_cpu buffers are the
-> same or not.
+> Signed-off-by: Eric Dumazet<eric.dumazet@gmail.com>
+> CC: "James E.J. Bottomley"<JBottomley@parallels.com>
 
-Aargh.
+Thanks Eric.
 
-I updated the code to return 'X' when individual cpu buffers don't match
-up in size and forgot to update the changelog, I will do it now.
+Acked-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+
+> ---
+>   drivers/scsi/bnx2fc/bnx2fc_fcoe.c |    6 +++---
+>   1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
+> index a97aff3..9843434 100644
+> --- a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
+> +++ b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
+> @@ -2161,9 +2161,9 @@ static void bnx2fc_percpu_thread_create(unsigned int cpu)
+>
+>   	p =&per_cpu(bnx2fc_percpu, cpu);
+>
+> -	thread = kthread_create(bnx2fc_percpu_io_thread,
+> -				(void *)p,
+> -				"bnx2fc_thread/%d", cpu);
+> +	thread = kthread_create_on_node(bnx2fc_percpu_io_thread,
+> +					(void *)p, cpu_to_node(cpu),
+> +					"bnx2fc_thread/%d", cpu);
+>   	/* bind thread to the cpu */
+>   	if (likely(!IS_ERR(p->iothread))) {
+>   		kthread_bind(thread, cpu);
+>
+>
+>
 
 
-Vaibhav Nagarnaik
