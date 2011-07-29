@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab1G2CWp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 22:22:45 -0400
-Received: from dakia2.marvell.com ([65.219.4.35]:33982 "EHLO
-	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754308Ab1G2CWo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 22:22:44 -0400
-X-ASG-Debug-ID: 1311906163-082df4690001-xx1T2L
-X-Barracuda-Envelope-From: leoy@marvell.com
-Message-ID: <4E3219FE.6020306@marvell.com>
-Date: Fri, 29 Jul 2011 10:25:02 +0800
-From: Leo Yan <leoy@marvell.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+	id S932098Ab1G2Ctb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 22:49:31 -0400
+Received: from void.printf.net ([89.145.121.20]:52959 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755837Ab1G2Cta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 22:49:30 -0400
+From: Chris Ball <cjb@laptop.org>
+To: matsumur@nts.ricoh.co.jp
+Cc: ak@linux.intel.com, Andi Kleen <andi@firstfloor.org>,
+        daniel.manrique@canonical.com, jbarnes@virtuousgeek.org,
+        linux-kernel@vger.kernel.org, manoj.iyer@canonical.com,
+        stable@kernel.org, tim.bird@am.sony.com
+Subject: Re: [PATCH] [9/50] mmc: Added quirks for Ricoh 1180:e823 lower base clock
+References: <OF5CBC52FF.5B5957D9-ON492578DC.00093451-492578DC.000BCC8B@mta.ricoh.co.jp>
+Date: Thu, 28 Jul 2011 22:49:20 -0400
+In-Reply-To: <OF5CBC52FF.5B5957D9-ON492578DC.00093451-492578DC.000BCC8B@mta.ricoh.co.jp>
+	(matsumur@nts.ricoh.co.jp's message of "Fri, 29 Jul 2011 11:10:45
+	+0900")
+Message-ID: <m2ipqldcnj.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: real mz <realmz6@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>
-X-ASG-Orig-Subj: Re: [PATCH] lib/genalloc: fix gen_pool_virt_to_phys locking
-Subject: Re: [PATCH] lib/genalloc: fix gen_pool_virt_to_phys locking
-References: <1311664741-21336-1-git-send-email-leoy@marvell.com> <CAMk6uBmE01EpAw3e8kB9v6tEkU0rAPqt8T7+k54QDzDxtDn7PQ@mail.gmail.com>
-X-ASG-Orig-Subj: Re: [PATCH] lib/genalloc: fix gen_pool_virt_to_phys locking
-In-Reply-To: <CAMk6uBmE01EpAw3e8kB9v6tEkU0rAPqt8T7+k54QDzDxtDn7PQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
-X-Barracuda-Start-Time: 1311906163
-X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: -1002.00
-X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-real mz,
+Hi,
 
-You are right. :-) it's long time not see you guy.
-For i am developed based on mainline, so if without this
-patch, then the kernel will panic.
+On Thu, Jul 28 2011, matsumur@nts.ricoh.co.jp wrote:
+> As you know, SD ver.1.1 and 2.0(SDHC) cards can be applied 50MHz SD-CLK..
+> SD 3.0 (UHS-I) cards also can be applied 50Mhz. However UHS-I cards are
+> available 200 or 100Mhz SD-CLK.
+> I would like to know if the current SD Host driver has the function of
+> setting SD-CLK to 200Mhz for SD ver3.0 compliant Host Controller.
 
-Best regards,
-Leo Yan
+Yes, we normally would set the higher clock rates for SDv3 controllers.
+We are only restricting to 50MHz on this Ricoh 0xe823 controller.
 
+We added support for the SDR104 UHS-1 speeds in Linux 3.0, thanks to
+a patchset from Arindam Nath.
 
-On 2011年07月28日 18:39, real mz wrote:
-> this fix seems already on next tree
->
-> http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=lib/genalloc.c;h=f352cc42f4f8a58b8e4c8304de32cb31b4e29b67;hb=HEAD
->
->
-> On Tue, Jul 26, 2011 at 3:19 PM, Leo Yan<leoy@marvell.com>  wrote:
->> The func gen_pool_virt_to_phys will iterate the chunk list;
->> if find the correct chunk it should need release pool's lock.
->>
->> Signed-off-by: Leo Yan<leoy@marvell.com>
->> ---
->>   lib/genalloc.c |    4 +++-
->>   1 files changed, 3 insertions(+), 1 deletions(-)
->>
->> diff --git a/lib/genalloc.c b/lib/genalloc.c
->> index 577ddf8..e625df5 100644
->> --- a/lib/genalloc.c
->> +++ b/lib/genalloc.c
->> @@ -92,8 +92,10 @@ phys_addr_t gen_pool_virt_to_phys(struct gen_pool *pool, unsigned long addr)
->>         list_for_each(_chunk,&pool->chunks) {
->>                 chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
->>
->> -               if (addr>= chunk->start_addr&&  addr<  chunk->end_addr)
->> +               if (addr>= chunk->start_addr&&  addr<  chunk->end_addr) {
->> +                       read_unlock(&pool->lock);
->>                         return chunk->phys_addr + addr - chunk->start_addr;
->> +               }
->>         }
->>         read_unlock(&pool->lock);
->>
->> --
->> 1.7.4.1
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->>
+Thanks,
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
