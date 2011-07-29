@@ -1,60 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345Ab1G2QQk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 12:16:40 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:40580 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751897Ab1G2QQj (ORCPT
+	id S1752383Ab1G2QYe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 12:24:34 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44066 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752012Ab1G2QYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 12:16:39 -0400
-Message-ID: <4E32DCE3.2040708@nanometrics.ca>
-Date: Fri, 29 Jul 2011 12:16:35 -0400
-From: James Nuss <jamesnuss@nanometrics.ca>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110627 Thunderbird/5.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Ricardo Martins <rasm@fe.up.pt>, Rodolfo Giometti <giometti@linux.it>,
-        Ben Gardiner <bengardiner@nanometrics.ca>,
-        linux-kernel@vger.kernel.org, linuxpps@ml.enneenne.com,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Igor Plyatov <plyatov@gmail.com>
-Subject: Re: [PATCH v4 0/2] New PPS client driver using GPIO
-References: <1311353744-16405-1-git-send-email-jamesnuss@nanometrics.ca> <20110728160835.aad5bd31.akpm@linux-foundation.org> <CAFqRFbfn==sVPdkw7LWa0M_XXXe+ry0Wi93bEP_gZz7fnYOz1A@mail.gmail.com>
-In-Reply-To: <CAFqRFbfn==sVPdkw7LWa0M_XXXe+ry0Wi93bEP_gZz7fnYOz1A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 29 Jul 2011 12:24:33 -0400
+Date: Fri, 29 Jul 2011 17:27:36 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: lsorense@csclub.uwaterloo.ca (Lennart Sorensen)
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Breno Leitao <leitao@linux.vnet.ibm.com>
+Subject: Re: Very strange data loss with jsm driver
+Message-ID: <20110729172736.4b199d31@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110729160416.GK8562@caffeine.csclub.uwaterloo.ca>
+References: <20110729160416.GK8562@caffeine.csclub.uwaterloo.ca>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+> The trigger point appears to be lines of up to 14 bytes, followed by
+> a newline.  With 15 bytes or more per line it seems to be OK.
+> 
+> Anyone got a clue?
 
-On 07/29/2011 05:44 AM, Ricardo Martins wrote:
-> On 29 July 2011 01:08, Andrew Morton<akpm@linux-foundation.org>  wrote:
->> On Fri, 22 Jul 2011 12:55:42 -0400
->> James Nuss<jamesnuss@nanometrics.ca>  wrote:
->>
->>> This patchset contains 2 patches.  It is based on the work done by
->>> Ricardo Martins<rasm@fe.up.pt>  who submitted an initial implementation [1]
->>> of a PPS IRQ client driver to the linuxpps mailing-list on Dec 3 2010.
->>
->> In which case it is rather desirable that we have Ricardo's Signed-off-by:
->> for these patches, please.
-
-Absolutely, I should have added that from the beginning.
-
->
-> Signed-off-by: Ricardo Martins<rasm@fe.up.pt>
->
->>
-
-I see that you've introduced this patchset to the -mm tree with a minor 
-fixup also (thanks for that). They all look good to me so now that 
-Ricardo has approved the addition of his Signed-off-by, could you add 
-that and submit to Linus please? Otherwise I can submit another patchset 
-if that is necessary.
-
-Regards,
-James Nuss
-jamesnuss@nanometrics.ca
-
+FIFO size perhaps - and some kind of missed wakeup or tx handling bug ?
