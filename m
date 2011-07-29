@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab1G2SJX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 14:09:23 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:22724 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233Ab1G2SJW (ORCPT
+	id S1752735Ab1G2SJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 14:09:27 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:36838 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752233Ab1G2SJY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 14:09:22 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:x-system-of-record;
-	b=MdjhUOxfol/n+uMUZ18zn4qzfx27K8vhgQxFmN7YdNdz78/sVrwVEvVOINJIicwtZ
-	bR1zo0XboKJ0EhX+kxoaA==
+	Fri, 29 Jul 2011 14:09:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAOfQC9-Z31SSv8agzxZ_hvPOOLY8p0F6yc1=o-QPbDwbNxavTg@mail.gmail.com>
-References: <1311852512-7340-1-git-send-email-dengcheng.zhu@gmail.com>
- <1311852512-7340-2-git-send-email-dengcheng.zhu@gmail.com>
- <20110728115330.GA29899@linux-mips.org> <CAOfQC9-Z31SSv8agzxZ_hvPOOLY8p0F6yc1=o-QPbDwbNxavTg@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 29 Jul 2011 11:35:51 -0600
-Message-ID: <CAErSpo6SLCLxh6vOwLaj5AYXNLrUEtQgfMU_hFCKJVH1dC5neQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] PCI: make pci_claim_resource() work with conflict
- resources as appropriate
-To: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, jbarnes@virtuousgeek.org,
-        torvalds@linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org, eyal@mips.com,
-        zenon@mips.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <4E32F2ED.4020000@codeaurora.org>
+References: <CA+icZUV7R5hqTupiuZZKWcsZ5LOBGmY6xgmMTM7W3ojJo0Sp4w@mail.gmail.com>
+	<20110728160136.771e2c0a.rdunlap@xenotime.net>
+	<CA+icZUXLpThpEem+DPimemYVHqSKb5NAb5h_L-rMPWsD+WJTYg@mail.gmail.com>
+	<20110728220926.6d1a91f4.rdunlap@xenotime.net>
+	<CA+icZUVsJNSDzBvvH810POEydpaZxJZfM8J9bD+93+4d+88D_A@mail.gmail.com>
+	<CA+icZUX=qM+xhJkteXs=F_RJP+k-Tzf3+Cp4ZdeatZ0cgHegBw@mail.gmail.com>
+	<4E32F2ED.4020000@codeaurora.org>
+Date: Fri, 29 Jul 2011 20:09:22 +0200
+Message-ID: <CA+icZUWJ=VS6_oqibRbdU0D=TMpEpcB4DNd1i8QUF5MS+4rV8Q@mail.gmail.com>
+Subject: Re: linux-next: Tree for July 28 ("copy_from_user_overflow" undefined)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>, Helge Deller <deller@gmx.de>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 12:32 AM, Deng-Cheng Zhu
-<dengcheng.zhu@gmail.com> wrote:
-> I noticed that at 79896cf42f Linus changed the function from insert_resource()
-> to request_resource() (and later evolved into request_resource_conflict()) and
-> he explained the reason. So, in the NIC's case, the problem is that in
-> pci_claim_resource() the function pci_find_parent_resource() returns the root
-> (0x0-0xffffff) rather than the MSC PCI I/O (0x1000-0xffffff).
+On Fri, Jul 29, 2011 at 7:50 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 07/29/2011 02:45 AM, Sedat Dilek wrote:
+>> [ CCing all people from 0416 patch ]
+>>
+>> OK, here a quick review and looking for suspicious commits:
+> [snip]
+>> -- a/lib/Makefile
+>> +++ b/lib/Makefile
+>> @@ -14,6 +14,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+>>          proportions.o prio_heap.o ratelimit.o show_mem.o \
+>>          is_single_threaded.o plist.o decompress.o find_next_bit.o
+>>
+>> +lib-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+>>  lib-$(CONFIG_MMU) += ioremap.o
+>>  lib-$(CONFIG_SMP) += cpumask.o
+>>
+>> So, I can rebuild next-201107{27,28} with
+>> CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS=y and look again if the
+>> build-breakage in binfmt_misc is gone.
+>>
+>> Any comments from x86 folk?
+>
+> I already noticed this and sent a fixup patch to Andrew. Looks like he
+> never picked it up. The real fix is to change that lib-$(CONFIG... to
+> obj-$(CONFIG...
+>
+> See https://lkml.org/lkml/2011/7/6/6 for the patch.
+>
+> --
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+>
+>
 
-This seems like the real problem: PCI has the wrong idea of the
-resources available on bus 00.  The pci_bus->resource[0] for bus 00
-points to ioport_resource (the default put there by pci_create_bus()),
-when it should point to to msc_io_resource instead.
+NO, Andrew didn't do so [1] and that's why the appropriate patch [2]
+in linux-next misses it, too.
+Grr, your patch is from 05-Jul-2011...
 
-Some architectures fill in the pci_bus->resource[] array directly for
-host bridges (for examples, try 'grep -r "resource\[0\] = " arch/').
-On x86 and ia64, we use pci_bus_remove_resources() and
-pci_bus_add_resource(), and I'd prefer that style for new code because
-it hides some ugly implementation details.
+- Sedat -
 
-I'm a little puzzled that we don't see this problem on more
-architectures.  The grep above only found a few arches that update the
-root bus resources.  I would expect most of the ones it didn't find to
-be broken the same way Malta is.
-
-Bjorn
+[1] http://userweb.kernel.org/~akpm/mmotm/broken-out/consolidate-config_debug_strict_user_copy_checks.patch
+[2] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=4df97ff66a102a89ecfa2f88051e30bdd54ad864
