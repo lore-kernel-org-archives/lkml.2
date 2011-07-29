@@ -1,138 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756514Ab1G2NNf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 09:13:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43119 "EHLO mx1.redhat.com"
+	id S1756469Ab1G2NQN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 09:16:13 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47829 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756061Ab1G2NNd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 09:13:33 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-btrace@vger.kernel.org
-Subject: Re: [PATCH] blktrace: add FLUSH/FUA support
-References: <x494o26ma11.fsf@segfault.boston.devel.redhat.com>
-	<1311895164.1913.57.camel@leonhard>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 29 Jul 2011 09:13:27 -0400
-In-Reply-To: <1311895164.1913.57.camel@leonhard> (Namhyung Kim's message of
-	"Fri, 29 Jul 2011 08:19:24 +0900")
-Message-ID: <x49mxfxi614.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1756061Ab1G2NQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 09:16:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,287,1309762800"; 
+   d="scan'208";a="33000259"
+Subject: Re: [PATCH 10/18] dmaengine/amba-pl08x: Get rid of
+ pl08x_pre_boundary()
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Viresh Kumar <viresh.kumar@st.com>, linus.walleij@linaro.org,
+        pratyush.anand@st.com, rajeev-dlh.kumar@st.com, bhupesh.sharma@st.com,
+        shiraz.hashim@st.com, linux-kernel@vger.kernel.org, vipin.kumar@st.com,
+        armando.visconti@st.com, amit.virdi@st.com, vipulkumar.samar@st.com,
+        viresh.linux@gmail.com, deepak.sikri@st.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20110729110525.GG25640@n2100.arm.linux.org.uk>
+References: <cover.1311936523.git.viresh.kumar@st.com>
+	 <c147ba3a755935e93fdb40b5531a6e18d34e0fd7.1311936524.git.viresh.kumar@st.com>
+	 <20110729110525.GG25640@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Jul 2011 18:02:57 +0530
+Message-ID: <1311942777.1536.547.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namhyung Kim <namhyung@gmail.com> writes:
+On Fri, 2011-07-29 at 12:05 +0100, Russell King - ARM Linux wrote:
+> On Fri, Jul 29, 2011 at 04:19:20PM +0530, Viresh Kumar wrote:
+> > Pl080 Manual says: "Bursts do not cross the 1KB address boundary"
+> > 
+> > We can program the controller to cross 1 KB boundary on a burst and controller
+> > can take care of this boundary condition by itself.
+> > 
+> > Following is the discussion with ARM Technical Support Guys (David):
+> > [Viresh] Manual says: "Bursts do not cross the 1KB address boundary"
+> > 
+> > What does that actually mean? As, Maximum size transferable with a single LLI is
+> > 4095 * 4 =16380 ~ 16KB. So, if we don't have src/dest address aligned to burst
+> > size, we can't use this big of an LLI.
+> > 
+> > [David] There is a difference between bursts describing the total data
+> > transferred by the DMA controller and AHB bursts. Bursts described by the
+> > programmable parameters in the PL080 have no direct connection with the bursts
+> > that are seen on the AHB bus.
+> > 
+> > The statement that "Bursts do not cross the 1KB address boundary" in the TRM is
+> > referring to AHB bursts, where this limitation is a requirement of the AHB spec.
+> > You can still issue bursts within the PL080 that are in excess o f 1KB. The
+> > PL080 will make sure that its bursts are broken down into legal AHB bursts which
+> > will be formatted to ensure that no AHB burst crosses a 1KB boundary.
+> > 
+> > Based on above discussion, this patch removes all code related to 1 KB boundary
+> > as we are not required to handle this in driver.
+> 
+> Good.  I'm glad someone's finally getting to the bottom of what's
+> actually required and what isn't...  This driver has been a mess for
+> quite a long time and is in desperate need of these kinds of cleanups.
+Typically in few dmac IPs i know of:
+There is max limitation of what a burst length can be for dma, and what
+a max transfer length can be.
+The dma will push/pull data into peripheral FIFO based on
+max_burst_length parameter (note length in dma terminology is always
+items not bytes, and one item is usually defined as
+transfer_length/src_width). For a transfer (single block or in
+multi-block) the dmac will break the transaction into multiple bursts
+and based on max_burst_length it will push/pull data to/from FIFO. Also
+matching FIFO thresholds with max_burst_length is also important and can
+be tuned based on perf/power requirements. 
 
-> 2011-07-28 (목), 16:21 -0400, Jeff Moyer:
->> Hi,
->> 
->> Sorry, I don't have the original posting of this message, so I've just
->> cut-n-paste from the archives on lkml.org:
->>   https://lkml.org/lkml/2011/6/1/235
->> 
->
-> Hello, Jeff.
->
-> Thanks for finding and replying to this :)
->
->
->> The proposal was this:
->> 
->> > Add FLUSH/FUA support to blktrace. As FLUSH precedes WRITE and/or
->> > FUA follows WRITE, use the same 'F' flag for both cases and
->> > distinguish them by their (relative) position. The end results
->> > look like (other flags might be shown also):
->> > 
->> >  - WRITE:            W
->> >  - WRITE_FLUSH:      FW
->> >  - WRITE_FUA:        WF
->> >  - WRITE_FLUSH_FUA:  FWF
->> 
->> I'm not sure I'll ever be able to keep that straight.  How about we use
->> 'F' for FUA, since FUA is capitalized anyway, and use 'f' for flush?
->> Too subtle?
->> 
->
-> Either way is fine to me. Jens?
+Sharing my knowledge, hopefully it helps :)
 
-OK, having read your [1] below, Jens' suggestion was to have:
+-- 
+~Vinod
 
-Write:        W
-Write Flush:  F
-Write + FUA:  WF
-Flush + FUA:  FF
-
-That actually makes sense to me.
-
->> Next...
->> 
->> > @@ -14,7 +14,7 @@
->> >  enum blktrace_cat {
->> >  	BLK_TC_READ	= 1 << 0,	/* reads */
->> >  	BLK_TC_WRITE	= 1 << 1,	/* writes */
->> > -	BLK_TC_BARRIER	= 1 << 2,	/* barrier */
->> > +	BLK_TC_FUA	= 1 << 2,	/* fua requests */
->> 
->> I would prefer to replace BARRIER with FLUSH, as I think they are closer
->> relatives.  Doing it the way you've suggested would mean that older
->> blktrace user-space would report FUA as a Barrier.
->> 
->
-> I thought about that too. But as I said in the changelog, it led to a
-> negative number at the rhs of MASC_TC_BIT calculation, so the end result
-> was not good.
-
-Yeah, I ran into that when trying this myself.
-
-> In the meantime, I found that Matthew Wilcox posted a patch which
-> relocates some REQ_ flags to appropriate positions.
->
-> https://lkml.org/lkml/2011/6/2/324
->
-> With the patch, it seems ok to replace BARRIER with FLUSH. However it
-> looks like the patch isn't included into the tree yet.
-
-OK, that's good to know.
-
-> BTW, I'm thinking about user-space again. I'm not sure it's ok if older
-> blktrace tool reports FLUSH/FUA as BARRIER. Actually I posted a patch
-> that treats FLUSH as BARRIER [1], and Jens and others commented we
-> should not do that.
-
-> To end that, I could leave BLK_TC_BARRIER as is, and add
-> BLK_TC_{FLUSH,FUA} at the end of blktrace_cat. But as we exhause space
-> in the 16-bit act_mask, it would require a substantial change.
->
-> Any thoughts?
-
-This is a rat hole.  ;-)  Expanding the bit space is not easy, since
-there is no versioning in the kernel<->userspace protocol.  The only way
-I can think of to accomplish that would be to add a new setup ioctl for
-the newer blktrace utility.  Then, for the older utility, we would
-simply not report any barriers at all.
-
-Really, though, when I look at blktrace output, and I'm trying to figure
-out what's going on (assuming a newer kernel and older blktrace), I'd
-rather have write cache flushes reported as barriers than FUA.  FUA
-isn't supported by all hardware, and I think the cache flush will be
-more commensurate with the hit in performance associated with the
-barriers of yore.  If we went this route, then we could just overload
-barrier with flush and be done with it.
-
-I'm open to other opinions, though.
-
-Cheers,
-Jeff
-
-
-> [1] https://lkml.org/lkml/2011/5/27/206
