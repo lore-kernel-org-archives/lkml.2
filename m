@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891Ab1G2RT3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 13:19:29 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:33012 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab1G2RT2 (ORCPT
+	id S1751959Ab1G2RVA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 13:21:00 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:39969 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab1G2RU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 13:19:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110729.101515.1435434309123620862.davem@davemloft.net>
-References: <1311959479.2242.41.camel@vivanov>
-	<20110729.101515.1435434309123620862.davem@davemloft.net>
-Date: Fri, 29 Jul 2011 20:19:26 +0300
-Message-ID: <CAGTPOqdTxkFHxp-qNAMjg_YV91ZF2Fxze-HyV-TGsoF_r5ZyVQ@mail.gmail.com>
-Subject: Re: [PATCH] net: xprt.c: htmldocs warning correction
-From: Vitaliy Ivanov <vitalivanov@gmail.com>
-To: David Miller <davem@davemloft.net>, Randy Dunlap <rdunlap@xenotime.net>
-Cc: Trond.Myklebust@netapp.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 29 Jul 2011 13:20:59 -0400
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: linux-kernel@vger.kernel.org, gregkh@suse.de,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [RFC 1/2]drivers:staging:usbip:stub_dev.c change SPIN_LOCK_UNLOCKED to __SPIN_LOCK_UNLOCKED
+Date: Fri, 29 Jul 2011 10:20:36 -0700
+Message-Id: <1311960037-9581-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 8:15 PM, David Miller <davem@davemloft.net> wrote:
-> From: Vitaliy Ivanov <vitalivanov@gmail.com>
-> Date: Fri, 29 Jul 2011 20:11:19 +0300
->
->> Add description for parameter 'xprt'.
->>
->> Warning(/net/sunrpc/xprt.c:196): No description found for parameter 'xprt'
->>
->> Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
->
-> There is already a fix for this from Randy Dunlap in my networking
-> GIT tree.
->
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-OK, I found two other warning correction patches from Randy in list
-but not this one. Seems like I missed it.
+The patch below updates SPIN_LOCK_UNLOCKED to __SPIN_LOCK_UNLOCKED since it is 
+deprected according to my search results.
+Note: Keep in mind I am not sure if this is the correct change for this(still learning)
+even though it's commented out and such.(figured to give this a try and see).
 
-Anyway, thanks.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Vitaliy
+---
+ drivers/staging/usbip/stub_dev.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
+index fce22f2..fe09105 100644
+--- a/drivers/staging/usbip/stub_dev.c
++++ b/drivers/staging/usbip/stub_dev.c
+@@ -301,7 +301,7 @@ static struct stub_device *stub_device_alloc(struct usb_device *udev,
+ 	sdev->devid		= (busnum << 16) | devnum;
+ 	sdev->ud.side		= USBIP_STUB;
+ 	sdev->ud.status		= SDEV_ST_AVAILABLE;
+-	/* sdev->ud.lock = SPIN_LOCK_UNLOCKED; */
++	/* sdev->ud.lock = __SPIN_LOCK_UNLOCKED(ud.lock); */
+ 	spin_lock_init(&sdev->ud.lock);
+ 	sdev->ud.tcp_socket	= NULL;
+ 
+@@ -310,7 +310,7 @@ static struct stub_device *stub_device_alloc(struct usb_device *udev,
+ 	INIT_LIST_HEAD(&sdev->priv_free);
+ 	INIT_LIST_HEAD(&sdev->unlink_free);
+ 	INIT_LIST_HEAD(&sdev->unlink_tx);
+-	/* sdev->priv_lock = SPIN_LOCK_UNLOCKED; */
++	/* sdev->priv_lock = __SPIN_LOCK_UNLOCKED(priv_lock); */
+ 	spin_lock_init(&sdev->priv_lock);
+ 
+ 	init_waitqueue_head(&sdev->tx_waitq);
+-- 
+1.7.6
+
