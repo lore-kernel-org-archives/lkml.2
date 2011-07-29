@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab1G2TIO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 15:08:14 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:49167 "EHLO
+	id S1752731Ab1G2TJq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 15:09:46 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:24255 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752527Ab1G2TIN (ORCPT
+	with ESMTP id S1751496Ab1G2TJp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 15:08:13 -0400
+	Fri, 29 Jul 2011 15:09:45 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:x-system-of-record;
-	b=vt307dvk/GUxZpiBECiKxLiAdczdjYPJ5HBNJkQFRwKfCvCPqO/8xsAvq8DB3QGSU
-	tVTk9HPCz8HWInTtCRAKA==
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=vSuWBq6Ik3Q7tVDRNK+AQi4l/ZLIH5NtXrsmoQHUzoWE4FbJ8YdL7cVZfOhzNmpJz
+	gALOIGSk/bKnCGx9UuHcg==
 MIME-Version: 1.0
-In-Reply-To: <1311962000.21143.69.camel@gandalf.stny.rr.com>
-References: <1310785241-3799-1-git-send-email-vnagarnaik@google.com>
- <1311619188-4905-1-git-send-email-vnagarnaik@google.com> <1311949173.21143.43.camel@gandalf.stny.rr.com>
- <CAL26m8Jmy=Rcg6fKghk9Epcj9U6Z2i9UM78hF5_r30U5Qvv9uw@mail.gmail.com> <1311962000.21143.69.camel@gandalf.stny.rr.com>
+In-Reply-To: <1311962463.21143.70.camel@gandalf.stny.rr.com>
+References: <1311721194-12164-1-git-send-email-vnagarnaik@google.com>
+ <1311721194-12164-2-git-send-email-vnagarnaik@google.com> <1311962463.21143.70.camel@gandalf.stny.rr.com>
 From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Date: Fri, 29 Jul 2011 12:07:38 -0700
-Message-ID: <CAL26m8JXQxWf-Pj1_KuW=ORUoL9yzEdtgXnQfe7dw0cqPUSURw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] trace-cmd: Add parse error checking target
+Date: Fri, 29 Jul 2011 12:09:12 -0700
+Message-ID: <CAL26m8KzZ_=pDU0S2yAXeZ-obH8DDMq=hNdHJF86Jg+CXXoGnA@mail.gmail.com>
+Subject: Re: [PATCH 1/5] trace: Add a new readonly entry to report total
+ buffer size
 To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 10:53 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri, 2011-07-29 at 10:41 -0700, Vaibhav Nagarnaik wrote:
+On Fri, Jul 29, 2011 at 11:01 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Tue, 2011-07-26 at 15:59 -0700, Vaibhav Nagarnaik wrote:
+>> The current file "buffer_size_kb" reports the size of per-cpu buffer and
+>> not the overall memory allocated which could be misleading. A new file
+>> "buffer_total_size_kb" adds up all the enabled CPU buffer sizes and
+>> reports it. This is only a readonly entry.
+>>
+>> Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+>> ---
+>>  kernel/trace/trace.c |   27 +++++++++++++++++++++++++++
+>>  1 files changed, 27 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+>> index e5df02c..ce57c55 100644
+>> --- a/kernel/trace/trace.c
+>> +++ b/kernel/trace/trace.c
+>> @@ -3569,6 +3569,24 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
+>>  }
+>>
+>>  static ssize_t
+>> +tracing_total_entries_read(struct file *filp, char __user *ubuf,
+>> +                             size_t cnt, loff_t *ppos)
+>> +{
+>> +     struct trace_array *tr = filp->private_data;
+>> +     char buf[64];
+>> +     int r, cpu;
+>> +     unsigned long size = 0;
+>> +
+>> +     mutex_lock(&trace_types_lock);
+>> +     for_each_tracing_cpu(cpu)
+>> +             size += tr->entries >> 10;
 >
->> Thanks Steve. I will send the man page patch.
+> Could you make this consistent with buffer_size_kb as well. That is, if
+> the buffer is "shrunk", could you have the expanded size printed as
+> well.
 >
-> BTW, I played with this and I have a few issues. I'll still accept the
-> patch as it's not that big of a deal. But here's some improvements that
-> can be made.
+> Thanks,
 >
+> -- Steve
 >
-> It should load in the plugins. As the plugins can process failed events
-> well. If you don't want the plugins than you can just do what we do with
-> report, add a -N to prevent plugins from being loaded.
 
-Thanks for the suggestion, I didn't know about plugins adding parsing
-capability. I will add loading the available plugins for this option.
-
-> It should also read a trace.dat file if one is provided on the command
-> line. If you don't add a file then it will use the local events of the
-> system, if possible.
-
-Our intention with this patch was to reuse the format string parsing
-functionality in trace-cmd to look for any errors in new trace events
-added by various kernel developers. So this was targeted to test for
-event format errors and report them during a new kernel release.
-
-A trace.dat file has already recorded all the data from the machine and
-when 'report' is used on it, the format string errors will be reported
-regardless. I don't see how using 'check-events' on a trace.dat file
-would be useful. Thoughts?
+Sure. I forgot about that.
 
 
 Vaibhav Nagarnaik
