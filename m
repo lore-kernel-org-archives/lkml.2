@@ -1,86 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab1G2CIy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 22:08:54 -0400
-Received: from outgw02.ricoh.co.jp ([202.248.73.5]:41108 "EHLO
-	outgw02.ricoh.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031Ab1G2CIx (ORCPT
+	id S1755523Ab1G2CR1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 22:17:27 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:35653 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754308Ab1G2CR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 22:08:53 -0400
-In-Reply-To: <m2r559di9y.fsf@bob.laptop.org>
-Subject: Re: [PATCH] [9/50] mmc: Added quirks for Ricoh 1180:e823 lower base clock
-To: cjb@laptop.org
-Cc: ak@linux.intel.com, Andi Kleen <andi@firstfloor.org>,
-        daniel.manrique@canonical.com, jbarnes@virtuousgeek.org,
-        linux-kernel@vger.kernel.org, manoj.iyer@canonical.com,
-        stable@kernel.org, tim.bird@am.sony.com
-X-Mailer: Lotus Notes Release 7.0.2 September 26, 2006
-Message-ID: <OF5CBC52FF.5B5957D9-ON492578DC.00093451-492578DC.000BCC8B@mta.ricoh.co.jp>
-From: matsumur@nts.ricoh.co.jp
-Date: Fri, 29 Jul 2011 11:10:45 +0900
-X-MIMETrack: Serialize by Router on ZGMTA07/G/RGroup(Release 7.0.2FP1 HF237|April 25, 2007) at
- 2011/07/29 11:08:51
-MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+	Thu, 28 Jul 2011 22:17:26 -0400
+X-AuditID: cbfee61a-b7cf0ae000006bc6-7b-4e3218341e08
+Date: Fri, 29 Jul 2011 11:17:11 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+Subject: Re: [PATCH 1/1] mmc: Fixed bug in IDMAC_SET_BUFFER1_SIZE Macro in
+ dw_mmc.c
+In-reply-to: <4E314562.2000001@imgtec.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Shashidhar Hiremath <shashidharh@vayavyalabs.com>,
+        Will Newton <will.newton@imgtec.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-id: <4E321827.5020606@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7BIT
+User-Agent: Thunderbird 2.0.0.24 (X11/20100623)
+References: <1311851023-3563-1-git-send-email-shashidharh@vayavyalabs.com>
+ <4E314562.2000001@imgtec.com>
+X-OriginalArrivalTime: 29 Jul 2011 02:17:44.0020 (UTC)
+ FILETIME=[B347E140:01CC4D95]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+Hi..
 
-> Do you know of a better solution than always lowering the clock speed to
-> 50MHz for this controller?
+this patch is right.
 
-Yes, it is a better solution.
-As you know, SD ver.1.1 and 2.0(SDHC) cards can be applied 50MHz SD-CLK..
-SD 3.0 (UHS-I) cards also can be applied 50Mhz. However UHS-I cards are
-available 200 or 100Mhz SD-CLK.
-I would like to know if the current SD Host driver has the function of
-setting SD-CLK to 200Mhz for SD ver3.0 compliant Host Controller.
+Acked-by : Jaehoon Chung <jh80.chung@samsung.com>
 
+Regards,
+Jaehoon Chung
 
-Thanks,
-
-
-Koji Matsumuro
-Ricoh Company,Ltd.
-
-
-Chris Ball <cjb@laptop.org> wrote on 2011/07/29 09:47:53:
-
-> Hi,
-
-> On Thu, Jul 28 2011, Andi Kleen wrote:
-> > On Fri, Jul 29, 2011 at 09:27:56AM +0900, matsumur@nts.ricoh.co.jp
-wrote:
-> >> Dear Sir,
-> >>
-> >> Ricoh 1180:e823 device is named R5U220/R5U232 (2 devices have the same
-> >> device ID ).
-> >> So, I think it should be declared to as PCI_DEVICE_ID_RICOH_R5U220.
-> >
-> > Is that just the wrong name or will it actually cause misfunction?
-
-> I don't think it could possibly cause misfunction; it's just a macro
-name.
-
-> > BTW, does anyone know whether the current SDHCI-driver sets 200Mhz to
-> > SD-CLK for UHS-I cards ?
-
-> The Linux 3.1 SD driver will set the SD-CLK to 50MHz for every card on an
-> e823 device, and older kernels will do so too once the commit has been
-> applied to the stable trees.  See this commit:
-
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;
-> a=commitdiff;h=15bed0f2fa8e1d7db201692532c210a7823d2d21
-
-> Do you know of a better solution than always lowering the clock speed to
-> 50MHz for this controller?
-
-> Thanks,
-
-> - Chris.
+James Hogan wrote:
+> On 07/28/2011 12:03 PM, Shashidhar Hiremath wrote:
+>> The mask used inside this macro was assuming Buffer_Size1's[BS1's] width to be 14 bits,
+>> it is actually of 13 bits, Modified masks used in IDMAC_SET_BUFFER1_SIZE such that
+>> they use only 13 bits instead of current 14.
+>>
+>> Signed-off-by: Shashidhar Hiremath <shashidharh@vayavyalabs.com>
+>> ---
+>>  drivers/mmc/host/dw_mmc.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+>> index 77f0b6b..f13bb49 100644
+>> --- a/drivers/mmc/host/dw_mmc.c
+>> +++ b/drivers/mmc/host/dw_mmc.c
+>> @@ -62,7 +62,7 @@ struct idmac_desc {
+>>  
+>>  	u32		des1;	/* Buffer sizes */
+>>  #define IDMAC_SET_BUFFER1_SIZE(d, s) \
+>> -	((d)->des1 = ((d)->des1 & 0x03ffc000) | ((s) & 0x3fff))
+>> +	((d)->des1 = ((d)->des1 & 0x03ffe000) | ((s) & 0x1fff))
+>>  
+>>  	u32		des2;	/* buffer 1 physical address */
+>>  
+> 
+> Yes, according to the TRM you appear to be correct
+> 
+> Reviewed-by: James Hogan <james.hogan@imgtec.com>
+> 
+> Thanks
+> James
+> 
 > --
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
