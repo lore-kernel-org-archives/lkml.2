@@ -1,150 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817Ab1G2JOT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 05:14:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53397 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755698Ab1G2JOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 05:14:18 -0400
-Date: Fri, 29 Jul 2011 10:14:13 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Keiichi KII <k-keiichi@bx.jp.nec.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Tom Zanussi <tzanussi@gmail.com>, "riel@redhat.com" <riel@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "BA, Moussa" <Moussa.BA@numonyx.com>
-Subject: Re: [RFC PATCH -tip 0/5] perf tools: pagecache monitoring
-Message-ID: <20110729091413.GP3010@suse.de>
-References: <4E24A61D.4060702@bx.jp.nec.com>
+	id S1755974Ab1G2JPA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 05:15:00 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:16481 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755925Ab1G2JO7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 05:14:59 -0400
+Date: Fri, 29 Jul 2011 11:14:57 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Dan Carpenter <error27@gmail.com>
+cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Jarod Wilson <jarod@redhat.com>,
+        Jerome Brock <jbrock@users.sourceforge.net>,
+        Andy Walls <awalls@md.metrocast.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Gerd Knorr <kraxel@goldbach.in-berlin.de>,
+        Jarod Wilson <jarod@wilsonet.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Thomas Reitmayr <treitmayr@yahoo.com>,
+        Michal Kochanowicz <mkochano@pld.org.pl>,
+        Christoph Bartelmus <lirc@bartelmus.de>, Mark Weaver <mark@npsl.co.uk>,
+        Ulrich Mueller <ulrich.mueller42@web.de>,
+        Stefan Jahn <stefan@lkcc.org>
+Subject: Re: [PATCH] staging; lirc, zilog: put_ir_rx may free 'rx' which can
+ lead to double free
+In-Reply-To: <20110729060822.GF3752@shale.localdomain>
+Message-ID: <alpine.LNX.2.00.1107291112470.22532@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1107282345540.20477@swampdragon.chaosbits.net> <20110729060822.GF3752@shale.localdomain>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4E24A61D.4060702@bx.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 18, 2011 at 05:31:09PM -0400, Keiichi KII wrote:
-> Hello,
-> 
-> I would propose pagecache monitoring tools using perf tools.
-> The purpose of the tools is to clarify pagecache behavior in a system.
-> 
-> We can now know system-wide pagecache usage by "/proc/meminfo".
-> But we don't have any way to get higher resolution information like
-> per file or per process usage than system-wide one.
+On Fri, 29 Jul 2011, Dan Carpenter wrote:
 
-It's convulated and slow but it can be determined what processes are
-mapping pages from a file by scanning /proc/PID/maps to identify what
-files are mapped and then using /proc/PID/pageflags to see what pages
-are mapped on a per-process basis.
-
-> If pagecache miss hit ratio rises due to unnecessary adding/removing
-> pagecaches, maybe it leads to extra I/O and affects system performance.
-> But it's difficult to find out what is going on in the system.
+> On Thu, Jul 28, 2011 at 11:49:51PM +0200, Jesper Juhl wrote:
+> > If calling put_ir_rx(rx, true); in
+> > drivers/staging/lirc/lirc_zilog.c::ir_probe() returns true (1) then it
+> > means that it has freed it's first argument. Subsequently jumping to
+> > 'out_put_xx' will cause us to call put_ir_rx() once more since 'rx' is
+> > not zero - leading to a double free.
+> 
+> It would be better to just remove the first call to put_ir_rx().
 > 
 
-What is "unnecessary adding/removing pagecaches"? If it's added, it
-means either someone has faulted the page or it is due to readahead.
-It's necessary to something.
+Taking a second look... Yes, you are right, that would be just fine and a 
+lot simpler. Thanks for reviewing.
 
-> So, the tools I propose provide 2 functions:
-> 
-> 1. pagecache snapshooting(perf script pagecache-snapshoot)
-> 
+Here's an updated patch.
 
-snapshot, not snapshoot :)
 
-> This function clarifies pagecache usage per each file in the system.
-> This function is based mainly on "pagecache object collections" that is
-> developed by Wu Fengguang (http://lkml.org/lkml/2010/2/9/156).
-> The following is sample output of this function.
-> 
-> pagecache snapshooting (time: 14131, path: /home)
->                              file name cache(B)  file(B)  ratio  +/-(B)    age
-> -------------------------------------- -------- -------- ------ ------- ------
-> /home/foo/git/linux-2.6-tip/.git/objec    71.0M   436.6M    16%       0   9012
-> /home/foo/git/linux-2.6-tip/.git/objec    49.6M    57.7M    86%       0   9012
-> /home/foo/.thunderbird/xso5zn7g.defaul    19.8M    19.8M   100%       0   7223
-> /home/foo/.thunderbird/xso5zn7g.defaul     5.7M     5.7M   100%       0   6621
-> /home/foo/git/linux-2.6-tip/.git/index     3.5M     3.5M   100%       0   4306
-> /home/foo/.thunderbird/xso5zn7g.defaul     2.2M     2.2M   100%       0   7524
-> /home/foo/.thunderbird/xso5zn7g.defaul     2.2M     2.2M   100%       0   7526
-> /home/foo/.thunderbird/xso5zn7g.defaul     1.7M     1.7M   100%       0   6921
-> ...
-> 
-> 2. continuous pagecache monitoring(perf script pagecachetop)
-> 
-> This function clarifies pagecache behavior like pagecache hit ratio and
-> added/removed pagecache amount on the basis of file/process.
-> This functions is based on pagecache tracepoints I propose.
-> While the pagecache snapshooting can take a pagecache snapshoot at a point,
-> the continuous pagecache monitoring can measure dynamic change between
-> 2 snapshoots.
-> The following is sample output of this function.
-> 
-> pagecache behavior per file (time:15826, interval:10)
-> 
->                          find        hit    cache      add   remove  proc
->                 file    count      ratio pages(B) pages(B) pages(B) count
-> -------------------- -------- ---------- -------- -------- -------- -----
->         libc-2.13.so      620    100.00%     1.2M        0        0     7
->                 bash      283    100.00%   888.0K        0        0     6
->           ld-2.13.so      136    100.00%   148.0K        0        0     6
->                 gawk      130    100.00%   376.0K        0        0     2
->          ld.so.cache       60    100.00%   116.0K        0        0     4
-> ...
-> 
-> pagecache behavior per process (time:16294, interval:10)
-> 
->                          find        hit      add   remove  file
->              process    count      ratio pages(B) pages(B) count
-> -------------------- -------- ---------- -------- -------- -----
->             zsh-7761     2968     99.93%     4.0K        0   246
->            perf-7758      369    100.00%        0        0    17
->            xmms-7634       52    100.00%        0        0     1
->            perf-7759       11    100.00%        0        0     2
->             zsh-2815        6     83.33%     4.0K     4.0K     2
->        gconfd-2-4849        3      0.00%    12.0K    12.0K     4
->        rsyslogd-7194        1    100.00%        0        0     1
-> 
+From: Jesper Juhl <jj@chaosbits.net>
+Subject: [PATCH] staging; lirc, zilog: put_ir_rx may free 'rx' which can lead to double free
 
-Ok, I can see how this could identify hot files in the system and
-processes that are currently active but I'm not seeing what problem
-could be solved with this information.
+If the call to put_ir_rx(rx, true); in
+drivers/staging/lirc/lirc_zilog.c::ir_probe() returns true (1) then it
+means that it has freed it's first argument. Subsequently jumping to
+'out_put_xx' will cause us to call put_ir_rx() once more since 'rx' is
+not zero - leading to a double free.
+To fix this, simply remove the first call to put_ir_rx().
 
-For example, a process that is suffering a poor hit ratio can usually
-be identified with a combination of vmstat showing a large amount
-of activity with page in/out or swap in/out and a profile showing
-a process that is spending a high percentage of its time servicing
-faults. If a profile is unsuitable, picking active processes from
-top and then monitoring /proc/PID/stat and the fault counters can
-identify which process in trouble.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/staging/lirc/lirc_zilog.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Can you give an example of a problem that using this tool would
-identify and help resolve?
-
-> By these 2 functions, we can find out whether pagecaches are used
-> efficiently or not.
-> And also these tools would help us tune some applications like database.
-
-If the database is using direct IO, will it even show up in this tool?
-
-> It will also help us tune the kernel parameters like "vm.dirty_*".
-> 
-
-Does it though? A dirty_ratio that is too low can cause stalls as
-processes get throttled cleaning pages but the pages are still present
-in the page cache and the hit ratio would not be affected.
-
-I'm not saying this is a bad idea but the changelog needs to be improved
-to explain why this information is helpful and why the existing
-mechanisms are either unsuitable or just too awkward to use.
+diff --git a/drivers/staging/lirc/lirc_zilog.c b/drivers/staging/lirc/lirc_zilog.c
+index 0302d82..6be6f67 100644
+--- a/drivers/staging/lirc/lirc_zilog.c
++++ b/drivers/staging/lirc/lirc_zilog.c
+@@ -1577,7 +1577,6 @@ static int ir_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 			put_ir_device(ir, true);
+ 			/* Failure exit, so put back rx ref from i2c_client */
+ 			i2c_set_clientdata(client, NULL);
+-			put_ir_rx(rx, true);
+ 			ir->l.features &= ~LIRC_CAN_REC_LIRCCODE;
+ 			goto out_put_xx;
+ 		}
+-- 
+1.7.6
 
 -- 
-Mel Gorman
-SUSE Labs
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
