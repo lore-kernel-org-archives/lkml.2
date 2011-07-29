@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab1G2AJV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 20:09:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:15660 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754031Ab1G2AJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 20:09:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,285,1309762800"; 
-   d="scan'208";a="31560650"
-Subject: Re: [PATCH] kswapd: assign new_order and new_classzone_idx after
- wakeup in sleeping
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andrea@cpushare.com" <andrea@cpushare.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-In-Reply-To: <20110728111203.GM3010@suse.de>
-References: <1311840688-11388-1-git-send-email-alex.shi@intel.com>
-	 <20110728101943.GI3010@suse.de> <1311850029.27358.2408.camel@debian>
-	 <20110728111203.GM3010@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 29 Jul 2011 08:10:38 +0800
-Message-ID: <1311898238.27358.2416.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1756223Ab1G2AOE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 20:14:04 -0400
+Received: from smtp2.Stanford.EDU ([171.67.219.82]:34793 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755550Ab1G2AOC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 20:14:02 -0400
+Message-ID: <4E31FB43.9050203@localhost>
+Date: Thu, 28 Jul 2011 17:13:55 -0700
+From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [ANNOUNCE] 3.0-rt4
+References: <alpine.LFD.2.02.1107272222420.2660@ionos> <4E31B59F.1000607@localhost> <alpine.LFD.2.02.1107282123380.2660@ionos>
+In-Reply-To: <alpine.LFD.2.02.1107282123380.2660@ionos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/28/2011 12:36 PM, Thomas Gleixner wrote:
+> On Thu, 28 Jul 2011, Fernando Lopez-Lezcano wrote:
+>
+>> On 07/27/2011 02:37 PM, Thomas Gleixner wrote:
+>>> Dear RT Folks,
+>>>
+>>> I'm pleased to announce the 3.0-rt4 release.
+>>
+>> Testing rt5 (lenovo dual core laptop running fc15, kernel based on koji's
+>> 3.0.0 build plus rt5)...
+...
+>> (I guess because HIGHMEM is disabled the computer only finds 800M+ of LOWMEM
+>> and that is all top reports - total installed is 4G)
+>
+> Yes, that's the state for now until someone fixes it :)
 
-> Post to linux-mm, cc me.
-> 
-> > > Acked-by: Mel Gorman <mgorman@suse.de>
-> > > 
-> > > It won't be merged to -stable until it goes to mainline though so
-> > > minimally you need to post this to linux-mm.
-> > > 
-> > > For -stable, you should explain why it is a candidate. I didn't push
-> > > the patch at the time because user problems were already resolved
-> > > and I wanted the merged for 3.0 before revisiting it. What problem
-> > > did you observe without this patch? With the lack of reference to
-> > > the other thread or the previous patch, I'm assuming you found and
-> > > solved the problem independently and I'd like to add a test case.
-> > 
-> > Actually, our LKP testing didn't find this problem on this point. Even
-> > with the patch, performance has no change on our machines. I just find
-> > this by my eyes. 
-> > 
-> 
-> Dang. I figured all right that it was unlikely the patch would
-> actually fix any problem but it looks correct and shouldnt' cause a
-> regression. You should resend the patch to Andrew cc'ing the people
-> in the old thread and linux-mm and ask Padraig Brady to test the
-> patch to confirm his problem does not reappear. When it gets into
-> mainline, try for -stable but I think there is very little motivation
-> for merging it there.
-
-Thanks a lot for the suggestions. I will do them. 
-
+Oh well... :-<
+-- Fernando
