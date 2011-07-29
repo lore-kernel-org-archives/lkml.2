@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab1G2Xi3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 19:38:29 -0400
-Received: from rcdn-iport-4.cisco.com ([173.37.86.75]:17750 "EHLO
-	rcdn-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058Ab1G2Xi2 (ORCPT
+	id S1753275Ab1G2Xoh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 19:44:37 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:32400 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753058Ab1G2Xog convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 19:38:28 -0400
-X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Jul 2011 19:38:28 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av8EAI9BM06rRDoJ/2dsb2JhbAA0AQEBAQMUAW8BEQwUBAkiDwkDAgECAQJRBwENAQgGAQEfp1J3qnqeOoZCBIdaiyCFB4t8
-X-IronPort-AV: E=Sophos;i="4.67,289,1309737600"; 
-   d="scan'208";a="7950150"
-Message-ID: <4E334235.8070304@cisco.com>
-Date: Fri, 29 Jul 2011 17:28:53 -0600
-From: David Ahern <daahern@cisco.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+	Fri, 29 Jul 2011 19:44:36 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=WsrJbV7LurJVL7JPyY9ZY2EFKIFvzdA/KxLUGWJ/c+c3pk3AU6TCgSzr4RhSxVATh
+	6PRuqVrUopX5lp1LK98JA==
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>, acme@redhat.com
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org
-Subject: Re: [PATCH] perf: add --symfs option to perf annotate
-References: <20110729232040.GA21838@quad>
-In-Reply-To: <20110729232040.GA21838@quad>
+In-Reply-To: <20110729205538.GD14343@redhat.com>
+References: <1311271873-10879-1-git-send-email-zakmagnus@google.com>
+	<20110722195340.GF3765@redhat.com>
+	<CAAuSN93tiSehpNXxjOgrq7oV-U+1ZPi2eqr+2dNSBG0yu0jxmA@mail.gmail.com>
+	<20110725124451.GA2866@redhat.com>
+	<CAAuSN93Qjk4eEAvm_Xn=O-0t+qhAyKmxy6HyPuyzJ35tX2u_CQ@mail.gmail.com>
+	<20110729205538.GD14343@redhat.com>
+Date: Fri, 29 Jul 2011 16:12:32 -0700
+Message-ID: <CAAuSN93ouWrPn9xWb9Zd3E2Dp0hQxC4JmFH1utbyy1_aMnfkLA@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] Make hard lockup detection use timestamps
+From: ZAK Magnus <zakmagnus@google.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Mandeep Singh Baines <msb@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2011 05:20 PM, Stephane Eranian wrote:
-> 
-> If you have --symfs in perf report, then you also need it
-> for perf annotate. This allows off-box assembly level analysis
-> of perf.data samples.
-> 
-> This patch complements:
-> 
-> commit ec5761eab318e50e69fcf8e63e9edaef5949c067
-> Author: David Ahern <daahern@cisco.com>
-> Date:   Thu Dec 9 13:27:07 2010 -0700
-> 
->     perf symbols: Add symfs option for off-box analysis using specified tree
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> ---
-> 
-> diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
-> index 85c5f02..15919dd 100644
-> --- a/tools/perf/Documentation/perf-annotate.txt
-> +++ b/tools/perf/Documentation/perf-annotate.txt
-> @@ -72,6 +72,9 @@ OPTIONS
->  	CPUs are specified with -: 0-2. Default is to report samples on all
->  	CPUs.
->  
-> +--symfs=<directory>::
-> +        Look for files with symbols relative to this directory.
-> +
->  SEE ALSO
->  --------
->  linkperf:perf-record[1], linkperf:perf-report[1]
-> diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-> index 555aefd..1605fbe 100644
-> --- a/tools/perf/builtin-annotate.c
-> +++ b/tools/perf/builtin-annotate.c
-> @@ -267,6 +267,8 @@ static const struct option options[] = {
->  	OPT_BOOLEAN('P', "full-paths", &full_paths,
->  		    "Don't shorten the displayed pathnames"),
->  	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
-> +	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
-> +		    "Look for files with symbols relative to this directory"),
->  	OPT_END()
->  };
->  
+Are you saying that any call to printk() will touch the watchdogs? I
+wasn't aware of that and it doesn't seem to comply with my
+observations too well, either. Then again, at the moment I don't
+understand some of the things I'm currently seeing so I could just be
+wrong.
 
-Acked-by: David Ahern <daahern@cisco.com>
-
-Nice to see others making use of that option.
-
-David
+On Fri, Jul 29, 2011 at 1:55 PM, Don Zickus <dzickus@redhat.com> wrote:
+> On Thu, Jul 28, 2011 at 05:16:00PM -0700, ZAK Magnus wrote:
+>> No news?
+>>
+>> I've been testing and looking into issues and I realized dump_stack()
+>> calls touch_nmi_watchdog(). That wrecks what the patch is trying to do
+>> so I'm changing it to save the trace and print it later after the
+>> stall has completed. This would also resolve some other things you
+>> were saying weren't so good. Hopefully the logic is similar enough
+>> that some things you may have learned still apply.
+>
+> So yeah, the acting of printing was resesting the softlockup counter and
+> delaying it forever.  In parallel, rcu has its own stall detector that was
+> going off after a minute or two.
+>
+> Once I routed the printk to trace_printk and disabled dump_stack,
+> everything started working as expected.
+>
+> Now the question is how to avoid shooting ourselves in the foot by
+> printk'ing a message without resetting the hard/soft lock watchdogs.
+>
+> I'll have to think about how to do that.  If you can come up with any
+> ideas let me know.
+>
+> We almost need a quiet dump_stack that dumps to a buffer instead of the
+> console.  But I am not sure that is worth the effort.
+>
+> Hmm.
+>
+> Cheers,
+> Don
+>
