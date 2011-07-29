@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab1G2JDx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 05:03:53 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60036 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755746Ab1G2JDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 05:03:52 -0400
-Message-ID: <4E327776.3010903@cn.fujitsu.com>
-Date: Fri, 29 Jul 2011 17:03:50 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs:remove a no needed mutex_unlock in devtmpfs
-References: <1311928444-4848-1-git-send-email-gaowanlong@cn.fujitsu.com>
-In-Reply-To: <1311928444-4848-1-git-send-email-gaowanlong@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-29 17:02:48,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-29 17:02:49,
-	Serialize complete at 2011-07-29 17:02:49
+	id S1755888Ab1G2JEZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 05:04:25 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:50631 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755698Ab1G2JEY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 05:04:24 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/CrA1/7dzCZLVNlrtlpRphn/Y0p7Sas1PaJ5tpbo
+	blusXOx1iK7m8q
+Subject: Re: [PATCH] sched: Remove WAKEUP_PREEMPT feature check in
+ entity_tick
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Yong Zhang <yong.zhang0@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+        "mingo@elte.hu" <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1311926218.5890.215.camel@twins>
+References: <1311846203.3938.1555.camel@minggr.sh.intel.com>
+	 <20110729062158.GA8971@zhy>
+	 <1311922180.3938.1573.camel@minggr.sh.intel.com>
+	 <20110729070356.GA10420@zhy>
+	 <1311924975.3938.1583.camel@minggr.sh.intel.com>
+	 <20110729074635.GB10420@zhy>  <1311926218.5890.215.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Jul 2011 11:04:18 +0200
+Message-ID: <1311930258.5500.36.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wanlong Gao wrote:
-> According ed75e95de574c99575e5f3e1d9ca59ea8c12a9cb, Al killed the
-> lookup_create(), this function will return with an mutex locked,
-> and it called by dev_mkdir() previously. then unlock this mutex
-> in dev_mkdir(), but when lookup_create() is replaced by kern_path_create(),
-> no locked mutex returned, so no need to unlock the mutex.
-> 
-> Al, is it right?
+On Fri, 2011-07-29 at 09:56 +0200, Peter Zijlstra wrote:
 
-no.. kern_path_create() returns with i_mutex held.
+> And I'm starting to think we should just kill all of WAKEUP_PREEMPT I
+> don't think we ever want to disable it anyway..
 
-> Thanks
-> 
-> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> ---
->  drivers/base/devtmpfs.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
-> index b89fffc..5384883 100644
-> --- a/drivers/base/devtmpfs.c
-> +++ b/drivers/base/devtmpfs.c
-> @@ -157,7 +157,6 @@ static int dev_mkdir(const char *name, mode_t mode)
->  		/* mark as kernel-created inode */
->  		dentry->d_inode->i_private = &thread;
->  	dput(dentry);
-> -	mutex_unlock(&path.dentry->d_inode->i_mutex);
->  	path_put(&path);
->  	return err;
->  }
+Agreed.  You have to be really into pain to flip that switch.
+
+	-Mike
+
+
