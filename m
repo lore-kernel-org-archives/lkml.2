@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756324Ab1G2Bmw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 21:42:52 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:36969 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755630Ab1G2Bmu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 21:42:50 -0400
-X-Authority-Analysis: v=1.1 cv=Pm0sEXe2MdIPK/rOEC7hwDW84D/yDsPO3JtCzsVYOFU= c=1 sm=0 a=vhdKIqpQuCYA:10 a=vqg4aWk6u8MA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=rlnYvQQmbScBrJwUyvMA:9 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20110729014215.328710900@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Thu, 28 Jul 2011 21:42:15 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 0/5] [GIT PULL][v3.2] x86: Consolidate 32 and 64 bit thread_info
+	id S932124Ab1G2Bnt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 21:43:49 -0400
+Received: from mga03.intel.com ([143.182.124.21]:10253 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756437Ab1G2Bnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 21:43:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,285,1309762800"; 
+   d="scan'208";a="32841816"
+From: Alex Shi <alex.shi@intel.com>
+To: linux-mm@kvack.org, P@draigBrady.com
+Cc: mgorman@suse.de, minchan.kim@gmail.com, linux-kernel@vger.kernel.org,
+        andrea@cpushare.com, tim.c.chen@intel.com, shaohua.li@intel.com,
+        akpm@linux-foundation.org, riel@redhat.com, luto@mit.edu
+Subject: [PATCH] kswapd: assign new_order and new_classzone_idx after wakeup in sleeping
+Date: Fri, 29 Jul 2011 09:45:08 +0800
+Message-Id: <1311903908-18263-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There 2 place to read pgdat in kswapd. One is return from a successful
+balance, another is waked up from sleeping. But the new_order and
+new_classzone_idx are not assigned after kswapd_try_to_sleep(), that
+will cause a bug in the following scenario.
 
-Thomas, Ingo, and Peter(s),
+After the last time successful balance, kswapd goes to sleep. So the
+new_order and new_classzone_idx were assigned to 0 and MAX-1 since there
+is no new wakeup during last time balancing. Now, a new wakeup came and
+finish balancing successful with order > 0. But since new_order is still
+0, this time successful balancing were judged as a failed balance. so,
+if there is another new wakeup coming during balancing, kswapd cann't
+read this and still want to try to sleep. And if the new wakeup is a
+tighter request, kswapd may goes to sleep, not to do balancing. That is
+incorrect.
 
-On IRC, Peter Zijlstra mentioned to me the difference between
-32bit and 64bit x86 on how thread_info is handled with interrupts.
-I mentioned that they should be more the same, and Peter agreed.
+So, to avoid above problem, the new_order and new_classzone_idx need to
+be assigned for later successful comparison.
 
-I decided to do so, and ended up with the following patches.
-I marked this for v3.2 as it should be tested a bit before going into
-mainline. I've ran several configs on it, but more testing should be done.
+Paidrag Brady, Could like do a retry for your problem on this patch?
 
-Some of the patches are clean ups, but the main ones are patch 3 and 4
-that do the work to convert 32bit of thread_info to be more like
-the 64bit.
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/vmscan.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
--- Steve
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 7ef6912..eb7bcce 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2850,6 +2850,8 @@ static int kswapd(void *p)
+ 			kswapd_try_to_sleep(pgdat, order, classzone_idx);
+ 			order = pgdat->kswapd_max_order;
+ 			classzone_idx = pgdat->classzone_idx;
++			new_order = order;
++			new_classzone_idx = classzone_idx;
+ 			pgdat->kswapd_max_order = 0;
+ 			pgdat->classzone_idx = pgdat->nr_zones - 1;
+ 		}
+-- 
+1.6.3.3
 
-Please pull the latest tip/x86/thread_info tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-tip/x86/thread_info
-
-Head SHA1: a9db5af270460d73139d83e39d1dabc9c475a821
-
-
-Steven Rostedt (5):
-      x86: Do not differentiate between x86_64 and i386 with init_per_cpu
-      x86: Nuke the supervisor_stack field in i386 thread_info
-      x86: Remove previous_esp from i386 thread_info structure
-      x86: Keep thread_info on thread stack in x86_32
-      x86: Clean up dumpstack_64.c code
-
-----
- arch/x86/include/asm/percpu.h      |    4 +-
- arch/x86/include/asm/processor.h   |    9 +++
- arch/x86/include/asm/thread_info.h |   56 +++--------------
- arch/x86/kernel/cpu/common.c       |    8 +-
- arch/x86/kernel/dumpstack_32.c     |   44 ++++++++++++-
- arch/x86/kernel/dumpstack_64.c     |  121 +++++++++++++++++++++++++-----------
- arch/x86/kernel/irq_32.c           |   86 +++++++++++---------------
- arch/x86/kernel/process_32.c       |    4 +
- arch/x86/kernel/smpboot.c          |    2 +-
- 9 files changed, 191 insertions(+), 143 deletions(-)
