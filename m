@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086Ab1G2PrK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 11:47:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58046 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693Ab1G2PrI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 11:47:08 -0400
+	id S1752195Ab1G2P6j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 11:58:39 -0400
+Received: from mga14.intel.com ([143.182.124.37]:62613 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752108Ab1G2P6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 11:58:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,287,1309762800"; 
+   d="scan'208";a="2363019"
+Message-ID: <4E32D86B.70301@linux.intel.com>
+Date: Fri, 29 Jul 2011 08:57:31 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <1311941355.1536.529.camel@vkoul-udesk3>
-References: <cover.1311936523.git.viresh.kumar@st.com>
-	<e2c1bd6941e88f8988b1942c13c20cf436b3a963.1311936524.git.viresh.kumar@st.com>
-	<1311941355.1536.529.camel@vkoul-udesk3>
-Date: Fri, 29 Jul 2011 08:47:06 -0700
-Message-ID: <CAOh2x=kqa0GxRH9o=8faPhuyyLcqxH8+AOowBTK_gMaDgJyeVA@mail.gmail.com>
-Subject: Re: [PATCH 04/18] dmaengine/amba-pl08x: Remove redundant comment and
- rewrite original
-From: viresh kumar <viresh.linux@gmail.com>
-To: "Koul, Vinod" <vinod.koul@intel.com>, linus.walleij@linaro.org,
-        linux@arm.linux.org.uk
-Cc: Viresh Kumar <viresh.kumar@st.com>, dan.j.williams@intel.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        armando.visconti@st.com, shiraz.hashim@st.com, vipin.kumar@st.com,
-        rajeev-dlh.kumar@st.com, deepak.sikri@st.com, vipulkumar.samar@st.com,
-        amit.virdi@st.com, pratyush.anand@st.com, bhupesh.sharma@st.com
-Content-Type: text/plain; charset=UTF-8
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [ANNOUNCE] 3.0-rt6 (kgdb working)
+References: <alpine.LFD.2.02.1107282213000.31246@ionos>
+In-Reply-To: <alpine.LFD.2.02.1107282213000.31246@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/29/11, Koul, Vinod <vinod.koul@intel.com> wrote:
-> On Fri, 2011-07-29 at 16:19 +0530, Viresh Kumar wrote:
->>  /*
->> - * Autoselect a master bus to use for the transfer this prefers the
->> - * destination bus if both available if fixed address on one bus the
->> - * other will be chosen
->> + * Autoselect a master bus to use for the transfer
->> + * - prefers the destination bus if both available
->> + * - if fixed address on one bus the other will be chosen
-> Not sure I get it, English is not my first language :)
 
-Nor mine either. :)
 
-Will give some more explanation.
+On 07/28/2011 02:43 PM, Thomas Gleixner wrote:
+> Dear RT Folks,
+> 
+> I'm pleased to announce the 3.0-rt6 release.
+> 
+> Changes versus 3.0-rt4 (I pushed out a rt5 w/o announce)
+> 
+>   * pin_cpu fix (Yong Zhang)
+> 
+>   * Various compile fixes (Yong Zhang & myself)
+> 
+>   * Serial fix for omap
+> 
+>   * Clocksource lockless watchdog reset
+> 
+>   * Reenabled CONFIG_RCU_BOOST (problem is unreproducible and maybe
+>     related to NO_HZ, which is still disabled. Paul is working on it!)
+> 
+>   * KGDB work^Whackaround (Jason Wessel)
+> 
+>     The kgdb workaround is really a hack and wants to be replaced by a
+>     proper overhaul for the console/tty maze.
+>     See: kgb-serial-hackaround.patch
 
-But before that i wanted to know the exact purpose of this
-master-slave concept here.
-Probably it is for choosing the victim for reduction of width, in case
-src and dest addresses
-are misaligned to each other.
-@Russell and Linus: Is this correct?
+I just confirmed that this resolves the issue I was seeing while trying
+to single step through futex_requeue() on a 2 socket E5680.
 
---
-viresh
+Thanks Thomas and Jason,
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
