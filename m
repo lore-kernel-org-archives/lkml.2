@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab1G2H4e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 03:56:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:43750 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753615Ab1G2H4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 03:56:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,286,1309762800"; 
-   d="scan'208";a="35846336"
+	id S1755419Ab1G2H5X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 03:57:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42249 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755326Ab1G2H5W convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 03:57:22 -0400
 Subject: Re: [PATCH] sched: Remove WAKEUP_PREEMPT feature check in
  entity_tick
-From: Lin Ming <ming.m.lin@intel.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, "mingo@elte.hu" <mingo@elte.hu>,
-        lkml <linux-kernel@vger.kernel.org>
+Cc: Lin Ming <ming.m.lin@intel.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        lkml <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>
 In-Reply-To: <20110729074635.GB10420@zhy>
 References: <1311846203.3938.1555.camel@minggr.sh.intel.com>
 	 <20110729062158.GA8971@zhy>
@@ -23,11 +21,11 @@ References: <1311846203.3938.1555.camel@minggr.sh.intel.com>
 	 <1311924975.3938.1583.camel@minggr.sh.intel.com>
 	 <20110729074635.GB10420@zhy>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 29 Jul 2011 15:56:31 +0800
-Message-ID: <1311926191.3938.1586.camel@minggr.sh.intel.com>
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 29 Jul 2011 09:56:58 +0200
+Message-ID: <1311926218.5890.215.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -60,14 +58,12 @@ On Fri, 2011-07-29 at 15:46 +0800, Yong Zhang wrote:
 > !sched_feat(WAKEUP_PREEMPT), Q will get scheduled when some event
 > happen, like IRQ.
 
-Wow. That's really clear explanation.
-Got it now.
+Nah, if there is 1 runnable task it will always run, preemption simply
+doesn't matter. There's nothing to preempt it with.
 
-Thanks!
+I've queued Lin's patch as I don't see the point of this thing either,
+normally WAKEUP_PREEMPT is enabled so it says || 0 which is kinda
+useless :-)
 
-> 
-> Thanks,
-> Yong
-> 
-
-
+And I'm starting to think we should just kill all of WAKEUP_PREEMPT I
+don't think we ever want to disable it anyway.. 
