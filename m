@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608Ab1G2QmU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 12:42:20 -0400
-Received: from fieldses.org ([174.143.236.118]:59623 "EHLO fieldses.org"
+	id S1751993Ab1G2Qp7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 12:45:59 -0400
+Received: from fieldses.org ([174.143.236.118]:48973 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750844Ab1G2QmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 12:42:19 -0400
-Date: Fri, 29 Jul 2011 12:42:14 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, Neil Brown <neilb@suse.de>,
-        David Miller <davem@davemloft.net>, linux-nfs@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>,
+	id S1751290Ab1G2Qp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 12:45:57 -0400
+Date: Fri, 29 Jul 2011 12:45:53 -0400
+To: Greg Banks <gnb@fastmail.fm>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, NeilBrown <neilb@suse.de>,
+        linux-nfs@vger.kernel.org, David Miller <davem@davemloft.net>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg Banks <gnb@fastmail.fm>
-Subject: Re: [PATCH] sunrpc: use better NUMA affinities
-Message-ID: <20110729164214.GI23194@fieldses.org>
-References: <1311876249.2346.39.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+        netdev <netdev@vger.kernel.org>
+Subject: Re: Fw: [PATCH] sunrpc: use better NUMA affinities
+Message-ID: <20110729164553.GJ23194@fieldses.org>
+References: <20110729153207.17af3085@notabene.brown>
+ <4E324DB4.7060600@fastmail.fm>
+ <1311921035.7845.10.camel@edumazet-laptop>
+ <4E3258E1.6020000@fastmail.fm>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1311876249.2346.39.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4E3258E1.6020000@fastmail.fm>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 08:04:09PM +0200, Eric Dumazet wrote:
-> Use NUMA aware allocations to reduce latencies and increase throughput.
+On Fri, Jul 29, 2011 at 04:53:21PM +1000, Greg Banks wrote:
+> On 29/07/11 16:30, Eric Dumazet wrote:
+> >Le vendredi 29 juillet 2011 à 16:05 +1000, Greg Banks a écrit :
+> >>On 29/07/11 15:32, NeilBrown wrote:
+> >>
+> >>I seem to remember coming to the conclusion that Jeff eventually
+> >>addressed this problem...am I misremembering or did something regress?
+> >>
+> >Currently, all nfsd kthreads use memory for their kernel stack and
+> >various initial data from a _single_ node, even if you use
+> >sunrpc.pool_mode=pernode  (or percpu)
 > 
-> sunrpc kthreads can use kthread_create_on_node() if pool_mode is
-> "percpu" or "pernode", and svc_prepare_thread()/svc_init_buffer() can
-> also take into account NUMA node affinity for memory allocations.
-...
-> @@ -662,14 +675,16 @@ svc_set_num_threads(struct svc_serv *serv, struct svc_pool *pool, int nrservs)
->  		nrservs--;
->  		chosen_pool = choose_pool(serv, pool, &state);
->  
-> -		rqstp = svc_prepare_thread(serv, chosen_pool);
-> +		node = svc_pool_map_get_node(chosen_pool->sp_id);
-> +		rqstp = svc_prepare_thread(serv, chosen_pool, node);
+> That's just plain broken and I'm very pleased to see you fix it.
 
-The only correct value for the third argument there is
-svc_pool_map_get_node(chosen_pool->sp_id), so let's have
-svc_prepare_thread() call that itself.
+Should I take that as a "Reviewed-by"?
 
-Seems OK otherwise.
+> I was just surprised that it was still broken and wondering how that
+> happened.  Looking at ToT I see that because I dropped the ball in
+> 2008, Jeff's patches didn't address the problem.  In ToT
+> svc_pool_map_set_cpumask() is called *after* kthread_create() and
+> applies to the child thread, *after* it's stack has been allocated
+> on the wrong node.  In the working SGI code,
+> svc_pool_map_set_cpumask() is called by the parent node on itself
+> *before* calling kernel_thread() or doing any of the data structure
+> allocations, thus ensuring that everything gets allocated using the
+> default memory allocation policy, which on SGI NFS servers was
+> globally tuned to be "node-local".
 
-Any suggestions on how we should test this?
+OK, so would it be enough to just move the svc_pool_map_set_cpumask()
+back a few lines, or do we want Eric's approach, in order to have
+something that will work better with other memory allocation policies?
 
 --b.
 
->  		if (IS_ERR(rqstp)) {
->  			error = PTR_ERR(rqstp);
->  			break;
->  		}
->  
->  		__module_get(serv->sv_module);
-> -		task = kthread_create(serv->sv_function, rqstp, serv->sv_name);
-> +		task = kthread_create_on_node(serv->sv_function, rqstp,
-> +					      node, serv->sv_name);
->  		if (IS_ERR(task)) {
->  			error = PTR_ERR(task);
->  			module_put(serv->sv_module);
 > 
+> >With my patch, we make sure each thread gets its stack from its local
+> >node.
+> >
+> >Check commit 94dcf29a11b3d20a (kthread: use kthread_create_on_node()) to
+> >see how this strategy already was adopted for ksoftirqd, kworker,
+> >migration, and pktgend kthreads.
 > 
+> Ah, I see.  It's unfortunate that the kthread_create() API ends up
+> being passed a CPU number but that's only used to format the name
+> and not for sensible things :(
+> 
+> -- 
+> Greg.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
