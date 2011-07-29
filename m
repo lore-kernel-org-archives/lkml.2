@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab1G2JuQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 05:50:16 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35760 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826Ab1G2JuO (ORCPT
+	id S1756099Ab1G2JwJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 05:52:09 -0400
+Received: from smtp.fe.up.pt ([193.136.28.30]:49676 "EHLO smtp.fe.up.pt"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755786Ab1G2JwH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 05:50:14 -0400
-Date: Fri, 29 Jul 2011 18:50:05 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mgorman@suse.de>, Andrew Lutomirski <luto@mit.edu>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [RFC PATCH 0/8] Reduce filesystem writeback from page reclaim v2
-Message-ID: <20110729095005.GH1843@barrios-desktop>
-References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
- <20110727161821.GA1738@barrios-desktop>
- <20110728113852.GN3010@suse.de>
- <20110729094816.GG1843@barrios-desktop>
+	Fri, 29 Jul 2011 05:52:07 -0400
+X-Greylist: delayed 428 seconds by postgrey-1.27 at vger.kernel.org; Fri, 29 Jul 2011 05:52:07 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110729094816.GG1843@barrios-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110728160835.aad5bd31.akpm@linux-foundation.org>
+References: <1311353744-16405-1-git-send-email-jamesnuss@nanometrics.ca>
+	<20110728160835.aad5bd31.akpm@linux-foundation.org>
+Date: Fri, 29 Jul 2011 11:44:54 +0200
+Message-ID: <CAFqRFbfn==sVPdkw7LWa0M_XXXe+ry0Wi93bEP_gZz7fnYOz1A@mail.gmail.com>
+Subject: Re: [PATCH v4 0/2] New PPS client driver using GPIO
+From: Ricardo Martins <rasm@fe.up.pt>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: James Nuss <jamesnuss@nanometrics.ca>,
+        Rodolfo Giometti <giometti@linux.it>,
+        Ben Gardiner <bengardiner@nanometrics.ca>,
+        linux-kernel@vger.kernel.org, linuxpps@ml.enneenne.com,
+        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
+        Igor Plyatov <plyatov@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for missing Ccing.
+On 29 July 2011 01:08, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Fri, 22 Jul 2011 12:55:42 -0400
+> James Nuss <jamesnuss@nanometrics.ca> wrote:
+>
+>> This patchset contains 2 patches.  It is based on the work done by
+>> Ricardo Martins <rasm@fe.up.pt> who submitted an initial implementation [1]
+>> of a PPS IRQ client driver to the linuxpps mailing-list on Dec 3 2010.
+>
+> In which case it is rather desirable that we have Ricardo's Signed-off-by:
+> for these patches, please.
 
-On Fri, Jul 29, 2011 at 06:48:16PM +0900, Minchan Kim wrote:
-> On Thu, Jul 28, 2011 at 12:38:52PM +0100, Mel Gorman wrote:
-> > On Thu, Jul 28, 2011 at 01:18:21AM +0900, Minchan Kim wrote:
-> > > On Thu, Jul 21, 2011 at 05:28:42PM +0100, Mel Gorman wrote:
-> > > > Note how preventing kswapd reclaiming dirty pages pushes up its CPU
-> 
-> <snip>
-> 
-> > > > usage as it scans more pages but it does not get excessive due to
-> > > > the throttling.
-> > > 
-> > > Good to hear.
-> > > The concern of this patchset was early OOM kill with too many scanning.
-> > > I can throw such concern out from now on.
-> > > 
-> > 
-> > At least, I haven't been able to trigger a premature OOM.
-> 
-> AFAIR, Andrew had a premature OOM problem[1] but I couldn't track down at that time.
-> I think this patch series might solve his problem. Although it doesn't, it should not accelerate
-> his problem, at least.
-> 
-> Andrew, Could you test this patchset?
-> 
-> [1] https://lkml.org/lkml/2011/5/25/415
-> -- 
-> Kind regards,
-> Minchan Kim
+Signed-off-by: Ricardo Martins <rasm@fe.up.pt>
 
--- 
-Kind regards,
-Minchan Kim
+>
