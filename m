@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235Ab1G2LFQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 07:05:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58371 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755453Ab1G2LFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 07:05:14 -0400
-Date: Fri, 29 Jul 2011 12:05:10 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/5] mm: per-zone dirty limiting
-Message-ID: <20110729110510.GS3010@suse.de>
-References: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
- <20110726154741.GE3010@suse.de>
- <20110726180559.GA667@redhat.com>
+	id S932112Ab1G2LFn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 07:05:43 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50798 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756090Ab1G2LFm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 07:05:42 -0400
+Date: Fri, 29 Jul 2011 12:05:25 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: linus.walleij@linaro.org, pratyush.anand@st.com, rajeev-dlh.kumar@st.com,
+        bhupesh.sharma@st.com, shiraz.hashim@st.com, vinod.koul@intel.com,
+        linux-kernel@vger.kernel.org, vipin.kumar@st.com,
+        armando.visconti@st.com, amit.virdi@st.com, vipulkumar.samar@st.com,
+        viresh.linux@gmail.com, deepak.sikri@st.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 10/18] dmaengine/amba-pl08x: Get rid of
+	pl08x_pre_boundary()
+Message-ID: <20110729110525.GG25640@n2100.arm.linux.org.uk>
+References: <cover.1311936523.git.viresh.kumar@st.com> <c147ba3a755935e93fdb40b5531a6e18d34e0fd7.1311936524.git.viresh.kumar@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110726180559.GA667@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <c147ba3a755935e93fdb40b5531a6e18d34e0fd7.1311936524.git.viresh.kumar@st.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 08:05:59PM +0200, Johannes Weiner wrote:
-> > As dd is variable, I'm rerunning the tests to do 4 iterations and
-> > multiple memory sizes for just xfs and ext4 to see what falls out. It
-> > should take about 14 hours to complete assuming nothing screws up.
+On Fri, Jul 29, 2011 at 04:19:20PM +0530, Viresh Kumar wrote:
+> Pl080 Manual says: "Bursts do not cross the 1KB address boundary"
 > 
-> Awesome, thanks!
+> We can program the controller to cross 1 KB boundary on a burst and controller
+> can take care of this boundary condition by itself.
 > 
+> Following is the discussion with ARM Technical Support Guys (David):
+> [Viresh] Manual says: "Bursts do not cross the 1KB address boundary"
+> 
+> What does that actually mean? As, Maximum size transferable with a single LLI is
+> 4095 * 4 =16380 ~ 16KB. So, if we don't have src/dest address aligned to burst
+> size, we can't use this big of an LLI.
+> 
+> [David] There is a difference between bursts describing the total data
+> transferred by the DMA controller and AHB bursts. Bursts described by the
+> programmable parameters in the PL080 have no direct connection with the bursts
+> that are seen on the AHB bus.
+> 
+> The statement that "Bursts do not cross the 1KB address boundary" in the TRM is
+> referring to AHB bursts, where this limitation is a requirement of the AHB spec.
+> You can still issue bursts within the PL080 that are in excess o f 1KB. The
+> PL080 will make sure that its bursts are broken down into legal AHB bursts which
+> will be formatted to ensure that no AHB burst crosses a 1KB boundary.
+> 
+> Based on above discussion, this patch removes all code related to 1 KB boundary
+> as we are not required to handle this in driver.
 
-While they in fact took about 30 hours to complete, I only got around
-to packaging them up now. Unfortuantely the tests were incomplete as
-I needed the machine back for another use but the results that did
-complete are at http://www.csn.ul.ie/~mel/postings/hnaz-20110729/
-
-Look for the comparison.html files such as this one
-
-http://www.csn.ul.ie/~mel/postings/hnaz-20110729/global-dhp-512M__writeback-reclaimdirty-ext3/hydra/comparison.html
-
-I'm afraid I haven't looked through them in detail.
-
--- 
-Mel Gorman
-SUSE Labs
+Good.  I'm glad someone's finally getting to the bottom of what's
+actually required and what isn't...  This driver has been a mess for
+quite a long time and is in desperate need of these kinds of cleanups.
