@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506Ab1G2LA5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 07:00:57 -0400
-Received: from ulysses.noc.ntua.gr ([147.102.222.230]:60690 "EHLO
-	ulysses.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756467Ab1G2LAz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 07:00:55 -0400
-Message-ID: <4E3292B5.6090507@gentoo.org>
-Date: Fri, 29 Jul 2011 14:00:05 +0300
-From: Stratos Psomadakis <psomas@gentoo.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1756235Ab1G2LFQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 07:05:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58371 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755453Ab1G2LFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 07:05:14 -0400
+Date: Fri, 29 Jul 2011 12:05:10 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/5] mm: per-zone dirty limiting
+Message-ID: <20110729110510.GS3010@suse.de>
+References: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
+ <20110726154741.GE3010@suse.de>
+ <20110726180559.GA667@redhat.com>
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>,
-        Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-Subject: Re: [PATCH 1/2] staging: fix zcache building
-References: <1311556452-1859-1-git-send-email-cascardo@holoscopio.com> <a5d17beb-847b-48c0-82d7-cfabe419e7f9@default>
-In-Reply-To: <a5d17beb-847b-48c0-82d7-cfabe419e7f9@default>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (ulysses.noc.ntua.gr [147.102.222.230]); Fri, 29 Jul 2011 14:00:40 +0300 (EEST)
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20110726180559.GA667@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2011 06:19 AM, Dan Magenheimer wrote:
->> From: Thadeu Lima de Souza Cascardo [mailto:cascardo@holoscopio.com]
->> Sent: Sunday, July 24, 2011 7:14 PM
->> To: Nitin Gupta
->> Cc: Dan Magenheimer; Greg Kroah-Hartman; devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org;
->> Thadeu Lima de Souza Cascardo
->> Subject: [PATCH 1/2] staging: fix zcache building
->>
->> zcache is only building tmem.c and not building zcache.c. To keep the
->> module name, zcache.c must be renamed if symbols from tmem.c are to
->> remain unexported.
->>
->> Signed-off-by: Thadeu Lima de Souza Cascardo<cascardo@holoscopio.com>
->
-> Greg --
->
-> Since a newer version of zcache.c is already in staging-next (and
-> hopefully soon in staging-for-linus for the 3.1 window), this
-> patch, which simply replaces the (older) zcache.c with identical
-> code with a different filename, would not apply cleanly.  Could
-> you advise on the best way to ensure both the newer version
-> and the file rename are applied... perhaps the rename must be
-> done manually in your git tree(s)?
->
-> Though I'm not certain of the process steps, please consider the
-> rename, the one liner Makefile change for the rename, and the GPL
-> module license addition (in patch 2/2)...
->
-> Acked-by: Dan Magenheimer<dan.magenheimer@oracle.com>
->
-> Thanks,
-> Dan
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-Will this fix get included in the 3.0.1 -stable release? (zcache is 
-'broken' (doesn't build) in Linux-3.0)
+On Tue, Jul 26, 2011 at 08:05:59PM +0200, Johannes Weiner wrote:
+> > As dd is variable, I'm rerunning the tests to do 4 iterations and
+> > multiple memory sizes for just xfs and ext4 to see what falls out. It
+> > should take about 14 hours to complete assuming nothing screws up.
+> 
+> Awesome, thanks!
+> 
 
-Btw, I noticed that there was another patch sent [1] to fix this issue 
-earlier, but the original author is not mentioned in the first patch of 
-this thread, which fixes the build failure (and the patches are almost 
-identical I think).
+While they in fact took about 30 hours to complete, I only got around
+to packaging them up now. Unfortuantely the tests were incomplete as
+I needed the machine back for another use but the results that did
+complete are at http://www.csn.ul.ie/~mel/postings/hnaz-20110729/
 
-[1] https://lkml.org/lkml/2011/6/22/54
+Look for the comparison.html files such as this one
 
-Thanks,
-Stratos
+http://www.csn.ul.ie/~mel/postings/hnaz-20110729/global-dhp-512M__writeback-reclaimdirty-ext3/hydra/comparison.html
+
+I'm afraid I haven't looked through them in detail.
 
 -- 
-Stratos Psomadakis
-<psomas@gentoo.org>
-
+Mel Gorman
+SUSE Labs
