@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531Ab1G2NSv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 09:18:51 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:44669 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756332Ab1G2NSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 09:18:50 -0400
-Date: Fri, 29 Jul 2011 15:17:52 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Steven Liu <lingjiujianke@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] xfs: Fix build breakage in xfs_iops.c when
- CONFIG_FS_POSIX_ACL is not set
-Message-ID: <20110729131752.GA29880@elte.hu>
-References: <20110725185649.GA22133@ZenIV.linux.org.uk>
- <20110726033535.GA11939@x4.trippels.de>
- <CA+55aFzaKHpVdLKac6rFN+YsAugz1aR3fv-reThJiD4HWDND8w@mail.gmail.com>
- <20110726082146.GB11939@x4.trippels.de>
- <CADxeRwnYxgxZPT3DN=SraZOvL_juWzV+MoY9+0vqZr29y6U6cA@mail.gmail.com>
- <20110726085804.GA1639@x4.trippels.de>
- <20110726091520.GB1639@x4.trippels.de>
- <20110726093401.GA8334@infradead.org>
+	id S1752793Ab1G2NUA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 09:20:00 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59606 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab1G2NT6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 09:19:58 -0400
+Date: Fri, 29 Jul 2011 06:19:38 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: "Darrick J. Wong" <djwong@us.ibm.com>, Andreas Dilger <aedilger@gmail.com>,
+        Mingming Cao <cmm@us.ibm.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] Add inode checksum support to ext4
+Message-ID: <20110729131937.GB5910@noexit.corp.google.com>
+Mail-Followup-To: Andreas Dilger <adilger.kernel@dilger.ca>,
+	"Darrick J. Wong" <djwong@us.ibm.com>,
+	Andreas Dilger <aedilger@gmail.com>, Mingming Cao <cmm@us.ibm.com>,
+	Theodore Ts'o <tytso@mit.edu>,
+	linux-ext4 <linux-ext4@vger.kernel.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <20110406224410.GB24354@tux1.beaverton.ibm.com>
+ <1302290868.4461.7.camel@mingming-laptop>
+ <20110727082730.GG20655@tux1.beaverton.ibm.com>
+ <EF1F2330-D8C4-427A-ABB9-D1E607D91A3D@gmail.com>
+ <20110728165615.GI20655@tux1.beaverton.ibm.com>
+ <20110728220735.GA27253@noexit.corp.google.com>
+ <0E795C1D-AD1E-4CC4-9426-2B58D98B14DC@dilger.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110726093401.GA8334@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <0E795C1D-AD1E-4CC4-9426-2B58D98B14DC@dilger.ca>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Christoph Hellwig <hch@infradead.org> wrote:
-
-> On Tue, Jul 26, 2011 at 11:15:20AM +0200, Markus Trippelsdorf wrote:
-> > commit 4e34e719e45, that takes the ACL checks to common code,
-> > accidentely broke the build when CONFIG_FS_POSIX_ACL is not set:
-> > 
-> >   CC      fs/xfs/linux-2.6/xfs_iops.o
-> > fs/xfs/linux-2.6/xfs_iops.c:1025:14: error: ???xfs_get_acl??? undeclared here (not in a function)
-> > 
-> > Fix this by declaring xfs_get_acl a static inline function.
+On Fri, Jul 29, 2011 at 03:48:45AM -0600, Andreas Dilger wrote:
+> On 2011-07-28, at 4:07 PM, Joel Becker wrote:
+> > 	We use ethernet crc32 in ocfs2.  btrfs uses crc32c.  Frankly, I
+> > could have used crc32c if I'd really thought about the hardware
+> > acceleration benefits.  I think it's a good idea for ext4.
 > 
-> Do you have OPTIMIZE_INLINING enabled?  In general I dont think we 
-> can take the address of an inline function, so without this option 
-> I far the code might not compile, in which case we'll need ifdefs 
-> around the inode operation assignment in addition to your patch.
+> The problem with crc32[c] is that if you don't have hardware acceleration
+> it is terribly slow.
 
-FYI, this build bug is still present upstream and triggers rather 
-frequently in randconfig testing.
+	We find ethernet crc32 just fine in ocfs2.  I use the kernel's
+implementation, which survives everyone's network traffic, and of course
+we added the triggers to jbd2 so we only have to do the calculations on
+read and write.
 
-Also, according to the timestamps of the guilty commit (4e34e719e45) 
-it had near zero linux-next testing time before it was pushed 
-upstream - could we improve on that please?
+> Yes, it makes sense to just put a "fake" dirent at the end of the leaf block,
+> or similar.  I don't think it is necessary to modify existing directories or
+> extent blocks to add these structures in, if there is no room, but for new
+> blocks, or blocks with space it is enough.
 
-Thanks,
+	We have tunefs.ocfs2 code to adjust existing directories to add
+the trailer.  It's not too bad, really.
+ 
+Joel
 
-	Ingo
+-- 
+
+"People with narrow minds usually have broad tongues."
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
