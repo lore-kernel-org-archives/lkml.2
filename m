@@ -1,71 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab1G2JH0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 05:07:26 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61050 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755944Ab1G2JHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 05:07:24 -0400
-Message-ID: <4E32780B.2090200@cn.fujitsu.com>
-Date: Fri, 29 Jul 2011 17:06:19 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: FNST
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110322 Red Hat/3.1.9-3.el6_0 Thunderbird/3.1.9
+	id S1755871Ab1G2JJw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 05:09:52 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:54340 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755645Ab1G2JJu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 05:09:50 -0400
+X-AuditID: b753bd60-a507fba0000050a4-5e-4e3278db537f
+X-AuditID: b753bd60-a507fba0000050a4-5e-4e3278db537f
+Message-ID: <4E3278C9.7000703@hitachi.com>
+Date: Fri, 29 Jul 2011 18:09:29 +0900
+From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-To: Li Zefan <lizf@cn.fujitsu.com>
-CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs:remove a no needed mutex_unlock in devtmpfs
-References: <1311928444-4848-1-git-send-email-gaowanlong@cn.fujitsu.com> <4E327776.3010903@cn.fujitsu.com>
-In-Reply-To: <4E327776.3010903@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-29 17:06:21,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-29 17:06:21,
-	Serialize complete at 2011-07-29 17:06:21
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: JBottomley@parallels.com
+Cc: Nao Nishijima <nao.nishijima.xt@hitachi.com>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, James.Bottomley@HansenPartnership.com,
+        dle-develop@lists.sourceforge.net,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, axboe@kernel.dk
+Subject: Re: [PATCH v2 0/3] Persistent device name using alias name
+References: <20110722105925.7330.6609.stgit@ltc197.sdl.hitachi.co.jp>
+In-Reply-To: <20110722105925.7330.6609.stgit@ltc197.sdl.hitachi.co.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2011 05:03 PM, Li Zefan wrote:
-> Wanlong Gao wrote:
->> According ed75e95de574c99575e5f3e1d9ca59ea8c12a9cb, Al killed the
->> lookup_create(), this function will return with an mutex locked,
->> and it called by dev_mkdir() previously. then unlock this mutex
->> in dev_mkdir(), but when lookup_create() is replaced by kern_path_create(),
->> no locked mutex returned, so no need to unlock the mutex.
->>
->> Al, is it right?
->
-> no.. kern_path_create() returns with i_mutex held.
-yeah, I hasn't seen the *return* when *dentry* is gotten successfully.
-Sorry for the noise
->
->> Thanks
->>
->> Signed-off-by: Wanlong Gao<gaowanlong@cn.fujitsu.com>
->> ---
->>   drivers/base/devtmpfs.c |    1 -
->>   1 files changed, 0 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
->> index b89fffc..5384883 100644
->> --- a/drivers/base/devtmpfs.c
->> +++ b/drivers/base/devtmpfs.c
->> @@ -157,7 +157,6 @@ static int dev_mkdir(const char *name, mode_t mode)
->>   		/* mark as kernel-created inode */
->>   		dentry->d_inode->i_private =&thread;
->>   	dput(dentry);
->> -	mutex_unlock(&path.dentry->d_inode->i_mutex);
->>   	path_put(&path);
->>   	return err;
->>   }
->
+Hi James,
+
+Could you review this patches?
+
+Best regards,
+
+(2011/07/22 19:59), Nao Nishijima wrote:
+> Hi,
+> 
+> This patch series provide an "alias name" of the disk into kernel messages.
+> Users can assign a preferred name to an alias name of the device.
+> 
+> A raw device name of a disk does not always point a same disk at each boot-up
+> time. Therefore, users have to use persistent device names, which udev creates
+> to always access the same disk. However, kernel messages still display the raw
+> device names.
+> 
+> My proposal is that users can use and see persistent device names which were
+> assigned by they because users expect same name to point same disk anytime.
+> 
+> Why need to modify kernel messages?
+> - We can see mapping of device names and persistent device names in udev log.
+>   If those logs output to syslog, we can search persistent device name from
+>   device name, but it can cause a large amount of syslog output.
+> 
+> - If we can use the persistent device names and can always see the same name on
+>   the kernel log, we don't need to pay additional cost for searching and picking
+>   a correct pair of device name and persistent device name from udev log.
+> 
+> - Kernel messages are output to serial console when kenel crashes,
+>   it's so hard to convert device name to alias name.
+> 
+> 
+> Of course, I am going to modify the commands using device name so that users
+> can use alias names.
+> 
+> 
+> How to use:
+> 1. Build and install the kernel with this series, and reboot with the kernel.
+> 
+> 2. Make a script of get alias_name
+> 
+> [localhost]# vi /lib/udev/get_alias_name
+> #!/bin/sh -e
+> DEVNAME=`echo $1 | sed -e 's/[0-9]//g'`
+> echo "ALIAS=`cat /sys/block/$DEVNAME/alias_name`"
+> exit 0
+> 
+> And you should set an execute bit,
+> [localhost]# chmod +x /lib/udev/get_alias_name
+> 
+> 3. Check disk's id
+> Here is an example to get the serial id and the path of the device.
+> 
+> [localhost]# udevadm info --query=property --path=/sys/block/sda \
+> | grep ID_SERIAL=
+> ID_SERIAL=0QEMU_QEMU_HARDDISK_drive-scsi0-0-1
+> 
+> Some devices does not have the serial id. For such devices,
+> you may use the device path.
+> 
+> [localhost]# udevadm info --query=property --path=/sys/block/sr0 \
+> | grep ID_PATH=
+> ID_PATH=pci-0000:00:01.1-scsi-1:0:0:0
+> 
+> 
+> 4. Write udev rules as follows
+> (The user assigns "foo" to sda and "bar" to sr0)
+> We use ENV{ID_SERIAL} or ENV{ID_PATH} (get by 3) to identify a disk.
+> And to assign automatically an "alias name", we use ATTR key.
+> If ENV{ALIAS} is empty, we use to get an "alias_name" by get_alias_name script.
+> 
+> [localhost]# vi /etc/udev/rules.d/70-alias_name.rules
+> SUBSYSTEM!="block", GOTO="end"
+> 
+> # write alias name for sdX
+> KERNEL=="sd*[!0-9]", ACTION=="add", ATTR{alias_name}="foo", \
+> ENV{ID_SERIAL}=="0QEMU_QEMU_HARDDISK_drive-scsi0-0-1"
+> 
+> # write alias name for srX
+> KERNEL=="sr[0-9]", ACTION=="add", ATTR{alias_name}="bar", \
+> ENV{ID_PATH}=="pci-0000:00:01.1-scsi-1:0:0:0"
+> 
+> # make symlink
+> ENV{DEVTYPE}=="disk", ENV{ALIAS}=="?*", SYMLINK+="disk/by-alias/$env{ALIAS}"
+> ENV{DEVTYPE}=="partition", ENV{ALIAS}=="", \
+> IMPORT{program}="/lib/udev/get_alias_name %k"
+> ENV{DEVTYPE}=="partition", ENV{ALIAS}=="?*", \
+> SYMLINK+="disk/by-alias/$env{ALIAS}%n"
+> 
+> LABEL="end"
+> 
+> 
+> 5. reboot
+> After reboot, we can see alias name in kernel messages.
+> 
+> [localhost]# ls -l /dev/disk/by-alias/
+> total 0
+> lrwxrwxrwx. 1 root root  9 Jul  1 21:21 bar -> ../../sr0
+> lrwxrwxrwx. 1 root root  9 Jul  1 21:21 foo -> ../../sda
+> lrwxrwxrwx. 1 root root 10 Jul  1 21:21 foo1 -> ../../sda1
+> 
+> [localhost]# dmesg
+> ...
+> sd 2:0:0:0: [foo] sd_init_command: block=17382146, count=56
+> sd 2:0:0:0: [foo] block=17382146
+> sd 2:0:0:0: [foo] reading 56/56 512 byte blocks.
+> sd 2:0:0:0: [foo] Send: 0xffff88007ab1a900 
+> ...
+> 
+> Currently, the user must add the naming rule manually for new devices.
+> In the future, it is appended automatically, as like NIC.
+> 
+> Changes in v2:
+> - Change alias_name string to pointer
+> - Change alias_name writable to write at once
+> - Drop procfs patch
+> 
+> Best regards,
+> 
+> ---
+> 
+> Joe Perches (1):
+>       sd: modify printk for alias name
+> 
+> Nao Nishijima (2):
+>       block: add a new attribute "alias name" in gendisk structure
+>       sd: [BUGFIX] Use sd_printk instead of printk
+> 
+> 
+>  Documentation/ABI/testing/sysfs-block |   15 ++++++
+>  block/genhd.c                         |   84 +++++++++++++++++++++++++++++++++
+>  drivers/scsi/scsi_lib.c               |   26 ++++++++++
+>  drivers/scsi/sd.c                     |   30 +++++++++++-
+>  drivers/scsi/sd.h                     |    8 +--
+>  include/linux/genhd.h                 |    4 ++
+>  include/scsi/scsi_device.h            |    8 +--
+>  7 files changed, 162 insertions(+), 13 deletions(-)
+> 
+> 
+> --
+> Nao Nishijima (nao.nishijima.xt@hitachi.com)
+> 
 
 
 -- 
-Thanks
-Best Regards
-Wanlong Gao
+Nao NISHIJIMA
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., YOKOHAMA Research  Laboratory
+Email： nao.nishijima.xt@hitachi.com
