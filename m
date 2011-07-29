@@ -1,182 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab1G2JJw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 05:09:52 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:54340 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755645Ab1G2JJu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 05:09:50 -0400
-X-AuditID: b753bd60-a507fba0000050a4-5e-4e3278db537f
-X-AuditID: b753bd60-a507fba0000050a4-5e-4e3278db537f
-Message-ID: <4E3278C9.7000703@hitachi.com>
-Date: Fri, 29 Jul 2011 18:09:29 +0900
-From: Nao Nishijima <nao.nishijima.xt@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1755817Ab1G2JOT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 05:14:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53397 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755698Ab1G2JOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 05:14:18 -0400
+Date: Fri, 29 Jul 2011 10:14:13 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Keiichi KII <k-keiichi@bx.jp.nec.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Tom Zanussi <tzanussi@gmail.com>, "riel@redhat.com" <riel@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "BA, Moussa" <Moussa.BA@numonyx.com>
+Subject: Re: [RFC PATCH -tip 0/5] perf tools: pagecache monitoring
+Message-ID: <20110729091413.GP3010@suse.de>
+References: <4E24A61D.4060702@bx.jp.nec.com>
 MIME-Version: 1.0
-To: JBottomley@parallels.com
-Cc: Nao Nishijima <nao.nishijima.xt@hitachi.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, James.Bottomley@HansenPartnership.com,
-        dle-develop@lists.sourceforge.net,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, axboe@kernel.dk
-Subject: Re: [PATCH v2 0/3] Persistent device name using alias name
-References: <20110722105925.7330.6609.stgit@ltc197.sdl.hitachi.co.jp>
-In-Reply-To: <20110722105925.7330.6609.stgit@ltc197.sdl.hitachi.co.jp>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4E24A61D.4060702@bx.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On Mon, Jul 18, 2011 at 05:31:09PM -0400, Keiichi KII wrote:
+> Hello,
+> 
+> I would propose pagecache monitoring tools using perf tools.
+> The purpose of the tools is to clarify pagecache behavior in a system.
+> 
+> We can now know system-wide pagecache usage by "/proc/meminfo".
+> But we don't have any way to get higher resolution information like
+> per file or per process usage than system-wide one.
 
-Could you review this patches?
+It's convulated and slow but it can be determined what processes are
+mapping pages from a file by scanning /proc/PID/maps to identify what
+files are mapped and then using /proc/PID/pageflags to see what pages
+are mapped on a per-process basis.
 
-Best regards,
+> If pagecache miss hit ratio rises due to unnecessary adding/removing
+> pagecaches, maybe it leads to extra I/O and affects system performance.
+> But it's difficult to find out what is going on in the system.
+> 
 
-(2011/07/22 19:59), Nao Nishijima wrote:
-> Hi,
+What is "unnecessary adding/removing pagecaches"? If it's added, it
+means either someone has faulted the page or it is due to readahead.
+It's necessary to something.
+
+> So, the tools I propose provide 2 functions:
 > 
-> This patch series provide an "alias name" of the disk into kernel messages.
-> Users can assign a preferred name to an alias name of the device.
+> 1. pagecache snapshooting(perf script pagecache-snapshoot)
 > 
-> A raw device name of a disk does not always point a same disk at each boot-up
-> time. Therefore, users have to use persistent device names, which udev creates
-> to always access the same disk. However, kernel messages still display the raw
-> device names.
+
+snapshot, not snapshoot :)
+
+> This function clarifies pagecache usage per each file in the system.
+> This function is based mainly on "pagecache object collections" that is
+> developed by Wu Fengguang (http://lkml.org/lkml/2010/2/9/156).
+> The following is sample output of this function.
 > 
-> My proposal is that users can use and see persistent device names which were
-> assigned by they because users expect same name to point same disk anytime.
-> 
-> Why need to modify kernel messages?
-> - We can see mapping of device names and persistent device names in udev log.
->   If those logs output to syslog, we can search persistent device name from
->   device name, but it can cause a large amount of syslog output.
-> 
-> - If we can use the persistent device names and can always see the same name on
->   the kernel log, we don't need to pay additional cost for searching and picking
->   a correct pair of device name and persistent device name from udev log.
-> 
-> - Kernel messages are output to serial console when kenel crashes,
->   it's so hard to convert device name to alias name.
-> 
-> 
-> Of course, I am going to modify the commands using device name so that users
-> can use alias names.
-> 
-> 
-> How to use:
-> 1. Build and install the kernel with this series, and reboot with the kernel.
-> 
-> 2. Make a script of get alias_name
-> 
-> [localhost]# vi /lib/udev/get_alias_name
-> #!/bin/sh -e
-> DEVNAME=`echo $1 | sed -e 's/[0-9]//g'`
-> echo "ALIAS=`cat /sys/block/$DEVNAME/alias_name`"
-> exit 0
-> 
-> And you should set an execute bit,
-> [localhost]# chmod +x /lib/udev/get_alias_name
-> 
-> 3. Check disk's id
-> Here is an example to get the serial id and the path of the device.
-> 
-> [localhost]# udevadm info --query=property --path=/sys/block/sda \
-> | grep ID_SERIAL=
-> ID_SERIAL=0QEMU_QEMU_HARDDISK_drive-scsi0-0-1
-> 
-> Some devices does not have the serial id. For such devices,
-> you may use the device path.
-> 
-> [localhost]# udevadm info --query=property --path=/sys/block/sr0 \
-> | grep ID_PATH=
-> ID_PATH=pci-0000:00:01.1-scsi-1:0:0:0
-> 
-> 
-> 4. Write udev rules as follows
-> (The user assigns "foo" to sda and "bar" to sr0)
-> We use ENV{ID_SERIAL} or ENV{ID_PATH} (get by 3) to identify a disk.
-> And to assign automatically an "alias name", we use ATTR key.
-> If ENV{ALIAS} is empty, we use to get an "alias_name" by get_alias_name script.
-> 
-> [localhost]# vi /etc/udev/rules.d/70-alias_name.rules
-> SUBSYSTEM!="block", GOTO="end"
-> 
-> # write alias name for sdX
-> KERNEL=="sd*[!0-9]", ACTION=="add", ATTR{alias_name}="foo", \
-> ENV{ID_SERIAL}=="0QEMU_QEMU_HARDDISK_drive-scsi0-0-1"
-> 
-> # write alias name for srX
-> KERNEL=="sr[0-9]", ACTION=="add", ATTR{alias_name}="bar", \
-> ENV{ID_PATH}=="pci-0000:00:01.1-scsi-1:0:0:0"
-> 
-> # make symlink
-> ENV{DEVTYPE}=="disk", ENV{ALIAS}=="?*", SYMLINK+="disk/by-alias/$env{ALIAS}"
-> ENV{DEVTYPE}=="partition", ENV{ALIAS}=="", \
-> IMPORT{program}="/lib/udev/get_alias_name %k"
-> ENV{DEVTYPE}=="partition", ENV{ALIAS}=="?*", \
-> SYMLINK+="disk/by-alias/$env{ALIAS}%n"
-> 
-> LABEL="end"
-> 
-> 
-> 5. reboot
-> After reboot, we can see alias name in kernel messages.
-> 
-> [localhost]# ls -l /dev/disk/by-alias/
-> total 0
-> lrwxrwxrwx. 1 root root  9 Jul  1 21:21 bar -> ../../sr0
-> lrwxrwxrwx. 1 root root  9 Jul  1 21:21 foo -> ../../sda
-> lrwxrwxrwx. 1 root root 10 Jul  1 21:21 foo1 -> ../../sda1
-> 
-> [localhost]# dmesg
-> ...
-> sd 2:0:0:0: [foo] sd_init_command: block=17382146, count=56
-> sd 2:0:0:0: [foo] block=17382146
-> sd 2:0:0:0: [foo] reading 56/56 512 byte blocks.
-> sd 2:0:0:0: [foo] Send: 0xffff88007ab1a900 
+> pagecache snapshooting (time: 14131, path: /home)
+>                              file name cache(B)  file(B)  ratio  +/-(B)    age
+> -------------------------------------- -------- -------- ------ ------- ------
+> /home/foo/git/linux-2.6-tip/.git/objec    71.0M   436.6M    16%       0   9012
+> /home/foo/git/linux-2.6-tip/.git/objec    49.6M    57.7M    86%       0   9012
+> /home/foo/.thunderbird/xso5zn7g.defaul    19.8M    19.8M   100%       0   7223
+> /home/foo/.thunderbird/xso5zn7g.defaul     5.7M     5.7M   100%       0   6621
+> /home/foo/git/linux-2.6-tip/.git/index     3.5M     3.5M   100%       0   4306
+> /home/foo/.thunderbird/xso5zn7g.defaul     2.2M     2.2M   100%       0   7524
+> /home/foo/.thunderbird/xso5zn7g.defaul     2.2M     2.2M   100%       0   7526
+> /home/foo/.thunderbird/xso5zn7g.defaul     1.7M     1.7M   100%       0   6921
 > ...
 > 
-> Currently, the user must add the naming rule manually for new devices.
-> In the future, it is appended automatically, as like NIC.
+> 2. continuous pagecache monitoring(perf script pagecachetop)
 > 
-> Changes in v2:
-> - Change alias_name string to pointer
-> - Change alias_name writable to write at once
-> - Drop procfs patch
+> This function clarifies pagecache behavior like pagecache hit ratio and
+> added/removed pagecache amount on the basis of file/process.
+> This functions is based on pagecache tracepoints I propose.
+> While the pagecache snapshooting can take a pagecache snapshoot at a point,
+> the continuous pagecache monitoring can measure dynamic change between
+> 2 snapshoots.
+> The following is sample output of this function.
 > 
-> Best regards,
+> pagecache behavior per file (time:15826, interval:10)
 > 
-> ---
+>                          find        hit    cache      add   remove  proc
+>                 file    count      ratio pages(B) pages(B) pages(B) count
+> -------------------- -------- ---------- -------- -------- -------- -----
+>         libc-2.13.so      620    100.00%     1.2M        0        0     7
+>                 bash      283    100.00%   888.0K        0        0     6
+>           ld-2.13.so      136    100.00%   148.0K        0        0     6
+>                 gawk      130    100.00%   376.0K        0        0     2
+>          ld.so.cache       60    100.00%   116.0K        0        0     4
+> ...
 > 
-> Joe Perches (1):
->       sd: modify printk for alias name
+> pagecache behavior per process (time:16294, interval:10)
 > 
-> Nao Nishijima (2):
->       block: add a new attribute "alias name" in gendisk structure
->       sd: [BUGFIX] Use sd_printk instead of printk
-> 
-> 
->  Documentation/ABI/testing/sysfs-block |   15 ++++++
->  block/genhd.c                         |   84 +++++++++++++++++++++++++++++++++
->  drivers/scsi/scsi_lib.c               |   26 ++++++++++
->  drivers/scsi/sd.c                     |   30 +++++++++++-
->  drivers/scsi/sd.h                     |    8 +--
->  include/linux/genhd.h                 |    4 ++
->  include/scsi/scsi_device.h            |    8 +--
->  7 files changed, 162 insertions(+), 13 deletions(-)
-> 
-> 
-> --
-> Nao Nishijima (nao.nishijima.xt@hitachi.com)
+>                          find        hit      add   remove  file
+>              process    count      ratio pages(B) pages(B) count
+> -------------------- -------- ---------- -------- -------- -----
+>             zsh-7761     2968     99.93%     4.0K        0   246
+>            perf-7758      369    100.00%        0        0    17
+>            xmms-7634       52    100.00%        0        0     1
+>            perf-7759       11    100.00%        0        0     2
+>             zsh-2815        6     83.33%     4.0K     4.0K     2
+>        gconfd-2-4849        3      0.00%    12.0K    12.0K     4
+>        rsyslogd-7194        1    100.00%        0        0     1
 > 
 
+Ok, I can see how this could identify hot files in the system and
+processes that are currently active but I'm not seeing what problem
+could be solved with this information.
+
+For example, a process that is suffering a poor hit ratio can usually
+be identified with a combination of vmstat showing a large amount
+of activity with page in/out or swap in/out and a profile showing
+a process that is spending a high percentage of its time servicing
+faults. If a profile is unsuitable, picking active processes from
+top and then monitoring /proc/PID/stat and the fault counters can
+identify which process in trouble.
+
+Can you give an example of a problem that using this tool would
+identify and help resolve?
+
+> By these 2 functions, we can find out whether pagecaches are used
+> efficiently or not.
+> And also these tools would help us tune some applications like database.
+
+If the database is using direct IO, will it even show up in this tool?
+
+> It will also help us tune the kernel parameters like "vm.dirty_*".
+> 
+
+Does it though? A dirty_ratio that is too low can cause stalls as
+processes get throttled cleaning pages but the pages are still present
+in the page cache and the hit ratio would not be affected.
+
+I'm not saying this is a bad idea but the changelog needs to be improved
+to explain why this information is helpful and why the existing
+mechanisms are either unsuitable or just too awkward to use.
 
 -- 
-Nao NISHIJIMA
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., YOKOHAMA Research  Laboratory
-Email： nao.nishijima.xt@hitachi.com
+Mel Gorman
+SUSE Labs
