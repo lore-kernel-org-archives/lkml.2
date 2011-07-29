@@ -1,119 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab1G2BVK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 28 Jul 2011 21:21:10 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:42748 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755322Ab1G2BVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 28 Jul 2011 21:21:07 -0400
-Date: Fri, 29 Jul 2011 11:20:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Ingo Molnar <mingo@elte.hu>, <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <linux-arch@vger.kernel.org>
-Subject: Re: [RFC/PULL 00/11] introduce export.h; reduce module.h usage
-Message-Id: <20110729112054.eaf20e1875990b05e9545d81@canb.auug.org.au>
-In-Reply-To: <20110728154229.GA19589@windriver.com>
-References: <1311830178-30314-1-git-send-email-paul.gortmaker@windriver.com>
-	<20110728071556.GA6497@elte.hu>
-	<20110728154229.GA19589@windriver.com>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__29_Jul_2011_11_20_54_+1000_6rS6/wEpV7B6inwo"
+	id S1756264Ab1G2BVi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 28 Jul 2011 21:21:38 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:50087 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755607Ab1G2BVh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 28 Jul 2011 21:21:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E31788F.7000307@lwfinger.net>
+References: <CAMzZzFGqPv6Nbw8J8JGNKcLA76sAs3oD6+hH9NPCjwA33fYpOQ@mail.gmail.com>
+	<20110727135353.GA16431@tuxdriver.com>
+	<CAMzZzFH8xBdiEN-rV1XE-1ZhFbzO_tcnA75Hpx_AyJ6LtWq01A@mail.gmail.com>
+	<4E31788F.7000307@lwfinger.net>
+Date: Fri, 29 Jul 2011 09:21:35 +0800
+Message-ID: <CAMzZzFF2WYGxEi5dmVKmDLG2zq4O0ZFzi65TxYGp1nAUdaVLnA@mail.gmail.com>
+Subject: Re: Oops when insmod rtl8192ce
+From: Hubert Liao <liao.hubertt@gmail.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: "John W. Linville" <linville@tuxdriver.com>, wlanfae@realtek.com,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__29_Jul_2011_11_20_54_+1000_6rS6/wEpV7B6inwo
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Paul,
-
-On Thu, 28 Jul 2011 11:42:29 -0400 Paul Gortmaker <paul.gortmaker@windriver=
-.com> wrote:
+2011/7/28 Larry Finger <Larry.Finger@lwfinger.net>:
+> On 07/28/2011 02:06 AM, hubert Liao wrote:
+>>
+>> 2011/7/27 John W. Linville<linville@tuxdriver.com>:
+>>>
+>>> On Wed, Jul 27, 2011 at 05:20:15PM +0800, hubert Liao wrote:
+>>>>
+>>>> Hi,
+>>>>
+>>>> We got an oops when insmod rtl8192ce module (the board is an ARM soc),
+>>>> accroding the oops message, find it's because in rtl_pci_probe() called
+>>>> _rtl_pci_find_adapter(),
+>>>> in this funcation, the  pdev->bus->self is a NULL pointer .
+>>>>
+>>>> static boot _rtl_pci_find_adapter(strcut pci_dev *dev,
+>>>>               struct ieee80211_hw *hw)
+>>>> {
+>>>>
+>>>> struct pci_dev *bridge_pdev = pdev->bus->self;   //line 1601
+>>>> ...
+>>>>
+>>>> pcipriv->ndis_adapter.pcibridge_vendorid = bridge_pdev->vendor;<-- [oops
+>>>> here] line 1700
+>>>>
+>>>> ...
+>>>> }
+>>>>
+>>>> here, I just want to know why the bus->self  is NULL?
+>>>
+>>> pdev is coming straight from what is passed to the PCI probe routine.
+>>> It seems like pdev->bus->self should already be set before that
+>>> happens.
+>>>
+>> Yes, I think it should be initialized when added the pci bus bridge,
+>> I have checked the mach-kirkwood(my board is arch/arm/mach-kirkwood)
+>> pcie related code, and I think when system initialized should call
+>> kirkwood_pcie_init() ->
+>>             kirkwood_pcie_scan_bus() ->
+>>                            pci_scan_bus() ->
+>>                                     pci_bus_add_devices()
+>> if the pci_bus->self  was initialized in pci_bus_add_devices()?
+>> Maybe the code is too complex for me ,  I really can not find where
+>> set the “->self" member?
 >
-> [Re: [RFC/PULL 00/11] introduce export.h; reduce module.h usage] On 28/07=
-/2011 (Thu 09:15) Ingo Molnar wrote:
->=20
-> > * Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-> >=20
-> > > I don't think there really is any rocket science or contentious=20
-> > > stuff here. It is a sensible cleanup that adds organization and=20
-> > > speeds up compiles. The RFC I'm hoping for is more about how/when=20
-> > > we want to get this in tree.
-> >=20
-> > I'd suggest to stick it into linux-next ASAP, leave there for a few=20
-> > days and after fixing any potential fallout send it Linuswards.
->=20
-> Hi Stephen,
->=20
-> Would you please add this to linux-next?
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/paulg/linux.git#module.h-sp=
-lit
-
-OK, I will add it today.
-
-> It won't need to be there forever, just long enough to shake loose
-> anyone who has implicitly been using module.h without asking for it.
-
-Please remind me to remove it again after you are finished with it.
-There is no real hurry about that as once Linus' merges it, it has very
-little effect on my process (assuming that you get him to merge the
-actual commits that are in my tree - hint, hint :-)).
-
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Fri__29_Jul_2011_11_20_54_+1000_6rS6/wEpV7B6inwo
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOMgr2AAoJEDMEi1NhKgbs5R0IAJb3Qw9qopzokZuGvERhIXcM
-c5qzTzAphIsC/ciLkeB64gqHmfO3pdo6a6xLQEfyC0OZoNhEeiyhXNNhN/8yEZt8
-hRuBTmOFd5FhUF9i4LEZh/MpvohAcEL6QgSMcv0pgZVcILS7Ah2LGwTwsu3Oxte+
-tSUs539Utf129p2DFbYMsIRis+G+ZkfdIDkdGgTGHv9vblnAX9QpJvRf7q02rruj
-3COdl7sOlSx2VYKL5Q3l4HqSZW9SBpMSaMUmfWS/79bKVMW0wfxNF3dbu/590ana
-MWTb9rKoIiwPRjtGGtY8XGrsWLgegW0D+c5FdOWTUezHH4rF1giIopg8asPYuLE=
-=2v3R
------END PGP SIGNATURE-----
-
---Signature=_Fri__29_Jul_2011_11_20_54_+1000_6rS6/wEpV7B6inwo--
+> I added a request to the bugzilla entry to post the full dmesg output there.
+> Perhaps there is some clue in the bus setup.
+>
+I have added the full dmesg output on bugzilla.
+thanks.
+> Larry
+>
+>
