@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755483Ab1G2IVN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 04:21:13 -0400
-Received: from tundra.namei.org ([65.99.196.166]:52726 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755097Ab1G2IVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 04:21:11 -0400
-Date: Fri, 29 Jul 2011 18:17:31 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Vasiliy Kulikov <segoon@openwall.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        kernel-hardening@lists.openwall.com,
-        Stephen Smalley <sds@tycho.nsa.gov>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Eric Paris <eparis@redhat.com>, Willy Tarreau <w@1wt.eu>,
-        Sebastian Krahmer <krahmer@suse.de>
-Subject: Re: [patch v3] move RLIMIT_NPROC check from set_user() to
- do_execve_common()
-In-Reply-To: <20110729081156.GB2488@albatros>
-Message-ID: <alpine.LRH.2.00.1107291815410.15102@tundra.namei.org>
-References: <20110721124830.GA1325@openwall.com> <CA+55aFy4ybatb0McQr2f4A56ympZVLqK2sbp2=73idu58_4RxQ@mail.gmail.com> <20110721193939.GA3914@openwall.com> <20110725171423.GA3739@albatros> <20110725234013.GB24110@openwall.com> <20110726104713.37273143@notabene.brown>
- <20110726011629.GA24610@openwall.com> <20110726141118.32f948e0@notabene.brown> <20110726144848.GA7133@albatros> <20110729080613.GA2488@albatros> <20110729081156.GB2488@albatros>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755528Ab1G2IVY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 04:21:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35684 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755046Ab1G2IVS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 04:21:18 -0400
+Subject: Re: [PATCH] sched: Remove WAKEUP_PREEMPT feature check in
+ entity_tick
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        lkml <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>
+In-Reply-To: <20110729081800.GA12106@zhy>
+References: <1311846203.3938.1555.camel@minggr.sh.intel.com>
+	 <20110729062158.GA8971@zhy>
+	 <1311922180.3938.1573.camel@minggr.sh.intel.com>
+	 <20110729070356.GA10420@zhy>
+	 <1311924975.3938.1583.camel@minggr.sh.intel.com>
+	 <20110729074635.GB10420@zhy> <1311926218.5890.215.camel@twins>
+	 <20110729081800.GA12106@zhy>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 29 Jul 2011 10:20:50 +0200
+Message-ID: <1311927650.5890.217.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jul 2011, Vasiliy Kulikov wrote:
+On Fri, 2011-07-29 at 16:18 +0800, Yong Zhang wrote:
+> > Nah, if there is 1 runnable task it will always run, preemption simply
+> > doesn't matter. There's nothing to preempt it with.
+> 
+> Hmmm, so the newly waked task could be scheduled a little later.
+> That means schedule tick judge everything. 
 
-> +	 * RLIMIT_NPROC limits on user->processes have already been checked
-> +	 * in set_user().
->  	 */
-> +
->  	alter_cred_subscribers(new, 2);
-
-Please get rid of the extra blank line if you re-spin.
-
-
-Reviewed-by: James Morris <jmorris@namei.org>
-
-
-
--- 
-James Morris
-<jmorris@namei.org>
+Oh, are you referring to the case where a task gets woken on an idle
+remote cpu?
