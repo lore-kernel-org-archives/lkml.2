@@ -1,65 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab1G2NaO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 09:30:14 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:57411 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750901Ab1G2NaM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 09:30:12 -0400
-X-Sasl-enc: Aw68KmWUqmYSak9Zfj9sm/Yj0CCQw/9lsI7iru3FKxJL 1311946210
-References: <20110729153207.17af3085@notabene.brown> <4E324DB4.7060600@fastmail.fm> <1311921035.7845.10.camel@edumazet-laptop> <4E3258E1.6020000@fastmail.fm> <20110729103634.GA12050@infradead.org> <5933F48C-49D6-492D-AB7B-B76A3ADDB6C6@fastmail.fm> <1311941491.2843.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Message-Id: <F67B6E82-9FA8-464E-B3FB-DC0D4EC18BB0@fastmail.fm>
-From: Greg Banks <gnb@fastmail.fm>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-In-Reply-To: <1311941491.2843.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Content-Type: text/plain;
-	charset=utf-8;
-	format=flowed;
-	delsp=yes
-Content-Transfer-Encoding: 8BIT
-X-Mailer: iPhone Mail (7C144)
-Mime-Version: 1.0 (iPhone Mail 7C144)
-Subject: Re: [PATCH] sunrpc: use better NUMA affinities
-Date: Fri, 29 Jul 2011 23:30:05 +1000
-Cc: Christoph Hellwig <hch@infradead.org>, NeilBrown <neilb@suse.de>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
+	id S1754685Ab1G2Nbr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 09:31:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42732 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056Ab1G2Nbq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 09:31:46 -0400
+X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=U1bfttRP1WkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=ufHFDILaAAAA:8 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=Dgdb2dsZrN-3O5mmCdsA:9 a=B9aZ9RYxEGQFHp5ocRsA:7 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=l7ZknGph1ugA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v3 RESEND] cgroup/kmemcheck: Annotate alloc_page() for
+ cgroup allocations
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: containers@lists.linux-foundation.org,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, Michal Hocko <mhocko@suse.cz>,
+        Paul Menage <menage@google.com>, LiZefan <lizf@cn.fujitsu.com>
+In-Reply-To: <1311732644.21143.5.camel@gandalf.stny.rr.com>
+References: <1311699911.3526.87.camel@gandalf.stny.rr.com>
+	 <20110726173816.GA26597@tiehlicka.suse.cz>
+	 <1311702110.3526.98.camel@gandalf.stny.rr.com>
+	 <1311702244.3526.100.camel@gandalf.stny.rr.com>
+	 <1311704249.3526.106.camel@gandalf.stny.rr.com>
+	 <20110726184342.GB26597@tiehlicka.suse.cz>
+	 <1311707088.21143.0.camel@gandalf.stny.rr.com>
+	 <1311732644.21143.5.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 29 Jul 2011 09:31:41 -0400
+Message-ID: <1311946302.21143.37.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Andrew,
+
+On Tue, 2011-07-26 at 22:10 -0400, Steven Rostedt wrote:
+> [ Resending with CGROUP maintainers Cc'd this time ]
+
+Paul sent me a note saying that these patches usually go through -mm,
+want to take them?
+
+Thanks,
+
+-- Steve
+
+> 
+> When the cgroup base was allocated with kmalloc, it was necessary to
+> annotate the variable with kmemcheck_not_leak(). But because it has
+> recently been changed to be allocated with alloc_page() (which skips
+> kmemleak checks) causes a warning on boot up.
+> 
+> I was triggering this output:
+> 
+> allocated 8388608 bytes of page_cgroup
+> please try 'cgroup_disable=memory' option if you don't want memory cgroups
+> kmemleak: Trying to color unknown object at 0xf5840000 as Grey
+> Pid: 0, comm: swapper Not tainted 3.0.0-test #12
+> Call Trace:
+>  [<c17e34e6>] ? printk+0x1d/0x1f^M
+>  [<c10e2941>] paint_ptr+0x4f/0x78
+>  [<c178ab57>] kmemleak_not_leak+0x58/0x7d
+>  [<c108ae9f>] ? __rcu_read_unlock+0x9/0x7d
+>  [<c1cdb462>] kmemleak_init+0x19d/0x1e9
+>  [<c1cbf771>] start_kernel+0x346/0x3ec
+>  [<c1cbf1b4>] ? loglevel+0x18/0x18
+>  [<c1cbf0aa>] i386_start_kernel+0xaa/0xb0
+> 
+> After a bit of debugging I tracked the object 0xf840000 (and others)
+> down to the cgroup code. The change from allocating base with kmalloc to
+> alloc_page() has the base not calling kmemleak_alloc() which adds the
+> pointer to the object_tree_root, but kmemleak_not_leak() adds it to the
+> crt_early_log[] table. On kmemleak_init(), the entry is found in the
+> early_log[] but not the object_tree_root, and this error message is
+> displayed.
+> 
+> If alloc_page() fails then it defaults back to vmalloc() which still
+> uses the kmemleak_alloc() which makes us still need the
+> kmemleak_not_leak() call. The solution is to call the kmemleak_alloc()
+> directly if the alloc_page() succeeds.
+> 
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+> index 53bffc6..1eb534a 100644
+> --- a/mm/page_cgroup.c
+> +++ b/mm/page_cgroup.c
+> @@ -133,10 +133,13 @@ struct page *lookup_cgroup_page(struct page_cgroup *pc)
+>  static void *__meminit alloc_page_cgroup(size_t size, int nid)
+>  {
+>  	void *addr = NULL;
+> +	gfp_t flags = GFP_KERNEL | __GFP_NOWARN;
+>  
+> -	addr = alloc_pages_exact_nid(nid, size, GFP_KERNEL | __GFP_NOWARN);
+> -	if (addr)
+> +	addr = alloc_pages_exact_nid(nid, size, flags);
+> +	if (addr) {
+> +		kmemleak_alloc(addr, size, 1, flags);
+>  		return addr;
+> +	}
+>  
+>  	if (node_state(nid, N_HIGH_MEMORY))
+>  		addr = vmalloc_node(size, nid);
+> 
+> 
 
 
-Sent from my iPhone
-
-On 29/07/2011, at 22:11, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-
-> Le vendredi 29 juillet 2011 à 21:58 +1000, Greg Banks a écrit :
->
->>
->> Sure, and a whole lot of the callsites are ("..._%d", cpu), hence the
->> unfortune :(
->
-> BTW, we could name nfsd threads differently :
->
-> Currently, they all are named : "nfsd"
->
-> If SVC_POOL_PERCPU is selected, we could name them :
-> nfsd_c0 -> nfsd_cN
->
-> If SVC_POOL_PERNODE is selected, we could name them :
-> nfsd_n0  -> nfsd_nN
->
-> That would help to check with "ps aux" which cpu/nodes are under  
-> stress.
->
->
-
-I like it!
-
->
-
-Greg.
