@@ -1,30 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751211Ab1G2OWc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 10:22:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38872 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859Ab1G2OWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 10:22:31 -0400
-Date: Fri, 29 Jul 2011 16:22:29 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: David Miller <davem@davemloft.net>
-Cc: James.Bottomley@HansenPartnership.com, vitalivanov@gmail.com,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org
+	id S1751312Ab1G2OWo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 10:22:44 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56255 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750867Ab1G2OWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 10:22:43 -0400
 Subject: Re: sungem: fix compile failure caused by trivial #include
  consolidation
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: David Miller <davem@davemloft.net>
+Cc: jkosina@suse.cz, vitalivanov@gmail.com, linux-kernel@vger.kernel.org,
+        linux-parisc@vger.kernel.org
 In-Reply-To: <20110729.071710.1864654661956416171.davem@davemloft.net>
-Message-ID: <alpine.LNX.2.00.1107291620400.7300@pobox.suse.cz>
-References: <1311948524.8190.39.camel@mulgrave> <alpine.LNX.2.00.1107291611030.7300@pobox.suse.cz> <20110729.071710.1864654661956416171.davem@davemloft.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+References: <1311948524.8190.39.camel@mulgrave>
+	 <alpine.LNX.2.00.1107291611030.7300@pobox.suse.cz>
+	 <20110729.071710.1864654661956416171.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 29 Jul 2011 18:22:37 +0400
+Message-ID: <1311949357.8190.40.camel@mulgrave>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jul 2011, David Miller wrote:
-
+On Fri, 2011-07-29 at 07:17 -0700, David Miller wrote:
+> From: Jiri Kosina <jkosina@suse.cz>
+> Date: Fri, 29 Jul 2011 16:11:54 +0200 (CEST)
+> 
+> > On Fri, 29 Jul 2011, James Bottomley wrote:
+> > 
 > >> This patch:
 > >> 
 > >> commit e44ba033c5654dbfda53461c9b1f7dd9bd1d198f
@@ -57,16 +65,15 @@ On Fri, 29 Jul 2011, David Miller wrote:
 > Take what, although James signed off he seemd to simply repost your
 > patch again rather than a fix, unless I'm reading it wrong :-)
 
-Well yes, I think that James wanted to actually send a revert of that 
-patch (as otherwise he wouldn't Sign-off on it) instead, right James? :)
+Oh, yes ... I applied it with patch -R, since I was finding the bit to
+revert. Sorry,
+
+James
 
 > But yeah once there is a fix please push it.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-parisc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-So I'll revert that hunk with James' Reported-by, if there are no 
-objections.
 
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
