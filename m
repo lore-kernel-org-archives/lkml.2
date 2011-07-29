@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136Ab1G2K0y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 06:26:54 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:16805 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056Ab1G2K0x (ORCPT
+	id S1756148Ab1G2K23 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 06:28:29 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45087 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756056Ab1G2K21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 06:26:53 -0400
-Date: Fri, 29 Jul 2011 12:26:51 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Andy Walls <awalls@md.metrocast.net>
-cc: Dan Carpenter <error27@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, Jarod Wilson <jarod@redhat.com>,
-        Jerome Brock <jbrock@users.sourceforge.net>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Gerd Knorr <kraxel@goldbach.in-berlin.de>,
-        Jarod Wilson <jarod@wilsonet.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Thomas Reitmayr <treitmayr@yahoo.com>,
-        Michal Kochanowicz <mkochano@pld.org.pl>,
-        Christoph Bartelmus <lirc@bartelmus.de>, Mark Weaver <mark@npsl.co.uk>,
-        Ulrich Mueller <ulrich.mueller42@web.de>,
-        Stefan Jahn <stefan@lkcc.org>
-Subject: Re: [PATCH] staging; lirc, zilog: put_ir_rx may free 'rx' which can
- lead to double free
-In-Reply-To: <f6f0d669-39e8-4435-839d-9c5525cbd8e9@email.android.com>
-Message-ID: <alpine.LNX.2.00.1107291225560.22532@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107282345540.20477@swampdragon.chaosbits.net> <20110729060822.GF3752@shale.localdomain> <f6f0d669-39e8-4435-839d-9c5525cbd8e9@email.android.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 29 Jul 2011 06:28:27 -0400
+Date: Fri, 29 Jul 2011 12:25:12 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Keith Packard <keithp@keithp.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Daniel Vetter <daniel@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Hold struct_mutex during hotplug
+ processing
+Message-ID: <20110729102512.GB2697@phenom.ffwll.local>
+Mail-Followup-To: Keith Packard <keithp@keithp.com>,
+	Jesse Barnes <jbarnes@virtuousgeek.org>,
+	Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+References: <1311613829-4990-1-git-send-email-keithp@keithp.com>
+ <CAKMK7uHO1jqUNrnqC9sd=JJ9Vr=hmAjnJ06eDYxfeyTTFAMK1w@mail.gmail.com>
+ <yunsjpt2hi6.fsf@aiko.keithp.com>
+ <20110726121225.3ae7acce@jbarnes-desktop>
+ <yunk4b43wq3.fsf@aiko.keithp.com>
+ <20110727090331.60e0c5be@jbarnes-desktop>
+ <yun39hqc95z.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <yun39hqc95z.fsf@aiko.keithp.com>
+X-Operating-System: Linux phenom 3.0.0-rc7-00009-g9095109
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jul 2011, Andy Walls wrote:
+On Thu, Jul 28, 2011 at 03:50:00PM -0700, Keith Packard wrote:
+> On Wed, 27 Jul 2011 09:03:31 -0700, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> > On Wed, 27 Jul 2011 02:21:24 -0700
+> > Keith Packard <keithp@keithp.com> wrote:
+> > > So the work may get executed immediately rather than being run later at
+> > > some point?
+> > 
+> > It sure looks that way... but I don't remember any rule about work
+> > queue items having inter dependencies like this.
 
-> Dan Carpenter <error27@gmail.com> wrote:
-> 
-> >On Thu, Jul 28, 2011 at 11:49:51PM +0200, Jesper Juhl wrote:
-> >> If calling put_ir_rx(rx, true); in
-> >> drivers/staging/lirc/lirc_zilog.c::ir_probe() returns true (1) then
-> >it
-> >> means that it has freed it's first argument. Subsequently jumping to
-> >> 'out_put_xx' will cause us to call put_ir_rx() once more since 'rx'
-> >is
-> >> not zero - leading to a double free.
-> >
-> >It would be better to just remove the first call to put_ir_rx().
-> >
-> >regards,
-> >dan carpenter
-> 
-> Jesper,
-> 
-> Could you forward your original patch email to me?  I never got it.
-> 
-> I was the one who added all the new ref counting to lirc_zilog and it was not fun to get right (well at least what I thought was right...).
-> 
+I've checked the workqueue code and haven't found it to run a work
+immediately, it's always queued. Further this problem is very easy to
+diagnose: Even without lockdep the scheduler will notice the stuck task
+after about 120s and the backtrace should make matters extremely clear. On
+the other hand if somebody adds some nice state clobbering in the drm
+helper, we have a very hard bug to track down.
 
-Sure. I've just forwarded both the original patch mail and the mail with 
-the updated version to  Andy Walls <awalls@md.metrocast.net>
-
+Generally modesetting isn't perf critical, so I vote for more locking,
+just in case.
+-Daniel
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
