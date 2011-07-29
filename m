@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756316Ab1G2KwQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 06:52:16 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:34437 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756298Ab1G2KwN (ORCPT
+	id S1756339Ab1G2Kwd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 06:52:33 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:56294 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932125Ab1G2KuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 06:52:13 -0400
+	Fri, 29 Jul 2011 06:50:09 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>
-Cc: <linux-kernel@vger.kernel.org>, <armando.visconti@st.com>,
+To: <linus.walleij@linaro.org>
+Cc: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux@arm.linux.org.uk>, <armando.visconti@st.com>,
         <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
         <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
         <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
         <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
         <viresh.linux@gmail.com>
-Subject: [PATCH] dmaengine/dmatest: Terminate transfers on all channels in case of error or exit
-Date: Fri, 29 Jul 2011 16:21:57 +0530
-Message-ID: <4560606c5b6665b47d22c571cd60e526e551c639.1311935349.git.viresh.kumar@st.com>
+Subject: [PATCH 05/18] dmaengine/amba-pl08x: Changing few prints to dev_dbg from dev_info
+Date: Fri, 29 Jul 2011 16:19:15 +0530
+Message-ID: <7ef7d86e78a74b140c7c5a87fd2b7a117120ce6f.1311936524.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <cover.1311936523.git.viresh.kumar@st.com>
+References: <cover.1311936523.git.viresh.kumar@st.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case, some error occurs while doing memcpy transfers, we must terminate all
-transfers physically too. This is achieved by calling device_control() routine
-with TERMINATE_ALL as parameter.
-
-This is also required to be done in case module is removed while we are in
-middle of some transfers.
+For 8 memory and 16 slave channels 35 boot print lines are printed. And that is
+too much. Most of this would be more useful for debugging. So moving few of them
+to dev_dbg instead of dev_info. Now only 3 prints will be printed.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- drivers/dma/dmatest.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ drivers/dma/amba-pl08x.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
-index b4f5c32..cd8ae03 100644
---- a/drivers/dma/dmatest.c
-+++ b/drivers/dma/dmatest.c
-@@ -476,6 +476,8 @@ err_srcs:
- 	pr_notice("%s: terminating after %u tests, %u failures (status %d)\n",
- 			thread_name, total_tests, failed_tests, ret);
+diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+index 4a64fdf..56a9670 100644
+--- a/drivers/dma/amba-pl08x.c
++++ b/drivers/dma/amba-pl08x.c
+@@ -1724,7 +1724,7 @@ static int pl08x_dma_init_virtual_channels(struct pl08x_driver_data *pl08x,
+ 			kfree(chan);
+ 			continue;
+ 		}
+-		dev_info(&pl08x->adev->dev,
++		dev_dbg(&pl08x->adev->dev,
+ 			 "initialize virtual channel \"%s\"\n",
+ 			 chan->name);
  
-+	/* terminate all transfers on specified channels */
-+	chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
- 	if (iterations > 0)
- 		while (!kthread_should_stop()) {
- 			DECLARE_WAIT_QUEUE_HEAD_ONSTACK(wait_dmatest_exit);
-@@ -498,6 +500,10 @@ static void dmatest_cleanup_channel(struct dmatest_chan *dtc)
- 		list_del(&thread->node);
- 		kfree(thread);
+@@ -1952,7 +1952,7 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
+ 		spin_lock_init(&ch->lock);
+ 		ch->serving = NULL;
+ 		ch->signal = -1;
+-		dev_info(&adev->dev,
++		dev_dbg(&adev->dev,
+ 			 "physical channel %d is %s\n", i,
+ 			 pl08x_phy_channel_busy(ch) ? "BUSY" : "FREE");
  	}
-+
-+	/* terminate all transfers on specified channels */
-+	dtc->chan->device->device_control(dtc->chan, DMA_TERMINATE_ALL, 0);
-+
- 	kfree(dtc);
- }
- 
 -- 
 1.7.2.2
 
