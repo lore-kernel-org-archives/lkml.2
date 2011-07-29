@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab1G2QAa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 12:00:30 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43709 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752174Ab1G2QA3 (ORCPT
+	id S1752243Ab1G2QER (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 12:04:17 -0400
+Received: from caffeine.csclub.uwaterloo.ca ([129.97.134.17]:40636 "EHLO
+	caffeine.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752191Ab1G2QEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 12:00:29 -0400
+	Fri, 29 Jul 2011 12:04:16 -0400
+Date: Fri, 29 Jul 2011 12:04:16 -0400
+To: linux-serial@vger.kernel.org
+Cc: Len Sorensen <lsorense@csclub.uwaterloo.ca>, linux-kernel@vger.kernel.org,
+        Breno Leitao <leitao@linux.vnet.ibm.com>
+Subject: Very strange data loss with jsm driver
+Message-ID: <20110729160416.GK8562@caffeine.csclub.uwaterloo.ca>
 MIME-Version: 1.0
-In-Reply-To: <1311942777.1536.547.camel@vkoul-udesk3>
-References: <cover.1311936523.git.viresh.kumar@st.com>
-	<c147ba3a755935e93fdb40b5531a6e18d34e0fd7.1311936524.git.viresh.kumar@st.com>
-	<20110729110525.GG25640@n2100.arm.linux.org.uk>
-	<1311942777.1536.547.camel@vkoul-udesk3>
-Date: Fri, 29 Jul 2011 08:58:48 -0700
-Message-ID: <CAOh2x=kRz70etXbaCPO2HCysftyixai44=ZZdLAnZde5N5PmrA@mail.gmail.com>
-Subject: Re: [PATCH 10/18] dmaengine/amba-pl08x: Get rid of pl08x_pre_boundary()
-From: viresh kumar <viresh.linux@gmail.com>
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Viresh Kumar <viresh.kumar@st.com>, linus.walleij@linaro.org,
-        pratyush.anand@st.com, rajeev-dlh.kumar@st.com, bhupesh.sharma@st.com,
-        shiraz.hashim@st.com, linux-kernel@vger.kernel.org, vipin.kumar@st.com,
-        armando.visconti@st.com, amit.virdi@st.com, vipulkumar.samar@st.com,
-        deepak.sikri@st.com, dan.j.williams@intel.com,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: lsorense@csclub.uwaterloo.ca (Lennart Sorensen)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/29/11, Koul, Vinod <vinod.koul@intel.com> wrote:
-> On Fri, 2011-07-29 at 12:05 +0100, Russell King - ARM Linux wrote:
->> On Fri, Jul 29, 2011 at 04:19:20PM +0530, Viresh Kumar wrote:
-> Typically in few dmac IPs i know of:
-> There is max limitation of what a burst length can be for dma, and what
-> a max transfer length can be.
-> The dma will push/pull data into peripheral FIFO based on
-> max_burst_length parameter (note length in dma terminology is always
-> items not bytes, and one item is usually defined as
-> transfer_length/src_width). For a transfer (single block or in
-> multi-block) the dmac will break the transaction into multiple bursts
-> and based on max_burst_length it will push/pull data to/from FIFO. Also
-> matching FIFO thresholds with max_burst_length is also important and can
-> be tuned based on perf/power requirements.
->
-> Sharing my knowledge, hopefully it helps :)
->
+I discovered a strange situation where the jsm driver discards the
+majority of transmit data.
 
-Thanks. It was indeed helpful. :)
+I have two text files.
 
---
-viresh
+The first file consists of 9100 lines of:
+0123456789<newline>
+Total 100100 bytes.
+
+The second file consists of 100 lines of:
+01234567890123456789.....0123456789<newline> (1000 character line)
+Total 100100 bytes.
+
+The first file transmits instantly, with the receiving end getting
+approximately 100 bytes of the data.
+
+The second file sends in about 1 minute and 40 seconds at 9600 baud
+(the speed doesn't affect the behaviour in any noticeable way) as one
+would expect, and the other end sees all the data.
+
+The trigger point appears to be lines of up to 14 bytes, followed by
+a newline.  With 15 bytes or more per line it seems to be OK.
+
+Anyone got a clue?
+
+I was testing on 3.0.0.  Same on 2.6.32.
+
+3.0.0 unfortunately no longer has port statistics on the jsm driver in
+/proc/tty/driver/jsm making it hard to see what the driver believes is
+going on, it seems 2.6.37 broke that with some serial cleanup.
+I am cleaning up a patch to fix that.
+
+-- 
+Len Sorensen
