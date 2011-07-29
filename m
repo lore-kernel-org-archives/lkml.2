@@ -1,87 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab1G2Vv3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 17:51:29 -0400
-Received: from mail.perches.com ([173.55.12.10]:4368 "EHLO mail.perches.com"
+	id S1753115Ab1G2V5I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 17:57:08 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34860 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752917Ab1G2Vv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 17:51:28 -0400
-From: Joe Perches <joe@perches.com>
-To: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] cfg80211: Update REG_DBG_PRINT macro and uses
-Date: Fri, 29 Jul 2011 14:51:25 -0700
-Message-Id: <01300ba58766070ab14137b8ba8a29fa78695a5c.1311976033.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.6.131.g99019
+	id S1752794Ab1G2V5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 29 Jul 2011 17:57:06 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Oliver Neukum <oliver@neukum.org>
+Subject: Re: [linux-pm] better oopsing when frozen
+Date: Fri, 29 Jul 2011 23:30:09 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0+; KDE/4.6.0; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <201107251043.19932.oneukum@suse.de> <201107292309.44877.rjw@sisk.pl> <201107292317.42737.oliver@neukum.org>
+In-Reply-To: <201107292317.42737.oliver@neukum.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107292330.09797.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Several uses were missing terminating newlines.
-Typo fix and macro neatening.
+On Friday, July 29, 2011, Oliver Neukum wrote:
+> Am Freitag, 29. Juli 2011, 23:09:44 schrieb Rafael J. Wysocki:
+> > On Friday, July 29, 2011, Oliver Neukum wrote:
+> > > Am Freitag, 29. Juli 2011, 22:27:54 schrieb Rafael J. Wysocki:
+> > > > However, there's another problem I didn't think of before.  Namely,
+> > > > we cannot thaw tasks before resuming devices in case we've already
+> > > > suspended them, because that will defeat the very purpose of the
+> > > > freezing in the first place.
+> > > 
+> > > That purpose is already defeated. The machine cannot be deader than dead.
+> > 
+> > OK, so what exactly is the purpose of the thawing, then?
+> 
+> We may be lucky enough to get the oops written out to disk. The oops may happen
+> in a driver rarely used and be late in the sequence.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- net/wireless/reg.c |   16 +++++++---------
- 1 files changed, 7 insertions(+), 9 deletions(-)
+OK, so is there any guarantee that we won't corrupt things this way?
 
-diff --git a/net/wireless/reg.c b/net/wireless/reg.c
-index 1ad0f39..b22c324 100644
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -49,10 +49,8 @@
- #include "nl80211.h"
- 
- #ifdef CONFIG_CFG80211_REG_DEBUG
--#define REG_DBG_PRINT(format, args...) \
--	do { \
--		printk(KERN_DEBUG pr_fmt(format), ##args);	\
--	} while (0)
-+#define REG_DBG_PRINT(format, args...)			\
-+	printk(KERN_DEBUG pr_fmt(format), ##args)
- #else
- #define REG_DBG_PRINT(args...)
- #endif
-@@ -890,7 +888,7 @@ static bool ignore_reg_update(struct wiphy *wiphy,
- 	    wiphy->flags & WIPHY_FLAG_CUSTOM_REGULATORY) {
- 		REG_DBG_PRINT("Ignoring regulatory request %s "
- 			      "since the driver uses its own custom "
--			      "regulatory domain ",
-+			      "regulatory domain\n",
- 			      reg_initiator_name(initiator));
- 		return true;
- 	}
-@@ -903,8 +901,8 @@ static bool ignore_reg_update(struct wiphy *wiphy,
- 	    initiator != NL80211_REGDOM_SET_BY_COUNTRY_IE &&
- 	    !is_world_regdom(last_request->alpha2)) {
- 		REG_DBG_PRINT("Ignoring regulatory request %s "
--			      "since the driver requires its own regulaotry "
--			      "domain to be set first",
-+			      "since the driver requires its own regulatory "
-+			      "domain to be set first\n",
- 			      reg_initiator_name(initiator));
- 		return true;
- 	}
-@@ -1473,7 +1471,7 @@ static void reg_process_pending_hints(void)
- 	/* When last_request->processed becomes true this will be rescheduled */
- 	if (last_request && !last_request->processed) {
- 		REG_DBG_PRINT("Pending regulatory request, waiting "
--			      "for it to be processed...");
-+			      "for it to be processed...\n");
- 		goto out;
- 	}
- 
-@@ -2186,7 +2184,7 @@ out:
- static void reg_timeout_work(struct work_struct *work)
- {
- 	REG_DBG_PRINT("Timeout while waiting for CRDA to reply, "
--		      "restoring regulatory settings");
-+		      "restoring regulatory settings\n");
- 	restore_regulatory_settings(true);
- }
- 
--- 
-1.7.6.131.g99019
-
+Rafael
