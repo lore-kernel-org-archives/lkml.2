@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab1G3TRk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 15:17:40 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:35012 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600Ab1G3TRd (ORCPT
+	id S1752616Ab1G3TTW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 15:19:22 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61108 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360Ab1G3TTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 15:17:33 -0400
-Date: Sat, 30 Jul 2011 12:17:26 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Eric Andersson <eric.andersson@unixphere.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
-        alan@lxorguk.ukuu.org.uk, jic23@cam.ac.uk,
-        Albert Zhang <xu.zhang@bosch-sensortec.com>
-Subject: Re: [PATCH v6 1/1] input: add driver for Bosch Sensortec's BMA150
- accelerometer
-Message-ID: <20110730191726.GG5686@core.coreip.homeip.net>
-References: <1311800027-25982-1-git-send-email-eric.andersson@unixphere.com>
- <1311800027-25982-2-git-send-email-eric.andersson@unixphere.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311800027-25982-2-git-send-email-eric.andersson@unixphere.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 30 Jul 2011 15:19:15 -0400
+Subject: loop: fix deadlock when sysfs and LOOP_CLR_FD race against each
+ other
+From: Kay Sievers <kay.sievers@vrfy.org>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Milan Broz <mbroz@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Date: Sat, 30 Jul 2011 21:19:11 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.1.4 (3.1.4-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1312053553.1187.17.camel@mop>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+From: Kay Sievers <kay.sievers@vrfy.org>
+Subject: loop: fix deadlock when sysfs and LOOP_CLR_FD race against each other
 
-On Wed, Jul 27, 2011 at 10:53:47PM +0200, Eric Andersson wrote:
-> +
-> +static int bma150_open(struct bma150_data *bma150)
-> +{
-> +	int ret;
-> +
-> +	ret = pm_runtime_set_active(&bma150->client->dev);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	pm_runtime_enable(&bma150->client->dev);
+LOOP_CLR_FD takes lo->lo_ctl_mutex and tries to remove the loop sysfs
+files. Sysfs calls show() and waits for lo->lo_ctl_mutex. LOOP_CLR_FD
+waits for show() to finish to remove the sysfs file.
 
-I am pretty sure you want to call pm_runtime_enable() in bma150_probe()
-so that parent controller can be suspended until somebody calls
-bma150_open() and we mark the device as active (which, in turn, should
-wake up its parent).
+  cat /sys/class/block/loop0/loop/backing_file
+    mutex_lock_nested+0x176/0x350
+    ? loop_attr_do_show_backing_file+0x2f/0xd0 [loop]
+    ? loop_attr_do_show_backing_file+0x2f/0xd0 [loop]
+    loop_attr_do_show_backing_file+0x2f/0xd0 [loop]
+    dev_attr_show+0x1b/0x60
+    ? sysfs_read_file+0x86/0x1a0
+    ? __get_free_pages+0x12/0x50
+    sysfs_read_file+0xaf/0x1a0
 
-> +
-> +	return bma150_set_mode(bma150->client, BMA150_MODE_NORMAL);
-> +}
-> +
-> +static void bma150_close(struct bma150_data *bma150)
-> +{
-> +	pm_runtime_disable(&bma150->client->dev);
+  ioctl(LOOP_CLR_FD):
+    wait_for_common+0x12c/0x180
+    ? try_to_wake_up+0x2a0/0x2a0
+    wait_for_completion+0x18/0x20
+    sysfs_deactivate+0x178/0x180
+    ? sysfs_addrm_finish+0x43/0x70
+    ? sysfs_addrm_start+0x1d/0x20
+    sysfs_addrm_finish+0x43/0x70
+    sysfs_hash_and_remove+0x85/0xa0
+    sysfs_remove_group+0x59/0x100
+    loop_clr_fd+0x1dc/0x3f0 [loop]
+    lo_ioctl+0x223/0x7a0 [loop]
 
-And disable should go into bma150_remove() unless I misunderstand
-runtime PM framework.
+Instead of taking the lo_ctl_mutex from sysfs code, take the inner
+lo->lo_lock, to protect the access to the backing_file data.
 
-> +	pm_runtime_set_suspended(&bma150->client->dev);
-> +	bma150_set_mode(bma150->client, BMA150_MODE_SLEEP);
+Thanks to Tejun for help debugging and finding a solution.
 
-I think you want to call bma150_set_mode() first and then mark device as
-suspended so that parent can go to sleep as well.
+Cc: Milan Broz <mbroz@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
+---
+ drivers/block/loop.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-Thanks.
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -743,10 +743,10 @@ static ssize_t loop_attr_backing_file_sh
+ 	ssize_t ret;
+ 	char *p = NULL;
+ 
+-	mutex_lock(&lo->lo_ctl_mutex);
++	spin_lock_irq(&lo->lo_lock);
+ 	if (lo->lo_backing_file)
+ 		p = d_path(&lo->lo_backing_file->f_path, buf, PAGE_SIZE - 1);
+-	mutex_unlock(&lo->lo_ctl_mutex);
++	spin_unlock_irq(&lo->lo_lock);
+ 
+ 	if (IS_ERR_OR_NULL(p))
+ 		ret = PTR_ERR(p);
+@@ -1000,7 +1000,9 @@ static int loop_clr_fd(struct loop_devic
+ 
+ 	kthread_stop(lo->lo_thread);
+ 
++	spin_lock_irq(&lo->lo_lock);
+ 	lo->lo_backing_file = NULL;
++	spin_unlock_irq(&lo->lo_lock);
+ 
+ 	loop_release_xfer(lo);
+ 	lo->transfer = NULL;
 
--- 
-Dmitry
+
