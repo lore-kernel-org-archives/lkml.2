@@ -1,308 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab1G3TNY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 15:13:24 -0400
+	id S1752831Ab1G3TNh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 15:13:37 -0400
 Received: from mail-ww0-f44.google.com ([74.125.82.44]:38652 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab1G3TNU (ORCPT
+	with ESMTP id S1752663Ab1G3TN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 15:13:20 -0400
-Subject: [PATCH 1/3] loop: replace linked list of allocated devices with an
- idr index
+	Sat, 30 Jul 2011 15:13:29 -0400
+Subject: [PATCH 2/3] loop: add management interface for on-demand device
+ allocation
 From: Kay Sievers <kay.sievers@vrfy.org>
 To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Date: Sat, 30 Jul 2011 21:13:16 +0200
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Karel Zak <kzak@redhat.com>
+Date: Sat, 30 Jul 2011 21:13:26 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.1.4 (3.1.4-1.fc16) 
 Content-Transfer-Encoding: 7bit
-Message-ID: <1312053197.1187.11.camel@mop>
+Message-ID: <1312053208.1187.12.camel@mop>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kay Sievers <kay.sievers@vrfy.org>
-Subject: loop: replace linked list of allocated devices with an idr index
+Subject: loop: add management interface for on-demand device allocation
 
-Replace the linked list, that keeps track of allocated devices, with an
-idr index to allow a more efficient lookup of devices.
+Loop devices today have a fixed pre-allocated number of usually 8.
+The number can only be changed at module init time. To find a free
+device to use, /dev/loop%i needs to be scanned, and all devices need
+to be opened until a free one is possibly found.
+
+This adds a new /dev/loop-control device node, that allows to
+dynamically find or allocate a free device, and to add and remove loop
+devices from the running system:
+ LOOP_CTL_ADD adds a specific device. Arg is the number
+ of the device. It returns the device i or a negative
+ error code.
+
+ LOOP_CTL_REMOVE removes a specific device, Arg is the
+ number the device. It returns the device i or a negative
+ error code.
+
+ LOOP_CTL_GET_FREE finds the next unbound device or allocates
+ a new one. No arg is given. It returns the device i or a
+ negative error code.
+
+The loop kernel module gets automatically loaded when
+/dev/loop-control is accessed the first time. The alias
+specified in the module, instructs udev to create this
+'dead' device node, even when the module is not loaded.
+
+Example:
+ cfd = open("/dev/loop-control", O_RDWR);
+
+ # add a new specific loop device
+ err = ioctl(cfd, LOOP_CTL_ADD, devnr);
+
+ # remove a specific loop device
+ err = ioctl(cfd, LOOP_CTL_REMOVE, devnr);
+
+ # find or allocate a free loop device to use
+ devnr = ioctl(cfd, LOOP_CTL_GET_FREE);
+
+ sprintf(loopname, "/dev/loop%i", devnr);
+ ffd = open("backing-file", O_RDWR);
+ lfd = open(loopname, O_RDWR);
+ err = ioctl(lfd, LOOP_SET_FD, ffd);
 
 Cc: Tejun Heo <tj@kernel.org>
+Cc: Karel Zak  <kzak@redhat.com>
 Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
 ---
- drivers/block/loop.c |  152 ++++++++++++++++++++++++++-------------------------
- include/linux/loop.h |    1 
- 2 files changed, 80 insertions(+), 73 deletions(-)
+ drivers/block/loop.c       |  120 +++++++++++++++++++++++++++++++++++++++++++--
+ include/linux/loop.h       |    4 +
+ include/linux/miscdevice.h |    1 
+ 3 files changed, 121 insertions(+), 4 deletions(-)
 
 --- a/drivers/block/loop.c
 +++ b/drivers/block/loop.c
-@@ -78,8 +78,8 @@
- 
+@@ -75,7 +75,7 @@
+ #include <linux/kthread.h>
+ #include <linux/splice.h>
+ #include <linux/sysfs.h>
+-
++#include <linux/miscdevice.h>
  #include <asm/uaccess.h>
  
--static LIST_HEAD(loop_devices);
--static DEFINE_MUTEX(loop_devices_mutex);
-+static DEFINE_IDR(loop_index_idr);
-+static DEFINE_MUTEX(loop_index_mutex);
+ static DEFINE_IDR(loop_index_idr);
+@@ -1478,13 +1478,22 @@ static int lo_compat_ioctl(struct block_
  
- static int max_part;
- static int part_shift;
-@@ -722,17 +722,10 @@ static inline int is_loop_device(struct
- static ssize_t loop_attr_show(struct device *dev, char *page,
- 			      ssize_t (*callback)(struct loop_device *, char *))
+ static int lo_open(struct block_device *bdev, fmode_t mode)
  {
--	struct loop_device *l, *lo = NULL;
--
--	mutex_lock(&loop_devices_mutex);
--	list_for_each_entry(l, &loop_devices, lo_list)
--		if (disk_to_dev(l->lo_disk) == dev) {
--			lo = l;
--			break;
--		}
--	mutex_unlock(&loop_devices_mutex);
-+	struct gendisk *disk = dev_to_disk(dev);
-+	struct loop_device *lo = disk->private_data;
- 
--	return lo ? callback(lo, page) : -EIO;
-+	return callback(lo, page);
- }
- 
- #define LOOP_ATTR_RO(_name)						\
-@@ -1557,40 +1550,64 @@ int loop_register_transfer(struct loop_f
- 	return 0;
- }
- 
-+static int unregister_transfer_cb(int id, void *ptr, void *data)
-+{
-+	struct loop_device *lo = ptr;
-+	struct loop_func_table *xfer = data;
+-	struct loop_device *lo = bdev->bd_disk->private_data;
++	struct loop_device *lo;
++	int err = 0;
 +
-+	mutex_lock(&lo->lo_ctl_mutex);
-+	if (lo->lo_encryption == xfer)
-+		loop_release_xfer(lo);
-+	mutex_unlock(&lo->lo_ctl_mutex);
-+	return 0;
-+}
-+
- int loop_unregister_transfer(int number)
- {
- 	unsigned int n = number;
--	struct loop_device *lo;
- 	struct loop_func_table *xfer;
- 
- 	if (n == 0 || n >= MAX_LO_CRYPT || (xfer = xfer_funcs[n]) == NULL)
- 		return -EINVAL;
- 
- 	xfer_funcs[n] = NULL;
--
--	list_for_each_entry(lo, &loop_devices, lo_list) {
--		mutex_lock(&lo->lo_ctl_mutex);
--
--		if (lo->lo_encryption == xfer)
--			loop_release_xfer(lo);
--
--		mutex_unlock(&lo->lo_ctl_mutex);
--	}
--
-+	idr_for_each(&loop_index_idr, &unregister_transfer_cb, xfer);
- 	return 0;
- }
- 
- EXPORT_SYMBOL(loop_register_transfer);
- EXPORT_SYMBOL(loop_unregister_transfer);
- 
--static struct loop_device *loop_alloc(int i)
-+static int loop_add(struct loop_device **l, int i)
- {
- 	struct loop_device *lo;
- 	struct gendisk *disk;
-+	int err;
- 
- 	lo = kzalloc(sizeof(*lo), GFP_KERNEL);
--	if (!lo)
++	mutex_lock(&loop_index_mutex);
++	lo = bdev->bd_disk->private_data;
 +	if (!lo) {
-+		err = -ENOMEM;
- 		goto out;
++		err = -ENXIO;
++		goto out;
 +	}
-+
-+	err = idr_pre_get(&loop_index_idr, GFP_KERNEL);
-+	if (err < 0)
-+		goto out_free_dev;
-+
-+	if (i >= 0) {
-+		int m;
-+
-+		/* create specific i in the index */
-+		err = idr_get_new_above(&loop_index_idr, lo, i, &m);
-+		if (err >= 0 && i != m) {
-+			idr_remove(&loop_index_idr, m);
-+			err = -EEXIST;
-+		}
-+	} else {
-+		err = -EINVAL;
-+	}
-+	if (err < 0)
-+		goto out_free_dev;
  
- 	lo->lo_queue = blk_alloc_queue(GFP_KERNEL);
- 	if (!lo->lo_queue)
-@@ -1611,56 +1628,54 @@ static struct loop_device *loop_alloc(in
- 	disk->private_data	= lo;
- 	disk->queue		= lo->lo_queue;
- 	sprintf(disk->disk_name, "loop%d", i);
--	return lo;
-+	add_disk(disk);
-+	*l = lo;
-+	return lo->lo_number;
- 
- out_free_queue:
- 	blk_cleanup_queue(lo->lo_queue);
- out_free_dev:
- 	kfree(lo);
- out:
--	return NULL;
+ 	mutex_lock(&lo->lo_ctl_mutex);
+ 	lo->lo_refcnt++;
+ 	mutex_unlock(&lo->lo_ctl_mutex);
+-
+-	return 0;
++out:
++	mutex_unlock(&loop_index_mutex);
 +	return err;
  }
  
--static void loop_free(struct loop_device *lo)
-+static void loop_remove(struct loop_device *lo)
- {
-+	del_gendisk(lo->lo_disk);
- 	blk_cleanup_queue(lo->lo_queue);
- 	put_disk(lo->lo_disk);
--	list_del(&lo->lo_list);
+ static int lo_release(struct gendisk *disk, fmode_t mode)
+@@ -1603,6 +1612,13 @@ static int loop_add(struct loop_device *
+ 			idr_remove(&loop_index_idr, m);
+ 			err = -EEXIST;
+ 		}
++	} else if (i == -1) {
++		int m;
++
++		/* get next free nr */
++		err = idr_get_new(&loop_index_idr, lo, &m);
++		if (err >= 0)
++			i = m;
+ 	} else {
+ 		err = -EINVAL;
+ 	}
+@@ -1648,16 +1664,41 @@ static void loop_remove(struct loop_devi
  	kfree(lo);
  }
  
--static struct loop_device *loop_init_one(int i)
-+static int loop_lookup(struct loop_device **l, int i)
++static int find_free_cb(int id, void *ptr, void *data)
++{
++	struct loop_device *lo = ptr;
++	struct loop_device **l = data;
++
++	if (lo->lo_state == Lo_unbound) {
++		*l = lo;
++		return 1;
++	}
++	return 0;
++}
++
+ static int loop_lookup(struct loop_device **l, int i)
  {
  	struct loop_device *lo;
-+	int ret = -ENODEV;
+ 	int ret = -ENODEV;
  
--	list_for_each_entry(lo, &loop_devices, lo_list) {
--		if (lo->lo_number == i)
--			return lo;
--	}
--
--	lo = loop_alloc(i);
-+	lo = idr_find(&loop_index_idr, i);
++	if (i < 0) {
++		int err;
++
++		err = idr_for_each(&loop_index_idr, &find_free_cb, &lo);
++		if (err == 1) {
++			*l = lo;
++			ret = lo->lo_number;
++		}
++		goto out;
++	}
++
++	/* lookup and return a specific i */
+ 	lo = idr_find(&loop_index_idr, i);
  	if (lo) {
--		add_disk(lo->lo_disk);
--		list_add_tail(&lo->lo_list, &loop_devices);
-+		*l = lo;
-+		ret = lo->lo_number;
+ 		*l = lo;
+ 		ret = lo->lo_number;
  	}
--	return lo;
--}
--
--static void loop_del_one(struct loop_device *lo)
--{
--	del_gendisk(lo->lo_disk);
--	loop_free(lo);
-+	return ret;
++out:
+ 	return ret;
  }
  
- static struct kobject *loop_probe(dev_t dev, int *part, void *data)
- {
- 	struct loop_device *lo;
- 	struct kobject *kobj;
-+	int err;
- 
--	mutex_lock(&loop_devices_mutex);
--	lo = loop_init_one(MINOR(dev) >> part_shift);
--	kobj = lo ? get_disk(lo->lo_disk) : ERR_PTR(-ENOMEM);
--	mutex_unlock(&loop_devices_mutex);
-+	mutex_lock(&loop_index_mutex);
-+	err = loop_lookup(&lo, MINOR(dev) >> part_shift);
-+	if (err < 0)
-+		err = loop_add(&lo, MINOR(dev) >> part_shift);
-+	if (err < 0)
-+		kobj = ERR_PTR(err);
-+	else
-+		kobj = get_disk(lo->lo_disk);
-+	mutex_unlock(&loop_index_mutex);
- 
- 	*part = 0;
+@@ -1681,11 +1722,76 @@ static struct kobject *loop_probe(dev_t
  	return kobj;
-@@ -1670,7 +1685,7 @@ static int __init loop_init(void)
+ }
+ 
++static long loop_control_ioctl(struct file *file, unsigned int cmd,
++			       unsigned long parm)
++{
++	struct loop_device *lo;
++	int ret = -ENOSYS;
++
++	mutex_lock(&loop_index_mutex);
++	switch (cmd) {
++	case LOOP_CTL_ADD:
++		ret = loop_lookup(&lo, parm);
++		if (ret >= 0) {
++			ret = -EEXIST;
++			break;
++		}
++		ret = loop_add(&lo, parm);
++		break;
++	case LOOP_CTL_REMOVE:
++		ret = loop_lookup(&lo, parm);
++		if (ret < 0)
++			break;
++		mutex_lock(&lo->lo_ctl_mutex);
++		if (lo->lo_state != Lo_unbound) {
++			ret = -EBUSY;
++			mutex_unlock(&lo->lo_ctl_mutex);
++			break;
++		}
++		if (lo->lo_refcnt > 0) {
++			ret = -EBUSY;
++			mutex_unlock(&lo->lo_ctl_mutex);
++			break;
++		}
++		lo->lo_disk->private_data = NULL;
++		mutex_unlock(&lo->lo_ctl_mutex);
++		idr_remove(&loop_index_idr, lo->lo_number);
++		loop_remove(lo);
++		break;
++	case LOOP_CTL_GET_FREE:
++		ret = loop_lookup(&lo, -1);
++		if (ret >= 0)
++			break;
++		ret = loop_add(&lo, -1);
++	}
++	mutex_unlock(&loop_index_mutex);
++
++	return ret;
++}
++
++static const struct file_operations loop_ctl_fops = {
++	.open		= nonseekable_open,
++	.unlocked_ioctl	= loop_control_ioctl,
++	.compat_ioctl	= loop_control_ioctl,
++	.owner		= THIS_MODULE,
++	.llseek		= noop_llseek,
++};
++
++static struct miscdevice loop_misc = {
++	.minor		= LOOP_CTRL_MINOR,
++	.name		= "loop-control",
++	.fops		= &loop_ctl_fops,
++};
++
++MODULE_ALIAS_MISCDEV(LOOP_CTRL_MINOR);
++MODULE_ALIAS("devname:loop-control");
++
+ static int __init loop_init(void)
  {
  	int i, nr;
  	unsigned long range;
--	struct loop_device *lo, *next;
-+	struct loop_device *lo;
+ 	struct loop_device *lo;
++	int err;
  
  	/*
  	 * loop module now has a feature to instantiate underlying device
-@@ -1719,43 +1734,36 @@ static int __init loop_init(void)
- 	if (register_blkdev(LOOP_MAJOR, "loop"))
- 		return -EIO;
+@@ -1702,6 +1808,10 @@ static int __init loop_init(void)
+ 	 *     device on-demand.
+ 	 */
  
--	for (i = 0; i < nr; i++) {
--		lo = loop_alloc(i);
--		if (!lo)
--			goto Enomem;
--		list_add_tail(&lo->lo_list, &loop_devices);
--	}
--
--	/* point of no return */
--
--	list_for_each_entry(lo, &loop_devices, lo_list)
--		add_disk(lo->lo_disk);
--
- 	blk_register_region(MKDEV(LOOP_MAJOR, 0), range,
- 				  THIS_MODULE, loop_probe, NULL, NULL);
- 
-+	/* pre-create number devices of devices given by config or max_loop */
-+	mutex_lock(&loop_index_mutex);
-+	for (i = 0; i < nr; i++)
-+		loop_add(&lo, i);
-+	mutex_unlock(&loop_index_mutex);
++	err = misc_register(&loop_misc);
++	if (err < 0)
++		return err;
 +
- 	printk(KERN_INFO "loop: module loaded\n");
- 	return 0;
-+}
- 
--Enomem:
--	printk(KERN_INFO "loop: out of memory\n");
--
--	list_for_each_entry_safe(lo, next, &loop_devices, lo_list)
--		loop_free(lo);
-+static int loop_exit_cb(int id, void *ptr, void *data)
-+{
-+	struct loop_device *lo = ptr;
- 
--	unregister_blkdev(LOOP_MAJOR, "loop");
--	return -ENOMEM;
-+	loop_remove(lo);
-+	return 0;
- }
- 
- static void __exit loop_exit(void)
- {
- 	unsigned long range;
--	struct loop_device *lo, *next;
- 
- 	range = max_loop ? max_loop << part_shift : 1UL << MINORBITS;
- 
--	list_for_each_entry_safe(lo, next, &loop_devices, lo_list)
--		loop_del_one(lo);
-+	idr_for_each(&loop_index_idr, &loop_exit_cb, NULL);
-+	idr_remove_all(&loop_index_idr);
-+	idr_destroy(&loop_index_idr);
+ 	part_shift = 0;
+ 	if (max_part > 0) {
+ 		part_shift = fls(max_part);
+@@ -1767,6 +1877,8 @@ static void __exit loop_exit(void)
  
  	blk_unregister_region(MKDEV(LOOP_MAJOR, 0), range);
  	unregister_blkdev(LOOP_MAJOR, "loop");
++
++	misc_deregister(&loop_misc);
+ }
+ 
+ module_init(loop_init);
 --- a/include/linux/loop.h
 +++ b/include/linux/loop.h
-@@ -64,7 +64,6 @@ struct loop_device {
+@@ -160,4 +160,8 @@ int loop_unregister_transfer(int number)
+ #define LOOP_CHANGE_FD		0x4C06
+ #define LOOP_SET_CAPACITY	0x4C07
  
- 	struct request_queue	*lo_queue;
- 	struct gendisk		*lo_disk;
--	struct list_head	lo_list;
- };
++/* /dev/loop-control interface */
++#define LOOP_CTL_ADD		0x4C80
++#define LOOP_CTL_REMOVE		0x4C81
++#define LOOP_CTL_GET_FREE	0x4C82
+ #endif
+--- a/include/linux/miscdevice.h
++++ b/include/linux/miscdevice.h
+@@ -40,6 +40,7 @@
+ #define BTRFS_MINOR		234
+ #define AUTOFS_MINOR		235
+ #define MAPPER_CTRL_MINOR	236
++#define LOOP_CTRL_MINOR		237
+ #define MISC_DYNAMIC_MINOR	255
  
- #endif /* __KERNEL__ */
+ struct device;
 
 
