@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163Ab1G3Pon (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 11:44:43 -0400
-Received: from mta21.charter.net ([216.33.127.81]:55776 "EHLO
-	mta21.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810Ab1G3Pog (ORCPT
+	id S1752129Ab1G3PuK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 11:50:10 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48816 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab1G3PuG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 11:44:36 -0400
-X-Authority-Analysis: v=1.1 cv=9p7SjTZeSDUoepfMOc4Nsety+m2Qz47GaesuhdPPf9o=
- c=1 sm=1 a=Y-Xa6sjusHoA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
- a=ywb5jiRdAAAA:8 a=FKcYwT7qAAAA:8 a=q3bFVz8phfM1WQm4WMgA:9
- a=hO6-NAvlA-CbkXu3u3YA:7 a=8ayuLyWxgakA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:117
-From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-To: laurent.pinchart@ideasonboard.com
-Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, trivial@kernel.org,
-        jpiszcz@lucidpixels.com, Greg Dietsche <Gregory.Dietsche@cuw.edu>
-Subject: [PATCH] uvcvideo: correct kernel version reference
-Date: Sat, 30 Jul 2011 10:47:30 -0500
-Message-Id: <1312040850-21475-1-git-send-email-Gregory.Dietsche@cuw.edu>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <alpine.DEB.2.02.1107301020220.4925@p34.internal.lan>
-References: <alpine.DEB.2.02.1107301020220.4925@p34.internal.lan>
+	Sat, 30 Jul 2011 11:50:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1107282213000.31246@ionos>
+References: <alpine.LFD.2.02.1107282213000.31246@ionos>
+Date: Sat, 30 Jul 2011 17:49:32 +0200
+X-Google-Sender-Auth: J3RkkQ02T3Lgbd8RJptx3hiw4no
+Message-ID: <CANqCtQ+VhmfpNZ8Oh_0MR+bZfAeBuowBsK9TyC5iA4B2oLpXfg@mail.gmail.com>
+Subject: Re: [ANNOUNCE] 3.0-rt6
+From: Remy Bohmer <linux@bohmer.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-change from v2.6.42 to v3.2
+Hi,
 
-Reported-by: Justin Piszcz <jpiszcz@lucidpixels.com>
-Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
----
- drivers/media/video/uvc/uvc_v4l2.c |    2 +-
- drivers/media/video/uvc/uvcvideo.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+2011/7/28 Thomas Gleixner <tglx@linutronix.de>:
+> Dear RT Folks,
+>
+> I'm pleased to announce the 3.0-rt6 release.
+>
+> Changes versus 3.0-rt4 (I pushed out a rt5 w/o announce)
+>
+>  * pin_cpu fix (Yong Zhang)
+>
+>  * Various compile fixes (Yong Zhang & myself)
+>
+>  * Serial fix for omap
+>
+>  * Clocksource lockless watchdog reset
+>
+>  * Reenabled CONFIG_RCU_BOOST (problem is unreproducible and maybe
+>    related to NO_HZ, which is still disabled. Paul is working on it!)
+>
+>  * KGDB work^Whackaround (Jason Wessel)
+>
+>    The kgdb workaround is really a hack and wants to be replaced by a
+>    proper overhaul for the console/tty maze.
+>    See: kgb-serial-hackaround.patch
+>
+> As I said yesterday, I'm preparing for vanishing from the net.
+>
+> Please keep on testing and sending patches. Peter Zijlstra kindly
+> volunteered to cover for me. He'll pick up stuff and eventually push
+> out releases when a reasonable number of sane patches hits his inbox.
 
-diff --git a/drivers/media/video/uvc/uvc_v4l2.c b/drivers/media/video/uvc/uvc_v4l2.c
-index ea71d5f..6d6e3f9 100644
---- a/drivers/media/video/uvc/uvc_v4l2.c
-+++ b/drivers/media/video/uvc/uvc_v4l2.c
-@@ -546,7 +546,7 @@ static void uvc_v4l2_ioctl_warn(void)
- 		return;
- 
- 	uvc_printk(KERN_INFO, "Deprecated UVCIOC_CTRL_{ADD,MAP_OLD,GET,SET} "
--		   "ioctls will be removed in 2.6.42.\n");
-+		   "ioctls will be removed in 3.2.\n");
- 	uvc_printk(KERN_INFO, "See http://www.ideasonboard.org/uvc/upgrade/ "
- 		   "for upgrade instructions.\n");
- 	warned = 1;
-diff --git a/drivers/media/video/uvc/uvcvideo.h b/drivers/media/video/uvc/uvcvideo.h
-index df32a43..4419c34 100644
---- a/drivers/media/video/uvc/uvcvideo.h
-+++ b/drivers/media/video/uvc/uvcvideo.h
-@@ -7,7 +7,7 @@
- #ifndef __KERNEL__
- /*
-  * This header provides binary compatibility with applications using the private
-- * uvcvideo API. This API is deprecated and will be removed in 2.6.42.
-+ * uvcvideo API. This API is deprecated and will be removed in 3.2.
-  * Applications should be recompiled against the public linux/uvcvideo.h header.
-  */
- #warn "The uvcvideo.h header is deprecated, use linux/uvcvideo.h instead."
--- 
-1.7.2.5
+I got rt5 booting yesterday on a ARM core (Atmel AT91):
+* LCD driver broken, booting stops during initialising driver (seems
+to be broken in mainstream too)
+* Strange issue with finding files in a directory. (currently checking
+if it is RT-patch related.)
+* Furthermore, the board feels slow... Can be perception only, need to
+check it out...
+* The patch (http://www.spinics.net/lists/arm-kernel/msg45022.html)
+that solved the problem at https://lkml.org/lkml/2007/11/26/73 is no
+longer part of the RT-patch. I Need to test if it is still needed...
 
+Kind regards,
+
+Remy
