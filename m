@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab1G3W5i (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 18:57:38 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59024 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab1G3W5d (ORCPT
+	id S1752302Ab1G3W6B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 18:58:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48781 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095Ab1G3W5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 18:57:33 -0400
-Date: Sat, 30 Jul 2011 23:57:08 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: viresh kumar <viresh.linux@gmail.com>,
-        "Koul, Vinod" <vinod.koul@intel.com>, pratyush.anand@st.com,
-        rajeev-dlh.kumar@st.com, bhupesh.sharma@st.com,
-        armando.visconti@st.com, linux-kernel@vger.kernel.org,
-        vipin.kumar@st.com, shiraz.hashim@st.com, amit.virdi@st.com,
-        vipulkumar.samar@st.com, deepak.sikri@st.com, dan.j.williams@intel.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 04/18] dmaengine/amba-pl08x: Remove redundant comment
-	and rewrite original
-Message-ID: <20110730225708.GB17570@n2100.arm.linux.org.uk>
-References: <cover.1311936523.git.viresh.kumar@st.com> <e2c1bd6941e88f8988b1942c13c20cf436b3a963.1311936524.git.viresh.kumar@st.com> <1311941355.1536.529.camel@vkoul-udesk3> <CAOh2x=kqa0GxRH9o=8faPhuyyLcqxH8+AOowBTK_gMaDgJyeVA@mail.gmail.com> <CAKnu2MrWbm5w6QsBzj=Fd=f7SfE=4_7bHMBBdQiN2bCnbeV-eg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKnu2MrWbm5w6QsBzj=Fd=f7SfE=4_7bHMBBdQiN2bCnbeV-eg@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Sat, 30 Jul 2011 18:57:53 -0400
+Subject: Re: [PATCH v3] x86, kconfig: Default to ARCH=x86 to avoid
+ overriding CONFIG_64BIT
+From: David Woodhouse <dwmw2@infradead.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        "Ted Ts'o" <tytso@mit.edu>, Ingo Molnar <mingo@elte.hu>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Date: Sat, 30 Jul 2011 23:57:43 +0100
+In-Reply-To: <CACqU3MWDqyWGz72jTd01OdeVFT=X9+m-6AjNt6tTLj2oG2vB7w@mail.gmail.com>
+References: <1306707270.2029.377.camel@i7.infradead.org>
+	 <20110530072300.GA9802@elte.hu>
+	 <1306745835.2029.389.camel@i7.infradead.org>
+	 <20110530104231.GF17821@elte.hu> <20110530104656.GA19532@elte.hu>
+	 <E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
+	 <20110530105809.GA20133@elte.hu>
+	 <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
+	 <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>
+	 <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
+	 <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
+	 <1306795186.2029.459.camel@i7.infradead.org>
+	 <BANLkTik=uHr1eX44XV1pAHUfVQ-MorzOnw@mail.gmail.com>
+	 <1306856937.27477.3.camel@i7.infradead.org>
+	 <BANLkTi=VoL8ze0AcdkG_QmEH5049X2K6Zw@mail.gmail.com>
+	 <4E0495F4.7080300@suse.cz> <1311986969.20983.52.camel@i7.infradead.org>
+	 <CACqU3MXeUiiQPc4t9bT7KuXuAjkN+t8eFn9SYOouPg-3hDgjWQ@mail.gmail.com>
+	 <alpine.LFD.2.02.1107301716430.21839@localhost6.localdomain6>
+	 <CACqU3MVY89L3B3=eFrmsgD2wzXtbQHssPm4D_-VZGEWNYBR4-Q@mail.gmail.com>
+	 <4E34548F.9040909@zytor.com> <1312059539.22074.16.camel@i7.infradead.org>
+	 <CACqU3MWDqyWGz72jTd01OdeVFT=X9+m-6AjNt6tTLj2oG2vB7w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 8bit
+Message-ID: <1312066665.22074.49.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 31, 2011 at 12:32:55AM +0200, Linus Walleij wrote:
-> 2011/7/29 viresh kumar <viresh.linux@gmail.com>:
-> > Nor mine either. :)
+On Sat, 2011-07-30 at 18:21 -0400, Arnaud Lacombe wrote:
+> > I'll work on a patch to fix that, and then it will be fine when the
+> > default for SUBARCH changes to be "x86".
 > >
-> > Will give some more explanation.
-> >
-> > But before that i wanted to know the exact purpose of this
-> > master-slave concept here.
-> 
-> The PL08x has two bus mastering interfaces. They can be
-> connected to two separate busses and two adress spaces
-> even, usually that is not the case though.
+> I still fail to see why you want it that way... You want both ARCH and
+> SUBARCH to be 'x86' ?
 
-This is not what the function is about... that's done by my
-pl08x_select_bus() function.
+See the way that SUBARCH is inferred in the Makefile, and then ARCH is
+set to match it (unless ARCH is set by the user).
 
-This function (pl08x_choose_master_bus) does something completely
-different, and has to do with how the LLIs are laid out.  I think
-it's to do with whether we use the source or destination for
-alignment purposes.
+To change the default setting of ARCH, we actually change the inference
+of *SUBARCH*. And yes, in the common case they are both the *same*; the
+SUBARCH variable doesn't really do anything except work as a temporary
+variable holding the default setting for ARCH.
 
-It really has nothing to do with choosing busses.
+In an ARCH=um build, of course they *are* different, and SUBARCH is
+actually used for more than that.
+
+> This starts to be a hell lots of deep changes just to fix i386 build
+> under a fast x86-64 without having to specify ARCH=i386. That job
+> alone can be done a lot easier. 
+
+It's not just that. It's also about making things work properly as
+config options — so we can finally complete the merge of arch/i386 and
+arch/x86_64, which directories we deleted almost four years ago, into
+the single 'x86' architecture.
+
+After a few 'unrelated' cleanups to how $(SUBARCH) is handled, the patch
+to make SUBARCH=x86 work in um really isn't that intrusive at all; I'll
+post the sequence shortly.
+
+We *could* preserve the legacy inference of SUBARCH={i386,x86_64} *just*
+for the ARCH=um case, but I think it's better not to.
+
+-- 
+dwmw2
+
