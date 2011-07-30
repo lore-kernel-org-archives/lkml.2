@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab1G3WgU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 18:36:20 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33268 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753014Ab1G3WgO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 18:36:14 -0400
+	id S1751822Ab1G3WpL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 18:45:11 -0400
+Received: from csmtp1.one.com ([195.47.247.21]:17756 "EHLO csmtp1.one.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751202Ab1G3WpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 18:45:07 -0400
+Date: Sun, 31 Jul 2011 00:49:17 +0200
+From: Eric Andersson <eric.andersson@unixphere.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
+        alan@lxorguk.ukuu.org.uk, jic23@cam.ac.uk,
+        Albert Zhang <xu.zhang@bosch-sensortec.com>
+Subject: Re: [PATCH v6 1/1] input: add driver for Bosch Sensortec's BMA150
+ accelerometer
+Message-ID: <20110730224917.GA8519@skinner.xfiles.lan>
+References: <1311800027-25982-1-git-send-email-eric.andersson@unixphere.com>
+ <1311800027-25982-2-git-send-email-eric.andersson@unixphere.com>
+ <20110730191726.GG5686@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <88035b0bd1f3fd755b6a157193c39477e21ec60a.1311936524.git.viresh.kumar@st.com>
-References: <cover.1311936523.git.viresh.kumar@st.com>
-	<88035b0bd1f3fd755b6a157193c39477e21ec60a.1311936524.git.viresh.kumar@st.com>
-Date: Sun, 31 Jul 2011 00:36:14 +0200
-X-Google-Sender-Auth: Gd56JIu9_HEh1smP5pm5PaKyEj0
-Message-ID: <CAKnu2MoHSVae6N=CA-zi3CpaqOrEOqbPCL=orfs5zgxAUOmSnQ@mail.gmail.com>
-Subject: Re: [PATCH 06/18] dmaengine/amba-pl08x: Simplify pl08x_ensure_on()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: vinod.koul@intel.com, dan.j.williams@intel.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, armando.visconti@st.com, shiraz.hashim@st.com,
-        vipin.kumar@st.com, rajeev-dlh.kumar@st.com, deepak.sikri@st.com,
-        vipulkumar.samar@st.com, amit.virdi@st.com, pratyush.anand@st.com,
-        bhupesh.sharma@st.com, viresh.linux@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110730191726.GG5686@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/29 Viresh Kumar <viresh.kumar@st.com>:
+> > +static int bma150_open(struct bma150_data *bma150)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = pm_runtime_set_active(&bma150->client->dev);
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	pm_runtime_enable(&bma150->client->dev);
+> 
+> I am pretty sure you want to call pm_runtime_enable() in bma150_probe()
+> so that parent controller can be suspended until somebody calls
+> bma150_open() and we mark the device as active (which, in turn, should
+> wake up its parent).
 
-> Simply writing 1 on bit 0 is sufficient instead of reading and clearing bits.
-> Also as per manual, for bit 3-31 of DMACConfiguration register:
-> "read undefined, write as 0"
->
-> So, we must not rely on values read from this registers bit 3-31.
->
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+If I call pm_runtime_enable() I cannot use pm_runtime_set_active() later
+according to the comment in __pm_runtime_set_status (runtime.c):
+"If runtime PM of the device is disabled or its power.runtime_error
+field is different from zero, the status may be changed either to
+RPM_ACTIVE, or to RPM_SUSPENDED..."
 
-Obviously correct,
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+If the PM of the device is enabled it will return -EAGAIN. Of course, we
+could enable() in probe, then disable(); set_active(); enable(); in
+open, but that seems a bit confused, right?
 
-Thanks,
-Linus Walleij
+> > +
+> > +	return bma150_set_mode(bma150->client, BMA150_MODE_NORMAL);
+> > +}
+> > +
+> > +static void bma150_close(struct bma150_data *bma150)
+> > +{
+> > +	pm_runtime_disable(&bma150->client->dev);
+> 
+> And disable should go into bma150_remove() unless I misunderstand
+> runtime PM framework.
+
+This is once again to make sure the PM is disabled when changing status.
+
+I am not entirely familiar with the details of runtime PM, but either
+the above works or we have to revert back to using #ifdefs which I would
+prefer not to.
+
+-- 
+Best regards,
+ Eric
+
+http://www.unixphere.com
