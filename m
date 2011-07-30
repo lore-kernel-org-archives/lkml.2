@@ -1,146 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab1G3Xo0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 19:44:26 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:42832 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433Ab1G3XoT convert rfc822-to-8bit (ORCPT
+	id S1752199Ab1G3Xqh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 19:46:37 -0400
+Received: from science.horizon.com ([71.41.210.146]:40491 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751433Ab1G3Xqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 19:44:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <1312067670.22074.61.camel@i7.infradead.org>
-References: <1312067499.22074.59.camel@i7.infradead.org>
-	<1312067670.22074.61.camel@i7.infradead.org>
-Date: Sat, 30 Jul 2011 19:44:18 -0400
-Message-ID: <CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 30 Jul 2011 19:46:32 -0400
+Date: 30 Jul 2011 19:46:30 -0400
+Message-ID: <20110730234630.7270.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: torvalds@linux-foundation.org
+Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
+Cc: linux@horizon.com, linux-kernel@vger.kernel.org, mpm@selenic.com,
+        tytso@mit.edu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> The fact is, even if you worry about some back door for the NSA, or
+> some theoretical lack of perfect 32-bit randomness, we can pretty much
+> depend on it. We still do our own hashing on top of whatever entropy
+> we get out of rdrand, and we would still have all our other stuff.
+> Plus the instruction is public and testable - if Intel did something
+> wrong, they'll be *very* embarrassed.
+> 
+> In other words, there's absolutely no reason not to use it, and allow
+> us to get away from /dev/random running out of entropy. We absolutely
+> should use it for bootup randomness (where we currently are somewhat
+> weak), and I absolutely disagree that it should be made into more of a
+> driver abstraction.
 
-On Sat, Jul 30, 2011 at 7:14 PM, David Woodhouse <dwmw2@infradead.org> wrote:
-> This allows you to set (and clear) config options on the make command
-> line, for all config targets. For example:
->
->   make CONFIG_64BIT=n randconfig
->   make CONFIG_64BIT=n allmodconfig
->   make CONFIG_64BIT=y CONFIG_SATA_MV=y oldconfig
->
-technically, no, this will not work as you intend. The following:
+I agree with your second paragraph, but disagree violently with your
+first: Intel provide no way to test their RNG, and the AES-based whitener
+makes it completely private and UNtestable.
 
- make CONFIG_SATA_MV=y allnoconfig
+Intel go into details about the hardware's boot-up self-test, but then
+provide no way to access that self-test information, much less check up
+on it.
 
-will fail to set CONFIG_SATA_MV=y. This is not a flaw in your patch,
-but a known issue with kconfig as even if you are setting
-CONFIG_SATA_MV=y, it's direct dependency are still unmet and thus the
-symbol in never considered to be output. The same flaw is present with
-the "allno.config" logic.
+I can feed all zeros into the described whitener and get output that is
+not possible to distinguish from random, without access to the secret
+initial state.  That's the whole point of a cipher, and AES is a very
+good cipher!
 
-Beside that, the one thing I dislike with your patch is that it is
-unconditional and global to all symbols, and you have no way to forbid
-the environment to override a value.
+The only technically difficult thing about implementing a back door
+is ensuring that the output sequence doesn't repeat each power cycle.
+You need just enough entropy or nonce to get that.
 
-What about:
- - a "select"-like approach, which would guarantee symbol selection
-and warn you when unmet-dependency are present
- - an opt-in approach to the symbol override from the environment
+As long as you can achieve that, getting caught is actually quite unlikely.
+
+Consider a sample implementation: implement it exactly as described,
+except:
+- Make the hardware known answer test (or, more specifically,
+  the state of the DRBG after the KAT) the backdoor secret, and
+- Suppress all but the first 40 bits of entropy from the hardware
+  entropy source, replacing it with a fixed pattern (e.g. all zero).
+
+An attacker who knows the secret needs to brute-force the 40 bits plus
+the number of RDRND reads to be able to predict the RDRAND outout.
+
+Someone who doesn't can ony detect the fiddle by power-cycling the
+hardware a million times and looking for duplicate outputs.  (Birthday
+attack on the amount of seed entropy.)
+
+Even a small amount of persistent storage makes things more difficult.
+For example, an 8-bit counter that usually survives power cycles replaces
+the 40-bit birthday attack with 256 32-bit birthday attacks, requiring
+256 * 2^16 = 2^24 power-cycles to find a collision.  While making an
+attacker's job easier after they've brute-forced 40+ bits once.
 
 
- - Arnaud
+I don't think it's *likely* that Intel have done this, but given the
+about of National Security bullshit the U.S. government is throwing
+around these days, I'm less than 10 bits certain that they haven't.
 
 
-> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-> ---
->  scripts/kconfig/conf.c     |    7 ++++++-
->  scripts/kconfig/confdata.c |   26 ++++++++++++++++++++++++++
->  scripts/kconfig/lkc.h      |    1 +
->  3 files changed, 33 insertions(+), 1 deletions(-)
->
-> diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
-> index 006ad81..2b91e3b 100644
-> --- a/scripts/kconfig/conf.c
-> +++ b/scripts/kconfig/conf.c
-> @@ -456,7 +456,7 @@ static struct option long_opts[] = {
->        {NULL, 0, NULL, 0}
->  };
->
-> -int main(int ac, char **av)
-> +int main(int ac, char **av, char **ep)
->  {
->        int opt;
->        const char *name;
-> @@ -563,6 +563,11 @@ int main(int ac, char **av)
->                break;
->        }
->
-> +       for ( ; *ep;  ep++) {
-> +               if (!strncmp(*ep, CONFIG_, strlen(CONFIG_)))
-> +                       conf_set_symbol_from_env(*ep);
-> +       }
-> +
->        if (sync_kconfig) {
->                if (conf_get_changed()) {
->                        name = getenv("KCONFIG_NOSILENTUPDATE");
-> diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-> index a518ab3..c64eb33 100644
-> --- a/scripts/kconfig/confdata.c
-> +++ b/scripts/kconfig/confdata.c
-> @@ -342,6 +342,32 @@ setsym:
->        return 0;
->  }
->
-> +void conf_set_symbol_from_env(char *str)
-> +{
-> +       char *p = strchr(str, '=');
-> +       struct symbol *sym;
-> +       int def = S_DEF_USER;
-> +       int def_flags = SYMBOL_DEF << def;
-> +
-> +       if (!p)
-> +               return;
-> +
-> +       *p = 0;
-> +       sym = sym_find(str + strlen(CONFIG_));
-> +       *p++ = '=';
-> +
-> +       if (!sym)
-> +               return;
-> +
-> +       sym_calc_value(sym);
-> +       if (!sym_set_string_value(sym, p))
-> +               return;
-> +
-> +       conf_message(CONFIG_ "%s set to %s from environment", sym->name, p);
-> +       if (sym_is_choice_value(sym))
-> +               conf_validate_choice_val(sym, def, def_flags);
-> +}
-> +
->  int conf_read(const char *name)
->  {
->        struct symbol *sym, *choice_sym;
-> diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
-> index f34a0a9..fc2f3ad 100644
-> --- a/scripts/kconfig/lkc.h
-> +++ b/scripts/kconfig/lkc.h
-> @@ -89,6 +89,7 @@ char *conf_get_default_confname(void);
->  void sym_set_change_count(int count);
->  void sym_add_change_count(int count);
->  void conf_set_all_new_symbols(enum conf_def_mode mode);
-> +void conf_set_symbol_from_env(char *);
->
->  /* confdata.c and expr.c */
->  static inline void xfwrite(const void *str, size_t len, size_t count, FILE *out)
-> --
-> 1.7.6
->
->
->
->
+A much more verifiable way would be to provide access to the raw hardware
+generator, and enough hardware documentation to predict how its output
+varies with environmental conditions (temperature, supply voltage, clock
+speed, x-rays, ...) and lot-to-lot.  It would be extremely difficult
+to produce a deterministic (i.e. back-door-able) generator with the
+same sensitivities.
