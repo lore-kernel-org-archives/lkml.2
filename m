@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693Ab1G3IiI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 04:38:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60268 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab1G3IiE (ORCPT
+	id S1751585Ab1G3IlO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 04:41:14 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:63946 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab1G3IlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 04:38:04 -0400
-Subject: Re: [PATCH v3] x86, kconfig: Default to ARCH=x86 to avoid
- overriding CONFIG_64BIT
-From: David Woodhouse <dwmw2@infradead.org>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Michal Marek <mmarek@suse.cz>, "Ted Ts'o" <tytso@mit.edu>,
-        Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        hpa@zytor.com
-Date: Sat, 30 Jul 2011 09:37:40 +0100
-In-Reply-To: <CACqU3MUnUHafhHFye2x1gR_b4ebN1zUK7PfSiUp1j=24y07yuA@mail.gmail.com>
-References: <1306707270.2029.377.camel@i7.infradead.org>
-	 <20110530072300.GA9802@elte.hu>
-	 <1306745835.2029.389.camel@i7.infradead.org>
-	 <20110530104231.GF17821@elte.hu> <20110530104656.GA19532@elte.hu>
-	 <E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
-	 <20110530105809.GA20133@elte.hu>
-	 <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
-	 <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>
-	 <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
-	 <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
-	 <1306795186.2029.459.camel@i7.infradead.org>
-	 <BANLkTik=uHr1eX44XV1pAHUfVQ-MorzOnw@mail.gmail.com>
-	 <1306856937.27477.3.camel@i7.infradead.org>
-	 <BANLkTi=VoL8ze0AcdkG_QmEH5049X2K6Zw@mail.gmail.com>
-	 <4E0495F4.7080300@suse.cz> <1311986969.20983.52.camel@i7.infradead.org>
-	 <CACqU3MUnUHafhHFye2x1gR_b4ebN1zUK7PfSiUp1j=24y07yuA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 8bit
-Message-ID: <1312015064.20983.58.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 30 Jul 2011 04:41:09 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Joe Perches <joe@perches.com>
+Subject: Re: [PATCH 1/9] watchdog: WatchDog Timer Driver Core - Add basic framework
+Date: Sat, 30 Jul 2011 10:40:47 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Wim Van Sebroeck <wim@iguana.be>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Wolfram Sang <w.sang@pengutronix.de>
+References: <20110727201537.GA13819@infomag.iguana.be> <1311797800-2706-1-git-send-email-wim@iguana.be> <1311888593.10042.36.camel@Joe-Laptop>
+In-Reply-To: <1311888593.10042.36.camel@Joe-Laptop>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107301040.47664.arnd@arndb.de>
+X-Provags-ID: V02:K0:bCxOaj+b/bfrOGalgv8uPzRVc1L2Rqb+18mEy30+AU9
+ LvE+msGfqomz1ERj4U8l3RNCgtLvG4wCSLl1HH/gZBV0zxqUvJ
+ /sX5gP66k9pCmdqCCh/5pe3UN0rTi/3LlkLEU/grIui8M4EFi2
+ c93bPwXd42C8sWfRlBCM8pt7TXX9x3HX+JYs35VvTUN4bPA90p
+ 6pzjydUwJX+BK+VcA1cDQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-29 at 21:26 -0400, Arnaud Lacombe wrote:
+On Thursday 28 July 2011, Joe Perches wrote:
+> Perhaps add some logging helpers to the .h?
 > 
-> Should we not try to fix this rather than introduce a new interface ?
+> #define wdd_emerg(wd, fmt, ...)                                 \
+>         pr_emerg("%s: " fmt, (wd)->info->identity, ##__VA_ARGS__)
+> #define wdd_crit(wd, fmt, ...)                                  \
+>         pr_crit("%s: " fmt, (wd)->info->identity, ##__VA_ARGS__)
+> #define wdd_alert(wd, fmt, ...)                                 \
+>         pr_alert("%s: " fmt, (wd)->info->identity, ##__VA_ARGS__)
+> #define wdd_err(wd, fmt, ...)                                   \
+>         pr_err("%s: " fmt, (wd)->info->identity, ##__VA_ARGS__)
+> #define wdd_notice(wd, fmt, ...)                                \
+>         pr_notice("%s: " fmt, (wd)->info->identity, ##__VA_ARGS__)
+> #define wdd_warn(wd, fmt, ...)                                  \
+>         pr_warn("%s: " fmt, (wd)->info->identity, ##__VA_ARGS__)
+> #define wdd_info(wd, fmt, ...)                                  \
+>         pr_info("%s: " fmt, (wd)->info->identity, ##__VA_ARGS__)
+> #define wdd_dbg(wd, fmt, ...)                                   \
+>         pr_debug("%s: " fmt, (wd)->info->identity, ##__VA_ARGS__)
 
-This patch *does* fix it, without needing the new interface that I
-presented in a separate patch. The two patches I sent are not strictly
-dependent on one another.
+No, please don't. Adding driver-specific debugging macros tends to confuse
+more than it helps, IMHO.
 
-> From my point of view, we (ie. Kbuild) should be intelligent enough to
-> take the default from the .config, if one is present in the object
-> directory, rather than trying to impose it's own view on what the ARCH
-> should be.
+> > +     err = misc_register(&watchdog_miscdev);
+> > +     if (err != 0) {
+> > +             pr_err("%s: cannot register miscdev on minor=%d (err=%d).\n",
+> > +                     watchdog->info->identity, WATCHDOG_MINOR, err);
 > 
-> Is there case where we would have a .config, but would not use its
-> content ?
+>                 wdd_err(watchdog, "cannot register watchdog on minor %d, err: %d\n",
+>                         WATCHDOG_MINOR, err);
 
-Heh, I think you've missed some of the history here.
+I think changing them could be useful, but I'd rather change them to
+dev_err etc and pass the underlying device.
 
-I originally, a year or two ago, posted a patch which took precisely the
-approach I think you're advocating. It basically made the ARCH=x86
-behaviour apply in all cases. It was reverted because it made 'make
-randconfig' actually *random* — *even* for the setting of CONFIG_64BIT,
-*even* when ARCH=i386 or ARCH=x86_64.
-
-The fact that KCONFIG_ALLCONFIG allows you to override *all* config
-options and not just CONFIG_64BIT, and that using the legacy ARCH=
-settings wasn't really necessary, was evidently not sufficient. It
-apparently *had* to be possible to switch using the command line.
-
-So I did two things — I fixed this patch so that it doesn't break that
-legacy use case of 'make ARCH=i386' or 'make ARCH=x86_64' to force the
-value of CONFIG_64BIT on or off, and I also posted a separate patch
-which gives a more *sensible* way to force *any* config options on or
-off from the 'make' command line, since the world is apparently going to
-end if we can't do that.
-
-The two patches can be considered to be entirely independent.
-
--- 
-dwmw2
-
+	Arnd
