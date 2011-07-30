@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936Ab1G3M6y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 08:58:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52540 "EHLO
+	id S1751925Ab1G3NDk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 09:03:40 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43335 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391Ab1G3M6s convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751488Ab1G3NDg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 08:58:48 -0400
+	Sat, 30 Jul 2011 09:03:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110729195904.GC1720@ucw.cz>
+In-Reply-To: <87bowcyvtj.fsf@rho.meyering.net>
 References: <CAPweEDzv+vByC1s2bWRjVQdVLqw4Xf2sUf_CQgVync_YcxtdvQ@mail.gmail.com>
 	<20110725134533.GA23781@citd.de>
 	<CAPweEDybuOpPVidJWg+rfs8rU8y=xo4d3H=P7XQJh_DiKrF4DQ@mail.gmail.com>
 	<20110729195904.GC1720@ucw.cz>
-Date: Sat, 30 Jul 2011 13:58:46 +0100
-X-Google-Sender-Auth: aVa6JdDydPWRZw0Meu4UQ8X1hRc
-Message-ID: <CAPweEDygbhQY8F7fzfY8LLOYHDJX+b06zXbrVxNSkMZBw8mbQg@mail.gmail.com>
+	<20110729213156.GA32685@citd.de>
+	<4E33397F.4010908@draigBrady.com>
+	<87bowcyvtj.fsf@rho.meyering.net>
+Date: Sat, 30 Jul 2011 14:03:34 +0100
+X-Google-Sender-Auth: sR0XtzQOdgXXpW048dErfhhVb04
+Message-ID: <CAPweEDzExzvt+G7_3UanFM+PJEpsuOh8Qnu-YRanNo+Bm-0o5w@mail.gmail.com>
 Subject: Re: ext3 hacked filesystem (by debian exim4 exploit) available for
  analysis and bugreporting
 From: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Matthias Schniedermeyer <ms@citd.de>, linux-kernel@vger.kernel.org
+To: Jim Meyering <jim@meyering.net>
+Cc: =?UTF-8?Q?P=C3=A1draig_Brady?= <P@draigbrady.com>,
+        Matthias Schniedermeyer <ms@citd.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pavel Machek <pavel@ucw.cz>, Coreutils <coreutils@gnu.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 8:59 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> On Mon 2011-07-25 22:08:24, Luke Kenneth Casson Leighton wrote:
-> [...]
->> On Mon, Jul 25, 2011 at 2:45 PM, Matthias Schniedermeyer <ms@citd.de> wrote:
->>> You did try lsattr and checked that the files aren't 'immutable'?
->>
->>  i didn't! :)  didn't know about (but should have guessed) ext3
->> attributes.  they are indeed - thank you matthias.
->> [...]
+On Sat, Jul 30, 2011 at 10:14 AM, Jim Meyering <jim@meyering.net> wrote:
+> Pádraig Brady wrote:
+> ...
+>> `strace lsattr ...` shows it calls ioctl (...FS_IOC_GETFLAGS...)
+>> So there would be overhead.
+>> The output of ls is fairly constrained too for compat reasons.
 
-> Should ls -l be moddified to show something when file has immutable
-> (and friends) set?
->                                                                Pavel
+ well if that rule has been broken once for selinux (adding extra
+symbols) then it can be broken again.
 
- +1 on that.  i've been using unix systems for 20 years, and had
-absolutely no visual clue that there were ext3 attributes, from doing
-"ls -altr", my usual "fingers-pre-programmed" command.
+> One way by which ls -l could inform us that a file has
+> "attributes" like that would be via what POSIX calls the
+> "optional alternate access method flag".  Currently,
+> it can be a space, a "+", or a ".":
 
- i would say that something like "+" on the attributes -rwxrwx---+
-would intuitively say "there's more!" but it would be very helpful for
-its background to e.g. be in red [on ls --color].  that would
-definitely grab peoples' attention in a "wtf is that??" way.
+ i'd advocate, when the ls --color option is set, changing the
+background to something attention-grabbing (e.g. red).  it's far too
+easy to miss an extra symbol otherwise, and "+", although intuitively
+saying "there's more than meets the eye, here" is too similar to a
+line of "-"s to really make people sit up and take notice.  i'd
+certainly go "oh look, there's a +, how pretty", but a + on a red
+background i might just stop and think, "eh? i no unnerstan, let's
+look up man page or call some friends".
 
- yeah. whatever symbol is chosen, i believe that some sort of
-eye-burning background colour would be more important, forcing people
-to go "ls --help" or "man ls".
-
- my only concern with adding yet more attribute-markers is all the
-commands that parse "ls -a" output.  well... t'be'honest... i think if
-selinux attribute markers have already been added, then that bullet
-has already been bitten once, so it's not as big a hairy deal as all
-that.
-
-peace.
-
-l.
+ l.
