@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723Ab1G3Ljo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 07:39:44 -0400
-Received: from lucidpixels.com ([72.73.18.11]:55635 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751320Ab1G3Ljk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 07:39:40 -0400
-Date: Sat, 30 Jul 2011 07:39:39 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Ivo van Doorn <IvDoorn@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
-        "users@rt2x00.serialmonkey.com" <users@rt2x00.serialmonkey.com>
-Subject: Re: [PATCH] rt2x00: rt2800: fix zeroing skb structure
-In-Reply-To: <20110730113255.GB2847@redhat.com>
-Message-ID: <alpine.DEB.2.02.1107300736010.4925@p34.internal.lan>
-References: <alpine.DEB.2.02.1107271851410.25432@p34.internal.lan> <4E318BD0.40202@lwfinger.net> <20110730113009.GA2847@redhat.com> <20110730113255.GB2847@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1751706Ab1G3MCE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 08:02:04 -0400
+Received: from grimli.r00tworld.net ([83.169.44.195]:45006 "EHLO
+	mail.r00tworld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870Ab1G3MCB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 08:02:01 -0400
+From: Mathias Krause <minipli@googlemail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Mathias Krause <minipli@googlemail.com>
+Subject: [PATCH] tty: clearify structure initializer in notify_write()
+Date: Sat, 30 Jul 2011 14:01:59 +0200
+Message-Id: <1312027319-1402-1-git-send-email-minipli@googlemail.com>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Even though this is valid C we should not mix C99 initializers with
+obfuscated ANSI C. Stick to C99 and initialize c by its name.
 
+Found by clang:
+drivers/tty/vt/vt.c:262:55: warning: explicitly assigning a variable of
+type 'unsigned int' to itself [-Wself-assign]
+    struct vt_notifier_param param = { .vc = vc, unicode = unicode };
+                                                 ~~~~~~~ ^ ~~~~~~~
 
-On Sat, 30 Jul 2011, Stanislaw Gruszka wrote:
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+---
+ drivers/tty/vt/vt.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> We should clear skb->data not skb itself. Bug was introduced by:
-> commit 0b8004aa12d13ec750d102ba4082a95f0107c649 "rt2x00: Properly
-> reserve room for descriptors in skbs".
->
-> Cc: stable@kernel.org # 2.6.36+
-> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-> ---
-> drivers/net/wireless/rt2x00/rt2800lib.c |    3 +--
-> 1 files changed, 1 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/wireless/rt2x00/rt2800lib.c b/drivers/net/wireless/rt2x00/rt2800lib.c
-> index 75d2c6c..f94d669 100644
-> --- a/drivers/net/wireless/rt2x00/rt2800lib.c
-> +++ b/drivers/net/wireless/rt2x00/rt2800lib.c
-> @@ -703,8 +703,7 @@ void rt2800_write_beacon(struct queue_entry *entry, struct txentry_desc *txdesc)
-> 	/*
-> 	 * Add space for the TXWI in front of the skb.
-> 	 */
-> -	skb_push(entry->skb, TXWI_DESC_SIZE);
-> -	memset(entry->skb, 0, TXWI_DESC_SIZE);
-> +	memset(skb_push(entry->skb, TXWI_DESC_SIZE), 0, TXWI_DESC_SIZE);
->
-> 	/*
-> 	 * Register descriptor details in skb frame descriptor.
-> -- 
-> 1.7.4
->
-
-Hi,
-
-Testing w/ Linux kernel 3.0:
-
-# patch -p1 < ../patch3
-patching file drivers/net/wireless/rt2x00/rt2800lib.c
-Hunk #1 succeeded at 784 (offset 81 lines).
-
-Compiled/installed.
-
-Will reboot shortly, need to run a backup first, thanks.
-
-Justin.
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index b3915b7..e716839 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -259,7 +259,7 @@ EXPORT_SYMBOL_GPL(unregister_vt_notifier);
+ 
+ static void notify_write(struct vc_data *vc, unsigned int unicode)
+ {
+-	struct vt_notifier_param param = { .vc = vc, unicode = unicode };
++	struct vt_notifier_param param = { .vc = vc, .c = unicode };
+ 	atomic_notifier_call_chain(&vt_notifier_list, VT_WRITE, &param);
+ }
+ 
+-- 
+1.5.6.5
 
