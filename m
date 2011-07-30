@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467Ab1G3RqJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 13:46:09 -0400
-Received: from waste.org ([173.11.57.241]:42935 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751527Ab1G3RqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 13:46:03 -0400
-Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
-From: Matt Mackall <mpm@selenic.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jeff Garzik <jgarzik@pobox.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CA+55aFwMGwVsD1Gexahio2pWd0PpaHAbvFroB3w0=JOQf1zQ_A@mail.gmail.com>
-References: <1311971867-25124-1-git-send-email-hpa@linux.intel.com>
-	 <1311971867-25124-2-git-send-email-hpa@linux.intel.com>
-	 <1311974171.20898.393.camel@calx>
-	 <CA+55aFwMGwVsD1Gexahio2pWd0PpaHAbvFroB3w0=JOQf1zQ_A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 30 Jul 2011 12:45:59 -0500
-Message-ID: <1312047959.20898.489.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	id S1752479Ab1G3SHl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 14:07:41 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40630 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646Ab1G3SHf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 14:07:35 -0400
+Message-ID: <4E344863.2080007@lwfinger.net>
+Date: Sat, 30 Jul 2011 13:07:31 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: Andreas Hartmann <andihartmann@01019freenet.de>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
+        "users@rt2x00.serialmonkey.com" <users@rt2x00.serialmonkey.com>
+Subject: Re: [PATCH] rt2x00: rt2800: fix zeroing skb structure
+References: <alpine.DEB.2.02.1107271851410.25432@p34.internal.lan> <4E318BD0.40202@lwfinger.net> <20110730113009.GA2847@redhat.com> <20110730113255.GB2847@redhat.com> <alpine.DEB.2.02.1107300736010.4925@p34.internal.lan> <alpine.DEB.2.02.1107301015340.4925@p34.internal.lan> <alpine.DEB.2.02.1107301031560.4925@p34.internal.lan> <4E341DC4.9010107@01019freenet.de> <alpine.DEB.2.02.1107301305590.4925@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.02.1107301305590.4925@p34.internal.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-29 at 23:20 -0700, Linus Torvalds wrote:
-> On Fri, Jul 29, 2011 at 2:16 PM, Matt Mackall <mpm@selenic.com> wrote:
-> >
-> > I have already NAKed this approach in no uncertain terms.
-> 
-> Doesn't matter.
+On 07/30/2011 12:07 PM, Justin Piszcz wrote:
+>
+>
+> On Sat, 30 Jul 2011, Andreas Hartmann wrote:
+>
+>> Hi Justin,
+>>
+>> if you want to test, if the module works stable, run this script for one
+>> or two hours. It will stress the driver and the hardware.
+>>
+>> If it doesn't crash and if the throughput is stable, you can hope, that
+>> the driver is ok for daily work.
+>>
+>>
+>> #!/bin/sh
+>>
+>> dest="server" # set the servername
+>>
+>> while true ; do
+>> netperf -t TCP_MAERTS -H $dest
+>> netperf -t TCP_STREAM -H $dest
+>> netperf -t TCP_SENDFILE -H $dest
+>> done
+>>
+>>
+>> Start the script on the client. On the server start netserver.
+>> You get netperf from http://www.netperf.org/netperf/
+>>
+>>
+>> Andreas
+>>
+>
+> Hello Andreas,
+>
+> Thanks for the suggestion; however, it is crashing repeatedly after about 5-10
+> minutes, so it is not needed yet.
+>
+> Here you go, crash 2:
+> http://home.comcast.net/~jpiszcz/20110730/2630-rt2800usb-crash2p1.jpg
+> http://home.comcast.net/~jpiszcz/20110730/2630-rt2800usb-crash2p2.jpg
 
-Good to know, feel free to drop me from MAINTAINERS.
+This is likely progress as the crash is in a different place.
 
-> Talking about "standard hardware random number drivers" is just crazy
-> talk, when the instruction is a single instruction that takes tens of
-> nanoseconds to run. Any driver overhead would be just crazy, and no
-> user would ever want that anyway.
+The page fault this time is at rt2800usb_get_txwi+0xc. That translates back to 
+line 382 of file rt2800usb.c, which says
 
-Did you even look at these patches?
+	if (entry->queue->qid == QID_BEACON)
 
-Here's Peter's interface:
+I have no idea why entry->queue->qid is wrong here, but likely one of the 
+smarter people who knows a lot more about the device will be able to figure it out.
 
-+       ssize_t (*get_entropy_krnl)(void *buf, size_t nbytes);
-
-Here's the hwrng interface:
-
-	int (*read)(struct hwrng *rng, void *data, size_t max, bool wait);
-
-The overhead on the kernel side for an "architectural random hook" and a
-bog-standard HWRNG is basically the same. Here's a buffer, put N bytes
-in it.
-
-But then, the bulk of this patch is actually putting in a fast path to
-pass this off to user space through /dev/urandom.
-
-So here you are yammering on about "any driver overhead would be just
-crazy" when the whole point of these patches is in fact CHARACTER
-DRIVERS. We could already have a HWRNG interface that's just as fast in
-the time we've spent debating this.
-
-If you want to add a function get_fast_random_bytes() that turns into
-inline assembly on Intel (and Via Padlock and whatever else shows up)
-and falls back to get_random_bytes, great. That has nothing to do with
-these patches.
-
--- 
-Mathematics is the supreme nostalgia of our time.
-
-
+Larry
