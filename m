@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358Ab1G3QT2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 12:19:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51602 "EHLO
+	id S1752426Ab1G3Qbr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 12:31:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58468 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205Ab1G3QTX (ORCPT
+	with ESMTP id S1752239Ab1G3Qbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 12:19:23 -0400
-Date: Sat, 30 Jul 2011 17:19:06 +0100 (BST)
-From: David Woodhouse <dwmw2@infradead.org>
-X-X-Sender: dwmw2@localhost6.localdomain6
-To: Arnaud Lacombe <lacombar@gmail.com>
-cc: Michal Marek <mmarek@suse.cz>, "Ted Ts'o" <tytso@mit.edu>,
-        Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        hpa@zytor.com
-Subject: Re: [PATCH v3] x86, kconfig: Default to ARCH=x86 to avoid overriding
- CONFIG_64BIT
-In-Reply-To: <CACqU3MXeUiiQPc4t9bT7KuXuAjkN+t8eFn9SYOouPg-3hDgjWQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1107301716430.21839@localhost6.localdomain6>
-References: <1306707270.2029.377.camel@i7.infradead.org> <20110530072300.GA9802@elte.hu> <1306745835.2029.389.camel@i7.infradead.org> <20110530104231.GF17821@elte.hu> <20110530104656.GA19532@elte.hu> <E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
- <20110530105809.GA20133@elte.hu> <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu> <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6> <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com> <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
- <1306795186.2029.459.camel@i7.infradead.org> <BANLkTik=uHr1eX44XV1pAHUfVQ-MorzOnw@mail.gmail.com> <1306856937.27477.3.camel@i7.infradead.org> <BANLkTi=VoL8ze0AcdkG_QmEH5049X2K6Zw@mail.gmail.com> <4E0495F4.7080300@suse.cz> <1311986969.20983.52.camel@i7.infradead.org>
- <CACqU3MXeUiiQPc4t9bT7KuXuAjkN+t8eFn9SYOouPg-3hDgjWQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	Sat, 30 Jul 2011 12:31:42 -0400
+Date: Sat, 30 Jul 2011 09:34:04 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matt Mackall <mpm@selenic.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jeff Garzik <jgarzik@pobox.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
+Message-ID: <20110730093404.6d5098a9@infradead.org>
+In-Reply-To: <CA+55aFwMGwVsD1Gexahio2pWd0PpaHAbvFroB3w0=JOQf1zQ_A@mail.gmail.com>
+References: <1311971867-25124-1-git-send-email-hpa@linux.intel.com>
+	<1311971867-25124-2-git-send-email-hpa@linux.intel.com>
+	<1311974171.20898.393.camel@calx>
+	<CA+55aFwMGwVsD1Gexahio2pWd0PpaHAbvFroB3w0=JOQf1zQ_A@mail.gmail.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Jul 2011, Arnaud Lacombe wrote:
+On Fri, 29 Jul 2011 23:20:40 -0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> this is breaking ARCH=um.
+> If you don't trust the CPU rng, don't bother with stupid arguments
+> about electron microscopes.  
 
-Breaking in what way? Is it just that ARCH=um is broken for SUBARCH=x86, 
-and needed to be updated anyway? And still works is you manually set 
-SUBARCH to one of the legacy values?
+also, if you don't trust the CPU and want an electron microscope, make
+sure to also audit the "mov" instruction that you use the cycle after
+getting the random number, maybe THAT is booby trapped to muck with the
+result ;-)
 
-I'll try to reproduce and take a look later thuis evening.
+
 
 -- 
-dwmw2
-
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
