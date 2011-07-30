@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab1G3Xqh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 19:46:37 -0400
-Received: from science.horizon.com ([71.41.210.146]:40491 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751433Ab1G3Xqc (ORCPT
+	id S1752136Ab1G3Xxq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 19:53:46 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39416 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886Ab1G3Xxm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 19:46:32 -0400
-Date: 30 Jul 2011 19:46:30 -0400
-Message-ID: <20110730234630.7270.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: torvalds@linux-foundation.org
-Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
-Cc: linux@horizon.com, linux-kernel@vger.kernel.org, mpm@selenic.com,
-        tytso@mit.edu
+	Sat, 30 Jul 2011 19:53:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110730130537.GB15791@n2100.arm.linux.org.uk>
+References: <cover.1311936523.git.viresh.kumar@st.com>
+	<96781d46e41fa6ffc04b88527a25d73f5a59eda8.1311936524.git.viresh.kumar@st.com>
+	<20110730120740.GA15791@n2100.arm.linux.org.uk>
+	<20110730130537.GB15791@n2100.arm.linux.org.uk>
+Date: Sun, 31 Jul 2011 01:53:41 +0200
+X-Google-Sender-Auth: -qlbeYFHxBTR_f1zuROkh_vSRlM
+Message-ID: <CAKnu2MqTYF43wW3axM--jXdtvsCyRBTLEHDc3hPoJYAmTAL5UA@mail.gmail.com>
+Subject: Re: [PATCH 07/18] dmaengine/amba-pl08x: Enable/Disable amba_pclk with
+ channel requests
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Viresh Kumar <viresh.kumar@st.com>, pratyush.anand@st.com,
+        rajeev-dlh.kumar@st.com, armando.visconti@st.com,
+        bhupesh.sharma@st.com, vinod.koul@intel.com,
+        linux-kernel@vger.kernel.org, vipin.kumar@st.com, shiraz.hashim@st.com,
+        amit.virdi@st.com, vipulkumar.samar@st.com, viresh.linux@gmail.com,
+        deepak.sikri@st.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The fact is, even if you worry about some back door for the NSA, or
-> some theoretical lack of perfect 32-bit randomness, we can pretty much
-> depend on it. We still do our own hashing on top of whatever entropy
-> we get out of rdrand, and we would still have all our other stuff.
-> Plus the instruction is public and testable - if Intel did something
-> wrong, they'll be *very* embarrassed.
-> 
-> In other words, there's absolutely no reason not to use it, and allow
-> us to get away from /dev/random running out of entropy. We absolutely
-> should use it for bootup randomness (where we currently are somewhat
-> weak), and I absolutely disagree that it should be made into more of a
-> driver abstraction.
+2011/7/30 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> On Sat, Jul 30, 2011 at 01:07:40PM +0100, Russell King - ARM Linux wrote:
+>> It may make better sense to convert this to runtime PM.  I suspect
+>> that there's core support which the amba/bus.c can do to help in that
+>> respect (eg, managing the apb pclk itself) so that we don't have to
+>> add the same code to every primecell driver.
+>
+> Something like this for the bus driver (untested):
+>
+>  drivers/amba/bus.c |   38 ++++++++++++++++++++++++++++++++++++--
+>  1 files changed, 36 insertions(+), 2 deletions(-)
 
-I agree with your second paragraph, but disagree violently with your
-first: Intel provide no way to test their RNG, and the AES-based whitener
-makes it completely private and UNtestable.
+I think the pm_runtime_* code Rabin put in place inside
+drivers/spi/spi-pl022.c would play really well with this approach, and
+just work, so:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Intel go into details about the hardware's boot-up self-test, but then
-provide no way to access that self-test information, much less check up
-on it.
-
-I can feed all zeros into the described whitener and get output that is
-not possible to distinguish from random, without access to the secret
-initial state.  That's the whole point of a cipher, and AES is a very
-good cipher!
-
-The only technically difficult thing about implementing a back door
-is ensuring that the output sequence doesn't repeat each power cycle.
-You need just enough entropy or nonce to get that.
-
-As long as you can achieve that, getting caught is actually quite unlikely.
-
-Consider a sample implementation: implement it exactly as described,
-except:
-- Make the hardware known answer test (or, more specifically,
-  the state of the DRBG after the KAT) the backdoor secret, and
-- Suppress all but the first 40 bits of entropy from the hardware
-  entropy source, replacing it with a fixed pattern (e.g. all zero).
-
-An attacker who knows the secret needs to brute-force the 40 bits plus
-the number of RDRND reads to be able to predict the RDRAND outout.
-
-Someone who doesn't can ony detect the fiddle by power-cycling the
-hardware a million times and looking for duplicate outputs.  (Birthday
-attack on the amount of seed entropy.)
-
-Even a small amount of persistent storage makes things more difficult.
-For example, an 8-bit counter that usually survives power cycles replaces
-the 40-bit birthday attack with 256 32-bit birthday attacks, requiring
-256 * 2^16 = 2^24 power-cycles to find a collision.  While making an
-attacker's job easier after they've brute-forced 40+ bits once.
-
-
-I don't think it's *likely* that Intel have done this, but given the
-about of National Security bullshit the U.S. government is throwing
-around these days, I'm less than 10 bits certain that they haven't.
-
-
-A much more verifiable way would be to provide access to the raw hardware
-generator, and enough hardware documentation to predict how its output
-varies with environmental conditions (temperature, supply voltage, clock
-speed, x-rays, ...) and lot-to-lot.  It would be extremely difficult
-to produce a deterministic (i.e. back-door-able) generator with the
-same sensitivities.
+Thanks,
+Linus Walleij
