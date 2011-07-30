@@ -1,88 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab1G3RKc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 13:10:32 -0400
-Received: from lucidpixels.com ([72.73.18.11]:37480 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752397Ab1G3RK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 13:10:27 -0400
-Date: Sat, 30 Jul 2011 13:10:26 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Andreas Hartmann <andihartmann@01019freenet.de>
-cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Ivo van Doorn <IvDoorn@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
-        "users@rt2x00.serialmonkey.com" <users@rt2x00.serialmonkey.com>
-Subject: Re: [PATCH] rt2x00: rt2800: fix zeroing skb structure
-In-Reply-To: <alpine.DEB.2.02.1107301305590.4925@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1107301310070.4925@p34.internal.lan>
-References: <alpine.DEB.2.02.1107271851410.25432@p34.internal.lan> <4E318BD0.40202@lwfinger.net> <20110730113009.GA2847@redhat.com> <20110730113255.GB2847@redhat.com> <alpine.DEB.2.02.1107300736010.4925@p34.internal.lan> <alpine.DEB.2.02.1107301015340.4925@p34.internal.lan>
- <alpine.DEB.2.02.1107301031560.4925@p34.internal.lan> <4E341DC4.9010107@01019freenet.de> <alpine.DEB.2.02.1107301305590.4925@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1752564Ab1G3RNx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 13:13:53 -0400
+Received: from lunge.queued.net ([173.255.254.236]:51812 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443Ab1G3RNr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 13:13:47 -0400
+Date: Sat, 30 Jul 2011 10:13:44 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Dan Williams <dcbw@redhat.com>, Daniel Drake <dsd@laptop.org>,
+        cjb@laptop.org, linux-kernel@vger.kernel.org,
+        libertas-dev@lists.infradead.org
+Subject: Re: [GIT PULL linux-firmware.git] OLPC libertas firmware blobs
+Message-ID: <20110730101344.645e22dc@debxo>
+In-Reply-To: <1311977825.20983.15.camel@i7.infradead.org>
+References: <20110618213803.521db1b3@debxo>
+	<20110618214203.0028ba85@debxo>
+	<BANLkTimyFj+iTWAopPMEyohP2pop_=g=6g@mail.gmail.com>
+	<1308631634.31157.7.camel@dcbw.foobar.com>
+	<20110621001805.1caecc82@queued.net>
+	<1311977825.20983.15.camel@i7.infradead.org>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 29 Jul 2011 23:17:03 +0100
+David Woodhouse <dwmw2@infradead.org> wrote:
 
+> On Tue, 2011-06-21 at 00:18 -0700, Andres Salomon wrote:
+> > Looks like the one on dev.l.o is older (9.70.7.p0).  Shall I redo
+> > the pull request a) ignoring sd8686, b) replacing usb8388 v5 with
+> > the OLPC version, and c) including both thinfirm blobs as well,
+> > then? 
+> 
+> Is there a conclusion on what I should be pulling in?
+> 
 
-On Sat, 30 Jul 2011, Justin Piszcz wrote:
-
->
->
-> On Sat, 30 Jul 2011, Andreas Hartmann wrote:
->
->> Hi Justin,
->> 
->> if you want to test, if the module works stable, run this script for one
->> or two hours. It will stress the driver and the hardware.
->> 
->> If it doesn't crash and if the throughput is stable, you can hope, that
->> the driver is ok for daily work.
->> 
->> 
->> #!/bin/sh
->> 
->> dest="server" # set the servername
->> 
->> while true ; do
->> netperf -t TCP_MAERTS -H $dest
->> netperf -t TCP_STREAM -H $dest
->> netperf -t TCP_SENDFILE -H $dest
->> done
->> 
->> 
->> Start the script on the client. On the server start netserver.
->> You get netperf from http://www.netperf.org/netperf/
->> 
->> 
->> Andreas
->> 
->
-> Hello Andreas,
->
-> Thanks for the suggestion; however, it is crashing repeatedly after about 
-> 5-10 minutes, so it is not needed yet.
->
-> Here you go, crash 2:
-> http://home.comcast.net/~jpiszcz/20110730/2630-rt2800usb-crash2p1.jpg
-> http://home.comcast.net/~jpiszcz/20110730/2630-rt2800usb-crash2p2.jpg
->
-> Justin.
->
-
-(This is with the patch provided earlier)
-
-atom:/usr/src/linux# cd drivers/net/wireless/rt2x00/
-atom:/usr/src/linux/drivers/net/wireless/rt2x00# grep 'memset(skb_push(entry->skb, TXWI_DESC_SIZE), 0, TXWI_DESC_SIZE)' rt2800lib.c
-         memset(skb_push(entry->skb, TXWI_DESC_SIZE), 0, TXWI_DESC_SIZE);
-atom:/usr/src/linux/drivers/net/wireless/rt2x00# cat /usr/src/linux/.version
-2
-atom:/usr/src/linux/drivers/net/wireless/rt2x00# uname -a
-Linux atom 3.0.0 #2 SMP Sat Jul 30 08:34:18 EDT 2011 x86_64 GNU/Linux
-atom:/usr/src/linux/drivers/net/wireless/rt2x00#
-
-Justin.
-
+Sorry for the delay, I'll put together a pull request for you today.
