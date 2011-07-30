@@ -1,85 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab1G3ABg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 29 Jul 2011 20:01:36 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:12758 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112Ab1G3ABR (ORCPT
+	id S1753296Ab1G3At6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 29 Jul 2011 20:49:58 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50979 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753127Ab1G3At5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 29 Jul 2011 20:01:17 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=RrZfnN6sakimId0BvANt2HETXdtgQ+CYaXmMvDNK0fYnrz41M7t9Nep1tNavqax/z
-	hngrl1y/sXcy5Jb+9O8xA==
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Michael Rubin <mrubin@google.com>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>
-Subject: [PATCH 1/2] trace,x86: Add tracepoint to x86 timer interrupt handler
-Date: Fri, 29 Jul 2011 16:59:37 -0700
-Message-Id: <1311983978-10350-2-git-send-email-vnagarnaik@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1311983978-10350-1-git-send-email-vnagarnaik@google.com>
-References: <1311983978-10350-1-git-send-email-vnagarnaik@google.com>
+	Fri, 29 Jul 2011 20:49:57 -0400
+Subject: [PATCH v3] x86, kconfig: Default to ARCH=x86 to avoid overriding
+ CONFIG_64BIT
+From: David Woodhouse <dwmw2@infradead.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        hpa@zytor.com
+Date: Sat, 30 Jul 2011 01:49:27 +0100
+References: <1306707270.2029.377.camel@i7.infradead.org>
+	 <20110530072300.GA9802@elte.hu>
+	 <1306745835.2029.389.camel@i7.infradead.org>
+	 <20110530104231.GF17821@elte.hu>	<20110530104656.GA19532@elte.hu>
+	 <E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
+	 <20110530105809.GA20133@elte.hu>
+	 <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
+	 <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>
+	 <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
+	 <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
+	 <1306795186.2029.459.camel@i7.infradead.org>
+	 <BANLkTik=uHr1eX44XV1pAHUfVQ-MorzOnw@mail.gmail.com>
+	 <1306856937.27477.3.camel@i7.infradead.org>
+	 <BANLkTi=VoL8ze0AcdkG_QmEH5049X2K6Zw@mail.gmail.com>
+	 <4E0495F4.7080300@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1311986969.20983.52.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The x86 timer interrupt handler is the only handler not traced in the
-irq/irq_handler_{entry|exit} trace events.
+I *frequently* waste a bunch of time when I take a 32-bit .config from a
+test machine and try to build it on a faster 64-bit system, and its
+existing setting of CONFIG_64BIT=n gets *changed* to match the build host.
 
-Add tracepoints to the interrupt handler to trace it.
+This is because the default setting for $ARCH when discovered from
+'uname' is one of the legacy pre-x86-merge values (i386 or x86_64),
+which effectively force the setting of CONFIG_64BIT to match. We should
+default to ARCH=x86 instead, finally completing the merge that we
+started so long ago.
 
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+This patch preserves the behaviour of the legacy ARCH settings for commands
+such as:
+
+   make ARCH=x86_64 randconfig
+   make ARCH=i386 randconfig
+
+... although since my commit "Enable 'make CONFIG_FOO=y oldconfig'" those
+would be better expressed as:
+
+   make CONFIG_64BIT=y randconfig
+   make CONFIG_64BIT=n randconfig
+
+... since that is a more generic way to set *any* config option, and
+there's no other technical reason to keep the legacy ARCH values around
+any more just to achieve that purpose; they could be removed at any
+time.
+
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Link: http://lkml.kernel.org/r/1306707270.2029.377.camel@i7.infradead.org
 ---
- arch/x86/kernel/time.c |   15 +++++++++------
- 1 files changed, 9 insertions(+), 6 deletions(-)
+v2: Explicitly turn off CONFIG_64BIT in i386_defconfig. The default for
+    CONFIG_64BIT has *changed* (from n to y) for ARCH=x86, so it needs to
+    be explicitly turned off or 'make i386_defconfig' will give you 64-bit.
+v3: Same patch as before; just updated changelog.
 
-diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
-index 5a64d05..74d2280 100644
---- a/arch/x86/kernel/time.c
-+++ b/arch/x86/kernel/time.c
-@@ -51,6 +51,13 @@ unsigned long profile_pc(struct pt_regs *regs)
- }
- EXPORT_SYMBOL(profile_pc);
+ Makefile                        |    3 ++-
+ arch/x86/Kconfig                |    2 +-
+ arch/x86/Makefile               |    4 ++++
+ arch/x86/configs/i386_defconfig |    1 +
+ 4 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index d018956..303df9b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -165,7 +165,8 @@ export srctree objtree VPATH
+ # then ARCH is assigned, getting whatever value it gets normally, and 
+ # SUBARCH is subsequently ignored.
  
-+static irqreturn_t timer_interrupt(int irq, void *dev_id);
-+static struct irqaction irq0  = {
-+	.handler = timer_interrupt,
-+	.flags = IRQF_DISABLED | IRQF_NOBALANCING | IRQF_IRQPOLL | IRQF_TIMER,
-+	.name = "timer"
-+};
-+
- /*
-  * Default timer interrupt handler for PIT/HPET
-  */
-@@ -59,7 +66,9 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
- 	/* Keep nmi watchdog up to date */
- 	inc_irq_stat(irq0_irqs);
+-SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
++SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
++				  -e s/sun4u/sparc64/ \
+ 				  -e s/arm.*/arm/ -e s/sa110/arm/ \
+ 				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+ 				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 153aa6f..9467fdd 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1,7 +1,7 @@
+ # Select 32 or 64 bit
+ config 64BIT
+ 	bool "64-bit kernel" if ARCH = "x86"
+-	default ARCH = "x86_64"
++	default ARCH != "i386"
+ 	---help---
+ 	  Say yes to build a 64-bit kernel - formerly known as x86_64
+ 	  Say no to build a 32-bit kernel - formerly known as i386
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index b02e509..94c2d8c 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -2,7 +2,11 @@
  
-+	trace_irq_handler_entry(irq, &irq0);
- 	global_clock_event->event_handler(global_clock_event);
-+	trace_irq_handler_exit(irq, &irq0, 1);
- 
- 	/* MCA bus quirk: Acknowledge irq0 by setting bit 7 in port 0x61 */
- 	if (MCA_bus)
-@@ -68,12 +77,6 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
- 	return IRQ_HANDLED;
- }
- 
--static struct irqaction irq0  = {
--	.handler = timer_interrupt,
--	.flags = IRQF_DISABLED | IRQF_NOBALANCING | IRQF_IRQPOLL | IRQF_TIMER,
--	.name = "timer"
--};
--
- void __init setup_default_timer_irq(void)
- {
- 	setup_irq(0, &irq0);
+ # select defconfig based on actual architecture
+ ifeq ($(ARCH),x86)
++  ifeq ($(shell uname -m),x86_64)
++        KBUILD_DEFCONFIG := x86_64_defconfig
++  else
+         KBUILD_DEFCONFIG := i386_defconfig
++  endif
+ else
+         KBUILD_DEFCONFIG := $(ARCH)_defconfig
+ endif
+diff --git a/arch/x86/configs/i386_defconfig b/arch/x86/configs/i386_defconfig
+index 2bf18059f..5f96c1c 100644
+--- a/arch/x86/configs/i386_defconfig
++++ b/arch/x86/configs/i386_defconfig
+@@ -1,3 +1,4 @@
++# CONFIG_64BIT is not set
+ CONFIG_EXPERIMENTAL=y
+ # CONFIG_LOCALVERSION_AUTO is not set
+ CONFIG_SYSVIPC=y
 -- 
-1.7.3.1
+1.7.6
+
+
+
+-- 
+dwmw2
 
