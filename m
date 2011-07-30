@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933Ab1G3OJH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 10:09:07 -0400
-Received: from smtp.unlimitedmail.net ([94.127.184.244]:44610 "EHLO
-	dcnode-01.unlimitedmail.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751480Ab1G3OJF (ORCPT
+	id S1751942Ab1G3OOL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 10:14:11 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:56698 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab1G3OOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 10:09:05 -0400
-X-Greylist: delayed 2280 seconds by postgrey-1.27 at vger.kernel.org; Sat, 30 Jul 2011 10:09:05 EDT
-Message-Id: <201107301330.p6UDUrt8004286@dcnode-01.unlimitedmail.net>
-Date: Sat, 30 Jul 2011 19:00:50 +0530
-From: "J. Bakshi" <j.bakshi@unlimitedmail.org>
-To: linux-kernel@vger.kernel.org
-Subject: where is /sys/class/power_supply/ADP1 ?
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAgMAAAAqbBEUAAAADFBMVEW2UCaWJQ3jnnRrCARshP4hAAACQElEQVQokRWSzU4aYRiFDwhiJjGAimxqRlzhbGpDm24wjmhTQtIIOlMag6GXUP92Tj5obcaaJqRJidvBlDi8N1FpbUzcFGgNK0MvgZKZsmHydVw+OWd1zgOiaH+98Ejt/SGCaTDlmZMYdl+cEmjMKQydBL97kJFAYlfbVab5KHS5AONrnoenPhVHbU1A4yezEYup+1crGRhtfuv9kPZtLRcz8Mw4ykJ1UPJF72Qkg09SdHFFxkY/iZW1HxNSY/zLSbS1B9sKLW7TaU3yB55DHXnjL4n0m1BSRNOZoKo8IXqx1YVqZ6is+C0YwS7Gml4q5/mdRFEbSkig95xbZEaHCMpEJ5x3yPRzyCEqzcTm0lMUscEEE0gfm/64RwPbpJyTIlPbLnNoMoku1JxNAHyTzhzQO2fWXL5PKgOD9H+fPQW4lUqnJk0OqkYEWorETE0SBzrmwFP0lj7Gn1r6qgZ4z8/jM/GVm7Mcg5apH4db8d43PccBoY6oHGAdPRuBX2m8DrSn+Y1+GALLNtLskjWFQHaEXsvMFvsFgc5sD4oyZT39wjiJQwu5ljRbSheqQnHIEfGfV2n+oL7KeBetvrcumQc1lbsQWJVj2fkDk/dceCwqi6qn4y7gcLxhlnCY71DgyGG4yNuvKnyPfBtzNipdRy6r/YXI9Pc+dM7WocqIHGU7KDlsSQn7wsHfSS9MVti9Dau5jfYkuU9Y13Z45+havZRg6H/Xhgk+au7c61L6FVD3XVu44IpkPpxUtnrqkiXRf3v/EFxxaZnHAAAAAElFTkSuQmCC
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SOLTECSIS-MailScanner-ID: p6UDUrt8004286
-X-SOLTECSIS-MailScanner-From: j.bakshi@unlimitedmail.org
+	Sat, 30 Jul 2011 10:14:08 -0400
+From: Zhu Yanhai <zhu.yanhai@gmail.com>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
+        acme@ghostprotocols.net
+Cc: linux-kernel@vger.kernel.org, Zhu Yanhai <gaoyang.zyh@taobao.com>
+Subject: [PATCH] perf lock: dropping unsupported ':r' modifier
+Date: Sat, 30 Jul 2011 22:13:52 +0800
+Message-Id: <1312035232-9534-1-git-send-email-gaoyang.zyh@taobao.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello kernel gurus,
+Looks to me like the :r modifier is not supported anymore, so remove it from
+the list of events. Without this fix 'perf lock record' doesn't work.
 
-This is my very first email to this list, so greetings to all of you.
+Signed-off-by: Zhu Yanhai <gaoyang.zyh@taobao.com>
+---
+ tools/perf/builtin-lock.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-I have compiled the latest 3.0 kernel. But I have not found the 
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index 9ac05aa..899080a 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -942,10 +942,10 @@ static const char *record_args[] = {
+ 	"-f",
+ 	"-m", "1024",
+ 	"-c", "1",
+-	"-e", "lock:lock_acquire:r",
+-	"-e", "lock:lock_acquired:r",
+-	"-e", "lock:lock_contended:r",
+-	"-e", "lock:lock_release:r",
++	"-e", "lock:lock_acquire",
++	"-e", "lock:lock_acquired",
++	"-e", "lock:lock_contended",
++	"-e", "lock:lock_release",
+ };
+ 
+ static int __cmd_record(int argc, const char **argv)
+-- 
+1.5.5.6
 
-/sys/class/power_supply/ADP1 and sys/class/power_supply/BAT0 any more
-
-are they still supported in 3.0 ?
-
-Thanks and please CC to me
