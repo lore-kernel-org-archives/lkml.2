@@ -1,36 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751065Ab1G3EOe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 00:14:34 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55807 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750739Ab1G3EOd (ORCPT
+	id S1752052Ab1G3EPU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 00:15:20 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:35039 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750923Ab1G3EPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 00:14:33 -0400
-Message-ID: <4E33851C.2000806@lwfinger.net>
-Date: Fri, 29 Jul 2011 23:14:20 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: "linux-pcmcia@lists.infradead.org" <linux-pcmcia@lists.infradead.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Problem with ide-cs
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sat, 30 Jul 2011 00:15:17 -0400
+Date: Fri, 29 Jul 2011 21:11:43 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Anton Vorontsov <cbou@mail.ru>,
+        David Woodhouse <dwmw2@infradead.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
+Subject: [PATCH -next] power: max8998_charger.c needs module.h
+Message-Id: <20110729211143.0a9d6ed7.rdunlap@xenotime.net>
+In-Reply-To: <20110729173827.716f57ff6e00095a3efc6449@canb.auug.org.au>
+References: <20110729173827.716f57ff6e00095a3efc6449@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With kernel 3.0, my external hard drive attached to a PCMCIA card reports "irq 
-11: nobody cared (try booting with the "irqpoll" option)". The driver in 
-question is ide-cs. When I try irqpoll, the device works correctly. Naturally, 
-the interrupt is shared with yenta, the PCMCIA adapter driver. In addition, that 
-same interrupt is used by a BCM4318 Cardbus device.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-I plan on preparing a Bugzilla entry for this problem, but I'm not quite ready. 
-What I would like to know if there is any documentation on what kinds of changes 
-are needed to fix the problem.
+power/max8998_charger.c uses interfaces from linux/module.h,
+so it should include that file.  This fixes build errors.
 
-Thanks,
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ drivers/power/max8998_charger.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Larry
+--- linux-next-20110729.orig/drivers/power/max8998_charger.c
++++ linux-next-20110729/drivers/power/max8998_charger.c
+@@ -20,6 +20,7 @@
+  */
+ 
+ #include <linux/err.h>
++#include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/platform_device.h>
+ #include <linux/power_supply.h>
