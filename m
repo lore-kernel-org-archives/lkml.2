@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753028Ab1G3F2a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 01:28:30 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:57325 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751978Ab1G3F22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 01:28:28 -0400
-Date: Sat, 30 Jul 2011 07:28:26 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: "linux-pcmcia@lists.infradead.org" <linux-pcmcia@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Problem with ide-cs
-Message-ID: <20110730052826.GB12383@isilmar-3.linta.de>
-Mail-Followup-To: Larry Finger <Larry.Finger@lwfinger.net>,
-	"linux-pcmcia@lists.infradead.org" <linux-pcmcia@lists.infradead.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <4E33851C.2000806@lwfinger.net>
+	id S1752447Ab1G3GDz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 02:03:55 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46465 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750920Ab1G3GDy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 02:03:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E33851C.2000806@lwfinger.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4E3320A2.1040808@pobox.com>
+References: <1311971867-25124-1-git-send-email-hpa@linux.intel.com> <4E3320A2.1040808@pobox.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 29 Jul 2011 23:03:24 -0700
+Message-ID: <CA+55aFwazvdePdf4ieooQH60bz69v0HNuH4g3M_9WMUVjtw86Q@mail.gmail.com>
+Subject: Re: [RFD] Direct support for the x86 RDRAND instruction
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Fenghua Yu <fenghua.yu@intel.com>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Larry,
-
-On Fri, Jul 29, 2011 at 11:14:20PM -0500, Larry Finger wrote:
-> With kernel 3.0, my external hard drive attached to a PCMCIA card reports 
-> "irq 11: nobody cared (try booting with the "irqpoll" option)". The 
-> driver in question is ide-cs. When I try irqpoll, the device works 
-> correctly. Naturally, the interrupt is shared with yenta, the PCMCIA 
-> adapter driver. In addition, that same interrupt is used by a BCM4318 
-> Cardbus device.
+On Fri, Jul 29, 2011 at 2:05 PM, Jeff Garzik <jgarzik@pobox.com> wrote:
 >
-> I plan on preparing a Bugzilla entry for this problem, but I'm not quite 
-> ready. What I would like to know if there is any documentation on what 
-> kinds of changes are needed to fix the problem.
+> This does not cover the one question I [predictably] have:  why not do this
+> in rngd, rather than the kernel?
 
-Let me guess: it worked fine in 2.6.39, or .38? Output of "lspci -vv",
-"dmesg" for a working and a non-working kernel would be good starting points
-for trying to debug this issue.
+So that's a silly question. It's a dichotomy that just doesn't exist.
+Go ahead and use rdrand in rngd too.
 
-Best,
-	Dominik
+But that is entirely independent of the kernel. Why should any
+potential rngd use suddenly mean that the kernel shouldn't try to
+improve *its* random number code?
+
+No reason what-so-ever. rngd can do whatever the hell it wants. The
+kernel doesn't care, and the kernel isn't impacted. There really is no
+reason to do "either or", and they have nothing to do with each other.
+
+The kernel also uses the "mov" instruction too to move data between
+registers. Should that mean that user programs shouldn't use that
+instruction? Obviously not.
+
+               Linus
