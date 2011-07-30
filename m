@@ -1,69 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484Ab1G3JO1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 05:14:27 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:47431 "EHLO smtp1-g21.free.fr"
+	id S1751797Ab1G3JbI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 05:31:08 -0400
+Received: from mga14.intel.com ([143.182.124.37]:55954 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751015Ab1G3JOZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 05:14:25 -0400
-From: Jim Meyering <jim@meyering.net>
-To: =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
-Cc: Matthias Schniedermeyer <ms@citd.de>,
-        Luke Kenneth Casson Leighton <lkcl@lkcl.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pavel Machek <pavel@ucw.cz>, Coreutils <coreutils@gnu.org>
-Subject: Re: ext3 hacked filesystem (by debian exim4 exploit) available for analysis and bugreporting
-In-Reply-To: <4E33397F.4010908@draigBrady.com> (=?iso-8859-1?Q?=22P=E1drai?=
- =?iso-8859-1?Q?g?= Brady"'s message of
-	"Fri, 29 Jul 2011 23:51:43 +0100")
-References: <CAPweEDzv+vByC1s2bWRjVQdVLqw4Xf2sUf_CQgVync_YcxtdvQ@mail.gmail.com>
-	<20110725134533.GA23781@citd.de>
-	<CAPweEDybuOpPVidJWg+rfs8rU8y=xo4d3H=P7XQJh_DiKrF4DQ@mail.gmail.com>
-	<20110729195904.GC1720@ucw.cz> <20110729213156.GA32685@citd.de>
-	<4E33397F.4010908@draigBrady.com>
-Date: Sat, 30 Jul 2011 11:14:16 +0200
-Message-ID: <87bowcyvtj.fsf@rho.meyering.net>
+	id S1751649Ab1G3Ja6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 05:30:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,291,1309762800"; 
+   d="scan'208";a="33259599"
+Date: Sat, 30 Jul 2011 17:30:55 +0800
+From: Shaohua Li <shaohua.li@intel.com>
+To: Larry Bassel <lbassel@codeaurora.org>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: questions about memory hotplug
+Message-ID: <20110730093055.GA10672@sli10-conroe.sh.intel.com>
+References: <20110729221230.GA3466@labbmf-linux.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110729221230.GA3466@labbmf-linux.qualcomm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pádraig Brady wrote:
-...
-> `strace lsattr ...` shows it calls ioctl (...FS_IOC_GETFLAGS...)
-> So there would be overhead.
-> The output of ls is fairly constrained too for compat reasons.
+On Sat, Jul 30, 2011 at 06:12:31AM +0800, Larry Bassel wrote:
+> We want to handle the following 2 use cases we have on
+> some of our (ARM) platforms:
+> 
+> 1. A platform where part of the memory may be powered
+> off. The location and size of this memory is not known
+> until the kernel parses the memory tags (there aren't
+> any non-standard tags used, but the memory layout and
+> a memory bank size which is obtained from HW are used
+> to figure out where and how large this memory is). All
+> of this memory must either be on or off. For a given
+> configuration the location of this memory can't be moved.
+> 
+> 2. A (different) platform where part of the memory
+> is occasionally needed as a large physically contiguous 
+> block, but usually is not (and then should be usable
+> by the kernel as normal memory). When the memory is
+> needed for the contiguous block, the pages in this
+> range currently being used by the kernel will
+> need to be migrated out.
+> 
+> The size of this is known at compile time and can be
+> placed at any reasonable place in memory (but should
+> be SPARSEMEM section aligned -- its size may however
+> not be a power of 2 and thus this memory could
+> span more than one section). This memory will not be
+> powered off, but must either be completely used for
+> one purpose or the other.
+> 
+> The size of memory in question for #1 is generally
+> much larger than that of #2.
+> 
+> Memory hotplug/hotremove (logical and physical for #1,
+> only logical for #2) approximately solves these problems,
+> but there is some functionality we need that AFAIK is
+> not present:
+> 
+> * The memory in #1 and #2 above must be in a movable
+> zone so that the chance of migration is maximized.
+> I'm familiar with the kernelcore= and movablecore=
+> commandline options, but they don't do what is necessary
+> here, because we need control on where the movable zone
+> is formed as well as the size. Also the location and size
+> of these special memory areas is not known until the
+> kernel comes up (in #1 it is conceivable that the bootloader
+> could locate the memory that can be powered on and off and
+> pass it in via some commandline option, but AFAICT this won't
+> work at all for #2).
+> 
+> One could hack up find_zone_movable_pfns_for_nodes() presumably,
+> but I wonder if there is an already existing way of doing
+> this (or at least a clean extension to the current
+> functionality that someone might suggest).
+> 
+> Would CONFIG_ARCH_POPULATES_NODE_MAP help here? Does anyone
+> use this? It doesn't seem to be in any defconfig or Kconfig
+> on 3.0 (or earlier versions I've looked at).
+> 
+> Perhaps CMA (which is not merged yet and AFAIK still has some
+> issues on ARM) might handle #2 better than memory
+> hotplug/hotremove. Or is there a better way to handle #2
+> than either CMA or memory hotplug?
+is such memory always at the end of memory? if yes, such memory
+can be added to MOVABLE_ZONE.
+or if such memory can be at the middle of memory, maybe we can add
+a new mirgate type, the migrate type is movable but other type allocation
+can't fallback into.
 
-One way by which ls -l could inform us that a file has
-"attributes" like that would be via what POSIX calls the
-"optional alternate access method flag".  Currently,
-it can be a space, a "+", or a ".":
-
-Since coreutils-7.1 (Feb 2009), ls -l has been doing this:
-
-    ls -l now marks SELinux-only files with the less obtrusive '.',
-    rather than '+'.  A file with any other combination of MAC and ACL
-    is still marked with a '+'.
-
-Using other printable characters to denote attributes (trumping
-SELinux, MAC and ACL settings) is possible.  Does any other ls
-implementation already do that?  There would be the cost of the
-additional ioctl... we'd have to measure that before deciding
-whether to impose this on every use of ls -l.
-
-Another possibility is to further overload the file type decorations
-("*", "|", "="), that you see with -F.  Already, "*" is obviously
-not a type indicator, so adding more attributes is not shocking.
-
-> However these flags are not specific to ext2 so it would fit
-> quite well from that perspective.
-> It might be something we could add to the stat command at least?
-
-Yes, this definitely deserves a new stat format directive or two.
-At least one for each single-byte "attribute" described in chattr(1),
-and maybe another for a readable string so we don't have to look up
-the likes of "T" ("top" dir hint, for orlov block allocator) and
-"t" (no-tail-merge).
+Thanks,
+Shaohua
