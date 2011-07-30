@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab1G3UVf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 16:21:35 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65021 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404Ab1G3UV1 (ORCPT
+	id S1752825Ab1G3UgO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 16:36:14 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:52704 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752404Ab1G3UgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 16:21:27 -0400
+	Sat, 30 Jul 2011 16:36:09 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Subject: Re: [PATCH] uvcvideo: correct kernel version reference
+Date: Sat, 30 Jul 2011 22:36:12 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37-gentoo-r3; KDE/4.6.5; x86_64; ; )
+Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org,
+        jpiszcz@lucidpixels.com
+References: <alpine.DEB.2.02.1107301020220.4925@p34.internal.lan> <1312040850-21475-1-git-send-email-Gregory.Dietsche@cuw.edu>
+In-Reply-To: <1312040850-21475-1-git-send-email-Gregory.Dietsche@cuw.edu>
 MIME-Version: 1.0
-In-Reply-To: <CANqCtQ+VhmfpNZ8Oh_0MR+bZfAeBuowBsK9TyC5iA4B2oLpXfg@mail.gmail.com>
-References: <alpine.LFD.2.02.1107282213000.31246@ionos>
-	<CANqCtQ+VhmfpNZ8Oh_0MR+bZfAeBuowBsK9TyC5iA4B2oLpXfg@mail.gmail.com>
-Date: Sat, 30 Jul 2011 22:21:25 +0200
-X-Google-Sender-Auth: b2plKVHTIl-NqvYtBeOCvi4hKvA
-Message-ID: <CANqCtQLjy4Ez9D9yH9gJ_h026ThEWOYeQGrosOrSAMsnvx5HPg@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.0-rt6
-From: Remy Bohmer <linux@bohmer.net>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107302236.13354.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Greg,
 
-2011/7/30 Remy Bohmer <linux@bohmer.net>:
->> Please keep on testing and sending patches. Peter Zijlstra kindly
->> volunteered to cover for me. He'll pick up stuff and eventually push
->> out releases when a reasonable number of sane patches hits his inbox.
->
-> I got rt5 booting yesterday on a ARM core (Atmel AT91):
-> * LCD driver broken, booting stops during initialising driver (seems
-> to be broken in mainstream too)
+Thanks for the patch.
 
-Still need to debug this one.
+On Saturday 30 July 2011 17:47:30 Greg Dietsche wrote:
+> change from v2.6.42 to v3.2
 
-> * Strange issue with finding files in a directory. (currently checking
-> if it is RT-patch related.)
+This patch would be queued for v3.2. As the code it fixes will go away at the 
+same time, it would be pretty pointless to apply it :-) Thanks for warning me 
+though.
 
-It seems that the busybox (v1.17.1) mount for loopback devices is
-broken on linux-3.0. The util-linux-ng mount still works.
-This is NOT a RT-patch issue.
+> Reported-by: Justin Piszcz <jpiszcz@lucidpixels.com>
+> Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+> ---
+>  drivers/media/video/uvc/uvc_v4l2.c |    2 +-
+>  drivers/media/video/uvc/uvcvideo.h |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/media/video/uvc/uvc_v4l2.c
+> b/drivers/media/video/uvc/uvc_v4l2.c index ea71d5f..6d6e3f9 100644
+> --- a/drivers/media/video/uvc/uvc_v4l2.c
+> +++ b/drivers/media/video/uvc/uvc_v4l2.c
+> @@ -546,7 +546,7 @@ static void uvc_v4l2_ioctl_warn(void)
+>  		return;
+> 
+>  	uvc_printk(KERN_INFO, "Deprecated UVCIOC_CTRL_{ADD,MAP_OLD,GET,SET} "
+> -		   "ioctls will be removed in 2.6.42.\n");
+> +		   "ioctls will be removed in 3.2.\n");
+>  	uvc_printk(KERN_INFO, "See http://www.ideasonboard.org/uvc/upgrade/ "
+>  		   "for upgrade instructions.\n");
+>  	warned = 1;
+> diff --git a/drivers/media/video/uvc/uvcvideo.h
+> b/drivers/media/video/uvc/uvcvideo.h index df32a43..4419c34 100644
+> --- a/drivers/media/video/uvc/uvcvideo.h
+> +++ b/drivers/media/video/uvc/uvcvideo.h
+> @@ -7,7 +7,7 @@
+>  #ifndef __KERNEL__
+>  /*
+>   * This header provides binary compatibility with applications using the
+> private - * uvcvideo API. This API is deprecated and will be removed in
+> 2.6.42. + * uvcvideo API. This API is deprecated and will be removed in
+> 3.2. * Applications should be recompiled against the public
+> linux/uvcvideo.h header. */
+>  #warn "The uvcvideo.h header is deprecated, use linux/uvcvideo.h instead."
 
-> * Furthermore, the board feels slow... Can be perception only, need to
-> check it out...
+-- 
+Regards,
 
-This seems to be caused by the fact that the IRQ-thread of the
-ttyS0/dbgu usart is running in thread context now.
-Previously it was shared with the timer interrupt and as such running
-in hard-irq context. It therefor felt faster.
-The debug usart now frequently misses some characters, since it only
-has a 1 byte 'fifo' and the interrupt handler thread cannot keep up
-with the 115200 baudrate on this board. (at91sam9261ek). The
-atmel-serial driver needs an update to use threaded interrupts, and
-read the fifo in hard-irq context. Maybe I pick this one up as well.
-
-> * The patch (http://www.spinics.net/lists/arm-kernel/msg45022.html)
-> that solved the problem at https://lkml.org/lkml/2007/11/26/73 is no
-> longer part of the RT-patch. I Need to test if it is still needed...
-
-Not tested yet.
-
-Furthermore, I built a patch to add a sched_clock implementation for
-the TC-based clocksource driver since the default jiffies based
-sched_clock stopped running for some reason during boot. (jiffies do
-not seem to be properly updated)
-This patch conflicts with the RT-patch since the RT-patch touches the
-same files. Should it go to mainline directly, or go via the RT-tree
-first? (I will post the patch tomorrow)
-
-Kind regards,
-
-Remy
+Laurent Pinchart
