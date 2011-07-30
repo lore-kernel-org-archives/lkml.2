@@ -1,100 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797Ab1G3JbI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 05:31:08 -0400
-Received: from mga14.intel.com ([143.182.124.37]:55954 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649Ab1G3Ja6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 05:30:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,291,1309762800"; 
-   d="scan'208";a="33259599"
-Date: Sat, 30 Jul 2011 17:30:55 +0800
-From: Shaohua Li <shaohua.li@intel.com>
-To: Larry Bassel <lbassel@codeaurora.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: questions about memory hotplug
-Message-ID: <20110730093055.GA10672@sli10-conroe.sh.intel.com>
-References: <20110729221230.GA3466@labbmf-linux.qualcomm.com>
+	id S1751563Ab1G3Jax (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 05:30:53 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:46718 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816Ab1G3Jav (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 05:30:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110729221230.GA3466@labbmf-linux.qualcomm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1311732839.10646.132.camel@haakon2.linux-iscsi.org>
+References: <1311732839.10646.132.camel@haakon2.linux-iscsi.org>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Sat, 30 Jul 2011 11:30:30 +0200
+X-Google-Sender-Auth: vu82vocx__wGuotMObpmJpzACQ4
+Message-ID: <CAO+b5-okX7BTMyf832g3uP0ghr9MMd-hNz4AVj2An8eVDMHE1Q@mail.gmail.com>
+Subject: Re: [GIT PULL-v2] iscsi-target merge for v3.1-rc1
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 30, 2011 at 06:12:31AM +0800, Larry Bassel wrote:
-> We want to handle the following 2 use cases we have on
-> some of our (ARM) platforms:
-> 
-> 1. A platform where part of the memory may be powered
-> off. The location and size of this memory is not known
-> until the kernel parses the memory tags (there aren't
-> any non-standard tags used, but the memory layout and
-> a memory bank size which is obtained from HW are used
-> to figure out where and how large this memory is). All
-> of this memory must either be on or off. For a given
-> configuration the location of this memory can't be moved.
-> 
-> 2. A (different) platform where part of the memory
-> is occasionally needed as a large physically contiguous 
-> block, but usually is not (and then should be usable
-> by the kernel as normal memory). When the memory is
-> needed for the contiguous block, the pages in this
-> range currently being used by the kernel will
-> need to be migrated out.
-> 
-> The size of this is known at compile time and can be
-> placed at any reasonable place in memory (but should
-> be SPARSEMEM section aligned -- its size may however
-> not be a power of 2 and thus this memory could
-> span more than one section). This memory will not be
-> powered off, but must either be completely used for
-> one purpose or the other.
-> 
-> The size of memory in question for #1 is generally
-> much larger than that of #2.
-> 
-> Memory hotplug/hotremove (logical and physical for #1,
-> only logical for #2) approximately solves these problems,
-> but there is some functionality we need that AFAIK is
-> not present:
-> 
-> * The memory in #1 and #2 above must be in a movable
-> zone so that the chance of migration is maximized.
-> I'm familiar with the kernelcore= and movablecore=
-> commandline options, but they don't do what is necessary
-> here, because we need control on where the movable zone
-> is formed as well as the size. Also the location and size
-> of these special memory areas is not known until the
-> kernel comes up (in #1 it is conceivable that the bootloader
-> could locate the memory that can be powered on and off and
-> pass it in via some commandline option, but AFAICT this won't
-> work at all for #2).
-> 
-> One could hack up find_zone_movable_pfns_for_nodes() presumably,
-> but I wonder if there is an already existing way of doing
-> this (or at least a clean extension to the current
-> functionality that someone might suggest).
-> 
-> Would CONFIG_ARCH_POPULATES_NODE_MAP help here? Does anyone
-> use this? It doesn't seem to be in any defconfig or Kconfig
-> on 3.0 (or earlier versions I've looked at).
-> 
-> Perhaps CMA (which is not merged yet and AFAIK still has some
-> issues on ARM) might handle #2 better than memory
-> hotplug/hotremove. Or is there a better way to handle #2
-> than either CMA or memory hotplug?
-is such memory always at the end of memory? if yes, such memory
-can be added to MOVABLE_ZONE.
-or if such memory can be at the middle of memory, maybe we can add
-a new mirgate type, the migrate type is movable but other type allocation
-can't fallback into.
+On Wed, Jul 27, 2011 at 4:13 AM, Nicholas A. Bellinger
+<nab@linux-iscsi.org> wrote:
+> Here is an updated pull request for an initial v3.1-rc1 merge of
+> iscsi_target including the updates to address some recent build breakage
+> with iscsi_proto.h in linux-next, and minor build warnings on 32-bit.
 
-Thanks,
-Shaohua
+Hi Linus, Andrew and James,
+
+There is a tradition in the Linux kernel community of only accepting
+kernel code upstream after all major outstanding issues have been
+resolved. Something that I consider as a major outstanding issue and
+that does not only affect the iSCSI target code but also the target
+core is that support for hot-pluggable HCAs is missing. This is
+something I have reported more than once in the past -- see e.g.
+http://www.spinics.net/lists/linux-scsi/msg50248.html. As far as I
+know nobody is working on this. So I'm wondering whether that has
+perhaps been overlooked when the iSCSI target code was pulled ?
+
+Bart.
