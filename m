@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab1G3HV0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 03:21:26 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:55896 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752715Ab1G3HVY (ORCPT
+	id S1753350Ab1G3HnB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 03:43:01 -0400
+Received: from smtp.flash.net.br ([201.46.240.48]:41526 "EHLO
+	smtp.gru.flash.tv.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204Ab1G3Hm6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 03:21:24 -0400
-Message-ID: <4E33B1EC.9030004@gmail.com>
-Date: Sat, 30 Jul 2011 15:25:32 +0800
-From: Coly Li <colyli@gmail.com>
-Reply-To: colyli@gmail.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; zh-CN; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Darrick J. Wong" <djwong@us.ibm.com>,
-        Andreas Dilger <aedilger@gmail.com>, Mingming Cao <cmm@us.ibm.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] Add inode checksum support to ext4
-References: <20110406224410.GB24354@tux1.beaverton.ibm.com> <1302290868.4461.7.camel@mingming-laptop> <20110727082730.GG20655@tux1.beaverton.ibm.com> <EF1F2330-D8C4-427A-ABB9-D1E607D91A3D@gmail.com> <20110728165615.GI20655@tux1.beaverton.ibm.com> <20110728220735.GA27253@noexit.corp.google.com> <0E795C1D-AD1E-4CC4-9426-2B58D98B14DC@dilger.ca> <20110729131937.GB5910@noexit.corp.google.com>
-In-Reply-To: <20110729131937.GB5910@noexit.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:coly.li} {sentby:smtp auth 123.122.104.166 authed with i@coly.li}
+	Sat, 30 Jul 2011 03:42:58 -0400
+In-Reply-To: <CAPM=9txTVVxvv85kcZqBVjmpVK1zsAvVarLv1Sm7viwfF+ZYyA@mail.gmail.com>
+References: <20110724130336.GA2116@ime.usp.br> <CAPM=9txTVVxvv85kcZqBVjmpVK1zsAvVarLv1Sm7viwfF+ZYyA@mail.gmail.com>
+Mime-Version: 1.0 (Apple Message framework v753.1)
+Content-Type: text/plain; charset=ISO-8859-1; delsp=yes; format=flowed
+Message-Id: <67AE5A41-F50F-4616-B9E1-437CAD9379D3@ime.usp.br>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Rog=E9rio_Theodoro_de_Brito?= <rbrito@gmail.com>
+Content-Transfer-Encoding: 8BIT
+From: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+Subject: Re: [REGRESSION] [BISECTED] Unable to use 3D with Radeon 2100 and UI freezes with Firefox
+Date: Sat, 30 Jul 2011 04:42:52 -0300
+To: Dave Airlie <airlied@gmail.com>
+X-Mailer: Apple Mail (2.753.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011å¹´07æœˆ29æ—¥ 21:19, Joel Becker Wrote:
-> On Fri, Jul 29, 2011 at 03:48:45AM -0600, Andreas Dilger wrote:
->> On 2011-07-28, at 4:07 PM, Joel Becker wrote:
->>> 	We use ethernet crc32 in ocfs2.  btrfs uses crc32c.  Frankly, I
->>> could have used crc32c if I'd really thought about the hardware
->>> acceleration benefits.  I think it's a good idea for ext4.
->>
->> The problem with crc32[c] is that if you don't have hardware acceleration
->> it is terribly slow.
-> 
-> 	We find ethernet crc32 just fine in ocfs2.  I use the kernel's
-> implementation, which survives everyone's network traffic, and of course
-> we added the triggers to jbd2 so we only have to do the calculations on
-> read and write.
-> 
+Hi once again, but things are not good with any kernel past the  
+reworked IRQ stuff.
 
-Ext4 supports non-journal mode, and there are a few users (Google, Taobao, etc.).
-A trigger of jbd2 may not work well for non-journal Ext4 ...
+On 2011-07-25, at 05:08, Dave Airlie wrote:
 
-And in non-journal mode, there is not copy of any meta data block in jbd2, we need to be
-more careful in check summing, e.g. inode/block bitmap blocks...
+> 2011/7/24 Rogério Brito <rbrito@ime.usp.br>:
+>> After experiencing problems with many post 2.6.38 kernels with X  
+>> when I used
+>> Firefox to see any webpage that used some of the new HTML5  
+>> features (Firefox
+>> freeze completely X and I could only log in remotely with SSH), I  
+>> took some
+>> time to see where things went wrong and, to cut a long story short, I
+>> bisected the kernel and I found that a commit of yours was the  
+>> first one
+>> that introduced a problem with my system:
+>
+> Can you attach /proc/interrupts as well please.
+
+It seems that the radeon thing is just one of the manifestations of  
+the problem.
+
+Today, I noticed another bad symptom, when I accidentally booted with  
+kernel 3.0 (I have many kernels in GRUB2): I printed a LaTeX document  
+with only 2 pages of pure text.  My printer is an inkjet printer  
+connected via USB to my computer and it took about 6 minutes to print  
+those 2 pages. The printer head moved printing something, then it  
+paused a bit, then it printed some more, then it paused some more etc.
+
+I just rebooted with 2.6.38 and the very same document was printed  
+in, like, 15 seconds...
+
+So, is there anything that I could do to rectify this situation? I  
+can give you loads of dumps from here, as long as you tell me what  
+would be useful.
 
 
->> Yes, it makes sense to just put a "fake" dirent at the end of the leaf block,
->> or similar.  I don't think it is necessary to modify existing directories or
->> extent blocks to add these structures in, if there is no room, but for new
->> blocks, or blocks with space it is enough.
-> 
-> 	We have tunefs.ocfs2 code to adjust existing directories to add
-> the trailer.  It's not too bad, really.
+Thanks,
 
-Agree, enable/disable the trailer isn't that difficult. We need more eyes to take care the user space tools.
+-- 
+Rogério Brito : rbrito@{ime.usp.br,gmail.com} : GPG key 4096R/BCFCAAAA
+http://rb.doesntexist.org : Packages for LaTeX : algorithms.berlios.de
+DebianQA: http://qa.debian.org/developer.php?login=rbrito%40ime.usp.br
 
-Coly
+
+
