@@ -1,37 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab1G3GGB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 02:06:01 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48267 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750923Ab1G3GF6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 02:05:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <4e32f13721205e7dbe@agluck-desktop.sc.intel.com>
-References: <4e32f13721205e7dbe@agluck-desktop.sc.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 29 Jul 2011 23:05:36 -0700
-Message-ID: <CA+55aFwHDzqjsuBPAEecpxXiaBSLfDHjhrOUwPKWoG5LANq8CA@mail.gmail.com>
-Subject: Re: [git pull] pstore + ia64 changes
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1753262Ab1G3GGf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 02:06:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40865 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750923Ab1G3GGa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 02:06:30 -0400
+Date: Sat, 30 Jul 2011 16:06:10 +1000
+From: NeilBrown <neilb@suse.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Greg Banks <gnb@fastmail.fm>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH] sunrpc: use better NUMA affinities
+Message-ID: <20110730160610.0b751ffd@notabene.brown>
+In-Reply-To: <1311998914.2873.27.camel@edumazet-laptop>
+References: <1311921035.7845.10.camel@edumazet-laptop>
+	<4E3258E1.6020000@fastmail.fm>
+	<20110729103634.GA12050@infradead.org>
+	<5933F48C-49D6-492D-AB7B-B76A3ADDB6C6@fastmail.fm>
+	<1311941491.2843.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<F67B6E82-9FA8-464E-B3FB-DC0D4EC18BB0@fastmail.fm>
+	<20110729164836.GL23194@fieldses.org>
+	<20110729165345.GM23194@fieldses.org>
+	<F562C6F4-3FC2-4952-A903-8E87E9EF2D9D@fastmail.fm>
+	<20110730093025.716f3f50@notabene.brown>
+	<20110729234857.GA30941@fieldses.org>
+	<1311998914.2873.27.camel@edumazet-laptop>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 10:43 AM, Luck, Tony <tony.luck@intel.com> wrote:
->
-> please pull from:
->
->        git://git.kernel.org/pub/scm/linux/kernel/git/aegl/linux-2.6.git release
->
-> This will update the files shown below.
+On Sat, 30 Jul 2011 06:08:34 +0200 Eric Dumazet <eric.dumazet@gmail.com>
+wrote:
 
-Is there any reason why ia64 changes are in the same branch as pstore?
+> Le vendredi 29 juillet 2011 à 19:48 -0400, J. Bruce Fields a écrit :
+> > On Sat, Jul 30, 2011 at 09:30:25AM +1000, NeilBrown wrote:
+> > > 
+> > > rpc.nfsd 0
+> > > 
+> > > will stop all nfsd threads.  Follow with
+> > > 
+> > >   exportfs -f
+> > > 
+> > > and you should be done.  I'm not 100% sure about the nfsv4 thread though -
+> > > would need to check.
+> > 
+> > Should be fine.
+> > 
+> 
+> What are the needed steps to be able to unload nfsd module ?
+> 
+> So far, I am unable to perform this without using -f option.
+> 
+> 
+> 
+> 
 
-It seems totally illogical, and against all the normal "topic branch" rules.
+Kill all nfsd threads.
+   This can be done with 'kill' or 'rpc.nfsd 0' or
+     echo 0 > /proc/fs/nfsd/threads
 
-       Linus
+kill mountd
+   killall rpc.mountd
+
+kill idmapd
+
+unexport everything.
+   This can be done with 'exportfs -f' and checked by
+    grep . /proc/net/rpc/*/content
+   this should only contain comments
+
+unmount the 'nfsd' filesystem
+   umount /proc/fs/nfsd
+
+rmmod nfsd
+
+
+(it look me ages to remember idmapd - but 
+   lsof /proc/net/rpc/*/*
+ gave it away)
+
+NeilBrown
