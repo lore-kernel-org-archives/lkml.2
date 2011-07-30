@@ -1,139 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab1G3TNr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 15:13:47 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61130 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752724Ab1G3TNm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 15:13:42 -0400
-Subject: [PATCH 3/3] loop: add BLK_DEV_LOOP_MIN_COUNT=%i to allow distros 0
- pre-allocated loop devices
-From: Kay Sievers <kay.sievers@vrfy.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Sat, 30 Jul 2011 21:13:38 +0200
+	id S1752790Ab1G3TOF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 15:14:05 -0400
+Received: from waste.org ([173.11.57.241]:56346 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752691Ab1G3TN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 15:13:58 -0400
+Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
+From: Matt Mackall <mpm@selenic.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jeff Garzik <jgarzik@pobox.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CA+55aFyhdSADSuc2Honu0HG4zLQ7JtovsiTonfA=Cu70jqrFRQ@mail.gmail.com>
+References: <1311971867-25124-1-git-send-email-hpa@linux.intel.com>
+	 <1311971867-25124-2-git-send-email-hpa@linux.intel.com>
+	 <1311974171.20898.393.camel@calx>
+	 <CA+55aFwMGwVsD1Gexahio2pWd0PpaHAbvFroB3w0=JOQf1zQ_A@mail.gmail.com>
+	 <1312047959.20898.489.camel@calx>
+	 <CA+55aFyhdSADSuc2Honu0HG4zLQ7JtovsiTonfA=Cu70jqrFRQ@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.4 (3.1.4-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1312053220.1187.14.camel@mop>
+Date: Sat, 30 Jul 2011 14:13:54 -0500
+Message-ID: <1312053234.20898.521.camel@calx>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kay Sievers <kay.sievers@vrfy.org>
-Subject: loop: add BLK_DEV_LOOP_MIN_COUNT=%i to allow distros 0 pre-allocated loop devices
+On Sat, 2011-07-30 at 08:20 -1000, Linus Torvalds wrote:
+> On Sat, Jul 30, 2011 at 7:45 AM, Matt Mackall <mpm@selenic.com> wrote:
+> >
+> > Did you even look at these patches?
+> 
+> Umm. My exact point about the email was that we should if anything
+> change Peter's patch *away* from some kind of abstracted driver
+> interface.
 
-Instead of unconditionally creating a fixed number of dead loop
-devices which need to be investigated by storage handling services,
-even when they are never used, we allow distros start with 0
-loop devices and have losetup(8) and similar switch to the dynamic
-/dev/loop-control interface instead of searching /dev/loop%i for free
-devices.
+Well then rather than saying my NAK doesn't matter, you should say you
+also NAK it.
 
-Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
----
- Documentation/kernel-parameters.txt |    9 ++++++---
- drivers/block/Kconfig               |   15 +++++++++++++++
- drivers/block/loop.c                |   27 ++++++++++-----------------
- 3 files changed, 31 insertions(+), 20 deletions(-)
+>  But that was what you were arguing for, and that was what I
+> was dismissing.
 
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1340,9 +1340,12 @@ bytes respectively. Such letter suffixes
- 			it is equivalent to "nosmp", which also disables
- 			the IO APIC.
- 
--	max_loop=	[LOOP] Maximum number of loopback devices that can
--			be mounted
--			Format: <1-256>
-+	max_loop=	[LOOP] The number of loop block devices that get
-+	(loop.max_loop)	unconditionally pre-created at init time. The default
-+			number is configured by BLK_DEV_LOOP_MIN_COUNT. Instead
-+			of statically allocating a predefined number, loop
-+			devices can be requested on-demand with the
-+			/dev/loop-control interface.
- 
- 	mcatest=	[IA-64]
- 
---- a/drivers/block/Kconfig
-+++ b/drivers/block/Kconfig
-@@ -256,6 +256,21 @@ config BLK_DEV_LOOP
- 
- 	  Most users will answer N here.
- 
-+config BLK_DEV_LOOP_MIN_COUNT
-+	int "Number of loop devices to pre-create at init time"
-+	depends on BLK_DEV_LOOP
-+	default 8
-+	help
-+	  Static number of loop devices to be unconditionally pre-created
-+	  at init time.
-+
-+	  This default value can be overwritten on the kernel command
-+	  line or with module-parameter loop.max_loop.
-+
-+	  The historic default is 8. If a late 2011 version of losetup(8)
-+	  is used, it can be set to 0, since needed loop devices can be
-+	  dynamically allocated with the /dev/loop-control interface.
-+
- config BLK_DEV_CRYPTOLOOP
- 	tristate "Cryptoloop Support"
- 	select CRYPTO
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1793,21 +1793,6 @@ static int __init loop_init(void)
- 	struct loop_device *lo;
- 	int err;
- 
--	/*
--	 * loop module now has a feature to instantiate underlying device
--	 * structure on-demand, provided that there is an access dev node.
--	 * However, this will not work well with user space tool that doesn't
--	 * know about such "feature".  In order to not break any existing
--	 * tool, we do the following:
--	 *
--	 * (1) if max_loop is specified, create that many upfront, and this
--	 *     also becomes a hard limit.
--	 * (2) if max_loop is not specified, create 8 loop device on module
--	 *     load, user can further extend loop device by create dev node
--	 *     themselves and have kernel automatically instantiate actual
--	 *     device on-demand.
--	 */
--
- 	err = misc_register(&loop_misc);
- 	if (err < 0)
- 		return err;
-@@ -1833,11 +1818,19 @@ static int __init loop_init(void)
- 	if (max_loop > 1UL << (MINORBITS - part_shift))
- 		return -EINVAL;
- 
-+	/*
-+	 * If max_loop is specified, create that many devices upfront.
-+	 * This also becomes a hard limit. If max_loop is not specified,
-+	 * create CONFIG_BLK_DEV_LOOP_MIN_COUNT loop devices at module
-+	 * init time. Loop devices can be requested on-demand with the
-+	 * /dev/loop-control interface, or be instantiated by accessing
-+	 * a 'dead' device node.
-+	 */
- 	if (max_loop) {
- 		nr = max_loop;
- 		range = max_loop << part_shift;
- 	} else {
--		nr = 8;
-+		nr = CONFIG_BLK_DEV_LOOP_MIN_COUNT;
- 		range = 1UL << MINORBITS;
- 	}
- 
-@@ -1847,7 +1840,7 @@ static int __init loop_init(void)
- 	blk_register_region(MKDEV(LOOP_MAJOR, 0), range,
- 				  THIS_MODULE, loop_probe, NULL, NULL);
- 
--	/* pre-create number devices of devices given by config or max_loop */
-+	/* pre-create number of devices given by config or max_loop */
- 	mutex_lock(&loop_index_mutex);
- 	for (i = 0; i < nr; i++)
- 		loop_add(&lo, i);
+Is there a reason you think making RDRAND available to userspace as a
+HWRNG is a bad idea? Is there a reason it's not the most obviously
+correct, least controversial first step to supporting this hardware?
+
+No, there's not. Which is why I asked Peter to do this weeks ago.
+
+> So when you argue for not taking the patches because you want a
+> generic interface, I tell you that the argument is bogus.
+
+It will only be bogus when Peter shows up with a patch that doesn't
+touch /dev/urandom, which IS a generic interface.
+
+> Now, if you now argue that we should make it closer, and not take
+> Peter's patches for *that* reason, then I'd be in whole-hearted
+> agreement with you.
+
+There are two sets of possible consumers here, in-kernel and userspace.
+Peter's patches are aimed squarely at the latter but you seem to be
+talking exclusively about in-kernel users.
+
+This is a lot like RDTSC. Sure, it makes sense to have an in-kernel
+inline for this. I've even suggested a name. But when it comes to
+gettimeofday(), we're going to insist on using a clocksource and we're
+going to insist that it meets all the guarantees that gettimeofday()
+normally makes.
+
+-- 
+Mathematics is the supreme nostalgia of our time.
 
 
