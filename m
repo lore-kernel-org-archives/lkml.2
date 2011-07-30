@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908Ab1G3PZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 11:25:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26723 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751419Ab1G3PZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 11:25:22 -0400
-Date: Sat, 30 Jul 2011 17:22:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Matt Fleming <matt.fleming@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Andrey Vagin <avagin@openvz.org>,
-        Frantisek Hrbata <fhrbata@redhat.com>, Ying Han <yinghan@google.com>
-Subject: mm->oom_disable_count is broken
-Message-ID: <20110730152238.GA17424@redhat.com>
-References: <20110727163159.GA23785@redhat.com> <20110727163610.GJ23793@redhat.com> <20110727175624.GA3950@redhat.com> <20110728154324.GA22864@redhat.com> <alpine.DEB.2.00.1107281341060.16093@chino.kir.corp.google.com> <20110729141431.GA3501@redhat.com> <20110730143426.GA6061@redhat.com>
+	id S1752000Ab1G3Pbz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 11:31:55 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47204 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419Ab1G3Pbw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 11:31:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110730143426.GA6061@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Sat, 30 Jul 2011 17:31:51 +0200
+Message-ID: <CAKWSe6B3hWt4ANpgoS4dRUZPju0Abey9y3DORVFqGYgMeF=gQA@mail.gmail.com>
+Subject: warn_slowpath_common WARNING on boot since 3.0.0-git7
+From: Alessandro Suardi <alessandro.suardi@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30, Oleg Nesterov wrote:
->
-> So I'd suggest this hack^Wpatch as a quick fix. I still think this
-> code is not right, but the patch tries to keep the current logic.
+F15 x86_64, still present in 3.0.0-git11; didn't report it earlier as I
+ thought it'd be squashed sooner... probably it's not as common
+ as I thought it'd be:
 
-And this reminds me. mm->oom_disable_count looks absolutely broken.
-IIRC, I already complained but nobody replied.
+Jul 27 18:46:18 duff kernel: WARNING: at fs/proc/base.c:1123
+oom_adjust_write+0x185/0x23c()
+Jul 27 18:46:18 duff kernel: Hardware name: Latitude E6400
+Jul 27 18:46:18 duff kernel: sshd (3245): /proc/3245/oom_adj is
+deprecated, please use /proc/3245/oom_score_adj instead.
+Jul 27 18:46:18 duff kernel: Modules linked in: sunrpc rfcomm bnep
+ip6t_REJECT nf_conntrack_ipv6 ipt_REJECT nf_defrag_ipv6
+nf_conntrack_ipv4 ip6table_filter nf_defrag_ipv4 ip6_tables xt_state
+nf_conntrack iptable_filter ip_tables snd_hda_codec_hdmi
+snd_hda_codec_idt snd_hda_intel snd_hda_codec aes_x86_64 aes_generic
+ecb snd_hwdep btusb snd_seq snd_seq_device bluetooth snd_pcm
+dell_laptop snd_timer snd i2c_i801 rfkill microcode pcspkr joydev
+soundcore snd_page_alloc dcdbas ipv6 autofs4 ext4 jbd2 crc16 sdhci_pci
+firewire_ohci sdhci firewire_core crc_itu_t mmc_core i915
+drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded:
+scsi_wait_scan]
+Jul 27 18:46:18 duff kernel: Pid: 3245, comm: sshd Not tainted 3.0.0-git7 #6
+Jul 27 18:46:18 duff kernel: Call Trace:
+Jul 27 18:46:18 duff kernel: [<ffffffff8103774c>] warn_slowpath_common+0x7e/0x96
+Jul 27 18:46:18 duff kernel: [<ffffffff810377f8>] warn_slowpath_fmt+0x41/0x43
+Jul 27 18:46:18 duff kernel: [<ffffffff810408f4>] ? ns_capable+0x35/0x4a
+Jul 27 18:46:18 duff kernel: [<ffffffff81129fb8>] oom_adjust_write+0x185/0x23c
+Jul 27 18:46:18 duff kernel: [<ffffffff810e0736>] vfs_write+0xa3/0xca
+Jul 27 18:46:18 duff kernel: [<ffffffff8109176f>] ?
+trace_hardirqs_on_caller+0xe/0x22
+Jul 27 18:46:18 duff kernel: [<ffffffff810e08d2>] sys_write+0x45/0x69
+Jul 27 18:46:18 duff kernel: [<ffffffff813752fb>] system_call_fastpath+0x16/0x1b
 
-What does this counter mean?
+--alessandro
 
-	/* How many tasks sharing this mm are OOM_DISABLE */
-	atomic_t oom_disable_count;
+ "There's always a siren singing you to shipwreck"
 
-tasks? processes or threads?
-
-Lets look at oom_adjust_write(),
-
-		if (task->signal->oom_adj == OOM_DISABLE)
-			atomic_inc(&task->mm->oom_disable_count);
-
-OK, so it is per-process. No matter how many threads this process
-has, mm->oom_disable_count becomes 1 (ignoring CLONE_VM).
-
-
-However, exit_mm() does:
-
-	if (tsk->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
-		atomic_dec(&mm->oom_disable_count);
-
-but this is per-thread! it becomes zero and then negative after
-pthread_exit().
-
-
-copy_process()->copy_mm() seems to think it is per-thread too. But,
-bad_fork_cleanup_mm:
-
-	if (p->mm) {
-		task_lock(p);
-		if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
-			atomic_dec(&p->mm->oom_disable_count);
-		task_unlock(p);
-		mmput(p->mm);
-	}
-
-Why do we take task_lock() ? OK, oom_score_adj_write() does task_lock()
-too, but this can't help in the multithreaded case? Why copy_mm() checks
-->oom_score_adj lockless?
-
-Oleg.
-
+   (Radiohead, "There There")
