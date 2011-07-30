@@ -1,49 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab1G3SVO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 14:21:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47959 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752333Ab1G3SVK (ORCPT
+	id S1752532Ab1G3S03 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 14:26:29 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:60057 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386Ab1G3S0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 14:21:10 -0400
+	Sat, 30 Jul 2011 14:26:22 -0400
+Date: Sat, 30 Jul 2011 14:26:18 -0400
+From: Nelson Elhage <nelhage@ksplice.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: recursive locking: epoll.
+Message-ID: <20110730182613.GA15151@ksplice.com>
+References: <4E1FF63F.4040704@gmail.com>
+ <20110715210420.GA22551@redhat.com>
+ <1311249346.2098.12.camel@t41.thuisdomein>
+ <1311965462.2351.28.camel@t41.thuisdomein>
 MIME-Version: 1.0
-In-Reply-To: <1312047959.20898.489.camel@calx>
-References: <1311971867-25124-1-git-send-email-hpa@linux.intel.com>
- <1311971867-25124-2-git-send-email-hpa@linux.intel.com> <1311974171.20898.393.camel@calx>
- <CA+55aFwMGwVsD1Gexahio2pWd0PpaHAbvFroB3w0=JOQf1zQ_A@mail.gmail.com> <1312047959.20898.489.camel@calx>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 30 Jul 2011 08:20:36 -1000
-Message-ID: <CA+55aFyhdSADSuc2Honu0HG4zLQ7JtovsiTonfA=Cu70jqrFRQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
-To: Matt Mackall <mpm@selenic.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jeff Garzik <jgarzik@pobox.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311965462.2351.28.camel@t41.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 30, 2011 at 7:45 AM, Matt Mackall <mpm@selenic.com> wrote:
->
-> Did you even look at these patches?
+Oof, this is kinda ugly.
 
-Umm. My exact point about the email was that we should if anything
-change Peter's patch *away* from some kind of abstracted driver
-interface. But that was what you were arguing for, and that was what I
-was dismissing.
+I *believe* that as of
 
-So when you argue for not taking the patches because you want a
-generic interface, I tell you that the argument is bogus.
+ 22bacca4 epoll: prevent creating circular epoll structures
 
-Now, if you now argue that we should make it closer, and not take
-Peter's patches for *that* reason, then I'd be in whole-hearted
-agreement with you.
+the epoll locking is correct, with the rule that two ep->mtx's can be
+locked recursively iff ep1 contains ep2 (possibly indirectly), and
+that if ep1 contains ep2, ep1 will always be locked first. Since
+22bacca4 eliminated the possibility of epoll cycles, this means there
+is a well-defined lock order.
 
-Which way is it?
+I *think* that for any static configuration of epoll file descriptors,
+we can fix the problem by doing something like using the "call_nests"
+parameter passed by ep_call_nested as the lock subkey, but I haven't
+thought this through completely.
 
-                Linus
+However, since that lock order is subject to change, and even
+reversal, at runtime, I think the following (pathological) sequence of
+userspace calls will trigger lockdep warnings, even though there is
+never any risk of deadlock:
+
+ - Create epoll fds ep1 and ep2
+ - Add ep1 to ep2
+ - Do some operations that result in recursive locking
+ - Remove ep1 from ep2
+ - Add ep2 to ep1
+ - Do some operations that result in recursive locking
+
+In fact, that program should trigger warnings even if we did the
+pathological thing of using the address of the 'struct eventpoll' as
+the subclass [1], since it is *literally the same two locks* that are
+getting acquired in different orders at different times.
+
+I also don't see a way to simplify the epoll locking without adding
+more restrictions to how the API can be used. As far as I can tell,
+the situation really is just that nasty.
+
+- Nelson
+
+[1] Never mind that the "subclass" is an unsigned int, so we can't
+    even do that directly on 64-bit systems.
+
+On Fri, Jul 29, 2011 at 08:50:55PM +0200, Paul Bolle wrote:
+> (Sent to the addresses get_maintainer.pl suggested and to Davide and
+> Nelson, because this is about code they cared about half a year ago.
+> CC'ed to the addresses involved until now.)
+> 
+> On Thu, 2011-07-21 at 13:55 +0200, Paul Bolle wrote:
+> > That number turned out to be 722472
+> > ( https://bugzilla.redhat.com/show_bug.cgi?id=722472 ).
+> 
+> 0) This seems to be a lockdep false alarm. The cause is an epoll
+> instance added to another epoll instance (ie, nesting epoll instances).
+> Apparently lockdep isn't supplied enough information to determine what's
+> going on here. Now there might be a number of ways to fix this. But
+> after having looked at this for quite some time and updating the above
+> bug report a number of times, I guessed that involving people outside
+> those tracking that report might move things forward towards a solution.
+> At least, I wasn't able to find a, well, clean solution.
+> 
+> 1) The call chain triggering the warning with the nice
+>     *** DEADLOCK ***
+> 
+> line can be summarized like this:
+> 
+> sys_epoll_ctl
+>     mutex_lock                          epmutex
+>     ep_call_nested
+>         ep_loop_check_proc
+>             mutex_lock                      ep->mtx
+>             mutex_unlock                    ep->mtx
+>     mutex_lock                              ep->mtx
+>     ep_eventpoll_poll
+>         ep_ptable_queue_proc
+>         ep_call_nested
+>             ep_poll_readyevents_pro
+>                 ep_scan_ready_list
+>                     mutex_lock                  ep->mtx
+>                     ep_read_events_proc
+>                     mutex_unlock                ep->mtx
+>     mutex_unlock                            ep->mtx
+>     mutex_unlock                        epmutex
+> 
+> 2) When ep_scan_ready_list() calls mutex_lock(), lockdep notices
+> recursive locking on ep->mtx. It is not supplied enough information to
+> determine that the lock is related to two separate epoll instances (the
+> outer instance and the nested instance). The solution appears to involve
+> supplying lockdep that information (ie, "lockdep annotation"). 
+> 
+> 3) Please see the bugzilla.redhat.com report for further background.
+> 
+> 
+> Paul Bolle
+> 
