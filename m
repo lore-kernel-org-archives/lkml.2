@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab1G3WeZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 18:34:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38528 "EHLO mail.zytor.com"
+	id S1753110Ab1G3Wee (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 18:34:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38529 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752964Ab1G3WeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 18:34:14 -0400
+	id S1753027Ab1G3WeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 18:34:16 -0400
 From: "H. Peter Anvin" <hpa@zytor.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
@@ -17,9 +17,9 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
 Cc: Arjan van de Ven <arjan@infradead.org>,
         "H. Peter Anvin" <hpa@linux.intel.com>,
         Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [PATCH v2 1/2] random: Add support for architectural random hooks
-Date: Sat, 30 Jul 2011 15:26:22 -0700
-Message-Id: <1312064783-9033-2-git-send-email-hpa@zytor.com>
+Subject: [PATCH v2 2/2] x86, random: Add support for architectural random number generator
+Date: Sat, 30 Jul 2011 15:26:23 -0700
+Message-Id: <1312064783-9033-3-git-send-email-hpa@zytor.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1312064783-9033-1-git-send-email-hpa@zytor.com>
 References: <1311971867-25124-1-git-send-email-hpa@linux.intel.com>
@@ -30,262 +30,231 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "H. Peter Anvin" <hpa@zytor.com>
 
-Add support for architecture-specific hooks into either the blocking
-or the nonblocking random pools.  These hooks are defined to produce a
-single random "unsigned long" and return true (nonzero) on success.
+Intel has introduced a new RDRAND instruction, a Digital Random Number
+Generator (DRNG), which is functionally an high bandwidth entropy
+source, cryptographic whitener, and integrity monitor all built into
+hardware.  This enables RDRAND to be used directly, bypassing the
+kernel random number pool.
 
-They could also potentialy be used to inject randomness on demand
-while continuing to use the pool system, by calling a suitable
-injection interface and returning 0.
+For technical documentation, see:
 
-Note: the "blocking" hook is not actually allowed to block; the
-semantic difference is that it is required to produce
-/dev/random-quality entropy if available.
+http://software.intel.com/en-us/articles/download-the-latest-bull-mountain-software-implementation-guide/
 
-Changes in version 2:
-- Have a single hook per pool (blocking, nonblocking) that returns an
-  unsigned long.  The loops to fill an arbitrary buffer has moved to
-  generic code.
-- Invoke the nonblocking hook to service get_random_int() if it is
-  available.  (Note: we could in theory do this for random32() as
-  well, however, the assumption is that random32() is used when speed
-  is the only thing that matters, and the current random32()
-  implementation is extremely fast.)
-- Correct the use of the nonblocking hook to preinitialize the pool
-  data buffers.  Version 1 would incorrectly initialize the input pool
-  three times.
+In this patch, this is *only* used for the nonblocking random number
+pool.  RDRAND is a nonblocking source, similar to our /dev/urandom,
+and is therefore not a direct replacement for /dev/random.  It can,
+and presumably should, be used to feed the blocking entropy pool as
+well, but that is not implemented in this patch and may be better done
+in rngd.
+
+Since this instruction is available in userspace, there is no reason
+to have a /dev/hw_rng device driver for the purpose of feeding rngd.
+This is especially so since RDRAND is a nonblocking source, and needs
+additional whitening and reduction (see the above technical
+documentation for details) in order to be of "pure entropy source"
+quality.
+
+The nordrand kernel parameter or a CONFIG_EXPERT compile-time option
+can be used to disable this use of RDRAND.
 
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
+Originally-by: Fenghua Yu <fenghua.yu@intel.com>
 Cc: Matt Mackall <mpm@selenic.com>
 Cc: Herbert Xu <herbert@gondor.apana.org.au>
 Cc: "Theodore Ts'o" <tytso@mit.edu>
 ---
- drivers/char/random.c  |  134 +++++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/random.h |   14 +++++
- 2 files changed, 147 insertions(+), 1 deletions(-)
+ Documentation/kernel-parameters.txt |    5 +++
+ arch/x86/Kconfig                    |    9 +++++
+ arch/x86/kernel/Makefile            |    2 +
+ arch/x86/kernel/rdrand.c            |   65 +++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/rdrand_asm.S        |   57 ++++++++++++++++++++++++++++++
+ 5 files changed, 138 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/kernel/rdrand.c
+ create mode 100644 arch/x86/kernel/rdrand_asm.S
 
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index d4ddeba..f2ddc6a 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -416,6 +416,7 @@ struct entropy_store {
- 	const char *name;
- 	struct entropy_store *pull;
- 	int limit;
-+	arch_random_func_t arch_func; /* Arch-specific shortcut */
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index aa47be7..397ee05 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1764,6 +1764,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
  
- 	/* read-write data: */
- 	spinlock_t lock;
-@@ -724,6 +725,104 @@ void add_disk_randomness(struct gendisk *disk)
+ 	noresidual	[PPC] Don't use residual data on PReP machines.
  
- /*********************************************************************
-  *
-+ * Helper functions to fill a block from an arch-specific function
++	nordrand	[X86] Disable the direct use of the RDRAND
++			instruction even if it is supported by the
++			processor.  RDRAND is still available to user
++			space applications.
++
+ 	noresume	[SWSUSP] Disables resume and restores original swap
+ 			space.
+ 
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 37357a5..a0e9bda 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1451,6 +1451,15 @@ config ARCH_USES_PG_UNCACHED
+ 	def_bool y
+ 	depends on X86_PAT
+ 
++config ARCH_RANDOM
++	def_bool y
++	prompt "x86 architectural random number generator" if EXPERT
++	---help---
++	  Enable the x86 architectural RDRAND instruction
++	  (Intel Bull Mountain technology) to generate random numbers.
++	  If supported, this is a high bandwidth, cryptographically
++	  secure hardware random number generator.
++
+ config EFI
+ 	bool "EFI runtime service support"
+ 	depends on ACPI
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 90b06d4..d45d889 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -116,6 +116,8 @@ obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION) += check.o
+ obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
+ obj-$(CONFIG_OF)			+= devicetree.o
+ 
++obj-$(CONFIG_ARCH_RANDOM)		+= rdrand.o rdrand_asm.o
++
+ ###
+ # 64 bit specific files
+ ifeq ($(CONFIG_X86_64),y)
+diff --git a/arch/x86/kernel/rdrand.c b/arch/x86/kernel/rdrand.c
+new file mode 100644
+index 0000000..df0e46b
+--- /dev/null
++++ b/arch/x86/kernel/rdrand.c
+@@ -0,0 +1,65 @@
++/*
++ * This file is part of the Linux kernel.
 + *
-+ *********************************************************************/
-+
-+/* Clear a variable and make sure it is actually zeroed in memory */
-+#define ZERO_VAR(x) do {			\
-+	(x) = 0;				\
-+	asm volatile("" : : "m" (x));		\
-+} while (0)
-+
-+#ifdef CONFIG_ARCH_RANDOM
-+
-+static ssize_t func_to_kern(arch_random_func_t func,
-+			    void *buf, size_t size)
-+{
-+	unsigned long *p1 = (unsigned long *)buf;
-+	unsigned long rnd;
-+	ssize_t ret = 0;
-+	int ok;
-+
-+	while (size >= sizeof *p1) {
-+		ok = func(p1);
-+		if (unlikely(!ok))
-+			goto out;
-+		p1++;
-+		size -= sizeof *p1;
-+		ret  += sizeof *p1;
-+	}
-+
-+	if (size) {
-+		ok = func(&rnd);
-+		if (unlikely(!ok))
-+			goto out;
-+		memcpy(p1, &rnd, size);
-+		ret += size;
-+	}
-+
-+out:
-+	ZERO_VAR(rnd);
-+	return ret;
-+}
-+
-+static ssize_t func_to_user(arch_random_func_t func,
-+			    void __user *buf, size_t size)
-+{
-+	char __user *p1 = (char __user *)buf;
-+	unsigned long rnd;
-+	size_t chunk;
-+	ssize_t ret = 0;
-+	int ok, err;
-+
-+	while (size >= sizeof rnd) {
-+		ok = func(&rnd);
-+		if (unlikely(!ok))
-+			goto out;
-+		err = copy_to_user(p1, &rnd, sizeof rnd);
-+		chunk  = sizeof rnd - err;
-+		p1    += chunk;
-+		ret   += chunk;
-+		size  -= chunk;
-+		if (err)
-+			goto out;
-+	}
-+
-+	if (size) {
-+		ok = func(&rnd);
-+		if (unlikely(!ok))
-+			goto out;
-+		err = copy_to_user(p1, &rnd, size);
-+		chunk  = size - err;
-+		p1    += chunk;
-+		ret   += chunk;
-+		size  -= chunk;
-+	}
-+
-+out:
-+	ZERO_VAR(rnd);
-+	return ret;
-+}
-+
-+#else
-+
-+static inline ssize_t func_to_kern(arch_random_func_t func,
-+				   void *buf, size_t size)
-+{
-+	return 0;
-+}
-+
-+static inline ssize_t func_to_user(arch_random_func_t func,
-+				   void __user *buf, size_t size)
-+{
-+	return 0;
-+}
-+
-+#endif
-+
-+/*********************************************************************
++ * Copyright (c) 2011, Intel Corporation
++ * Authors: Fenghua Yu <fenghua.yu@intel.com>,
++ *          H. Peter Anvin <hpa@linux.intel.com>
 + *
-  * Entropy extraction routines
-  *
-  *********************************************************************/
-@@ -862,6 +961,15 @@ static ssize_t extract_entropy(struct entropy_store *r, void *buf,
- 	__u8 tmp[EXTRACT_SIZE];
- 	unsigned long flags;
- 
-+	if (r->arch_func) {
-+		ret = func_to_kern(r->arch_func, buf, nbytes);
-+		buf += ret;
-+		nbytes -= ret;
-+	}
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ */
 +
-+	if (!nbytes)
-+		return ret;
++#include <linux/random.h>
++#include <linux/module.h>
++#include <linux/uaccess.h>
++#include <asm/errno.h>
 +
- 	xfer_secondary_pool(r, nbytes);
- 	nbytes = account(r, nbytes, min, reserved);
- 
-@@ -894,6 +1002,15 @@ static ssize_t extract_entropy_user(struct entropy_store *r, void __user *buf,
- 	ssize_t ret = 0, i;
- 	__u8 tmp[EXTRACT_SIZE];
- 
-+	if (r->arch_func) {
-+		ret = func_to_user(r->arch_func, buf, nbytes);
-+		buf += ret;
-+		nbytes -= ret;
-+	}
++extern int x86_rdrand_long(unsigned long *x); /* In rdrand_asm.S */
 +
-+	if (!nbytes)
-+		return ret;
++/*
++ * Force a reseed cycle; we are architecturally guaranteed a reseed
++ * after no more than 512 128-bit chunks of random data.  This also
++ * acts as a test of the CPU capability.
++ */
++#define RESEED_LOOP ((512*128)/sizeof(unsigned long))
 +
- 	xfer_secondary_pool(r, nbytes);
- 	nbytes = account(r, nbytes, 0, 0);
- 
-@@ -954,6 +1071,11 @@ static void init_std_data(struct entropy_store *r)
- 	r->entropy_count = 0;
- 	spin_unlock_irqrestore(&r->lock, flags);
- 
-+	if (nonblocking_pool.arch_func) {
-+		func_to_kern(nonblocking_pool.arch_func,
-+			     r->pool, r->poolinfo->POOLBYTES);
-+	}
++static bool rdrand_disabled;
 +
- 	now = ktime_get_real();
- 	mix_pool_bytes(r, &now, sizeof(now));
- 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())));
-@@ -961,6 +1083,8 @@ static void init_std_data(struct entropy_store *r)
- 
- static int rand_initialize(void)
- {
-+	arch_setup_random_funcs(&nonblocking_pool.arch_func,
-+				&blocking_pool.arch_func);
- 	init_std_data(&input_pool);
- 	init_std_data(&blocking_pool);
- 	init_std_data(&nonblocking_pool);
-@@ -1635,8 +1759,16 @@ DEFINE_PER_CPU(__u32 [4], get_random_int_hash);
- unsigned int get_random_int(void)
- {
- 	struct keydata *keyptr;
--	__u32 *hash = get_cpu_var(get_random_int_hash);
-+	__u32 *hash;
- 	int ret;
++static __init int disable_rdrand(char *s)
++{
++	rdrand_disabled = true;
++	return 1;
++}
++__setup("nordrand", disable_rdrand);
++
++void arch_setup_random_funcs(arch_random_func_t *nonblocking_func,
++			     arch_random_func_t *blocking_func)
++{
++	int i, count, ok;
 +	unsigned long tmp;
 +
-+	if (nonblocking_pool.arch_func) {
-+		if (nonblocking_pool.arch_func(&tmp))
-+			return tmp;
++	if (!boot_cpu_has(X86_FEATURE_RDRAND) || rdrand_disabled) {
++		/* Nothing available... */
++		return;
 +	}
 +
-+	hash = get_cpu_var(get_random_int_hash);
- 
- 	keyptr = get_keyptr();
- 	hash[0] += current->pid + jiffies + get_cycles();
-diff --git a/include/linux/random.h b/include/linux/random.h
-index fb7ab9d..65a1752 100644
---- a/include/linux/random.h
-+++ b/include/linux/random.h
-@@ -10,6 +10,7 @@
- #include <linux/types.h>
- #include <linux/ioctl.h>
- #include <linux/irqnr.h>
-+#include <linux/errno.h>
- 
- /* ioctl()'s for the random number generator */
- 
-@@ -75,7 +76,20 @@ extern const struct file_operations random_fops, urandom_fops;
- unsigned int get_random_int(void);
- unsigned long randomize_range(unsigned long start, unsigned long end, unsigned long len);
- 
-+typedef int (*arch_random_func_t)(unsigned long *);
-+#ifdef CONFIG_ARCH_RANDOM
-+void arch_setup_random_funcs(arch_random_func_t *nonblocking,
-+			     arch_random_func_t *blocking);
-+#else
-+static inline void arch_setup_random_funcs(arch_random_func_t *nonblocking,
-+					   arch_random_func_t *blocking)
-+{
-+	/* Nothing to do */
++	for (count = i = 0; i < RESEED_LOOP; i++) {
++		ok = x86_rdrand_long(&tmp);
++		if (ok)
++			count++;
++	}
++
++	if (likely(count == RESEED_LOOP))
++		*nonblocking_func = x86_rdrand_long;
 +}
+diff --git a/arch/x86/kernel/rdrand_asm.S b/arch/x86/kernel/rdrand_asm.S
+new file mode 100644
+index 0000000..5393565
+--- /dev/null
++++ b/arch/x86/kernel/rdrand_asm.S
+@@ -0,0 +1,57 @@
++/*
++ * This file is part of the Linux kernel.
++ *
++ * Copyright (c) 2011, Intel Corporation
++ * Authors: Fenghua Yu <fenghua.yu@intel.com>,
++ *          H. Peter Anvin <hpa@linux.intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ */
++
++#include <linux/linkage.h>
++#include <asm/asm.h>
++
++#define RDRAND_RETRY_LIMIT	10
++
++#ifdef CONFIG_X86_64
++ENTRY(x86_rdrand_long)
++	mov	$RDRAND_RETRY_LIMIT, %eax
++1:
++	.byte 0x48, 0x0f, 0xc7, 0xf2	/* rdrand %rdx */
++	jnc	2f
++	mov	%rdx, (%rdi)
++	ret
++2:
++	dec	%eax
++	rep;nop
++	jnz	1b
++	ret
++ENDPROC(x86_rdrand_long)
++#else
++ENTRY(x86_rdrand_long)
++	mov	%eax, %ecx
++	mov	$RDRAND_RETRY_LIMIT, %eax
++1:
++	.byte 0x0f, 0xc7, 0xf2		/* rdrand %edx */
++	jnc	2f
++	mov	%edx, (%ecx)
++	ret
++2:
++	dec	%eax
++	rep;nop
++	jnz	1b
++	ret
++ENDPROC(x86_rdrand_long)
 +#endif
-+
- u32 random32(void);
-+
- void srandom32(u32 seed);
- 
- u32 prandom32(struct rnd_state *);
 -- 
 1.7.6
 
