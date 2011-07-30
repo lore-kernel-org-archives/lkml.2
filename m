@@ -1,77 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab1G3WpL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 18:45:11 -0400
-Received: from csmtp1.one.com ([195.47.247.21]:17756 "EHLO csmtp1.one.com"
+	id S1752139Ab1G3Wps (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 18:45:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51223 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751202Ab1G3WpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 18:45:07 -0400
-Date: Sun, 31 Jul 2011 00:49:17 +0200
-From: Eric Andersson <eric.andersson@unixphere.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
-        alan@lxorguk.ukuu.org.uk, jic23@cam.ac.uk,
-        Albert Zhang <xu.zhang@bosch-sensortec.com>
-Subject: Re: [PATCH v6 1/1] input: add driver for Bosch Sensortec's BMA150
- accelerometer
-Message-ID: <20110730224917.GA8519@skinner.xfiles.lan>
-References: <1311800027-25982-1-git-send-email-eric.andersson@unixphere.com>
- <1311800027-25982-2-git-send-email-eric.andersson@unixphere.com>
- <20110730191726.GG5686@core.coreip.homeip.net>
+	id S1751450Ab1G3Wpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 18:45:43 -0400
+Message-ID: <4E348804.3010503@zytor.com>
+Date: Sat, 30 Jul 2011 15:39:00 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110730191726.GG5686@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Woodhouse <dwmw2@infradead.org>
+CC: Arnaud Lacombe <lacombar@gmail.com>, Michal Marek <mmarek@suse.cz>,
+        "Ted Ts'o" <tytso@mit.edu>, Ingo Molnar <mingo@elte.hu>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH v3] x86, kconfig: Default to ARCH=x86 to avoid overriding
+ CONFIG_64BIT
+References: <1306707270.2029.377.camel@i7.infradead.org>  <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>  <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>  <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>  <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>  <1306795186.2029.459.camel@i7.infradead.org>  <BANLkTik=uHr1eX44XV1pAHUfVQ-MorzOnw@mail.gmail.com>  <1306856937.27477.3.camel@i7.infradead.org>  <BANLkTi=VoL8ze0AcdkG_QmEH5049X2K6Zw@mail.gmail.com>  <4E0495F4.7080300@suse.cz> <1311986969.20983.52.camel@i7.infradead.org>  <CACqU3MXeUiiQPc4t9bT7KuXuAjkN+t8eFn9SYOouPg-3hDgjWQ@mail.gmail.com>  <alpine.LFD.2.02.1107301716430.21839@localhost6.localdomain6>  <CACqU3MVY89L3B3=eFrmsgD2wzXtbQHssPm4D_-VZGEWNYBR4-Q@mail.gmail.com>  <4E34548F.9040909@zytor.com> <4E347FC4.60600@zytor.com>  <1312064244.22074.21.camel@i7.infradead.org>  <CACqU3MUfpSeHBOPjkAcpdGSugoC3w4hyCs_igUxppohPj+o=2A@mail.gmail.com> <1312065261.22074.29.camel@i7.infradead.org>
+In-Reply-To: <1312065261.22074.29.camel@i7.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +static int bma150_open(struct bma150_data *bma150)
-> > +{
-> > +	int ret;
-> > +
-> > +	ret = pm_runtime_set_active(&bma150->client->dev);
-> > +	if (ret < 0)
-> > +		return ret;
-> > +
-> > +	pm_runtime_enable(&bma150->client->dev);
+On 07/30/2011 03:34 PM, David Woodhouse wrote:
+> On Sat, 2011-07-30 at 18:24 -0400, Arnaud Lacombe wrote:
+>> How do you plan to handle x32, if it ever makes it to mainline ? 
 > 
-> I am pretty sure you want to call pm_runtime_enable() in bma150_probe()
-> so that parent controller can be suspended until somebody calls
-> bma150_open() and we mark the device as active (which, in turn, should
-> wake up its parent).
-
-If I call pm_runtime_enable() I cannot use pm_runtime_set_active() later
-according to the comment in __pm_runtime_set_status (runtime.c):
-"If runtime PM of the device is disabled or its power.runtime_error
-field is different from zero, the status may be changed either to
-RPM_ACTIVE, or to RPM_SUSPENDED..."
-
-If the PM of the device is enabled it will return -EAGAIN. Of course, we
-could enable() in probe, then disable(); set_active(); enable(); in
-open, but that seems a bit confused, right?
-
-> > +
-> > +	return bma150_set_mode(bma150->client, BMA150_MODE_NORMAL);
-> > +}
-> > +
-> > +static void bma150_close(struct bma150_data *bma150)
-> > +{
-> > +	pm_runtime_disable(&bma150->client->dev);
+> I was pondering that. Surely it would involve porting the kernel itself
+> to x32? And there's never going to be any motivation for that *other*
+> than UML, so I can't really see it happening.
 > 
-> And disable should go into bma150_remove() unless I misunderstand
-> runtime PM framework.
+> What does 'uname -m' give under x32, anyway?
 
-This is once again to make sure the PM is disabled when changing status.
+Right now is gives x86_64, but that should probably be changed before
+mainlining.
 
-I am not entirely familiar with the details of runtime PM, but either
-the above works or we have to revert back to using #ifdefs which I would
-prefer not to.
-
+	-hpa
 -- 
-Best regards,
- Eric
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-http://www.unixphere.com
