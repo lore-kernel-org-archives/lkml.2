@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751361Ab1G3IXS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 04:23:18 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:60335 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab1G3IXK (ORCPT
+	id S1751693Ab1G3IiI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 04:38:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60268 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab1G3IiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 04:23:10 -0400
-Date: Sat, 30 Jul 2011 11:19:58 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: bojan prtvar <prtvar.b@gmail.com>
-Cc: =?iso-8859-1?Q?Jean-Fran=E7ois?= Dagenais 
-	<jeff.dagenais@gmail.com>,
-        Evgeniy Polyakov <johnpol@2ka.mipt.ru>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
-Subject: [patch v2] w1: fix for loop in w1_f29_remove_slave()
-Message-ID: <20110730081958.GA5575@shale.localdomain>
-References: <20110727095557.GL3824@shale.localdomain>
- <9C2475AA-829E-4BB8-A3D2-2444803A33D3@gmail.com>
- <CAOmT4fS1OqQb5KOOeFnGHt1tnYGBRutVrAZ4cXB6n=hou5fn8w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOmT4fS1OqQb5KOOeFnGHt1tnYGBRutVrAZ4cXB6n=hou5fn8w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 30 Jul 2011 04:38:04 -0400
+Subject: Re: [PATCH v3] x86, kconfig: Default to ARCH=x86 to avoid
+ overriding CONFIG_64BIT
+From: David Woodhouse <dwmw2@infradead.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, "Ted Ts'o" <tytso@mit.edu>,
+        Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        hpa@zytor.com
+Date: Sat, 30 Jul 2011 09:37:40 +0100
+In-Reply-To: <CACqU3MUnUHafhHFye2x1gR_b4ebN1zUK7PfSiUp1j=24y07yuA@mail.gmail.com>
+References: <1306707270.2029.377.camel@i7.infradead.org>
+	 <20110530072300.GA9802@elte.hu>
+	 <1306745835.2029.389.camel@i7.infradead.org>
+	 <20110530104231.GF17821@elte.hu> <20110530104656.GA19532@elte.hu>
+	 <E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
+	 <20110530105809.GA20133@elte.hu>
+	 <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
+	 <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>
+	 <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
+	 <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
+	 <1306795186.2029.459.camel@i7.infradead.org>
+	 <BANLkTik=uHr1eX44XV1pAHUfVQ-MorzOnw@mail.gmail.com>
+	 <1306856937.27477.3.camel@i7.infradead.org>
+	 <BANLkTi=VoL8ze0AcdkG_QmEH5049X2K6Zw@mail.gmail.com>
+	 <4E0495F4.7080300@suse.cz> <1311986969.20983.52.camel@i7.infradead.org>
+	 <CACqU3MUnUHafhHFye2x1gR_b4ebN1zUK7PfSiUp1j=24y07yuA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 8bit
+Message-ID: <1312015064.20983.58.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The for loop was looking for i <= 0 instead of i >= 0 so this
-function never did anything.  Also we started with i =
-NB_SYSFS_BIN_FILES instead of "NB_SYSFS_BIN_FILES - 1" which is an
-off by one bug.
+On Fri, 2011-07-29 at 21:26 -0400, Arnaud Lacombe wrote:
+> 
+> Should we not try to fix this rather than introduce a new interface ?
 
-Reported-by: Bojan Prtvar <prtvar.b@gmail.com>
-Signed-off-by: Dan Carpenter <error27@gmail.com>
----
-v2:  fix >= vs <=
+This patch *does* fix it, without needing the new interface that I
+presented in a separate patch. The two patches I sent are not strictly
+dependent on one another.
 
-diff --git a/drivers/w1/slaves/w1_ds2408.c b/drivers/w1/slaves/w1_ds2408.c
-index c377818..7c8cdb8 100644
---- a/drivers/w1/slaves/w1_ds2408.c
-+++ b/drivers/w1/slaves/w1_ds2408.c
-@@ -373,7 +373,7 @@ static int w1_f29_add_slave(struct w1_slave *sl)
- static void w1_f29_remove_slave(struct w1_slave *sl)
- {
- 	int i;
--	for (i = NB_SYSFS_BIN_FILES; i <= 0; --i)
-+	for (i = NB_SYSFS_BIN_FILES - 1; i >= 0; --i)
- 		sysfs_remove_bin_file(&sl->dev.kobj,
- 			&(w1_f29_sysfs_bin_files[i]));
- }
+> From my point of view, we (ie. Kbuild) should be intelligent enough to
+> take the default from the .config, if one is present in the object
+> directory, rather than trying to impose it's own view on what the ARCH
+> should be.
+> 
+> Is there case where we would have a .config, but would not use its
+> content ?
+
+Heh, I think you've missed some of the history here.
+
+I originally, a year or two ago, posted a patch which took precisely the
+approach I think you're advocating. It basically made the ARCH=x86
+behaviour apply in all cases. It was reverted because it made 'make
+randconfig' actually *random* — *even* for the setting of CONFIG_64BIT,
+*even* when ARCH=i386 or ARCH=x86_64.
+
+The fact that KCONFIG_ALLCONFIG allows you to override *all* config
+options and not just CONFIG_64BIT, and that using the legacy ARCH=
+settings wasn't really necessary, was evidently not sufficient. It
+apparently *had* to be possible to switch using the command line.
+
+So I did two things — I fixed this patch so that it doesn't break that
+legacy use case of 'make ARCH=i386' or 'make ARCH=x86_64' to force the
+value of CONFIG_64BIT on or off, and I also posted a separate patch
+which gives a more *sensible* way to force *any* config options on or
+off from the 'make' command line, since the world is apparently going to
+end if we can't do that.
+
+The two patches can be considered to be entirely independent.
+
+-- 
+dwmw2
+
