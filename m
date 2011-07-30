@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab1G3IK3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 04:10:29 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:61688 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813Ab1G3IKX convert rfc822-to-8bit (ORCPT
+	id S1751361Ab1G3IXS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 04:23:18 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:60335 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776Ab1G3IXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 04:10:23 -0400
+	Sat, 30 Jul 2011 04:23:10 -0400
+Date: Sat, 30 Jul 2011 11:19:58 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: bojan prtvar <prtvar.b@gmail.com>
+Cc: =?iso-8859-1?Q?Jean-Fran=E7ois?= Dagenais 
+	<jeff.dagenais@gmail.com>,
+        Evgeniy Polyakov <johnpol@2ka.mipt.ru>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org
+Subject: [patch v2] w1: fix for loop in w1_f29_remove_slave()
+Message-ID: <20110730081958.GA5575@shale.localdomain>
+References: <20110727095557.GL3824@shale.localdomain>
+ <9C2475AA-829E-4BB8-A3D2-2444803A33D3@gmail.com>
+ <CAOmT4fS1OqQb5KOOeFnGHt1tnYGBRutVrAZ4cXB6n=hou5fn8w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <67AE5A41-F50F-4616-B9E1-437CAD9379D3@ime.usp.br>
-References: <20110724130336.GA2116@ime.usp.br>
-	<CAPM=9txTVVxvv85kcZqBVjmpVK1zsAvVarLv1Sm7viwfF+ZYyA@mail.gmail.com>
-	<67AE5A41-F50F-4616-B9E1-437CAD9379D3@ime.usp.br>
-Date: Sat, 30 Jul 2011 09:10:22 +0100
-Message-ID: <CAPM=9tznbmkMnTcUDw-KAGeZQcqyZpsNwb74-JV9Y-d0Z3Sg1w@mail.gmail.com>
-Subject: Re: [REGRESSION] [BISECTED] Unable to use 3D with Radeon 2100 and UI
- freezes with Firefox
-From: Dave Airlie <airlied@gmail.com>
-To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?Rog=E9rio_Theodoro_de_Brito?= <rbrito@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOmT4fS1OqQb5KOOeFnGHt1tnYGBRutVrAZ4cXB6n=hou5fn8w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 30, 2011 at 8:42 AM, Rogério Brito <rbrito@ime.usp.br> wrote:
-> Hi once again, but things are not good with any kernel past the reworked IRQ
-> stuff.
->
-> On 2011-07-25, at 05:08, Dave Airlie wrote:
->
->> 2011/7/24 Rogério Brito <rbrito@ime.usp.br>:
->>>
->>> After experiencing problems with many post 2.6.38 kernels with X when I
->>> used
->>> Firefox to see any webpage that used some of the new HTML5 features
->>> (Firefox
->>> freeze completely X and I could only log in remotely with SSH), I took
->>> some
->>> time to see where things went wrong and, to cut a long story short, I
->>> bisected the kernel and I found that a commit of yours was the first one
->>> that introduced a problem with my system:
->>
->> Can you attach /proc/interrupts as well please.
->
-> It seems that the radeon thing is just one of the manifestations of the
-> problem.
->
-> Today, I noticed another bad symptom, when I accidentally booted with kernel
-> 3.0 (I have many kernels in GRUB2): I printed a LaTeX document with only 2
-> pages of pure text.  My printer is an inkjet printer connected via USB to my
-> computer and it took about 6 minutes to print those 2 pages. The printer
-> head moved printing something, then it paused a bit, then it printed some
-> more, then it paused some more etc.
->
-> I just rebooted with 2.6.38 and the very same document was printed in, like,
-> 15 seconds...
->
-> So, is there anything that I could do to rectify this situation? I can give
-> you loads of dumps from here, as long as you tell me what would be useful.
->
+The for loop was looking for i <= 0 instead of i >= 0 so this
+function never did anything.  Also we started with i =
+NB_SYSFS_BIN_FILES instead of "NB_SYSFS_BIN_FILES - 1" which is an
+off by one bug.
 
-Well I was hoping Thomas would help debug this, but he's gone on
-holidays, I'll try and take a look next week.
+Reported-by: Bojan Prtvar <prtvar.b@gmail.com>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+---
+v2:  fix >= vs <=
 
-but I've no real idea about the irq subsystem.
-
-Dave.
+diff --git a/drivers/w1/slaves/w1_ds2408.c b/drivers/w1/slaves/w1_ds2408.c
+index c377818..7c8cdb8 100644
+--- a/drivers/w1/slaves/w1_ds2408.c
++++ b/drivers/w1/slaves/w1_ds2408.c
+@@ -373,7 +373,7 @@ static int w1_f29_add_slave(struct w1_slave *sl)
+ static void w1_f29_remove_slave(struct w1_slave *sl)
+ {
+ 	int i;
+-	for (i = NB_SYSFS_BIN_FILES; i <= 0; --i)
++	for (i = NB_SYSFS_BIN_FILES - 1; i >= 0; --i)
+ 		sysfs_remove_bin_file(&sl->dev.kobj,
+ 			&(w1_f29_sysfs_bin_files[i]));
+ }
