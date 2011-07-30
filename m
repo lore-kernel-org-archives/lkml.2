@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab1G3GPF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 02:15:05 -0400
-Received: from mout0.freenet.de ([195.4.92.90]:51858 "EHLO mout0.freenet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752624Ab1G3GPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 02:15:02 -0400
-Message-ID: <4E33A17B.2050008@01019freenet.de>
-Date: Sat, 30 Jul 2011 08:15:23 +0200
-From: Andreas Hartmann <andihartmann@01019freenet.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110720 Firefox/5.0 SeaMonkey/2.2
+	id S1753373Ab1G3GVG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 02:21:06 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51070 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753369Ab1G3GVC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 02:21:02 -0400
 MIME-Version: 1.0
-To: Huajun Li <huajun.li.lee@gmail.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>, acho@novell.com,
-        linux-kernel@vger.kernel.org, lud <linux-usb@vger.kernel.org>,
-        usb-storage@lists.one-eyed-alien.net,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: Linux 3.0: broken ums_eneub6250
-References: <j0um5s$4l4$1@ID-44327.news.uni-berlin.de> <20110729181418.fa4af78f.rdunlap@xenotime.net> <CA+v9cxbKKxPg29q5Jr3Lf+JOrdQeYhrPqFm4TtK9=c1Xoq3CUw@mail.gmail.com>
-In-Reply-To: <CA+v9cxbKKxPg29q5Jr3Lf+JOrdQeYhrPqFm4TtK9=c1Xoq3CUw@mail.gmail.com>
-X-Enigmail-Version: 1.2
+In-Reply-To: <1311974171.20898.393.camel@calx>
+References: <1311971867-25124-1-git-send-email-hpa@linux.intel.com>
+ <1311971867-25124-2-git-send-email-hpa@linux.intel.com> <1311974171.20898.393.camel@calx>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 29 Jul 2011 23:20:40 -0700
+Message-ID: <CA+55aFwMGwVsD1Gexahio2pWd0PpaHAbvFroB3w0=JOQf1zQ_A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
+To: Matt Mackall <mpm@selenic.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jeff Garzik <jgarzik@pobox.com>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Huajun,
+On Fri, Jul 29, 2011 at 2:16 PM, Matt Mackall <mpm@selenic.com> wrote:
+>
+> I have already NAKed this approach in no uncertain terms.
 
-Huajun Li schrieb:
-> Hi Dunlap and all, The root cause may be the firmware of ENE card
-> reader is not integrated yet. You known, after the codes merged from
-> staging/keucr into usb-storage, its HEX formated firmware codes were
-> removed, and they should go to firmware tree.
-> 
-> Currently, acho@novell.com toke efforts to get these firmware
-> license and pushed the patch to dwmw2@infradead.org, I thinks the
-> patch is pending now.
-> 
-> Yes, the perfect way to fix the issue is waiting the firmware patch 
-> applied soon, but to make your card work at once, I think you could 
-> get a copy of the firmware patch from acho@novell.com.  :)
+Doesn't matter.
 
-What's the name of the firmware file? I think, there is a repository
-somewhere, where I could just get it? Any hints?
+Talking about "standard hardware random number drivers" is just crazy
+talk, when the instruction is a single instruction that takes tens of
+nanoseconds to run. Any driver overhead would be just crazy, and no
+user would ever want that anyway.
 
+User space would never use it, because they just want to use the
+instruction directly.
 
-Thanks,
-Andreas
+And kernel space doesn't want it either, for the exact same reason.
+There's no point in making it anything but a simple direct function
+call, because the whole functionality is so cheap.
+
+This is not like some stupid "behind PCI" crap. It's high bandwidth
+and low latency.
+
+If anything, I think Peter's approach perhaps doesn't tie it in close
+enough. Instead of making it some indirect function you register, just
+make it an inline function per architecture that just returns how many
+bits of randomness it gives (default to just an inline function that
+returns 0 for the case of no on-CPU rng).
+
+On x86, choice between the different possible random number generators
+(if somebody cares enough about the cyrix and whatever ones) could be
+a an asm_alternate() thing.
+
+If you don't trust the CPU rng, don't bother with stupid arguments
+about electron microscopes.  Test it - or more reasonably - make it
+just one small part of the entropy pool. But don't make it something
+heavy-weight, when the whole *point* of having the hardware is to make
+it light-weight.
+
+                 Linus
