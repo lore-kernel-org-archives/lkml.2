@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136Ab1G3Xxq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 19:53:46 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39416 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886Ab1G3Xxm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 19:53:42 -0400
+	id S1752284Ab1G3XyH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 19:54:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59388 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751715Ab1G3XyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 19:54:01 -0400
+Message-ID: <4E34998D.8060806@zytor.com>
+Date: Sat, 30 Jul 2011 16:53:49 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-In-Reply-To: <20110730130537.GB15791@n2100.arm.linux.org.uk>
-References: <cover.1311936523.git.viresh.kumar@st.com>
-	<96781d46e41fa6ffc04b88527a25d73f5a59eda8.1311936524.git.viresh.kumar@st.com>
-	<20110730120740.GA15791@n2100.arm.linux.org.uk>
-	<20110730130537.GB15791@n2100.arm.linux.org.uk>
-Date: Sun, 31 Jul 2011 01:53:41 +0200
-X-Google-Sender-Auth: -qlbeYFHxBTR_f1zuROkh_vSRlM
-Message-ID: <CAKnu2MqTYF43wW3axM--jXdtvsCyRBTLEHDc3hPoJYAmTAL5UA@mail.gmail.com>
-Subject: Re: [PATCH 07/18] dmaengine/amba-pl08x: Enable/Disable amba_pclk with
- channel requests
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Viresh Kumar <viresh.kumar@st.com>, pratyush.anand@st.com,
-        rajeev-dlh.kumar@st.com, armando.visconti@st.com,
-        bhupesh.sharma@st.com, vinod.koul@intel.com,
-        linux-kernel@vger.kernel.org, vipin.kumar@st.com, shiraz.hashim@st.com,
-        amit.virdi@st.com, vipulkumar.samar@st.com, viresh.linux@gmail.com,
-        deepak.sikri@st.com, dan.j.williams@intel.com,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Arnaud Lacombe <lacombar@gmail.com>
+CC: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
+References: <1312067499.22074.59.camel@i7.infradead.org> <1312067670.22074.61.camel@i7.infradead.org> <CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
+In-Reply-To: <CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/30 Russell King - ARM Linux <linux@arm.linux.org.uk>:
-> On Sat, Jul 30, 2011 at 01:07:40PM +0100, Russell King - ARM Linux wrote:
->> It may make better sense to convert this to runtime PM.  I suspect
->> that there's core support which the amba/bus.c can do to help in that
->> respect (eg, managing the apb pclk itself) so that we don't have to
->> add the same code to every primecell driver.
->
-> Something like this for the bus driver (untested):
->
->  drivers/amba/bus.c |   38 ++++++++++++++++++++++++++++++++++++--
->  1 files changed, 36 insertions(+), 2 deletions(-)
+On 07/30/2011 04:44 PM, Arnaud Lacombe wrote:
+> 
+> Beside that, the one thing I dislike with your patch is that it is
+> unconditional and global to all symbols, and you have no way to forbid
+> the environment to override a value.
+> 
 
-I think the pm_runtime_* code Rabin put in place inside
-drivers/spi/spi-pl022.c would play really well with this approach, and
-just work, so:
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Why????
 
-Thanks,
-Linus Walleij
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
