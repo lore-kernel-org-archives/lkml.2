@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424Ab1G3TAW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 15:00:22 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62939 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab1G3TAR convert rfc822-to-8bit (ORCPT
+	id S1752388Ab1G3TCc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 15:02:32 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:54525 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572Ab1G3TC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 15:00:17 -0400
+	Sat, 30 Jul 2011 15:02:28 -0400
+Date: Sat, 30 Jul 2011 12:02:20 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: riyer@nvidia.com, rydberg@euromail.se, olof@lixom.net, amartin@nvidia.com,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH v1] Input: tegra-kbc - fix computation of polling time
+Message-ID: <20110730190220.GA5686@core.coreip.homeip.net>
+References: <1311981417-31865-1-git-send-email-riyer@nvidia.com>
+ <20110730104101.GA12309@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-In-Reply-To: <20110729180422.07355fdb.rdunlap@xenotime.net>
-References: <20110729173827.716f57ff6e00095a3efc6449@canb.auug.org.au>
-	<20110729180422.07355fdb.rdunlap@xenotime.net>
-Date: Sat, 30 Jul 2011 15:00:15 -0400
-X-Google-Sender-Auth: Oceptekv-XIqtYQhey7Mi7xp1-U
-Message-ID: <CAP=VYLrtcQ_zWxXSqD+wHV=rk6z03wCdhivVPNt43D+Fw+b4tg@mail.gmail.com>
-Subject: Re: [PATCH -next] x86: devicetree.h needs export.h
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110730104101.GA12309@avionic-0098.mockup.avionic-design.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 9:04 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
->
-> devicetree.c needs to include linux/export.h to fix build errors.
+On Sat, Jul 30, 2011 at 12:41:01PM +0200, Thierry Reding wrote:
+> * riyer@nvidia.com wrote:
+> > From: Rakesh Iyer <riyer@nvidia.com>
+> > 
+> > Fix a constant definition and computation of polling time.
+> > 
+> > Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
+> > ---
+> >  drivers/input/keyboard/tegra-kbc.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
+> > index da3828f..263f6fc 100644
+> > --- a/drivers/input/keyboard/tegra-kbc.c
+> > +++ b/drivers/input/keyboard/tegra-kbc.c
+> > @@ -37,7 +37,7 @@
+> >  #define KBC_ROW_SCAN_DLY	5
+> >  
+> >  /* KBC uses a 32KHz clock so a cycle = 1/32Khz */
+> > -#define KBC_CYCLE_USEC	32
+> > +#define KBC_CYCLE_MS	32
+> >  
+> >  /* KBC Registers */
+> >  
+> > @@ -647,7 +647,7 @@ static int __devinit tegra_kbc_probe(struct platform_device *pdev)
+> >  	debounce_cnt = min(pdata->debounce_cnt, KBC_MAX_DEBOUNCE_CNT);
+> >  	scan_time_rows = (KBC_ROW_SCAN_TIME + debounce_cnt) * num_rows;
+> >  	kbc->repoll_dly = KBC_ROW_SCAN_DLY + scan_time_rows + pdata->repeat_cnt;
+> > -	kbc->repoll_dly = ((kbc->repoll_dly * KBC_CYCLE_USEC) + 999) / 1000;
+> > +	kbc->repoll_dly = (kbc->repoll_dly + KBC_CYCLE_MS - 1) / KBC_CYCLE_MS;
+> 
+> You might want to consider using DIV_ROUND_UP for this.
 
-Applied to module.h-split, thanks.
+Indeed. Adjusted locally and applied.
 
-P.
+Thanks.
 
->
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> ---
->  arch/x86/kernel/devicetree.c |    1 +
->  1 file changed, 1 insertion(+)
->
-> --- linux-next-20110729.orig/arch/x86/kernel/devicetree.c
-> +++ linux-next-20110729/arch/x86/kernel/devicetree.c
-> @@ -2,6 +2,7 @@
->  * Architecture specific OF callbacks.
->  */
->  #include <linux/bootmem.h>
-> +#include <linux/export.h>
->  #include <linux/io.h>
->  #include <linux/interrupt.h>
->  #include <linux/list.h>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-next" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+-- 
+Dmitry
