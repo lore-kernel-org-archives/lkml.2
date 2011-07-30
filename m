@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab1G3Pbz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 11:31:55 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47204 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419Ab1G3Pbw convert rfc822-to-8bit (ORCPT
+	id S1752135Ab1G3Pdy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 11:33:54 -0400
+Received: from alerce.vps.bitfolk.com ([212.13.194.134]:50505 "EHLO
+	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419Ab1G3Pdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 11:31:52 -0400
+	Sat, 30 Jul 2011 11:33:49 -0400
+X-Greylist: delayed 1840 seconds by postgrey-1.27 at vger.kernel.org; Sat, 30 Jul 2011 11:33:49 EDT
+Date: Sat, 30 Jul 2011 12:02:14 -0300
+From: Leandro Lucarella <luca@llucax.com.ar>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org
+Subject: Re: Graphic corruption with i915 (2.6.39.1)
+Message-ID: <20110730150214.GK3182@llucax.com.ar>
+References: <20110616145842.GM20487@llucax.com.ar>
+ <013811$g9fu7@fmsmga002.fm.intel.com>
+ <20110616161803.GQ20487@llucax.com.ar>
+ <aefc95$f0ne9@orsmga001.jf.intel.com>
 MIME-Version: 1.0
-Date: Sat, 30 Jul 2011 17:31:51 +0200
-Message-ID: <CAKWSe6B3hWt4ANpgoS4dRUZPju0Abey9y3DORVFqGYgMeF=gQA@mail.gmail.com>
-Subject: warn_slowpath_common WARNING on boot since 3.0.0-git7
-From: Alessandro Suardi <alessandro.suardi@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <aefc95$f0ne9@orsmga001.jf.intel.com>
+X-Paranoid: Just because you're paranoid, don't mean they're not after you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-F15 x86_64, still present in 3.0.0-git11; didn't report it earlier as I
- thought it'd be squashed sooner... probably it's not as common
- as I thought it'd be:
+Chris Wilson, el 16 de junio a las 17:39 me escribiste:
+> On Thu, 16 Jun 2011 13:18:03 -0300, Leandro Lucarella <luca@llucax.com.ar> wrote:
+> > cannot access /sys/kernel/debug/dri/0/i915_error_state: No such file or directory
+> > 
+> > The debug directory is not present, should I boot or compile with some
+> > particular option to enable it?
+> 
+> You need to compile with CONFIG_DEBUGFS and at runtime
+> "mount -tdebugfs debug /sys/kernel/debug".
+> 
+> The /sys/kernel/debug/dri/0/i915_error_state will only be populated
+> after a hang is detected.
 
-Jul 27 18:46:18 duff kernel: WARNING: at fs/proc/base.c:1123
-oom_adjust_write+0x185/0x23c()
-Jul 27 18:46:18 duff kernel: Hardware name: Latitude E6400
-Jul 27 18:46:18 duff kernel: sshd (3245): /proc/3245/oom_adj is
-deprecated, please use /proc/3245/oom_score_adj instead.
-Jul 27 18:46:18 duff kernel: Modules linked in: sunrpc rfcomm bnep
-ip6t_REJECT nf_conntrack_ipv6 ipt_REJECT nf_defrag_ipv6
-nf_conntrack_ipv4 ip6table_filter nf_defrag_ipv4 ip6_tables xt_state
-nf_conntrack iptable_filter ip_tables snd_hda_codec_hdmi
-snd_hda_codec_idt snd_hda_intel snd_hda_codec aes_x86_64 aes_generic
-ecb snd_hwdep btusb snd_seq snd_seq_device bluetooth snd_pcm
-dell_laptop snd_timer snd i2c_i801 rfkill microcode pcspkr joydev
-soundcore snd_page_alloc dcdbas ipv6 autofs4 ext4 jbd2 crc16 sdhci_pci
-firewire_ohci sdhci firewire_core crc_itu_t mmc_core i915
-drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded:
-scsi_wait_scan]
-Jul 27 18:46:18 duff kernel: Pid: 3245, comm: sshd Not tainted 3.0.0-git7 #6
-Jul 27 18:46:18 duff kernel: Call Trace:
-Jul 27 18:46:18 duff kernel: [<ffffffff8103774c>] warn_slowpath_common+0x7e/0x96
-Jul 27 18:46:18 duff kernel: [<ffffffff810377f8>] warn_slowpath_fmt+0x41/0x43
-Jul 27 18:46:18 duff kernel: [<ffffffff810408f4>] ? ns_capable+0x35/0x4a
-Jul 27 18:46:18 duff kernel: [<ffffffff81129fb8>] oom_adjust_write+0x185/0x23c
-Jul 27 18:46:18 duff kernel: [<ffffffff810e0736>] vfs_write+0xa3/0xca
-Jul 27 18:46:18 duff kernel: [<ffffffff8109176f>] ?
-trace_hardirqs_on_caller+0xe/0x22
-Jul 27 18:46:18 duff kernel: [<ffffffff810e08d2>] sys_write+0x45/0x69
-Jul 27 18:46:18 duff kernel: [<ffffffff813752fb>] system_call_fastpath+0x16/0x1b
+OK, I'm having another i915 "episode" and now I have the debugfs
+mounted. Here is the contents of
+/sys/kernel/debug/dri/0/i915_error_state:
+http://llucax.com.ar/tmp/i915_error_state.txt (1.4MiB)
 
---alessandro
+Here is the error message shown in dmesg:
 
- "There's always a siren singing you to shipwreck"
+[1259708.264742] Out of memory: Kill process 16640 (firefox-bin) score 504 or sacrifice child
+[1259708.264748] Killed process 13128 (plugin-containe) total-vm:450880kB, anon-rss:19588kB, file-rss:780kB
+[1259726.000008] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
+[1259726.000014] [drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
+[1259726.001254] [drm:i915_wait_request] *ERROR* i915_wait_request returns -11 (awaiting 28517162 at 28517161, next 28517164)
+[1259726.503009] [drm:i915_reset] *ERROR* Failed to reset chip.
 
-   (Radiohead, "There There")
+Any ideas? Thanks!
+
+-- 
+Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
+----------------------------------------------------------------------
+GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
+----------------------------------------------------------------------
+The average person laughs 13 times a day
