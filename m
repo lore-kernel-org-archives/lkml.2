@@ -1,38 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab1G3THj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 15:07:39 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:35211 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab1G3THe (ORCPT
+	id S1752748Ab1G3TJk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 15:09:40 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52056 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752323Ab1G3TJe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 15:07:34 -0400
-Date: Sat, 30 Jul 2011 12:07:28 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Felipe Balbi <felipe.balbi@nokia.com>,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH] Input: lm8323: add missing device_remove_file for
- dev_attr_time
-Message-ID: <20110730190728.GD5686@core.coreip.homeip.net>
-References: <1311844021.31725.3.camel@phoenix>
+	Sat, 30 Jul 2011 15:09:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311844021.31725.3.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110729211430.6c4830bd.rdunlap@xenotime.net>
+References: <20110729173827.716f57ff6e00095a3efc6449@canb.auug.org.au>
+	<20110729211430.6c4830bd.rdunlap@xenotime.net>
+Date: Sat, 30 Jul 2011 15:09:32 -0400
+Message-ID: <CAP=VYLrtumuSM_ncO6sEr7=HciiKcOsB=yN4NZnAxesjSSOgMw@mail.gmail.com>
+Subject: Re: [PATCH -next] i2c: i2c-pxa-pci.c needs module.h
+From: Paul Gortmaker <paul.gortmaker@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-i2c@vger.kernel.org,
+        akpm <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, khali@linux-fr.org,
+        ben-linux@fluff.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 05:07:01PM +0800, Axel Lin wrote:
-> Add missing device_remove_file() for dev_attr_time in lm8323_remove().
-> Also calling device_remove_file() in lm8323_probe() error path to
-> remove sysfs attribute file.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Sat, Jul 30, 2011 at 12:14 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
+>
+> i2c-pxa-pci.c uses interfaces from linux/module.h, so it should
+> include that file.  This fixes build errors.
 
-Applied, thanks Axel.
+Applied to module.h-split, thanks.
 
--- 
-Dmitry
+P.
+
+>
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> ---
+>  drivers/i2c/busses/i2c-pxa-pci.c |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> --- linux-next-20110729.orig/drivers/i2c/busses/i2c-pxa-pci.c
+> +++ linux-next-20110729/drivers/i2c/busses/i2c-pxa-pci.c
+> @@ -3,6 +3,7 @@
+>  * It does not support slave mode, the register slightly moved. This PCI
+>  * device provides three bars, every contains a single I2C controller.
+>  */
+> +#include <linux/module.h>
+>  #include <linux/pci.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/i2c/pxa-i2c.h>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
