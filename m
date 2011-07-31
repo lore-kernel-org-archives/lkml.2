@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab1GaCDL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 22:03:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51688 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab1GaCDG convert rfc822-to-8bit (ORCPT
+	id S1752676Ab1GaCJG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 22:09:06 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:48776 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab1GaCJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 22:03:06 -0400
+	Sat, 30 Jul 2011 22:09:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyimDdpCRER_7pc30S-QLhUkt0z-Y=gD48f7t=FxxFh7g@mail.gmail.com>
-References: <20110730234630.7270.qmail@science.horizon.com>
- <CAF_S4t8TFour-Yw1T+qdG9mCzy9+tGBR0hQG83+ra6PRzPhNHQ@mail.gmail.com> <CA+55aFyimDdpCRER_7pc30S-QLhUkt0z-Y=gD48f7t=FxxFh7g@mail.gmail.com>
-From: Bryan Donlan <bdonlan@gmail.com>
-Date: Sat, 30 Jul 2011 22:02:24 -0400
-Message-ID: <CAF_S4t9PhDQBBfaLLaq1sE9YkJvQq5Q+ULegpD0aoTnv0CPutw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org,
-        mpm@selenic.com, tytso@mit.edu
+In-Reply-To: <4E34AFAD.90008@zytor.com>
+References: <1312067499.22074.59.camel@i7.infradead.org>
+	<1312067670.22074.61.camel@i7.infradead.org>
+	<CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
+	<4E34998D.8060806@zytor.com>
+	<CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
+	<4E34A1E4.8040103@zytor.com>
+	<CACqU3MVkLXoBq7KP2Jff=p7EiKR7DkPa4z7y0Rdah-dGzRvj4g@mail.gmail.com>
+	<4E34AFAD.90008@zytor.com>
+Date: Sat, 30 Jul 2011 22:09:00 -0400
+Message-ID: <CACqU3MUJ=B-VszESWcFXbW=TLRxz5HrAaUn3nkyydX-xBBTXhg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 30, 2011 at 21:35, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sat, Jul 30, 2011 at 3:02 PM, Bryan Donlan <bdonlan@gmail.com> wrote:
+Hi,
+
+On Sat, Jul 30, 2011 at 9:28 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/30/2011 06:06 PM, Arnaud Lacombe wrote:
+>>>
+>> The principle of least surprise is broken anyway as the proposed patch
+>> has absolutely no dependency checking and verification. You can `make
+>> CONFIG_SATA_MV=y allnoconfig', you will _not_ get it set.
 >>
->> The problem, as you can see here, is we need to test for the existence
->> of an architecture-specific HWRNG once for _every word processed_.
+> This gives you exactly the same way as a .config file or a ALLCONFIG
+> file with the same options, which is what one realistically should expect.
 >
-> See the patch I sent out. Not only doesn't it check an
-> architecture-specific flag on x86, IT COSTS NOTHING AT ALL on other
-> architectures. Not per byte, not per call, not at all.
+no, I would expect it to have the same effect as a `select
+CONFIG_SATA_MV', have it forcibly set to the given value, and be
+warned if there was any problem.
 
-Certainly, on architectures which never support fast hwrngs, you can
-avoid the overhead. I'm concerned about whether you're actually coming
-out ahead in the case where there _is_ an arch hwrng.
+Btw, `make CONFIG_GENERIC_BUG=n oldconfig' or `make CONFIG_64BIT=n
+oldconfig'[0] does not even work, and I'm getting no error. So either
+you make it work for all possible uses, or you warn the user he tried
+something illegal, but you don't just fail silently.
 
-> On x86, it does have the cost of:
->
->  - basically one conditional for the whole loop (branching out if
-> there is no rdrand support at all). You cannot do much better than
-> that, except of course if you statically say "compile for an x86 that
-> doesn't have rdrand")
->
->  - a per-word cost of checking CF - which you are supposed to do
-> anyway (ie the rdrand hardware will return with CF clear if the data
-> isn't reliable).
->
-> So at least on x86, I think you can get pretty close to "optimal
-> behavior" with my approach.
+>From my point of view, this patch, as-is, open a delicate Pandora's box.
 
-Ah, I see - I wasn't aware RDRAND could fail. In that case, it's not
-so bad, although it would be nicer to directly branch on the carry
-flag, rather than emitting code that will, eventually, do a setcc ->
-and -> test -> branch.
+ - Arnaud
 
-In any case though, what about my suggestion - don't mess with urandom
-at all, and let udev replace the /dev/urandom device node with one
-directed to a fast hwrng device if one is detected? This has zero
-extra overhead - you have to pass through the character device layer
-no matter what, and you can go straight from there to either the
-standard hwrng wrapper code, or to your own special extra-fast
-implementation of dev_read. It should also satisfy Mr. Spelvin's
-paranoia - he can just instruct his udev to not replace /dev/urandom.
-And so we don't need to introduce any new APIs to the kernel at all,
-nor do we need to touch any core code.
-
-The downside, of course, is that in-kernel users of entropy won't have
-this fast API - do we have the kind of high-volume non-blocking
-entropy consumers in the kernel that might care about this?
+[0]: which is still funny to do with CONFIG_X86_64=y :)
