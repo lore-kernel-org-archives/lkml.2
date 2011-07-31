@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936Ab1GaPHn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 11:07:43 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54894 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab1GaPHi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 11:07:38 -0400
-Date: Sun, 31 Jul 2011 16:07:07 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Remy Bohmer <l.pinguin@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Remy Bohmer <linux@bohmer.net>, tglx@linutronix.de,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Add sched_clock to AT91 TCB clocksource driver
-Message-ID: <20110731150707.GA2975@n2100.arm.linux.org.uk>
-References: <1312124593-6088-1-git-send-email-linux@bohmer.net>
+	id S1751925Ab1GaPKY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 11:10:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:7547 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751772Ab1GaPKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 11:10:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,296,1309762800"; 
+   d="scan'208";a="33510259"
+Date: Sun, 31 Jul 2011 23:10:14 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: xfstests 073 regression
+Message-ID: <20110731151014.GA23106@localhost>
+References: <20110728164105.GA18258@infradead.org>
+ <20110729142121.GA21149@localhost>
+ <20110730134422.GA1884@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1312124593-6088-1-git-send-email-linux@bohmer.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20110730134422.GA1884@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 31, 2011 at 05:03:13PM +0200, Remy Bohmer wrote:
-> On AT91 there is no architecture specific sched_clock() implementation,
-> so the default fallback is used. This fallback uses the jiffie counter
-> as sched_clock().
-> There is NO standard clocksource available that is accurate enough,
-> except the TC-based clocksource implementation. Therefor this
-> implementation is used as base for the sched_clock(). This clocksource
-> offers sub-millisecond time-stamping. (< 200 ns)
-> 
-> Signed-off-by: Remy Bohmer <linux@bohmer.net>
-> ---
->  arch/arm/Kconfig                 |    1 +
->  arch/arm/kernel/sched_clock.c    |    7 +++++++
->  drivers/clocksource/tcb_clksrc.c |   23 +++++++++++++++++++++++
->  3 files changed, 31 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 9adc278..e0563a7 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -296,6 +296,7 @@ config ARCH_AT91
->  	select HAVE_CLK
->  	select CLKDEV_LOOKUP
->  	select ARM_PATCH_PHYS_VIRT if MMU
-> +	select HAVE_SCHED_CLOCK if ATMEL_TCB_CLKSRC
->  	help
->  	  This enables support for systems based on the Atmel AT91RM9200,
->  	  AT91SAM9 and AT91CAP9 processors.
-> diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
-> index 9a46370..f9028e4 100644
-> --- a/arch/arm/kernel/sched_clock.c
-> +++ b/arch/arm/kernel/sched_clock.c
-> @@ -20,6 +20,13 @@ static void (*sched_clock_update_fn)(void);
->  
->  static void sched_clock_poll(unsigned long wrap_ticks)
->  {
-> +	/*
-> +	 * The sched_clock_update_fn may be initialised AFTER first call to
-> +	 * time_init()
-> +	 */
-> +	if (unlikely(!sched_clock_update_fn))
-> +		return;
+On Sat, Jul 30, 2011 at 09:44:22PM +0800, Christoph Hellwig wrote:
+> This patch fixes the hang for me.
 
-NAK.  I've said this before - sched_clock _must_ be up and running by the
-time this function is called - because shortly after this call is when
-the scheduler initializes, and the scheduler wants sched_clock() working
-at that point.
+Thanks. It'd be better to get the _simple and tested_ fix into 3.1-rc1.
+(if anyone find major problems with the fix, please speak up)
+
+Linus, will you pull from this branch for the below one-liner change?
+
+        git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git urgent-for-linus
+
+Thanks,
+Fengguang
+---
+
+>From 0e995816f4fb69cef602b7fe82da68ced6be3b41 Mon Sep 17 00:00:00 2001
+From: Wu Fengguang <fengguang.wu@intel.com>
+Date: Fri, 29 Jul 2011 22:14:35 -0600
+Subject: [PATCH] don't busy retry the inode on failed grab_super_passive()
+
+This fixes a soft lockup on conditions
+
+a) the flusher is working on a work by __bdi_start_writeback(), while
+
+b) someone else calls writeback_inodes_sb*() or sync_inodes_sb(), which
+   grab sb->s_umount and enqueue a new work for the flusher to execute
+
+The s_umount grabbed by (b) will fail the grab_super_passive() in (a).
+Then if the inode is requeued, wb_writeback() will busy retry on it.
+As a result, wb_writeback() loops for ever without releasing
+wb->list_lock, which further blocks other tasks.
+
+Fix the busy loop by redirtying the inode. This may undesirably delay
+the writeback of the inode, however most likely it will be picked up
+soon by the queued work by writeback_inodes_sb*(), sync_inodes_sb() or
+even writeback_inodes_wb().
+
+bug url: http://www.spinics.net/lists/linux-fsdevel/msg47292.html
+
+Reported-by: Christoph Hellwig <hch@infradead.org>
+Tested-by: Christoph Hellwig <hch@infradead.org>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/fs-writeback.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 1599aa9..04cf3b9 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -618,7 +618,12 @@ static long __writeback_inodes_wb(struct bdi_writeback *wb,
+ 		struct super_block *sb = inode->i_sb;
+ 
+ 		if (!grab_super_passive(sb)) {
+-			requeue_io(inode, wb);
++			/*
++			 * grab_super_passive() may fail consistently due to
++			 * s_umount being grabbed by someone else. Don't use
++			 * requeue_io() to avoid busy retrying the inode/sb.
++			 */
++			redirty_tail(inode, wb);
+ 			continue;
+ 		}
+ 		wrote += writeback_sb_inodes(sb, wb, work);
+-- 
+1.7.2.3
+
