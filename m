@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab1GaUUf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 16:20:35 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:56438 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752289Ab1GaUU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 16:20:28 -0400
-X-ASG-Debug-ID: 1312143627-03d6a510aa2128d0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E35B908.6090507@fusionio.com>
-Date: Sun, 31 Jul 2011 22:20:24 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Kay Sievers <kay.sievers@vrfy.org>
-CC: Milan Broz <mbroz@redhat.com>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: loop: fix deadlock when sysfs and LOOP_CLR_FD race against each
-  other
-References: <1312053553.1187.17.camel@mop>
-X-ASG-Orig-Subj: Re: loop: fix deadlock when sysfs and LOOP_CLR_FD race against each
-  other
-In-Reply-To: <1312053553.1187.17.camel@mop>
+	id S1752577Ab1GaUUx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 16:20:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58372 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab1GaUUq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 16:20:46 -0400
+Subject: Re: [PATCH] kbuild: honor the ARCH setting of the existing
+ configuration
+From: David Woodhouse <dwmw2@infradead.org>
+To: Aunt Tillie <lacombar@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Date: Sun, 31 Jul 2011 21:20:42 +0100
+In-Reply-To: <1312141497-13854-1-git-send-email-lacombar@gmail.com>
+References: <1312141497-13854-1-git-send-email-lacombar@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1312143627
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.70528
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 8bit
+Message-ID: <1312143643.12369.32.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-07-30 21:19, Kay Sievers wrote:
-> From: Kay Sievers <kay.sievers@vrfy.org>
-> Subject: loop: fix deadlock when sysfs and LOOP_CLR_FD race against each other
-> 
-> LOOP_CLR_FD takes lo->lo_ctl_mutex and tries to remove the loop sysfs
-> files. Sysfs calls show() and waits for lo->lo_ctl_mutex. LOOP_CLR_FD
-> waits for show() to finish to remove the sysfs file.
-> 
->   cat /sys/class/block/loop0/loop/backing_file
->     mutex_lock_nested+0x176/0x350
->     ? loop_attr_do_show_backing_file+0x2f/0xd0 [loop]
->     ? loop_attr_do_show_backing_file+0x2f/0xd0 [loop]
->     loop_attr_do_show_backing_file+0x2f/0xd0 [loop]
->     dev_attr_show+0x1b/0x60
->     ? sysfs_read_file+0x86/0x1a0
->     ? __get_free_pages+0x12/0x50
->     sysfs_read_file+0xaf/0x1a0
-> 
->   ioctl(LOOP_CLR_FD):
->     wait_for_common+0x12c/0x180
->     ? try_to_wake_up+0x2a0/0x2a0
->     wait_for_completion+0x18/0x20
->     sysfs_deactivate+0x178/0x180
->     ? sysfs_addrm_finish+0x43/0x70
->     ? sysfs_addrm_start+0x1d/0x20
->     sysfs_addrm_finish+0x43/0x70
->     sysfs_hash_and_remove+0x85/0xa0
->     sysfs_remove_group+0x59/0x100
->     loop_clr_fd+0x1dc/0x3f0 [loop]
->     lo_ioctl+0x223/0x7a0 [loop]
-> 
-> Instead of taking the lo_ctl_mutex from sysfs code, take the inner
-> lo->lo_lock, to protect the access to the backing_file data.
-> 
-> Thanks to Tejun for help debugging and finding a solution.
+On Sun, 2011-07-31 at 15:44 -0400, Aunt Tillie wrote:
+> This change make Kbuild honor the ARCH setting of the existing configuration, if
+> any .config is present so that it does not get reset if there is a conflict
+> with the default ARCH for the platform and the current setting.
 
-Looks good, looks like something that should have a stable tag as well?
+I think this is the wrong approach.
+
+There are plans to make the architecture a *real* configuration option,
+and that will be lovely when it happens (and changing the 32-vs-64
+distinction so that it's no longer a different ARCH but just a config
+option is one step in that direction).
+
+But I don't think this patch is really a helpful step towards that goal;
+we should do that *properly* or not at all, and not give some temporary
+half-baked behaviour in the meantime, that people will come to depend on
+(and others will hate because it means they can't just take an ARM
+config and build it on their x86 box and have it automatically
+converted).
+
+And the other problem is that this is not really addressing the
+underlying issue, which is that we are still clinging to the legacy ARCH
+values for directories which don't exist in the arch/ directory any
+more, and which are *redundant* with the setting of CONFIG_64BIT in the
+config.
+
+The only problem here is that we're not using the merged ARCH=x86 by
+default, as most of the other 64-bit capable architectures in the kernel
+do — and it works just fine for all of them.
+
+If the x86 merge still hasn't been completed, four years after we
+deleted arch/{i386,x86_64}, then we need to complete it. Thanks for
+helping to root out the few esoteric things that still don't quite work
+right on x86; it's very useful to find them and fix them.
 
 -- 
-Jens Axboe
+dwmw2
 
