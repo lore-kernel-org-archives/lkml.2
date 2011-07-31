@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab1GaDQT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 23:16:19 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:46445 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997Ab1GaDQQ convert rfc822-to-8bit (ORCPT
+	id S1753059Ab1GaDSB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 23:18:01 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42319 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab1GaDRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 23:16:16 -0400
-Date: Sat, 30 Jul 2011 20:16:09 -0700 (PDT)
-Message-Id: <20110730.201609.2157787571393748046.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: shemminger@vyatta.com, paulmck@linux.vnet.ibm.com, mchan@broadcom.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: RCU: how to suppress warnings from rcu_assign_pointer?
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1312028225.2873.104.camel@edumazet-laptop>
-References: <20110729003843.GA2373@linux.vnet.ibm.com>
-	<20110729105058.2cb9fa86@nehalam.ftrdhcpuser.net>
-	<1312028225.2873.104.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 30 Jul 2011 20:16:12 -0700 (PDT)
+	Sat, 30 Jul 2011 23:17:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110731024208.GA30593@khazad-dum.debian.net>
+References: <20110730234630.7270.qmail@science.horizon.com>
+ <CAF_S4t8TFour-Yw1T+qdG9mCzy9+tGBR0hQG83+ra6PRzPhNHQ@mail.gmail.com>
+ <CA+55aFyimDdpCRER_7pc30S-QLhUkt0z-Y=gD48f7t=FxxFh7g@mail.gmail.com>
+ <CAF_S4t9PhDQBBfaLLaq1sE9YkJvQq5Q+ULegpD0aoTnv0CPutw@mail.gmail.com> <20110731024208.GA30593@khazad-dum.debian.net>
+From: Bryan Donlan <bdonlan@gmail.com>
+Date: Sat, 30 Jul 2011 23:17:14 -0400
+Message-ID: <CAF_S4t-a0NXa4Zapwf-jO4TRnEjpHzqFpy4HT4jE=gGwT9+80Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org,
+        mpm@selenic.com, tytso@mit.edu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Sat, 30 Jul 2011 14:17:05 +0200
+On Sat, Jul 30, 2011 at 22:42, Henrique de Moraes Holschuh
+<hmh@hmh.eng.br> wrote:
+> On Sat, 30 Jul 2011, Bryan Donlan wrote:
+>> In any case though, what about my suggestion - don't mess with urandom
+>> at all, and let udev replace the /dev/urandom device node with one
+>> directed to a fast hwrng device if one is detected? This has zero
+>
+> Now, THAT would be unsafe, and a nasty way to go about it.
 
-> Le vendredi 29 juillet 2011 à 10:50 -0700, Stephen Hemminger a écrit :
->> Gcc now generates warnings from rcu_assign_pointer when passed the
->> address of something for example:
->> 	rcu_assign_pointer(dev_queue->qdisc, &noop_qdisc);
->> This warning is harmless and should be surpressed but there maybe
->> other cases where we want that Gcc warning.
->> 
->> I tried various combinations of in rcu_assign_pointer macro
->>   #pragma GCC diagnostic push
->>   #pragma GCC diagnostic ignored "-Wlogical-op"
->>   ...
->>   #pragma GCC diagnostic pop
->> but macro's and pragma's don't nest with the correct scope for
->> this.
->> 
->> Maybe some one with more Gcc foo and time to waste could take
->> a crack at it.
-> 
-> I would just remove the test from rcu_assign_pointer().
-> 
-> We now have RCU_INIT_POINTER() for places we dont want/afford the
-> smp_wmb()
+I don't see why it's unsafe. It's leaving the policy decision of what
+RNG to use up to userspace, without needing to introduce any new API
+or parameter to do so. As long as the replacement device exposes the
+same interface as /dev/urandom, no problem, right? Userspace programs
+shouldn't notice the difference unless they stat() /dev/urandom and
+look at the device numbers.
 
-Agreed:
+I do realize it's a bit unorthodox to replace what has, traditionally,
+been a fixed device node with a configurable symlink, but there's no
+technical reason (as far as I can see) why it shouldn't work.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+> If you really don't want to touch /dev/.random, make it simple: either
+> export the embedded RNG as high-bandwidth /dev/hwrandom and let
+> userspace postprocess it and reroute it back to /dev/random as needed,
+> or do the same with a kernel thread.
+
+This approach is identical to mine as far as the kernel is concerned :)
+You'd set up a daemon to pump entropy into /dev/random. Users who want
+/dev/urandom to be even faster/more secure(?) can further symlink
+/dev/urandom to /dev/hwrandom. But there's no need to change
+/dev/urandom's implementation in the kernel to redirect it to the
+hwrng when userspace can do that just as well on its own, is my point.
