@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930Ab1GaV2H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 17:28:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60168 "EHLO mail.zytor.com"
+	id S1752948Ab1GaV2Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 17:28:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60187 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752763Ab1GaV1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 17:27:46 -0400
+	id S1752612Ab1GaV2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 17:28:19 -0400
 From: "H. Peter Anvin" <hpa@zytor.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
@@ -17,9 +17,9 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
 Cc: Arjan van de Ven <arjan@linux.intel.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>,
         Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [PATCH v3 3/3] x86, random: Verify RDRAND functionality and allow it to be disabled
-Date: Sun, 31 Jul 2011 14:26:56 -0700
-Message-Id: <1312147616-29125-4-git-send-email-hpa@zytor.com>
+Subject: [PATCH v3 2/3] x86, random: Architectural inlines to get random integers with RDRAND
+Date: Sun, 31 Jul 2011 14:26:55 -0700
+Message-Id: <1312147616-29125-3-git-send-email-hpa@zytor.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1312147616-29125-1-git-send-email-hpa@zytor.com>
 References: <CA+55aFy5iRjCigmK-eddkP8Wqy_qFDZRd6PV5d0XFE3p8ws1Bg@mail.gmail.com>
@@ -30,91 +30,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "H. Peter Anvin" <hpa@zytor.com>
 
-If the CPU declares that RDRAND is available, go through a guranteed
-reseed sequence, and make sure that it is actually working (producing
-data.)   If it does not, disable the CPU feature flag.
+Architectural inlines to get random ints and longs using the RDRAND
+instruction.
 
-Allow RDRAND to be disabled on the command line (as opposed to at
-compile time) for a user who has special requirements with regards to
-random numbers.
+Intel has introduced a new RDRAND instruction, a Digital Random Number
+Generator (DRNG), which is functionally an high bandwidth entropy
+source, cryptographic whitener, and integrity monitor all built into
+hardware.  This enables RDRAND to be used directly, bypassing the
+kernel random number pool.
+
+For technical documentation, see:
+
+http://software.intel.com/en-us/articles/download-the-latest-bull-mountain-software-implementation-guide/
+
+In this patch, this is *only* used for the nonblocking random number
+pool.  RDRAND is a nonblocking source, similar to our /dev/urandom,
+and is therefore not a direct replacement for /dev/random.  The
+architectural hooks presented in the previous patch only feed the
+kernel internal users, which only use the nonblocking pool, and so
+this is not a problem.
+
+Since this instruction is available in userspace, there is no reason
+to have a /dev/hw_rng device driver for the purpose of feeding rngd.
+This is especially so since RDRAND is a nonblocking source, and needs
+additional whitening and reduction (see the above technical
+documentation for details) in order to be of "pure entropy source"
+quality.
+
+The CONFIG_EXPERT compile-time option can be used to disable this use
+of RDRAND.
 
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Originally-by: Fenghua Yu <fenghua.yu@intel.com>
 Cc: Matt Mackall <mpm@selenic.com>
 Cc: Herbert Xu <herbert@gondor.apana.org.au>
 Cc: "Theodore Ts'o" <tytso@mit.edu>
 ---
- Documentation/kernel-parameters.txt |    5 ++
- arch/x86/include/asm/archrandom.h   |    2 +
- arch/x86/kernel/cpu/Makefile        |    1 +
- arch/x86/kernel/cpu/common.c        |    2 +
- arch/x86/kernel/cpu/rdrand.c        |   73 +++++++++++++++++++++++++++++++++++
- 5 files changed, 83 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/kernel/cpu/rdrand.c
+ arch/x86/Kconfig                  |    9 +++++
+ arch/x86/include/asm/archrandom.h |   73 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 82 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/archrandom.h
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index aa47be7..397ee05 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1764,6 +1764,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 37357a5..a0e9bda 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1451,6 +1451,15 @@ config ARCH_USES_PG_UNCACHED
+ 	def_bool y
+ 	depends on X86_PAT
  
- 	noresidual	[PPC] Don't use residual data on PReP machines.
- 
-+	nordrand	[X86] Disable the direct use of the RDRAND
-+			instruction even if it is supported by the
-+			processor.  RDRAND is still available to user
-+			space applications.
++config ARCH_RANDOM
++	def_bool y
++	prompt "x86 architectural random number generator" if EXPERT
++	---help---
++	  Enable the x86 architectural RDRAND instruction
++	  (Intel Bull Mountain technology) to generate random numbers.
++	  If supported, this is a high bandwidth, cryptographically
++	  secure hardware random number generator.
 +
- 	noresume	[SWSUSP] Disables resume and restores original swap
- 			space.
- 
+ config EFI
+ 	bool "EFI runtime service support"
+ 	depends on ACPI
 diff --git a/arch/x86/include/asm/archrandom.h b/arch/x86/include/asm/archrandom.h
-index b7b5bc0..0d9ec77 100644
---- a/arch/x86/include/asm/archrandom.h
-+++ b/arch/x86/include/asm/archrandom.h
-@@ -70,4 +70,6 @@ GET_RANDOM(arch_get_random_int, unsigned int, RDRAND_INT, ASM_NOP3);
- 
- #endif  /* CONFIG_ARCH_RANDOM */
- 
-+extern void x86_init_rdrand(struct cpuinfo_x86 *c);
-+
- #endif /* ASM_X86_ARCHRANDOM_H */
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 6042981..0e3a82a 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -15,6 +15,7 @@ CFLAGS_common.o		:= $(nostackp)
- obj-y			:= intel_cacheinfo.o scattered.o topology.o
- obj-y			+= proc.o capflags.o powerflags.o common.o
- obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
-+obj-y			+= rdrand.o
- 
- obj-$(CONFIG_X86_32)	+= bugs.o
- obj-$(CONFIG_X86_64)	+= bugs_64.o
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 22a073d..8dbd929 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -15,6 +15,7 @@
- #include <asm/stackprotector.h>
- #include <asm/perf_event.h>
- #include <asm/mmu_context.h>
-+#include <asm/archrandom.h>
- #include <asm/hypervisor.h>
- #include <asm/processor.h>
- #include <asm/sections.h>
-@@ -857,6 +858,7 @@ static void __cpuinit identify_cpu(struct cpuinfo_x86 *c)
- #endif
- 
- 	init_hypervisor(c);
-+	x86_init_rdrand(c);
- 
- 	/*
- 	 * Clear/Set all flags overriden by options, need do it
-diff --git a/arch/x86/kernel/cpu/rdrand.c b/arch/x86/kernel/cpu/rdrand.c
 new file mode 100644
-index 0000000..feca286
+index 0000000..b7b5bc0
 --- /dev/null
-+++ b/arch/x86/kernel/cpu/rdrand.c
++++ b/arch/x86/include/asm/archrandom.h
 @@ -0,0 +1,73 @@
 +/*
 + * This file is part of the Linux kernel.
@@ -138,57 +119,57 @@ index 0000000..feca286
 + *
 + */
 +
++#ifndef ASM_X86_ARCHRANDOM_H
++#define ASM_X86_ARCHRANDOM_H
++
 +#include <asm/processor.h>
-+#include <asm/archrandom.h>
-+#include <asm/sections.h>
++#include <asm/cpufeature.h>
++#include <asm/alternative.h>
++#include <asm/nops.h>
 +
-+static int __init x86_rdrand_setup(char *s)
-+{
-+	setup_clear_cpu_cap(X86_FEATURE_RDRAND);
-+	return 1;
-+}
-+__setup("nordrand", x86_rdrand_setup);
++#define RDRAND_RETRY_LOOPS	10
 +
-+/* We can't use arch_get_random_long() here since alternatives haven't run */
-+static inline int rdrand_long(unsigned long *v)
-+{
-+	int ok;
-+	asm volatile("1: " RDRAND_LONG "\n\t"
-+		     "jc 2f\n\t"
-+		     "decl %0\n\t"
-+		     "jnz 1b\n\t"
-+		     "2:"
-+		     : "=r" (ok), "=a" (*v)
-+		     : "0" (RDRAND_RETRY_LOOPS));
-+	return ok;
-+}
-+
-+/*
-+ * Force a reseed cycle; we are architecturally guaranteed a reseed
-+ * after no more than 512 128-bit chunks of random data.  This also
-+ * acts as a test of the CPU capability.
-+ */
-+#define RESEED_LOOP ((512*128)/sizeof(unsigned long))
-+
-+void __cpuinit x86_init_rdrand(struct cpuinfo_x86 *c)
-+{
-+#ifdef CONFIG_ARCH_RANDOM
-+	unsigned long tmp;
-+	int i, count, ok;
-+
-+	if (!cpu_has(c, X86_FEATURE_RDRAND))
-+		return;		/* Nothing to do */
-+
-+	for (count = i = 0; i < RESEED_LOOP; i++) {
-+		ok = rdrand_long(&tmp);
-+		if (ok)
-+			count++;
-+	}
-+
-+	if (count != RESEED_LOOP)
-+		clear_cpu_cap(c, X86_FEATURE_RDRAND);
++#define RDRAND_INT	".byte 0x0f,0xc7,0xf0"
++#ifdef CONFIG_X86_64
++# define RDRAND_LONG	".byte 0x48,0x0f,0xc7,0xf0"
++#else
++# define RDRAND_LONG	RDRAND_INT
 +#endif
++
++#ifdef CONFIG_ARCH_RANDOM
++
++#define GET_RANDOM(name, type, rdrand, nop)			\
++static inline int name(type *v)					\
++{								\
++	int ok;							\
++	alternative_io("movl $0, %0\n\t"			\
++		       nop,					\
++		       "\n1: " rdrand "\n\t"			\
++		       "jc 2f\n\t"				\
++		       "decl %0\n\t"                            \
++		       "jnz 1b\n\t"                             \
++		       "2:",                                    \
++		       X86_FEATURE_RDRAND,                      \
++		       ASM_OUTPUT2("=r" (ok), "=a" (*v)),       \
++		       "0" (RDRAND_RETRY_LOOPS));		\
++	return ok;						\
 +}
++
++#ifdef CONFIG_X86_64
++
++GET_RANDOM(arch_get_random_long, unsigned long, RDRAND_LONG, ASM_NOP5);
++GET_RANDOM(arch_get_random_int, unsigned int, RDRAND_INT, ASM_NOP4);
++
++#else
++
++GET_RANDOM(arch_get_random_long, unsigned long, RDRAND_LONG, ASM_NOP3);
++GET_RANDOM(arch_get_random_int, unsigned int, RDRAND_INT, ASM_NOP3);
++
++#endif /* CONFIG_X86_64 */
++
++#endif  /* CONFIG_ARCH_RANDOM */
++
++#endif /* ASM_X86_ARCHRANDOM_H */
 -- 
 1.7.6
 
