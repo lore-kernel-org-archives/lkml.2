@@ -1,65 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455Ab1GaRkF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 13:40:05 -0400
-Received: from mga14.intel.com ([143.182.124.37]:65400 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751818Ab1GaRkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 13:40:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,296,1309762800"; 
-   d="scan'208";a="2800550"
-From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Pekka Enberg <penberg@kernel.org>, cl@linux-foundation.org,
-        akpm@linux-foundation.org, rientjes@google.com, hughd@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
-        yinghan@google.com
-Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
-References: <alpine.DEB.2.00.1107290145080.3279@tiger>
-	<CA+55aFzut1tF6CLAPJUUh2H_7M4wcDpp2+Zb85Lqvofe+3v_jQ@mail.gmail.com>
-	<CA+55aFw9V-VM5TBwqdKiP0E_g8urth+08nX-_inZ8N1_gFQF4w@mail.gmail.com>
-Date: Sun, 31 Jul 2011 10:39:58 -0700
-In-Reply-To: <CA+55aFw9V-VM5TBwqdKiP0E_g8urth+08nX-_inZ8N1_gFQF4w@mail.gmail.com>
-	(Linus Torvalds's message of "Sat, 30 Jul 2011 08:32:10 -1000")
-Message-ID: <m2livez6vl.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752540Ab1GaRk0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 13:40:26 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:61350 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818Ab1GaRkU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 13:40:20 -0400
+Date: Sun, 31 Jul 2011 13:37:58 -0400 (EDT)
+From: Peter Foley <pefoley2@verizon.net>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Peter Foley <pefoley2@verizon.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
+        mmarek@suse.cz
+Subject: Re: kbuild: prevent make from deleting _shipped files
+In-reply-to: <CACqU3MX=MVd8v2wKaFsNuXB2WsWq2jLsGfAdDEW9atoWbWE7Mg@mail.gmail.com>
+Message-id: <alpine.LNX.2.00.1107311333320.53256@linux>
+References: <alpine.LNX.2.00.1107311134490.30666@linux>
+ <CACqU3MX7f2oNpDf6W124tfROfKq4PFsyvxiq=VtPJfv-gqUrww@mail.gmail.com>
+ <CACqU3MU9BBsXjevz617v7YOBm+9RR1Wm49gi0jvs95yneQ2Yrg@mail.gmail.com>
+ <alpine.LNX.2.00.1107311300190.16802@linux>
+ <CACqU3MX=MVd8v2wKaFsNuXB2WsWq2jLsGfAdDEW9atoWbWE7Mg@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: MULTIPART/MIXED; BOUNDARY="0-844082869-1312133883=:53256"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> On Sat, Jul 30, 2011 at 8:27 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> Do we allocate the page map array sufficiently aligned that we
->> actually don't ever have the case of straddling a cacheline? I didn't
->> check.
->
-> Oh, and another thing worth checking: did somebody actually check the
-> timings for:
+--0-844082869-1312133883=:53256
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-I would like to see a followon patch that moves the mem_cgroup
-pointer back into struct page. Copying some mem_cgroup people.
+On Sun, 31 Jul 2011, Arnaud Lacombe wrote:
 
->
->  - *just* the alignment change?
->
->    IOW, maybe some of the netperf improvement isn't from the lockless
-> path, but exactly from 'struct page' always being in a single
-> cacheline?
->
->  - check performance with cmpxchg16b *without* the alignment.
->
->    Sometimes especially intel is so good at unaligned accesses that
-> you wouldn't see an issue. Now, locked ops are usually special (and
+> Hi,
+> 
+> On Sun, Jul 31, 2011 at 1:08 PM, Peter Foley <pefoley2@verizon.net> wrote:
+> > On Sun, 31 Jul 2011, Arnaud Lacombe wrote:
+> >
+> >> Hi,
+> >>
+> >> On Sun, Jul 31, 2011 at 12:21 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> >> > Hi,
+> >> >
+> >> > On Sun, Jul 31, 2011 at 11:37 AM, Peter Foley <pefoley2@verizon.net> wrote:
+> >> >> commit 7373f4f (kbuild: add implicit rules for parser generation)
+> >> >> created a implicit rule chain (%.c: %.c_shipped: %.y). This causes make to delete the _shipped files
+> >> >> because it considers them intermediate files. Mark the _shipped files PRECIOUS
+> >> >> to prevent make from deleting them.
+> >> >>
+> >> >> Signed-off-by: Peter Foley <pefoley2@verizon.net>
+> >> > What make are you using, and what command triggers the issue ?
+> >> >
+> >> > Those rules should only be visible on parser regeneration (ie.
+> >> > REGENERATE_PARSERS defined). make 3.82 does not seem to trigger the
+> >> > issue:
+> >> >
+> >> > % make -v
+> >> > GNU Make 3.82
+> >> >
+> >> > % make REGENERATE_PARSERS=y defconfig
+> >> >  HOSTCC  scripts/basic/fixdep
+> >> >  HOSTCC  scripts/kconfig/conf.o
+> >> >  SHIPPED scripts/kconfig/zconf.tab.c
+> >> >  SHIPPED scripts/kconfig/zconf.lex.c
+> >> >  SHIPPED scripts/kconfig/zconf.hash.c
+> >> >  HOSTCC  scripts/kconfig/zconf.tab.o
+> >> >  HOSTLD  scripts/kconfig/conf
+> >> > *** Default configuration is based on 'x86_64_defconfig'
+> >> > [...]
+> >> >
+> >> > The shipped file are still there:
+> >> >
+> >> > % ls scripts/kconfig/*_shipped
+> >> > scripts/kconfig/zconf.hash.c_shipped
+> >> > scripts/kconfig/zconf.lex.c_shipped
+> >> > scripts/kconfig/zconf.tab.c_shipped
+> >> >
+> >> a bare make-3.81 from ftp.gnu.org built on a Fedora 14 behave the same.
+> >>
+> >> I definitively needs enlightenment on this one :)
+> >>
+> >> Thanks,
+> >>  - Arnaud
+> >
+> > The problem only appears when the parsers are actually rebuilt.
+> > rm scripts/kconfig/*_shipped
+> ^^^^^
+> 
+> This is why. You do not (or at least no longer) need to remove the
+> *_shipped files before regenerating them.
+> 
+>  - Arnaud
 
-As Eric pointed out CMPXCHG16B requires alignment, it #GPs otherwise.
+Ok, I deleted the _shipped files as a easy way to force regeneration but 
+touching the source files works just as well.
+Please disregard this patch.
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+
+Thanks,
+
+Peter
+--0-844082869-1312133883=:53256--
