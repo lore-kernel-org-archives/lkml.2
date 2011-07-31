@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab1GaQjq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 12:39:46 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:55184 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab1GaQjj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 12:39:39 -0400
-X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Sun, 31 Jul 2011 12:39:39 EDT
-Date: Sun, 31 Jul 2011 11:37:08 -0400 (EDT)
-From: Peter Foley <pefoley2@verizon.net>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
-        mmarek@suse.cz, lacombar@gmail.com
-Subject: kbuild: prevent make from deleting _shipped files
-Message-id: <alpine.LNX.2.00.1107311134490.30666@linux>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1752316Ab1GaQmh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 12:42:37 -0400
+Received: from trinity.fluff.org ([89.16.178.74]:42300 "EHLO trinity.fluff.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751784Ab1GaQm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 12:42:29 -0400
+Date: Sun, 31 Jul 2011 17:42:08 +0100
+From: Ben Dooks <ben-i2c@fluff.org>
+To: Paul Gortmaker <paul.gortmaker@gmail.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-i2c@vger.kernel.org,
+        akpm <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, khali@linux-fr.org,
+        ben-linux@fluff.org
+Subject: Re: [PATCH -next] i2c: i2c-pxa-pci.c needs module.h
+Message-ID: <20110731164208.GP15795@trinity.fluff.org>
+References: <20110729173827.716f57ff6e00095a3efc6449@canb.auug.org.au> <20110729211430.6c4830bd.rdunlap@xenotime.net> <CAP=VYLrtumuSM_ncO6sEr7=HciiKcOsB=yN4NZnAxesjSSOgMw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAP=VYLrtumuSM_ncO6sEr7=HciiKcOsB=yN4NZnAxesjSSOgMw@mail.gmail.com>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@trinity.fluff.org
+X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 7373f4f (kbuild: add implicit rules for parser generation)
-created a implicit rule chain (%.c: %.c_shipped: %.y). This causes make to delete the _shipped files
-because it considers them intermediate files. Mark the _shipped files PRECIOUS
-to prevent make from deleting them.
+On Sat, Jul 30, 2011 at 03:09:32PM -0400, Paul Gortmaker wrote:
+> On Sat, Jul 30, 2011 at 12:14 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> > From: Randy Dunlap <rdunlap@xenotime.net>
+> >
+> > i2c-pxa-pci.c uses interfaces from linux/module.h, so it should
+> > include that file.  This fixes build errors.
+> 
+> Applied to module.h-split, thanks.
 
-Signed-off-by: Peter Foley <pefoley2@verizon.net>
----
+ok, so I don't need to apply this one?
+Acked-by: Ben Dooks <ben-linux@fluff.org>
+ 
+> P.
+> 
+> >
+> > Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> > ---
+> >  drivers/i2c/busses/i2c-pxa-pci.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> > --- linux-next-20110729.orig/drivers/i2c/busses/i2c-pxa-pci.c
+> > +++ linux-next-20110729/drivers/i2c/busses/i2c-pxa-pci.c
+> > @@ -3,6 +3,7 @@
+> >  * It does not support slave mode, the register slightly moved. This PCI
+> >  * device provides three bars, every contains a single I2C controller.
+> >  */
+> > +#include <linux/module.h>
+> >  #include <linux/pci.h>
+> >  #include <linux/platform_device.h>
+> >  #include <linux/i2c/pxa-i2c.h>
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index aeea84a..5d986d9 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -167,6 +167,7 @@ ifdef REGENERATE_PARSERS
- quiet_cmd_gperf = GPERF $@
-       cmd_gperf = gperf -t --output-file $@ -a -C -E -g -k 1,3,$$ -p -t $<
- 
-+.PRECIOUS: $(src)/%.hash.c_shipped
- $(src)/%.hash.c_shipped: $(src)/%.gperf
- 	$(call cmd,gperf)
- 
-@@ -177,6 +178,7 @@ LEX_PREFIX = $(if $(LEX_PREFIX_${baseprereq}),$(LEX_PREFIX_${baseprereq}),yy)
- quiet_cmd_flex = LEX     $@
-       cmd_flex = flex -o$@ -L -P $(LEX_PREFIX) $<
- 
-+.PRECIOUS: $(src)/%.lex.c_shipped
- $(src)/%.lex.c_shipped: $(src)/%.l
- 	$(call cmd,flex)
- 
-@@ -187,12 +189,14 @@ YACC_PREFIX = $(if $(YACC_PREFIX_${baseprereq}),$(YACC_PREFIX_${baseprereq}),yy)
- quiet_cmd_bison = YACC    $@
-       cmd_bison = bison -o$@ -t -l -p $(YACC_PREFIX) $<
- 
-+.PRECIOUS: $(src)/%.tab.c_shipped
- $(src)/%.tab.c_shipped: $(src)/%.y
- 	$(call cmd,bison)
- 
- quiet_cmd_bison_h = YACC    $@
-       cmd_bison_h = bison -o/dev/null --defines=$@ -t -l -p $(YACC_PREFIX) $<
- 
-+.PRECIOUS: $(src)/%.tab.h_shipped
- $(src)/%.tab.h_shipped: $(src)/%.y
- 	$(call cmd,bison_h)
- 
+-- 
+Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
+
+Large Hadron Colada: A large Pina Colada that makes the universe disappear.
+
