@@ -1,42 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751222Ab1GaEe3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 00:34:29 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55338 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750762Ab1GaEeW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 00:34:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAF_S4t9PhDQBBfaLLaq1sE9YkJvQq5Q+ULegpD0aoTnv0CPutw@mail.gmail.com>
-References: <20110730234630.7270.qmail@science.horizon.com>
- <CAF_S4t8TFour-Yw1T+qdG9mCzy9+tGBR0hQG83+ra6PRzPhNHQ@mail.gmail.com>
- <CA+55aFyimDdpCRER_7pc30S-QLhUkt0z-Y=gD48f7t=FxxFh7g@mail.gmail.com> <CAF_S4t9PhDQBBfaLLaq1sE9YkJvQq5Q+ULegpD0aoTnv0CPutw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 30 Jul 2011 18:33:38 -1000
-Message-ID: <CA+55aFzUeRd0fx79eepx98HLk3-EMWPyu2V-9VM1qtT60q-bVQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
-To: Bryan Donlan <bdonlan@gmail.com>
-Cc: George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org,
-        mpm@selenic.com, tytso@mit.edu
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751414Ab1GaEhS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 00:37:18 -0400
+Received: from mail.perches.com ([173.55.12.10]:4395 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750762Ab1GaEhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 00:37:13 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org
+Subject: [PATCH] [media] tda18271: Use printk extension %pV
+Date: Sat, 30 Jul 2011 21:37:10 -0700
+Message-Id: <7d652e92c65b5cf1495492bd1e56eca6a7c9d2dd.1312087002.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.131.g99019
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 30, 2011 at 4:02 PM, Bryan Donlan <bdonlan@gmail.com> wrote:
->
-> In any case though, what about my suggestion - don't mess with urandom
-> at all, and let udev replace the /dev/urandom device node with one
-> directed to a fast hwrng device if one is detected?
+Deduplicate printk formats to save ~20KB text.
 
-Umm, user space is encouraged to do exactly that.
+$ size drivers/media/common/tuners/tda18271*o.*
+   text	   data	    bss	    dec	    hex	filename
+  10747	     56	   1920	  12723	   31b3	drivers/media/common/tuners/tda18271-common.o.new
+  18889	     56	   3112	  22057	   5629	drivers/media/common/tuners/tda18271-common.o.old
+  20561	    204	   4264	  25029	   61c5	drivers/media/common/tuners/tda18271-fe.o.new
+  31093	    204	   6000	  37297	   91b1	drivers/media/common/tuners/tda18271-fe.o.old
+   3681	   6760	    440	  10881	   2a81	drivers/media/common/tuners/tda18271-maps.o.new
+   5631	   6760	    680	  13071	   330f	drivers/media/common/tuners/tda18271-maps.o.old
 
-However, at no point does that mean "the kernel shouldn't do the best
-it can". So it's a totally independent issue.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/media/common/tuners/tda18271-common.c |   32 ++++++++++++++++----
+ drivers/media/common/tuners/tda18271-priv.h   |   39 +++++++++++-------------
+ 2 files changed, 43 insertions(+), 28 deletions(-)
 
-The kernel will want to use rdrand regardless of what user space does.
-Both for legacy applications that don't know about rdrand, and for
-scripts that don't want to bother. And for just its own use.
+diff --git a/drivers/media/common/tuners/tda18271-common.c b/drivers/media/common/tuners/tda18271-common.c
+index aae40e5..39c6457 100644
+--- a/drivers/media/common/tuners/tda18271-common.c
++++ b/drivers/media/common/tuners/tda18271-common.c
+@@ -676,10 +676,28 @@ fail:
+ 	return ret;
+ }
+ 
+-/*
+- * Overrides for Emacs so that we follow Linus's tabbing style.
+- * ---------------------------------------------------------------------------
+- * Local variables:
+- * c-basic-offset: 8
+- * End:
+- */
++int _tda_printk(struct tda18271_priv *state, const char *level,
++		const char *func, const char *fmt, ...)
++{
++	struct va_format vaf;
++	va_list args;
++	int rtn;
++
++	va_start(args, fmt);
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	if (state)
++		rtn = printk("%s%s: [%d-%04x|%c] %pV",
++			     level, func, i2c_adapter_id(state->i2c_props.adap),
++			     state->i2c_props.addr,
++			     (state->role == TDA18271_MASTER) ? 'M' : 'S',
++			     &vaf);
++	else
++		rtn = printk("%s%s: %pV", level, func, &vaf);
++
++	va_end(args);
++
++	return rtn;
++}
+diff --git a/drivers/media/common/tuners/tda18271-priv.h b/drivers/media/common/tuners/tda18271-priv.h
+index 9589ab0..94340f4 100644
+--- a/drivers/media/common/tuners/tda18271-priv.h
++++ b/drivers/media/common/tuners/tda18271-priv.h
+@@ -136,29 +136,26 @@ extern int tda18271_debug;
+ #define DBG_ADV  8
+ #define DBG_CAL  16
+ 
+-#define tda_printk(st, kern, fmt, arg...) do {\
+-	if (st) { \
+-		struct tda18271_priv *state = st; \
+-		printk(kern "%s: [%d-%04x|%s] " fmt, __func__, \
+-			i2c_adapter_id(state->i2c_props.adap), \
+-			state->i2c_props.addr, \
+-			(state->role == TDA18271_MASTER) \
+-			? "M" : "S", ##arg); \
+-	} else \
+-		printk(kern "%s: " fmt, __func__, ##arg); \
++__attribute__((format(printf, 4, 5)))
++int _tda_printk(struct tda18271_priv *state, const char *level,
++		const char *func, const char *fmt, ...);
++
++#define tda_printk(st, lvl, fmt, arg...)			\
++	_tda_printk(st, lvl, __func__, fmt, ##arg)
++
++#define tda_dprintk(st, lvl, fmt, arg...)			\
++do {								\
++	if (tda18271_debug & lvl)				\
++		tda_printk(st, KERN_DEBUG, fmt, ##arg);		\
+ } while (0)
+ 
+-#define tda_dprintk(st, lvl, fmt, arg...) do {\
+-	if (tda18271_debug & lvl) \
+-		tda_printk(st, KERN_DEBUG, fmt, ##arg); } while (0)
+-
+-#define tda_info(fmt, arg...)     printk(KERN_INFO     fmt, ##arg)
+-#define tda_warn(fmt, arg...) tda_printk(priv, KERN_WARNING, fmt, ##arg)
+-#define tda_err(fmt, arg...)  tda_printk(priv, KERN_ERR,     fmt, ##arg)
+-#define tda_dbg(fmt, arg...)  tda_dprintk(priv, DBG_INFO,    fmt, ##arg)
+-#define tda_map(fmt, arg...)  tda_dprintk(priv, DBG_MAP,     fmt, ##arg)
+-#define tda_reg(fmt, arg...)  tda_dprintk(priv, DBG_REG,     fmt, ##arg)
+-#define tda_cal(fmt, arg...)  tda_dprintk(priv, DBG_CAL,     fmt, ##arg)
++#define tda_info(fmt, arg...)	pr_info(fmt, ##arg)
++#define tda_warn(fmt, arg...)	tda_printk(priv, KERN_WARNING, fmt, ##arg)
++#define tda_err(fmt, arg...)	tda_printk(priv, KERN_ERR,     fmt, ##arg)
++#define tda_dbg(fmt, arg...)	tda_dprintk(priv, DBG_INFO,    fmt, ##arg)
++#define tda_map(fmt, arg...)	tda_dprintk(priv, DBG_MAP,     fmt, ##arg)
++#define tda_reg(fmt, arg...)	tda_dprintk(priv, DBG_REG,     fmt, ##arg)
++#define tda_cal(fmt, arg...)	tda_dprintk(priv, DBG_CAL,     fmt, ##arg)
+ 
+ #define tda_fail(ret)							     \
+ ({									     \
+-- 
+1.7.6.131.g99019
 
-             Linus
