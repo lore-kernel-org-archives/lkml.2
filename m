@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab1GaWLN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 18:11:13 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51466 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab1GaWLJ convert rfc822-to-8bit (ORCPT
+	id S1753016Ab1GaWSa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 18:18:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42125 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752926Ab1GaWSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 18:11:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <1312066923.22074.53.camel@i7.infradead.org>
-References: <1312066693.22074.50.camel@i7.infradead.org>
-	<1312066923.22074.53.camel@i7.infradead.org>
-Date: Mon, 1 Aug 2011 00:11:08 +0200
-Message-ID: <CAFLxGvy0QqoySDFwZpygHeXvQ7hG-B7z5iZq8qx3GUkFX8w2RQ@mail.gmail.com>
-Subject: Re: [PATCH 1/5] um: Use __i386__ in ifdef for vsyscall exports, not SUBARCH_i386
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 31 Jul 2011 18:18:24 -0400
+Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
+From: David Woodhouse <dwmw2@infradead.org>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>
+Date: Sun, 31 Jul 2011 23:18:16 +0100
+In-Reply-To: <CACqU3MUJ=B-VszESWcFXbW=TLRxz5HrAaUn3nkyydX-xBBTXhg@mail.gmail.com>
+References: <1312067499.22074.59.camel@i7.infradead.org>
+	 <1312067670.22074.61.camel@i7.infradead.org>
+	 <CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
+	 <4E34998D.8060806@zytor.com>
+	 <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
+	 <4E34A1E4.8040103@zytor.com>
+	 <CACqU3MVkLXoBq7KP2Jff=p7EiKR7DkPa4z7y0Rdah-dGzRvj4g@mail.gmail.com>
+	 <4E34AFAD.90008@zytor.com>
+	 <CACqU3MUJ=B-VszESWcFXbW=TLRxz5HrAaUn3nkyydX-xBBTXhg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1312150698.18010.21.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 31, 2011 at 1:02 AM, David Woodhouse <dwmw2@infradead.org> wrote:
-> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-> ---
->  arch/um/os-Linux/Makefile    |    2 --
->  arch/um/os-Linux/user_syms.c |    2 +-
->  2 files changed, 1 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/um/os-Linux/Makefile b/arch/um/os-Linux/Makefile
-> index b33f4df..78658a7 100644
-> --- a/arch/um/os-Linux/Makefile
-> +++ b/arch/um/os-Linux/Makefile
-> @@ -13,8 +13,6 @@ USER_OBJS := $(user-objs-y) aio.o elf_aux.o execvp.o file.o helper.o irq.o \
->        main.o mem.o process.o registers.o sigio.o signal.o start_up.o time.o \
->        tty.o tls.o uaccess.o umid.o util.o
->
-> -CFLAGS_user_syms.o += -DSUBARCH_$(SUBARCH)
-> -
->  HAVE_AIO_ABI := $(shell [ -r /usr/include/linux/aio_abi.h ] && \
->        echo -DHAVE_AIO_ABI )
->  CFLAGS_aio.o += $(HAVE_AIO_ABI)
-> diff --git a/arch/um/os-Linux/user_syms.c b/arch/um/os-Linux/user_syms.c
-> index 45ffe46..9165513 100644
-> --- a/arch/um/os-Linux/user_syms.c
-> +++ b/arch/um/os-Linux/user_syms.c
-> @@ -45,7 +45,7 @@ EXPORT_SYMBOL(readdir64);
->  extern void truncate64(void) __attribute__((weak));
->  EXPORT_SYMBOL(truncate64);
->
-> -#ifdef SUBARCH_i386
-> +#ifdef __i386__
->  EXPORT_SYMBOL(vsyscall_ehdr);
->  EXPORT_SYMBOL(vsyscall_end);
->  #endif
+On Sat, 2011-07-30 at 22:09 -0400, Arnaud Lacombe wrote:
+> Btw, `make CONFIG_GENERIC_BUG=n oldconfig' or `make CONFIG_64BIT=n
+> oldconfig'[0] does not even work, and I'm getting no error. So either
+> you make it work for all possible uses, or you warn the user he tried
+> something illegal, but you don't just fail silently. 
 
-Why do we need this?
+You're absolutely right that we should report it. I'm dubious about
+trying to report a *reason*... it would be nice if we could do it
+*reliably*, but we don't actually pass the reasons back up so the code
+has to guess. I'm torn between ripping it out because it's guessing, and
+trying to improve it. What do you think?
+
+I'd *love* to be able to say 'You need to enable CONFIG_SATA in order to
+enable CONFIG_SATA_MV'. But if I were to do *that* then I'd probably end
+up ripping out the whole of this 'select' atrocity (which would now have
+no excuse for its existence) and I'd be even further from the simple
+task I started off with :)
+
+[dwmw2@i7 linux-2.6]$ make CONFIG_GENERIC_BUG=n oldconfig
+scripts/kconfig/conf --oldconfig Kconfig
+#
+# Could not set CONFIG_GENERIC_BUG=n; perhaps it is selected by another option?
+#
+#
+# configuration written to .config
+#
+[dwmw2@i7 linux-2.6]$ make CONFIG_SATA_MV=y oldconfig
+scripts/kconfig/conf --oldconfig Kconfig
+#
+# Could not set CONFIG_SATA_MV=y; perhaps it has unmet dependencies?
+#
+#
+# configuration written to .config
+#
+
+
+Incremental patch: 
+
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index 0341254..ff25669 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -364,8 +364,22 @@ void conf_set_symbol_from_env(char *str)
+ 		return;
+ 
+ 	sym_calc_value(sym);
+-	if (!sym_set_string_value(sym, p))
++	if (!sym_set_string_value(sym, p)) {
++		char *reason;
++
++		if ((sym->type == S_BOOLEAN || sym->type == S_TRISTATE) &&
++			 !p[1] && toupper(p[0]) == 'N')
++			/* We were turning it *off* and failed... selected? */
++			reason = "perhaps it is selected by another option?";
++		else if (!sym->visible)
++			reason = "perhaps it has unmet dependencies?";
++		else
++			reason = "perhaps your setting was invalid?";
++
++		conf_message("Could not set " CONFIG_ "%s=%s; %s",
++			     sym->name, p, reason);
+ 		return;
++	}
+ 
+ 	conf_message(CONFIG_ "%s set to %s from environment", sym->name, p);
+ 	if (sym_is_choice_value(sym))
 
 -- 
-Thanks,
-//richard
+dwmw2
+
