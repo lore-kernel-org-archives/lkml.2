@@ -1,36 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583Ab1GaSgH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 14:36:07 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56351
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751790Ab1GaSf6 (ORCPT
+	id S1752616Ab1GaSho (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 14:37:44 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:47017 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab1GaShk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 14:35:58 -0400
-Date: Sun, 31 Jul 2011 14:35:56 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Sage Weil <sage@newdream.net>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: Re: [GIT PULL] Ceph updates for 3.1-rc1
-Message-ID: <20110731183556.GA23133@infradead.org>
-References: <Pine.LNX.4.64.1107261152440.2593@cobra.newdream.net>
+	Sun, 31 Jul 2011 14:37:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1107261152440.2593@cobra.newdream.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <alpine.LNX.2.00.1107311333320.53256@linux>
+References: <alpine.LNX.2.00.1107311134490.30666@linux>
+	<CACqU3MX7f2oNpDf6W124tfROfKq4PFsyvxiq=VtPJfv-gqUrww@mail.gmail.com>
+	<CACqU3MU9BBsXjevz617v7YOBm+9RR1Wm49gi0jvs95yneQ2Yrg@mail.gmail.com>
+	<alpine.LNX.2.00.1107311300190.16802@linux>
+	<CACqU3MX=MVd8v2wKaFsNuXB2WsWq2jLsGfAdDEW9atoWbWE7Mg@mail.gmail.com>
+	<alpine.LNX.2.00.1107311333320.53256@linux>
+Date: Sun, 31 Jul 2011 14:37:39 -0400
+Message-ID: <CACqU3MWHRJXRu5sOvyGhyiqV94=UmDfCxixf-okkGuphxUFRTQ@mail.gmail.com>
+Subject: Re: kbuild: prevent make from deleting _shipped files
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Peter Foley <pefoley2@verizon.net>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
+        mmarek@suse.cz
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 01:36:37PM -0700, Sage Weil wrote:
-> Sage Weil (19):
->       ceph: add flags field to file_info
->       ceph: add F_SYNC file flag to force sync (non-O_DIRECT) io
+Hi,
 
-Can you document what the exact semantics of this flag are, and how
-they different from using O_SYNC/O_DSYNC.
+On Sun, Jul 31, 2011 at 1:37 PM, Peter Foley <pefoley2@verizon.net> wrote:
+> On Sun, 31 Jul 2011, Arnaud Lacombe wrote:
+>
+>> Hi,
+>>
+>> On Sun, Jul 31, 2011 at 1:08 PM, Peter Foley <pefoley2@verizon.net> wrote:
+>> > On Sun, 31 Jul 2011, Arnaud Lacombe wrote:
+>> >
+>> >> Hi,
+>> >>
+>> >> On Sun, Jul 31, 2011 at 12:21 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>> >> > Hi,
+>> >> >
+>> >> > On Sun, Jul 31, 2011 at 11:37 AM, Peter Foley <pefoley2@verizon.net> wrote:
+>> >> >> commit 7373f4f (kbuild: add implicit rules for parser generation)
+>> >> >> created a implicit rule chain (%.c: %.c_shipped: %.y). This causes make to delete the _shipped files
+>> >> >> because it considers them intermediate files. Mark the _shipped files PRECIOUS
+>> >> >> to prevent make from deleting them.
+>> >> >>
+>> >> >> Signed-off-by: Peter Foley <pefoley2@verizon.net>
+>> >> > What make are you using, and what command triggers the issue ?
+>> >> >
+>> >> > Those rules should only be visible on parser regeneration (ie.
+>> >> > REGENERATE_PARSERS defined). make 3.82 does not seem to trigger the
+>> >> > issue:
+>> >> >
+>> >> > % make -v
+>> >> > GNU Make 3.82
+>> >> >
+>> >> > % make REGENERATE_PARSERS=y defconfig
+>> >> >  HOSTCC  scripts/basic/fixdep
+>> >> >  HOSTCC  scripts/kconfig/conf.o
+>> >> >  SHIPPED scripts/kconfig/zconf.tab.c
+>> >> >  SHIPPED scripts/kconfig/zconf.lex.c
+>> >> >  SHIPPED scripts/kconfig/zconf.hash.c
+>> >> >  HOSTCC  scripts/kconfig/zconf.tab.o
+>> >> >  HOSTLD  scripts/kconfig/conf
+>> >> > *** Default configuration is based on 'x86_64_defconfig'
+>> >> > [...]
+>> >> >
+>> >> > The shipped file are still there:
+>> >> >
+>> >> > % ls scripts/kconfig/*_shipped
+>> >> > scripts/kconfig/zconf.hash.c_shipped
+>> >> > scripts/kconfig/zconf.lex.c_shipped
+>> >> > scripts/kconfig/zconf.tab.c_shipped
+>> >> >
+>> >> a bare make-3.81 from ftp.gnu.org built on a Fedora 14 behave the same.
+>> >>
+>> >> I definitively needs enlightenment on this one :)
+>> >>
+>> >> Thanks,
+>> >>  - Arnaud
+>> >
+>> > The problem only appears when the parsers are actually rebuilt.
+>> > rm scripts/kconfig/*_shipped
+>> ^^^^^
+>>
+>> This is why. You do not (or at least no longer) need to remove the
+>> *_shipped files before regenerating them.
+>>
+>>  - Arnaud
+>
+> Ok, I deleted the _shipped files as a easy way to force regeneration but
+> touching the source files works just as well.
+> Please disregard this patch.
+>
+I think it is still valuable, especially when _shipped files are
+created, we want make to keep them. Could you update the changelog to
+mention in which case this is happening and re-send ?
 
+Thanks,
+ - Arnaud
