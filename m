@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab1GaXUe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 19:20:34 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:65373 "EHLO
+	id S1753231Ab1GaXXS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 19:23:18 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:41182 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab1GaXU1 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752847Ab1GaXXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 19:20:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <1312151687.18010.31.camel@i7.infradead.org>
-References: <1312141497-13854-1-git-send-email-lacombar@gmail.com>
-	<1312143643.12369.32.camel@i7.infradead.org>
-	<CACqU3MXak0Yo+VDQNEqT9rTJ5CjdU6jJ-C1Km7GauMQ+qGW+vg@mail.gmail.com>
-	<1312151687.18010.31.camel@i7.infradead.org>
-Date: Sun, 31 Jul 2011 19:20:26 -0400
-Message-ID: <CACqU3MUfnt9Pn1Sen-Q=6W-n904Qu842Goo3n4iq_uyK0fQ3rg@mail.gmail.com>
-Subject: Re: [PATCH] kbuild: honor the ARCH setting of the existing configuration
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 31 Jul 2011 19:23:12 -0400
+Subject: [PATCH] power_supply: fix unterminated platform_device_id table
+ for max8997_charger and max8998_charger
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        KyungMin Park <kyungmin.park@samsung.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 01 Aug 2011 07:23:00 +0800
+Message-ID: <1312154581.2445.3.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The platform_device_id table is supposed to be zero-terminated.
 
-On Sun, Jul 31, 2011 at 6:34 PM, David Woodhouse <dwmw2@infradead.org> wrote:
->> I am working with configuration for mips, sh, powerpc, arm and x86.
->> Some of them are for real board, some of them are to regress-test
->> compilers, binutils and kernel builds. Each of those config hardcode
->> the CROSS_COMPILER string and have their own build directory. In each
->> case, I want to be able to just run "make O=/src/obj/v3.0-arm
->> oldnoconfig all" without having to worry about anything else.
->
-> Yes, that's a valid but *separate* problem.
-yes, but I never really looked at it so far, I had the occasion now,
-and did the patch.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/power/max8997_charger.c |    1 +
+ drivers/power/max8998_charger.c |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-> FWIW I usually solve this problem with a two-line GNUmakefile:
->        ARCH := arm
->        include Makefile
->
-this would not work as I might ends up being multiple build in
-parallel and I am an aficionados of `git clean -fdx' so the extra file
-would go away.
+diff --git a/drivers/power/max8997_charger.c b/drivers/power/max8997_charger.c
+index 7106b49..9848fb8 100644
+--- a/drivers/power/max8997_charger.c
++++ b/drivers/power/max8997_charger.c
+@@ -177,6 +177,7 @@ static int __devexit max8997_battery_remove(struct platform_device *pdev)
+ 
+ static const struct platform_device_id max8997_battery_id[] = {
+ 	{ "max8997-battery", 0 },
++	{ }
+ };
+ 
+ static struct platform_driver max8997_battery_driver = {
+diff --git a/drivers/power/max8998_charger.c b/drivers/power/max8998_charger.c
+index cc21fa2..4ddacb4 100644
+--- a/drivers/power/max8998_charger.c
++++ b/drivers/power/max8998_charger.c
+@@ -188,6 +188,7 @@ static int __devexit max8998_battery_remove(struct platform_device *pdev)
+ 
+ static const struct platform_device_id max8998_battery_id[] = {
+ 	{ "max8998-battery", TYPE_MAX8998 },
++	{ }
+ };
+ 
+ static struct platform_driver max8998_battery_driver = {
+-- 
+1.7.4.1
 
-> I haven't checked whether it works for out-of-source-tree builds; I bet
-> it could be made to.
->
-> I would love to see $ARCH turned into a proper configuration option.
->
-I do not think this would be that hard, the main issue is that it
-would heavily be cross-tree.
 
- - Arnaud
+
