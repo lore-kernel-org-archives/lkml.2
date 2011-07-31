@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab1GaBfz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 21:35:55 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58169 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752711Ab1GaBfv (ORCPT
+	id S1753125Ab1GaBiy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 21:38:54 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:54202 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752711Ab1GaBir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 21:35:51 -0400
+	Sat, 30 Jul 2011 21:38:47 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlUDAI2uNE55LCkBgWdsb2JhbABBp2MVAQEWJiWBQAEBBAEnExwjBQsIAw4KLhQlAyETh2y/AQ6GNASjcQ
+Date: Sun, 31 Jul 2011 11:38:43 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@parallels.com>
+Subject: Re: [PATCH 3/4] dcache set size
+Message-ID: <20110731013843.GN5404@dastard>
+References: <1311947059-17209-1-git-send-email-glommer@parallels.com>
+ <1311947059-17209-4-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <CAF_S4t8TFour-Yw1T+qdG9mCzy9+tGBR0hQG83+ra6PRzPhNHQ@mail.gmail.com>
-References: <20110730234630.7270.qmail@science.horizon.com> <CAF_S4t8TFour-Yw1T+qdG9mCzy9+tGBR0hQG83+ra6PRzPhNHQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 30 Jul 2011 15:35:29 -1000
-Message-ID: <CA+55aFyimDdpCRER_7pc30S-QLhUkt0z-Y=gD48f7t=FxxFh7g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
-To: Bryan Donlan <bdonlan@gmail.com>
-Cc: George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org,
-        mpm@selenic.com, tytso@mit.edu
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311947059-17209-4-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 30, 2011 at 3:02 PM, Bryan Donlan <bdonlan@gmail.com> wrote:
->
-> The problem, as you can see here, is we need to test for the existence
-> of an architecture-specific HWRNG once for _every word processed_.
+On Fri, Jul 29, 2011 at 05:44:18PM +0400, Glauber Costa wrote:
+> Simple patch that provides a function allowing its caller to set
+> the maximum number of dentries that can exist at the same time
+> at a given super block. Will be used in a later patch.
 
-See the patch I sent out. Not only doesn't it check an
-architecture-specific flag on x86, IT COSTS NOTHING AT ALL on other
-architectures. Not per byte, not per call, not at all.
+Pretty simple - probably better to put it in the patch that uses it,
+I think.
 
-On x86, it does have the cost of:
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Dave Chinner <david@fromorbit.com>
+> ---
+>  fs/dcache.c            |   12 ++++++++++++
+>  include/linux/dcache.h |    1 +
+>  2 files changed, 13 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index 3bdb106..4369aa2 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -1202,6 +1202,18 @@ static int dcache_mem_check(struct super_block *sb)
+>  	return -ENOMEM;
+>  }
+>  
+> +int vfs_set_dcache_size(struct super_block *sb, int size)
+> +{
+> +	unsigned long dr = percpu_counter_sum_positive(&sb->s_nr_dentry); 
+> +
+> +	if (size != sb->s_nr_dentry_max)
+> +		prune_dcache_sb(sb, dr - size);
 
- - basically one conditional for the whole loop (branching out if
-there is no rdrand support at all). You cannot do much better than
-that, except of course if you statically say "compile for an x86 that
-doesn't have rdrand")
+And why shrink if the new size > the current sb->s_nr_dentry_max?
 
- - a per-word cost of checking CF - which you are supposed to do
-anyway (ie the rdrand hardware will return with CF clear if the data
-isn't reliable).
+And what happens when size > dr?
 
-So at least on x86, I think you can get pretty close to "optimal
-behavior" with my approach.
+Cheers,
 
-              Linus
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
