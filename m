@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164Ab1GaAZF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 20:25:05 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41856 "EHLO
+	id S1752587Ab1GaA1m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 20:27:42 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41551 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024Ab1GaAY4 (ORCPT
+	with ESMTP id S1752024Ab1GaA1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 20:24:56 -0400
+	Sat, 30 Jul 2011 20:27:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <c147ba3a755935e93fdb40b5531a6e18d34e0fd7.1311936524.git.viresh.kumar@st.com>
+In-Reply-To: <5521ee74eef41cf26a9f1ece6dadd32cca529cce.1311936524.git.viresh.kumar@st.com>
 References: <cover.1311936523.git.viresh.kumar@st.com>
-	<c147ba3a755935e93fdb40b5531a6e18d34e0fd7.1311936524.git.viresh.kumar@st.com>
-Date: Sun, 31 Jul 2011 02:24:56 +0200
-X-Google-Sender-Auth: kyUZ7aedHWfXUQbGLYLOkfE1s1E
-Message-ID: <CAKnu2MrBB_QEn4Psa9aeyNLvF86oM-KnaNiFZ5=zMVkz_U5GOQ@mail.gmail.com>
-Subject: Re: [PATCH 10/18] dmaengine/amba-pl08x: Get rid of pl08x_pre_boundary()
+	<5521ee74eef41cf26a9f1ece6dadd32cca529cce.1311936524.git.viresh.kumar@st.com>
+Date: Sun, 31 Jul 2011 02:27:38 +0200
+X-Google-Sender-Auth: bJ5pmNr8UqM1Q7yQmNgX4WecXYI
+Message-ID: <CAKnu2MpUj9JDDg8psPf5WaGGFSZGmPcmtiujKiFzcHM71RqLKQ@mail.gmail.com>
+Subject: Re: [PATCH 11/18] dmaengine/amba-pl08x: max_bytes_per_lli is
+ TRANSFER_SIZE * src_width (not MIN(width))
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Viresh Kumar <viresh.kumar@st.com>
 Cc: pratyush.anand@st.com, rajeev-dlh.kumar@st.com, linux@arm.linux.org.uk,
@@ -30,19 +31,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 2011/7/29 Viresh Kumar <viresh.kumar@st.com>:
 
-> Based on above discussion, this patch removes all code related to 1 KB boundary
-> as we are not required to handle this in driver.
->
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+> max_bytes_per_lli = bd.srcbus.buswidth * PL080_CONTROL_TRANSFER_SIZE_MASK;
+> This is confirmed by ARM support guys.
 
-OMG yes that makes perfect sense. I questioned this in the past and was
-pointed to the same manual page.
-
-What is fun is that the code was written by ARM.
-
-Let's merge this and I'll test it on the PB11MPCore, I think Mem2Mem
-with the DMA engine compile-in tests may work on a few other boards as
-well so maybe Russell can test it too.
+Great and THANKS for your tiresome research in ironing out the ambiguities
+in the manuals.
 
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
