@@ -1,110 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187Ab1GaIIk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 04:08:40 -0400
-Received: from mail.windriver.com ([147.11.1.11]:60666 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab1GaII1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 04:08:27 -0400
-Date: Sun, 31 Jul 2011 04:08:22 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the moduleh tree
-Message-ID: <20110731080822.GJ31842@windriver.com>
-References: <20110729161931.a9c9108c233640f3c2d7b24e@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110729161931.a9c9108c233640f3c2d7b24e@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752896Ab1GaIJG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 04:09:06 -0400
+Received: from mail.perches.com ([173.55.12.10]:4403 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753166Ab1GaIIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 04:08:52 -0400
+Subject: Re: [PATCH 1/2] qla2xxx: Rewrite logging functions to use %pV
+From: Joe Perches <joe@perches.com>
+To: Rolf Eike Beer <eike-kernel@sf-tec.de>
+Cc: Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-driver@qlogic.com,
+        "James E.J. Bottomley" <jbottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <256822902b9b2221e206b75f384bdc68.squirrel@webmail.sf-mail.de>
+References: <cover.1312067036.git.joe@perches.com>
+	 <f404820a01953db2c3608f90c40b8567646f079a.1312067036.git.joe@perches.com>
+	 <256822902b9b2221e206b75f384bdc68.squirrel@webmail.sf-mail.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 31 Jul 2011 01:08:50 -0700
+Message-ID: <1312099730.1558.7.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[linux-next: build failure after merge of the moduleh tree] On 29/07/2011 (Fri 16:19) Stephen Rothwell wrote:
+On Sun, 2011-07-31 at 10:02 +0200, Rolf Eike Beer wrote:
+> > +	if (vha != NULL) {
+> > +		const struct pci_dev *pdev = vha->hw->pdev;
+> > +		/* <module-name> <pci-name> <msg-id>:<host> Message */
+> > +		pr_warn("%s [%s]-%04x:%ld: %pV",
+> > +			QL_MSGHDR, dev_name(&(pdev->dev)), id + ql_dbg_offset,
+> > +			vha->host_no, &vaf);
+> > +	} else {
+> > +		pr_warn("%s [%s]-%04x: : %pV",
+> > +			QL_MSGHDR, "0000:00:00.0", id + ql_dbg_offset, &vaf);
+> >  	}
+> If I would see 0000:00:00.0 in the logmessage I would become scared that
+> something is dereferencing cleared memory, use after free or whatever.
+> Only by looking into the code I could see that this code simply has no
+> idea which device it is on. Well, then don't print an address when you
+> don't have one instead of inventing one.
 
-> Hi Paul,
-> 
-> After merging the moduleh tree, today's linux-next build (powerpc
-> allnoconfig) failed like this:
-> 
+I don't disagree, but that's for Andrew to figure out
+in a separate patch.
 
-[...]
+I just want to make the code smaller.
 
-> 
-> I have added this patch for today:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Fri, 29 Jul 2011 16:15:26 +1000
-> Subject: [PATCH] powerpc32: include export.h for EXPORT_SYMBOL
+The output of the new code is the same as the old code.
 
-Thanks, applied alongside the 4xx powerpc exports.
-
-Paul.
-
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  arch/powerpc/kernel/iomap.c          |    1 +
->  arch/powerpc/kernel/pci_32.c         |    1 +
->  arch/powerpc/mm/mmu_context_hash32.c |    1 +
->  arch/powerpc/mm/tlb_hash32.c         |    1 +
->  4 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/powerpc/kernel/iomap.c b/arch/powerpc/kernel/iomap.c
-> index 1577434..2735872 100644
-> --- a/arch/powerpc/kernel/iomap.c
-> +++ b/arch/powerpc/kernel/iomap.c
-> @@ -6,6 +6,7 @@
->  #include <linux/init.h>
->  #include <linux/pci.h>
->  #include <linux/mm.h>
-> +#include <linux/export.h>
->  #include <asm/io.h>
->  #include <asm/pci-bridge.h>
->  
-> diff --git a/arch/powerpc/kernel/pci_32.c b/arch/powerpc/kernel/pci_32.c
-> index bb15451..fdd1a3d 100644
-> --- a/arch/powerpc/kernel/pci_32.c
-> +++ b/arch/powerpc/kernel/pci_32.c
-> @@ -15,6 +15,7 @@
->  #include <linux/list.h>
->  #include <linux/of.h>
->  #include <linux/slab.h>
-> +#include <linux/export.h>
->  
->  #include <asm/processor.h>
->  #include <asm/io.h>
-> diff --git a/arch/powerpc/mm/mmu_context_hash32.c b/arch/powerpc/mm/mmu_context_hash32.c
-> index d0ee554..78fef67 100644
-> --- a/arch/powerpc/mm/mmu_context_hash32.c
-> +++ b/arch/powerpc/mm/mmu_context_hash32.c
-> @@ -24,6 +24,7 @@
->  
->  #include <linux/mm.h>
->  #include <linux/init.h>
-> +#include <linux/export.h>
->  
->  #include <asm/mmu_context.h>
->  #include <asm/tlbflush.h>
-> diff --git a/arch/powerpc/mm/tlb_hash32.c b/arch/powerpc/mm/tlb_hash32.c
-> index 9a445f6..558e30c 100644
-> --- a/arch/powerpc/mm/tlb_hash32.c
-> +++ b/arch/powerpc/mm/tlb_hash32.c
-> @@ -27,6 +27,7 @@
->  #include <linux/init.h>
->  #include <linux/highmem.h>
->  #include <linux/pagemap.h>
-> +#include <linux/export.h>
->  
->  #include <asm/tlbflush.h>
->  #include <asm/tlb.h>
-> -- 
-> 1.7.5.4
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
