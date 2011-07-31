@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab1GaRkx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 13:40:53 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54810 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab1GaRkr (ORCPT
+	id S1752564Ab1GaRlM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 13:41:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42886 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab1GaRlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 13:40:47 -0400
-Date: Sun, 31 Jul 2011 19:39:44 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH v3 0/6] notifier error injection
-Message-ID: <20110731173944.GA1620@ucw.cz>
-References: <1311411060-30124-1-git-send-email-akinobu.mita@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311411060-30124-1-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 31 Jul 2011 13:41:04 -0400
+Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
+From: David Woodhouse <dwmw2@infradead.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Roman Zippel <zippel@linux-m68k.org>
+Date: Sun, 31 Jul 2011 18:40:58 +0100
+In-Reply-To: <20110731100856.780d71de.rdunlap@xenotime.net>
+References: <1312067499.22074.59.camel@i7.infradead.org>
+	 <1312067670.22074.61.camel@i7.infradead.org>
+	 <CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
+	 <4E34998D.8060806@zytor.com>
+	 <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
+	 <4E34A1E4.8040103@zytor.com>
+	 <CACqU3MVkLXoBq7KP2Jff=p7EiKR7DkPa4z7y0Rdah-dGzRvj4g@mail.gmail.com>
+	 <1312097621.22074.71.camel@i7.infradead.org>
+	 <20110731093740.39f7fbc3.rdunlap@xenotime.net>
+	 <1312131467.22074.95.camel@i7.infradead.org>
+	 <20110731100856.780d71de.rdunlap@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1312134060.22074.99.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> This provides kernel modules that can be used to test the error handling
-> of notifier call chain failures by injecting artifical errors to the
-> following notifier chain callbacks.
+On Sun, 2011-07-31 at 10:08 -0700, Randy Dunlap wrote:
 > 
->  * CPU notifier
->  * PM notifier
->  * memory hotplug notifier
->  * powerpc pSeries reconfig notifier
-...
+> OK, it seems that we agree that ARCH=x86 is an incomplete
+> specification.
+> Thanks. 
 
->  11 files changed, 680 insertions(+), 38 deletions(-)
-
-Do we really need this debugging code in mainline? How many bugs did
-it find?
+Of course it's incomplete, just as the legacy ARCH=i386 was incomplete.
+Even an allnoconfig still had over a hundred lines more configuration
+before it was a complete description of what gets built.
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+dwmw2
+
