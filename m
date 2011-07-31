@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab1GaSuy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 14:50:54 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:1664 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab1GaSut (ORCPT
+	id S1752883Ab1GaTD0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 15:03:26 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:45320 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752685Ab1GaTDV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 14:50:49 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=v3GdTQOWK/s7157vDkzK7m6EiVlnQwEK3xFcm9PeXodikzKL+iwMjBGNfEWUEyBcd
-	NEn/mV9+1krUuzQcRPiPQ==
-Date: Sun, 31 Jul 2011 11:50:39 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
-In-Reply-To: <alpine.DEB.2.00.1107291002570.16178@router.home>
-Message-ID: <alpine.DEB.2.00.1107311136150.12538@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1107290145080.3279@tiger> <alpine.DEB.2.00.1107291002570.16178@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sun, 31 Jul 2011 15:03:21 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <alpine.LNX.2.00.1107311437460.28279@linux>
+References: <alpine.LNX.2.00.1107311134490.30666@linux>
+	<CACqU3MX7f2oNpDf6W124tfROfKq4PFsyvxiq=VtPJfv-gqUrww@mail.gmail.com>
+	<CACqU3MU9BBsXjevz617v7YOBm+9RR1Wm49gi0jvs95yneQ2Yrg@mail.gmail.com>
+	<alpine.LNX.2.00.1107311300190.16802@linux>
+	<CACqU3MX=MVd8v2wKaFsNuXB2WsWq2jLsGfAdDEW9atoWbWE7Mg@mail.gmail.com>
+	<alpine.LNX.2.00.1107311333320.53256@linux>
+	<CACqU3MWHRJXRu5sOvyGhyiqV94=UmDfCxixf-okkGuphxUFRTQ@mail.gmail.com>
+	<alpine.LNX.2.00.1107311437460.28279@linux>
+Date: Sun, 31 Jul 2011 15:03:19 -0400
+Message-ID: <CACqU3MVSH9HKdKFpw1dxKRHV1grPEMjnNbrAbE73yLrZbgYHcg@mail.gmail.com>
+Subject: Re: [PATCH v2] kbuild: prevent make from deleting _shipped files
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Peter Foley <pefoley2@verizon.net>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
+        mmarek@suse.cz
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jul 2011, Christoph Lameter wrote:
+Hi,
 
-> > We haven't come up with a solution to keep struct page size the same but I
-> > think it's a reasonable trade-off.
-> 
+On Sun, Jul 31, 2011 at 2:45 PM, Peter Foley <pefoley2@verizon.net> wrote:
+> commit 7373f4f (kbuild: add implicit rules for parser generation)
+> created a implicit rule chain (%.c: %.c_shipped: %.y).
+> Make considers the _shipped files to be intermediate files which
+> causes them to be deleted if they didn't exist before make was run.
+> Mark the _shipped files PRECIOUS to prevent make from deleting them.
+>
+> Signed-off-by: Peter Foley <pefoley2@verizon.net>
 
-We won't be coming up with a solution to that since the alignment is a 
-requirement for cmpxchg16b, unfortunately.
+Acked-by: Arnaud Lacombe <lacombar@gmail.com>
 
-> The change requires the page struct to be aligned to a double word
-> boundary. There is actually no variable added to the page struct. Its just
-> the alignment requirement that causes padding to be added after each page
-> struct.
-> 
+ - Arnaud
 
-Well, the counters variable is added although it doesn't increase the size 
-of the unaligned struct page because of how it is restructured.  The end 
-result of the alignment for CONFIG_CMPXCHG_LOCAL is that struct page will 
-increase from 56 bytes to 64 bytes on my config.  That's a cost of 128MB 
-on each of my client and server 64GB machines for the netperf benchmark 
-for the ~2.3% speedup.
+> ---
+>
+> V2: update changelog to specify files are only deleted when they did not
+> already exist
+>
+> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+> index aeea84a..5d986d9 100644
+> --- a/scripts/Makefile.lib
+> +++ b/scripts/Makefile.lib
+> @@ -167,6 +167,7 @@ ifdef REGENERATE_PARSERS
+>  quiet_cmd_gperf = GPERF $@
+>       cmd_gperf = gperf -t --output-file $@ -a -C -E -g -k 1,3,$$ -p -t $<
+>
+> +.PRECIOUS: $(src)/%.hash.c_shipped
+>  $(src)/%.hash.c_shipped: $(src)/%.gperf
+>        $(call cmd,gperf)
+>
+> @@ -177,6 +178,7 @@ LEX_PREFIX = $(if $(LEX_PREFIX_${baseprereq}),$(LEX_PREFIX_${baseprereq}),yy)
+>  quiet_cmd_flex = LEX     $@
+>       cmd_flex = flex -o$@ -L -P $(LEX_PREFIX) $<
+>
+> +.PRECIOUS: $(src)/%.lex.c_shipped
+>  $(src)/%.lex.c_shipped: $(src)/%.l
+>        $(call cmd,flex)
+>
+> @@ -187,12 +189,14 @@ YACC_PREFIX = $(if $(YACC_PREFIX_${baseprereq}),$(YACC_PREFIX_${baseprereq}),yy)
+>  quiet_cmd_bison = YACC    $@
+>       cmd_bison = bison -o$@ -t -l -p $(YACC_PREFIX) $<
+>
+> +.PRECIOUS: $(src)/%.tab.c_shipped
+>  $(src)/%.tab.c_shipped: $(src)/%.y
+>        $(call cmd,bison)
+>
+>  quiet_cmd_bison_h = YACC    $@
+>       cmd_bison_h = bison -o/dev/null --defines=$@ -t -l -p $(YACC_PREFIX) $<
+>
+> +.PRECIOUS: $(src)/%.tab.h_shipped
+>  $(src)/%.tab.h_shipped: $(src)/%.y
+>        $(call cmd,bison_h)
+>
+>
+>
