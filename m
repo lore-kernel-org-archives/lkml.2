@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752587Ab1GaA1m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 20:27:42 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41551 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024Ab1GaA1i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 20:27:38 -0400
+	id S1752656Ab1GaAaA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 20:30:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54831 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752024Ab1GaA3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 20:29:55 -0400
+Message-ID: <4E34A1E4.8040103@zytor.com>
+Date: Sat, 30 Jul 2011 17:29:24 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-In-Reply-To: <5521ee74eef41cf26a9f1ece6dadd32cca529cce.1311936524.git.viresh.kumar@st.com>
-References: <cover.1311936523.git.viresh.kumar@st.com>
-	<5521ee74eef41cf26a9f1ece6dadd32cca529cce.1311936524.git.viresh.kumar@st.com>
-Date: Sun, 31 Jul 2011 02:27:38 +0200
-X-Google-Sender-Auth: bJ5pmNr8UqM1Q7yQmNgX4WecXYI
-Message-ID: <CAKnu2MpUj9JDDg8psPf5WaGGFSZGmPcmtiujKiFzcHM71RqLKQ@mail.gmail.com>
-Subject: Re: [PATCH 11/18] dmaengine/amba-pl08x: max_bytes_per_lli is
- TRANSFER_SIZE * src_width (not MIN(width))
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: pratyush.anand@st.com, rajeev-dlh.kumar@st.com, linux@arm.linux.org.uk,
-        bhupesh.sharma@st.com, shiraz.hashim@st.com, vinod.koul@intel.com,
-        linux-kernel@vger.kernel.org, vipin.kumar@st.com,
-        armando.visconti@st.com, amit.virdi@st.com, vipulkumar.samar@st.com,
-        viresh.linux@gmail.com, deepak.sikri@st.com, dan.j.williams@intel.com,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnaud Lacombe <lacombar@gmail.com>
+CC: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
+References: <1312067499.22074.59.camel@i7.infradead.org> <1312067670.22074.61.camel@i7.infradead.org> <CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com> <4E34998D.8060806@zytor.com> <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
+In-Reply-To: <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/29 Viresh Kumar <viresh.kumar@st.com>:
+On 07/30/2011 05:05 PM, Arnaud Lacombe wrote:
+>>
+>> Why????
+>>
+> Because kconfig might not be ran exclusively from a fully controlled
+> and restricted environment ? Not to mention that it is used by other
+> people than the linux kernel folks.
+> 
 
-> max_bytes_per_lli = bd.srcbus.buswidth * PL080_CONTROL_TRANSFER_SIZE_MASK;
-> This is confirmed by ARM support guys.
+I'm sorry, but whitelisting specific options is an absolutely idiotic
+way to deal with that.  The options use a specific namespace (CONFIG_*),
+and only allowing some options to be set on the command line, but not
+others, is a serious violation of the principle of least surprise.
 
-Great and THANKS for your tiresome research in ironing out the ambiguities
-in the manuals.
+	-hpa
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Yours,
-Linus Walleij
