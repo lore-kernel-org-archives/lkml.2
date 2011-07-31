@@ -1,109 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab1GaBNw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 21:13:52 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34650 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752256Ab1GaBNu (ORCPT
+	id S1752892Ab1GaBPn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 21:15:43 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:30957 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752256Ab1GaBPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 21:13:50 -0400
+	Sat, 30 Jul 2011 21:15:35 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlUDADyrNE55LCkBgWdsb2JhbABBp2MVAQEWJiWBQAEBBScTHCMQCAMOCi4UJQMhE8ZzDoY0BJsuiEM
+Date: Sun, 31 Jul 2011 11:15:31 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@parallels.com>
+Subject: Re: [PATCH 2/4] limit nr_dentries per superblock
+Message-ID: <20110731011531.GL5404@dastard>
+References: <1311947059-17209-1-git-send-email-glommer@parallels.com>
+ <1311947059-17209-3-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <1311971867-25124-2-git-send-email-hpa@linux.intel.com>
-References: <1311971867-25124-1-git-send-email-hpa@linux.intel.com> <1311971867-25124-2-git-send-email-hpa@linux.intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 30 Jul 2011 15:13:27 -1000
-Message-ID: <CA+55aFz07ewwkBHeqj_VqAiNCBzDj8uzA0xzt2fc4qrYB9O19g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Fenghua Yu <fenghua.yu@intel.com>, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jeff Garzik <jgarzik@pobox.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=00221597587afce5ae04a9533958
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311947059-17209-3-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00221597587afce5ae04a9533958
-Content-Type: text/plain; charset=ISO-8859-1
+On Fri, Jul 29, 2011 at 05:44:17PM +0400, Glauber Costa wrote:
+> This patch lays the foundation for us to limit the dcache size.
+> Each super block can have only a maximum amount of dentries under its
+> sub-tree. Allocation fails if we we're over limit and the cache
+> can't be pruned to free up space for the newcomers.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Dave Chinner <david@fromorbit.com>
+> ---
+>  fs/dcache.c        |   45 +++++++++++++++++++++++++++++++++++++--------
+>  fs/super.c         |    1 +
+>  include/linux/fs.h |    1 +
+>  3 files changed, 39 insertions(+), 8 deletions(-)
+> 
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index 9cb6395..3bdb106 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -663,7 +663,7 @@ EXPORT_SYMBOL(d_prune_aliases);
+>   *
+>   * This may fail if locks cannot be acquired no problem, just try again.
+>   */
+> -static void try_prune_one_dentry(struct dentry *dentry)
+> +static int try_prune_one_dentry(struct dentry *dentry)
+>  	__releases(dentry->d_lock)
+>  {
+>  	struct dentry *parent;
 
-So here is my counter-suggestion
+Comment explaining the return value?
 
-NOTE NOTE NOTE! This is completely and utterly untested.  I didn't
-actually check how big the "rdrand" and "setc" instructions are, so
-the ASM_NOP4 there is just a random "I guess two 'xor' instructions
-are four bytes shorter than the rdrand/setc instructions are".
+[...]
+> @@ -740,7 +744,7 @@ static void shrink_dentry_list(struct list_head *list)
+>   *
+>   * If flags contains DCACHE_REFERENCED reference dentries will not be pruned.
+>   */
+> -static void __shrink_dcache_sb(struct super_block *sb, int count, int flags)
+> +static int __shrink_dcache_sb(struct super_block *sb, int count, int flags)
+>  {
+>  	struct dentry *dentry;
+>  	LIST_HEAD(referenced);
 
-So please don't take this as a serious patch that should be applied,
-but instead take it as a serious alternative *approach*.
+What's the new return value do?
 
-Note that with the default inline function in <asm-generic/random.h>
-is designed so that architectures that use it (this patch does *not*
-contain the architecture glue to enable it) will compile the loop in
-random.c entirely away. No test, no nothing.
+> @@ -781,7 +785,7 @@ relock:
+>  		list_splice(&referenced, &sb->s_dentry_lru);
+>  	spin_unlock(&dcache_lru_lock);
+>  
+> -	shrink_dentry_list(&tmp);
+> +	return shrink_dentry_list(&tmp);
+>  }
+>  
+>  /**
+> @@ -1176,6 +1180,28 @@ void shrink_dcache_parent(struct dentry * parent)
+>  }
+>  EXPORT_SYMBOL(shrink_dcache_parent);
+>  
+> +static int dcache_mem_check(struct super_block *sb)
+> +{
+> +	int nr_dentry;
+> +	int count;
+> +
+> +	if (percpu_counter_read_positive(&sb->s_nr_dentry) <=
+> +						sb->s_nr_dentry_max)
+> +		return 0;
+> +
+> +	do {
+> +		nr_dentry = percpu_counter_sum_positive(&sb->s_nr_dentry);
+> +
+> +		if (nr_dentry < sb->s_nr_dentry_max)
+> +			return 0;
+> +
+> +		count = (nr_dentry - sb->s_nr_dentry_max) << 1;
+> +
+> +	} while (__shrink_dcache_sb(sb, count, DCACHE_REFERENCED) > 0);
+> +
+> +	return -ENOMEM;
+> +}
 
-Comments?
 
-(Btw, even on x86, assuming the concept works and the ASM_NOP4 is
-corrected to the right length, we'd need to support older assemblers
-that don't understand the "rdrand" instruction, so it would need to be
-done as a explicit byte sequence).
+I don't like the idea of trying to be exact on how many we shrink.
+percpu_counter_read_positive() will always have an error in it:
++/-(N cpus * 31) by default. Statistically speaking 50% of the cases
+it passes will then get rejected on the expensive sum operation. And
+then we shrink only 2x the difference between the counter and the
+max value, which will leave it inside the error margin of the
+counter anyway. Hence once we hit the threshold, we'll continually
+take expensive sum operations, many for no reason.  There needs to
+be some hysteresis here to avoid simply hammering the percpu counter
+on every single __d_alloc call. Perhaps per-cpu counters are not
+suited for this purpose?
 
-Again, TOTALLY UNTESTED. Concept patch only!! There may be seriously
-stupid bugs here, but the point is that it should make it easy for an
-architecture to have a "get a word of random data quickly".
+Indeed, what happens if one caller saw the read and sum over the
+limit, then starts shrinking but other callers don't see the read
+over the limit but keep allocating dentries and hence keeping the
+shrinking caller's sum over the limit and hence forever shrinking?
+That seems like a unprivileged random process DOS, yes?
 
-                     Linus
+So at minimum, the loop should not recalculate how much to shrink -
+calculate the amount to shrink, the run a loop to shrink that much
+and only that much. If there are other concurrent callers, then
+they'll also do a shrink, but nothing will get stuck in a loop.
 
---00221597587afce5ae04a9533958
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gqrbefgp0
+Hmmm, what happens when the size of the cache and/or the max value
+are less than the error margin of the counter?
 
-Y29tbWl0IDIxODYwMzQxMmFhZDA3M2EwNGVhODE1ODU4Yjk4ZjZjMzNhYjMwZDIKQXV0aG9yOiBM
-aW51cyBUb3J2YWxkcyA8dG9ydmFsZHNAbGludXgtZm91bmRhdGlvbi5vcmc+CkRhdGU6ICAgU2F0
-IEp1bCAzMCAxNTowNjoxNiAyMDExIC0xMDAwCgogICAgRVhBTVBMRSAnUkRSQU5EJyBQQVRDSAog
-ICAgCiAgICBOT1QgRk9SIFJFQUwgQ09OU1VNUFRJT04hCi0tLQogYXJjaC94ODYvaW5jbHVkZS9h
-c20vcmFuZG9tLmggfCAgIDIzICsrKysrKysrKysrKysrKysrKysrKysrCiBkcml2ZXJzL2NoYXIv
-cmFuZG9tLmMgICAgICAgICB8ICAgMTUgKysrKysrKysrKysrKysrCiBpbmNsdWRlL2FzbS1nZW5l
-cmljL3JhbmRvbS5oICB8ICAgMTMgKysrKysrKysrKysrKwogMyBmaWxlcyBjaGFuZ2VkLCA1MSBp
-bnNlcnRpb25zKCspLCAwIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2FyY2gveDg2L2luY2x1
-ZGUvYXNtL3JhbmRvbS5oIGIvYXJjaC94ODYvaW5jbHVkZS9hc20vcmFuZG9tLmgKbmV3IGZpbGUg
-bW9kZSAxMDA2NDQKaW5kZXggMDAwMDAwMDAwMDAwLi5mNmZiZDMzNDA2MDgKLS0tIC9kZXYvbnVs
-bAorKysgYi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9yYW5kb20uaApAQCAtMCwwICsxLDIzIEBACisj
-aWZuZGVmIF9YODZfUkFORE9NX0gKKyNkZWZpbmUgX1g4Nl9SQU5ET01fSAorCisjaW5jbHVkZSA8
-YXNtL2FsdGVybmF0aXZlLmg+CisKK3N0YXRpYyBpbmxpbmUgaW50IGFyY2hfZ2V0X3JhbmRvbV93
-b3JkKHVuc2lnbmVkIGxvbmcgKndvcmQpCit7CisJaW50IHJldDsKKworCWFsdGVybmF0aXZlX2lv
-KCJ4b3IgJTAsJTA7IHhvciAlMSwlMSIgQVNNX05PUDQsCisJCSJyZHJhbmQgJTE7IHNldGNjICUw
-IiwKKwkJWDg2X0ZFQVRVUkVfUEVSRkNUUl9DT1JFLAorCQlBU01fT1VUUFVUMigiPWEiIChyZXQp
-LCAiPWQiICgqd29yZCkpLAorCQkiaSIgKDApIC8qIGZha2UgaW5wdXQgKi8pOworCS8qCisJICog
-V2UgcmV0dXJuIDAgaWYgQ0YgaXMgY2xlYXIgb2YgaWYgdGhlIENQVQorCSAqIGRvZXNuJ3Qgc3Vw
-cG9ydCBSRFJBTkQsIG90aGVyd2lzZSB3ZSByZXR1cm4KKwkgKiA4IChmb3IgOCBieXRlcyBvZiBk
-YXRhKS4KKwkgKi8KKwlyZXR1cm4gcmV0ICYgODsKK30KKworI2VuZGlmCmRpZmYgLS1naXQgYS9k
-cml2ZXJzL2NoYXIvcmFuZG9tLmMgYi9kcml2ZXJzL2NoYXIvcmFuZG9tLmMKaW5kZXggNzI5Mjgx
-OTYxZjIyLi5lMzM1ZWM5NmJmODggMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvY2hhci9yYW5kb20uYwor
-KysgYi9kcml2ZXJzL2NoYXIvcmFuZG9tLmMKQEAgLTI1Nyw2ICsyNTcsNyBAQAogI2luY2x1ZGUg
-PGFzbS91YWNjZXNzLmg+CiAjaW5jbHVkZSA8YXNtL2lycS5oPgogI2luY2x1ZGUgPGFzbS9pby5o
-PgorI2luY2x1ZGUgPGFzbS9yYW5kb20uaD4KIAogLyoKICAqIENvbmZpZ3VyYXRpb24gaW5mb3Jt
-YXRpb24KQEAgLTg2NSw2ICs4NjYsMjAgQEAgc3RhdGljIHNzaXplX3QgZXh0cmFjdF9lbnRyb3B5
-KHN0cnVjdCBlbnRyb3B5X3N0b3JlICpyLCB2b2lkICpidWYsCiAJeGZlcl9zZWNvbmRhcnlfcG9v
-bChyLCBuYnl0ZXMpOwogCW5ieXRlcyA9IGFjY291bnQociwgbmJ5dGVzLCBtaW4sIHJlc2VydmVk
-KTsKIAorCS8qIFVzZSBmYXN0IENQVSByYW5kb20gd29yZHMgaWYgYXZhaWxhYmxlICovCisJd2hp
-bGUgKG5ieXRlcykgeworCQl1bnNpZ25lZCBsb25nIHdvcmQ7CisJCWludCBieXRlcyA9IGFyY2hf
-Z2V0X3JhbmRvbV93b3JkKCZ3b3JkKTsKKwkJaWYgKCFieXRlcykKKwkJCWJyZWFrOworCQlpZiAo
-Ynl0ZXMgPiBuYnl0ZXMpCisJCQlieXRlcyA9IG5ieXRlczsKKwkJbWVtY3B5KGJ1ZiwgJndvcmQs
-IGJ5dGVzKTsKKwkJbmJ5dGVzIC09IGJ5dGVzOworCQlidWYgKz0gYnl0ZXM7CisJCXJldCArPSBi
-eXRlczsKKwl9CisKIAl3aGlsZSAobmJ5dGVzKSB7CiAJCWV4dHJhY3RfYnVmKHIsIHRtcCk7CiAK
-ZGlmZiAtLWdpdCBhL2luY2x1ZGUvYXNtLWdlbmVyaWMvcmFuZG9tLmggYi9pbmNsdWRlL2FzbS1n
-ZW5lcmljL3JhbmRvbS5oCm5ldyBmaWxlIG1vZGUgMTAwNjQ0CmluZGV4IDAwMDAwMDAwMDAwMC4u
-ZTliZTEyYmE4NmZhCi0tLSAvZGV2L251bGwKKysrIGIvaW5jbHVkZS9hc20tZ2VuZXJpYy9yYW5k
-b20uaApAQCAtMCwwICsxLDEzIEBACisjaWZuZGVmIF9BU01fUkFORE9NX0gKKyNkZWZpbmUgX0FT
-TV9SQU5ET01fSAorCisvKgorICogQXJjaGl0ZWN0dXJlIHJhbmRvbSBkYXRhIGluIGxvdyBieXRl
-cyBvZiAid29yZCIsIHJldHVybiBob3cKKyAqIG1hbnkgYnl0ZXMgd2VyZSBmaWxsZWQgaW4uIERl
-ZmF1bHQgaW1wbGVtZW50YXRpb246IG5vbmUuCisgKi8KK3N0YXRpYyBpbmxpbmUgaW50IGFyY2hf
-Z2V0X3JhbmRvbV93b3JkKHVuc2lnbmVkIGxvbmcgKndvcmQpCit7CisJcmV0dXJuIDA7Cit9CisK
-KyNlbmRpZgo=
---00221597587afce5ae04a9533958--
+Also, this doesn't address the problem I originally commented on -
+it only shrinks the dcache, not the inode or filesystem caches that
+hold all the memory.  I mentioned the new per-sb shrinkers for a
+reason - you should be calling them, not __shrink_dcache_sb(). i.e.
+building a scan_control structure and calling
+sb->shrinker.shrink(&sb->shrinker, &sc);
+
+I'm seriously starting to think that this needs to share an
+implementation with the mm shrinker code, because it already
+solves most of these problems...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
