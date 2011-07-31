@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135Ab1GaPlY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 11:41:24 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46781 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab1GaPlT (ORCPT
+	id S1752222Ab1GaQNM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 12:13:12 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64822 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752162Ab1GaQNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 11:41:19 -0400
-Message-ID: <4E35779B.7020908@gmail.com>
-Date: Sun, 31 Jul 2011 17:41:15 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	Sun, 31 Jul 2011 12:13:07 -0400
+Date: Sun, 31 Jul 2011 19:12:59 +0300 (EEST)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tiger
+To: Christoph Lameter <cl@linux.com>
+cc: David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [GIT PULL] SLAB changes for v3.1-rc0
+In-Reply-To: <alpine.DEB.2.00.1107291023000.16178@router.home>
+Message-ID: <alpine.DEB.2.00.1107311912380.9837@tiger>
+References: <alpine.DEB.2.00.1107221108190.2996@tiger> <CAOJsxLHniS9Hx+ep_i2qbE_Oo6PnkNCK5dNARW5egg9Bso4Ovg@mail.gmail.com> <alpine.DEB.2.00.1107281514080.29344@chino.kir.corp.google.com> <alpine.DEB.2.00.1107291023000.16178@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: linux-rt-users <linux-rt-users@vger.kernel.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: bug with debug registers and 3.0rt6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Portal 2's anti debugger checks hangs on rt6:
 
-[21940.633370] BUG: sleeping function called from invalid context at kernel/rtmutex.c:645
-[21940.633371] in_atomic(): 1, irqs_disabled(): 0, pid: 4235, name: portal2.exe
-[21940.633372] Pid: 4235, comm: portal2.exe Tainted: P        WC  3.0.0-rt6-patser+ #3
-[21940.633377] Call Trace:
-[21940.633381]  [<ffffffff8103fc0a>] __might_sleep+0xca/0xf0
-[21940.633383]  [<ffffffff8160d344>] rt_spin_lock+0x24/0x40
-[21940.633385]  [<ffffffff8106b879>] force_sig_info+0x49/0x100
-[21940.633387]  [<ffffffff8100e6d8>] send_sigtrap+0x68/0x70
-[21940.633389]  [<ffffffff8160e6f0>] do_debug+0x150/0x160
-[21940.633390]  [<ffffffff8160dbf2>] debug+0x22/0x40
+> On Thu, 28 Jul 2011, David Rientjes wrote:
+>
+>> On Thu, 28 Jul 2011, Pekka Enberg wrote:
+>>
+>>> Christoph, your debugging fix has been in linux-next for few days now
+>>> and no problem have been reported. I'm considering sending the series
+>>> to Linus. What do you think?
+>>>
+>>
+>> I ran slub/lockless through some stress testing and it seems to be quite
+>> stable on my testing cluster.  There is about a 2.3% performance
+>> improvement with the lockless slowpath on the netperf benchmark with
+>> various thread counts on my 16-core 64GB Opterons, so I'd recommend it to
+>> be merged into 3.1.
 
-and int3:
-[15945.341955] BUG: sleeping function called from invalid context at kernel/rtmutex.c:645
-[15945.341957] in_atomic(): 1, irqs_disabled(): 0, pid: 3166, name: portal2.exe
-[15945.341958] Pid: 3166, comm: portal2.exe Tainted: P        WC  3.0.0-rt6-patser+ #3
-[15945.341959] Call Trace:
-[15945.341963]  [<ffffffff8103fc0a>] __might_sleep+0xca/0xf0
-[15945.341965]  [<ffffffff8160d344>] rt_spin_lock+0x24/0x40
-[15945.341968]  [<ffffffff8106b879>] force_sig_info+0x49/0x100
-[15945.341969]  [<ffffffff8106b946>] force_sig+0x16/0x20
-[15945.341970]  [<ffffffff8160e0ab>] do_trap+0x16b/0x170
-[15945.341972]  [<ffffffff8160e509>] do_int3+0x99/0xc0
-[15945.341973]  [<ffffffff8160dc32>] int3+0x22/0x40
+On Fri, 29 Jul 2011, Christoph Lameter wrote:
+> Great. Could you also test the next stage of patches (not yet even in
+> Pekka's tree) where we add a per cpu cache of partial allocated slab
+> pages? This decreases the per node lock contention further. I can repost
+> the set if the old one does not work for you. Shows significant
+> improvement here as well.
 
-Is there a better solution than converting the siglock to a raw spinlock?
+They don't apply so please resend them.
 
-~Maarten
+ 			Pekka
