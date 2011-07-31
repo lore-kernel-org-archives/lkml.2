@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157Ab1GaKKA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 06:10:00 -0400
-Received: from lucidpixels.com ([72.73.18.11]:41030 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752851Ab1GaKJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 06:09:55 -0400
-Date: Sun, 31 Jul 2011 06:09:53 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Adam Cozzette <acozzette@cs.hmc.edu>
-cc: Andreas Hartmann <andihartmann@01019freenet.de>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Ivo van Doorn <IvDoorn@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
-        users@rt2x00.serialmonkey.com
-Subject: Re: [PATCH] rt2x00: rt2800: fix zeroing skb structure
-In-Reply-To: <20110731033916.GA7182@[192.168.0.12]>
-Message-ID: <alpine.DEB.2.02.1107310609210.21194@p34.internal.lan>
-References: <alpine.DEB.2.02.1107271851410.25432@p34.internal.lan> <4E318BD0.40202@lwfinger.net> <20110730113009.GA2847@redhat.com> <20110730113255.GB2847@redhat.com> <alpine.DEB.2.02.1107300736010.4925@p34.internal.lan> <alpine.DEB.2.02.1107301310070.4925@p34.internal.lan>
- <20110731033916.GA7182@[192.168.0.12]>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753174Ab1GaKkq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 06:40:46 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55460 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab1GaKkk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 06:40:40 -0400
+Date: Sun, 31 Jul 2011 14:40:23 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] battery-2.6.git
+Message-ID: <20110731104023.GA1691@oksana.dev.rtsoft.ru>
+Reply-To: cbouatmailru@gmail.com
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Linus,
+
+Please pull battery-2.6.git tree to receive changes prepared for
+v3.1.
+
+These are the patches that were sitting for a long time in my tree.
+I have another bunch of fresh commits, but I don't want to pollute
+this pull request with them. So I might do another small pull request
+just after you merge this tree.
+
+Thanks!
 
 
-On Sat, 30 Jul 2011, Adam Cozzette wrote:
+The following changes since commit 906649de0eacde7a643b5a0750de6207441ad54f:
 
-> On Sat, Jul 30, 2011 at 01:10:26PM -0400, Justin Piszcz wrote:
->> (This is with the patch provided earlier)
->>
->> atom:/usr/src/linux# cd drivers/net/wireless/rt2x00/
->> atom:/usr/src/linux/drivers/net/wireless/rt2x00# grep 'memset(skb_push(entry->skb, TXWI_DESC_SIZE), 0, TXWI_DESC_SIZE)' rt2800lib.c
->>         memset(skb_push(entry->skb, TXWI_DESC_SIZE), 0, TXWI_DESC_SIZE);
->> atom:/usr/src/linux/drivers/net/wireless/rt2x00# cat /usr/src/linux/.version
->> 2
->> atom:/usr/src/linux/drivers/net/wireless/rt2x00# uname -a
->> Linux atom 3.0.0 #2 SMP Sat Jul 30 08:34:18 EDT 2011 x86_64 GNU/Linux
->> atom:/usr/src/linux/drivers/net/wireless/rt2x00#
->>
->> Justin.
->
-> The last two images you posted show rt2800_txdone in the stack trace. I couldn't
-> find any such function in the source and unless I'm mistaken, it was renamed in
-> commit 8f66bbb5 back in May. Are you sure that the most recent code is what is
-> actually running when you run into this problem?
->
-> -- 
-> Adam Cozzette
-> Harvey Mudd College
->
+  PXA: Use dev_pm_ops in z2_battery (2011-05-20 19:25:11 +0400)
 
-Hi,
+are available in the git repository at:
+  git://git.infradead.org/battery-2.6.git master
 
-Here is the .config used (3.0):
-http://home.comcast.net/~jpiszcz/20110731/config-3.0.txt
+Axel Lin (1):
+      gpio-charger: Fix checking return value of request_any_context_irq
 
-Justin.
+Donggeun Kim (3):
+      power_supply: Add charger driver for MAX8997/8966
+      power_supply: Add charger driver for MAX8998/LP3974
+      power_supply: MAX17042: Support additional properties
 
+Grazvydas Ignotas (1):
+      twl4030_charger: Fix warnings
+
+Ken O'Brien (1):
+      apm_power: Fix style error in macros
+
+Mark Brown (3):
+      s3c_adc_battery: Fix annotation for s3c_adc_battery_probe()
+      wm831x_backup: Support multiple instances
+      wm831x_power: Support multiple instances
+
+MyungJoo Ham (1):
+      max8903_charger: Allow platform data to be __initdata
+
+Rhyland Klein (2):
+      bq20z75: Add support for external notification
+      bq20z75: Enable detection after registering
+
+Wolfram Sang (1):
+      max17042_battery: Remove obsolete cleanup for clientdata
+
+ drivers/mfd/max8998.c                  |    2 +
+ drivers/power/Kconfig                  |   14 ++
+ drivers/power/Makefile                 |    2 +
+ drivers/power/apm_power.c              |    8 +-
+ drivers/power/bq20z75.c                |  103 ++++++++++++++--
+ drivers/power/gpio-charger.c           |    2 +-
+ drivers/power/max17042_battery.c       |  175 +++++++++++++++----------
+ drivers/power/max8903_charger.c        |   16 ++--
+ drivers/power/max8997_charger.c        |  206 ++++++++++++++++++++++++++++++
+ drivers/power/max8998_charger.c        |  218 ++++++++++++++++++++++++++++++++
+ drivers/power/s3c_adc_battery.c        |    2 +-
+ drivers/power/twl4030_charger.c        |   10 +-
+ drivers/power/wm831x_backup.c          |   12 ++-
+ drivers/power/wm831x_power.c           |   26 ++++-
+ include/linux/mfd/max8997.h            |    7 +-
+ include/linux/mfd/max8998.h            |   12 ++
+ include/linux/power/bq20z75.h          |    3 +
+ include/linux/power/max17042_battery.h |   91 +++++++++++++
+ 18 files changed, 806 insertions(+), 103 deletions(-)
+ create mode 100644 drivers/power/max8997_charger.c
+ create mode 100644 drivers/power/max8998_charger.c
