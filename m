@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276Ab1GaIN2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 04:13:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53198 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458Ab1GaIN0 (ORCPT
+	id S1753289Ab1GaIPG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 04:15:06 -0400
+Received: from mail.windriver.com ([147.11.1.11]:61445 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458Ab1GaIO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 04:13:26 -0400
-Subject: Re: [PATCH v3] x86, kconfig: Default to ARCH=x86 to avoid
- overriding CONFIG_64BIT
-From: David Woodhouse <dwmw2@infradead.org>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Michal Marek <mmarek@suse.cz>, "Ted Ts'o" <tytso@mit.edu>,
-        Ingo Molnar <mingo@elte.hu>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        hpa@zytor.com
-Date: Sun, 31 Jul 2011 09:13:00 +0100
-In-Reply-To: <CACqU3MUMj4PzOzyHUXwQKu5LqNZzY+W9amPPiw555Ae9QKqpng@mail.gmail.com>
-References: <1306707270.2029.377.camel@i7.infradead.org>
-	 <20110530072300.GA9802@elte.hu>
-	 <1306745835.2029.389.camel@i7.infradead.org>
-	 <20110530104231.GF17821@elte.hu> <20110530104656.GA19532@elte.hu>
-	 <E934876C-FABB-41F8-8C5E-469AA42DBE91@mit.edu>
-	 <20110530105809.GA20133@elte.hu>
-	 <1A4DB87D-9B32-44C0-B7C9-47A003CABD96@mit.edu>
-	 <alpine.LFD.2.02.1105301955210.3164@localhost6.localdomain6>
-	 <20110530195545.GG2890@dhcp-172-31-194-241.cam.corp.google.com>
-	 <alpine.LFD.2.02.1105302103220.3164@localhost6.localdomain6>
-	 <1306795186.2029.459.camel@i7.infradead.org>
-	 <BANLkTik=uHr1eX44XV1pAHUfVQ-MorzOnw@mail.gmail.com>
-	 <1306856937.27477.3.camel@i7.infradead.org>
-	 <BANLkTi=VoL8ze0AcdkG_QmEH5049X2K6Zw@mail.gmail.com>
-	 <4E0495F4.7080300@suse.cz> <1311986969.20983.52.camel@i7.infradead.org>
-	 <CACqU3MUMj4PzOzyHUXwQKu5LqNZzY+W9amPPiw555Ae9QKqpng@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1312099981.22074.73.camel@i7.infradead.org>
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sun, 31 Jul 2011 04:14:58 -0400
+Date: Sun, 31 Jul 2011 04:14:47 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        <linux-media@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the moduleh tree
+Message-ID: <20110731081446.GL31842@windriver.com>
+References: <20110729152533.73329e8bafd4e839e85f0555@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110729152533.73329e8bafd4e839e85f0555@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-07-31 at 01:18 -0400, Arnaud Lacombe wrote:
-> If I'm reading this correctly, does this mean that someone doing an
-> 'allyesconfig' on an i386 machine will get a configuration for a
-> 64bits kernel[0] ? With your logic, you would require the user to
-> manually specify CONFIG_64BIT=n, which should be automatic on such a
-> system... 
+[linux-next: build failure after merge of the moduleh tree] On 29/07/2011 (Fri 15:25) Stephen Rothwell wrote:
 
-Yes, that is entirely correct, and intentional. If the user asks for
-'all yes', then the user gets 'all yes'.
+> Hi Paul,
+> 
+> After merging the moduleh tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/media/rc/ir-raw.c: In function 'init_decoders':
+> drivers/media/rc/ir-raw.c:354:2: error: implicit declaration of function 'request_module'
+> 
+> I have added this patch for today:
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Fri, 29 Jul 2011 15:21:27 +1000
+> Subject: [PATCH] ir-raw.c: include modules .h for request_module
 
-We do not attempt some kind of half-baked Aunt Tillie mode where we
-guess certain settings from the build host.
+Thanks, I've got this change in tree now.
 
-It's not as if people often use 'allyesconfig' to build kernels they're
-actually going to *run*.
+P.
 
--- 
-dwmw2
-
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/media/rc/ir-raw.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/rc/ir-raw.c b/drivers/media/rc/ir-raw.c
+> index 56adca8..ba817d2 100644
+> --- a/drivers/media/rc/ir-raw.c
+> +++ b/drivers/media/rc/ir-raw.c
+> @@ -14,7 +14,7 @@
+>  
+>  #include <linux/kthread.h>
+>  #include <linux/mutex.h>
+> -#include <linux/export.h>
+> +#include <linux/module.h>
+>  #include <linux/sched.h>
+>  #include <linux/freezer.h>
+>  #include "rc-core-priv.h"
+> -- 
+> 1.7.5.4
+> 
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
