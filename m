@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037Ab1GaBoi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 21:44:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36196 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752015Ab1GaBof convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 21:44:35 -0400
+	id S1752857Ab1GaCDL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 22:03:11 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51688 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab1GaCDG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 22:03:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <4E34B095.100@zytor.com>
-References: <1311971867-25124-1-git-send-email-hpa@linux.intel.com>
- <1311971867-25124-2-git-send-email-hpa@linux.intel.com> <CA+55aFz07ewwkBHeqj_VqAiNCBzDj8uzA0xzt2fc4qrYB9O19g@mail.gmail.com>
- <4E34B095.100@zytor.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 30 Jul 2011 15:43:42 -1000
-Message-ID: <CA+55aFy5iRjCigmK-eddkP8Wqy_qFDZRd6PV5d0XFE3p8ws1Bg@mail.gmail.com>
+In-Reply-To: <CA+55aFyimDdpCRER_7pc30S-QLhUkt0z-Y=gD48f7t=FxxFh7g@mail.gmail.com>
+References: <20110730234630.7270.qmail@science.horizon.com>
+ <CAF_S4t8TFour-Yw1T+qdG9mCzy9+tGBR0hQG83+ra6PRzPhNHQ@mail.gmail.com> <CA+55aFyimDdpCRER_7pc30S-QLhUkt0z-Y=gD48f7t=FxxFh7g@mail.gmail.com>
+From: Bryan Donlan <bdonlan@gmail.com>
+Date: Sat, 30 Jul 2011 22:02:24 -0400
+Message-ID: <CAF_S4t9PhDQBBfaLLaq1sE9YkJvQq5Q+ULegpD0aoTnv0CPutw@mail.gmail.com>
 Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Fenghua Yu <fenghua.yu@intel.com>, Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jeff Garzik <jgarzik@pobox.com>,
-        linux-kernel@vger.kernel.org
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org,
+        mpm@selenic.com, tytso@mit.edu
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 30, 2011 at 3:32 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+On Sat, Jul 30, 2011 at 21:35, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sat, Jul 30, 2011 at 3:02 PM, Bryan Donlan <bdonlan@gmail.com> wrote:
+>>
+>> The problem, as you can see here, is we need to test for the existence
+>> of an architecture-specific HWRNG once for _every word processed_.
 >
-> The only minor issue with this is that RDRAND can, at least in theory,
-> return a failure condition transiently ("the entropy buffer is empty")
-> or permanently ("the random number generator is broken.")  Although we
-> have never actually observed the former under anything approaching
-> realistic conditions, the recommendation is to loop for 10 iterations.
+> See the patch I sent out. Not only doesn't it check an
+> architecture-specific flag on x86, IT COSTS NOTHING AT ALL on other
+> architectures. Not per byte, not per call, not at all.
 
-So I don't care too deeply, we could easily make the
-"alternative_io()" thing just do a "call" to an out-of-line thing
-instead.
+Certainly, on architectures which never support fast hwrngs, you can
+avoid the overhead. I'm concerned about whether you're actually coming
+out ahead in the case where there _is_ an arch hwrng.
 
-That said, I seriously suggest that we shouldn't even care.
+> On x86, it does have the cost of:
+>
+>  - basically one conditional for the whole loop (branching out if
+> there is no rdrand support at all). You cannot do much better than
+> that, except of course if you statically say "compile for an x86 that
+> doesn't have rdrand")
+>
+>  - a per-word cost of checking CF - which you are supposed to do
+> anyway (ie the rdrand hardware will return with CF clear if the data
+> isn't reliable).
+>
+> So at least on x86, I think you can get pretty close to "optimal
+> behavior" with my approach.
 
-Why?
+Ah, I see - I wasn't aware RDRAND could fail. In that case, it's not
+so bad, although it would be nicer to directly branch on the carry
+flag, rather than emitting code that will, eventually, do a setcc ->
+and -> test -> branch.
 
-Because the high-level code needs to handle the failure case *anyway*,
-so if there is some "in theory, CF might be clear and we don't get any
-data" under certain odd an unusual circumstances, I think we might as
-well just opt out for braking out early. So I don't think we really
-should necessarily at all do the intel-recommended "loop at least ten
-times", because quite frankly, we're probably better off just falling
-back to our old sw fallback anyway.
+In any case though, what about my suggestion - don't mess with urandom
+at all, and let udev replace the /dev/urandom device node with one
+directed to a fast hwrng device if one is detected? This has zero
+extra overhead - you have to pass through the character device layer
+no matter what, and you can go straight from there to either the
+standard hwrng wrapper code, or to your own special extra-fast
+implementation of dev_read. It should also satisfy Mr. Spelvin's
+paranoia - he can just instruct his udev to not replace /dev/urandom.
+And so we don't need to introduce any new APIs to the kernel at all,
+nor do we need to touch any core code.
 
-So at this point, I'd much rather go for "really simple,
-straightforward and small" than anything else.
-
-> What makes that more than a bit ugly is that extract_entropy() and
-> extract_entropy_user() take their randomness type ("perfect/blocking"
-> versus "PRNG degrade OK/nonblocking") from a pointer to the pool, which
-> means that some kind of indirection or policy information is going to be
-> necessary there anyway, in order to enable get_random_bytes() and its
-> friends -- as opposed to get_random_int().
-
-Why?
-
-WHY SHOULD WE CARE?
-
-Nobody is ever going to complain about being better than necessary,
-and the whole point of rdrand should be that it's (a) fast enough and
-(b) good enough that the whole "blocking/degraded" thing is a total
-nonissue.
-
-In other words, we should consider rdrand to be "perfect +
-nonblocking", which is acceptable to everybody. Those nonblocking
-users aren't going to complain about good randomness, even if they
-might *accept* less than perfect randomness.
-
-IOW, I really want to aim for simple and straightforward. Don't make
-it more complicated than it is.
-
-Aim to make my patch *smaller* rather than trying to find ways to make
-it bigger.
-
-             Linus
+The downside, of course, is that in-kernel users of entropy won't have
+this fast API - do we have the kind of high-volume non-blocking
+entropy consumers in the kernel that might care about this?
