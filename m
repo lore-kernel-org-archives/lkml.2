@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753125Ab1GaBiy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 21:38:54 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:54202 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752711Ab1GaBir (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 21:38:47 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlUDAI2uNE55LCkBgWdsb2JhbABBp2MVAQEWJiWBQAEBBAEnExwjBQsIAw4KLhQlAyETh2y/AQ6GNASjcQ
-Date: Sun, 31 Jul 2011 11:38:43 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        containers@lists.linux-foundation.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@parallels.com>
-Subject: Re: [PATCH 3/4] dcache set size
-Message-ID: <20110731013843.GN5404@dastard>
-References: <1311947059-17209-1-git-send-email-glommer@parallels.com>
- <1311947059-17209-4-git-send-email-glommer@parallels.com>
+	id S1753037Ab1GaBoi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 21:44:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36196 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752015Ab1GaBof convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 21:44:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311947059-17209-4-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E34B095.100@zytor.com>
+References: <1311971867-25124-1-git-send-email-hpa@linux.intel.com>
+ <1311971867-25124-2-git-send-email-hpa@linux.intel.com> <CA+55aFz07ewwkBHeqj_VqAiNCBzDj8uzA0xzt2fc4qrYB9O19g@mail.gmail.com>
+ <4E34B095.100@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 30 Jul 2011 15:43:42 -1000
+Message-ID: <CA+55aFy5iRjCigmK-eddkP8Wqy_qFDZRd6PV5d0XFE3p8ws1Bg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Fenghua Yu <fenghua.yu@intel.com>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jeff Garzik <jgarzik@pobox.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 05:44:18PM +0400, Glauber Costa wrote:
-> Simple patch that provides a function allowing its caller to set
-> the maximum number of dentries that can exist at the same time
-> at a given super block. Will be used in a later patch.
+On Sat, Jul 30, 2011 at 3:32 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> The only minor issue with this is that RDRAND can, at least in theory,
+> return a failure condition transiently ("the entropy buffer is empty")
+> or permanently ("the random number generator is broken.")  Although we
+> have never actually observed the former under anything approaching
+> realistic conditions, the recommendation is to loop for 10 iterations.
 
-Pretty simple - probably better to put it in the patch that uses it,
-I think.
+So I don't care too deeply, we could easily make the
+"alternative_io()" thing just do a "call" to an out-of-line thing
+instead.
 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Dave Chinner <david@fromorbit.com>
-> ---
->  fs/dcache.c            |   12 ++++++++++++
->  include/linux/dcache.h |    1 +
->  2 files changed, 13 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 3bdb106..4369aa2 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -1202,6 +1202,18 @@ static int dcache_mem_check(struct super_block *sb)
->  	return -ENOMEM;
->  }
->  
-> +int vfs_set_dcache_size(struct super_block *sb, int size)
-> +{
-> +	unsigned long dr = percpu_counter_sum_positive(&sb->s_nr_dentry); 
-> +
-> +	if (size != sb->s_nr_dentry_max)
-> +		prune_dcache_sb(sb, dr - size);
+That said, I seriously suggest that we shouldn't even care.
 
-And why shrink if the new size > the current sb->s_nr_dentry_max?
+Why?
 
-And what happens when size > dr?
+Because the high-level code needs to handle the failure case *anyway*,
+so if there is some "in theory, CF might be clear and we don't get any
+data" under certain odd an unusual circumstances, I think we might as
+well just opt out for braking out early. So I don't think we really
+should necessarily at all do the intel-recommended "loop at least ten
+times", because quite frankly, we're probably better off just falling
+back to our old sw fallback anyway.
 
-Cheers,
+So at this point, I'd much rather go for "really simple,
+straightforward and small" than anything else.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+> What makes that more than a bit ugly is that extract_entropy() and
+> extract_entropy_user() take their randomness type ("perfect/blocking"
+> versus "PRNG degrade OK/nonblocking") from a pointer to the pool, which
+> means that some kind of indirection or policy information is going to be
+> necessary there anyway, in order to enable get_random_bytes() and its
+> friends -- as opposed to get_random_int().
+
+Why?
+
+WHY SHOULD WE CARE?
+
+Nobody is ever going to complain about being better than necessary,
+and the whole point of rdrand should be that it's (a) fast enough and
+(b) good enough that the whole "blocking/degraded" thing is a total
+nonissue.
+
+In other words, we should consider rdrand to be "perfect +
+nonblocking", which is acceptable to everybody. Those nonblocking
+users aren't going to complain about good randomness, even if they
+might *accept* less than perfect randomness.
+
+IOW, I really want to aim for simple and straightforward. Don't make
+it more complicated than it is.
+
+Aim to make my patch *smaller* rather than trying to find ways to make
+it bigger.
+
+             Linus
