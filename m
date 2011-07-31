@@ -1,64 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283Ab1GaSbP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 14:31:15 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:17848 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751452Ab1GaSbJ convert rfc822-to-8bit (ORCPT
+	id S1752583Ab1GaSgH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 14:36:07 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56351
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751790Ab1GaSf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 14:31:09 -0400
-X-IronPort-AV: E=Sophos;i="4.67,296,1309762800"; 
-   d="scan'208";a="566948347"
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Sun, 31 Jul 2011 14:35:58 -0400
+Date: Sun, 31 Jul 2011 14:35:56 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Sage Weil <sage@newdream.net>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: Re: [GIT PULL] Ceph updates for 3.1-rc1
+Message-ID: <20110731183556.GA23133@infradead.org>
+References: <Pine.LNX.4.64.1107261152440.2593@cobra.newdream.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: Please pull NFS client changes
-Date: Sun, 31 Jul 2011 11:30:48 -0700
-Message-ID: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430A777FE7@SACMVEXC2-PRD.hq.netapp.com>
-In-Reply-To: <20110731182406.GA16470@infradead.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Please pull NFS client changes
-Thread-Index: AcxPrwxfato9IhI9SbavzybOW9E9QwAABcOg
-References: <1312082377.10882.1.camel@lade.trondhjem.org> <20110731182406.GA16470@infradead.org>
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "Christoph Hellwig" <hch@infradead.org>
-Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        <linux-fsdevel@vger.kernel.org>, <linux-nfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 31 Jul 2011 18:30:53.0084 (UTC) FILETIME=[FAB37DC0:01CC4FAF]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1107261152440.2593@cobra.newdream.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Christoph Hellwig [mailto:hch@infradead.org]
-> Sent: Sunday, July 31, 2011 2:24 PM
-> To: Myklebust, Trond
-> Cc: Linus Torvalds; linux-fsdevel@vger.kernel.org; linux-
-> nfs@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: Please pull NFS client changes
-> 
-> How does this manage to include the pnfs block code, which only was
-> posted
-> on the list a few hours before the pull request, and which doesn't
-> appear to past testing very well (although the major issue seems to be
-> core nfs code)?
+On Tue, Jul 26, 2011 at 01:36:37PM -0700, Sage Weil wrote:
+> Sage Weil (19):
+>       ceph: add flags field to file_info
+>       ceph: add F_SYNC file flag to force sync (non-O_DIRECT) io
 
-The majority of that code has been ready for several weeks and has been
-posted several times for review. The main stuff that was addressed in
-the last week were smaller issues such as the naming of functions that
-are globally visible (i.e. not polluting the kernel namespace), a few
-bisectability issues and (in the last iteraction) the lack of a
-signed-off-by: from Jim.
+Can you document what the exact semantics of this flag are, and how
+they different from using O_SYNC/O_DSYNC.
 
-I agree that we have to address the bug that Peng found, but that
-appears to be linked to the NFSv4.1 back channel, which these patches
-did not change.
-
-The other point to note is that the patches do not touch the main
-read/write code and only lightly change the pNFS code paths. The impact
-of any residual bugs is therefore going to be limited.
