@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab1GaRxb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 13:53:31 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36732 "EHLO ogre.sisk.pl"
+	id S1752993Ab1GaRxs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 13:53:48 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36733 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752464Ab1GaRwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752499Ab1GaRwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 31 Jul 2011 13:52:53 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 8/9] PM / Domains: Rename second argument of pm_genpd_add_subdomain()
-Date: Sun, 31 Jul 2011 19:52:16 +0200
+Subject: [PATCH 7/9] PM / Domains: Rename GPD_STATE_WAIT_PARENT to GPD_STATE_WAIT_MASTER
+Date: Sun, 31 Jul 2011 19:51:37 +0200
 User-Agent: KMail/1.13.6 (Linux/3.0.0+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
         linux-sh@vger.kernel.org
@@ -19,88 +19,74 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107311952.16664.rjw@sisk.pl>
+Message-Id: <201107311951.37713.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Change the name of the second argument of pm_genpd_add_subdomain()
-so that it is (a) shorter and (b) in agreement with the name of
-the second argument of pm_genpd_add_subdomain().
+Since it is now possible for a PM domain to have multiple masters
+instead of one parent, rename the "wait for parent" status to reflect
+the new situation.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/power/domain.c |   26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ drivers/base/power/domain.c |   34 +++++++++++++++++-----------------
+ include/linux/pm_domain.h   |    2 +-
+ 2 files changed, 18 insertions(+), 18 deletions(-)
 
 Index: linux-2.6/drivers/base/power/domain.c
 ===================================================================
 --- linux-2.6.orig/drivers/base/power/domain.c
 +++ linux-2.6/drivers/base/power/domain.c
-@@ -1163,36 +1163,36 @@ int pm_genpd_remove_device(struct generi
- /**
-  * pm_genpd_add_subdomain - Add a subdomain to an I/O PM domain.
-  * @genpd: Master PM domain to add the subdomain to.
-- * @new_subdomain: Subdomain to be added.
-+ * @subdomain: Subdomain to be added.
-  */
- int pm_genpd_add_subdomain(struct generic_pm_domain *genpd,
--			   struct generic_pm_domain *new_subdomain)
-+			   struct generic_pm_domain *subdomain)
- {
- 	struct gpd_link *link;
- 	int ret = 0;
+@@ -98,7 +98,7 @@ int __pm_genpd_poweron(struct generic_pm
+ 	for (;;) {
+ 		prepare_to_wait(&genpd->status_wait_queue, &wait,
+ 				TASK_UNINTERRUPTIBLE);
+-		if (genpd->status != GPD_STATE_WAIT_PARENT)
++		if (genpd->status != GPD_STATE_WAIT_MASTER)
+ 			break;
+ 		mutex_unlock(&genpd->lock);
  
--	if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(new_subdomain))
-+	if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(subdomain))
- 		return -EINVAL;
- 
-  start:
- 	genpd_acquire_lock(genpd);
--	mutex_lock_nested(&new_subdomain->lock, SINGLE_DEPTH_NESTING);
-+	mutex_lock_nested(&subdomain->lock, SINGLE_DEPTH_NESTING);
- 
--	if (new_subdomain->status != GPD_STATE_POWER_OFF
--	    && new_subdomain->status != GPD_STATE_ACTIVE) {
--		mutex_unlock(&new_subdomain->lock);
-+	if (subdomain->status != GPD_STATE_POWER_OFF
-+	    && subdomain->status != GPD_STATE_ACTIVE) {
-+		mutex_unlock(&subdomain->lock);
- 		genpd_release_lock(genpd);
- 		goto start;
- 	}
- 
- 	if (genpd->status == GPD_STATE_POWER_OFF
--	    &&  new_subdomain->status != GPD_STATE_POWER_OFF) {
-+	    &&  subdomain->status != GPD_STATE_POWER_OFF) {
- 		ret = -EINVAL;
- 		goto out;
- 	}
- 
+@@ -124,7 +124,7 @@ int __pm_genpd_poweron(struct generic_pm
+ 	 */
  	list_for_each_entry(link, &genpd->slave_links, slave_node) {
--		if (link->slave == new_subdomain && link->master == genpd) {
-+		if (link->slave == subdomain && link->master == genpd) {
- 			ret = -EINVAL;
- 			goto out;
- 		}
-@@ -1205,13 +1205,13 @@ int pm_genpd_add_subdomain(struct generi
- 	}
- 	link->master = genpd;
- 	list_add_tail(&link->master_node, &genpd->master_links);
--	link->slave = new_subdomain;
--	list_add_tail(&link->slave_node, &new_subdomain->slave_links);
--	if (new_subdomain->status != GPD_STATE_POWER_OFF)
-+	link->slave = subdomain;
-+	list_add_tail(&link->slave_node, &subdomain->slave_links);
-+	if (subdomain->status != GPD_STATE_POWER_OFF)
- 		genpd_sd_counter_inc(genpd);
+ 		genpd_sd_counter_inc(link->master);
+-		genpd->status = GPD_STATE_WAIT_PARENT;
++		genpd->status = GPD_STATE_WAIT_MASTER;
  
-  out:
--	mutex_unlock(&new_subdomain->lock);
-+	mutex_unlock(&subdomain->lock);
- 	genpd_release_lock(genpd);
+ 		mutex_unlock(&genpd->lock);
  
- 	return ret;
+@@ -258,7 +258,7 @@ static void __pm_genpd_restore_device(st
+  */
+ static bool genpd_abort_poweroff(struct generic_pm_domain *genpd)
+ {
+-	return genpd->status == GPD_STATE_WAIT_PARENT
++	return genpd->status == GPD_STATE_WAIT_MASTER
+ 		|| genpd->status == GPD_STATE_ACTIVE || genpd->resume_count > 0;
+ }
+ 
+@@ -300,7 +300,7 @@ static int pm_genpd_poweroff(struct gene
+ 	 * (4) System suspend is in progress.
+ 	 */
+ 	if (genpd->status == GPD_STATE_POWER_OFF
+-	    || genpd->status == GPD_STATE_WAIT_PARENT
++	    || genpd->status == GPD_STATE_WAIT_MASTER
+ 	    || genpd->resume_count > 0 || genpd->prepared_count > 0)
+ 		return 0;
+ 
+Index: linux-2.6/include/linux/pm_domain.h
+===================================================================
+--- linux-2.6.orig/include/linux/pm_domain.h
++++ linux-2.6/include/linux/pm_domain.h
+@@ -13,7 +13,7 @@
+ 
+ enum gpd_status {
+ 	GPD_STATE_ACTIVE = 0,	/* PM domain is active */
+-	GPD_STATE_WAIT_PARENT,	/* PM domain's parent is being waited for */
++	GPD_STATE_WAIT_MASTER,	/* PM domain's master is being waited for */
+ 	GPD_STATE_BUSY,		/* Something is happening to the PM domain */
+ 	GPD_STATE_REPEAT,	/* Power off in progress, to be repeated */
+ 	GPD_STATE_POWER_OFF,	/* PM domain is off */
 
