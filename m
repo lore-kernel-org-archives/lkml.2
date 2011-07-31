@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab1GaRw6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 13:52:58 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36728 "EHLO ogre.sisk.pl"
+	id S1752690Ab1GaRxV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 13:53:21 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36730 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751829Ab1GaRww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 13:52:52 -0400
+	id S1752372Ab1GaRwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 13:52:53 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 1/9] PM / Domains: Fix pm_genpd_poweron()
-Date: Sun, 31 Jul 2011 19:47:00 +0200
+Subject: [PATCH 9/9] ARM / shmobile: Make A3RV be a subdomain of A4LC on SH7372
+Date: Sun, 31 Jul 2011 19:52:51 +0200
 User-Agent: KMail/1.13.6 (Linux/3.0.0+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
         linux-sh@vger.kernel.org
@@ -19,45 +19,103 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107311947.00477.rjw@sisk.pl>
+Message-Id: <201107311952.51969.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-The local variable ret is defined twice in pm_genpd_poweron(), which
-causes this function to always return 0, even if the PM domain's
-.power_on() callback fails, in which case an error code should be
-returned.
-
-Remove the wrong second definition of ret and additionally remove an
-unnecessary definition of wait from pm_genpd_poweron().
+Instead of coding the undocumented dependencies between power domains
+A3RV and A4LC on SH7372 directly into the low-level power up/down
+routines, make A3RV be a subdomain of A4LC, which will cause the
+same dependecies to hold.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/base/power/domain.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/arm/mach-shmobile/pm-sh7372.c    |   42 +---------------------------------
+ arch/arm/mach-shmobile/setup-sh7372.c |    3 ++
+ 2 files changed, 5 insertions(+), 40 deletions(-)
 
-Index: linux-2.6/drivers/base/power/domain.c
+Index: linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
 ===================================================================
---- linux-2.6.orig/drivers/base/power/domain.c
-+++ linux-2.6/drivers/base/power/domain.c
-@@ -80,7 +80,6 @@ static void genpd_set_active(struct gene
- int pm_genpd_poweron(struct generic_pm_domain *genpd)
+--- linux-2.6.orig/arch/arm/mach-shmobile/pm-sh7372.c
++++ linux-2.6/arch/arm/mach-shmobile/pm-sh7372.c
+@@ -91,35 +91,6 @@ static int pd_power_up(struct generic_pm
+ 	return ret;
+ }
+ 
+-static int pd_power_up_a3rv(struct generic_pm_domain *genpd)
+-{
+-	int ret = pd_power_up(genpd);
+-
+-	/* force A4LC on after A3RV has been requested on */
+-	pm_genpd_poweron(&sh7372_a4lc.genpd);
+-
+-	return ret;
+-}
+-
+-static int pd_power_down_a3rv(struct generic_pm_domain *genpd)
+-{
+-	int ret = pd_power_down(genpd);
+-
+-	/* try to power down A4LC after A3RV is requested off */
+-	genpd_queue_power_off_work(&sh7372_a4lc.genpd);
+-
+-	return ret;
+-}
+-
+-static int pd_power_down_a4lc(struct generic_pm_domain *genpd)
+-{
+-	/* only power down A4LC if A3RV is off */
+-	if (!(__raw_readl(PSTR) & (1 << sh7372_a3rv.bit_shift)))
+-		return pd_power_down(genpd);
+-
+-	return -EBUSY;
+-}
+-
+ static bool pd_active_wakeup(struct device *dev)
  {
- 	struct generic_pm_domain *parent = genpd->parent;
--	DEFINE_WAIT(wait);
- 	int ret = 0;
+ 	return true;
+@@ -133,17 +104,8 @@ void sh7372_init_pm_domain(struct sh7372
+ 	genpd->stop_device = pm_clk_suspend;
+ 	genpd->start_device = pm_clk_resume;
+ 	genpd->active_wakeup = pd_active_wakeup;
+-
+-	if (sh7372_pd == &sh7372_a4lc) {
+-		genpd->power_off = pd_power_down_a4lc;
+-		genpd->power_on = pd_power_up;
+-	} else if (sh7372_pd == &sh7372_a3rv) {
+-		genpd->power_off = pd_power_down_a3rv;
+-		genpd->power_on = pd_power_up_a3rv;
+-	} else {
+-		genpd->power_off = pd_power_down;
+-		genpd->power_on = pd_power_up;
+-	}
++	genpd->power_off = pd_power_down;
++	genpd->power_on = pd_power_up;
+ 	genpd->power_on(&sh7372_pd->genpd);
+ }
  
-  start:
-@@ -112,7 +111,7 @@ int pm_genpd_poweron(struct generic_pm_d
- 	}
+Index: linux-2.6/arch/arm/mach-shmobile/setup-sh7372.c
+===================================================================
+--- linux-2.6.orig/arch/arm/mach-shmobile/setup-sh7372.c
++++ linux-2.6/arch/arm/mach-shmobile/setup-sh7372.c
+@@ -30,6 +30,7 @@
+ #include <linux/sh_dma.h>
+ #include <linux/sh_intc.h>
+ #include <linux/sh_timer.h>
++#include <linux/pm_domain.h>
+ #include <mach/hardware.h>
+ #include <mach/sh7372.h>
+ #include <asm/mach-types.h>
+@@ -848,6 +849,8 @@ void __init sh7372_add_standard_devices(
+ 	sh7372_init_pm_domain(&sh7372_a3ri);
+ 	sh7372_init_pm_domain(&sh7372_a3sg);
  
- 	if (genpd->power_on) {
--		int ret = genpd->power_on(genpd);
-+		ret = genpd->power_on(genpd);
- 		if (ret)
- 			goto out;
- 	}
++	pm_genpd_add_subdomain(&sh7372_a4lc.genpd, &sh7372_a3sg.genpd);
++
+ 	platform_add_devices(sh7372_early_devices,
+ 			    ARRAY_SIZE(sh7372_early_devices));
+ 
 
