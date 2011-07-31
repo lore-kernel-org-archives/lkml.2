@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751755Ab1GaFVe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 01:21:34 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:42532 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab1GaFV1 (ORCPT
+	id S1751947Ab1GaFWZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 01:22:25 -0400
+Received: from mail.windriver.com ([147.11.1.11]:45282 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab1GaFWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 01:21:27 -0400
+	Sun, 31 Jul 2011 01:22:19 -0400
+Date: Sun, 31 Jul 2011 01:22:14 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (probably moduleh tree related)
+Message-ID: <20110731052214.GB31842@windriver.com>
+References: <20110729170142.4cd1979127a0d5d864297db3@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <CACqU3MUJ=B-VszESWcFXbW=TLRxz5HrAaUn3nkyydX-xBBTXhg@mail.gmail.com>
-References: <1312067499.22074.59.camel@i7.infradead.org>
-	<1312067670.22074.61.camel@i7.infradead.org>
-	<CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
-	<4E34998D.8060806@zytor.com>
-	<CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
-	<4E34A1E4.8040103@zytor.com>
-	<CACqU3MVkLXoBq7KP2Jff=p7EiKR7DkPa4z7y0Rdah-dGzRvj4g@mail.gmail.com>
-	<4E34AFAD.90008@zytor.com>
-	<CACqU3MUJ=B-VszESWcFXbW=TLRxz5HrAaUn3nkyydX-xBBTXhg@mail.gmail.com>
-Date: Sun, 31 Jul 2011 01:21:27 -0400
-Message-ID: <CACqU3MXjBsJ=nWL8ue6JGGVQTej8f3CcUvFtS3n6K+henHzvuQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110729170142.4cd1979127a0d5d864297db3@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+[linux-next: build failure after merge of the final tree (probably moduleh tree related)] On 29/07/2011 (Fri 17:01) Stephen Rothwell wrote:
 
-On Sat, Jul 30, 2011 at 10:09 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> Hi,
->
-> On Sat, Jul 30, 2011 at 9:28 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 07/30/2011 06:06 PM, Arnaud Lacombe wrote:
->>>>
->>> The principle of least surprise is broken anyway as the proposed patch
->>> has absolutely no dependency checking and verification. You can `make
->>> CONFIG_SATA_MV=y allnoconfig', you will _not_ get it set.
->>>
->> This gives you exactly the same way as a .config file or a ALLCONFIG
->> file with the same options, which is what one realistically should expect.
->>
-> no, I would expect it to have the same effect as a `select
-> CONFIG_SATA_MV', have it forcibly set to the given value, and be
-> warned if there was any problem.
->
-> Btw, `make CONFIG_GENERIC_BUG=n oldconfig' or `make CONFIG_64BIT=n
-> oldconfig'[0] does not even work, and I'm getting no error. So either
-> you make it work for all possible uses, or you warn the user he tried
-> something illegal, but you don't just fail silently.
->
-ok, the issue is that you will only be allowed to change visible
-symbols. CONFIG_64BIT is conditionally visible (when ARCH=x86), so
-right now, you can not do on x86-64:
+[...]
 
-% make ARCH=i386 defconfig
-% make CONFIG_64BIT=n oldconfig # [0]
+> 
+> I have added the folllowing patch for today:
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Fri, 29 Jul 2011 16:55:11 +1000
+> Subject: [PATCH] dmaengine.h needs bitmap.h
 
-and expect it to work.
+Thanks, I've added it to the queue.
+Paul.
 
-Instead of allowing explicitly a symbol to be overridden, the behavior
-is to implicitly, silently and un-deterministicaly[1] deny an
-override. Strange ...
-
- - Arnaud
-
-[0]: this match David's use-case described in
-<1311986969.20983.52.camel@i7.infradead.org>
-
-[1]: ie. it depends on the state of the tree when ran
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  include/linux/dmaengine.h |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index 8fbf40e..c90b17f 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -24,6 +24,7 @@
+>  #include <linux/device.h>
+>  #include <linux/uio.h>
+>  #include <linux/dma-direction.h>
+> +#include <linux/bitmap.h>
+>  
+>  struct scatterlist;
+>  
+> -- 
+> 1.7.5.4
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
