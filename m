@@ -1,127 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab1GaVQu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 17:16:50 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:10251 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab1GaVQp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 17:16:45 -0400
-Date: Sun, 31 Jul 2011 23:16:43 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Takashi Iwai <tiwai@suse.de>
-cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Joe Perches <joe@perches.com>,
-        Eliot Blennerhassett <eblennerhassett@audioscience.com>,
-        Jaroslav Kysela <perex@perex.cz>, support@audioscience.com
-Subject: Re: [PATCH] Sound: AudioScience HPI: Don't leak firmware if mem
- alloc fails
-In-Reply-To: <alpine.LNX.2.00.1107291106300.22532@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1107312313360.28695@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107282145230.20477@swampdragon.chaosbits.net> <s5hpqkt6425.wl%tiwai@suse.de> <alpine.LNX.2.00.1107291106300.22532@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752869Ab1GaV14 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 17:27:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60163 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752566Ab1GaV1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 17:27:42 -0400
+From: "H. Peter Anvin" <hpa@zytor.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Fenghua Yu <fenghua.yu@intel.com>, Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jeff Garzik <jgarzik@pobox.com>,
+        linux-kernel@vger.kernel.org
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Subject: [PATCH v3 0/3] Add support for architectural random number generator
+Date: Sun, 31 Jul 2011 14:26:53 -0700
+Message-Id: <1312147616-29125-1-git-send-email-hpa@zytor.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <CA+55aFy5iRjCigmK-eddkP8Wqy_qFDZRd6PV5d0XFE3p8ws1Bg@mail.gmail.com>
+References: <CA+55aFy5iRjCigmK-eddkP8Wqy_qFDZRd6PV5d0XFE3p8ws1Bg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Jul 2011, Jesper Juhl wrote:
+This version of the patchset uses inlines with alternatives as
+proposed by Linus.  In order to avoid the issue of "random" vs
+"urandom", this hooks into *only* the kernel consumer interfaces
+get_random_bytes() and get_random_int(); this means that legacy users
+of /dev/urandom in userspace will not get direct use RDRAND, but those
+can be eventually converted to using RDRAND directly in userspace.
 
-> On Fri, 29 Jul 2011, Takashi Iwai wrote:
-> 
-> > At Thu, 28 Jul 2011 21:48:27 +0200 (CEST),
-> > Jesper Juhl wrote:
-> > > 
-> > > We leak the memory allocated to 'firmware' when we fail to
-> > > release_firmware() after a kmalloc() failure in hpi_dsp_code_open().
-> > > This patch should take care of the leak.
-> > > 
-> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > > ---
-> > >  sound/pci/asihpi/hpidspcd.c |    4 +++-
-> > >  1 files changed, 3 insertions(+), 1 deletions(-)
-> > > 
-> > > 	Build tested only.
-> > > 
-> > > diff --git a/sound/pci/asihpi/hpidspcd.c b/sound/pci/asihpi/hpidspcd.c
-> > > index 3a7afa3..8d261ef 100644
-> > > --- a/sound/pci/asihpi/hpidspcd.c
-> > > +++ b/sound/pci/asihpi/hpidspcd.c
-> > > @@ -85,8 +85,10 @@ short hpi_dsp_code_open(u32 adapter, void *os_data, struct dsp_code *dsp_code,
-> > >  
-> > >  	HPI_DEBUG_LOG(DEBUG, "dsp code %s opened\n", fw_name);
-> > >  	dsp_code->pvt = kmalloc(sizeof(*dsp_code->pvt), GFP_KERNEL);
-> > > -	if (!dsp_code->pvt)
-> > > +	if (!dsp_code->pvt) {
-> > > +		release_firmware(firmware);
-> > >  		return HPI_ERROR_MEMORY_ALLOC;
-> > > +	}
-> > 
-> > IMO, it's better to use the same error handling like others, i.e.
-> > "goto error2".  But you want to pass a different error code, so we'd
-> > need to introduce an error code variable there...
-> > 
-> Thank you for the feedback. I'll cook up a better patch tonight.
-> 
-> 
+We can, of course, still both pools randomness via rngd or a future
+in-kernel mechanism as proposed by Matt.
 
-Sorry about the delay - had non-computer things to attend to.
+Since there was a minor amount of confusion I want to clarify: RDRAND
+architecturally has weaker security guarantees than the documented
+interface for /dev/random, so we can't just replace all users of
+extract_entropy() with RDRAND.
 
-I hope this is more to your liking :-)
+Git tree also available:
 
+git://git.kernel.org/pub/scm/linux/kernel/git/hpa/linux-rdrand.git rdrand-3
 
-From: Jesper Juhl <jj@chaosbits.net>
+Again, for technical documentation see:
 
-We leak the memory allocated to 'firmware' when we fail to
-release_firmware() after a kmalloc() failure in hpi_dsp_code_open().
-This patch should take care of the leak.
+http://software.intel.com/en-us/articles/download-the-latest-bull-mountain-software-implementation-guide/
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- sound/pci/asihpi/hpidspcd.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+Changes in version 3:
+- Use inline hooks.
+- Enable get_random_int() and get_random_bytes() only, in other words
+  only enable the in-kernel users.
+- Drop the preinitialization of the random pools; since they are only
+  used for userspace consumers when RDRAND is available, they can be fed
+  entropy via the input mechanism.
 
-diff --git a/sound/pci/asihpi/hpidspcd.c b/sound/pci/asihpi/hpidspcd.c
-index 3a7afa3..71d32c8 100644
---- a/sound/pci/asihpi/hpidspcd.c
-+++ b/sound/pci/asihpi/hpidspcd.c
-@@ -43,6 +43,7 @@ short hpi_dsp_code_open(u32 adapter, void *os_data, struct dsp_code *dsp_code,
- 	struct pci_dev *dev = os_data;
- 	struct code_header header;
- 	char fw_name[20];
-+	short err_ret = HPI_ERROR_DSP_FILE_NOT_FOUND;
- 	int err;
- 
- 	sprintf(fw_name, "asihpi/dsp%04x.bin", adapter);
-@@ -85,8 +86,10 @@ short hpi_dsp_code_open(u32 adapter, void *os_data, struct dsp_code *dsp_code,
- 
- 	HPI_DEBUG_LOG(DEBUG, "dsp code %s opened\n", fw_name);
- 	dsp_code->pvt = kmalloc(sizeof(*dsp_code->pvt), GFP_KERNEL);
--	if (!dsp_code->pvt)
--		return HPI_ERROR_MEMORY_ALLOC;
-+	if (!dsp_code->pvt) {
-+		err_ret = HPI_ERROR_MEMORY_ALLOC;
-+		goto error2;
-+	}
- 
- 	dsp_code->pvt->dev = dev;
- 	dsp_code->pvt->firmware = firmware;
-@@ -99,7 +102,7 @@ error2:
- 	release_firmware(firmware);
- error1:
- 	dsp_code->block_length = 0;
--	return HPI_ERROR_DSP_FILE_NOT_FOUND;
-+	return err_ret;
- }
- 
- /*-------------------------------------------------------------------*/
--- 
-1.7.6
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Total changes:
+ Documentation/kernel-parameters.txt |    5 ++
+ arch/x86/Kconfig                    |    9 ++++
+ arch/x86/include/asm/archrandom.h   |   75 +++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/Makefile        |    1 +
+ arch/x86/kernel/cpu/common.c        |    2 +
+ arch/x86/kernel/cpu/rdrand.c        |   73 ++++++++++++++++++++++++++++++++++
+ drivers/char/random.c               |   25 ++++++++++-
+ include/linux/random.h              |   13 ++++++
+ 8 files changed, 200 insertions(+), 3 deletions(-)
