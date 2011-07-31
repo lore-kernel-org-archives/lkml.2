@@ -1,221 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753238Ab1GaIvl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 04:51:41 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:48266 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751453Ab1GaIvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 04:51:33 -0400
-Date: Sun, 31 Jul 2011 10:51:24 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: torvalds@osdl.org, akpm@osdl.org
-Cc: cpufreq@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, lenb@kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Thomas Renninger <trenn@suse.de>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] cpupowerutils
-Message-ID: <20110731085124.GA5874@comet.dominikbrodowski.net>
-Mail-Followup-To: torvalds@osdl.org, akpm@osdl.org, cpufreq@vger.kernel.org,
-	linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-	lenb@kernel.org, Ingo Molnar <mingo@elte.hu>,
-	Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
+	id S1752280Ab1GaJGq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 05:06:46 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59591 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab1GaJGk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 05:06:40 -0400
+Date: Sun, 31 Jul 2011 10:06:19 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: pratyush.anand@st.com, rajeev-dlh.kumar@st.com, bhupesh.sharma@st.com,
+        shiraz.hashim@st.com, "Koul, Vinod" <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org, vipin.kumar@st.com,
+        armando.visconti@st.com, amit.virdi@st.com, vipulkumar.samar@st.com,
+        viresh kumar <viresh.linux@gmail.com>, deepak.sikri@st.com,
+        dan.j.williams@intel.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 04/18] dmaengine/amba-pl08x: Remove redundant comment
+	and rewrite original
+Message-ID: <20110731090619.GA30888@n2100.arm.linux.org.uk>
+References: <cover.1311936523.git.viresh.kumar@st.com> <e2c1bd6941e88f8988b1942c13c20cf436b3a963.1311936524.git.viresh.kumar@st.com> <1311941355.1536.529.camel@vkoul-udesk3> <CAOh2x=kqa0GxRH9o=8faPhuyyLcqxH8+AOowBTK_gMaDgJyeVA@mail.gmail.com> <CAKnu2MrWbm5w6QsBzj=Fd=f7SfE=4_7bHMBBdQiN2bCnbeV-eg@mail.gmail.com> <20110730225708.GB17570@n2100.arm.linux.org.uk> <CAKnu2MpzFK1HHhs7F5PV1EsbCG9y1Htbu5KM7x0OC2_9U=vovA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKnu2MpzFK1HHhs7F5PV1EsbCG9y1Htbu5KM7x0OC2_9U=vovA@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Sun, Jul 31, 2011 at 01:37:46AM +0200, Linus Walleij wrote:
+> 2011/7/31 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> > On Sun, Jul 31, 2011 at 12:32:55AM +0200, Linus Walleij wrote:
+> >> The PL08x has two bus mastering interfaces. They can be
+> >> connected to two separate busses and two adress spaces
+> >> even, usually that is not the case though.
+> >
+> > This is not what the function is about... that's done by my
+> > pl08x_select_bus() function.
+> 
+> To be clear, I was explaining what I percieved as a
+> question from Viresh about what the comment in this hunk of
+> the patch was about:
 
-the git tree
+Yes, and the comment and function name are wrong for what it's doing.
+I repeat: it has nothing to do with selecting an AHB bus.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/cpupowerutils.git master
+> As for the LLI code, all of it's weird complexity comes from the fact
+> that the DMAC cannot let a single element pass across 1KB (0x400)
+> boundaries, which is one more than a little insane hardware
+> restriction, and I have no clue where that limitation actually comes
+> from, likely strange VHDL code.
 
-contains a new utility called "cpupowerutils" which is laregely based on
-the well known "cpufrequtils", but extended to provide much more information
-about other power-related features of modern CPUs, such as idle states.
-
-Users and Developers want to have *one* tool to get an overview what
-their system supports and to monitor and debug CPU power management
-in detail. The tool should compile and work on as many architectures
-as possible.
-
-To reach these goals, Thomas Renninger suggested -- and implemented most
-of the parts -- to convert the external tool cpufrequtils to a userspace
-tool residing in tools/power/cpupower/ .
-
-Once this stabilizes, it is intended to replace cpufrequtils and the
-Intel-specific tools in tools/power/x86 .
-
-A list of patches and the diffstat are appended to this messages.
-
-Best,
-	Dominik
-
-
-Dominik Brodowski (10):
-      cpupowerutils - cpufrequtils extended with quite some features
-      cpupowerutils: use COPYING, CREDITS from top-level directory
-      cpupowerutils: remove ccdv, use kernel quiet/verbose mechanism
-      cpupowerutils: do not update po files on each and every compile
-      cpupowerutils: bench - ConfigStyle bugfixes
-      cpupowerutils: lib - ConfigStyle bugfixes
-      cpupowerutils: idle_monitor - ConfigStyle bugfixes
-      cpupowerutils: helpers - ConfigStyle bugfixes
-      cpupowerutils: utils - ConfigStyle bugfixes
-      cpupowerutils: use kernel version-derived version string
-
-Roman Vasiyarov (1):
-      cpupowerutils: increase MAX_LINE_LEN
-
-Thomas Renninger (4):
-      cpupowerutils: Rename: libcpufreq->libcpupower
-      cpupower: Rename package from cpupowerutils to cpupower
-      cpupower: Show Intel turbo ratio support via ./cpupower frequency-info
-      cpupower: Do detect IDA (opportunistic processor performance) via cpuid
-
- CREDITS                                            |   17 +-
- MAINTAINERS                                        |    6 +
- tools/power/cpupower/.gitignore                    |   22 +
- tools/power/cpupower/Makefile                      |  279 ++++++
- tools/power/cpupower/README                        |   49 +
- tools/power/cpupower/ToDo                          |   11 +
- tools/power/cpupower/bench/Makefile                |   29 +
- tools/power/cpupower/bench/README-BENCH            |  124 +++
- tools/power/cpupower/bench/benchmark.c             |  194 ++++
- tools/power/cpupower/bench/benchmark.h             |   29 +
- tools/power/cpupower/bench/config.h                |   36 +
- tools/power/cpupower/bench/cpufreq-bench_plot.sh   |  104 +++
- tools/power/cpupower/bench/cpufreq-bench_script.sh |  101 ++
- tools/power/cpupower/bench/example.cfg             |   11 +
- tools/power/cpupower/bench/main.c                  |  202 ++++
- tools/power/cpupower/bench/parse.c                 |  225 +++++
- tools/power/cpupower/bench/parse.h                 |   53 ++
- tools/power/cpupower/bench/system.c                |  191 ++++
- tools/power/cpupower/bench/system.h                |   29 +
- tools/power/cpupower/debug/i386/Makefile           |   20 +
- tools/power/cpupower/debug/i386/centrino-decode.c  |  113 +++
- tools/power/cpupower/debug/i386/dump_psb.c         |  196 ++++
- tools/power/cpupower/debug/i386/intel_gsic.c       |   78 ++
- .../power/cpupower/debug/i386/powernow-k8-decode.c |   96 ++
- tools/power/cpupower/debug/kernel/Makefile         |   23 +
- .../power/cpupower/debug/kernel/cpufreq-test_tsc.c |  113 +++
- tools/power/cpupower/debug/x86_64/Makefile         |   14 +
- .../power/cpupower/debug/x86_64/centrino-decode.c  |    1 +
- .../cpupower/debug/x86_64/powernow-k8-decode.c     |    1 +
- tools/power/cpupower/lib/cpufreq.c                 |  208 +++++
- tools/power/cpupower/lib/cpufreq.h                 |  223 +++++
- tools/power/cpupower/lib/sysfs.c                   |  672 ++++++++++++++
- tools/power/cpupower/lib/sysfs.h                   |   31 +
- tools/power/cpupower/man/cpupower-frequency-info.1 |   76 ++
- tools/power/cpupower/man/cpupower-frequency-set.1  |   54 ++
- tools/power/cpupower/man/cpupower-info.1           |   19 +
- tools/power/cpupower/man/cpupower-monitor.1        |  179 ++++
- tools/power/cpupower/man/cpupower-set.1            |  103 +++
- tools/power/cpupower/man/cpupower.1                |   72 ++
- tools/power/cpupower/po/cs.po                      |  944 +++++++++++++++++++
- tools/power/cpupower/po/de.po                      |  961 ++++++++++++++++++++
- tools/power/cpupower/po/fr.po                      |  947 +++++++++++++++++++
- tools/power/cpupower/po/it.po                      |  961 ++++++++++++++++++++
- tools/power/cpupower/po/pt.po                      |  957 +++++++++++++++++++
- tools/power/cpupower/utils/builtin.h               |   18 +
- tools/power/cpupower/utils/cpufreq-info.c          |  708 ++++++++++++++
- tools/power/cpupower/utils/cpufreq-set.c           |  358 ++++++++
- tools/power/cpupower/utils/cpuidle-info.c          |  244 +++++
- tools/power/cpupower/utils/cpupower-info.c         |  153 ++++
- tools/power/cpupower/utils/cpupower-set.c          |  153 ++++
- tools/power/cpupower/utils/cpupower.c              |  203 ++++
- tools/power/cpupower/utils/helpers/amd.c           |  137 +++
- tools/power/cpupower/utils/helpers/bitmask.c       |  292 ++++++
- tools/power/cpupower/utils/helpers/bitmask.h       |   33 +
- tools/power/cpupower/utils/helpers/cpuid.c         |  176 ++++
- tools/power/cpupower/utils/helpers/helpers.h       |  178 ++++
- tools/power/cpupower/utils/helpers/misc.c          |   27 +
- tools/power/cpupower/utils/helpers/msr.c           |  115 +++
- tools/power/cpupower/utils/helpers/pci.c           |   44 +
- tools/power/cpupower/utils/helpers/sysfs.c         |  358 ++++++++
- tools/power/cpupower/utils/helpers/sysfs.h         |   28 +
- tools/power/cpupower/utils/helpers/topology.c      |  108 +++
- .../cpupower/utils/idle_monitor/amd_fam14h_idle.c  |  338 +++++++
- .../cpupower/utils/idle_monitor/cpuidle_sysfs.c    |  196 ++++
- .../cpupower/utils/idle_monitor/cpupower-monitor.c |  448 +++++++++
- .../cpupower/utils/idle_monitor/cpupower-monitor.h |   68 ++
- .../cpupower/utils/idle_monitor/idle_monitors.def  |    7 +
- .../cpupower/utils/idle_monitor/idle_monitors.h    |   18 +
- .../cpupower/utils/idle_monitor/mperf_monitor.c    |  255 ++++++
- tools/power/cpupower/utils/idle_monitor/nhm_idle.c |  216 +++++
- tools/power/cpupower/utils/idle_monitor/snb_idle.c |  190 ++++
- tools/power/cpupower/utils/version-gen.sh          |   35 +
- 72 files changed, 13877 insertions(+), 1 deletions(-)
- create mode 100644 tools/power/cpupower/.gitignore
- create mode 100644 tools/power/cpupower/Makefile
- create mode 100644 tools/power/cpupower/README
- create mode 100644 tools/power/cpupower/ToDo
- create mode 100644 tools/power/cpupower/bench/Makefile
- create mode 100644 tools/power/cpupower/bench/README-BENCH
- create mode 100644 tools/power/cpupower/bench/benchmark.c
- create mode 100644 tools/power/cpupower/bench/benchmark.h
- create mode 100644 tools/power/cpupower/bench/config.h
- create mode 100644 tools/power/cpupower/bench/cpufreq-bench_plot.sh
- create mode 100644 tools/power/cpupower/bench/cpufreq-bench_script.sh
- create mode 100644 tools/power/cpupower/bench/example.cfg
- create mode 100644 tools/power/cpupower/bench/main.c
- create mode 100644 tools/power/cpupower/bench/parse.c
- create mode 100644 tools/power/cpupower/bench/parse.h
- create mode 100644 tools/power/cpupower/bench/system.c
- create mode 100644 tools/power/cpupower/bench/system.h
- create mode 100644 tools/power/cpupower/debug/i386/Makefile
- create mode 100644 tools/power/cpupower/debug/i386/centrino-decode.c
- create mode 100644 tools/power/cpupower/debug/i386/dump_psb.c
- create mode 100644 tools/power/cpupower/debug/i386/intel_gsic.c
- create mode 100644 tools/power/cpupower/debug/i386/powernow-k8-decode.c
- create mode 100644 tools/power/cpupower/debug/kernel/Makefile
- create mode 100644 tools/power/cpupower/debug/kernel/cpufreq-test_tsc.c
- create mode 100644 tools/power/cpupower/debug/x86_64/Makefile
- create mode 120000 tools/power/cpupower/debug/x86_64/centrino-decode.c
- create mode 120000 tools/power/cpupower/debug/x86_64/powernow-k8-decode.c
- create mode 100644 tools/power/cpupower/lib/cpufreq.c
- create mode 100644 tools/power/cpupower/lib/cpufreq.h
- create mode 100644 tools/power/cpupower/lib/sysfs.c
- create mode 100644 tools/power/cpupower/lib/sysfs.h
- create mode 100644 tools/power/cpupower/man/cpupower-frequency-info.1
- create mode 100644 tools/power/cpupower/man/cpupower-frequency-set.1
- create mode 100644 tools/power/cpupower/man/cpupower-info.1
- create mode 100644 tools/power/cpupower/man/cpupower-monitor.1
- create mode 100644 tools/power/cpupower/man/cpupower-set.1
- create mode 100644 tools/power/cpupower/man/cpupower.1
- create mode 100644 tools/power/cpupower/po/cs.po
- create mode 100644 tools/power/cpupower/po/de.po
- create mode 100644 tools/power/cpupower/po/fr.po
- create mode 100644 tools/power/cpupower/po/it.po
- create mode 100644 tools/power/cpupower/po/pt.po
- create mode 100644 tools/power/cpupower/utils/builtin.h
- create mode 100644 tools/power/cpupower/utils/cpufreq-info.c
- create mode 100644 tools/power/cpupower/utils/cpufreq-set.c
- create mode 100644 tools/power/cpupower/utils/cpuidle-info.c
- create mode 100644 tools/power/cpupower/utils/cpupower-info.c
- create mode 100644 tools/power/cpupower/utils/cpupower-set.c
- create mode 100644 tools/power/cpupower/utils/cpupower.c
- create mode 100644 tools/power/cpupower/utils/helpers/amd.c
- create mode 100644 tools/power/cpupower/utils/helpers/bitmask.c
- create mode 100644 tools/power/cpupower/utils/helpers/bitmask.h
- create mode 100644 tools/power/cpupower/utils/helpers/cpuid.c
- create mode 100644 tools/power/cpupower/utils/helpers/helpers.h
- create mode 100644 tools/power/cpupower/utils/helpers/misc.c
- create mode 100644 tools/power/cpupower/utils/helpers/msr.c
- create mode 100644 tools/power/cpupower/utils/helpers/pci.c
- create mode 100644 tools/power/cpupower/utils/helpers/sysfs.c
- create mode 100644 tools/power/cpupower/utils/helpers/sysfs.h
- create mode 100644 tools/power/cpupower/utils/helpers/topology.c
- create mode 100644 tools/power/cpupower/utils/idle_monitor/amd_fam14h_idle.c
- create mode 100644 tools/power/cpupower/utils/idle_monitor/cpuidle_sysfs.c
- create mode 100644 tools/power/cpupower/utils/idle_monitor/cpupower-monitor.c
- create mode 100644 tools/power/cpupower/utils/idle_monitor/cpupower-monitor.h
- create mode 100644 tools/power/cpupower/utils/idle_monitor/idle_monitors.def
- create mode 100644 tools/power/cpupower/utils/idle_monitor/idle_monitors.h
- create mode 100644 tools/power/cpupower/utils/idle_monitor/mperf_monitor.c
- create mode 100644 tools/power/cpupower/utils/idle_monitor/nhm_idle.c
- create mode 100644 tools/power/cpupower/utils/idle_monitor/snb_idle.c
- create mode 100755 tools/power/cpupower/utils/version-gen.sh
+Viresh's discussion with ARM Ltd indicates that this is not the case,
+and that restriction comes from misunderstanding of the documentation.
