@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab1GaM7m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 08:59:42 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37981 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab1GaM7k convert rfc822-to-8bit (ORCPT
+	id S1753408Ab1GaNIN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 09:08:13 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:48977 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab1GaNIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 08:59:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110731000521.45e48638@debxo>
-References: <20110731000300.5c08e95f@debxo>
-	<20110731000521.45e48638@debxo>
-Date: Sun, 31 Jul 2011 13:59:38 +0100
-X-Google-Sender-Auth: 6H3saeVTgxYY40Ks_fUir8kBzCs
-Message-ID: <CAGq3pz75qVMuR_Hh3GKg8xK7T+_ZAW5gBZns6D6PfDYh4CF5GA@mail.gmail.com>
-Subject: Re: [PATCH] libertas: prioritize usb8388_v5.bin firmware on OLPC machines
-From: Daniel Drake <dsd@laptop.org>
-To: Andres Salomon <dilinger@queued.net>
-Cc: dcbw@redhat.com, David Woodhouse <dwmw2@infradead.org>,
-        libertas-dev@lists.infradead.org, cjb@laptop.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 31 Jul 2011 09:08:10 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Lukas Czerner <lczerner@redhat.com>,
+        Amir Goldstein <amir73il@gmail.com>
+Subject: [PATCH -mmotm] ext4: remove unused ext4_set_bit_atomic and ext4_clear_bit_atomic
+Date: Sun, 31 Jul 2011 22:09:43 +0900
+Message-Id: <1312117783-5985-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 July 2011 08:05, Andres Salomon <dilinger@queued.net> wrote:
-> Note: I've not tested this out yet on an XO-1.  I'll do that after some
-> feedback regarding the matching linux-firmware pull request.  This
-> should address dsd's concern about changing the loading order of the
-> firmware.
+(This depends on ext4-use-proper-little-endian-bitops.patch in -mm tree)
 
-That indeed was a concern, but only until Dan Williams and Chris
-pointed out that OLPC is the only usb8388 user. With that in mind, I
-am in agreement with them that simply putting usb8388_olpc_v5.bin (or
-whatever name is chosen) at the top of the firmware loading list is
-the best option.
+This removes unused macro definisions for ext4_set_bit_atomic and
+ext4_clear_bit_atomic.
 
-Daniel
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Lukas Czerner <lczerner@redhat.com>
+Cc: Amir Goldstein <amir73il@gmail.com>
+---
+ fs/ext4/ext4.h |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index e7811f7..4cf1dd8 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -932,10 +932,8 @@ struct ext4_inode_info {
+ 
+ #define ext4_test_and_set_bit		__test_and_set_bit_le
+ #define ext4_set_bit			__set_bit_le
+-#define ext4_set_bit_atomic		ext2_set_bit_atomic
+ #define ext4_test_and_clear_bit		__test_and_clear_bit_le
+ #define ext4_clear_bit			__clear_bit_le
+-#define ext4_clear_bit_atomic		ext2_clear_bit_atomic
+ #define ext4_test_bit			test_bit_le
+ #define ext4_find_next_zero_bit		find_next_zero_bit_le
+ #define ext4_find_next_bit		find_next_bit_le
+-- 
+1.7.4.4
+
