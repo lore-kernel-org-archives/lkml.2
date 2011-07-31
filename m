@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab1GaPcc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 11:32:32 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63060 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab1GaPc3 (ORCPT
+	id S1752135Ab1GaPlY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 11:41:24 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:46781 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949Ab1GaPlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 11:32:29 -0400
-Date: Sun, 31 Jul 2011 19:32:25 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Francis Moreau <francis.moro@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: v3.0: Weird kernel log message when resuming avout NMI received
-Message-ID: <20110731153225.GJ2209@sun>
-References: <CAC9WiBgbhLomH_CtLGKyxm2xD9=h1nJAy=-b24GOaUV+hg7bNg@mail.gmail.com>
- <20110731110641.GG2209@sun>
- <CAC9WiBgg+To8ggUvTqxOCy2hgb=XQCRH6D_0HFy4sEEoF8R0rw@mail.gmail.com>
+	Sun, 31 Jul 2011 11:41:19 -0400
+Message-ID: <4E35779B.7020908@gmail.com>
+Date: Sun, 31 Jul 2011 17:41:15 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAC9WiBgg+To8ggUvTqxOCy2hgb=XQCRH6D_0HFy4sEEoF8R0rw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-rt-users <linux-rt-users@vger.kernel.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: bug with debug registers and 3.0rt6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 31, 2011 at 05:20:15PM +0200, Francis Moreau wrote:
-> Hi Cyrill
-> 
-> On Sun, Jul 31, 2011 at 1:06 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> > On Sun, Jul 31, 2011 at 08:56:30AM +0200, Francis Moreau wrote:
-> >> Hello,
-> >>
-> >> I'm seeing those kernel message when resuming:
-> >>
-> >> [  524.973283] Uhhuh. NMI received for unknown reason 3d on CPU 0.
-> >> [  524.973288] Do you have a strange power saving mode enabled?
-> >> [  524.973289] Dazed and confused, but trying to continue
-> >>
-> >> I don't know if it's important or not because the system seems to work
-> >> after but maybe it worths to report
-> >>
-> >
-> > Hi Francis, cpu please?
-> >
-> 
-> Still the same which causes some kvm-tools madness ;)
-> 
+Portal 2's anti debugger checks hangs on rt6:
 
-OK, thanks Francis, I've CC'ed a couple of people involved into
-x86 perf implementation. I believe at moment of wakeup we could
-drop any/all overflow flags in perf registers (still didn't look
-into, will try to find some time a bit later).
+[21940.633370] BUG: sleeping function called from invalid context at kernel/rtmutex.c:645
+[21940.633371] in_atomic(): 1, irqs_disabled(): 0, pid: 4235, name: portal2.exe
+[21940.633372] Pid: 4235, comm: portal2.exe Tainted: P        WC  3.0.0-rt6-patser+ #3
+[21940.633377] Call Trace:
+[21940.633381]  [<ffffffff8103fc0a>] __might_sleep+0xca/0xf0
+[21940.633383]  [<ffffffff8160d344>] rt_spin_lock+0x24/0x40
+[21940.633385]  [<ffffffff8106b879>] force_sig_info+0x49/0x100
+[21940.633387]  [<ffffffff8100e6d8>] send_sigtrap+0x68/0x70
+[21940.633389]  [<ffffffff8160e6f0>] do_debug+0x150/0x160
+[21940.633390]  [<ffffffff8160dbf2>] debug+0x22/0x40
 
-	Cyrill
+and int3:
+[15945.341955] BUG: sleeping function called from invalid context at kernel/rtmutex.c:645
+[15945.341957] in_atomic(): 1, irqs_disabled(): 0, pid: 3166, name: portal2.exe
+[15945.341958] Pid: 3166, comm: portal2.exe Tainted: P        WC  3.0.0-rt6-patser+ #3
+[15945.341959] Call Trace:
+[15945.341963]  [<ffffffff8103fc0a>] __might_sleep+0xca/0xf0
+[15945.341965]  [<ffffffff8160d344>] rt_spin_lock+0x24/0x40
+[15945.341968]  [<ffffffff8106b879>] force_sig_info+0x49/0x100
+[15945.341969]  [<ffffffff8106b946>] force_sig+0x16/0x20
+[15945.341970]  [<ffffffff8160e0ab>] do_trap+0x16b/0x170
+[15945.341972]  [<ffffffff8160e509>] do_int3+0x99/0xc0
+[15945.341973]  [<ffffffff8160dc32>] int3+0x22/0x40
+
+Is there a better solution than converting the siglock to a raw spinlock?
+
+~Maarten
