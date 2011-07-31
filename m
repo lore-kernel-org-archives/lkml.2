@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab1GaAaA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 20:30:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54831 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752024Ab1GaA3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 20:29:55 -0400
-Message-ID: <4E34A1E4.8040103@zytor.com>
-Date: Sat, 30 Jul 2011 17:29:24 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1752760Ab1GaAaH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 20:30:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50790 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752024Ab1GaAaB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 30 Jul 2011 20:30:01 -0400
 MIME-Version: 1.0
-To: Arnaud Lacombe <lacombar@gmail.com>
-CC: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
-References: <1312067499.22074.59.camel@i7.infradead.org> <1312067670.22074.61.camel@i7.infradead.org> <CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com> <4E34998D.8060806@zytor.com> <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
-In-Reply-To: <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110730234630.7270.qmail@science.horizon.com>
+References: <20110730234630.7270.qmail@science.horizon.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 30 Jul 2011 14:29:38 -1000
+Message-ID: <CA+55aFwdA_6W1GZZG76wVvmDQnEMj3hYBt6Md7GcFE02OkqiVA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
+To: George Spelvin <linux@horizon.com>
+Cc: linux-kernel@vger.kernel.org, mpm@selenic.com, tytso@mit.edu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2011 05:05 PM, Arnaud Lacombe wrote:
->>
->> Why????
->>
-> Because kconfig might not be ran exclusively from a fully controlled
-> and restricted environment ? Not to mention that it is used by other
-> people than the linux kernel folks.
-> 
+On Sat, Jul 30, 2011 at 1:46 PM, George Spelvin <linux@horizon.com> wrote:
+>
+> I agree with your second paragraph, but disagree violently with your
+> first: Intel provide no way to test their RNG, and the AES-based whitener
+> makes it completely private and UNtestable.
 
-I'm sorry, but whitelisting specific options is an absolutely idiotic
-way to deal with that.  The options use a specific namespace (CONFIG_*),
-and only allowing some options to be set on the command line, but not
-others, is a serious violation of the principle of least surprise.
+Umm.
 
-	-hpa
+Guys, if your argument is that you cannot possibly distinguish the
+Intel implementation from "true" randomness, then WHAT THE HELL are
+you complaining about?
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+We don't even care. "True randomness" and "something we cannot
+possibly even test and distinguish from true randomess" are 100%
+equivalent. Stop with the idiotic "we cannot test it" crap. If it
+really is indistinguishable from true randomness, nobody will ever
+care.
 
+It's that simple. Really.
+
+And if somebody ever figures out that Intel flubbed, and you actually
+*can* tell it from true randomness, even then, what's the downside? It
+will be practically random anyway, and we'll be mixing it up some
+more.
+
+Seriously. This whole discussion just makes me convinced that security
+people are so far removed from reality that it's not even relevant any
+more.
+
+            Linus
