@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753169Ab1GaIs7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 04:48:59 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:50853 "EHLO linta.de"
+	id S1753238Ab1GaIvl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 04:51:41 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:48266 "EHLO linta.de"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751280Ab1GaIsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 04:48:53 -0400
-Date: Sun, 31 Jul 2011 10:46:28 +0200
+	id S1751453Ab1GaIvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 04:51:33 -0400
+Date: Sun, 31 Jul 2011 10:51:24 +0200
 From: Dominik Brodowski <linux@dominikbrodowski.net>
 To: torvalds@osdl.org, akpm@osdl.org
-Cc: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [git pull] PCMCIA updates for 3.1
-Message-ID: <20110731084628.GA5637@comet.dominikbrodowski.net>
-Mail-Followup-To: torvalds@osdl.org, akpm@osdl.org,
-	linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: cpufreq@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, lenb@kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Thomas Renninger <trenn@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] cpupowerutils
+Message-ID: <20110731085124.GA5874@comet.dominikbrodowski.net>
+Mail-Followup-To: torvalds@osdl.org, akpm@osdl.org, cpufreq@vger.kernel.org,
+	linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+	lenb@kernel.org, Ingo Molnar <mingo@elte.hu>,
+	Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,42 +29,193 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-a few PCMCIA updates for 3.1 are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git master
+the git tree
 
-Please pull from that location. The diffstat and list of changes is below,
-the individual diffs are sent (at least) to the linux-pcmcia list.
+  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/cpupowerutils.git master
 
-Thanks,
-        Dominik
+contains a new utility called "cpupowerutils" which is laregely based on
+the well known "cpufrequtils", but extended to provide much more information
+about other power-related features of modern CPUs, such as idle states.
+
+Users and Developers want to have *one* tool to get an overview what
+their system supports and to monitor and debug CPU power management
+in detail. The tool should compile and work on as many architectures
+as possible.
+
+To reach these goals, Thomas Renninger suggested -- and implemented most
+of the parts -- to convert the external tool cpufrequtils to a userspace
+tool residing in tools/power/cpupower/ .
+
+Once this stabilizes, it is intended to replace cpufrequtils and the
+Intel-specific tools in tools/power/x86 .
+
+A list of patches and the diffstat are appended to this messages.
+
+Best,
+	Dominik
 
 
-Dominik Brodowski (1):
-      smc91c92_cs.c: fix bogus compiler warning
+Dominik Brodowski (10):
+      cpupowerutils - cpufrequtils extended with quite some features
+      cpupowerutils: use COPYING, CREDITS from top-level directory
+      cpupowerutils: remove ccdv, use kernel quiet/verbose mechanism
+      cpupowerutils: do not update po files on each and every compile
+      cpupowerutils: bench - ConfigStyle bugfixes
+      cpupowerutils: lib - ConfigStyle bugfixes
+      cpupowerutils: idle_monitor - ConfigStyle bugfixes
+      cpupowerutils: helpers - ConfigStyle bugfixes
+      cpupowerutils: utils - ConfigStyle bugfixes
+      cpupowerutils: use kernel version-derived version string
 
-Jonathan Cameron (3):
-      drivers:pcmcia:soc_common: make socket_init and socket_suspend optional
-      pcmcia: pxa2xx: remove empty socket_init / socket_resume functions.
-      pxa2xx pcmcia - stargate 2 use gpio array.
+Roman Vasiyarov (1):
+      cpupowerutils: increase MAX_LINE_LEN
 
-Pavel Roskin (3):
-      pcmcia: add PCMCIA_DEVICE_MANF_CARD_PROD_ID3
-      hostap_cs: support cards with "Version 01.02" as third product ID
-      orinoco_cs: be more careful when matching cards with ID 0x0156:0x0002
+Thomas Renninger (4):
+      cpupowerutils: Rename: libcpufreq->libcpupower
+      cpupower: Rename package from cpupowerutils to cpupower
+      cpupower: Show Intel turbo ratio support via ./cpupower frequency-info
+      cpupower: Do detect IDA (opportunistic processor performance) via cpuid
 
- drivers/net/pcmcia/smc91c92_cs.c          |    2 +-
- drivers/net/wireless/hostap/hostap_cs.c   |    2 +
- drivers/net/wireless/orinoco/orinoco_cs.c |    5 +++-
- drivers/pcmcia/pxa2xx_balloon3.c          |   10 --------
- drivers/pcmcia/pxa2xx_cm_x255.c           |   11 ---------
- drivers/pcmcia/pxa2xx_cm_x270.c           |   11 ---------
- drivers/pcmcia/pxa2xx_colibri.c           |   11 ---------
- drivers/pcmcia/pxa2xx_mainstone.c         |   10 --------
- drivers/pcmcia/pxa2xx_palmld.c            |   11 ---------
- drivers/pcmcia/pxa2xx_palmtc.c            |   11 ---------
- drivers/pcmcia/pxa2xx_palmtx.c            |   11 ---------
- drivers/pcmcia/pxa2xx_stargate2.c         |   34 +++++++++-------------------
- drivers/pcmcia/pxa2xx_viper.c             |   10 --------
- drivers/pcmcia/soc_common.c               |    7 +++--
- include/pcmcia/device_id.h                |    9 +++++++
- 15 files changed, 31 insertions(+), 124 deletions(-)
+ CREDITS                                            |   17 +-
+ MAINTAINERS                                        |    6 +
+ tools/power/cpupower/.gitignore                    |   22 +
+ tools/power/cpupower/Makefile                      |  279 ++++++
+ tools/power/cpupower/README                        |   49 +
+ tools/power/cpupower/ToDo                          |   11 +
+ tools/power/cpupower/bench/Makefile                |   29 +
+ tools/power/cpupower/bench/README-BENCH            |  124 +++
+ tools/power/cpupower/bench/benchmark.c             |  194 ++++
+ tools/power/cpupower/bench/benchmark.h             |   29 +
+ tools/power/cpupower/bench/config.h                |   36 +
+ tools/power/cpupower/bench/cpufreq-bench_plot.sh   |  104 +++
+ tools/power/cpupower/bench/cpufreq-bench_script.sh |  101 ++
+ tools/power/cpupower/bench/example.cfg             |   11 +
+ tools/power/cpupower/bench/main.c                  |  202 ++++
+ tools/power/cpupower/bench/parse.c                 |  225 +++++
+ tools/power/cpupower/bench/parse.h                 |   53 ++
+ tools/power/cpupower/bench/system.c                |  191 ++++
+ tools/power/cpupower/bench/system.h                |   29 +
+ tools/power/cpupower/debug/i386/Makefile           |   20 +
+ tools/power/cpupower/debug/i386/centrino-decode.c  |  113 +++
+ tools/power/cpupower/debug/i386/dump_psb.c         |  196 ++++
+ tools/power/cpupower/debug/i386/intel_gsic.c       |   78 ++
+ .../power/cpupower/debug/i386/powernow-k8-decode.c |   96 ++
+ tools/power/cpupower/debug/kernel/Makefile         |   23 +
+ .../power/cpupower/debug/kernel/cpufreq-test_tsc.c |  113 +++
+ tools/power/cpupower/debug/x86_64/Makefile         |   14 +
+ .../power/cpupower/debug/x86_64/centrino-decode.c  |    1 +
+ .../cpupower/debug/x86_64/powernow-k8-decode.c     |    1 +
+ tools/power/cpupower/lib/cpufreq.c                 |  208 +++++
+ tools/power/cpupower/lib/cpufreq.h                 |  223 +++++
+ tools/power/cpupower/lib/sysfs.c                   |  672 ++++++++++++++
+ tools/power/cpupower/lib/sysfs.h                   |   31 +
+ tools/power/cpupower/man/cpupower-frequency-info.1 |   76 ++
+ tools/power/cpupower/man/cpupower-frequency-set.1  |   54 ++
+ tools/power/cpupower/man/cpupower-info.1           |   19 +
+ tools/power/cpupower/man/cpupower-monitor.1        |  179 ++++
+ tools/power/cpupower/man/cpupower-set.1            |  103 +++
+ tools/power/cpupower/man/cpupower.1                |   72 ++
+ tools/power/cpupower/po/cs.po                      |  944 +++++++++++++++++++
+ tools/power/cpupower/po/de.po                      |  961 ++++++++++++++++++++
+ tools/power/cpupower/po/fr.po                      |  947 +++++++++++++++++++
+ tools/power/cpupower/po/it.po                      |  961 ++++++++++++++++++++
+ tools/power/cpupower/po/pt.po                      |  957 +++++++++++++++++++
+ tools/power/cpupower/utils/builtin.h               |   18 +
+ tools/power/cpupower/utils/cpufreq-info.c          |  708 ++++++++++++++
+ tools/power/cpupower/utils/cpufreq-set.c           |  358 ++++++++
+ tools/power/cpupower/utils/cpuidle-info.c          |  244 +++++
+ tools/power/cpupower/utils/cpupower-info.c         |  153 ++++
+ tools/power/cpupower/utils/cpupower-set.c          |  153 ++++
+ tools/power/cpupower/utils/cpupower.c              |  203 ++++
+ tools/power/cpupower/utils/helpers/amd.c           |  137 +++
+ tools/power/cpupower/utils/helpers/bitmask.c       |  292 ++++++
+ tools/power/cpupower/utils/helpers/bitmask.h       |   33 +
+ tools/power/cpupower/utils/helpers/cpuid.c         |  176 ++++
+ tools/power/cpupower/utils/helpers/helpers.h       |  178 ++++
+ tools/power/cpupower/utils/helpers/misc.c          |   27 +
+ tools/power/cpupower/utils/helpers/msr.c           |  115 +++
+ tools/power/cpupower/utils/helpers/pci.c           |   44 +
+ tools/power/cpupower/utils/helpers/sysfs.c         |  358 ++++++++
+ tools/power/cpupower/utils/helpers/sysfs.h         |   28 +
+ tools/power/cpupower/utils/helpers/topology.c      |  108 +++
+ .../cpupower/utils/idle_monitor/amd_fam14h_idle.c  |  338 +++++++
+ .../cpupower/utils/idle_monitor/cpuidle_sysfs.c    |  196 ++++
+ .../cpupower/utils/idle_monitor/cpupower-monitor.c |  448 +++++++++
+ .../cpupower/utils/idle_monitor/cpupower-monitor.h |   68 ++
+ .../cpupower/utils/idle_monitor/idle_monitors.def  |    7 +
+ .../cpupower/utils/idle_monitor/idle_monitors.h    |   18 +
+ .../cpupower/utils/idle_monitor/mperf_monitor.c    |  255 ++++++
+ tools/power/cpupower/utils/idle_monitor/nhm_idle.c |  216 +++++
+ tools/power/cpupower/utils/idle_monitor/snb_idle.c |  190 ++++
+ tools/power/cpupower/utils/version-gen.sh          |   35 +
+ 72 files changed, 13877 insertions(+), 1 deletions(-)
+ create mode 100644 tools/power/cpupower/.gitignore
+ create mode 100644 tools/power/cpupower/Makefile
+ create mode 100644 tools/power/cpupower/README
+ create mode 100644 tools/power/cpupower/ToDo
+ create mode 100644 tools/power/cpupower/bench/Makefile
+ create mode 100644 tools/power/cpupower/bench/README-BENCH
+ create mode 100644 tools/power/cpupower/bench/benchmark.c
+ create mode 100644 tools/power/cpupower/bench/benchmark.h
+ create mode 100644 tools/power/cpupower/bench/config.h
+ create mode 100644 tools/power/cpupower/bench/cpufreq-bench_plot.sh
+ create mode 100644 tools/power/cpupower/bench/cpufreq-bench_script.sh
+ create mode 100644 tools/power/cpupower/bench/example.cfg
+ create mode 100644 tools/power/cpupower/bench/main.c
+ create mode 100644 tools/power/cpupower/bench/parse.c
+ create mode 100644 tools/power/cpupower/bench/parse.h
+ create mode 100644 tools/power/cpupower/bench/system.c
+ create mode 100644 tools/power/cpupower/bench/system.h
+ create mode 100644 tools/power/cpupower/debug/i386/Makefile
+ create mode 100644 tools/power/cpupower/debug/i386/centrino-decode.c
+ create mode 100644 tools/power/cpupower/debug/i386/dump_psb.c
+ create mode 100644 tools/power/cpupower/debug/i386/intel_gsic.c
+ create mode 100644 tools/power/cpupower/debug/i386/powernow-k8-decode.c
+ create mode 100644 tools/power/cpupower/debug/kernel/Makefile
+ create mode 100644 tools/power/cpupower/debug/kernel/cpufreq-test_tsc.c
+ create mode 100644 tools/power/cpupower/debug/x86_64/Makefile
+ create mode 120000 tools/power/cpupower/debug/x86_64/centrino-decode.c
+ create mode 120000 tools/power/cpupower/debug/x86_64/powernow-k8-decode.c
+ create mode 100644 tools/power/cpupower/lib/cpufreq.c
+ create mode 100644 tools/power/cpupower/lib/cpufreq.h
+ create mode 100644 tools/power/cpupower/lib/sysfs.c
+ create mode 100644 tools/power/cpupower/lib/sysfs.h
+ create mode 100644 tools/power/cpupower/man/cpupower-frequency-info.1
+ create mode 100644 tools/power/cpupower/man/cpupower-frequency-set.1
+ create mode 100644 tools/power/cpupower/man/cpupower-info.1
+ create mode 100644 tools/power/cpupower/man/cpupower-monitor.1
+ create mode 100644 tools/power/cpupower/man/cpupower-set.1
+ create mode 100644 tools/power/cpupower/man/cpupower.1
+ create mode 100644 tools/power/cpupower/po/cs.po
+ create mode 100644 tools/power/cpupower/po/de.po
+ create mode 100644 tools/power/cpupower/po/fr.po
+ create mode 100644 tools/power/cpupower/po/it.po
+ create mode 100644 tools/power/cpupower/po/pt.po
+ create mode 100644 tools/power/cpupower/utils/builtin.h
+ create mode 100644 tools/power/cpupower/utils/cpufreq-info.c
+ create mode 100644 tools/power/cpupower/utils/cpufreq-set.c
+ create mode 100644 tools/power/cpupower/utils/cpuidle-info.c
+ create mode 100644 tools/power/cpupower/utils/cpupower-info.c
+ create mode 100644 tools/power/cpupower/utils/cpupower-set.c
+ create mode 100644 tools/power/cpupower/utils/cpupower.c
+ create mode 100644 tools/power/cpupower/utils/helpers/amd.c
+ create mode 100644 tools/power/cpupower/utils/helpers/bitmask.c
+ create mode 100644 tools/power/cpupower/utils/helpers/bitmask.h
+ create mode 100644 tools/power/cpupower/utils/helpers/cpuid.c
+ create mode 100644 tools/power/cpupower/utils/helpers/helpers.h
+ create mode 100644 tools/power/cpupower/utils/helpers/misc.c
+ create mode 100644 tools/power/cpupower/utils/helpers/msr.c
+ create mode 100644 tools/power/cpupower/utils/helpers/pci.c
+ create mode 100644 tools/power/cpupower/utils/helpers/sysfs.c
+ create mode 100644 tools/power/cpupower/utils/helpers/sysfs.h
+ create mode 100644 tools/power/cpupower/utils/helpers/topology.c
+ create mode 100644 tools/power/cpupower/utils/idle_monitor/amd_fam14h_idle.c
+ create mode 100644 tools/power/cpupower/utils/idle_monitor/cpuidle_sysfs.c
+ create mode 100644 tools/power/cpupower/utils/idle_monitor/cpupower-monitor.c
+ create mode 100644 tools/power/cpupower/utils/idle_monitor/cpupower-monitor.h
+ create mode 100644 tools/power/cpupower/utils/idle_monitor/idle_monitors.def
+ create mode 100644 tools/power/cpupower/utils/idle_monitor/idle_monitors.h
+ create mode 100644 tools/power/cpupower/utils/idle_monitor/mperf_monitor.c
+ create mode 100644 tools/power/cpupower/utils/idle_monitor/nhm_idle.c
+ create mode 100644 tools/power/cpupower/utils/idle_monitor/snb_idle.c
+ create mode 100755 tools/power/cpupower/utils/version-gen.sh
