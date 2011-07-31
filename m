@@ -1,112 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab1GaQ66 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 12:58:58 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:52581 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833Ab1GaQ6x convert rfc822-to-8bit (ORCPT
+	id S1752749Ab1GaRAk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 13:00:40 -0400
+Received: from lunge.queued.net ([173.255.254.236]:58841 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662Ab1GaRAf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 12:58:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACqU3MX7f2oNpDf6W124tfROfKq4PFsyvxiq=VtPJfv-gqUrww@mail.gmail.com>
-References: <alpine.LNX.2.00.1107311134490.30666@linux>
-	<CACqU3MX7f2oNpDf6W124tfROfKq4PFsyvxiq=VtPJfv-gqUrww@mail.gmail.com>
-Date: Sun, 31 Jul 2011 12:58:53 -0400
-Message-ID: <CACqU3MU9BBsXjevz617v7YOBm+9RR1Wm49gi0jvs95yneQ2Yrg@mail.gmail.com>
-Subject: Re: kbuild: prevent make from deleting _shipped files
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Peter Foley <pefoley2@verizon.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
-        mmarek@suse.cz
+	Sun, 31 Jul 2011 13:00:35 -0400
+Date: Sun, 31 Jul 2011 10:00:32 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Daniel Drake <dsd@laptop.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, cjb@laptop.org,
+        linux-kernel@vger.kernel.org, dcbw@redhat.com,
+        libertas-dev@lists.infradead.org
+Subject: Re: [GIT PULL linux-firmware.git] OLPC libertas firmware blobs
+Message-ID: <20110731100032.5f9155eb@debxo>
+In-Reply-To: <CAGq3pz4sbLxRz3AnQZehUpseDhGNY7Wi03Mce-w=Ex4uGy3x8w@mail.gmail.com>
+References: <20110730225039.34467e4e@debxo>
+	<CAGq3pz4sbLxRz3AnQZehUpseDhGNY7Wi03Mce-w=Ex4uGy3x8w@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, 31 Jul 2011 13:58:20 +0100
+Daniel Drake <dsd@laptop.org> wrote:
 
-On Sun, Jul 31, 2011 at 12:21 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
-> Hi,
->
-> On Sun, Jul 31, 2011 at 11:37 AM, Peter Foley <pefoley2@verizon.net> wrote:
->> commit 7373f4f (kbuild: add implicit rules for parser generation)
->> created a implicit rule chain (%.c: %.c_shipped: %.y). This causes make to delete the _shipped files
->> because it considers them intermediate files. Mark the _shipped files PRECIOUS
->> to prevent make from deleting them.
->>
->> Signed-off-by: Peter Foley <pefoley2@verizon.net>
-> What make are you using, and what command triggers the issue ?
->
-> Those rules should only be visible on parser regeneration (ie.
-> REGENERATE_PARSERS defined). make 3.82 does not seem to trigger the
-> issue:
->
-> % make -v
-> GNU Make 3.82
->
-> % make REGENERATE_PARSERS=y defconfig
->  HOSTCC  scripts/basic/fixdep
->  HOSTCC  scripts/kconfig/conf.o
->  SHIPPED scripts/kconfig/zconf.tab.c
->  SHIPPED scripts/kconfig/zconf.lex.c
->  SHIPPED scripts/kconfig/zconf.hash.c
->  HOSTCC  scripts/kconfig/zconf.tab.o
->  HOSTLD  scripts/kconfig/conf
-> *** Default configuration is based on 'x86_64_defconfig'
-> [...]
->
-> The shipped file are still there:
->
-> % ls scripts/kconfig/*_shipped
-> scripts/kconfig/zconf.hash.c_shipped
-> scripts/kconfig/zconf.lex.c_shipped
-> scripts/kconfig/zconf.tab.c_shipped
->
-a bare make-3.81 from ftp.gnu.org built on a Fedora 14 behave the same.
+> On 31 July 2011 06:50, Andres Salomon <dilinger@queued.net> wrote:
+> >  libertas/usb8388_v5.bin |  Bin 100292 -> 127824 bytes
+> 
+> It looks like you're replacing the generic Marvell v5 firmware with
+> the OLPC-forked version. Technically these are independent branches,
+> so it would make more sense to have the OLPC one separately e.g.
+> usb8388_olpc_v5.bin.
+> 
 
-I definitively needs enlightenment on this one :)
+I guess I misunderstood.  I thought since dcbw was saying OLPC was the
+only real user of the chip, so it didn't matter; in my mind, that
+mean just replace v5 (since it's a superset of functionality
+anyways).
 
-Thanks,
- - Arnaud
->
->> ---
->>
->> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
->> index aeea84a..5d986d9 100644
->> --- a/scripts/Makefile.lib
->> +++ b/scripts/Makefile.lib
->> @@ -167,6 +167,7 @@ ifdef REGENERATE_PARSERS
->>  quiet_cmd_gperf = GPERF $@
->>       cmd_gperf = gperf -t --output-file $@ -a -C -E -g -k 1,3,$$ -p -t $<
->>
->> +.PRECIOUS: $(src)/%.hash.c_shipped
->>  $(src)/%.hash.c_shipped: $(src)/%.gperf
->>        $(call cmd,gperf)
->>
->> @@ -177,6 +178,7 @@ LEX_PREFIX = $(if $(LEX_PREFIX_${baseprereq}),$(LEX_PREFIX_${baseprereq}),yy)
->>  quiet_cmd_flex = LEX     $@
->>       cmd_flex = flex -o$@ -L -P $(LEX_PREFIX) $<
->>
->> +.PRECIOUS: $(src)/%.lex.c_shipped
->>  $(src)/%.lex.c_shipped: $(src)/%.l
->>        $(call cmd,flex)
->>
->> @@ -187,12 +189,14 @@ YACC_PREFIX = $(if $(YACC_PREFIX_${baseprereq}),$(YACC_PREFIX_${baseprereq}),yy)
->>  quiet_cmd_bison = YACC    $@
->>       cmd_bison = bison -o$@ -t -l -p $(YACC_PREFIX) $<
->>
->> +.PRECIOUS: $(src)/%.tab.c_shipped
->>  $(src)/%.tab.c_shipped: $(src)/%.y
->>        $(call cmd,bison)
->>
->>  quiet_cmd_bison_h = YACC    $@
->>       cmd_bison_h = bison -o/dev/null --defines=$@ -t -l -p $(YACC_PREFIX) $<
->>
->> +.PRECIOUS: $(src)/%.tab.h_shipped
->>  $(src)/%.tab.h_shipped: $(src)/%.y
->>        $(call cmd,bison_h)
->>
->>
->
