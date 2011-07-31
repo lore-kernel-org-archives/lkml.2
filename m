@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab1GaRFU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 13:05:20 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46415 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566Ab1GaRFQ (ORCPT
+	id S1752768Ab1GaRJE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 13:09:04 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:56757 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752373Ab1GaRI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 13:05:16 -0400
-Date: Sun, 31 Jul 2011 18:04:51 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Viresh Kumar <viresh.kumar@st.com>, pratyush.anand@st.com,
-        rajeev-dlh.kumar@st.com, armando.visconti@st.com,
-        bhupesh.sharma@st.com, vinod.koul@intel.com,
-        linux-kernel@vger.kernel.org, vipin.kumar@st.com, shiraz.hashim@st.com,
-        amit.virdi@st.com, vipulkumar.samar@st.com, viresh.linux@gmail.com,
-        deepak.sikri@st.com, dan.j.williams@intel.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 07/18] dmaengine/amba-pl08x: Enable/Disable amba_pclk
-	with channel requests
-Message-ID: <20110731170451.GC2975@n2100.arm.linux.org.uk>
-References: <cover.1311936523.git.viresh.kumar@st.com> <96781d46e41fa6ffc04b88527a25d73f5a59eda8.1311936524.git.viresh.kumar@st.com> <20110730120740.GA15791@n2100.arm.linux.org.uk> <20110730130537.GB15791@n2100.arm.linux.org.uk> <CAKnu2MqTYF43wW3axM--jXdtvsCyRBTLEHDc3hPoJYAmTAL5UA@mail.gmail.com> <CAKnu2MppEKxZD2Z77tfShMfG80d-Xx26yBGhZtJkJ2C6SjE=1w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKnu2MppEKxZD2Z77tfShMfG80d-Xx26yBGhZtJkJ2C6SjE=1w@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Sun, 31 Jul 2011 13:08:58 -0400
+Date: Sun, 31 Jul 2011 10:08:56 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Roman Zippel <zippel@linux-m68k.org>
+Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
+Message-Id: <20110731100856.780d71de.rdunlap@xenotime.net>
+In-Reply-To: <1312131467.22074.95.camel@i7.infradead.org>
+References: <1312067499.22074.59.camel@i7.infradead.org>
+	<1312067670.22074.61.camel@i7.infradead.org>
+	<CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
+	<4E34998D.8060806@zytor.com>
+	<CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
+	<4E34A1E4.8040103@zytor.com>
+	<CACqU3MVkLXoBq7KP2Jff=p7EiKR7DkPa4z7y0Rdah-dGzRvj4g@mail.gmail.com>
+	<1312097621.22074.71.camel@i7.infradead.org>
+	<20110731093740.39f7fbc3.rdunlap@xenotime.net>
+	<1312131467.22074.95.camel@i7.infradead.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 31, 2011 at 02:04:47AM +0200, Linus Walleij wrote:
-> 2011/7/31 Linus Walleij <linus.walleij@linaro.org>:
-> > 2011/7/30 Russell King - ARM Linux <linux@arm.linux.org.uk>:
-> >> On Sat, Jul 30, 2011 at 01:07:40PM +0100, Russell King - ARM Linux wrote:
-> >>> It may make better sense to convert this to runtime PM.  I suspect
-> >>> that there's core support which the amba/bus.c can do to help in that
-> >>> respect (eg, managing the apb pclk itself) so that we don't have to
-> >>> add the same code to every primecell driver.
-> >>
-> >> Something like this for the bus driver (untested):
-> >>
-> >>  drivers/amba/bus.c |   38 ++++++++++++++++++++++++++++++++++++--
-> >>  1 files changed, 36 insertions(+), 2 deletions(-)
-> >
-> > I think the pm_runtime_* code Rabin put in place inside
-> > drivers/spi/spi-pl022.c would play really well with this approach, and
-> > just work, so:
-> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+On Sun, 31 Jul 2011 17:57:46 +0100 David Woodhouse wrote:
+
+> On Sun, 2011-07-31 at 09:37 -0700, Randy Dunlap wrote:
+> > Simple question:  what does "ARCH=x86" mean?
+> > 
+> > It doesn't mean anything to me without SUBARCH or nnBIT specified.
 > 
-> ..and while it will just cause some double refcounts on the clock,
-> it makes sense to delete the pclk manipulation from the PL022
-> driver code as part of the patch, like this:
+> SUBARCH is meaningless for a native build; it's only for ARCH=um. So I
+> don't know why that would make anything more meaningful to you.
+> 
+> And why would CONFIG_64BIT make a difference either? Or conversely: why
+> do CONFIG_PAE, CONFIG_LITTLE_ENDIAN, etc. *not* make a difference to
+> your understanding?
+> 
+> ARCH=x86 means exactly what it says: "build a kernel for the x86
+> architecture".
+> 
+> Just like ARCH=mips means "build a kernel for MIPS" and ARCH=sparc means
+> "build a kernel for SPARC", and ARCH=parisc means "build a kernel for
+> PARISC", and ARCH=powerpc means "build a kernel for PowerPC". and
+> ARCH=s390 means "build a kernel for S390".
+> 
+> In *all* of those cases, CONFIG_64BIT is just one more configuration
+> option; one of *many* that define what actual hardware the kernel
+> supports.
 
-Yes, this looks fine.  Shall I wrap it up as part of my patch?
+OK, it seems that we agree that ARCH=x86 is an incomplete specification.
+Thanks.
 
-Two other things I've spotted in this driver are:
-
-1. The remove function doesn't undo what the probe function did to
-the pclk and vcore.  It needs to keep things balanced.  For a driver
-which doesn't manage its pclk, this is what happens:
-	- core gets pclk
-	- core enables pclk
-	- core calls driver's probe
-		- driver sets stuff up
-...
-	- core calls driver's remove
-		- driver tidies up
-	- core disables pclk
-	- core puts pclk
-
-And PL022 does this:
-	- core gets pclk
-	- core enables pclk
-	- core calls driver's probe
-		- driver sets stuff up
-		- driver disables pclk
-...
-	- core calls driver's remove
-		- driver tidies up
-	- core disables pclk
-	- core puts pclk
-
-Notice the double-disable of pclk in that sequence.  If ->probe disables
-pclk, ->remove needs to return with that disable balanced with an enable.
-
-2. It thinks it can refuse 'remove' by returning an error code.  This
-is false.  removes can't be aborted - here's the code from drivers/base/dd.c:
-
-static void __device_release_driver(struct device *dev)
-{
-...
-                if (dev->bus && dev->bus->remove)
-                        dev->bus->remove(dev);
-                else if (drv->remove)
-                        drv->remove(dev);
-...
-}
-
-Notice how return codes go nowhere.  remove should _really_ be a void
-function to stop people thinking that it can be aborted.  It can't.
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
