@@ -1,122 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859Ab1GaPDd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 11:03:33 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:54121 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982Ab1GaPD0 (ORCPT
+	id S1751920Ab1GaPGW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 11:06:22 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:40089 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982Ab1GaPGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 11:03:26 -0400
-From: Remy Bohmer <l.pinguin@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org,
-        Peter Zijlstra <peterz@infradead.org>, Remy Bohmer <linux@bohmer.net>
-Subject: [PATCH] Add sched_clock to AT91 TCB clocksource driver
-Date: Sun, 31 Jul 2011 17:03:13 +0200
-Message-Id: <1312124593-6088-1-git-send-email-linux@bohmer.net>
-X-Mailer: git-send-email 1.7.4.1
+	Sun, 31 Jul 2011 11:06:17 -0400
+Date: Mon, 1 Aug 2011 00:06:06 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/8] mm: vmscan: Do not writeback filesystem pages in
+ direct reclaim
+Message-ID: <20110731150606.GB1735@barrios-desktop>
+References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
+ <1311265730-5324-2-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311265730-5324-2-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On AT91 there is no architecture specific sched_clock() implementation,
-so the default fallback is used. This fallback uses the jiffie counter
-as sched_clock().
-There is NO standard clocksource available that is accurate enough,
-except the TC-based clocksource implementation. Therefor this
-implementation is used as base for the sched_clock(). This clocksource
-offers sub-millisecond time-stamping. (< 200 ns)
+On Thu, Jul 21, 2011 at 05:28:43PM +0100, Mel Gorman wrote:
+> From: Mel Gorman <mel@csn.ul.ie>
+> 
+> When kswapd is failing to keep zones above the min watermark, a process
+> will enter direct reclaim in the same manner kswapd does. If a dirty
+> page is encountered during the scan, this page is written to backing
+> storage using mapping->writepage.
+> 
+> This causes two problems. First, it can result in very deep call
+> stacks, particularly if the target storage or filesystem are complex.
+> Some filesystems ignore write requests from direct reclaim as a result.
+> The second is that a single-page flush is inefficient in terms of IO.
+> While there is an expectation that the elevator will merge requests,
+> this does not always happen. Quoting Christoph Hellwig;
+> 
+> 	The elevator has a relatively small window it can operate on,
+> 	and can never fix up a bad large scale writeback pattern.
+> 
+> This patch prevents direct reclaim writing back filesystem pages by
+> checking if current is kswapd. Anonymous pages are still written to
+> swap as there is not the equivalent of a flusher thread for anonymous
+> pages. If the dirty pages cannot be written back, they are placed
+> back on the LRU lists. There is now a direct dependency on dirty page
+> balancing to prevent too many pages in the system being dirtied which
+> would prevent reclaim making forward progress.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-Signed-off-by: Remy Bohmer <linux@bohmer.net>
----
- arch/arm/Kconfig                 |    1 +
- arch/arm/kernel/sched_clock.c    |    7 +++++++
- drivers/clocksource/tcb_clksrc.c |   23 +++++++++++++++++++++++
- 3 files changed, 31 insertions(+), 0 deletions(-)
+Nitpick.
+We can change description of should_reclaim_stall.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 9adc278..e0563a7 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -296,6 +296,7 @@ config ARCH_AT91
- 	select HAVE_CLK
- 	select CLKDEV_LOOKUP
- 	select ARM_PATCH_PHYS_VIRT if MMU
-+	select HAVE_SCHED_CLOCK if ATMEL_TCB_CLKSRC
- 	help
- 	  This enables support for systems based on the Atmel AT91RM9200,
- 	  AT91SAM9 and AT91CAP9 processors.
-diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
-index 9a46370..f9028e4 100644
---- a/arch/arm/kernel/sched_clock.c
-+++ b/arch/arm/kernel/sched_clock.c
-@@ -20,6 +20,13 @@ static void (*sched_clock_update_fn)(void);
- 
- static void sched_clock_poll(unsigned long wrap_ticks)
- {
-+	/*
-+	 * The sched_clock_update_fn may be initialised AFTER first call to
-+	 * time_init()
-+	 */
-+	if (unlikely(!sched_clock_update_fn))
-+		return;
-+
- 	mod_timer(&sched_clock_timer, round_jiffies(jiffies + wrap_ticks));
- 	sched_clock_update_fn();
- }
-diff --git a/drivers/clocksource/tcb_clksrc.c b/drivers/clocksource/tcb_clksrc.c
-index 79c47e8..d6069b3 100644
---- a/drivers/clocksource/tcb_clksrc.c
-+++ b/drivers/clocksource/tcb_clksrc.c
-@@ -11,6 +11,7 @@
- #include <linux/platform_device.h>
- #include <linux/atmel_tc.h>
- 
-+#include <asm/sched_clock.h>
- 
- /*
-  * We're configured to use a specific TC block, one that's not hooked
-@@ -210,6 +211,23 @@ static void __init setup_clkevents(struct atmel_tc *tc, int clk32k_divisor_idx)
- 
- #endif
- 
-+static DEFINE_CLOCK_DATA(cd);
-+
-+unsigned long long notrace sched_clock(void)
-+{
-+	if (likely(tcaddr)) {
-+		cycle_t cyc = tc_get_cycles(&clksrc);
-+		return cyc_to_sched_clock(&cd, cyc, (u32)~0);
-+	}
-+	return 0;
-+}
-+
-+static void notrace tcb_update_sched_clock(void)
-+{
-+	cycle_t cyc = tc_get_cycles(&clksrc);
-+	update_sched_clock(&cd, cyc, (u32)~0);
-+}
-+
- static int __init tcb_clksrc_init(void)
- {
- 	static char bootinfo[] __initdata
-@@ -297,6 +315,11 @@ static int __init tcb_clksrc_init(void)
- 	/* channel 2:  periodic and oneshot timer support */
- 	setup_clkevents(tc, clk32k_divisor_idx);
- 
-+	/* Now prepare the sched_clock support */
-+	init_sched_clock(&cd, tcb_update_sched_clock, 32, divided_rate);
-+	sched_clock_postinit();
-+
- 	return 0;
- }
- arch_initcall(tcb_clksrc_init);
-+
+"Returns true if the caller should wait to clean dirty/writeback pages"
+->
+"Returns true if direct reclaimer should wait to clean writeback pages"
+
 -- 
-1.7.4.1
-
+Kind regards,
+Minchan Kim
