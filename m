@@ -1,34 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab1GaVzq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 17:55:46 -0400
-Received: from mail.play-mail.info ([211.47.140.228]:57100 "EHLO
-	play-mail.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752839Ab1GaVz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 17:55:29 -0400
+	id S1753149Ab1GaWIR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 18:08:17 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:58788 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752913Ab1GaWH5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 18:07:57 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Sven Eckelmann <sven@narfation.org>
+Subject: Re: [PATCHv4 05/11] omap3isp: Use *_dec_not_zero instead of *_add_unless
+Date: Sun, 31 Jul 2011 17:00:43 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37-gentoo-r3; KDE/4.6.5; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+References: <1311760070-21532-1-git-send-email-sven@narfation.org> <1311760070-21532-5-git-send-email-sven@narfation.org>
+In-Reply-To: <1311760070-21532-5-git-send-email-sven@narfation.org>
 MIME-Version: 1.0
-Message-Id: <110801065528W6.14843@mail.play-mail.info>
-Date: Mon, 1 Aug 2011 06:55:28 +0900
-From: =?UTF-8?B?bWFyaW5hMDM3MEBpbnRlcjcuanA=?= <marina0370@inter7.jp>
-To: linux-kernel@vger.kernel.org
-Content-Type: Text/Plain;charset="utf-8"
-Subject: =?UTF-8?B?44GK6L+U5LqL44Gr6L+344KP44KM44Gm44GE44KJ44Gj44GX44KD44GE44G+44GZ44GL77yf?=
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107311700.43515.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p6VLtq36023097
 
-マリナです！
-もしかして不安な思いにさせてしまっていますか？
-私の記憶が正しければ貴方は今まで女性からこういうお話を持ちかけられ関係を築いた事がないと伺っております。
+Hi Sven,
 
-困惑してしまっているのかもしれないですね。申し訳ありません。
-私も冗談でこんなお話を貴方にもち掛けた訳ではありません。
-何度も迷い考えた結果でご連絡させて戴きました。
+Thanks for the patch.
 
-何も毎日私の相手をして欲しいとはそんな我侭な事は私も言いません。
-貴方には貴方の仕事も時間も仲間もいるでしょうから。でもその環境の中に私との時間を少しだけ組み込んで欲しいと願っているんです。
+On Wednesday 27 July 2011 11:47:44 Sven Eckelmann wrote:
+> atomic_dec_not_zero is defined for each architecture through
+> <linux/atomic.h> to provide the functionality of
+> atomic_add_unless(x, -1, 0).
+> 
+> Signed-off-by: Sven Eckelmann <sven@narfation.org>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-今日待ってますので、具体的な金額、会う条件を決めましょう。
-そして、直接電話できたらと思ってます。���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+I'll queue this to my tree for v3.2. Please let me know if you would rather 
+push the patch through another tree.
+
+> Cc: linux-media@vger.kernel.org
+> ---
+>  drivers/media/video/omap3isp/ispstat.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/video/omap3isp/ispstat.c
+> b/drivers/media/video/omap3isp/ispstat.c index b44cb68..81b1ec9 100644
+> --- a/drivers/media/video/omap3isp/ispstat.c
+> +++ b/drivers/media/video/omap3isp/ispstat.c
+> @@ -652,7 +652,7 @@ static int isp_stat_buf_process(struct ispstat *stat,
+> int buf_state) {
+>  	int ret = STAT_NO_BUF;
+> 
+> -	if (!atomic_add_unless(&stat->buf_err, -1, 0) &&
+> +	if (!atomic_dec_not_zero(&stat->buf_err) &&
+>  	    buf_state == STAT_BUF_DONE && stat->state == ISPSTAT_ENABLED) {
+>  		ret = isp_stat_buf_queue(stat);
+>  		isp_stat_buf_next(stat);
+
+-- 
+Regards,
+
+Laurent Pinchart
