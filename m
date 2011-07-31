@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab1GaUn0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 16:43:26 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:39788 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab1GaUnT (ORCPT
+	id S1752499Ab1GaUpx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 16:45:53 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:55943 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab1GaUps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 16:43:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E35B908.6090507@fusionio.com>
-References: <1312053553.1187.17.camel@mop> <4E35B908.6090507@fusionio.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Sun, 31 Jul 2011 22:42:59 +0200
-Message-ID: <CAPXgP11W7dKSAQaemaeN=7desPtK-VonTLvLoW9_i1rUbYjvJg@mail.gmail.com>
-Subject: Re: loop: fix deadlock when sysfs and LOOP_CLR_FD race against each other
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Milan Broz <mbroz@redhat.com>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 31 Jul 2011 16:45:48 -0400
+Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
+From: Pekka Enberg <penberg@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <alpine.DEB.2.00.1107311253560.12538@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1107290145080.3279@tiger>
+	 <alpine.DEB.2.00.1107291002570.16178@router.home>
+	 <alpine.DEB.2.00.1107311136150.12538@chino.kir.corp.google.com>
+	 <alpine.DEB.2.00.1107311253560.12538@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Sun, 31 Jul 2011 23:45:46 +0300
+Message-ID: <1312145146.24862.97.camel@jaguar>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 31, 2011 at 22:20, Jens Axboe <jaxboe@fusionio.com> wrote:
-> On 2011-07-30 21:19, Kay Sievers wrote:
->> Instead of taking the lo_ctl_mutex from sysfs code, take the inner
->> lo->lo_lock, to protect the access to the backing_file data.
->>
->> Thanks to Tejun for help debugging and finding a solution.
->
-> Looks good, looks like something that should have a stable tag as well?
+On Sun, 2011-07-31 at 13:24 -0700, David Rientjes wrote:
+> And although slub is definitely heading in the right direction regarding 
+> the netperf benchmark, it's still a non-starter for anybody using large 
+> NUMA machines for networking performance.  On my 16-core, 4 node, 64GB 
+> client/server machines running netperf TCP_RR with various thread counts 
+> for 60 seconds each on 3.0:
+> 
+> 	threads		SLUB		SLAB		diff
+> 	 16		76345		74973		- 1.8%
+> 	 32		116380		116272		- 0.1%
+> 	 48		150509		153703		+ 2.1%
+> 	 64		187984		189750		+ 0.9%
+> 	 80		216853		224471		+ 3.5%
+> 	 96		236640		249184		+ 5.3%
+> 	112		256540		275464		+ 7.4%
+> 	128		273027		296014		+ 8.4%
+> 	144		281441		314791		+11.8%
+> 	160		287225		326941		+13.8%
 
-Right, I think it makes sense to have that in -stable.
+That looks like a pretty nasty scaling issue. David, would it be
+possible to see 'perf report' for the 160 case? [ Maybe even 'perf
+annotate' for the interesting SLUB functions. ]
 
-It's pretty hard to trigger, I had multiple threads running, crawling
-/sys and adding/binding/unbinding/removing 1000s of loop devices, and
-it takes several minutes sometimes until its hit. So I only tested it
-on top of the 3 loop-control patches, but the issue should exist in
-the current code as well.
+On Sun, 2011-07-31 at 13:24 -0700, David Rientjes wrote:
+> And although I've developed a mutable slab allocator, SLAM, that makes all 
+> of this irrelevant since it's a drop-in replacement for slab and slub, I 
+> can't legitimately propose it for inclusion because it lacks the debugging 
+> capabilities that slub excels in and there's an understanding that Linus 
+> won't merge another stand-alone allocator until one is removed.
 
-Thanks,
-Kay
+Nick tried that with SLQB and it didn't work out. I actually even tried
+to maintain it out-of-tree for a while but eventually gave up. So no,
+I'm not interested in merging a new allocator either. I would be,
+however, interested to see the source code.
+
+			Pekka
+
