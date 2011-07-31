@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812Ab1GaFdN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 01:33:13 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55541 "EHLO
+	id S1751935Ab1GaFg4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 01:36:56 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45000 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab1GaFdH (ORCPT
+	with ESMTP id S1751341Ab1GaFgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 01:33:07 -0400
+	Sun, 31 Jul 2011 01:36:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAKnu2Mp0Xs3ivj0Vd1=Euj1CyKsWpBLrf_L_jYWuOnoRMpxGGQ@mail.gmail.com>
+In-Reply-To: <CAKnu2MqrKxPDzCUtTVH8DrBR2JqcsyFpr-9ppS1=iR3uAPs2Og@mail.gmail.com>
 References: <cover.1311936523.git.viresh.kumar@st.com>
-	<9c81beb9cd84f84b58abbd24ebfae85dfe8d8ee1.1311936524.git.viresh.kumar@st.com>
-	<CAKnu2Mp0Xs3ivj0Vd1=Euj1CyKsWpBLrf_L_jYWuOnoRMpxGGQ@mail.gmail.com>
-Date: Sat, 30 Jul 2011 22:33:05 -0700
-Message-ID: <CAOh2x=ntfuZ46nGVAGgEeYNPQwV677sT2Bks7Ve02LZqthHpQA@mail.gmail.com>
-Subject: Re: [PATCH 09/18] dmaengine/amba-pl08x: Schedule tasklet in case of
- error interrupt
+	<2f6001455c4e54f56716a245c7e319eb25a9bb0d.1311936524.git.viresh.kumar@st.com>
+	<CAKnu2MqrKxPDzCUtTVH8DrBR2JqcsyFpr-9ppS1=iR3uAPs2Og@mail.gmail.com>
+Date: Sat, 30 Jul 2011 22:36:48 -0700
+Message-ID: <CAOh2x=n1FWvDX9n7RJwQJjm3+mnWJe5kAYdOg0nZ2D7BVt4nmg@mail.gmail.com>
+Subject: Re: [PATCH 15/18] dmaengine/amba-pl08x: Pass flow controller
+ information with slave channel data
 From: viresh kumar <viresh.linux@gmail.com>
 To: Linus Walleij <linus.walleij@linaro.org>
 Cc: Viresh Kumar <viresh.kumar@st.com>, vinod.koul@intel.com,
@@ -31,22 +31,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 7/30/11, Linus Walleij <linus.walleij@linaro.org> wrote:
 > 2011/7/29 Viresh Kumar <viresh.kumar@st.com>:
-> NAK.
 >
-> These snippets illustrate what is not good about this patch, you're making
-> the driver fragile by removing checks for spurious IRQ.
+> I have the same comment as Russell basically:
 >
-> So for example if there is an error or TC IRQ on a channel that is not
-> in use, what happens now?
+>> @@ -65,6 +69,7 @@ struct pl08x_channel_data {
+>>        int max_signal;
+>>        u32 muxval;
+>>        u32 cctl;
+>> +       u32 fc;
 >
-> It used to result in IRQ_NONE, now all of a sudden we start handling
-> spurious IRQs and claim IRQ_HANDLED with totally unpredictable
-> results, whereas they would previously gather error metrics for
-> spurious IRQs.
+> bool device_fc;
+>
+> or similar. Then encode the necessary bits if the device controls
+> flow, and fall back to default (DMAC control) otherwise.
 >
 
-I got your point. Will resend this patch with better handling for
-spurious interrupts.
+Yes. I thought of exactly the same code.
 
 --
 viresh
