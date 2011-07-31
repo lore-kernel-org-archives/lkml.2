@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab1GaCTD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 22:19:03 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:35136 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751997Ab1GaCS6 (ORCPT
+	id S1752964Ab1GaCmS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 22:42:18 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:33448 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752559Ab1GaCmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 22:18:58 -0400
-Date: Sat, 30 Jul 2011 19:18:55 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Alessandro Suardi <alessandro.suardi@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: warn_slowpath_common WARNING on boot since 3.0.0-git7
-Message-Id: <20110730191855.eaec670f.rdunlap@xenotime.net>
-In-Reply-To: <CAKWSe6B3hWt4ANpgoS4dRUZPju0Abey9y3DORVFqGYgMeF=gQA@mail.gmail.com>
-References: <CAKWSe6B3hWt4ANpgoS4dRUZPju0Abey9y3DORVFqGYgMeF=gQA@mail.gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Sat, 30 Jul 2011 22:42:12 -0400
+X-Sasl-enc: aYaKjf6NH8avPwvipMG8Bwpf0AH9We08Jnk5LcpGvn9I 1312080131
+Date: Sat, 30 Jul 2011 23:42:09 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Bryan Donlan <bdonlan@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org,
+        mpm@selenic.com, tytso@mit.edu
+Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
+Message-ID: <20110731024208.GA30593@khazad-dum.debian.net>
+References: <20110730234630.7270.qmail@science.horizon.com>
+ <CAF_S4t8TFour-Yw1T+qdG9mCzy9+tGBR0hQG83+ra6PRzPhNHQ@mail.gmail.com>
+ <CA+55aFyimDdpCRER_7pc30S-QLhUkt0z-Y=gD48f7t=FxxFh7g@mail.gmail.com>
+ <CAF_S4t9PhDQBBfaLLaq1sE9YkJvQq5Q+ULegpD0aoTnv0CPutw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAF_S4t9PhDQBBfaLLaq1sE9YkJvQq5Q+ULegpD0aoTnv0CPutw@mail.gmail.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Jul 2011 17:31:51 +0200 Alessandro Suardi wrote:
+On Sat, 30 Jul 2011, Bryan Donlan wrote:
+> In any case though, what about my suggestion - don't mess with urandom
+> at all, and let udev replace the /dev/urandom device node with one
+> directed to a fast hwrng device if one is detected? This has zero
 
-> F15 x86_64, still present in 3.0.0-git11; didn't report it earlier as I
->  thought it'd be squashed sooner... probably it's not as common
->  as I thought it'd be:
-> 
-> Jul 27 18:46:18 duff kernel: WARNING: at fs/proc/base.c:1123
-> oom_adjust_write+0x185/0x23c()
-> Jul 27 18:46:18 duff kernel: Hardware name: Latitude E6400
-> Jul 27 18:46:18 duff kernel: sshd (3245): /proc/3245/oom_adj is
-> deprecated, please use /proc/3245/oom_score_adj instead.
+Now, THAT would be unsafe, and a nasty way to go about it.
 
-Looks like sshd is using a deprecated /proc interface.
-fs/proc/base.c:1118 says:
-	 * Warn that /proc/pid/oom_adj is deprecated, see
-	 * Documentation/feature-removal-schedule.txt.
+If you really don't want to touch /dev/.random, make it simple: either
+export the embedded RNG as high-bandwidth /dev/hwrandom and let
+userspace postprocess it and reroute it back to /dev/random as needed,
+or do the same with a kernel thread.
 
-What else needs to be done here?
-
-> Jul 27 18:46:18 duff kernel: Modules linked in: sunrpc rfcomm bnep
-> ip6t_REJECT nf_conntrack_ipv6 ipt_REJECT nf_defrag_ipv6
-> nf_conntrack_ipv4 ip6table_filter nf_defrag_ipv4 ip6_tables xt_state
-> nf_conntrack iptable_filter ip_tables snd_hda_codec_hdmi
-> snd_hda_codec_idt snd_hda_intel snd_hda_codec aes_x86_64 aes_generic
-> ecb snd_hwdep btusb snd_seq snd_seq_device bluetooth snd_pcm
-> dell_laptop snd_timer snd i2c_i801 rfkill microcode pcspkr joydev
-> soundcore snd_page_alloc dcdbas ipv6 autofs4 ext4 jbd2 crc16 sdhci_pci
-> firewire_ohci sdhci firewire_core crc_itu_t mmc_core i915
-> drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded:
-> scsi_wait_scan]
-> Jul 27 18:46:18 duff kernel: Pid: 3245, comm: sshd Not tainted 3.0.0-git7 #6
-> Jul 27 18:46:18 duff kernel: Call Trace:
-> Jul 27 18:46:18 duff kernel: [<ffffffff8103774c>] warn_slowpath_common+0x7e/0x96
-> Jul 27 18:46:18 duff kernel: [<ffffffff810377f8>] warn_slowpath_fmt+0x41/0x43
-> Jul 27 18:46:18 duff kernel: [<ffffffff810408f4>] ? ns_capable+0x35/0x4a
-> Jul 27 18:46:18 duff kernel: [<ffffffff81129fb8>] oom_adjust_write+0x185/0x23c
-> Jul 27 18:46:18 duff kernel: [<ffffffff810e0736>] vfs_write+0xa3/0xca
-> Jul 27 18:46:18 duff kernel: [<ffffffff8109176f>] ?
-> trace_hardirqs_on_caller+0xe/0x22
-> Jul 27 18:46:18 duff kernel: [<ffffffff810e08d2>] sys_write+0x45/0x69
-> Jul 27 18:46:18 duff kernel: [<ffffffff813752fb>] system_call_fastpath+0x16/0x1b
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
