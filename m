@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab1GaQmh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 12:42:37 -0400
-Received: from trinity.fluff.org ([89.16.178.74]:42300 "EHLO trinity.fluff.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751784Ab1GaQm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 12:42:29 -0400
-Date: Sun, 31 Jul 2011 17:42:08 +0100
-From: Ben Dooks <ben-i2c@fluff.org>
-To: Paul Gortmaker <paul.gortmaker@gmail.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-i2c@vger.kernel.org,
-        akpm <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, khali@linux-fr.org,
-        ben-linux@fluff.org
-Subject: Re: [PATCH -next] i2c: i2c-pxa-pci.c needs module.h
-Message-ID: <20110731164208.GP15795@trinity.fluff.org>
-References: <20110729173827.716f57ff6e00095a3efc6449@canb.auug.org.au> <20110729211430.6c4830bd.rdunlap@xenotime.net> <CAP=VYLrtumuSM_ncO6sEr7=HciiKcOsB=yN4NZnAxesjSSOgMw@mail.gmail.com>
+	id S1752230Ab1GaQuR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 12:50:17 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:61583 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751299Ab1GaQuL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 12:50:11 -0400
+Message-ID: <4E3587C0.4040406@gmail.com>
+Date: Sun, 31 Jul 2011 18:50:08 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAP=VYLrtumuSM_ncO6sEr7=HciiKcOsB=yN4NZnAxesjSSOgMw@mail.gmail.com>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@trinity.fluff.org
-X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
+To: Robert Richter <robert.richter@amd.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] oprofile, x86: Move memory allocation to init
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 30, 2011 at 03:09:32PM -0400, Paul Gortmaker wrote:
-> On Sat, Jul 30, 2011 at 12:14 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> > From: Randy Dunlap <rdunlap@xenotime.net>
-> >
-> > i2c-pxa-pci.c uses interfaces from linux/module.h, so it should
-> > include that file.  This fixes build errors.
-> 
-> Applied to module.h-split, thanks.
+ppro_setup_ctrs is called on all cpu's, while init is only called once.
 
-ok, so I don't need to apply this one?
-Acked-by: Ben Dooks <ben-linux@fluff.org>
+Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+
+---
+Fixes oprofile on 3.0 rt6.
+
+diff --git a/arch/x86/oprofile/op_model_ppro.c b/arch/x86/oprofile/op_model_ppro.c
+index 94b7450..53a84fc 100644
+--- a/arch/x86/oprofile/op_model_ppro.c
++++ b/arch/x86/oprofile/op_model_ppro.c
+@@ -79,13 +79,6 @@ static void ppro_setup_ctrs(struct op_x86_model_spec const *model,
+ 	u64 val;
+ 	int i;
  
-> P.
-> 
-> >
-> > Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> > ---
-> >  drivers/i2c/busses/i2c-pxa-pci.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> >
-> > --- linux-next-20110729.orig/drivers/i2c/busses/i2c-pxa-pci.c
-> > +++ linux-next-20110729/drivers/i2c/busses/i2c-pxa-pci.c
-> > @@ -3,6 +3,7 @@
-> >  * It does not support slave mode, the register slightly moved. This PCI
-> >  * device provides three bars, every contains a single I2C controller.
-> >  */
-> > +#include <linux/module.h>
-> >  #include <linux/pci.h>
-> >  #include <linux/platform_device.h>
-> >  #include <linux/i2c/pxa-i2c.h>
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-next" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-	if (!reset_value) {
+-		reset_value = kzalloc(sizeof(reset_value[0]) * num_counters,
+-					GFP_ATOMIC);
+-		if (!reset_value)
+-			return;
+-	}
+-
+ 	if (cpu_has_arch_perfmon) {
+ 		union cpuid10_eax eax;
+ 		eax.full = cpuid_eax(0xa);
+@@ -228,7 +221,7 @@ struct op_x86_model_spec op_ppro_spec = {
+  * the specific CPU.
+  */
+ 
+-static void arch_perfmon_setup_counters(void)
++static int arch_perfmon_setup_counters(void)
+ {
+ 	union cpuid10_eax eax;
+ 
+@@ -246,12 +239,17 @@ static void arch_perfmon_setup_counters(void)
+ 
+ 	op_arch_perfmon_spec.num_counters = num_counters;
+ 	op_arch_perfmon_spec.num_controls = num_counters;
++
++	reset_value = kzalloc(sizeof(reset_value[0]) * num_counters,
++				GFP_KERNEL);
++	if (!reset_value)
++		return -ENOMEM;
++	return 0;
+ }
+ 
+ static int arch_perfmon_init(struct oprofile_operations *ignore)
+ {
+-	arch_perfmon_setup_counters();
+-	return 0;
++	return arch_perfmon_setup_counters();
+ }
+ 
+ struct op_x86_model_spec op_arch_perfmon_spec = {
 
--- 
-Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
-
-Large Hadron Colada: A large Pina Colada that makes the universe disappear.
 
