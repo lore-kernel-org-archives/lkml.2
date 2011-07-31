@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205Ab1GaFox (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 01:44:53 -0400
-Received: from mail.windriver.com ([147.11.1.11]:47114 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764Ab1GaFor (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 01:44:47 -0400
-Date: Sun, 31 Jul 2011 01:44:42 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the moduleh tree
-Message-ID: <20110731054442.GD31842@windriver.com>
-References: <20110729145644.ce9b20c535822ede35cd0a0c@canb.auug.org.au>
+	id S1752536Ab1GaFrp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 01:47:45 -0400
+Received: from msr1.hinet.net ([168.95.4.101]:39448 "EHLO msr1.hinet.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751341Ab1GaFrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 01:47:37 -0400
+X-Greylist: delayed 7128 seconds by postgrey-1.27 at vger.kernel.org; Sun, 31 Jul 2011 01:47:36 EDT
+Date: Sun, 31 Jul 2011 11:45:59 +0800
+From: Ali Bahar <ali@internetdog.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] vfs pile 1.5
+Message-ID: <20110731034559.GA8041@internetdog.org>
+Reply-To: ali@internetdog.org
+Mail-Followup-To: Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+References: <20110725185649.GA22133@ZenIV.linux.org.uk>
+ <20110726033535.GA11939@x4.trippels.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110729145644.ce9b20c535822ede35cd0a0c@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110726033535.GA11939@x4.trippels.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[linux-next: build failure after merge of the moduleh tree] On 29/07/2011 (Fri 14:56) Stephen Rothwell wrote:
+On Tue, Jul 26, 2011 at 05:35:35AM +0200, Markus Trippelsdorf wrote:
+> On 2011.07.25 at 19:56 +0100, Al Viro wrote:
+> > Regression fixes (devtmpfs race, cifs ->d_revalidate() breakage, fsync
+> > fallout), ACL stuff (me/Linus/Christoph), fixes for bugs found while
+> 
+> > Linus Torvalds (1):
+> >       vfs: move ACL cache lookup into generic code
+> 
+> This breaks the build for "# CONFIG_FS_POSIX_ACL is not set" configs:
+> 
+>   CC      fs/namei.o
+> fs/namei.c: In function ‘check_acl’:
+> fs/namei.c:191:10: error: implicit declaration of function ‘negative_cached_acl’ [-Werror=implicit-function-declaration]
+> fs/namei.c:196:2: error: implicit declaration of function ‘get_cached_acl’ [-Werror=implicit-function-declaration]
+> fs/namei.c:196:6: warning: assignment makes pointer from integer without a cast [enabled by default]
+> fs/namei.c:212:11: error: implicit declaration of function ‘set_cached_acl’ [-Werror=implicit-function-declaration]
+> cc1: some warnings being treated as errors
 
-> Hi Paul,
-> 
-> After merging the moduleh tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> arch/powerpc/platforms/cell/spu_syscalls.c: In function 'spufs_calls_get':
-> arch/powerpc/platforms/cell/spu_syscalls.c:42:2: error: implicit declaration of function 'try_module_get'
-> arch/powerpc/platforms/cell/spu_syscalls.c: In function 'spufs_calls_put':
-> arch/powerpc/platforms/cell/spu_syscalls.c:54:2: error: implicit declaration of function 'module_put'
-> 
-> Caused by commit f7f927183dba ("powerpc: various straight conversions
-> from module.h --> export.h").  This file should not be modified.
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Fri, 29 Jul 2011 14:53:16 +1000
-> Subject: [PATCH] Partial revert of f7f927183dba
+Ditto.
+(I'm using the staging-2.6 tree.)
+regards,
+ali
 
-Thanks, I've dropped the offending hunk from its origin.
-
-Paul.
-
-> 
-> "powerpc: various straight conversions from module.h --> export.h"
-> 
-> This file needs module.h.
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  arch/powerpc/platforms/cell/spu_syscalls.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/powerpc/platforms/cell/spu_syscalls.c b/arch/powerpc/platforms/cell/spu_syscalls.c
-> index 60fc5ec..75530d9 100644
-> --- a/arch/powerpc/platforms/cell/spu_syscalls.c
-> +++ b/arch/powerpc/platforms/cell/spu_syscalls.c
-> @@ -22,7 +22,7 @@
->   */
->  #include <linux/file.h>
->  #include <linux/fs.h>
-> -#include <linux/export.h>
-> +#include <linux/module.h>
->  #include <linux/syscalls.h>
->  #include <linux/rcupdate.h>
->  
-> -- 
-> 1.7.5.4
 > 
 > -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
+> Markus
