@@ -1,106 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab1GaQUG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 12:20:06 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56556 "EHLO
+	id S1752376Ab1GaQV1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 12:21:27 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39695 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162Ab1GaQUE convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752175Ab1GaQVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 12:20:04 -0400
+	Sun, 31 Jul 2011 12:21:23 -0400
+Date: Mon, 1 Aug 2011 01:21:13 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH v4 06/10] migration: introudce migrate_ilru_pages
+Message-ID: <20110731162113.GA2864@barrios-desktop>
+References: <cover.1309787991.git.minchan.kim@gmail.com>
+ <132686a2ab204bb917bea5faa4eb5cb797940518.1309787991.git.minchan.kim@gmail.com>
+ <20110727131357.cc5a42ce.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20110730191855.eaec670f.rdunlap@xenotime.net>
-References: <CAKWSe6B3hWt4ANpgoS4dRUZPju0Abey9y3DORVFqGYgMeF=gQA@mail.gmail.com>
-	<20110730191855.eaec670f.rdunlap@xenotime.net>
-Date: Sun, 31 Jul 2011 18:20:01 +0200
-Message-ID: <CAKWSe6Bf6bZQnjujPRYQPCw+PEkvPOkwxdCVqfJV+6Xr6erw5Q@mail.gmail.com>
-Subject: Re: warn_slowpath_common WARNING on boot since 3.0.0-git7
-From: Alessandro Suardi <alessandro.suardi@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110727131357.cc5a42ce.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 31, 2011 at 4:18 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On Sat, 30 Jul 2011 17:31:51 +0200 Alessandro Suardi wrote:
->
->> F15 x86_64, still present in 3.0.0-git11; didn't report it earlier as I
->>  thought it'd be squashed sooner... probably it's not as common
->>  as I thought it'd be:
->>
->> Jul 27 18:46:18 duff kernel: WARNING: at fs/proc/base.c:1123
->> oom_adjust_write+0x185/0x23c()
->> Jul 27 18:46:18 duff kernel: Hardware name: Latitude E6400
->> Jul 27 18:46:18 duff kernel: sshd (3245): /proc/3245/oom_adj is
->> deprecated, please use /proc/3245/oom_score_adj instead.
->
-> Looks like sshd is using a deprecated /proc interface.
-> fs/proc/base.c:1118 says:
->         * Warn that /proc/pid/oom_adj is deprecated, see
->         * Documentation/feature-removal-schedule.txt.
->
-> What else needs to be done here?
->
->> Jul 27 18:46:18 duff kernel: Modules linked in: sunrpc rfcomm bnep
->> ip6t_REJECT nf_conntrack_ipv6 ipt_REJECT nf_defrag_ipv6
->> nf_conntrack_ipv4 ip6table_filter nf_defrag_ipv4 ip6_tables xt_state
->> nf_conntrack iptable_filter ip_tables snd_hda_codec_hdmi
->> snd_hda_codec_idt snd_hda_intel snd_hda_codec aes_x86_64 aes_generic
->> ecb snd_hwdep btusb snd_seq snd_seq_device bluetooth snd_pcm
->> dell_laptop snd_timer snd i2c_i801 rfkill microcode pcspkr joydev
->> soundcore snd_page_alloc dcdbas ipv6 autofs4 ext4 jbd2 crc16 sdhci_pci
->> firewire_ohci sdhci firewire_core crc_itu_t mmc_core i915
->> drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded:
->> scsi_wait_scan]
->> Jul 27 18:46:18 duff kernel: Pid: 3245, comm: sshd Not tainted 3.0.0-git7 #6
->> Jul 27 18:46:18 duff kernel: Call Trace:
->> Jul 27 18:46:18 duff kernel: [<ffffffff8103774c>] warn_slowpath_common+0x7e/0x96
->> Jul 27 18:46:18 duff kernel: [<ffffffff810377f8>] warn_slowpath_fmt+0x41/0x43
->> Jul 27 18:46:18 duff kernel: [<ffffffff810408f4>] ? ns_capable+0x35/0x4a
->> Jul 27 18:46:18 duff kernel: [<ffffffff81129fb8>] oom_adjust_write+0x185/0x23c
->> Jul 27 18:46:18 duff kernel: [<ffffffff810e0736>] vfs_write+0xa3/0xca
->> Jul 27 18:46:18 duff kernel: [<ffffffff8109176f>] ?
->> trace_hardirqs_on_caller+0xe/0x22
->> Jul 27 18:46:18 duff kernel: [<ffffffff810e08d2>] sys_write+0x45/0x69
->> Jul 27 18:46:18 duff kernel: [<ffffffff813752fb>] system_call_fastpath+0x16/0x1b
+On Wed, Jul 27, 2011 at 01:13:57PM -0700, Andrew Morton wrote:
+> On Mon,  4 Jul 2011 23:04:39 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
+> 
+> > This patch defines new APIs to put back new page into old page's position as LRU order.
+> > for LRU churning of compaction.
+> > 
+> > The idea I suggested in LSF/MM is simple.
+> >
+> > ...
+> >
+> > +static bool same_lru(struct page *page, struct page *prev)
+> > +{
+> > +	bool ret = false;
+> > +	if (!prev || !PageLRU(prev))
+> 
+> Both parts of this test need explanations so readers can understand why
+> they are here.
+> 
+> > +		goto out;
+> > +
+> > +	if (unlikely(PageUnevictable(prev)))
+> 
+> As does this.
 
-Well, the obsolescence was discussed a while ago in this thread
+Will do.
 
-http://www.gossamer-threads.com/lists/linux/kernel/1301830
+> 
+> > +		goto out;
+> > +
+> > +	if (page_lru_base_type(page) != page_lru_base_type(prev))
+> > +		goto out;
+> 
+> This (and testing for PageLRU) is the only part of this function whcih
+> is sufficiently obvious to leave undocumented.
 
- and my kernel dmesg output has been telling me ever since;
- the "issue", if we can so call that, is that the WARNING trace
- output appeared in 3.0.0-git7.
+> 
+> > +	ret = true;
+> > +out:
+> > +	return ret;
+> > +}
+> > +
+> > +void putback_ilru_pages(struct inorder_lru *l)
+> > +{
+> > +	struct zone *zone;
+> > +	struct page *page, *page2, *prev;
+> > +
+> > +	list_for_each_ilru_entry_safe(page, page2, l, ilru) {
+> > +		ilru_list_del(page, l);
+> > +		dec_zone_page_state(page, NR_ISOLATED_ANON +
+> > +				page_is_file_cache(page));
+> > +		zone = page_zone(page);
+> > +		spin_lock_irq(&zone->lru_lock);
+> > +		prev = page->ilru.prev_page;
+> > +		if (same_lru(page, prev)) {
+> > +			putback_page_to_lru(page, prev);
+> > +			spin_unlock_irq(&zone->lru_lock);
+> > +			put_page(page);
+> > +		} else {
+> > +			spin_unlock_irq(&zone->lru_lock);
+> > +			putback_lru_page(page);
+> > +		}
+> > +	}
+> > +}
+> 
+> This function takes lru_lock at lest once per page, up to twice per
+> page.  The spinlocking frequency here could be optimised tremendously.
 
-In 3.0.0-git1 I still had
+Yes. Mel is pointed out and I sent a [8/10] patch about it.
 
-Jul 24 12:22:01 duff kernel: sshd (3185): /proc/3185/oom_adj is
-deprecated, please use /proc/3185/oom_score_adj instead.
+> 
+> The trick of hanging onto zone->lru_lock is the zone didn't change gets
+> hard if we want to do a put_page() inside the loop.
+> 
+> We have functions "putback_page_to_lru()" and "putback_lru_page()". 
+> Ugh.  Can we think of better naming?
 
- *without* the warn_slowpath_common WARNING.
+Yes. The name is bad but It's disappeared at [8/10].
 
-Is the extra tracing intentional, or a side effect of something else ?
+> 
+> Does this function even need to exist if CONFIG_MIGRATION=n?
 
+Of course, NOT.
+I will nullify it in case of no migration.
 
-As a final note, the openssh fix appears to be in 5.7p1
+> 
+> > +/*
+> >   * Restore a potential migration pte to a working pte entry
+> >   */
+> >
+> > ...
+> >
+> > +void __put_ilru_pages(struct page *page, struct page *newpage,
+> > +		struct inorder_lru *prev_lru, struct inorder_lru *ihead)
+> 
+> The function name leaves me wondering where we put the pages, and
+> there's no documentation telling me.
 
-https://bugzilla.mindrot.org/show_bug.cgi?id=1838
+It seems remained thing to me is to add documentation.
+I will add documentation in next version.
 
- and I am running an updated F15 as of today
+> 
+> > +{
+> > +	struct page *prev_page;
+> > +	struct zone *zone;
+> > +	prev_page = page->ilru.prev_page;
+> > +	/*
+> > +	 * A page that has been migrated has all references
+> > +	 * removed and will be freed. A page that has not been
+> > +	 * migrated will have kepts its references and be
+> > +	 * restored.
+> > +	 */
+> > +	ilru_list_del(page, prev_lru);
+> > +	dec_zone_page_state(page, NR_ISOLATED_ANON +
+> > +			page_is_file_cache(page));
+> > +
+> > +	/*
+> > +	 * Move the new page to the LRU. If migration was not successful
+> > +	 * then this will free the page.
+> > +	 */
+> > +	zone = page_zone(newpage);
+> > +	spin_lock_irq(&zone->lru_lock);
+> > +	if (same_lru(page, prev_page)) {
+> > +		putback_page_to_lru(newpage, prev_page);
+> > +		spin_unlock_irq(&zone->lru_lock);
+> > +		/*
+> > +		 * The newpage replaced LRU position of old page and
+> > +		 * old one would be freed. So let's adjust prev_page of pages
+> > +		 * remained in inorder_lru list.
+> > +		 */
+> > +		adjust_ilru_prev_page(ihead, page, newpage);
+> > +		put_page(newpage);
+> > +	} else {
+> > +		spin_unlock_irq(&zone->lru_lock);
+> > +		putback_lru_page(newpage);
+> > +	}
+> 
+> The same spinlocking frequency issue.
+> 
+> > +	putback_lru_page(page);
+> > +}
+> > +
+> >
+> > ...
+> >
+> > +int migrate_ilru_pages(struct inorder_lru *ihead, new_page_t get_new_page,
+> > +		unsigned long private, bool offlining, bool sync)
+> > +{
+> > +	int retry = 1;
+> > +	int nr_failed = 0;
+> > +	int pass = 0;
+> > +	struct page *page, *page2;
+> > +	struct inorder_lru *prev;
+> > +	int swapwrite = current->flags & PF_SWAPWRITE;
+> > +	int rc;
+> > +
+> > +	if (!swapwrite)
+> > +		current->flags |= PF_SWAPWRITE;
+> > +
+> > +	for (pass = 0; pass < 10 && retry; pass++) {
+> 
+> That ten-passes thing was too ugly to live, and now it's breeding.  Argh.
 
-[root@duff ~]# rpm -q openssh
-openssh-5.6p1-33.fc15.1.x86_64
-
-I guess I'll file a F15 bug later tonight, as I can't find one
- already asking for the 5.7p1 fix backport to 5.6x.
-
-
-Thanks,
-
---alessandro
-
- "There's always a siren singing you to shipwreck"
-
-   (Radiohead, "There There")
+Personally, I hope we remove it.
+I will consider it later version or as independent patch.
+Thanks for the review, Andrew!
+-- 
+Kind regards,
+Minchan Kim
