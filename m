@@ -1,178 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab1GaBfG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 21:35:06 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:27055 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752015Ab1GaBfA (ORCPT
+	id S1753102Ab1GaBfz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 21:35:55 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58169 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752711Ab1GaBfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 21:35:00 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlUDAI2uNE55LCkBgWdsb2JhbABBp2MVAQEWJiWBQAEBBAEnExwjBQsIAw4KLhQlAyETh2y/AQ6GNASjcQ
-Date: Sun, 31 Jul 2011 11:34:56 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        containers@lists.linux-foundation.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@parallels.com>
-Subject: Re: [PATCH 4/4] parse options in the vfs level
-Message-ID: <20110731013456.GM5404@dastard>
-References: <1311947059-17209-1-git-send-email-glommer@parallels.com>
- <1311947059-17209-5-git-send-email-glommer@parallels.com>
+	Sat, 30 Jul 2011 21:35:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311947059-17209-5-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAF_S4t8TFour-Yw1T+qdG9mCzy9+tGBR0hQG83+ra6PRzPhNHQ@mail.gmail.com>
+References: <20110730234630.7270.qmail@science.horizon.com> <CAF_S4t8TFour-Yw1T+qdG9mCzy9+tGBR0hQG83+ra6PRzPhNHQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 30 Jul 2011 15:35:29 -1000
+Message-ID: <CA+55aFyimDdpCRER_7pc30S-QLhUkt0z-Y=gD48f7t=FxxFh7g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] random: Add support for architectural random hooks
+To: Bryan Donlan <bdonlan@gmail.com>
+Cc: George Spelvin <linux@horizon.com>, linux-kernel@vger.kernel.org,
+        mpm@selenic.com, tytso@mit.edu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 05:44:19PM +0400, Glauber Costa wrote:
-> This patch introduces a simple generic vfs option parser.
-> Right now, the only option we have is to limit the size of the dcache.
-> 
-> So any user that wants to have a dcache entries limit, can specify:
-> 
->   mount -o whatever_options,vfs_dcache_size=XXX <dev> <mntpoint>
-> 
-> It is supposed to work well with remounts, allowing it to change
-> multiple over the course of the filesystem's lifecycle.
-> 
-> I find mount a natural interface for handling filesystem options,
-> so that's what I've choosen. Feel free to yell at it at will if
-> you disagree.
+On Sat, Jul 30, 2011 at 3:02 PM, Bryan Donlan <bdonlan@gmail.com> wrote:
+>
+> The problem, as you can see here, is we need to test for the existence
+> of an architecture-specific HWRNG once for _every word processed_.
 
-IMO, the whole point of having a configurable cache size maximum is
-that is can be changed at runtime. Tying it to mount options is a
-painful way to acheive that because the only way to change it would
-be via a remount command.
+See the patch I sent out. Not only doesn't it check an
+architecture-specific flag on x86, IT COSTS NOTHING AT ALL on other
+architectures. Not per byte, not per call, not at all.
 
-I'm not sure what the best API is, but I'd prefer something that is
-specific to a superblock, not a vfs mount. Perhaps something in
-/sys/fs?
+On x86, it does have the cost of:
 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: Dave Chinner <david@fromorbit.com>
-> ---
->  fs/namespace.c |   89 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 89 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index 22bfe82..11ce45d 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -31,6 +31,7 @@
->  #include <linux/idr.h>
->  #include <linux/fs_struct.h>
->  #include <linux/fsnotify.h>
-> +#include <linux/parser.h>
->  #include <asm/uaccess.h>
->  #include <asm/unistd.h>
->  #include "pnode.h"
-> @@ -2271,6 +2272,82 @@ int copy_mount_string(const void __user *data, char **where)
->  	return 0;
->  }
->  
-> +static const match_table_t tokens = {
-> +	{1, "vfs_dcache_size=%u"},
-> +};
-> +
-> +struct vfs_options {
-> +	unsigned long vfs_dcache_size;
-> +};
-> +
-> +/**
-> + * Generic option parsing for the VFS.
-> + *
-> + * Since most of the filesystems already do their own option parsing, and with
-> + * very few code shared between them, this function strips out any options that
-> + * we succeed in parsing ourselves. Passing them forward would just give the
-> + * underlying fs an option it does not expect, leading it to fail.
-> + *
-> + * We don't yet have a pointer to the super block as well, since this is
-> + * pre-mount. We accumulate in struct vfs_options whatever data we collected,
-> + * and act on it later.
-> + */
-> +static int vfs_parse_options(char *options, struct vfs_options *ops)
-> +{
-> +	substring_t args[MAX_OPT_ARGS];
-> +	unsigned int option;
-> +	char *p;
-> +	char *opt;
-> +	char *start = NULL;
-> +	int ret;
-> +	
-> +	if (!options)
-> +		return 0;
-> +
-> +	opt = kstrdup(options, GFP_KERNEL);
-> +	if (!opt)
-> +		return 1;
-> +	
-> +	ret = 1;
-> +
-> +	start = opt;
-> +	while ((p = strsep(&opt, ",")) != NULL) {
-> +		int token;
-> +		if (!*p)
-> +			continue;
-> +
-> +		/*
-> +		 * Initialize args struct so we know whether arg was
-> +		 * found; some options take optional arguments.
-> +		 */
-> +		args[0].to = args[0].from = 0;
-> +		token = match_token(p, tokens, args);
-> +		switch (token) {
-> +		case 1:
-> +			if (!args[0].from)
-> +				break;
-> +
-> +			if (match_int(&args[0], &option))
-> +				break;
-> +			else
+ - basically one conditional for the whole loop (branching out if
+there is no rdrand support at all). You cannot do much better than
+that, except of course if you statically say "compile for an x86 that
+doesn't have rdrand")
 
-No need fo the else.
+ - a per-word cost of checking CF - which you are supposed to do
+anyway (ie the rdrand hardware will return with CF clear if the data
+isn't reliable).
 
-> +				ops->vfs_dcache_size = option;
+So at least on x86, I think you can get pretty close to "optimal
+behavior" with my approach.
 
-Bounds checking? What are valid values? e.g. setting it to a
-negative number would be bad, as would a number that is too small
-(e.g. 1)....
-
-> +
-> +			ret = 0;
-> +			if (!opt) /* it is the last option listed */
-> +				*(options + (p - start)) = '\0';
-> +			else
-> +				strcpy(options + (p - start), opt);
-
-What's this for? I don't see any of the other mount option code
-doing this sort of thing...
-
-> @@ -2350,6 +2434,11 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
->  	else
->  		retval = do_new_mount(&path, type_page, flags, mnt_flags,
->  				      dev_name, data_page);
-> +
-> +	if (!retval)
-> +		vfs_set_dcache_size(path.mnt->mnt_sb,
-> +				    vfs_options.vfs_dcache_size);
-> +			
-
-Hmmmm -  doesn't that mean bind mounts will override the value for
-the original, underlying filesytem mount? Isn't that a bad thing to
-do? i.e. the limiting is supposed to be per-sb, not per-vfsmnt?
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+              Linus
