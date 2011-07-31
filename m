@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836Ab1GaHF2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 03:05:28 -0400
-Received: from lunge.queued.net ([173.255.254.236]:33353 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab1GaHFY (ORCPT
+	id S1752253Ab1GaHIy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 03:08:54 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50855 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185Ab1GaHIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 03:05:24 -0400
-Date: Sun, 31 Jul 2011 00:05:21 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: dcbw@redhat.com
-Cc: David Woodhouse <dwmw2@infradead.org>, libertas-dev@lists.infradead.org,
-        dsd@laptop.org, cjb@laptop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] libertas: prioritize usb8388_v5.bin firmware on OLPC
- machines
-Message-ID: <20110731000521.45e48638@debxo>
-In-Reply-To: <20110731000300.5c08e95f@debxo>
-References: <20110731000300.5c08e95f@debxo>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 31 Jul 2011 03:08:47 -0400
+Date: Sun, 31 Jul 2011 00:08:32 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Coly Li <colyli@gmail.com>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Darrick J. Wong" <djwong@us.ibm.com>,
+        Andreas Dilger <aedilger@gmail.com>, Mingming Cao <cmm@us.ibm.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] Add inode checksum support to ext4
+Message-ID: <20110731070832.GA2848@noexit.corp.google.com>
+Mail-Followup-To: Coly Li <colyli@gmail.com>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	"Darrick J. Wong" <djwong@us.ibm.com>,
+	Andreas Dilger <aedilger@gmail.com>, Mingming Cao <cmm@us.ibm.com>,
+	Theodore Ts'o <tytso@mit.edu>,
+	linux-ext4 <linux-ext4@vger.kernel.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <20110406224410.GB24354@tux1.beaverton.ibm.com>
+ <1302290868.4461.7.camel@mingming-laptop>
+ <20110727082730.GG20655@tux1.beaverton.ibm.com>
+ <EF1F2330-D8C4-427A-ABB9-D1E607D91A3D@gmail.com>
+ <20110728165615.GI20655@tux1.beaverton.ibm.com>
+ <20110728220735.GA27253@noexit.corp.google.com>
+ <0E795C1D-AD1E-4CC4-9426-2B58D98B14DC@dilger.ca>
+ <20110729131937.GB5910@noexit.corp.google.com>
+ <4E33B1EC.9030004@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4E33B1EC.9030004@gmail.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note: I've not tested this out yet on an XO-1.  I'll do that after some
-feedback regarding the matching linux-firmware pull request.  This
-should address dsd's concern about changing the loading order of the
-firmware.
-
-On Sun, 31 Jul 2011
-00:03:00 -0700 Andres Salomon <dilinger@queued.net> wrote:
-
-> Normally, the v9 firmware will be loaded if it's available.  However,
-> on OLPC XO-1 machines, the v5 firmware supports extra functionality.
-> This makes the libertas driver attempt to load the v5 firmware first
-> if the machine is an OLPC machine; if that fails (or it's not an OLPC
-> machine), fall back to attempting to load the other firmwares.
+On Sat, Jul 30, 2011 at 03:25:32PM +0800, Coly Li wrote:
+> On 2011年07月29日 21:19, Joel Becker Wrote:
+> > On Fri, Jul 29, 2011 at 03:48:45AM -0600, Andreas Dilger wrote:
+> >> On 2011-07-28, at 4:07 PM, Joel Becker wrote:
+> >>> 	We use ethernet crc32 in ocfs2.  btrfs uses crc32c.  Frankly, I
+> >>> could have used crc32c if I'd really thought about the hardware
+> >>> acceleration benefits.  I think it's a good idea for ext4.
+> >>
+> >> The problem with crc32[c] is that if you don't have hardware acceleration
+> >> it is terribly slow.
+> > 
+> > 	We find ethernet crc32 just fine in ocfs2.  I use the kernel's
+> > implementation, which survives everyone's network traffic, and of course
+> > we added the triggers to jbd2 so we only have to do the calculations on
+> > read and write.
+> > 
 > 
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-> ---
->  drivers/net/wireless/libertas/if_usb.c |   24
-> ++++++++++++++++++++++++ 1 files changed, 24 insertions(+), 0
-> deletions(-)
+> Ext4 supports non-journal mode, and there are a few users (Google, Taobao, etc.).
+> A trigger of jbd2 may not work well for non-journal Ext4 ...
 > 
-> diff --git a/drivers/net/wireless/libertas/if_usb.c
-> b/drivers/net/wireless/libertas/if_usb.c index b5acc39..6a2e70e 100644
-> --- a/drivers/net/wireless/libertas/if_usb.c
-> +++ b/drivers/net/wireless/libertas/if_usb.c
-> @@ -973,6 +973,26 @@ static const struct {
->  	{ MODEL_8682, "libertas/usb8682.bin" }
->  };
->  
-> +#ifdef CONFIG_OLPC
-> +
-> +/* default OLPC firmware to try; index into fw_table above */
-> +#define OLPC_FW 1
-> +
-> +static int try_olpc_fw(struct if_usb_card *cardp)
-> +{
-> +	int retval = -ENOENT;
-> +
-> +	/* try the OLPC firmware first; fall back to any others */
-> +	if (machine_is_olpc())
-> +		retval = request_firmware(&cardp->fw,
-> +				fw_table[OLPC_FW].fwname,
-> &cardp->udev->dev);
-> +	return retval;
-> +}
-> +
-> +#else
-> +static int try_olpc_fw(struct if_usb_card *cardp) { return -ENOENT; }
-> +#endif /* !CONFIG_OLPC */
-> +
->  static int get_fw(struct if_usb_card *cardp, const char *fwname)
->  {
->  	int i;
-> @@ -981,6 +1001,10 @@ static int get_fw(struct if_usb_card *cardp,
-> const char *fwname) if (fwname)
->  		return request_firmware(&cardp->fw, fwname,
-> &cardp->udev->dev); 
-> +	/* Handle OLPC firmware */
-> +	if (try_olpc_fw(cardp) == 0)
-> +		return 0;
-> +
->  	/* Otherwise search for firmware to use */
->  	for (i = 0; i < ARRAY_SIZE(fw_table); i++) {
->  		if (fw_table[i].model != cardp->model)
+> And in non-journal mode, there is not copy of any meta data block in jbd2, we need to be
+> more careful in check summing, e.g. inode/block bitmap blocks...
 
+	Sure, but you could use a trigger in journaled mode and then do
+the checksums directly in the __ext4_handle_journal_dirty_*() functions
+in non-journaled mode.  Sure, it would be a little more CPU time, but
+the user picked "checksums + no journal" at mkfs time.
+
+Joel
+
+-- 
+
+ Joel's Second Law:
+
+	If a code change requires additional user setup, it is wrong.
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
