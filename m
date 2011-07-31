@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab1GaWok (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 18:44:40 -0400
-Received: from mail.perches.com ([173.55.12.10]:4414 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751697Ab1GaWoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 18:44:37 -0400
-Subject: Re: [PATCH] Fix leak in
- drivers/target/iscsi/iscsi_target_parameters.c::iscsi_copy_param_list()
-From: Joe Perches <joe@perches.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Andy Grover <agrover@redhat.com>, Roland Dreier <roland@kernel.org>,
-        Christoph Hellwig <hch@lst.de>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <alpine.LNX.2.00.1108010017030.28695@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1108010017030.28695@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 31 Jul 2011 15:44:34 -0700
-Message-ID: <1312152274.11635.8.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753013Ab1GaWsn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 18:48:43 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:33163 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697Ab1GaWsj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 18:48:39 -0400
+Date: Sun, 31 Jul 2011 23:48:35 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Arnaud Lacombe <lacombar@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: [PATCH 1/5] um: Use __i386__ in ifdef for vsyscall exports, not
+ SUBARCH_i386
+Message-ID: <20110731224834.GC2203@ZenIV.linux.org.uk>
+References: <1312066693.22074.50.camel@i7.infradead.org>
+ <1312066923.22074.53.camel@i7.infradead.org>
+ <CAFLxGvy0QqoySDFwZpygHeXvQ7hG-B7z5iZq8qx3GUkFX8w2RQ@mail.gmail.com>
+ <1312151063.18010.25.camel@i7.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312151063.18010.25.camel@i7.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-01 at 00:28 +0200, Jesper Juhl wrote:
-> We leak memory if the allocations for 'new_param->name' or 'new_param->value' fail.
-> We also do a lot of variable assignments that are completely pointless
-> if the allocations fail.
-> So, let's move the allocations before the assignments and also make
-> sure that we free whatever was allocated to one if the allocation for
-> another fails.
+On Sun, Jul 31, 2011 at 11:24:21PM +0100, David Woodhouse wrote:
+> On Mon, 2011-08-01 at 00:11 +0200, richard -rw- weinberger wrote:
+> > 
+> > Why do we need this? 
+> 
+> The arch/x86_64 and arch/i386 directories were removed from the kernel
+> four years ago, and replaced by the 'x86' arch. UML is still dependent
+> on the legacy SUBARCH=i386 and SUBARCH=x86_64 settings, and the patch
+> sequence I just posted makes it cope with SUBARCH=x86.
 
-> diff --git a/drivers/target/iscsi/iscsi_target_parameters.c b/drivers/target/iscsi/iscsi_target_parameters.c
-[]
-> +		new_param->name = kmalloc(strlen(param->name) + 1, GFP_KERNEL);
-> +		new_param->value = kmalloc(strlen(param->value) + 1, GFP_KERNEL);
-[]
->  		memcpy(new_param->name, param->name, strlen(param->name));
->  		new_param->name[strlen(param->name)] = '\0';
->  		memcpy(new_param->value, param->value, strlen(param->value));
-
-kstrdup
-
+Hell, no.  If you want to do it, do it the right way.  See #x86_merge in
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/um-header.git/
