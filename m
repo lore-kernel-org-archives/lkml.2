@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab1GaAaM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 20:30:12 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37875 "EHLO
+	id S1752724Ab1GaAgZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 20:36:25 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39980 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681Ab1GaAaC (ORCPT
+	with ESMTP id S1752275Ab1GaAgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 20:30:02 -0400
+	Sat, 30 Jul 2011 20:36:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <afe9e5154d96c0f44c64c411c98b5db75969db6c.1311936524.git.viresh.kumar@st.com>
+In-Reply-To: <c1cb9cd2abc64b4efdc3648896324a1821fdba3e.1311936524.git.viresh.kumar@st.com>
 References: <cover.1311936523.git.viresh.kumar@st.com>
-	<afe9e5154d96c0f44c64c411c98b5db75969db6c.1311936524.git.viresh.kumar@st.com>
-Date: Sun, 31 Jul 2011 02:30:01 +0200
-X-Google-Sender-Auth: 4v-1IKrmo1Ft2exEYu7cDbEaILo
-Message-ID: <CAKnu2MobCaCNLf_GTm=1T=nBWB8pe8_dYQUx77XKnceNGtGogw@mail.gmail.com>
-Subject: Re: [PATCH 13/18] dmaengine/amba-pl08x: Align lli_len to
- max(src.width, dst.width)
+	<c1cb9cd2abc64b4efdc3648896324a1821fdba3e.1311936524.git.viresh.kumar@st.com>
+Date: Sun, 31 Jul 2011 02:36:20 +0200
+X-Google-Sender-Auth: MRi0w9hTQ_nA8ywD3XlQ3xTpMvg
+Message-ID: <CAKnu2MobiWWL_sC2vGE5bUM-n_uG+awVHAJVyjjxYTBcjXHGUA@mail.gmail.com>
+Subject: Re: [PATCH 14/18] dmaengine/amba-pl08x: Choose peripheral bus as
+ master bus
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Viresh Kumar <viresh.kumar@st.com>
 Cc: pratyush.anand@st.com, rajeev-dlh.kumar@st.com, linux@arm.linux.org.uk,
@@ -31,11 +31,17 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 2011/7/29 Viresh Kumar <viresh.kumar@st.com>:
 
-> Currently lli_len is aligned to min of two widths, which looks to be incorrect.
-> Instead it should be aligned to max of both widths.
+> When we have DMA transfers between peripheral and memory, then we shouldn't
+> reduce width of peripheral at all, as that may be a strict requirement. But we
+> can always reduce width of memory access, with some compromise in performance.
+> Thus, we must select peripheral as master and not memory.
+>
+> Also this rearranges code to make it shorter.
+>
+> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 
-Again, a great and well researched patch.
+Looks correct to me!
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Yours,
+Thanks,
 Linus Walleij
