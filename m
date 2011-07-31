@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab1GaAFg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 30 Jul 2011 20:05:36 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:60594 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729Ab1GaAFb (ORCPT
+	id S1752427Ab1GaAJh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 30 Jul 2011 20:09:37 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42763 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886Ab1GaAJd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 30 Jul 2011 20:05:31 -0400
+	Sat, 30 Jul 2011 20:09:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <4E34998D.8060806@zytor.com>
-References: <1312067499.22074.59.camel@i7.infradead.org>
-	<1312067670.22074.61.camel@i7.infradead.org>
-	<CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
-	<4E34998D.8060806@zytor.com>
-Date: Sat, 30 Jul 2011 20:05:30 -0400
-Message-ID: <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
+In-Reply-To: <1e1f287888a2ce9affdcbded8f63028fa3f6b09b.1311936524.git.viresh.kumar@st.com>
+References: <cover.1311936523.git.viresh.kumar@st.com>
+	<1e1f287888a2ce9affdcbded8f63028fa3f6b09b.1311936524.git.viresh.kumar@st.com>
+Date: Sun, 31 Jul 2011 02:09:33 +0200
+X-Google-Sender-Auth: YGd__lBiDbxM-EFf5T7uMf9Rkg8
+Message-ID: <CAKnu2MrtC9uqguPKFXYJnzys6hMMnMU9eBsGQ0DXkP67ZzOnVA@mail.gmail.com>
+Subject: Re: [PATCH 08/18] dmaengine/amba-pl08x: No need to check "ch->signal
+ < 0"
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, armando.visconti@st.com, shiraz.hashim@st.com,
+        vipin.kumar@st.com, rajeev-dlh.kumar@st.com, deepak.sikri@st.com,
+        vipulkumar.samar@st.com, amit.virdi@st.com, pratyush.anand@st.com,
+        bhupesh.sharma@st.com, viresh.linux@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2011/7/29 Viresh Kumar <viresh.kumar@st.com>:
 
-On Sat, Jul 30, 2011 at 7:53 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 07/30/2011 04:44 PM, Arnaud Lacombe wrote:
->>
->> Beside that, the one thing I dislike with your patch is that it is
->> unconditional and global to all symbols, and you have no way to forbid
->> the environment to override a value.
->>
+> We have just executed following in pl08x_get_phy_channel():
+>        ch->signal = -1;
+> We don't have to compare "ch->signal < 0", as this will always be true.
 >
-> Why????
->
-Because kconfig might not be ran exclusively from a fully controlled
-and restricted environment ? Not to mention that it is used by other
-people than the linux kernel folks.
+> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 
- - Arnaud
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Thanks,
+Linus Walleij
