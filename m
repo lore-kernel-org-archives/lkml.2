@@ -1,201 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab1GaQV1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 12:21:27 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39695 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab1GaQVX (ORCPT
+	id S1752468Ab1GaQVo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 12:21:44 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:45507 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208Ab1GaQVi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 12:21:23 -0400
-Date: Mon, 1 Aug 2011 01:21:13 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH v4 06/10] migration: introudce migrate_ilru_pages
-Message-ID: <20110731162113.GA2864@barrios-desktop>
-References: <cover.1309787991.git.minchan.kim@gmail.com>
- <132686a2ab204bb917bea5faa4eb5cb797940518.1309787991.git.minchan.kim@gmail.com>
- <20110727131357.cc5a42ce.akpm@linux-foundation.org>
+	Sun, 31 Jul 2011 12:21:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110727131357.cc5a42ce.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1107311134490.30666@linux>
+References: <alpine.LNX.2.00.1107311134490.30666@linux>
+Date: Sun, 31 Jul 2011 12:21:37 -0400
+Message-ID: <CACqU3MX7f2oNpDf6W124tfROfKq4PFsyvxiq=VtPJfv-gqUrww@mail.gmail.com>
+Subject: Re: kbuild: prevent make from deleting _shipped files
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Peter Foley <pefoley2@verizon.net>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
+        mmarek@suse.cz
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 01:13:57PM -0700, Andrew Morton wrote:
-> On Mon,  4 Jul 2011 23:04:39 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
-> 
-> > This patch defines new APIs to put back new page into old page's position as LRU order.
-> > for LRU churning of compaction.
-> > 
-> > The idea I suggested in LSF/MM is simple.
-> >
-> > ...
-> >
-> > +static bool same_lru(struct page *page, struct page *prev)
-> > +{
-> > +	bool ret = false;
-> > +	if (!prev || !PageLRU(prev))
-> 
-> Both parts of this test need explanations so readers can understand why
-> they are here.
-> 
-> > +		goto out;
-> > +
-> > +	if (unlikely(PageUnevictable(prev)))
-> 
-> As does this.
+Hi,
 
-Will do.
+On Sun, Jul 31, 2011 at 11:37 AM, Peter Foley <pefoley2@verizon.net> wrote:
+> commit 7373f4f (kbuild: add implicit rules for parser generation)
+> created a implicit rule chain (%.c: %.c_shipped: %.y). This causes make to delete the _shipped files
+> because it considers them intermediate files. Mark the _shipped files PRECIOUS
+> to prevent make from deleting them.
+>
+> Signed-off-by: Peter Foley <pefoley2@verizon.net>
+What make are you using, and what command triggers the issue ?
 
-> 
-> > +		goto out;
-> > +
-> > +	if (page_lru_base_type(page) != page_lru_base_type(prev))
-> > +		goto out;
-> 
-> This (and testing for PageLRU) is the only part of this function whcih
-> is sufficiently obvious to leave undocumented.
+Those rules should only be visible on parser regeneration (ie.
+REGENERATE_PARSERS defined). make 3.82 does not seem to trigger the
+issue:
 
-> 
-> > +	ret = true;
-> > +out:
-> > +	return ret;
-> > +}
-> > +
-> > +void putback_ilru_pages(struct inorder_lru *l)
-> > +{
-> > +	struct zone *zone;
-> > +	struct page *page, *page2, *prev;
-> > +
-> > +	list_for_each_ilru_entry_safe(page, page2, l, ilru) {
-> > +		ilru_list_del(page, l);
-> > +		dec_zone_page_state(page, NR_ISOLATED_ANON +
-> > +				page_is_file_cache(page));
-> > +		zone = page_zone(page);
-> > +		spin_lock_irq(&zone->lru_lock);
-> > +		prev = page->ilru.prev_page;
-> > +		if (same_lru(page, prev)) {
-> > +			putback_page_to_lru(page, prev);
-> > +			spin_unlock_irq(&zone->lru_lock);
-> > +			put_page(page);
-> > +		} else {
-> > +			spin_unlock_irq(&zone->lru_lock);
-> > +			putback_lru_page(page);
-> > +		}
-> > +	}
-> > +}
-> 
-> This function takes lru_lock at lest once per page, up to twice per
-> page.  The spinlocking frequency here could be optimised tremendously.
+% make -v
+GNU Make 3.82
 
-Yes. Mel is pointed out and I sent a [8/10] patch about it.
+% make REGENERATE_PARSERS=y defconfig
+  HOSTCC  scripts/basic/fixdep
+  HOSTCC  scripts/kconfig/conf.o
+  SHIPPED scripts/kconfig/zconf.tab.c
+  SHIPPED scripts/kconfig/zconf.lex.c
+  SHIPPED scripts/kconfig/zconf.hash.c
+  HOSTCC  scripts/kconfig/zconf.tab.o
+  HOSTLD  scripts/kconfig/conf
+*** Default configuration is based on 'x86_64_defconfig'
+[...]
 
-> 
-> The trick of hanging onto zone->lru_lock is the zone didn't change gets
-> hard if we want to do a put_page() inside the loop.
-> 
-> We have functions "putback_page_to_lru()" and "putback_lru_page()". 
-> Ugh.  Can we think of better naming?
+The shipped file are still there:
 
-Yes. The name is bad but It's disappeared at [8/10].
+% ls scripts/kconfig/*_shipped
+scripts/kconfig/zconf.hash.c_shipped
+scripts/kconfig/zconf.lex.c_shipped
+scripts/kconfig/zconf.tab.c_shipped
 
-> 
-> Does this function even need to exist if CONFIG_MIGRATION=n?
+Thanks,
+ - Arnaud
 
-Of course, NOT.
-I will nullify it in case of no migration.
-
-> 
-> > +/*
-> >   * Restore a potential migration pte to a working pte entry
-> >   */
-> >
-> > ...
-> >
-> > +void __put_ilru_pages(struct page *page, struct page *newpage,
-> > +		struct inorder_lru *prev_lru, struct inorder_lru *ihead)
-> 
-> The function name leaves me wondering where we put the pages, and
-> there's no documentation telling me.
-
-It seems remained thing to me is to add documentation.
-I will add documentation in next version.
-
-> 
-> > +{
-> > +	struct page *prev_page;
-> > +	struct zone *zone;
-> > +	prev_page = page->ilru.prev_page;
-> > +	/*
-> > +	 * A page that has been migrated has all references
-> > +	 * removed and will be freed. A page that has not been
-> > +	 * migrated will have kepts its references and be
-> > +	 * restored.
-> > +	 */
-> > +	ilru_list_del(page, prev_lru);
-> > +	dec_zone_page_state(page, NR_ISOLATED_ANON +
-> > +			page_is_file_cache(page));
-> > +
-> > +	/*
-> > +	 * Move the new page to the LRU. If migration was not successful
-> > +	 * then this will free the page.
-> > +	 */
-> > +	zone = page_zone(newpage);
-> > +	spin_lock_irq(&zone->lru_lock);
-> > +	if (same_lru(page, prev_page)) {
-> > +		putback_page_to_lru(newpage, prev_page);
-> > +		spin_unlock_irq(&zone->lru_lock);
-> > +		/*
-> > +		 * The newpage replaced LRU position of old page and
-> > +		 * old one would be freed. So let's adjust prev_page of pages
-> > +		 * remained in inorder_lru list.
-> > +		 */
-> > +		adjust_ilru_prev_page(ihead, page, newpage);
-> > +		put_page(newpage);
-> > +	} else {
-> > +		spin_unlock_irq(&zone->lru_lock);
-> > +		putback_lru_page(newpage);
-> > +	}
-> 
-> The same spinlocking frequency issue.
-> 
-> > +	putback_lru_page(page);
-> > +}
-> > +
-> >
-> > ...
-> >
-> > +int migrate_ilru_pages(struct inorder_lru *ihead, new_page_t get_new_page,
-> > +		unsigned long private, bool offlining, bool sync)
-> > +{
-> > +	int retry = 1;
-> > +	int nr_failed = 0;
-> > +	int pass = 0;
-> > +	struct page *page, *page2;
-> > +	struct inorder_lru *prev;
-> > +	int swapwrite = current->flags & PF_SWAPWRITE;
-> > +	int rc;
-> > +
-> > +	if (!swapwrite)
-> > +		current->flags |= PF_SWAPWRITE;
-> > +
-> > +	for (pass = 0; pass < 10 && retry; pass++) {
-> 
-> That ten-passes thing was too ugly to live, and now it's breeding.  Argh.
-
-Personally, I hope we remove it.
-I will consider it later version or as independent patch.
-Thanks for the review, Andrew!
--- 
-Kind regards,
-Minchan Kim
+> ---
+>
+> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+> index aeea84a..5d986d9 100644
+> --- a/scripts/Makefile.lib
+> +++ b/scripts/Makefile.lib
+> @@ -167,6 +167,7 @@ ifdef REGENERATE_PARSERS
+>  quiet_cmd_gperf = GPERF $@
+>       cmd_gperf = gperf -t --output-file $@ -a -C -E -g -k 1,3,$$ -p -t $<
+>
+> +.PRECIOUS: $(src)/%.hash.c_shipped
+>  $(src)/%.hash.c_shipped: $(src)/%.gperf
+>        $(call cmd,gperf)
+>
+> @@ -177,6 +178,7 @@ LEX_PREFIX = $(if $(LEX_PREFIX_${baseprereq}),$(LEX_PREFIX_${baseprereq}),yy)
+>  quiet_cmd_flex = LEX     $@
+>       cmd_flex = flex -o$@ -L -P $(LEX_PREFIX) $<
+>
+> +.PRECIOUS: $(src)/%.lex.c_shipped
+>  $(src)/%.lex.c_shipped: $(src)/%.l
+>        $(call cmd,flex)
+>
+> @@ -187,12 +189,14 @@ YACC_PREFIX = $(if $(YACC_PREFIX_${baseprereq}),$(YACC_PREFIX_${baseprereq}),yy)
+>  quiet_cmd_bison = YACC    $@
+>       cmd_bison = bison -o$@ -t -l -p $(YACC_PREFIX) $<
+>
+> +.PRECIOUS: $(src)/%.tab.c_shipped
+>  $(src)/%.tab.c_shipped: $(src)/%.y
+>        $(call cmd,bison)
+>
+>  quiet_cmd_bison_h = YACC    $@
+>       cmd_bison_h = bison -o/dev/null --defines=$@ -t -l -p $(YACC_PREFIX) $<
+>
+> +.PRECIOUS: $(src)/%.tab.h_shipped
+>  $(src)/%.tab.h_shipped: $(src)/%.y
+>        $(call cmd,bison_h)
+>
+>
