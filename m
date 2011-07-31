@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab1GaPYQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 11:24:16 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:42907 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab1GaPYM (ORCPT
+	id S1752066Ab1GaPcc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 11:32:32 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63060 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab1GaPc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 11:24:12 -0400
-Date: Mon, 1 Aug 2011 00:24:01 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, XFS <xfs@oss.sgi.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 7/8] mm: vmscan: Immediately reclaim end-of-LRU dirty
- pages when writeback completes
-Message-ID: <20110731152401.GE1735@barrios-desktop>
-References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
- <1311265730-5324-8-git-send-email-mgorman@suse.de>
- <1311339228.27400.34.camel@twins>
- <20110722132319.GX5349@suse.de>
+	Sun, 31 Jul 2011 11:32:29 -0400
+Date: Sun, 31 Jul 2011 19:32:25 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Francis Moreau <francis.moro@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: v3.0: Weird kernel log message when resuming avout NMI received
+Message-ID: <20110731153225.GJ2209@sun>
+References: <CAC9WiBgbhLomH_CtLGKyxm2xD9=h1nJAy=-b24GOaUV+hg7bNg@mail.gmail.com>
+ <20110731110641.GG2209@sun>
+ <CAC9WiBgg+To8ggUvTqxOCy2hgb=XQCRH6D_0HFy4sEEoF8R0rw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110722132319.GX5349@suse.de>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAC9WiBgg+To8ggUvTqxOCy2hgb=XQCRH6D_0HFy4sEEoF8R0rw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 02:23:19PM +0100, Mel Gorman wrote:
-> On Fri, Jul 22, 2011 at 02:53:48PM +0200, Peter Zijlstra wrote:
-> > On Thu, 2011-07-21 at 17:28 +0100, Mel Gorman wrote:
-> > > When direct reclaim encounters a dirty page, it gets recycled around
-> > > the LRU for another cycle. This patch marks the page PageReclaim
-> > > similar to deactivate_page() so that the page gets reclaimed almost
-> > > immediately after the page gets cleaned. This is to avoid reclaiming
-> > > clean pages that are younger than a dirty page encountered at the
-> > > end of the LRU that might have been something like a use-once page.
-> > > 
-> > 
-> > > @@ -834,7 +834,15 @@ static unsigned long shrink_page_list(struct list_head *page_list,
-> > >  			 */
-> > >  			if (page_is_file_cache(page) &&
-> > >  					(!current_is_kswapd() || priority >= DEF_PRIORITY - 2)) {
-> > > -				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
-> > > +				/*
-> > > +				 * Immediately reclaim when written back.
-> > > +				 * Similar in principal to deactivate_page()
-> > > +				 * except we already have the page isolated
-> > > +				 * and know it's dirty
-> > > +				 */
-> > > +				inc_zone_page_state(page, NR_VMSCAN_INVALIDATE);
-> > > +				SetPageReclaim(page);
-> > > +
-> > 
-> > I find the invalidate name somewhat confusing. It makes me think we'll
-> > drop the page without writeback, like invalidatepage().
+On Sun, Jul 31, 2011 at 05:20:15PM +0200, Francis Moreau wrote:
+> Hi Cyrill
 > 
-> I wasn't that happy with it either to be honest but didn't think of a
-> better one at the time. nr_reclaim_deferred?
-
-How about "NR_VMSCAN_IMMEDIATE_RECLAIM" like comment rotate_reclaimable_page?
-
+> On Sun, Jul 31, 2011 at 1:06 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> > On Sun, Jul 31, 2011 at 08:56:30AM +0200, Francis Moreau wrote:
+> >> Hello,
+> >>
+> >> I'm seeing those kernel message when resuming:
+> >>
+> >> [  524.973283] Uhhuh. NMI received for unknown reason 3d on CPU 0.
+> >> [  524.973288] Do you have a strange power saving mode enabled?
+> >> [  524.973289] Dazed and confused, but trying to continue
+> >>
+> >> I don't know if it's important or not because the system seems to work
+> >> after but maybe it worths to report
+> >>
+> >
+> > Hi Francis, cpu please?
+> >
 > 
-> -- 
-> Mel Gorman
-> SUSE Labs
+> Still the same which causes some kvm-tools madness ;)
+> 
 
--- 
-Kind regards,
-Minchan Kim
+OK, thanks Francis, I've CC'ed a couple of people involved into
+x86 perf implementation. I believe at moment of wakeup we could
+drop any/all overflow flags in perf registers (still didn't look
+into, will try to find some time a bit later).
+
+	Cyrill
