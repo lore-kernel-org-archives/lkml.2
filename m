@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab1GaIJG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 04:09:06 -0400
-Received: from mail.perches.com ([173.55.12.10]:4403 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753166Ab1GaIIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 04:08:52 -0400
-Subject: Re: [PATCH 1/2] qla2xxx: Rewrite logging functions to use %pV
-From: Joe Perches <joe@perches.com>
-To: Rolf Eike Beer <eike-kernel@sf-tec.de>
-Cc: Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-driver@qlogic.com,
-        "James E.J. Bottomley" <jbottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <256822902b9b2221e206b75f384bdc68.squirrel@webmail.sf-mail.de>
-References: <cover.1312067036.git.joe@perches.com>
-	 <f404820a01953db2c3608f90c40b8567646f079a.1312067036.git.joe@perches.com>
-	 <256822902b9b2221e206b75f384bdc68.squirrel@webmail.sf-mail.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 31 Jul 2011 01:08:50 -0700
-Message-ID: <1312099730.1558.7.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753257Ab1GaIML (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 04:12:11 -0400
+Received: from mail.windriver.com ([147.11.1.11]:61269 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752458Ab1GaIMJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 04:12:09 -0400
+Date: Sun, 31 Jul 2011 04:11:39 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: linux-next: manual merge of the moduleh tree with the v4l-dvb
+ tree
+Message-ID: <20110731081138.GK31842@windriver.com>
+References: <20110729144700.d58aad0fe07e454ac7c7ece4@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110729144700.d58aad0fe07e454ac7c7ece4@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-07-31 at 10:02 +0200, Rolf Eike Beer wrote:
-> > +	if (vha != NULL) {
-> > +		const struct pci_dev *pdev = vha->hw->pdev;
-> > +		/* <module-name> <pci-name> <msg-id>:<host> Message */
-> > +		pr_warn("%s [%s]-%04x:%ld: %pV",
-> > +			QL_MSGHDR, dev_name(&(pdev->dev)), id + ql_dbg_offset,
-> > +			vha->host_no, &vaf);
-> > +	} else {
-> > +		pr_warn("%s [%s]-%04x: : %pV",
-> > +			QL_MSGHDR, "0000:00:00.0", id + ql_dbg_offset, &vaf);
-> >  	}
-> If I would see 0000:00:00.0 in the logmessage I would become scared that
-> something is dereferencing cleared memory, use after free or whatever.
-> Only by looking into the code I could see that this code simply has no
-> idea which device it is on. Well, then don't print an address when you
-> don't have one instead of inventing one.
+[linux-next: manual merge of the moduleh tree with the v4l-dvb tree] On 29/07/2011 (Fri 14:47) Stephen Rothwell wrote:
 
-I don't disagree, but that's for Andrew to figure out
-in a separate patch.
+> Hi Paul,
+> 
+> Today's linux-next merge of the moduleh tree got a conflict in
+> sound/i2c/other/tea575x-tuner.c between commit 4522e825dbfc ("[media]
+> tea575x: convert to control framework") from the v4l-dvb tree and commit
+> a319a4d494d5 ("sound: Add module.h to the previously silent sound users")
+> from the moduleh tree.
+> 
+> Just context changes.  I fixed it up (see below) anc can carry the fix as
+> necessary.
 
-I just want to make the code smaller.
+Seems 4522e825dbfc is in master now, so I've done the fixup locally
+and you shouldn't see this crop up again.
 
-The output of the new code is the same as the old code.
+Thanks,
+Paul.
 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc sound/i2c/other/tea575x-tuner.c
+> index 484a35b,c65c624..0000000
+> --- a/sound/i2c/other/tea575x-tuner.c
+> +++ b/sound/i2c/other/tea575x-tuner.c
+> @@@ -25,8 -25,9 +25,9 @@@
+>   #include <linux/init.h>
+>   #include <linux/slab.h>
+>   #include <linux/version.h>
+> + #include <linux/module.h>
+>  -#include <sound/core.h>
+>  +#include <media/v4l2-dev.h>
+>  +#include <media/v4l2-ioctl.h>
+>   #include <sound/tea575x-tuner.h>
+>   
+>   MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
