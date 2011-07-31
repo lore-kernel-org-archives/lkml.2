@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230Ab1GaQuR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 12:50:17 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:61583 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab1GaQuL (ORCPT
+	id S1752432Ab1GaQ56 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 12:57:58 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40226 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833Ab1GaQ5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 12:50:11 -0400
-Message-ID: <4E3587C0.4040406@gmail.com>
-Date: Sun, 31 Jul 2011 18:50:08 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Robert Richter <robert.richter@amd.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] oprofile, x86: Move memory allocation to init
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 31 Jul 2011 12:57:53 -0400
+Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
+From: David Woodhouse <dwmw2@infradead.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Roman Zippel <zippel@linux-m68k.org>
+Date: Sun, 31 Jul 2011 17:57:46 +0100
+In-Reply-To: <20110731093740.39f7fbc3.rdunlap@xenotime.net>
+References: <1312067499.22074.59.camel@i7.infradead.org>
+	 <1312067670.22074.61.camel@i7.infradead.org>
+	 <CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com>
+	 <4E34998D.8060806@zytor.com>
+	 <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
+	 <4E34A1E4.8040103@zytor.com>
+	 <CACqU3MVkLXoBq7KP2Jff=p7EiKR7DkPa4z7y0Rdah-dGzRvj4g@mail.gmail.com>
+	 <1312097621.22074.71.camel@i7.infradead.org>
+	 <20110731093740.39f7fbc3.rdunlap@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1312131467.22074.95.camel@i7.infradead.org>
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ppro_setup_ctrs is called on all cpu's, while init is only called once.
+On Sun, 2011-07-31 at 09:37 -0700, Randy Dunlap wrote:
+> Simple question:  what does "ARCH=x86" mean?
+> 
+> It doesn't mean anything to me without SUBARCH or nnBIT specified.
 
-Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+SUBARCH is meaningless for a native build; it's only for ARCH=um. So I
+don't know why that would make anything more meaningful to you.
 
----
-Fixes oprofile on 3.0 rt6.
+And why would CONFIG_64BIT make a difference either? Or conversely: why
+do CONFIG_PAE, CONFIG_LITTLE_ENDIAN, etc. *not* make a difference to
+your understanding?
 
-diff --git a/arch/x86/oprofile/op_model_ppro.c b/arch/x86/oprofile/op_model_ppro.c
-index 94b7450..53a84fc 100644
---- a/arch/x86/oprofile/op_model_ppro.c
-+++ b/arch/x86/oprofile/op_model_ppro.c
-@@ -79,13 +79,6 @@ static void ppro_setup_ctrs(struct op_x86_model_spec const *model,
- 	u64 val;
- 	int i;
- 
--	if (!reset_value) {
--		reset_value = kzalloc(sizeof(reset_value[0]) * num_counters,
--					GFP_ATOMIC);
--		if (!reset_value)
--			return;
--	}
--
- 	if (cpu_has_arch_perfmon) {
- 		union cpuid10_eax eax;
- 		eax.full = cpuid_eax(0xa);
-@@ -228,7 +221,7 @@ struct op_x86_model_spec op_ppro_spec = {
-  * the specific CPU.
-  */
- 
--static void arch_perfmon_setup_counters(void)
-+static int arch_perfmon_setup_counters(void)
- {
- 	union cpuid10_eax eax;
- 
-@@ -246,12 +239,17 @@ static void arch_perfmon_setup_counters(void)
- 
- 	op_arch_perfmon_spec.num_counters = num_counters;
- 	op_arch_perfmon_spec.num_controls = num_counters;
-+
-+	reset_value = kzalloc(sizeof(reset_value[0]) * num_counters,
-+				GFP_KERNEL);
-+	if (!reset_value)
-+		return -ENOMEM;
-+	return 0;
- }
- 
- static int arch_perfmon_init(struct oprofile_operations *ignore)
- {
--	arch_perfmon_setup_counters();
--	return 0;
-+	return arch_perfmon_setup_counters();
- }
- 
- struct op_x86_model_spec op_arch_perfmon_spec = {
+ARCH=x86 means exactly what it says: "build a kernel for the x86
+architecture".
 
+Just like ARCH=mips means "build a kernel for MIPS" and ARCH=sparc means
+"build a kernel for SPARC", and ARCH=parisc means "build a kernel for
+PARISC", and ARCH=powerpc means "build a kernel for PowerPC". and
+ARCH=s390 means "build a kernel for S390".
+
+In *all* of those cases, CONFIG_64BIT is just one more configuration
+option; one of *many* that define what actual hardware the kernel
+supports.
+
+-- 
+dwmw2
 
