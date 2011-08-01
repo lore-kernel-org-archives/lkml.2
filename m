@@ -1,545 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab1HAQFF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 12:05:05 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:57139 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464Ab1HAQE7 convert rfc822-to-8bit (ORCPT
+	id S1753161Ab1HAQIR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 12:08:17 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:36492 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752464Ab1HAQIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 12:04:59 -0400
+	Mon, 1 Aug 2011 12:08:09 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110527081251.3992.27574.stgit@ponder>
-References: <20110527081251.3992.27574.stgit@ponder>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 1 Aug 2011 17:04:37 +0100
-X-Google-Sender-Auth: FXkoFTbfvwsMBH2hAWIbldt6YjQ
-Message-ID: <CACxGe6vO=dtFmG4r5Da+T1EOknEofjEHqg_Jc_TCagju-no9mQ@mail.gmail.com>
-Subject: Re: [PATCH] input: Add Nintendo extension controller driver
-To: Fabien Marteau <fabien.marteau@armadeus.com>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+In-Reply-To: <CAGZ=bqL=VAx5jnSBkE2q5KJSY_+An-VRTRAzJmJ3waQUvrRFFg@mail.gmail.com>
+References: <1312042478-26012-1-git-send-email-zdevai@gmail.com>
+	<20110801083614.GC15578@n2100.arm.linux.org.uk>
+	<CAMuHMdUpTDSRP_JmWqcCBtYwzna0hwmaBshpiF8kgvqoNcqYZA@mail.gmail.com>
+	<20110801101410.GE15578@n2100.arm.linux.org.uk>
+	<CAMuHMdUiLjMVwOqKPF6tHLpPxROrx=rRf3ednfTLrwGuZ2VF7A@mail.gmail.com>
+	<CACqU3MVUxTYmD+4VGBAeN8PTs83fR0xQQrQS5h4QGMZXgMxEvA@mail.gmail.com>
+	<CAGZ=bqL=VAx5jnSBkE2q5KJSY_+An-VRTRAzJmJ3waQUvrRFFg@mail.gmail.com>
+Date: Mon, 1 Aug 2011 12:08:08 -0400
+Message-ID: <CACqU3MUoxSNmcYsSF4zOTgADdedb7TcciPuBPMviG02M5oUPDQ@mail.gmail.com>
+Subject: Re: [PATCH] Remove remaining references of CONFIG_GENERIC_TIME
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Kyle Moffett <kyle@moffetthome.net>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Zoltan Devai <zdevai@gmail.com>, linux-kernel@vger.kernel.org,
+        chris@zankel.net, linux-am33-list@redhat.com, trivial@kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net, cmetcalf@tilera.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+Hi,
 
-Any thoughts on this patch?  Can you send it on to Linus?
+On Mon, Aug 1, 2011 at 11:15 AM, Kyle Moffett <kyle@moffetthome.net> wrote:
+> On Mon, Aug 1, 2011 at 11:04, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>> Hi,
+>>
+>> On Mon, Aug 1, 2011 at 7:27 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>>> On Mon, Aug 1, 2011 at 12:14, Russell King - ARM Linux
+>>>>>[...]
+>>>>>
+>>>>> Doesn't kconf error out when trying to select a non-existent symbol?
+>>>>
+>>>> Nope.
+>>>
+>>> You're right. So that's a bug.
+>>>
+>> depends on what you are trying to achieve and what the problem is.
+>>
+>> Internally kconfig will create a dummy symbol when it encounter a
+>> missing symbol so that arch/arm/Kconfig can reference a symbol which
+>> will be fully defined later on. I do not think you want to forward
+>> decl all the symbol which can be used. That'd be a mess. That said, we
+>> can come with a form of symbol deprecation that would error-out when
+>> used.
+>
+> Would it be possible instead to make Kconfig go through all the symbols
+> after everything is processed and identify any remaining "dummy symbols"
+> which were not actually declared anywhere?
+>
+this is software, everything is possible.
 
-Thanks,
-g.
+> Right now if you typo a "select" statement you get no warnings that you
+> are selecting something that does not exist, which is probably a cause
+> of many kinds of errors beyond this particular one.
+>
+d'oh! ... I'm not sure we want that. Dummy symbol are heavily used
+internally, a trivial implementation[0] triggered:
 
-On Fri, May 27, 2011 at 9:14 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> This driver adds support for Nintendo Wiimote extension controllers
-> directly attached to an i2c bus, such as when using an adaptor like
-> the Wiichuck.
->
-> v3: - Fixed and tested classic controller connection
->    - Fixed comment block
-> v2: - Fixed DMA buffers on stack problem
->    - added classic controller support
->
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
-> I've actually got my hands on a classic controller now, so this driver
-> has been tested with both nunchuck and classic controller.  I leave adding
-> support for the motionplus to someone who actually has the hardware.  :)
->
-> This driver should be ready for merging now.
->
-> g.
->
->  drivers/input/joystick/Kconfig    |   13 +
->  drivers/input/joystick/Makefile   |    1
->  drivers/input/joystick/wiichuck.c |  435 +++++++++++++++++++++++++++++++++++++
->  3 files changed, 449 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/input/joystick/wiichuck.c
->
-> diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
-> index 56eb471..5b7fba7 100644
-> --- a/drivers/input/joystick/Kconfig
-> +++ b/drivers/input/joystick/Kconfig
-> @@ -193,6 +193,19 @@ config JOYSTICK_TWIDJOY
->          To compile this driver as a module, choose M here: the
->          module will be called twidjoy.
->
-> +config JOYSTICK_WIICHUCK
-> +       tristate "Nintendo Wiimote Extension connector on i2c bus"
-> +       depends on I2C
-> +       select INPUT_POLLDEV
-> +       help
-> +         Say Y here if you have a Nintendo Wiimote extension connector
-> +         attached directly to an i2c bus, like the Sparcfun Wiichuck adapter
-> +         board.  This driver supports both the Nunchuck and the Classic
-> +         Controller extensions.
-> +
-> +         To compile this driver as a module, choose M here: the
-> +         modules will be called wiichuck.
-> +
->  config JOYSTICK_ZHENHUA
->        tristate "5-byte Zhenhua RC transmitter"
->        select SERIO
-> diff --git a/drivers/input/joystick/Makefile b/drivers/input/joystick/Makefile
-> index 92dc0de..78466d6 100644
-> --- a/drivers/input/joystick/Makefile
-> +++ b/drivers/input/joystick/Makefile
-> @@ -29,6 +29,7 @@ obj-$(CONFIG_JOYSTICK_TMDC)           += tmdc.o
->  obj-$(CONFIG_JOYSTICK_TURBOGRAFX)      += turbografx.o
->  obj-$(CONFIG_JOYSTICK_TWIDJOY)         += twidjoy.o
->  obj-$(CONFIG_JOYSTICK_WARRIOR)         += warrior.o
-> +obj-$(CONFIG_JOYSTICK_WIICHUCK)                += wiichuck.o
->  obj-$(CONFIG_JOYSTICK_XPAD)            += xpad.o
->  obj-$(CONFIG_JOYSTICK_ZHENHUA)         += zhenhua.o
->  obj-$(CONFIG_JOYSTICK_WALKERA0701)     += walkera0701.o
-> diff --git a/drivers/input/joystick/wiichuck.c b/drivers/input/joystick/wiichuck.c
-> new file mode 100644
-> index 0000000..ab26c34b
-> --- /dev/null
-> +++ b/drivers/input/joystick/wiichuck.c
-> @@ -0,0 +1,435 @@
-> +/*
-> + * i2c Wiichuck driver (Nintendo Wiimote accessory connector)
-> + *
-> + * This driver supports Nintendo Wiimote accessories like the Nunchuck and
-> + * the Classic Controller connected to an i2c bus.
-> + *
-> + * Copyright (c) 2011 Secret Lab Technologies Ltd.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of version 2 of the GNU General Public License as
-> + * published by the Free Software Foundation.
-> + *
-> + * This driver uses the polled input device abstraction to implement an
-> + * input driver for Nintendo expansion devices wired up to an i2c bus.
-> + *
-> + * A state machine implements the protocol handling.  It starts in the
-> + * DISCONNECTED state initially and polls every second waiting for a
-> + * device to get attached, and reading the device id when one does.
-> + * If the device is recognized, then the polling period is bumped
-> + * to 100ms, and the state machine enters into a loop reading the data
-> + * capture reports out of the controller.  If at any time the device
-> + * is disconnected, then it goes back to DISCONNECTED state and bumps
-> + * the polling frequency back to 1 second.
-> + *
-> + * A callback is implemented for each supported devices, currently the
-> + * Nunchuck and the Classic Controller.  Wii Motion Plus has yet to be
-> + * added.
-> + */
-> +
-> +#include <linux/cache.h>
-> +#include <linux/delay.h>
-> +#include <linux/i2c.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/input.h>
-> +#include <linux/input-polldev.h>
-> +#include <linux/mod_devicetable.h>
-> +#include <linux/slab.h>
-> +
-> +MODULE_AUTHOR("Grant Likely <grant.likely@secretlab.ca>");
-> +MODULE_DESCRIPTION("Wiichuck (i2c Nintendo Wiimote accessory) driver");
-> +MODULE_LICENSE("GPL");
-> +
-> +#define WIICHUCK_POLL_PERIOD   (1000)  /* 1 second */
-> +#ifdef DEBUG
-> +#define WIICHUCK_CAPTURE_PERIOD (500)  /* 1/2 second for debug */
-> +#else
-> +#define WIICHUCK_CAPTURE_PERIOD (100)  /* 100 milliseconds */
-> +#endif /* DEBUG */
-> +
-> +enum wiichuck_state {
-> +       WIICHUCK_STATE_DISCONNECTED = 0,
-> +       WIICHUCK_STATE_DATA,
-> +};
-> +
-> +struct wiichuck_device {
-> +       struct input_polled_dev *poll_dev;
-> +       struct i2c_client *i2c_client;
-> +       int (*process)(struct wiichuck_device *wiichuck);
-> +       enum wiichuck_state state;
-> +
-> +       /* transfer buffer, aligned to cache line so it can be used with DMA */
-> +       uint8_t buf[6] ____cacheline_aligned;
-> +};
-> +
-> +static int wiichuck_transfer(struct wiichuck_device *wiichuck,
-> +                            int len, bool read)
-> +{
-> +       struct i2c_client *i2c = wiichuck->i2c_client;
-> +       struct i2c_msg msg = {
-> +               .addr = i2c->addr, .len = len, .buf = wiichuck->buf };
-> +
-> +       if (read)
-> +               msg.flags = I2C_M_RD;
-> +       return i2c_transfer(i2c->adapter, &msg, 1);
-> +}
-> +
-> +static int wiichuck_write(struct wiichuck_device *wiichuck,
-> +                          uint8_t addr, uint8_t val)
-> +{
-> +       wiichuck->buf[0] = addr;
-> +       wiichuck->buf[1] = val;
-> +       return wiichuck_transfer(wiichuck, 2, false);
-> +}
-> +
-> +static inline int wiichuck_setaddr(struct wiichuck_device *wiichuck,
-> +                                   uint8_t addr)
-> +{
-> +       wiichuck->buf[0] = addr;
-> +       return wiichuck_transfer(wiichuck, 1, false);
-> +}
-> +
-> +static inline int wiichuck_read(struct wiichuck_device *wiichuck, int len)
-> +{
-> +       return wiichuck_transfer(wiichuck, len, true);
-> +}
-> +
-> +static inline bool WIIBTN(int val, int bit)
-> +{
-> +       return (val & BIT(bit)) == 0;
-> +}
-> +
-> +static int wiichuck_process_unknown(struct wiichuck_device *wiichuck)
-> +{
-> +       return 0;
-> +}
-> +
-> +static int wiichuck_process_nunchuck(struct wiichuck_device *wiichuck)
-> +{
-> +       struct input_dev *input_dev = wiichuck->poll_dev->input;
-> +       uint8_t *b = wiichuck->buf;
-> +       int ax, ay, az, rc;
-> +
-> +       rc = wiichuck_read(wiichuck, 6);
-> +       if (rc < 0)
-> +               return rc;
-> +
-> +       ax = (b[2] << 2) | ((b[5] >> 2) & 0x3);
-> +       ay = (b[3] << 2) | ((b[5] >> 4) & 0x3);
-> +       az = (b[4] << 2) | ((b[5] >> 6) & 0x3);
-> +
-> +       input_report_abs(input_dev, ABS_X, b[0]);
-> +       input_report_abs(input_dev, ABS_Y, b[1]);
-> +       input_report_abs(input_dev, ABS_RX, ax);
-> +       input_report_abs(input_dev, ABS_RY, ax);
-> +       input_report_abs(input_dev, ABS_RZ, ay);
-> +       input_report_key(input_dev, BTN_C, WIIBTN(b[5], 1));
-> +       input_report_key(input_dev, BTN_Z, WIIBTN(b[5], 0));
-> +       input_sync(input_dev);
-> +
-> +       dev_dbg(&wiichuck->i2c_client->dev,
-> +               "nunchuck: j=%.3i,%.3i a=%.3x,%.3x,%.3x c,z=%i,%i\n",
-> +               b[0],b[1], ax,ay,az, WIIBTN(b[5], 1), WIIBTN(b[5], 0));
-> +       return 0;
-> +};
-> +
-> +static int wiichuck_process_classic(struct wiichuck_device *wiichuck)
-> +{
-> +       struct input_dev *input_dev = wiichuck->poll_dev->input;
-> +       uint8_t *b = wiichuck->buf;
-> +       int lx, ly, lt, rx, ry, rt, rc;
-> +
-> +       rc = wiichuck_read(wiichuck, 6);
-> +       if (rc < 0)
-> +               return rc;
-> +
-> +       /* Analog measurements; some values are split between registers */
-> +       rx = ((b[0] >> 3) & 0x18) | ((b[1] >> 5) & 6) | ((b[2] >> 7) & 1);
-> +       ry = b[2] & 0x1f;
-> +       rt = b[3] & 0x1f;
-> +       lx = b[0] & 0x3f;
-> +       ly = b[1] & 0x3f;
-> +       lt = ((b[2] >> 2) & 0x18) | ((b[3] >> 5) & 7);
-> +
-> +       input_report_abs(input_dev, ABS_HAT0X, lx); /* left joystick */
-> +       input_report_abs(input_dev, ABS_HAT0Y, ly);
-> +       input_report_abs(input_dev, ABS_BRAKE, lt); /* left trigger */
-> +       input_report_abs(input_dev, ABS_HAT1X, rx); /* right joystick */
-> +       input_report_abs(input_dev, ABS_HAT1Y, ry);
-> +       input_report_abs(input_dev, ABS_GAS, rt); /* right trigger */
-> +
-> +       /* D-pad */
-> +       input_report_abs(input_dev, ABS_HAT2X, WIIBTN(b[4],7) - WIIBTN(b[5],1));
-> +       input_report_abs(input_dev, ABS_HAT2Y, WIIBTN(b[4],6) - WIIBTN(b[5],0));
-> +
-> +       /* Buttons */
-> +       input_report_key(input_dev, BTN_TL, WIIBTN(b[4], 5)); /* left trigger */
-> +       input_report_key(input_dev, BTN_SELECT, WIIBTN(b[4], 4)); /* minus */
-> +       input_report_key(input_dev, BTN_MODE, WIIBTN(b[4], 3)); /* home */
-> +       input_report_key(input_dev, BTN_START, WIIBTN(b[4], 2)); /* plus */
-> +       input_report_key(input_dev, BTN_TR, WIIBTN(b[4], 1)); /* right trigger */
-> +
-> +       input_report_key(input_dev, BTN_TL2, WIIBTN(b[5], 7)); /* left z */
-> +       input_report_key(input_dev, BTN_B, WIIBTN(b[5], 6));
-> +       input_report_key(input_dev, BTN_Y, WIIBTN(b[5], 5));
-> +       input_report_key(input_dev, BTN_A, WIIBTN(b[5], 4));
-> +       input_report_key(input_dev, BTN_X, WIIBTN(b[5], 3));
-> +       input_report_key(input_dev, BTN_TR2, WIIBTN(b[5], 2)); /* right z */
-> +       input_sync(input_dev);
-> +
-> +       dev_dbg(&wiichuck->i2c_client->dev,
-> +               "classic: r=%.3i,%.3i,%.3i l=%.3x,%.3x,%.3x b=%.2x,%.2x\n",
-> +               lx,ly,lt, rx,ry,rt, b[4],b[5]);
-> +       return 0;
-> +};
-> +
-> +/**
-> + * wiichuck_poll() - Protocol state machine implementation
-> + *
-> + * A state machine is used here to keep the protocol processing
-> + * reentrant.  Any of the i2c transactions will indeed sleep because
-> + * i2c transactions are slow, but there is a mandatory delay between
-> + * triggering the data capture (set address) and reading the data
-> + * back.  Using a state machine means the poll function can return and
-> + * free up the worker thread while waiting for the data.
-> + */
-> +static void wiichuck_poll(struct input_polled_dev *poll_dev)
-> +{
-> +       struct wiichuck_device *wiichuck = poll_dev->private;
-> +       int id;
-> +
-> +       switch (wiichuck->state) {
-> +       case WIICHUCK_STATE_DISCONNECTED:
-> +               /* Disable encryption */
-> +               if (wiichuck_write(wiichuck, 0xf0, 0x55) < 0)
-> +                       return;
-> +               if (wiichuck_write(wiichuck, 0xfb, 0x00) < 0)
-> +                       return;
-> +
-> +               /* Read device id */
-> +               if (wiichuck_setaddr(wiichuck, 0xfe) < 0)
-> +                       return;
-> +               if (wiichuck_read(wiichuck, 2) < 0)
-> +                       return;
-> +               id = (wiichuck->buf[0] << 8) | wiichuck->buf[1];
-> +
-> +               switch (id) {
-> +                       case 0x0000: /* Nunchuck */
-> +                               wiichuck->process = wiichuck_process_nunchuck;
-> +                               dev_info(&wiichuck->i2c_client->dev,
-> +                                        "Connected Nunchuck\n");
-> +                               break;
-> +
-> +                       case 0x0101: /* Classic Controller */
-> +                               wiichuck->process = wiichuck_process_classic;
-> +                               dev_info(&wiichuck->i2c_client->dev,
-> +                                        "Connected Classic Controller\n");
-> +                               break;
-> +
-> +                       default: /* No connection or unsupported device */
-> +                               wiichuck->process = wiichuck_process_unknown;
-> +                               dev_dbg(&wiichuck->i2c_client->dev,
-> +                                        "Connected unknown id: %x\n", id);
-> +                               return;
-> +               }
-> +
-> +               /* Setup the first data transfer */
-> +               if (wiichuck_setaddr(wiichuck, 0) < 0)
-> +                       return;
-> +
-> +               wiichuck->state = WIICHUCK_STATE_DATA;
-> +               poll_dev->poll_interval = WIICHUCK_CAPTURE_PERIOD;
-> +               break;
-> +
-> +       case WIICHUCK_STATE_DATA:
-> +               /* Read the input report */
-> +               if (wiichuck->process(wiichuck) < 0)
-> +                       goto disconnect;
-> +
-> +               /* Setup the next transfer */
-> +               if (wiichuck_setaddr(wiichuck, 0) < 0)
-> +                       goto disconnect;
-> +               break;
-> +
-> +       default:
-> +               goto disconnect;
-> +       }
-> +       return;
-> +
-> + disconnect:
-> +       dev_info(&wiichuck->i2c_client->dev, "disconnected\n");
-> +       wiichuck->state = WIICHUCK_STATE_DISCONNECTED;
-> +       poll_dev->poll_interval = WIICHUCK_POLL_PERIOD;
-> +}
-> +
-> +/**
-> + * wiichuck_open() - Set up initial state machine state
-> + *
-> + * Called exactly once the first time the device is opened by
-> + * userspace.  Will not be called again unless all users close it
-> + * before reopening.  This simply clears the state to disconnected and
-> + * sets the poll rate back to the slow speed
-> + */
-> +static void wiichuck_open(struct input_polled_dev *poll_dev)
-> +{
-> +       struct wiichuck_device *wiichuck = poll_dev->private;
-> +
-> +       wiichuck->process = wiichuck_process_unknown;
-> +       wiichuck->state = WIICHUCK_STATE_DISCONNECTED;
-> +       wiichuck->poll_dev->poll_interval = WIICHUCK_POLL_PERIOD;
-> +}
-> +
-> +static int __devinit wiichuck_probe(struct i2c_client *client,
-> +                               const struct i2c_device_id *id)
-> +{
-> +       struct wiichuck_device *wiichuck;
-> +       struct input_polled_dev *poll_dev;
-> +       struct input_dev *input_dev;
-> +       int rc;
-> +
-> +       wiichuck = kzalloc(sizeof(*wiichuck), GFP_KERNEL);
-> +       if (!wiichuck)
-> +               return -ENOMEM;
-> +
-> +       poll_dev = input_allocate_polled_device();
-> +       if (!poll_dev) {
-> +               rc = -ENOMEM;
-> +               goto err_alloc;
-> +       }
-> +
-> +       wiichuck->i2c_client = client;
-> +       wiichuck->poll_dev = poll_dev;
-> +
-> +       poll_dev->private = wiichuck;
-> +       poll_dev->poll = wiichuck_poll;
-> +       poll_dev->open = wiichuck_open;
-> +
-> +       input_dev = poll_dev->input;
-> +       input_dev->name = "Wiichuck expansion connector";
-> +       input_dev->id.bustype = BUS_I2C;
-> +       input_dev->dev.parent = &client->dev;
-> +
-> +       /* Declare the events generated by this driver */
-> +       __set_bit(EV_ABS, input_dev->evbit);
-> +       __set_bit(EV_KEY, input_dev->evbit);
-> +
-> +       /* Nunchuck ranges */
-> +       __set_bit(ABS_X, input_dev->absbit); /* joystick */
-> +       __set_bit(ABS_Y, input_dev->absbit);
-> +       input_set_abs_params(input_dev, ABS_X, 30, 220, 4, 8);
-> +       input_set_abs_params(input_dev, ABS_Y, 40, 200, 4, 8);
-> +
-> +       __set_bit(ABS_RX, input_dev->absbit); /* accelerometer */
-> +       __set_bit(ABS_RY, input_dev->absbit);
-> +       __set_bit(ABS_RZ, input_dev->absbit);
-> +       input_set_abs_params(input_dev, ABS_RX, 0, 0x3ff, 4, 8);
-> +       input_set_abs_params(input_dev, ABS_RY, 0, 0x3ff, 4, 8);
-> +       input_set_abs_params(input_dev, ABS_RZ, 0, 0x3ff, 4, 8);
-> +
-> +       /* Nunchuck buttons */
-> +       __set_bit(BTN_C, input_dev->keybit);
-> +       __set_bit(BTN_Z, input_dev->keybit);
-> +
-> +       /* Classic ranges */
-> +       __set_bit(ABS_HAT0X, input_dev->absbit); /* Left Joystick */
-> +       __set_bit(ABS_HAT0Y, input_dev->absbit);
-> +       input_set_abs_params(input_dev, ABS_HAT0X, 0, 63, 2, 4);
-> +       input_set_abs_params(input_dev, ABS_HAT0Y, 0, 63, 2, 4);
-> +
-> +       __set_bit(ABS_HAT1X, input_dev->absbit); /* Right Joystick */
-> +       __set_bit(ABS_HAT1Y, input_dev->absbit);
-> +       input_set_abs_params(input_dev, ABS_HAT1X, 0, 31, 1, 2);
-> +       input_set_abs_params(input_dev, ABS_HAT1Y, 0, 31, 1, 2);
-> +
-> +       __set_bit(ABS_HAT2X, input_dev->absbit); /* D-pad */
-> +       __set_bit(ABS_HAT2Y, input_dev->absbit);
-> +       input_set_abs_params(input_dev, ABS_HAT2X, -1, 1, 0, 0);
-> +       input_set_abs_params(input_dev, ABS_HAT2Y, -1, 1, 0, 0);
-> +
-> +       __set_bit(ABS_BRAKE, input_dev->absbit); /* Left trigger */
-> +       input_set_abs_params(input_dev, ABS_BRAKE, 0, 31, 1, 2);
-> +       __set_bit(ABS_GAS, input_dev->absbit);
-> +       input_set_abs_params(input_dev, ABS_GAS, 0, 31, 1, 2);
-> +
-> +       /* Classic buttons */
-> +       __set_bit(BTN_TL, input_dev->keybit);
-> +       __set_bit(BTN_SELECT, input_dev->keybit);
-> +       __set_bit(BTN_MODE, input_dev->keybit);
-> +       __set_bit(BTN_START, input_dev->keybit);
-> +       __set_bit(BTN_TR, input_dev->keybit);
-> +       __set_bit(BTN_TL2, input_dev->keybit);
-> +       __set_bit(BTN_B, input_dev->keybit);
-> +       __set_bit(BTN_Y, input_dev->keybit);
-> +       __set_bit(BTN_A, input_dev->keybit);
-> +       __set_bit(BTN_X, input_dev->keybit);
-> +       __set_bit(BTN_TR2, input_dev->keybit);
-> +
-> +       i2c_set_clientdata(client, wiichuck);
-> +
-> +       /* Register the device; it is 'live' after this point */
-> +       rc = input_register_polled_device(wiichuck->poll_dev);
-> +       if (rc) {
-> +               dev_err(&client->dev, "Failed to register input device\n");
-> +               goto err_register;
-> +       }
-> +
-> +       return 0;
-> +
-> + err_register:
-> +       i2c_set_clientdata(client, NULL);
-> +       input_free_polled_device(poll_dev);
-> + err_alloc:
-> +       kfree(wiichuck);
-> +
-> +       return rc;
-> +}
-> +
-> +static int __devexit wiichuck_remove(struct i2c_client *client)
-> +{
-> +       struct wiichuck_device *wiichuck = i2c_get_clientdata(client);
-> +
-> +       i2c_set_clientdata(client, NULL);
-> +       input_unregister_polled_device(wiichuck->poll_dev);
-> +       input_free_polled_device(wiichuck->poll_dev);
-> +       kfree(wiichuck);
-> +
-> +       return 0;
-> +}
-> +
-> +static const struct i2c_device_id wiichuck_id[] = {
-> +       { "wiichuck", 0 },
-> +       { }
-> +};
-> +MODULE_DEVICE_TABLE(i2c, wiichuck_id);
-> +
-> +#ifdef CONFIG_OF
-> +static struct of_device_id wiichuck_match_table[] __devinitdata = {
-> +       { .compatible = "nintendo,wiimote-extension", },
-> +       { }
-> +};
-> +#else
-> +#define wiichuck_match_table NULL
-> +#endif
-> +
-> +static struct i2c_driver wiichuck_driver = {
-> +       .driver = {
-> +               .name = "wiichuck",
-> +               .owner = THIS_MODULE,
-> +               .of_match_table = wiichuck_match_table,
-> +       },
-> +       .probe          = wiichuck_probe,
-> +       .remove         = __devexit_p(wiichuck_remove),
-> +       .id_table       = wiichuck_id,
-> +};
-> +
-> +static int __init wiichuck_init(void)
-> +{
-> +       return i2c_add_driver(&wiichuck_driver);
-> +}
-> +module_init(wiichuck_init);
-> +
-> +static void __exit wiichuck_exit(void)
-> +{
-> +       i2c_del_driver(&wiichuck_driver);
-> +}
-> +module_exit(wiichuck_exit);
->
->
+% make REGENERATE_PARSERS=y alldefconfig 2>&1 | grep 'defined without
+type' | wc -l
+817
 
+Moreover, this approach is deemed to fail. The current symbol
+namespace is tied to an arch, so whenever you do:
 
+arch/arm/Kconfig:
+config FOO
+    bool
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+config BAZ
+    bool
+
+drivers/cpufreq/Kconfig
+config BAR
+    depends on ARM && FOO
+    select BAZ
+
+You will end up triggering the warning for every ARCH != ARM...
+
+ - Arnaud
+
+[0]: or rather a fix as we currently only do the check for symbol linked to menu
