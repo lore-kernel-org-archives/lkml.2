@@ -1,238 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab1HAKbF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 06:31:05 -0400
-Received: from cernmx31.cern.ch ([137.138.144.179]:18496 "EHLO
-	CERNMX31.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab1HAK3a (ORCPT
+	id S1753941Ab1HAKeN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 06:34:13 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:47008 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753098Ab1HAKeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 06:29:30 -0400
-From: Manohar Vanga <manohar.vanga@cern.ch>
-To: <gregkh@suse.de>
-CC: <martyn.welch@ge.com>, <cota@braap.org>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>, Manohar Vanga <manohar.vanga@cern.ch>
-Subject: [PATCH 3/8] staging: vme: make [alloc|free]_consistent bridge specific
-Date: Mon, 1 Aug 2011 12:20:48 +0200
-Message-ID: <1312194053-32310-4-git-send-email-manohar.vanga@cern.ch>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch>
-References: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [137.138.192.18]
-Keywords: CERN SpamKiller Note: -50
+	Mon, 1 Aug 2011 06:34:07 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+H8ZAfYL2HhXdb+nL7ZlKvR8RS21hKhopDdADvLI
+	cuknQqh3mLc9bM
+Subject: Re: [ANNOUNCE] 3.0-rt6
+From: Mike Galbraith <efault@gmx.de>
+To: Rolando Martins <rolando.martins@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <CABcS5h0m10aWDuK5fK4C-mzMMwLyXJ_cehoTgWFutvPPrv30HQ@mail.gmail.com>
+References: <alpine.LFD.2.02.1107282213000.31246@ionos>
+	 <CABcS5h0m10aWDuK5fK4C-mzMMwLyXJ_cehoTgWFutvPPrv30HQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 01 Aug 2011 12:34:02 +0200
+Message-ID: <1312194842.8233.88.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make PCI dependent functions ([alloc|free]_consistent() in
-'vme.c') bridge specific. By removing the dependency of the
-VME bridge framework on PCI, this patch allows for addition of
-non-PCI based VME bridges.
+On Mon, 2011-08-01 at 09:42 +0100, Rolando Martins wrote:
+> Hi Peter,
+> is there any progress on the CONFIG_RT_GROUP_SCHED front?
 
-Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
----
- drivers/staging/vme/bridges/vme_ca91cx42.c |   24 ++++++++++++++++++++++
- drivers/staging/vme/bridges/vme_tsi148.c   |   24 ++++++++++++++++++++++
- drivers/staging/vme/vme.c                  |   30 ++++++++++++++-------------
- drivers/staging/vme/vme_bridge.h           |   10 ++++++--
- 4 files changed, 71 insertions(+), 17 deletions(-)
+Out of curiosity, why would you want that in a -rt kernel?
 
-diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
-index c378819..15a0b19 100644
---- a/drivers/staging/vme/bridges/vme_ca91cx42.c
-+++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
-@@ -1507,6 +1507,28 @@ static int ca91cx42_slot_get(struct vme_bridge *ca91cx42_bridge)
- 
- }
- 
-+void *ca91cx42_alloc_consistent(struct device *parent, size_t size,
-+	dma_addr_t *dma)
-+{
-+	struct pci_dev *pdev;
-+
-+	/* Find pci_dev container of dev */
-+	pdev = container_of(parent, struct pci_dev, dev);
-+
-+	return pci_alloc_consistent(pdev, size, dma);
-+}
-+
-+void ca91cx42_free_consistent(struct device *parent, size_t size, void *vaddr,
-+	dma_addr_t dma)
-+{
-+	struct pci_dev *pdev;
-+
-+	/* Find pci_dev container of dev */
-+	pdev = container_of(parent, struct pci_dev, dev);
-+
-+	pci_free_consistent(pdev, size, vaddr, dma);
-+}
-+
- static int __init ca91cx42_init(void)
- {
- 	return pci_register_driver(&ca91cx42_driver);
-@@ -1776,6 +1798,8 @@ static int ca91cx42_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	ca91cx42_bridge->lm_attach = ca91cx42_lm_attach;
- 	ca91cx42_bridge->lm_detach = ca91cx42_lm_detach;
- 	ca91cx42_bridge->slot_get = ca91cx42_slot_get;
-+	ca91cx42_bridge->alloc_consistent = ca91cx42_alloc_consistent;
-+	ca91cx42_bridge->free_consistent = ca91cx42_free_consistent;
- 
- 	data = ioread32(ca91cx42_device->base + MISC_CTL);
- 	dev_info(&pdev->dev, "Board is%s the VME system controller\n",
-diff --git a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
-index e3f021e..5c147d6 100644
---- a/drivers/staging/vme/bridges/vme_tsi148.c
-+++ b/drivers/staging/vme/bridges/vme_tsi148.c
-@@ -2122,6 +2122,28 @@ static int tsi148_slot_get(struct vme_bridge *tsi148_bridge)
- 	return (int)slot;
- }
- 
-+void *tsi148_alloc_consistent(struct device *parent, size_t size,
-+	dma_addr_t *dma)
-+{
-+	struct pci_dev *pdev;
-+
-+	/* Find pci_dev container of dev */
-+	pdev = container_of(parent, struct pci_dev, dev);
-+
-+	return pci_alloc_consistent(pdev, size, dma);
-+}
-+
-+void tsi148_free_consistent(struct device *parent, size_t size, void *vaddr,
-+	dma_addr_t dma)
-+{
-+	struct pci_dev *pdev;
-+
-+	/* Find pci_dev container of dev */
-+	pdev = container_of(parent, struct pci_dev, dev);
-+
-+	pci_free_consistent(pdev, size, vaddr, dma);
-+}
-+
- static int __init tsi148_init(void)
- {
- 	return pci_register_driver(&tsi148_driver);
-@@ -2451,6 +2473,8 @@ static int tsi148_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	tsi148_bridge->lm_attach = tsi148_lm_attach;
- 	tsi148_bridge->lm_detach = tsi148_lm_detach;
- 	tsi148_bridge->slot_get = tsi148_slot_get;
-+	tsi148_bridge->alloc_consistent = tsi148_alloc_consistent;
-+	tsi148_bridge->free_consistent = tsi148_free_consistent;
- 
- 	data = ioread32be(tsi148_device->base + TSI148_LCSR_VSTAT);
- 	dev_info(&pdev->dev, "Board is%s the VME system controller\n",
-diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
-index 330a4ff..bbede97 100644
---- a/drivers/staging/vme/vme.c
-+++ b/drivers/staging/vme/vme.c
-@@ -83,15 +83,11 @@ static struct vme_bridge *find_bridge(struct vme_resource *resource)
- /*
-  * Allocate a contiguous block of memory for use by the driver. This is used to
-  * create the buffers for the slave windows.
-- *
-- * XXX VME bridges could be available on buses other than PCI. At the momment
-- *     this framework only supports PCI devices.
-  */
- void *vme_alloc_consistent(struct vme_resource *resource, size_t size,
- 	dma_addr_t *dma)
- {
- 	struct vme_bridge *bridge;
--	struct pci_dev *pdev;
- 
- 	if (resource == NULL) {
- 		printk(KERN_ERR "No resource\n");
-@@ -104,28 +100,27 @@ void *vme_alloc_consistent(struct vme_resource *resource, size_t size,
- 		return NULL;
- 	}
- 
--	/* Find pci_dev container of dev */
- 	if (bridge->parent == NULL) {
- 		printk(KERN_ERR "Dev entry NULL\n");
- 		return NULL;
- 	}
--	pdev = container_of(bridge->parent, struct pci_dev, dev);
- 
--	return pci_alloc_consistent(pdev, size, dma);
-+	if (bridge->alloc_consistent == NULL) {
-+		printk(KERN_ERR "alloc_consistent not supported by bridge\n");
-+		return NULL;
-+	}
-+
-+	return bridge->alloc_consistent(bridge->parent, size, dma);
- }
- EXPORT_SYMBOL(vme_alloc_consistent);
- 
- /*
-  * Free previously allocated contiguous block of memory.
-- *
-- * XXX VME bridges could be available on buses other than PCI. At the momment
-- *     this framework only supports PCI devices.
-  */
- void vme_free_consistent(struct vme_resource *resource, size_t size,
- 	void *vaddr, dma_addr_t dma)
- {
- 	struct vme_bridge *bridge;
--	struct pci_dev *pdev;
- 
- 	if (resource == NULL) {
- 		printk(KERN_ERR "No resource\n");
-@@ -138,10 +133,17 @@ void vme_free_consistent(struct vme_resource *resource, size_t size,
- 		return;
- 	}
- 
--	/* Find pci_dev container of dev */
--	pdev = container_of(bridge->parent, struct pci_dev, dev);
-+	if (bridge->parent == NULL) {
-+		printk(KERN_ERR "Dev entry NULL\n");
-+		return;
-+	}
-+
-+	if (bridge->free_consistent == NULL) {
-+		printk(KERN_ERR "free_consistent not supported by bridge\n");
-+		return;
-+	}
- 
--	pci_free_consistent(pdev, size, vaddr, dma);
-+	bridge->free_consistent(bridge->parent, size, vaddr, dma);
- }
- EXPORT_SYMBOL(vme_free_consistent);
- 
-diff --git a/drivers/staging/vme/vme_bridge.h b/drivers/staging/vme/vme_bridge.h
-index 4c6ec31..a9084f0 100644
---- a/drivers/staging/vme/vme_bridge.h
-+++ b/drivers/staging/vme/vme_bridge.h
-@@ -98,8 +98,6 @@ struct vme_irq {
- /* This structure stores all the information about one bridge
-  * The structure should be dynamically allocated by the driver and one instance
-  * of the structure should be present for each VME chip present in the system.
-- *
-- * Currently we assume that all chips are PCI-based
-  */
- struct vme_bridge {
- 	char name[VMENAMSIZ];
-@@ -112,7 +110,7 @@ struct vme_bridge {
- 	struct list_head vme_errors;	/* List for errors generated on VME */
- 
- 	/* Bridge Info - XXX Move to private structure? */
--	struct device *parent;	/* Generic device struct (pdev->dev for PCI) */
-+	struct device *parent;	/* Parent device (eg. pdev->dev for PCI) */
- 	void *driver_priv;	/* Private pointer for the bridge driver */
- 
- 	struct device dev[VME_SLOTS_MAX];	/* Device registered with
-@@ -165,6 +163,12 @@ struct vme_bridge {
- 
- 	/* CR/CSR space functions */
- 	int (*slot_get) (struct vme_bridge *);
-+
-+	/* Bridge parent interface */
-+	void *(*alloc_consistent)(struct device *dev, size_t size,
-+		dma_addr_t *dma);
-+	void (*free_consistent)(struct device *dev, size_t size,
-+		void *vaddr, dma_addr_t dma);
- };
- 
- void vme_irq_handler(struct vme_bridge *, int, int);
--- 
-1.7.4.1
+(I haven't done any PI testing with that, but I can imagine the throttle
+causing heartburn)
+
+	-Mike
+
+> I don't know if this is related, but in 33-rt if I used a low (=100)
+> cpu_runtime_us and cpu_period_us then I would get some freezes
+> (something that does not happen in 2.6.39).
+
+(providing a realtime budget of 100 whole microseconds to a kernel where
+everything and it's brother is realtime is unlikely to go well)
 
