@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab1HAVny (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 17:43:54 -0400
+	id S1753435Ab1HAVoI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 17:44:08 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:48655 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab1HAVnv (ORCPT
+	with ESMTP id S1752936Ab1HAVoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 17:43:51 -0400
+	Mon, 1 Aug 2011 17:44:02 -0400
 From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 To: linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk
 Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-Subject: [PATCH 2/3] gma500: Don't enable MSI on Poulsbo
-Date: Mon,  1 Aug 2011 23:42:09 +0200
-Message-Id: <1312234930-2387-2-git-send-email-patrik.r.jakobsson@gmail.com>
+Subject: [PATCH 3/3] gma500: Add VBLANK support for Poulsbo hardware
+Date: Mon,  1 Aug 2011 23:42:10 +0200
+Message-Id: <1312234930-2387-3-git-send-email-patrik.r.jakobsson@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1312234930-2387-1-git-send-email-patrik.r.jakobsson@gmail.com>
 References: <1312234930-2387-1-git-send-email-patrik.r.jakobsson@gmail.com>
@@ -20,39 +20,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chipset reports MSI capabilities for Poulsbo even though it isn't really there.
-
 Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
 ---
- drivers/staging/gma500/psb_drv.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+ drivers/staging/gma500/psb_drv.h |    3 ++
+ drivers/staging/gma500/psb_irq.c |   71 ++++++++++++++++++++++----------------
+ 2 files changed, 44 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
-index d91083a..10c8ecd 100644
---- a/drivers/staging/gma500/psb_drv.c
-+++ b/drivers/staging/gma500/psb_drv.c
-@@ -329,6 +329,11 @@ static int psb_driver_load(struct drm_device *dev, unsigned long chipset)
- 	dev_priv->dev = dev;
- 	dev->dev_private = (void *) dev_priv;
+diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/psb_drv.h
+index 8c6aa15..33c5f6ea 100644
+--- a/drivers/staging/gma500/psb_drv.h
++++ b/drivers/staging/gma500/psb_drv.h
+@@ -136,6 +136,9 @@ enum {
+ #define _PSB_IRQ_MSVDX_FLAG	  (1<<19)
+ #define _LNC_IRQ_TOPAZ_FLAG	  (1<<20)
  
-+	if (!IS_PSB(dev)) {
-+		if (pci_enable_msi(dev->pdev))
-+			dev_warn(dev->dev, "Enabling MSI failed!\n");
-+	}
++#define _PSB_PIPE_EVENT_FLAG	(_PSB_VSYNC_PIPEA_FLAG | \
++				 _PSB_VSYNC_PIPEB_FLAG)
 +
- 	dev_priv->num_pipe = dev_priv->ops->pipes;
- 
- 	resource_start = pci_resource_start(dev->pdev, PSB_MMIO_RESOURCE);
-@@ -1207,9 +1212,6 @@ static struct pci_driver psb_pci_driver = {
- 
- static int psb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- {
--	/* MLD Added this from Inaky's patch */
--	if (pci_enable_msi(pdev))
--		dev_warn(&pdev->dev, "Enable MSI failed!\n");
- 	return drm_get_pci_dev(pdev, ent, &driver);
+ /* This flag includes all the display IRQ bits excepts the vblank irqs. */
+ #define _MDFLD_DISP_ALL_IRQ_FLAG (_MDFLD_PIPEC_EVENT_FLAG | \
+ 				  _MDFLD_PIPEB_EVENT_FLAG | \
+diff --git a/drivers/staging/gma500/psb_irq.c b/drivers/staging/gma500/psb_irq.c
+index 4a0fa42..36dd630 100644
+--- a/drivers/staging/gma500/psb_irq.c
++++ b/drivers/staging/gma500/psb_irq.c
+@@ -139,21 +139,10 @@ void mid_disable_pipe_event(struct drm_psb_private *dev_priv, int pipe)
  }
  
+ /**
+- * Display controller interrupt handler for vsync/vblank.
+- *
+- */
+-static void mid_vblank_handler(struct drm_device *dev, uint32_t pipe)
+-{
+-	drm_handle_vblank(dev, pipe);
+-}
+-
+-
+-/**
+  * Display controller interrupt handler for pipe event.
+  *
+  */
+-#define WAIT_STATUS_CLEAR_LOOP_COUNT 0xffff
+-static void mid_pipe_event_handler(struct drm_device *dev, uint32_t pipe)
++static void mid_pipe_event_handler(struct drm_device *dev, int pipe)
+ {
+ 	struct drm_psb_private *dev_priv =
+ 	    (struct drm_psb_private *) dev->dev_private;
+@@ -162,6 +151,7 @@ static void mid_pipe_event_handler(struct drm_device *dev, uint32_t pipe)
+ 	uint32_t pipe_stat_reg = psb_pipestat(pipe);
+ 	uint32_t pipe_enable = dev_priv->pipestat[pipe];
+ 	uint32_t pipe_status = dev_priv->pipestat[pipe] >> 16;
++	uint32_t pipe_clear;
+ 	uint32_t i = 0;
+ 
+ 	spin_lock(&dev_priv->irqmask_lock);
+@@ -172,27 +162,23 @@ static void mid_pipe_event_handler(struct drm_device *dev, uint32_t pipe)
+ 
+ 	spin_unlock(&dev_priv->irqmask_lock);
+ 
+-	/* clear the 2nd level interrupt status bits */
+-	/**
+-	* FIXME: shouldn't use while loop here. However, the interrupt
+-	* status 'sticky' bits cannot be cleared by setting '1' to that
+-	* bit once...
+-	*/
+-	for (i = 0; i < WAIT_STATUS_CLEAR_LOOP_COUNT; i++) {
++	/* Clear the 2nd level interrupt status bits
++	 * Sometimes the bits are very sticky so we repeat until they unstick */
++	for (i = 0; i < 0xffff; i++) {
+ 		PSB_WVDC32(PSB_RVDC32(pipe_stat_reg), pipe_stat_reg);
+-		(void) PSB_RVDC32(pipe_stat_reg);
++		pipe_clear = PSB_RVDC32(pipe_stat_reg) & pipe_status;
+ 
+-		if ((PSB_RVDC32(pipe_stat_reg) & pipe_status) == 0)
++		if (pipe_clear == 0)
+ 			break;
+ 	}
+ 
+-	if (i == WAIT_STATUS_CLEAR_LOOP_COUNT)
++	if (pipe_clear)
+ 		dev_err(dev->dev,
+-	"%s, can't clear the status bits in pipe_stat_reg, its value = 0x%x.\n",
+-			__func__, PSB_RVDC32(pipe_stat_reg));
++		"%s, can't clear status bits for pipe %d, its value = 0x%x.\n",
++		__func__, pipe, PSB_RVDC32(pipe_stat_reg));
+ 
+ 	if (pipe_stat_val & PIPE_VBLANK_STATUS)
+-		mid_vblank_handler(dev, pipe);
++		drm_handle_vblank(dev, pipe);
+ 
+ 	if (pipe_stat_val & PIPE_TE_STATUS)
+ 		drm_handle_vblank(dev, pipe);
+@@ -203,8 +189,11 @@ static void mid_pipe_event_handler(struct drm_device *dev, uint32_t pipe)
+  */
+ static void psb_vdc_interrupt(struct drm_device *dev, uint32_t vdc_stat)
+ {
+-	if (vdc_stat & _PSB_PIPEA_EVENT_FLAG)
++	if (vdc_stat & _PSB_VSYNC_PIPEA_FLAG)
+ 		mid_pipe_event_handler(dev, 0);
++
++	if (vdc_stat & _PSB_VSYNC_PIPEB_FLAG)
++		mid_pipe_event_handler(dev, 1);
+ }
+ 
+ irqreturn_t psb_irq_handler(DRM_IRQ_ARGS)
+@@ -220,8 +209,13 @@ irqreturn_t psb_irq_handler(DRM_IRQ_ARGS)
+ 
+ 	vdc_stat = PSB_RVDC32(PSB_INT_IDENTITY_R);
+ 
++	if (vdc_stat & _PSB_PIPE_EVENT_FLAG)
++		dsp_int = 1;
++
++	/* FIXME: Handle Medfield
+ 	if (vdc_stat & _MDFLD_DISP_ALL_IRQ_FLAG)
+ 		dsp_int = 1;
++	*/
+ 
+ 	if (vdc_stat & _PSB_IRQ_SGX_FLAG)
+ 		sgx_int = 1;
+@@ -267,13 +261,18 @@ void psb_irq_preinstall(struct drm_device *dev)
+ 	if (gma_power_is_on(dev))
+ 		PSB_WVDC32(0xFFFFFFFF, PSB_HWSTAM);
+ 	if (dev->vblank_enabled[0])
+-		dev_priv->vdc_irq_mask |= _PSB_PIPEA_EVENT_FLAG;
++		dev_priv->vdc_irq_mask |= _PSB_VSYNC_PIPEA_FLAG;
++	if (dev->vblank_enabled[1])
++		dev_priv->vdc_irq_mask |= _PSB_VSYNC_PIPEB_FLAG;
++
++	/* FIXME: Handle Medfield irq mask
+ 	if (dev->vblank_enabled[1])
+ 		dev_priv->vdc_irq_mask |= _MDFLD_PIPEB_EVENT_FLAG;
+ 	if (dev->vblank_enabled[2])
+ 		dev_priv->vdc_irq_mask |= _MDFLD_PIPEC_EVENT_FLAG;
++	*/
+ 
+-	/*This register is safe even if display island is off*/
++	/* This register is safe even if display island is off */
+ 	PSB_WVDC32(~dev_priv->vdc_irq_mask, PSB_INT_MASK_R);
+ 	spin_unlock_irqrestore(&dev_priv->irqmask_lock, irqflags);
+ }
+@@ -471,7 +470,13 @@ int psb_enable_vblank(struct drm_device *dev, int pipe)
+ 
+ 	spin_lock_irqsave(&dev_priv->irqmask_lock, irqflags);
+ 
+-	mid_enable_pipe_event(dev_priv, pipe);
++	if (pipe == 0)
++		dev_priv->vdc_irq_mask |= _PSB_VSYNC_PIPEA_FLAG;
++	else if (pipe == 1)
++		dev_priv->vdc_irq_mask |= _PSB_VSYNC_PIPEB_FLAG;
++
++	PSB_WVDC32(~dev_priv->vdc_irq_mask, PSB_INT_MASK_R);
++	PSB_WVDC32(dev_priv->vdc_irq_mask, PSB_INT_ENABLE_R);
+ 	psb_enable_pipestat(dev_priv, pipe, PIPE_VBLANK_INTERRUPT_ENABLE);
+ 
+ 	spin_unlock_irqrestore(&dev_priv->irqmask_lock, irqflags);
+@@ -493,7 +498,13 @@ void psb_disable_vblank(struct drm_device *dev, int pipe)
+ #endif
+ 	spin_lock_irqsave(&dev_priv->irqmask_lock, irqflags);
+ 
+-	mid_disable_pipe_event(dev_priv, pipe);
++	if (pipe == 0)
++		dev_priv->vdc_irq_mask &= ~_PSB_VSYNC_PIPEA_FLAG;
++	else if (pipe == 1)
++		dev_priv->vdc_irq_mask &= ~_PSB_VSYNC_PIPEB_FLAG;
++
++	PSB_WVDC32(~dev_priv->vdc_irq_mask, PSB_INT_MASK_R);
++	PSB_WVDC32(dev_priv->vdc_irq_mask, PSB_INT_ENABLE_R);
+ 	psb_disable_pipestat(dev_priv, pipe, PIPE_VBLANK_INTERRUPT_ENABLE);
+ 
+ 	spin_unlock_irqrestore(&dev_priv->irqmask_lock, irqflags);
 -- 
 1.7.4.1
 
