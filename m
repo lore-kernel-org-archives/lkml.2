@@ -1,45 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab1HAWZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 18:25:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34159 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753751Ab1HAWZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 18:25:39 -0400
-Date: Mon, 1 Aug 2011 15:24:29 -0700
-From: Greg KH <gregkh@suse.de>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        Andiry Xu <andiry.xu@amd.com>, Luben Tuikov <ltuikov@yahoo.com>
-Subject: Re: [PATCH][Resend] USB: Remove test for NULL that'll never happen
- in usb_disconnect()
-Message-ID: <20110801222429.GB5853@suse.de>
-References: <alpine.LNX.2.00.1108020001310.31999@swampdragon.chaosbits.net>
- <20110801221019.GA22726@xanatos>
- <20110801222405.GA5853@suse.de>
+	id S1753829Ab1HAW0F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 18:26:05 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:54157 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753811Ab1HAWZx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 18:25:53 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Serge E. Hallyn" <serge@hallyn.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Cc: dhowells@redhat.com, netdev@vger.kernel.org,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+References: <1311706717-7398-1-git-send-email-serge@hallyn.com>
+	<1311706717-7398-3-git-send-email-serge@hallyn.com>
+	<m1hb67fh9l.fsf@fess.ebiederm.org> <20110729172748.GB18935@hallyn.com>
+Date: Mon, 01 Aug 2011 15:25:46 -0700
+In-Reply-To: <20110729172748.GB18935@hallyn.com> (Serge E. Hallyn's message of
+	"Fri, 29 Jul 2011 17:27:48 +0000")
+Message-ID: <m1ei146a6t.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110801222405.GA5853@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18P9sYNmZSkFLsn0cRwPuaMBnPWKWvpxIM=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>, "Serge E. Hallyn"
+	<serge.hallyn@canonical.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 02/14] allow root in container to copy namespaces (v3)
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 03:24:05PM -0700, Greg KH wrote:
-> On Mon, Aug 01, 2011 at 03:10:19PM -0700, Sarah Sharp wrote:
-> > Hi Jesper,
-> > 
-> > You probably need to send this directly to Greg, instead of to the list.
-> 
-> He copied me :)
-> 
-> > I'm not sure if Greg's still on vacation, so resend in a couple days if
-> > you don't hear from him.
-> 
-> I'm back, but digging out from a huge load of todo work, so it will be a
-> while before getting to non-3.1-bugfix patches (unlike this one.)
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-s/unlike/like/
+> Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> Serge Hallyn <serge@hallyn.com> writes:
+>> 
+>> > From: Serge E. Hallyn <serge.hallyn@canonical.com>
+>> >
+>> > Othewise nested containers with user namespaces won't be possible.
+>> >
+>> > It's true that user namespaces are not yet fully isolated, but for
+>> > that same reason there are far worse things that root in a child
+>> > user ns can do.  Spawning a child user ns is not in itself bad.
+>> >
+>> > This patch also allows setns for root in a container:
+>> > @Eric Biederman: are there gotchas in allowing setns from child
+>> > userns?
+>> 
+>> Yes.  We need to ensure that the target namespaces are namespaces
+>> that have been created in from user_namespace or from a child of this
+>> user_namespace.
+>> 
+>> Aka we need to ensure that we have CAP_SYS_ADMIN for the new namespace.
+>
+> [New patch below]
+>
+> Othewise nested containers with user namespaces won't be possible.
+>
+> It's true that user namespaces are not yet fully isolated, but for
+> that same reason there are far worse things that root in a child
+> user ns can do.  Spawning a child user ns is not in itself bad.
+>
+> This patch also allows setns for root in a container:
+> @Eric Biederman: are there gotchas in allowing setns from child
+> userns?
 
+The dangers of changing the namespace of a process remain the same,
+confused suid programs.  I don't believe there are any unique new
+dangers. 
+
+Not allowing joining namespaces you already have a copy of is just
+a matter of making it hard to get things wrong.
+
+I would feel more a bit more comfortable if the way we did this was
+to move all of the capable calls into the per namespace methods
+and then changed them one namespace at a time.  I don't think
+there are any fundmanetal dangers of allowing unshare without
+the global CAP_SYS_ADMIN, but it would be good to be able to audit
+and make or revoke the decision one namespace at a time.
+
+Eric
+
+
+> Changelog:
+>   Jul 29: setns: target capability check for setns
+>           When changing to another namespace, make sure that we have
+>           the CAP_SYS_ADMIN capability targeted at the user namespace
+>           owning the new ns.
+>
+> Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+> Cc: Eric W. Biederman <ebiederm@xmission.com>
+> ---
+>  ipc/namespace.c          |    3 +++
+>  kernel/fork.c            |    4 ++--
+>  kernel/nsproxy.c         |    7 ++-----
+>  kernel/utsname.c         |    3 +++
+>  net/core/net_namespace.c |    3 +++
+>  5 files changed, 13 insertions(+), 7 deletions(-)
+>
+> diff --git a/ipc/namespace.c b/ipc/namespace.c
+> index ce0a647..f527e49 100644
+> --- a/ipc/namespace.c
+> +++ b/ipc/namespace.c
+> @@ -163,6 +163,9 @@ static void ipcns_put(void *ns)
+>  
+>  static int ipcns_install(struct nsproxy *nsproxy, void *ns)
+>  {
+> +	struct ipc_namespace *newns = ns;
+> +	if (!ns_capable(newns->user_ns, CAP_SYS_ADMIN))
+> +		return -1;
+>  	/* Ditch state from the old ipc namespace */
+>  	exit_sem(current);
+>  	put_ipc_ns(nsproxy->ipc_ns);
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index e7ceaca..f9fac70 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -1488,8 +1488,8 @@ long do_fork(unsigned long clone_flags,
+>  		/* hopefully this check will go away when userns support is
+>  		 * complete
+>  		 */
+> -		if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SETUID) ||
+> -				!capable(CAP_SETGID))
+> +		if (!nsown_capable(CAP_SYS_ADMIN) || !nsown_capable(CAP_SETUID) ||
+> +				!nsown_capable(CAP_SETGID))
+>  			return -EPERM;
+>  	}
+>  
+> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+> index 9aeab4b..cadcee0 100644
+> --- a/kernel/nsproxy.c
+> +++ b/kernel/nsproxy.c
+> @@ -134,7 +134,7 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
+>  				CLONE_NEWPID | CLONE_NEWNET)))
+>  		return 0;
+>  
+> -	if (!capable(CAP_SYS_ADMIN)) {
+> +	if (!nsown_capable(CAP_SYS_ADMIN)) {
+>  		err = -EPERM;
+>  		goto out;
+>  	}
+> @@ -191,7 +191,7 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
+>  			       CLONE_NEWNET)))
+>  		return 0;
+>  
+> -	if (!capable(CAP_SYS_ADMIN))
+> +	if (!nsown_capable(CAP_SYS_ADMIN))
+>  		return -EPERM;
+>  
+>  	*new_nsp = create_new_namespaces(unshare_flags, current,
+> @@ -241,9 +241,6 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+>  	struct file *file;
+>  	int err;
+>  
+> -	if (!capable(CAP_SYS_ADMIN))
+> -		return -EPERM;
+> -
+>  	file = proc_ns_fget(fd);
+>  	if (IS_ERR(file))
+>  		return PTR_ERR(file);
+> diff --git a/kernel/utsname.c b/kernel/utsname.c
+> index bff131b..8f648cc 100644
+> --- a/kernel/utsname.c
+> +++ b/kernel/utsname.c
+> @@ -104,6 +104,9 @@ static void utsns_put(void *ns)
+>  
+>  static int utsns_install(struct nsproxy *nsproxy, void *ns)
+>  {
+> +	struct uts_namespace *newns = ns;
+> +	if (!ns_capable(newns->user_ns, CAP_SYS_ADMIN))
+> +		return -1;
+>  	get_uts_ns(ns);
+>  	put_uts_ns(nsproxy->uts_ns);
+>  	nsproxy->uts_ns = ns;
+> diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+> index 5bbdbf0..90c97f6 100644
+> --- a/net/core/net_namespace.c
+> +++ b/net/core/net_namespace.c
+> @@ -620,6 +620,9 @@ static void netns_put(void *ns)
+>  
+>  static int netns_install(struct nsproxy *nsproxy, void *ns)
+>  {
+> +	struct net *net = ns;
+> +	if (!ns_capable(net->user_ns, CAP_SYS_ADMIN))
+> +		return -1;
+>  	put_net(nsproxy->net_ns);
+>  	nsproxy->net_ns = get_net(ns);
+>  	return 0;
