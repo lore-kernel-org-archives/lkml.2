@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab1HAJYE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 05:24:04 -0400
-Received: from mga11.intel.com ([192.55.52.93]:40938 "EHLO mga11.intel.com"
+	id S1753195Ab1HAJYU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 05:24:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47571 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751254Ab1HAJX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 05:23:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,299,1309762800"; 
-   d="scan'208";a="36583659"
-Date: Mon, 1 Aug 2011 11:25:18 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Liam Girdwood <lrg@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, akpm <akpm@linux-foundation.org>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH -next] regulator: aat2870-regulator.c needs module.h
-Message-ID: <20110801092518.GA26275@sortiz-mobl>
-References: <20110729173827.716f57ff6e00095a3efc6449@canb.auug.org.au>
- <20110729211309.92e8b744.rdunlap@xenotime.net>
- <20110801001523.GA20641@opensource.wolfsonmicro.com>
- <20110801103304.e77887ff2e60f4f6d5c9f91f@canb.auug.org.au>
- <20110801110507.7ca032b85a285d1f9e755146@canb.auug.org.au>
+	id S1751477Ab1HAJYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 05:24:17 -0400
+Message-ID: <4E3670BF.6000709@suse.cz>
+Date: Mon, 01 Aug 2011 11:24:15 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110801110507.7ca032b85a285d1f9e755146@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Foley <pefoley2@verizon.net>
+Cc: Arnaud Lacombe <lacombar@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
+        rdunlap@xenotime.net
+Subject: Re: [PATCH RFC] kconfig.h fix extraneous dependencies
+References: <alpine.LNX.2.00.1107311812460.62769@linux> <CACqU3MWfOg+ZhUGAovWsds48Y37i7GRk7qSxWvt7-JmLMBcmgg@mail.gmail.com> <alpine.LNX.2.00.1107312055360.20006@linux>
+In-Reply-To: <alpine.LNX.2.00.1107312055360.20006@linux>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen, Liam,
+On 1.8.2011 03:16, Peter Foley wrote:
+> On Sun, 31 Jul 2011, Arnaud Lacombe wrote:
+>> On Sun, Jul 31, 2011 at 8:36 PM, Peter Foley<pefoley2@verizon.net>  wrote:
+>>> The introduction of kconfig.h caused fixdep to create three extraneous
+>>> dependencies.
+>>> include/config/.h
+>>> include/config/h.h
+>>> include/config/foo.h
+>>>
+>>> Remove them by eliminating instances of CONFIG_
+>>>
+>> this seems ugly to me... I would rather try to fix fixdep, no ?
+>>
+>>   - Arnaud
+>
+> I'd be the first to admit that this patch is a ugly hack.
+> However, judging by the comments in fixdep.c this is expected behavior.
 
-On Mon, Aug 01, 2011 at 11:05:07AM +1000, Stephen Rothwell wrote:
-> On Mon, 1 Aug 2011 10:33:04 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >
-> > On Mon, 1 Aug 2011 01:15:24 +0100 Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-> > >
-> > > On Fri, Jul 29, 2011 at 09:13:09PM -0700, Randy Dunlap wrote:
-> > > > From: Randy Dunlap <rdunlap@xenotime.net>
-> > > > 
-> > > > aat2870-regulator.c needs to include linux/module.h to fix multiple
-> > > > build errors.
-> > > 
-> > > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> > > 
-> > > but if the breakage isn't in mainline yet to minimize the breaks
-> > > bisection someone should figure out which tree introduced the change
-> > > with module.h and either get the fix merged along with that.  If neither
-> > > the module.h change nor the driver is in Linus' tree yet I rather
-> > > suspect this should go via MFD as I seem to recall that the driver is
-> > > going in via there.
-> > 
-> > It is indeed.  I have this patch set to apply to my tree today after the
-> > mfd tree.  Hopefully Samuel will put it in his tree for tomorrow (and
-> > before he asks Linus to pull.
-> 
-> Too late :-)
-Sorry about that. I thought I would hear about any breakage after I pushed my
-bits on Friday morning.
-Anyway, Liam, are you going to push this fix through your tree ?
+And it's also harmless, the source contains thousands of false matches:
+$ git grep '_CONFIG_' | wc -l
+7989
+e.g anything that includes include/linux/acpi.h gets a false dependency 
+on include/config/support.h because of
+include/linux/acpi.h:#define OSC_EXT_PCI_CONFIG_SUPPORT         1
+but it doesn't matter.
 
-Cheers,
-Samuel.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+> I'm also afraid that changing fixdep to ignore comments would slow down
+> the whole build for the sake of one file which IMHO dosen't seem to be a
+> worthwhile tradeoff.
+
+I would take a patch that makes fixdep ignore include/linux/kconfig.h, 
+like it ignores include/generated/kconfig.h. Anything more advanced 
+isn't worth the effort, IMO.
+
+Michal
