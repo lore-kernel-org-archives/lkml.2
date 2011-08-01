@@ -1,40 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab1HALZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 07:25:11 -0400
-Received: from mail.leecountync.gov ([162.39.82.19]:43391 "EHLO
-	mail.leecountync.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab1HALZH convert rfc822-to-8bit (ORCPT
+	id S1752347Ab1HAL16 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 07:27:58 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42384 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab1HAL1y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 07:25:07 -0400
-X-Greylist: delayed 595 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Aug 2011 07:25:07 EDT
-From: Brenda Walker <bwalker@leecountync.gov>
-To: "info@helpdesk.org" <info@helpdesk.org>
-Date: Mon, 1 Aug 2011 07:14:36 -0400
-Subject: Re: Help Desk Error >>>>>
-Thread-Topic: Help Desk Error >>>>>
-Thread-Index: AQHMUDwyTt68i7njYECzGTpkRh1JIQ==
-Message-ID: <06AFECE8DC5E634FBC3BCD82B22ED8EC579EF4E92E@lee-exchange.leecountync.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Mon, 1 Aug 2011 07:27:54 -0400
 MIME-Version: 1.0
-X-Mlf-Version: 7.3.2.5083
-X-Mlf-UniqueId: o201108011114470055029
+In-Reply-To: <20110801101410.GE15578@n2100.arm.linux.org.uk>
+References: <1312042478-26012-1-git-send-email-zdevai@gmail.com>
+	<20110801083614.GC15578@n2100.arm.linux.org.uk>
+	<CAMuHMdUpTDSRP_JmWqcCBtYwzna0hwmaBshpiF8kgvqoNcqYZA@mail.gmail.com>
+	<20110801101410.GE15578@n2100.arm.linux.org.uk>
+Date: Mon, 1 Aug 2011 13:27:52 +0200
+X-Google-Sender-Auth: 5NtuI19uCGI_P7H7JSwf4QsCTZk
+Message-ID: <CAMuHMdUiLjMVwOqKPF6tHLpPxROrx=rRf3ednfTLrwGuZ2VF7A@mail.gmail.com>
+Subject: Re: [PATCH] Remove remaining references of CONFIG_GENERIC_TIME
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Zoltan Devai <zdevai@gmail.com>, linux-kernel@vger.kernel.org,
+        chris@zankel.net, linux-am33-list@redhat.com, trivial@kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net, cmetcalf@tilera.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear User,
+On Mon, Aug 1, 2011 at 12:14, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Mon, Aug 01, 2011 at 12:09:02PM +0200, Geert Uytterhoeven wrote:
+>> On Mon, Aug 1, 2011 at 10:36, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>> > On Sat, Jul 30, 2011 at 06:14:38PM +0200, Zoltan Devai wrote:
+>> >> Commit 592913ecb87a9e06f98ddb55b298f1a66bf94c6b has killed off any
+>> >> use of this config option long ago.
+>> >
+>> > I don't see the point of this - we were free of GENERIC_TIME on ARM
+>> > shortly after it was originally killed off.  The problem is you can't
+>> > stop people introducing new uses of this - because it existed once and
+>> > there's nothing which errors out on its presence, people are going to
+>> > continue submitting patches with it in.  And it's going to continue
+>> > being missed at the review stage.
+>> >
+>> > I've a similar problem with folk on ARM including mach/gpio.h as their
+>> > sole gpio header file rather than linux/gpio.h - I've been trying for
+>> > the last 1-2 years to educate people to use linux/ in preference.  You
+>> > can't do it, and I'm still just about the only one who picks up on that.
+>> > (SoC maintainers don't care.)  They will end up caring when I push a
+>> > change during the next merge window though, so I'll eventually stop
+>> > mach/gpio.h being included.  (Instead, it'll be asm/gpio.h).
+>> >
+>> > GENERIC_TIME though... I don't think you'll ever stop new uses of it
+>> > creeping in unless you can arrange for something to error out.
+>>
+>> Doesn't kconf error out when trying to select a non-existent symbol?
+>
+> Nope.
 
-You have exceeded the limit of your mailbox set by your IT service provider, you will be unable to receive new emails and sent successfully. Just before this message was sent, you are Currently running on 91624 KB, You have has exceeded the storage limit which is 20GB. To prevent this, please click to reset your account. CLICK HERE<https://spreadsheets.google.com/spreadsheet/viewform?formkey=dHNubEZ0UWZZeVQ2VFk0dGJiV1dpZVE6MQ>
+You're right. So that's a bug.
 
-Thanks
-Administrator.
+Gr{oetje,eeting}s,
 
-________________________________
-This email and any files transmitted with it are confidential and intended solely for the sender and receiver. If you are not the named addressee you should not disseminate, distribute, copy or alter this email. Any views or opinions presented in this email are solely those of the author and might not represent those of Lee County Government. Warning: Although Lee County Government has taken reasonable precautions to ensure no viruses are present in this email, the company cannot accept responsibility for any loss or damage arising from the use of this email or attachments. This email message, and any attachment(s) hereto, as well as any email message(s) that may be sent in response to it, may be considered Public Record subject to the North Carolina Public Records Law "NCGS.Ch.132" and may be disclosed to third parties and as such are subject to requests for review without the consent of the sender and/or receiver. If you are not the intended recipient, please destroy this message and inform the sender immediately. The information contained in this email may be confidential and, in any event, is intended only for the use of the entity or individual to whom it is addressed
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
