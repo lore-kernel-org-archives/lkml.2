@@ -1,252 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105Ab1HANlb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 09:41:31 -0400
-Received: from exprod5og104.obsmtp.com ([64.18.0.178]:58718 "EHLO
-	exprod5og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753095Ab1HANl2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 09:41:28 -0400
-Message-ID: <4E36AD01.1050004@ge.com>
-Date: Mon, 01 Aug 2011 14:41:21 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1753195Ab1HANmJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 09:42:09 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:43243 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753095Ab1HANmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 09:42:04 -0400
+From: Richard Weinberger <richard@nod.at>
+To: segoon@openwall.com
+Subject: shm updates broke UML
+Date: Mon, 1 Aug 2011 15:41:59 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.5; x86_64; ; )
+Cc: serge.hallyn@canonical.com, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net, toralf.foerster@gmx.de
 MIME-Version: 1.0
-To: Manohar Vanga <manohar.vanga@cern.ch>
-CC: gregkh@suse.de, cota@braap.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/8] staging: vme: make [alloc|free]_consistent bridge
- specific
-References: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch> <1312194053-32310-4-git-send-email-manohar.vanga@cern.ch>
-In-Reply-To: <1312194053-32310-4-git-send-email-manohar.vanga@cern.ch>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Aug 2011 13:41:25.0391 (UTC) FILETIME=[B52999F0:01CC5050]
+Message-Id: <201108011541.59640.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/11 11:20, Manohar Vanga wrote:
-> Make PCI dependent functions ([alloc|free]_consistent() in
-> 'vme.c') bridge specific. By removing the dependency of the
-> VME bridge framework on PCI, this patch allows for addition of
-> non-PCI based VME bridges.
-> 
+Vasiliy,
 
-I like the approach, I think I agree with Dan, I'd rather see the locking
-inside the function for now.
+5774ed01 (shm: handle separate PID namespaces case)
+b34a6b1d (ipc: introduce shm_rmid_forced sysctl)
+4c677e2e (shm: optimize locking and ipc_namespace getting)
 
-Martyn
+broke UML on i386.
+It crashes while starting up by SIGSEGV.
+exit_shm() seems to be the evil doer.
 
-> Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
-> ---
->  drivers/staging/vme/bridges/vme_ca91cx42.c |   24 ++++++++++++++++++++++
->  drivers/staging/vme/bridges/vme_tsi148.c   |   24 ++++++++++++++++++++++
->  drivers/staging/vme/vme.c                  |   30 ++++++++++++++-------------
->  drivers/staging/vme/vme_bridge.h           |   10 ++++++--
->  4 files changed, 71 insertions(+), 17 deletions(-)
-> 
-> diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
-> index c378819..15a0b19 100644
-> --- a/drivers/staging/vme/bridges/vme_ca91cx42.c
-> +++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
-> @@ -1507,6 +1507,28 @@ static int ca91cx42_slot_get(struct vme_bridge *ca91cx42_bridge)
->  
->  }
->  
-> +void *ca91cx42_alloc_consistent(struct device *parent, size_t size,
-> +	dma_addr_t *dma)
-> +{
-> +	struct pci_dev *pdev;
-> +
-> +	/* Find pci_dev container of dev */
-> +	pdev = container_of(parent, struct pci_dev, dev);
-> +
-> +	return pci_alloc_consistent(pdev, size, dma);
-> +}
-> +
-> +void ca91cx42_free_consistent(struct device *parent, size_t size, void *vaddr,
-> +	dma_addr_t dma)
-> +{
-> +	struct pci_dev *pdev;
-> +
-> +	/* Find pci_dev container of dev */
-> +	pdev = container_of(parent, struct pci_dev, dev);
-> +
-> +	pci_free_consistent(pdev, size, vaddr, dma);
-> +}
-> +
->  static int __init ca91cx42_init(void)
->  {
->  	return pci_register_driver(&ca91cx42_driver);
-> @@ -1776,6 +1798,8 @@ static int ca91cx42_probe(struct pci_dev *pdev, const struct pci_device_id *id)
->  	ca91cx42_bridge->lm_attach = ca91cx42_lm_attach;
->  	ca91cx42_bridge->lm_detach = ca91cx42_lm_detach;
->  	ca91cx42_bridge->slot_get = ca91cx42_slot_get;
-> +	ca91cx42_bridge->alloc_consistent = ca91cx42_alloc_consistent;
-> +	ca91cx42_bridge->free_consistent = ca91cx42_free_consistent;
->  
->  	data = ioread32(ca91cx42_device->base + MISC_CTL);
->  	dev_info(&pdev->dev, "Board is%s the VME system controller\n",
-> diff --git a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
-> index e3f021e..5c147d6 100644
-> --- a/drivers/staging/vme/bridges/vme_tsi148.c
-> +++ b/drivers/staging/vme/bridges/vme_tsi148.c
-> @@ -2122,6 +2122,28 @@ static int tsi148_slot_get(struct vme_bridge *tsi148_bridge)
->  	return (int)slot;
->  }
->  
-> +void *tsi148_alloc_consistent(struct device *parent, size_t size,
-> +	dma_addr_t *dma)
-> +{
-> +	struct pci_dev *pdev;
-> +
-> +	/* Find pci_dev container of dev */
-> +	pdev = container_of(parent, struct pci_dev, dev);
-> +
-> +	return pci_alloc_consistent(pdev, size, dma);
-> +}
-> +
-> +void tsi148_free_consistent(struct device *parent, size_t size, void *vaddr,
-> +	dma_addr_t dma)
-> +{
-> +	struct pci_dev *pdev;
-> +
-> +	/* Find pci_dev container of dev */
-> +	pdev = container_of(parent, struct pci_dev, dev);
-> +
-> +	pci_free_consistent(pdev, size, vaddr, dma);
-> +}
-> +
->  static int __init tsi148_init(void)
->  {
->  	return pci_register_driver(&tsi148_driver);
-> @@ -2451,6 +2473,8 @@ static int tsi148_probe(struct pci_dev *pdev, const struct pci_device_id *id)
->  	tsi148_bridge->lm_attach = tsi148_lm_attach;
->  	tsi148_bridge->lm_detach = tsi148_lm_detach;
->  	tsi148_bridge->slot_get = tsi148_slot_get;
-> +	tsi148_bridge->alloc_consistent = tsi148_alloc_consistent;
-> +	tsi148_bridge->free_consistent = tsi148_free_consistent;
->  
->  	data = ioread32be(tsi148_device->base + TSI148_LCSR_VSTAT);
->  	dev_info(&pdev->dev, "Board is%s the VME system controller\n",
-> diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
-> index 330a4ff..bbede97 100644
-> --- a/drivers/staging/vme/vme.c
-> +++ b/drivers/staging/vme/vme.c
-> @@ -83,15 +83,11 @@ static struct vme_bridge *find_bridge(struct vme_resource *resource)
->  /*
->   * Allocate a contiguous block of memory for use by the driver. This is used to
->   * create the buffers for the slave windows.
-> - *
-> - * XXX VME bridges could be available on buses other than PCI. At the momment
-> - *     this framework only supports PCI devices.
->   */
->  void *vme_alloc_consistent(struct vme_resource *resource, size_t size,
->  	dma_addr_t *dma)
->  {
->  	struct vme_bridge *bridge;
-> -	struct pci_dev *pdev;
->  
->  	if (resource == NULL) {
->  		printk(KERN_ERR "No resource\n");
-> @@ -104,28 +100,27 @@ void *vme_alloc_consistent(struct vme_resource *resource, size_t size,
->  		return NULL;
->  	}
->  
-> -	/* Find pci_dev container of dev */
->  	if (bridge->parent == NULL) {
->  		printk(KERN_ERR "Dev entry NULL\n");
->  		return NULL;
->  	}
-> -	pdev = container_of(bridge->parent, struct pci_dev, dev);
->  
-> -	return pci_alloc_consistent(pdev, size, dma);
-> +	if (bridge->alloc_consistent == NULL) {
-> +		printk(KERN_ERR "alloc_consistent not supported by bridge\n");
-> +		return NULL;
-> +	}
-> +
-> +	return bridge->alloc_consistent(bridge->parent, size, dma);
->  }
->  EXPORT_SYMBOL(vme_alloc_consistent);
->  
->  /*
->   * Free previously allocated contiguous block of memory.
-> - *
-> - * XXX VME bridges could be available on buses other than PCI. At the momment
-> - *     this framework only supports PCI devices.
->   */
->  void vme_free_consistent(struct vme_resource *resource, size_t size,
->  	void *vaddr, dma_addr_t dma)
->  {
->  	struct vme_bridge *bridge;
-> -	struct pci_dev *pdev;
->  
->  	if (resource == NULL) {
->  		printk(KERN_ERR "No resource\n");
-> @@ -138,10 +133,17 @@ void vme_free_consistent(struct vme_resource *resource, size_t size,
->  		return;
->  	}
->  
-> -	/* Find pci_dev container of dev */
-> -	pdev = container_of(bridge->parent, struct pci_dev, dev);
-> +	if (bridge->parent == NULL) {
-> +		printk(KERN_ERR "Dev entry NULL\n");
-> +		return;
-> +	}
-> +
-> +	if (bridge->free_consistent == NULL) {
-> +		printk(KERN_ERR "free_consistent not supported by bridge\n");
-> +		return;
-> +	}
->  
-> -	pci_free_consistent(pdev, size, vaddr, dma);
-> +	bridge->free_consistent(bridge->parent, size, vaddr, dma);
->  }
->  EXPORT_SYMBOL(vme_free_consistent);
->  
-> diff --git a/drivers/staging/vme/vme_bridge.h b/drivers/staging/vme/vme_bridge.h
-> index 4c6ec31..a9084f0 100644
-> --- a/drivers/staging/vme/vme_bridge.h
-> +++ b/drivers/staging/vme/vme_bridge.h
-> @@ -98,8 +98,6 @@ struct vme_irq {
->  /* This structure stores all the information about one bridge
->   * The structure should be dynamically allocated by the driver and one instance
->   * of the structure should be present for each VME chip present in the system.
-> - *
-> - * Currently we assume that all chips are PCI-based
->   */
->  struct vme_bridge {
->  	char name[VMENAMSIZ];
-> @@ -112,7 +110,7 @@ struct vme_bridge {
->  	struct list_head vme_errors;	/* List for errors generated on VME */
->  
->  	/* Bridge Info - XXX Move to private structure? */
-> -	struct device *parent;	/* Generic device struct (pdev->dev for PCI) */
-> +	struct device *parent;	/* Parent device (eg. pdev->dev for PCI) */
->  	void *driver_priv;	/* Private pointer for the bridge driver */
->  
->  	struct device dev[VME_SLOTS_MAX];	/* Device registered with
-> @@ -165,6 +163,12 @@ struct vme_bridge {
->  
->  	/* CR/CSR space functions */
->  	int (*slot_get) (struct vme_bridge *);
-> +
-> +	/* Bridge parent interface */
-> +	void *(*alloc_consistent)(struct device *dev, size_t size,
-> +		dma_addr_t *dma);
-> +	void (*free_consistent)(struct device *dev, size_t size,
-> +		void *vaddr, dma_addr_t dma);
->  };
->  
->  void vme_irq_handler(struct vme_bridge *, int, int);
+Reverting all three patches make UML work again.
 
+Commit 5774ed01 removed the !ns->shm_rmid_forced check, maybe this is wrong?
+The attached patch cures the problem, but I'm sure it's wrong. 8)
 
--- 
-Martyn Welch (Principal Software Engineer) | Registered in England and
-GE Intelligent Platforms                   | Wales (3828642) at 100
-T +44(0)127322748                          | Barbirolli Square, Manchester,
-E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
+---cut---
+#13 0x08067efb in hard_handler (sig=11) at arch/um/os-Linux/sys-i386/signal.c:12
+#14 <signal handler called>
+#15 __list_add (sem=0x824cc98, subclass=0) at include/linux/list.h:44
+#16 list_add_tail (sem=0x824cc98, subclass=0) at include/linux/list.h:76
+#17 __down_write_nested (sem=0x824cc98, subclass=0) at lib/rwsem-spinlock.c:232
+#18 0x081c7ba1 in __down_write (sem=0x824cc98) at lib/rwsem-spinlock.c:252
+#19 0x081c74a3 in down_write (sem=0x824cc98) at kernel/rwsem.c:51
+#20 0x08139913 in exit_shm (task=0x9c73b60) at ipc/shm.c:308
+#21 0x08075649 in do_exit (code=0) at kernel/exit.c:983
+#22 0x08081dd2 in ____call_usermodehelper (data=0x9c6bce0) at kernel/kmod.c:187
+#23 0x08065c18 in run_kernel_thread (fn=0x8081ce4 <____call_usermodehelper>, arg=0x9c6bce0, 
+jmp_ptr=0x9c73d94)
+    at arch/um/os-Linux/process.c:268
+#24 0x080588cb in new_thread_handler () at arch/um/kernel/process.c:153
+#25 0x00000000 in ?? ()
+---cut---
+
+Not-Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 9fb044f3b..2196a0d 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -304,6 +304,9 @@ void exit_shm(struct task_struct *task)
+ {
+ 	struct ipc_namespace *ns = task->nsproxy->ipc_ns;
+ 
++	if(!ns->shm_rmid_forced)
++		return;
++
+ 	/* Destroy all already created segments, but not mapped yet */
+ 	down_write(&shm_ids(ns).rw_mutex);
+ 	if (&shm_ids(ns).in_use)
