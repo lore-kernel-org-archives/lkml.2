@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab1HAXh0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 19:37:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38254 "EHLO mx2.suse.de"
+	id S1754479Ab1HAXhe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 19:37:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38246 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753279Ab1HAXZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 19:25:08 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:53 2011
-Message-Id: <20110801232053.002179037@clark.kroah.org>
+	id S1753690Ab1HAXZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 19:25:04 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:52 2011
+Message-Id: <20110801232052.899089655@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 01 Aug 2011 16:18:39 -0700
+Date: Mon, 01 Aug 2011 16:18:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Hans Verkuil <hans.verkuil@cisco.com>,
         Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [24/70] [media] tuner-core: fix s_std and s_tuner
+Subject: [23/70] [media] v4l2-ioctl.c: prefill tuner type for g_frequency and g/s_tuner
 In-Reply-To: <20110801232124.GA15313@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,157 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit 4e4a31fb95d88518180517bae3098a23ebde9f9c upstream.
+commit 227690df75382e46a4f6ea1bbc5df855a674b47f upstream.
 
-Both s_std and s_tuner are broken because set_mode_freq is called before the
-new std (for s_std) and audmode (for s_tuner) are set.
+The subdevs are supposed to receive a valid tuner type for the g_frequency
+and g/s_tuner subdev ops. Some drivers do this, others don't. So prefill
+this in v4l2-ioctl.c based on whether the device node from which this is
+called is a radio node or not.
 
-This patch splits set_mode_freq in a set_mode and a set_freq and in s_std/s_tuner
-first calls set_mode, and if that returns 0 (i.e. the mode is supported)
-then they set t->std/t->audmode and call set_freq.
-
-This fixes a bug where changing std or audmode would actually change it to
-the previous value.
-
-Discovered while testing analog TV standards for cx18 with a tda18271 tuner.
+The spec does not require applications to fill in the type, and if they
+leave it at 0 then the 'check_mode' call in tuner-core.c will return
+an error and the ioctl does nothing.
 
 Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/tuner-core.c |   59 ++++++++++++++++++++-------------------
- 1 file changed, 31 insertions(+), 28 deletions(-)
+ drivers/media/video/v4l2-ioctl.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/media/video/tuner-core.c
-+++ b/drivers/media/video/tuner-core.c
-@@ -724,19 +724,15 @@ static inline int check_mode(struct tune
- }
+--- a/drivers/media/video/v4l2-ioctl.c
++++ b/drivers/media/video/v4l2-ioctl.c
+@@ -1822,6 +1822,8 @@ static long __video_do_ioctl(struct file
+ 		if (!ops->vidioc_g_tuner)
+ 			break;
  
- /**
-- * set_mode_freq - Switch tuner to other mode.
-- * @client:	struct i2c_client pointer
-+ * set_mode - Switch tuner to other mode.
-  * @t:		a pointer to the module's internal struct_tuner
-  * @mode:	enum v4l2_type (radio or TV)
-- * @freq:	frequency to set (0 means to use the previous one)
-  *
-  * If tuner doesn't support the needed mode (radio or TV), prints a
-  * debug message and returns -EINVAL, changing its state to standby.
-- * Otherwise, changes the state and sets frequency to the last value, if
-- * the tuner can sleep or if it supports both Radio and TV.
-+ * Otherwise, changes the mode and returns 0.
-  */
--static int set_mode_freq(struct i2c_client *client, struct tuner *t,
--			 enum v4l2_tuner_type mode, unsigned int freq)
-+static int set_mode(struct tuner *t, enum v4l2_tuner_type mode)
- {
- 	struct analog_demod_ops *analog_ops = &t->fe.ops.analog_ops;
++		p->type = (vfd->vfl_type == VFL_TYPE_RADIO) ?
++			V4L2_TUNER_RADIO : V4L2_TUNER_ANALOG_TV;
+ 		ret = ops->vidioc_g_tuner(file, fh, p);
+ 		if (!ret)
+ 			dbgarg(cmd, "index=%d, name=%s, type=%d, "
+@@ -1840,6 +1842,8 @@ static long __video_do_ioctl(struct file
  
-@@ -752,17 +748,27 @@ static int set_mode_freq(struct i2c_clie
- 		t->mode = mode;
- 		tuner_dbg("Changing to mode %d\n", mode);
- 	}
-+	return 0;
-+}
-+
-+/**
-+ * set_freq - Set the tuner to the desired frequency.
-+ * @t:		a pointer to the module's internal struct_tuner
-+ * @freq:	frequency to set (0 means to use the current frequency)
-+ */
-+static void set_freq(struct tuner *t, unsigned int freq)
-+{
-+	struct i2c_client *client = v4l2_get_subdevdata(&t->sd);
-+
- 	if (t->mode == V4L2_TUNER_RADIO) {
--		if (freq)
--			t->radio_freq = freq;
--		set_radio_freq(client, t->radio_freq);
-+		if (!freq)
-+			freq = t->radio_freq;
-+		set_radio_freq(client, freq);
- 	} else {
--		if (freq)
--			t->tv_freq = freq;
--		set_tv_freq(client, t->tv_freq);
-+		if (!freq)
-+			freq = t->tv_freq;
-+		set_tv_freq(client, freq);
- 	}
--
--	return 0;
- }
+ 		if (!ops->vidioc_s_tuner)
+ 			break;
++		p->type = (vfd->vfl_type == VFL_TYPE_RADIO) ?
++			V4L2_TUNER_RADIO : V4L2_TUNER_ANALOG_TV;
+ 		dbgarg(cmd, "index=%d, name=%s, type=%d, "
+ 				"capability=0x%x, rangelow=%d, "
+ 				"rangehigh=%d, signal=%d, afc=%d, "
+@@ -1858,6 +1862,8 @@ static long __video_do_ioctl(struct file
+ 		if (!ops->vidioc_g_frequency)
+ 			break;
  
- /*
-@@ -1058,10 +1064,9 @@ static void tuner_status(struct dvb_fron
- static int tuner_s_radio(struct v4l2_subdev *sd)
- {
- 	struct tuner *t = to_tuner(sd);
--	struct i2c_client *client = v4l2_get_subdevdata(sd);
- 
--	if (set_mode_freq(client, t, V4L2_TUNER_RADIO, 0) == -EINVAL)
--		return 0;
-+	if (set_mode(t, V4L2_TUNER_RADIO) == 0)
-+		set_freq(t, 0);
- 	return 0;
- }
- 
-@@ -1093,25 +1098,22 @@ static int tuner_s_power(struct v4l2_sub
- static int tuner_s_std(struct v4l2_subdev *sd, v4l2_std_id std)
- {
- 	struct tuner *t = to_tuner(sd);
--	struct i2c_client *client = v4l2_get_subdevdata(sd);
- 
--	if (set_mode_freq(client, t, V4L2_TUNER_ANALOG_TV, 0) == -EINVAL)
-+	if (set_mode(t, V4L2_TUNER_ANALOG_TV))
- 		return 0;
- 
- 	t->std = std;
- 	tuner_fixup_std(t);
--
-+	set_freq(t, 0);
- 	return 0;
- }
- 
- static int tuner_s_frequency(struct v4l2_subdev *sd, struct v4l2_frequency *f)
- {
- 	struct tuner *t = to_tuner(sd);
--	struct i2c_client *client = v4l2_get_subdevdata(sd);
--
--	if (set_mode_freq(client, t, f->type, f->frequency) == -EINVAL)
--		return 0;
- 
-+	if (set_mode(t, f->type) == 0)
-+		set_freq(t, f->frequency);
- 	return 0;
- }
- 
-@@ -1180,13 +1182,13 @@ static int tuner_g_tuner(struct v4l2_sub
- static int tuner_s_tuner(struct v4l2_subdev *sd, struct v4l2_tuner *vt)
- {
- 	struct tuner *t = to_tuner(sd);
--	struct i2c_client *client = v4l2_get_subdevdata(sd);
- 
--	if (set_mode_freq(client, t, vt->type, 0) == -EINVAL)
-+	if (set_mode(t, vt->type))
- 		return 0;
- 
- 	if (t->mode == V4L2_TUNER_RADIO)
- 		t->audmode = vt->audmode;
-+	set_freq(t, 0);
- 
- 	return 0;
- }
-@@ -1221,7 +1223,8 @@ static int tuner_resume(struct i2c_clien
- 	tuner_dbg("resume\n");
- 
- 	if (!t->standby)
--		set_mode_freq(c, t, t->type, 0);
-+		if (set_mode(t, t->type) == 0)
-+			set_freq(t, 0);
- 
- 	return 0;
- }
++		p->type = (vfd->vfl_type == VFL_TYPE_RADIO) ?
++			V4L2_TUNER_RADIO : V4L2_TUNER_ANALOG_TV;
+ 		ret = ops->vidioc_g_frequency(file, fh, p);
+ 		if (!ret)
+ 			dbgarg(cmd, "tuner=%d, type=%d, frequency=%d\n",
 
 
