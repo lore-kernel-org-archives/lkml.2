@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920Ab1HAJSP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 05:18:15 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:58505 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab1HAJSK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 05:18:10 -0400
-Message-ID: <4E366F4A.1030704@gmail.com>
-Date: Mon, 01 Aug 2011 17:18:02 +0800
-From: Liu Yuan <namei.unix@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1752968Ab1HAJYE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 05:24:04 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40938 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751254Ab1HAJX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 05:23:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,299,1309762800"; 
+   d="scan'208";a="36583659"
+Date: Mon, 1 Aug 2011 11:25:18 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Liam Girdwood <lrg@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, akpm <akpm@linux-foundation.org>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH -next] regulator: aat2870-regulator.c needs module.h
+Message-ID: <20110801092518.GA26275@sortiz-mobl>
+References: <20110729173827.716f57ff6e00095a3efc6449@canb.auug.org.au>
+ <20110729211309.92e8b744.rdunlap@xenotime.net>
+ <20110801001523.GA20641@opensource.wolfsonmicro.com>
+ <20110801103304.e77887ff2e60f4f6d5c9f91f@canb.auug.org.au>
+ <20110801110507.7ca032b85a285d1f9e755146@canb.auug.org.au>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Sasha Levin <levinsasha928@gmail.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Khoa Huynh <khoa@us.ibm.com>,
-        Badari Pulavarty <pbadari@us.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [RFC PATCH]vhost-blk: In-kernel accelerator for virtio block
- device
-References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com>	 <CAJSP0QUKz7LFuARF_n2LcBi_uuSzfmkjrWsHAWrXXkEaQJKkEA@mail.gmail.com>	 <4E325F98.5090308@gmail.com>	 <CAJSP0QX=mXvkZyeMx28iwVNDrKEZZVAZxLLOFRv62pu7byo6gw@mail.gmail.com>	 <4E32A105.6080509@gmail.com> <1311953104.30835.15.camel@lappy> <4E36612F.6040809@redhat.com>
-In-Reply-To: <4E36612F.6040809@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110801110507.7ca032b85a285d1f9e755146@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2011 04:17 PM, Avi Kivity wrote:
-> On 07/29/2011 06:25 PM, Sasha Levin wrote:
->> On Fri, 2011-07-29 at 20:01 +0800, Liu Yuan wrote:
->> >  Looking at this long list,most are function pointers that can not be
->> >  inlined, and the internal data structures used by these functions are
->> >  dozons. Leave aside code complexity, this long code path would really
->> >  need retrofit. As Christoph simply put, this kind of mess is inherent
->> >  all over the qemu code. So I am afraid, the 'retrofit'  would end 
->> up to
->> >  be a re-write the entire (sub)system. I have to admit that, I am
->> >  inclined to the MST's vhost approach, that write a new subsystem 
->> other
->> >  than tedious profiling and fixing, that would possibly goes as far as
->> >  actually re-writing it.
->>
->> I don't think the fix for problematic userspace is to write more kernel
->> code.
->>
->> vhost-net improved throughput and latency by several factors, allowing
->> to achieve much more than was possible at userspace alone.
->>
->> With vhost-blk we see an improvement of ~15% - which I assume by your
->> and Christoph's comments can be mostly attributed to QEMU. Merging a
->> module which won't improve performance dramatically compared to what is
->> possible to achieve in userspace (even if it would require a code
->> rewrite) sounds a bit wrong to me
->
-> Agree.  vhost-net works around the lack of async zero copy networking 
-> interface.  Block I/O on the other hand does have such an interface, 
-> and in addition transaction rates are usually lower.  All we're saving 
-> is the syscall overhead.
->
-Personally I too agree with Sasha Levin. But vhost-blk is the first fast 
-prototype that is supposed to act as a code base to do further 
-optimisation, which I plan to utilize  kernel's internal stuff like BIO 
-layer,  that can not be accessed from user space, to maximize the 
-performance for raw disk based block IO.
+Hi Stephen, Liam,
 
-Yuan
+On Mon, Aug 01, 2011 at 11:05:07AM +1000, Stephen Rothwell wrote:
+> On Mon, 1 Aug 2011 10:33:04 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > On Mon, 1 Aug 2011 01:15:24 +0100 Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> > >
+> > > On Fri, Jul 29, 2011 at 09:13:09PM -0700, Randy Dunlap wrote:
+> > > > From: Randy Dunlap <rdunlap@xenotime.net>
+> > > > 
+> > > > aat2870-regulator.c needs to include linux/module.h to fix multiple
+> > > > build errors.
+> > > 
+> > > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> > > 
+> > > but if the breakage isn't in mainline yet to minimize the breaks
+> > > bisection someone should figure out which tree introduced the change
+> > > with module.h and either get the fix merged along with that.  If neither
+> > > the module.h change nor the driver is in Linus' tree yet I rather
+> > > suspect this should go via MFD as I seem to recall that the driver is
+> > > going in via there.
+> > 
+> > It is indeed.  I have this patch set to apply to my tree today after the
+> > mfd tree.  Hopefully Samuel will put it in his tree for tomorrow (and
+> > before he asks Linus to pull.
+> 
+> Too late :-)
+Sorry about that. I thought I would hear about any breakage after I pushed my
+bits on Friday morning.
+Anyway, Liam, are you going to push this fix through your tree ?
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
