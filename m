@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab1HAX3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 19:29:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39029 "EHLO mx2.suse.de"
+	id S1754305Ab1HAXaF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 19:30:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38993 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754205Ab1HAX2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 19:28:14 -0400
+	id S1754164Ab1HAX2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 19:28:02 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:57 2011
-Message-Id: <20110801232057.327161857@clark.kroah.org>
+Message-Id: <20110801232057.008562147@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 01 Aug 2011 16:19:22 -0700
+Date: Mon, 01 Aug 2011 16:19:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [67/70] cifs: fix wsize negotiation to respect max buffer size and
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, mgorman@suse.de,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: [64/70] mm: vmscan: only read new_classzone_idx from pgdat when reclaiming successfully
 In-Reply-To: <20110801232124.GA15313@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,90 +26,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.39-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
- active signing (try #4)
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 1190f6a067bf27b2ee7e06ec0776a17fe0f6c4d8 upstream.
+commit 215ddd6664ced067afca7eebd2d1eb83f064ff5a upstream
 
-Hopefully last version. Base signing check on CAP_UNIX instead of
-tcon->unix_ext, also clean up the comments a bit more.
+During allocator-intensive workloads, kswapd will be woken frequently
+causing free memory to oscillate between the high and min watermark.  This
+is expected behaviour.  Unfortunately, if the highest zone is small, a
+problem occurs.
 
-According to Hongwei Sun's blog posting here:
+When balance_pgdat() returns, it may be at a lower classzone_idx than it
+started because the highest zone was unreclaimable.  Before checking if it
+should go to sleep though, it checks pgdat->classzone_idx which when there
+is no other activity will be MAX_NR_ZONES-1.  It interprets this as it has
+been woken up while reclaiming, skips scheduling and reclaims again.  As
+there is no useful reclaim work to do, it enters into a loop of shrinking
+slab consuming loads of CPU until the highest zone becomes reclaimable for
+a long period of time.
 
-    http://blogs.msdn.com/b/openspecification/archive/2009/04/10/smb-maximum-transmit-buffer-size-and-performance-tuning.aspx
+There are two problems here.  1) If the returned classzone or order is
+lower, it'll continue reclaiming without scheduling.  2) if the highest
+zone was marked unreclaimable but balance_pgdat() returns immediately at
+DEF_PRIORITY, the new lower classzone is not communicated back to kswapd()
+for sleeping.
 
-CAP_LARGE_WRITEX is ignored when signing is active. Also, the maximum
-size for a write without CAP_LARGE_WRITEX should be the maxBuf that
-the server sent in the NEGOTIATE request.
+This patch does two things that are related.  If the end_zone is
+unreclaimable, this information is communicated back.  Second, if the
+classzone or order was reduced due to failing to reclaim, new information
+is not read from pgdat and instead an attempt is made to go to sleep.  Due
+to this, it is also necessary that pgdat->classzone_idx be initialised
+each time to pgdat->nr_zones - 1 to avoid re-reads being interpreted as
+wakeups.
 
-Fix the wsize negotiation to take this into account. While we're at it,
-alter the other wsize definitions to use sizeof(WRITE_REQ) to allow for
-slightly larger amounts of data to potentially be written per request.
-
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reported-by: Pádraig Brady <P@draigBrady.com>
+Tested-by: Pádraig Brady <P@draigBrady.com>
+Tested-by: Andrew Lutomirski <luto@mit.edu>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- fs/cifs/connect.c |   33 ++++++++++++++++++++-------------
- 1 file changed, 20 insertions(+), 13 deletions(-)
+ mm/vmscan.c |   34 +++++++++++++++++++++-------------
+ 1 file changed, 21 insertions(+), 13 deletions(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -2650,21 +2650,21 @@ static void setup_cifs_sb(struct smb_vol
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2394,7 +2394,6 @@ loop_again:
+ 			if (!zone_watermark_ok_safe(zone, order,
+ 					high_wmark_pages(zone), 0, 0)) {
+ 				end_zone = i;
+-				*classzone_idx = i;
+ 				break;
+ 			}
+ 		}
+@@ -2471,8 +2470,11 @@ loop_again:
+ 			    total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
+ 				sc.may_writepage = 1;
  
- /*
-  * When the server supports very large writes via POSIX extensions, we can
-- * allow up to 2^24 - PAGE_CACHE_SIZE.
-+ * allow up to 2^24-1, minus the size of a WRITE_AND_X header, not including
-+ * the RFC1001 length.
-  *
-  * Note that this might make for "interesting" allocation problems during
-- * writeback however (as we have to allocate an array of pointers for the
-- * pages). A 16M write means ~32kb page array with PAGE_CACHE_SIZE == 4096.
-+ * writeback however as we have to allocate an array of pointers for the
-+ * pages. A 16M write means ~32kb page array with PAGE_CACHE_SIZE == 4096.
+-			if (zone->all_unreclaimable)
++			if (zone->all_unreclaimable) {
++				if (end_zone && end_zone == i)
++					end_zone--;
+ 				continue;
++			}
+ 
+ 			if (!zone_watermark_ok_safe(zone, order,
+ 					high_wmark_pages(zone), end_zone, 0)) {
+@@ -2652,8 +2654,8 @@ static void kswapd_try_to_sleep(pg_data_
   */
--#define CIFS_MAX_WSIZE ((1<<24) - PAGE_CACHE_SIZE)
-+#define CIFS_MAX_WSIZE ((1<<24) - 1 - sizeof(WRITE_REQ) + 4)
+ static int kswapd(void *p)
+ {
+-	unsigned long order;
+-	int classzone_idx;
++	unsigned long order, new_order;
++	int classzone_idx, new_classzone_idx;
+ 	pg_data_t *pgdat = (pg_data_t*)p;
+ 	struct task_struct *tsk = current;
  
- /*
-- * When the server doesn't allow large posix writes, default to a wsize of
-- * 128k - PAGE_CACHE_SIZE -- one page less than the largest frame size
-- * described in RFC1001. This allows space for the header without going over
-- * that by default.
-+ * When the server doesn't allow large posix writes, only allow a wsize of
-+ * 128k minus the size of the WRITE_AND_X header. That allows for a write up
-+ * to the maximum size described by RFC1002.
-  */
--#define CIFS_MAX_RFC1001_WSIZE (128 * 1024 - PAGE_CACHE_SIZE)
-+#define CIFS_MAX_RFC1002_WSIZE (128 * 1024 - sizeof(WRITE_REQ) + 4)
+@@ -2683,17 +2685,23 @@ static int kswapd(void *p)
+ 	tsk->flags |= PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD;
+ 	set_freezable();
  
- /*
-  * The default wsize is 1M. find_get_pages seems to return a maximum of 256
-@@ -2683,11 +2683,18 @@ cifs_negotiate_wsize(struct cifsTconInfo
+-	order = 0;
+-	classzone_idx = MAX_NR_ZONES - 1;
++	order = new_order = 0;
++	classzone_idx = new_classzone_idx = pgdat->nr_zones - 1;
+ 	for ( ; ; ) {
+-		unsigned long new_order;
+-		int new_classzone_idx;
+ 		int ret;
  
- 	/* can server support 24-bit write sizes? (via UNIX extensions) */
- 	if (!tcon->unix_ext || !(unix_cap & CIFS_UNIX_LARGE_WRITE_CAP))
--		wsize = min_t(unsigned int, wsize, CIFS_MAX_RFC1001_WSIZE);
-+		wsize = min_t(unsigned int, wsize, CIFS_MAX_RFC1002_WSIZE);
+-		new_order = pgdat->kswapd_max_order;
+-		new_classzone_idx = pgdat->classzone_idx;
+-		pgdat->kswapd_max_order = 0;
+-		pgdat->classzone_idx = MAX_NR_ZONES - 1;
++		/*
++		 * If the last balance_pgdat was unsuccessful it's unlikely a
++		 * new request of a similar or harder type will succeed soon
++		 * so consider going to sleep on the basis we reclaimed at
++		 */
++		if (classzone_idx >= new_classzone_idx && order == new_order) {
++			new_order = pgdat->kswapd_max_order;
++			new_classzone_idx = pgdat->classzone_idx;
++			pgdat->kswapd_max_order =  0;
++			pgdat->classzone_idx = pgdat->nr_zones - 1;
++		}
++
+ 		if (order < new_order || classzone_idx > new_classzone_idx) {
+ 			/*
+ 			 * Don't sleep if someone wants a larger 'order'
+@@ -2706,7 +2714,7 @@ static int kswapd(void *p)
+ 			order = pgdat->kswapd_max_order;
+ 			classzone_idx = pgdat->classzone_idx;
+ 			pgdat->kswapd_max_order = 0;
+-			pgdat->classzone_idx = MAX_NR_ZONES - 1;
++			pgdat->classzone_idx = pgdat->nr_zones - 1;
+ 		}
  
--	/* no CAP_LARGE_WRITE_X? Limit it to 16 bits */
--	if (!(server->capabilities & CAP_LARGE_WRITE_X))
--		wsize = min_t(unsigned int, wsize, USHRT_MAX);
-+	/*
-+	 * no CAP_LARGE_WRITE_X or is signing enabled without CAP_UNIX set?
-+	 * Limit it to max buffer offered by the server, minus the size of the
-+	 * WRITEX header, not including the 4 byte RFC1001 length.
-+	 */
-+	if (!(server->capabilities & CAP_LARGE_WRITE_X) ||
-+	    (!(server->capabilities & CAP_UNIX) &&
-+	     (server->secMode & (SECMODE_SIGN_ENABLED|SECMODE_SIGN_REQUIRED))))
-+		wsize = min_t(unsigned int, wsize,
-+				server->maxBuf - sizeof(WRITE_REQ) + 4);
- 
- 	/* hard limit of CIFS_MAX_WSIZE */
- 	wsize = min_t(unsigned int, wsize, CIFS_MAX_WSIZE);
+ 		ret = try_to_freeze();
 
 
