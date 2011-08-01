@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab1HAFId (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 01:08:33 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:55860 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291Ab1HAFI3 (ORCPT
+	id S1752770Ab1HAFVk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 01:21:40 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:56300
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752369Ab1HAFVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 01:08:29 -0400
-Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
-From: Pekka Enberg <penberg@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <alpine.DEB.2.00.1107311426001.944@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1107290145080.3279@tiger>
-	 <alpine.DEB.2.00.1107291002570.16178@router.home>
-	 <alpine.DEB.2.00.1107311136150.12538@chino.kir.corp.google.com>
-	 <alpine.DEB.2.00.1107311253560.12538@chino.kir.corp.google.com>
-	 <1312145146.24862.97.camel@jaguar>
-	 <alpine.DEB.2.00.1107311426001.944@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Mon, 01 Aug 2011 08:08:26 +0300
-Message-ID: <1312175306.24862.103.camel@jaguar>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Aug 2011 01:21:34 -0400
+X-SpamScore: -19
+X-BigFish: VPS-19(zz936eK146fK1432N98dKzz1202hzz5eeeM8275bhz32i668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LP8HJR-01-27O-02
+X-M-MSG: 
+Date: Mon, 1 Aug 2011 07:21:28 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/7] perf, x86: Implement AMD IBS
+Message-ID: <20110801052128.GW4590@erda.amd.com>
+References: <1311860812-28748-1-git-send-email-robert.richter@amd.com>
+ <1311959236.5890.420.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1311959236.5890.420.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-07-31 at 14:55 -0700, David Rientjes wrote:
-> On Sun, 31 Jul 2011, Pekka Enberg wrote:
+On 29.07.11 13:07:16, Peter Zijlstra wrote:
+> On Thu, 2011-07-28 at 15:46 +0200, Robert Richter wrote:
+> > This patch set adds support for AMD IBS to perf. 
 > 
-> > > And although slub is definitely heading in the right direction regarding 
-> > > the netperf benchmark, it's still a non-starter for anybody using large 
-> > > NUMA machines for networking performance.  On my 16-core, 4 node, 64GB 
-> > > client/server machines running netperf TCP_RR with various thread counts 
-> > > for 60 seconds each on 3.0:
-> > > 
-> > > 	threads		SLUB		SLAB		diff
-> > > 	 16		76345		74973		- 1.8%
-> > > 	 32		116380		116272		- 0.1%
-> > > 	 48		150509		153703		+ 2.1%
-> > > 	 64		187984		189750		+ 0.9%
-> > > 	 80		216853		224471		+ 3.5%
-> > > 	 96		236640		249184		+ 5.3%
-> > > 	112		256540		275464		+ 7.4%
-> > > 	128		273027		296014		+ 8.4%
-> > > 	144		281441		314791		+11.8%
-> > > 	160		287225		326941		+13.8%
-> > 
-> > That looks like a pretty nasty scaling issue. David, would it be
-> > possible to see 'perf report' for the 160 case? [ Maybe even 'perf
-> > annotate' for the interesting SLUB functions. ] 
+> > The approach is still to collect raw sample data which should be the
+> > most important use case for application developers. The data format is
+> > the same as described in the IBS register specification.
 > 
-> More interesting than the perf report (which just shows kfree, 
-> kmem_cache_free, kmem_cache_alloc dominating) is the statistics that are 
-> exported by slub itself, it shows the "slab thrashing" issue that I 
-> described several times over the past few years.  It's difficult to 
-> address because it's a result of slub's design.  From the client side of 
-> 160 netperf TCP_RR threads for 60 seconds:
-> 
-> 	cache		alloc_fastpath		alloc_slowpath
-> 	kmalloc-256	10937512 (62.8%)	6490753
-> 	kmalloc-1024	17121172 (98.3%)	303547
-> 	kmalloc-4096	5526281			11910454 (68.3%)
-> 
-> 	cache		free_fastpath		free_slowpath
-> 	kmalloc-256	15469			17412798 (99.9%)
-> 	kmalloc-1024	11604742 (66.6%)	5819973
-> 	kmalloc-4096	14848			17421902 (99.9%)
-> 
-> With those stats, there's no way that slub will even be able to compete 
-> with slab because it's not optimized for the slowpath.
+> That makes it hardware dependent right? I take it new hardware with IBS
+> extensions adds output MSRs.
 
-Is the slowpath being hit more often with 160 vs 16 threads? As I said,
-the problem you mentioned looks like a *scaling issue* to me which is
-actually somewhat surprising. I knew that the slowpaths were slow but I
-haven't seen this sort of data before.
+IBS is supposed to be architectural spec'ed, meaning there are no
+family checks. IBS features are detected using cpuid.
 
-I snipped the 'SLUB can never compete with SLAB' part because I'm
-frankly more interested in raw data I can analyse myself. I'm hoping to
-the per-CPU partial list patch queued for v3.2 soon and I'd be
-interested to know how much I can expect that to help.
+So the version of the raw sampling data format could be specified with
+the u32 capability variable. I could put the caps value to the raw
+sample data too right after the size field. An additional advantage
+would be that 64 bit values are memory alligned then.
 
-			Pekka
+The Branch Target Address register that has been added to newer cpus
+could simply be extended to the raw data sample, the data would still
+be backward compatible. Userland can detect it existence from the
+sample size or (better) from the ibs caps.
+
+> Anyway, I'll try and go over it again next week after reading the IBS
+> hardware spec (again.. that stuff just won't stick to memory).
+> 
+> I've got the BKDG for Fam10, is there anything more I should read?
+
+Though it is treated architectural, it isn't in the AMD64 Architecture
+Programmer's Manual (APM). The 10h BKDG is a good source, but extended
+IBS features are described in the family 12h bkdg (same as for 15h)
+and the capabilities are in the cpuid spec:
+
+ http://support.amd.com/us/Processor_TechDocs/41131.pdf
+ http://support.amd.com/us/Processor_TechDocs/25481.pdf
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
