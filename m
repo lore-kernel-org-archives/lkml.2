@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753230Ab1HAUAX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 16:00:23 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46281 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080Ab1HAUAB (ORCPT
+	id S1753195Ab1HAUAT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 16:00:19 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42564 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753115Ab1HAUAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Aug 2011 16:00:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110801194809.GE19079@n2100.arm.linux.org.uk>
-References: <1312124593-6088-1-git-send-email-linux@bohmer.net>
-	<20110731150707.GA2975@n2100.arm.linux.org.uk>
-	<CANqCtQJwUsLXfA408GzAr0rQtc2DRjtKqP8-m2UBUGEy-YP5dg@mail.gmail.com>
-	<20110801092806.GD15578@n2100.arm.linux.org.uk>
-	<CANqCtQK=H_B04A7knZSiuE5RLogTgMKxwtMK1HSqSgKA_U2J7A@mail.gmail.com>
-	<20110801194809.GE19079@n2100.arm.linux.org.uk>
-Date: Mon, 1 Aug 2011 22:00:00 +0200
-X-Google-Sender-Auth: lNcTZvoHuD-XDQB7e-DBrHakb3Q
-Message-ID: <CANqCtQLuvFSsL3N3HdxdhnmO=2g4qsUTPX5rym1FUH1Lo8-ofA@mail.gmail.com>
-Subject: Re: [PATCH] Add sched_clock to AT91 TCB clocksource driver
-From: Remy Bohmer <linux@bohmer.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Remy Bohmer <l.pinguin@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Mon, 1 Aug 2011 12:59:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: Have we changed /proc/stat idle statistics by NOHZ kernel?
+Message-Id: <20110801125916.1855ff3f.akpm@linux-foundation.org>
+In-Reply-To: <20110725143313.GE9445@tiehlicka.suse.cz>
+References: <20110725143313.GE9445@tiehlicka.suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 25 Jul 2011 16:33:13 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
->> But late_time_init does it before the sched_clock is declared stable.
->> Until that point sched_clock will always return zero, as such we can
->> IMHO safely assume that the scheduler is designed such that it can
->> handle fixed zero timestamps for a while.
->
-> You're confused.
->
-> If you provide your own sched_clock(), that's what is used by everyone
-> who calls sched_clock() both before and after sched_clock_init() has
-> been called.
->
-> sched_clock_cpu() and cpu_clock() both will return zero up until
-> sched_clock_init() has been called, but sched_clock() itself may not.
->
-> And these parts of the scheduler I'm talking about use sched_clock()
-> itself, not sched_clock_cpu() nor cpu_clock().
+> Hi,
+> we have a customer reporting that /proc/stat doesn't provide correct
+> results about idle time if the machine is idle.
+> The issue is caused by the fact that tickles kernel doesn't update
+> kstat_cpu(i).cpustat.idle while it is tickles. Tools that parse this
+> file interpret the unchanged value as 0% idle since the last time.
+> While I personally do not think that measuring the idle machine is
+> that important one could say that the semantic of the file has changed
+> with NOHZ which is not good as we are trying to keep this interface
+> stable.
+> One way to fix this is to consider the current status of idle in
+> show_stat. The very primitive attempt of that can be seen bellow (on
+> top of the current Linus tree). I know it has several issue it just
+> illustrates what I am trying to say.  It will not work if jiffies
+> overflow while the CPU was tickles and it also misses locking and
+> handling !NOHZ configuration.
+> 
+> I have also noticed we have get_cpu_idle_time_us which should do
+> something similar. Should it be used instead or it is more intrusive?
+> 
+> Btw. is this considered to be a problem at all?
+> 
 
-Yep. You are right. I was confused... Sorry.
+I'd consider it a bug and a regression.  If the machine was idle and
+/proc/stat says "zero idle time" then that is simply incorrect.
 
-Kind regards,
+Can we just cheat?  subtract elapsed R and D time from elapsed wall
+time and print that out?
 
-Remy
