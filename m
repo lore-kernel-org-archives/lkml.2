@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab1HAItd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 04:49:33 -0400
-Received: from hedley.dartmouth.edu ([129.170.6.28]:50218 "EHLO
-	hedley.dartmouth.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751697Ab1HAIt2 (ORCPT
+	id S1752425Ab1HAIxR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 04:53:17 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35256 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031Ab1HAIxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 04:49:28 -0400
-X-Greylist: delayed 1469 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Aug 2011 04:49:27 EDT
-Message-ID: <20110801042353.x4ve4u9ncc8sswk0@webmail.dartmouth.edu>
-Date: Mon,  1 Aug 2011 04:23:53 -0400
-From: Weixin.Zheng.15@Dartmouth.edu
-Reply-to: bahhahfeaz@hotmail.com
-To: undisclosed-recipients:;
-Subject: PLEASE REPLY, ITS A BUSINESS PROPOSAL
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
+	Mon, 1 Aug 2011 04:53:13 -0400
+Subject: [PATCH] leds: led-bd2802: bd2802_unregister_led_classdev should
+ unregister all registered leds
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Kim Kyuwon <q1.kim@samsung.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 01 Aug 2011 16:53:04 +0800
+Message-ID: <1312188784.27249.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
-X-MailScanner: Found to be clean by hedley.dartmouth.edu
-X-MailScanner-SpamCheck: spam, SpamAssassin (cached, score=4.382, required 1,
-	ALL_TRUSTED -0.00, AWL -0.34, DART_TRUSTED -1.00,
-	FREEMAIL_FORGED_REPLYTO 2.50, RP_8BIT 2.40, RP_MATCHES_RCVD -0.81,
-	SUBJ_ALL_CAPS 1.62)
-X-MailScanner-SpamScore: ssss
-X-MailScanner-From: weixin.zheng.15@dartmouth.edu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+bd2802_unregister_led_classdev() should unregister all instances of
+led_classdev class that had registered by bd2802_register_led_classdev().
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/leds/leds-bd2802.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/leds/leds-bd2802.c b/drivers/leds/leds-bd2802.c
+index 3ebe382..ea21855 100644
+--- a/drivers/leds/leds-bd2802.c
++++ b/drivers/leds/leds-bd2802.c
+@@ -662,6 +662,11 @@ failed_unregister_led1_R:
+ static void bd2802_unregister_led_classdev(struct bd2802_led *led)
+ {
+ 	cancel_work_sync(&led->work);
++	led_classdev_unregister(&led->cdev_led2b);
++	led_classdev_unregister(&led->cdev_led2g);
++	led_classdev_unregister(&led->cdev_led2r);
++	led_classdev_unregister(&led->cdev_led1b);
++	led_classdev_unregister(&led->cdev_led1g);
+ 	led_classdev_unregister(&led->cdev_led1r);
+ }
+ 
+-- 
+1.7.4.1
 
 
-This is a business proposal for you, it is an oil exportation proposition
-contract for you and this is a highly prospective crude oil sales  
-venture; This
-involves the shipment of over 2.5 Million barrels of Light Crude Oil from Iraq
-to Turkey, this project is genuine, legal and highly lucrative. For more
-details, please reply to this email address: bahhahfeaz@hotmail.com
 
-
-Sincerely
-Bahhah Faez Saleh
