@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab1HARUi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 13:20:38 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:43484 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753281Ab1HARU1 convert rfc822-to-8bit (ORCPT
+	id S1753400Ab1HARXL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 13:23:11 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37079 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752946Ab1HARXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 13:20:27 -0400
+	Mon, 1 Aug 2011 13:23:08 -0400
+Date: Mon, 1 Aug 2011 18:23:03 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnaud Lacombe <lacombar@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [uml-devel] [PATCH 1/5] um: Use __i386__ in ifdef for vsyscall
+ exports, not SUBARCH_i386
+Message-ID: <20110801172303.GH2203@ZenIV.linux.org.uk>
+References: <1312066693.22074.50.camel@i7.infradead.org>
+ <1312066923.22074.53.camel@i7.infradead.org>
+ <CAFLxGvy0QqoySDFwZpygHeXvQ7hG-B7z5iZq8qx3GUkFX8w2RQ@mail.gmail.com>
+ <1312151063.18010.25.camel@i7.infradead.org>
+ <20110731224834.GC2203@ZenIV.linux.org.uk>
+ <20110731225801.GD2203@ZenIV.linux.org.uk>
+ <1312153988.18010.39.camel@i7.infradead.org>
+ <CAFLxGvyewG70ZgU41Kmu_eOYpjZ0TVXYwYq1AfS1sXONAM6G_w@mail.gmail.com>
+ <20110801043207.GE2203@ZenIV.linux.org.uk>
+ <CAMuHMdUXZw=NO-sXLWu8TMkwE-_A_sq60KUVkYZrNFqcLOALrA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1108011737030.18706@xanadu.home>
-References: <1312042478-26012-1-git-send-email-zdevai@gmail.com>
-	<20110801083614.GC15578@n2100.arm.linux.org.uk>
-	<CAMuHMdUpTDSRP_JmWqcCBtYwzna0hwmaBshpiF8kgvqoNcqYZA@mail.gmail.com>
-	<20110801101410.GE15578@n2100.arm.linux.org.uk>
-	<CAMuHMdUiLjMVwOqKPF6tHLpPxROrx=rRf3ednfTLrwGuZ2VF7A@mail.gmail.com>
-	<CACqU3MVUxTYmD+4VGBAeN8PTs83fR0xQQrQS5h4QGMZXgMxEvA@mail.gmail.com>
-	<CAGZ=bqL=VAx5jnSBkE2q5KJSY_+An-VRTRAzJmJ3waQUvrRFFg@mail.gmail.com>
-	<CACqU3MUoxSNmcYsSF4zOTgADdedb7TcciPuBPMviG02M5oUPDQ@mail.gmail.com>
-	<alpine.LFD.2.00.1108011737030.18706@xanadu.home>
-Date: Mon, 1 Aug 2011 13:20:26 -0400
-Message-ID: <CACqU3MU_oq+RYydenKG_8U08rdJ-N+2hftH+2xEPZU0uVP6i5A@mail.gmail.com>
-Subject: Re: [PATCH] Remove remaining references of CONFIG_GENERIC_TIME
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Kyle Moffett <kyle@moffetthome.net>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Zoltan Devai <zdevai@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        chris@zankel.net, linux-am33-list@redhat.com, trivial@kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net, cmetcalf@tilera.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdUXZw=NO-sXLWu8TMkwE-_A_sq60KUVkYZrNFqcLOALrA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Aug 01, 2011 at 12:04:37PM +0200, Geert Uytterhoeven wrote:
+> > Yes. ??Resurrected is not the right word here, sorry...
+> 
+> Oh, what a disappointment. I really hoped it was true...
+> 
+> BTW, how much work would it be to port UML to ARM? Would be nice-to-have on
+> your Android phone, as it can provide a full Linux userspace without
+> requiring rooting
+> the phone.
 
-On Mon, Aug 1, 2011 at 12:40 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
-> On Mon, 1 Aug 2011, Arnaud Lacombe wrote:
->
->> Moreover, this approach is deemed to fail. The current symbol
->> namespace is tied to an arch, so whenever you do:
->>
->> arch/arm/Kconfig:
->> config FOO
->>     bool
->>
->> config BAZ
->>     bool
->>
->> drivers/cpufreq/Kconfig
->> config BAR
->>     depends on ARM && FOO
->>     select BAZ
->>
->> You will end up triggering the warning for every ARCH != ARM...
->
-> You can keep a state for those symbols with regard to their level of
-> reference.  Surely if ARM isn't true, BAZ is not "actively" referenced
-> in the end.
->
-he :) we enter in compilers optimizations. As much as I agree with
-you, that might not be trivial to implement given the internal,
-ad-hoc, structure of kconfig. All of that would be useless if we had a
-single global namespace.
-
- - Arnaud
+Moderately unpleasant, but not fatally so.  I have no idea how often will
+cache aliasing bite you, though.  We really need to get non-x86 ports
+working to see how many portability issues are there; what I've got for
+ppc is promising, but very preliminary...
