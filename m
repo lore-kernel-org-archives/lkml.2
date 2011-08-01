@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869Ab1HAMeY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 08:34:24 -0400
-Received: from cernmx30.cern.ch ([137.138.144.177]:33754 "EHLO
-	CERNMX30.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742Ab1HAMeS (ORCPT
+	id S1752929Ab1HAMkC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 08:40:02 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52338 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab1HAMjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 08:34:18 -0400
-Date: Mon, 1 Aug 2011 14:31:21 +0200
-From: Manohar Vanga <manohar.vanga@cern.ch>
-To: Martyn Welch <martyn.welch@ge.com>
-CC: <gregkh@suse.de>, <cota@braap.org>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/8] staging: vme: rename *_slot_get to *_get_slot
-Message-ID: <20110801123121.GA7130@becoht-mvanga>
-Mail-Followup-To: Martyn Welch <martyn.welch@ge.com>, gregkh@suse.de,
-	cota@braap.org, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org
-References: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch>
- <1312194053-32310-7-git-send-email-manohar.vanga@cern.ch>
- <4E369C26.5040300@ge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4E369C26.5040300@ge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [137.138.192.18]
-Keywords: CERN SpamKiller Note: -50
+	Mon, 1 Aug 2011 08:39:55 -0400
+Subject: Re: threaded interrupt handlers: what if hardirq part not disables
+ device interrupt?
+From: Peter Zijlstra <peterz@infradead.org>
+To: Remy Bohmer <linux@bohmer.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+In-Reply-To: <CANqCtQ+9ab1qt0WzuC6n6gX9Y8XNcDxaTosUBc94eecj0umuiQ@mail.gmail.com>
+References: <CANqCtQ+9ab1qt0WzuC6n6gX9Y8XNcDxaTosUBc94eecj0umuiQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 01 Aug 2011 14:44:38 +0200
+Message-ID: <1312202678.2617.460.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Martyn,
-
-> If your doing vme_slot_get, then there's also vme_lm_get, vme_master_get and
-> vme_slave_get.
+On Sun, 2011-07-31 at 16:15 +0200, Remy Bohmer wrote:
+> As alternative solution I can do the following as well:
+> The driver now has a tasklet used for processing the queue. If I add
+> IRQF_NO_THREAD as irq-flag, the thread is not created and the handler
+> runs completely in hard-irq context. This seems to work okay, but it
+> does not feel as the right solution.
 > 
-> Doing just this would then lead to more inconsistency in the naming and
-> wouldn't even get rid of all the functions using the *_get naming convention.
+> How is this supposed to work? Do you have better ideas how to solve
+> situations like this? 
 
-I can simply change those as well and resend :)
+This sounds like the total trainwreck known as tty/console, I believe
+jwessel and tglx had some ideas on that. Maybe Jason can share what he
+knows, I'm not up to speed on that issue.
 
-> I'm not sure this change is worth it.
 
-I thought it would be worth changing this especially with the addition of bridge
-refcounting functions (which have the *_get/_set convention).
 
---
-/manohar
