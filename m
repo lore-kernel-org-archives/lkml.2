@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052Ab1HATtj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 15:49:39 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42835 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915Ab1HATtf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 15:49:35 -0400
-Date: Mon, 1 Aug 2011 20:48:09 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Remy Bohmer <linux@bohmer.net>
-Cc: Remy Bohmer <l.pinguin@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Add sched_clock to AT91 TCB clocksource driver
-Message-ID: <20110801194809.GE19079@n2100.arm.linux.org.uk>
-References: <1312124593-6088-1-git-send-email-linux@bohmer.net> <20110731150707.GA2975@n2100.arm.linux.org.uk> <CANqCtQJwUsLXfA408GzAr0rQtc2DRjtKqP8-m2UBUGEy-YP5dg@mail.gmail.com> <20110801092806.GD15578@n2100.arm.linux.org.uk> <CANqCtQK=H_B04A7knZSiuE5RLogTgMKxwtMK1HSqSgKA_U2J7A@mail.gmail.com>
+	id S1753153Ab1HATuD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 15:50:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56582 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752951Ab1HATt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 15:49:58 -0400
+Date: Mon, 1 Aug 2011 21:49:42 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v4 3/5] memcg : stop scanning if enough
+Message-ID: <20110801194905.GA5354@tiehlicka.suse.cz>
+References: <20110727144438.a9fdfd5b.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110727144900.503a0afe.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110801143745.GF25251@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANqCtQK=H_B04A7knZSiuE5RLogTgMKxwtMK1HSqSgKA_U2J7A@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20110801143745.GF25251@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 08:08:19PM +0200, Remy Bohmer wrote:
-> Hi,
+On Mon 01-08-11 16:37:45, Michal Hocko wrote:
+> On Wed 27-07-11 14:49:00, KAMEZAWA Hiroyuki wrote:
+> > memcg :avoid node fallback scan if possible.
+> > 
+> > Now, try_to_free_pages() scans all zonelist because the page allocator
+> > should visit all zonelists...but that behavior is harmful for memcg.
+> > Memcg just scans memory because it hits limit...no memory shortage
+> > in pased zonelist.
+> > 
+> > For example, with following unbalanced nodes
+> > 
+> >      Node 0    Node 1
+> > File 1G        0
+> > Anon 200M      200M
+> > 
+> > memcg will cause swap-out from Node1 at every vmscan.
+> > 
+> > Another example, assume 1024 nodes system.
+> > With 1024 node system, memcg will visit 1024 nodes
+> > pages per vmscan... This is overkilling. 
+> > 
+> > This is why memcg's victim node selection logic doesn't work
+> > as expected.
 > 
-> > You're forgetting that jiffies doesn't jump about.  A late initializing
-> > sched_clock could jump.
-> 
-> Agreed. Currently the jiffies based clock does not move at all, thus
-> it surely does not jump... ;-)
-> 
-> >> Anyway, do you have a better suggestion how to fix this? The tcb
-> >> clocksource is loaded during a arch_initcall(), perhaps we need
-> >> something before that point.
-> >> I do not see an easy way to integrate it in MACHINE_START(.timer).
-> >> Would 'late_time_init' be a better solution?
-> >
-> > late_time_init() is not that much better as that still happens after
-> > sched_init() has been called.  sched_init() initializes various
-> > structures which involves reading sched_clock().
-> 
-> But late_time_init does it before the sched_clock is declared stable.
-> Until that point sched_clock will always return zero, as such we can
-> IMHO safely assume that the scheduler is designed such that it can
-> handle fixed zero timestamps for a while.
+> Previous patch adds nodemask filled by
+> mem_cgroup_select_victim_node. Shouldn't we rather limit that nodemask
+> to a victim node?
 
-You're confused.
+Bahh, scratch that. I was jumping from one thing to another and got 
+totally confused. Victim memcg is not bound to any particular node in 
+general...
+Sorry for noise. I will try to get back to this tomorrow.
 
-If you provide your own sched_clock(), that's what is used by everyone
-who calls sched_clock() both before and after sched_clock_init() has
-been called.
-
-sched_clock_cpu() and cpu_clock() both will return zero up until
-sched_clock_init() has been called, but sched_clock() itself may not.
-
-And these parts of the scheduler I'm talking about use sched_clock()
-itself, not sched_clock_cpu() nor cpu_clock().
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
