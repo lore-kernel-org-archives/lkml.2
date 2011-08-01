@@ -1,91 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260Ab1HASG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 14:06:26 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34819 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751211Ab1HASGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 14:06:22 -0400
-Subject: [GIT PULL] Regulator updates for 3.1
-From: Liam Girdwood <lrg@ti.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 1 Aug 2011 19:05:44 +0100
-Message-ID: <1312221944.5170.5.camel@CNA0741383>
+	id S1752914Ab1HASI1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 14:08:27 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:46204 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab1HASIV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 14:08:21 -0400
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110801092806.GD15578@n2100.arm.linux.org.uk>
+References: <1312124593-6088-1-git-send-email-linux@bohmer.net>
+	<20110731150707.GA2975@n2100.arm.linux.org.uk>
+	<CANqCtQJwUsLXfA408GzAr0rQtc2DRjtKqP8-m2UBUGEy-YP5dg@mail.gmail.com>
+	<20110801092806.GD15578@n2100.arm.linux.org.uk>
+Date: Mon, 1 Aug 2011 20:08:19 +0200
+X-Google-Sender-Auth: UZ6QElOdF9XrwXRw4Bof8CjcDAA
+Message-ID: <CANqCtQK=H_B04A7knZSiuE5RLogTgMKxwtMK1HSqSgKA_U2J7A@mail.gmail.com>
+Subject: Re: [PATCH] Add sched_clock to AT91 TCB clocksource driver
+From: Remy Bohmer <linux@bohmer.net>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Remy Bohmer <l.pinguin@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi,
 
-Please pull the following regulator updates for Linus 3.1. No major
-changes this time, however there are many driver improvements and fixes
-with a few core improvements for debugfs and logging.
+> You're forgetting that jiffies doesn't jump about.  A late initializing
+> sched_clock could jump.
 
-Thanks
+Agreed. Currently the jiffies based clock does not move at all, thus
+it surely does not jump... ;-)
 
-Liam
+>> Anyway, do you have a better suggestion how to fix this? The tcb
+>> clocksource is loaded during a arch_initcall(), perhaps we need
+>> something before that point.
+>> I do not see an easy way to integrate it in MACHINE_START(.timer).
+>> Would 'late_time_init' be a better solution?
+>
+> late_time_init() is not that much better as that still happens after
+> sched_init() has been called.  sched_init() initializes various
+> structures which involves reading sched_clock().
 
----
+But late_time_init does it before the sched_clock is declared stable.
+Until that point sched_clock will always return zero, as such we can
+IMHO safely assume that the scheduler is designed such that it can
+handle fixed zero timestamps for a while. The new sched_clock also
+nicely starts counting from zero once enabled, and does not make a
+jump start.
 
-The following changes since commit 02f8c6aee8df3cdc935e9bdd4f2d020306035dbe:
+> Why can't it initialize itself at the standard point during the boot
+> sequence, which is time_init() - which in turn is as you say the
+> .timer callback?
 
-  Linux 3.0 (2011-07-21 19:17:23 -0700)
+In that case it has to replace the PIT based clocksource completely.
+Since the TCB based clocksource and event device are
+optional/configurable for this architecture and it is implemented as a
+clocksource driver instead of part of the BSP, it would result in a
+lot of ifdefs throughout that code.
+The arch_initcall() has to be removed and replaced by something else...
+I will try to work out a different solution, and post an update, see
+how that looks like...
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/lrg/voltage-2.6.git for-linus
+Kind regards,
 
-Ambresh K (1):
-      regulator: TWL: Remove entry of RES_ID for 6030 macros
-
-Axel Lin (4):
-      regulator: tps65910: Fix a memory leak in tps65910_probe error path
-      regulator: tps65910: Add missing breaks in switch/case
-      regulator: tps65910: Fix array access out of bounds bug
-      regulator: Fix memory leak in set_machine_constraints() error paths
-
-Colin Cross (1):
-      regulator: twl-regulator: fix n_voltages for twl6030 variable LDOs
-
-Jarkko Nikula (1):
-      ASoC: tlv320aic3x: Add correct hw registers to Line1 cross connect muxes
-
-Liam Girdwood (1):
-      Merge branch 'for-next' into for-linus
-
-Mark Brown (16):
-      regulator: Do bulk enables of regulators in parallel
-      regulator: Use _cansleep() for WM8994 regulator GPIOs
-      regulator: Properly register dummy regulator driver
-      regulator: Increase the limit on sysfs file names
-      regulator: Include the device name in the microamps_requested_ file
-      regulator: Refactor supply implementation to work as regular consumers
-      regulator: Add rdev_crit() macro
-      regulator: Add basic per consumer debugfs
-      regulator: Make core more chatty about some errors
-      regulator: Fix argument format type errors in error prints
-      regulator: Fix WM831x regulator ID lookups for multiple WM831xs
-      regulator: Fix WM831x DCDC DVS VSEL bootstrapping
-      regulator: Add EPEs to the MODULE_ALIAS() for wm831x-dcdc
-      regulator: Set up GPIO for WM831x VSEL before enabling VSEL mode
-      regulator: Bootstrap wm831x DVS VSEL value from ON VSEL if not already set
-      regulator: Improve WM831x DVS VSEL selection algorithm
-
- drivers/regulator/core.c               |  190 ++++++++++++++++++-------------
- drivers/regulator/dummy.c              |   32 +++++-
- drivers/regulator/tps65910-regulator.c |   63 +++++++++--
- drivers/regulator/twl-regulator.c      |   66 +++++------
- drivers/regulator/wm831x-dcdc.c        |  126 +++++++++++----------
- drivers/regulator/wm831x-ldo.c         |   25 ++++-
- drivers/regulator/wm8994-regulator.c   |    4 +-
- include/linux/regulator/consumer.h     |    3 +
- include/linux/regulator/driver.h       |    4 +-
- sound/soc/codecs/tlv320aic3x.c         |   34 ++++--
- 10 files changed, 332 insertions(+), 215 deletions(-)
-
-
+Remy
