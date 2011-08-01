@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab1HAUl3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 16:41:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14707 "EHLO mx1.redhat.com"
+	id S1753518Ab1HAUnu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 16:43:50 -0400
+Received: from mail.tpi.com ([70.99.223.143]:3096 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753349Ab1HAUlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 16:41:24 -0400
-Date: Mon, 1 Aug 2011 16:41:14 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
-        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: Re: [patch v2 04/10] kdump: Trigger kdump via panic notifier chain
- on s390
-Message-ID: <20110801204114.GJ3805@redhat.com>
-References: <20110727125504.491183728@linux.vnet.ibm.com>
- <20110727125808.028895659@linux.vnet.ibm.com>
+	id S1753475Ab1HAUnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 16:43:45 -0400
+Message-ID: <4E370FFA.7050106@canonical.com>
+Date: Mon, 01 Aug 2011 14:43:38 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110727125808.028895659@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andi Kleen <andi@firstfloor.org>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>, dan@aloni.org,
+        davem@davemloft.net, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com,
+        stable@vger.kernel.org
+Subject: Re: [stable] [PATCH] [26/98] af_unix: Only allow recv on connected
+ seqpacket sockets.
+References: <20110726534.972201586@firstfloor.org> <20110727003518.6DA772403FF@tassilo.jf.intel.com> <4E3035BE.6090908@canonical.com> <m1sjprfryg.fsf@fess.ebiederm.org> <20110801200857.GE27083@one.firstfloor.org>
+In-Reply-To: <20110801200857.GE27083@one.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 02:55:08PM +0200, Michael Holzheu wrote:
-> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> 
-> On s390 we have the possibility to configure actions that are executed in
-> case of a kernel panic. E.g. it is possible to automatically trigger an s390
-> stand-alone dump. The actions are called via a panic notifier.  We also want
-> to trigger kdump via the notifier call chain. Therefore this patch disables
-> for s390 the direct kdump invocation in the panic() function.
+On 08/01/2011 02:08 PM, Andi Kleen wrote:
+>> For 2.6.38, and Andi's 2.6.35 which has the potential for an
+>> unprivileged process to trigger an oops, it seems irresponsible to me to
+>> not include this change.  People who exploit kernel flaws seem good at
+>> taking random Oops's and converting them into methods for privilege
+>> escalation.
+>
+> I'll ship 2.6.25.14 without the patch, but can you guys please come to a
+> conclusion whether the patch is useful or not. I'll reconsider it for .15.
+>
+> Thanks,
+>
+> -Andi
+>
 
-Doesn't this reduce the reliability of the operation as you are assuming
-that panic notifier list is fine and not corrupted.
+I'd go with Eric's assessment. He knows way more about this then I do. I 
+am much less confident that the problem Ubuntu experienced with 2.6.35 
+was related, it only felt the same (similar network issues).
 
-There might be other generic notifiers registerd on panic notifier list
-too. So in your case, are there multiple subsystem registering for panic
-notifiers? If not, why not call crash_kexec() directly. Are there any
-other actions you want to take on panic then calling crash_kexec()?
-
-Thanks
-Vivek
-
-> 
-> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> ---
->  kernel/panic.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
-> @@ -84,9 +84,12 @@ NORET_TYPE void panic(const char * fmt,
->  	/*
->  	 * If we have crashed and we have a crash kernel loaded let it handle
->  	 * everything else.
-> +	 * For s390 kdump is triggered via the panic notifier call chain.
->  	 * Do we want to call this before we try to display a message?
->  	 */
-> +#if !defined(CONFIG_S390)
->  	crash_kexec(NULL);
-> +#endif
->  
->  	kmsg_dump(KMSG_DUMP_PANIC);
->  
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
