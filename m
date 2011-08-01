@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195Ab1HAXcG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 19:32:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38783 "EHLO mx2.suse.de"
+	id S1754289Ab1HAXcS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 19:32:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38771 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753478Ab1HAX1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 19:27:02 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:53 2011
-Message-Id: <20110801232053.491715283@clark.kroah.org>
+	id S1753741Ab1HAX07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 19:26:59 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:56 2011
+Message-Id: <20110801232056.244470337@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 01 Aug 2011 16:18:44 -0700
+Date: Mon, 01 Aug 2011 16:19:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Timo Warns <warns@pre-sense.de>, Matt Domsch <Matt_Domsch@dell.com>,
-        Eugene Teo <eugeneteo@kernel.sg>, Dave Jones <davej@codemonkey.org.uk>,
-        Moritz Muehlenhoff <jmm@debian.org>
-Subject: [29/70] fs/partitions/efi.c: corrupted GUID partition tables can cause kernel oops
+        Tejun Heo <tj@kernel.org>, Dave Howorth <dhoworth@mrc-lmb.cam.ac.uk>,
+        Jeff Garzik <jgarzik@pobox.com>
+Subject: [56/70] libata: fix unexpectedly frozen port after ata_eh_reset()
 In-Reply-To: <20110801232124.GA15313@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,61 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Timo Warns <Warns@pre-sense.de>
+From: Tejun Heo <tj@kernel.org>
 
-commit 3eb8e74ec72736b9b9d728bad30484ec89c91dde upstream.
+commit 8c56cacc724c7650b893d43068fa66044aa29a61 upstream.
 
-The kernel automatically evaluates partition tables of storage devices.
-The code for evaluating GUID partitions (in fs/partitions/efi.c) contains
-a bug that causes a kernel oops on certain corrupted GUID partition
-tables.
+To work around controllers which can't properly plug events while
+reset, ata_eh_reset() clears error states and ATA_PFLAG_EH_PENDING
+after reset but before RESET is marked done.  As reset is the final
+recovery action and full verification of devices including onlineness
+and classfication match is done afterwards, this shouldn't lead to
+lost devices or missed hotplug events.
 
-This bug has security impacts, because it allows, for example, to
-prepare a storage device that crashes a kernel subsystem upon connecting
-the device (e.g., a "USB Stick of (Partial) Death").
+Unfortunately, it forgot to thaw the port when clearing EH_PENDING, so
+if the condition happens after resetting an empty port, the port could
+be left frozen and EH will end without thawing it, making the port
+unresponsive to further hotplug events.
 
-	crc = efi_crc32((const unsigned char *) (*gpt), le32_to_cpu((*gpt)->header_size));
+Thaw if the port is frozen after clearing EH_PENDING.  This problem is
+reported by Bruce Stenning in the following thread.
 
-computes a CRC32 checksum over gpt covering (*gpt)->header_size bytes.
-There is no validation of (*gpt)->header_size before the efi_crc32 call.
+ http://thread.gmane.org/gmane.linux.kernel/1123265
 
-A corrupted partition table may have large values for (*gpt)->header_size.
- In this case, the CRC32 computation access memory beyond the memory
-allocated for gpt, which may cause a kernel heap overflow.
+stable: I think we should weather this patch a bit longer in -rcX
+	before sending it to -stable.  Please wait at least a month
+	after this patch makes upstream.  Thanks.
 
-Validate value of GUID partition table header size.
+-v2: Fixed spelling in the comment per Dave Howorth.
 
-[akpm@linux-foundation.org: fix layout and indenting]
-Signed-off-by: Timo Warns <warns@pre-sense.de>
-Cc: Matt Domsch <Matt_Domsch@dell.com>
-Cc: Eugene Teo <eugeneteo@kernel.sg>
-Cc: Dave Jones <davej@codemonkey.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Moritz Muehlenhoff <jmm@debian.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Bruce Stenning <b.stenning@indigovision.com>
+Cc: Dave Howorth <dhoworth@mrc-lmb.cam.ac.uk>
+Signed-off-by: Jeff Garzik <jgarzik@pobox.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/partitions/efi.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/ata/libata-eh.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/fs/partitions/efi.c
-+++ b/fs/partitions/efi.c
-@@ -310,6 +310,15 @@ static int is_gpt_valid(struct parsed_pa
- 		goto fail;
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -2802,10 +2802,11 @@ int ata_eh_reset(struct ata_link *link,
  	}
  
-+	/* Check the GUID Partition Table header size */
-+	if (le32_to_cpu((*gpt)->header_size) >
-+			bdev_logical_block_size(state->bdev)) {
-+		pr_debug("GUID Partition Table Header size is wrong: %u > %u\n",
-+			le32_to_cpu((*gpt)->header_size),
-+			bdev_logical_block_size(state->bdev));
-+		goto fail;
-+	}
+ 	/*
+-	 * Some controllers can't be frozen very well and may set
+-	 * spuruious error conditions during reset.  Clear accumulated
+-	 * error information.  As reset is the final recovery action,
+-	 * nothing is lost by doing this.
++	 * Some controllers can't be frozen very well and may set spurious
++	 * error conditions during reset.  Clear accumulated error
++	 * information and re-thaw the port if frozen.  As reset is the
++	 * final recovery action and we cross check link onlineness against
++	 * device classification later, no hotplug event is lost by this.
+ 	 */
+ 	spin_lock_irqsave(link->ap->lock, flags);
+ 	memset(&link->eh_info, 0, sizeof(link->eh_info));
+@@ -2814,6 +2815,9 @@ int ata_eh_reset(struct ata_link *link,
+ 	ap->pflags &= ~ATA_PFLAG_EH_PENDING;
+ 	spin_unlock_irqrestore(link->ap->lock, flags);
+ 
++	if (ap->pflags & ATA_PFLAG_FROZEN)
++		ata_eh_thaw_port(ap);
 +
- 	/* Check the GUID Partition Table CRC */
- 	origcrc = le32_to_cpu((*gpt)->header_crc32);
- 	(*gpt)->header_crc32 = 0;
+ 	/*
+ 	 * Make sure onlineness and classification result correspond.
+ 	 * Hotplug could have happened during reset and some
 
 
