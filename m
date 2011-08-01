@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150Ab1HAOAF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 10:00:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38534 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703Ab1HAN77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 09:59:59 -0400
-Date: Mon, 1 Aug 2011 15:59:53 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH v4 2/5] memcg : pass scan nodemask
-Message-ID: <20110801135953.GE25251@tiehlicka.suse.cz>
-References: <20110727144438.a9fdfd5b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110727144742.420cf69c.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1751352Ab1HANtU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 09:49:20 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:43192 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab1HANtR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 09:49:17 -0400
+Date: Mon, 1 Aug 2011 17:49:11 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: serge.hallyn@canonical.com, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net, toralf.foerster@gmx.de
+Subject: Re: shm updates broke UML
+Message-ID: <20110801134911.GA11705@albatros>
+References: <201108011541.59640.richard@nod.at>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110727144742.420cf69c.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201108011541.59640.richard@nod.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 27-07-11 14:47:42, KAMEZAWA Hiroyuki wrote:
-> 
-> pass memcg's nodemask to try_to_free_pages().
-> 
-> try_to_free_pages can take nodemask as its argument but memcg
-> doesn't pass it. Considering memcg can be used with cpuset on
-> big NUMA, memcg should pass nodemask if available.
-> 
-> Now, memcg maintain nodemask with periodic updates. pass it.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  include/linux/memcontrol.h |    2 +-
->  mm/memcontrol.c            |    8 ++++++--
->  mm/vmscan.c                |    3 ++-
->  3 files changed, 9 insertions(+), 4 deletions(-)
-> 
-[...]
-> Index: mmotm-0710/mm/vmscan.c
-> ===================================================================
-> --- mmotm-0710.orig/mm/vmscan.c
-> +++ mmotm-0710/mm/vmscan.c
-> @@ -2280,6 +2280,7 @@ unsigned long try_to_free_mem_cgroup_pag
->  	unsigned long nr_reclaimed;
->  	unsigned long start, end;
->  	int nid;
-> +	nodemask_t *mask;
->  	struct scan_control sc = {
->  		.may_writepage = !laptop_mode,
->  		.may_unmap = 1,
-> @@ -2302,7 +2303,7 @@ unsigned long try_to_free_mem_cgroup_pag
->  	 * take care of from where we get pages. So the node where we start the
->  	 * scan does not need to be the current node.
->  	 */
-> -	nid = mem_cgroup_select_victim_node(mem_cont);
-> +	nid = mem_cgroup_select_victim_node(mem_cont, &mask);
+Hi Richard,
 
-The mask is not used anywhere AFAICS and using it is a point of the
-patch AFAIU. I guess you wanted to use &sc.nodemask, right?
+On Mon, Aug 01, 2011 at 15:41 +0200, Richard Weinberger wrote:
+> 5774ed01 (shm: handle separate PID namespaces case)
+> b34a6b1d (ipc: introduce shm_rmid_forced sysctl)
+> 4c677e2e (shm: optimize locking and ipc_namespace getting)
+> 
+> broke UML on i386.
+> It crashes while starting up by SIGSEGV.
+> exit_shm() seems to be the evil doer.
 
-Other than that, looks good to me.
+I was reported 20 mins ago that it's reproducable on MIPS too.
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> Reverting all three patches make UML work again.
+
+Can you confirm that 5774ed01 breaks the boot? (it is for MIPS)
+
+
+> Commit 5774ed01 removed the !ns->shm_rmid_forced check, maybe this is wrong?
+
+No, it's not the reason.
+
+> ---cut---
+> #13 0x08067efb in hard_handler (sig=11) at arch/um/os-Linux/sys-i386/signal.c:12
+> #14 <signal handler called>
+> #15 __list_add (sem=0x824cc98, subclass=0) at include/linux/list.h:44
+> #16 list_add_tail (sem=0x824cc98, subclass=0) at include/linux/list.h:76
+> #17 __down_write_nested (sem=0x824cc98, subclass=0) at lib/rwsem-spinlock.c:232
+> #18 0x081c7ba1 in __down_write (sem=0x824cc98) at lib/rwsem-spinlock.c:252
+> #19 0x081c74a3 in down_write (sem=0x824cc98) at kernel/rwsem.c:51
+> #20 0x08139913 in exit_shm (task=0x9c73b60) at ipc/shm.c:308
+> #21 0x08075649 in do_exit (code=0) at kernel/exit.c:983
+> #22 0x08081dd2 in ____call_usermodehelper (data=0x9c6bce0) at kernel/kmod.c:187
+> #23 0x08065c18 in run_kernel_thread (fn=0x8081ce4 <____call_usermodehelper>, arg=0x9c6bce0, 
+> jmp_ptr=0x9c73d94)
+>     at arch/um/os-Linux/process.c:268
+> #24 0x080588cb in new_thread_handler () at arch/um/kernel/process.c:153
+> #25 0x00000000 in ?? ()
+> ---cut---
+
+Can you post the whole oops message?  I'd want to see what pointer is
+NULL.
+
+Thanks,
+
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
