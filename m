@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab1HASwW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 14:52:22 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:32870 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752915Ab1HASwQ (ORCPT
+	id S1752640Ab1HAS5z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 14:57:55 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:19818 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab1HAS5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 14:52:16 -0400
-Date: Mon, 1 Aug 2011 11:52:05 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Ram Pai <linuxram@us.ibm.com>
-Cc: torvalds@linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yinghai@kernel.org,
-        bhutchings@solarflare.com, socketcan@hartkopp.net, bhelgaas@google.com,
-        linux@dominikbrodowski.net
-Subject: Re: [PATCH 1/5 v3] PCI: honor child buses add_size in hot plug
- configuration
-Message-ID: <20110801115205.0f165e75@jbarnes-desktop>
-In-Reply-To: <1311624522-30242-2-git-send-email-linuxram@us.ibm.com>
-References: <1311624522-30242-1-git-send-email-linuxram@us.ibm.com>
-	<1311624522-30242-2-git-send-email-linuxram@us.ibm.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Mon, 1 Aug 2011 14:57:49 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6425"; a="107358344"
+Date: Mon, 1 Aug 2011 11:57:45 -0700
+From: Larry Bassel <lbassel@codeaurora.org>
+To: Larry Bassel <lbassel@codeaurora.org>
+Cc: linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: questions about memory hotplug
+Message-ID: <20110801185745.GC3466@labbmf-linux.qualcomm.com>
+References: <20110729221230.GA3466@labbmf-linux.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110729221230.GA3466@labbmf-linux.qualcomm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 25 Jul 2011 13:08:38 -0700
-Ram Pai <linuxram@us.ibm.com> wrote:
+On 29 Jul 11 15:12, Larry Bassel wrote:
+> 
+> Would CONFIG_ARCH_POPULATES_NODE_MAP help here? Does anyone
+> use this? It doesn't seem to be in any defconfig or Kconfig
 
-> From: Yinghai Lu <yinghai@kernel.org>
-> 
-> git commit c8adf9a3e873eddaaec11ac410a99ef6b9656938
->     "PCI: pre-allocate additional resources to devices only after
-> 	successful allocation of essential resources."
-> 
-> fails to take into consideration the optional-resources needed by children
-> devices while calculating the optional-resource needed by the bridge.
-> 
-> This can be a problem on some setup. For example, if a hotplug bridge has 8
-> children hotplug bridges, the bridge should have enough resources to accomodate
-> the hotplug requirements for each of its children hotplug bridges.  Currently
-> this is not the case.
-> 
-> This patch fixes the problem.
+I want to clarify this, I meant used on ARM -- I see it is being used
+on other architectures (and that movablecore= and kernelcore=
+require this config option).
 
-Just pulled these guys into my for-linus branch.  They should be safe
-since they're behind the new =realloc param, but please test.
+> on 3.0 (or earlier versions I've looked at).
+> 
 
-Thanks,
+Larry
+
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
