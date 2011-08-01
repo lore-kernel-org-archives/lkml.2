@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab1HAX2T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 19:28:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38971 "EHLO mx2.suse.de"
+	id S1754401Ab1HAX32 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 19:29:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39047 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754043Ab1HAX1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 19:27:55 -0400
+	id S1754228Ab1HAX2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 19:28:20 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:56 2011
-Message-Id: <20110801232056.812072156@clark.kroah.org>
+Message-Id: <20110801232056.519796117@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 01 Aug 2011 16:19:17 -0700
+Date: Mon, 01 Aug 2011 16:19:14 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [62/70] cifs: clean up wsize negotiation and allow for larger wsize
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Sattler <tsattler@gmx.de>, Mel Gorman <mgorman@suse.de>
+Subject: [59/70] mm: vmscan: do not use page_count without a page pin
 In-Reply-To: <20110801232124.GA15313@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,126 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
 
-commit f7910cbd9fa319ee4501074f1f3b5ce23c4b1518 upstream.
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-Now that we can handle larger wsizes in writepages, fix up the
-negotiation of the wsize to allow for that. find_get_pages only seems to
-give out a max of 256 pages at a time, so that gives us a reasonable
-default of 1M for the wsize.
+commit: d179e84ba5da1d0024087d1759a2938817a00f3f upstream
 
-If the server however does not support large writes via POSIX
-extensions, then we cap the wsize to (128k - PAGE_CACHE_SIZE). That
-gives us a size that goes up to the max frame size specified in RFC1001.
+It is unsafe to run page_count during the physical pfn scan because
+compound_head could trip on a dangling pointer when reading
+page->first_page if the compound page is being freed by another CPU.
 
-Finally, if CAP_LARGE_WRITE_AND_X isn't set, then further cap it to the
-largest size allowed by the protocol (USHRT_MAX).
-
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Reviewed-and-Tested-by: Pavel Shilovsky <piastry@etersoft.ru>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+[mgorman@suse.de: split out patch]
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- fs/cifs/connect.c |   69 ++++++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 49 insertions(+), 20 deletions(-)
+ mm/vmscan.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -2571,23 +2571,6 @@ static void setup_cifs_sb(struct smb_vol
- 	else /* default */
- 		cifs_sb->rsize = CIFSMaxBufSize;
- 
--	if (pvolume_info->wsize > PAGEVEC_SIZE * PAGE_CACHE_SIZE) {
--		cERROR(1, "wsize %d too large, using 4096 instead",
--			  pvolume_info->wsize);
--		cifs_sb->wsize = 4096;
--	} else if (pvolume_info->wsize)
--		cifs_sb->wsize = pvolume_info->wsize;
--	else
--		cifs_sb->wsize = min_t(const int,
--					PAGEVEC_SIZE * PAGE_CACHE_SIZE,
--					127*1024);
--		/* old default of CIFSMaxBufSize was too small now
--		   that SMB Write2 can send multiple pages in kvec.
--		   RFC1001 does not describe what happens when frame
--		   bigger than 128K is sent so use that as max in
--		   conjunction with 52K kvec constraint on arch with 4K
--		   page size  */
--
- 	if (cifs_sb->rsize < 2048) {
- 		cifs_sb->rsize = 2048;
- 		/* Windows ME may prefer this */
-@@ -2665,6 +2648,53 @@ static void setup_cifs_sb(struct smb_vol
- 			   "mount option supported");
- }
- 
-+/*
-+ * When the server supports very large writes via POSIX extensions, we can
-+ * allow up to 2^24 - PAGE_CACHE_SIZE.
-+ *
-+ * Note that this might make for "interesting" allocation problems during
-+ * writeback however (as we have to allocate an array of pointers for the
-+ * pages). A 16M write means ~32kb page array with PAGE_CACHE_SIZE == 4096.
-+ */
-+#define CIFS_MAX_WSIZE ((1<<24) - PAGE_CACHE_SIZE)
-+
-+/*
-+ * When the server doesn't allow large posix writes, default to a wsize of
-+ * 128k - PAGE_CACHE_SIZE -- one page less than the largest frame size
-+ * described in RFC1001. This allows space for the header without going over
-+ * that by default.
-+ */
-+#define CIFS_MAX_RFC1001_WSIZE (128 * 1024 - PAGE_CACHE_SIZE)
-+
-+/*
-+ * The default wsize is 1M. find_get_pages seems to return a maximum of 256
-+ * pages in a single call. With PAGE_CACHE_SIZE == 4k, this means we can fill
-+ * a single wsize request with a single call.
-+ */
-+#define CIFS_DEFAULT_WSIZE (1024 * 1024)
-+
-+static unsigned int
-+cifs_negotiate_wsize(struct cifsTconInfo *tcon, struct smb_vol *pvolume_info)
-+{
-+	__u64 unix_cap = le64_to_cpu(tcon->fsUnixInfo.Capability);
-+	struct TCP_Server_Info *server = tcon->ses->server;
-+	unsigned int wsize = pvolume_info->wsize ? pvolume_info->wsize :
-+				CIFS_DEFAULT_WSIZE;
-+
-+	/* can server support 24-bit write sizes? (via UNIX extensions) */
-+	if (!tcon->unix_ext || !(unix_cap & CIFS_UNIX_LARGE_WRITE_CAP))
-+		wsize = min_t(unsigned int, wsize, CIFS_MAX_RFC1001_WSIZE);
-+
-+	/* no CAP_LARGE_WRITE_X? Limit it to 16 bits */
-+	if (!(server->capabilities & CAP_LARGE_WRITE_X))
-+		wsize = min_t(unsigned int, wsize, USHRT_MAX);
-+
-+	/* hard limit of CIFS_MAX_WSIZE */
-+	wsize = min_t(unsigned int, wsize, CIFS_MAX_WSIZE);
-+
-+	return wsize;
-+}
-+
- static int
- is_path_accessible(int xid, struct cifsTconInfo *tcon,
- 		   struct cifs_sb_info *cifs_sb, const char *full_path)
-@@ -2866,13 +2896,12 @@ try_mount_again:
- 		cifs_sb->rsize = 1024 * 127;
- 		cFYI(DBG2, "no very large read support, rsize now 127K");
- 	}
--	if (!(tcon->ses->capabilities & CAP_LARGE_WRITE_X))
--		cifs_sb->wsize = min(cifs_sb->wsize,
--			       (tcon->ses->server->maxBuf - MAX_CIFS_HDR_SIZE));
- 	if (!(tcon->ses->capabilities & CAP_LARGE_READ_X))
- 		cifs_sb->rsize = min(cifs_sb->rsize,
- 			       (tcon->ses->server->maxBuf - MAX_CIFS_HDR_SIZE));
- 
-+	cifs_sb->wsize = cifs_negotiate_wsize(tcon, volume_info);
-+
- remote_path_check:
- 	/* check if a whole path (including prepath) is not remote */
- 	if (!rc && tcon) {
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1114,8 +1114,20 @@ static unsigned long isolate_lru_pages(u
+ 					nr_lumpy_dirty++;
+ 				scan++;
+ 			} else {
+-				/* the page is freed already. */
+-				if (!page_count(cursor_page))
++				/*
++				 * Check if the page is freed already.
++				 *
++				 * We can't use page_count() as that
++				 * requires compound_head and we don't
++				 * have a pin on the page here. If a
++				 * page is tail, we may or may not
++				 * have isolated the head, so assume
++				 * it's not free, it'd be tricky to
++				 * track the head status without a
++				 * page pin.
++				 */
++				if (!PageTail(cursor_page) &&
++				    !atomic_read(&cursor_page->_count))
+ 					continue;
+ 				break;
+ 			}
 
 
