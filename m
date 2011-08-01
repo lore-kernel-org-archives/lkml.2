@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab1HAX0x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 19:26:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38708 "EHLO mx2.suse.de"
+	id S1754121Ab1HAX1U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 19:27:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38804 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753971Ab1HAX0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 19:26:38 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:55 2011
-Message-Id: <20110801232055.630132100@clark.kroah.org>
+	id S1754095Ab1HAX1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 19:27:06 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:56 2011
+Message-Id: <20110801232056.337335871@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 01 Aug 2011 16:19:05 -0700
+Date: Mon, 01 Aug 2011 16:19:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Pavel Herrmann <morpheus.ibis@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Pavel Machek <pavel@ucw.cz>, Marek Vasut <marek.vasut@gmail.com>,
-        Cyril Hrubis <metan@ucw.cz>, Jean Delvare <khali@linux-fr.org>
-Subject: [50/70] hwmon: (max1111) Fix race condition causing NULL pointer exception
+        Amir Goldstein <amir73il@users.sf.net>, Jan Kara <jack@suse.cz>,
+        "Theodore Tso" <tytso@mit.edu>, Chris Dunlop <chris@onthe.net.au>
+Subject: [57/70] ext4: fix oops in ext4_quota_off()
 In-Reply-To: <20110801232124.GA15313@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,80 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Herrmann <morpheus.ibis@gmail.com>
+From: Amir Goldstein <amir73il@gmail.com>
 
-commit d3f684f2820a7f42acef68bea6622d9032127fb2 upstream.
+commit 0b26859027ce0005ef89520af20351360e51ad76 upstream.
 
-spi_sync call uses its spi_message parameter to keep completion information,
-using a drvdata structure is not thread-safe. Use a mutex to prevent
-multiple access to shared driver data.
+If quota is not enabled when ext4_quota_off() is called, we must not
+dereference quota file inode since it is NULL.  Check properly for
+this.
 
-Signed-off-by: Pavel Herrmann <morpheus.ibis@gmail.com>
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Acked-by: Pavel Machek <pavel@ucw.cz>
-Acked-by: Marek Vasut <marek.vasut@gmail.com>
-Acked-by: Cyril Hrubis <metan@ucw.cz>
-Tested-by: Stanislav Brabec <utx@penguin.cz>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+This fixes a bug in commit 21f976975cbe (ext4: remove unnecessary
+[cm]time update of quota file), which was merged for 2.6.39-rc3.
+
+Reported-by: Amir Goldstein <amir73il@users.sf.net>
+Signed-off-by: Amir Goldstein <amir73il@users.sf.net>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Chris Dunlop <chris@onthe.net.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/max1111.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ fs/ext4/super.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/hwmon/max1111.c
-+++ b/drivers/hwmon/max1111.c
-@@ -40,6 +40,8 @@ struct max1111_data {
- 	struct spi_transfer	xfer[2];
- 	uint8_t *tx_buf;
- 	uint8_t *rx_buf;
-+	struct mutex		drvdata_lock;
-+	/* protect msg, xfer and buffers from multiple access */
- };
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -4635,6 +4635,9 @@ static int ext4_quota_off(struct super_b
+ 	if (test_opt(sb, DELALLOC))
+ 		sync_filesystem(sb);
  
- static int max1111_read(struct device *dev, int channel)
-@@ -48,6 +50,9 @@ static int max1111_read(struct device *d
- 	uint8_t v1, v2;
- 	int err;
- 
-+	/* writing to drvdata struct is not thread safe, wait on mutex */
-+	mutex_lock(&data->drvdata_lock);
++	if (!inode)
++		goto out;
 +
- 	data->tx_buf[0] = (channel << MAX1111_CTRL_SEL_SH) |
- 		MAX1111_CTRL_PD0 | MAX1111_CTRL_PD1 |
- 		MAX1111_CTRL_SGL | MAX1111_CTRL_UNI | MAX1111_CTRL_STR;
-@@ -55,12 +60,15 @@ static int max1111_read(struct device *d
- 	err = spi_sync(data->spi, &data->msg);
- 	if (err < 0) {
- 		dev_err(dev, "spi_sync failed with %d\n", err);
-+		mutex_unlock(&data->drvdata_lock);
- 		return err;
- 	}
- 
- 	v1 = data->rx_buf[0];
- 	v2 = data->rx_buf[1];
- 
-+	mutex_unlock(&data->drvdata_lock);
-+
- 	if ((v1 & 0xc0) || (v2 & 0x3f))
- 		return -EINVAL;
- 
-@@ -176,6 +184,8 @@ static int __devinit max1111_probe(struc
- 	if (err)
- 		goto err_free_data;
- 
-+	mutex_init(&data->drvdata_lock);
-+
- 	data->spi = spi;
- 	spi_set_drvdata(spi, data);
- 
-@@ -213,6 +223,7 @@ static int __devexit max1111_remove(stru
- 
- 	hwmon_device_unregister(data->hwmon_dev);
- 	sysfs_remove_group(&spi->dev.kobj, &max1111_attr_group);
-+	mutex_destroy(&data->drvdata_lock);
- 	kfree(data->rx_buf);
- 	kfree(data->tx_buf);
- 	kfree(data);
+ 	/* Update modification times of quota files when userspace can
+ 	 * start looking at them */
+ 	handle = ext4_journal_start(inode, 1);
 
 
