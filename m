@@ -1,138 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab1HAUcj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 16:32:39 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:13934 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065Ab1HAUcY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 16:32:24 -0400
-Date: Mon, 1 Aug 2011 22:32:21 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Joe Perches <joe@perches.com>
-cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Andy Grover <agrover@redhat.com>, Roland Dreier <roland@kernel.org>,
-        Christoph Hellwig <hch@lst.de>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] Fix leak in
- drivers/target/iscsi/iscsi_target_parameters.c::iscsi_copy_param_list()
-In-Reply-To: <1312152274.11635.8.camel@Joe-Laptop>
-Message-ID: <alpine.LNX.2.00.1108012230080.31999@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1108010017030.28695@swampdragon.chaosbits.net> <1312152274.11635.8.camel@Joe-Laptop>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753457Ab1HAUgY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 16:36:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32366 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753349Ab1HAUgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 16:36:18 -0400
+Date: Mon, 1 Aug 2011 16:36:07 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
+        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+Subject: Re: [patch v2 03/10] kdump: Add size to elfcorehdr kernel parameter
+Message-ID: <20110801203607.GI3805@redhat.com>
+References: <20110727125504.491183728@linux.vnet.ibm.com>
+ <20110727125807.853426542@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110727125807.853426542@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 31 Jul 2011, Joe Perches wrote:
-
-> On Mon, 2011-08-01 at 00:28 +0200, Jesper Juhl wrote:
-> > We leak memory if the allocations for 'new_param->name' or 'new_param->value' fail.
-> > We also do a lot of variable assignments that are completely pointless
-> > if the allocations fail.
-> > So, let's move the allocations before the assignments and also make
-> > sure that we free whatever was allocated to one if the allocation for
-> > another fails.
+On Wed, Jul 27, 2011 at 02:55:07PM +0200, Michael Holzheu wrote:
+> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 > 
-> > diff --git a/drivers/target/iscsi/iscsi_target_parameters.c b/drivers/target/iscsi/iscsi_target_parameters.c
-> []
-> > +		new_param->name = kmalloc(strlen(param->name) + 1, GFP_KERNEL);
-> > +		new_param->value = kmalloc(strlen(param->value) + 1, GFP_KERNEL);
-> []
-> >  		memcpy(new_param->name, param->name, strlen(param->name));
-> >  		new_param->name[strlen(param->name)] = '\0';
-> >  		memcpy(new_param->value, param->value, strlen(param->value));
+> Currently only the address of the pre-allocated ELF header is passed with
+> the elfcorehdr= kernel parameter. In order to reserve memory for the header
+> in the 2nd kernel also the size is required. To pass the size with this
+> patch the syntax of the kernel parameter is extended as follows:
 > 
-> kstrdup
+> elfcorehdr=[size[KMG]@]offset[KMG]
 > 
-Right, now why didn't I think of that?  - thank you :)
+> This change is backward compatible because elfcorehdr=size is still allowed.
 
-Here's an updated version.
+Generally vmcore parses elfcorehdr to figure out the sizes. kexec-tools
+knows about it and relevant memory is excluded from second kernel's map
+with the help of memmap= command line option.
 
+Can you please mention that this is only s390 specific requirement as
+there are no memmap= equivalent options and somehow dump tools wants
+to know how big the elf header size is?
 
-From: Jesper Juhl <jj@chaosbits.net>
-Subject: Fix leak in drivers/target/iscsi/iscsi_target_parameters.c::iscsi_copy_param_list()
+Thanks
+Vivek
 
-We leak memory if the allocations for 'new_param->name' or 'new_param->value' fail.
-We also do a lot of variable assignments that are completely pointless
-if the allocations fail.
-So, let's move the allocations before the assignments and also make
-sure that we free whatever was allocated to one if the allocation fail.
-There's also a small CodingStyle fixup in there (curly braces on both
-branches of if statement) since I was in the area anyway.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/target/iscsi/iscsi_target_parameters.c |   35 +++++++++---------------
- 1 files changed, 13 insertions(+), 22 deletions(-)
-
-  compile tested only.
-
-diff --git a/drivers/target/iscsi/iscsi_target_parameters.c b/drivers/target/iscsi/iscsi_target_parameters.c
-index 252e246..2ab955d 100644
---- a/drivers/target/iscsi/iscsi_target_parameters.c
-+++ b/drivers/target/iscsi/iscsi_target_parameters.c
-@@ -572,6 +572,17 @@ int iscsi_copy_param_list(
- 			goto err_out;
- 		}
- 
-+		new_param->name = kstrdup(param->name, GFP_KERNEL);
-+		new_param->value = kstrdup(param->value, GFP_KERNEL);
-+		if (!new_param->name || !new_param->value) {
-+			kfree(new_param->value);
-+			kfree(new_param->name);
-+			kfree(new_param);
-+			pr_err("Unable to allocate memory for parameter "
-+				"name/value.\n");
-+			goto err_out;
-+		}
-+
- 		new_param->set_param = param->set_param;
- 		new_param->phase = param->phase;
- 		new_param->scope = param->scope;
-@@ -580,32 +591,12 @@ int iscsi_copy_param_list(
- 		new_param->use = param->use;
- 		new_param->type_range = param->type_range;
- 
--		new_param->name = kzalloc(strlen(param->name) + 1, GFP_KERNEL);
--		if (!new_param->name) {
--			pr_err("Unable to allocate memory for"
--				" parameter name.\n");
--			goto err_out;
--		}
--
--		new_param->value = kzalloc(strlen(param->value) + 1,
--				GFP_KERNEL);
--		if (!new_param->value) {
--			pr_err("Unable to allocate memory for"
--				" parameter value.\n");
--			goto err_out;
--		}
--
--		memcpy(new_param->name, param->name, strlen(param->name));
--		new_param->name[strlen(param->name)] = '\0';
--		memcpy(new_param->value, param->value, strlen(param->value));
--		new_param->value[strlen(param->value)] = '\0';
--
- 		list_add_tail(&new_param->p_list, &param_list->param_list);
- 	}
- 
--	if (!list_empty(&param_list->param_list))
-+	if (!list_empty(&param_list->param_list)) {
- 		*dst_param_list = param_list;
--	else {
-+	} else {
- 		pr_err("No parameters allocated.\n");
- 		goto err_out;
- 	}
--- 
-1.7.6
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+> 
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> ---
+>  Documentation/kernel-parameters.txt |    6 +++---
+>  include/linux/crash_dump.h          |    1 +
+>  kernel/crash_dump.c                 |   11 +++++++++++
+>  3 files changed, 15 insertions(+), 3 deletions(-)
+> 
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -717,10 +717,10 @@ bytes respectively. Such letter suffixes
+>  			See Documentation/block/as-iosched.txt and
+>  			Documentation/block/deadline-iosched.txt for details.
+>  
+> -	elfcorehdr=	[IA64,PPC,SH,X86]
+> +	elfcorehdr=[size[KMG]@]offset[KMG] [IA64,PPC,SH,X86,S390]
+>  			Specifies physical address of start of kernel core
+> -			image elf header. Generally kexec loader will
+> -			pass this option to capture kernel.
+> +			image elf header and optionally the size. Generally
+> +			kexec loader will pass this option to capture kernel.
+>  			See Documentation/kdump/kdump.txt for details.
+>  
+>  	enable_mtrr_cleanup [X86]
+> --- a/include/linux/crash_dump.h
+> +++ b/include/linux/crash_dump.h
+> @@ -10,6 +10,7 @@
+>  #define ELFCORE_ADDR_ERR	(-2ULL)
+>  
+>  extern unsigned long long elfcorehdr_addr;
+> +extern unsigned long long elfcorehdr_size;
+>  
+>  extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
+>  						unsigned long, int);
+> --- a/kernel/crash_dump.c
+> +++ b/kernel/crash_dump.c
+> @@ -20,8 +20,15 @@ unsigned long saved_max_pfn;
+>  unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
+>  
+>  /*
+> + * stores the size of elf header of crash image
+> + */
+> +unsigned long long elfcorehdr_size;
+> +
+> +/*
+>   * elfcorehdr= specifies the location of elf core header stored by the crashed
+>   * kernel. This option will be passed by kexec loader to the capture kernel.
+> + *
+> + * Syntax: elfcorehdr=[size[KMG]@]offset[KMG]
+>   */
+>  static int __init setup_elfcorehdr(char *arg)
+>  {
+> @@ -29,6 +36,10 @@ static int __init setup_elfcorehdr(char
+>  	if (!arg)
+>  		return -EINVAL;
+>  	elfcorehdr_addr = memparse(arg, &end);
+> +	if (*end == '@') {
+> +		elfcorehdr_size = elfcorehdr_addr;
+> +		elfcorehdr_addr = memparse(end + 1, &end);
+> +	}
+>  	return end > arg ? 0 : -EINVAL;
+>  }
+>  early_param("elfcorehdr", setup_elfcorehdr);
