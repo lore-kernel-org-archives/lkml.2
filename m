@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab1HAPJI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 11:09:08 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:58346 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752230Ab1HAPJD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 11:09:03 -0400
-Message-ID: <4E36C18B.7050502@gmail.com>
-Date: Mon, 01 Aug 2011 17:08:59 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1752804Ab1HAPOI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 11:14:08 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50564 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750862Ab1HAPOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 11:14:05 -0400
+Date: Mon, 1 Aug 2011 17:13:08 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+Message-ID: <20110801151308.GA31256@elte.hu>
+References: <20110722.073339.1236244143490935644.davem@davemloft.net>
 MIME-Version: 1.0
-To: Robert Richter <robert.richter@amd.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, "x86@kernel.org" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH v3] oprofile, x86: Convert memory allocation to static array
-References: <4E35A14E.90702@gmail.com> <20110801070742.GA11795@erda.amd.com>
-In-Reply-To: <20110801070742.GA11795@erda.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110722.073339.1236244143490935644.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On -rt, allocators don't work from atomic context any more,
-and the maximum size of the array is known at compile time.
 
-Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+* David Miller <davem@davemloft.net> wrote:
 
----
+>       forcedeth: do vlan cleanup
 
-diff --git a/arch/x86/oprofile/op_model_ppro.c b/arch/x86/oprofile/op_model_ppro.c
-index 94b7450..608874b 100644
---- a/arch/x86/oprofile/op_model_ppro.c
-+++ b/arch/x86/oprofile/op_model_ppro.c
-@@ -28,7 +28,7 @@ static int counter_width = 32;
- 
- #define MSR_PPRO_EVENTSEL_RESERVED	((0xFFFFFFFFULL<<32)|(1ULL<<21))
- 
--static u64 *reset_value;
-+static u64 reset_value[OP_MAX_COUNTER];
- 
- static void ppro_shutdown(struct op_msrs const * const msrs)
- {
-@@ -40,10 +40,6 @@ static void ppro_shutdown(struct op_msrs const * const msrs)
- 		release_perfctr_nmi(MSR_P6_PERFCTR0 + i);
- 		release_evntsel_nmi(MSR_P6_EVNTSEL0 + i);
- 	}
--	if (reset_value) {
--		kfree(reset_value);
--		reset_value = NULL;
--	}
- }
- 
- static int ppro_fill_in_addresses(struct op_msrs * const msrs)
-@@ -79,13 +75,6 @@ static void ppro_setup_ctrs(struct op_x86_model_spec const *model,
- 	u64 val;
- 	int i;
- 
--	if (!reset_value) {
--		reset_value = kzalloc(sizeof(reset_value[0]) * num_counters,
--					GFP_ATOMIC);
--		if (!reset_value)
--			return;
--	}
--
- 	if (cpu_has_arch_perfmon) {
- 		union cpuid10_eax eax;
- 		eax.full = cpuid_eax(0xa);
-@@ -141,13 +130,6 @@ static int ppro_check_ctrs(struct pt_regs * const regs,
- 	u64 val;
- 	int i;
- 
--	/*
--	 * This can happen if perf counters are in use when
--	 * we steal the die notifier NMI.
--	 */
--	if (unlikely(!reset_value))
--		goto out;
--
- 	for (i = 0; i < num_counters; ++i) {
- 		if (!reset_value[i])
- 			continue;
-@@ -179,8 +161,6 @@ static void ppro_start(struct op_msrs const * const msrs)
- 	u64 val;
- 	int i;
- 
--	if (!reset_value)
--		return;
- 	for (i = 0; i < num_counters; ++i) {
- 		if (reset_value[i]) {
- 			rdmsrl(msrs->controls[i].addr, val);
-@@ -196,8 +176,6 @@ static void ppro_stop(struct op_msrs const * const msrs)
- 	u64 val;
- 	int i;
- 
--	if (!reset_value)
--		return;
- 	for (i = 0; i < num_counters; ++i) {
- 		if (!reset_value[i])
- 			continue;
+Trying to bring latest -git into latest -tip today i managed to 
+bisect back to a pretty bad networking breakage on one of my 
+testboxes back to this commit - where i have discovered that it has 
+been fixed freshly.
 
+This bug cost me multiple days of debugging so here's a bit of a post 
+mortem.
 
+The bit that IMO wasnt very optimal was the timing of the merge path:
+
+ -                  AuthorDate: Wed Jul 20 04:54:38 2011 +0000
+ -                  CommitDate: Thu Jul 21 13:47:57 2011 -0700
+ - tree Linus merge CommitDate: Fri Jul 22 14:43:13 2011 -0700
+ -        first lkml bugreport: Sun Jul 24 16:10:59 2011 -0700
+ -              fix CommitDate: Wed Jul 27 22:39:30 2011 -0700
+ - fix  Linus merge CommitDate: Thu Jul 28 05:58:19 2011 -0700
+
+So you can see that the commit was committed to net-next within 24 
+hours of it being submitted, the (bad) breakage was not discovered 
+until 4 days down the road.
+
+I submit that *no one* with real forcedeth hardware actually tested 
+this commit before it hit upstream. It has not touched linux-next 
+before going to Linus and it took 8 days for the fix to get upstream.
+
+If the latency of common driver bugfixes is on the order of 1 week 
+then the golden rule is that commits must be tested for at least 1 
+week as well. One day of testing was *way* too short.
+
+Furthermore, the changelog of the fix:
+
+ 0891b0e08937: forcedeth: fix vlans
+
+Doesn't contain any reference to the bisection work done by
+walt <w41ter@gmail.com> nor by any of the other bugreporters.
+
+So this really sucked all around - could we please improve on it?
+
+Thanks,
+
+	Ingo
