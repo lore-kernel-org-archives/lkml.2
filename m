@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab1HAXK5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 19:10:57 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:48454 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913Ab1HAXKu (ORCPT
+	id S1753180Ab1HAXOE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 19:14:04 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45929 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752974Ab1HAXN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 19:10:50 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.212.96.93]
-In-Reply-To: <4E36C693.6000705@lwfinger.net>
-References: <CAFdoEiT54o+NQKO=dAcOXgyf6GJ1E51w_H_p7PJyRmynz8Sbzg@mail.gmail.com>
-	<4E36C693.6000705@lwfinger.net>
-Date: Tue, 2 Aug 2011 02:10:49 +0300
-Message-ID: <CAFdoEiRBPMx0C+YXwd4-Q=_nHpOb+r2+GspwujZrPh6S4tDwEQ@mail.gmail.com>
-Subject: Re: [Bug?] Machine hangs, rtl8192se possible cause
-From: Jaroslaw Fedewicz <jafd@netstyle.com.ua>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 1 Aug 2011 19:13:59 -0400
+Date: Mon, 1 Aug 2011 16:13:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 7/8] cgroups: Add a task counter subsystem
+Message-Id: <20110801161347.5f4aeeeb.akpm@linux-foundation.org>
+In-Reply-To: <1311956010-32076-8-git-send-email-fweisbec@gmail.com>
+References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com>
+	<1311956010-32076-8-git-send-email-fweisbec@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What kernel are you using? The only problems I've had were some kernel
-> panics due to improper handling of memory allocation failures with the
-> receive skb's, but they have been fixed.
+On Fri, 29 Jul 2011 18:13:29 +0200
+Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> Add a new subsystem to limit the number of running tasks,
+> similar to the NR_PROC rlimit but in the scope of a cgroup.
+> 
+> This is a step to be able to isolate a bit more a cgroup against
+> the rest of the system and limit the global impact of a fork bomb
+> inside a given cgroup.
+> 
+> ...
 >
+> +config CGROUP_TASK_COUNTER
+> +        bool "Control number of tasks in a cgroup"
+> +	depends on RESOURCE_COUNTERS
+> +	help
+> +	  This option let the user to set up an upper bound allowed number
+> +	  of tasks inside a cgroup.
 
-I'm using a fairly recent version of kernel from git (I think from
-before yesterday). The mysterious hangs were there from the beginning,
-but it also might be partly because ATI driver was messed up too at
-these times. Later, ati appeared fixed but the hangs wouldn't go away.
+whitespace went weird.
 
-I don't think it's a panic proper, though. Nothing ever gets logged
-along the lines of "panic". Even if I happen to have a text mode
-console, it just freezes. If I have a panic or an oops proper, I'm
-also kicked out of X11 to see it by the KMS. But not in this case.
-
-(Also, the laptop has neither Caps Lock nor Num Lock nor Scroll Lock
-LEDs, so I can't see if they blink.)
-
-What raised my suspicions is that I've never seen this happen when
-rtl8192se wasn't compiled at all or was not loaded.
-
-> It can be difficult to use netconsole to debug problems with wireless
-> devices.
-
-I can hook netconsole to the Ethernet and it *might* manage to log the
-last packet (at least I used to reason that way when screen just
-froze). The trick is, it never did log anything spurious. Just your
-normal initialization messages and then it just stops.
-
+> 
+> ...
 >
-> As you prevent rtl8192se from loading automatically, the logging console may
-> provide some clues. Use the following command to load the driver:
+ +
+> +static void task_counter_post_clone(struct cgroup_subsys *ss, struct cgroup *cgrp)
+> +{
+> +	res_counter_inherit(cgroup_task_counter_res(cgrp), RES_LIMIT);
+
+cgroup_task_counter_res() has code in it to carefully return NULL in
+one situation, but if it does this, res_counter_inherit() will then
+cheerily oops.  This makes no sense.
+
+> +}
+> +
+> 
+> ...
 >
-> sleep 10 ; modprobe rtl8192se
+> +/* Protected amongst can_attach_task/attach_task/cancel_attach_task by cgroup mutex */
+> +static struct res_counter *common_ancestor;
+> +
+> +static int task_counter_can_attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
+> +					struct task_struct *tsk)
+> +{
+> +	struct res_counter *res = cgroup_task_counter_res(cgrp);
+> +	struct res_counter *old_res = cgroup_task_counter_res(old_cgrp);
+> +	struct res_counter *limit_fail_at;
+> +
+> +	common_ancestor = res_counter_common_ancestor(res, old_res);
+
+This might oops too?
+
+> +	return res_counter_charge_until(res, common_ancestor, 1, &limit_fail_at);
+> +}
+> +
+> 
+> ...
 >
-> During the 10 second sleep, use CTRL-ALT-F10 to switch consoles and see if
-> any messages appear.
->
+> +int cgroup_task_counter_fork(struct task_struct *child)
+> +{
+> +	struct cgroup_subsys_state *css = child->cgroups->subsys[tasks_subsys_id];
+> +	struct cgroup *cgrp = css->cgroup;
+> +	struct res_counter *limit_fail_at;
+> +
+> +	/* Optimize for the root cgroup case, which doesn't have a limit */
+> +	if (!cgrp->parent)
+> +		return 0;
+> +
+> +	return res_counter_charge(cgroup_task_counter_res(cgrp), 1, &limit_fail_at);
+> +}
 
-The most problematic thing is that it does not hang right away. Most
-of the time, I see the machine go into the catatonia after quite a
-while, and as it is not the laptop I do most of my work on, I usually
-see it hanged when screen PM has already kicked in. So I cannot really
-read what the log might say on the matter.
+It took a while for me to work out the meaning of the return value from
+this function.  Some documentation would be nice?
 
-I cannot also trigger the freeze reliably. Most of the time it happens
-"when you are not looking at it", and it usually happens either during
-or just after high load averages and low to none network activity (a
-typical scenario: build a firefox from sources, go outside, come home
-4 hours later, the laptop is turned on but dead by hanging; no
-messages as the screen is obviously off; a less typical scenario is to
-freeze during startup).
 
-I'm the last person ever to suggest anything on the subject, but could
-it be a problem in the card's power management?
-
-> Please use 'lspci -nn' to determine which version of the card you have.
-
-03:00.0 Network controller [0280]: Realtek Semiconductor Co., Ltd.
-RTL8191SEvB Wireless LAN Controller [10ec:8172] (rev 10)
-
-If there is a test I can conduct or any other information to provide,
-please let me know.
