@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121Ab1HAN04 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 09:26:56 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45075 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579Ab1HAN0t convert rfc822-to-8bit (ORCPT
+	id S1753141Ab1HANim (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 09:38:42 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:35694 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978Ab1HANie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 09:26:49 -0400
-MIME-Version: 1.0
-X-Originating-IP: [178.212.96.93]
-Date: Mon, 1 Aug 2011 16:26:49 +0300
-Message-ID: <CAFdoEiT54o+NQKO=dAcOXgyf6GJ1E51w_H_p7PJyRmynz8Sbzg@mail.gmail.com>
-Subject: [Bug?] Machine hangs, rtl8192se possible cause
-From: Jaroslaw Fedewicz <jafd@netstyle.com.ua>
-To: linux-kernel@vger.kernel.org
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        Larry.Finger@lwfinger.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 1 Aug 2011 09:38:34 -0400
+From: Andy Whitcroft <apw@canonical.com>
+To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
+Subject: [PATCH 1/1] btrfs: btrfs_calc_avail_data_space cope with no read/write devices V2
+Date: Mon,  1 Aug 2011 14:38:30 +0100
+Message-Id: <1312205910-13053-1-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+When we mount a btrfs filesystem from read-only media there will be no
+read/write devices; for example mounting an SD card with its lock enabled.
+This triggers an immediate BUG during mount:
 
-I own a Thinkpad Edge 13 (AMD, machine type 0197) laptop, which is
-shipped with a Realtek 8192 SE WLAN card.
+  kernel BUG at .../fs/btrfs/super.c:984!
 
-The WLAN support with this particular card was never brilliant under
-Linux, first with (very) flakey drivers from Realtek which would stop
-transmitting packets every so often or panic after a few hours of
-usage. The in-tree drivers are better in this respect, but I'm
-experiencing mysterious hangups every once in a while. The machine is
-effectively dead and has to be power-cycled — no oops, no kernel
-panic, no nothing, it just hangs and that's it.
+This is triggered by statfs when calculating the free space in the
+filesytem.  We bug if the number of read/write devices is 0.
 
-I'm sure this is not a regression because the hangups were right there
-from the start.
+This check seems spurious as the information collected is valid regardless
+of whether the devices are read-only or not.  As the count is used to
+size the sort array it seems more correct to switch it to the number of
+open devices.
 
-The last meaningful message which might be helpful was: "wait for
-BIT(6) return value X" (I don't remember what X was, it was a while
-ago and only once).
+BugLink: http://bugs.launchpad.net/bugs/816770
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ fs/btrfs/super.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I don't know if there are other means to debug (netconsole over eth0?)
-those hangs. The only other thing I know for sure that I can get a
-week long uptime if I blacklist rtl8192se.ko from loading.
+diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+index 15634d4..ae4367a 100644
+--- a/fs/btrfs/super.c
++++ b/fs/btrfs/super.c
+@@ -980,7 +980,7 @@ static int btrfs_calc_avail_data_space(struct btrfs_root *root, u64 *free_bytes)
+ 	int i = 0, nr_devices;
+ 	int ret;
+ 
+-	nr_devices = fs_info->fs_devices->rw_devices;
++	nr_devices = fs_info->fs_devices->open_devices;
+ 	BUG_ON(!nr_devices);
+ 
+ 	devices_info = kmalloc(sizeof(*devices_info) * nr_devices,
+-- 
+1.7.4.1
 
-If I can provide any additional information to track the bug (or a
-faulty piece of hardware?) down, please tell me. Google tells me
-nobody reported this before, or it was just me feeding incorrect
-keywords.
-
-Thanks for your kind attention.
-
-P. S. Tried netconsole before, got nothing to pinpoint the error. The
-only recurring pattern I could see in it was that almost every time
-the machine hanged was after ip6tables initialized, at least it was
-the last message in the log.
-
-P. P. S. I don't track netdev@ and linux-wireless@ lists, so please Cc: me.
