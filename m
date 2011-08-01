@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab1HAPwK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 11:52:10 -0400
-Received: from vms173011pub.verizon.net ([206.46.173.11]:35113 "EHLO
-	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752832Ab1HAPwB (ORCPT
+	id S1753126Ab1HAPzt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 11:55:49 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:36660 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752464Ab1HAPzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 11:52:01 -0400
-X-Greylist: delayed 3605 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Aug 2011 11:52:01 EDT
-Date: Mon, 01 Aug 2011 10:51:38 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: "Yung, Winson W" <winson.w.yung@intel.com>
-Cc: Venkatesh Pallipadi <venki@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
-        "Kanigeri, Hari K" <hari.k.kanigeri@intel.com>
-Subject: RE: [PATCH] [RFC] ondemand governor: dynamic cpufreq scaling with
- different CPUs
-In-reply-to: <CAC4B8726E86A142B27A9E9A2F2F124701921EF878@rrsmsx505.amr.corp.intel.com>
-Message-id: <alpine.LFD.2.02.1108011033540.23581@x980>
-References: <CAC4B8726E86A142B27A9E9A2F2F12470191AAD4C3@rrsmsx505.amr.corp.intel.com>
- <CABeCy1Zvt2rv6r5ea2Pum+2gCDYJS-A3-00_0U2+ZcWV_kip4A@mail.gmail.com>
- <CAC4B8726E86A142B27A9E9A2F2F124701921EF878@rrsmsx505.amr.corp.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 1 Aug 2011 11:55:45 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 2.oRjxgVM1l7.fvnD7vBPZkHhubIntK8wmkLNtTzGl26n8s
+ ZSl1Q0PYuF34HRC.UV52Uuun_iYBGCNGVV6bunyfX.Qe8I0l3StlcAJof4ym
+ sfaK5ZsaXrjUuixX6OGJN8_2LvdXhqHZaKEv1_VfMoQr4MptPu_YNY6Zk2WH
+ hlhUiC_YIvaQknFAAx7gSKPt9Yzn3YmPqM__XygeGs5Mm1gPfPmLhgT_OgA5
+ EzE_b8bhy3XJj2Lhi78AEyyRiFnXc2BSyTeNtOQrv6jrYzUIH0B.NviPQBIj
+ wtSp08560Dj1Yt9L2VUzH4sr9wMILdFsbdl1GpHPtcB6B2__xf3Y.8hnK0Ca
+ E7FRs.EVgHgbjdBB8Osh98YEa
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Mon, 1 Aug 2011 10:55:40 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@kernel.org>
+cc: David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
+In-Reply-To: <CAOJsxLHB9jPNyU2qztbEHG4AZWjauCLkwUVYr--8PuBBg1=MCA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1108011046230.8420@router.home>
+References: <alpine.DEB.2.00.1107290145080.3279@tiger> <alpine.DEB.2.00.1107291002570.16178@router.home> <alpine.DEB.2.00.1107311136150.12538@chino.kir.corp.google.com> <alpine.DEB.2.00.1107311253560.12538@chino.kir.corp.google.com> <1312145146.24862.97.camel@jaguar>
+ <alpine.DEB.2.00.1107311426001.944@chino.kir.corp.google.com> <CAOJsxLHB9jPNyU2qztbEHG4AZWjauCLkwUVYr--8PuBBg1=MCA@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Re: software vs hardware coordination
 
-Speaking for Intel, everything we make, from hand-sets to supercomputers
-supports hardware coorination.
+The future plans that I have for performance improvements are:
 
-Think about it -- if we did not, then we would not be able
-to support a legacy OS that doesn't know how to do SW coordination.
+1. The percpu partial lists.
 
-HW coordiation is the simplest thing for the SW because
-SW doesn't have to know anything at all about topology constraints.
-It is also the simplest thing for the BIOS, which doesn't have
-to correctly describe topology.
+The min_partial settings are halved by this approach so that there wont be
+any excessive memory usage. Pages on per cpu partial lists are frozen and
+this means that the __slab_free path can avoid taking node locks for a
+page that is cached by another processor. This causes another significant
+performance gain in hackbench of up to 20%. The problem here is to fine
+tune the approach and clean up the patchset.
 
-Yes, there is an MSR bit that the BIOS can flip to disable
-HW coordination.  90% of the time that bit is set it is a BIOS bug.
-eg. the bit is set, but the BIOS fails to properly set up the
-ACPI tables to properly enable SW coordination, resulting
-in a system with really strange performance issues.
+2. per cpu full lists.
 
-Indeed, I proposed before, and I will propose again that
-the underlying ACPI _PSD support behind SW coordination
-be completely removed from Linux.
+These will not be specific to a particular slab cache but shared amoung
+all of them. This will reduce the need to keep empty slab pages on the
+per node partial lists and therefore also reduce memory consumption.
 
-Venki,
-I recall that you mentioned one platform that depends on it --
-and I'd  like to understand that issue and address it with a quirk
-rather than expose all systems to BIOS bugs due to bogus _PSD support.
+The per cpu full lists will be essentially a caching layer for the
+page allocator and will make slab acquisition and release as fast
+as the slub fastpath for alloc and free (it uses the same
+this_cpu_cmpxchg_double based approach). I basically gave up on
+fixing up the page allocator fastpath after trying various approaches
+over the last weeks. Maybe the caching layer can be made available
+for other kernel subsystems that need fast page access too.
 
-Winston,
-Your system is running in SW coordination mode?
-What do you see if you run with the patch below?
-I'd be intersted to see the output from adpidump for your system.
+The scaling issues that are left over are then those caused by
 
-thanks,
--Len Brown
-Intel Open Source Technology Center
+1. The per node lock taken for the partial lists per node.
+   This can be controlled by enlarging the per cpu partial lists.
 
----
-diff --git a/include/acpi/pdc_intel.h b/include/acpi/pdc_intel.h
-index 552637b..d081595 100644
---- a/include/acpi/pdc_intel.h
-+++ b/include/acpi/pdc_intel.h
-@@ -22,7 +22,6 @@
- 
- #define ACPI_PDC_EST_CAPABILITY_SWSMP	(ACPI_PDC_SMP_C1PT | \
- 					 ACPI_PDC_C_C1_HALT | \
--					 ACPI_PDC_SMP_P_SWCOORD | \
- 					 ACPI_PDC_SMP_P_HWCOORD | \
- 					 ACPI_PDC_P_FFH)
- 
+2. The necessity to go to the page allocator.
+   This will be tunable by configuring the caching layer.
+
+3. Bouncing cachelines for __remote_free if multiple processors
+   enter __slab_free for the same page.
+
+
+
+
