@@ -1,137 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689Ab1HAS0A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 14:26:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54007 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752563Ab1HASZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 14:25:53 -0400
-Message-ID: <4E36EF88.6040704@suse.de>
-Date: Mon, 01 Aug 2011 23:55:12 +0530
-From: Suresh Jayaraman <sjayaraman@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
+	id S1752796Ab1HASdk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 14:33:40 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:38157 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab1HASdd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 14:33:33 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:x-system-of-record;
+	b=cv+LqxTz50PXgK2qpvZ++jo8lF/zzAamQrw3Q9dotm0tYpF8PyzUieH+nfnY4kW50
+	0IzyEpbDHQPHsZB42GRgw==
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Moyer Jeff Moyer <jmoyer@redhat.com>,
-        Shaohua Li <shaohua.li@intel.com>
-Subject: Re: [PATCH] cfq-iosched: Add some more documentation about idling
-References: <20110801155523.GE3805@redhat.com>
-In-Reply-To: <20110801155523.GE3805@redhat.com>
+In-Reply-To: <20110801125234.GE14343@redhat.com>
+References: <1311271873-10879-1-git-send-email-zakmagnus@google.com>
+	<20110722195340.GF3765@redhat.com>
+	<CAAuSN93tiSehpNXxjOgrq7oV-U+1ZPi2eqr+2dNSBG0yu0jxmA@mail.gmail.com>
+	<20110725124451.GA2866@redhat.com>
+	<CAAuSN93Qjk4eEAvm_Xn=O-0t+qhAyKmxy6HyPuyzJ35tX2u_CQ@mail.gmail.com>
+	<20110729205538.GD14343@redhat.com>
+	<CAAuSN93ouWrPn9xWb9Zd3E2Dp0hQxC4JmFH1utbyy1_aMnfkLA@mail.gmail.com>
+	<20110801125234.GE14343@redhat.com>
+Date: Mon, 1 Aug 2011 11:33:24 -0700
+Message-ID: <CAAuSN92UAjuJXprBAj9z0sekk=iBWGe3PP88z8NmrZ5fExOyjg@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] Make hard lockup detection use timestamps
+From: ZAK Magnus <zakmagnus@google.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Mandeep Singh Baines <msb@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2011 09:25 PM, Vivek Goyal wrote:
-> There are always questions about why CFQ is idling on various conditions.
-> Recent ones is Christoph asking again why to idle on REQ_NOIDLE. His
-> assertion is that XFS is relying more and more on workqueues and is
-> concerned that CFQ idling on IO from every workqueue will impact
-> XFS badly.
-> 
-> So he suggested that I add some more documentation about CFQ idling
-> and that can provide more clarity on the topic and also gives an
-> opprotunity to poke a hole in theory and lead to improvements.
-> 
-> So here is my attempt at that. Any comments are welcome.
-> 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> ---
->  Documentation/block/cfq-iosched.txt |   70 +++++++++++++++++++++++++++++++++++
->  1 files changed, 70 insertions(+), 0 deletions(-)
+Okay... So this is a problem we need to solve. Does there exist a good
+way to output a stack trace to, say, a file in /proc? I think that
+would be an appealing solution, if doable.
 
-The patch looks good and documents idling nicely. A few minor nits...
-
-> diff --git a/Documentation/block/cfq-iosched.txt b/Documentation/block/cfq-iosched.txt
-> index e578fee..7ce81b8 100644
-> --- a/Documentation/block/cfq-iosched.txt
-> +++ b/Documentation/block/cfq-iosched.txt
-> @@ -43,3 +43,73 @@ If one sets slice_idle=0 and if storage supports NCQ, CFQ internally switches
->  to IOPS mode and starts providing fairness in terms of number of requests
->  dispatched. Note that this mode switching takes effect only for group
->  scheduling. For non-cgroup users nothing should change.
-> +
-> +CFQ IO scheduler Idling Theory
-> +==============================
-> +Idling on a queue is primarily about waiting for next request to come on
-                                                  ^^ the ?
-> +same queue after completion of a request. In this process CFQ will not
-> +dispatch requests from other cfq queues even if requests are pending
-> +there.
-> +
-> +The rationale behind idling is that it can cut down on number of seeks
-> +on rotational media. For example, if a process is doing dependent
-> +sequential reads (next read will come on only after completion of previous
-> +one), then not dispatching request from other queue sould help as we
-                                                      ^^ should
-> +did not move the disk head and kept on dispatching sequential IO from
-> +one queue.
-> +
-> +CFQ does not do idling on all the queues. It primarily tries to do idling
-> +on queues which are doing synchronous sequential IO. The synchronous
-> +queues which are not doing sequential IO are put on a separate service
-> +tree (called sync-noidle tree) where we do not idle on individual
-> +cfq queue, but idle on the whole tree or IOW, idle on a group of cfq
-> +queues.
-> +
-> +CFQ has following tree service trees and various queues are put on these
-                    ^^ extraneous "tree" ?
-
-There seems to be some redundant information between the paragraph above
-and below.. More room for brevity?
-
-> +trees.
-> +
-> +	sync-idle	sync-noidle	async 
-> +
-> +All cfq queues doing synchronous sequential IO go on to sync-idle tree.
-> +On this tree we idle on each queue individually.
-> +
-> +All synchronous non-sequential queues go on sync-noidle tree. Also any
-> +request which are marked with REQ_NOIDLE go on this service tree.
-> +
-> +All async writes go on async service tree. There is no idling on async
-> +queues.
-
-> +FAQ
-> +===
-> +Q1. Why to idle at all on queues marked with REQ_NOIDLE.
-> +
-> +A1. We only do group idle on queues marked with REQ_NOIDLE. This helps in
-> +    providing isolation with all the sync-idle queues. Otherwise in presence
-> +    of many sequential readers, other synchronous IO might not get fair
-> +    share of disk.
-> +
-> +    For example, if there are 10 sequential readers doing IO and they get
-> +    100ms each. If a REQ_NOIDLE request comes in, it will be scheduled
-> +    roughly after 1 second. If after completion of REQ_NOIDLE request we
-> +    do not idle, and after a couple of mili seconds a another REQ_NOIDLE
-> +    request comes in, again it will be scheduled after 1second. Repeat it
-> +    and notice how a workload can lose its disk share and suffer due to
-> +    multiple sequnetial readers.
-> +
-> +    fsync can generate dependent IO where bunch of data is written in the
-> +    context of fsync, and later some journaling data is written. Journaling
-> +    data comes in only after fsync has finished its IO (atleast for ext4
-> +    that seemed to be the case). Now if one decides not to idle on fsync
-> +    thread due to REQ_NOIDLE, then next journaling write will not get
-> +    scheduled for another second. A process doing small fsync, will suffer
-> +    badly in presence of multiple sequntial readers.
-> +
-> +    Hence doing group idling on threads using REQ_NOIDLE flag on requests
-> +    provides isolation from multiple sequntial readers and at the same
-> +    time we do not idle on individual threads. 
-> +
-> +Q2. When to specify REQ_NOIDLE
-> +A2. I would think whenever one is doing synchronous write and not expecting
-> +    more writes to be dispatched from same context soon, should be able
-> +    to specify REQ_NOIDLE on writes and that probably should work well for
-> +    most of the cases. 
-
-
--- 
-Suresh Jayaraman
+On Mon, Aug 1, 2011 at 5:52 AM, Don Zickus <dzickus@redhat.com> wrote:
+> On Fri, Jul 29, 2011 at 04:12:32PM -0700, ZAK Magnus wrote:
+>> Are you saying that any call to printk() will touch the watchdogs? I
+>> wasn't aware of that and it doesn't seem to comply with my
+>> observations too well, either. Then again, at the moment I don't
+>> understand some of the things I'm currently seeing so I could just be
+>> wrong.
+>
+> I believe the serial console write is the source of all the
+> touch_nmi_watchdogs that result from a printk.
+>
+> drivers/tty/serial/8250.c::serial8250_console_write()
+>
+> Cheers,
+> Don
+>
