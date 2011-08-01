@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab1HAMpL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 08:45:11 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:48567 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752790Ab1HAMpF convert rfc822-to-8bit (ORCPT
+	id S1752983Ab1HAMwA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 08:52:00 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52421 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab1HAMv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 08:45:05 -0400
+	Mon, 1 Aug 2011 08:51:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1108010229150.1062@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1107290145080.3279@tiger>
-	<alpine.DEB.2.00.1107291002570.16178@router.home>
-	<alpine.DEB.2.00.1107311136150.12538@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1107311253560.12538@chino.kir.corp.google.com>
-	<1312145146.24862.97.camel@jaguar>
-	<alpine.DEB.2.00.1107311426001.944@chino.kir.corp.google.com>
-	<1312175306.24862.103.camel@jaguar>
-	<alpine.DEB.2.00.1108010229150.1062@chino.kir.corp.google.com>
-Date: Mon, 1 Aug 2011 15:45:04 +0300
-X-Google-Sender-Auth: qLixu4jHoa8bHWkAA_I-bhXosak
-Message-ID: <CAOJsxLGyC4=WwGu7kUTwVKF3AxhfWjBg2sZu=W08RtVMHKk8eQ@mail.gmail.com>
-Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
-From: Pekka Enberg <penberg@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Mon, 1 Aug 2011 14:51:56 +0200
+Message-ID: <CAOLZvyEQNS3dwQ+6bh2o6kADp7Gd3xOpah8y1_AhqJ2FWSP9VA@mail.gmail.com>
+Subject: shm broken on MIPS in current -git
+From: Manuel Lauss <manuel.lauss@googlemail.com>
+To: Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org
+Cc: Linux-MIPS <linux-mips@linux-mips.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Hello Vasiliy,
 
-On Mon, Aug 1, 2011 at 1:02 PM, David Rientjes <rientjes@google.com> wrote:
-> Here's the same testing environment with CONFIG_SLUB_STATS for 16 threads
-> instead of 160:
+Commits 5774ed014f02120db9a6945a1ecebeb97c2acccb
+(shm: handle separate PID namespaces case)
+and 4c677e2eefdba9c5bfc4474e2e91b26ae8458a1d
+(shm: optimize locking and ipc_namespace getting)
+break on my MIPS systems.  The following oops is
+printed on boot, and as a result, more than  300 zombie kworker
+kernel processes are resident.  I don't see this oops on x86 or x64.
 
-[snip]
+ra points to the down_write() in ipc/shm.c::exit_shm()
 
-Looking at the data (in slightly reorganized form):
+CPU 0 Unable to handle kernel paging request at virtual address
+00000000, epc == 80527c64, ra == 8024afb8
+Oops[#1]:
+Cpu 0
+$ 0   : 00000000 10003c00 00000000 10003c01
+$ 4   : 8060d114 8fc45e60 8060d118 8fc3f520
+$ 8   : 00000000 01312d00 0016e35f 00020000
+$12   : 00000080 00000010 00000010 8fc3001c
+$16   : 8fc3f520 00000000 00000000 00000000
+$20   : 00000000 00000000 8fc45eb4 00000000
+$24   : 00000000 8011f9b0
+$28   : 8fc44000 8fc45e50 00000001 8024afb8
+Hi    : 00000000
+Lo    : 01312d00
+epc   : 80527c64 __down_write_nested+0x68/0xf0
+    Not tainted
+ra    : 8024afb8 exit_shm+0x30/0x64
+Status: 10003c02    KERNEL EXL
+Cause : 0080800c
+BadVA : 00000000
+PrId  : 800c8000 (Au1300)
+Process kworker/u:0 (pid: 9, threadinfo=8fc44000, task=8fc3f520, tls=00000000)
+Stack : 14200972 d3054429 00000000 56b8e493 8060d118 00000000 8fc3f520 00000002
+        8fc2c000 8060d114 00000000 8024afb8 00000000 00000000 00000000 00000000
+        8060d0c0 00000000 8fc3f520 80128ae8 30480023 0b309f84 34ffeedb ef9e65d6
+        38019941 af430015 f6d9ebeb 00000000 00000000 00000000 8fc29ce0 8fc15300
+        00000000 00000000 00000000 00000000 00000000 00000000 00000000 80139578
+        ...
+Call Trace:
+[<80527c64>] __down_write_nested+0x68/0xf0
+[<8024afb8>] exit_shm+0x30/0x64
+[<80128ae8>] do_exit+0x50c/0x664
+[<80139578>] ____call_usermodehelper+0xfc/0x118
+[<801061bc>] kernel_thread_helper+0x10/0x18
 
-  alloc
-  =====
 
-    16 threads:
+Code: ac850008  afa60010  afa20014 <ac450000> 40016000  30630001
+3421001f  3821001f  00611825
+Disabling lock debugging due to kernel taint
+Fixing recursive fault but reboot is needed!
 
-      cache           alloc_fastpath          alloc_slowpath
-      kmalloc-256     4263275 (91.1%)         417445   (8.9%)
-      kmalloc-1024    4636360 (99.1%)         42091    (0.9%)
-      kmalloc-4096    2570312 (54.4%)         2155946  (45.6%)
 
-    160 threads:
-
-      cache           alloc_fastpath          alloc_slowpath
-      kmalloc-256     10937512 (62.8%)        6490753  (37.2%)
-      kmalloc-1024    17121172 (98.3%)        303547   (1.7%)
-      kmalloc-4096    5526281  (31.7%)        11910454 (68.3%)
-
-  free
-  ====
-
-    16 threads:
-
-      cache           free_fastpath           free_slowpath
-      kmalloc-256     210115   (4.5%)         4470604  (95.5%)
-      kmalloc-1024    3579699  (76.5%)        1098764  (23.5%)
-      kmalloc-4096    67616    (1.4%)         4658678  (98.6%)
-
-    160 threads:
-      cache           free_fastpath           free_slowpath
-      kmalloc-256     15469    (0.1%)         17412798 (99.9%)
-      kmalloc-1024    11604742 (66.6%)        5819973  (33.4%)
-      kmalloc-4096    14848    (0.1%)         17421902 (99.9%)
-
-it's pretty sad to see how SLUB alloc fastpath utilization drops so
-dramatically. Free fastpath utilization isn't all that great with 160
-threads either but it seems to me that most of the performance
-regression compared to SLAB still comes from the alloc paths.
-
-I guess the problem here is that __slab_free() happens on a remote CPU
-which puts the object to 'struct page' freelist which effectively means
-we're unable to recycle free'd objects. As the number of concurrent
-threads increase, we simply drain out the fastpath freelists more
-quickly. Did I understand the problem correctly?
-
-If that's really happening, I'm still bit puzzled why we're hitting the
-slowpath so much. I'd assume that __slab_alloc() would simply reload the
-'struct page' freelist once the per-cpu freelist is empty.  Why is that
-not happening? I see __slab_alloc() does deactivate_slab() upon
-node_match() failure. What kind of ALLOC_NODE_MISMATCH stats are you
-seeing?
-
-                        Pekka
+Thanks,
+        Manuel Lauss
