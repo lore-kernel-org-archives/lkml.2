@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab1HAROn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 13:14:43 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:59014 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478Ab1HAROg convert rfc822-to-8bit (ORCPT
+	id S1753667Ab1HARPn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 13:15:43 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:64179 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753589Ab1HARPj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 13:14:36 -0400
+	Mon, 1 Aug 2011 13:15:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAGZ=bqLHjzpKQP63dnSK0fML2ZycmfFnSbiApV4naMCN_UrZdg@mail.gmail.com>
+In-Reply-To: <CACqU3MUoxSNmcYsSF4zOTgADdedb7TcciPuBPMviG02M5oUPDQ@mail.gmail.com>
 References: <1312042478-26012-1-git-send-email-zdevai@gmail.com>
 	<20110801083614.GC15578@n2100.arm.linux.org.uk>
 	<CAMuHMdUpTDSRP_JmWqcCBtYwzna0hwmaBshpiF8kgvqoNcqYZA@mail.gmail.com>
@@ -17,9 +17,8 @@ References: <1312042478-26012-1-git-send-email-zdevai@gmail.com>
 	<CACqU3MVUxTYmD+4VGBAeN8PTs83fR0xQQrQS5h4QGMZXgMxEvA@mail.gmail.com>
 	<CAGZ=bqL=VAx5jnSBkE2q5KJSY_+An-VRTRAzJmJ3waQUvrRFFg@mail.gmail.com>
 	<CACqU3MUoxSNmcYsSF4zOTgADdedb7TcciPuBPMviG02M5oUPDQ@mail.gmail.com>
-	<CAGZ=bqLHjzpKQP63dnSK0fML2ZycmfFnSbiApV4naMCN_UrZdg@mail.gmail.com>
-Date: Mon, 1 Aug 2011 13:14:36 -0400
-Message-ID: <CACqU3MV1PWWttCdXpafwovc_X-CxUp_Dcng1i8jKx5bA0+NGPQ@mail.gmail.com>
+Date: Mon, 1 Aug 2011 13:15:37 -0400
+Message-ID: <CACqU3MVRNmAOm+hTBR34YJ-A2H18NgMZqgvs_ejjQ6hqjG6NBA@mail.gmail.com>
 Subject: Re: [PATCH] Remove remaining references of CONFIG_GENERIC_TIME
 From: Arnaud Lacombe <lacombar@gmail.com>
 To: Kyle Moffett <kyle@moffetthome.net>
@@ -38,82 +37,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Mon, Aug 1, 2011 at 12:48 PM, Kyle Moffett <kyle@moffetthome.net> wrote:
-> On Mon, Aug 1, 2011 at 12:08, Arnaud Lacombe <lacombar@gmail.com> wrote:
->> On Mon, Aug 1, 2011 at 11:15 AM, Kyle Moffett <kyle@moffetthome.net> wrote:
->>> On Mon, Aug 1, 2011 at 11:04, Arnaud Lacombe <lacombar@gmail.com> wrote:
->>>> On Mon, Aug 1, 2011 at 7:27 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->>>>> On Mon, Aug 1, 2011 at 12:14, Russell King - ARM Linux
->>>>>>>[...]
->>>>>>>
->>>>>>> Doesn't kconf error out when trying to select a non-existent symbol?
+On Mon, Aug 1, 2011 at 12:08 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> Hi,
+>
+> On Mon, Aug 1, 2011 at 11:15 AM, Kyle Moffett <kyle@moffetthome.net> wrote:
+>> On Mon, Aug 1, 2011 at 11:04, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>>> Hi,
+>>>
+>>> On Mon, Aug 1, 2011 at 7:27 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>>>> On Mon, Aug 1, 2011 at 12:14, Russell King - ARM Linux
+>>>>>>[...]
 >>>>>>
->>>>>> Nope.
+>>>>>> Doesn't kconf error out when trying to select a non-existent symbol?
 >>>>>
->>>>> You're right. So that's a bug.
->>>>>
->>>> depends on what you are trying to achieve and what the problem is.
+>>>>> Nope.
 >>>>
->>>> Internally kconfig will create a dummy symbol when it encounter a
->>>> missing symbol so that arch/arm/Kconfig can reference a symbol which
->>>> will be fully defined later on. I do not think you want to forward
->>>> decl all the symbol which can be used. That'd be a mess. That said, we
->>>> can come with a form of symbol deprecation that would error-out when
->>>> used.
+>>>> You're right. So that's a bug.
+>>>>
+>>> depends on what you are trying to achieve and what the problem is.
 >>>
->>> Would it be possible instead to make Kconfig go through all the symbols
->>> after everything is processed and identify any remaining "dummy symbols"
->>> which were not actually declared anywhere?
->>>
->> this is software, everything is possible.
+>>> Internally kconfig will create a dummy symbol when it encounter a
+>>> missing symbol so that arch/arm/Kconfig can reference a symbol which
+>>> will be fully defined later on. I do not think you want to forward
+>>> decl all the symbol which can be used. That'd be a mess. That said, we
+>>> can come with a form of symbol deprecation that would error-out when
+>>> used.
 >>
->>> Right now if you typo a "select" statement you get no warnings that you
->>> are selecting something that does not exist, which is probably a cause
->>> of many kinds of errors beyond this particular one.
->>>
->> d'oh! ... I'm not sure we want that. Dummy symbol are heavily used
->> internally, a trivial implementation[0] triggered:
+>> Would it be possible instead to make Kconfig go through all the symbols
+>> after everything is processed and identify any remaining "dummy symbols"
+>> which were not actually declared anywhere?
 >>
->> % make REGENERATE_PARSERS=y alldefconfig 2>&1 | grep 'defined without
->> type' | wc -l
->> 817
->>
->> Moreover, this approach is deemed to fail. The current symbol
->> namespace is tied to an arch, so whenever you do:
->>
->> arch/arm/Kconfig:
->> config FOO
->>    bool
->>
->> config BAZ
->>    bool
->>
->> drivers/cpufreq/Kconfig
->> config BAR
->>    depends on ARM && FOO
->>    select BAZ
->>
->> You will end up triggering the warning for every ARCH != ARM...
+> this is software, everything is possible.
 >
-> Perhaps that's an argument for building a single Kconfig namespace?
-I'm working on that, but this is a real mess :)
+>> Right now if you typo a "select" statement you get no warnings that you
+>> are selecting something that does not exist, which is probably a cause
+>> of many kinds of errors beyond this particular one.
+>>
+> d'oh! ... I'm not sure we want that. Dummy symbol are heavily used
+> internally, a trivial implementation[0] triggered:
+>
+> % make REGENERATE_PARSERS=y alldefconfig 2>&1 | grep 'defined without
+> type' | wc -l
+> 817
+>
+> Moreover, this approach is deemed to fail. The current symbol
+> namespace is tied to an arch, so whenever you do:
+>
+> arch/arm/Kconfig:
+> config FOO
+>    bool
+>
+> config BAZ
+>    bool
+>
+> drivers/cpufreq/Kconfig
+> config BAR
+>    depends on ARM && FOO
+>    select BAZ
+>
+> You will end up triggering the warning for every ARCH != ARM...
+>
+Ok, I restricted the tagging to selected symbol, and we definitively
+have this pattern occurring. It shall be fixed when/if we ends up
+having a global configuration namespace.
 
-> At the very least, most of the architecture-generic warnings could be
-> worked around with trivial predeclarations in an "arch/Kconfig" file:
->
-> config ARM
->        bool
-> [...]
-> config X86
->        bool
->
-> There's probably technical issues that I'm missing that would make
-> that inordinately painful, but I can't see them right now... any ideas?
->
-not I directly forsee.
+I think I can work a patch.
 
  - Arnaud
-
-> Cheers,
-> Kyle Moffett
->
