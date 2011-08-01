@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab1HAKJK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 06:09:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52546 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab1HAKJD convert rfc822-to-8bit (ORCPT
+	id S1753782Ab1HAKN4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 06:13:56 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35138 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752083Ab1HAKNu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 06:09:03 -0400
+	Mon, 1 Aug 2011 06:13:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110801083614.GC15578@n2100.arm.linux.org.uk>
-References: <1312042478-26012-1-git-send-email-zdevai@gmail.com>
-	<20110801083614.GC15578@n2100.arm.linux.org.uk>
-Date: Mon, 1 Aug 2011 12:09:02 +0200
-X-Google-Sender-Auth: KCaSYYJDO2kO1QWppeqE0rMCCnQ
-Message-ID: <CAMuHMdUpTDSRP_JmWqcCBtYwzna0hwmaBshpiF8kgvqoNcqYZA@mail.gmail.com>
-Subject: Re: [PATCH] Remove remaining references of CONFIG_GENERIC_TIME
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Zoltan Devai <zdevai@gmail.com>, linux-kernel@vger.kernel.org,
-        chris@zankel.net, linux-am33-list@redhat.com, trivial@kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net, cmetcalf@tilera.com,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAErSpo6SLCLxh6vOwLaj5AYXNLrUEtQgfMU_hFCKJVH1dC5neQ@mail.gmail.com>
+References: <1311852512-7340-1-git-send-email-dengcheng.zhu@gmail.com>
+	<1311852512-7340-2-git-send-email-dengcheng.zhu@gmail.com>
+	<20110728115330.GA29899@linux-mips.org>
+	<CAOfQC9-Z31SSv8agzxZ_hvPOOLY8p0F6yc1=o-QPbDwbNxavTg@mail.gmail.com>
+	<CAErSpo6SLCLxh6vOwLaj5AYXNLrUEtQgfMU_hFCKJVH1dC5neQ@mail.gmail.com>
+Date: Mon, 1 Aug 2011 18:13:49 +0800
+Message-ID: <CAOfQC9-vT0F-atsuQ1DRg1cFMzRq3rjfa3hvsemLqnRCJedFkA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] PCI: make pci_claim_resource() work with conflict
+ resources as appropriate
+From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, Ralf Baechle <ralf@linux-mips.org>
+Cc: jbarnes@virtuousgeek.org, torvalds@linux-foundation.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, eyal@mips.com, zenon@mips.com
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 1, 2011 at 10:36, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sat, Jul 30, 2011 at 06:14:38PM +0200, Zoltan Devai wrote:
->> Commit 592913ecb87a9e06f98ddb55b298f1a66bf94c6b has killed off any
->> use of this config option long ago.
+It was found that PCI quirks claim resources (by calling pci_claim_resource())
+*BEFORE* pcibios_fixup_bus() is called. In pcibios_fixup_bus(),
+pci_bus->resource[0] for the root bus DOES point to msc_io_resource. If PCI
+quirks do the resource claim after the arch-defined pcibios_fixup_bus() being
+called, then the problem with Malta goes away.
+
+So, it looks like 2 solutions out there:
+
+1) To manage the call sequence. This seems not a desired one as it affects other
+arches.
+
+2) To raise the start point of the system controller's io_resource in
+mips_pcibios_init() in arch/mips/mti-malta/malta-pci.c. This will place PCI
+quirks' resources at the same level of the system controller's resources.
+
+Ralf and Bjorn, which one sounds good to you?
+
+
+Deng-Cheng
+
+
+2011/7/30 Bjorn Helgaas <bhelgaas@google.com>:
+> On Fri, Jul 29, 2011 at 12:32 AM, Deng-Cheng Zhu
+> <dengcheng.zhu@gmail.com> wrote:
+>> I noticed that at 79896cf42f Linus changed the function from insert_resource()
+>> to request_resource() (and later evolved into request_resource_conflict()) and
+>> he explained the reason. So, in the NIC's case, the problem is that in
+>> pci_claim_resource() the function pci_find_parent_resource() returns the root
+>> (0x0-0xffffff) rather than the MSC PCI I/O (0x1000-0xffffff).
 >
-> I don't see the point of this - we were free of GENERIC_TIME on ARM
-> shortly after it was originally killed off.  The problem is you can't
-> stop people introducing new uses of this - because it existed once and
-> there's nothing which errors out on its presence, people are going to
-> continue submitting patches with it in.  And it's going to continue
-> being missed at the review stage.
+> This seems like the real problem: PCI has the wrong idea of the
+> resources available on bus 00. �The pci_bus->resource[0] for bus 00
+> points to ioport_resource (the default put there by pci_create_bus()),
+> when it should point to to msc_io_resource instead.
 >
-> I've a similar problem with folk on ARM including mach/gpio.h as their
-> sole gpio header file rather than linux/gpio.h - I've been trying for
-> the last 1-2 years to educate people to use linux/ in preference.  You
-> can't do it, and I'm still just about the only one who picks up on that.
-> (SoC maintainers don't care.)  They will end up caring when I push a
-> change during the next merge window though, so I'll eventually stop
-> mach/gpio.h being included.  (Instead, it'll be asm/gpio.h).
+> Some architectures fill in the pci_bus->resource[] array directly for
+> host bridges (for examples, try 'grep -r "resource\[0\] = " arch/').
+> On x86 and ia64, we use pci_bus_remove_resources() and
+> pci_bus_add_resource(), and I'd prefer that style for new code because
+> it hides some ugly implementation details.
 >
-> GENERIC_TIME though... I don't think you'll ever stop new uses of it
-> creeping in unless you can arrange for something to error out.
-
-Doesn't kconf error out when trying to select a non-existent symbol?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> I'm a little puzzled that we don't see this problem on more
+> architectures. �The grep above only found a few arches that update the
+> root bus resources. �I would expect most of the ones it didn't find to
+> be broken the same way Malta is.
+>
+> Bjorn
+>
