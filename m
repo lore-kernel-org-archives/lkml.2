@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab1HAX2p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 19:28:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39040 "EHLO mx2.suse.de"
+	id S1754244Ab1HAX2Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 19:28:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38979 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754116Ab1HAX2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 19:28:17 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:57 2011
-Message-Id: <20110801232057.441308252@clark.kroah.org>
+	id S1754188Ab1HAX17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 19:27:59 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:56 2011
+Message-Id: <20110801232056.914258413@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 01 Aug 2011 16:19:23 -0700
+Date: Mon, 01 Aug 2011 16:19:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        stable-commits@vger.kernel.org, Jeff Layton <jlayton@redhat.com>
-Subject: [68/70] cifs: lower default and max wsize to what 2.6.39 can handle
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, mgorman@suse.de,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: [63/70] mm: vmscan: do not apply pressure to slab if we are not applying pressure to zone
 In-Reply-To: <20110801232124.GA15313@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,69 +25,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Mel Gorman <mgorman@suse.de>
 
-This patch is intended for 2.6.39-stable kernels only and is needed to
-fix a regression introduced in 2.6.39. Prior to 2.6.39, when signing was
-enabled on a socket the client only sent single-page writes. This
-changed with commit ca83ce3, which made signed and unsigned connections
-use the same codepaths for write calls.
+commit d7868dae893c83c50c7824bc2bc75f93d114669f upstream
 
-This caused a regression when working with windows servers. Windows
-machines will reject writes larger than the MaxBufferSize when signing
-is active, but do not clear the CAP_LARGE_WRITE_X flag in the protocol
-negotiation. The upshot is that when signing is active, windows servers
-often reject large writes from the client in 2.6.39.
+During allocator-intensive workloads, kswapd will be woken frequently
+causing free memory to oscillate between the high and min watermark.  This
+is expected behaviour.
 
-Because 3.0 adds support for larger wsize values, simply cherry picking
-the upstream patches that fix the wsize negotiation isn't sufficient to
-fix this issue. We also need to alter the maximum and default values to
-something suitable for 2.6.39.
+When kswapd applies pressure to zones during node balancing, it checks if
+the zone is above a high+balance_gap threshold.  If it is, it does not
+apply pressure but it unconditionally shrinks slab on a global basis which
+is excessive.  In the event kswapd is being kept awake due to a high small
+unreclaimable zone, it skips zone shrinking but still calls shrink_slab().
 
-This patch also accounts for the change in field name from sec_mode to
-secMode that went into 3.0.
+Once pressure has been applied, the check for zone being unreclaimable is
+being made before the check is made if all_unreclaimable should be set.
+This miss of unreclaimable can cause has_under_min_watermark_zone to be
+set due to an unreclaimable zone preventing kswapd backing off on
+congestion_wait().
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reported-by: Pádraig Brady <P@draigBrady.com>
+Tested-by: Pádraig Brady <P@draigBrady.com>
+Tested-by: Andrew Lutomirski <luto@mit.edu>
+Acked-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/cifs/connect.c |   20 ++++----------------
- 1 file changed, 4 insertions(+), 16 deletions(-)
+ mm/vmscan.c |   25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -2648,16 +2648,8 @@ static void setup_cifs_sb(struct smb_vol
- 			   "mount option supported");
- }
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2449,19 +2449,19 @@ loop_again:
+ 				KSWAPD_ZONE_BALANCE_GAP_RATIO);
+ 			if (!zone_watermark_ok_safe(zone, order,
+ 					high_wmark_pages(zone) + balance_gap,
+-					end_zone, 0))
++					end_zone, 0)) {
+ 				shrink_zone(priority, zone, &sc);
+-			reclaim_state->reclaimed_slab = 0;
+-			nr_slab = shrink_slab(sc.nr_scanned, GFP_KERNEL,
+-						lru_pages);
+-			sc.nr_reclaimed += reclaim_state->reclaimed_slab;
+-			total_scanned += sc.nr_scanned;
  
--/*
-- * When the server supports very large writes via POSIX extensions, we can
-- * allow up to 2^24-1, minus the size of a WRITE_AND_X header, not including
-- * the RFC1001 length.
-- *
-- * Note that this might make for "interesting" allocation problems during
-- * writeback however as we have to allocate an array of pointers for the
-- * pages. A 16M write means ~32kb page array with PAGE_CACHE_SIZE == 4096.
-- */
--#define CIFS_MAX_WSIZE ((1<<24) - 1 - sizeof(WRITE_REQ) + 4)
-+/* Prior to 3.0, cifs couldn't handle writes larger than this */
-+#define CIFS_MAX_WSIZE (PAGEVEC_SIZE * PAGE_CACHE_SIZE)
+-			if (zone->all_unreclaimable)
+-				continue;
+-			if (nr_slab == 0 &&
+-			    !zone_reclaimable(zone))
+-				zone->all_unreclaimable = 1;
++				reclaim_state->reclaimed_slab = 0;
++				nr_slab = shrink_slab(sc.nr_scanned, GFP_KERNEL,
++							lru_pages);
++				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
++				total_scanned += sc.nr_scanned;
++
++				if (nr_slab == 0 && !zone_reclaimable(zone))
++					zone->all_unreclaimable = 1;
++			}
++
+ 			/*
+ 			 * If we've done a decent amount of scanning and
+ 			 * the reclaim ratio is low, start doing writepage
+@@ -2471,6 +2471,9 @@ loop_again:
+ 			    total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
+ 				sc.may_writepage = 1;
  
- /*
-  * When the server doesn't allow large posix writes, only allow a wsize of
-@@ -2666,12 +2658,8 @@ static void setup_cifs_sb(struct smb_vol
-  */
- #define CIFS_MAX_RFC1002_WSIZE (128 * 1024 - sizeof(WRITE_REQ) + 4)
- 
--/*
-- * The default wsize is 1M. find_get_pages seems to return a maximum of 256
-- * pages in a single call. With PAGE_CACHE_SIZE == 4k, this means we can fill
-- * a single wsize request with a single call.
-- */
--#define CIFS_DEFAULT_WSIZE (1024 * 1024)
-+/* Make the default the same as the max */
-+#define CIFS_DEFAULT_WSIZE CIFS_MAX_WSIZE
- 
- static unsigned int
- cifs_negotiate_wsize(struct cifsTconInfo *tcon, struct smb_vol *pvolume_info)
++			if (zone->all_unreclaimable)
++				continue;
++
+ 			if (!zone_watermark_ok_safe(zone, order,
+ 					high_wmark_pages(zone), end_zone, 0)) {
+ 				all_zones_ok = 0;
 
 
