@@ -1,78 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126Ab1HAPzt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 11:55:49 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:36660 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752464Ab1HAPzp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 11:55:45 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 2.oRjxgVM1l7.fvnD7vBPZkHhubIntK8wmkLNtTzGl26n8s
- ZSl1Q0PYuF34HRC.UV52Uuun_iYBGCNGVV6bunyfX.Qe8I0l3StlcAJof4ym
- sfaK5ZsaXrjUuixX6OGJN8_2LvdXhqHZaKEv1_VfMoQr4MptPu_YNY6Zk2WH
- hlhUiC_YIvaQknFAAx7gSKPt9Yzn3YmPqM__XygeGs5Mm1gPfPmLhgT_OgA5
- EzE_b8bhy3XJj2Lhi78AEyyRiFnXc2BSyTeNtOQrv6jrYzUIH0B.NviPQBIj
- wtSp08560Dj1Yt9L2VUzH4sr9wMILdFsbdl1GpHPtcB6B2__xf3Y.8hnK0Ca
- E7FRs.EVgHgbjdBB8Osh98YEa
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 1 Aug 2011 10:55:40 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
-In-Reply-To: <CAOJsxLHB9jPNyU2qztbEHG4AZWjauCLkwUVYr--8PuBBg1=MCA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1108011046230.8420@router.home>
-References: <alpine.DEB.2.00.1107290145080.3279@tiger> <alpine.DEB.2.00.1107291002570.16178@router.home> <alpine.DEB.2.00.1107311136150.12538@chino.kir.corp.google.com> <alpine.DEB.2.00.1107311253560.12538@chino.kir.corp.google.com> <1312145146.24862.97.camel@jaguar>
- <alpine.DEB.2.00.1107311426001.944@chino.kir.corp.google.com> <CAOJsxLHB9jPNyU2qztbEHG4AZWjauCLkwUVYr--8PuBBg1=MCA@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753198Ab1HAP4G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 11:56:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30160 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753089Ab1HAPz6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 11:55:58 -0400
+Date: Mon, 1 Aug 2011 11:55:23 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
+Cc: Dave Chinner <david@fromorbit.com>, Moyer Jeff Moyer <jmoyer@redhat.com>,
+        Shaohua Li <shaohua.li@intel.com>
+Subject: [PATCH] cfq-iosched: Add some more documentation about idling
+Message-ID: <20110801155523.GE3805@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There are always questions about why CFQ is idling on various conditions.
+Recent ones is Christoph asking again why to idle on REQ_NOIDLE. His
+assertion is that XFS is relying more and more on workqueues and is
+concerned that CFQ idling on IO from every workqueue will impact
+XFS badly.
 
-The future plans that I have for performance improvements are:
+So he suggested that I add some more documentation about CFQ idling
+and that can provide more clarity on the topic and also gives an
+opprotunity to poke a hole in theory and lead to improvements.
 
-1. The percpu partial lists.
+So here is my attempt at that. Any comments are welcome.
 
-The min_partial settings are halved by this approach so that there wont be
-any excessive memory usage. Pages on per cpu partial lists are frozen and
-this means that the __slab_free path can avoid taking node locks for a
-page that is cached by another processor. This causes another significant
-performance gain in hackbench of up to 20%. The problem here is to fine
-tune the approach and clean up the patchset.
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ Documentation/block/cfq-iosched.txt |   70 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 70 insertions(+), 0 deletions(-)
 
-2. per cpu full lists.
-
-These will not be specific to a particular slab cache but shared amoung
-all of them. This will reduce the need to keep empty slab pages on the
-per node partial lists and therefore also reduce memory consumption.
-
-The per cpu full lists will be essentially a caching layer for the
-page allocator and will make slab acquisition and release as fast
-as the slub fastpath for alloc and free (it uses the same
-this_cpu_cmpxchg_double based approach). I basically gave up on
-fixing up the page allocator fastpath after trying various approaches
-over the last weeks. Maybe the caching layer can be made available
-for other kernel subsystems that need fast page access too.
-
-The scaling issues that are left over are then those caused by
-
-1. The per node lock taken for the partial lists per node.
-   This can be controlled by enlarging the per cpu partial lists.
-
-2. The necessity to go to the page allocator.
-   This will be tunable by configuring the caching layer.
-
-3. Bouncing cachelines for __remote_free if multiple processors
-   enter __slab_free for the same page.
-
-
-
+diff --git a/Documentation/block/cfq-iosched.txt b/Documentation/block/cfq-iosched.txt
+index e578fee..7ce81b8 100644
+--- a/Documentation/block/cfq-iosched.txt
++++ b/Documentation/block/cfq-iosched.txt
+@@ -43,3 +43,73 @@ If one sets slice_idle=0 and if storage supports NCQ, CFQ internally switches
+ to IOPS mode and starts providing fairness in terms of number of requests
+ dispatched. Note that this mode switching takes effect only for group
+ scheduling. For non-cgroup users nothing should change.
++
++CFQ IO scheduler Idling Theory
++==============================
++Idling on a queue is primarily about waiting for next request to come on
++same queue after completion of a request. In this process CFQ will not
++dispatch requests from other cfq queues even if requests are pending
++there.
++
++The rationale behind idling is that it can cut down on number of seeks
++on rotational media. For example, if a process is doing dependent
++sequential reads (next read will come on only after completion of previous
++one), then not dispatching request from other queue sould help as we
++did not move the disk head and kept on dispatching sequential IO from
++one queue.
++
++CFQ does not do idling on all the queues. It primarily tries to do idling
++on queues which are doing synchronous sequential IO. The synchronous
++queues which are not doing sequential IO are put on a separate service
++tree (called sync-noidle tree) where we do not idle on individual
++cfq queue, but idle on the whole tree or IOW, idle on a group of cfq
++queues.
++
++CFQ has following tree service trees and various queues are put on these
++trees.
++
++	sync-idle	sync-noidle	async 
++
++All cfq queues doing synchronous sequential IO go on to sync-idle tree.
++On this tree we idle on each queue individually.
++
++All synchronous non-sequential queues go on sync-noidle tree. Also any
++request which are marked with REQ_NOIDLE go on this service tree.
++
++All async writes go on async service tree. There is no idling on async
++queues.
++
++FAQ
++===
++Q1. Why to idle at all on queues marked with REQ_NOIDLE.
++
++A1. We only do group idle on queues marked with REQ_NOIDLE. This helps in
++    providing isolation with all the sync-idle queues. Otherwise in presence
++    of many sequential readers, other synchronous IO might not get fair
++    share of disk.
++
++    For example, if there are 10 sequential readers doing IO and they get
++    100ms each. If a REQ_NOIDLE request comes in, it will be scheduled
++    roughly after 1 second. If after completion of REQ_NOIDLE request we
++    do not idle, and after a couple of mili seconds a another REQ_NOIDLE
++    request comes in, again it will be scheduled after 1second. Repeat it
++    and notice how a workload can lose its disk share and suffer due to
++    multiple sequnetial readers.
++
++    fsync can generate dependent IO where bunch of data is written in the
++    context of fsync, and later some journaling data is written. Journaling
++    data comes in only after fsync has finished its IO (atleast for ext4
++    that seemed to be the case). Now if one decides not to idle on fsync
++    thread due to REQ_NOIDLE, then next journaling write will not get
++    scheduled for another second. A process doing small fsync, will suffer
++    badly in presence of multiple sequntial readers.
++
++    Hence doing group idling on threads using REQ_NOIDLE flag on requests
++    provides isolation from multiple sequntial readers and at the same
++    time we do not idle on individual threads. 
++
++Q2. When to specify REQ_NOIDLE
++A2. I would think whenever one is doing synchronous write and not expecting
++    more writes to be dispatched from same context soon, should be able
++    to specify REQ_NOIDLE on writes and that probably should work well for
++    most of the cases. 
+-- 
+1.7.4.4
 
