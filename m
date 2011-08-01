@@ -1,91 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab1HASeQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 14:34:16 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:42886 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752675Ab1HASeH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 14:34:07 -0400
-Date: Mon, 1 Aug 2011 22:34:01 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com
-Cc: Ingo Molnar <mingo@elte.hu>, "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        torvalds@linux-foundation.org, Marc Zyngier <maz@misterjones.org>
-Subject: Re: [kernel-hardening] Re: initcall dependency problem (ns vs.
- threads)
-Message-ID: <20110801183401.GA27647@albatros>
-References: <20110801180151.GA26686@albatros>
- <20110801112021.25ec9041.akpm@linux-foundation.org>
+	id S1752892Ab1HASpt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 14:45:49 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:60062 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752821Ab1HASpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 14:45:45 -0400
+Date: Mon, 1 Aug 2011 13:45:42 -0500
+From: Jack Steiner <steiner@sgi.com>
+To: mingo@elte.hu, tglx@linutronix.de
+Cc: davej@redhat.com, yinghan@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] x86: Reduce clock calibration time during slave cpu
+	startup
+Message-ID: <20110801184542.GA3939@sgi.com>
+References: <20110727135730.GA17717@sgi.com> <20110727140523.GA24206@redhat.com> <20110727141527.GA8453@sgi.com> <20110727155200.GA25381@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110801112021.25ec9041.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110727155200.GA25381@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 11:20 -0700, Andrew Morton wrote:
-> There's not really enough detail here for me to suggest a fix without
-> actually doing some work.  Which ipc initialization function is being
-> called to late?
 
-The call sequence is:
+Reduce the startup time for slave cpus.
 
-static int __init ipc_init(void)
-{
-    ...
-	shm_init();
-    ...
-}
-__initcall(ipc_init);
+This patch adds hooks for an arch-specific function for clock calibration.
+These hooks are used on x86. If a newly started cpu has the same phys_proc_id
+as a core already active, use the already-calculated value of loops_per_jiffy.
 
-void __init shm_init (void)
-{
-	shm_init_ns(&init_ipc_ns);
-    ...
-
-void shm_init_ns(struct ipc_namespace *ns)
-{
-    ...
-	ipc_init_ids(&shm_ids(ns));
-
-void ipc_init_ids(struct ipc_ids *ids)
-{
-	init_rwsem(&ids->rw_mutex);
-    ...
+The new code is used only on processor sockets that use the TSC for
+delay loops and have X86_FEATURE_CONSTANT_TSC.
 
 
-The code triggering the oops (called from do_exit()):
+This patch reduces the time required to start slave cpus on a 4096 cpu system
+from:
+	465 sec  OLD
+	 62 sec NEW
 
-void exit_shm(struct task_struct *task)
-{
-    ...
-	down_write(&shm_ids(ns).rw_mutex);
-
->  Which thread is using which data structures before
-> which initialization function has been run?
-
-Actually, it doesn't matter.  If ANY thread exits before init_rwsem()
-then exit_shm() would use uninitialized shm_ids(ns).rw_mutex.
+This reduces boot time on a 4096p system by almost 7 minutes.  Nice...
 
 
-> Are we talking about init_ipc_ns.ids[] here?  If so, did you try
-> initializing the three rwsems at compile-time?
-
-No, good idea.  I'll do it.
-
-IMO moving specific initializer is bad by design.  There should be a
-guarantee what resources are accessible on what boot stage.  I suppose
-it should be: all thread related information (including ns data) is
-accessible for the moment of threads' code execution.
+Signed-off-by: Jack Steiner <steiner@sgi.com>
 
 
-Thanks,
+---
+V2 - remove assumption that all cores in a socket have the same core frequency.
+     the patch is enabled only if delay() uses the TSC & socket is CONSTANT_TSC.
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Also see https://lkml.org/lkml/2010/12/14/511 for a previous discussion
+for similar improvement. This patch gives almost equivalent performance
+and is less intrusive.
+
+
+ arch/x86/kernel/smpboot.c |   16 +++++++++++-----
+ arch/x86/kernel/tsc.c     |   18 ++++++++++++++++++
+ init/calibrate.c          |   16 ++++++++++++++++
+ 3 files changed, 45 insertions(+), 5 deletions(-)
+
+Index: linux/arch/x86/kernel/smpboot.c
+===================================================================
+--- linux.orig/arch/x86/kernel/smpboot.c	2011-07-26 08:01:11.611979781 -0500
++++ linux/arch/x86/kernel/smpboot.c	2011-08-01 13:25:42.544605719 -0500
+@@ -207,23 +207,29 @@ static void __cpuinit smp_callin(void)
+ 	 * Need to setup vector mappings before we enable interrupts.
+ 	 */
+ 	setup_vector_irq(smp_processor_id());
++
++	/*
++	 * Save our processor parameters. Note: this information
++	 * is needed for clock calibration.
++	 */
++	smp_store_cpu_info(cpuid);
++
+ 	/*
+ 	 * Get our bogomips.
++	 * Update loops_per_jiffy in cpu_data. Previous call to
++	 * smp_store_cpu_info() stored a value that is close but not as
++	 * accurate as the value just calculated.
+ 	 *
+ 	 * Need to enable IRQs because it can take longer and then
+ 	 * the NMI watchdog might kill us.
+ 	 */
+ 	local_irq_enable();
+ 	calibrate_delay();
++	cpu_data(cpuid).loops_per_jiffy = loops_per_jiffy;
+ 	local_irq_disable();
+ 	pr_debug("Stack at about %p\n", &cpuid);
+ 
+ 	/*
+-	 * Save our processor parameters
+-	 */
+-	smp_store_cpu_info(cpuid);
+-
+-	/*
+ 	 * This must be done before setting cpu_online_mask
+ 	 * or calling notify_cpu_starting.
+ 	 */
+Index: linux/arch/x86/kernel/tsc.c
+===================================================================
+--- linux.orig/arch/x86/kernel/tsc.c	2011-08-01 12:45:06.000000000 -0500
++++ linux/arch/x86/kernel/tsc.c	2011-08-01 13:26:20.244043188 -0500
+@@ -995,3 +995,21 @@ void __init tsc_init(void)
+ 	check_system_tsc_reliable();
+ }
+ 
++/*
++ * Check if another cpu is in the same socket and has already been calibrated.
++ * If found, use the previous value. This assumes all cores in the same physical
++ * socket have the same core frequency.
++ */
++unsigned long __cpuinit calibrate_delay_is_known(void)
++{
++	int i, cpu = smp_processor_id();
++
++	if (!tsc_disabled && !cpu_has(&cpu_data(cpu), X86_FEATURE_CONSTANT_TSC))
++		return 0;
++
++	for_each_online_cpu(i)
++		if (cpu_data(i).phys_proc_id == cpu_data(cpu).phys_proc_id)
++			return cpu_data(i).loops_per_jiffy;
++	return 0;
++}
++
+Index: linux/init/calibrate.c
+===================================================================
+--- linux.orig/init/calibrate.c	2011-07-26 08:01:15.571979739 -0500
++++ linux/init/calibrate.c	2011-07-27 08:39:35.691983745 -0500
+@@ -243,6 +243,20 @@ recalibrate:
+ 	return lpj;
+ }
+ 
++/*
++ * Check if cpu calibration delay is already known. For example,
++ * some processors with multi-core sockets may have all sockets
++ * use the same core frequency. It is not necessary to calibrate
++ * each core.
++ *
++ * Architectures should override this function if a faster calibration
++ * method is available.
++ */
++unsigned long __attribute__((weak)) __cpuinit calibrate_delay_is_known(void)
++{
++	return 0;
++}
++
+ void __cpuinit calibrate_delay(void)
+ {
+ 	unsigned long lpj;
+@@ -257,6 +271,8 @@ void __cpuinit calibrate_delay(void)
+ 		lpj = lpj_fine;
+ 		pr_info("Calibrating delay loop (skipped), "
+ 			"value calculated using timer frequency.. ");
++	} else if ((lpj = calibrate_delay_is_known())) {
++		;
+ 	} else if ((lpj = calibrate_delay_direct()) != 0) {
+ 		if (!printed)
+ 			pr_info("Calibrating delay using timer "
