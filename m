@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab1HARXL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 13:23:11 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37079 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752946Ab1HARXI (ORCPT
+	id S1753669Ab1HARZC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 13:25:02 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:36098 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752946Ab1HARY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 13:23:08 -0400
-Date: Mon, 1 Aug 2011 18:23:03 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnaud Lacombe <lacombar@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [uml-devel] [PATCH 1/5] um: Use __i386__ in ifdef for vsyscall
- exports, not SUBARCH_i386
-Message-ID: <20110801172303.GH2203@ZenIV.linux.org.uk>
-References: <1312066693.22074.50.camel@i7.infradead.org>
- <1312066923.22074.53.camel@i7.infradead.org>
- <CAFLxGvy0QqoySDFwZpygHeXvQ7hG-B7z5iZq8qx3GUkFX8w2RQ@mail.gmail.com>
- <1312151063.18010.25.camel@i7.infradead.org>
- <20110731224834.GC2203@ZenIV.linux.org.uk>
- <20110731225801.GD2203@ZenIV.linux.org.uk>
- <1312153988.18010.39.camel@i7.infradead.org>
- <CAFLxGvyewG70ZgU41Kmu_eOYpjZ0TVXYwYq1AfS1sXONAM6G_w@mail.gmail.com>
- <20110801043207.GE2203@ZenIV.linux.org.uk>
- <CAMuHMdUXZw=NO-sXLWu8TMkwE-_A_sq60KUVkYZrNFqcLOALrA@mail.gmail.com>
+	Mon, 1 Aug 2011 13:24:58 -0400
+Date: Mon, 1 Aug 2011 21:24:52 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Richard Weinberger <richard@nod.at>, serge.hallyn@canonical.com,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net, toralf.foerster@gmx.de
+Subject: Re: shm updates broke UML
+Message-ID: <20110801172452.GA26190@albatros>
+References: <201108011541.59640.richard@nod.at>
+ <20110801134911.GA11705@albatros>
+ <43e4e9e98b32d3d3eb06ab837a019ad8@localhost>
+ <20110801171042.GA25954@albatros>
+ <08cf4697685ecd9bcb7e4eefe516f2ee@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdUXZw=NO-sXLWu8TMkwE-_A_sq60KUVkYZrNFqcLOALrA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <08cf4697685ecd9bcb7e4eefe516f2ee@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 12:04:37PM +0200, Geert Uytterhoeven wrote:
-> > Yes. ??Resurrected is not the right word here, sorry...
-> 
-> Oh, what a disappointment. I really hoped it was true...
-> 
-> BTW, how much work would it be to port UML to ARM? Would be nice-to-have on
-> your Android phone, as it can provide a full Linux userspace without
-> requiring rooting
-> the phone.
+On Mon, Aug 01, 2011 at 19:19 +0200, Marc Zyngier wrote:
+> Here you go (sorry about the line wrapping, damned webmail...):
 
-Moderately unpleasant, but not fatally so.  I have no idea how often will
-cache aliasing bite you, though.  We really need to get non-x86 ports
-working to see how many portability issues are there; what I've got for
-ppc is promising, but very preliminary...
+Thank you!  Now I see that the problem is rw_mutex is not initialized:
+
+	down_write(&shm_ids(ns).rw_mutex);
+
+void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
+{
+    ...
+	if (sem->activity == 0 && list_empty(&sem->wait_list)) {
+                                         ^^^^^^^^^^^^^^^ is NULL
+
+Wtf - ipc namespace should be fully initialized for the moment of
+threads run...
+
+> Calibrating local timer... 104.99MHz.
+> CPU1: Booted secondary processor
+> CPU1: Unknown IPI message 0x1
+> CPU2: Booted secondary processor
+> CPU2: Unknown IPI message 0x1
+> CPU3: Booted secondary processor
+> CPU3: Unknown IPI message 0x1
+> Brought up 4 CPUs
+> SMP: Total of 4 processors activated (333.41 BogoMIPS).
+> ns = c0447474, ids = c04474d0
+> ns = c0447474, ids = c04474d0
+> wait_list = c04474e0
+> next =   (null)
+           ^^^^^^
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
