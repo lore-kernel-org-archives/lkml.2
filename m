@@ -1,55 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab1HARKw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 13:10:52 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:53025 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472Ab1HARKs (ORCPT
+	id S1753631Ab1HAROn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 13:14:43 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:59014 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753478Ab1HAROg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 13:10:48 -0400
-Date: Mon, 1 Aug 2011 21:10:42 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Marc Zyngier <maz@misterjones.org>
-Cc: Richard Weinberger <richard@nod.at>, serge.hallyn@canonical.com,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net, toralf.foerster@gmx.de
-Subject: Re: shm updates broke UML
-Message-ID: <20110801171042.GA25954@albatros>
-References: <201108011541.59640.richard@nod.at>
- <20110801134911.GA11705@albatros>
- <43e4e9e98b32d3d3eb06ab837a019ad8@localhost>
+	Mon, 1 Aug 2011 13:14:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <43e4e9e98b32d3d3eb06ab837a019ad8@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAGZ=bqLHjzpKQP63dnSK0fML2ZycmfFnSbiApV4naMCN_UrZdg@mail.gmail.com>
+References: <1312042478-26012-1-git-send-email-zdevai@gmail.com>
+	<20110801083614.GC15578@n2100.arm.linux.org.uk>
+	<CAMuHMdUpTDSRP_JmWqcCBtYwzna0hwmaBshpiF8kgvqoNcqYZA@mail.gmail.com>
+	<20110801101410.GE15578@n2100.arm.linux.org.uk>
+	<CAMuHMdUiLjMVwOqKPF6tHLpPxROrx=rRf3ednfTLrwGuZ2VF7A@mail.gmail.com>
+	<CACqU3MVUxTYmD+4VGBAeN8PTs83fR0xQQrQS5h4QGMZXgMxEvA@mail.gmail.com>
+	<CAGZ=bqL=VAx5jnSBkE2q5KJSY_+An-VRTRAzJmJ3waQUvrRFFg@mail.gmail.com>
+	<CACqU3MUoxSNmcYsSF4zOTgADdedb7TcciPuBPMviG02M5oUPDQ@mail.gmail.com>
+	<CAGZ=bqLHjzpKQP63dnSK0fML2ZycmfFnSbiApV4naMCN_UrZdg@mail.gmail.com>
+Date: Mon, 1 Aug 2011 13:14:36 -0400
+Message-ID: <CACqU3MV1PWWttCdXpafwovc_X-CxUp_Dcng1i8jKx5bA0+NGPQ@mail.gmail.com>
+Subject: Re: [PATCH] Remove remaining references of CONFIG_GENERIC_TIME
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Kyle Moffett <kyle@moffetthome.net>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Zoltan Devai <zdevai@gmail.com>, linux-kernel@vger.kernel.org,
+        chris@zankel.net, linux-am33-list@redhat.com, trivial@kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net, cmetcalf@tilera.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 18:01 +0200, Marc Zyngier wrote:
-> It also breaks ARM (at least 11MPCore and Cortex A9).
-> The same workaround gets the kernel booting again.
+Hi,
 
-Can you please apply this patch and show the output? 
-I suppose all numbers will be nonNULL and the last is NULL.
+On Mon, Aug 1, 2011 at 12:48 PM, Kyle Moffett <kyle@moffetthome.net> wrote:
+> On Mon, Aug 1, 2011 at 12:08, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>> On Mon, Aug 1, 2011 at 11:15 AM, Kyle Moffett <kyle@moffetthome.net> wrote:
+>>> On Mon, Aug 1, 2011 at 11:04, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>>>> On Mon, Aug 1, 2011 at 7:27 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>>>>> On Mon, Aug 1, 2011 at 12:14, Russell King - ARM Linux
+>>>>>>>[...]
+>>>>>>>
+>>>>>>> Doesn't kconf error out when trying to select a non-existent symbol?
+>>>>>>
+>>>>>> Nope.
+>>>>>
+>>>>> You're right. So that's a bug.
+>>>>>
+>>>> depends on what you are trying to achieve and what the problem is.
+>>>>
+>>>> Internally kconfig will create a dummy symbol when it encounter a
+>>>> missing symbol so that arch/arm/Kconfig can reference a symbol which
+>>>> will be fully defined later on. I do not think you want to forward
+>>>> decl all the symbol which can be used. That'd be a mess. That said, we
+>>>> can come with a form of symbol deprecation that would error-out when
+>>>> used.
+>>>
+>>> Would it be possible instead to make Kconfig go through all the symbols
+>>> after everything is processed and identify any remaining "dummy symbols"
+>>> which were not actually declared anywhere?
+>>>
+>> this is software, everything is possible.
+>>
+>>> Right now if you typo a "select" statement you get no warnings that you
+>>> are selecting something that does not exist, which is probably a cause
+>>> of many kinds of errors beyond this particular one.
+>>>
+>> d'oh! ... I'm not sure we want that. Dummy symbol are heavily used
+>> internally, a trivial implementation[0] triggered:
+>>
+>> % make REGENERATE_PARSERS=y alldefconfig 2>&1 | grep 'defined without
+>> type' | wc -l
+>> 817
+>>
+>> Moreover, this approach is deemed to fail. The current symbol
+>> namespace is tied to an arch, so whenever you do:
+>>
+>> arch/arm/Kconfig:
+>> config FOO
+>>    bool
+>>
+>> config BAZ
+>>    bool
+>>
+>> drivers/cpufreq/Kconfig
+>> config BAR
+>>    depends on ARM && FOO
+>>    select BAZ
+>>
+>> You will end up triggering the warning for every ARCH != ARM...
+>
+> Perhaps that's an argument for building a single Kconfig namespace?
+I'm working on that, but this is a real mess :)
 
-diff --git a/ipc/shm.c b/ipc/shm.c
-index bf46636..8e48ad8 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -304,6 +304,12 @@ void exit_shm(struct task_struct *task)
- {
- 	struct ipc_namespace *ns = task->nsproxy->ipc_ns;
- 
-+	pr_err("ns = %p, ids = %p",
-+		ns, ns ? &shm_ids(ns) : (void*)(-2));
-+	pr_err("wait_list = %p\n", ns ? &shm_ids(ns) ?
-+		 &shm_ids(ns).rw_mutex.wait_list : (void*)(-1) : (void*)(-2));
-+	pr_err("next = %p\n", shm_ids(ns).rw_mutex.wait_list.next);
-+
- 	/* Destroy all already created segments, but not mapped yet */
- 	down_write(&shm_ids(ns).rw_mutex);
- 	if (&shm_ids(ns).in_use)
---
+> At the very least, most of the architecture-generic warnings could be
+> worked around with trivial predeclarations in an "arch/Kconfig" file:
+>
+> config ARM
+>        bool
+> [...]
+> config X86
+>        bool
+>
+> There's probably technical issues that I'm missing that would make
+> that inordinately painful, but I can't see them right now... any ideas?
+>
+not I directly forsee.
+
+ - Arnaud
+
+> Cheers,
+> Kyle Moffett
+>
