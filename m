@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab1HAFXv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 01:23:51 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:50056 "EHLO e4.ny.us.ibm.com"
+	id S1753041Ab1HAFYX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 01:24:23 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10438 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752637Ab1HAFXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 01:23:45 -0400
-Date: Sun, 31 Jul 2011 22:23:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, shemminger@vyatta.com, mchan@broadcom.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: RCU: how to suppress warnings from rcu_assign_pointer?
-Message-ID: <20110801052342.GD2307@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110729003843.GA2373@linux.vnet.ibm.com>
- <20110729105058.2cb9fa86@nehalam.ftrdhcpuser.net>
- <1312028225.2873.104.camel@edumazet-laptop>
- <20110730.201609.2157787571393748046.davem@davemloft.net>
+	id S1752668Ab1HAFYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 01:24:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,298,1309762800"; 
+   d="scan'208";a="36523191"
+Date: Mon, 1 Aug 2011 13:24:14 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: xfstests 073 regression
+Message-ID: <20110801052414.GA21021@localhost>
+References: <20110728164105.GA18258@infradead.org>
+ <20110729142121.GA21149@localhost>
+ <20110730134422.GA1884@infradead.org>
+ <20110731151014.GA23106@localhost>
+ <20110731234749.GQ5404@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110730.201609.2157787571393748046.davem@davemloft.net>
+In-Reply-To: <20110731234749.GQ5404@dastard>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 30, 2011 at 08:16:09PM -0700, David Miller wrote:
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Sat, 30 Jul 2011 14:17:05 +0200
-> 
-> > Le vendredi 29 juillet 2011 à 10:50 -0700, Stephen Hemminger a écrit :
-> >> Gcc now generates warnings from rcu_assign_pointer when passed the
-> >> address of something for example:
-> >> 	rcu_assign_pointer(dev_queue->qdisc, &noop_qdisc);
-> >> This warning is harmless and should be surpressed but there maybe
-> >> other cases where we want that Gcc warning.
-> >> 
-> >> I tried various combinations of in rcu_assign_pointer macro
-> >>   #pragma GCC diagnostic push
-> >>   #pragma GCC diagnostic ignored "-Wlogical-op"
-> >>   ...
-> >>   #pragma GCC diagnostic pop
-> >> but macro's and pragma's don't nest with the correct scope for
-> >> this.
-> >> 
-> >> Maybe some one with more Gcc foo and time to waste could take
-> >> a crack at it.
+On Mon, Aug 01, 2011 at 07:47:49AM +0800, Dave Chinner wrote:
+> On Sun, Jul 31, 2011 at 11:10:14PM +0800, Wu Fengguang wrote:
+> > On Sat, Jul 30, 2011 at 09:44:22PM +0800, Christoph Hellwig wrote:
+> > > This patch fixes the hang for me.
 > > 
-> > I would just remove the test from rcu_assign_pointer().
-> > 
-> > We now have RCU_INIT_POINTER() for places we dont want/afford the
-> > smp_wmb()
+> > Thanks. It'd be better to get the _simple and tested_ fix into 3.1-rc1.
+> > (if anyone find major problems with the fix, please speak up)
 > 
-> Agreed:
+> Yes, I already have, a couple of hours before you sent this:
 > 
-> Acked-by: David S. Miller <davem@davemloft.net>
+> http://www.spinics.net/lists/linux-fsdevel/msg47357.html
 
-Very good!!!  Many thanks to the three of you!
+Err I found it in my spam folder.. and added you to the white list :)
 
-I have queued this, adding Eric's Signed-off-by.  Eric, could you please
-reply either giving me explicit permission to do this or telling me that
-you would rather that I apply under my own Signed-off-by?  (I would guess
-that the former is OK with you, but I really do need to know for sure.)
-Please see below for the current state of this commit in my on-laptop
--rcu tree.
+> We haven't found the root cause of the problem, and writeback cannot
+> hold off grab_super_passive() because writeback only holds read
+> locks on s_umount, just like grab_super_passive. So if
+> grab_super_passive is failing, there is some other, not yet
+> unidentified actor causing this problem....
 
-I have also added a second commit upgrading comment headers to call out
-exactly when RCU_INIT_POINTER() may be used.
+Yeah sorry, I totally overlooked the read lock. Since Linus has
+pointed out the possibility of read-write-read deadlock, I'll jump
+to your more recent email for the root cause.
 
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-rcu: Make rcu_assign_pointer() unconditionally insert a memory barrier
-
-Recent changes to gcc give warning messages on rcu_assign_pointers()'s
-checks that allow it to determine when it is OK to omit the memory
-barrier.  Stephen Hemminger tried a number of gcc tricks to silence
-this warning, but #pragmas and CPP macros do not work together in the
-way that would be required to make this work.
-
-However, we now have RCU_INIT_POINTER(), which already omits this
-memory barrier, and which therefore may be used when assigning NULL to
-an RCU-protected pointer that is accessible to readers.  This commit
-therefore makes rcu_assign_pointer() unconditionally emit the memory
-barrier.
-
-Reported-by: Stephen Hemminger <shemminger@vyatta.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index ea80396..b2e5fe8 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -443,9 +443,7 @@ extern int rcu_my_thread_group_empty(void);
- 	})
- #define __rcu_assign_pointer(p, v, space) \
- 	({ \
--		if (!__builtin_constant_p(v) || \
--		    ((v) != NULL)) \
--			smp_wmb(); \
-+		smp_wmb(); \
- 		(p) = (typeof(*v) __force space *)(v); \
- 	})
- 
+Thanks,
+Fengguang
