@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350Ab1HAIgb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 04:36:31 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50611 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab1HAIg0 (ORCPT
+	id S1753578Ab1HAImp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 04:42:45 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35566 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048Ab1HAImh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 04:36:26 -0400
-Date: Mon, 1 Aug 2011 09:36:14 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Zoltan Devai <zdevai@gmail.com>
-Cc: linux-kernel@vger.kernel.org, chris@zankel.net, linux-am33-list@redhat.com,
-        trivial@kernel.org, user-mode-linux-devel@lists.sourceforge.net,
-        cmetcalf@tilera.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Remove remaining references of CONFIG_GENERIC_TIME
-Message-ID: <20110801083614.GC15578@n2100.arm.linux.org.uk>
-References: <1312042478-26012-1-git-send-email-zdevai@gmail.com>
+	Mon, 1 Aug 2011 04:42:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312042478-26012-1-git-send-email-zdevai@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20110731150707.GA2975@n2100.arm.linux.org.uk>
+References: <1312124593-6088-1-git-send-email-linux@bohmer.net>
+	<20110731150707.GA2975@n2100.arm.linux.org.uk>
+Date: Mon, 1 Aug 2011 10:42:35 +0200
+X-Google-Sender-Auth: PnmD6d0d7-tyb8ypd4PU0AwxMW8
+Message-ID: <CANqCtQJwUsLXfA408GzAr0rQtc2DRjtKqP8-m2UBUGEy-YP5dg@mail.gmail.com>
+Subject: Re: [PATCH] Add sched_clock to AT91 TCB clocksource driver
+From: Remy Bohmer <linux@bohmer.net>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Remy Bohmer <l.pinguin@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 30, 2011 at 06:14:38PM +0200, Zoltan Devai wrote:
-> Commit 592913ecb87a9e06f98ddb55b298f1a66bf94c6b has killed off any
-> use of this config option long ago.
+Hi Russell,
 
-I don't see the point of this - we were free of GENERIC_TIME on ARM
-shortly after it was originally killed off.  The problem is you can't
-stop people introducing new uses of this - because it existed once and
-there's nothing which errors out on its presence, people are going to
-continue submitting patches with it in.  And it's going to continue
-being missed at the review stage.
+2011/7/31 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+>> +++ b/arch/arm/Kconfig
+>> @@ -296,6 +296,7 @@ config ARCH_AT91
+>>       select HAVE_CLK
+>>       select CLKDEV_LOOKUP
+>>       select ARM_PATCH_PHYS_VIRT if MMU
+>> +     select HAVE_SCHED_CLOCK if ATMEL_TCB_CLKSRC
+>>       help
+>>         This enables support for systems based on the Atmel AT91RM9200,
+>>         AT91SAM9 and AT91CAP9 processors.
+>> diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
+>> index 9a46370..f9028e4 100644
+>> --- a/arch/arm/kernel/sched_clock.c
+>> +++ b/arch/arm/kernel/sched_clock.c
+>> @@ -20,6 +20,13 @@ static void (*sched_clock_update_fn)(void);
+>>
+>>  static void sched_clock_poll(unsigned long wrap_ticks)
+>>  {
+>> +     /*
+>> +      * The sched_clock_update_fn may be initialised AFTER first call to
+>> +      * time_init()
+>> +      */
+>> +     if (unlikely(!sched_clock_update_fn))
+>> +             return;
+>
+> NAK.  I've said this before - sched_clock _must_ be up and running by the
+> time this function is called - because shortly after this call is when
+> the scheduler initializes, and the scheduler wants sched_clock() working
+> at that point.
 
-I've a similar problem with folk on ARM including mach/gpio.h as their
-sole gpio header file rather than linux/gpio.h - I've been trying for
-the last 1-2 years to educate people to use linux/ in preference.  You
-can't do it, and I'm still just about the only one who picks up on that.
-(SoC maintainers don't care.)  They will end up caring when I push a
-change during the next merge window though, so I'll eventually stop
-mach/gpio.h being included.  (Instead, it'll be asm/gpio.h).
+OK, I know that too, but the jiffies based fallback does it even
+worse, since it does not run at all...  (It only updates in steps of a
+couple of 100msecs and stops after a while, and even does not display
+a real time...) This sched_clock implementation at least works before
+the drivers are being initialised...
 
-GENERIC_TIME though... I don't think you'll ever stop new uses of it
-creeping in unless you can arrange for something to error out.
+Anyway, do you have a better suggestion how to fix this? The tcb
+clocksource is loaded during a arch_initcall(), perhaps we need
+something before that point.
+I do not see an easy way to integrate it in MACHINE_START(.timer).
+Would 'late_time_init' be a better solution?
+
+Kind regards,
+
+Remy
