@@ -1,90 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab1HAOZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 10:25:27 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46288 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959Ab1HAOZW (ORCPT
+	id S1751947Ab1HAOZk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 10:25:40 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38121 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667Ab1HAOZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 10:25:22 -0400
+	Mon, 1 Aug 2011 10:25:35 -0400
+Date: Mon, 1 Aug 2011 15:25:22 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Zoltan Devai <zdevai@gmail.com>
+Cc: linux-kernel@vger.kernel.org, chris@zankel.net, linux-am33-list@redhat.com,
+        trivial@kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        cmetcalf@tilera.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Remove remaining references of CONFIG_GENERIC_TIME
+Message-ID: <20110801142522.GC19079@n2100.arm.linux.org.uk>
+References: <1312042478-26012-1-git-send-email-zdevai@gmail.com> <20110801083614.GC15578@n2100.arm.linux.org.uk> <CAGVye5Nh2E4L3Ox=OKvG09v4hO6BjGmLUGZ5=Ha2QzbXar+deA@mail.gmail.com>
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 1 Aug 2011 15:25:00 +0100
-X-Google-Sender-Auth: dVPAazd_bZYradvJm7bJfWv2SFM
-Message-ID: <CACxGe6tV4VUtdEzcMi1zkXJ1Ro2vrFgksHP52dzSNASB0-aSwA@mail.gmail.com>
-Subject: [GIT PULL] last gpio patches for v3.1 merge window
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: David Brown <davidb@codeaurora.org>, Axel Lin <axel.lin@gmail.com>,
-        Jamie Iles <jamie@jamieiles.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGVye5Nh2E4L3Ox=OKvG09v4hO6BjGmLUGZ5=Ha2QzbXar+deA@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Aug 01, 2011 at 01:41:32PM +0200, Zoltan Devai wrote:
+> 2011/8/1 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> > On Sat, Jul 30, 2011 at 06:14:38PM +0200, Zoltan Devai wrote:
+> >> Commit 592913ecb87a9e06f98ddb55b298f1a66bf94c6b has killed off any
+> >> use of this config option long ago.
+> >
+> > I don't see the point of this - we were free of GENERIC_TIME on ARM
+> > shortly after it was originally killed off.  The problem is you can't
+> > stop people introducing new uses of this - because it existed once and
+> > there's nothing which errors out on its presence, people are going to
+> > continue submitting patches with it in.  And it's going to continue
+> > being missed at the review stage.
+> >
+> > I've a similar problem with folk on ARM including mach/gpio.h as their
+> > sole gpio header file rather than linux/gpio.h - I've been trying for
+> > the last 1-2 years to educate people to use linux/ in preference.  You
+> > can't do it, and I'm still just about the only one who picks up on that.
+> > (SoC maintainers don't care.)  They will end up caring when I push a
+> > change during the next merge window though, so I'll eventually stop
+> > mach/gpio.h being included.  (Instead, it'll be asm/gpio.h).
+> >
+> > GENERIC_TIME though... I don't think you'll ever stop new uses of it
+> > creeping in unless you can arrange for something to error out.
+> 
+> Sure, but the patch at least reduces the chances of copy-pasting it,
+> and makes it obvious by a simple grep that there's no use of it at all,
+> so I still think it's wort merging.
 
-Here are some more gpio changes that should get into v3.1
-
-Thanks,
-g.
-
-The following changes since commit 3da3f872aa175f59e20766ed30aaea67fd4fa7d1:
-
-  Merge branch 'for-next' of
-git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6
-(2011-07-31 14:31:44 -1000)
-
-are available in the git repository at:
-
-  git://git.secretlab.ca/git/linux-2.6 gpio/next
-
-Axel Lin (1):
-      gpio: ab8500: fix MODULE_ALIAS for ab8500
-
-David Brown (8):
-      msm: gpio: Remove unsupported devices
-      msm: Remove chip-ifdefs for GPIO io mappings
-      msm: gpio: Remove chip-specific register definitions
-      msm: gpio: Remove ifdefs on gpio chip registers
-      msm: gpiomux: Move public API to public header
-      msm: gpio: Fold register defs into C file
-      gpio_msm: Move Qualcomm v6 MSM driver into drivers
-      gpio_msm: Move Qualcomm MSM v2 gpio driver into drivers
-
-Grant Likely (1):
-      Merge branch 'msm-move-gpio' of
-git://codeaurora.org/quic/kernel/davidb/linux-msm into gpio/next
-
-Jamie Iles (1):
-      of/gpio: export of_gpio_simple_xlate
-
- arch/arm/mach-msm/Kconfig                          |    4 +
- arch/arm/mach-msm/Makefile                         |    8 -
- arch/arm/mach-msm/gpio.c                           |  376 ------------
- arch/arm/mach-msm/gpio_hw.h                        |  278 ---------
- arch/arm/mach-msm/gpiomux.h                        |   17 +-
- arch/arm/mach-msm/include/mach/msm_gpiomux.h       |   38 ++
- arch/arm/mach-msm/include/mach/msm_iomap-7x00.h    |   10 +-
- arch/arm/mach-msm/include/mach/msm_iomap-7x30.h    |   10 +-
- arch/arm/mach-msm/include/mach/msm_iomap-8x50.h    |   10 +-
- arch/arm/mach-msm/include/mach/msm_iomap.h         |    2 +
- arch/arm/mach-msm/io.c                             |   12 +-
- drivers/gpio/Kconfig                               |   16 +
- drivers/gpio/Makefile                              |    2 +
- drivers/gpio/gpio-ab8500.c                         |    2 +-
- drivers/gpio/gpio-msm-v1.c                         |  636 ++++++++++++++++++++
- .../gpio-v2.c => drivers/gpio/gpio-msm-v2.c        |    4 +-
- drivers/of/gpio.c                                  |    5 +-
- include/linux/of_gpio.h                            |    9 +
- 18 files changed, 732 insertions(+), 707 deletions(-)
- delete mode 100644 arch/arm/mach-msm/gpio.c
- delete mode 100644 arch/arm/mach-msm/gpio_hw.h
- create mode 100644 arch/arm/mach-msm/include/mach/msm_gpiomux.h
- create mode 100644 drivers/gpio/gpio-msm-v1.c
- rename arch/arm/mach-msm/gpio-v2.c => drivers/gpio/gpio-msm-v2.c (99%)
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+That argument doesn't work - as can be seen from my first paragraph.
+The fact that we have new references to it in arch/arm/Kconfig is
+proof of that.
