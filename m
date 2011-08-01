@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab1HAJxb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 05:53:31 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55577 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381Ab1HAJx0 (ORCPT
+	id S1753720Ab1HAJzQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 05:55:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35507 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753088Ab1HAJzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 05:53:26 -0400
-Message-ID: <4E367776.1070008@ru.mvista.com>
-Date: Mon, 01 Aug 2011 13:52:54 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@st.com>
-CC: linus.walleij@linaro.org, pratyush.anand@st.com, rajeev-dlh.kumar@st.com,
-        linux@arm.linux.org.uk, bhupesh.sharma@st.com, shiraz.hashim@st.com,
-        vinod.koul@intel.com, linux-kernel@vger.kernel.org, vipin.kumar@st.com,
-        armando.visconti@st.com, amit.virdi@st.com, vipulkumar.samar@st.com,
-        viresh.linux@gmail.com, deepak.sikri@st.com, dan.j.williams@intel.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2 03/20] dmaengine/amba-pl08x: Rearrange inclusion of
- header files in ascending order
-References: <cover.1312190881.git.viresh.kumar@st.com> <16f5abd9452832860f3a11fe1ddabde05fa3ae8c.1312190881.git.viresh.kumar@st.com>
-In-Reply-To: <16f5abd9452832860f3a11fe1ddabde05fa3ae8c.1312190881.git.viresh.kumar@st.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 1 Aug 2011 05:55:12 -0400
+Subject: Re: [PATCH] perf: powerpc: Disable pagefaults during callchain
+ stack read
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: benh@kernel.crashing.org, anton@samba.org, acme@ghostprotocols.net,
+        mingo@elte.hu, paulus@samba.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1312059200-11563-1-git-send-email-dsahern@gmail.com>
+References: <1312059200-11563-1-git-send-email-dsahern@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 01 Aug 2011 11:59:52 +0200
+Message-ID: <1312192792.2617.381.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Sat, 2011-07-30 at 14:53 -0600, David Ahern wrote:
+> A page fault occurred walking the callchain while creating a perf
+> sample for the context-switch event. To handle the page fault the
+> mmap_sem is needed, but it is currently held by setup_arg_pages.
+> (setup_arg_pages calls shift_arg_pages with the mmap_sem held.
+> shift_arg_pages then calls move_page_tables which has a cond_resched
+> at the top of its for loop - hitting that cond_resched is what caused
+> the context switch.)
+> 
+> This is an extension of Anton's proposed patch:
+> https://lkml.org/lkml/2011/7/24/151
+> adding case for 32-bit ppc.
+> 
+> Tested on the system that first generated the panic and then again
+> with latest kernel using a PPC VM. I am not able to test the 64-bit
+> path - I do not have H/W for it and 64-bit PPC VMs (qemu on Intel)
+> is horribly slow.
+> 
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Anton Blanchard <anton@samba.org> 
 
-On 01-08-2011 13:37, Viresh Kumar wrote:
+Hmm, Paul, didn't you fix something like this early on? Anyway, I've no
+objections since I'm really not familiar enough with the PPC side of
+things.
 
-> Header files included in driver are not present in alphabetical order. Rearrange
-> them in alphabetical order.
-
-> Signed-off-by: Viresh Kumar<viresh.kumar@st.com>
-> ---
->   drivers/dma/amba-pl08x.c |   17 ++++++++---------
->   1 files changed, 8 insertions(+), 9 deletions(-)
-
-> diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-> index 4c4a309..8e2056b 100644
-> --- a/drivers/dma/amba-pl08x.c
-> +++ b/drivers/dma/amba-pl08x.c
-> @@ -74,19 +74,18 @@
->    * Global TODO:
->    * - Break out common code from arch/arm/mach-s3c64xx and share
->    */
-> -#include<linux/device.h>
-> -#include<linux/init.h>
-> -#include<linux/module.h>
-> -#include<linux/interrupt.h>
-> -#include<linux/slab.h>
-> -#include<linux/delay.h>
-> -#include<linux/dmapool.h>
-> -#include<linux/dmaengine.h>
->   #include<linux/amba/bus.h>
->   #include<linux/amba/pl08x.h>
->   #include<linux/debugfs.h>
-> +#include<linux/delay.h>
-> +#include<linux/device.h>
-> +#include<linux/dmaengine.h>
-> +#include<linux/dmapool.h>
-> +#include<linux/init.h>
-> +#include<linux/interrupt.h>
-> +#include<linux/module.h>
->   #include<linux/seq_file.h>
-> -
-> +#include<linux/slab.h>
-
-    Shouldn't there be emoty line here?
-
->   #include<asm/hardware/pl080.h>
-
-WBR, Sergei
