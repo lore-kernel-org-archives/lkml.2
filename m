@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab1HAR6c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 13:58:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16554 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750862Ab1HAR60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 13:58:26 -0400
-Date: Mon, 1 Aug 2011 12:38:23 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/7] perf, x86: Implement IBS interrupt handler
-Message-ID: <20110801163823.GZ2581@redhat.com>
-References: <1311860812-28748-1-git-send-email-robert.richter@amd.com>
- <1311860812-28748-5-git-send-email-robert.richter@amd.com>
- <1311958726.5890.411.camel@twins>
- <20110801053201.GY4590@erda.amd.com>
- <1312212103.2617.495.camel@laptop>
+	id S1753163Ab1HASCF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 14:02:05 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:49485 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab1HASB5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 14:01:57 -0400
+Date: Mon, 1 Aug 2011 22:01:51 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, kernel-hardening@lists.openwall.com,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        torvalds@linux-foundation.org, Marc Zyngier <maz@misterjones.org>
+Subject: initcall dependency problem (ns vs. threads)
+Message-ID: <20110801180151.GA26686@albatros>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1312212103.2617.495.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 05:21:43PM +0200, Peter Zijlstra wrote:
-> On Mon, 2011-08-01 at 07:32 +0200, Robert Richter wrote:
-> > > So IBS cannot trigger the whole unknown NMI business? Wouldn't ibs_op
-> > > triggering while ibs_fetch just started latch the NMI line, the
-> > > in-progress NMI would handle both, and we then end up with a spare NMI?
-> > 
-> > Ok, I will run some excessive testing of this. If this turns out to be
-> > a problem I will change the code. Could this be on top of this patch
-> > set then? 
-> 
-> Sure, if you somehow end up duplicating some logic I think you know
-> about this common.c file you proposed ;-)
-> 
-> I kinda lost the current state of affairs wrt spurious NMIs, I think
-> there's still a few reports out there. I recently read through some
-> Intel errata and found the Intel PMU can send double PMIs under some
-> circumstances (just to keep life interesting).
+Hi,
 
-I tried looking into but everytime I applied workarounds for Intel errata
-I wound up with more unknown NMIs and proving that a couple of them worked
-(with trace_printks) seemed elusive.  I got frustrated and left it alone.
+There were reported problems with recent shm changes, by Manuel
+Lauss (on MIPS), Richard Weinberger (on UML), and Marc Zyngier (on ARM).
 
-But yeah, Intel's perf has so many errata that I think if you kick the
-box while running perf you can generate an unknown NMI.
+https://lkml.org/lkml/2011/8/1/149
+https://lkml.org/lkml/2011/8/1/162
+https://lkml.org/lkml/2011/8/1/210
 
-> 
-> I also haven't checked up on what the perf_event_nmi_handler() magic
-> looks today, so I can't say if its a problem or not, but I thought I'd
-> just mention it.
+The problem became visible on this patch:
 
-It hasn't changed much since Robert added his magic which handles the
-majority of use cases for now.
+    commit 5774ed014f02120db9a6945a1ecebeb97c2acccb
+    Author: Vasiliy Kulikov <segoon@openwall.com>
+    Date:   Fri Jul 29 03:55:31 2011 +0400
 
-Cheers,
-Don
+        shm: handle separate PID namespaces case
+
+It started to use &shm_ids(ns).rw_mutex, which is not initialized yet.
+Init IPC namespace is initialized as initcall() and some threads are
+created as early_initcall().
+
+I threat it is a dependency bug in the core kernel - kernel threads
+should be able to use any namespace information, but currently there is
+a race between namespace initialization code (which is initcall) and
+kernel threads (which are early_initcall).
+
+I don't feel enough experienced in init code dependencies, so I report
+it to you.
+
+    static int __init kernel_init(void * unused)
+    {
+        ...
+        do_pre_smp_initcalls(); << threads start here
+        ...
+        do_basic_setup();
+
+
+    static void __init do_basic_setup(void)
+    {
+        cpuset_init_smp();
+        usermodehelper_init();
+        init_tmpfs();
+        driver_init();
+        init_irq_proc();
+        do_ctors();
+        do_initcalls(); << namespace init here
+    }
+
+Thanks,
+
+-- 
+Vasiliy
