@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386Ab1HASKk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 14:10:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35018 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750699Ab1HASKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 14:10:33 -0400
-Subject: Re: [PATCH -next] regulator: aat2870-regulator.c needs module.h
-From: Liam Girdwood <lrg@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, akpm <akpm@linux-foundation.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110801092518.GA26275@sortiz-mobl>
-References: <20110729173827.716f57ff6e00095a3efc6449@canb.auug.org.au>
-	 <20110729211309.92e8b744.rdunlap@xenotime.net>
-	 <20110801001523.GA20641@opensource.wolfsonmicro.com>
-	 <20110801103304.e77887ff2e60f4f6d5c9f91f@canb.auug.org.au>
-	 <20110801110507.7ca032b85a285d1f9e755146@canb.auug.org.au>
-	 <20110801092518.GA26275@sortiz-mobl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 1 Aug 2011 19:09:46 +0100
-Message-ID: <1312222186.5170.8.camel@CNA0741383>
+	id S1752517Ab1HASQY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 14:16:24 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56339 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752358Ab1HASQS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 14:16:18 -0400
+Date: Mon, 1 Aug 2011 19:16:15 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] assorted fixes
+Message-ID: <20110801181615.GI2203@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+Misc stuff from various sources; probably the most interesting in that pile
+is Eric's series (lock reduction for pipes et.al.).  Please, pull from
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git for-linus
 
-On Mon, 2011-08-01 at 11:25 +0200, Samuel Ortiz wrote:
-> Hi Stephen, Liam,
-> 
-> On Mon, Aug 01, 2011 at 11:05:07AM +1000, Stephen Rothwell wrote:
-> > On Mon, 1 Aug 2011 10:33:04 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > >
-> > > On Mon, 1 Aug 2011 01:15:24 +0100 Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-> > > >
-> > > > On Fri, Jul 29, 2011 at 09:13:09PM -0700, Randy Dunlap wrote:
-> > > > > From: Randy Dunlap <rdunlap@xenotime.net>
-> > > > > 
-> > > > > aat2870-regulator.c needs to include linux/module.h to fix multiple
-> > > > > build errors.
-> > > > 
-> > > > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> > > > 
-> > > > but if the breakage isn't in mainline yet to minimize the breaks
-> > > > bisection someone should figure out which tree introduced the change
-> > > > with module.h and either get the fix merged along with that.  If neither
-> > > > the module.h change nor the driver is in Linus' tree yet I rather
-> > > > suspect this should go via MFD as I seem to recall that the driver is
-> > > > going in via there.
-> > > 
-> > > It is indeed.  I have this patch set to apply to my tree today after the
-> > > mfd tree.  Hopefully Samuel will put it in his tree for tomorrow (and
-> > > before he asks Linus to pull.
-> > 
-> > Too late :-)
-> Sorry about that. I thought I would hear about any breakage after I pushed my
-> bits on Friday morning.
-> Anyway, Liam, are you going to push this fix through your tree ?
-> 
+Shortlog:
+Al Viro (6):
+      hppfs: missing include
+      devtmpfs: missing initialialization in never-hit case
+      switch posix_acl_create() to umode_t *
+      switch posix_acl_equiv_mode() to umode_t *
+      switch posix_acl_from_mode() to umode_t
+      switch posix_acl_chmod() to umode_t
 
-I can if required, however I've just done my pull request (sorry didn't
-see this in time). I have to do another pull request with misc fixes in
-rc1 time frame so I can add it there if OK. 
+David Howells (4):
+      VFS: Fix automount for negative autofs dentries
+      VFS: Remove detached-dentry counter from shrink_dcache_for_umount_subtree()
+      VFS: Remove dentry->d_lock locking from shrink_dcache_for_umount_subtree()
+      VFS: Reorganise shrink_dcache_for_umount_subtree() after demise of dcache_lock
 
-Thanks
+Eric Dumazet (3):
+      vfs: conditionally call inode_wb_list_del()
+      vfs: avoid taking inode_hash_lock on pipes and sockets
+      vfs: avoid call to inode_lru_list_del() if possible
 
-Liam
+Josef Bacik (1):
+      Btrfs: load the key from the dir item in readdir into a fake dentry
 
+Lachlan McIlroy (1):
+      block: initialise bd_super in bdget()
+
+Markus Trippelsdorf (1):
+      xfs: Fix build breakage in xfs_iops.c when CONFIG_FS_POSIX_ACL is not set
+
+
+Diffstat:
+ drivers/base/devtmpfs.c    |    2 +-
+ fs/9p/acl.c                |    6 ++--
+ fs/9p/acl.h                |    4 +-
+ fs/9p/vfs_inode_dotl.c     |    6 ++--
+ fs/block_dev.c             |    1 +
+ fs/btrfs/acl.c             |   10 +-----
+ fs/btrfs/inode.c           |   47 ++++++++++++++++++++++++++++-
+ fs/dcache.c                |   69 +++++++++++++++++--------------------------
+ fs/ext2/acl.c              |    8 +----
+ fs/ext3/acl.c              |    9 +----
+ fs/ext4/acl.c              |    9 +----
+ fs/generic_acl.c           |   13 ++------
+ fs/gfs2/acl.c              |    6 ++--
+ fs/hppfs/hppfs.c           |    1 +
+ fs/inode.c                 |   13 +++++---
+ fs/jffs2/acl.c             |    4 +-
+ fs/jffs2/acl.h             |    2 +-
+ fs/jffs2/fs.c              |    2 +-
+ fs/jffs2/os-linux.h        |    2 +-
+ fs/jfs/acl.c               |    4 +--
+ fs/jfs/xattr.c             |    4 +--
+ fs/namei.c                 |   24 +++++++++------
+ fs/nfs/nfs3acl.c           |    2 +-
+ fs/nfs/nfs3proc.c          |    6 ++--
+ fs/ocfs2/acl.c             |    4 +-
+ fs/posix_acl.c             |   16 +++++-----
+ fs/reiserfs/xattr_acl.c    |   10 +-----
+ fs/xfs/linux-2.6/xfs_acl.c |    6 ++--
+ fs/xfs/xfs_acl.h           |    5 ++-
+ include/linux/fs.h         |    9 +++++-
+ include/linux/nfs_fs.h     |    4 +-
+ include/linux/posix_acl.h  |    8 ++--
+ 32 files changed, 165 insertions(+), 151 deletions(-)
