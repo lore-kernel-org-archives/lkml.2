@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab1HASTl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 14:19:41 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45378 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752426Ab1HASTg (ORCPT
+	id S1752640Ab1HASZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 14:25:31 -0400
+Received: from lunge.queued.net ([173.255.254.236]:48213 "EHLO
+	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466Ab1HASZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 14:19:36 -0400
-Date: Mon, 1 Aug 2011 11:20:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Ingo Molnar <mingo@elte.hu>, kernel-hardening@lists.openwall.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        torvalds@linux-foundation.org, Marc Zyngier <maz@misterjones.org>
-Subject: Re: initcall dependency problem (ns vs. threads)
-Message-Id: <20110801112021.25ec9041.akpm@linux-foundation.org>
-In-Reply-To: <20110801180151.GA26686@albatros>
-References: <20110801180151.GA26686@albatros>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Mon, 1 Aug 2011 14:25:25 -0400
+Date: Mon, 1 Aug 2011 11:25:22 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Dan Williams <dcbw@redhat.com>
+Cc: Daniel Drake <dsd@laptop.org>, cjb@laptop.org,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        libertas-dev@lists.infradead.org
+Subject: Re: [PATCH] libertas: prioritize usb8388_v5.bin firmware on OLPC
+ machines
+Message-ID: <20110801112522.1ba02f5e@debxo>
+In-Reply-To: <1312219075.6121.20.camel@dcbw.foobar.com>
+References: <20110731000300.5c08e95f@debxo>
+	<20110731000521.45e48638@debxo>
+	<CAGq3pz75qVMuR_Hh3GKg8xK7T+_ZAW5gBZns6D6PfDYh4CF5GA@mail.gmail.com>
+	<1312219075.6121.20.camel@dcbw.foobar.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -27,63 +29,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Aug 2011 22:01:51 +0400 Vasiliy Kulikov <segoon@openwall.com> wrote:
+On Mon, 01 Aug 2011 12:17:23 -0500
+Dan Williams <dcbw@redhat.com> wrote:
 
-> Hi,
+> On Sun, 2011-07-31 at 13:59 +0100, Daniel Drake wrote:
+> > On 31 July 2011 08:05, Andres Salomon <dilinger@queued.net> wrote:
+> > > Note: I've not tested this out yet on an XO-1.  I'll do that
+> > > after some feedback regarding the matching linux-firmware pull
+> > > request.  This should address dsd's concern about changing the
+> > > loading order of the firmware.
+> > 
+> > That indeed was a concern, but only until Dan Williams and Chris
+> > pointed out that OLPC is the only usb8388 user. With that in mind, I
+> > am in agreement with them that simply putting usb8388_olpc_v5.bin
+> > (or whatever name is chosen) at the top of the firmware loading
+> > list is the best option.
 > 
-> There were reported problems with recent shm changes, by Manuel
-> Lauss (on MIPS), Richard Weinberger (on UML), and Marc Zyngier (on ARM).
+> Yeah, patches for that would be immediately acked.
 > 
-> https://lkml.org/lkml/2011/8/1/149
-> https://lkml.org/lkml/2011/8/1/162
-> https://lkml.org/lkml/2011/8/1/210
-> 
-> The problem became visible on this patch:
-> 
->     commit 5774ed014f02120db9a6945a1ecebeb97c2acccb
->     Author: Vasiliy Kulikov <segoon@openwall.com>
->     Date:   Fri Jul 29 03:55:31 2011 +0400
-> 
->         shm: handle separate PID namespaces case
-> 
-> It started to use &shm_ids(ns).rw_mutex, which is not initialized yet.
-> Init IPC namespace is initialized as initcall() and some threads are
-> created as early_initcall().
-> 
-> I threat it is a dependency bug in the core kernel - kernel threads
-> should be able to use any namespace information, but currently there is
-> a race between namespace initialization code (which is initcall) and
-> kernel threads (which are early_initcall).
-> 
-> I don't feel enough experienced in init code dependencies, so I report
-> it to you.
-> 
->     static int __init kernel_init(void * unused)
->     {
->         ...
->         do_pre_smp_initcalls(); << threads start here
->         ...
->         do_basic_setup();
-> 
-> 
->     static void __init do_basic_setup(void)
->     {
->         cpuset_init_smp();
->         usermodehelper_init();
->         init_tmpfs();
->         driver_init();
->         init_irq_proc();
->         do_ctors();
->         do_initcalls(); << namespace init here
->     }
 
-There's not really enough detail here for me to suggest a fix without
-actually doing some work.  Which ipc initialization function is being
-called to late?  Which thread is using which data structures before
-which initialization function has been run?
-
-Are we talking about init_ipc_ns.ids[] here?  If so, did you try
-initializing the three rwsems at compile-time?
-
-That's rather a nasty hack though.  It'd be better to run the mystery
-init function before starting the threads.
+What's your opinion on overwriting usb8388_v5.bin with OLPC's version,
+versus having both a usb8388_v5.bin and a usb8388_olpc_v5.bin?
