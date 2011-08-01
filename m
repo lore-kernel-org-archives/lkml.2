@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876Ab1HAPRL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 11:17:11 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33569 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752230Ab1HAPRG (ORCPT
+	id S1752926Ab1HAPVk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 11:21:40 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:19620 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab1HAPVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 11:17:06 -0400
-Subject: Re: [PATCH 4/7] perf, x86: Implement IBS interrupt handler
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>
-In-Reply-To: <20110801053201.GY4590@erda.amd.com>
-References: <1311860812-28748-1-git-send-email-robert.richter@amd.com>
-	 <1311860812-28748-5-git-send-email-robert.richter@amd.com>
-	 <1311958726.5890.411.camel@twins>  <20110801053201.GY4590@erda.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 01 Aug 2011 17:21:43 +0200
-Message-ID: <1312212103.2617.495.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Aug 2011 11:21:35 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:x-system-of-record;
+	b=YDqegdRi81+tDsX0IKb11Kj/YDCxZIZy0+MtrJ9oZsiHN8vJ+U1/+ME9WVaYFc5XS
+	5a+ZgfhqINlk6MaeQQh7A==
+MIME-Version: 1.0
+In-Reply-To: <CAOfQC9-vT0F-atsuQ1DRg1cFMzRq3rjfa3hvsemLqnRCJedFkA@mail.gmail.com>
+References: <1311852512-7340-1-git-send-email-dengcheng.zhu@gmail.com>
+ <1311852512-7340-2-git-send-email-dengcheng.zhu@gmail.com>
+ <20110728115330.GA29899@linux-mips.org> <CAOfQC9-Z31SSv8agzxZ_hvPOOLY8p0F6yc1=o-QPbDwbNxavTg@mail.gmail.com>
+ <CAErSpo6SLCLxh6vOwLaj5AYXNLrUEtQgfMU_hFCKJVH1dC5neQ@mail.gmail.com> <CAOfQC9-vT0F-atsuQ1DRg1cFMzRq3rjfa3hvsemLqnRCJedFkA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 1 Aug 2011 09:21:11 -0600
+Message-ID: <CAErSpo5A0At+U4gZ6s6ER2vzBzRiV9iJVkZtGH+gnAWeT+N=Ag@mail.gmail.com>
+Subject: Re: [PATCH 1/2] PCI: make pci_claim_resource() work with conflict
+ resources as appropriate
+To: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, jbarnes@virtuousgeek.org,
+        torvalds@linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org, eyal@mips.com,
+        zenon@mips.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-01 at 07:32 +0200, Robert Richter wrote:
-> > So IBS cannot trigger the whole unknown NMI business? Wouldn't ibs_op
-> > triggering while ibs_fetch just started latch the NMI line, the
-> > in-progress NMI would handle both, and we then end up with a spare NMI?
-> 
-> Ok, I will run some excessive testing of this. If this turns out to be
-> a problem I will change the code. Could this be on top of this patch
-> set then? 
+On Mon, Aug 1, 2011 at 4:13 AM, Deng-Cheng Zhu <dengcheng.zhu@gmail.com> wrote:
+> It was found that PCI quirks claim resources (by calling pci_claim_resource())
+> *BEFORE* pcibios_fixup_bus() is called. In pcibios_fixup_bus(),
+> pci_bus->resource[0] for the root bus DOES point to msc_io_resource. If PCI
+> quirks do the resource claim after the arch-defined pcibios_fixup_bus() being
+> called, then the problem with Malta goes away.
 
-Sure, if you somehow end up duplicating some logic I think you know
-about this common.c file you proposed ;-)
+Oh, I see.  pcibios_fixup_bus() copies the hose resources to the root
+bus pci_bus structure.  I think that's bogus because we have the
+interval between mips_pcibios_init() and pcibios_fixup_bus() where the
+root bus resources are incorrect.
 
-I kinda lost the current state of affairs wrt spurious NMIs, I think
-there's still a few reports out there. I recently read through some
-Intel errata and found the Intel PMU can send double PMIs under some
-circumstances (just to keep life interesting).
+I think it would be better to set up the resources correctly right
+away, as we do on x86.  In fact, I'm dubious about pci_create_bus()
+filling in ioport_resource and iomem_resource as defaults -- that's
+never what we really want there, and we have to rely on the arch
+coming back later to fix it up.
 
-I also haven't checked up on what the perf_event_nmi_handler() magic
-looks today, so I can't say if its a problem or not, but I thought I'd
-just mention it.
+I'd like to see some sort of restructuring there so we could pass in a
+list of resources at the time we create the bus.
 
+Bjorn
