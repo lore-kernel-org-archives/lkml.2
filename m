@@ -1,116 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab1HAHSd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 03:18:33 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54284 "EHLO mga02.intel.com"
+	id S1752640Ab1HAHkC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 03:40:02 -0400
+Received: from mga01.intel.com ([192.55.52.88]:61614 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751681Ab1HAHS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 03:18:29 -0400
+	id S1752072Ab1HAHj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 03:39:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,299,1309762800"; 
-   d="scan'208";a="34142316"
-Date: Mon, 1 Aug 2011 10:19:00 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH RESEND] sched: fix false lockdep warning in set_task_cpu()
-Message-ID: <20110801071900.GB3945@intel.com>
-References: <1311680161-23755-1-git-send-email-mika.westerberg@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311680161-23755-1-git-send-email-mika.westerberg@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+   d="scan'208";a="36557330"
+Subject: [PATCH]blk-throttle: correctly determine sync bio
+From: Shaohua Li <shaohua.li@intel.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 01 Aug 2011 15:39:57 +0800
+Message-ID: <1312184397.15392.430.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 02:36:01PM +0300, Mika Westerberg wrote:
-> When we have CONFIG_LOCKDEP enabled we get occasionally following warning
-> on the system console at boot:
+read request is always sync. Using rw_is_sync() to determine
+if a bio is sync.
 
-Ping.
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
-Peter, Ingo: any comments on this patch?
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index f6a7941..a19f58c 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -746,7 +746,7 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
+ static void throtl_charge_bio(struct throtl_grp *tg, struct bio *bio)
+ {
+ 	bool rw = bio_data_dir(bio);
+-	bool sync = bio->bi_rw & REQ_SYNC;
++	bool sync = rw_is_sync(bio->bi_rw);
+ 
+ 	/* Charge the bio to the group */
+ 	tg->bytes_disp[rw] += bio->bi_size;
+@@ -1150,7 +1150,7 @@ int blk_throtl_bio(struct request_queue *q, struct bio **biop)
+ 
+ 		if (tg_no_rule_group(tg, rw)) {
+ 			blkiocg_update_dispatch_stats(&tg->blkg, bio->bi_size,
+-					rw, bio->bi_rw & REQ_SYNC);
++					rw, rw_is_sync(bio->bi_rw));
+ 			rcu_read_unlock();
+ 			return 0;
+ 		}
 
-> 
->  WARNING: at kernel/sched.c:2204 set_task_cpu+0x1a1/0x390()
->  Modules linked in:
->  Pid: 133, comm: mount Not tainted 3.0.0-rc2+ #70
->  Call Trace:
->   [<c104137d>] warn_slowpath_common+0x6d/0xa0
->   [<c103d3b1>] ? set_task_cpu+0x1a1/0x390
->   [<c103d3b1>] ? set_task_cpu+0x1a1/0x390
->   [<c10413cd>] warn_slowpath_null+0x1d/0x20
->   [<c103d3b1>] set_task_cpu+0x1a1/0x390
->   [<c103e0a7>] try_to_wake_up+0x127/0x250
->   [<c103e1db>] default_wake_function+0xb/0x10
->   [<c106290e>] autoremove_wake_function+0x1e/0x50
->   [<c102a2b0>] __wake_up_common+0x40/0x70
->   [<c102f2d7>] __wake_up+0x37/0x50
->   [<c12d36c0>] ? serial_m3110_enable_ms+0x10/0x10
->   [<c12d3715>] serial_m3110_con_write+0x55/0x60
->   [<c1041575>] __call_console_drivers+0x75/0x90
->   [<c10415d9>] _call_console_drivers+0x49/0x80
->   [<c1041baa>] console_unlock+0xca/0x1f0
->   [<c10420ef>] vprintk+0x18f/0x4f0
->   [<c10787cb>] ? trace_hardirqs_on+0xb/0x10
->   [<c107985e>] ? lockdep_init_map+0x4e/0x4c0
->   [<c10787cb>] ? trace_hardirqs_on+0xb/0x10
->   [<c14928a3>] printk+0x18/0x1a
->   [<c115dd4e>] ext3_msg+0x3e/0x40
->   [<c116046a>] ext3_fill_super+0x16ba/0x1960
->   [<c11478b8>] ? disk_name+0x88/0xc0
->   [<c10fa88d>] mount_bdev+0x16d/0x1b0
->   [<c10ed667>] ? __kmalloc_track_caller+0xf7/0x280
->   [<c1112021>] ? alloc_vfsmnt+0x81/0x140
->   [<c115d20a>] ext3_mount+0x1a/0x20
->   [<c115edb0>] ? ext3_clear_journal_err+0xa0/0xa0
->   [<c10f95dc>] mount_fs+0x1c/0xc0
->   [<c10d763a>] ? __alloc_percpu+0xa/0x10
->   [<c111203b>] ? alloc_vfsmnt+0x9b/0x140
->   [<c1112896>] vfs_kern_mount+0x46/0xa0
->   [<c1113609>] do_kern_mount+0x39/0xd0
->   [<c1114087>] do_mount+0x2c7/0x680
->   [<c10d31f9>] ? strndup_user+0x49/0x60
->   [<c11144a6>] sys_mount+0x66/0xa0
->   [<c14976d0>] sysenter_do_call+0x12/0x36
-> 
-> This is due the fact that printk() disables lockdep before the output is
-> passed to the actual console driver. If the console driver happens to call
-> some functions which eventually calls set_task_cpu() we end up failing the
-> following test:
-> 
->        WARN_ON_ONCE(debug_locks && !(lockdep_is_held(&p->pi_lock) ||
->                                      lockdep_is_held(&task_rq(p)->lock)));
-> 
-> This is because lockdep_is_held() returns 0 if lockdep is temporarily
-> disabled.
-> 
-> So we check whether lockdep is enabled and only then validate the locks.
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> ---
->  kernel/sched.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 9769c75..1177f81 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -2211,8 +2211,9 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
->  	 * Furthermore, all task_rq users should acquire both locks, see
->  	 * task_rq_lock().
->  	 */
-> -	WARN_ON_ONCE(debug_locks && !(lockdep_is_held(&p->pi_lock) ||
-> -				      lockdep_is_held(&task_rq(p)->lock)));
-> +	WARN_ON_ONCE(debug_locks && !current->lockdep_recursion &&
-> +			!(lockdep_is_held(&p->pi_lock) ||
-> +			  lockdep_is_held(&task_rq(p)->lock)));
->  #endif
->  #endif
->  
-> -- 
-> 1.7.5.4
+
