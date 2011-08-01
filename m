@@ -1,114 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab1HAUgY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 16:36:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32366 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753349Ab1HAUgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 16:36:18 -0400
-Date: Mon, 1 Aug 2011 16:36:07 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
-        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: Re: [patch v2 03/10] kdump: Add size to elfcorehdr kernel parameter
-Message-ID: <20110801203607.GI3805@redhat.com>
-References: <20110727125504.491183728@linux.vnet.ibm.com>
- <20110727125807.853426542@linux.vnet.ibm.com>
+	id S1753479Ab1HAUkT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 16:40:19 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53886 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753349Ab1HAUkR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 16:40:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110727125807.853426542@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKWSe6Bf6bZQnjujPRYQPCw+PEkvPOkwxdCVqfJV+6Xr6erw5Q@mail.gmail.com>
+References: <CAKWSe6B3hWt4ANpgoS4dRUZPju0Abey9y3DORVFqGYgMeF=gQA@mail.gmail.com>
+	<20110730191855.eaec670f.rdunlap@xenotime.net>
+	<CAKWSe6Bf6bZQnjujPRYQPCw+PEkvPOkwxdCVqfJV+6Xr6erw5Q@mail.gmail.com>
+Date: Mon, 1 Aug 2011 22:38:57 +0200
+Message-ID: <CAKWSe6AXWRXa+Z8u+P1sauLVJFU2R6MFnh5q=6ir4PVFjDBUcw@mail.gmail.com>
+Subject: Re: warn_slowpath_common WARNING on boot since 3.0.0-git7
+From: Alessandro Suardi <alessandro.suardi@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 02:55:07PM +0200, Michael Holzheu wrote:
-> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> 
-> Currently only the address of the pre-allocated ELF header is passed with
-> the elfcorehdr= kernel parameter. In order to reserve memory for the header
-> in the 2nd kernel also the size is required. To pass the size with this
-> patch the syntax of the kernel parameter is extended as follows:
-> 
-> elfcorehdr=[size[KMG]@]offset[KMG]
-> 
-> This change is backward compatible because elfcorehdr=size is still allowed.
+On Sun, Jul 31, 2011 at 6:20 PM, Alessandro Suardi
+<alessandro.suardi@gmail.com> wrote:
+> On Sun, Jul 31, 2011 at 4:18 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> On Sat, 30 Jul 2011 17:31:51 +0200 Alessandro Suardi wrote:
+>>
+>>> F15 x86_64, still present in 3.0.0-git11; didn't report it earlier as I
+>>>  thought it'd be squashed sooner... probably it's not as common
+>>>  as I thought it'd be:
+>>>
+>>> Jul 27 18:46:18 duff kernel: WARNING: at fs/proc/base.c:1123
+>>> oom_adjust_write+0x185/0x23c()
+>>> Jul 27 18:46:18 duff kernel: Hardware name: Latitude E6400
+>>> Jul 27 18:46:18 duff kernel: sshd (3245): /proc/3245/oom_adj is
+>>> deprecated, please use /proc/3245/oom_score_adj instead.
+>>
+>> Looks like sshd is using a deprecated /proc interface.
+>> fs/proc/base.c:1118 says:
+>>         * Warn that /proc/pid/oom_adj is deprecated, see
+>>         * Documentation/feature-removal-schedule.txt.
+>>
+>> What else needs to be done here?
+>>
+>>> Jul 27 18:46:18 duff kernel: Modules linked in: sunrpc rfcomm bnep
+>>> ip6t_REJECT nf_conntrack_ipv6 ipt_REJECT nf_defrag_ipv6
+>>> nf_conntrack_ipv4 ip6table_filter nf_defrag_ipv4 ip6_tables xt_state
+>>> nf_conntrack iptable_filter ip_tables snd_hda_codec_hdmi
+>>> snd_hda_codec_idt snd_hda_intel snd_hda_codec aes_x86_64 aes_generic
+>>> ecb snd_hwdep btusb snd_seq snd_seq_device bluetooth snd_pcm
+>>> dell_laptop snd_timer snd i2c_i801 rfkill microcode pcspkr joydev
+>>> soundcore snd_page_alloc dcdbas ipv6 autofs4 ext4 jbd2 crc16 sdhci_pci
+>>> firewire_ohci sdhci firewire_core crc_itu_t mmc_core i915
+>>> drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded:
+>>> scsi_wait_scan]
+>>> Jul 27 18:46:18 duff kernel: Pid: 3245, comm: sshd Not tainted 3.0.0-git7 #6
+>>> Jul 27 18:46:18 duff kernel: Call Trace:
+>>> Jul 27 18:46:18 duff kernel: [<ffffffff8103774c>] warn_slowpath_common+0x7e/0x96
+>>> Jul 27 18:46:18 duff kernel: [<ffffffff810377f8>] warn_slowpath_fmt+0x41/0x43
+>>> Jul 27 18:46:18 duff kernel: [<ffffffff810408f4>] ? ns_capable+0x35/0x4a
+>>> Jul 27 18:46:18 duff kernel: [<ffffffff81129fb8>] oom_adjust_write+0x185/0x23c
+>>> Jul 27 18:46:18 duff kernel: [<ffffffff810e0736>] vfs_write+0xa3/0xca
+>>> Jul 27 18:46:18 duff kernel: [<ffffffff8109176f>] ?
+>>> trace_hardirqs_on_caller+0xe/0x22
+>>> Jul 27 18:46:18 duff kernel: [<ffffffff810e08d2>] sys_write+0x45/0x69
+>>> Jul 27 18:46:18 duff kernel: [<ffffffff813752fb>] system_call_fastpath+0x16/0x1b
+>
+> Well, the obsolescence was discussed a while ago in this thread
+>
+> http://www.gossamer-threads.com/lists/linux/kernel/1301830
+>
+>  and my kernel dmesg output has been telling me ever since;
+>  the "issue", if we can so call that, is that the WARNING trace
+>  output appeared in 3.0.0-git7.
+>
+> In 3.0.0-git1 I still had
+>
+> Jul 24 12:22:01 duff kernel: sshd (3185): /proc/3185/oom_adj is
+> deprecated, please use /proc/3185/oom_score_adj instead.
+>
+>  *without* the warn_slowpath_common WARNING.
+>
+> Is the extra tracing intentional, or a side effect of something else ?
+>
+>
+> As a final note, the openssh fix appears to be in 5.7p1
+>
+> https://bugzilla.mindrot.org/show_bug.cgi?id=1838
+>
+>  and I am running an updated F15 as of today
+>
+> [root@duff ~]# rpm -q openssh
+> openssh-5.6p1-33.fc15.1.x86_64
+>
+> I guess I'll file a F15 bug later tonight, as I can't find one
+>  already asking for the 5.7p1 fix backport to 5.6x.
 
-Generally vmcore parses elfcorehdr to figure out the sizes. kexec-tools
-knows about it and relevant memory is excluded from second kernel's map
-with the help of memmap= command line option.
+F15 openssh bug just for the record:
 
-Can you please mention that this is only s390 specific requirement as
-there are no memmap= equivalent options and somehow dump tools wants
-to know how big the elf header size is?
+https://bugzilla.redhat.com/show_bug.cgi?id=727335
 
-Thanks
-Vivek
+Thanks,
 
-> 
-> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> ---
->  Documentation/kernel-parameters.txt |    6 +++---
->  include/linux/crash_dump.h          |    1 +
->  kernel/crash_dump.c                 |   11 +++++++++++
->  3 files changed, 15 insertions(+), 3 deletions(-)
-> 
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -717,10 +717,10 @@ bytes respectively. Such letter suffixes
->  			See Documentation/block/as-iosched.txt and
->  			Documentation/block/deadline-iosched.txt for details.
->  
-> -	elfcorehdr=	[IA64,PPC,SH,X86]
-> +	elfcorehdr=[size[KMG]@]offset[KMG] [IA64,PPC,SH,X86,S390]
->  			Specifies physical address of start of kernel core
-> -			image elf header. Generally kexec loader will
-> -			pass this option to capture kernel.
-> +			image elf header and optionally the size. Generally
-> +			kexec loader will pass this option to capture kernel.
->  			See Documentation/kdump/kdump.txt for details.
->  
->  	enable_mtrr_cleanup [X86]
-> --- a/include/linux/crash_dump.h
-> +++ b/include/linux/crash_dump.h
-> @@ -10,6 +10,7 @@
->  #define ELFCORE_ADDR_ERR	(-2ULL)
->  
->  extern unsigned long long elfcorehdr_addr;
-> +extern unsigned long long elfcorehdr_size;
->  
->  extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
->  						unsigned long, int);
-> --- a/kernel/crash_dump.c
-> +++ b/kernel/crash_dump.c
-> @@ -20,8 +20,15 @@ unsigned long saved_max_pfn;
->  unsigned long long elfcorehdr_addr = ELFCORE_ADDR_MAX;
->  
->  /*
-> + * stores the size of elf header of crash image
-> + */
-> +unsigned long long elfcorehdr_size;
-> +
-> +/*
->   * elfcorehdr= specifies the location of elf core header stored by the crashed
->   * kernel. This option will be passed by kexec loader to the capture kernel.
-> + *
-> + * Syntax: elfcorehdr=[size[KMG]@]offset[KMG]
->   */
->  static int __init setup_elfcorehdr(char *arg)
->  {
-> @@ -29,6 +36,10 @@ static int __init setup_elfcorehdr(char
->  	if (!arg)
->  		return -EINVAL;
->  	elfcorehdr_addr = memparse(arg, &end);
-> +	if (*end == '@') {
-> +		elfcorehdr_size = elfcorehdr_addr;
-> +		elfcorehdr_addr = memparse(end + 1, &end);
-> +	}
->  	return end > arg ? 0 : -EINVAL;
->  }
->  early_param("elfcorehdr", setup_elfcorehdr);
+--alessandro
+
+ "There's always a siren singing you to shipwreck"
+
+   (Radiohead, "There There")
