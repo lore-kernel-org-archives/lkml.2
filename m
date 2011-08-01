@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab1HAJYU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 05:24:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47571 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751477Ab1HAJYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 05:24:17 -0400
-Message-ID: <4E3670BF.6000709@suse.cz>
-Date: Mon, 01 Aug 2011 11:24:15 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1752996Ab1HAJ3N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 05:29:13 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37207 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752621Ab1HAJ3G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 05:29:06 -0400
+Date: Mon, 1 Aug 2011 10:28:06 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Remy Bohmer <linux@bohmer.net>
+Cc: Remy Bohmer <l.pinguin@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Add sched_clock to AT91 TCB clocksource driver
+Message-ID: <20110801092806.GD15578@n2100.arm.linux.org.uk>
+References: <1312124593-6088-1-git-send-email-linux@bohmer.net> <20110731150707.GA2975@n2100.arm.linux.org.uk> <CANqCtQJwUsLXfA408GzAr0rQtc2DRjtKqP8-m2UBUGEy-YP5dg@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Foley <pefoley2@verizon.net>
-Cc: Arnaud Lacombe <lacombar@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
-        rdunlap@xenotime.net
-Subject: Re: [PATCH RFC] kconfig.h fix extraneous dependencies
-References: <alpine.LNX.2.00.1107311812460.62769@linux> <CACqU3MWfOg+ZhUGAovWsds48Y37i7GRk7qSxWvt7-JmLMBcmgg@mail.gmail.com> <alpine.LNX.2.00.1107312055360.20006@linux>
-In-Reply-To: <alpine.LNX.2.00.1107312055360.20006@linux>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANqCtQJwUsLXfA408GzAr0rQtc2DRjtKqP8-m2UBUGEy-YP5dg@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1.8.2011 03:16, Peter Foley wrote:
-> On Sun, 31 Jul 2011, Arnaud Lacombe wrote:
->> On Sun, Jul 31, 2011 at 8:36 PM, Peter Foley<pefoley2@verizon.net>  wrote:
->>> The introduction of kconfig.h caused fixdep to create three extraneous
->>> dependencies.
->>> include/config/.h
->>> include/config/h.h
->>> include/config/foo.h
->>>
->>> Remove them by eliminating instances of CONFIG_
->>>
->> this seems ugly to me... I would rather try to fix fixdep, no ?
->>
->>   - Arnaud
->
-> I'd be the first to admit that this patch is a ugly hack.
-> However, judging by the comments in fixdep.c this is expected behavior.
+On Mon, Aug 01, 2011 at 10:42:35AM +0200, Remy Bohmer wrote:
+> OK, I know that too, but the jiffies based fallback does it even
+> worse, since it does not run at all...  (It only updates in steps of a
+> couple of 100msecs and stops after a while, and even does not display
+> a real time...) This sched_clock implementation at least works before
+> the drivers are being initialised...
 
-And it's also harmless, the source contains thousands of false matches:
-$ git grep '_CONFIG_' | wc -l
-7989
-e.g anything that includes include/linux/acpi.h gets a false dependency 
-on include/config/support.h because of
-include/linux/acpi.h:#define OSC_EXT_PCI_CONFIG_SUPPORT         1
-but it doesn't matter.
+You're forgetting that jiffies doesn't jump about.  A late initializing
+sched_clock could jump.
 
+> Anyway, do you have a better suggestion how to fix this? The tcb
+> clocksource is loaded during a arch_initcall(), perhaps we need
+> something before that point.
+> I do not see an easy way to integrate it in MACHINE_START(.timer).
+> Would 'late_time_init' be a better solution?
 
-> I'm also afraid that changing fixdep to ignore comments would slow down
-> the whole build for the sake of one file which IMHO dosen't seem to be a
-> worthwhile tradeoff.
+late_time_init() is not that much better as that still happens after
+sched_init() has been called.  sched_init() initializes various
+structures which involves reading sched_clock().
 
-I would take a patch that makes fixdep ignore include/linux/kconfig.h, 
-like it ignores include/generated/kconfig.h. Anything more advanced 
-isn't worth the effort, IMO.
-
-Michal
+Why can't it initialize itself at the standard point during the boot
+sequence, which is time_init() - which in turn is as you say the
+.timer callback?
