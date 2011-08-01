@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab1HAUXd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 16:23:33 -0400
-Received: from smtp-out003.kontent.com ([81.88.40.217]:52900 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753254Ab1HAUX0 (ORCPT
+	id S1753380Ab1HAU3v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 16:29:51 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43515 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753065Ab1HAU3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 16:23:26 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: Josh Boyer <jwboyer@redhat.com>
-Subject: Re: cdc_ncm uses stack memory for DMA
-Date: Mon, 1 Aug 2011 22:26:16 +0200
-User-Agent: KMail/1.13.5 (Linux/3.0.0-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Oliver Neukum <oliver@neukum.name>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20110801195949.GB2096@zod.bos.redhat.com>
-In-Reply-To: <20110801195949.GB2096@zod.bos.redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Mon, 1 Aug 2011 16:29:44 -0400
+Date: Mon, 1 Aug 2011 13:29:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: =?ISO-8859-1?Q?=C9ric?= Piel <eric.piel@tremplin-utc.net>
+Cc: Matthew Garrett <mjg@redhat.com>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH 01/10] lis3lv02d: avoid divide by zero due to unchecked
+Message-Id: <20110801132906.2d4cd28e.akpm@linux-foundation.org>
+In-Reply-To: <4E2D88C7.30409@tremplin-utc.net>
+References: <4E2D8858.8000900@tremplin-utc.net>
+	<4E2D88C7.30409@tremplin-utc.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108012226.16180.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 1. August 2011, 21:59:50 schrieb Josh Boyer:
+On Mon, 25 Jul 2011 17:16:23 +0200
+__ric Piel <eric.piel@tremplin-utc.net> wrote:
 
-Hi,
+> +static int lis3lv02d_get_pwron_wait(struct lis3lv02d *lis3)
+> +{
+> +	int div = lis3lv02d_get_odr();
+> +
+> +	if (WARN_ONCE(div == 0, "device returned spurious data"))
+> +		return -ENXIO;
+> +
+> +	/* LIS3 power on delay is quite long */
+> +	msleep(lis3->pwron_delay / div);
+> +	return 0;
+> +}
 
-> Looking through the code, it seems that cdc_ncm_setup is still passing
-> stack variables around lines 270, 276, 375, and 406.  Which of those
-> exactly is triggering the backtrace, I'm not sure but all of them seem
-> incorrect from what I can tell.
-
-They are incorrect.
- 
-> Do you have any thoughts on a solution for this?  Off the top of my
-> head, either the local variables being used could be added to the ctx
-
-Careful. You also need to confirm to the rules about cached coherency
-on some architectures. You cannot do DMA into the middle of a structure
-unless you are sure it is not touched any other way.
-
-> structure or the variables can be changed to pointers and then be
-> allocated via kmalloc and torn down shortly after.
-
-This looks like the easiest way.
-
-	Regards
-		Oliver
+The WARN_ONCE may not be very useful.  The user gets worried, might
+report it (often to a distro, not to you!).  But we won't actually *do*
+anything with the information?
