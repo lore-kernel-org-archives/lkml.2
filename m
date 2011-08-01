@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092Ab1HAQOY (ORCPT <rfc822;w@1wt.eu>);
+	id S1753260Ab1HAQOe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 12:14:34 -0400
+Received: from mail.perches.com ([173.55.12.10]:4436 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753101Ab1HAQOY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Aug 2011 12:14:24 -0400
-Received: from mhub2.bbsrc.ac.uk ([149.155.202.2]:60715 "EHLO
-	mhub2.bbsrc.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370Ab1HAQOS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 12:14:18 -0400
-X-Greylist: delayed 1510 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Aug 2011 12:14:17 EDT
-From: "dean north (BITS)" <dean.north@bbsrc.ac.uk>
-To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Mon, 1 Aug 2011 16:49:01 +0100
-Subject: Dell sx280 machine to graphics driver crash
-Thread-Topic: Dell sx280 machine to graphics driver crash
-Thread-Index: AcxQYohWe9uaCl93R+Wf/TZIPrGt3g==
-Message-ID: <C57CE776344DFE4A8B8E254640024EE513D5E5277B@bitsexch1.bits.bbsrc.ac.uk>
-Accept-Language: en-US, en-GB
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, en-GB
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Subject: Re: [PATCH] Staging: cx25821: fix coding style issues
+From: Joe Perches <joe@perches.com>
+To: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, mchehab@redhat.com,
+        arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Palash.Bandyopadhyay@conexant.com, ruslan@rpisarev.org.ua,
+        Revent82@gmail.com
+In-Reply-To: <1312191229-24718-1-git-send-email-leonidsbox@gmail.com>
+References: <1312191229-24718-1-git-send-email-leonidsbox@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 01 Aug 2011 09:14:22 -0700
+Message-ID: <1312215262.11635.15.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All,
+On Mon, 2011-08-01 at 17:33 +0800, Leonid V. Fedorenchik wrote:
+> Fix too long lines in cx25821-audio.h and cx25821-core.c
+[]
+> diff --git a/drivers/staging/cx25821/cx25821-core.c b/drivers/staging/cx25821/cx25821-core.c
+[]
+> @@ -972,8 +972,8 @@ static int cx25821_dev_setup(struct cx25821_dev *dev)
+>  	dev->lmmio = ioremap(dev->base_io_addr, pci_resource_len(dev->pci, 0));
+>  
+>  	if (!dev->lmmio) {
+> -		CX25821_ERR
+> -		    ("ioremap failed, maybe increasing __VMALLOC_RESERVE in page.h\n");
+> +		CX25821_ERR("ioremap failed, maybe increasing __VMALLOC_RESERVE"
+> +								" in page.h\n");
 
-I am currently installing the latest version of Fedora on an Dell Optiplex SX280.  The install works, Fedora boots fine and I can log in, but after a while the systems graphics driver crashes.  Below is an output of the issue.  It seems to be a bug in the Kernel
+Please do not split formats.
 
-#
-Aug 1 11:48:23 localhost kernel: [ 124.221008] [<f7a3780a>]
-do_intel_finish_page_flip+0x16d/0x1f1 [i915] # Aug 1 11:48:23 localhost kernel: [ 124.221008] [<f7a3e09b>] intel_finish_page_flip_plane+0x1a/0x1c [i915] # Aug 1 11:48:23 localhost kernel: [ 124.221008] [<f7a2843b>]
-i915_driver_irq_handler+0x884/0x942 [i915] # Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c07d62b3>] ?
-_raw_spin_unlock_irqrestore+0x13/0x15 #
-Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c06a1be1>] ?
-__ata_sff_interrupt+0x126/0x137 #
-Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c06a3735>] ?
-ata_bmdma_port_intr+0x0/0xc2 #
-Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c048704e>] handle_IRQ_event+0x4c/0xfe # Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c041c9fb>] ?
-ack_apic_level+0x57/0x140 #
-Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c0488b03>]
-handle_fasteoi_irq+0x74/0xa6 #
-Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c0488a8f>] ?
-handle_fasteoi_irq+0x0/0xa6 #
-Aug 1 11:48:23 localhost kernel: [ 124.221008] <IRQ> # Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c0404bbd>] ?
-do_IRQ+0x3c/0x92 #
-Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c043feb7>] ?
-irq_exit+0x4c/0x70
+>  		cx25821_iounmap(dev);
+>  		return -ENOMEM;
+>  	}
+> @@ -1011,8 +1011,8 @@ static int cx25821_dev_setup(struct cx25821_dev *dev)
+>  	if (video_register_device
+>  	    (dev->ioctl_dev, VFL_TYPE_GRABBER, VIDEO_IOCTL_CH) < 0) {
+>  		cx25821_videoioctl_unregister(dev);
+> -		pr_err("%s(): Failed to register video adapter for IOCTL, so unregistering videoioctl device\n",
+> -		       __func__);
+> +		pr_err("%s(): Failed to register video adapter for IOCTL, so "
+> +				"unregistering videoioctl device\n", __func__);
 
+This was better before the change.
 
-Dean North
+> -static struct pci_device_id cx25821_pci_tbl[] = {
+> +static DEFINE_PCI_DEVICE_TABLE(cx25821_pci_tbl) __used = {
+
+__used?  Hard to believe that's necessary here.
 
 
-
-This email and any attachments are intended solely for the use of the individual(s) to whom it/they are addressed. If you believe you have received this in error please notify the sender and delete this e-mail from your system.
-
-BBSRC may need to release information, including this email and any attachments therein, under the terms of the Freedom of Information or Data Protection Acts.
-
-Opinions, conclusions or other information in this message and attachments that are not related directly to BBSRC business are solely those of the author and do not represent the views of BBSRC.
