@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab1HAX17 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 19:27:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38934 "EHLO mx2.suse.de"
+	id S1753843Ab1HAX2I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 19:28:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38945 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754164Ab1HAX1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 19:27:41 -0400
+	id S1753536Ab1HAX1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 19:27:44 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:57 2011
-Message-Id: <20110801232057.540698730@clark.kroah.org>
+Message-Id: <20110801232057.639822531@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 01 Aug 2011 16:19:24 -0700
+Date: Mon, 01 Aug 2011 16:19:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stephen Hemminger <shemminger@vyatta.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [69/70] bridge: send proper message_age in config BPDU
+Subject: [70/70] gro: Only reset frag0 when skb can be pulled
 In-Reply-To: <20110801232124.GA15313@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,82 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: stephen hemminger <shemminger@vyatta.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-commit 0c03150e7ea8f7fcd03cfef29385e0010b22ee92 upstream.
+commit 17dd759c67f21e34f2156abcf415e1f60605a188 upstream.
 
-A bridge topology with three systems:
+Currently skb_gro_header_slow unconditionally resets frag0 and
+frag0_len.  However, when we can't pull on the skb this leaves
+the GRO fields in an inconsistent state.
 
-      +------+  +------+
-      | A(2) |--| B(1) |
-      +------+  +------+
-           \    /
-          +------+
-          | C(3) |
-          +------+
+This patch fixes this by only resetting those fields after the
+pskb_may_pull test.
 
-What is supposed to happen:
- * bridge with the lowest ID is elected root (for example: B)
- * C detects that A->C is higher cost path and puts in blocking state
-
-What happens. Bridge with lowest id (B) is elected correctly as
-root and things start out fine initially. But then config BPDU
-doesn't get transmitted from A -> C. Because of that
-the link from A-C is transistioned to the forwarding state.
-
-The root cause of this is that the configuration messages
-is generated with bogus message age, and dropped before
-sending.
-
-In the standardmessage_age is supposed to be:
-  the time since the generation of the Configuration BPDU by
-  the Root that instigated the generation of this Configuration BPDU.
-
-Reimplement this by recording the timestamp (age + jiffies) when
-recording config information. The old code incorrectly used the time
-elapsed on the ageing timer which was incorrect.
-
-See also:
-  https://bugzilla.vyatta.com/show_bug.cgi?id=7164
-
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/bridge/br_private.h |    1 +
- net/bridge/br_stp.c     |    4 ++--
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ include/linux/netdevice.h |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -123,6 +123,7 @@ struct net_bridge_port
- 	bridge_id			designated_bridge;
- 	u32				path_cost;
- 	u32				designated_cost;
-+	unsigned long			designated_age;
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1680,9 +1680,12 @@ static inline int skb_gro_header_hard(st
+ static inline void *skb_gro_header_slow(struct sk_buff *skb, unsigned int hlen,
+ 					unsigned int offset)
+ {
++	if (!pskb_may_pull(skb, hlen))
++		return NULL;
++
+ 	NAPI_GRO_CB(skb)->frag0 = NULL;
+ 	NAPI_GRO_CB(skb)->frag0_len = 0;
+-	return pskb_may_pull(skb, hlen) ? skb->data + offset : NULL;
++	return skb->data + offset;
+ }
  
- 	struct timer_list		forward_delay_timer;
- 	struct timer_list		hold_timer;
---- a/net/bridge/br_stp.c
-+++ b/net/bridge/br_stp.c
-@@ -164,8 +164,7 @@ void br_transmit_config(struct net_bridg
- 	else {
- 		struct net_bridge_port *root
- 			= br_get_port(br, br->root_port);
--		bpdu.message_age = br->max_age
--			- (root->message_age_timer.expires - jiffies)
-+		bpdu.message_age = (jiffies - root->designated_age)
- 			+ MESSAGE_AGE_INCR;
- 	}
- 	bpdu.max_age = br->max_age;
-@@ -189,6 +188,7 @@ static inline void br_record_config_info
- 	p->designated_cost = bpdu->root_path_cost;
- 	p->designated_bridge = bpdu->bridge_id;
- 	p->designated_port = bpdu->port_id;
-+	p->designated_age = jiffies + bpdu->message_age;
- 
- 	mod_timer(&p->message_age_timer, jiffies
- 		  + (p->br->max_age - bpdu->message_age));
+ static inline void *skb_gro_mac_header(struct sk_buff *skb)
 
 
