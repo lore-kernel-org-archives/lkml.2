@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163Ab1HASCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 14:02:05 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:49485 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950Ab1HASB5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 14:01:57 -0400
-Date: Mon, 1 Aug 2011 22:01:51 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, kernel-hardening@lists.openwall.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        torvalds@linux-foundation.org, Marc Zyngier <maz@misterjones.org>
-Subject: initcall dependency problem (ns vs. threads)
-Message-ID: <20110801180151.GA26686@albatros>
+	id S1753260Ab1HASG0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 14:06:26 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34819 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751211Ab1HASGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 14:06:22 -0400
+Subject: [GIT PULL] Regulator updates for 3.1
+From: Liam Girdwood <lrg@ti.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 1 Aug 2011 19:05:44 +0100
+Message-ID: <1312221944.5170.5.camel@CNA0741383>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Linus,
 
-There were reported problems with recent shm changes, by Manuel
-Lauss (on MIPS), Richard Weinberger (on UML), and Marc Zyngier (on ARM).
+Please pull the following regulator updates for Linus 3.1. No major
+changes this time, however there are many driver improvements and fixes
+with a few core improvements for debugfs and logging.
 
-https://lkml.org/lkml/2011/8/1/149
-https://lkml.org/lkml/2011/8/1/162
-https://lkml.org/lkml/2011/8/1/210
+Thanks
 
-The problem became visible on this patch:
+Liam
 
-    commit 5774ed014f02120db9a6945a1ecebeb97c2acccb
-    Author: Vasiliy Kulikov <segoon@openwall.com>
-    Date:   Fri Jul 29 03:55:31 2011 +0400
+---
 
-        shm: handle separate PID namespaces case
+The following changes since commit 02f8c6aee8df3cdc935e9bdd4f2d020306035dbe:
 
-It started to use &shm_ids(ns).rw_mutex, which is not initialized yet.
-Init IPC namespace is initialized as initcall() and some threads are
-created as early_initcall().
+  Linux 3.0 (2011-07-21 19:17:23 -0700)
 
-I threat it is a dependency bug in the core kernel - kernel threads
-should be able to use any namespace information, but currently there is
-a race between namespace initialization code (which is initcall) and
-kernel threads (which are early_initcall).
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/lrg/voltage-2.6.git for-linus
 
-I don't feel enough experienced in init code dependencies, so I report
-it to you.
+Ambresh K (1):
+      regulator: TWL: Remove entry of RES_ID for 6030 macros
 
-    static int __init kernel_init(void * unused)
-    {
-        ...
-        do_pre_smp_initcalls(); << threads start here
-        ...
-        do_basic_setup();
+Axel Lin (4):
+      regulator: tps65910: Fix a memory leak in tps65910_probe error path
+      regulator: tps65910: Add missing breaks in switch/case
+      regulator: tps65910: Fix array access out of bounds bug
+      regulator: Fix memory leak in set_machine_constraints() error paths
+
+Colin Cross (1):
+      regulator: twl-regulator: fix n_voltages for twl6030 variable LDOs
+
+Jarkko Nikula (1):
+      ASoC: tlv320aic3x: Add correct hw registers to Line1 cross connect muxes
+
+Liam Girdwood (1):
+      Merge branch 'for-next' into for-linus
+
+Mark Brown (16):
+      regulator: Do bulk enables of regulators in parallel
+      regulator: Use _cansleep() for WM8994 regulator GPIOs
+      regulator: Properly register dummy regulator driver
+      regulator: Increase the limit on sysfs file names
+      regulator: Include the device name in the microamps_requested_ file
+      regulator: Refactor supply implementation to work as regular consumers
+      regulator: Add rdev_crit() macro
+      regulator: Add basic per consumer debugfs
+      regulator: Make core more chatty about some errors
+      regulator: Fix argument format type errors in error prints
+      regulator: Fix WM831x regulator ID lookups for multiple WM831xs
+      regulator: Fix WM831x DCDC DVS VSEL bootstrapping
+      regulator: Add EPEs to the MODULE_ALIAS() for wm831x-dcdc
+      regulator: Set up GPIO for WM831x VSEL before enabling VSEL mode
+      regulator: Bootstrap wm831x DVS VSEL value from ON VSEL if not already set
+      regulator: Improve WM831x DVS VSEL selection algorithm
+
+ drivers/regulator/core.c               |  190 ++++++++++++++++++-------------
+ drivers/regulator/dummy.c              |   32 +++++-
+ drivers/regulator/tps65910-regulator.c |   63 +++++++++--
+ drivers/regulator/twl-regulator.c      |   66 +++++------
+ drivers/regulator/wm831x-dcdc.c        |  126 +++++++++++----------
+ drivers/regulator/wm831x-ldo.c         |   25 ++++-
+ drivers/regulator/wm8994-regulator.c   |    4 +-
+ include/linux/regulator/consumer.h     |    3 +
+ include/linux/regulator/driver.h       |    4 +-
+ sound/soc/codecs/tlv320aic3x.c         |   34 ++++--
+ 10 files changed, 332 insertions(+), 215 deletions(-)
 
 
-    static void __init do_basic_setup(void)
-    {
-        cpuset_init_smp();
-        usermodehelper_init();
-        init_tmpfs();
-        driver_init();
-        init_irq_proc();
-        do_ctors();
-        do_initcalls(); << namespace init here
-    }
-
-Thanks,
-
--- 
-Vasiliy
