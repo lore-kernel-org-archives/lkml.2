@@ -1,42 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab1HAOJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 10:09:59 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:45215 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752230Ab1HAOJ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 10:09:56 -0400
-Date: Mon, 1 Aug 2011 15:13:02 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mikko Rapeli <mikko.rapeli@iki.fi>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Linux, binary blob and binary driver summary for vendors?
-Message-ID: <20110801151302.7d56cd0d@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110801134212.GS29803@nalle>
-References: <20110801134212.GS29803@nalle>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752230Ab1HAOTH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 10:19:07 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:3858 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751773Ab1HAOTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 10:19:01 -0400
+Message-ID: <4E36B5C2.6050305@atmel.com>
+Date: Mon, 01 Aug 2011 15:18:42 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 3/3] dmaengine: at_hdmac: add wrappers for testing
+ channel state
+References: <1311677514.24316.6.camel@vkoul-mobl4> <3c302a7166c2aa6ae4b6d7b7cdfe21e640b73603.1311627477.git.nicolas.ferre@atmel.com> <a04c691d57da727d0b68affb424e3fec44cfd421.1311627477.git.nicolas.ferre@atmel.com>
+In-Reply-To: <a04c691d57da727d0b68affb424e3fec44cfd421.1311627477.git.nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Aug 2011 16:42:12 +0300
-Mikko Rapeli <mikko.rapeli@iki.fi> wrote:
+On 07/27/2011 01:21 PM, Nicolas Ferre wrote:
+> Cyclic property and paused state are encoded as bits in the channel status
+> bitfield. Tests of those bits are wrapped in convenient helper functions.
+>
+> Signed-off-by: Nicolas Ferre<nicolas.ferre@atmel.com>
+> ---
+> V2: match V2 2/3 patch indentation fixing
 
-> What is a good and also technically detailed summary of the binary blob and
-> driver issues with Linux kernel and GPL?
-> 
-> I'd like to refer a vendor to some documentation regarding this instead
-> writing a ton of text with IANAL everywhere.
+Vinod, any news on this V2 series?
 
-I would suggest they talk to the Linux Foundation. It's basically a legal
-question around derivative works, and that's a lawyer question that tends
-to need looking at by lawyers per piece of code.
+Thanks, bye,
 
-Aside from that there are technical, marketing and PR things to consider.
 
-Alan
+>   drivers/dma/at_hdmac.c      |   19 +++++++++----------
+>   drivers/dma/at_hdmac_regs.h |   17 +++++++++++++++++
+>   2 files changed, 26 insertions(+), 10 deletions(-)
+>
+> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+> index 99bd2c18..26a1196 100644
+> --- a/drivers/dma/at_hdmac.c
+> +++ b/drivers/dma/at_hdmac.c
+> @@ -301,7 +301,7 @@ atc_chain_complete(struct at_dma_chan *atchan, struct at_desc *desc)
+>
+>   	/* for cyclic transfers,
+>   	 * no need to replay callback function while stopping */
+> -	if (!test_bit(ATC_IS_CYCLIC,&atchan->status)) {
+> +	if (!atc_chan_is_cyclic(atchan)) {
+>   		dma_async_tx_callback	callback = txd->callback;
+>   		void			*param = txd->callback_param;
+>
+> @@ -478,7 +478,7 @@ static void atc_tasklet(unsigned long data)
+>   	spin_lock_irqsave(&atchan->lock, flags);
+>   	if (test_and_clear_bit(ATC_IS_ERROR,&atchan->status))
+>   		atc_handle_error(atchan);
+> -	else if (test_bit(ATC_IS_CYCLIC,&atchan->status))
+> +	else if (atc_chan_is_cyclic(atchan))
+>   		atc_handle_cyclic(atchan);
+>   	else
+>   		atc_advance_work(atchan);
+> @@ -945,7 +945,7 @@ static int atc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>
+>   		spin_unlock_irqrestore(&atchan->lock, flags);
+>   	} else if (cmd == DMA_RESUME) {
+> -		if (!test_bit(ATC_IS_PAUSED,&atchan->status))
+> +		if (!atc_chan_is_paused(atchan))
+>   			return 0;
+>
+>   		spin_lock_irqsave(&atchan->lock, flags);
+> @@ -1035,7 +1035,7 @@ atc_tx_status(struct dma_chan *chan,
+>   	else
+>   		dma_set_tx_state(txstate, last_complete, last_used, 0);
+>
+> -	if (test_bit(ATC_IS_PAUSED,&atchan->status))
+> +	if (atc_chan_is_paused(atchan))
+>   		ret = DMA_PAUSED;
+>
+>   	dev_vdbg(chan2dev(chan), "tx_status %d: cookie = %d (d%d, u%d)\n",
+> @@ -1057,7 +1057,7 @@ static void atc_issue_pending(struct dma_chan *chan)
+>   	dev_vdbg(chan2dev(chan), "issue_pending\n");
+>
+>   	/* Not needed for cyclic transfers */
+> -	if (test_bit(ATC_IS_CYCLIC,&atchan->status))
+> +	if (atc_chan_is_cyclic(atchan))
+>   		return;
+>
+>   	spin_lock_irqsave(&atchan->lock, flags);
+> @@ -1395,8 +1395,7 @@ static int at_dma_prepare(struct device *dev)
+>   			device_node) {
+>   		struct at_dma_chan *atchan = to_at_dma_chan(chan);
+>   		/* wait for transaction completion (except in cyclic case) */
+> -		if (atc_chan_is_enabled(atchan)&&
+> -		   !test_bit(ATC_IS_CYCLIC,&atchan->status))
+> +		if (atc_chan_is_enabled(atchan)&&  !atc_chan_is_cyclic(atchan))
+>   			return -EAGAIN;
+>   	}
+>   	return 0;
+> @@ -1408,7 +1407,7 @@ static void atc_suspend_cyclic(struct at_dma_chan *atchan)
+>
+>   	/* Channel should be paused by user
+>   	 * do it anyway even if it is not done already */
+> -	if (!test_bit(ATC_IS_PAUSED,&atchan->status)) {
+> +	if (!atc_chan_is_paused(atchan)) {
+>   		dev_warn(chan2dev(chan),
+>   		"cyclic channel not paused, should be done by channel user\n");
+>   		atc_control(chan, DMA_PAUSE, 0);
+> @@ -1432,7 +1431,7 @@ static int at_dma_suspend_noirq(struct device *dev)
+>   			device_node) {
+>   		struct at_dma_chan *atchan = to_at_dma_chan(chan);
+>
+> -		if (test_bit(ATC_IS_CYCLIC,&atchan->status))
+> +		if (atc_chan_is_cyclic(atchan))
+>   			atc_suspend_cyclic(atchan);
+>   		atchan->save_cfg = channel_readl(atchan, CFG);
+>   	}
+> @@ -1484,7 +1483,7 @@ static int at_dma_resume_noirq(struct device *dev)
+>   		struct at_dma_chan *atchan = to_at_dma_chan(chan);
+>
+>   		channel_writel(atchan, CFG, atchan->save_cfg);
+> -		if (test_bit(ATC_IS_CYCLIC,&atchan->status))
+> +		if (atc_chan_is_cyclic(atchan))
+>   			atc_resume_cyclic(atchan);
+>   	}
+>   	return 0;
+> diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
+> index 6f0c4a3..aa4c9ae 100644
+> --- a/drivers/dma/at_hdmac_regs.h
+> +++ b/drivers/dma/at_hdmac_regs.h
+> @@ -362,6 +362,23 @@ static inline int atc_chan_is_enabled(struct at_dma_chan *atchan)
+>   	return !!(dma_readl(atdma, CHSR)&  atchan->mask);
+>   }
+>
+> +/**
+> + * atc_chan_is_paused - test channel pause/resume status
+> + * @atchan: channel we want to test status
+> + */
+> +static inline int atc_chan_is_paused(struct at_dma_chan *atchan)
+> +{
+> +	return test_bit(ATC_IS_PAUSED,&atchan->status);
+> +}
+> +
+> +/**
+> + * atc_chan_is_cyclic - test if given channel has cyclic property set
+> + * @atchan: channel we want to test status
+> + */
+> +static inline int atc_chan_is_cyclic(struct at_dma_chan *atchan)
+> +{
+> +	return test_bit(ATC_IS_CYCLIC,&atchan->status);
+> +}
+>
+>   /**
+>    * set_desc_eol - set end-of-link to descriptor so it will end transfer
+
