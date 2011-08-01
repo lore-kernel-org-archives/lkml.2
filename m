@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab1HAOjA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 10:39:00 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39296 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751693Ab1HAOiy (ORCPT
+	id S1752548Ab1HAOpZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 10:45:25 -0400
+Received: from mailx3-2.csloxinfo.com ([58.137.249.43]:45886 "EHLO
+	mailx3-2.csloxinfo.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab1HAOpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 10:38:54 -0400
-Date: Mon, 1 Aug 2011 16:36:36 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, chris@zankel.net,
-        linux-am33-list@redhat.com, trivial@kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, cmetcalf@tilera.com,
-        linux-arm-kernel@lists.infradead.org, Zoltan Devai <zdevai@gmail.com>
-Subject: Re: [PATCH] Remove remaining references of CONFIG_GENERIC_TIME
-Message-ID: <20110801143636.GE9250@pengutronix.de>
-References: <1312042478-26012-1-git-send-email-zdevai@gmail.com>
- <20110801083614.GC15578@n2100.arm.linux.org.uk>
- <CAMuHMdUpTDSRP_JmWqcCBtYwzna0hwmaBshpiF8kgvqoNcqYZA@mail.gmail.com>
- <20110801101410.GE15578@n2100.arm.linux.org.uk>
- <CAMuHMdUiLjMVwOqKPF6tHLpPxROrx=rRf3ednfTLrwGuZ2VF7A@mail.gmail.com>
+	Mon, 1 Aug 2011 10:45:19 -0400
+X-Greylist: delayed 608 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Aug 2011 10:45:18 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ap4EAPK4Nk7Lku2p/2dsb2JhbAA9BA+YWY4SgV6BPBIrAWkZDCgwCRiHdgoioAOfaYMyBYMLBIdYmzwZAjw
+X-IronPort-AV: E=Sophos;i="4.67,300,1309712400"; 
+   d="scan'208";a="140256086"
+Message-ID: <1312209306.4e36b99aa9545@webmail.loxinfo.co.th>
+Date: Mon,  1 Aug 2011 21:35:06 +0700
+From: System Administrator <helpdeskz@getmail.no>
+Reply-to: hectechz@aim.com
+Subject: Webmail Kvote har overskredet Set Limit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+Content-Type: text/plain; charset=TIS-620
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMuHMdUiLjMVwOqKPF6tHLpPxROrx=rRf3ednfTLrwGuZ2VF7A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+User-Agent: Internet Messaging Program (IMP) 3.2.1
+X-Originating-IP: 66.197.235.213
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 01:27:52PM +0200, Geert Uytterhoeven wrote:
-> On Mon, Aug 1, 2011 at 12:14, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Mon, Aug 01, 2011 at 12:09:02PM +0200, Geert Uytterhoeven wrote:
-> >> Doesn't kconf error out when trying to select a non-existent symbol?
-> >
-> > Nope.
-> 
-> You're right. So that's a bug.
-Not sure, this might have been done on purpose to make cross-tree series
-easier!?
 
-Best regards
-Uwe
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Postkassen har overskredet lagringskapasiteten som er 1GB som er satt av 
+standard administrator, du kjører lite, kan du ikke kunne sende eller motta ny 
+e-post før du re-validere din postkasse. For å re-validere postkassen vennligst 
+klikk her:
+
+
+http://www.secfanatics.com/freeurldirectories.com/account.html
+
+Thanks
+systemadministrator
+
