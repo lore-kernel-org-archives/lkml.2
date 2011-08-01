@@ -1,124 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801Ab1HAO55 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 10:57:57 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:51131 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859Ab1HAO5v (ORCPT
+	id S1752258Ab1HAO6E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 10:58:04 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42043 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab1HAO5z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 10:57:51 -0400
-Message-ID: <4E36BEE5.9060006@gmail.com>
-Date: Mon, 01 Aug 2011 16:57:41 +0200
-From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	Mon, 1 Aug 2011 10:57:55 -0400
 MIME-Version: 1.0
-To: Robert Richter <robert.richter@amd.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, "x86@kernel.org" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v2] oprofile, x86: Move memory allocation for ppro out
- of per cpu
-References: <4E35A14E.90702@gmail.com> <20110801070742.GA11795@erda.amd.com>
-In-Reply-To: <20110801070742.GA11795@erda.amd.com>
+In-Reply-To: <20110801133954.GA11452@albatros>
+References: <CAOLZvyEQNS3dwQ+6bh2o6kADp7Gd3xOpah8y1_AhqJ2FWSP9VA@mail.gmail.com>
+	<20110801133954.GA11452@albatros>
+Date: Mon, 1 Aug 2011 16:57:54 +0200
+Message-ID: <CAOLZvyEGHW3GUskhQoGnELynegzcM0-XAUTrf89hjODE1bzhqA@mail.gmail.com>
+Subject: Re: shm broken on MIPS in current -git
+From: Manuel Lauss <manuel.lauss@googlemail.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, Linux-MIPS <linux-mips@linux-mips.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2011 09:07 AM, Robert Richter wrote:
-> On 31.07.11 14:39:10, Maarten Lankhorst wrote:
->> ppro_setup_ctrs is called on all cpu's, while init is only called once.
-> Can you please describe the root problem more precisely. Why can't you
-> run it on -rt? What is broken?
-on -rt it warns about the allocation.
->> Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
->>
->> ---
->> Oprofile shutdown is still broken. Doing kfree in the shutdown call gave
-> Do you mean it is broken and your patch fixes it, or is it still
-> broken even with your path applied?
-With the patch I no longer get the warning on setup_ctrs, but on rt
-just starting and shutting down is enough to cause badness. The
-original backtrace is below, but here's what happens with it patched.
-opcontrol --start and then --shutdown:
-
-[17318.720971] BUG: sleeping function called from invalid context at kernel/rtmutex.c:645
-[17318.720972] in_atomic(): 1, irqs_disabled(): 0, pid: 18108, name: opjitconv
-[17318.720974] Pid: 18108, comm: opjitconv Tainted: P        WC  3.0.0-rt6-patser+ #5
-[17318.720975] Call Trace:
-[17318.720979]  [<ffffffff8103fc0a>] __might_sleep+0xca/0xf0
-[17318.720981]  [<ffffffff8160d424>] rt_spin_lock+0x24/0x40
-[17318.720983]  [<ffffffff811453c3>] kfree+0xd3/0x370
-[17318.720985]  [<ffffffffa0c20204>] free_msrs+0x44/0x130 [oprofile]
-[17318.720987]  [<ffffffffa0c2037c>] nmi_shutdown+0x8c/0xc0 [oprofile]
-[17318.720989]  [<ffffffffa0c1d2b6>] oprofile_shutdown+0x36/0x70 [oprofile]
-[17318.720990]  [<ffffffffa0c1e8db>] event_buffer_release+0x1b/0x50 [oprofile]
-[17318.720992]  [<ffffffff8115814e>] fput+0xfe/0x240
-[17318.720993]  [<ffffffff811546ec>] filp_close+0x6c/0x90
-[17318.720995]  [<ffffffff8105a810>] put_files_struct+0xa0/0x120
-[17318.720996]  [<ffffffff8105a96c>] exit_files+0x5c/0x70
-[17318.720997]  [<ffffffff8105aeaf>] do_exit+0x17f/0x900
-[17318.720998]  [<ffffffff8105b9af>] do_group_exit+0x4f/0xd0
-[17318.720999]  [<ffffffff8105ba47>] sys_exit_group+0x17/0x20
-[17318.721001]  [<ffffffff8161456b>] system_call_fastpath+0x16/0x1b
-[17318.721303] slab error in kmem_cache_destroy(): cache `dcookie_cache': Can't free all objects
-[17318.721304] Pid: 18108, comm: opjitconv Tainted: P        WC  3.0.0-rt6-patser+ #5
-[17318.721305] Call Trace:
-[17318.721306]  [<ffffffff81145f4c>] kmem_cache_destroy+0xdc/0x120
-[17318.721309]  [<ffffffff811cd4e5>] dcookie_unregister+0x175/0x180
-[17318.721310]  [<ffffffffa0c1e8e7>] event_buffer_release+0x27/0x50 [oprofile]
-[17318.721312]  [<ffffffff8115814e>] fput+0xfe/0x240
-[17318.721313]  [<ffffffff811546ec>] filp_close+0x6c/0x90
-[17318.721314]  [<ffffffff8105a810>] put_files_struct+0xa0/0x120
-[17318.721315]  [<ffffffff8105a96c>] exit_files+0x5c/0x70
-[17318.721316]  [<ffffffff8105aeaf>] do_exit+0x17f/0x900
-[17318.721317]  [<ffffffff8105b9af>] do_group_exit+0x4f/0xd0
-[17318.721318]  [<ffffffff8105ba47>] sys_exit_group+0x17/0x20
-[17318.721319]  [<ffffffff8161456b>] system_call_fastpath+0x16/0x1b
-
-After that opcontrol can no longer start.
-
->> me a warning of in_atomic, so I moved to exit. This also allowed me to
->> remove the null pointer checks, by zeroing reset_value on shutdown. But
->> even with shutdown being broken on -rt at least I can run oprofile now. :)
-> If there is a problem I tend to fix it by using a hard coded array:
+On Mon, Aug 1, 2011 at 3:39 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> Manuel,
 >
->  static unsigned long reset_value[OP_MAX_COUNTER];
-Ah, that looks better, thanks. I wanted to use a static array,
-but didn't know the max value I should use.
-> See arch/x86/oprofile/op_model_amd.c.
+> On Mon, Aug 01, 2011 at 14:51 +0200, Manuel Lauss wrote:
+>> CPU 0 Unable to handle kernel paging request at virtual address
+>> 00000000, epc == 80527c64, ra == 8024afb8
+>> Oops[#1]:
+> [...]
+>> epc   : 80527c64 __down_write_nested+0x68/0xf0
 >
-> But still can't see the problem you want to fix.
-It gives a warning on rt because it allocates memory in something
-that runs on all cpus. I think the OP_MAX_COUNTER fix is fine, since
-amd does similar.
+> Could you post the asm code of __down_write_nested() of your image?
+> What pointer is NULL?  Looks like MIPS handles namespaces in usermode
+> helpers other way.
 
-~Maarten
+I'm no MIPS expert, but this looks like a problem with the waiter_list
+in struct rw_semaphore:
 
-Original bug:
+Dump of assembler code for function __down_write_nested:
+   0x80530ee4 <+0>:     addiu   sp,sp,-48
+   0x80530ee8 <+4>:     sw      ra,44(sp)
+   0x80530eec <+8>:     sw      s1,40(sp)
+   0x80530ef0 <+12>:    sw      s0,36(sp)
+   0x80530ef4 <+16>:    mfc0    v1,c0_status
+   0x80530ef8 <+20>:    ori     at,v1,0x1f
+   0x80530efc <+24>:    xori    at,at,0x1f
+   0x80530f00 <+28>:    mtc0    at,c0_status
+   0x80530f04 <+32>:    lw      v0,0(a0)
+   0x80530f08 <+36>:    beqz    v0,0x80530fa4 <__down_write_nested+192>
+   0x80530f0c <+40>:    addiu   a2,a0,4
+tsk = current:
+   0x80530f10 <+44>:    lw      s0,0(gp)
+set_task_state(tsk, UNINTERRUPTIBLE):
+   0x80530f14 <+48>:    li      v0,2
+   0x80530f18 <+52>:    sw      v0,0(s0)
+waiter.tsk = tsk, ...
+   0x80530f1c <+56>:    sw      v0,28(sp)
+   0x80530f20 <+60>:    sw      s0,24(sp)
+get_task_struct():
+   0x80530f24 <+64>:    addiu   v0,s0,8
+   0x80530f28 <+68>:    ll      a1,0(v0)
+   0x80530f2c <+72>:    addiu   a1,a1,1
+   0x80530f30 <+76>:    sc      a1,0(v0)
+   0x80530f34 <+80>:    beqz    a1,0x80530f28 <__down_write_nested+68>
+list_add_tail:
+   0x80530f38 <+84>:    addiu   a1,sp,16   ; a1 = &waiter.list
+   0x80530f3c <+88>:    lw      v0,8(a0)     ; v0 = &sem->wait_list
+   0x80530f40 <+92>:    sw      a1,8(a0)
+   0x80530f44 <+96>:    sw      a2,16(sp)
+   0x80530f48 <+100>:   sw      v0,20(sp)
+   0x80530f4c <+104>:   sw      a1,0(v0)     <===== oops here, because v0 = 0
+spin_unlock_irqrestore:
+   0x80530f50 <+108>:   mfc0    at,c0_status
+   0x80530f54 <+112>:   andi    v1,v1,0x1
+   0x80530f58 <+116>:   ori     at,at,0x1f
+   0x80530f5c <+120>:   xori    at,at,0x1f
+   0x80530f60 <+124>:   or      v1,v1,at
+   0x80530f64 <+128>:   mtc0    v1,c0_status
+[...]
+   0x80530f68 <+132>:   lw      v0,24(sp)
+   0x80530f6c <+136>:   beqz    v0,0x80530f8c <__down_write_nested+168>
+   0x80530f70 <+140>:   li      s1,2
+   0x80530f74 <+144>:   jal     0x8052ef94 <schedule>
+   0x80530f78 <+148>:   nop
+   0x80530f7c <+152>:   sw      s1,0(s0)
+   0x80530f80 <+156>:   lw      v0,24(sp)
+   0x80530f84 <+160>:   bnez    v0,0x80530f74 <__down_write_nested+144>
+   0x80530f88 <+164>:   nop
+   0x80530f8c <+168>:   sw      zero,0(s0)
+   0x80530f90 <+172>:   lw      ra,44(sp)
+   0x80530f94 <+176>:   lw      s1,40(sp)
+   0x80530f98 <+180>:   lw      s0,36(sp)
+   0x80530f9c <+184>:   jr      ra
+   0x80530fa0 <+188>:   addiu   sp,sp,48
+   0x80530fa4 <+192>:   lw      v0,4(a0)
+   0x80530fa8 <+196>:   bne     v0,a2,0x80530f10 <__down_write_nested+44>
+   0x80530fac <+200>:   li      a1,-1
+   0x80530fb0 <+204>:   sw      a1,0(a0)
+   0x80530fb4 <+208>:   mfc0    at,c0_status
+   0x80530fb8 <+212>:   andi    v1,v1,0x1
+   0x80530fbc <+216>:   ori     at,at,0x1f
+   0x80530fc0 <+220>:   xori    at,at,0x1f
+   0x80530fc4 <+224>:   or      v1,v1,at
+   0x80530fc8 <+228>:   mtc0    v1,c0_status
+   0x80530fcc <+232>:   j       0x80530f94 <__down_write_nested+176>
+   0x80530fd0 <+236>:   lw      ra,44(sp)
 
-[   46.460786] oprofile: using NMI interrupt.
-[   47.492263] BUG: sleeping function called from invalid context at kernel/rtmutex.c:645
-[   47.492265] in_atomic(): 1, irqs_disabled(): 1, pid: 0, name: kworker/0:1
-[   47.492267] Pid: 0, comm: kworker/0:1 Tainted: G         C  3.0.0-rt3-patser+ #39
-[   47.492269] Call Trace:
-[   47.492270]  <IRQ>  [<ffffffff8103fc0a>] __might_sleep+0xca/0xf0
-[   47.492279]  [<ffffffff8160d424>] rt_spin_lock+0x24/0x40
-[   47.492282]  [<ffffffff811476c7>] __kmalloc+0xc7/0x370
-[   47.492287]  [<ffffffffa0275c85>] ? ppro_setup_ctrs+0x215/0x260 [oprofile]
-[   47.492291]  [<ffffffffa0273de0>] ? oprofile_cpu_notifier+0x60/0x60 [oprofile]
-[   47.492295]  [<ffffffffa0275c85>] ppro_setup_ctrs+0x215/0x260 [oprofile]
-[   47.492305]  [<ffffffffa0273de0>] ? oprofile_cpu_notifier+0x60/0x60 [oprofile]
-[   47.492307]  [<ffffffffa0273de0>] ? oprofile_cpu_notifier+0x60/0x60 [oprofile]
-[   47.492308]  [<ffffffffa0273ea4>] nmi_cpu_setup+0xc4/0x110 [oprofile]
-[   47.492310]  [<ffffffff81094455>] generic_smp_call_function_interrupt+0x95/0x190
-[   47.492313]  [<ffffffff8101df77>] smp_call_function_interrupt+0x27/0x40
-[   47.492315]  [<ffffffff81615093>] call_function_interrupt+0x13/0x20
-[   47.492316]  <EOI>  [<ffffffff8131d0c4>] ? plist_check_head+0x54/0xc0
-[   47.492321]  [<ffffffff81371fe8>] ? intel_idle+0xc8/0x120
-[   47.492322]  [<ffffffff81371fc7>] ? intel_idle+0xa7/0x120
-[   47.492324]  [<ffffffff814a57b0>] cpuidle_idle_call+0xb0/0x230
-[   47.492326]  [<ffffffff810011db>] cpu_idle+0x8b/0xe0
-[   47.492328]  [<ffffffff815fc82f>] start_secondary+0x1d3/0x1d8
 
+Manuel Lauss
