@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab1HASI1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 14:08:27 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46204 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab1HASIV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 14:08:21 -0400
+	id S1751386Ab1HASKk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 14:10:40 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35018 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750699Ab1HASKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 14:10:33 -0400
+Subject: Re: [PATCH -next] regulator: aat2870-regulator.c needs module.h
+From: Liam Girdwood <lrg@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, akpm <akpm@linux-foundation.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110801092518.GA26275@sortiz-mobl>
+References: <20110729173827.716f57ff6e00095a3efc6449@canb.auug.org.au>
+	 <20110729211309.92e8b744.rdunlap@xenotime.net>
+	 <20110801001523.GA20641@opensource.wolfsonmicro.com>
+	 <20110801103304.e77887ff2e60f4f6d5c9f91f@canb.auug.org.au>
+	 <20110801110507.7ca032b85a285d1f9e755146@canb.auug.org.au>
+	 <20110801092518.GA26275@sortiz-mobl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 1 Aug 2011 19:09:46 +0100
+Message-ID: <1312222186.5170.8.camel@CNA0741383>
 MIME-Version: 1.0
-In-Reply-To: <20110801092806.GD15578@n2100.arm.linux.org.uk>
-References: <1312124593-6088-1-git-send-email-linux@bohmer.net>
-	<20110731150707.GA2975@n2100.arm.linux.org.uk>
-	<CANqCtQJwUsLXfA408GzAr0rQtc2DRjtKqP8-m2UBUGEy-YP5dg@mail.gmail.com>
-	<20110801092806.GD15578@n2100.arm.linux.org.uk>
-Date: Mon, 1 Aug 2011 20:08:19 +0200
-X-Google-Sender-Auth: UZ6QElOdF9XrwXRw4Bof8CjcDAA
-Message-ID: <CANqCtQK=H_B04A7knZSiuE5RLogTgMKxwtMK1HSqSgKA_U2J7A@mail.gmail.com>
-Subject: Re: [PATCH] Add sched_clock to AT91 TCB clocksource driver
-From: Remy Bohmer <linux@bohmer.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Remy Bohmer <l.pinguin@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Samuel,
 
-> You're forgetting that jiffies doesn't jump about.  A late initializing
-> sched_clock could jump.
+On Mon, 2011-08-01 at 11:25 +0200, Samuel Ortiz wrote:
+> Hi Stephen, Liam,
+> 
+> On Mon, Aug 01, 2011 at 11:05:07AM +1000, Stephen Rothwell wrote:
+> > On Mon, 1 Aug 2011 10:33:04 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > >
+> > > On Mon, 1 Aug 2011 01:15:24 +0100 Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> > > >
+> > > > On Fri, Jul 29, 2011 at 09:13:09PM -0700, Randy Dunlap wrote:
+> > > > > From: Randy Dunlap <rdunlap@xenotime.net>
+> > > > > 
+> > > > > aat2870-regulator.c needs to include linux/module.h to fix multiple
+> > > > > build errors.
+> > > > 
+> > > > Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> > > > 
+> > > > but if the breakage isn't in mainline yet to minimize the breaks
+> > > > bisection someone should figure out which tree introduced the change
+> > > > with module.h and either get the fix merged along with that.  If neither
+> > > > the module.h change nor the driver is in Linus' tree yet I rather
+> > > > suspect this should go via MFD as I seem to recall that the driver is
+> > > > going in via there.
+> > > 
+> > > It is indeed.  I have this patch set to apply to my tree today after the
+> > > mfd tree.  Hopefully Samuel will put it in his tree for tomorrow (and
+> > > before he asks Linus to pull.
+> > 
+> > Too late :-)
+> Sorry about that. I thought I would hear about any breakage after I pushed my
+> bits on Friday morning.
+> Anyway, Liam, are you going to push this fix through your tree ?
+> 
 
-Agreed. Currently the jiffies based clock does not move at all, thus
-it surely does not jump... ;-)
+I can if required, however I've just done my pull request (sorry didn't
+see this in time). I have to do another pull request with misc fixes in
+rc1 time frame so I can add it there if OK. 
 
->> Anyway, do you have a better suggestion how to fix this? The tcb
->> clocksource is loaded during a arch_initcall(), perhaps we need
->> something before that point.
->> I do not see an easy way to integrate it in MACHINE_START(.timer).
->> Would 'late_time_init' be a better solution?
->
-> late_time_init() is not that much better as that still happens after
-> sched_init() has been called.  sched_init() initializes various
-> structures which involves reading sched_clock().
+Thanks
 
-But late_time_init does it before the sched_clock is declared stable.
-Until that point sched_clock will always return zero, as such we can
-IMHO safely assume that the scheduler is designed such that it can
-handle fixed zero timestamps for a while. The new sched_clock also
-nicely starts counting from zero once enabled, and does not make a
-jump start.
+Liam
 
-> Why can't it initialize itself at the standard point during the boot
-> sequence, which is time_init() - which in turn is as you say the
-> .timer callback?
-
-In that case it has to replace the PIT based clocksource completely.
-Since the TCB based clocksource and event device are
-optional/configurable for this architecture and it is implemented as a
-clocksource driver instead of part of the BSP, it would result in a
-lot of ifdefs throughout that code.
-The arch_initcall() has to be removed and replaced by something else...
-I will try to work out a different solution, and post an update, see
-how that looks like...
-
-Kind regards,
-
-Remy
