@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab1HADYJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 23:24:09 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33511 "EHLO smtps.tip.net.au"
+	id S1753553Ab1HAD6d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 23:58:33 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:36090 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926Ab1HADYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 23:24:03 -0400
-Date: Mon, 1 Aug 2011 13:23:59 +1000
+	id S1752926Ab1HAD61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 23:58:27 -0400
+Date: Mon, 1 Aug 2011 13:58:22 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Paul Gortmaker <paul.gortmaker@windriver.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mike Christie <michaelc@cs.wisc.edu>, Jens Axboe <jaxboe@fusionio.com>
-Subject: linux-next: build warning after merge of the moduleh tree
-Message-Id: <20110801132359.1de051cb8a4a2bdfdad7560c@canb.auug.org.au>
+        Donggeun Kim <dg77.kim@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        KyungMin Park <kyungmin.park@samsung.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: build failure after merge of the moduleh tree
+Message-Id: <20110801135822.c5514475f2c76a05788c7505@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -23,52 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Paul,
 
-After merging the moduleh tree, today's linux-next build (x86_64
-allmodconfig) produced this warning:
+[I reported this on Friday, but this time I have a patch.]
 
-block/bsg-lib.c:75:1: warning: data definition has no type or storage class
-block/bsg-lib.c:75:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-block/bsg-lib.c:75:1: warning: parameter names (without types) in function declaration
-block/bsg-lib.c:164:1: warning: data definition has no type or storage class
-block/bsg-lib.c:164:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-block/bsg-lib.c:164:1: warning: parameter names (without types) in function declaration
-block/bsg-lib.c:210:1: warning: data definition has no type or storage class
-block/bsg-lib.c:210:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-block/bsg-lib.c:210:1: warning: parameter names (without types) in function declaration
-block/bsg-lib.c:244:1: warning: data definition has no type or storage class
-block/bsg-lib.c:244:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-block/bsg-lib.c:244:1: warning: parameter names (without types) in function declaration
-block/bsg-lib.c:297:1: warning: data definition has no type or storage class
-block/bsg-lib.c:297:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-block/bsg-lib.c:297:1: warning: parameter names (without types) in function declaration
+After merging the moduleh tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-This is an interaction with commit aa387cc89567 ("block: add bsg helper
-library") from the block tree.  That file should have included module.h
-but now would need export.h it seems (just uses EXPORTSYMBOL_GPL).
+drivers/power/max8997_charger.c:185:12: error: 'THIS_MODULE' undeclared here (not in a function)
+drivers/power/max8997_charger.c:204:20: error: expected declaration specifiers or '...' before string constant
+drivers/power/max8997_charger.c:204:1: warning: data definition has no type or storage class
+drivers/power/max8997_charger.c:204:1: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
+drivers/power/max8997_charger.c:204:20: warning: function declaration isn't a prototype
+drivers/power/max8997_charger.c:205:15: error: expected declaration specifiers or '...' before string constant
+drivers/power/max8997_charger.c:205:1: warning: data definition has no type or storage class
+drivers/power/max8997_charger.c:205:1: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+drivers/power/max8997_charger.c:205:15: warning: function declaration isn't a prototype
+drivers/power/max8997_charger.c:206:16: error: expected declaration specifiers or '...' before string constant
+drivers/power/max8997_charger.c:206:1: warning: data definition has no type or storage class
+drivers/power/max8997_charger.c:206:1: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+drivers/power/max8997_charger.c:206:16: warning: function declaration isn't a prototype
 
-I applied the following as a merge fix patch:
+Caused by commit 149c077b4bd7 ("power_supply: Add charger driver for
+MAX8997/8966") interacting with the modules.h split.
+
+I have applied the following patch for today.  This file is now upstream,
+so this patch could be applied to Linus' tree (or the battery tree where
+this commit originated).
 
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 1 Aug 2011 13:21:39 +1000
-Subject: [PATCH] block: bsg-lib.c needs export.h
+Date: Mon, 1 Aug 2011 13:51:35 +1000
+Subject: [PATCH] power_supply: max8997_charger.c need to include module.h
 
 Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- block/bsg-lib.c |    1 +
+ drivers/power/max8997_charger.c |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/block/bsg-lib.c b/block/bsg-lib.c
-index f8c0a61..b82c11b 100644
---- a/block/bsg-lib.c
-+++ b/block/bsg-lib.c
+diff --git a/drivers/power/max8997_charger.c b/drivers/power/max8997_charger.c
+index 7106b49..b093af9 100644
+--- a/drivers/power/max8997_charger.c
++++ b/drivers/power/max8997_charger.c
 @@ -23,6 +23,7 @@
  #include <linux/slab.h>
- #include <linux/blkdev.h>
- #include <linux/delay.h>
-+#include <linux/export.h>
- #include <linux/scatterlist.h>
- #include <linux/bsg-lib.h>
- #include <scsi/scsi_cmnd.h>
+ #include <linux/platform_device.h>
+ #include <linux/power_supply.h>
++#include <linux/module.h>
+ #include <linux/mfd/max8997.h>
+ #include <linux/mfd/max8997-private.h>
+ 
 -- 
 1.7.5.4
 
