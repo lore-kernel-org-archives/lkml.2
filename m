@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab1HAKEo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 06:04:44 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43274 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753823Ab1HAKEj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 06:04:39 -0400
+	id S1753803Ab1HAKH2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 06:07:28 -0400
+Received: from narfation.org ([79.140.41.39]:49554 "EHLO v3-1039.vlinux.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750911Ab1HAKHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 06:07:23 -0400
+From: Sven Eckelmann <sven@narfation.org>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: Re: [PATCHv4 05/11] omap3isp: Use *_dec_not_zero instead of *_add_unless
+Date: Mon, 01 Aug 2011 12:07:15 +0200
+Message-ID: <1518031.UNu44UiQdf@sven-laptop.home.narfation.org>
+User-Agent: KMail/4.6.0 (Linux/2.6.39-2-686-pae; KDE/4.6.5; i686; ; )
+In-Reply-To: <201107311700.43515.laurent.pinchart@ideasonboard.com>
+References: <1311760070-21532-1-git-send-email-sven@narfation.org> <1311760070-21532-5-git-send-email-sven@narfation.org> <201107311700.43515.laurent.pinchart@ideasonboard.com>
 MIME-Version: 1.0
-In-Reply-To: <20110801043207.GE2203@ZenIV.linux.org.uk>
-References: <1312066693.22074.50.camel@i7.infradead.org>
-	<1312066923.22074.53.camel@i7.infradead.org>
-	<CAFLxGvy0QqoySDFwZpygHeXvQ7hG-B7z5iZq8qx3GUkFX8w2RQ@mail.gmail.com>
-	<1312151063.18010.25.camel@i7.infradead.org>
-	<20110731224834.GC2203@ZenIV.linux.org.uk>
-	<20110731225801.GD2203@ZenIV.linux.org.uk>
-	<1312153988.18010.39.camel@i7.infradead.org>
-	<CAFLxGvyewG70ZgU41Kmu_eOYpjZ0TVXYwYq1AfS1sXONAM6G_w@mail.gmail.com>
-	<20110801043207.GE2203@ZenIV.linux.org.uk>
-Date: Mon, 1 Aug 2011 12:04:37 +0200
-X-Google-Sender-Auth: diztSCGumZVHmFvTshVvYRszTM0
-Message-ID: <CAMuHMdUXZw=NO-sXLWu8TMkwE-_A_sq60KUVkYZrNFqcLOALrA@mail.gmail.com>
-Subject: Re: [uml-devel] [PATCH 1/5] um: Use __i386__ in ifdef for vsyscall
- exports, not SUBARCH_i386
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnaud Lacombe <lacombar@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; boundary="nextPart1410967.cpOlAuVVht"; micalg="pgp-sha512"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 1, 2011 at 06:32, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, Aug 01, 2011 at 01:17:17AM +0200, richard -rw- weinberger wrote:
->> On Mon, Aug 1, 2011 at 1:13 AM, David Woodhouse <dwmw2@infradead.org> wrote:
->> > On Sun, 2011-07-31 at 23:58 +0100, Al Viro wrote:
->> >> FWIW, the next step (still not pushed there) is to move arch/um/sys-x86 to
->> >> arch/x86/um, with arch/um/os-Linux/sys-x86 becoming arch/x86/um/os-Linux,
->> >> Kconfig.x86 moving to arch/x86/um/Kconfig and Makefile-x86 - to
->> >> arch/x86/um/Makefile.defs. ?Next after that - arch/powerpc/um (and yes,
->> >> it means resurrected uml/ppc port; for now - only ppc32, since I have no
->> >> ppc64 boxen to test on).
->> >
->> > I can give you an account on a ppc64 box if that would help...
->>
->> Isn't UML on ppc broken since ages?
->
-> Yes.  Resurrected is not the right word here, sorry...
 
-Oh, what a disappointment. I really hoped it was true...
+--nextPart1410967.cpOlAuVVht
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-BTW, how much work would it be to port UML to ARM? Would be nice-to-have on
-your Android phone, as it can provide a full Linux userspace without
-requiring rooting
-the phone.
+On Sunday 31 July 2011 17:00:43 Laurent Pinchart wrote:
+> Hi Sven,
+> 
+> Thanks for the patch.
+> 
+> On Wednesday 27 July 2011 11:47:44 Sven Eckelmann wrote:
+> > atomic_dec_not_zero is defined for each architecture through
+> > <linux/atomic.h> to provide the functionality of
+> > atomic_add_unless(x, -1, 0).
+> > 
+> > Signed-off-by: Sven Eckelmann <sven@narfation.org>
+> > Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> 
+> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> 
+> I'll queue this to my tree for v3.2. Please let me know if you would rather
+> push the patch through another tree.
 
-Gr{oetje,eeting}s,
+The problem is that until now no one from linux-arch has applied the patch 
+01/11 in his tree (which is needed before this patch can be applied) and you 
+tree have to be based on the "yet to be chosen linux-arch tree". Otherwise 
+your tree will just break and not be acceptable for a pull request. 
 
-                        Geert
+Maybe it is easier when one person applies 01-11 after 02-11 was Acked-by the 
+responsible maintainers.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+02 is more or less automatically Acked-by us :)
+04, 09 and 10 are also Acked.
+... and the rest is waiting for actions.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Kind regards,
+	Sven
+--nextPart1410967.cpOlAuVVht
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABCgAGBQJONnrTAAoJEF2HCgfBJntGlHgQALreUYVAb04uP6ya4Mz0D24D
+9gRxde9DaBYZovxlmhH9Cis/FiOEGkpbMl/sooyRZYzWaID5jpDp8020K622uBMw
+Le3CrZOzv1IZtEFepJ1jxaRUOgNHVACwH0+B314BNNhRG3NZet1MRMhpwWYWbVQ9
+SupB7fB7GNn23a0nkvwFndRxAONpbWMc4rtSbZMwi4x4ViSRVlFkAxGefLubBUoJ
+/0J8hX6C/ddrYbuJWdHbzlFr2y/j3S8EQFV0YTBGOeLjBAN/io3K/t76IEFCuofP
+47wmjKLgkl0EJIYQw8Rzhqd6tzPupXTPgeJfi0jwQvBCUValXO34rDf+2iZoB1eo
+fdNBnvYTZWpM3DDDtJtEnNN9/1V0P4qnYuvwxhDD8d2w1PHh8TlSpug72oliKnm+
+Y+XC+E2jZFGuQDofZqu/SCpFqsesjyRJVvEMXbk4pxT1AyVlWELgdnxcFg5zqPxG
+UFk38o5mp4yqm18KWQDqmH4LNjBlP00SSl8wyMYUfiowc81Yt5gf/T6gViDM7o74
+RCmfuzRKd8uyrKeeVakEEWMv5f2oVRZy0ziBT3R4wo8NBsErQR//6L0d8RvdWM0L
+0MnlpHBbw88pFJDcLL8HnloF7hO3914WwPcbIQ3M1A6WSLFEzhcjuuIrckHE2nae
++ihdk+MrfXO8JKC0rmH/
+=NHxW
+-----END PGP SIGNATURE-----
+
+--nextPart1410967.cpOlAuVVht--
+
