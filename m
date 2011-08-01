@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab1HAOaD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 10:30:03 -0400
-Received: from exprod5og116.obsmtp.com ([64.18.0.147]:54657 "EHLO
-	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab1HAO36 (ORCPT
+	id S1752065Ab1HAOeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 10:34:07 -0400
+Received: from cernmx30.cern.ch ([137.138.144.177]:12054 "EHLO
+	CERNMX30.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab1HAOd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 10:29:58 -0400
-Message-ID: <4E36B860.3020805@ge.com>
-Date: Mon, 01 Aug 2011 15:29:52 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Manohar Vanga <manohar.vanga@cern.ch>
-CC: gregkh@suse.de, cota@braap.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] VME Driver Fixes
+	Mon, 1 Aug 2011 10:33:59 -0400
+Date: Mon, 1 Aug 2011 16:31:02 +0200
+From: Manohar Vanga <manohar.vanga@cern.ch>
+To: Martyn Welch <martyn.welch@ge.com>
+CC: <gregkh@suse.de>, <cota@braap.org>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/8] staging: vme: allow explicit assignment of bus
+ numbers
+Message-ID: <20110801143102.GA9705@becoht-mvanga>
+Mail-Followup-To: Martyn Welch <martyn.welch@ge.com>, gregkh@suse.de,
+	cota@braap.org, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org
 References: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch>
-In-Reply-To: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Aug 2011 14:26:48.0684 (UTC) FILETIME=[0C5F22C0:01CC5057]
+ <1312194053-32310-3-git-send-email-manohar.vanga@cern.ch>
+ <4E36A4EA.30404@ge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4E36A4EA.30404@ge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [137.138.192.18]
+Keywords: CERN SpamKiller Note: -50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/11 11:20, Manohar Vanga wrote:
-> A little background: I work at CERN in the device drivers section and
-> we have a lot of VME crates we use in the accelerator controls. We have
-> been using an in-house driver for some time now and want to slowly port
-> our existing device drivers over to the kernel driver.
+Hi Martyn,
+
+> I assume this is in a system where there are more than one type of bridge
+> (i.e. a ca91c042 and tsi148).
+
+Yes. This is referring to multiple bridges on a single PCI bus (in the case of
+the existing bridges). In practice we have only a single bridge of a single
+type. We can however have multiple types of bridges (eg. 1 TSI148 and 1 Universe).
+This solution is specifically for such situations.
+
+> I'm not sure that passing a list of bus numbers to each driver is the correct
+> way to resolve this. This issue also exists for hard drives and ethernet
+> devices as well.
+
+This solution won't help the cases where multiple bridges of the same type are
+present (as we cannot control probe order) however in the case of multiple
+bridges of differing types, it helps in deterministically assigning numbers to
+the bridge.
+
+The array was created simply for the reason that the code allows for multiple
+bridges of the same kind. In practice we have only one of a specific kind.
+
+> The network subsystem either has or uses a mechanism to allow udev rules to
+> rename the devices (this seems to be done by MAC address on my system).
 > 
-> This set of patches adds multiple changes to the VME driver that fix
-> various issues, mostly dealing with the device driver model. 
-
-Please can you update the vme_api.txt document as well to fully reflect the
-proposed changes.
-
-Martyn
-
-> Some of
-> these are based on the changes made by Emilio G. Cota in a previous
-> LKML thread at:
+> I believe drive ordering is resolved to some extent with UUIDs. Persistent
+> device naming can be provided by using udev rules to create symlinks (such as
+> "/dev/cdrom" etc), with the drives are determined by system topology.
 > 
->     https://lkml.org/lkml/2010/10/25/480
-> 
+> I'm wondering whether re-ordering the bus numbering based on system topology
+> using udev rules (where persistent bus numbering is required), or bind based
+> on system topology and not need persistent numbering at all).
 
+The problem here is that it is kernel space that requires a consistent
+numbering so creating symlinks is not a useful solution for this. (unless the
+driver loader script queries each device for its UUID at startup which seems
+a little like a roundabout way).
 
+The VME drivers require a list of bus numbers that it passes to the VME
+driver so it knows which buses/bridges to probe on. We need to pass this to
+the drivers during load time. Are you recommending we change this to UUID's?
 
-> Thanks and best regards,
-> Manohar Vanga
-> 
-> Emilio G. Cota (1):
->   staging: vme: allow explicit assignment of bus numbers
-> 
-> Manohar Vanga (7):
->   staging: vme_user: change kmalloc+memset to kzalloc
->   staging: vme: make [alloc|free]_consistent bridge specific
->   staging: vme: keep track of registered buses
->   staging: vme: add functions for bridge module refcounting
->   staging: vme: rename *_slot_get to *_get_slot
->   staging: vme: add struct vme_dev for VME devices
->   staging: vme: make match() driver specific to improve non-VME64x
->     support
-> 
->  drivers/staging/vme/bridges/vme_ca91cx42.c |   54 ++++-
->  drivers/staging/vme/bridges/vme_tsi148.c   |   53 ++++-
->  drivers/staging/vme/devices/vme_user.c     |   63 ++++-
->  drivers/staging/vme/devices/vme_user.h     |    2 +-
->  drivers/staging/vme/vme.c                  |  414 ++++++++++++++++------------
->  drivers/staging/vme/vme.h                  |   56 +++-
->  drivers/staging/vme/vme_api.txt            |    2 +-
->  drivers/staging/vme/vme_bridge.h           |   19 +-
->  8 files changed, 435 insertions(+), 228 deletions(-)
-> 
+Also, if we replace a card entirely (eg. in the case of a malfunction), the
+UUID changes and we need to update a lot of local files to maintain the
+automated startup (Please correct me if I'm wrong here). This would become a
+mess to maintain really quickly.
 
+In this patch, we don't solve the issue of multiple bridges of the same kind
+but we solve the automation issue in cases of different types of bridge.
+We already maintain a database with configuration options for each crate
+and a bus number can be easily added. This won't change in the case of card
+replacement.
 
--- 
-Martyn Welch (Principal Software Engineer) | Registered in England and
-GE Intelligent Platforms                   | Wales (3828642) at 100
-T +44(0)127322748                          | Barbirolli Square, Manchester,
-E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
+--
+/manohar
