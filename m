@@ -1,214 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102Ab1HAHKR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 03:10:17 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:46650
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751681Ab1HAHKN (ORCPT
+	id S1752373Ab1HAHMW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 03:12:22 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:45938 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751891Ab1HAHMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 03:10:13 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zz4015L1432N98dKzz1202hzz8275bhz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LP8MGX-02-3PU-02
-X-M-MSG: 
-Date: Mon, 1 Aug 2011 09:07:42 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, "x86@kernel.org" <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v2] oprofile, x86: Move memory allocation for ppro out of
- per cpu
-Message-ID: <20110801070742.GA11795@erda.amd.com>
-References: <4E35A14E.90702@gmail.com>
+	Mon, 1 Aug 2011 03:12:15 -0400
+Message-ID: <4E3652CE.1060000@coly.li>
+Date: Mon, 01 Aug 2011 15:16:30 +0800
+From: Coly Li <i@coly.li>
+Reply-To: i@coly.li
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; zh-CN; rv:1.9.2.13) Gecko/20101206 SUSE/3.1.7 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4E35A14E.90702@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Darrick J. Wong" <djwong@us.ibm.com>,
+        Andreas Dilger <aedilger@gmail.com>, Mingming Cao <cmm@us.ibm.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] Add inode checksum support to ext4
+References: <20110727082730.GG20655@tux1.beaverton.ibm.com> <EF1F2330-D8C4-427A-ABB9-D1E607D91A3D@gmail.com> <20110728165615.GI20655@tux1.beaverton.ibm.com> <20110728220735.GA27253@noexit.corp.google.com> <0E795C1D-AD1E-4CC4-9426-2B58D98B14DC@dilger.ca> <20110729131937.GB5910@noexit.corp.google.com> <4E33B1EC.9030004@gmail.com> <20110731070832.GA2848@noexit.corp.google.com> <4E35EAC9.6070707@gmail.com> <20110801045710.GB5716@noexit.corp.google.com> <20110801050435.GC5716@noexit.corp.google.com>
+In-Reply-To: <20110801050435.GC5716@noexit.corp.google.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:coly.li} {sentby:smtp auth 114.251.86.0 authed with i@coly.li}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.07.11 14:39:10, Maarten Lankhorst wrote:
-> ppro_setup_ctrs is called on all cpu's, while init is only called once.
-
-Can you please describe the root problem more precisely. Why can't you
-run it on -rt? What is broken?
-
+On 2011年08月01日 13:04, Joel Becker Wrote:
+> On Sun, Jul 31, 2011 at 09:57:11PM -0700, Joel Becker wrote:
+>> On Mon, Aug 01, 2011 at 07:52:41AM +0800, Coly Li wrote:
+>>> On 2011年07月31日 15:08, Joel Becker Wrote:
+>>>> On Sat, Jul 30, 2011 at 03:25:32PM +0800, Coly Li wrote:
+>>>>> And in non-journal mode, there is not copy of any meta data block in jbd2, we need to be
+>>>>> more careful in check summing, e.g. inode/block bitmap blocks...
+>>>>
+>>>> 	Sure, but you could use a trigger in journaled mode and then do
+>>>> the checksums directly in the __ext4_handle_journal_dirty_*() functions
+>>>> in non-journaled mode.  Sure, it would be a little more CPU time, but
+>>>> the user picked "checksums + no journal" at mkfs time.
+>>>>
+>>>
+>>> Yes, my idea was similar to you.
+>>> One thing not clear to me is, in non-journal mode, how to make the page of bitmap block being stable. Because bits
+>>> setting in Ext4 bitmap is non-locking, it might be possible that new bit setting after check sum is calculated.
+>>
+>> 	Every place that changes the bits will eventually call
+>> ext4_journal_dirty(), which recalculates the checksum.  So there's no
+>> danger of a set-bit-after-last-checksum.  But you will have to lock
+>> around the checksum calculation in non-journaling mode.  JBD2 handles it
+>> for journaling mode.
 > 
-> Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+> 	Wait, bitsetting in ext4 can't be non-locking.  Or are they
+> crazily stomping on memory?  I sure see an assert_spin_locked() in
+> mb_mark_used().
 > 
-> ---
-> Oprofile shutdown is still broken. Doing kfree in the shutdown call gave
 
-Do you mean it is broken and your patch fixes it, or is it still
-broken even with your path applied?
+Yes, you are right.
+What I worried was inode bitmap, because last time (before uninit_bg was developed), inode bitmap was set by
+ext4_set_bit_atomic(). Now I see inode bitmap is set by ext4_claim_inode() which locks the group internally.
+And I confirm block bitmap is protected by ext4_{lock,unlock}_group(). So there is no risk for
+set-bit-after-last-checksum.
 
-> me a warning of in_atomic, so I moved to exit. This also allowed me to
-> remove the null pointer checks, by zeroing reset_value on shutdown. But
-> even with shutdown being broken on -rt at least I can run oprofile now. :)
-
-If there is a problem I tend to fix it by using a hard coded array:
-
- static unsigned long reset_value[OP_MAX_COUNTER];
-
-See arch/x86/oprofile/op_model_amd.c.
-
-But still can't see the problem you want to fix.
-
-Please cc Andi.
-
-Thanks,
-
--Robert
-
-> 
-> diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-> index 96646b3..fef08b2 100644
-> --- a/arch/x86/oprofile/nmi_int.c
-> +++ b/arch/x86/oprofile/nmi_int.c
-> @@ -790,5 +790,7 @@ int __init op_nmi_init(struct oprofile_operations *ops)
->  
->  void op_nmi_exit(void)
->  {
-> +	if (model->exit)
-> +		model->exit();
->  	exit_suspend_resume();
->  }
-> diff --git a/arch/x86/oprofile/op_model_ppro.c b/arch/x86/oprofile/op_model_ppro.c
-> index 94b7450..aefefcc 100644
-> --- a/arch/x86/oprofile/op_model_ppro.c
-> +++ b/arch/x86/oprofile/op_model_ppro.c
-> @@ -30,6 +30,20 @@ static int counter_width = 32;
->  
->  static u64 *reset_value;
->  
-> +static int ppro_init(struct oprofile_operations *ignore)
-> +{
-> +	reset_value = kzalloc(sizeof(reset_value[0]) * num_counters,
-> +				GFP_KERNEL);
-> +	if (!reset_value)
-> +		return -ENOMEM;
-> +	return 0;
-> +}
-> +
-> +static void ppro_exit(void)
-> +{
-> +	kfree(reset_value);
-> +}
-> +
->  static void ppro_shutdown(struct op_msrs const * const msrs)
->  {
->  	int i;
-> @@ -39,10 +53,7 @@ static void ppro_shutdown(struct op_msrs const * const msrs)
->  			continue;
->  		release_perfctr_nmi(MSR_P6_PERFCTR0 + i);
->  		release_evntsel_nmi(MSR_P6_EVNTSEL0 + i);
-> -	}
-> -	if (reset_value) {
-> -		kfree(reset_value);
-> -		reset_value = NULL;
-> +		reset_value[i] = 0;
->  	}
->  }
->  
-> @@ -79,13 +90,6 @@ static void ppro_setup_ctrs(struct op_x86_model_spec const *model,
->  	u64 val;
->  	int i;
->  
-> -	if (!reset_value) {
-> -		reset_value = kzalloc(sizeof(reset_value[0]) * num_counters,
-> -					GFP_ATOMIC);
-> -		if (!reset_value)
-> -			return;
-> -	}
-> -
->  	if (cpu_has_arch_perfmon) {
->  		union cpuid10_eax eax;
->  		eax.full = cpuid_eax(0xa);
-> @@ -141,13 +145,6 @@ static int ppro_check_ctrs(struct pt_regs * const regs,
->  	u64 val;
->  	int i;
->  
-> -	/*
-> -	 * This can happen if perf counters are in use when
-> -	 * we steal the die notifier NMI.
-> -	 */
-> -	if (unlikely(!reset_value))
-> -		goto out;
-> -
->  	for (i = 0; i < num_counters; ++i) {
->  		if (!reset_value[i])
->  			continue;
-> @@ -158,7 +155,6 @@ static int ppro_check_ctrs(struct pt_regs * const regs,
->  		wrmsrl(msrs->counters[i].addr, -reset_value[i]);
->  	}
->  
-> -out:
->  	/* Only P6 based Pentium M need to re-unmask the apic vector but it
->  	 * doesn't hurt other P6 variant */
->  	apic_write(APIC_LVTPC, apic_read(APIC_LVTPC) & ~APIC_LVT_MASKED);
-> @@ -179,8 +175,6 @@ static void ppro_start(struct op_msrs const * const msrs)
->  	u64 val;
->  	int i;
->  
-> -	if (!reset_value)
-> -		return;
->  	for (i = 0; i < num_counters; ++i) {
->  		if (reset_value[i]) {
->  			rdmsrl(msrs->controls[i].addr, val);
-> @@ -196,8 +190,6 @@ static void ppro_stop(struct op_msrs const * const msrs)
->  	u64 val;
->  	int i;
->  
-> -	if (!reset_value)
-> -		return;
->  	for (i = 0; i < num_counters; ++i) {
->  		if (!reset_value[i])
->  			continue;
-> @@ -211,6 +203,8 @@ struct op_x86_model_spec op_ppro_spec = {
->  	.num_counters		= 2,
->  	.num_controls		= 2,
->  	.reserved		= MSR_PPRO_EVENTSEL_RESERVED,
-> +	.init			= &ppro_init,
-> +	.exit			= &ppro_exit,
->  	.fill_in_addresses	= &ppro_fill_in_addresses,
->  	.setup_ctrs		= &ppro_setup_ctrs,
->  	.check_ctrs		= &ppro_check_ctrs,
-> @@ -251,12 +245,13 @@ static void arch_perfmon_setup_counters(void)
->  static int arch_perfmon_init(struct oprofile_operations *ignore)
->  {
->  	arch_perfmon_setup_counters();
-> -	return 0;
-> +	return ppro_init(ignore);
->  }
->  
->  struct op_x86_model_spec op_arch_perfmon_spec = {
->  	.reserved		= MSR_PPRO_EVENTSEL_RESERVED,
->  	.init			= &arch_perfmon_init,
-> +	.exit			= &ppro_exit,
->  	/* num_counters/num_controls filled in at runtime */
->  	.fill_in_addresses	= &ppro_fill_in_addresses,
->  	/* user space does the cpuid check for available events */
-> diff --git a/arch/x86/oprofile/op_x86_model.h b/arch/x86/oprofile/op_x86_model.h
-> index 89017fa..e77fd91 100644
-> --- a/arch/x86/oprofile/op_x86_model.h
-> +++ b/arch/x86/oprofile/op_x86_model.h
-> @@ -40,6 +40,7 @@ struct op_x86_model_spec {
->  	u64		reserved;
->  	u16		event_mask;
->  	int		(*init)(struct oprofile_operations *ops);
-> +	void		(*exit)(void);
->  	int		(*fill_in_addresses)(struct op_msrs * const msrs);
->  	void		(*setup_ctrs)(struct op_x86_model_spec const *model,
->  				      struct op_msrs const * const msrs);
-> 
-> 
+Thanks for the clarification.
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Coly Li
