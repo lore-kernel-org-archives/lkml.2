@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab1HAJ3N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 05:29:13 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37207 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab1HAJ3G (ORCPT
+	id S1753291Ab1HAJcW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 05:32:22 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:59838 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092Ab1HAJcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 05:29:06 -0400
-Date: Mon, 1 Aug 2011 10:28:06 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Remy Bohmer <linux@bohmer.net>
-Cc: Remy Bohmer <l.pinguin@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Add sched_clock to AT91 TCB clocksource driver
-Message-ID: <20110801092806.GD15578@n2100.arm.linux.org.uk>
-References: <1312124593-6088-1-git-send-email-linux@bohmer.net> <20110731150707.GA2975@n2100.arm.linux.org.uk> <CANqCtQJwUsLXfA408GzAr0rQtc2DRjtKqP8-m2UBUGEy-YP5dg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANqCtQJwUsLXfA408GzAr0rQtc2DRjtKqP8-m2UBUGEy-YP5dg@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 1 Aug 2011 05:32:16 -0400
+Date: Mon, 01 Aug 2011 02:27:59 -0700 (PDT)
+Message-Id: <20110801.022759.1366729474517785485.davem@davemloft.net>
+To: julia@diku.dk
+Cc: grant.likely@secretlab.ca, kernel-janitors@vger.kernel.org,
+        bhutchings@solarflare.com, shemminger@vyatta.com,
+        eric.dumazet@gmail.com, mirq-linux@rere.qmqm.pl,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 3/6] drivers/net/niu.c: adjust array index
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1311857165-14780-4-git-send-email-julia@diku.dk>
+References: <1311857165-14780-1-git-send-email-julia@diku.dk>
+	<1311857165-14780-4-git-send-email-julia@diku.dk>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 01 Aug 2011 02:28:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 10:42:35AM +0200, Remy Bohmer wrote:
-> OK, I know that too, but the jiffies based fallback does it even
-> worse, since it does not run at all...  (It only updates in steps of a
-> couple of 100msecs and stops after a while, and even does not display
-> a real time...) This sched_clock implementation at least works before
-> the drivers are being initialised...
+From: Julia Lawall <julia@diku.dk>
+Date: Thu, 28 Jul 2011 14:46:03 +0200
 
-You're forgetting that jiffies doesn't jump about.  A late initializing
-sched_clock could jump.
+> From: Julia Lawall <julia@diku.dk>
+> 
+> Convert array index from the loop bound to the loop index.
+> 
+> A simplified version of the semantic patch that fixes this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression e1,e2,ar;
+> @@
+> 
+> for(e1 = 0; e1 < e2; e1++) { <...
+>   ar[
+> - e2
+> + e1
+>   ]
+>   ...> }
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-> Anyway, do you have a better suggestion how to fix this? The tcb
-> clocksource is loaded during a arch_initcall(), perhaps we need
-> something before that point.
-> I do not see an easy way to integrate it in MACHINE_START(.timer).
-> Would 'late_time_init' be a better solution?
-
-late_time_init() is not that much better as that still happens after
-sched_init() has been called.  sched_init() initializes various
-structures which involves reading sched_clock().
-
-Why can't it initialize itself at the standard point during the boot
-sequence, which is time_init() - which in turn is as you say the
-.timer callback?
+Applied.
