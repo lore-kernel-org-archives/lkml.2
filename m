@@ -1,54 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab1HAIxR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 04:53:17 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35256 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031Ab1HAIxN (ORCPT
+	id S1752903Ab1HAI4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 04:56:05 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:49810 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694Ab1HAI4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 04:53:13 -0400
-Subject: [PATCH] leds: led-bd2802: bd2802_unregister_led_classdev should
- unregister all registered leds
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Kim Kyuwon <q1.kim@samsung.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 01 Aug 2011 16:53:04 +0800
-Message-ID: <1312188784.27249.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Mon, 1 Aug 2011 04:56:01 -0400
+Message-ID: <4E366A1A.2090004@gmail.com>
+Date: Mon, 01 Aug 2011 16:55:54 +0800
+From: Liu Yuan <namei.unix@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] vhost-blk: An in-kernel accelerator for virtio-blk
+References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com> <1311863346-4338-2-git-send-email-namei.unix@gmail.com> <20110728152244.GA31888@redhat.com> <4E3646E0.9050400@gmail.com> <20110801081237.GC5439@redhat.com>
+In-Reply-To: <20110801081237.GC5439@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bd2802_unregister_led_classdev() should unregister all instances of
-led_classdev class that had registered by bd2802_register_led_classdev().
+On 08/01/2011 04:12 PM, Michael S. Tsirkin wrote:
+> On Mon, Aug 01, 2011 at 02:25:36PM +0800, Liu Yuan wrote:
+>> On 07/28/2011 11:22 PM, Michael S. Tsirkin wrote:
+>>> It would be nicer to reuse the worker infrastructure
+>> >from vhost.c. In particular this one ignores cgroups that
+>>> the owner belongs to if any.
+>>> Does this one do anything that vhost.c doesn't?
+>>>
+>> The main idea I use a separated thread to handling completion is to
+>> decouple the  request handling
+>> and the request completion signalling. This might allow better
+>> scalability in a IO intensive scenario,
+> The code seems to have the vq mutex though, isn't that right?
+> If so, it can't execute in parallel so it's a bit
+> hard to see how this would help scalability.
+>
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/leds/leds-bd2802.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+Nope, V1 completion thread doesn't has any mutex, thus can run parallel 
+with the vhost worker.
+Anyway, I'll adopt completion code to the vhost worker, since it deals 
+with other stuff like cgroup.
 
-diff --git a/drivers/leds/leds-bd2802.c b/drivers/leds/leds-bd2802.c
-index 3ebe382..ea21855 100644
---- a/drivers/leds/leds-bd2802.c
-+++ b/drivers/leds/leds-bd2802.c
-@@ -662,6 +662,11 @@ failed_unregister_led1_R:
- static void bd2802_unregister_led_classdev(struct bd2802_led *led)
- {
- 	cancel_work_sync(&led->work);
-+	led_classdev_unregister(&led->cdev_led2b);
-+	led_classdev_unregister(&led->cdev_led2g);
-+	led_classdev_unregister(&led->cdev_led2r);
-+	led_classdev_unregister(&led->cdev_led1b);
-+	led_classdev_unregister(&led->cdev_led1g);
- 	led_classdev_unregister(&led->cdev_led1r);
- }
- 
--- 
-1.7.4.1
+> I had a feeling other devices might want some other structure
+> (not an fd) as a backend. Maybe that was wrong ...
+> If so, pls do that, and #define VHOST_NET_SET_BACKEND VHOST_SET_BACKEND
+> for compatibility.
+>
 
+Okay.
 
+>>>>   static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+>>>>   			 struct iocb *iocb, bool compat)
+>>>> diff --git a/fs/eventfd.c b/fs/eventfd.c
+>>>> index d9a5917..6343bc9 100644
+>>>> --- a/fs/eventfd.c
+>>>> +++ b/fs/eventfd.c
+>>>> @@ -406,6 +406,7 @@ struct file *eventfd_file_create(unsigned int count, int flags)
+>>>>
+>>>>   	return file;
+>>>>   }
+>>>> +EXPORT_SYMBOL_GPL(eventfd_file_create);
+>>> You can avoid the need for this export if you pass
+>>> the eventfd in from userspace.
+>>>
+>> Since eventfd used by completion code is internal and hiding it from
+>> hw/vhost_blk.c would simplify
+>> the configuration, I think this exporting is necessary and can get
+>> rid of unnecessary FD management
+>> in vhost-blk.c.
+> Well this is a new kernel interface duplicating the functionality of the
+> old one.  You'll have a hard time selling this idea upstream, I suspect.
+> And I doubt it simplifies the code significantly.
+> Further, you have a single vq for block, but net has two and
+> we do want the flexibility of using a single eventfd for both,
+> I think.
+>
+point taken.
+
+>>>>   SYSCALL_DEFINE2(eventfd2, unsigned int, count, int, flags)
+>>>>   {
+>>>> diff --git a/include/linux/aio.h b/include/linux/aio.h
+>>>> index 7a8db41..d63bc04 100644
+>>>> --- a/include/linux/aio.h
+>>>> +++ b/include/linux/aio.h
+>>>> @@ -214,6 +214,37 @@ struct mm_struct;
+>>>>   extern void exit_aio(struct mm_struct *mm);
+>>>>   extern long do_io_submit(aio_context_t ctx_id, long nr,
+>>>>   			 struct iocb __user *__user *iocbpp, bool compat);
+>>>> +extern void __put_ioctx(struct kioctx *ctx);
+>>>> +extern struct kioctx *ioctx_alloc(unsigned nr_events);
+>>>> +extern struct kiocb *aio_get_req(struct kioctx *ctx);
+>>>> +extern ssize_t aio_run_iocb(struct kiocb *iocb);
+>>>> +extern int __aio_run_iocbs(struct kioctx *ctx);
+>>>> +extern int read_events(struct kioctx *ctx,
+>>>> +                        long min_nr, long nr,
+>>>> +                        struct io_event __user *event,
+>>>> +                        struct timespec __user *timeout);
+>>>> +extern void io_destroy(struct kioctx *ioctx);
+>>>> +extern ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat);
+>>>> +extern void __put_ioctx(struct kioctx *ctx);
+>>>> +
+>>>> +static inline void get_ioctx(struct kioctx *kioctx)
+>>>> +{
+>>>> +        BUG_ON(atomic_read(&kioctx->users)<= 0);
+>>>> +        atomic_inc(&kioctx->users);
+>>>> +}
+>>>> +
+>>>> +static inline int try_get_ioctx(struct kioctx *kioctx)
+>>>> +{
+>>>> +        return atomic_inc_not_zero(&kioctx->users);
+>>>> +}
+>>>> +
+>>>> +static inline void put_ioctx(struct kioctx *kioctx)
+>>>> +{
+>>>> +        BUG_ON(atomic_read(&kioctx->users)<= 0);
+>>>> +        if (unlikely(atomic_dec_and_test(&kioctx->users)))
+>>>> +                __put_ioctx(kioctx);
+>>>> +}
+>>>> +
+>>>>   #else
+>>>>   static inline ssize_t wait_on_sync_kiocb(struct kiocb *iocb) { return 0; }
+>>>>   static inline int aio_put_req(struct kiocb *iocb) { return 0; }
+>>>> -- 
+>>>> 1.7.5.1
+>> Other comments will be addressed in V2. Thanks
+>>
+>> Yuan
 
