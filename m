@@ -1,31 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab1HAUIx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 16:08:53 -0400
-Received: from mail.play-mail.info ([211.47.140.228]:38945 "EHLO
-	play-mail.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753065Ab1HAUIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 16:08:46 -0400
-MIME-Version: 1.0
-Message-Id: <1108020508462S.26884@mail.play-mail.info>
-Date: Tue, 2 Aug 2011 05:08:46 +0900
-From: =?UTF-8?B?bWFyaW5lMDEyM21hcmluZS1tYXJpbmE5MjUwQHlhaG9vLmNvLmpw?= 
-	<marine0123marine-marina9250@yahoo.co.jp>
-To: linux-kernel@vger.kernel.org
-Content-Type: Text/Plain;charset="utf-8"
-Subject: =?UTF-8?B?5YmN44Gr56eB44Gp44GT44G+44Gn6Ieq5YiG44Gu44GT44Go44KS6Kmx44GX44Gm44GE44Gf44GL44KC5b+Y44KM44Gm44GX44G+44GE44G+44GX44Gf44GL77yf?=
+	id S1753238Ab1HAUJE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 16:09:04 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:58503 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169Ab1HAUJB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 16:09:01 -0400
+Date: Mon, 1 Aug 2011 22:08:57 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Tim Gardner <tim.gardner@canonical.com>, Andi Kleen <andi@firstfloor.org>,
+        dan@aloni.org, davem@davemloft.net, gregkh@suse.de, ak@linux.intel.com,
+        linux-kernel@vger.kernel.org, stable@kernel.org, tim.bird@am.sony.com,
+        stable@vger.kernel.org
+Subject: Re: [stable] [PATCH] [26/98] af_unix: Only allow recv on connected seqpacket sockets.
+Message-ID: <20110801200857.GE27083@one.firstfloor.org>
+References: <20110726534.972201586@firstfloor.org> <20110727003518.6DA772403FF@tassilo.jf.intel.com> <4E3035BE.6090908@canonical.com> <m1sjprfryg.fsf@fess.ebiederm.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1sjprfryg.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p71K91vN026638
 
-ãã£ã¨ãã‚Œã§ãŠè¿”äº‹ã™ã‚‹ã®ã‚’èºŠèº‡ã£ã¦ã„ã‚‰ã£ã—ã‚ƒã‚‹ã®ã‹ãªã¨æ€ã£ã¦ã„ã¾ã—ãŸã€‚
-çªç„¶é€£çµ¡ãŒé€”çµ¶ãˆã€ãã—ã¦ã¾ãŸã“ã†ã—ã¦é€£çµ¡ã™ã‚‹ã“ã¨ã‚‚
-ä¸å®‰ã‚’ç…½ã‚‹çµæœã«ãªã£ã¦ã—ã¾ã£ã¦ã„ã‚‹ã®ã‹ã¨åçœã—ã¦ã„ã¾ã™ã€‚
+> For 2.6.38, and Andi's 2.6.35 which has the potential for an
+> unprivileged process to trigger an oops, it seems irresponsible to me to
+> not include this change.  People who exploit kernel flaws seem good at
+> taking random Oops's and converting them into methods for privilege
+> escalation.
 
-ã‚ã®æ™‚é¡˜ã£ã¦ã„ã¦ã‚‚å‡ºæ¥ãªã‹ã£ãŸã“ã¨ã€
-è²´æ–¹ã«ä¼šã„ãŸã„æ€ã„ãŒå®Ÿç¾ã—ãªã‹ã£ãŸã“ã¨ã€
-ä»Šåº¦ã“ãã¯å½¢ã«ã—ãŸã„ã¨æ€ã£ã¦ã„ã¾ã™ã€‚
+I'll ship 2.6.25.14 without the patch, but can you guys please come to a 
+conclusion whether the patch is useful or not. I'll reconsider it for .15.
 
-ä»Šæ—¥ã‚‚æ™‚é–“ã¯ã‚ã‚Šã¾ã™ã‹ã‚‰ãŠè¿”äº‹å¾…ã£ã¦ã¾ã™ã­ã€‚  ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks,
+
+-Andi
