@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab1HAKaX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 06:30:23 -0400
-Received: from cernmx30.cern.ch ([137.138.144.177]:44742 "EHLO
-	CERNMX30.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753916Ab1HAK3h (ORCPT
+	id S1753870Ab1HAKaO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 06:30:14 -0400
+Received: from cernmx31.cern.ch ([137.138.144.179]:18500 "EHLO
+	CERNMX31.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753912Ab1HAK3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Aug 2011 06:29:37 -0400
 From: Manohar Vanga <manohar.vanga@cern.ch>
 To: <gregkh@suse.de>
 CC: <martyn.welch@ge.com>, <cota@braap.org>, <devel@driverdev.osuosl.org>,
         <linux-kernel@vger.kernel.org>, Manohar Vanga <manohar.vanga@cern.ch>
-Subject: [PATCH 2/8] staging: vme: allow explicit assignment of bus numbers
-Date: Mon, 1 Aug 2011 12:20:47 +0200
-Message-ID: <1312194053-32310-3-git-send-email-manohar.vanga@cern.ch>
+Subject: [PATCH 5/8] staging: vme: add functions for bridge module refcounting
+Date: Mon, 1 Aug 2011 12:20:50 +0200
+Message-ID: <1312194053-32310-6-git-send-email-manohar.vanga@cern.ch>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch>
 References: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch>
@@ -25,232 +25,184 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Emilio G. Cota <cota@braap.org>
+This patch adds functions that allow for reference counting
+bridge modules. The patch introduces the functions
+'vme_bridge_get()' and 'vme_bridge_put()'.
 
-In a configuration with several bridges, each bridge is
-assigned a certain bus number depending on the order in which
-bridge modules are loaded. This can complicate multi-bridge
-installations because the bus numbers will depend on the load
-order of the bridges.
+This patch is based on the changes introduced by Emilio G. Cota
+in the patch:
 
-This patch allows bridges to register with a bus number of
-their choice, while keeping the previous 'first come, first
-serve' behaviour as the default.
+    https://lkml.org/lkml/2010/10/25/492
 
-Module parameters have been added to the bridge drivers to
-allow overriding of the auto-assignment during load time.
-
-This patch also explicitly defines VME_MAX_BRIDGES as the,
-size of vme_bus_numbers (unsigned int); something that was
-implicit earlier in the code.
-
-Signed-off-by: Emilio G. Cota <cota@braap.org>
 Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
 ---
- drivers/staging/vme/bridges/vme_ca91cx42.c |   20 ++++++++++++
- drivers/staging/vme/bridges/vme_tsi148.c   |   21 +++++++++++++
- drivers/staging/vme/vme.c                  |   46 ++++++++++++++++++++++-----
+ drivers/staging/vme/bridges/vme_ca91cx42.c |    2 +
+ drivers/staging/vme/bridges/vme_tsi148.c   |    2 +
+ drivers/staging/vme/devices/vme_user.c     |   20 +++++++++++
+ drivers/staging/vme/vme.c                  |   48 ++++++++++++++++++++++++++++
  drivers/staging/vme/vme.h                  |    2 +
- 4 files changed, 80 insertions(+), 9 deletions(-)
+ drivers/staging/vme/vme_bridge.h           |    1 +
+ 6 files changed, 75 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
-index 5122c13..c378819 100644
+index 15a0b19..2f9c22b 100644
 --- a/drivers/staging/vme/bridges/vme_ca91cx42.c
 +++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
-@@ -41,6 +41,13 @@ static void __exit ca91cx42_exit(void);
+@@ -1680,6 +1680,8 @@ static int ca91cx42_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	ca91cx42_bridge->parent = &pdev->dev;
+ 	strcpy(ca91cx42_bridge->name, driver_name);
  
- /* Module parameters */
- static int geoid;
-+static int bus_ids[VME_MAX_BRIDGES];
-+static int id_count;
++	ca91cx42_bridge->owner = THIS_MODULE;
 +
-+/* The number of registered buses */
-+static int bus_count;
-+/* Mutex for protecting ID access */
-+static DEFINE_MUTEX(bus_id_mutex);
- 
- static const char driver_name[] = "vme_ca91cx42";
- 
-@@ -1779,6 +1786,12 @@ static int ca91cx42_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	if (ca91cx42_crcsr_init(ca91cx42_bridge, pdev))
- 		dev_err(&pdev->dev, "CR/CSR configuration failed.\n");
- 
-+	mutex_lock(&bus_id_mutex);
-+	if (bus_count >= id_count)
-+		ca91cx42_bridge->num = -1;
-+	else
-+		ca91cx42_bridge->num = bus_ids[bus_count];
-+
- 	/* Need to save ca91cx42_bridge pointer locally in link list for use in
- 	 * ca91cx42_remove()
- 	 */
-@@ -1788,11 +1801,15 @@ static int ca91cx42_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		goto err_reg;
- 	}
- 
-+	bus_count++;
-+	mutex_unlock(&bus_id_mutex);
-+
- 	pci_set_drvdata(pdev, ca91cx42_bridge);
- 
- 	return 0;
- 
- err_reg:
-+	mutex_unlock(&bus_id_mutex);
- 	ca91cx42_crcsr_exit(ca91cx42_bridge, pdev);
- err_lm:
- 	/* resources are stored in link list */
-@@ -1930,5 +1947,8 @@ module_param(geoid, int, 0);
- MODULE_DESCRIPTION("VME driver for the Tundra Universe II VME bridge");
- MODULE_LICENSE("GPL");
- 
-+MODULE_PARM_DESC(bus_num, "Explicitly set bus number (override auto-assign)");
-+module_param_array(bus_ids, int, &id_count, 0);
-+
- module_init(ca91cx42_init);
- module_exit(ca91cx42_exit);
+ 	/* Setup IRQ */
+ 	retval = ca91cx42_irq_init(ca91cx42_bridge);
+ 	if (retval != 0) {
 diff --git a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
-index 9c53951..e3f021e 100644
+index 5c147d6..9db89dc 100644
 --- a/drivers/staging/vme/bridges/vme_tsi148.c
 +++ b/drivers/staging/vme/bridges/vme_tsi148.c
-@@ -44,6 +44,14 @@ static void __exit tsi148_exit(void);
- static int err_chk;
- static int geoid;
+@@ -2320,6 +2320,8 @@ static int tsi148_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	tsi148_bridge->parent = &pdev->dev;
+ 	strcpy(tsi148_bridge->name, driver_name);
  
-+static int bus_ids[VME_MAX_BRIDGES];
-+static int id_count;
++	tsi148_bridge->owner = THIS_MODULE;
 +
-+/* The number of registered buses */
-+static int bus_count;
-+/* Mutex for protecting ID access */
-+static DEFINE_MUTEX(bus_id_mutex);
-+
- static const char driver_name[] = "vme_tsi148";
- 
- static DEFINE_PCI_DEVICE_TABLE(tsi148_ids) = {
-@@ -2462,12 +2470,21 @@ static int tsi148_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		goto err_crcsr;
- 	}
- 
-+	mutex_lock(&bus_id_mutex);
-+	if (bus_count >= id_count)
-+		tsi148_bridge->num = -1;
-+	else
-+		tsi148_bridge->num = bus_ids[bus_count];
-+
- 	retval = vme_register_bridge(tsi148_bridge);
+ 	/* Setup IRQ */
+ 	retval = tsi148_irq_init(tsi148_bridge);
  	if (retval != 0) {
- 		dev_err(&pdev->dev, "Chip Registration failed.\n");
- 		goto err_reg;
+diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
+index 3cbeb2a..7ed4a5c 100644
+--- a/drivers/staging/vme/devices/vme_user.c
++++ b/drivers/staging/vme/devices/vme_user.c
+@@ -118,6 +118,8 @@ static struct cdev *vme_user_cdev;		/* Character device */
+ static struct class *vme_user_sysfs_class;	/* Sysfs class */
+ static struct device *vme_user_bridge;		/* Pointer to bridge device */
+ 
++static struct vme_bridge *vme_user_bus;		/* Pointer to bridge */
++
+ 
+ static const int type[VME_DEVS] = {	MASTER_MINOR,	MASTER_MINOR,
+ 					MASTER_MINOR,	MASTER_MINOR,
+@@ -824,10 +826,25 @@ static int __devinit vme_user_probe(struct device *dev, int cur_bus,
+ 		}
  	}
  
-+	bus_count++;
-+	mutex_unlock(&bus_id_mutex);
++	/*
++	 * Increment reference count of bridge module. We don't want things
++	 * to fall over in case the bridge module is removed while the vme_user
++	 * driver is still loaded.
++	 */
++	vme_user_bus = vme_bridge_get(cur_bus);
++	if (!vme_user_bus) {
++		printk(KERN_ERR "%s: vme_bridge_get failed\n", driver_name);
++		err = -EINVAL;
++		goto err_bridge_get;
++	}
 +
- 	pci_set_drvdata(pdev, tsi148_bridge);
- 
- 	/* Clear VME bus "board fail", and "power-up reset" lines */
-@@ -2479,6 +2496,7 @@ static int tsi148_probe(struct pci_dev *pdev, const struct pci_device_id *id)
  	return 0;
  
- err_reg:
-+	mutex_unlock(&bus_id_mutex);
- 	tsi148_crcsr_exit(tsi148_bridge, pdev);
- err_crcsr:
- err_lm:
-@@ -2633,6 +2651,9 @@ module_param(err_chk, bool, 0);
- MODULE_PARM_DESC(geoid, "Override geographical addressing");
- module_param(geoid, int, 0);
+ 	/* Ensure counter set correcty to destroy all sysfs devices */
+ 	i = VME_DEVS;
++err_bridge_get:
++	for (i = 0; i < VME_DEVS; i++)
++		device_destroy(vme_user_sysfs_class, MKDEV(VME_MAJOR, i));
+ err_sysfs:
+ 	while (i > 0) {
+ 		i--;
+@@ -892,6 +909,9 @@ static int __devexit vme_user_remove(struct device *dev, int cur_bus,
+ 	/* Unregiser the major and minor device numbers */
+ 	unregister_chrdev_region(MKDEV(VME_MAJOR, 0), VME_DEVS);
  
-+MODULE_PARM_DESC(bus_ids, "Explicitly set bus number (override auto-assign)");
-+module_param_array(bus_ids, int, &id_count, 0);
++	/* decrement bridge module reference */
++	vme_bridge_put(vme_user_bus);
 +
- MODULE_DESCRIPTION("VME driver for the Tundra Tempe VME bridge");
- MODULE_LICENSE("GPL");
- 
-diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
-index c078ce3..330a4ff 100644
---- a/drivers/staging/vme/vme.c
-+++ b/drivers/staging/vme/vme.c
-@@ -1303,20 +1303,44 @@ EXPORT_SYMBOL(vme_slot_get);
- 
- /* - Bridge Registration --------------------------------------------------- */
- 
--static int vme_alloc_bus_num(void)
-+/* call with vme_bus_num_mtx held */
-+static int __vme_alloc_bus_num(int bus_num)
- {
-+	int num;
- 	int i;
- 
--	mutex_lock(&vme_bus_num_mtx);
--	for (i = 0; i < sizeof(vme_bus_numbers) * 8; i++) {
--		if (((vme_bus_numbers >> i) & 0x1) == 0) {
--			vme_bus_numbers |= (0x1 << i);
--			break;
-+	if (bus_num == -1) {
-+		/* try to find a free bus number */
-+		for (i = 0; i < VME_MAX_BRIDGES; i++) {
-+			if ((vme_bus_numbers & (1 << i)) == 0) {
-+				num = i;
-+				break;
-+			}
-+		}
-+		if (i == VME_MAX_BRIDGES) {
-+			pr_warn("vme: No bus numbers left\n");
-+			return -ENODEV;
- 		}
-+	} else {
-+		/* check if the given bus number is already in use */
-+		if (vme_bus_numbers & (1 << bus_num)) {
-+			pr_warn("vme: bus number %d already in use\n", bus_num);
-+			return -EBUSY;
-+		}
-+		num = bus_num;
- 	}
--	mutex_unlock(&vme_bus_num_mtx);
-+	vme_bus_numbers |= 1 << num;
-+	return num;
-+}
- 
--	return i;
-+static int vme_alloc_bus_num(int bus_num)
-+{
-+	int num;
-+
-+	mutex_lock(&vme_bus_num_mtx);
-+	num = __vme_alloc_bus_num(bus_num);
-+	mutex_unlock(&vme_bus_num_mtx);
-+	return num;
+ 	return 0;
  }
  
- static void vme_free_bus_num(int bus)
-@@ -1332,7 +1356,11 @@ int vme_register_bridge(struct vme_bridge *bridge)
- 	int retval;
- 	int i;
+diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
+index 11e28ca..759ec2b 100644
+--- a/drivers/staging/vme/vme.c
++++ b/drivers/staging/vme/vme.c
+@@ -52,6 +52,54 @@ static struct vme_bridge *dev_to_bridge(struct device *dev)
+ }
  
--	bridge->num = vme_alloc_bus_num();
-+	retval = vme_alloc_bus_num(bridge->num);
-+	if (retval < 0)
-+		return retval;
+ /*
++ * Increments the reference count of a VME bridge.
++ *
++ * If found, a pointer to the bridge is returned and the reference count
++ * of the module that owns it is incremented.
++ *
++ * On success, it can be assumed that the bridge won't be removed until
++ * the corresponding call to vme_put_bridge().
++ *
++ * Normally drivers should call vme_get_bridge() on a successfull .probe,
++ * and vme_put_bridge() when releasing the device, e.g. in .remove.
++ */
++struct vme_bridge *vme_bridge_get(unsigned int bus_id)
++{
++	struct vme_bridge *bridge;
++	struct vme_bridge *retp = NULL;
 +
-+	bridge->num = retval;
- 
- 	/* This creates 32 vme "slot" devices. This equates to a slot for each
- 	 * ID available in a system conforming to the ANSI/VITA 1-1994
++	mutex_lock(&vme_buses_lock);
++	list_for_each_entry(bridge, &vme_bus_list, bus_list) {
++		if (bridge->num == bus_id) {
++			if (!bridge->owner)
++				dev_warn(bridge->parent,
++					"bridge->owner not set\n");
++			else if (try_module_get(bridge->owner))
++				retp = bridge;
++			break;
++		}
++	}
++	mutex_unlock(&vme_buses_lock);
++	return retp;
++}
++EXPORT_SYMBOL(vme_bridge_get);
++
++/*
++ * Decrements the reference count of a bridge
++ *
++ * This function decrements the reference count of the module that controls
++ * the bridge. It must come after a call to vme_get_bridge().
++ */
++void vme_bridge_put(struct vme_bridge *bridge)
++{
++	if (!bridge->owner)
++		dev_warn(bridge->parent, "bridge->owner not set\n");
++	else
++		module_put(bridge->owner);
++}
++EXPORT_SYMBOL(vme_bridge_put);
++
++/*
+  * Find the bridge that the resource is associated with.
+  */
+ static struct vme_bridge *find_bridge(struct vme_resource *resource)
 diff --git a/drivers/staging/vme/vme.h b/drivers/staging/vme/vme.h
-index 4155d8c..3ccb497 100644
+index 3ccb497..8fb35e2 100644
 --- a/drivers/staging/vme/vme.h
 +++ b/drivers/staging/vme/vme.h
-@@ -88,6 +88,8 @@ struct vme_resource {
+@@ -167,6 +167,8 @@ int vme_slot_get(struct device *);
+ int vme_register_driver(struct vme_driver *);
+ void vme_unregister_driver(struct vme_driver *);
  
- extern struct bus_type vme_bus_type;
++struct vme_bridge *vme_bridge_get(unsigned int bus_id);
++void vme_bridge_put(struct vme_bridge *bridge);
  
-+/* VME_MAX_BRIDGES comes from the type of vme_bus_numbers */
-+#define VME_MAX_BRIDGES		(sizeof(unsigned int)*8)
- #define VME_SLOT_CURRENT	-1
- #define VME_SLOT_ALL		-2
+ #endif /* _VME_H_ */
  
+diff --git a/drivers/staging/vme/vme_bridge.h b/drivers/staging/vme/vme_bridge.h
+index 8959670..ef751a4 100644
+--- a/drivers/staging/vme/vme_bridge.h
++++ b/drivers/staging/vme/vme_bridge.h
+@@ -113,6 +113,7 @@ struct vme_bridge {
+ 	struct device *parent;	/* Parent device (eg. pdev->dev for PCI) */
+ 	void *driver_priv;	/* Private pointer for the bridge driver */
+ 	struct list_head bus_list; /* list of VME buses */
++	struct module *owner;	/* module that owns the bridge */
+ 
+ 	struct device dev[VME_SLOTS_MAX];	/* Device registered with
+ 						 * device model on VME bus
 -- 
 1.7.4.1
 
