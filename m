@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab1HAMBs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 08:01:48 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:15651 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751212Ab1HAMBn (ORCPT
+	id S1752479Ab1HAMGX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 08:06:23 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:40074 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595Ab1HAMGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 08:01:43 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6424"; a="107040728"
-Date: Mon, 1 Aug 2011 05:01:42 -0700
-From: David Brown <davidb@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-msm@lists.infradead.org, linux-arm-kernel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL corrected] msm gpio move to drivers/gpio
-Message-ID: <20110801120141.GA29990@huya.qualcomm.com>
-References: <20110801112244.GA24384@huya.qualcomm.com>
+	Mon, 1 Aug 2011 08:06:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110801112244.GA24384@huya.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.00.1107311426001.944@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1107290145080.3279@tiger>
+	<alpine.DEB.2.00.1107291002570.16178@router.home>
+	<alpine.DEB.2.00.1107311136150.12538@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1107311253560.12538@chino.kir.corp.google.com>
+	<1312145146.24862.97.camel@jaguar>
+	<alpine.DEB.2.00.1107311426001.944@chino.kir.corp.google.com>
+Date: Mon, 1 Aug 2011 15:06:19 +0300
+X-Google-Sender-Auth: 4aB3O-M9u433100r7enrUzmZUS4
+Message-ID: <CAOJsxLHB9jPNyU2qztbEHG4AZWjauCLkwUVYr--8PuBBg1=MCA@mail.gmail.com>
+Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
+From: Pekka Enberg <penberg@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(corrected version of the versions approved on list)
+On Mon, Aug 1, 2011 at 12:55 AM, David Rientjes <rientjes@google.com> wrote:
+> I'm very confident that slub could beat slab on any system if you throw
+> enough memory at it because its fastpaths are extremely efficient, but
+> there's no business case for that.
 
-The following changes since commit 02f8c6aee8df3cdc935e9bdd4f2d020306035dbe:
+Btw, I haven't measured this recently but in my testing, SLAB has
+pretty much always used more memory than SLUB. So 'throwing more
+memory at the problem' is definitely a reasonable approach for SLUB.
 
-  Linux 3.0 (2011-07-21 19:17:23 -0700)
-
-are available in the git repository at:
-  git://codeaurora.org/quic/kernel/davidb/linux-msm.git msm-move-gpio
-
-David Brown (8):
-      msm: gpio: Remove unsupported devices
-      msm: Remove chip-ifdefs for GPIO io mappings
-      msm: gpio: Remove chip-specific register definitions
-      msm: gpio: Remove ifdefs on gpio chip registers
-      msm: gpiomux: Move public API to public header
-      msm: gpio: Fold register defs into C file
-      gpio_msm: Move Qualcomm v6 MSM driver into drivers
-      gpio_msm: Move Qualcomm MSM v2 gpio driver into drivers
-
- arch/arm/mach-msm/Kconfig                          |    4 +
- arch/arm/mach-msm/Makefile                         |    8 -
- arch/arm/mach-msm/gpio.c                           |  376 ------------
- arch/arm/mach-msm/gpio_hw.h                        |  278 ---------
- arch/arm/mach-msm/gpiomux.h                        |   17 +-
- arch/arm/mach-msm/include/mach/msm_gpiomux.h       |   38 ++
- arch/arm/mach-msm/include/mach/msm_iomap-7x00.h    |   10 +-
- arch/arm/mach-msm/include/mach/msm_iomap-7x30.h    |   10 +-
- arch/arm/mach-msm/include/mach/msm_iomap-8x50.h    |   10 +-
- arch/arm/mach-msm/include/mach/msm_iomap.h         |    2 +
- arch/arm/mach-msm/io.c                             |   12 +-
- drivers/gpio/Kconfig                               |   16 +
- drivers/gpio/Makefile                              |    2 +
- drivers/gpio/gpio-msm-v1.c                         |  636 ++++++++++++++++++++
- .../gpio-v2.c => drivers/gpio/gpio-msm-v2.c        |    4 +-
- 15 files changed, 719 insertions(+), 704 deletions(-)
- delete mode 100644 arch/arm/mach-msm/gpio.c
- delete mode 100644 arch/arm/mach-msm/gpio_hw.h
- create mode 100644 arch/arm/mach-msm/include/mach/msm_gpiomux.h
- create mode 100644 drivers/gpio/gpio-msm-v1.c
- rename arch/arm/mach-msm/gpio-v2.c => drivers/gpio/gpio-msm-v2.c (99%)
+                        Pekka
