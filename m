@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645Ab1HALuv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 07:50:51 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47573 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536Ab1HALup (ORCPT
+	id S1752667Ab1HALwh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 07:52:37 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56308 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536Ab1HALwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 07:50:45 -0400
-Date: Mon, 1 Aug 2011 12:50:39 +0100
-From: Grant Likely <grant.likely@secretlab.ca>
-To: David Brown <davidb@codeaurora.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] msm gpio move to drivers/gpio
-Message-ID: <20110801115039.GA2191@ponder.secretlab.ca>
-References: <20110801112244.GA24384@huya.qualcomm.com>
+	Mon, 1 Aug 2011 07:52:31 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4E369372.80105@jp.fujitsu.com>
+Date: Mon, 01 Aug 2011 20:52:18 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110801112244.GA24384@huya.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: oleg@redhat.com
+CC: rientjes@google.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, roland@hack.frob.com, tj@kernel.org,
+        dvlasenk@redhat.com, matt.fleming@linux.intel.com,
+        linux-kernel@vger.kernel.org, avagin@openvz.org, fhrbata@redhat.com,
+        yinghan@google.com
+Subject: Re: mm->oom_disable_count is broken
+References: <20110727163159.GA23785@redhat.com> <20110727163610.GJ23793@redhat.com> <20110727175624.GA3950@redhat.com> <20110728154324.GA22864@redhat.com> <alpine.DEB.2.00.1107281341060.16093@chino.kir.corp.google.com> <20110729141431.GA3501@redhat.com> <20110730143426.GA6061@redhat.com> <20110730152238.GA17424@redhat.com>
+In-Reply-To: <20110730152238.GA17424@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 04:22:45AM -0700, David Brown wrote:
-> The following changes since commit 02f8c6aee8df3cdc935e9bdd4f2d020306035dbe:
+(2011/07/31 0:22), Oleg Nesterov wrote:
+> On 07/30, Oleg Nesterov wrote:
+>>
+>> So I'd suggest this hack^Wpatch as a quick fix. I still think this
+>> code is not right, but the patch tries to keep the current logic.
 > 
->   Linux 3.0 (2011-07-21 19:17:23 -0700)
+> And this reminds me. mm->oom_disable_count looks absolutely broken.
+> IIRC, I already complained but nobody replied.
+>
+> What does this counter mean?
 > 
-> are available in the git repository at:
->   git://codeaurora.org/quic/kernel/davidb/linux-msm.git msm-move-gpio
+> 	/* How many tasks sharing this mm are OOM_DISABLE */
+> 	atomic_t oom_disable_count;
 > 
-> David Brown (7):
->       msm: gpio: Remove unsupported devices
->       msm: Remove chip-ifdefs for GPIO io mappings
->       msm: gpio: Remove chip-specific register definitions
->       msm: gpio: Remove ifdefs on gpio chip registers
->       msm: gpiomux: Move public API to public header
->       gpio_msm: Move Qualcomm v6 MSM driver into drivers
->       gpio_msm: Move Qualcomm MSM v2 gpio driver into drivers
+> tasks? processes or threads?
 > 
->  arch/arm/mach-msm/Kconfig                          |    4 +
->  arch/arm/mach-msm/Makefile                         |    8 -
->  arch/arm/mach-msm/gpio_hw.h                        |  278 --------------------
->  arch/arm/mach-msm/gpiomux.h                        |   17 +--
->  arch/arm/mach-msm/include/mach/msm_gpiomux.h       |   38 +++
->  arch/arm/mach-msm/include/mach/msm_iomap-7x00.h    |   10 +-
->  arch/arm/mach-msm/include/mach/msm_iomap-7x30.h    |   10 +-
->  arch/arm/mach-msm/include/mach/msm_iomap-8x50.h    |   10 +-
->  arch/arm/mach-msm/include/mach/msm_iomap.h         |    2 +
->  arch/arm/mach-msm/io.c                             |   12 +-
->  drivers/gpio/Kconfig                               |   16 ++
->  drivers/gpio/Makefile                              |    2 +
->  arch/arm/mach-msm/gpio.c => drivers/gpio/msm_v1.c  |  111 +++++----
->  drivers/gpio/msm_v1.h                              |  271 +++++++++++++++++++
->  .../mach-msm/gpio-v2.c => drivers/gpio/msm_v2.c    |    2 +-
+> Lets look at oom_adjust_write(),
+> 
+> 		if (task->signal->oom_adj == OOM_DISABLE)
+> 			atomic_inc(&task->mm->oom_disable_count);
+> 
+> OK, so it is per-process. No matter how many threads this process
+> has, mm->oom_disable_count becomes 1 (ignoring CLONE_VM).
+> 
+> 
+> However, exit_mm() does:
+> 
+> 	if (tsk->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
+> 		atomic_dec(&mm->oom_disable_count);
+> 
+> but this is per-thread! it becomes zero and then negative after
+> pthread_exit().
+> 
+> 
+> copy_process()->copy_mm() seems to think it is per-thread too. But,
+> bad_fork_cleanup_mm:
+> 
+> 	if (p->mm) {
+> 		task_lock(p);
+> 		if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
+> 			atomic_dec(&p->mm->oom_disable_count);
+> 		task_unlock(p);
+> 		mmput(p->mm);
+> 	}
+> 
+> Why do we take task_lock() ? OK, oom_score_adj_write() does task_lock()
+> too, but this can't help in the multithreaded case? Why copy_mm() checks
+> ->oom_score_adj lockless?
 
-As discussed f2f at linaro Connect: filenames in drivers/gpio/ should be "gpio-*.{c,h}
+IIRC, I did pointed out this issue. But nobody replied.
+I think ->oom_disable_count is currently broken. but now I have no time to
+audit this stuff. So, I'd suggest to revert this code if nobody don't fix it.
 
-g.
 
->  15 files changed, 414 insertions(+), 377 deletions(-)
->  delete mode 100644 arch/arm/mach-msm/gpio_hw.h
->  create mode 100644 arch/arm/mach-msm/include/mach/msm_gpiomux.h
->  rename arch/arm/mach-msm/gpio.c => drivers/gpio/msm_v1.c (82%)
->  create mode 100644 drivers/gpio/msm_v1.h
->  rename arch/arm/mach-msm/gpio-v2.c => drivers/gpio/msm_v2.c (99%)
-> 
-> -- 
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
+
