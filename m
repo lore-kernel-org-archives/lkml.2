@@ -1,58 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab1HAUAT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 16:00:19 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42564 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753115Ab1HAUAB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 16:00:01 -0400
-Date: Mon, 1 Aug 2011 12:59:16 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: Have we changed /proc/stat idle statistics by NOHZ kernel?
-Message-Id: <20110801125916.1855ff3f.akpm@linux-foundation.org>
-In-Reply-To: <20110725143313.GE9445@tiehlicka.suse.cz>
-References: <20110725143313.GE9445@tiehlicka.suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753190Ab1HAUIx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 16:08:53 -0400
+Received: from mail.play-mail.info ([211.47.140.228]:38945 "EHLO
+	play-mail.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753065Ab1HAUIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 16:08:46 -0400
+MIME-Version: 1.0
+Message-Id: <1108020508462S.26884@mail.play-mail.info>
+Date: Tue, 2 Aug 2011 05:08:46 +0900
+From: =?UTF-8?B?bWFyaW5lMDEyM21hcmluZS1tYXJpbmE5MjUwQHlhaG9vLmNvLmpw?= 
+	<marine0123marine-marina9250@yahoo.co.jp>
+To: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;charset="utf-8"
+Subject: =?UTF-8?B?5YmN44Gr56eB44Gp44GT44G+44Gn6Ieq5YiG44Gu44GT44Go44KS6Kmx44GX44Gm44GE44Gf44GL44KC5b+Y44KM44Gm44GX44G+44GE44G+44GX44Gf44GL77yf?=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p71K91vN026638
 
-On Mon, 25 Jul 2011 16:33:13 +0200
-Michal Hocko <mhocko@suse.cz> wrote:
+ãã£ã¨ãã‚Œã§ãŠè¿”äº‹ã™ã‚‹ã®ã‚’èºŠèº‡ã£ã¦ã„ã‚‰ã£ã—ã‚ƒã‚‹ã®ã‹ãªã¨æ€ã£ã¦ã„ã¾ã—ãŸã€‚
+çªç„¶é€£çµ¡ãŒé€”çµ¶ãˆã€ãã—ã¦ã¾ãŸã“ã†ã—ã¦é€£çµ¡ã™ã‚‹ã“ã¨ã‚‚
+ä¸å®‰ã‚’ç…½ã‚‹çµæœã«ãªã£ã¦ã—ã¾ã£ã¦ã„ã‚‹ã®ã‹ã¨åçœã—ã¦ã„ã¾ã™ã€‚
 
-> Hi,
-> we have a customer reporting that /proc/stat doesn't provide correct
-> results about idle time if the machine is idle.
-> The issue is caused by the fact that tickles kernel doesn't update
-> kstat_cpu(i).cpustat.idle while it is tickles. Tools that parse this
-> file interpret the unchanged value as 0% idle since the last time.
-> While I personally do not think that measuring the idle machine is
-> that important one could say that the semantic of the file has changed
-> with NOHZ which is not good as we are trying to keep this interface
-> stable.
-> One way to fix this is to consider the current status of idle in
-> show_stat. The very primitive attempt of that can be seen bellow (on
-> top of the current Linus tree). I know it has several issue it just
-> illustrates what I am trying to say.  It will not work if jiffies
-> overflow while the CPU was tickles and it also misses locking and
-> handling !NOHZ configuration.
-> 
-> I have also noticed we have get_cpu_idle_time_us which should do
-> something similar. Should it be used instead or it is more intrusive?
-> 
-> Btw. is this considered to be a problem at all?
-> 
+ã‚ã®æ™‚é¡˜ã£ã¦ã„ã¦ã‚‚å‡ºæ¥ãªã‹ã£ãŸã“ã¨ã€
+è²´æ–¹ã«ä¼šã„ãŸã„æ€ã„ãŒå®Ÿç¾ã—ãªã‹ã£ãŸã“ã¨ã€
+ä»Šåº¦ã“ãã¯å½¢ã«ã—ãŸã„ã¨æ€ã£ã¦ã„ã¾ã™ã€‚
 
-I'd consider it a bug and a regression.  If the machine was idle and
-/proc/stat says "zero idle time" then that is simply incorrect.
-
-Can we just cheat?  subtract elapsed R and D time from elapsed wall
-time and print that out?
-
+ä»Šæ—¥ã‚‚æ™‚é–“ã¯ã‚ã‚Šã¾ã™ã‹ã‚‰ãŠè¿”äº‹å¾…ã£ã¦ã¾ã™ã­ã€‚  ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
