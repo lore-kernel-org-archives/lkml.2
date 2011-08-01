@@ -1,87 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab1HAAnj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 20:43:39 -0400
-Received: from mga03.intel.com ([143.182.124.21]:13725 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751897Ab1HAAnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 20:43:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,297,1309762800"; 
-   d="scan'208";a="2848865"
-Subject: Re: [PATCH] kswapd: avoid unnecessary rebalance after an
- unsuccessful balancing
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "P@draigBrady.com" <P@draigBrady.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andrea@cpushare.com" <andrea@cpushare.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "riel@redhat.com" <riel@redhat.com>, "luto@mit.edu" <luto@mit.edu>
-In-Reply-To: <20110729154031.GV3010@suse.de>
-References: <1311952990-3844-1-git-send-email-alex.shi@intel.com>
-	 <20110729154031.GV3010@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 01 Aug 2011 08:45:17 +0800
-Message-ID: <1312159517.27358.2446.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1753316Ab1HAApZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 20:45:25 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47130 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751897Ab1HAApX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 20:45:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110731223739.GZ26275@sortiz-mobl>
+References: <20110731223739.GZ26275@sortiz-mobl>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 31 Jul 2011 14:45:00 -1000
+Message-ID: <CA+55aFw3AW5mB-9Q5hkmL1zRPybbAb1vFCkftx3xFGZ6P5uz6g@mail.gmail.com>
+Subject: Re: [GIT] [3.1] MFD pull request
+To: Samuel Ortiz <sameo@linux.intel.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Sanjeev Premi <premi@ti.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Keshava Munegowda <Keshava_mgowda@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jesper Juhl <jj@chaosbits.net>, Dan Carpenter <error27@gmail.com>,
+        Jin Park <jinyoungp@nvidia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Om Prakash <omprakash.pal@stericsson.com>,
+        Axel Lin <axel.lin@gmail.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Oleg Drokin <green@linuxhacker.ru>,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Robert Rosengren <robert.rosengren@stericsson.com>,
+        Margarita Olaya <magi@slimlogic.co.uk>,
+        Peter Huewe <peterhuewe@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-29 at 23:40 +0800, Mel Gorman wrote:
-> On Fri, Jul 29, 2011 at 11:23:10PM +0800, Alex Shi wrote:
-> > In commit 215ddd66, Mel Gorman said kswapd is better to sleep after a
-> > unsuccessful balancing if there is tighter reclaim request pending in
-> > the balancing. In this scenario, the 'order' and 'classzone_idx'
-> > that are checked for tighter request judgment is incorrect, since they
-> > aren't the one kswapd should read from new pgdat, but the last time pgdat
-> > value for just now balancing. Then kswapd will skip try_to_sleep func
-> > and rebalance the last pgdat request. It's not our expected behavior.
-> > 
-> > So, I added new variables to distinguish the returned order/classzone_idx
-> > from last balancing, that can resolved above issue in that scenario.
-> > 
-> 
-> I'm afraid this changelog is very difficult to read and I do not see
-> what problem you are trying to solve and I do not see what this patch
-> might solve.
-> 
-> When balance_pgdat() returns with a lower classzone or order, the values
-> stored in pgdat are not re-read and instead it tries to go to sleep
-> based on the starting request. Something like;
+On Sun, Jul 31, 2011 at 12:37 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
+>
+> This is the MFD pull request for the 3.1 merge window.
 
-Thanks for your comments, I will use this comments style next time, list
-request A, B etc. 
+Guys, I'm getting *really* fed up with these kinds of trees.
 
-> 
-> 1. Read pgdat request A (classzone_idx, order)
+This -git tree clearly had no testing at all, and cannot possibly have
+been in -next.
 
-Assume the order of A > 0, like is 3.
+How do I know? It's based on something I pushed out this morning, so
+all the commits are really recent.
 
-> 2. balance_pgdat()
-> 3.	During pgdat, a new pgdat request B (classzone_idx, order) is placed
-> 4. balance_pgdat() returns but failed so classzone_idx is lower
+DO NOT DO THIS. It annoys the hell out of me to pull something and be
+able to definitely say immediately that the person who wrote the pull
+request clearly gave that particular git tree zero amount of actual
+testing.
 
-Another balance_pgdat() failure indicate is returned order == 0, am I
-right?  If so, the next step of kswapd is not trying to sleep, but do
-request A balance again.  And I thought this behavior doesn't match the
-comments in kswapd. 
+I pulled this time, because I just cannot find it in myself to care
+too much about mfd.
 
-> 5. Try to sleep based on pgdat request A 
+But for the very same reason, next time I notice people rebasing their
+trees on top of random points, I will just not pull.  If I see that
+the tree they based stuff on is from the merge window, I'll just go
+"this guy clearly means for this to get more testing, and meant for
+this to be pulled in *next* merge window".
 
-> 
-> i.e. pgdat request B is not read and there is a comment explaining
-> why pgdat request B is not read after balance_pgdat() fails.
-> 
-> This patch adds some variables that might improve the readability
-> for some people but otherwise I can't see what problem is being
-> fixed. What did I miss?
-> 
+And it doesn't matter one whit if you say something like "Oh, but I
+use quilt, so it's been tested there, and I just imported a very well
+tested tree into -git to push it to you". Dammit, even if you use
+quilt or something else to actually maintain your patch series, I KNOW
+DAMN WELL THAT YOU DIDN'T TEST THAT SERIES ON TOP OF THE RECENT CRAPPY
+NFS PULL!
 
+So if you use quilt or something, then import the patch series on top
+of something STABLE AND SANE. Start off with the released 3.0, that at
+least doesn't have random pulls that have known compile issues. Use
+that for testing, and don't send me a re-based patch-series that
+clearly cannot possibly have been tested in that form, and that was
+based on a kernel that had ugly problems.
 
+(And during the merge window, pretty much any "Linus' kernel of the
+day" tends to have some problem or other. DON'T USE RANDOM KERNELS FOR
+YOUR BASE).
+
+Seriously. It really annoys the hell out of me when I get pull
+requests that are totally half-assed. And today I got *two* of them
+(that NFS pull request that you had based your tree on really was
+total crap too, and had clearly not been tested enough)
+
+I'm grumpy. I don't want to know that submaintainers are sending me
+untested crap. So if you are too damn lazy to test things, at least
+make it not so horribly OBVIOUS to me that it's clearly not tested,
+and that it has clearly not been in -next in the form that you sent it
+to me. Try to at least spend *some* time trying to make your pull
+request look competent, ok?
+
+But best would be if it was actually tested, and had actually been in
+-next for a week. That is *especially* true when you send me a pull
+request late in the merge window.
+
+There is *NO* excuse for sending me crap this late in the merge
+window. If it's not ready at this point, don't send it to me. It's
+that simple. And yes, Trond, I'm very much looking at you too.
+
+                  Linus
