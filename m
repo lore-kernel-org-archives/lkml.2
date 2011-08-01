@@ -1,107 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab1HATYU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 15:24:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8973 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752605Ab1HATYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 15:24:15 -0400
-Date: Mon, 1 Aug 2011 15:24:07 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: ZAK Magnus <zakmagnus@google.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH v3 2/2] Make hard lockup detection use timestamps
-Message-ID: <20110801192407.GE2581@redhat.com>
-References: <1311271873-10879-1-git-send-email-zakmagnus@google.com>
- <20110722195340.GF3765@redhat.com>
- <CAAuSN93tiSehpNXxjOgrq7oV-U+1ZPi2eqr+2dNSBG0yu0jxmA@mail.gmail.com>
- <20110725124451.GA2866@redhat.com>
- <CAAuSN93Qjk4eEAvm_Xn=O-0t+qhAyKmxy6HyPuyzJ35tX2u_CQ@mail.gmail.com>
- <20110729205538.GD14343@redhat.com>
- <CAAuSN93ouWrPn9xWb9Zd3E2Dp0hQxC4JmFH1utbyy1_aMnfkLA@mail.gmail.com>
- <20110801125234.GE14343@redhat.com>
- <CAAuSN92UAjuJXprBAj9z0sekk=iBWGe3PP88z8NmrZ5fExOyjg@mail.gmail.com>
+	id S1752939Ab1HATca (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 15:32:30 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:63357 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192Ab1HATcZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 15:32:25 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=w/L/S5A1eiJubRjEPP4y0MK0cwA8F8lkyP9DzsH5G6gGD9Aze1i8T4kXW0xZ4Tm6b
+	tDL4zyFPju9u5OfLU+p7w==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAuSN92UAjuJXprBAj9z0sekk=iBWGe3PP88z8NmrZ5fExOyjg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110729142842.GA8462@unix33.andrew.cmu.edu>
+References: <20110727171101.5e32d8eb@notabene.brown> <20110727150710.GB5242@unix33.andrew.cmu.edu>
+ <20110727234235.GA2318@linux.vnet.ibm.com> <20110728110813.7ff84b13@notabene.brown>
+ <20110728062616.GC15204@unix33.andrew.cmu.edu> <20110728171345.67d3797d@notabene.brown>
+ <20110729142842.GA8462@unix33.andrew.cmu.edu>
+From: Paul Menage <menage@google.com>
+Date: Mon, 1 Aug 2011 12:31:59 -0700
+Message-ID: <CAJniumX+L5bXoXNXTppcDTtG5gHee=_Vk=h5EuOUBnpLQYDY2Q@mail.gmail.com>
+Subject: Re: [PATCH][BUGFIX] cgroups: more safe tasklist locking in cgroup_attach_proc
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: NeilBrown <neilb@suse.de>, paulmck@linux.vnet.ibm.com,
+        Li Zefan <lizf@cn.fujitsu.com>, Oleg Nesterov <oleg@tv-sign.ru>,
+        containers@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 11:33:24AM -0700, ZAK Magnus wrote:
-> Okay... So this is a problem we need to solve. Does there exist a good
-> way to output a stack trace to, say, a file in /proc? I think that
-> would be an appealing solution, if doable.
+On Fri, Jul 29, 2011 at 7:28 AM, Ben Blum <bblum@andrew.cmu.edu> wrote:
+> Fix unstable tasklist locking in cgroup_attach_proc.
+>
+> From: Ben Blum <bblum@andrew.cmu.edu>
+>
+> According to this thread - https://lkml.org/lkml/2011/7/27/243 - RCU is
+> not sufficient to guarantee the tasklist is stable w.r.t. de_thread and
+> exit. Taking tasklist_lock for reading, instead of rcu_read_lock,
+> ensures proper exclusion.
+>
+> Signed-off-by: Ben Blum <bblum@andrew.cmu.edu>
 
-One idea I thought of to workaround this is to save the timestamp and the
-watchdog bool and restore after the stack dump.  It's a cheap hack and I
-am not to sure about the locking as it might race with
-touch_nmi_watchdog().  But it gives you an idea what I was thinking.
+Acked-by: Paul Menage <menage@google.com>
 
-Being in the nmi context, no one can normally touch these variables,
-except for another cpu using touch_nmi_watchdog() (or watchdog_enable()
-but that should never race in these scenarios).
+Thanks,
+Paul
 
-Cheers,
-Don
-
-compile tested only.
-
-
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 17bcded..2dcedb3 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -214,6 +214,9 @@ void touch_softlockup_watchdog_sync(void)
- static void update_hardstall(unsigned long stall, int this_cpu)
- {
- 	int update_stall = 0;
-+	int ts;
-+	bool touched;
-+
- 	if (stall > hardstall_thresh &&
- 			stall > worst_hardstall + hardstall_diff_thresh) {
- 		unsigned long flags;
-@@ -225,10 +228,14 @@ static void update_hardstall(unsigned long stall, int this_cpu)
- 	}
- 
- 	if (update_stall) {
-+		ts = __this_cpu_read(watchdog_touch_ts);
-+		touched = __this_cpu_read(watchdog_nmi_touch);
- 		printk(KERN_WARNING "LOCKUP may be in progress!"
- 			"Worst hard stall seen on CPU#%d: %lums\n",
- 			this_cpu, stall);
- 		dump_stack();
-+		__this_cpu_write(watchdog_touch_ts, ts);
-+		__this_cpu_write(watchdog_nmi_touch, touched);
- 	}
- }
- 
-@@ -262,6 +269,9 @@ static int is_hardlockup(int this_cpu)
- static void update_softstall(unsigned long stall, int this_cpu)
- {
- 	int update_stall = 0;
-+	int ts;
-+	bool touched;
-+
- 	if (stall > get_softstall_thresh() &&
- 			stall > worst_softstall + softstall_diff_thresh) {
- 		unsigned long flags;
-@@ -273,10 +283,14 @@ static void update_softstall(unsigned long stall, int this_cpu)
- 	}
- 
- 	if (update_stall) {
-+		ts = __this_cpu_read(watchdog_touch_ts);
-+		touched = __this_cpu_read(watchdog_nmi_touch);
- 		printk(KERN_WARNING "LOCKUP may be in progress!"
- 				"Worst soft stall seen on CPU#%d: %lums\n",
- 				this_cpu, stall);
- 		dump_stack();
-+		__this_cpu_write(watchdog_touch_ts, ts);
-+		__this_cpu_write(watchdog_nmi_touch, touched);
- 	}
- }
- 
+> ---
+>  kernel/cgroup.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff a/kernel/cgroup.c b/kernel/cgroup.c
+> --- a/kernel/cgroup.c   2011-07-21 19:17:23.000000000 -0700
+> +++ b/kernel/cgroup.c   2011-07-29 06:17:47.000000000 -0700
+> @@ -2024,7 +2024,7 @@
+>                goto out_free_group_list;
+>
+>        /* prevent changes to the threadgroup list while we take a snapshot. */
+> -       rcu_read_lock();
+> +       read_lock(&tasklist_lock);
+>        if (!thread_group_leader(leader)) {
+>                /*
+>                 * a race with de_thread from another thread's exec() may strip
+> @@ -2033,7 +2033,7 @@
+>                 * throw this task away and try again (from cgroup_procs_write);
+>                 * this is "double-double-toil-and-trouble-check locking".
+>                 */
+> -               rcu_read_unlock();
+> +               read_unlock(&tasklist_lock);
+>                retval = -EAGAIN;
+>                goto out_free_group_list;
+>        }
+> @@ -2054,7 +2054,7 @@
+>        } while_each_thread(leader, tsk);
+>        /* remember the number of threads in the array for later. */
+>        group_size = i;
+> -       rcu_read_unlock();
+> +       read_unlock(&tasklist_lock);
+>
+>        /*
+>         * step 1: check that we can legitimately attach to the cgroup.
+>
