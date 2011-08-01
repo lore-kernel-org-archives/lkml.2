@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab1HATJR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 15:09:17 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33237 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751299Ab1HATJL (ORCPT
+	id S1752879Ab1HATW4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 15:22:56 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45420 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862Ab1HATWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 15:09:11 -0400
-Date: Mon, 1 Aug 2011 12:07:50 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Ingo Molnar <mingo@elte.hu>, kernel-hardening@lists.openwall.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+	Mon, 1 Aug 2011 15:22:51 -0400
+Date: Mon, 1 Aug 2011 23:22:45 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: kernel-hardening@lists.openwall.com
+Cc: Ingo Molnar <mingo@elte.hu>, "Paul E. McKenney" <paul.mckenney@linaro.org>,
         Manuel Lauss <manuel.lauss@googlemail.com>,
         linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
         torvalds@linux-foundation.org, Marc Zyngier <maz@misterjones.org>
 Subject: Re: [kernel-hardening] Re: initcall dependency problem (ns vs.
  threads)
-Message-Id: <20110801120750.5c0e6d2b.akpm@linux-foundation.org>
-In-Reply-To: <20110801190341.GA6898@albatros>
+Message-ID: <20110801192245.GA7202@albatros>
 References: <20110801180151.GA26686@albatros>
-	<20110801112021.25ec9041.akpm@linux-foundation.org>
-	<20110801190341.GA6898@albatros>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+ <20110801112021.25ec9041.akpm@linux-foundation.org>
+ <20110801190341.GA6898@albatros>
+ <20110801120750.5c0e6d2b.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110801120750.5c0e6d2b.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Aug 2011 23:03:41 +0400
-Vasiliy Kulikov <segoon@openwall.com> wrote:
-
-> > Are we talking about init_ipc_ns.ids[] here?  If so, did you try
-> > initializing the three rwsems at compile-time?
-> > 
-> > That's rather a nasty hack though.  It'd be better to run the mystery
-> > init function before starting the threads.
+On Mon, Aug 01, 2011 at 12:07 -0700, Andrew Morton wrote:
+> On Mon, 1 Aug 2011 23:03:41 +0400
+> Vasiliy Kulikov <segoon@openwall.com> wrote:
 > 
-> Looks like it solves the race.
+> > > Are we talking about init_ipc_ns.ids[] here?  If so, did you try
+> > > initializing the three rwsems at compile-time?
+> > > 
+> > > That's rather a nasty hack though.  It'd be better to run the mystery
+> > > init function before starting the threads.
+> > 
+> > Looks like it solves the race.
+> 
+> What patch are you talking about here?
 
-What patch are you talking about here?
+Sorry for short sentences :)  I tried the patch you've suggested -
+initialize rw_mutex in the init_ipc_ns declaration.  Surely, it solves a
+specific race.  As no kernel threads actually use shm, other fields are
+not needed to be initialized before do_initcall().
 
->  However, I think it should be solved on
-> another level.
+However, it is a bit ugly as it divides namespace initialization code
+into init_ipc_ns initialization and other namespaces.  It's better to
+use the same code for all namespaces (as it currently is).
 
-What level?
 
->  Other bugs might be hidden with this race.
+> >  However, I think it should be solved on
+> > another level.
+> 
+> What level?
 
-What bugs?
+I mean it is a bug of _implicit_ assume that kthreads don't use ns
+related information.  So, AFAICS, it can be fixed 2 ways:
+
+1) Move creations of kernel threads somewhere after namespaces
+initializations in the init chain.
+
+2) Deferring threads creation until all ns initialization is done.
+
+
+> >  Other bugs might be hidden with this race.
+> 
+> What bugs?
+
+I don't speak about specific bugs (I know the only one, which is this shm
+related bug), but I suppose some threads might use some ns related
+information as well.  At least I don't see whether it is somehow
+explicitly denied currently.
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
