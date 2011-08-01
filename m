@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab1HAKkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 06:40:05 -0400
-Received: from gate.crashing.org ([63.228.1.57]:44312 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753999Ab1HAKkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 06:40:02 -0400
-Subject: Re: [PATCH] perf: powerpc: Disable pagefaults during callchain
- stack read
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: David Ahern <dsahern@gmail.com>, anton@samba.org, acme@ghostprotocols.net,
-        mingo@elte.hu, paulus@samba.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1312192792.2617.381.camel@laptop>
-References: <1312059200-11563-1-git-send-email-dsahern@gmail.com>
-	 <1312192792.2617.381.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 01 Aug 2011 20:39:07 +1000
-Message-ID: <1312195147.8793.794.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754028Ab1HAKlA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 06:41:00 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:45216 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab1HAKkx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 06:40:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMuHMdUXZw=NO-sXLWu8TMkwE-_A_sq60KUVkYZrNFqcLOALrA@mail.gmail.com>
+References: <1312066693.22074.50.camel@i7.infradead.org>
+	<1312066923.22074.53.camel@i7.infradead.org>
+	<CAFLxGvy0QqoySDFwZpygHeXvQ7hG-B7z5iZq8qx3GUkFX8w2RQ@mail.gmail.com>
+	<1312151063.18010.25.camel@i7.infradead.org>
+	<20110731224834.GC2203@ZenIV.linux.org.uk>
+	<20110731225801.GD2203@ZenIV.linux.org.uk>
+	<1312153988.18010.39.camel@i7.infradead.org>
+	<CAFLxGvyewG70ZgU41Kmu_eOYpjZ0TVXYwYq1AfS1sXONAM6G_w@mail.gmail.com>
+	<20110801043207.GE2203@ZenIV.linux.org.uk>
+	<CAMuHMdUXZw=NO-sXLWu8TMkwE-_A_sq60KUVkYZrNFqcLOALrA@mail.gmail.com>
+Date: Mon, 1 Aug 2011 12:40:52 +0200
+Message-ID: <CAFLxGvxH+O=9vxCQSgTqZgHCbO2x-dDi3YUudHpapTu1v=VN1A@mail.gmail.com>
+Subject: Re: [uml-devel] [PATCH 1/5] um: Use __i386__ in ifdef for vsyscall
+ exports, not SUBARCH_i386
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnaud Lacombe <lacombar@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-01 at 11:59 +0200, Peter Zijlstra wrote:
-> > Signed-off-by: David Ahern <dsahern@gmail.com>
-> > CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > CC: Anton Blanchard <anton@samba.org> 
-> 
-> Hmm, Paul, didn't you fix something like this early on? Anyway, I've
-> no
-> objections since I'm really not familiar enough with the PPC side of
-> things. 
+On Mon, Aug 1, 2011 at 12:04 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> BTW, how much work would it be to port UML to ARM? Would be nice-to-have on
+> your Android phone, as it can provide a full Linux userspace without
+> requiring rooting
+> the phone.
+>
 
-I'm travelling so I haven't had a chance to review properly or even test
-but it looks like an ad-hoc fix for the immediate problem.
+Depends how strong your UML- and ARM-fu is. ;-)
+I'm sure it will be non-trivial...
 
-Ultimately, I want to rework that stuff to do a __gup_fast like x86 does
-(maybe as a fallback from an attempt at access first) so we work around
-access permissions blocked by lack of dirty/accessed bits but in the
-meantime, this should fix the immediate issue.
-
-Cheers,
-Ben.
-
-
+-- 
+Thanks,
+//richard
