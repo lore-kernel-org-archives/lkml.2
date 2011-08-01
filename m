@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab1HAX1u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 19:27:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38903 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754156Ab1HAX1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754155Ab1HAX1d (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 1 Aug 2011 19:27:33 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:54 2011
-Message-Id: <20110801232054.185177976@clark.kroah.org>
+Received: from cantor2.suse.de ([195.135.220.15]:38863 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754119Ab1HAX1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 19:27:19 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:53 2011
+Message-Id: <20110801232053.796250069@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 01 Aug 2011 16:18:51 -0700
+Date: Mon, 01 Aug 2011 16:18:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ben Greear <greearb@candelatech.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [36/70] SUNRPC: Fix use of static variable in rpcb_getport_async
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [32/70] mac80211: fix TKIP replay vulnerability
 In-Reply-To: <20110801232124.GA15313@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +26,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Greear <greearb@candelatech.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit ec0dd267bf7d08cb30e321e45a75fd40edd7e528 upstream.
+commit 34459512ffa7236c849466e3bd604801389734e1 upstream.
 
-Because struct rpcbind_args *map was declared static, if two
-threads entered this method at the same time, the values
-assigned to map could be sent two two differen tasks.
-This could cause all sorts of problems, include use-after-free
-and double-free of memory.
+Unlike CCMP, the presence or absence of the QoS
+field doesn't change the encryption, only the
+TID is used. When no QoS field is present, zero
+is used as the TID value. This means that it is
+possible for an attacker to take a QoS packet
+with TID 0 and replay it as a non-QoS packet.
 
-Fix this by removing the static declaration so that the map
-pointer is on the stack.
+Unfortunately, mac80211 uses different IVs for
+checking the validity of the packet's TKIP IV
+when it checks TID 0 and when it checks non-QoS
+packets. This means it is vulnerable to this
+replay attack.
 
-Signed-off-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+To fix this, use the same replay counter for
+TID 0 and non-QoS packets by overriding the
+rx->queue value to 0 if it is 16 (non-QoS).
+
+This is a minimal fix for now. I caused this
+issue in
+
+commit 1411f9b531f0a910cd1c85a337737c1e6ffbae6a
+Author: Johannes Berg <johannes@sipsolutions.net>
+Date:   Thu Jul 10 10:11:02 2008 +0200
+
+    mac80211: fix RX sequence number check
+
+while fixing a sequence number issue (there,
+a separate counter needs to be used).
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/rpcb_clnt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/mac80211/wpa.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
---- a/net/sunrpc/rpcb_clnt.c
-+++ b/net/sunrpc/rpcb_clnt.c
-@@ -528,7 +528,7 @@ void rpcb_getport_async(struct rpc_task
- 	u32 bind_version;
- 	struct rpc_xprt *xprt;
- 	struct rpc_clnt	*rpcb_clnt;
--	static struct rpcbind_args *map;
-+	struct rpcbind_args *map;
- 	struct rpc_task	*child;
- 	struct sockaddr_storage addr;
- 	struct sockaddr *sap = (struct sockaddr *)&addr;
+--- a/net/mac80211/wpa.c
++++ b/net/mac80211/wpa.c
+@@ -86,6 +86,11 @@ ieee80211_rx_h_michael_mic_verify(struct
+ 	struct sk_buff *skb = rx->skb;
+ 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(skb);
+ 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->data;
++	int queue = rx->queue;
++
++	/* otherwise, TKIP is vulnerable to TID 0 vs. non-QoS replays */
++	if (rx->queue == NUM_RX_DATA_QUEUES - 1)
++		queue = 0;
+ 
+ 	/* No way to verify the MIC if the hardware stripped it */
+ 	if (status->flag & RX_FLAG_MMIC_STRIPPED)
+@@ -119,8 +124,8 @@ ieee80211_rx_h_michael_mic_verify(struct
+ 	skb_trim(skb, skb->len - MICHAEL_MIC_LEN);
+ 
+ 	/* update IV in key information to be able to detect replays */
+-	rx->key->u.tkip.rx[rx->queue].iv32 = rx->tkip_iv32;
+-	rx->key->u.tkip.rx[rx->queue].iv16 = rx->tkip_iv16;
++	rx->key->u.tkip.rx[queue].iv32 = rx->tkip_iv32;
++	rx->key->u.tkip.rx[queue].iv16 = rx->tkip_iv16;
+ 
+ 	return RX_CONTINUE;
+ }
+@@ -201,6 +206,11 @@ ieee80211_crypto_tkip_decrypt(struct iee
+ 	struct ieee80211_key *key = rx->key;
+ 	struct sk_buff *skb = rx->skb;
+ 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(skb);
++	int queue = rx->queue;
++
++	/* otherwise, TKIP is vulnerable to TID 0 vs. non-QoS replays */
++	if (rx->queue == NUM_RX_DATA_QUEUES - 1)
++		queue = 0;
+ 
+ 	hdrlen = ieee80211_hdrlen(hdr->frame_control);
+ 
+@@ -221,7 +231,7 @@ ieee80211_crypto_tkip_decrypt(struct iee
+ 	res = ieee80211_tkip_decrypt_data(rx->local->wep_rx_tfm,
+ 					  key, skb->data + hdrlen,
+ 					  skb->len - hdrlen, rx->sta->sta.addr,
+-					  hdr->addr1, hwaccel, rx->queue,
++					  hdr->addr1, hwaccel, queue,
+ 					  &rx->tkip_iv32,
+ 					  &rx->tkip_iv16);
+ 	if (res != TKIP_DECRYPT_OK)
 
 
