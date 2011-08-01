@@ -1,84 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab1HATW4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 15:22:56 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45420 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab1HATWv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 15:22:51 -0400
-Date: Mon, 1 Aug 2011 23:22:45 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com
-Cc: Ingo Molnar <mingo@elte.hu>, "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        torvalds@linux-foundation.org, Marc Zyngier <maz@misterjones.org>
-Subject: Re: [kernel-hardening] Re: initcall dependency problem (ns vs.
- threads)
-Message-ID: <20110801192245.GA7202@albatros>
-References: <20110801180151.GA26686@albatros>
- <20110801112021.25ec9041.akpm@linux-foundation.org>
- <20110801190341.GA6898@albatros>
- <20110801120750.5c0e6d2b.akpm@linux-foundation.org>
+	id S1752892Ab1HATYU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 15:24:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8973 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752605Ab1HATYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 15:24:15 -0400
+Date: Mon, 1 Aug 2011 15:24:07 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: ZAK Magnus <zakmagnus@google.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH v3 2/2] Make hard lockup detection use timestamps
+Message-ID: <20110801192407.GE2581@redhat.com>
+References: <1311271873-10879-1-git-send-email-zakmagnus@google.com>
+ <20110722195340.GF3765@redhat.com>
+ <CAAuSN93tiSehpNXxjOgrq7oV-U+1ZPi2eqr+2dNSBG0yu0jxmA@mail.gmail.com>
+ <20110725124451.GA2866@redhat.com>
+ <CAAuSN93Qjk4eEAvm_Xn=O-0t+qhAyKmxy6HyPuyzJ35tX2u_CQ@mail.gmail.com>
+ <20110729205538.GD14343@redhat.com>
+ <CAAuSN93ouWrPn9xWb9Zd3E2Dp0hQxC4JmFH1utbyy1_aMnfkLA@mail.gmail.com>
+ <20110801125234.GE14343@redhat.com>
+ <CAAuSN92UAjuJXprBAj9z0sekk=iBWGe3PP88z8NmrZ5fExOyjg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110801120750.5c0e6d2b.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAAuSN92UAjuJXprBAj9z0sekk=iBWGe3PP88z8NmrZ5fExOyjg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 12:07 -0700, Andrew Morton wrote:
-> On Mon, 1 Aug 2011 23:03:41 +0400
-> Vasiliy Kulikov <segoon@openwall.com> wrote:
-> 
-> > > Are we talking about init_ipc_ns.ids[] here?  If so, did you try
-> > > initializing the three rwsems at compile-time?
-> > > 
-> > > That's rather a nasty hack though.  It'd be better to run the mystery
-> > > init function before starting the threads.
-> > 
-> > Looks like it solves the race.
-> 
-> What patch are you talking about here?
+On Mon, Aug 01, 2011 at 11:33:24AM -0700, ZAK Magnus wrote:
+> Okay... So this is a problem we need to solve. Does there exist a good
+> way to output a stack trace to, say, a file in /proc? I think that
+> would be an appealing solution, if doable.
 
-Sorry for short sentences :)  I tried the patch you've suggested -
-initialize rw_mutex in the init_ipc_ns declaration.  Surely, it solves a
-specific race.  As no kernel threads actually use shm, other fields are
-not needed to be initialized before do_initcall().
+One idea I thought of to workaround this is to save the timestamp and the
+watchdog bool and restore after the stack dump.  It's a cheap hack and I
+am not to sure about the locking as it might race with
+touch_nmi_watchdog().  But it gives you an idea what I was thinking.
 
-However, it is a bit ugly as it divides namespace initialization code
-into init_ipc_ns initialization and other namespaces.  It's better to
-use the same code for all namespaces (as it currently is).
+Being in the nmi context, no one can normally touch these variables,
+except for another cpu using touch_nmi_watchdog() (or watchdog_enable()
+but that should never race in these scenarios).
+
+Cheers,
+Don
+
+compile tested only.
 
 
-> >  However, I think it should be solved on
-> > another level.
-> 
-> What level?
-
-I mean it is a bug of _implicit_ assume that kthreads don't use ns
-related information.  So, AFAICS, it can be fixed 2 ways:
-
-1) Move creations of kernel threads somewhere after namespaces
-initializations in the init chain.
-
-2) Deferring threads creation until all ns initialization is done.
-
-
-> >  Other bugs might be hidden with this race.
-> 
-> What bugs?
-
-I don't speak about specific bugs (I know the only one, which is this shm
-related bug), but I suppose some threads might use some ns related
-information as well.  At least I don't see whether it is somehow
-explicitly denied currently.
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 17bcded..2dcedb3 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -214,6 +214,9 @@ void touch_softlockup_watchdog_sync(void)
+ static void update_hardstall(unsigned long stall, int this_cpu)
+ {
+ 	int update_stall = 0;
++	int ts;
++	bool touched;
++
+ 	if (stall > hardstall_thresh &&
+ 			stall > worst_hardstall + hardstall_diff_thresh) {
+ 		unsigned long flags;
+@@ -225,10 +228,14 @@ static void update_hardstall(unsigned long stall, int this_cpu)
+ 	}
+ 
+ 	if (update_stall) {
++		ts = __this_cpu_read(watchdog_touch_ts);
++		touched = __this_cpu_read(watchdog_nmi_touch);
+ 		printk(KERN_WARNING "LOCKUP may be in progress!"
+ 			"Worst hard stall seen on CPU#%d: %lums\n",
+ 			this_cpu, stall);
+ 		dump_stack();
++		__this_cpu_write(watchdog_touch_ts, ts);
++		__this_cpu_write(watchdog_nmi_touch, touched);
+ 	}
+ }
+ 
+@@ -262,6 +269,9 @@ static int is_hardlockup(int this_cpu)
+ static void update_softstall(unsigned long stall, int this_cpu)
+ {
+ 	int update_stall = 0;
++	int ts;
++	bool touched;
++
+ 	if (stall > get_softstall_thresh() &&
+ 			stall > worst_softstall + softstall_diff_thresh) {
+ 		unsigned long flags;
+@@ -273,10 +283,14 @@ static void update_softstall(unsigned long stall, int this_cpu)
+ 	}
+ 
+ 	if (update_stall) {
++		ts = __this_cpu_read(watchdog_touch_ts);
++		touched = __this_cpu_read(watchdog_nmi_touch);
+ 		printk(KERN_WARNING "LOCKUP may be in progress!"
+ 				"Worst soft stall seen on CPU#%d: %lums\n",
+ 				this_cpu, stall);
+ 		dump_stack();
++		__this_cpu_write(watchdog_touch_ts, ts);
++		__this_cpu_write(watchdog_nmi_touch, touched);
+ 	}
+ }
+ 
