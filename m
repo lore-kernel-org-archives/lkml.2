@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab1HAAii (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 20:38:38 -0400
-Received: from vms173017pub.verizon.net ([206.46.173.17]:45883 "EHLO
-	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831Ab1HAAia (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 20:38:30 -0400
-Date: Sun, 31 Jul 2011 20:36:03 -0400 (EDT)
-From: Peter Foley <pefoley2@verizon.net>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
-        mmarek@suse.cz, rdunlap@xenotime.net, lacombar@gmail.com
-Subject: [PATCH RFC] kconfig.h fix extraneous dependencies
-Message-id: <alpine.LNX.2.00.1107311812460.62769@linux>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1753295Ab1HAAnj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 20:43:39 -0400
+Received: from mga03.intel.com ([143.182.124.21]:13725 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751897Ab1HAAnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 20:43:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,297,1309762800"; 
+   d="scan'208";a="2848865"
+Subject: Re: [PATCH] kswapd: avoid unnecessary rebalance after an
+ unsuccessful balancing
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "P@draigBrady.com" <P@draigBrady.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andrea@cpushare.com" <andrea@cpushare.com>,
+        "Chen, Tim C" <tim.c.chen@intel.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "riel@redhat.com" <riel@redhat.com>, "luto@mit.edu" <luto@mit.edu>
+In-Reply-To: <20110729154031.GV3010@suse.de>
+References: <1311952990-3844-1-git-send-email-alex.shi@intel.com>
+	 <20110729154031.GV3010@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 01 Aug 2011 08:45:17 +0800
+Message-ID: <1312159517.27358.2446.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The introduction of kconfig.h caused fixdep to create three extraneous 
-dependencies.
-include/config/.h
-include/config/h.h
-include/config/foo.h
+On Fri, 2011-07-29 at 23:40 +0800, Mel Gorman wrote:
+> On Fri, Jul 29, 2011 at 11:23:10PM +0800, Alex Shi wrote:
+> > In commit 215ddd66, Mel Gorman said kswapd is better to sleep after a
+> > unsuccessful balancing if there is tighter reclaim request pending in
+> > the balancing. In this scenario, the 'order' and 'classzone_idx'
+> > that are checked for tighter request judgment is incorrect, since they
+> > aren't the one kswapd should read from new pgdat, but the last time pgdat
+> > value for just now balancing. Then kswapd will skip try_to_sleep func
+> > and rebalance the last pgdat request. It's not our expected behavior.
+> > 
+> > So, I added new variables to distinguish the returned order/classzone_idx
+> > from last balancing, that can resolved above issue in that scenario.
+> > 
+> 
+> I'm afraid this changelog is very difficult to read and I do not see
+> what problem you are trying to solve and I do not see what this patch
+> might solve.
+> 
+> When balance_pgdat() returns with a lower classzone or order, the values
+> stored in pgdat are not re-read and instead it tries to go to sleep
+> based on the starting request. Something like;
 
-Remove them by eliminating instances of CONFIG_
+Thanks for your comments, I will use this comments style next time, list
+request A, B etc. 
 
-Signed-off-by: Peter Foley <pefoley2@verizon.net>
----
+> 
+> 1. Read pgdat request A (classzone_idx, order)
 
-Suggestions for a better replacement for CONFIG_FOO would be appreciated.
+Assume the order of A > 0, like is 3.
 
-diff --git a/include/linux/kconfig.h b/include/linux/kconfig.h
-index 067eda0..66a0659 100644
---- a/include/linux/kconfig.h
-+++ b/include/linux/kconfig.h
-@@ -1,15 +1,15 @@
--#ifndef __LINUX_KCONFIG_H
--#define __LINUX_KCONFIG_H
-+#ifndef __LINUX_KCONFIG
-+#define __LINUX_KCONFIG
- 
- #include <generated/autoconf.h>
- 
- /*
-- * Helper macros to use CONFIG_ options in C expressions. Note that
-+ * Helper macros to use CONFIG options in C expressions. Note that
-  * these only work with boolean and tristate options.
-  */
- 
- /*
-- * IS_ENABLED(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y' or 'm',
-+ * IS_ENABLED(CONFIG _FOO) evaluates to 1 if CONFIG _FOO is set to 'y' or 'm',
-  * 0 otherwise.
-  *
-  */
-@@ -17,16 +17,16 @@
- 	(__enabled_ ## option || __enabled_ ## option ## _MODULE)
- 
- /*
-- * IS_BUILTIN(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y', 0
-+ * IS_BUILTIN(CONFIG _FOO) evaluates to 1 if CONFIG _FOO is set to 'y', 0
-  * otherwise. For boolean options, this is equivalent to
-- * IS_ENABLED(CONFIG_FOO).
-+ * IS_ENABLED(CONFIG _FOO).
-  */
- #define IS_BUILTIN(option) __enabled_ ## option
- 
- /*
-- * IS_MODULE(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'm', 0
-+ * IS_MODULE(CONFIG _FOO) evaluates to 1 if CONFIG _FOO is set to 'm', 0
-  * otherwise.
-  */
- #define IS_MODULE(option) __enabled_ ## option ## _MODULE
- 
--#endif /* __LINUX_KCONFIG_H */
-+#endif /* __LINUX_KCONFIG */
+> 2. balance_pgdat()
+> 3.	During pgdat, a new pgdat request B (classzone_idx, order) is placed
+> 4. balance_pgdat() returns but failed so classzone_idx is lower
+
+Another balance_pgdat() failure indicate is returned order == 0, am I
+right?  If so, the next step of kswapd is not trying to sleep, but do
+request A balance again.  And I thought this behavior doesn't match the
+comments in kswapd. 
+
+> 5. Try to sleep based on pgdat request A 
+
+> 
+> i.e. pgdat request B is not read and there is a comment explaining
+> why pgdat request B is not read after balance_pgdat() fails.
+> 
+> This patch adds some variables that might improve the readability
+> for some people but otherwise I can't see what problem is being
+> fixed. What did I miss?
+> 
+
+
