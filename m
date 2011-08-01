@@ -1,55 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab1HAKTU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 06:19:20 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:45041 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab1HAKTO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 06:19:14 -0400
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h2a8h668h839h63h)
-X-Spam-TCS-SCL: 2:0
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Alan Cox <alan@linux.intel.com>
-CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH 2/2] serial:blackfin: Put TX IRQ in individual platform resource. Fix typo.
-Date: Mon, 1 Aug 2011 18:13:12 +0800
-Message-ID: <1312193592-6672-1-git-send-email-sonic.adi@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753777Ab1HAK0W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 06:26:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19265 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752895Ab1HAK0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 06:26:13 -0400
+Date: Mon, 1 Aug 2011 13:26:43 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Liu Yuan <namei.unix@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] vhost-blk: An in-kernel accelerator for virtio-blk
+Message-ID: <20110801102643.GG5439@redhat.com>
+References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com>
+ <1311863346-4338-2-git-send-email-namei.unix@gmail.com>
+ <20110728152244.GA31888@redhat.com>
+ <4E3646E0.9050400@gmail.com>
+ <20110801081237.GC5439@redhat.com>
+ <4E366A1A.2090004@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E366A1A.2090004@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+On Mon, Aug 01, 2011 at 04:55:54PM +0800, Liu Yuan wrote:
+> Nope, V1 completion thread doesn't has any mutex, thus can run
+> parallel with the vhost worker.
 
-Fix typo in last patch.
-
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
----
- drivers/tty/serial/bfin_uart.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/tty/serial/bfin_uart.c b/drivers/tty/serial/bfin_uart.c
-index b907a2a..881c6e7 100644
---- a/drivers/tty/serial/bfin_uart.c
-+++ b/drivers/tty/serial/bfin_uart.c
-@@ -674,7 +674,7 @@ static int bfin_serial_startup(struct uart_port *port)
- 	}
- 
- 	if (request_irq
--	    (uart->port.tx_irq, bfin_serial_tx_int, IRQF_DISABLED,
-+	    (uart->tx_irq, bfin_serial_tx_int, IRQF_DISABLED,
- 	     "BFIN_UART_TX", uart)) {
- 		printk(KERN_NOTICE "Unable to attach BlackFin UART TX interrupt\n");
- 		free_irq(uart->rx_irq, uart);
--- 
-1.7.0.4
-
-
+It's true, it doesn't, but I think it's a bug :)
+It calls vhost_add_used which definitely needs the
+vq mutex.
