@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab1HAULg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 16:11:36 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:18350 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970Ab1HAULb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 16:11:31 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=BWqy5xPl+JqHwnQq0vn38k93C8YKCMNfCYuKo9lIJXILqvD9TMAq0Hg3xzEGvixb8
-	pslmNQkin6AmsT1icvxNw==
+	id S1753279Ab1HAURE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 16:17:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20228 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752821Ab1HAUQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 16:16:57 -0400
+Date: Mon, 1 Aug 2011 16:16:44 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
+        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+Subject: Re: [patch v2 01/10] kdump: Add KEXEC_CRASH_CONTROL_MEMORY_LIMIT
+Message-ID: <20110801201644.GG3805@redhat.com>
+References: <20110727125504.491183728@linux.vnet.ibm.com>
+ <20110727125807.529303146@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20110801192407.GE2581@redhat.com>
-References: <1311271873-10879-1-git-send-email-zakmagnus@google.com>
-	<20110722195340.GF3765@redhat.com>
-	<CAAuSN93tiSehpNXxjOgrq7oV-U+1ZPi2eqr+2dNSBG0yu0jxmA@mail.gmail.com>
-	<20110725124451.GA2866@redhat.com>
-	<CAAuSN93Qjk4eEAvm_Xn=O-0t+qhAyKmxy6HyPuyzJ35tX2u_CQ@mail.gmail.com>
-	<20110729205538.GD14343@redhat.com>
-	<CAAuSN93ouWrPn9xWb9Zd3E2Dp0hQxC4JmFH1utbyy1_aMnfkLA@mail.gmail.com>
-	<20110801125234.GE14343@redhat.com>
-	<CAAuSN92UAjuJXprBAj9z0sekk=iBWGe3PP88z8NmrZ5fExOyjg@mail.gmail.com>
-	<20110801192407.GE2581@redhat.com>
-Date: Mon, 1 Aug 2011 13:11:27 -0700
-Message-ID: <CAAuSN92zxF9ZDuMhgrB_sBUrt+O4jGJ=AMe_iNMYSwXo9o79Kw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] Make hard lockup detection use timestamps
-From: ZAK Magnus <zakmagnus@google.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Mandeep Singh Baines <msb@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110727125807.529303146@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 1, 2011 at 12:24 PM, Don Zickus <dzickus@redhat.com> wrote:
-> One idea I thought of to workaround this is to save the timestamp and the
-> watchdog bool and restore after the stack dump.  It's a cheap hack and I
-> am not to sure about the locking as it might race with
-> touch_nmi_watchdog().  But it gives you an idea what I was thinking.
-Yes, I see. Is the hackiness of it okay?
+On Wed, Jul 27, 2011 at 02:55:05PM +0200, Michael Holzheu wrote:
+> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> 
+> On s390 there is a different KEXEC_CONTROL_MEMORY_LIMIT for the normal and
+> the kdump kexec case. Therefore this patch introduces a new macro
+> KEXEC_CRASH_CONTROL_MEMORY_LIMIT. This is set to
+> KEXEC_CONTROL_MEMORY_LIMIT for all architectures that do not define
+> KEXEC_CRASH_CONTROL_MEMORY_LIMIT.
 
-> Being in the nmi context, no one can normally touch these variables,
-> except for another cpu using touch_nmi_watchdog() (or watchdog_enable()
-> but that should never race in these scenarios).
-Well, the soft lockup stuff is not a NMI but just a regular interrupt,
-right? Is that also okay?
+Hi Michael,
+
+Curious that why limit is different for kexec and kdump cases on s390
+only.
+
+Thanks
+Vivek
+
+> 
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> ---
+>  include/linux/kexec.h |    4 ++++
+>  kernel/kexec.c        |    2 +-
+>  2 files changed, 5 insertions(+), 1 deletion(-)
+> 
+> --- a/include/linux/kexec.h
+> +++ b/include/linux/kexec.h
+> @@ -33,6 +33,10 @@
+>  #error KEXEC_ARCH not defined
+>  #endif
+>  
+> +#ifndef KEXEC_CRASH_CONTROL_MEMORY_LIMIT
+> +#define KEXEC_CRASH_CONTROL_MEMORY_LIMIT KEXEC_CONTROL_MEMORY_LIMIT
+> +#endif
+> +
+>  #define KEXEC_NOTE_HEAD_BYTES ALIGN(sizeof(struct elf_note), 4)
+>  #define KEXEC_CORE_NOTE_NAME "CORE"
+>  #define KEXEC_CORE_NOTE_NAME_BYTES ALIGN(sizeof(KEXEC_CORE_NOTE_NAME), 4)
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -498,7 +498,7 @@ static struct page *kimage_alloc_crash_c
+>  	while (hole_end <= crashk_res.end) {
+>  		unsigned long i;
+>  
+> -		if (hole_end > KEXEC_CONTROL_MEMORY_LIMIT)
+> +		if (hole_end > KEXEC_CRASH_CONTROL_MEMORY_LIMIT)
+>  			break;
+>  		if (hole_end > crashk_res.end)
+>  			break;
