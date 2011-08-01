@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab1HAQoR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 12:44:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44714 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752912Ab1HAQoI (ORCPT
+	id S1753383Ab1HAQo1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 12:44:27 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55045 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753281Ab1HAQoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 12:44:08 -0400
-Message-ID: <4E36D7D6.4010004@linutronix.de>
-Date: Mon, 01 Aug 2011 18:44:06 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	Mon, 1 Aug 2011 12:44:21 -0400
+Date: Mon, 1 Aug 2011 17:44:18 +0100
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Fabien Marteau <fabien.marteau@armadeus.com>,
+        Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH] input: Add Nintendo extension controller driver
+Message-ID: <20110801164418.GA5306@ponder.secretlab.ca>
+References: <20110527081251.3992.27574.stgit@ponder>
+ <CACxGe6vO=dtFmG4r5Da+T1EOknEofjEHqg_Jc_TCagju-no9mQ@mail.gmail.com>
+ <20110801163823.GA3905@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: sodaville@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [sodaville] [PATCH v2 2/2] gpio: Add a driver for Sodaville	GPIO
- controller
-References: <1309159583-11339-1-git-send-email-bigeasy@linutronix.de>	<1309159583-11339-2-git-send-email-bigeasy@linutronix.de>	<20110704161914.GH29977@ponder.secretlab.ca>	<4E11EA63.8010909@linutronix.de>	<20110704163313.GB28042@ponder.secretlab.ca> <CACxGe6vNEFUf4o0Q5fh+Z2KG5knjgSSyPCT_b49=BqTdd0nZfA@mail.gmail.com>
-In-Reply-To: <CACxGe6vNEFUf4o0Q5fh+Z2KG5knjgSSyPCT_b49=BqTdd0nZfA@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110801163823.GA3905@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote:
->> HAHAHA.  I didn't bother to go digging into why it didn't compile.
->> I'll merge the branches and see how it goes.
+On Mon, Aug 01, 2011 at 09:38:24AM -0700, Dmitry Torokhov wrote:
+> Hi Grant,
 > 
-> Actually, no.  I've not finished irq_domain yet, and it is not queued
-> up for v3.1 (though I hope to be done with it this week).  I guess
-> this patch will have to sit on the sidelines for a bit.
-
-Since the domain_irq stuff is mainline now anyway to get this merged for
-v3.1?
-
+> On Mon, Aug 01, 2011 at 05:04:37PM +0100, Grant Likely wrote:
+> > Hi Dmitry,
+> > 
+> > Any thoughts on this patch?  Can you send it on to Linus?
+> > 
 > 
-> g.
+> I thought I responded earlier but apparently not...
+> 
+> The issue with the driver is that it pre-registers an input device with
+> a super-set of capabilities instead of waiting until the device is
+> properly identified and registering input device with the exact
+> capabilities.
+> 
+> The input policy is that device's stated capabilities should match the
+> physical device (within the constraints of input framework).
 
+Okay, that's solvable.  I'll rework and repost with a goal to merge in v3.2
 
-Sebastian
+g.
+
