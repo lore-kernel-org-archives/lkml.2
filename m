@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab1HAXZt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 19:25:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38309 "EHLO mx2.suse.de"
+	id S1753973Ab1HAX0K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 19:26:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38379 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753445Ab1HAXZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 19:25:28 -0400
+	id S1753890Ab1HAXZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 19:25:39 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:51 2011
-Message-Id: <20110801232051.189269480@clark.kroah.org>
+Message-Id: <20110801232051.470488160@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 01 Aug 2011 16:18:21 -0700
+Date: Mon, 01 Aug 2011 16:18:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bob Liu <lliubbo@gmail.com>, Geert Uytterhoeven <geert@linux-m68k.org>,
-        David Howells <dhowells@redhat.com>, Greg Ungerer <gerg@uclinux.org>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: [06/70] mm/nommu.c: fix remap_pfn_range()
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [09/70] hwmon: (lm95241) Fix negative temperature results
 In-Reply-To: <20110801232124.GA15313@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,53 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Liu <lliubbo@gmail.com>
+From: Guenter Roeck <guenter.roeck@ericsson.com>
 
-commit 8f3b1327aa454bc8283e96bca7669c3c88b83f79 upstream.
+commit 0c2a40e2fe4f4af0410f57e84b95b817ec15aa70 upstream.
 
-remap_pfn_range() means map physical address pfn<<PAGE_SHIFT to user addr.
+Negative temperatures were returned in degrees C instead of milli-Degrees C.
+Also, negative temperatures were reported for remote temperature sensors even
+if the chip was configured for positive-only results.
 
-For nommu arch it's implemented by vma->vm_start = pfn << PAGE_SHIFT which
-is wrong acroding the original meaning of this function.  And some driver
-developer using remap_pfn_range() with correct parameter will get
-unexpected result because vm_start is changed.  It should be implementd
-like addr = pfn << PAGE_SHIFT but which is meanless on nommu arch, this
-patch just make it simply return.
+Fix by detecting temperature modes, and by treating negative temperatures
+similar to positive temperatures, with appropriate sign extension.
 
-Parameter name and setting of vma->vm_flags also be fixed.
-
-Signed-off-by: Bob Liu <lliubbo@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: David Howells <dhowells@redhat.com>
-Acked-by: Greg Ungerer <gerg@uclinux.org>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Bob Liu <lliubbo@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/nommu.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/hwmon/lm95241.c |   20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -1819,10 +1819,13 @@ struct page *follow_page(struct vm_area_
- 	return NULL;
+--- a/drivers/hwmon/lm95241.c
++++ b/drivers/hwmon/lm95241.c
+@@ -98,11 +98,16 @@ struct lm95241_data {
+ };
+ 
+ /* Conversions */
+-static int TempFromReg(u8 val_h, u8 val_l)
++static int temp_from_reg_signed(u8 val_h, u8 val_l)
+ {
+-	if (val_h & 0x80)
+-		return val_h - 0x100;
+-	return val_h * 1000 + val_l * 1000 / 256;
++	s16 val_hl = (val_h << 8) | val_l;
++	return val_hl * 1000 / 256;
++}
++
++static int temp_from_reg_unsigned(u8 val_h, u8 val_l)
++{
++	u16 val_hl = (val_h << 8) | val_l;
++	return val_hl * 1000 / 256;
  }
  
--int remap_pfn_range(struct vm_area_struct *vma, unsigned long from,
--		unsigned long to, unsigned long size, pgprot_t prot)
-+int remap_pfn_range(struct vm_area_struct *vma, unsigned long addr,
-+		unsigned long pfn, unsigned long size, pgprot_t prot)
+ static struct lm95241_data *lm95241_update_device(struct device *dev)
+@@ -135,10 +140,13 @@ static ssize_t show_input(struct device
+ 			  char *buf)
  {
--	vma->vm_start = vma->vm_pgoff << PAGE_SHIFT;
-+	if (addr != (pfn << PAGE_SHIFT))
-+		return -EINVAL;
-+
-+	vma->vm_flags |= VM_IO | VM_RESERVED | VM_PFNMAP;
- 	return 0;
+ 	struct lm95241_data *data = lm95241_update_device(dev);
++	int index = to_sensor_dev_attr(attr)->index;
+ 
+ 	return snprintf(buf, PAGE_SIZE - 1, "%d\n",
+-		TempFromReg(data->temp[to_sensor_dev_attr(attr)->index],
+-			    data->temp[to_sensor_dev_attr(attr)->index + 1]));
++			index == 0 || (data->config & (1 << (index / 2))) ?
++		temp_from_reg_signed(data->temp[index], data->temp[index + 1]) :
++		temp_from_reg_unsigned(data->temp[index],
++				       data->temp[index + 1]));
  }
- EXPORT_SYMBOL(remap_pfn_range);
+ 
+ static ssize_t show_type(struct device *dev, struct device_attribute *attr,
 
 
