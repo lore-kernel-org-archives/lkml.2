@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab1HAK04 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 06:26:56 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34444 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752898Ab1HAK0t (ORCPT
+	id S1753899Ab1HAK3d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 06:29:33 -0400
+Received: from cernmx30.cern.ch ([137.138.144.177]:44733 "EHLO
+	CERNMX30.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752964Ab1HAK3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 06:26:49 -0400
-Date: Mon, 1 Aug 2011 11:26:27 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: linus.walleij@linaro.org, pratyush.anand@st.com, rajeev-dlh.kumar@st.com,
-        bhupesh.sharma@st.com, shiraz.hashim@st.com, vinod.koul@intel.com,
-        linux-kernel@vger.kernel.org, vipin.kumar@st.com,
-        armando.visconti@st.com, amit.virdi@st.com, vipulkumar.samar@st.com,
-        viresh.linux@gmail.com, deepak.sikri@st.com, dan.j.williams@intel.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2 08/20] dmaengine/amba-pl08x: support runtime PM
-Message-ID: <20110801102627.GF15578@n2100.arm.linux.org.uk>
-References: <cover.1312190881.git.viresh.kumar@st.com> <bc59bbd3709a7af1723d37ab846bf44c6867c00e.1312190881.git.viresh.kumar@st.com>
+	Mon, 1 Aug 2011 06:29:30 -0400
+X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Aug 2011 06:29:30 EDT
+From: Manohar Vanga <manohar.vanga@cern.ch>
+To: <gregkh@suse.de>
+CC: <martyn.welch@ge.com>, <cota@braap.org>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>, Manohar Vanga <manohar.vanga@cern.ch>
+Subject: [PATCH 0/8] VME Driver Fixes
+Date: Mon, 1 Aug 2011 12:20:45 +0200
+Message-ID: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <bc59bbd3709a7af1723d37ab846bf44c6867c00e.1312190881.git.viresh.kumar@st.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain
+X-Originating-IP: [137.138.192.18]
+Keywords: CERN SpamKiller Note: -50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 03:07:18PM +0530, Viresh Kumar wrote:
-> @@ -1993,6 +2002,8 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
->  	dev_info(&pl08x->adev->dev, "DMA: PL%03x rev%u at 0x%08llx irq %d\n",
->  		 amba_part(adev), amba_rev(adev),
->  		 (unsigned long long)adev->res.start, adev->irq[0]);
-> +
-> +	pm_runtime_suspend(&adev->dev);
+A little background: I work at CERN in the device drivers section and
+we have a lot of VME crates we use in the accelerator controls. We have
+been using an in-house driver for some time now and want to slowly port
+our existing device drivers over to the kernel driver.
 
-Having read the runtime pm documentation, devices are assumed to be
-suspended at probe time, and there should be a call to pm_runtime_enable()
-in here.  See Documentation/power/runtime_pm.txt chapter 5.
+This set of patches adds multiple changes to the VME driver that fix
+various issues, mostly dealing with the device driver model. Some of
+these are based on the changes made by Emilio G. Cota in a previous
+LKML thread at:
 
-However, this is complicated by the core managing the peripheral clock,
-which starts off in the enabled state.  So there's only one sane solution,
-which is to tell the runtime PM that the device is already active.  So
-I think a primecell's probe function should look like this:
+    https://lkml.org/lkml/2010/10/25/480
 
-primecell_probe()
-{
-	ret = amba_request_regions(adev, NULL);
-	if (ret)
-		return ret;
+Thanks and best regards,
+Manohar Vanga
 
-	... allocate stuff, don't access primecell though ...
+Emilio G. Cota (1):
+  staging: vme: allow explicit assignment of bus numbers
 
-	pm_runtime_set_active(&adev->dev);
-	pm_runtime_enable(&adev->dev);
+Manohar Vanga (7):
+  staging: vme_user: change kmalloc+memset to kzalloc
+  staging: vme: make [alloc|free]_consistent bridge specific
+  staging: vme: keep track of registered buses
+  staging: vme: add functions for bridge module refcounting
+  staging: vme: rename *_slot_get to *_get_slot
+  staging: vme: add struct vme_dev for VME devices
+  staging: vme: make match() driver specific to improve non-VME64x
+    support
 
-	... get clocks and enable them, do rest of init ...
+ drivers/staging/vme/bridges/vme_ca91cx42.c |   54 ++++-
+ drivers/staging/vme/bridges/vme_tsi148.c   |   53 ++++-
+ drivers/staging/vme/devices/vme_user.c     |   63 ++++-
+ drivers/staging/vme/devices/vme_user.h     |    2 +-
+ drivers/staging/vme/vme.c                  |  414 ++++++++++++++++------------
+ drivers/staging/vme/vme.h                  |   56 +++-
+ drivers/staging/vme/vme_api.txt            |    2 +-
+ drivers/staging/vme/vme_bridge.h           |   19 +-
+ 8 files changed, 435 insertions(+), 228 deletions(-)
 
-	pm_runtime_put_sync(&adev->dev);
-	return 0;
-}
+-- 
+1.7.4.1
+
