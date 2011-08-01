@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab1HANZz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 09:25:55 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:37263 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752467Ab1HANZt (ORCPT
+	id S1753121Ab1HAN04 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 09:26:56 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45075 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752579Ab1HAN0t convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 09:25:49 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AocDAKGnNk55LCkBgWdsb2JhbABBDqdSFQEBFiYlgUABAQUyASMjEAgDDgouFCUDIRPIFQ6FVV8EoyhJ
-Date: Mon, 1 Aug 2011 23:25:46 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu
-Subject: Re: [3.0-rc0 Regression]: legacy vsyscall emulation increases user
- CPU time by 20%
-Message-ID: <20110801132546.GB12870@dastard>
-References: <20110729013830.GC5404@dastard>
- <CAObL_7GdxD07-9_aYZBDqutQD6cVz2kYHXAcUwDWr6NkqRdByw@mail.gmail.com>
- <20110729072426.GF5404@dastard>
- <CAObL_7HCyS0aE2KKJR0rF48VKVqdeOruNVvsakAjzR5J6GHvPw@mail.gmail.com>
- <CAObL_7G6rb23X2xAA0Aw6jT+TapynDvhAicNNeo91jD09S5UkQ@mail.gmail.com>
- <20110731110119.GO5404@dastard>
- <CAObL_7ES3FyAAaX-1GOjKV1xCbT2pnW7=Ey+=ErUdTKUt8shkA@mail.gmail.com>
+	Mon, 1 Aug 2011 09:26:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAObL_7ES3FyAAaX-1GOjKV1xCbT2pnW7=Ey+=ErUdTKUt8shkA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [178.212.96.93]
+Date: Mon, 1 Aug 2011 16:26:49 +0300
+Message-ID: <CAFdoEiT54o+NQKO=dAcOXgyf6GJ1E51w_H_p7PJyRmynz8Sbzg@mail.gmail.com>
+Subject: [Bug?] Machine hangs, rtl8192se possible cause
+From: Jaroslaw Fedewicz <jafd@netstyle.com.ua>
+To: linux-kernel@vger.kernel.org
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        Larry.Finger@lwfinger.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 08:29:47AM -0400, Andrew Lutomirski wrote:
-> On Sun, Jul 31, 2011 at 7:01 AM, Dave Chinner <david@fromorbit.com> wrote:
-> > On Fri, Jul 29, 2011 at 09:26:19AM -0400, Andrew Lutomirski wrote:
-> >> On Fri, Jul 29, 2011 at 8:17 AM, Andrew Lutomirski <luto@mit.edu> wrote:
-> >> > On Fri, Jul 29, 2011 at 3:24 AM, Dave Chinner <david@fromorbit.com> wrote:
-> >> >> On Thu, Jul 28, 2011 at 11:30:49PM -0400, Andrew Lutomirski wrote:
-> >> >>> >
-> >> >>> > Assuming this is the problem, can this be fixed without requiring
-> >> >>> > the whole world having to wait for the current glibc dev tree to
-> >> >>> > filter down into distro repositories?
-> >> >>>
-> >> >>> How old is your glibc?  gettimeofday has used the vdso since:
-> >> >>
-> >> >> It's 2.11 on the test machine, whatever that translates to. I
-> >> >> haven't really changed the base userspace for about 12 months
-> >> >> because if I do I invalidate all my historical benchmark results
-> >> >> that I use for comparisons.
-> >> >
-> >> > 2.11 is from 2009 and appears to contain that commit.  Does your
-> >> > workload call time() very frequently?  That's the largest slowdown.
-> >> > With the old code, time() took 4-5 ns and with the new code time() is
-> >> > about as slow as gettimeofday().  I suggested having a config option
-> >> > to allow time() to stay fast until glibc 2.14 became widespread, but a
-> >> > few other people disagreed.
-> >>
-> >> *sigh*
-> >>
-> >> fs_mark: fs_mark.o lib_timing.o
-> >>         ${CC} -static -o fs_mark fs_mark.o lib_timing.o
-> >>
-> >> Even brand-new glibc still issues vsyscalls when statically linked,
-> >> and Ulrich has said [1] that he doesn't care that much about
-> >> performance of statically linked code.
-> >>
-> >> How bad would it be to just remove the -static from the makefile?
-> >
-> > Results in 270s +-5s user CPU time, so user CPU time is still ~10%
-> > up on 3.0 numbers.  IOWs, a non-static link roughly halves the
-> > regression but doesn't get rid of it.
-> 
-> Are you sure?  I stuck a trace event in do_emulate_vsyscall and it's
-> not getting hit at all in fs_mark, at least on my system.  I'll send
-> out the patch tomorrow.
+Hello,
 
-It may be other changes to kernel code that are causing the rest of
-the regresssion. Kernel code that blows the CPU caches (e.g. direct
-reclaim LRU scanning) can have a major effect of the userspace CPU
-time, so it's probably some secondary effect like that I'm seeing.
+I own a Thinkpad Edge 13 (AMD, machine type 0197) laptop, which is
+shipped with a Realtek 8192 SE WLAN card.
 
-Cheers,
+The WLAN support with this particular card was never brilliant under
+Linux, first with (very) flakey drivers from Realtek which would stop
+transmitting packets every so often or panic after a few hours of
+usage. The in-tree drivers are better in this respect, but I'm
+experiencing mysterious hangups every once in a while. The machine is
+effectively dead and has to be power-cycled â€”Â no oops, no kernel
+panic, no nothing, it just hangs and that's it.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+I'm sure this is not a regression because the hangups were right there
+from the start.
+
+The last meaningful message which might be helpful was: "wait for
+BIT(6) return value X" (I don't remember what X was, it was a while
+ago and only once).
+
+I don't know if there are other means to debug (netconsole over eth0?)
+those hangs. The only other thing I know for sure that I can get a
+week long uptime if I blacklist rtl8192se.ko from loading.
+
+If I can provide any additional information to track the bug (or a
+faulty piece of hardware?) down, please tell me. Google tells me
+nobody reported this before, or it was just me feeding incorrect
+keywords.
+
+Thanks for your kind attention.
+
+P. S. Tried netconsole before, got nothing to pinpoint the error. The
+only recurring pattern I could see in it was that almost every time
+the machine hanged was after ip6tables initialized, at least it was
+the last message in the log.
+
+P. P. S. I don't track netdev@ and linux-wireless@ lists, so please Cc: me.
