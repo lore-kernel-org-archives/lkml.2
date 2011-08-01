@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab1HAVQS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 17:16:18 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:14501 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab1HAVQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 17:16:07 -0400
-Date: Mon, 1 Aug 2011 23:16:06 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: trivial@kernel.org, Lars Ellenberg <drbd-dev@lists.linbit.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        drbd-user@lists.linbit.com
-Subject: [PATCH][Resend] Remove unneeded version.h includes from
- drivers/block/
-Message-ID: <alpine.LNX.2.00.1108012314410.31999@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752968Ab1HAVUJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 17:20:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60268 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752448Ab1HAVUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 17:20:04 -0400
+Date: Mon, 1 Aug 2011 14:16:59 -0700
+From: Greg KH <gregkh@suse.de>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: edwin_rong <edwin_rong@realsil.com.cn>, wwang <wei_wang@realsil.com.cn>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: ums-realtek driver uses stack memory for DMA
+Message-ID: <20110801211659.GA13252@suse.de>
+References: <20110801210905.GC2096@zod.bos.redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110801210905.GC2096@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was pointed out by 'make versioncheck' that some includes of
-linux/version.h are not needed in drivers/block/.
-This patch removes them.
+On Mon, Aug 01, 2011 at 05:09:06PM -0400, Josh Boyer wrote:
+> Hello,
+> 
+> We have a report that the ums-realtek driver is generating a backtrace
+> due to using stack variables for DMA buffers.  The backtrace is below
+> and you can view the bug report here:
+> https://bugzilla.redhat.com/show_bug.cgi?id=720054
+> 
+> Looking through the code, it seems that every call to rts51x_read_mem,
+> rts51x_write_mem, and rts51x_read_status passes a stack variable to
+> rts51x_bulk_transport, which then calls usb_stor_bulk_transfer_buf with
+> this and generates the backtrace.  It is my understanding that the
+> driver should be passing variables that are not on the stack and have
+> been allocated with memory that will be suitable for the DMA api (e.g.
+> kmalloc).
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/block/drbd/drbd_int.h      |    1 -
- drivers/block/xen-blkback/common.h |    1 -
- 2 files changed, 0 insertions(+), 2 deletions(-)
+That is correct.
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index ef2ceed..1c3194d 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -28,7 +28,6 @@
- 
- #include <linux/compiler.h>
- #include <linux/types.h>
--#include <linux/version.h>
- #include <linux/list.h>
- #include <linux/sched.h>
- #include <linux/bitops.h>
-diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
-index 9e40b28..0d04c7f 100644
---- a/drivers/block/xen-blkback/common.h
-+++ b/drivers/block/xen-blkback/common.h
-@@ -27,7 +27,6 @@
- #ifndef __XEN_BLKIF__BACKEND__COMMON_H__
- #define __XEN_BLKIF__BACKEND__COMMON_H__
- 
--#include <linux/version.h>
- #include <linux/module.h>
- #include <linux/interrupt.h>
- #include <linux/slab.h>
--- 
-1.7.6
+> Was this missed during the initial review and is anyone working on
+> adapting the driver to be compliant?
 
+Odds are it was missed.  Patches gladly accepted.
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+thanks,
 
+greg k-h
