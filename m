@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab1HAX1d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 19:27:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38863 "EHLO mx2.suse.de"
+	id S1754060Ab1HAX17 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 19:27:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38934 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754119Ab1HAX1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 19:27:19 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:53 2011
-Message-Id: <20110801232053.796250069@clark.kroah.org>
+	id S1754164Ab1HAX1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 19:27:41 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:57 2011
+Message-Id: <20110801232057.540698730@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 01 Aug 2011 16:18:47 -0700
+Date: Mon, 01 Aug 2011 16:19:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [32/70] mac80211: fix TKIP replay vulnerability
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [69/70] bridge: send proper message_age in config BPDU
 In-Reply-To: <20110801232124.GA15313@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,92 +26,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: stephen hemminger <shemminger@vyatta.com>
 
-commit 34459512ffa7236c849466e3bd604801389734e1 upstream.
+commit 0c03150e7ea8f7fcd03cfef29385e0010b22ee92 upstream.
 
-Unlike CCMP, the presence or absence of the QoS
-field doesn't change the encryption, only the
-TID is used. When no QoS field is present, zero
-is used as the TID value. This means that it is
-possible for an attacker to take a QoS packet
-with TID 0 and replay it as a non-QoS packet.
+A bridge topology with three systems:
 
-Unfortunately, mac80211 uses different IVs for
-checking the validity of the packet's TKIP IV
-when it checks TID 0 and when it checks non-QoS
-packets. This means it is vulnerable to this
-replay attack.
+      +------+  +------+
+      | A(2) |--| B(1) |
+      +------+  +------+
+           \    /
+          +------+
+          | C(3) |
+          +------+
 
-To fix this, use the same replay counter for
-TID 0 and non-QoS packets by overriding the
-rx->queue value to 0 if it is 16 (non-QoS).
+What is supposed to happen:
+ * bridge with the lowest ID is elected root (for example: B)
+ * C detects that A->C is higher cost path and puts in blocking state
 
-This is a minimal fix for now. I caused this
-issue in
+What happens. Bridge with lowest id (B) is elected correctly as
+root and things start out fine initially. But then config BPDU
+doesn't get transmitted from A -> C. Because of that
+the link from A-C is transistioned to the forwarding state.
 
-commit 1411f9b531f0a910cd1c85a337737c1e6ffbae6a
-Author: Johannes Berg <johannes@sipsolutions.net>
-Date:   Thu Jul 10 10:11:02 2008 +0200
+The root cause of this is that the configuration messages
+is generated with bogus message age, and dropped before
+sending.
 
-    mac80211: fix RX sequence number check
+In the standardmessage_age is supposed to be:
+  the time since the generation of the Configuration BPDU by
+  the Root that instigated the generation of this Configuration BPDU.
 
-while fixing a sequence number issue (there,
-a separate counter needs to be used).
+Reimplement this by recording the timestamp (age + jiffies) when
+recording config information. The old code incorrectly used the time
+elapsed on the ageing timer which was incorrect.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+See also:
+  https://bugzilla.vyatta.com/show_bug.cgi?id=7164
+
+Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/wpa.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ net/bridge/br_private.h |    1 +
+ net/bridge/br_stp.c     |    4 ++--
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/net/mac80211/wpa.c
-+++ b/net/mac80211/wpa.c
-@@ -86,6 +86,11 @@ ieee80211_rx_h_michael_mic_verify(struct
- 	struct sk_buff *skb = rx->skb;
- 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(skb);
- 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->data;
-+	int queue = rx->queue;
-+
-+	/* otherwise, TKIP is vulnerable to TID 0 vs. non-QoS replays */
-+	if (rx->queue == NUM_RX_DATA_QUEUES - 1)
-+		queue = 0;
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -123,6 +123,7 @@ struct net_bridge_port
+ 	bridge_id			designated_bridge;
+ 	u32				path_cost;
+ 	u32				designated_cost;
++	unsigned long			designated_age;
  
- 	/* No way to verify the MIC if the hardware stripped it */
- 	if (status->flag & RX_FLAG_MMIC_STRIPPED)
-@@ -119,8 +124,8 @@ ieee80211_rx_h_michael_mic_verify(struct
- 	skb_trim(skb, skb->len - MICHAEL_MIC_LEN);
+ 	struct timer_list		forward_delay_timer;
+ 	struct timer_list		hold_timer;
+--- a/net/bridge/br_stp.c
++++ b/net/bridge/br_stp.c
+@@ -164,8 +164,7 @@ void br_transmit_config(struct net_bridg
+ 	else {
+ 		struct net_bridge_port *root
+ 			= br_get_port(br, br->root_port);
+-		bpdu.message_age = br->max_age
+-			- (root->message_age_timer.expires - jiffies)
++		bpdu.message_age = (jiffies - root->designated_age)
+ 			+ MESSAGE_AGE_INCR;
+ 	}
+ 	bpdu.max_age = br->max_age;
+@@ -189,6 +188,7 @@ static inline void br_record_config_info
+ 	p->designated_cost = bpdu->root_path_cost;
+ 	p->designated_bridge = bpdu->bridge_id;
+ 	p->designated_port = bpdu->port_id;
++	p->designated_age = jiffies + bpdu->message_age;
  
- 	/* update IV in key information to be able to detect replays */
--	rx->key->u.tkip.rx[rx->queue].iv32 = rx->tkip_iv32;
--	rx->key->u.tkip.rx[rx->queue].iv16 = rx->tkip_iv16;
-+	rx->key->u.tkip.rx[queue].iv32 = rx->tkip_iv32;
-+	rx->key->u.tkip.rx[queue].iv16 = rx->tkip_iv16;
- 
- 	return RX_CONTINUE;
- }
-@@ -201,6 +206,11 @@ ieee80211_crypto_tkip_decrypt(struct iee
- 	struct ieee80211_key *key = rx->key;
- 	struct sk_buff *skb = rx->skb;
- 	struct ieee80211_rx_status *status = IEEE80211_SKB_RXCB(skb);
-+	int queue = rx->queue;
-+
-+	/* otherwise, TKIP is vulnerable to TID 0 vs. non-QoS replays */
-+	if (rx->queue == NUM_RX_DATA_QUEUES - 1)
-+		queue = 0;
- 
- 	hdrlen = ieee80211_hdrlen(hdr->frame_control);
- 
-@@ -221,7 +231,7 @@ ieee80211_crypto_tkip_decrypt(struct iee
- 	res = ieee80211_tkip_decrypt_data(rx->local->wep_rx_tfm,
- 					  key, skb->data + hdrlen,
- 					  skb->len - hdrlen, rx->sta->sta.addr,
--					  hdr->addr1, hwaccel, rx->queue,
-+					  hdr->addr1, hwaccel, queue,
- 					  &rx->tkip_iv32,
- 					  &rx->tkip_iv16);
- 	if (res != TKIP_DECRYPT_OK)
+ 	mod_timer(&p->message_age_timer, jiffies
+ 		  + (p->br->max_age - bpdu->message_age));
 
 
