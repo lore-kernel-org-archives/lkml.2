@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab1HABd6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 21:33:58 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:55992 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992Ab1HABdx (ORCPT
+	id S1753461Ab1HABkv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 21:40:51 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60041 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753009Ab1HABkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 21:33:53 -0400
-Date: Mon, 1 Aug 2011 09:33:41 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Lin Ming <ming.m.lin@intel.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        lkml <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH] sched: Remove WAKEUP_PREEMPT feature check in entity_tick
-Message-ID: <20110801013341.GA26768@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20110729062158.GA8971@zhy>
- <1311922180.3938.1573.camel@minggr.sh.intel.com>
- <20110729070356.GA10420@zhy>
- <1311924975.3938.1583.camel@minggr.sh.intel.com>
- <20110729074635.GB10420@zhy>
- <1311926218.5890.215.camel@twins>
- <20110729081800.GA12106@zhy>
- <1311927650.5890.217.camel@twins>
- <20110729084637.GC12106@zhy>
- <1311939933.5890.341.camel@twins>
+	Sun, 31 Jul 2011 21:40:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1311939933.5890.341.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110801012813.GR5404@dastard>
+References: <20110728164105.GA18258@infradead.org> <20110729142121.GA21149@localhost>
+ <20110730134422.GA1884@infradead.org> <20110731151014.GA23106@localhost>
+ <20110731234749.GQ5404@dastard> <CA+55aFzkb58Gtzgpd3oQgXekpg4APN6jDLNCh=CAMQ0zwyE4kg@mail.gmail.com>
+ <20110801012813.GR5404@dastard>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 31 Jul 2011 15:40:20 -1000
+Message-ID: <CA+55aFwtfUeUn=MuqSEyPiPeC5=k2xK2ULd9-5ShQAJ=4T0CvQ@mail.gmail.com>
+Subject: Re: xfstests 073 regression
+To: Dave Chinner <david@fromorbit.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 29, 2011 at 01:45:33PM +0200, Peter Zijlstra wrote:
-> On Fri, 2011-07-29 at 16:46 +0800, Yong Zhang wrote:
-> > Let's take UP for example, we have cpu-hug task A and threadirq B.
-> > 
-> >         n tick          --->            n+1 tick
-> > set_tsk_need_resched(A);
-> >                 B comes in and
-> >                 wake up thread-B;
-> > 
-> > So for system on which we disable WAKEUP_PREEMPT,
-> > if we don't have that check, thread-B will wait until n+1 tick comes
-> > to get to run.
-> > But if we have that check, thread-B will get to run after IRQ-B returns.
-> 
-> But that's exactly what wakeup preemption is about, waking tasks don't
-> get to preempt running tasks. So no doing that preemption is exactly
-> right for !WAKEUP_PREEMPT.
-> 
-> Anyway, I've queued the removal patch since that removes all
-> confusion ;-)
+On Sun, Jul 31, 2011 at 3:28 PM, Dave Chinner <david@fromorbit.com> wrote:
+>
+> IOWs, what I'm asking is whether this "just move the inodes one at a
+> time to a different queue" is just a bandaid for a particular
+> symptom of a deeper problem we haven't realised existed....
 
-Yup, that sounds good. Thanks Peter.
+Deeper problems in writeback? Unpossible.
 
--Yong
+The writeback code has pretty much always been just a collection of
+"bandaids for particular symptoms of deeper problems".  So let's just
+say I'd not be shocked. But what else would you suggest? You could
+just break out of the loop if you can't get the read lock, but while
+the *common* case is likely that a lot of the inodes are on the same
+filesystem, that's certainly not the only possible case.
 
--- 
-Only stand for myself
+                 Linus
