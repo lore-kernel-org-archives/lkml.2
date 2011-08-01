@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab1HASdk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 14:33:40 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:38157 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751Ab1HASdd (ORCPT
+	id S1752845Ab1HASeQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 14:34:16 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:42886 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752675Ab1HASeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 14:33:33 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:x-system-of-record;
-	b=cv+LqxTz50PXgK2qpvZ++jo8lF/zzAamQrw3Q9dotm0tYpF8PyzUieH+nfnY4kW50
-	0IzyEpbDHQPHsZB42GRgw==
+	Mon, 1 Aug 2011 14:34:07 -0400
+Date: Mon, 1 Aug 2011 22:34:01 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: kernel-hardening@lists.openwall.com
+Cc: Ingo Molnar <mingo@elte.hu>, "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        torvalds@linux-foundation.org, Marc Zyngier <maz@misterjones.org>
+Subject: Re: [kernel-hardening] Re: initcall dependency problem (ns vs.
+ threads)
+Message-ID: <20110801183401.GA27647@albatros>
+References: <20110801180151.GA26686@albatros>
+ <20110801112021.25ec9041.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20110801125234.GE14343@redhat.com>
-References: <1311271873-10879-1-git-send-email-zakmagnus@google.com>
-	<20110722195340.GF3765@redhat.com>
-	<CAAuSN93tiSehpNXxjOgrq7oV-U+1ZPi2eqr+2dNSBG0yu0jxmA@mail.gmail.com>
-	<20110725124451.GA2866@redhat.com>
-	<CAAuSN93Qjk4eEAvm_Xn=O-0t+qhAyKmxy6HyPuyzJ35tX2u_CQ@mail.gmail.com>
-	<20110729205538.GD14343@redhat.com>
-	<CAAuSN93ouWrPn9xWb9Zd3E2Dp0hQxC4JmFH1utbyy1_aMnfkLA@mail.gmail.com>
-	<20110801125234.GE14343@redhat.com>
-Date: Mon, 1 Aug 2011 11:33:24 -0700
-Message-ID: <CAAuSN92UAjuJXprBAj9z0sekk=iBWGe3PP88z8NmrZ5fExOyjg@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] Make hard lockup detection use timestamps
-From: ZAK Magnus <zakmagnus@google.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Mandeep Singh Baines <msb@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110801112021.25ec9041.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Okay... So this is a problem we need to solve. Does there exist a good
-way to output a stack trace to, say, a file in /proc? I think that
-would be an appealing solution, if doable.
+On Mon, Aug 01, 2011 at 11:20 -0700, Andrew Morton wrote:
+> There's not really enough detail here for me to suggest a fix without
+> actually doing some work.  Which ipc initialization function is being
+> called to late?
 
-On Mon, Aug 1, 2011 at 5:52 AM, Don Zickus <dzickus@redhat.com> wrote:
-> On Fri, Jul 29, 2011 at 04:12:32PM -0700, ZAK Magnus wrote:
->> Are you saying that any call to printk() will touch the watchdogs? I
->> wasn't aware of that and it doesn't seem to comply with my
->> observations too well, either. Then again, at the moment I don't
->> understand some of the things I'm currently seeing so I could just be
->> wrong.
->
-> I believe the serial console write is the source of all the
-> touch_nmi_watchdogs that result from a printk.
->
-> drivers/tty/serial/8250.c::serial8250_console_write()
->
-> Cheers,
-> Don
->
+The call sequence is:
+
+static int __init ipc_init(void)
+{
+    ...
+	shm_init();
+    ...
+}
+__initcall(ipc_init);
+
+void __init shm_init (void)
+{
+	shm_init_ns(&init_ipc_ns);
+    ...
+
+void shm_init_ns(struct ipc_namespace *ns)
+{
+    ...
+	ipc_init_ids(&shm_ids(ns));
+
+void ipc_init_ids(struct ipc_ids *ids)
+{
+	init_rwsem(&ids->rw_mutex);
+    ...
+
+
+The code triggering the oops (called from do_exit()):
+
+void exit_shm(struct task_struct *task)
+{
+    ...
+	down_write(&shm_ids(ns).rw_mutex);
+
+>  Which thread is using which data structures before
+> which initialization function has been run?
+
+Actually, it doesn't matter.  If ANY thread exits before init_rwsem()
+then exit_shm() would use uninitialized shm_ids(ns).rw_mutex.
+
+
+> Are we talking about init_ipc_ns.ids[] here?  If so, did you try
+> initializing the three rwsems at compile-time?
+
+No, good idea.  I'll do it.
+
+IMO moving specific initializer is bad by design.  There should be a
+guarantee what resources are accessible on what boot stage.  I suppose
+it should be: all thread related information (including ns data) is
+accessible for the moment of threads' code execution.
+
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
