@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab1HAMnQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 08:43:16 -0400
-Received: from mail.windriver.com ([147.11.1.11]:37191 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666Ab1HAMnM (ORCPT
+	id S1752999Ab1HAMoo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 08:44:44 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:62002 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752786Ab1HAMoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 08:43:12 -0400
-Message-ID: <4E369F53.4040903@windriver.com>
-Date: Mon, 1 Aug 2011 07:42:59 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Mon, 1 Aug 2011 08:44:38 -0400
+Message-ID: <4E369FB4.3070603@gmail.com>
+Date: Mon, 01 Aug 2011 06:44:36 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the final tree (kgdb
- tree related)
-References: <20110801142257.0fe7bcceaa0c61527b9597c3@canb.auug.org.au>
-In-Reply-To: <20110801142257.0fe7bcceaa0c61527b9597c3@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Peter Zijlstra <peterz@infradead.org>, anton@samba.org,
+        acme@ghostprotocols.net, mingo@elte.hu, paulus@samba.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: powerpc: Disable pagefaults during callchain stack
+ read
+References: <1312059200-11563-1-git-send-email-dsahern@gmail.com>	 <1312192792.2617.381.camel@laptop> <1312195147.8793.794.camel@pasglop>
+In-Reply-To: <1312195147.8793.794.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/31/2011 11:22 PM, Stephen Rothwell wrote:
-> Hi Jason,
->
-> After merging the final tree, today's linux-next build (sparc32_defconfig)
-> failed like this:
->
-> kernel/debug/gdbstub.c: In function 'gdbstub_state':
-> kernel/debug/gdbstub.c:1098:3: error: 'gdbstub_use_prev_in_buf' undeclared (first use in this function)
-> kernel/debug/gdbstub.c:1098:3: note: each undeclared identifier is reported only once for each function it appears in
-> kernel/debug/gdbstub.c:1099:3: error: 'gdbstub_prev_in_buf_pos' undeclared (first use in this function)
->
-> Caused by commit faed702e3b31 ("kdb,kgdb: Implement switch and pass
-> buffer from kdb -> gdb").
->
-> I reverted that commit (and 621ebf205b99 "kdb: Remove all references to
-> DOING_KGDB2" and "kdb,kgdb: Allow arbitrary kgdb magic knock
-> sequences" that depend on it) for today.
->
-> BTW, that last commit (29e3c61ef33c) doesn't have a SOB line.
 
-Thanks for the detailed report.   I fixed this by re-basing kgdb-next against the kgdb-dev branch.  These branches are not supposed to get out of sync.  I'll try and figure out what went wrong. :-)
 
-Jason.
+On 08/01/2011 04:39 AM, Benjamin Herrenschmidt wrote:
+> On Mon, 2011-08-01 at 11:59 +0200, Peter Zijlstra wrote:
+>>> Signed-off-by: David Ahern <dsahern@gmail.com>
+>>> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>> CC: Anton Blanchard <anton@samba.org> 
+>>
+>> Hmm, Paul, didn't you fix something like this early on? Anyway, I've
+>> no
+>> objections since I'm really not familiar enough with the PPC side of
+>> things. 
+> 
+> I'm travelling so I haven't had a chance to review properly or even test
+> but it looks like an ad-hoc fix for the immediate problem.
+> 
+> Ultimately, I want to rework that stuff to do a __gup_fast like x86 does
+> (maybe as a fallback from an attempt at access first) so we work around
+> access permissions blocked by lack of dirty/accessed bits but in the
+> meantime, this should fix the immediate issue.
+
+The problem goes back to all kernel releases with perf, so this patch
+should get applied to the stable trains too.
+
+David
+
+> 
+> Cheers,
+> Ben.
+> 
+> 
