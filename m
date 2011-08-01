@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab1HARcQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 13:32:16 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:56926 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753351Ab1HARcM (ORCPT
+	id S1753866Ab1HARdV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 13:33:21 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:52907 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753683Ab1HARdP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 13:32:12 -0400
-Date: Mon, 1 Aug 2011 21:32:06 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Richard Weinberger <richard@nod.at>, serge.hallyn@canonical.com,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net, toralf.foerster@gmx.de
-Subject: Re: shm updates broke UML
-Message-ID: <20110801173206.GA26440@albatros>
-References: <201108011541.59640.richard@nod.at>
- <20110801134911.GA11705@albatros>
- <43e4e9e98b32d3d3eb06ab837a019ad8@localhost>
- <20110801171042.GA25954@albatros>
- <08cf4697685ecd9bcb7e4eefe516f2ee@localhost>
- <20110801172452.GA26190@albatros>
+	Mon, 1 Aug 2011 13:33:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110801172452.GA26190@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1312188139.18010.104.camel@i7.infradead.org>
+References: <1312141497-13854-1-git-send-email-lacombar@gmail.com>
+	<1312143643.12369.32.camel@i7.infradead.org>
+	<CACqU3MXak0Yo+VDQNEqT9rTJ5CjdU6jJ-C1Km7GauMQ+qGW+vg@mail.gmail.com>
+	<1312151687.18010.31.camel@i7.infradead.org>
+	<317e3210947c039a33b970300e62d53d.squirrel@xenotime.net>
+	<1312188139.18010.104.camel@i7.infradead.org>
+Date: Mon, 1 Aug 2011 13:33:14 -0400
+Message-ID: <CACqU3MU1yS73++j3H00fbfeBpmKZJ=S93SObnccsw+Bto4V_8w@mail.gmail.com>
+Subject: Re: [PATCH] kbuild: honor the ARCH setting of the existing configuration
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marc,
+Hi,
 
-On Mon, Aug 01, 2011 at 21:24 +0400, Vasiliy Kulikov wrote:
-> On Mon, Aug 01, 2011 at 19:19 +0200, Marc Zyngier wrote:
-> > Here you go (sorry about the line wrapping, damned webmail...):
-> 
-> Thank you!  Now I see that the problem is rw_mutex is not initialized:
-> 
-> 	down_write(&shm_ids(ns).rw_mutex);
-> 
-> void __sched __down_write_nested(struct rw_semaphore *sem, int subclass)
-> {
->     ...
-> 	if (sem->activity == 0 && list_empty(&sem->wait_list)) {
->                                          ^^^^^^^^^^^^^^^ is NULL
-> 
-> Wtf - ipc namespace should be fully initialized for the moment of
-> threads run...
+On Mon, Aug 1, 2011 at 4:42 AM, David Woodhouse <dwmw2@infradead.org> wrote:
+> On Sun, 2011-07-31 at 19:05 -0700, Randy Dunlap wrote:
+>>
+>> > I would love to see $ARCH turned into a proper configuration option.
+>>
+>> I don't object in principle, but I'm expecting to have to modify/update
+>> multiple *working* scripts as a result.  But of course this won't be
+>> the first time and I don't expect it to be the last time either.
+>> [signed:  eeyore]
+>
+> :)
+>
+> Yeah, that's why I'd kind of like to see it done *once*, *properly*.
+>
+> Arnaud's hack to read it from .config is cute, but might give behaviour
+> that people will come to depend on in their scripts and then we take it
+> away again.
+>
+Instead of talking of irrelevant implementation details, what
+_behavior_ do you expect ?
 
-Does ARM try to run _any_ threads before do_initcalls()?  IPC
-initialization is initcall, so any thread before do_initcalls() is a
-dependency bug.
+The priority I expect is (from most to least):
+ 1. command line
+ 2. existing configuration (.config)
+ 3. Makefile's default
+ 4. Kconfig default
 
-static void __init do_basic_setup(void)
-{
-	cpuset_init_smp();
-	usermodehelper_init();
-	init_tmpfs();
-	driver_init();
-	init_irq_proc();
-	do_ctors();
-	do_initcalls(); <<<<
-}
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+ - Arnaud
