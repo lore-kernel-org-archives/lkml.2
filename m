@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab1HAB2l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 21:28:41 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:54623 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753229Ab1HAB2f (ORCPT
+	id S1753447Ab1HABd6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 21:33:58 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:55992 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992Ab1HABdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 21:28:35 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhADAEoANk55LCkBgWdsb2JhbABBp2EVAQEWJiWBOQcBAQEBAgEBAjccIwULCAMYLhQUEQMhE4dsBL8FDoY0BJBvkwI
-Date: Mon, 1 Aug 2011 11:28:13 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: xfstests 073 regression
-Message-ID: <20110801012813.GR5404@dastard>
-References: <20110728164105.GA18258@infradead.org>
- <20110729142121.GA21149@localhost>
- <20110730134422.GA1884@infradead.org>
- <20110731151014.GA23106@localhost>
- <20110731234749.GQ5404@dastard>
- <CA+55aFzkb58Gtzgpd3oQgXekpg4APN6jDLNCh=CAMQ0zwyE4kg@mail.gmail.com>
+	Sun, 31 Jul 2011 21:33:53 -0400
+Date: Mon, 1 Aug 2011 09:33:41 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Lin Ming <ming.m.lin@intel.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        lkml <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH] sched: Remove WAKEUP_PREEMPT feature check in entity_tick
+Message-ID: <20110801013341.GA26768@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20110729062158.GA8971@zhy>
+ <1311922180.3938.1573.camel@minggr.sh.intel.com>
+ <20110729070356.GA10420@zhy>
+ <1311924975.3938.1583.camel@minggr.sh.intel.com>
+ <20110729074635.GB10420@zhy>
+ <1311926218.5890.215.camel@twins>
+ <20110729081800.GA12106@zhy>
+ <1311927650.5890.217.camel@twins>
+ <20110729084637.GC12106@zhy>
+ <1311939933.5890.341.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzkb58Gtzgpd3oQgXekpg4APN6jDLNCh=CAMQ0zwyE4kg@mail.gmail.com>
+In-Reply-To: <1311939933.5890.341.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 31, 2011 at 02:25:27PM -1000, Linus Torvalds wrote:
-> On Sun, Jul 31, 2011 at 1:47 PM, Dave Chinner <david@fromorbit.com> wrote:
-> >
-> > Yes, I already have, a couple of hours before you sent this:
-> >
-> > http://www.spinics.net/lists/linux-fsdevel/msg47357.html
-> >
-> > We haven't found the root cause of the problem, and writeback cannot
-> > hold off grab_super_passive() because writeback only holds read
-> > locks on s_umount, just like grab_super_passive.
+On Fri, Jul 29, 2011 at 01:45:33PM +0200, Peter Zijlstra wrote:
+> On Fri, 2011-07-29 at 16:46 +0800, Yong Zhang wrote:
+> > Let's take UP for example, we have cpu-hug task A and threadirq B.
+> > 
+> >         n tick          --->            n+1 tick
+> > set_tsk_need_resched(A);
+> >                 B comes in and
+> >                 wake up thread-B;
+> > 
+> > So for system on which we disable WAKEUP_PREEMPT,
+> > if we don't have that check, thread-B will wait until n+1 tick comes
+> > to get to run.
+> > But if we have that check, thread-B will get to run after IRQ-B returns.
 > 
-> With read-write semaphores, even read-vs-read recursion is a deadlock
-> possibility.
+> But that's exactly what wakeup preemption is about, waking tasks don't
+> get to preempt running tasks. So no doing that preemption is exactly
+> right for !WAKEUP_PREEMPT.
 > 
-> Why? Because if a writer comes in on another thread, while the read
-> lock is initially held, then the writer will now block. And due to
-> fairness, now a subsequent reader will *also* block.
+> Anyway, I've queued the removal patch since that removes all
+> confusion ;-)
 
-Yes, I know.
+Yup, that sounds good. Thanks Peter.
 
-> So no, nesting readers is *not* allowed for rw_semaphores even if
-> naively you'd think it should work.
+-Yong
 
-Right, hence my question of where the deadlock was. I can see how we
-get a temporary holdoff due to background flushing holding the
-s_umount lock (and hence why this change prevents that holdoff) but
-that should not deadlock even if there is a pending write lock.
-
-> So if xfstests 073 does mount/umount testing, then it is entirely
-> possible that a reader blocks another reader due to a pending writer.
-
-And I know that remount,ro will take the lock in write mode, hence
-cause such a holdoff to occur. Test 073 does this, and it is likely
-to be the cause of the problem.
-
-However, if we can't grab the superblock, it implies it that there
-is something major happening on the superblock. It's likely to be
-going away, or in the case of a remount, something significant is
-changing.  In both cases, writeback of dirty data is going to be
-handled by the umount/remount process, and so whatever writeback
-that is currently in progress is just getting in the way of
-executing the higher level, more important operation.
-
-AFAICT, there's a bunch of non-trivial ways that we can get
-read-write-read deadlocks that the bdi-flusher "avoids" by ignoring
-inodes when it can't get the superblock. However, if it can't get
-the superblock reference, why shouldn't we just abort whatever
-writeback that is going through writeback_inodes_wb? That writeback
-is guaranteed to be unable to complete until the reference to
-s_umount is dropped, so why do we continue to try one inode at a
-time?
-
-IOWs, what I'm asking is whether this "just move the inodes one at a
-time to a different queue" is just a bandaid for a particular
-symptom of a deeper problem we haven't realised existed....
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Only stand for myself
