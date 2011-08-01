@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab1HAAxN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 20:53:13 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:63243 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab1HAAxH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 20:53:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1107311812460.62769@linux>
-References: <alpine.LNX.2.00.1107311812460.62769@linux>
-Date: Sun, 31 Jul 2011 20:53:06 -0400
-Message-ID: <CACqU3MWfOg+ZhUGAovWsds48Y37i7GRk7qSxWvt7-JmLMBcmgg@mail.gmail.com>
-Subject: Re: [PATCH RFC] kconfig.h fix extraneous dependencies
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Peter Foley <pefoley2@verizon.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
-        mmarek@suse.cz, rdunlap@xenotime.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753394Ab1HAA57 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 20:57:59 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48730 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752123Ab1HAA5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 20:57:51 -0400
+Date: Mon, 1 Aug 2011 10:57:39 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Please pull NFS client changes
+Message-Id: <20110801105739.4dd1244f1a6f5f13e1b486b8@canb.auug.org.au>
+In-Reply-To: <1312142325.7127.3.camel@lade.trondhjem.org>
+References: <1312082377.10882.1.camel@lade.trondhjem.org>
+	<20110731182406.GA16470@infradead.org>
+	<4E35A9B1.9090309@fusionio.com>
+	<1312141193.7127.1.camel@lade.trondhjem.org>
+	<4E35B126.8050009@fusionio.com>
+	<1312142325.7127.3.camel@lade.trondhjem.org>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__1_Aug_2011_10_57_39_+1000_xAa/oHeQzkERkSvM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Signature=_Mon__1_Aug_2011_10_57_39_+1000_xAa/oHeQzkERkSvM
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, Jul 31, 2011 at 8:36 PM, Peter Foley <pefoley2@verizon.net> wrote:
-> The introduction of kconfig.h caused fixdep to create three extraneous
-> dependencies.
-> include/config/.h
-> include/config/h.h
-> include/config/foo.h
->
-> Remove them by eliminating instances of CONFIG_
->
-this seems ugly to me... I would rather try to fix fixdep, no ?
+Hi all,
 
- - Arnaud
+On Sun, 31 Jul 2011 15:58:45 -0400 Trond Myklebust <Trond.Myklebust@netapp.=
+com> wrote:
+>
+> How's this?
+>=20
+> 8<-----------------------------------------------------------------------=
+---------------=20
+> From e01e56eb7013a11f3e09bd8a8562332777f9e100 Mon Sep 17 00:00:00 2001
+> From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Date: Sun, 31 Jul 2011 15:33:26 -0400
+> Subject: [PATCH v2] NFS: Re-enable compilation of nfs with !CONFIG_NFS_V4=
+ ||
+>  !CONFIG_NFS_V4_1
+>=20
+> Fix a typo in fs/nfs/pnfs.h
+> Move the pnfs_blksize declaration outside the CONFIG_NFS_V4 section in
+> struct nfs_server.
+>=20
+> Reported-by: Jens Axboe <jaxboe@fusionio.com>
+> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-> Signed-off-by: Peter Foley <pefoley2@verizon.net>
-> ---
->
-> Suggestions for a better replacement for CONFIG_FOO would be appreciated.
->
-> diff --git a/include/linux/kconfig.h b/include/linux/kconfig.h
-> index 067eda0..66a0659 100644
-> --- a/include/linux/kconfig.h
-> +++ b/include/linux/kconfig.h
-> @@ -1,15 +1,15 @@
-> -#ifndef __LINUX_KCONFIG_H
-> -#define __LINUX_KCONFIG_H
-> +#ifndef __LINUX_KCONFIG
-> +#define __LINUX_KCONFIG
->
->  #include <generated/autoconf.h>
->
->  /*
-> - * Helper macros to use CONFIG_ options in C expressions. Note that
-> + * Helper macros to use CONFIG options in C expressions. Note that
->  * these only work with boolean and tristate options.
->  */
->
->  /*
-> - * IS_ENABLED(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y' or 'm',
-> + * IS_ENABLED(CONFIG _FOO) evaluates to 1 if CONFIG _FOO is set to 'y' or 'm',
->  * 0 otherwise.
->  *
->  */
-> @@ -17,16 +17,16 @@
->        (__enabled_ ## option || __enabled_ ## option ## _MODULE)
->
->  /*
-> - * IS_BUILTIN(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y', 0
-> + * IS_BUILTIN(CONFIG _FOO) evaluates to 1 if CONFIG _FOO is set to 'y', 0
->  * otherwise. For boolean options, this is equivalent to
-> - * IS_ENABLED(CONFIG_FOO).
-> + * IS_ENABLED(CONFIG _FOO).
->  */
->  #define IS_BUILTIN(option) __enabled_ ## option
->
->  /*
-> - * IS_MODULE(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'm', 0
-> + * IS_MODULE(CONFIG _FOO) evaluates to 1 if CONFIG _FOO is set to 'm', 0
->  * otherwise.
->  */
->  #define IS_MODULE(option) __enabled_ ## option ## _MODULE
->
-> -#endif /* __LINUX_KCONFIG_H */
-> +#endif /* __LINUX_KCONFIG */
->
+I have applied this the linux-next today ..
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__1_Aug_2011_10_57_39_+1000_xAa/oHeQzkERkSvM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJONfoDAAoJEDMEi1NhKgbsTewH+gPrqxgWi3GjnhEyRbWBUVFJ
+zYmhFt3tgOLeYLjc6VVAihwauJ6tzs567ztJB+NpOA6ZMdfFGS10l379dS3Z6G2Q
+3D37t5zo2PsIgUp4jwONPOTF6HLHxr0ucxATufn3ZpfYzFv6pMBXARZA4cGBJkF2
+fAbGTKt5G5dXL+CwdIJVHHmLVWcSjmITuHAxh0YmlfV3kq+ctixwtA7SOsSjrC/6
+ov0263LM3Pay36TVM1f5LWr9CxGcM3HWeEZPjFeT1d94hwtnprU4sSTAu3ZcHS1f
+1Ga3dKAaB8Ew0aEU8O03IEAcZwX8iwRywLxZFJayUZAoKxABSS4uwTUFAtEYOCE=
+=GdBh
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__1_Aug_2011_10_57_39_+1000_xAa/oHeQzkERkSvM--
