@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961Ab1HAKfE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 06:35:04 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:39821 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753098Ab1HAKe5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 06:34:57 -0400
-Message-ID: <4E36813B.7090509@st.com>
-Date: Mon, 1 Aug 2011 16:04:35 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        Pratyush ANAND <pratyush.anand@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vipin KUMAR <vipin.kumar@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH V2 03/20] dmaengine/amba-pl08x: Rearrange inclusion of
- header files in ascending order
-References: <cover.1312190881.git.viresh.kumar@st.com> <16f5abd9452832860f3a11fe1ddabde05fa3ae8c.1312190881.git.viresh.kumar@st.com> <4E367776.1070008@ru.mvista.com>
-In-Reply-To: <4E367776.1070008@ru.mvista.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1754021Ab1HAKkF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 06:40:05 -0400
+Received: from gate.crashing.org ([63.228.1.57]:44312 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753999Ab1HAKkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 06:40:02 -0400
+Subject: Re: [PATCH] perf: powerpc: Disable pagefaults during callchain
+ stack read
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: David Ahern <dsahern@gmail.com>, anton@samba.org, acme@ghostprotocols.net,
+        mingo@elte.hu, paulus@samba.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1312192792.2617.381.camel@laptop>
+References: <1312059200-11563-1-git-send-email-dsahern@gmail.com>
+	 <1312192792.2617.381.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 01 Aug 2011 20:39:07 +1000
+Message-ID: <1312195147.8793.794.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2011 03:22 PM, Sergei Shtylyov wrote:
->> > +#include<linux/slab.h>
->     Shouldn't there be emoty line here?
+On Mon, 2011-08-01 at 11:59 +0200, Peter Zijlstra wrote:
+> > Signed-off-by: David Ahern <dsahern@gmail.com>
+> > CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > CC: Anton Blanchard <anton@samba.org> 
 > 
->> >   #include<asm/hardware/pl080.h>
+> Hmm, Paul, didn't you fix something like this early on? Anyway, I've
+> no
+> objections since I'm really not familiar enough with the PPC side of
+> things. 
+
+I'm travelling so I haven't had a chance to review properly or even test
+but it looks like an ad-hoc fix for the immediate problem.
+
+Ultimately, I want to rework that stuff to do a __gup_fast like x86 does
+(maybe as a fallback from an attempt at access first) so we work around
+access permissions blocked by lack of dirty/accessed bits but in the
+meantime, this should fix the immediate issue.
+
+Cheers,
+Ben.
 
 
-Ya, can be, but i thought it is also fine. Don't know.
-If you want i can do that.
-
--- 
-viresh
