@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161Ab1HAQIR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 12:08:17 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36492 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464Ab1HAQIJ (ORCPT
+	id S1753092Ab1HAQOY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 12:14:24 -0400
+Received: from mhub2.bbsrc.ac.uk ([149.155.202.2]:60715 "EHLO
+	mhub2.bbsrc.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab1HAQOS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 12:08:09 -0400
+	Mon, 1 Aug 2011 12:14:18 -0400
+X-Greylist: delayed 1510 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Aug 2011 12:14:17 EDT
+From: "dean north (BITS)" <dean.north@bbsrc.ac.uk>
+To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Mon, 1 Aug 2011 16:49:01 +0100
+Subject: Dell sx280 machine to graphics driver crash
+Thread-Topic: Dell sx280 machine to graphics driver crash
+Thread-Index: AcxQYohWe9uaCl93R+Wf/TZIPrGt3g==
+Message-ID: <C57CE776344DFE4A8B8E254640024EE513D5E5277B@bitsexch1.bits.bbsrc.ac.uk>
+Accept-Language: en-US, en-GB
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-GB
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAGZ=bqL=VAx5jnSBkE2q5KJSY_+An-VRTRAzJmJ3waQUvrRFFg@mail.gmail.com>
-References: <1312042478-26012-1-git-send-email-zdevai@gmail.com>
-	<20110801083614.GC15578@n2100.arm.linux.org.uk>
-	<CAMuHMdUpTDSRP_JmWqcCBtYwzna0hwmaBshpiF8kgvqoNcqYZA@mail.gmail.com>
-	<20110801101410.GE15578@n2100.arm.linux.org.uk>
-	<CAMuHMdUiLjMVwOqKPF6tHLpPxROrx=rRf3ednfTLrwGuZ2VF7A@mail.gmail.com>
-	<CACqU3MVUxTYmD+4VGBAeN8PTs83fR0xQQrQS5h4QGMZXgMxEvA@mail.gmail.com>
-	<CAGZ=bqL=VAx5jnSBkE2q5KJSY_+An-VRTRAzJmJ3waQUvrRFFg@mail.gmail.com>
-Date: Mon, 1 Aug 2011 12:08:08 -0400
-Message-ID: <CACqU3MUoxSNmcYsSF4zOTgADdedb7TcciPuBPMviG02M5oUPDQ@mail.gmail.com>
-Subject: Re: [PATCH] Remove remaining references of CONFIG_GENERIC_TIME
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Kyle Moffett <kyle@moffetthome.net>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Zoltan Devai <zdevai@gmail.com>, linux-kernel@vger.kernel.org,
-        chris@zankel.net, linux-am33-list@redhat.com, trivial@kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net, cmetcalf@tilera.com,
-        linux-arm-kernel@lists.infradead.org,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+All,
 
-On Mon, Aug 1, 2011 at 11:15 AM, Kyle Moffett <kyle@moffetthome.net> wrote:
-> On Mon, Aug 1, 2011 at 11:04, Arnaud Lacombe <lacombar@gmail.com> wrote:
->> Hi,
->>
->> On Mon, Aug 1, 2011 at 7:27 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->>> On Mon, Aug 1, 2011 at 12:14, Russell King - ARM Linux
->>>>>[...]
->>>>>
->>>>> Doesn't kconf error out when trying to select a non-existent symbol?
->>>>
->>>> Nope.
->>>
->>> You're right. So that's a bug.
->>>
->> depends on what you are trying to achieve and what the problem is.
->>
->> Internally kconfig will create a dummy symbol when it encounter a
->> missing symbol so that arch/arm/Kconfig can reference a symbol which
->> will be fully defined later on. I do not think you want to forward
->> decl all the symbol which can be used. That'd be a mess. That said, we
->> can come with a form of symbol deprecation that would error-out when
->> used.
->
-> Would it be possible instead to make Kconfig go through all the symbols
-> after everything is processed and identify any remaining "dummy symbols"
-> which were not actually declared anywhere?
->
-this is software, everything is possible.
+I am currently installing the latest version of Fedora on an Dell Optiplex SX280.  The install works, Fedora boots fine and I can log in, but after a while the systems graphics driver crashes.  Below is an output of the issue.  It seems to be a bug in the Kernel
 
-> Right now if you typo a "select" statement you get no warnings that you
-> are selecting something that does not exist, which is probably a cause
-> of many kinds of errors beyond this particular one.
->
-d'oh! ... I'm not sure we want that. Dummy symbol are heavily used
-internally, a trivial implementation[0] triggered:
+#
+Aug 1 11:48:23 localhost kernel: [ 124.221008] [<f7a3780a>]
+do_intel_finish_page_flip+0x16d/0x1f1 [i915] # Aug 1 11:48:23 localhost kernel: [ 124.221008] [<f7a3e09b>] intel_finish_page_flip_plane+0x1a/0x1c [i915] # Aug 1 11:48:23 localhost kernel: [ 124.221008] [<f7a2843b>]
+i915_driver_irq_handler+0x884/0x942 [i915] # Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c07d62b3>] ?
+_raw_spin_unlock_irqrestore+0x13/0x15 #
+Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c06a1be1>] ?
+__ata_sff_interrupt+0x126/0x137 #
+Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c06a3735>] ?
+ata_bmdma_port_intr+0x0/0xc2 #
+Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c048704e>] handle_IRQ_event+0x4c/0xfe # Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c041c9fb>] ?
+ack_apic_level+0x57/0x140 #
+Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c0488b03>]
+handle_fasteoi_irq+0x74/0xa6 #
+Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c0488a8f>] ?
+handle_fasteoi_irq+0x0/0xa6 #
+Aug 1 11:48:23 localhost kernel: [ 124.221008] <IRQ> # Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c0404bbd>] ?
+do_IRQ+0x3c/0x92 #
+Aug 1 11:48:23 localhost kernel: [ 124.221008] [<c043feb7>] ?
+irq_exit+0x4c/0x70
 
-% make REGENERATE_PARSERS=y alldefconfig 2>&1 | grep 'defined without
-type' | wc -l
-817
 
-Moreover, this approach is deemed to fail. The current symbol
-namespace is tied to an arch, so whenever you do:
+Dean North
 
-arch/arm/Kconfig:
-config FOO
-    bool
 
-config BAZ
-    bool
 
-drivers/cpufreq/Kconfig
-config BAR
-    depends on ARM && FOO
-    select BAZ
+This email and any attachments are intended solely for the use of the individual(s) to whom it/they are addressed. If you believe you have received this in error please notify the sender and delete this e-mail from your system.
 
-You will end up triggering the warning for every ARCH != ARM...
+BBSRC may need to release information, including this email and any attachments therein, under the terms of the Freedom of Information or Data Protection Acts.
 
- - Arnaud
-
-[0]: or rather a fix as we currently only do the check for symbol linked to menu
+Opinions, conclusions or other information in this message and attachments that are not related directly to BBSRC business are solely those of the author and do not represent the views of BBSRC.
