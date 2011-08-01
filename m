@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746Ab1HAInH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 04:43:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34753 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753531Ab1HAImn (ORCPT
+	id S1752926Ab1HAIr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 04:47:59 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63268 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192Ab1HAIrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 04:42:43 -0400
-Subject: Re: [PATCH] kbuild: honor the ARCH setting of the existing
- configuration
-From: David Woodhouse <dwmw2@infradead.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Date: Mon, 01 Aug 2011 09:42:17 +0100
-In-Reply-To: <317e3210947c039a33b970300e62d53d.squirrel@xenotime.net>
-References: <1312141497-13854-1-git-send-email-lacombar@gmail.com>
-	 <1312143643.12369.32.camel@i7.infradead.org>
-	 <CACqU3MXak0Yo+VDQNEqT9rTJ5CjdU6jJ-C1Km7GauMQ+qGW+vg@mail.gmail.com>
-	 <1312151687.18010.31.camel@i7.infradead.org>
-	 <317e3210947c039a33b970300e62d53d.squirrel@xenotime.net>
+	Mon, 1 Aug 2011 04:47:52 -0400
+Subject: Re: RCU: how to suppress warnings from rcu_assign_pointer?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
+        mchan@broadcom.com, linux-kernel@vger.kernel.org
+In-Reply-To: <20110801052342.GD2307@linux.vnet.ibm.com>
+References: <20110729003843.GA2373@linux.vnet.ibm.com>
+	 <20110729105058.2cb9fa86@nehalam.ftrdhcpuser.net>
+	 <1312028225.2873.104.camel@edumazet-laptop>
+	 <20110730.201609.2157787571393748046.davem@davemloft.net>
+	 <20110801052342.GD2307@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1312188139.18010.104.camel@i7.infradead.org>
+Date: Mon, 01 Aug 2011 10:47:33 +0200
+Message-ID: <1312188453.2719.1.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-07-31 at 19:05 -0700, Randy Dunlap wrote:
+Le dimanche 31 juillet 2011 à 22:23 -0700, Paul E. McKenney a écrit :
+> 							Thanx, Paul
 > 
-> > I would love to see $ARCH turned into a proper configuration option.
+> ------------------------------------------------------------------------
 > 
-> I don't object in principle, but I'm expecting to have to modify/update
-> multiple *working* scripts as a result.  But of course this won't be
-> the first time and I don't expect it to be the last time either.
-> [signed:  eeyore] 
+> rcu: Make rcu_assign_pointer() unconditionally insert a memory barrier
+> 
+> Recent changes to gcc give warning messages on rcu_assign_pointers()'s
+> checks that allow it to determine when it is OK to omit the memory
+> barrier.  Stephen Hemminger tried a number of gcc tricks to silence
+> this warning, but #pragmas and CPP macros do not work together in the
+> way that would be required to make this work.
+> 
+> However, we now have RCU_INIT_POINTER(), which already omits this
+> memory barrier, and which therefore may be used when assigning NULL to
+> an RCU-protected pointer that is accessible to readers.  This commit
+> therefore makes rcu_assign_pointer() unconditionally emit the memory
+> barrier.
+> 
+> Reported-by: Stephen Hemminger <shemminger@vyatta.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> Acked-by: David S. Miller <davem@davemloft.net>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>  
 
-:)
+Sure Paul, thanks for doing this. I have _very_ limited access to
+Internet this week.
 
-Yeah, that's why I'd kind of like to see it done *once*, *properly*.
+Eric
 
-Arnaud's hack to read it from .config is cute, but might give behaviour
-that people will come to depend on in their scripts and then we take it
-away again.
-
--- 
-dwmw2
 
