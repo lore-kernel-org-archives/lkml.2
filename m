@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846Ab1HAJl0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 05:41:26 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:40026 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753701Ab1HAJj4 (ORCPT
+	id S1753861Ab1HAJlm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 05:41:42 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:52589 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753549Ab1HAJjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 05:39:56 -0400
+	Mon, 1 Aug 2011 05:39:35 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <linus.walleij@linaro.org>
 Cc: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
@@ -17,9 +17,9 @@ Cc: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
         <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
         <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
         <viresh.linux@gmail.com>
-Subject: [PATCH V2 15/20] dmaengine/amba-pl08x: Align lli_len to max(src.width, dst.width)
-Date: Mon, 1 Aug 2011 15:07:25 +0530
-Message-ID: <aa50fd324708557b6e904da8f62a567bb54c9dd8.1312190881.git.viresh.kumar@st.com>
+Subject: [PATCH V2 13/20] dmaengine/amba-pl08x: max_bytes_per_lli is TRANSFER_SIZE * src_width (not MIN(width))
+Date: Mon, 1 Aug 2011 15:07:23 +0530
+Message-ID: <816b8264dc71310bd6fca94ed454ebb6e2b2ba5e.1312190881.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1312190881.git.viresh.kumar@st.com>
 References: <cover.1312190881.git.viresh.kumar@st.com>
@@ -29,82 +29,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently lli_len is aligned to min of two widths, which looks to be incorrect.
-Instead it should be aligned to max of both widths.
+max_bytes_per_lli = bd.srcbus.buswidth * PL080_CONTROL_TRANSFER_SIZE_MASK;
+This is confirmed by ARM support guys.
 
-Lets say, total_size = 441 bytes
+Below is summary of mail exchange with them:
 
-MIN: lets check if min() suits or not:
+[Viresh] What is the total data to be transferred in case source and destination
+bus widths are different. Suppose, source bus width is 2 bytes and destination
+is 4 bytes. Now in order to transfer 80 bytes, what should be value of
+TransferSize field in control reg: 40? or 20?.
 
-CASE 1: srcwidth = 1, dstwidth = 4
-min(src, dst) = 1
+[David from ARM] The value that is programmed into the TransferSize field should
+be the number of <SourceWidth> transfers needed to achieve the required data
+transfer.
 
-i.e. We program transfer size in control reg to 441.
-Now, till 440 bytes everything is fine, but on the last byte DMAC can't transfer
-1 byte to dst, as its width is 4.
+So, to transfer 80 bytes, with a Source Width of 2, the TransferSize field =
+should be programmed with:
 
-CASE 2: srcwidth = 4, dstwidth = 1
-min(src, dst) = 1
+        Total transfer size
+        ------------------- = 40
+          <source width>
 
-i.e. we program transfer size in control reg to 110 (data transferred = 110 * srcwidth).
-So, here too 1 byte is left, but on the source side.
+[Viresh] Will this change if source is 4 bytes and dest is 2?
 
-MAX: Lets check if max() suits or not:
+[David] Yes - the calculation then becomes:
 
-CASE 3: srcwidth = 1, dstwidth = 4
-max(src, dst) = 4
+        Total transfer size
+        ------------------- =20
+          <source width>
 
-Aligned size is 440
+Also, max_bytes_per_lli must be calculated after fixing src and dest widths not
+before that. So move this code to the correct place.
 
-i.e. We program transfer size in control reg to 440.
-Now, all 440 bytes will be transferred without any issues.
-
-CASE 4: srcwidth = 4, dstwidth = 1
-max(src, dst) = 4
-
-Aligned size is 440
-
-i.e. We program transfer size in control reg to 110 (data transferred = 110 * srcwidth).
-Now, also all 440 bytes will be transferred without any issues.
+This patch also removes max_bytes_per_lli from earlier print message, as till
+that point max_bytes_per_lli is unknown.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/dma/amba-pl08x.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+ drivers/dma/amba-pl08x.c |   14 ++++++--------
+ 1 files changed, 6 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index 0bdf3b8..ef02fb9 100644
+index e00a9b5..c29e55c 100644
 --- a/drivers/dma/amba-pl08x.c
 +++ b/drivers/dma/amba-pl08x.c
-@@ -666,20 +666,22 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
- 		 * width left
- 		 */
- 		while (bd.remainder > (mbus->buswidth - 1)) {
--			size_t lli_len, tsize;
-+			size_t lli_len, tsize, width;
+@@ -601,23 +601,17 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
+ 	bd.srcbus.buswidth = bd.srcbus.maxwidth;
+ 	bd.dstbus.buswidth = bd.dstbus.maxwidth;
  
- 			/*
- 			 * If enough left try to send max possible,
- 			 * otherwise try to send the remainder
- 			 */
- 			lli_len = min(bd.remainder, max_bytes_per_lli);
+-	/*
+-	 * Bytes transferred == tsize * MIN(buswidths), not max(buswidths)
+-	 */
+-	max_bytes_per_lli = min(bd.srcbus.buswidth, bd.dstbus.buswidth) *
+-		PL080_CONTROL_TRANSFER_SIZE_MASK;
+-
+ 	/* We need to count this down to zero */
+ 	bd.remainder = txd->len;
+ 
+ 	pl08x_choose_master_bus(&bd, &mbus, &sbus, cctl);
+ 
+-	dev_vdbg(&pl08x->adev->dev, "src=0x%08x%s/%u dst=0x%08x%s/%u len=%zu llimax=%zu\n",
++	dev_vdbg(&pl08x->adev->dev, "src=0x%08x%s/%u dst=0x%08x%s/%u len=%zu\n",
+ 		 bd.srcbus.addr, cctl & PL080_CONTROL_SRC_INCR ? "+" : "",
+ 		 bd.srcbus.buswidth,
+ 		 bd.dstbus.addr, cctl & PL080_CONTROL_DST_INCR ? "+" : "",
+ 		 bd.dstbus.buswidth,
+-		 bd.remainder, max_bytes_per_lli);
++		 bd.remainder);
+ 	dev_vdbg(&pl08x->adev->dev, "mbus=%s sbus=%s\n",
+ 		 mbus == &bd.srcbus ? "src" : "dst",
+ 		 sbus == &bd.srcbus ? "src" : "dst");
+@@ -657,6 +651,10 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
+ 			sbus->buswidth = 1;
+ 		}
+ 
++		/* Bytes transferred = tsize * src width, not MIN(buswidths) */
++		max_bytes_per_lli = bd.srcbus.buswidth *
++			PL080_CONTROL_TRANSFER_SIZE_MASK;
 +
- 			/*
--			 * Check against minimum bus alignment: Calculate actual
-+			 * Check against maximum bus alignment: Calculate actual
- 			 * transfer size in relation to bus width and get a
--			 * maximum remainder of the smallest bus width - 1
-+			 * maximum remainder of the highest bus width - 1
- 			 */
--			tsize = lli_len / min(mbus->buswidth, sbus->buswidth);
--			lli_len	= tsize * min(mbus->buswidth, sbus->buswidth);
-+			width = max(mbus->buswidth, sbus->buswidth);
-+			lli_len = (lli_len / width) * width;
-+			tsize = lli_len / bd.srcbus.buswidth;
- 
- 			dev_vdbg(&pl08x->adev->dev,
- 				"%s fill lli with single lli chunk of "
+ 		/*
+ 		 * Make largest possible LLIs until less than one bus
+ 		 * width left
 -- 
 1.7.2.2
 
