@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab1HADJc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 23:09:32 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35831 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926Ab1HADJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 23:09:28 -0400
-Date: Mon, 1 Aug 2011 13:09:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: linux-next: manual merge of the moduleh tree with the  tree
-Message-Id: <20110801130919.52333344fbb9995ff67fb821@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__1_Aug_2011_13_09_19_+1000__DlzTxodAdfrlnpY"
+	id S1753491Ab1HADKb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 23:10:31 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:44722 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752926Ab1HADK0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Jul 2011 23:10:26 -0400
+Date: Sun, 31 Jul 2011 20:10:21 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Michal Simek <monstr@monstr.eu>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] input: xilinx_ps2: Add missing of_address.h header
+Message-ID: <20110801031021.GB23944@core.coreip.homeip.net>
+References: <1310564781-5979-1-git-send-email-monstr@monstr.eu>
+ <CACxGe6vRZ4tCALpzFng2y9W_9zB3qQEntma+z292FXzDuYBRKQ@mail.gmail.com>
+ <4E2C2362.1080204@monstr.eu>
+ <20110731041230.GO24334@ponder.secretlab.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110731041230.GO24334@ponder.secretlab.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__1_Aug_2011_13_09_19_+1000__DlzTxodAdfrlnpY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, Jul 30, 2011 at 10:12:30PM -0600, Grant Likely wrote:
+> On Sun, Jul 24, 2011 at 03:51:30PM +0200, Michal Simek wrote:
+> > Hi Grant,
+> > 
+> > can you propose this patch to mainline through your devicetree tree?
+> 
+> I've got it in a "input/next" branch.  Since the input maintainer
+> doesn't seem to be active on driver patches, I'll send a pull req to
+> Linus.
 
-Hi Paul,
+CCing me on patches usually helps... Yes, please feel free to push
+through your tree if you'd like.
 
-Today's linux-next merge of the moduleh tree got a conflict in
-drivers/dma/ste_dma40.c between commit f4b89764c470
-("dmaengine/ste_dma40: use AMBA PrimeCell helper macros") from the
-slave-dma tree and commit dbd9b79ce7bd ("Add export.h
-to /home/paul/git/module.h/linux-2.6.git/drivers/dma/ste_dma40.c") from
-the moduleh tree.
-
-Just a trivla context change.  I fixed it up (just overlapping include
-additions) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__1_Aug_2011_13_09_19_+1000__DlzTxodAdfrlnpY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJONhjfAAoJEDMEi1NhKgbs3PQH/3tv9OZuY0s8rlXiOSl1hC1/
-865hvYRE3uNkBVof0j11N/gPfTWlOAG7n4QScP6iP3howyD2QVI8SuJ8gtAXV4/l
-DpEQCCJH6mMbLWQ+wWKjS0THP/cOgVa6z/SnGgNLquH/b7rbdlSnFmwcsPObtDiu
-XyV7vfKl/fnU7o4CLxENz4wo1zDLyfgxA739Jmz5CNILmeVOU1rPv8HAglsoU4dD
-7eI5tEQIyfiZceLvLQ5YecD2oK89WzKWUJ/NS3hfiPnA7qmrTam1Y/8VVl9aEx0F
-9vNQeq8la5EirR2ONHuo5dY7M3vmYJEfKallCTDGiDrF6a7QaCgkZKdTIOTn7rc=
-=Id/F
------END PGP SIGNATURE-----
-
---Signature=_Mon__1_Aug_2011_13_09_19_+1000__DlzTxodAdfrlnpY--
+-- 
+Dmitry
