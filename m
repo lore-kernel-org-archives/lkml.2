@@ -1,75 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751352Ab1HANtU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 09:49:20 -0400
-Received: from mail-ey0-f171.google.com ([209.85.215.171]:43192 "EHLO
-	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab1HANtR (ORCPT
+	id S1752629Ab1HAOJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 10:09:59 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:45215 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752230Ab1HAOJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 09:49:17 -0400
-Date: Mon, 1 Aug 2011 17:49:11 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: serge.hallyn@canonical.com, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net, toralf.foerster@gmx.de
-Subject: Re: shm updates broke UML
-Message-ID: <20110801134911.GA11705@albatros>
-References: <201108011541.59640.richard@nod.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108011541.59640.richard@nod.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 1 Aug 2011 10:09:56 -0400
+Date: Mon, 1 Aug 2011 15:13:02 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mikko Rapeli <mikko.rapeli@iki.fi>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Linux, binary blob and binary driver summary for vendors?
+Message-ID: <20110801151302.7d56cd0d@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110801134212.GS29803@nalle>
+References: <20110801134212.GS29803@nalle>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+On Mon, 1 Aug 2011 16:42:12 +0300
+Mikko Rapeli <mikko.rapeli@iki.fi> wrote:
 
-On Mon, Aug 01, 2011 at 15:41 +0200, Richard Weinberger wrote:
-> 5774ed01 (shm: handle separate PID namespaces case)
-> b34a6b1d (ipc: introduce shm_rmid_forced sysctl)
-> 4c677e2e (shm: optimize locking and ipc_namespace getting)
+> What is a good and also technically detailed summary of the binary blob and
+> driver issues with Linux kernel and GPL?
 > 
-> broke UML on i386.
-> It crashes while starting up by SIGSEGV.
-> exit_shm() seems to be the evil doer.
+> I'd like to refer a vendor to some documentation regarding this instead
+> writing a ton of text with IANAL everywhere.
 
-I was reported 20 mins ago that it's reproducable on MIPS too.
+I would suggest they talk to the Linux Foundation. It's basically a legal
+question around derivative works, and that's a lawyer question that tends
+to need looking at by lawyers per piece of code.
 
-> Reverting all three patches make UML work again.
+Aside from that there are technical, marketing and PR things to consider.
 
-Can you confirm that 5774ed01 breaks the boot? (it is for MIPS)
-
-
-> Commit 5774ed01 removed the !ns->shm_rmid_forced check, maybe this is wrong?
-
-No, it's not the reason.
-
-> ---cut---
-> #13 0x08067efb in hard_handler (sig=11) at arch/um/os-Linux/sys-i386/signal.c:12
-> #14 <signal handler called>
-> #15 __list_add (sem=0x824cc98, subclass=0) at include/linux/list.h:44
-> #16 list_add_tail (sem=0x824cc98, subclass=0) at include/linux/list.h:76
-> #17 __down_write_nested (sem=0x824cc98, subclass=0) at lib/rwsem-spinlock.c:232
-> #18 0x081c7ba1 in __down_write (sem=0x824cc98) at lib/rwsem-spinlock.c:252
-> #19 0x081c74a3 in down_write (sem=0x824cc98) at kernel/rwsem.c:51
-> #20 0x08139913 in exit_shm (task=0x9c73b60) at ipc/shm.c:308
-> #21 0x08075649 in do_exit (code=0) at kernel/exit.c:983
-> #22 0x08081dd2 in ____call_usermodehelper (data=0x9c6bce0) at kernel/kmod.c:187
-> #23 0x08065c18 in run_kernel_thread (fn=0x8081ce4 <____call_usermodehelper>, arg=0x9c6bce0, 
-> jmp_ptr=0x9c73d94)
->     at arch/um/os-Linux/process.c:268
-> #24 0x080588cb in new_thread_handler () at arch/um/kernel/process.c:153
-> #25 0x00000000 in ?? ()
-> ---cut---
-
-Can you post the whole oops message?  I'd want to see what pointer is
-NULL.
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Alan
