@@ -1,77 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab1HAFVk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 01:21:40 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:56300
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752369Ab1HAFVe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 01:21:34 -0400
-X-SpamScore: -19
-X-BigFish: VPS-19(zz936eK146fK1432N98dKzz1202hzz5eeeM8275bhz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LP8HJR-01-27O-02
-X-M-MSG: 
-Date: Mon, 1 Aug 2011 07:21:28 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/7] perf, x86: Implement AMD IBS
-Message-ID: <20110801052128.GW4590@erda.amd.com>
-References: <1311860812-28748-1-git-send-email-robert.richter@amd.com>
- <1311959236.5890.420.camel@twins>
+	id S1752882Ab1HAFXv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 01:23:51 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:50056 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752637Ab1HAFXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 01:23:45 -0400
+Date: Sun, 31 Jul 2011 22:23:42 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, shemminger@vyatta.com, mchan@broadcom.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: RCU: how to suppress warnings from rcu_assign_pointer?
+Message-ID: <20110801052342.GD2307@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110729003843.GA2373@linux.vnet.ibm.com>
+ <20110729105058.2cb9fa86@nehalam.ftrdhcpuser.net>
+ <1312028225.2873.104.camel@edumazet-laptop>
+ <20110730.201609.2157787571393748046.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1311959236.5890.420.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110730.201609.2157787571393748046.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.07.11 13:07:16, Peter Zijlstra wrote:
-> On Thu, 2011-07-28 at 15:46 +0200, Robert Richter wrote:
-> > This patch set adds support for AMD IBS to perf. 
+On Sat, Jul 30, 2011 at 08:16:09PM -0700, David Miller wrote:
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Sat, 30 Jul 2011 14:17:05 +0200
 > 
-> > The approach is still to collect raw sample data which should be the
-> > most important use case for application developers. The data format is
-> > the same as described in the IBS register specification.
+> > Le vendredi 29 juillet 2011 à 10:50 -0700, Stephen Hemminger a écrit :
+> >> Gcc now generates warnings from rcu_assign_pointer when passed the
+> >> address of something for example:
+> >> 	rcu_assign_pointer(dev_queue->qdisc, &noop_qdisc);
+> >> This warning is harmless and should be surpressed but there maybe
+> >> other cases where we want that Gcc warning.
+> >> 
+> >> I tried various combinations of in rcu_assign_pointer macro
+> >>   #pragma GCC diagnostic push
+> >>   #pragma GCC diagnostic ignored "-Wlogical-op"
+> >>   ...
+> >>   #pragma GCC diagnostic pop
+> >> but macro's and pragma's don't nest with the correct scope for
+> >> this.
+> >> 
+> >> Maybe some one with more Gcc foo and time to waste could take
+> >> a crack at it.
+> > 
+> > I would just remove the test from rcu_assign_pointer().
+> > 
+> > We now have RCU_INIT_POINTER() for places we dont want/afford the
+> > smp_wmb()
 > 
-> That makes it hardware dependent right? I take it new hardware with IBS
-> extensions adds output MSRs.
-
-IBS is supposed to be architectural spec'ed, meaning there are no
-family checks. IBS features are detected using cpuid.
-
-So the version of the raw sampling data format could be specified with
-the u32 capability variable. I could put the caps value to the raw
-sample data too right after the size field. An additional advantage
-would be that 64 bit values are memory alligned then.
-
-The Branch Target Address register that has been added to newer cpus
-could simply be extended to the raw data sample, the data would still
-be backward compatible. Userland can detect it existence from the
-sample size or (better) from the ibs caps.
-
-> Anyway, I'll try and go over it again next week after reading the IBS
-> hardware spec (again.. that stuff just won't stick to memory).
+> Agreed:
 > 
-> I've got the BKDG for Fam10, is there anything more I should read?
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-Though it is treated architectural, it isn't in the AMD64 Architecture
-Programmer's Manual (APM). The 10h BKDG is a good source, but extended
-IBS features are described in the family 12h bkdg (same as for 15h)
-and the capabilities are in the cpuid spec:
+Very good!!!  Many thanks to the three of you!
 
- http://support.amd.com/us/Processor_TechDocs/41131.pdf
- http://support.amd.com/us/Processor_TechDocs/25481.pdf
+I have queued this, adding Eric's Signed-off-by.  Eric, could you please
+reply either giving me explicit permission to do this or telling me that
+you would rather that I apply under my own Signed-off-by?  (I would guess
+that the former is OK with you, but I really do need to know for sure.)
+Please see below for the current state of this commit in my on-laptop
+-rcu tree.
 
--Robert
+I have also added a second commit upgrading comment headers to call out
+exactly when RCU_INIT_POINTER() may be used.
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+							Thanx, Paul
 
+------------------------------------------------------------------------
+
+rcu: Make rcu_assign_pointer() unconditionally insert a memory barrier
+
+Recent changes to gcc give warning messages on rcu_assign_pointers()'s
+checks that allow it to determine when it is OK to omit the memory
+barrier.  Stephen Hemminger tried a number of gcc tricks to silence
+this warning, but #pragmas and CPP macros do not work together in the
+way that would be required to make this work.
+
+However, we now have RCU_INIT_POINTER(), which already omits this
+memory barrier, and which therefore may be used when assigning NULL to
+an RCU-protected pointer that is accessible to readers.  This commit
+therefore makes rcu_assign_pointer() unconditionally emit the memory
+barrier.
+
+Reported-by: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index ea80396..b2e5fe8 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -443,9 +443,7 @@ extern int rcu_my_thread_group_empty(void);
+ 	})
+ #define __rcu_assign_pointer(p, v, space) \
+ 	({ \
+-		if (!__builtin_constant_p(v) || \
+-		    ((v) != NULL)) \
+-			smp_wmb(); \
++		smp_wmb(); \
+ 		(p) = (typeof(*v) __force space *)(v); \
+ 	})
+ 
