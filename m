@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941Ab1HAKeN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 06:34:13 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:47008 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753098Ab1HAKeH (ORCPT
+	id S1753961Ab1HAKfE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 06:35:04 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:39821 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753098Ab1HAKe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 06:34:07 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+H8ZAfYL2HhXdb+nL7ZlKvR8RS21hKhopDdADvLI
-	cuknQqh3mLc9bM
-Subject: Re: [ANNOUNCE] 3.0-rt6
-From: Mike Galbraith <efault@gmx.de>
-To: Rolando Martins <rolando.martins@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <CABcS5h0m10aWDuK5fK4C-mzMMwLyXJ_cehoTgWFutvPPrv30HQ@mail.gmail.com>
-References: <alpine.LFD.2.02.1107282213000.31246@ionos>
-	 <CABcS5h0m10aWDuK5fK4C-mzMMwLyXJ_cehoTgWFutvPPrv30HQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 01 Aug 2011 12:34:02 +0200
-Message-ID: <1312194842.8233.88.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	Mon, 1 Aug 2011 06:34:57 -0400
+Message-ID: <4E36813B.7090509@st.com>
+Date: Mon, 1 Aug 2011 16:04:35 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vipin KUMAR <vipin.kumar@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V2 03/20] dmaengine/amba-pl08x: Rearrange inclusion of
+ header files in ascending order
+References: <cover.1312190881.git.viresh.kumar@st.com> <16f5abd9452832860f3a11fe1ddabde05fa3ae8c.1312190881.git.viresh.kumar@st.com> <4E367776.1070008@ru.mvista.com>
+In-Reply-To: <4E367776.1070008@ru.mvista.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-01 at 09:42 +0100, Rolando Martins wrote:
-> Hi Peter,
-> is there any progress on the CONFIG_RT_GROUP_SCHED front?
+On 08/01/2011 03:22 PM, Sergei Shtylyov wrote:
+>> > +#include<linux/slab.h>
+>     Shouldn't there be emoty line here?
+> 
+>> >   #include<asm/hardware/pl080.h>
 
-Out of curiosity, why would you want that in a -rt kernel?
 
-(I haven't done any PI testing with that, but I can imagine the throttle
-causing heartburn)
+Ya, can be, but i thought it is also fine. Don't know.
+If you want i can do that.
 
-	-Mike
-
-> I don't know if this is related, but in 33-rt if I used a low (=100)
-> cpu_runtime_us and cpu_period_us then I would get some freezes
-> (something that does not happen in 2.6.39).
-
-(providing a realtime budget of 100 whole microseconds to a kernel where
-everything and it's brother is realtime is unlikely to go well)
-
+-- 
+viresh
