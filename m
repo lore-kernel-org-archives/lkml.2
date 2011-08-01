@@ -1,160 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab1HAWjr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 18:39:47 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:40928 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751211Ab1HAWjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 18:39:41 -0400
-Date: Mon, 01 Aug 2011 18:39:37 -0400
-Message-Id: <E1Qo197-0004oD-JO@tytso-glaptop>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ext4 update for 3.1
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1752857Ab1HAWxS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 18:53:18 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:15831 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab1HAWxL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 18:53:11 -0400
+Date: Tue, 2 Aug 2011 00:53:09 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-kernel@vger.kernel.org
+cc: trivial@kernel.org, ocfs2-devel@oss.oracle.com,
+        =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>,
+        device-drivers-devel@blackfin.uclinux.org,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
+Subject: [PATCH] Documentation/ABI/: update version number references from
+ 2.6.x to 3.x
+Message-ID: <alpine.LNX.2.00.1108020050190.31999@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1085115735-1312239189=:31999"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Here are my changes for 3.1 can be found here:
+--8323328-1085115735-1312239189=:31999
+Content-Type: TEXT/PLAIN; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
+Update the version number references from 2.6.x to 3.x
+Also correct spelling of "May" (was spelled "Mai").
 
-However, there will be a merge conflict because the function
-ext4_ind_direct_IO() got moved from inode.c to a new file indirect.c as
-part of a cleanup effort.  So a patch hunk that attempted to be applied
-to inode.c in upstream caused a merge conflict, and needs to be manually
-applied to indirect.c.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ Documentation/ABI/removed/o2cb                     |    2 +-
+ Documentation/ABI/testing/sysfs-bus-bcma           |    8 ++++----
+ .../testing/sysfs-class-backlight-driver-adp8870   |   16 ++++++++--------
+ 3 files changed, 13 insertions(+), 13 deletions(-)
 
-My fixup of the merge conflict can be found here:
+diff --git a/Documentation/ABI/removed/o2cb b/Documentation/ABI/removed/o2cb
+index 7f5daa4..20c91ad 100644
+--- a/Documentation/ABI/removed/o2cb
++++ b/Documentation/ABI/removed/o2cb
+@@ -1,6 +1,6 @@
+ What:		/sys/o2cb symlink
+ Date:		May 2011
+-KernelVersion:	2.6.40
++KernelVersion:	3.0
+ Contact:	ocfs2-devel@oss.oracle.com
+ Description:	This is a symlink: /sys/o2cb to /sys/fs/o2cb. The symlink is
+ 		removed when new versions of ocfs2-tools which know to look
+diff --git a/Documentation/ABI/testing/sysfs-bus-bcma b/Documentation/ABI/testing/sysfs-bus-bcma
+index 06b62ba..721b4ae 100644
+--- a/Documentation/ABI/testing/sysfs-bus-bcma
++++ b/Documentation/ABI/testing/sysfs-bus-bcma
+@@ -1,6 +1,6 @@
+ What:		/sys/bus/bcma/devices/.../manuf
+ Date:		May 2011
+-KernelVersion:	2.6.40
++KernelVersion:	3.0
+ Contact:	Rafa³ Mi³ecki <zajec5@gmail.com>
+ Description:
+ 		Each BCMA core has it's manufacturer id. See
+@@ -8,7 +8,7 @@ Description:
+ 
+ What:		/sys/bus/bcma/devices/.../id
+ Date:		May 2011
+-KernelVersion:	2.6.40
++KernelVersion:	3.0
+ Contact:	Rafa³ Mi³ecki <zajec5@gmail.com>
+ Description:
+ 		There are a few types of BCMA cores, they can be identified by
+@@ -16,7 +16,7 @@ Description:
+ 
+ What:		/sys/bus/bcma/devices/.../rev
+ Date:		May 2011
+-KernelVersion:	2.6.40
++KernelVersion:	3.0
+ Contact:	Rafa³ Mi³ecki <zajec5@gmail.com>
+ Description:
+ 		BCMA cores of the same type can still slightly differ depending
+@@ -24,7 +24,7 @@ Description:
+ 
+ What:		/sys/bus/bcma/devices/.../class
+ Date:		May 2011
+-KernelVersion:	2.6.40
++KernelVersion:	3.0
+ Contact:	Rafa³ Mi³ecki <zajec5@gmail.com>
+ Description:
+ 		Each BCMA core is identified by few fields, including class it
+diff --git a/Documentation/ABI/testing/sysfs-class-backlight-driver-adp8870 b/Documentation/ABI/testing/sysfs-class-backlight-driver-adp8870
+index aa11dbd..4a9c545 100644
+--- a/Documentation/ABI/testing/sysfs-class-backlight-driver-adp8870
++++ b/Documentation/ABI/testing/sysfs-class-backlight-driver-adp8870
+@@ -4,8 +4,8 @@ What:		/sys/class/backlight/<backlight>/l2_bright_max
+ What:		/sys/class/backlight/<backlight>/l3_office_max
+ What:		/sys/class/backlight/<backlight>/l4_indoor_max
+ What:		/sys/class/backlight/<backlight>/l5_dark_max
+-Date:		Mai 2011
+-KernelVersion:	2.6.40
++Date:		May 2011
++KernelVersion:	3.0
+ Contact:	device-drivers-devel@blackfin.uclinux.org
+ Description:
+ 		Control the maximum brightness for <ambient light zone>
+@@ -18,8 +18,8 @@ What:		/sys/class/backlight/<backlight>/l2_bright_dim
+ What:		/sys/class/backlight/<backlight>/l3_office_dim
+ What:		/sys/class/backlight/<backlight>/l4_indoor_dim
+ What:		/sys/class/backlight/<backlight>/l5_dark_dim
+-Date:		Mai 2011
+-KernelVersion:	2.6.40
++Date:		May 2011
++KernelVersion:	3.0
+ Contact:	device-drivers-devel@blackfin.uclinux.org
+ Description:
+ 		Control the dim brightness for <ambient light zone>
+@@ -29,8 +29,8 @@ Description:
+ 		this <ambient light zone>.
+ 
+ What:		/sys/class/backlight/<backlight>/ambient_light_level
+-Date:		Mai 2011
+-KernelVersion:	2.6.40
++Date:		May 2011
++KernelVersion:	3.0
+ Contact:	device-drivers-devel@blackfin.uclinux.org
+ Description:
+ 		Get conversion value of the light sensor.
+@@ -39,8 +39,8 @@ Description:
+ 		8000 (max ambient brightness)
+ 
+ What:		/sys/class/backlight/<backlight>/ambient_light_zone
+-Date:		Mai 2011
+-KernelVersion:	2.6.40
++Date:		May 2011
++KernelVersion:	3.0
+ Contact:	device-drivers-devel@blackfin.uclinux.org
+ Description:
+ 		Get/Set current ambient light zone. Reading returns
+-- 
+1.7.6
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git upstream-merge
 
-Please pull from either for_linus or upstream-merge, at your
-convenience.
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Many thanks!!
-
-						- Ted
-
-Allison Henderson (2):
-      ext4: punch hole optimizations: skip un-needed extent lookup
-      ext4: remove unneeded parameter to ext4_ext_remove_space()
-
-Amir Goldstein (3):
-      ext4: split ext4_ind_truncate from ext4_truncate
-      ext4: rename ext4_indirect_* funcs to ext4_ind_*
-      ext4: move ext4_ind_* functions from inode.c to indirect.c
-
-Bernd Schubert (1):
-      ext4: fix compilation with -DDX_DEBUG
-
-Dan Carpenter (1):
-      ext4: add missing kfree() on error return path in add_new_gdb()
-
-Dan Ehrenberg (2):
-      ext4: make the preallocation size be a multiple of stripe size
-      ext4: ignore a stripe width of 1
-
-Eric Sandeen (1):
-      ext4: refactor duplicated block placement code
-
-Jan Kara (1):
-      ext4: fix data corruption in inodes with journalled data
-
-Jiaying Zhang (1):
-      ext4: free allocated and pre-allocated blocks when check_eofblocks_fl fails
-
-Lukas Czerner (1):
-      ext4: remove unnecessary comments in ext4_orphan_add()
-
-Maxim Patlasov (1):
-      ext4: fix i_blocks/quota accounting when extent insertion fails
-
-Robin Dong (9):
-      ext4: fix incorrect error msg in ext4_ext_insert_index
-      ext4: remove redundant goto in ext4_ext_insert_extent()
-      ext4: avoid unneeded ext4_ext_next_leaf_block() while inserting extents
-      ext4: avoid wasted extent cache lookup if !PUNCH_OUT_EXT
-      ext4: avoid eh_entries overflow before insert extent_idx
-      ext4: remove unused argument in ext4_ext_next_leaf_block
-      ext4: correct the debug message in ext4_ext_insert_extent
-      ext4: correct comment for ext4_ext_check_cache
-      ext4: add action of moving index in ext4_ext_rm_idx for Punch Hole
-
-Tao Ma (11):
-      jbd2: use WRITE_SYNC in journal checkpoint
-      ext4: fix trim length underflow with small trim length
-      ext4: speed up group trim with the right free block count
-      ext4: Add new ext4 trim tracepoints
-      ext4: Speed up FITRIM by recording flags in ext4_group_info
-      ext4: Change the wrong param comment for ext4_trim_all_free
-      ext4: fix a race which could leak memory in ext4_groupinfo_create_slab()
-      ext4: Fix a double free of sbi->s_group_info in ext4_mb_init_backend
-      ext4: remove unnecessary ext4_get_group_info in ext4_mb_load_buddy
-      ext4: don't increment s_mb_buddies_generated in ext4_mb_release
-      ext4: remove ac_repeats from ext4_allocation_context
-
-Theodore Ts'o (10):
-      ext4: move __ext4_check_blockref to block_validity.c
-      ext4: move common truncate functions to header file
-      ext4: remove loop around bio_alloc()
-      jbd2: remove jbd2_dev_to_name() from jbd2 tracepoints
-      ext4: add tracepoint for ext4_journal_start
-      ext4: fix races in ext4_sync_parent()
-      ext4: change umode_t in tracepoint headers to be an explicit __u16
-      ext4: introduce ext4_kvmalloc(), ext4_kzalloc(), and ext4_kvfree()
-      ext4: use ext4_kvzalloc()/ext4_kvmalloc() for s_group_desc and s_group_info
-      ext4: use ext4_msg() instead of printk in mballoc
-
-Utako Kusaka (1):
-      ext4: Fix overflow caused by missing cast in ext4_fallocate()
-
-Yongqiang Yang (13):
-      ext4: quiet 'unused variables' compile warnings
-      ext4: prevent parallel resizers by atomic bit ops
-      ext4: prevent a fs with errors from being resized
-      ext4: rename ext4_add_groupblocks() to ext4_group_add_blocks()
-      ext4: let ext4_group_add_blocks() return an error code
-      ext4: let ext4_group_add_blocks() handle 0 blocks quickly
-      ext4: fix a typo in ext4_group_extend()
-      ext4: let setup_new_group_blocks() set multiple bits at a time
-      ext4: simplify journal handling in setup_new_group_blocks()
-      ext4: remove lock_buffer in bclean() and setup_new_group_blocks()
-      ext4: simplify parameters of add_new_gdb()
-      ext4: simplify parameters of reserve_backup_gdb()
-      ext4: use the correct error exit path in ext4_init_inode_table()
-
-Yu Jian (2):
-      ext4: use EXT4_BAD_INO for buddy cache to avoid colliding with valid inode #
-      ext4: prevent memory leaks from ext4_mb_init_backend() on error path
-
- fs/ext4/Makefile            |    2 +-
- fs/ext4/balloc.c            |   48 ++
- fs/ext4/block_validity.c    |   21 +
- fs/ext4/ext4.h              |   55 ++-
- fs/ext4/extents.c           |  129 ++--
- fs/ext4/fsync.c             |   26 +-
- fs/ext4/ialloc.c            |    2 +-
- fs/ext4/indirect.c          | 1484 ++++++++++++++++++++++++++++++++++++++++
- fs/ext4/inode.c             | 1598 +------------------------------------------
- fs/ext4/ioctl.c             |   12 +-
- fs/ext4/mballoc.c           |  230 ++++---
- fs/ext4/mballoc.h           |    1 -
- fs/ext4/namei.c             |   21 +-
- fs/ext4/page-io.c           |    6 +-
- fs/ext4/resize.c            |  199 +++---
- fs/ext4/super.c             |   88 ++-
- fs/ext4/truncate.h          |   43 ++
- fs/jbd2/checkpoint.c        |    5 +-
- fs/jbd2/journal.c           |   67 --
- include/linux/jbd2.h        |    6 -
- include/trace/events/ext4.h |   87 +++-
- include/trace/events/jbd2.h |   36 +-
- 22 files changed, 2192 insertions(+), 1974 deletions(-)
+--8323328-1085115735-1312239189=:31999--
