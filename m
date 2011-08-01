@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab1HACWU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Jul 2011 22:22:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37204 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753024Ab1HACWM (ORCPT
+	id S1753439Ab1HAC45 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Jul 2011 22:56:57 -0400
+Received: from dakia2.marvell.com ([65.219.4.35]:50613 "EHLO
+	dakia2.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753003Ab1HAC4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Jul 2011 22:22:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110801020951.GA12870@dastard>
-References: <20110728164105.GA18258@infradead.org> <20110729142121.GA21149@localhost>
- <20110730134422.GA1884@infradead.org> <20110731151014.GA23106@localhost>
- <20110731234749.GQ5404@dastard> <CA+55aFzkb58Gtzgpd3oQgXekpg4APN6jDLNCh=CAMQ0zwyE4kg@mail.gmail.com>
- <20110801012813.GR5404@dastard> <CA+55aFwtfUeUn=MuqSEyPiPeC5=k2xK2ULd9-5ShQAJ=4T0CvQ@mail.gmail.com>
- <20110801020951.GA12870@dastard>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 31 Jul 2011 16:21:15 -1000
-Message-ID: <CA+55aFy7wjBsgUhx2vxiKbN_fxJX2_bvJowQszyxyp7Emn_dQA@mail.gmail.com>
-Subject: Re: xfstests 073 regression
-To: Dave Chinner <david@fromorbit.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 31 Jul 2011 22:56:50 -0400
+X-ASG-Debug-ID: 1312167409-082efa450001-xx1T2L
+X-Barracuda-Envelope-From: leoy@marvell.com
+From: Leo Yan <leoy@marvell.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        haojian.zhuang@marvell.com, nicolas.pitre@linaro.org,
+        linux@arm.linux.org.uk, plagnioj@jcrosoft.com
+Cc: Leo Yan <leoy@marvell.com>
+X-ASG-Orig-Subj: [PATCH V2 0/2] ARM: mmp: add audio sram support
+Subject: [PATCH V2 0/2] ARM: mmp: add audio sram support
+Date: Mon,  1 Aug 2011 10:59:05 +0800
+X-ASG-Orig-Subj: [PATCH V2 0/2] ARM: mmp: add audio sram support
+Message-Id: <1312167547-26740-1-git-send-email-leoy@marvell.com>
+X-Mailer: git-send-email 1.7.4.1
+X-Barracuda-Connect: maili.marvell.com[10.68.76.51]
+X-Barracuda-Start-Time: 1312167409
+X-Barracuda-URL: http://10.68.76.222:80/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: -1002.00
+X-Barracuda-Spam-Status: No, SCORE=-1002.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=1000.0 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 31, 2011 at 4:09 PM, Dave Chinner <david@fromorbit.com> wrote:
->
-> Hence if we can't grab the superblock here, it is simply another
-> case of a "new work pending" interrupt, right? And so aborting the
-> work is the correct thing to do? Especially as it avoids all the
-> ordering problems of redirtying inodes and allows the writeback work
-> to restart (form whatever context it is stared from next time) where
-> it stopped.
+On mmp platform, there have sram buffer dedicated
+to audio island. It can be to dynamically allocated
+for versatile pcm devices. So add the audio sram
+allocator for managing it.
 
-Ok, that does sound like a reasonable approach to me. Which probably
-means that there is some oversimplification and gotcha hidden in that
-argument, but I don't see it immediately.
+Leo Yan (2):
+  ARM: mmp: register audio sram device
+  ARM: mmp: add audio sram allocator
 
-I do agree that it would be nice if we could avoid re-ordering
-problems. The whole dirty time issue and whether inodes are actually
-correctly ordered on the dirty lists has always been one huge rats
-nest.  Ask Andrew about it, he was espousing his love for that code at
-the recent Intel Tech Days ;)
+ arch/arm/Kconfig                            |    1 +
+ arch/arm/mach-mmp/Makefile                  |    2 +-
+ arch/arm/mach-mmp/audio_sram.c              |   99 +++++++++++++++++++++++++++
+ arch/arm/mach-mmp/brownstone.c              |    1 +
+ arch/arm/mach-mmp/include/mach/audio_sram.h |   24 +++++++
+ arch/arm/mach-mmp/include/mach/mmp2.h       |    6 ++
+ arch/arm/mach-mmp/mmp2.c                    |    1 +
+ 7 files changed, 133 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/mach-mmp/audio_sram.c
+ create mode 100644 arch/arm/mach-mmp/include/mach/audio_sram.h
 
-         Linus
+-- 
+1.7.4.1
+
