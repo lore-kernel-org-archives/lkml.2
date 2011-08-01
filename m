@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab1HAS5z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 14:57:55 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:19818 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386Ab1HAS5t (ORCPT
+	id S1752602Ab1HATBs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 15:01:48 -0400
+Received: from mail.windriver.com ([147.11.1.11]:50465 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862Ab1HATBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 14:57:49 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6425"; a="107358344"
-Date: Mon, 1 Aug 2011 11:57:45 -0700
-From: Larry Bassel <lbassel@codeaurora.org>
-To: Larry Bassel <lbassel@codeaurora.org>
-Cc: linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: questions about memory hotplug
-Message-ID: <20110801185745.GC3466@labbmf-linux.qualcomm.com>
-References: <20110729221230.GA3466@labbmf-linux.qualcomm.com>
+	Mon, 1 Aug 2011 15:01:43 -0400
+From: Jason Wessel <jason.wessel@windriver.com>
+To: <torvalds@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <kgdb-bugreport@lists.sourceforge.net>
+Subject: [GIT PULL] kgdb/kdb updates for 3.1 
+Date: Mon, 1 Aug 2011 14:00:56 -0500
+Message-ID: <1312225260-1028-1-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110729221230.GA3466@labbmf-linux.qualcomm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 Jul 11 15:12, Larry Bassel wrote:
-> 
-> Would CONFIG_ARCH_POPULATES_NODE_MAP help here? Does anyone
-> use this? It doesn't seem to be in any defconfig or Kconfig
+Linus, please pull the for_linus branch to pick up the minor kgdb/kdb
+cleanups accumulated in the last few months.
 
-I want to clarify this, I meant used on ARM -- I see it is being used
-on other architectures (and that movablecore= and kernelcore=
-require this config option).
+git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git for_linus
 
-> on 3.0 (or earlier versions I've looked at).
-> 
+Thanks,
+Jason.
 
-Larry
+---
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+The following changes since commit 02f8c6aee8df3cdc935e9bdd4f2d020306035dbe:
+
+  Linux 3.0 (2011-07-21 19:17:23 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git for_linus
+
+Jason Wessel (4):
+      kdb: cleanup unused variables missed in the original kdb merge
+      kdb,kgdb: Implement switch and pass buffer from kdb -> gdb
+      kdb: Remove all references to DOING_KGDB2
+      kdb,kgdb: Allow arbitrary kgdb magic knock sequences
+
+ kernel/debug/gdbstub.c          |   22 +++++++++++++++-------
+ kernel/debug/kdb/kdb_bt.c       |    5 ++---
+ kernel/debug/kdb/kdb_cmds       |    4 ----
+ kernel/debug/kdb/kdb_debugger.c |   21 ++++++++-------------
+ kernel/debug/kdb/kdb_io.c       |   36 +++++++++++++++++++++++++-----------
+ kernel/debug/kdb/kdb_main.c     |    4 ++--
+ kernel/debug/kdb/kdb_private.h  |    3 +--
+ 7 files changed, 53 insertions(+), 42 deletions(-)
