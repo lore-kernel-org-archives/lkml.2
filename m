@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab1HAUb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 16:31:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42766 "EHLO mx1.redhat.com"
+	id S1753435Ab1HAUcb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 16:32:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40001 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753065Ab1HAUbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 16:31:53 -0400
-Date: Mon, 1 Aug 2011 16:31:43 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
-        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: Re: [patch v2 02/10] kdump: Make kimage_load_crash_segment() weak
-Message-ID: <20110801203143.GH3805@redhat.com>
-References: <20110727125504.491183728@linux.vnet.ibm.com>
- <20110727125807.695225427@linux.vnet.ibm.com>
+	id S1753260Ab1HAUcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 16:32:24 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernle.org>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [patch] blk-flush: fix flush policy calculation
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 01 Aug 2011 16:32:17 -0400
+Message-ID: <x49d3go98ku.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110727125807.695225427@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 27, 2011 at 02:55:06PM +0200, Michael Holzheu wrote:
-> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> 
-> On s390 we do not create page tables at all for the crashkernel memory.
-> This requires a s390 specific version for kimage_load_crash_segment().
-> Therefore this patch declares this function as "__weak". The s390 version is
-> very simple. It just copies the kexec segment to real memory without using
-> page tables:
-> 
-> int kimage_load_crash_segment(struct kimage *image,
->                               struct kexec_segment *segment)
-> {
->         return copy_from_user_real((void *) segment->mem, segment->buf,
->                                    segment->bufsz);
-> }
-> 
-> There are two main advantages of not creating page tables for the
-> crashkernel memory:
-> 
-> a) It saves memory. We have scenarios in mind, where crashkernel
->    memory can be very large and saving page table space is important.
-> b) We protect the crashkernel memory from being overwritten.
-> 
-> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> ---
->  kernel/kexec.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -842,8 +842,8 @@ out:
->  	return result;
->  }
->  
-> -static int kimage_load_crash_segment(struct kimage *image,
-> -					struct kexec_segment *segment)
-> +int __weak kimage_load_crash_segment(struct kimage *image,
-> +				     struct kexec_segment *segment)
+Hi,
 
-A comment here why we are making it weak should help in increasing
-the code readability.
+Reading through the code in blk-flush.c, it appears that there is an
+oversight in the policy returned from blk_flush_policy:
 
-Thanks
-Vivek
+        if (fflags & REQ_FLUSH) {
+                if (rq->cmd_flags & REQ_FLUSH)
+                        policy |= REQ_FSEQ_PREFLUSH;
+                if (blk_rq_sectors(rq))
+                        policy |= REQ_FSEQ_DATA;
+                if (!(fflags & REQ_FUA) && (rq->cmd_flags & REQ_FUA))
+                        policy |= REQ_FSEQ_POSTFLUSH;
+        }
+        return policy;
 
->  {
->  	/* For crash dumps kernels we simply copy the data from
->  	 * user space to it's destination.
+This means that REQ_FSEQ_DATA can only be set if the queue flush_flags
+include FLUSH and/or FUA.  However, the short-circuit for not issuing
+flushes when the device doesn't need/support them depends on
+REQ_FSEQ_DATA being set while the other two bits are clear:
+
+        /*
+         * If there's data but flush is not necessary, the request can be
+         * processed directly without going through flush machinery.  Queue
+         * for normal execution.
+         */
+        if ((policy & REQ_FSEQ_DATA) &&
+            !(policy & (REQ_FSEQ_PREFLUSH | REQ_FSEQ_POSTFLUSH))) {
+                list_add_tail(&rq->queuelist, &q->queue_head);
+                return;
+        }
+
+Given the code as it stands, I don't think the body of this if statement
+will ever be executed.  I've attached a fix for this below.  It seems
+like this could be both a performance and a correctness issue, though
+I've not run into any problems I can directly attribute to this (perhaps
+due to file systems not issuing flushes when support is not advertised?).
+
+Comments are appreciated.
+
+Cheers,
+Jeff
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+
+diff --git a/block/blk-flush.c b/block/blk-flush.c
+index bb21e4c..3a06118 100644
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -95,11 +95,11 @@ static unsigned int blk_flush_policy(unsigned int fflags, struct request *rq)
+ {
+ 	unsigned int policy = 0;
+ 
++	if (blk_rq_sectors(rq))
++		policy |= REQ_FSEQ_DATA;
+ 	if (fflags & REQ_FLUSH) {
+ 		if (rq->cmd_flags & REQ_FLUSH)
+ 			policy |= REQ_FSEQ_PREFLUSH;
+-		if (blk_rq_sectors(rq))
+-			policy |= REQ_FSEQ_DATA;
+ 		if (!(fflags & REQ_FUA) && (rq->cmd_flags & REQ_FUA))
+ 			policy |= REQ_FSEQ_POSTFLUSH;
+ 	}
