@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab1HAJh6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 05:37:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6426 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753282Ab1HAJhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 05:37:52 -0400
-Message-ID: <4E3673E3.6020100@redhat.com>
-Date: Mon, 01 Aug 2011 12:37:39 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+	id S1753538Ab1HAJj3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 05:39:29 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:60261 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752839Ab1HAJjX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 05:39:23 -0400
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <linus.walleij@linaro.org>
+Cc: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux@arm.linux.org.uk>, <armando.visconti@st.com>,
+        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
+        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
+        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
+        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
+        <viresh.linux@gmail.com>
+Subject: [PATCH V2 06/20] dmaengine/amba-pl08x: Remove redundant comment and rewrite original
+Date: Mon, 1 Aug 2011 15:07:16 +0530
+Message-ID: <295c3ca443ecc1a22f67b32ba4d185b94b79dd95.1312190881.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <cover.1312190881.git.viresh.kumar@st.com>
+References: <cover.1312190881.git.viresh.kumar@st.com>
 MIME-Version: 1.0
-To: Liu Yuan <namei.unix@gmail.com>
-CC: Sasha Levin <levinsasha928@gmail.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Khoa Huynh <khoa@us.ibm.com>,
-        Badari Pulavarty <pbadari@us.ibm.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [RFC PATCH]vhost-blk: In-kernel accelerator for virtio block
- device
-References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com>	 <CAJSP0QUKz7LFuARF_n2LcBi_uuSzfmkjrWsHAWrXXkEaQJKkEA@mail.gmail.com>	 <4E325F98.5090308@gmail.com>	 <CAJSP0QX=mXvkZyeMx28iwVNDrKEZZVAZxLLOFRv62pu7byo6gw@mail.gmail.com>	 <4E32A105.6080509@gmail.com> <1311953104.30835.15.camel@lappy> <4E36612F.6040809@redhat.com> <4E366F4A.1030704@gmail.com>
-In-Reply-To: <4E366F4A.1030704@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/2011 12:18 PM, Liu Yuan wrote:
->> Agree.  vhost-net works around the lack of async zero copy networking 
->> interface.  Block I/O on the other hand does have such an interface, 
->> and in addition transaction rates are usually lower.  All we're 
->> saving is the syscall overhead.
->>
->
-> Personally I too agree with Sasha Levin. But vhost-blk is the first 
-> fast prototype that is supposed to act as a code base to do further 
-> optimisation, which I plan to utilize  kernel's internal stuff like 
-> BIO layer,  that can not be accessed from user space, to maximize the 
-> performance for raw disk based block IO.
+Similar comment is present over routine also pl08x_choose_master_bus(). Keeping
+one of them. Also rewrite that comment to convey message clearly.
 
-Is there anything in the bio layer which is not exposed by linux-aio?  
-Or is linux-aio slow in translating from vfs ops to bio ops?
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+---
+ drivers/dma/amba-pl08x.c |   15 +++++++--------
+ 1 files changed, 7 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+index 01c2f50..6c52959 100644
+--- a/drivers/dma/amba-pl08x.c
++++ b/drivers/dma/amba-pl08x.c
+@@ -497,9 +497,13 @@ struct pl08x_lli_build_data {
+ };
+ 
+ /*
+- * Autoselect a master bus to use for the transfer this prefers the
+- * destination bus if both available if fixed address on one bus the
+- * other will be chosen
++ * Autoselect a master bus to use for the transfer. Slave will be the chosen as
++ * victim in case src & dest are not similarly aligned. i.e. If after aligning
++ * masters address with width requirements of transfer (by sending few byte by
++ * byte data), slave is still not aligned, then its width will be reduced to
++ * BYTE.
++ * - prefers the destination bus if both available
++ * - if fixed address on one bus the other will be chosen
+  */
+ static void pl08x_choose_master_bus(struct pl08x_lli_build_data *bd,
+ 	struct pl08x_bus_data **mbus, struct pl08x_bus_data **sbus, u32 cctl)
+@@ -625,11 +629,6 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
+ 	/* We need to count this down to zero */
+ 	bd.remainder = txd->len;
+ 
+-	/*
+-	 * Choose bus to align to
+-	 * - prefers destination bus if both available
+-	 * - if fixed address on one bus chooses other
+-	 */
+ 	pl08x_choose_master_bus(&bd, &mbus, &sbus, cctl);
+ 
+ 	dev_vdbg(&pl08x->adev->dev, "src=0x%08x%s/%u dst=0x%08x%s/%u len=%zu llimax=%zu\n",
 -- 
-error compiling committee.c: too many arguments to function
+1.7.2.2
 
