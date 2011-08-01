@@ -1,65 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432Ab1HAQol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 12:44:41 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:41200
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753110Ab1HAQof (ORCPT
+	id S1753328Ab1HAQsr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 12:48:47 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37987 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753036Ab1HAQsk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 12:44:35 -0400
-Date: Mon, 1 Aug 2011 12:44:14 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: xfstests 073 regression
-Message-ID: <20110801164414.GA1398@infradead.org>
-References: <20110728164105.GA18258@infradead.org>
- <20110729142121.GA21149@localhost>
- <20110730134422.GA1884@infradead.org>
- <20110731151014.GA23106@localhost>
- <20110731234749.GQ5404@dastard>
- <CA+55aFzkb58Gtzgpd3oQgXekpg4APN6jDLNCh=CAMQ0zwyE4kg@mail.gmail.com>
- <20110801012813.GR5404@dastard>
- <CA+55aFwtfUeUn=MuqSEyPiPeC5=k2xK2ULd9-5ShQAJ=4T0CvQ@mail.gmail.com>
- <20110801020951.GA12870@dastard>
- <20110801055212.GB21021@localhost>
+	Mon, 1 Aug 2011 12:48:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110801055212.GB21021@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <CACqU3MUoxSNmcYsSF4zOTgADdedb7TcciPuBPMviG02M5oUPDQ@mail.gmail.com>
+References: <1312042478-26012-1-git-send-email-zdevai@gmail.com>
+ <20110801083614.GC15578@n2100.arm.linux.org.uk> <CAMuHMdUpTDSRP_JmWqcCBtYwzna0hwmaBshpiF8kgvqoNcqYZA@mail.gmail.com>
+ <20110801101410.GE15578@n2100.arm.linux.org.uk> <CAMuHMdUiLjMVwOqKPF6tHLpPxROrx=rRf3ednfTLrwGuZ2VF7A@mail.gmail.com>
+ <CACqU3MVUxTYmD+4VGBAeN8PTs83fR0xQQrQS5h4QGMZXgMxEvA@mail.gmail.com>
+ <CAGZ=bqL=VAx5jnSBkE2q5KJSY_+An-VRTRAzJmJ3waQUvrRFFg@mail.gmail.com> <CACqU3MUoxSNmcYsSF4zOTgADdedb7TcciPuBPMviG02M5oUPDQ@mail.gmail.com>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Mon, 1 Aug 2011 12:48:19 -0400
+Message-ID: <CAGZ=bqLHjzpKQP63dnSK0fML2ZycmfFnSbiApV4naMCN_UrZdg@mail.gmail.com>
+Subject: Re: [PATCH] Remove remaining references of CONFIG_GENERIC_TIME
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Zoltan Devai <zdevai@gmail.com>, linux-kernel@vger.kernel.org,
+        chris@zankel.net, linux-am33-list@redhat.com, trivial@kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net, cmetcalf@tilera.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 01:52:12PM +0800, Wu Fengguang wrote:
-> There is another type of work that won't abort: the one that started
-> by __bdi_start_writeback() and I'd call it "nr_pages" work since its
-> termination condition is simply nr_pages and nothing more. It's not
-> the for_background or for_kupdate works that will abort as soon as
-> other works are queued. 
+On Mon, Aug 1, 2011 at 12:08, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> On Mon, Aug 1, 2011 at 11:15 AM, Kyle Moffett <kyle@moffetthome.net> wrote:
+>> On Mon, Aug 1, 2011 at 11:04, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>>> On Mon, Aug 1, 2011 at 7:27 AM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>>>> On Mon, Aug 1, 2011 at 12:14, Russell King - ARM Linux
+>>>>>>[...]
+>>>>>>
+>>>>>> Doesn't kconf error out when trying to select a non-existent symbol?
+>>>>>
+>>>>> Nope.
+>>>>
+>>>> You're right. So that's a bug.
+>>>>
+>>> depends on what you are trying to achieve and what the problem is.
+>>>
+>>> Internally kconfig will create a dummy symbol when it encounter a
+>>> missing symbol so that arch/arm/Kconfig can reference a symbol which
+>>> will be fully defined later on. I do not think you want to forward
+>>> decl all the symbol which can be used. That'd be a mess. That said, we
+>>> can come with a form of symbol deprecation that would error-out when
+>>> used.
+>>
+>> Would it be possible instead to make Kconfig go through all the symbols
+>> after everything is processed and identify any remaining "dummy symbols"
+>> which were not actually declared anywhere?
+>>
+> this is software, everything is possible.
+>
+>> Right now if you typo a "select" statement you get no warnings that you
+>> are selecting something that does not exist, which is probably a cause
+>> of many kinds of errors beyond this particular one.
+>>
+> d'oh! ... I'm not sure we want that. Dummy symbol are heavily used
+> internally, a trivial implementation[0] triggered:
+>
+> % make REGENERATE_PARSERS=y alldefconfig 2>&1 | grep 'defined without
+> type' | wc -l
+> 817
+>
+> Moreover, this approach is deemed to fail. The current symbol
+> namespace is tied to an arch, so whenever you do:
+>
+> arch/arm/Kconfig:
+> config FOO
+>    bool
+>
+> config BAZ
+>    bool
+>
+> drivers/cpufreq/Kconfig
+> config BAR
+>    depends on ARM && FOO
+>    select BAZ
+>
+> You will end up triggering the warning for every ARCH != ARM...
 
-We have two callers of __bdi_start_writeback: bdi_start_writeback
-and wakeup_flusher_threads.
+Perhaps that's an argument for building a single Kconfig namespace?
+At the very least, most of the architecture-generic warnings could be
+worked around with trivial predeclarations in an "arch/Kconfig" file:
 
-The first one want to write all pages for a bdi when a laptop-mode
-completion comes in.  It's a bit like the first pass of a sync in
-that it's a) asynchronous and b) skipping inodes or even superblocks
-has absolutely no data integrity or system balance effect.
+config ARM
+        bool
+[...]
+config X86
+        bool
 
-The second one is a huge mess.  We may call it either in places like
-sync that want to write all pages, and have similar characteristics
-as above.  Or in some places where the VM wants to write a certain
-number of pages - but the writeback code totally fucks that goal
-up by trying to write the requested number of pages per BDI, leading
-to much more massive writeback than we have requested on any
-larger system.  And what the callers appear to actually want is to
-either increase background writeback a bit, or free a certain number
-of pages (in one case even just in the lowmem zone).
+There's probably technical issues that I'm missing that would make
+that inordinately painful, but I can't see them right now... any ideas?
+
+Cheers,
+Kyle Moffett
