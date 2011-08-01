@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab1HAXaX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 19:30:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38952 "EHLO mx2.suse.de"
+	id S1754458Ab1HAXa1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 19:30:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38915 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754170Ab1HAX1s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 19:27:48 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:56 2011
-Message-Id: <20110801232056.622155467@clark.kroah.org>
+	id S1754160Ab1HAX1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 19:27:37 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Mon Aug  1 16:20:53 2011
+Message-Id: <20110801232053.272652233@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Mon, 01 Aug 2011 16:19:15 -0700
+Date: Mon, 01 Aug 2011 16:18:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Sattler <tsattler@gmx.de>, Mel Gorman <mgorman@suse.de>
-Subject: [60/70] [stable] [PATCH 3/3] mm: compaction: abort compaction if too many pages are isolated and caller is asynchronous V2
+        Hans Verkuil <hans.verkuil@cisco.com>, Mike Isely <isely@pobox.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [27/70] [media] pvrusb2: fix g/s_tuner support
 In-Reply-To: <20110801232124.GA15313@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,111 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit: f9e35b3b41f47c4e17d8132edbcab305a6aaa4b0 upstream
+commit 50e9efd60b213ce43ad6979bfc18e25eec2d8413 upstream.
 
-Asynchronous compaction is used when promoting to huge pages.  This is all
-very nice but if there are a number of processes in compacting memory, a
-large number of pages can be isolated.  An "asynchronous" process can
-stall for long periods of time as a result with a user reporting that
-firefox can stall for 10s of seconds.  This patch aborts asynchronous
-compaction if too many pages are isolated as it's better to fail a
-hugepage promotion than stall a process.
+The tuner-core subdev requires that the type field of v4l2_tuner is
+filled in correctly. This is done in v4l2-ioctl.c, but pvrusb2 doesn't
+use that yet, so we have to do it manually based on whether the current
+input is radio or not.
 
-[minchan.kim@gmail.com: return COMPACT_PARTIAL for abort]
-Reported-and-tested-by: Ury Stankevich <urykhy@gmail.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Tested with my pvrusb2.
+
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Acked-by: Mike Isely <isely@pobox.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/compaction.c |   29 ++++++++++++++++++++++++-----
- 1 file changed, 24 insertions(+), 5 deletions(-)
+ drivers/media/video/pvrusb2/pvrusb2-hdw.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -251,11 +251,18 @@ static bool too_many_isolated(struct zon
- 	return isolated > (inactive + active) / 2;
- }
- 
-+/* possible outcome of isolate_migratepages */
-+typedef enum {
-+	ISOLATE_ABORT,		/* Abort compaction now */
-+	ISOLATE_NONE,		/* No pages isolated, continue scanning */
-+	ISOLATE_SUCCESS,	/* Pages isolated, migrate */
-+} isolate_migrate_t;
-+
- /*
-  * Isolate all pages that can be migrated from the block pointed to by
-  * the migrate scanner within compact_control.
-  */
--static unsigned long isolate_migratepages(struct zone *zone,
-+static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 					struct compact_control *cc)
+--- a/drivers/media/video/pvrusb2/pvrusb2-hdw.c
++++ b/drivers/media/video/pvrusb2/pvrusb2-hdw.c
+@@ -3046,6 +3046,8 @@ static void pvr2_subdev_update(struct pv
+ 	if (hdw->input_dirty || hdw->audiomode_dirty || hdw->force_dirty) {
+ 		struct v4l2_tuner vt;
+ 		memset(&vt, 0, sizeof(vt));
++		vt.type = (hdw->input_val == PVR2_CVAL_INPUT_RADIO) ?
++			V4L2_TUNER_RADIO : V4L2_TUNER_ANALOG_TV;
+ 		vt.audmode = hdw->audiomode_val;
+ 		v4l2_device_call_all(&hdw->v4l2_dev, 0, tuner, s_tuner, &vt);
+ 	}
+@@ -5171,6 +5173,8 @@ void pvr2_hdw_status_poll(struct pvr2_hd
  {
- 	unsigned long low_pfn, end_pfn;
-@@ -272,7 +279,7 @@ static unsigned long isolate_migratepage
- 	/* Do not cross the free scanner or scan within a memory hole */
- 	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
- 		cc->migrate_pfn = end_pfn;
--		return 0;
-+		return ISOLATE_NONE;
- 	}
- 
- 	/*
-@@ -281,10 +288,14 @@ static unsigned long isolate_migratepage
- 	 * delay for some time until fewer pages are isolated
- 	 */
- 	while (unlikely(too_many_isolated(zone))) {
-+		/* async migration should just abort */
-+		if (!cc->sync)
-+			return ISOLATE_ABORT;
-+
- 		congestion_wait(BLK_RW_ASYNC, HZ/10);
- 
- 		if (fatal_signal_pending(current))
--			return 0;
-+			return ISOLATE_ABORT;
- 	}
- 
- 	/* Time to isolate some pages for migration */
-@@ -369,7 +380,7 @@ static unsigned long isolate_migratepage
- 
- 	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
- 
--	return cc->nr_migratepages;
-+	return ISOLATE_SUCCESS;
- }
- 
- /*
-@@ -533,8 +544,15 @@ static int compact_zone(struct zone *zon
- 		unsigned long nr_migrate, nr_remaining;
- 		int err;
- 
--		if (!isolate_migratepages(zone, cc))
-+		switch (isolate_migratepages(zone, cc)) {
-+		case ISOLATE_ABORT:
-+			ret = COMPACT_PARTIAL;
-+			goto out;
-+		case ISOLATE_NONE:
- 			continue;
-+		case ISOLATE_SUCCESS:
-+			;
-+		}
- 
- 		nr_migrate = cc->nr_migratepages;
- 		err = migrate_pages(&cc->migratepages, compaction_alloc,
-@@ -558,6 +576,7 @@ static int compact_zone(struct zone *zon
- 
- 	}
- 
-+out:
- 	/* Release free pages and check accounting */
- 	cc->nr_freepages -= release_freepages(&cc->freepages);
- 	VM_BUG_ON(cc->nr_freepages != 0);
+ 	struct v4l2_tuner *vtp = &hdw->tuner_signal_info;
+ 	memset(vtp, 0, sizeof(*vtp));
++	vtp->type = (hdw->input_val == PVR2_CVAL_INPUT_RADIO) ?
++		V4L2_TUNER_RADIO : V4L2_TUNER_ANALOG_TV;
+ 	hdw->tuner_signal_stale = 0;
+ 	/* Note: There apparently is no replacement for VIDIOC_CROPCAP
+ 	   using v4l2-subdev - therefore we can't support that AT ALL right
 
 
