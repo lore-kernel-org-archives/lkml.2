@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab1HBUtx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 16:49:53 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44841 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755254Ab1HBUtq (ORCPT
+	id S1755329Ab1HBUuw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 16:50:52 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57200 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755254Ab1HBUuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 16:49:46 -0400
-Message-ID: <4E3862E6.508@lwfinger.net>
-Date: Tue, 02 Aug 2011 15:49:42 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
+	Tue, 2 Aug 2011 16:50:46 -0400
+Date: Tue, 2 Aug 2011 22:50:44 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Len Brown <lenb@kernel.org>
+Cc: Matthew Garrett <mjg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davej@redhat.com" <davej@redhat.com>,
+        "Langsdorf, Mark" <mark.langsdorf@amd.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>
+Subject: Re: [PATCH 2/5] acpi-cpufreq: Add support for disabling dynamic
+ overclocking
+Message-ID: <20110802205044.GA21330@aftab>
+References: <1305651819-25660-1-git-send-email-mjg@redhat.com>
+ <1305651819-25660-2-git-send-email-mjg@redhat.com>
+ <alpine.LFD.2.02.1108021618190.25237@x980>
 MIME-Version: 1.0
-To: Felix Fietkau <nbd@openwrt.org>, John W Linville <linville@tuxdriver.com>
-CC: geert@linux-m68k.org, chaoming_li@realsil.com.cn,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtlwifi: Fix build errors on sh4 architecture
-References: <4e3855e4.8qPfeuR18XtAq7Vs%Larry.Finger@lwfinger.net> <4E385BFA.90406@openwrt.org>
-In-Reply-To: <4E385BFA.90406@openwrt.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1108021618190.25237@x980>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2011 03:20 PM, Felix Fietkau wrote:
-> On 2011-08-02 9:54 PM, Larry Finger wrote:
->> When rtlwifi is built for the sh4 architecture, build errors of the following
->> type occur. An explicit reference to<linux/io.h> should fix these. I have not
->> setup the cross-build environment, thus this patch is untested on that platform.
->> It does not cause any problems on i386 or x86_64.
->>
->> v3.0/sh4/sh-allmodconfig v3.0/sh4/sh-allyesconfig
->> src/drivers/net/wireless/rtlwifi/rtl8192c/../pci.h:290: error: implicit
->> declaration of function 'outl': 4 errors in 2 logs
->> v3.0/sh4/sh-allmodconfig v3.0/sh4/sh-allyesconfig
->> src/drivers/net/wireless/rtlwifi/rtl8192c/../pci.h:295: error: implicit
->> declaration of function 'outb': 4 errors in 2 logs
->> v3.0/sh4/sh-allmodconfig v3.0/sh4/sh-allyesconfig
->> src/drivers/net/wireless/rtlwifi/rtl8192c/../pci.h:300: error: implicit
->> declaration of function 'inb': 4 errors in 2 logs
->> v3.0/sh4/sh-allmodconfig v3.0/sh4/sh-allyesconfig
->> src/drivers/net/wireless/rtlwifi/rtl8192c/../pci.h:305: error: implicit
->> declaration of function 'inw': 4 errors in 2 logs
->>
->> Signed-off-by: Larry Finger<Larry.Finger@lwfinger.net>
->> Cc: Geert Uytterhoeven<geert@linux-m68k.org>
->> ---
->>
->> John,
->>
->> I'm not sure where this goes. I guess that 3.2 would be OK, unless someone
->> actually tries to build it on sh4. The only time I have seen the errors is
->> in Geert's listing of errors and warnings.
-> I looked at the code that uses raw port access, and it looks to me like this is
-> just a bunch of x86 specific hacks to mess with the ASPM settings of the PCI
-> bridge. This code should probably be either #ifdef'd, removed or rewritten. I
-> doubt it'll work properly on other architectures.
+On Tue, Aug 02, 2011 at 04:21:16PM -0400, Len Brown wrote:
+> While this patch will work and is not invalid, I don't like it.
+> 
+> It advertises a user I/F that suggests that disabling turbo
+> is on a per logical processor basis -- but a write to
+> any of the attributes will write to every CPU in the system.
+> 
+> Either it should do per-cpu limiting (which, btw doesn't
+> work if you use the MISC_ENABLES MSR method in this patch,
+> and would instead need to use the PERF_CTL.32 method)
+> or there should be a per-system attribute
+> that reflects that this knob is per-system.
 
-Thanks Felix.
+Agreed with the per-system thing. The reason to disable boosting on
+all cores is very simple: nobody has come up with a usecase until now
+which needs disabling only a subset of the cores. Also, this way the
+implementation is the simplest.
 
-John,
+-- 
+Regards/Gruss,
+Boris.
 
-I'll take another look at this. Please drop the patch.
-
-Larry
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
