@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab1HBPwh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 11:52:37 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:59094 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753816Ab1HBPwa (ORCPT
+	id S1754263Ab1HBPxp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 11:53:45 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:43326 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754080Ab1HBPxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 11:52:30 -0400
-X-Sasl-enc: nhtcUuRY0dFYdvlfMpFLSDOSBUZVFTuX/pQUYpOAwk89 1312300350
-Date: Tue, 2 Aug 2011 08:48:06 -0700
-From: Greg KH <greg@kroah.com>
-To: Paul Gortmaker <paul.gortmaker@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, stable@kernel.org,
-        linux-kernel@vger.kernel.org, stable-review@kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [34-longterm 024/247] USB: prevent buggy hubs from crashing the
- USB stack
-Message-ID: <20110802154806.GC18149@kroah.com>
-References: <1308849690-14530-25-git-send-email-paul.gortmaker@windriver.com>
- <Pine.LNX.4.44L0.1106231438530.2033-100000@iolanthe.rowland.org>
- <BANLkTimi7Srt+jgxU3gEt=-XsgLQ1VwCkA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimi7Srt+jgxU3gEt=-XsgLQ1VwCkA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 2 Aug 2011 11:53:39 -0400
+Date: Tue, 2 Aug 2011 08:53:27 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jon Mason <mason@myri.com>, Jordan Hargrave <jordan_hargrave@dell.com>
+Subject: Re: linux-next: build failure after merge of the pci-current tree
+Message-ID: <20110802085327.61325b3c@jbarnes-desktop>
+In-Reply-To: <20110802112336.fd2d2b577a2a71892189733b@canb.auug.org.au>
+References: <20110802104838.ac7f46b54e8a3fcc4cdd9448@canb.auug.org.au>
+	<20110802112336.fd2d2b577a2a71892189733b@canb.auug.org.au>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 03:59:43PM -0400, Paul Gortmaker wrote:
-> On Thu, Jun 23, 2011 at 2:48 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > On Thu, 23 Jun 2011, Paul Gortmaker wrote:
-> >
-> >> From: Alan Stern <stern@rowland.harvard.edu>
-> >>
-> >>                    -------------------
-> >>     This is a commit scheduled for the next v2.6.34 longterm release.
-> >>     If you see a problem with using this for longterm, please comment.
-> >>                    -------------------
-> >>
-> >> commit d199c96d41d80a567493e12b8e96ea056a1350c1 upstream.
-> >>
-> >> If anyone comes across a high-speed hub that (by mistake or by design)
-> >> claims to have no Transaction Translators, plugging a full- or
-> >> low-speed device into it will cause the USB stack to crash.  This
-> >> patch (as1446) prevents the problem by ignoring such devices, since
-> >> the kernel has no way to communicate with them.
-> >
-> > This commit had some unexpected fallout.  It shouldn't be merged unless
-> > the following upstream commits are also merged:
-> >
-> > c5c69f3f0dcf9b569c8f3ad67f3af92cfcedac43
-> > cee6a262550f53a13acfefbc1e3e5ff35c96182c
-> > ec95d35a6bd0047f05fe8a21e6c52f8bb418da55
+On Tue, 2 Aug 2011 11:23:36 +1000
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+
+> Hi Jesse,
 > 
-> Thanks Alan, I'll sort this out and the Nvidia one.    Greg, it looks like
-> you have two and three in 32.40, but not #1 (c5c69f) queued up, in
-> case that saves you looking.
+> On Tue, 2 Aug 2011 10:48:38 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > After merging the pci-current tree, today's linux-next build (powerpc
+> > ppc64_defconfig) failed like this:
+> > 
+> > ERROR: ".pcie_bus_configure_settings" [drivers/pci/hotplug/pci_hotplug.ko] undefined!
+> > 
+> > Caused by commit b03e7495a862 ("PCI: Set PCI-E Max Payload Size on
+> > fabric").  Missing EXPORT_SYMBOL?
+> > 
+> > I have used the pci-current tree from next-20110801 for today.
+> 
+> And the same for the pci tree (which is identical today).
 
-Thanks, I had missed that one, now queued up.
+Jon just sent me the fix and I pushed it out.  Should be fixed now.
 
-greg k-h
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
