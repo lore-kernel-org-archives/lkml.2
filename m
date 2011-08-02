@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356Ab1HBWwx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 18:52:53 -0400
+	id S1753267Ab1HBWxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 18:53:06 -0400
 Received: from vms173005pub.verizon.net ([206.46.173.5]:41662 "EHLO
 	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752969Ab1HBWwF (ORCPT
+	with ESMTP id S1752934Ab1HBWwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 18:52:05 -0400
+	Tue, 2 Aug 2011 18:52:04 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
 Cc: Huang Ying <ying.huang@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 12/19] lib, Make gen_pool memory allocator lockless
-Date: Tue, 02 Aug 2011 18:14:45 -0400
-Message-id: <c1b9297cb623c9f2ea33ff6027e8100d76cd9944.1312323131.git.len.brown@intel.com>
+Subject: [PATCH 11/19] lib, Add lock-less NULL terminated single list
+Date: Tue, 02 Aug 2011 18:14:44 -0400
+Message-id: <e6c823b7e890e54fb63c6687082a488e9cf3e1e5.1312323131.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.6.396.ge0613
 In-reply-to: <1312323292-2986-1-git-send-email-lenb@kernel.org>
 References: <1312323292-2986-1-git-send-email-lenb@kernel.org>
@@ -27,24 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Huang Ying <ying.huang@intel.com>
 
-This version of the gen_pool memory allocator supports lockless
-operation.
+Cmpxchg is used to implement adding new entry to the list, deleting
+all entries from the list, deleting first entry of the list and some
+other operations.
 
-This makes it safe to use in NMI handlers and other special
-unblockable contexts that could otherwise deadlock on locks.  This is
-implemented by using atomic operations and retries on any conflicts.
-The disadvantage is that there may be livelocks in extreme cases.  For
-better scalability, one gen_pool allocator can be used for each CPU.
+Because this is a single list, so the tail can not be accessed in O(1).
 
-The lockless operation only works if there is enough memory available.
-If new memory is added to the pool a lock has to be still taken.  So
-any user relying on locklessness has to ensure that sufficient memory
-is preallocated.
+If there are multiple producers and multiple consumers, llist_add can
+be used in producers and llist_del_all can be used in consumers.  They
+can work simultaneously without lock.  But llist_del_first can not be
+used here.  Because llist_del_first depends on list->first->next does
+not changed if list->first is not changed during its operation, but
+llist_del_first, llist_add, llist_add (or llist_del_all, llist_add,
+llist_add) sequence in another consumer may violate that.
 
-The basic atomic operation of this allocator is cmpxchg on long.  On
+If there are multiple producers and one consumer, llist_add can be
+used in producers and llist_del_all or llist_del_first can be used in
+the consumer.
+
+This can be summarized as follow:
+
+           |   add    | del_first |  del_all
+ add       |    -     |     -     |     -
+ del_first |          |     L     |     L
+ del_all   |          |           |     -
+
+Where "-" stands for no lock is needed, while "L" stands for lock is
+needed.
+
+The list entries deleted via llist_del_all can be traversed with
+traversing function such as llist_for_each etc.  But the list entries
+can not be traversed safely before deleted from the list.  The order
+of deleted entries is from the newest to the oldest added one.  If you
+want to traverse from the oldest to the newest, you must reverse the
+order by yourself before traversing.
+
+The basic atomic operation of this list is cmpxchg on long.  On
 architectures that don't have NMI-safe cmpxchg implementation, the
-allocator can NOT be used in NMI handler.  So code uses the allocator
-in NMI handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
+list can NOT be used in NMI handler.  So code uses the list in NMI
+handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Reviewed-by: Andi Kleen <ak@linux.intel.com>
@@ -52,495 +73,306 @@ Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- include/linux/bitmap.h   |    1 +
- include/linux/genalloc.h |   34 +++++-
- lib/bitmap.c             |    2 -
- lib/genalloc.c           |  300 +++++++++++++++++++++++++++++++++++++---------
- 4 files changed, 272 insertions(+), 65 deletions(-)
+ include/linux/llist.h |  126 +++++++++++++++++++++++++++++++++++++++++++++++
+ lib/Kconfig           |    3 +
+ lib/Makefile          |    2 +
+ lib/llist.c           |  129 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 260 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/llist.h
+ create mode 100644 lib/llist.c
 
-diff --git a/include/linux/bitmap.h b/include/linux/bitmap.h
-index dcafe0b..907dd58 100644
---- a/include/linux/bitmap.h
-+++ b/include/linux/bitmap.h
-@@ -145,6 +145,7 @@ extern void bitmap_release_region(unsigned long *bitmap, int pos, int order);
- extern int bitmap_allocate_region(unsigned long *bitmap, int pos, int order);
- extern void bitmap_copy_le(void *dst, const unsigned long *src, int nbits);
+diff --git a/include/linux/llist.h b/include/linux/llist.h
+new file mode 100644
+index 0000000..aa0c8b5
+--- /dev/null
++++ b/include/linux/llist.h
+@@ -0,0 +1,126 @@
++#ifndef LLIST_H
++#define LLIST_H
++/*
++ * Lock-less NULL terminated single linked list
++ *
++ * If there are multiple producers and multiple consumers, llist_add
++ * can be used in producers and llist_del_all can be used in
++ * consumers.  They can work simultaneously without lock.  But
++ * llist_del_first can not be used here.  Because llist_del_first
++ * depends on list->first->next does not changed if list->first is not
++ * changed during its operation, but llist_del_first, llist_add,
++ * llist_add (or llist_del_all, llist_add, llist_add) sequence in
++ * another consumer may violate that.
++ *
++ * If there are multiple producers and one consumer, llist_add can be
++ * used in producers and llist_del_all or llist_del_first can be used
++ * in the consumer.
++ *
++ * This can be summarized as follow:
++ *
++ *           |   add    | del_first |  del_all
++ * add       |    -     |     -     |     -
++ * del_first |          |     L     |     L
++ * del_all   |          |           |     -
++ *
++ * Where "-" stands for no lock is needed, while "L" stands for lock
++ * is needed.
++ *
++ * The list entries deleted via llist_del_all can be traversed with
++ * traversing function such as llist_for_each etc.  But the list
++ * entries can not be traversed safely before deleted from the list.
++ * The order of deleted entries is from the newest to the oldest added
++ * one.  If you want to traverse from the oldest to the newest, you
++ * must reverse the order by yourself before traversing.
++ *
++ * The basic atomic operation of this list is cmpxchg on long.  On
++ * architectures that don't have NMI-safe cmpxchg implementation, the
++ * list can NOT be used in NMI handler.  So code uses the list in NMI
++ * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
++ */
++
++struct llist_head {
++	struct llist_node *first;
++};
++
++struct llist_node {
++	struct llist_node *next;
++};
++
++#define LLIST_HEAD_INIT(name)	{ NULL }
++#define LLIST_HEAD(name)	struct llist_head name = LLIST_HEAD_INIT(name)
++
++/**
++ * init_llist_head - initialize lock-less list head
++ * @head:	the head for your lock-less list
++ */
++static inline void init_llist_head(struct llist_head *list)
++{
++	list->first = NULL;
++}
++
++/**
++ * llist_entry - get the struct of this entry
++ * @ptr:	the &struct llist_node pointer.
++ * @type:	the type of the struct this is embedded in.
++ * @member:	the name of the llist_node within the struct.
++ */
++#define llist_entry(ptr, type, member)		\
++	container_of(ptr, type, member)
++
++/**
++ * llist_for_each - iterate over some deleted entries of a lock-less list
++ * @pos:	the &struct llist_node to use as a loop cursor
++ * @node:	the first entry of deleted list entries
++ *
++ * In general, some entries of the lock-less list can be traversed
++ * safely only after being deleted from list, so start with an entry
++ * instead of list head.
++ *
++ * If being used on entries deleted from lock-less list directly, the
++ * traverse order is from the newest to the oldest added entry.  If
++ * you want to traverse from the oldest to the newest, you must
++ * reverse the order by yourself before traversing.
++ */
++#define llist_for_each(pos, node)			\
++	for ((pos) = (node); pos; (pos) = (pos)->next)
++
++/**
++ * llist_for_each_entry - iterate over some deleted entries of lock-less list of given type
++ * @pos:	the type * to use as a loop cursor.
++ * @node:	the fist entry of deleted list entries.
++ * @member:	the name of the llist_node with the struct.
++ *
++ * In general, some entries of the lock-less list can be traversed
++ * safely only after being removed from list, so start with an entry
++ * instead of list head.
++ *
++ * If being used on entries deleted from lock-less list directly, the
++ * traverse order is from the newest to the oldest added entry.  If
++ * you want to traverse from the oldest to the newest, you must
++ * reverse the order by yourself before traversing.
++ */
++#define llist_for_each_entry(pos, node, member)				\
++	for ((pos) = llist_entry((node), typeof(*(pos)), member);	\
++	     &(pos)->member != NULL;					\
++	     (pos) = llist_entry((pos)->member.next, typeof(*(pos)), member))
++
++/**
++ * llist_empty - tests whether a lock-less list is empty
++ * @head:	the list to test
++ *
++ * Not guaranteed to be accurate or up to date.  Just a quick way to
++ * test whether the list is empty without deleting something from the
++ * list.
++ */
++static inline int llist_empty(const struct llist_head *head)
++{
++	return ACCESS_ONCE(head->first) == NULL;
++}
++
++void llist_add(struct llist_node *new, struct llist_head *head);
++void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
++		     struct llist_head *head);
++struct llist_node *llist_del_first(struct llist_head *head);
++struct llist_node *llist_del_all(struct llist_head *head);
++#endif /* LLIST_H */
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 830181c..25c1967 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -262,4 +262,7 @@ config AVERAGE
  
-+#define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) % BITS_PER_LONG))
- #define BITMAP_LAST_WORD_MASK(nbits)					\
- (									\
- 	((nbits) % BITS_PER_LONG) ?					\
-diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
-index 5bbebda..5e98eeb 100644
---- a/include/linux/genalloc.h
-+++ b/include/linux/genalloc.h
-@@ -1,8 +1,26 @@
- /*
-- * Basic general purpose allocator for managing special purpose memory
-- * not managed by the regular kmalloc/kfree interface.
-- * Uses for this includes on-device special memory, uncached memory
-- * etc.
-+ * Basic general purpose allocator for managing special purpose
-+ * memory, for example, memory that is not managed by the regular
-+ * kmalloc/kfree interface.  Uses for this includes on-device special
-+ * memory, uncached memory etc.
-+ *
-+ * It is safe to use the allocator in NMI handlers and other special
-+ * unblockable contexts that could otherwise deadlock on locks.  This
-+ * is implemented by using atomic operations and retries on any
-+ * conflicts.  The disadvantage is that there may be livelocks in
-+ * extreme cases.  For better scalability, one allocator can be used
-+ * for each CPU.
-+ *
-+ * The lockless operation only works if there is enough memory
-+ * available.  If new memory is added to the pool a lock has to be
-+ * still taken.  So any user relying on locklessness has to ensure
-+ * that sufficient memory is preallocated.
-+ *
-+ * The basic atomic operation of this allocator is cmpxchg on long.
-+ * On architectures that don't have NMI-safe cmpxchg implementation,
-+ * the allocator can NOT be used in NMI handler.  So code uses the
-+ * allocator in NMI handler should depend on
-+ * CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
-  *
-  * This source code is licensed under the GNU General Public License,
-  * Version 2.  See the file COPYING for more details.
-@@ -15,7 +33,7 @@
-  *  General purpose special memory pool descriptor.
-  */
- struct gen_pool {
--	rwlock_t lock;
-+	spinlock_t lock;
- 	struct list_head chunks;	/* list of chunks in this pool */
- 	int min_alloc_order;		/* minimum allocation order */
- };
-@@ -24,8 +42,8 @@ struct gen_pool {
-  *  General purpose special memory pool chunk descriptor.
-  */
- struct gen_pool_chunk {
--	spinlock_t lock;
- 	struct list_head next_chunk;	/* next chunk in pool */
-+	atomic_t avail;
- 	phys_addr_t phys_addr;		/* physical starting address of memory chunk */
- 	unsigned long start_addr;	/* starting address of memory chunk */
- 	unsigned long end_addr;		/* ending address of memory chunk */
-@@ -56,4 +74,8 @@ static inline int gen_pool_add(struct gen_pool *pool, unsigned long addr,
- extern void gen_pool_destroy(struct gen_pool *);
- extern unsigned long gen_pool_alloc(struct gen_pool *, size_t);
- extern void gen_pool_free(struct gen_pool *, unsigned long, size_t);
-+extern void gen_pool_for_each_chunk(struct gen_pool *,
-+	void (*)(struct gen_pool *, struct gen_pool_chunk *, void *), void *);
-+extern size_t gen_pool_avail(struct gen_pool *);
-+extern size_t gen_pool_size(struct gen_pool *);
- #endif /* __GENALLOC_H__ */
-diff --git a/lib/bitmap.c b/lib/bitmap.c
-index 3f3b681..e3c9e99 100644
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -271,8 +271,6 @@ int __bitmap_weight(const unsigned long *bitmap, int bits)
- }
- EXPORT_SYMBOL(__bitmap_weight);
+ 	  If unsure, say N.
  
--#define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) % BITS_PER_LONG))
--
- void bitmap_set(unsigned long *map, int start, int nr)
- {
- 	unsigned long *p = map + BIT_WORD(start);
-diff --git a/lib/genalloc.c b/lib/genalloc.c
-index 577ddf8..f352cc4 100644
---- a/lib/genalloc.c
-+++ b/lib/genalloc.c
-@@ -1,8 +1,26 @@
- /*
-- * Basic general purpose allocator for managing special purpose memory
-- * not managed by the regular kmalloc/kfree interface.
-- * Uses for this includes on-device special memory, uncached memory
-- * etc.
-+ * Basic general purpose allocator for managing special purpose
-+ * memory, for example, memory that is not managed by the regular
-+ * kmalloc/kfree interface.  Uses for this includes on-device special
-+ * memory, uncached memory etc.
++config LLIST
++	bool
++
+ endmenu
+diff --git a/lib/Makefile b/lib/Makefile
+index 6b597fd..d770b81 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -112,6 +112,8 @@ obj-$(CONFIG_AVERAGE) += average.o
+ 
+ obj-$(CONFIG_CPU_RMAP) += cpu_rmap.o
+ 
++obj-$(CONFIG_LLIST) += llist.o
++
+ hostprogs-y	:= gen_crc32table
+ clean-files	:= crc32table.h
+ 
+diff --git a/lib/llist.c b/lib/llist.c
+new file mode 100644
+index 0000000..da44572
+--- /dev/null
++++ b/lib/llist.c
+@@ -0,0 +1,129 @@
++/*
++ * Lock-less NULL terminated single linked list
 + *
-+ * It is safe to use the allocator in NMI handlers and other special
-+ * unblockable contexts that could otherwise deadlock on locks.  This
-+ * is implemented by using atomic operations and retries on any
-+ * conflicts.  The disadvantage is that there may be livelocks in
-+ * extreme cases.  For better scalability, one allocator can be used
-+ * for each CPU.
++ * The basic atomic operation of this list is cmpxchg on long.  On
++ * architectures that don't have NMI-safe cmpxchg implementation, the
++ * list can NOT be used in NMI handler.  So code uses the list in NMI
++ * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
 + *
-+ * The lockless operation only works if there is enough memory
-+ * available.  If new memory is added to the pool a lock has to be
-+ * still taken.  So any user relying on locklessness has to ensure
-+ * that sufficient memory is preallocated.
++ * Copyright 2010,2011 Intel Corp.
++ *   Author: Huang Ying <ying.huang@intel.com>
 + *
-+ * The basic atomic operation of this allocator is cmpxchg on long.
-+ * On architectures that don't have NMI-safe cmpxchg implementation,
-+ * the allocator can NOT be used in NMI handler.  So code uses the
-+ * allocator in NMI handler should depend on
-+ * CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
-  *
-  * Copyright 2005 (C) Jes Sorensen <jes@trained-monkey.org>
-  *
-@@ -13,8 +31,109 @@
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/bitmap.h>
-+#include <linux/rculist.h>
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation;
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++#include <linux/kernel.h>
++#include <linux/module.h>
 +#include <linux/interrupt.h>
- #include <linux/genalloc.h>
- 
-+static int set_bits_ll(unsigned long *addr, unsigned long mask_to_set)
-+{
-+	unsigned long val, nval;
++#include <linux/llist.h>
 +
-+	nval = *addr;
-+	do {
-+		val = nval;
-+		if (val & mask_to_set)
-+			return -EBUSY;
-+		cpu_relax();
-+	} while ((nval = cmpxchg(addr, val, val | mask_to_set)) != val);
++#include <asm/system.h>
 +
-+	return 0;
-+}
-+
-+static int clear_bits_ll(unsigned long *addr, unsigned long mask_to_clear)
-+{
-+	unsigned long val, nval;
-+
-+	nval = *addr;
-+	do {
-+		val = nval;
-+		if ((val & mask_to_clear) != mask_to_clear)
-+			return -EBUSY;
-+		cpu_relax();
-+	} while ((nval = cmpxchg(addr, val, val & ~mask_to_clear)) != val);
-+
-+	return 0;
-+}
-+
-+/*
-+ * bitmap_set_ll - set the specified number of bits at the specified position
-+ * @map: pointer to a bitmap
-+ * @start: a bit position in @map
-+ * @nr: number of bits to set
-+ *
-+ * Set @nr bits start from @start in @map lock-lessly. Several users
-+ * can set/clear the same bitmap simultaneously without lock. If two
-+ * users set the same bit, one user will return remain bits, otherwise
-+ * return 0.
++/**
++ * llist_add - add a new entry
++ * @new:	new entry to be added
++ * @head:	the head for your lock-less list
 + */
-+static int bitmap_set_ll(unsigned long *map, int start, int nr)
++void llist_add(struct llist_node *new, struct llist_head *head)
 +{
-+	unsigned long *p = map + BIT_WORD(start);
-+	const int size = start + nr;
-+	int bits_to_set = BITS_PER_LONG - (start % BITS_PER_LONG);
-+	unsigned long mask_to_set = BITMAP_FIRST_WORD_MASK(start);
-+
-+	while (nr - bits_to_set >= 0) {
-+		if (set_bits_ll(p, mask_to_set))
-+			return nr;
-+		nr -= bits_to_set;
-+		bits_to_set = BITS_PER_LONG;
-+		mask_to_set = ~0UL;
-+		p++;
-+	}
-+	if (nr) {
-+		mask_to_set &= BITMAP_LAST_WORD_MASK(size);
-+		if (set_bits_ll(p, mask_to_set))
-+			return nr;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * bitmap_clear_ll - clear the specified number of bits at the specified position
-+ * @map: pointer to a bitmap
-+ * @start: a bit position in @map
-+ * @nr: number of bits to set
-+ *
-+ * Clear @nr bits start from @start in @map lock-lessly. Several users
-+ * can set/clear the same bitmap simultaneously without lock. If two
-+ * users clear the same bit, one user will return remain bits,
-+ * otherwise return 0.
-+ */
-+static int bitmap_clear_ll(unsigned long *map, int start, int nr)
-+{
-+	unsigned long *p = map + BIT_WORD(start);
-+	const int size = start + nr;
-+	int bits_to_clear = BITS_PER_LONG - (start % BITS_PER_LONG);
-+	unsigned long mask_to_clear = BITMAP_FIRST_WORD_MASK(start);
-+
-+	while (nr - bits_to_clear >= 0) {
-+		if (clear_bits_ll(p, mask_to_clear))
-+			return nr;
-+		nr -= bits_to_clear;
-+		bits_to_clear = BITS_PER_LONG;
-+		mask_to_clear = ~0UL;
-+		p++;
-+	}
-+	if (nr) {
-+		mask_to_clear &= BITMAP_LAST_WORD_MASK(size);
-+		if (clear_bits_ll(p, mask_to_clear))
-+			return nr;
-+	}
-+
-+	return 0;
-+}
- 
- /**
-  * gen_pool_create - create a new special memory pool
-@@ -30,7 +149,7 @@ struct gen_pool *gen_pool_create(int min_alloc_order, int nid)
- 
- 	pool = kmalloc_node(sizeof(struct gen_pool), GFP_KERNEL, nid);
- 	if (pool != NULL) {
--		rwlock_init(&pool->lock);
-+		spin_lock_init(&pool->lock);
- 		INIT_LIST_HEAD(&pool->chunks);
- 		pool->min_alloc_order = min_alloc_order;
- 	}
-@@ -63,14 +182,14 @@ int gen_pool_add_virt(struct gen_pool *pool, unsigned long virt, phys_addr_t phy
- 	if (unlikely(chunk == NULL))
- 		return -ENOMEM;
- 
--	spin_lock_init(&chunk->lock);
- 	chunk->phys_addr = phys;
- 	chunk->start_addr = virt;
- 	chunk->end_addr = virt + size;
-+	atomic_set(&chunk->avail, size);
- 
--	write_lock(&pool->lock);
--	list_add(&chunk->next_chunk, &pool->chunks);
--	write_unlock(&pool->lock);
-+	spin_lock(&pool->lock);
-+	list_add_rcu(&chunk->next_chunk, &pool->chunks);
-+	spin_unlock(&pool->lock);
- 
- 	return 0;
- }
-@@ -85,19 +204,19 @@ EXPORT_SYMBOL(gen_pool_add_virt);
-  */
- phys_addr_t gen_pool_virt_to_phys(struct gen_pool *pool, unsigned long addr)
- {
--	struct list_head *_chunk;
- 	struct gen_pool_chunk *chunk;
-+	phys_addr_t paddr = -1;
- 
--	read_lock(&pool->lock);
--	list_for_each(_chunk, &pool->chunks) {
--		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
--
--		if (addr >= chunk->start_addr && addr < chunk->end_addr)
--			return chunk->phys_addr + addr - chunk->start_addr;
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
-+		if (addr >= chunk->start_addr && addr < chunk->end_addr) {
-+			paddr = chunk->phys_addr + (addr - chunk->start_addr);
-+			break;
-+		}
- 	}
--	read_unlock(&pool->lock);
-+	rcu_read_unlock();
- 
--	return -1;
-+	return paddr;
- }
- EXPORT_SYMBOL(gen_pool_virt_to_phys);
- 
-@@ -115,7 +234,6 @@ void gen_pool_destroy(struct gen_pool *pool)
- 	int order = pool->min_alloc_order;
- 	int bit, end_bit;
- 
--
- 	list_for_each_safe(_chunk, _next_chunk, &pool->chunks) {
- 		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
- 		list_del(&chunk->next_chunk);
-@@ -137,44 +255,50 @@ EXPORT_SYMBOL(gen_pool_destroy);
-  * @size: number of bytes to allocate from the pool
-  *
-  * Allocate the requested number of bytes from the specified pool.
-- * Uses a first-fit algorithm.
-+ * Uses a first-fit algorithm. Can not be used in NMI handler on
-+ * architectures without NMI-safe cmpxchg implementation.
-  */
- unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
- {
--	struct list_head *_chunk;
- 	struct gen_pool_chunk *chunk;
--	unsigned long addr, flags;
-+	unsigned long addr = 0;
- 	int order = pool->min_alloc_order;
--	int nbits, start_bit, end_bit;
-+	int nbits, start_bit = 0, end_bit, remain;
++	struct llist_node *entry, *old_entry;
 +
 +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
 +	BUG_ON(in_nmi());
 +#endif
- 
- 	if (size == 0)
- 		return 0;
- 
- 	nbits = (size + (1UL << order) - 1) >> order;
--
--	read_lock(&pool->lock);
--	list_for_each(_chunk, &pool->chunks) {
--		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
-+		if (size > atomic_read(&chunk->avail))
-+			continue;
- 
- 		end_bit = (chunk->end_addr - chunk->start_addr) >> order;
--
--		spin_lock_irqsave(&chunk->lock, flags);
--		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit, 0,
--						nbits, 0);
--		if (start_bit >= end_bit) {
--			spin_unlock_irqrestore(&chunk->lock, flags);
-+retry:
-+		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit,
-+						       start_bit, nbits, 0);
-+		if (start_bit >= end_bit)
- 			continue;
-+		remain = bitmap_set_ll(chunk->bits, start_bit, nbits);
-+		if (remain) {
-+			remain = bitmap_clear_ll(chunk->bits, start_bit,
-+						 nbits - remain);
-+			BUG_ON(remain);
-+			goto retry;
- 		}
- 
- 		addr = chunk->start_addr + ((unsigned long)start_bit << order);
--
--		bitmap_set(chunk->bits, start_bit, nbits);
--		spin_unlock_irqrestore(&chunk->lock, flags);
--		read_unlock(&pool->lock);
--		return addr;
-+		size = nbits << order;
-+		atomic_sub(size, &chunk->avail);
-+		break;
- 	}
--	read_unlock(&pool->lock);
--	return 0;
-+	rcu_read_unlock();
-+	return addr;
- }
- EXPORT_SYMBOL(gen_pool_alloc);
- 
-@@ -184,33 +308,95 @@ EXPORT_SYMBOL(gen_pool_alloc);
-  * @addr: starting address of memory to free back to pool
-  * @size: size in bytes of memory to free
-  *
-- * Free previously allocated special memory back to the specified pool.
-+ * Free previously allocated special memory back to the specified
-+ * pool.  Can not be used in NMI handler on architectures without
-+ * NMI-safe cmpxchg implementation.
-  */
- void gen_pool_free(struct gen_pool *pool, unsigned long addr, size_t size)
- {
--	struct list_head *_chunk;
- 	struct gen_pool_chunk *chunk;
--	unsigned long flags;
- 	int order = pool->min_alloc_order;
--	int bit, nbits;
-+	int start_bit, nbits, remain;
- 
--	nbits = (size + (1UL << order) - 1) >> order;
--
--	read_lock(&pool->lock);
--	list_for_each(_chunk, &pool->chunks) {
--		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
++
++	entry = head->first;
++	do {
++		old_entry = entry;
++		new->next = entry;
++		cpu_relax();
++	} while ((entry = cmpxchg(&head->first, old_entry, new)) != old_entry);
++}
++EXPORT_SYMBOL_GPL(llist_add);
++
++/**
++ * llist_add_batch - add several linked entries in batch
++ * @new_first:	first entry in batch to be added
++ * @new_last:	last entry in batch to be added
++ * @head:	the head for your lock-less list
++ */
++void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
++		     struct llist_head *head)
++{
++	struct llist_node *entry, *old_entry;
++
 +#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
 +	BUG_ON(in_nmi());
 +#endif
- 
-+	nbits = (size + (1UL << order) - 1) >> order;
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk) {
- 		if (addr >= chunk->start_addr && addr < chunk->end_addr) {
- 			BUG_ON(addr + size > chunk->end_addr);
--			spin_lock_irqsave(&chunk->lock, flags);
--			bit = (addr - chunk->start_addr) >> order;
--			while (nbits--)
--				__clear_bit(bit++, chunk->bits);
--			spin_unlock_irqrestore(&chunk->lock, flags);
--			break;
-+			start_bit = (addr - chunk->start_addr) >> order;
-+			remain = bitmap_clear_ll(chunk->bits, start_bit, nbits);
-+			BUG_ON(remain);
-+			size = nbits << order;
-+			atomic_add(size, &chunk->avail);
-+			rcu_read_unlock();
-+			return;
- 		}
- 	}
--	BUG_ON(nbits > 0);
--	read_unlock(&pool->lock);
-+	rcu_read_unlock();
-+	BUG();
- }
- EXPORT_SYMBOL(gen_pool_free);
++
++	entry = head->first;
++	do {
++		old_entry = entry;
++		new_last->next = entry;
++		cpu_relax();
++	} while ((entry = cmpxchg(&head->first, old_entry, new_first)) != old_entry);
++}
++EXPORT_SYMBOL_GPL(llist_add_batch);
 +
 +/**
-+ * gen_pool_for_each_chunk - call func for every chunk of generic memory pool
-+ * @pool:	the generic memory pool
-+ * @func:	func to call
-+ * @data:	additional data used by @func
++ * llist_del_first - delete the first entry of lock-less list
++ * @head:	the head for your lock-less list
 + *
-+ * Call @func for every chunk of generic memory pool.  The @func is
-+ * called with rcu_read_lock held.
++ * If list is empty, return NULL, otherwise, return the first entry
++ * deleted, this is the newest added one.
++ *
++ * Only one llist_del_first user can be used simultaneously with
++ * multiple llist_add users without lock.  Because otherwise
++ * llist_del_first, llist_add, llist_add (or llist_del_all, llist_add,
++ * llist_add) sequence in another user may change @head->first->next,
++ * but keep @head->first.  If multiple consumers are needed, please
++ * use llist_del_all or use lock between consumers.
 + */
-+void gen_pool_for_each_chunk(struct gen_pool *pool,
-+	void (*func)(struct gen_pool *pool, struct gen_pool_chunk *chunk, void *data),
-+	void *data)
++struct llist_node *llist_del_first(struct llist_head *head)
 +{
-+	struct gen_pool_chunk *chunk;
++	struct llist_node *entry, *old_entry, *next;
 +
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(chunk, &(pool)->chunks, next_chunk)
-+		func(pool, chunk, data);
-+	rcu_read_unlock();
++#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++	BUG_ON(in_nmi());
++#endif
++
++	entry = head->first;
++	do {
++		if (entry == NULL)
++			return NULL;
++		old_entry = entry;
++		next = entry->next;
++		cpu_relax();
++	} while ((entry = cmpxchg(&head->first, old_entry, next)) != old_entry);
++
++	return entry;
 +}
-+EXPORT_SYMBOL(gen_pool_for_each_chunk);
++EXPORT_SYMBOL_GPL(llist_del_first);
 +
 +/**
-+ * gen_pool_avail - get available free space of the pool
-+ * @pool: pool to get available free space
++ * llist_del_all - delete all entries from lock-less list
++ * @head:	the head of lock-less list to delete all entries
 + *
-+ * Return available free space of the specified pool.
++ * If list is empty, return NULL, otherwise, delete all entries and
++ * return the pointer to the first entry.  The order of entries
++ * deleted is from the newest to the oldest added one.
 + */
-+size_t gen_pool_avail(struct gen_pool *pool)
++struct llist_node *llist_del_all(struct llist_head *head)
 +{
-+	struct gen_pool_chunk *chunk;
-+	size_t avail = 0;
++#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
++	BUG_ON(in_nmi());
++#endif
 +
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk)
-+		avail += atomic_read(&chunk->avail);
-+	rcu_read_unlock();
-+	return avail;
++	return xchg(&head->first, NULL);
 +}
-+EXPORT_SYMBOL_GPL(gen_pool_avail);
-+
-+/**
-+ * gen_pool_size - get size in bytes of memory managed by the pool
-+ * @pool: pool to get size
-+ *
-+ * Return size in bytes of memory managed by the pool.
-+ */
-+size_t gen_pool_size(struct gen_pool *pool)
-+{
-+	struct gen_pool_chunk *chunk;
-+	size_t size = 0;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(chunk, &pool->chunks, next_chunk)
-+		size += chunk->end_addr - chunk->start_addr;
-+	rcu_read_unlock();
-+	return size;
-+}
-+EXPORT_SYMBOL_GPL(gen_pool_size);
++EXPORT_SYMBOL_GPL(llist_del_all);
 -- 
 1.7.6.396.ge0613
 
