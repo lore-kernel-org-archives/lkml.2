@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab1HBI5F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 04:57:05 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:38818 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314Ab1HBI46 (ORCPT
+	id S1752770Ab1HBJAa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 05:00:30 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:15937 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752314Ab1HBJAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 04:56:58 -0400
-Date: Tue, 2 Aug 2011 11:54:47 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tino Keitel <tino.keitel@tikei.de>, Florian Mickler <florian@mickler.org>,
-        mchehab@infradead.org
-Subject: Re: USB related "unable to handle kernel paging request" in 3.0.0-rc7
-Message-ID: <20110802085447.GA4522@shale.localdomain>
-References: <20110722192722.GA9369@x61.home>
+	Tue, 2 Aug 2011 05:00:23 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6425"; a="107486309"
+Message-ID: <4E37BCA2.4010208@codeaurora.org>
+Date: Tue, 02 Aug 2011 14:30:18 +0530
+From: Anirudh Ghayal <aghayal@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110722192722.GA9369@x61.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Amy Maloche <amaloche@codeaurora.org>
+Subject: Re: [PATCH] input: misc: Add support for pm8xxx based vibrator driver
+References: <1312258397-11039-1-git-send-email-aghayal@codeaurora.org> <CAM=Q2cvzsZO4dc6Ot_aYJyLW27TErgySdXRcHr1UDb5ua1uHAg@mail.gmail.com> <4E3798C1.3080800@codeaurora.org> <20110802064124.GA21319@core.coreip.homeip.net>
+In-Reply-To: <20110802064124.GA21319@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looking at this, I noticed a memory corruption bug introduce in:
-ab22cbda6651d "[media] vp7045: get rid of on-stack dma buffers"
+Hi Dmitry,
 
-vp7045_properties.size_of_priv is sizeof(u8 *) so in vp7045_usb_probe()
-the d->priv buffer gets allocated twice.  Once in:
-	dvb_usb_device_init()
-	-> dvb_usb_init()
+On 8/2/2011 12:11 PM, Dmitry Torokhov wrote:
+> On Tue, Aug 02, 2011 at 11:57:13AM +0530, Anirudh Ghayal wrote:
+>
+>> Yes should have been dev_err.
+>>
+>> Dmitry, would you like me to submit another patch for this? I can
+>> make the @work change as well. Or would you make this minor change
+>> as well. Thank you.
+>>
+>
+> Anirudh, I made this plus a few more cosmetic changes, if you could try
+> the patch below and let me know if it still works I will commit it for
+> the next merge window.
+>
 
-And once explicitly to a larger buffer later on in the function with
-a kmalloc().
+Thank you for making changes. I have tested the patch and it works fine.
 
-So the two places that use the buffer will probably race and cause
-memory corruption.
+Thank you,
+~Anirudh
 
-regards,
-dan carpenter
+> Thanks.
+>
+
+
