@@ -1,71 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab1HBLAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 07:00:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49915 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753548Ab1HBLAD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 07:00:03 -0400
-From: Marcus Folkesson <marcus.folkesson@gmail.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org,
-        Marcus Folkesson <marcus.folkesson@gmail.com>
-Subject: [PATCH 2/4] regulator: tps65023: Set missing bit for update core-voltage
-Date: Tue,  2 Aug 2011 12:59:32 +0200
-Message-Id: <1312282774-30880-3-git-send-email-marcus.folkesson@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1312282774-30880-1-git-send-email-marcus.folkesson@gmail.com>
-References: <marcus.folkesson@gmail.com>
- <1312282774-30880-1-git-send-email-marcus.folkesson@gmail.com>
+	id S1753596Ab1HBLBw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 07:01:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51462 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752330Ab1HBLBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 07:01:47 -0400
+Date: Tue, 2 Aug 2011 07:01:38 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: cdc_ncm uses stack memory for DMA
+Message-ID: <20110802110138.GD2096@zod.bos.redhat.com>
+References: <20110801195949.GB2096@zod.bos.redhat.com>
+ <201108012226.16180.oliver@neukum.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201108012226.16180.oliver@neukum.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setting the GO bit in CTRL2 for updating the core voltage
+On Mon, Aug 01, 2011 at 10:26:16PM +0200, Oliver Neukum wrote:
+> Am Montag, 1. August 2011, 21:59:50 schrieb Josh Boyer:
+> 
+> Hi,
+> 
+> > Looking through the code, it seems that cdc_ncm_setup is still passing
+> > stack variables around lines 270, 276, 375, and 406.  Which of those
+> > exactly is triggering the backtrace, I'm not sure but all of them seem
+> > incorrect from what I can tell.
+> 
+> They are incorrect.
+>  
+> > Do you have any thoughts on a solution for this?  Off the top of my
+> > head, either the local variables being used could be added to the ctx
+> 
+> Careful. You also need to confirm to the rules about cached coherency
+> on some architectures. You cannot do DMA into the middle of a structure
+> unless you are sure it is not touched any other way.
+> 
+> > structure or the variables can be changed to pointers and then be
+> > allocated via kmalloc and torn down shortly after.
+> 
+> This looks like the easiest way.
 
-Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
----
- drivers/regulator/tps65023-regulator.c |   19 ++++++++++++++-----
- 1 files changed, 14 insertions(+), 5 deletions(-)
+OK.  How does the following look?  It's been compile tested, but I don't
+have the hardware.
 
-diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
-index a81abd4..8bd41fa 100644
---- a/drivers/regulator/tps65023-regulator.c
-+++ b/drivers/regulator/tps65023-regulator.c
-@@ -277,6 +277,7 @@ static int tps65023_dcdc_set_voltage(struct regulator_dev *dev,
- 	struct tps_pmic *tps = rdev_get_drvdata(dev);
- 	int dcdc = rdev_get_id(dev);
- 	int vsel;
-+	int ret;
+josh
+
+commit 208ae00b437bec1f46fa93f37c65a66a831e55fb
+Author: Josh Boyer <jwboyer@redhat.com>
+Date:   Mon Aug 1 21:09:43 2011 -0400
+
+    The cdc_ncm driver still has a few places where stack variables are passed
+    to the cdc_ncm_do_request function.  This triggers a stack trace in
+    lib/dma-debug.c if the CONFIG_DEBUG_DMA_API option is set.
+    
+    Adjust these calls to pass parameters that have been allocated with kzalloc.
+    
+    Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+
+diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
+index fd622a6..7415265 100644
+--- a/drivers/net/usb/cdc_ncm.c
++++ b/drivers/net/usb/cdc_ncm.c
+@@ -260,23 +260,38 @@ static u8 cdc_ncm_setup(struct cdc_ncm_ctx *ctx)
+ 		req.wIndex = cpu_to_le16(iface_no);
  
- 	if (dcdc != TPS65023_DCDC_1)
- 		return -EINVAL;
-@@ -299,11 +300,19 @@ static int tps65023_dcdc_set_voltage(struct regulator_dev *dev,
- 
- 	*selector = vsel;
- 
--	/* write to the register in case we found a match */
--	if (vsel == tps->info[dcdc]->table_len)
--		return -EINVAL;
--	else
--		return tps_65023_reg_write(tps, TPS65023_REG_DEF_CORE, vsel);
-+	if (vsel == tps->info[dcdc]->table_len) {
-+		ret = -EINVAL;
-+	} else {
-+		ret = tps_65023_reg_write(tps, TPS65023_REG_DEF_CORE, vsel);
+ 		if (flags & USB_CDC_NCM_NCAP_NTB_INPUT_SIZE) {
+-			struct usb_cdc_ncm_ndp_input_size ndp_in_sz;
++			struct usb_cdc_ncm_ndp_input_size *ndp_in_sz;
 +
-+		/* Tell the chip that we have changed the value in DEFCORE
-+		 * and its time to update the core voltage
-+		 */
-+		tps_65023_set_bits(tps, TPS65023_REG_CON_CTRL2,
-+							TPS65023_REG_CTRL2_GO);
-+	}
-+
-+	return ret;
- }
++			ndp_in_sz = kzalloc(sizeof(*ndp_in_sz), GFP_KERNEL);
++			if (!ndp_in_sz) {
++				err = -ENOMEM;
++				goto size_err;
++			}
  
- static int tps65023_ldo_get_voltage(struct regulator_dev *dev)
--- 
-1.7.4.1
-
+ 			req.wLength = 8;
+-			ndp_in_sz.dwNtbInMaxSize = cpu_to_le32(ctx->rx_max);
+-			ndp_in_sz.wNtbInMaxDatagrams =
++			ndp_in_sz->dwNtbInMaxSize = cpu_to_le32(ctx->rx_max);
++			ndp_in_sz->wNtbInMaxDatagrams =
+ 					cpu_to_le16(CDC_NCM_DPT_DATAGRAMS_MAX);
+-			ndp_in_sz.wReserved = 0;
+-			err = cdc_ncm_do_request(ctx, &req, &ndp_in_sz, 0, NULL,
++			ndp_in_sz->wReserved = 0;
++			err = cdc_ncm_do_request(ctx, &req, ndp_in_sz, 0, NULL,
+ 									1000);
++			kfree(ndp_in_sz);
+ 		} else {
+-			__le32 dwNtbInMaxSize = cpu_to_le32(ctx->rx_max);
++			__le32 *dwNtbInMaxSize;
++			dwNtbInMaxSize = kzalloc(sizeof(*dwNtbInMaxSize), GFP_KERNEL);
++			if (!dwNtbInMaxSize) {
++				err = -ENOMEM;
++				goto size_err;
++			}
++			*dwNtbInMaxSize = cpu_to_le32(ctx->rx_max);
+ 
+ 			req.wLength = 4;
+-			err = cdc_ncm_do_request(ctx, &req, &dwNtbInMaxSize, 0,
++			err = cdc_ncm_do_request(ctx, &req, dwNtbInMaxSize, 0,
+ 								NULL, 1000);
++			kfree(dwNtbInMaxSize);
+ 		}
+ 
++size_err:
+ 		if (err)
+ 			pr_debug("Setting NTB Input Size failed\n");
+ 	}
+@@ -362,9 +377,15 @@ static u8 cdc_ncm_setup(struct cdc_ncm_ctx *ctx)
+ 
+ 	/* set Max Datagram Size (MTU) */
+ 	if (flags & USB_CDC_NCM_NCAP_MAX_DATAGRAM_SIZE) {
+-		__le16 max_datagram_size;
++		__le16 *max_datagram_size;
+ 		u16 eth_max_sz = le16_to_cpu(ctx->ether_desc->wMaxSegmentSize);
+ 
++		max_datagram_size = kzalloc(sizeof(*max_datagram_size), GFP_KERNEL);
++		if (!max_datagram_size) {
++			err = -ENOMEM;
++			goto max_dgram_err;
++		}
++
+ 		req.bmRequestType = USB_TYPE_CLASS | USB_DIR_IN |
+ 							USB_RECIP_INTERFACE;
+ 		req.bNotificationType = USB_CDC_GET_MAX_DATAGRAM_SIZE;
+@@ -372,13 +393,14 @@ static u8 cdc_ncm_setup(struct cdc_ncm_ctx *ctx)
+ 		req.wIndex = cpu_to_le16(iface_no);
+ 		req.wLength = cpu_to_le16(2);
+ 
+-		err = cdc_ncm_do_request(ctx, &req, &max_datagram_size, 0, NULL,
++		err = cdc_ncm_do_request(ctx, &req, max_datagram_size, 0, NULL,
+ 									1000);
++
+ 		if (err) {
+ 			pr_debug("GET_MAX_DATAGRAM_SIZE failed, use size=%u\n",
+ 						CDC_NCM_MIN_DATAGRAM_SIZE);
+ 		} else {
+-			ctx->max_datagram_size = le16_to_cpu(max_datagram_size);
++			ctx->max_datagram_size = le16_to_cpu(*max_datagram_size);
+ 			/* Check Eth descriptor value */
+ 			if (eth_max_sz < CDC_NCM_MAX_DATAGRAM_SIZE) {
+ 				if (ctx->max_datagram_size > eth_max_sz)
+@@ -401,10 +423,12 @@ static u8 cdc_ncm_setup(struct cdc_ncm_ctx *ctx)
+ 			req.wValue = 0;
+ 			req.wIndex = cpu_to_le16(iface_no);
+ 			req.wLength = 2;
+-			max_datagram_size = cpu_to_le16(ctx->max_datagram_size);
++			*max_datagram_size = cpu_to_le16(ctx->max_datagram_size);
+ 
+-			err = cdc_ncm_do_request(ctx, &req, &max_datagram_size,
++			err = cdc_ncm_do_request(ctx, &req, max_datagram_size,
+ 								0, NULL, 1000);
++			kfree(max_datagram_size);
++max_dgram_err:
+ 			if (err)
+ 				pr_debug("SET_MAX_DATAGRAM_SIZE failed\n");
+ 		}
