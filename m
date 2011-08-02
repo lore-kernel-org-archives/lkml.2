@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080Ab1HBSzw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 14:55:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755009Ab1HBSzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 14:55:46 -0400
-Date: Tue, 2 Aug 2011 14:55:30 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
-        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: Re: [patch v2 02/10] kdump: Make kimage_load_crash_segment() weak
-Message-ID: <20110802185530.GH6399@redhat.com>
-References: <20110727125504.491183728@linux.vnet.ibm.com>
- <20110727125807.695225427@linux.vnet.ibm.com>
- <20110801203143.GH3805@redhat.com>
- <1312277403.4881.26.camel@br98xy6r>
+	id S1755050Ab1HBTDf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 15:03:35 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:60621 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755006Ab1HBTDa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 15:03:30 -0400
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX18o2TUI33kobRsqErGU4jdj2T/EHOF8SgVe+2GGzv
+	GnvcSpHx9Fwxtz
+From: Sven Joachim <svenjoac@gmx.de>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [stable] [ANNOUNCE] The longterm Linux 2.6.35.14 kernel is released
+References: <20110801215908.GA11448@tassilo.jf.intel.com>
+	<87sjpk9ttf.fsf@turtle.gmx.de>
+	<20110802181751.GB7087@tassilo.jf.intel.com>
+	<87aabraca3.fsf@turtle.gmx.de> <20110802185501.GC32027@1wt.eu>
+Date: Tue, 02 Aug 2011 21:03:28 +0200
+In-Reply-To: <20110802185501.GC32027@1wt.eu> (Willy Tarreau's message of "Tue,
+	2 Aug 2011 20:55:01 +0200")
+Message-ID: <8739hjab5r.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312277403.4881.26.camel@br98xy6r>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 02, 2011 at 11:30:03AM +0200, Michael Holzheu wrote:
-> Hello Vivek,
-> 
-> On Mon, 2011-08-01 at 16:31 -0400, Vivek Goyal wrote:
-> > On Wed, Jul 27, 2011 at 02:55:06PM +0200, Michael Holzheu wrote:
-> 
-> [snip]
-> 
-> > > --- a/kernel/kexec.c
-> > > +++ b/kernel/kexec.c
-> > > @@ -842,8 +842,8 @@ out:
-> > >  	return result;
-> > >  }
-> > >  
-> > > -static int kimage_load_crash_segment(struct kimage *image,
-> > > -					struct kexec_segment *segment)
-> > > +int __weak kimage_load_crash_segment(struct kimage *image,
-> > > +				     struct kexec_segment *segment)
-> > 
-> > A comment here why we are making it weak should help in increasing
-> > the code readability.
-> 
-> What about the following:
-> 
-> /*
->  * Load crash segment into memory. Architecture code can override this
->  * function. E.g. this is necessary for architectures that do not
->  * create page tables for crashkernel memory.
->  */
-> int __weak kimage_load_crash_segment(struct kimage *image,
+On 2011-08-02 20:55 +0200, Willy Tarreau wrote:
 
-This looks better.
+> On Tue, Aug 02, 2011 at 08:39:16PM +0200, Sven Joachim wrote:
+>> I don't think that's the problem, since the v2.6.35.14 tag and the
+>> commits that lead to it have been at
+>> git.kernel.org/pub/scm/linux/kernel/git/longterm/linux-2.6.35.y.git for
+>> at least twelve hours.  The problem is that while the tag is there, the
+>> master branch is still at v2.6.35.13-original.  This happens if you just
+>> "git push v2.6.35.14" without _also_ explicitly pushing the master
+>> branch.  In that case, the commits leading to v2.6.35.14 get pushed (and
+>> can be fetched with "git fetch -t") but are not on any branch.
+>> 
+>> Linus himself had already made this mistake at least twice, so it can
+>> happen to anyone, I guess. :-)
+>
+> I too made this mistake a few times. However I just checked Andi's tree
+> on hera and it's OK, master == v2.6.35.14, so possibly this is just a
+> synchronization issue. Let's wait a bit.
 
-Thanks
-Vivek
+Yes, it seems so.  In gitweb I now see the master branch at v2.6.35.14
+as well, while it was at v2.6.35.13-original half an hour ago.
+
+Cheers,
+       Sven
