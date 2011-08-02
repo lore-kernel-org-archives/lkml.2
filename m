@@ -1,73 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab1HBRKw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 13:10:52 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:41416 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754154Ab1HBRKs (ORCPT
+	id S1754568Ab1HBRNU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 13:13:20 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:32847 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753475Ab1HBRNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 13:10:48 -0400
-Date: Tue, 2 Aug 2011 10:10:45 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Helmut Schaa <helmut.schaa@googlemail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-wireless@vger.kernel.org, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Ivo van Doorn <IvDoorn@gmail.com>
-Subject: Re: [PATCH] rt2x00: Fix compilation without
- CONFIG_RT2X00_LIB_CRYPTO
-Message-Id: <20110802101045.11001f21.rdunlap@xenotime.net>
-In-Reply-To: <CAGXE3d9ynyJX2eAr2bfwOc_PdDNEwVHDVsA_Jx1ReBht=eVuYw@mail.gmail.com>
-References: <CAGXE3d9ynyJX2eAr2bfwOc_PdDNEwVHDVsA_Jx1ReBht=eVuYw@mail.gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Tue, 2 Aug 2011 13:13:14 -0400
+Date: Tue, 2 Aug 2011 10:15:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Xiaotian Feng <xtfeng@gmail.com>, linux-mm@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: kernel BUG at mm/vmscan.c:1114
+Message-Id: <20110802101500.3f1d53c5.akpm@linux-foundation.org>
+In-Reply-To: <20110802142459.GF10436@suse.de>
+References: <CAJn8CcE20-co4xNOD8c+0jMeABrc1mjmGzju3xT34QwHHHFsUA@mail.gmail.com>
+	<CAJn8CcG-pNbg88+HLB=tRr26_R+A0RxZEWsJQg4iGe4eY2noXA@mail.gmail.com>
+	<20110802142459.GF10436@suse.de>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Aug 2011 11:43:14 +0200 Helmut Schaa wrote:
+On Tue, 2 Aug 2011 15:24:59 +0100 Mel Gorman <mgorman@suse.de> wrote:
 
-> This was introduced by commit
-> 77b5621bac4a56b83b9081f48d4e7d1accdde400 (rt2x00: Don't use queue entry
-> as parameter when creating TX descriptor.)
+> On Tue, Aug 02, 2011 at 03:09:57PM +0800, Xiaotian Feng wrote:
+> > Hi,
+> > __ __I'm hitting the kernel BUG at mm/vmscan.c:1114 twice, each time I
+> > was trying to build my kernel. The photo of crash screen and my config
+> > is attached. Thanks.
+> > Regards
+> > Xiaotian
 > 
-> Signed-off-by: Helmut Schaa <helmut.schaa@googlemail.com>
-
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-
-Thanks.
-
-> ---
-> Sending directly to John as I assume this should go through the wireless tree?
+> I am obviously blind because in 3.0, I cannot see what BUG is at
+> mm/vmscan.c:1114 :(. I see
 > 
->  drivers/net/wireless/rt2x00/rt2x00lib.h |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
+> 1109:			/*
+> 1110:			 * If we don't have enough swap space, reclaiming of
+> 1111:			 * anon page which don't already have a swap slot is
+> 1112:			 * pointless.
+> 1113:			 */
+> 1114:			if (nr_swap_pages <= 0 && PageAnon(cursor_page) &&
+> 1115:			    !PageSwapCache(cursor_page))
+> 1116:				break;
+> 1117:
+> 1118:			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
+> 1119:				list_move(&cursor_page->lru, dst);
+> 1120:				mem_cgroup_del_lru(cursor_page);
 > 
-> diff --git a/drivers/net/wireless/rt2x00/rt2x00lib.h
-> b/drivers/net/wireless/rt2x00/rt2x00lib.h
-> index 15cdc7e..4cdf247 100644
-> --- a/drivers/net/wireless/rt2x00/rt2x00lib.h
-> +++ b/drivers/net/wireless/rt2x00/rt2x00lib.h
-> @@ -355,7 +355,8 @@ static inline enum cipher
-> rt2x00crypto_key_to_cipher(struct ieee80211_key_conf *
->  	return CIPHER_NONE;
->  }
+> Is this 3.0 vanilla or are there some other patches applied?
 > 
-> -static inline void rt2x00crypto_create_tx_descriptor(struct queue_entry *entry,
-> +static inline void rt2x00crypto_create_tx_descriptor(struct
-> rt2x00_dev *rt2x00dev,
-> +						     struct sk_buff *skb,
->  						     struct txentry_desc *txdesc)
->  {
->  }
-> -- 
 
+"3.0.0+": Current mainline.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+		struct list_head *src, struct list_head *dst,
+		unsigned long *scanned, int order, int mode, int file)
+{
+	unsigned long nr_taken = 0;
+	unsigned long nr_lumpy_taken = 0;
+	unsigned long nr_lumpy_dirty = 0;
+	unsigned long nr_lumpy_failed = 0;
+	unsigned long scan;
+
+	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++) {
+		struct page *page;
+		unsigned long pfn;
+		unsigned long end_pfn;
+		unsigned long page_pfn;
+		int zone_id;
+
+		page = lru_to_page(src);
+		prefetchw_prev_lru_page(page, src, flags);
+
+		VM_BUG_ON(!PageLRU(page));
+
+		switch (__isolate_lru_page(page, mode, file)) {
+		case 0:
+			list_move(&page->lru, dst);
+			mem_cgroup_del_lru(page);
+			nr_taken += hpage_nr_pages(page);
+			break;
+
+		case -EBUSY:
+			/* else it is being freed elsewhere */
+			list_move(&page->lru, src);
+			mem_cgroup_rotate_lru_list(page, page_lru(page));
+			continue;
+
+		default:
+-->>			BUG();
+		}
+
