@@ -1,80 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab1HBLV4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 07:21:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40824 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752821Ab1HBLVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 07:21:51 -0400
-Date: Tue, 2 Aug 2011 12:21:46 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/8] mm: vmscan: Do not writeback filesystem pages in
- direct reclaim
-Message-ID: <20110802112146.GD10436@suse.de>
-References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
- <1311265730-5324-2-git-send-email-mgorman@suse.de>
- <20110731150606.GB1735@barrios-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110731150606.GB1735@barrios-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753915Ab1HBLWd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 07:22:33 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:46896 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753174Ab1HBLW3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 07:22:29 -0400
+Date: Tue, 02 Aug 2011 04:22:16 -0700 (PDT)
+Message-Id: <20110802.042216.1555611529250936804.davem@davemloft.net>
+To: alan@lxorguk.ukuu.org.uk
+Cc: rientjes@google.com, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, andi@firstfloor.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Revert needed: udev spewing warnons on common systems in 3.0
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110802111117.10a73b89@lxorguk.ukuu.org.uk>
+References: <20110802101614.009cdf42@lxorguk.ukuu.org.uk>
+	<alpine.DEB.2.00.1108020249560.18935@chino.kir.corp.google.com>
+	<20110802111117.10a73b89@lxorguk.ukuu.org.uk>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 02 Aug 2011 04:22:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 12:06:06AM +0900, Minchan Kim wrote:
-> On Thu, Jul 21, 2011 at 05:28:43PM +0100, Mel Gorman wrote:
-> > From: Mel Gorman <mel@csn.ul.ie>
-> > 
-> > When kswapd is failing to keep zones above the min watermark, a process
-> > will enter direct reclaim in the same manner kswapd does. If a dirty
-> > page is encountered during the scan, this page is written to backing
-> > storage using mapping->writepage.
-> > 
-> > This causes two problems. First, it can result in very deep call
-> > stacks, particularly if the target storage or filesystem are complex.
-> > Some filesystems ignore write requests from direct reclaim as a result.
-> > The second is that a single-page flush is inefficient in terms of IO.
-> > While there is an expectation that the elevator will merge requests,
-> > this does not always happen. Quoting Christoph Hellwig;
-> > 
-> > 	The elevator has a relatively small window it can operate on,
-> > 	and can never fix up a bad large scale writeback pattern.
-> > 
-> > This patch prevents direct reclaim writing back filesystem pages by
-> > checking if current is kswapd. Anonymous pages are still written to
-> > swap as there is not the equivalent of a flusher thread for anonymous
-> > pages. If the dirty pages cannot be written back, they are placed
-> > back on the LRU lists. There is now a direct dependency on dirty page
-> > balancing to prevent too many pages in the system being dirtied which
-> > would prevent reclaim making forward progress.
-> > 
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> 
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Date: Tue, 2 Aug 2011 11:11:17 +0100
 
-Thanks
+> Perhaps the right way to do it would be to file the bugzillas in the key
+> distros instead
 
-> Nitpick.
-> We can change description of should_reclaim_stall.
-> 
-> "Returns true if the caller should wait to clean dirty/writeback pages"
-> ->
-> "Returns true if direct reclaimer should wait to clean writeback pages"
-> 
+I completely disagree, there are lots of distributions and filing a bug
+with all of them is unreasonable.  Some don't even have bug databases and
+are just a bunch of people maintaining a distribution for fun :-)
 
-Not a nitpick. At least one check for RECLAIM_MODE_SYNC is no longer
-reachable. I've added a new patch that updates the comment and has
-synchronous direct reclaim wait on pages under writeback.
-
--- 
-Mel Gorman
-SUSE Labs
+So even the most obscure distribution might want to notice this and
+fix it if it's users care about it enough to report it.
