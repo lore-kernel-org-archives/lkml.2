@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412Ab1HBVTf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 17:19:35 -0400
-Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:33845 "EHLO
-	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754856Ab1HBVT3 (ORCPT
+	id S1755424Ab1HBV3s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 17:29:48 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:53546 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755383Ab1HBV3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 17:19:29 -0400
-Date: Wed, 3 Aug 2011 00:19:24 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, trivial@kernel.org,
-        Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        linux-usb@vger.kernel.org, usb-storage@lists.one-eyed-alien.net,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH][Resend] Remove unneeded version.h includes (and add
- where needed) for drivers/usb/
-Message-ID: <20110802211923.GB10120@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <alpine.LNX.2.00.1108012329380.31999@swampdragon.chaosbits.net>
+	Tue, 2 Aug 2011 17:29:43 -0400
+X-Authenticated: #1587495
+X-Provags-ID: V01U2FsdGVkX18cMh8WqGAcwv/uCflSeFfAzztboU6O8cyF1WXv/J
+	eNkw0+HfOaZ5if
+From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
+To: Matthew Garrett <mjg@redhat.com>
+Subject: Re: drm: Add a driver for kvm emulated Cirrus
+Date: Tue, 2 Aug 2011 23:29:31 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0-0.slh.5-aptosid-686; KDE/4.6.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+References: <1303157094-11425-1-git-send-email-mjg@redhat.com>
+In-Reply-To: <1303157094-11425-1-git-send-email-mjg@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tjCHc7DPkfUGtrlw"
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1108012329380.31999@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108022329.33538.s.L-H@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
---tjCHc7DPkfUGtrlw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tuesday 02 August 2011, Matthew Garrett wrote:
+> qemu-kvm emulates a Cirrus GPU, including its acceleration engine. We
+> typically then run a Cirrus-specific X driver on top of this, which
+> turns requests into commands and sends them to the emulated accelerator.
+> This all seems to be unnecessary overhead given that we're just going
+> to end up writing to memory from the host instead, and performance is
+> almost certainly going to be better using an unaccelerated framebuffer
+> and a guest-side shadow.
+> 
+> This patch provides a simple modesetting-only KMS driver for the hardware
+> emulated in qemu-kvm. It's stripped down to the point where it's able to
+> program the emulation, but would almost certainly fail miserably if asked
+> to run on real hardware. It's intended to reduce virt overhead slightly,
+> but also to serve as a template to writing a basic KMS driver.
+> 
+> The code and structure are heavily derived from Matt Turner's glint
+> driver, with the modesetting code cribbed from cirrusfb (hence the
+> license).
+[...]
 
-Hi,
+What is the status of this KMS based drm driver for cirrus-kvm?
+I've been successfully testing this patch in 2.6.{38,39} and 3.0 
+(Debian unstable userspace, xserver-xorg-core <=2:1.10.2.902-1, 
+xserver-xorg-video-cirrus <=1:1.3.2-4+b1, qemu-kvm <=0.14.1+dfsg-4) 
+with pretty good results. While it shares the same issues with plain 
+cirrus (no regressions) before this patch (inverted colors in KDE, 
+window management issues in LXDE), the KMS based drm driver seems to 
+be a big improvement over all.
 
-On Mon, Aug 01, 2011 at 11:33:29PM +0200, Jesper Juhl wrote:
-> It was pointed out by 'make versioncheck' that linux/version.h was not
-> always being included where needed and sometimes included needlessly
-> in drivers/usb/.
-> This patch fixes up the includes.
->=20
-> For the UVC gadget driver bits, this was ACK'ed by Laurent Pinchart.
->=20
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> ---
->  drivers/usb/gadget/uvc.h         |    1 +
->  drivers/usb/gadget/uvc_v4l2.c    |    1 -
->  drivers/usb/storage/realtek_cr.c |    1 -
->  3 files changed, 1 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/usb/gadget/uvc.h b/drivers/usb/gadget/uvc.h
-> index 5b79194..81971fb 100644
-> --- a/drivers/usb/gadget/uvc.h
-> +++ b/drivers/usb/gadget/uvc.h
-> @@ -56,6 +56,7 @@ struct uvc_event
->  #include <linux/usb.h>	/* For usb_endpoint_* */
->  #include <linux/usb/gadget.h>
->  #include <linux/videodev2.h>
-> +#include <linux/version.h>
-
-does uvc.h really needs <linux/version.h> ?? Laurent ?
-
---=20
-balbi
-
---tjCHc7DPkfUGtrlw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOOGnbAAoJEAv8Txj19kN1Q7cIAI6gYGaEE/ML5qZhRWhhUYzy
-NfPiKH4h9TN2euOhn+y/OBVsb4Ek67aZb+AevrFfCPD3WKqhk3eAm2KCG8GCV2u5
-kENdWEjRKi6AwX8gnyHvl5itoW8EZgbjmE5vukbsEM1Al7dsAlbF0gnTHqffToe7
-w44y0f25p7kcZBUTEskGfGqJ1WTjPWy5CK6J2RqnMCsHBXQqQNCJOZNWYuFtIjuD
-KWKeN5SiSjTJYZ12WZUYzM64n+4+2Fx62vHO5FxaNZXPON9qFLk7Och3A7lgYEiQ
-HA/NL265AKRMzftx9b2aM4E6QcJSwdJdQBptN4vwqibMUS5OkeGEJ6Scb1LOMZk=
-=TJ2g
------END PGP SIGNATURE-----
-
---tjCHc7DPkfUGtrlw--
+Regards
+	Stefan Lippers-Hollmann
