@@ -1,121 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab1HBRkV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 13:40:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2063 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754726Ab1HBRkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 13:40:15 -0400
-Date: Tue, 2 Aug 2011 13:40:06 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Cc: Shaohua Li <shaohua.li@intel.com>, Suresh Jayaraman <sjayaraman@suse.de>,
-        Moyer Jeff Moyer <jmoyer@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: [PATCH] cfq-iosched: Add documentation about idling [V2]
-Message-ID: <20110802174006.GD6399@redhat.com>
+	id S1754792Ab1HBRke (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 13:40:34 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:36032 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754726Ab1HBRka convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 13:40:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGq3pz4LHRkCqaJfqoMYe-=mn+s5CVZipab7bd8F3z+ou3xxVA@mail.gmail.com>
+References: <CAGq3pz4LHRkCqaJfqoMYe-=mn+s5CVZipab7bd8F3z+ou3xxVA@mail.gmail.com>
+Date: Tue, 2 Aug 2011 10:40:29 -0700
+Message-ID: <CAN8TOE9mWEmS5YJqNrS9OrG=t+emeLcXNpKR1BiZ6VDJW7_c=A@mail.gmail.com>
+Subject: Re: MTD-related kobject badness during linux-next boot
+From: Brian Norris <computersforpeace@gmail.com>
+To: Daniel Drake <dsd@laptop.org>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Jamie Iles <jamie@jamieiles.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are always questions about why CFQ is idling on various conditions.
-Recent ones is Christoph asking again why to idle on REQ_NOIDLE. His
-assertion is that XFS is relying more and more on workqueues and is
-concerned that CFQ idling on IO from every workqueue will impact
-XFS badly.
+Hi,
 
-So he suggested that I add some more documentation about CFQ idling
-and that can provide more clarity on the topic and also gives an
-opprotunity to poke a hole in theory and lead to improvements.
+I CC'd Dmitry and Jamie who did recent work on this area of MTD,
+regarding a subsystem-wide simplification of the routines for
+partitioning and registering devices. I don't personally develop with
+the cafe_nand driver, but I can try to help.
 
-So here is my attempt at that. Any comments are welcome.
+On Thu, Jul 14, 2011 at 10:37 AM, Daniel Drake <dsd@laptop.org> wrote:
+> Booting linux-next 20110707 on OLPC XO-1 I get:
+> [    1.172947] kobject (cd8d40dc): tried to init an initialized
+> object, something is seriously wrong.
+> [    1.184111] Pid: 1, comm: swapper Not tainted 3.0.0-rc6-next-20110707+ #100
+> [    1.198384] Call Trace:
+> [    1.207741]  [<c05301a0>] ? kobject_init+0x24/0x6b
+> [    1.212420]  [<c0578c49>] ? device_initialize+0x18/0x56
+> [    1.227060]  [<c057960a>] ? device_register+0x8/0x10
+> [    1.241052]  [<c059104a>] ? add_mtd_device+0x17a/0x1f1
+> [    1.244949]  [<c0591128>] ? mtd_device_parse_register+0x67/0x7c
+> [    1.259536]  [<c06c6522>] ? cafe_nand_probe+0x5c9/0x686
+...
+> Any ideas?
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+Yeah, I think it has to do with Dmitry Eremin-Solenikov's recent
+changes in l2-mtd-2.6.git. Looks like the driver is trying calling
+add_mtd_device() on the master MTD twice. The problem commit is (for
+now):
+commit 0f7451bea72c64d3f0a47850328d52f0315e2ea6
+"mtd: cafe_nand.c: use mtd_device_parse_register"
+
+Have you tried linux 3.0, which does not have the patch series that
+messes with mtd partition parsing and registering?
+
+It looks like previously, cafe_nand would always add the master
+device, then it would parse and register its partitions, if found.
+
+Since Dmitry's change, it looks like cafe_nand will add the master
+device, then parse and register its partitions, if found. However, if
+partitions are NOT found, then mtd_device_parse_register() falls back
+to adding the master device, which was already added. In
+drivers/mtd/mtdcore.c, see:
+
+     int mtd_device_parse_register(struct mtd_info *mtd, const char **types,
+     ...
+     if (err > 0) {
+     ...
+     } else if (err == 0) {
+             err = add_mtd_device(mtd);
+     ...
+
+
+So it looks like perhaps we can solve the problem by just killing the
+"register the whole device first" and allow mtd_device_parse_register
+to do it if there are no partitions. Any cafe_nand developers know if
+this is a problem? i.e., is there a reason we need both the whole
+device AND the partitions sent to add_mtd_device()? I'll send a full
+patch with sign-off and description if there are no objections.
+
+Brian
+
 ---
- Documentation/block/cfq-iosched.txt |   71 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 71 insertions(+)
+ drivers/mtd/nand/cafe_nand.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-Index: linux-2.6/Documentation/block/cfq-iosched.txt
-===================================================================
---- linux-2.6.orig/Documentation/block/cfq-iosched.txt	2011-08-02 13:16:51.514957332 -0400
-+++ linux-2.6/Documentation/block/cfq-iosched.txt	2011-08-02 13:36:43.151402251 -0400
-@@ -43,3 +43,74 @@ If one sets slice_idle=0 and if storage 
- to IOPS mode and starts providing fairness in terms of number of requests
- dispatched. Note that this mode switching takes effect only for group
- scheduling. For non-cgroup users nothing should change.
-+
-+CFQ IO scheduler Idling Theory
-+==============================
-+Idling on a queue is primarily about waiting for the next request to come
-+on same queue after completion of a request. In this process CFQ will not
-+dispatch requests from other cfq queues even if requests are pending there.
-+
-+The rationale behind idling is that it can cut down on number of seeks
-+on rotational media. For example, if a process is doing dependent
-+sequential reads (next read will come on only after completion of previous
-+one), then not dispatching request from other queue should help as we
-+did not move the disk head and kept on dispatching sequential IO from
-+one queue.
-+
-+CFQ has following service trees and various queues are put on these trees.
-+
-+	sync-idle	sync-noidle	async
-+
-+All cfq queues doing synchronous sequential IO go on to sync-idle tree.
-+On this tree we idle on each queue individually.
-+
-+All synchronous non-sequential queues go on sync-noidle tree. Also any
-+request which are marked with REQ_NOIDLE go on this service tree. On this
-+tree we do not idle on individual queues instead idle on the whole group
-+of queues or the tree. So if there are 4 queues waiting for IO to dispatch
-+we will idle only once last queue has dispatched the IO and there is
-+no more IO on this service tree.
-+
-+All async writes go on async service tree. There is no idling on async
-+queues.
-+
-+CFQ has some optimizations for SSDs and if it detects a non-rotational
-+media which can support higher queue depth (multiple requests at in
-+flight at a time), then it cuts down on idling of individual queues and
-+all the queues move to sync-noidle tree and only tree idle remains. This
-+tree idling provides isolation with buffered write queues on async tree.
-+
-+FAQ
-+===
-+Q1. Why to idle at all on queues marked with REQ_NOIDLE.
-+
-+A1. We only do tree idle (all queues on sync-noidle tree) on queues marked
-+    with REQ_NOIDLE. This helps in providing isolation with all the sync-idle
-+    queues. Otherwise in presence of many sequential readers, other
-+    synchronous IO might not get fair share of disk.
-+
-+    For example, if there are 10 sequential readers doing IO and they get
-+    100ms each. If a REQ_NOIDLE request comes in, it will be scheduled
-+    roughly after 1 second. If after completion of REQ_NOIDLE request we
-+    do not idle, and after a couple of milli seconds a another REQ_NOIDLE
-+    request comes in, again it will be scheduled after 1second. Repeat it
-+    and notice how a workload can lose its disk share and suffer due to
-+    multiple sequential readers.
-+
-+    fsync can generate dependent IO where bunch of data is written in the
-+    context of fsync, and later some journaling data is written. Journaling
-+    data comes in only after fsync has finished its IO (atleast for ext4
-+    that seemed to be the case). Now if one decides not to idle on fsync
-+    thread due to REQ_NOIDLE, then next journaling write will not get
-+    scheduled for another second. A process doing small fsync, will suffer
-+    badly in presence of multiple sequential readers.
-+
-+    Hence doing tree idling on threads using REQ_NOIDLE flag on requests
-+    provides isolation from multiple sequential readers and at the same
-+    time we do not idle on individual threads.
-+
-+Q2. When to specify REQ_NOIDLE
-+A2. I would think whenever one is doing synchronous write and not expecting
-+    more writes to be dispatched from same context soon, should be able
-+    to specify REQ_NOIDLE on writes and that probably should work well for
-+    most of the cases.
+diff --git a/drivers/mtd/nand/cafe_nand.c b/drivers/mtd/nand/cafe_nand.c
+index fb1425e..72d3f23 100644
+--- a/drivers/mtd/nand/cafe_nand.c
++++ b/drivers/mtd/nand/cafe_nand.c
+@@ -798,9 +798,6 @@ static int __devinit cafe_nand_probe(struct pci_dev *pdev,
+
+        pci_set_drvdata(pdev, mtd);
+
+-       /* We register the whole device first, separate from the partitions */
+-       mtd_device_register(mtd, NULL, 0);
+-
+        mtd->name = "cafe_nand";
+        mtd_device_parse_register(mtd, part_probes, 0, NULL, 0);
+
+-- 
+1.7.0.4
