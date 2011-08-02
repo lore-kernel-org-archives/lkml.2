@@ -1,69 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab1HBKil (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 06:38:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39922 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752793Ab1HBKig convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 06:38:36 -0400
-Subject: Re: [PATCH 6/7] perf, x86: Example code for AMD IBS
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Michael Cree <mcree@orcon.net.nz>,
-        Lin Ming <ming.m.lin@intel.com>
-In-Reply-To: <20110801055008.GZ4590@erda.amd.com>
-References: <1311860812-28748-1-git-send-email-robert.richter@amd.com>
-	 <1311860812-28748-7-git-send-email-robert.richter@amd.com>
-	 <1311958729.5890.413.camel@twins>  <20110801055008.GZ4590@erda.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 02 Aug 2011 12:37:54 +0200
-Message-ID: <1312281474.1147.40.camel@twins>
+	id S1753389Ab1HBKkg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 06:40:36 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:57042 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753174Ab1HBKka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 06:40:30 -0400
+Date: Tue, 2 Aug 2011 12:40:28 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Florian Mickler <florian@mickler.org>, linux-kernel@vger.kernel.org,
+        Tino Keitel <tino.keitel@tikei.de>, mchehab@infradead.org
+Subject: Re: USB related "unable to handle kernel paging request" in
+ 3.0.0-rc7
+Message-ID: <20110802124028.3b8dcd5a@schatten.dmk.lab>
+In-Reply-To: <20110802115145.25b6a445@schatten.dmk.lab>
+References: <20110722192722.GA9369@x61.home>
+	<20110802085447.GA4522@shale.localdomain>
+	<20110802115145.25b6a445@schatten.dmk.lab>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-01 at 07:50 +0200, Robert Richter wrote:
-> On 29.07.11 12:58:49, Peter Zijlstra wrote:
-> > On Thu, 2011-07-28 at 15:46 +0200, Robert Richter wrote:
-> > >  tools/perf/Documentation/examples/ibs.c    |  436 ++++++++++++++++++++++++++++
+On Tue, 2 Aug 2011 11:51:45 +0200
+Florian Mickler <florian@mickler.org> wrote:
+
+> On Tue, 2 Aug 2011 11:54:47 +0300
+> Dan Carpenter <error27@gmail.com> wrote:
+> 
+> > Looking at this, I noticed a memory corruption bug introduce in:
+> > ab22cbda6651d "[media] vp7045: get rid of on-stack dma buffers"
 > > 
-> > That really isn't the place for this..
+> > vp7045_properties.size_of_priv is sizeof(u8 *) so in vp7045_usb_probe()
+> > the d->priv buffer gets allocated twice.  Once in:
+> > 	dvb_usb_device_init()
+> > 	-> dvb_usb_init()
 > > 
-> > Also, how similar is the Alpha PMU to AMD IBS?
-> 
-> Would you prefer
-> 
->  tools/perf/Documentation/examples/x86/ibs.c
-> 
-> instead?
+> > And once explicitly to a larger buffer later on in the function with
+> > a kmalloc().
+> > 
+> > So the two places that use the buffer will probably race and cause
+> > memory corruption.
 
-Possibly, but having just looked at the example again I don't really see
-it doing anything perf-record doesn't already do, so why does it deserve
-to live at all?
+Btw, what two places use the buffer? I only see vp7045_usb_op. Did you
+mean s/use/free/ or did I overlook it?
 
-Initially I thought it was a record+report like example, some code
-interpreting the 'mess' that comes out of IBS would be most appreciated
-and I think we can even ship that as perf-ibs-report/perf-ibs-annotate
-or so (and if its still remotely similar to its Alpha precursor that
-might make the Alpha folks happy too).
+Patch below.
 
-> Actually I wasn't sure if this place is ok at all. But I wanted to
-> publish the code for reference and testing. There isn't somthing
-> similar already there, and the perf tool code is also not the best
-> place to implement such cpu specific features.
+> > 
+> > regards,
+> > dan carpenter
 > 
-> But putting it to the documentation is common practice for library
-> packages (e.g. libpapi and libpfm). If the example is not for the
-> given architecture it won't be added to the package documentation.
-> This example won't be installed at all. Even for very special features
-> an example is important since it is often not part of the generic
-> implementation.
+> Damn. That (u8*)sized priv buffer should only hold a pointer to the
+> transfer buffer allocated in the prope routine. But I botched that. 
+> I will send a fixup in a minute.  
+> 
+> Regards,
+> Flo
 
-Right, its just that I'm not seeing the extra value at all, aside from
-maybe the IBS_*_DEFAULT values that should live as an event config
-(poking mlin to see where he's at with those patches..).
+This should fix it. 
+
+[git am -c ]
+--------->8-------->8---------->8------------>8---------------------------
+commit 2c505d4867be9f3605c20ed505ec62d2096a05b1
+Author: Florian Mickler <florian@mickler.org>
+Date:   Tue Aug 2 12:18:55 2011 +0200
+
+    [media] vp7045: fix double free and mem leak
+    
+    The vp7045 priv data should be a pointer to a buffer.
+    Make it so.
+    
+    This was introduced in commit ab22cbda6651db25 ([media] vp7045: get rid of on-stack
+    dma buffers).
+    
+    CC: stable@kernel.org
+    Reported-by: Dan Carpenter <error27@gmail.com>
+    Signed-off-by: Florian Mickler <florian@mickler.org>
+
+diff --git a/drivers/media/dvb/dvb-usb/vp7045.c b/drivers/media/dvb/dvb-usb/vp7045.c
+index 3db89e3..8dd348b 100644
+--- a/drivers/media/dvb/dvb-usb/vp7045.c
++++ b/drivers/media/dvb/dvb-usb/vp7045.c
+@@ -28,7 +28,8 @@ DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
+ int vp7045_usb_op(struct dvb_usb_device *d, u8 cmd, u8 *out, int outlen, u8 *in, int inlen, int msec)
+ {
+ 	int ret = 0;
+-	u8 *buf = d->priv;
++	u8 **bufp = d->priv;
++	u8 *buf = *bufp
+ 
+ 	buf[0] = cmd;
+ 
+@@ -224,14 +225,16 @@ static struct dvb_usb_device_properties vp7045_properties;
+ static int vp7045_usb_probe(struct usb_interface *intf,
+ 		const struct usb_device_id *id)
+ {
++	u8 **bufp;
+ 	struct dvb_usb_device *d;
+ 	int ret = dvb_usb_device_init(intf, &vp7045_properties,
+ 				   THIS_MODULE, &d, adapter_nr);
+ 	if (ret)
+ 		return ret;
+ 
+-	d->priv = kmalloc(20, GFP_KERNEL);
+-	if (!d->priv) {
++	bufp = d->priv;
++	*bufp = kmalloc(20, GFP_KERNEL);
++	if (!*bufp) {
+ 		dvb_usb_device_exit(intf);
+ 		return -ENOMEM;
+ 	}
+@@ -241,8 +244,10 @@ static int vp7045_usb_probe(struct usb_interface *intf,
+ 
+ static void vp7045_usb_disconnect(struct usb_interface *intf)
+ {
++	u8 **bufp;
+ 	struct dvb_usb_device *d = usb_get_intfdata(intf);
+-	kfree(d->priv);
++	bufp = d->priv;
++	kfree(*bufp);
+ 	dvb_usb_device_exit(intf);
+ }
+ 
