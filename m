@@ -1,138 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156Ab1HBTTw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 15:19:52 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59392 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755035Ab1HBTTZ (ORCPT
+	id S1755141Ab1HBTTo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 15:19:44 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:1306 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754935Ab1HBTTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 15:19:25 -0400
-From: Mark Einon <mark.einon@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        o.hartmann@telovital.com, Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH 4/4] staging: et131x: Fix link detection signalling
-Date: Tue,  2 Aug 2011 20:17:52 +0100
-Message-Id: <1312312672-3639-4-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1312312672-3639-1-git-send-email-mark.einon@gmail.com>
-References: <1312312672-3639-1-git-send-email-mark.einon@gmail.com>
+	Tue, 2 Aug 2011 15:19:21 -0400
+Date: Tue, 2 Aug 2011 14:19:19 -0500
+From: scameron@beardog.cce.hp.com
+To: Joe Handzik <joseph.t.handzik@beardog.cce.hp.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, stephenmcameron@gmail.com,
+        akpm@linux-foundation.org, mikem@beardog.cce.hp.com, thenzl@redhat.com
+Subject: Re: [PATCH 2/2] cciss: add transport mode attribute to sys
+Message-ID: <20110802191919.GB27723@beardog.cce.hp.com>
+References: <20110727213830.13453.15208.stgit@beardog.cce.hp.com> <20110727213835.13453.64091.stgit@beardog.cce.hp.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110727213835.13453.64091.stgit@beardog.cce.hp.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove redundant code around netif_carrier_XXX calls, and associated adapter->media_state, which prevented the link from being reported as off.
-Tested on an ET-1310 device.
+On Wed, Jul 27, 2011 at 04:38:36PM -0500, Joe Handzik wrote:
+> From: Joseph Handzik <joseph.t.handzik@beardog.cce.hp.com>
+> 
+> Signed-off-by: Joseph Handzik <joseph.t.handzik@beardog.cce.hp.com>
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
- drivers/staging/et131x/et1310_phy.c     |   26 +-------------------------
- drivers/staging/et131x/et131x_adapter.h |    6 ------
- drivers/staging/et131x/et131x_initpci.c |   23 +----------------------
- 3 files changed, 2 insertions(+), 53 deletions(-)
+looks ok to me.  Ack.
 
-diff --git a/drivers/staging/et131x/et1310_phy.c b/drivers/staging/et131x/et1310_phy.c
-index 6eb9d5c..2c6898f 100644
---- a/drivers/staging/et131x/et1310_phy.c
-+++ b/drivers/staging/et131x/et1310_phy.c
-@@ -737,16 +737,6 @@ void et131x_mii_check(struct et131x_adapter *adapter,
- 	if (bmsr_ints & MI_BMSR_LINK_STATUS) {
- 		if (bmsr & MI_BMSR_LINK_STATUS) {
- 			adapter->boot_coma = 20;
--
--			/* Update our state variables and indicate the
--			 * connected state
--			 */
--			spin_lock_irqsave(&adapter->lock, flags);
--
--			adapter->media_state = NETIF_STATUS_MEDIA_CONNECT;
--
--			spin_unlock_irqrestore(&adapter->lock, flags);
--
- 			netif_carrier_on(adapter->netdev);
- 		} else {
- 			dev_warn(&adapter->pdev->dev,
-@@ -768,21 +758,7 @@ void et131x_mii_check(struct et131x_adapter *adapter,
- 				et131x_mii_write(adapter, 0x12, register18);
- 			}
- 
--			/* For the first N seconds of life, we are in "link
--			 * detection" When we are in this state, we should
--			 * only report "connected". When the LinkDetection
--			 * Timer expires, we can report disconnected (handled
--			 * in the LinkDetectionDPC).
--			 */
--			if (adapter->media_state == NETIF_STATUS_MEDIA_DISCONNECT) {
--				spin_lock_irqsave(&adapter->lock, flags);
--				adapter->media_state =
--				    NETIF_STATUS_MEDIA_DISCONNECT;
--				spin_unlock_irqrestore(&adapter->lock,
--						       flags);
--
--				netif_carrier_off(adapter->netdev);
--			}
-+			netif_carrier_off(adapter->netdev);
- 
- 			adapter->linkspeed = 0;
- 			adapter->duplex_mode = 0;
-diff --git a/drivers/staging/et131x/et131x_adapter.h b/drivers/staging/et131x/et131x_adapter.h
-index 5dfa153..762e07c 100644
---- a/drivers/staging/et131x/et131x_adapter.h
-+++ b/drivers/staging/et131x/et131x_adapter.h
-@@ -196,12 +196,6 @@ struct et131x_adapter {
- 	u8 ai_force_duplex;	/* duplex setting */
- 	u16 ai_force_speed;	/* 'Speed', user over-ride of line speed */
- 	u8 flowcontrol;		/* flow control validated by the far-end */
--	enum {
--		NETIF_STATUS_INVALID = 0,
--		NETIF_STATUS_MEDIA_CONNECT,
--		NETIF_STATUS_MEDIA_DISCONNECT,
--		NETIF_STATUS_MAX
--	} media_state;
- 
- 	/* Minimize init-time */
- 	struct timer_list error_timer;
-diff --git a/drivers/staging/et131x/et131x_initpci.c b/drivers/staging/et131x/et131x_initpci.c
-index 59637c6..072cfb5 100644
---- a/drivers/staging/et131x/et131x_initpci.c
-+++ b/drivers/staging/et131x/et131x_initpci.c
-@@ -299,27 +299,6 @@ void et131x_error_timer_handler(unsigned long data)
- }
- 
- /**
-- * et131x_link_detection_handler
-- *
-- * Timer function for link up at driver load time
-- */
--void et131x_link_detection_handler(unsigned long data)
--{
--	struct et131x_adapter *adapter = (struct et131x_adapter *) data;
--	unsigned long flags;
--
--	if (adapter->media_state == 0) {
--		spin_lock_irqsave(&adapter->lock, flags);
--
--		adapter->media_state = NETIF_STATUS_MEDIA_DISCONNECT;
--
--		spin_unlock_irqrestore(&adapter->lock, flags);
--
--		netif_carrier_off(adapter->netdev);
--	}
--}
--
--/**
-  * et131x_configure_global_regs	-	configure JAGCore global regs
-  * @adapter: pointer to our adapter structure
-  *
-@@ -718,7 +697,7 @@ static int __devinit et131x_pci_setup(struct pci_dev *pdev,
- 	adapter->error_timer.data = (unsigned long)adapter;
- 
- 	/* Initialize link state */
--	et131x_link_detection_handler((unsigned long)adapter);
-+	netif_carrier_off(adapter->netdev);
- 
- 	/* Initialize variable for counting how long we do not have
- 							link status */
--- 
-1.7.4.4
+-- steve
 
+> ---
+>  .../ABI/testing/sysfs-bus-pci-devices-cciss        |    7 +++++++
+>  drivers/block/cciss.c                              |   13 +++++++++++++
+>  2 files changed, 20 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-bus-pci-devices-cciss b/Documentation/ABI/testing/sysfs-bus-pci-devices-cciss
+> index f5bb0a3..53d99ed 100644
+> --- a/Documentation/ABI/testing/sysfs-bus-pci-devices-cciss
+> +++ b/Documentation/ABI/testing/sysfs-bus-pci-devices-cciss
+> @@ -71,3 +71,10 @@ Description:	Value of 1 indicates the controller can honor the reset_devices
+>  		a dump device, as kdump requires resetting the device in order
+>  		to work reliably.
+>  
+> +Where:		/sys/bus/pci/devices/<dev>/ccissX/transport_mode
+> +Date:		July 2011
+> +Kernel Version:	3.0
+> +Contact:	iss_storagedev@hp.com
+> +Description:	Value of "simple" indicates that the controller has been placed
+> +		in "simple mode". Value of "performant" indicates that the
+> +		controller has been placed in "performant mode".
+> diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+> index 61f0b5b..6da7ede 100644
+> --- a/drivers/block/cciss.c
+> +++ b/drivers/block/cciss.c
+> @@ -641,6 +641,18 @@ static ssize_t host_store_rescan(struct device *dev,
+>  }
+>  static DEVICE_ATTR(rescan, S_IWUSR, NULL, host_store_rescan);
+>  
+> +static ssize_t host_show_transport_mode(struct device *dev,
+> +				 struct device_attribute *attr,
+> +				 char *buf)
+> +{
+> +	struct ctlr_info *h = to_hba(dev);
+> +
+> +	return snprintf(buf, 20, "%s\n",
+> +		h->transMethod & CFGTBL_Trans_Performant ?
+> +			"performant" : "simple");
+> +}
+> +static DEVICE_ATTR(transport_mode, S_IRUGO, host_show_transport_mode, NULL);
+> +
+>  static ssize_t dev_show_unique_id(struct device *dev,
+>  				 struct device_attribute *attr,
+>  				 char *buf)
+> @@ -813,6 +825,7 @@ static DEVICE_ATTR(usage_count, S_IRUGO, cciss_show_usage_count, NULL);
+>  static struct attribute *cciss_host_attrs[] = {
+>  	&dev_attr_rescan.attr,
+>  	&dev_attr_resettable.attr,
+> +	&dev_attr_transport_mode.attr,
+>  	NULL
+>  };
+>  
