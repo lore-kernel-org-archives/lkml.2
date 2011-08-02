@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab1HBKcX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 06:32:23 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:36544 "EHLO e4.ny.us.ibm.com"
+	id S1753279Ab1HBKfT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 06:35:19 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:59056 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751826Ab1HBKcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 06:32:20 -0400
-Date: Tue, 2 Aug 2011 03:32:16 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Miller <davem@davemloft.net>
-Cc: shemminger@vyatta.com, eric.dumazet@gmail.com, mchan@broadcom.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rcu: convert uses of rcu_assign_pointer(x, NULL) to
- RCU_INIT_POINTER
-Message-ID: <20110802103216.GB2352@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110801052342.GD2307@linux.vnet.ibm.com>
- <1312188453.2719.1.camel@edumazet-laptop>
- <20110801091900.1027396f@nehalam.ftrdhcpuser.net>
- <20110801.224401.31810103988544647.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110801.224401.31810103988544647.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753107Ab1HBKfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 06:35:11 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Andrew Morton <akpm@linux-foundation.org>, trivial@kernel.org
+Cc: kernel-janitors@vger.kernel.org, Stefani Seibold <stefani@seibold.net>,
+        Andrea Righi <arighi@develer.com>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/11] kernel/kfifo.c: trivial: use BUG_ON
+Date: Tue,  2 Aug 2011 12:34:54 +0200
+Message-Id: <1312281304-11847-2-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1312281304-11847-1-git-send-email-julia@diku.dk>
+References: <1312281304-11847-1-git-send-email-julia@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 10:44:01PM -0700, David Miller wrote:
-> From: Stephen Hemminger <shemminger@vyatta.com>
-> Date: Mon, 1 Aug 2011 09:19:00 -0700
-> 
-> > When assigning a NULL value to an RCU protected pointer, no barrier
-> > is needed. The rcu_assign_pointer, used to handle that but will soon
-> > change to not handle the special case.
-> > 
-> > Convert all rcu_assign_pointer of NULL value.
-> > 
-> > //smpl
-> > @@ expression P; @@
-> > 
-> > - rcu_assign_pointer(P, NULL)
-> > + RCU_INIT_POINTER(P, NULL)
-> > 
-> > // </smpl>
-> > 
-> > 
-> > Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-> 
-> Acked-by: David S. Miller <davem@davemloft.net>
+From: Julia Lawall <julia@diku.dk>
 
-Very good, thank you!
+Use BUG_ON(x) rather than if(x) BUG();
 
-This patch does not depend on Eric's earlier patch because
-RCU_INIT_POINTER() already exists.  So although I would be happy to
-carry this patch, there is no reason I can see not to run it up through
-net-next.  Either way, the Coccinelle script does look generally
-useful.  ;-)
+The semantic patch that fixes this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-If you would prefer me to carry it, please let me know.  Otherwise:
+// <smpl>
+@@ identifier x; @@
+-if (x) BUG();
++BUG_ON(x);
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+@@ identifier x; @@
+-if (!x) BUG();
++BUG_ON(!x);
+// </smpl>
 
-							Thanx, Paul
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ kernel/kfifo.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff -u -p a/kernel/kfifo.c b/kernel/kfifo.c
+--- a/kernel/kfifo.c
++++ b/kernel/kfifo.c
+@@ -562,8 +562,7 @@ EXPORT_SYMBOL(__kfifo_to_user_r);
+ unsigned int __kfifo_dma_in_prepare_r(struct __kfifo *fifo,
+ 	struct scatterlist *sgl, int nents, unsigned int len, size_t recsize)
+ {
+-	if (!nents)
+-		BUG();
++	BUG_ON(!nents);
+ 
+ 	len = __kfifo_max_r(len, recsize);
+ 
+@@ -586,8 +585,7 @@ EXPORT_SYMBOL(__kfifo_dma_in_finish_r);
+ unsigned int __kfifo_dma_out_prepare_r(struct __kfifo *fifo,
+ 	struct scatterlist *sgl, int nents, unsigned int len, size_t recsize)
+ {
+-	if (!nents)
+-		BUG();
++	BUG_ON(!nents);
+ 
+ 	len = __kfifo_max_r(len, recsize);
+ 
+
