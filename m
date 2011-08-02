@@ -1,110 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab1HBU4L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 16:56:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48527 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755351Ab1HBU4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 16:56:03 -0400
-Date: Tue, 2 Aug 2011 13:55:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        Marc Zyngier <maz@misterjones.org>, Ingo Molnar <mingo@elte.hu>,
-        kernel-hardening@lists.openwall.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH] shm: fix a race between shm_exit() and shm_init()
-Message-Id: <20110802135512.b49c9de1.akpm@linux-foundation.org>
-In-Reply-To: <20110802124530.GA2543@albatros>
-References: <20110801180151.GA26686@albatros>
-	<20110801112021.25ec9041.akpm@linux-foundation.org>
-	<20110801190341.GA6898@albatros>
-	<CA+55aFw2kHWY1N=ox1er7c-3WL4OA8x0M=Keu7hvAncKUZd1tQ@mail.gmail.com>
-	<20110802124530.GA2543@albatros>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755351Ab1HBU5K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 16:57:10 -0400
+Received: from mga14.intel.com ([143.182.124.37]:28107 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755311Ab1HBU5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 16:57:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,307,1309762800"; 
+   d="scan'208";a="34420284"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Mike Waychison" <mikew@google.com>, "Matthew Garrett" <mjg@redhat.com>
+Subject: [PATCH] efivars: fix warnings when CONFIG_PSTORE=n
+Date: Tue, 02 Aug 2011 13:57:06 -0700
+Message-Id: <4e3864a227625bd7d6@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Aug 2011 16:45:30 +0400
-Vasiliy Kulikov <segoon@openwall.com> wrote:
+drivers/firmware/efivars.c:161: warning: ‘utf16_strlen’ defined but not used
+utf16_strlen() is only used inside CONFIG_PSTORE - put same #ifdef around the
+definition of the function too.
 
-> On thread exit shm_exit() is called, it uses shm_ids(ns).rw_mutex.
-> It is initialized in shm_init(), but it is not called yet at the moment
-> of kernel threads exit.  Some kernel threads are created in
-> do_pre_smp_initcalls(), and shm_init() is called in do_initcalls().
-> 
-> Static initialization of shm_ids(init_ipc_ns).rw_mutex fixes the race.
-> 
-> It fixes a kernel oops:
-> 
-> Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> ...
-> [<c0320090>] (__down_write_nested+0x88/0xe0) from [<c015da08>] (exit_shm+0x28/0x48)
-> [<c015da08>] (exit_shm+0x28/0x48) from [<c002e550>] (do_exit+0x59c/0x750)
-> [<c002e550>] (do_exit+0x59c/0x750) from [<c003eaac>] (____call_usermodehelper+0x13c/0x154)
-> [<c003eaac>] (____call_usermodehelper+0x13c/0x154) from [<c000f630>] (kernel_thread_exit+0x0/0x8)
+drivers/firmware/efivars.c:602: warning: initialization from incompatible pointer type
+Between v1 and v2 of this patch series we decided to make the "part" number
+unsigned - but missed fixing the stub version of efi_pstore_write()
 
-erm, wait.  There's no reason I can think of why a kernel thread needs
-to call shm_exit() at all?
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 
-Is that a regular kernel thread exiting, or is it a
-call_usermodehelper() worker thread?  It *looks* like
-____call_usermodehelper()'s kernel_execve() failed, so
-____call_usermodehelper() directly called do_exit().
+---
 
-Something's still screwed up here - we shouldn't be trying to run
-usermode helper applications before shm_init() has been run - usermode
-helpers can use ipc!
-
-Can someone who can reproduce this please work out if and why we're
-calling call_usermodehelper() under do_pre_smp_initcalls()?  Something
-like this...
-
---- a/init/main.c~a
-+++ a/init/main.c
-@@ -722,12 +722,16 @@ static void __init do_basic_setup(void)
- 	do_initcalls();
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index eacb05e..5315c1e 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -157,11 +157,13 @@ utf16_strnlen(efi_char16_t *s, size_t maxlength)
+ 	return length;
  }
  
-+int in_do_pre_smp_initcalls;
-+
- static void __init do_pre_smp_initcalls(void)
++#ifdef CONFIG_PSTORE
+ static unsigned long
+ utf16_strlen(efi_char16_t *s)
  {
- 	initcall_t *fn;
+ 	return utf16_strnlen(s, ~0UL);
+ }
++#endif
  
-+	in_do_pre_smp_initcalls = 1;
- 	for (fn = __initcall_start; fn < __early_initcall_end; fn++)
- 		do_one_initcall(*fn);
-+	in_do_pre_smp_initcalls = 0;
+ /*
+  * Return the number of bytes is the length of this string
+@@ -580,8 +582,8 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
+ 	return -1;
  }
  
- static void run_init_process(const char *init_filename)
---- a/kernel/kmod.c~a
-+++ a/kernel/kmod.c
-@@ -412,12 +412,17 @@ EXPORT_SYMBOL(call_usermodehelper_setfns
-  * asynchronously if wait is not set, and runs as a child of keventd.
-  * (ie. it runs with full root capabilities).
-  */
-+
-+extern int in_do_pre_smp_initcalls;
-+
- int call_usermodehelper_exec(struct subprocess_info *sub_info,
- 			     enum umh_wait wait)
+-static u64 efi_pstore_write(enum pstore_type_id type, int part, size_t size,
+-			    struct pstore_info *psi)
++static u64 efi_pstore_write(enum pstore_type_id type, unsigned int part,
++			    size_t size, struct pstore_info *psi)
  {
- 	DECLARE_COMPLETION_ONSTACK(done);
- 	int retval = 0;
- 
-+	if (in_do_pre_smp_initcalls)
-+		dump_stack();
- 	helper_lock();
- 	if (sub_info->path[0] == '\0')
- 		goto out;
-_
-
+ 	return 0;
+ }
