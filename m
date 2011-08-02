@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab1HBLZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 07:25:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41082 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752889Ab1HBLZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 07:25:22 -0400
-Date: Tue, 2 Aug 2011 12:25:18 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, XFS <xfs@oss.sgi.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 7/8] mm: vmscan: Immediately reclaim end-of-LRU dirty
- pages when writeback completes
-Message-ID: <20110802112518.GE10436@suse.de>
-References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
- <1311265730-5324-8-git-send-email-mgorman@suse.de>
- <1311339228.27400.34.camel@twins>
- <20110722132319.GX5349@suse.de>
- <20110731152401.GE1735@barrios-desktop>
+	id S1753926Ab1HBL0i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 07:26:38 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:59061 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889Ab1HBL0d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 07:26:33 -0400
+From: =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: linux-kernel@vger.kernel.org
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>,
+        linux-arm-kernel@lists.infradead.org,
+        =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Subject: [BUGFIX][PATCH] Fix double inversion bug in clk_disable()
+Date: Tue,  2 Aug 2011 13:26:30 +0200
+Message-Id: <1312284390-20244-1-git-send-email-LW@KARO-electronics.de>
+X-Mailer: git-send-email 1.5.6.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110731152401.GE1735@barrios-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 12:24:01AM +0900, Minchan Kim wrote:
-> On Fri, Jul 22, 2011 at 02:23:19PM +0100, Mel Gorman wrote:
-> > On Fri, Jul 22, 2011 at 02:53:48PM +0200, Peter Zijlstra wrote:
-> > > On Thu, 2011-07-21 at 17:28 +0100, Mel Gorman wrote:
-> > > > When direct reclaim encounters a dirty page, it gets recycled around
-> > > > the LRU for another cycle. This patch marks the page PageReclaim
-> > > > similar to deactivate_page() so that the page gets reclaimed almost
-> > > > immediately after the page gets cleaned. This is to avoid reclaiming
-> > > > clean pages that are younger than a dirty page encountered at the
-> > > > end of the LRU that might have been something like a use-once page.
-> > > > 
-> > > 
-> > > > @@ -834,7 +834,15 @@ static unsigned long shrink_page_list(struct list_head *page_list,
-> > > >  			 */
-> > > >  			if (page_is_file_cache(page) &&
-> > > >  					(!current_is_kswapd() || priority >= DEF_PRIORITY - 2)) {
-> > > > -				inc_zone_page_state(page, NR_VMSCAN_WRITE_SKIP);
-> > > > +				/*
-> > > > +				 * Immediately reclaim when written back.
-> > > > +				 * Similar in principal to deactivate_page()
-> > > > +				 * except we already have the page isolated
-> > > > +				 * and know it's dirty
-> > > > +				 */
-> > > > +				inc_zone_page_state(page, NR_VMSCAN_INVALIDATE);
-> > > > +				SetPageReclaim(page);
-> > > > +
-> > > 
-> > > I find the invalidate name somewhat confusing. It makes me think we'll
-> > > drop the page without writeback, like invalidatepage().
-> > 
-> > I wasn't that happy with it either to be honest but didn't think of a
-> > better one at the time. nr_reclaim_deferred?
-> 
-> How about "NR_VMSCAN_IMMEDIATE_RECLAIM" like comment rotate_reclaimable_page?
-> 
+The condition check for calling the low level disable function is
+wrong due to double inversion via '!' and '== 0'.
 
-Yeah, I guess. I find it a little misleading because the reclaim does
-not happen immediately at the time the counter is incremented but it's
-better than "invalidate".
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+---
+ drivers/clk/clk.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 83c6b67..1525e2a 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -81,7 +81,7 @@ void clk_disable(struct clk *clk)
+ 
+ 	WARN_ON(clk->enable_count == 0);
+ 
+-	if (!--clk->enable_count == 0 && clk->ops->disable)
++	if (--clk->enable_count == 0 && clk->ops->disable)
+ 		clk->ops->disable(clk);
+ 
+ 	spin_unlock_irqrestore(&clk->enable_lock, flags);
 -- 
-Mel Gorman
-SUSE Labs
+1.5.6.5
+
