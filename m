@@ -1,76 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924Ab1HBJIh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 05:08:37 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:43525 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314Ab1HBJIb (ORCPT
+	id S1752985Ab1HBJNX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 05:13:23 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49783 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752748Ab1HBJNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 05:08:31 -0400
-Subject: Re: [patch v2 03/10] kdump: Add size to elfcorehdr kernel parameter
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
-        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-In-Reply-To: <20110801203607.GI3805@redhat.com>
-References: <20110727125504.491183728@linux.vnet.ibm.com>
-	 <20110727125807.853426542@linux.vnet.ibm.com>
-	 <20110801203607.GI3805@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Tue, 02 Aug 2011 11:08:07 +0200
-Message-ID: <1312276087.4881.24.camel@br98xy6r>
+	Tue, 2 Aug 2011 05:13:16 -0400
+Date: Tue, 2 Aug 2011 10:16:14 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: David Rientjes <rientjes@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: Revert needed: udev spewing warnons on common systems in 3.0
+Message-ID: <20110802101614.009cdf42@lxorguk.ukuu.org.uk>
+In-Reply-To: <alpine.DEB.2.00.1108011916480.15596@chino.kir.corp.google.com>
+References: <20110802005206.GA3832@tassilo.jf.intel.com>
+	<20110801183207.cea89a96.akpm@linux-foundation.org>
+	<CA+55aFw=wX1CormdOAnsoK2ruDLp9SaEVh1EcTj8wvt+Kq2gAg@mail.gmail.com>
+	<alpine.DEB.2.00.1108011916480.15596@chino.kir.corp.google.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek,
+> It was a printk_once() when the tunable was scheduled to be removed two 
+> years later.  Now that one year has passed since the oom killer rewrite 
+> has been merged, it was changed to a WARN_ONCE() simply to attract more 
+> attention to the issue. 
 
-#On Mon, 2011-08-01 at 16:36 -0400, Vivek Goyal wrote: 
-> On Wed, Jul 27, 2011 at 02:55:07PM +0200, Michael Holzheu wrote:
-> > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> > 
-> > Currently only the address of the pre-allocated ELF header is passed with
-> > the elfcorehdr= kernel parameter. In order to reserve memory for the header
-> > in the 2nd kernel also the size is required. To pass the size with this
-> > patch the syntax of the kernel parameter is extended as follows:
-> > 
-> > elfcorehdr=[size[KMG]@]offset[KMG]
-> > 
-> > This change is backward compatible because elfcorehdr=size is still allowed.
-> 
-> Generally vmcore parses elfcorehdr to figure out the sizes. kexec-tools
-> knows about it and relevant memory is excluded from second kernel's map
-> with the help of memmap= command line option.
-> 
-> Can you please mention that this is only s390 specific requirement as
-> there are no memmap= equivalent options and somehow dump tools wants
-> to know how big the elf header size is?
+For the most part the only people whose attention you need are the
+distributions not the end users so the WARN isn't helpful.
 
-I updated the description: 
-
-Currently only the address of the pre-allocated ELF header is passed with
-the elfcorehdr= kernel parameter. In order to reserve memory for the header
-in the 2nd kernel also the size is required. Current kdump architecture
-backends use different methods to do that, e.g. x86 uses the memmap= kernel
-parameter. On s390 there is no easy way to transfer this information.
-Therefore the elfcorehdr kernel parameter is extended to also pass the size.
-This now can also be used as standard mechanism by all future kdump
-architecture backends.
-
-The syntax of the kernel parameter is extended as follows:
-
-elfcorehdr=[size[KMG]@]offset[KMG]
-
-This change is backward compatible because elfcorehdr=size is still allowed.
-
-Ok?
-
-Michael
-
+Alan
