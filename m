@@ -1,75 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888Ab1HBBGt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 21:06:49 -0400
-Received: from fieldses.org ([174.143.236.118]:57666 "EHLO fieldses.org"
+	id S1752949Ab1HBBJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 21:09:42 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3893 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753238Ab1HBBGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 21:06:43 -0400
-Date: Mon, 1 Aug 2011 21:06:36 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Greg Banks <gnb@fastmail.fm>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] sunrpc: use better NUMA affinities
-Message-ID: <20110802010635.GA16305@fieldses.org>
-References: <1311921035.7845.10.camel@edumazet-laptop>
- <4E3258E1.6020000@fastmail.fm>
- <20110729103634.GA12050@infradead.org>
- <5933F48C-49D6-492D-AB7B-B76A3ADDB6C6@fastmail.fm>
- <1311941491.2843.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <F67B6E82-9FA8-464E-B3FB-DC0D4EC18BB0@fastmail.fm>
- <20110729164836.GL23194@fieldses.org>
- <20110729165345.GM23194@fieldses.org>
- <F562C6F4-3FC2-4952-A903-8E87E9EF2D9D@fastmail.fm>
- <20110730093025.716f3f50@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110730093025.716f3f50@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1750862Ab1HBBJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 21:09:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,303,1309762800"; 
+   d="scan'208";a="34751440"
+Subject: Re: questions about memory hotplug
+From: Shaohua Li <shaohua.li@intel.com>
+To: Larry Bassel <lbassel@codeaurora.org>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110801170850.GB3466@labbmf-linux.qualcomm.com>
+References: <20110729221230.GA3466@labbmf-linux.qualcomm.com>
+	 <20110730093055.GA10672@sli10-conroe.sh.intel.com>
+	 <20110801170850.GB3466@labbmf-linux.qualcomm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 02 Aug 2011 09:09:36 +0800
+Message-ID: <1312247376.15392.454.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 30, 2011 at 09:30:25AM +1000, NeilBrown wrote:
-> On Sat, 30 Jul 2011 06:34:44 +1000 Greg Banks <gnb@fastmail.fm> wrote:
-> > The "killall nfsd" semantics in those scripts are awful and lead to  
-> > problems shutting down when there are lots of threads. It would  
-> > probably be an improvement to provide a better shutdown mechanism and  
-> > force distros to use it.
+On Tue, 2011-08-02 at 01:08 +0800, Larry Bassel wrote:
 > 
-> rpc.nfsd 0
-> 
-> will stop all nfsd threads.  Follow with
-> 
->   exportfs -f
-> 
-> and you should be done.  I'm not 100% sure about the nfsv4 thread though -
-> would need to check.
-> 
-> And yes - I would love it if distros could standardise on start/stop scripts
-> so upstreams could maintain them sensibly.  This is my personal number 1
-> reason for liking systemd - it pushes for this standardisation.
+> In use case #1 yes, maybe not in #2 (we can arrange it to be
+> at the end of memory, but then might waste memory as it may
+> not be aligned on a SPARSEMEM section boundary and so would
+> need to be padded).
+then maybe the new migrate type I suggested can help here for the
+non-aligned memory. Anyway, let me do an experiment.
 
-I can't remember if this is getting fixed in Fedora--probably not.  We
-should fix it.
+Thanks,
+Shaohua
 
-I'd also be fine with logging a deprecation message when someone signals
-an nfsd thread.
-
-> > Or, you could preserve the effective semantics by having a single  
-> > "nfsd" thread whose purpose is to notice that it's being signalled and  
-> > perform a clean shutdown (perhaps blocking the thread doing the kill()  
-> > call until the shutdown has completed).
-> 
-> That's kinda neat.  It would be an ugly wart to have to keep around, but
-> sometimes that the price we pay for "no regressions".
-
-Yep; patch welcomed.
-
---b.
