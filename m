@@ -1,47 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab1HBSR6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 14:17:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:44610 "EHLO mga01.intel.com"
+	id S1754894Ab1HBSSW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 14:18:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15401 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753348Ab1HBSRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 14:17:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,307,1309762800"; 
-   d="scan'208";a="35057150"
-Date: Tue, 2 Aug 2011 11:17:51 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Sven Joachim <svenjoac@gmx.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [ANNOUNCE] The longterm Linux 2.6.35.14 kernel is released
-Message-ID: <20110802181751.GB7087@tassilo.jf.intel.com>
-References: <20110801215908.GA11448@tassilo.jf.intel.com>
- <87sjpk9ttf.fsf@turtle.gmx.de>
+	id S1754868Ab1HBSSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 14:18:17 -0400
+Date: Tue, 2 Aug 2011 14:17:39 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Shaohua Li <shli@kernel.org>, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        msnitzer@redhat.com
+Subject: Re: [patch] blk-flush: fix flush policy calculation
+Message-ID: <20110802181739.GE6399@redhat.com>
+References: <x49d3go98ku.fsf@segfault.boston.devel.redhat.com>
+ <CANejiEXK7NSJo-0vshyX6RSqmRbHmyxAw8_wFQEwvTXrEQF3fg@mail.gmail.com>
+ <x4939hju2zh.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87sjpk9ttf.fsf@turtle.gmx.de>
+In-Reply-To: <x4939hju2zh.fsf@segfault.boston.devel.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 02, 2011 at 09:05:48AM +0200, Sven Joachim wrote:
-> On 2011-08-01 23:59 +0200, Andi Kleen wrote:
+On Tue, Aug 02, 2011 at 01:39:46PM -0400, Jeff Moyer wrote:
+> OK, sorry for top-posting here, but I chased the problem down further.
 > 
-> > The longterm Linux kernel 2.6.35.14 is released.
-> >
-> > A note on the 2.6.35.13 git tags & branches: when releasing 2.6.35.13 I made
-> > a mistake which resulted in the v2.6.35.13 tag being on a different
-> > branch than the master tree.  I decided the continue on the branch,
-> > not the tag, so you have to delete the v2.6.35.13 tag -- if you're
-> > using that -- and refetch the new tag. If you just use the "master" branch
-> > or the released patches/tarballs you don't need to do anything. Sorry about that.
+> Commit ae1b1539622fb46e51b4d13b3f9e5f4c713f86ae, block: reimplement
+> FLUSH/FUA to support merge, introduced a regression when running any
+> sort of fsyncing workload using dm-multipath and certain storage (in our
+> case, an HP EVA).  It turns out that dm-multipath always advertised
+> flush+fua support, and passed commands on down the stack, where they
+> used to get stripped off.  The above commit, unfortunately, changed that
+> behavior:
 > 
-> Well, there is still a little problem with the git repository.  You have
-> pushed the tag but not the master branch to git.kernel.org.
+> static inline struct request *__elv_next_request(struct request_queue *q)
+> {
+>         struct request *rq;
+> 
+>         while (1) {
+> -               while (!list_empty(&q->queue_head)) {
+> +               if (!list_empty(&q->queue_head)) {
+>                         rq = list_entry_rq(q->queue_head.next);
+> -                       if (!(rq->cmd_flags & (REQ_FLUSH | REQ_FUA)) ||
+> -                           (rq->cmd_flags & REQ_FLUSH_SEQ))
+> -                               return rq;
+> -                       rq = blk_do_flush(q, rq);
+> -                       if (rq)
+> -                               return rq;
+> +                       return rq;
+>                 }
+> 
+> Note that previously, a command would come in here, have
+> REQ_FLUSH|REQ_FUA set, and then get handed off to blk_do_flush:
+> 
+> struct request *blk_do_flush(struct request_queue *q, struct request *rq)
+> {
+>         unsigned int fflags = q->flush_flags; /* may change, cache it */
+>         bool has_flush = fflags & REQ_FLUSH, has_fua = fflags & REQ_FUA;
+>         bool do_preflush = has_flush && (rq->cmd_flags & REQ_FLUSH);
+>         bool do_postflush = has_flush && !has_fua && (rq->cmd_flags &
+>         REQ_FUA);
+>         unsigned skip = 0;
+> ...
+>         if (blk_rq_sectors(rq) && !do_preflush && !do_postflush) {
+>                 rq->cmd_flags &= ~REQ_FLUSH;
+> 		if (!has_fua)
+> 			rq->cmd_flags &= ~REQ_FUA;
+> 	        return rq;
+> 	}
+> 
+> So, the flush machinery was bypassed in such cases (q->flush_flags == 0
+> && rq->cmd_flags & (REQ_FLUSH|REQ_FUA)).
+> 
+> Now, however, we don't get into the flush machinery at all (which is why
+> my initial patch didn't help this situation).  Instead,
+> __elv_next_request just hands a request with flush and fua bits set to
+> the scsi_request_fn, even though the underlying request_queue does not
+> support flush or fua.
+> 
+> So, where do we fix this?  We could just accept Mike's patch to not send
+> such requests down from dm-mpath, but that seems short-sighted.  We
+> could reinstate some checks in __elv_next_request.  Or, we could put the
+> checks into blk_insert_cloned_request.
+> 
+> Suggestions?
 
-I checked the tree on master, it is uptodate. Don't know why it's 
-not reaching the main git server. Maybe have to wait a bit longer.
+IMHO, we should fix it at multiple places.
 
--Andi
+- Your initial fix in blk_insert_flush makes sense. blk_insert_flush()
+  is equivalent of blk_do_flush() so resetting REQ_FLUSH and REQ_FUA there
+  makes sense to me. 
+
+- Fixing blk_insert_cloned_request() also makes sense to me so that if
+  a request is REQ_FLUSH or REQ_FUA set, we try to add it to underlying
+  device using ELEVATOR_INSERT_FLUSH and not ELEVATOR_INSERT_BACK.
+
+- Fixing dm-multipath makes sense too as what's the point in dispatching
+  unnecessary flush/fua requests to underlying devices if underlying
+  queue does not have FLUSH capability.
+
+So I would say, fix it at all the places. :-)
+
+I have one question though. What happens if we have an empty request
+with REQ_FLUSH set and request queue does not support flush. Where
+will we complete the IO for that request? I see that __generic_make_request()
+takes care of that but we might have to take care of if it insert_cloned
+path too.
+
+Thanks
+Vivek
