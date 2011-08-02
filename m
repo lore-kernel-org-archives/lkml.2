@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755689Ab1HBWQB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 18:16:01 -0400
-Received: from vms173003pub.verizon.net ([206.46.173.3]:57785 "EHLO
-	vms173003pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755582Ab1HBWPk (ORCPT
+	id S1755704Ab1HBWQI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 18:16:08 -0400
+Received: from vms173009pub.verizon.net ([206.46.173.9]:57182 "EHLO
+	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755633Ab1HBWPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Aug 2011 18:15:40 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Cc: Huang Ying <ying.huang@intel.com>, Thomas Renninger <trenn@novell.com>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH 05/19] ACPI, APEI, Use apei_exec_run_optional in APEI EINJ and
- ERST
-Date: Tue, 02 Aug 2011 18:14:38 -0400
-Message-id: <392913de7cc7446531922f29c0a4382d8d09626c.1312323131.git.len.brown@intel.com>
+Cc: Huang Ying <ying.huang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 08/19] ACPI, APEI, Add APEI bit support in generic _OSC call
+Date: Tue, 02 Aug 2011 18:14:41 -0400
+Message-id: <eccddd32ced0df8f9130024157bf8d37df860d76.1312323131.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.6.396.ge0613
 In-reply-to: <1312323292-2986-1-git-send-email-lenb@kernel.org>
 References: <1312323292-2986-1-git-send-email-lenb@kernel.org>
@@ -27,97 +25,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Huang Ying <ying.huang@intel.com>
 
-This patch changes APEI EINJ and ERST to use apei_exec_run for
-mandatory actions, and apei_exec_run_optional for optional actions.
+In APEI firmware first mode, hardware error is reported by hardware to
+firmware firstly, then firmware reports the error to Linux in a GHES
+error record via POLL/SCI/IRQ/NMI etc.
 
-Cc: Thomas Renninger <trenn@novell.com>
+This may result in some issues if OS has no full APEI support.  So
+some firmware implementation will work in a back-compatible mode by
+default.  Where firmware will only notify OS in old-fashion, without
+GHES record.  For example, for a fatal hardware error, only NMI is
+signaled, no GHES record.
+
+To gain full APEI power on these machines, APEI bit in generic _OSC
+call can be specified to tell firmware that Linux has full APEI
+support.  This patch adds the APEI bit support in generic _OSC call.
+
 Signed-off-by: Huang Ying <ying.huang@intel.com>
+Reviewed-by: Andi Kleen <ak@linux.intel.com>
+Reviewed-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/apei/einj.c |    4 ++--
- drivers/acpi/apei/erst.c |   12 ++++++------
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/acpi/bus.c   |   16 ++++++++++++++--
+ include/linux/acpi.h |    2 ++
+ 2 files changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/acpi/apei/einj.c b/drivers/acpi/apei/einj.c
-index f74b2ea..ab821f1 100644
---- a/drivers/acpi/apei/einj.c
-+++ b/drivers/acpi/apei/einj.c
-@@ -285,7 +285,7 @@ static int __einj_error_inject(u32 type, u64 param1, u64 param2)
+diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+index d1e06c1..43ce3b0 100644
+--- a/drivers/acpi/bus.c
++++ b/drivers/acpi/bus.c
+@@ -39,6 +39,7 @@
+ #include <linux/pci.h>
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
++#include <acpi/apei.h>
+ #include <linux/dmi.h>
+ #include <linux/suspend.h>
  
- 	einj_exec_ctx_init(&ctx);
- 
--	rc = apei_exec_run(&ctx, ACPI_EINJ_BEGIN_OPERATION);
-+	rc = apei_exec_run_optional(&ctx, ACPI_EINJ_BEGIN_OPERATION);
- 	if (rc)
- 		return rc;
- 	apei_exec_ctx_set_input(&ctx, type);
-@@ -323,7 +323,7 @@ static int __einj_error_inject(u32 type, u64 param1, u64 param2)
- 	rc = __einj_error_trigger(trigger_paddr);
- 	if (rc)
- 		return rc;
--	rc = apei_exec_run(&ctx, ACPI_EINJ_END_OPERATION);
-+	rc = apei_exec_run_optional(&ctx, ACPI_EINJ_END_OPERATION);
- 
- 	return rc;
+@@ -519,6 +520,7 @@ out_kfree:
  }
-diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-index e6cef8e..c8ba9da 100644
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -642,7 +642,7 @@ static int __erst_write_to_storage(u64 offset)
- 	int rc;
+ EXPORT_SYMBOL(acpi_run_osc);
  
- 	erst_exec_ctx_init(&ctx);
--	rc = apei_exec_run(&ctx, ACPI_ERST_BEGIN_WRITE);
-+	rc = apei_exec_run_optional(&ctx, ACPI_ERST_BEGIN_WRITE);
- 	if (rc)
- 		return rc;
- 	apei_exec_ctx_set_input(&ctx, offset);
-@@ -666,7 +666,7 @@ static int __erst_write_to_storage(u64 offset)
- 	if (rc)
- 		return rc;
- 	val = apei_exec_ctx_get_output(&ctx);
--	rc = apei_exec_run(&ctx, ACPI_ERST_END);
-+	rc = apei_exec_run_optional(&ctx, ACPI_ERST_END);
- 	if (rc)
- 		return rc;
++bool osc_sb_apei_support_acked;
+ static u8 sb_uuid_str[] = "0811B06E-4A27-44F9-8D60-3CBBC22E7B48";
+ static void acpi_bus_osc_support(void)
+ {
+@@ -541,11 +543,21 @@ static void acpi_bus_osc_support(void)
+ #if defined(CONFIG_ACPI_PROCESSOR) || defined(CONFIG_ACPI_PROCESSOR_MODULE)
+ 	capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_PPC_OST_SUPPORT;
+ #endif
++
++#ifdef CONFIG_ACPI_APEI_GHES
++	if (!ghes_disable)
++		capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_APEI_SUPPORT;
++#endif
+ 	if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle)))
+ 		return;
+-	if (ACPI_SUCCESS(acpi_run_osc(handle, &context)))
++	if (ACPI_SUCCESS(acpi_run_osc(handle, &context))) {
++		u32 *capbuf_ret = context.ret.pointer;
++		if (context.ret.length > OSC_SUPPORT_TYPE)
++			osc_sb_apei_support_acked =
++				capbuf_ret[OSC_SUPPORT_TYPE] & OSC_SB_APEI_SUPPORT;
+ 		kfree(context.ret.pointer);
+-	/* do we need to check the returned cap? Sounds no */
++	}
++	/* do we need to check other returned cap? Sounds no */
+ }
  
-@@ -681,7 +681,7 @@ static int __erst_read_from_storage(u64 record_id, u64 offset)
- 	int rc;
+ /* --------------------------------------------------------------------------
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 1deb2a7..e19527d 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -280,6 +280,8 @@ acpi_status acpi_run_osc(acpi_handle handle, struct acpi_osc_context *context);
+ #define OSC_SB_CPUHP_OST_SUPPORT	8
+ #define OSC_SB_APEI_SUPPORT		16
  
- 	erst_exec_ctx_init(&ctx);
--	rc = apei_exec_run(&ctx, ACPI_ERST_BEGIN_READ);
-+	rc = apei_exec_run_optional(&ctx, ACPI_ERST_BEGIN_READ);
- 	if (rc)
- 		return rc;
- 	apei_exec_ctx_set_input(&ctx, offset);
-@@ -709,7 +709,7 @@ static int __erst_read_from_storage(u64 record_id, u64 offset)
- 	if (rc)
- 		return rc;
- 	val = apei_exec_ctx_get_output(&ctx);
--	rc = apei_exec_run(&ctx, ACPI_ERST_END);
-+	rc = apei_exec_run_optional(&ctx, ACPI_ERST_END);
- 	if (rc)
- 		return rc;
- 
-@@ -724,7 +724,7 @@ static int __erst_clear_from_storage(u64 record_id)
- 	int rc;
- 
- 	erst_exec_ctx_init(&ctx);
--	rc = apei_exec_run(&ctx, ACPI_ERST_BEGIN_CLEAR);
-+	rc = apei_exec_run_optional(&ctx, ACPI_ERST_BEGIN_CLEAR);
- 	if (rc)
- 		return rc;
- 	apei_exec_ctx_set_input(&ctx, record_id);
-@@ -748,7 +748,7 @@ static int __erst_clear_from_storage(u64 record_id)
- 	if (rc)
- 		return rc;
- 	val = apei_exec_ctx_get_output(&ctx);
--	rc = apei_exec_run(&ctx, ACPI_ERST_END);
-+	rc = apei_exec_run_optional(&ctx, ACPI_ERST_END);
- 	if (rc)
- 		return rc;
- 
++extern bool osc_sb_apei_support_acked;
++
+ /* PCI defined _OSC bits */
+ /* _OSC DW1 Definition (OS Support Fields) */
+ #define OSC_EXT_PCI_CONFIG_SUPPORT		1
 -- 
 1.7.6.396.ge0613
 
