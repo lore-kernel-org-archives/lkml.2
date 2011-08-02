@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab1HBWxG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 18:53:06 -0400
+	id S1753396Ab1HBWx1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 18:53:27 -0400
 Received: from vms173005pub.verizon.net ([206.46.173.5]:41662 "EHLO
 	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752934Ab1HBWwE (ORCPT
+	with ESMTP id S1752923Ab1HBWwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 18:52:04 -0400
+	Tue, 2 Aug 2011 18:52:02 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Cc: Huang Ying <ying.huang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Huang Ying <ying.huang@intel.com>, Matthew Garrett <mjg@redhat.com>,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 11/19] lib, Add lock-less NULL terminated single list
-Date: Tue, 02 Aug 2011 18:14:44 -0400
-Message-id: <e6c823b7e890e54fb63c6687082a488e9cf3e1e5.1312323131.git.len.brown@intel.com>
+Subject: [PATCH 19/19] ACPI, APEI, EINJ Param support is disabled by default
+Date: Tue, 02 Aug 2011 18:14:52 -0400
+Message-id: <3a94a1401b4506cc6209ac5f34390139e80f5a33.1312323131.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.6.396.ge0613
 In-reply-to: <1312323292-2986-1-git-send-email-lenb@kernel.org>
 References: <1312323292-2986-1-git-send-email-lenb@kernel.org>
@@ -27,352 +26,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Huang Ying <ying.huang@intel.com>
 
-Cmpxchg is used to implement adding new entry to the list, deleting
-all entries from the list, deleting first entry of the list and some
-other operations.
-
-Because this is a single list, so the tail can not be accessed in O(1).
-
-If there are multiple producers and multiple consumers, llist_add can
-be used in producers and llist_del_all can be used in consumers.  They
-can work simultaneously without lock.  But llist_del_first can not be
-used here.  Because llist_del_first depends on list->first->next does
-not changed if list->first is not changed during its operation, but
-llist_del_first, llist_add, llist_add (or llist_del_all, llist_add,
-llist_add) sequence in another consumer may violate that.
-
-If there are multiple producers and one consumer, llist_add can be
-used in producers and llist_del_all or llist_del_first can be used in
-the consumer.
-
-This can be summarized as follow:
-
-           |   add    | del_first |  del_all
- add       |    -     |     -     |     -
- del_first |          |     L     |     L
- del_all   |          |           |     -
-
-Where "-" stands for no lock is needed, while "L" stands for lock is
-needed.
-
-The list entries deleted via llist_del_all can be traversed with
-traversing function such as llist_for_each etc.  But the list entries
-can not be traversed safely before deleted from the list.  The order
-of deleted entries is from the newest to the oldest added one.  If you
-want to traverse from the oldest to the newest, you must reverse the
-order by yourself before traversing.
-
-The basic atomic operation of this list is cmpxchg on long.  On
-architectures that don't have NMI-safe cmpxchg implementation, the
-list can NOT be used in NMI handler.  So code uses the list in NMI
-handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
+EINJ parameter support is only usable for some specific BIOS.
+Originally, it is expected to have no harm for BIOS does not support
+it.  But now, we found it will cause issue (memory overwriting) for
+some BIOS.  So param support is disabled by default and only enabled
+when newly added module parameter named "param_extension" is
+explicitly specified.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
-Reviewed-by: Andi Kleen <ak@linux.intel.com>
-Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Matthew Garrett <mjg@redhat.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
+Acked-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- include/linux/llist.h |  126 +++++++++++++++++++++++++++++++++++++++++++++++
- lib/Kconfig           |    3 +
- lib/Makefile          |    2 +
- lib/llist.c           |  129 +++++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 260 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/llist.h
- create mode 100644 lib/llist.c
+ Documentation/acpi/apei/einj.txt |   11 ++++++++-
+ drivers/acpi/apei/einj.c         |   39 +++++++++++++++++++++++--------------
+ 2 files changed, 33 insertions(+), 17 deletions(-)
 
-diff --git a/include/linux/llist.h b/include/linux/llist.h
-new file mode 100644
-index 0000000..aa0c8b5
---- /dev/null
-+++ b/include/linux/llist.h
-@@ -0,0 +1,126 @@
-+#ifndef LLIST_H
-+#define LLIST_H
-+/*
-+ * Lock-less NULL terminated single linked list
-+ *
-+ * If there are multiple producers and multiple consumers, llist_add
-+ * can be used in producers and llist_del_all can be used in
-+ * consumers.  They can work simultaneously without lock.  But
-+ * llist_del_first can not be used here.  Because llist_del_first
-+ * depends on list->first->next does not changed if list->first is not
-+ * changed during its operation, but llist_del_first, llist_add,
-+ * llist_add (or llist_del_all, llist_add, llist_add) sequence in
-+ * another consumer may violate that.
-+ *
-+ * If there are multiple producers and one consumer, llist_add can be
-+ * used in producers and llist_del_all or llist_del_first can be used
-+ * in the consumer.
-+ *
-+ * This can be summarized as follow:
-+ *
-+ *           |   add    | del_first |  del_all
-+ * add       |    -     |     -     |     -
-+ * del_first |          |     L     |     L
-+ * del_all   |          |           |     -
-+ *
-+ * Where "-" stands for no lock is needed, while "L" stands for lock
-+ * is needed.
-+ *
-+ * The list entries deleted via llist_del_all can be traversed with
-+ * traversing function such as llist_for_each etc.  But the list
-+ * entries can not be traversed safely before deleted from the list.
-+ * The order of deleted entries is from the newest to the oldest added
-+ * one.  If you want to traverse from the oldest to the newest, you
-+ * must reverse the order by yourself before traversing.
-+ *
-+ * The basic atomic operation of this list is cmpxchg on long.  On
-+ * architectures that don't have NMI-safe cmpxchg implementation, the
-+ * list can NOT be used in NMI handler.  So code uses the list in NMI
-+ * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
-+ */
-+
-+struct llist_head {
-+	struct llist_node *first;
-+};
-+
-+struct llist_node {
-+	struct llist_node *next;
-+};
-+
-+#define LLIST_HEAD_INIT(name)	{ NULL }
-+#define LLIST_HEAD(name)	struct llist_head name = LLIST_HEAD_INIT(name)
-+
-+/**
-+ * init_llist_head - initialize lock-less list head
-+ * @head:	the head for your lock-less list
-+ */
-+static inline void init_llist_head(struct llist_head *list)
-+{
-+	list->first = NULL;
-+}
-+
-+/**
-+ * llist_entry - get the struct of this entry
-+ * @ptr:	the &struct llist_node pointer.
-+ * @type:	the type of the struct this is embedded in.
-+ * @member:	the name of the llist_node within the struct.
-+ */
-+#define llist_entry(ptr, type, member)		\
-+	container_of(ptr, type, member)
-+
-+/**
-+ * llist_for_each - iterate over some deleted entries of a lock-less list
-+ * @pos:	the &struct llist_node to use as a loop cursor
-+ * @node:	the first entry of deleted list entries
-+ *
-+ * In general, some entries of the lock-less list can be traversed
-+ * safely only after being deleted from list, so start with an entry
-+ * instead of list head.
-+ *
-+ * If being used on entries deleted from lock-less list directly, the
-+ * traverse order is from the newest to the oldest added entry.  If
-+ * you want to traverse from the oldest to the newest, you must
-+ * reverse the order by yourself before traversing.
-+ */
-+#define llist_for_each(pos, node)			\
-+	for ((pos) = (node); pos; (pos) = (pos)->next)
-+
-+/**
-+ * llist_for_each_entry - iterate over some deleted entries of lock-less list of given type
-+ * @pos:	the type * to use as a loop cursor.
-+ * @node:	the fist entry of deleted list entries.
-+ * @member:	the name of the llist_node with the struct.
-+ *
-+ * In general, some entries of the lock-less list can be traversed
-+ * safely only after being removed from list, so start with an entry
-+ * instead of list head.
-+ *
-+ * If being used on entries deleted from lock-less list directly, the
-+ * traverse order is from the newest to the oldest added entry.  If
-+ * you want to traverse from the oldest to the newest, you must
-+ * reverse the order by yourself before traversing.
-+ */
-+#define llist_for_each_entry(pos, node, member)				\
-+	for ((pos) = llist_entry((node), typeof(*(pos)), member);	\
-+	     &(pos)->member != NULL;					\
-+	     (pos) = llist_entry((pos)->member.next, typeof(*(pos)), member))
-+
-+/**
-+ * llist_empty - tests whether a lock-less list is empty
-+ * @head:	the list to test
-+ *
-+ * Not guaranteed to be accurate or up to date.  Just a quick way to
-+ * test whether the list is empty without deleting something from the
-+ * list.
-+ */
-+static inline int llist_empty(const struct llist_head *head)
-+{
-+	return ACCESS_ONCE(head->first) == NULL;
-+}
-+
-+void llist_add(struct llist_node *new, struct llist_head *head);
-+void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
-+		     struct llist_head *head);
-+struct llist_node *llist_del_first(struct llist_head *head);
-+struct llist_node *llist_del_all(struct llist_head *head);
-+#endif /* LLIST_H */
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 830181c..25c1967 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -262,4 +262,7 @@ config AVERAGE
+diff --git a/Documentation/acpi/apei/einj.txt b/Documentation/acpi/apei/einj.txt
+index dfab718..5cc699b 100644
+--- a/Documentation/acpi/apei/einj.txt
++++ b/Documentation/acpi/apei/einj.txt
+@@ -48,12 +48,19 @@ directory apei/einj. The following files are provided.
+ - param1
+   This file is used to set the first error parameter value. Effect of
+   parameter depends on error_type specified. For memory error, this is
+-  physical memory address.
++  physical memory address.  Only available if param_extension module
++  parameter is specified.
  
- 	  If unsure, say N.
+ - param2
+   This file is used to set the second error parameter value. Effect of
+   parameter depends on error_type specified. For memory error, this is
+-  physical memory address mask.
++  physical memory address mask.  Only available if param_extension
++  module parameter is specified.
++
++Injecting parameter support is a BIOS version specific extension, that
++is, it only works on some BIOS version.  If you want to use it, please
++make sure your BIOS version has the proper support and specify
++"param_extension=y" in module parameter.
  
-+config LLIST
-+	bool
-+
- endmenu
-diff --git a/lib/Makefile b/lib/Makefile
-index 6b597fd..d770b81 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -112,6 +112,8 @@ obj-$(CONFIG_AVERAGE) += average.o
+ For more information about EINJ, please refer to ACPI specification
+ version 4.0, section 17.5.
+diff --git a/drivers/acpi/apei/einj.c b/drivers/acpi/apei/einj.c
+index ab821f1..589b96c 100644
+--- a/drivers/acpi/apei/einj.c
++++ b/drivers/acpi/apei/einj.c
+@@ -46,7 +46,8 @@
+  * Some BIOSes allow parameters to the SET_ERROR_TYPE entries in the
+  * EINJ table through an unpublished extension. Use with caution as
+  * most will ignore the parameter and make their own choice of address
+- * for error injection.
++ * for error injection.  This extension is used only if
++ * param_extension module parameter is specified.
+  */
+ struct einj_parameter {
+ 	u64 type;
+@@ -65,6 +66,9 @@ struct einj_parameter {
+ 	((struct acpi_whea_header *)((char *)(tab) +			\
+ 				    sizeof(struct acpi_table_einj)))
  
- obj-$(CONFIG_CPU_RMAP) += cpu_rmap.o
++static bool param_extension;
++module_param(param_extension, bool, 0);
++
+ static struct acpi_table_einj *einj_tab;
  
-+obj-$(CONFIG_LLIST) += llist.o
-+
- hostprogs-y	:= gen_crc32table
- clean-files	:= crc32table.h
+ static struct apei_resources einj_resources;
+@@ -489,14 +493,6 @@ static int __init einj_init(void)
+ 				     einj_debug_dir, NULL, &error_type_fops);
+ 	if (!fentry)
+ 		goto err_cleanup;
+-	fentry = debugfs_create_x64("param1", S_IRUSR | S_IWUSR,
+-				    einj_debug_dir, &error_param1);
+-	if (!fentry)
+-		goto err_cleanup;
+-	fentry = debugfs_create_x64("param2", S_IRUSR | S_IWUSR,
+-				    einj_debug_dir, &error_param2);
+-	if (!fentry)
+-		goto err_cleanup;
+ 	fentry = debugfs_create_file("error_inject", S_IWUSR,
+ 				     einj_debug_dir, NULL, &error_inject_fops);
+ 	if (!fentry)
+@@ -513,12 +509,23 @@ static int __init einj_init(void)
+ 	rc = apei_exec_pre_map_gars(&ctx);
+ 	if (rc)
+ 		goto err_release;
+-	param_paddr = einj_get_parameter_address();
+-	if (param_paddr) {
+-		einj_param = ioremap(param_paddr, sizeof(*einj_param));
+-		rc = -ENOMEM;
+-		if (!einj_param)
+-			goto err_unmap;
++	if (param_extension) {
++		param_paddr = einj_get_parameter_address();
++		if (param_paddr) {
++			einj_param = ioremap(param_paddr, sizeof(*einj_param));
++			rc = -ENOMEM;
++			if (!einj_param)
++				goto err_unmap;
++			fentry = debugfs_create_x64("param1", S_IRUSR | S_IWUSR,
++						    einj_debug_dir, &error_param1);
++			if (!fentry)
++				goto err_unmap;
++			fentry = debugfs_create_x64("param2", S_IRUSR | S_IWUSR,
++						    einj_debug_dir, &error_param2);
++			if (!fentry)
++				goto err_unmap;
++		} else
++			pr_warn(EINJ_PFX "Parameter extension is not supported.\n");
+ 	}
  
-diff --git a/lib/llist.c b/lib/llist.c
-new file mode 100644
-index 0000000..da44572
---- /dev/null
-+++ b/lib/llist.c
-@@ -0,0 +1,129 @@
-+/*
-+ * Lock-less NULL terminated single linked list
-+ *
-+ * The basic atomic operation of this list is cmpxchg on long.  On
-+ * architectures that don't have NMI-safe cmpxchg implementation, the
-+ * list can NOT be used in NMI handler.  So code uses the list in NMI
-+ * handler should depend on CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG.
-+ *
-+ * Copyright 2010,2011 Intel Corp.
-+ *   Author: Huang Ying <ying.huang@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation;
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/interrupt.h>
-+#include <linux/llist.h>
-+
-+#include <asm/system.h>
-+
-+/**
-+ * llist_add - add a new entry
-+ * @new:	new entry to be added
-+ * @head:	the head for your lock-less list
-+ */
-+void llist_add(struct llist_node *new, struct llist_head *head)
-+{
-+	struct llist_node *entry, *old_entry;
-+
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	BUG_ON(in_nmi());
-+#endif
-+
-+	entry = head->first;
-+	do {
-+		old_entry = entry;
-+		new->next = entry;
-+		cpu_relax();
-+	} while ((entry = cmpxchg(&head->first, old_entry, new)) != old_entry);
-+}
-+EXPORT_SYMBOL_GPL(llist_add);
-+
-+/**
-+ * llist_add_batch - add several linked entries in batch
-+ * @new_first:	first entry in batch to be added
-+ * @new_last:	last entry in batch to be added
-+ * @head:	the head for your lock-less list
-+ */
-+void llist_add_batch(struct llist_node *new_first, struct llist_node *new_last,
-+		     struct llist_head *head)
-+{
-+	struct llist_node *entry, *old_entry;
-+
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	BUG_ON(in_nmi());
-+#endif
-+
-+	entry = head->first;
-+	do {
-+		old_entry = entry;
-+		new_last->next = entry;
-+		cpu_relax();
-+	} while ((entry = cmpxchg(&head->first, old_entry, new_first)) != old_entry);
-+}
-+EXPORT_SYMBOL_GPL(llist_add_batch);
-+
-+/**
-+ * llist_del_first - delete the first entry of lock-less list
-+ * @head:	the head for your lock-less list
-+ *
-+ * If list is empty, return NULL, otherwise, return the first entry
-+ * deleted, this is the newest added one.
-+ *
-+ * Only one llist_del_first user can be used simultaneously with
-+ * multiple llist_add users without lock.  Because otherwise
-+ * llist_del_first, llist_add, llist_add (or llist_del_all, llist_add,
-+ * llist_add) sequence in another user may change @head->first->next,
-+ * but keep @head->first.  If multiple consumers are needed, please
-+ * use llist_del_all or use lock between consumers.
-+ */
-+struct llist_node *llist_del_first(struct llist_head *head)
-+{
-+	struct llist_node *entry, *old_entry, *next;
-+
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	BUG_ON(in_nmi());
-+#endif
-+
-+	entry = head->first;
-+	do {
-+		if (entry == NULL)
-+			return NULL;
-+		old_entry = entry;
-+		next = entry->next;
-+		cpu_relax();
-+	} while ((entry = cmpxchg(&head->first, old_entry, next)) != old_entry);
-+
-+	return entry;
-+}
-+EXPORT_SYMBOL_GPL(llist_del_first);
-+
-+/**
-+ * llist_del_all - delete all entries from lock-less list
-+ * @head:	the head of lock-less list to delete all entries
-+ *
-+ * If list is empty, return NULL, otherwise, delete all entries and
-+ * return the pointer to the first entry.  The order of entries
-+ * deleted is from the newest to the oldest added one.
-+ */
-+struct llist_node *llist_del_all(struct llist_head *head)
-+{
-+#ifndef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	BUG_ON(in_nmi());
-+#endif
-+
-+	return xchg(&head->first, NULL);
-+}
-+EXPORT_SYMBOL_GPL(llist_del_all);
+ 	pr_info(EINJ_PFX "Error INJection is initialized.\n");
+@@ -526,6 +533,8 @@ static int __init einj_init(void)
+ 	return 0;
+ 
+ err_unmap:
++	if (einj_param)
++		iounmap(einj_param);
+ 	apei_exec_post_unmap_gars(&ctx);
+ err_release:
+ 	apei_resources_release(&einj_resources);
 -- 
 1.7.6.396.ge0613
 
