@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab1HBJv2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 05:51:28 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:43724 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752512Ab1HBJvW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 05:51:22 -0400
-Subject: Re: [patch v2 01/10] kdump: Add KEXEC_CRASH_CONTROL_MEMORY_LIMIT
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
-        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-In-Reply-To: <20110801201644.GG3805@redhat.com>
-References: <20110727125504.491183728@linux.vnet.ibm.com>
-	 <20110727125807.529303146@linux.vnet.ibm.com>
-	 <20110801201644.GG3805@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Tue, 02 Aug 2011 11:51:04 +0200
-Message-ID: <1312278664.4881.35.camel@br98xy6r>
+	id S1753151Ab1HBJvw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 05:51:52 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:41638 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752512Ab1HBJvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 05:51:47 -0400
+Date: Tue, 2 Aug 2011 11:51:45 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Dan Carpenter <error27@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Tino Keitel <tino.keitel@tikei.de>,
+        mchehab@infradead.org
+Subject: Re: USB related "unable to handle kernel paging request" in
+ 3.0.0-rc7
+Message-ID: <20110802115145.25b6a445@schatten.dmk.lab>
+In-Reply-To: <20110802085447.GA4522@shale.localdomain>
+References: <20110722192722.GA9369@x61.home>
+	<20110802085447.GA4522@shale.localdomain>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek,
+On Tue, 2 Aug 2011 11:54:47 +0300
+Dan Carpenter <error27@gmail.com> wrote:
 
-On Mon, 2011-08-01 at 16:16 -0400, Vivek Goyal wrote:
-> On Wed, Jul 27, 2011 at 02:55:05PM +0200, Michael Holzheu wrote:
-> > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> > 
-> > On s390 there is a different KEXEC_CONTROL_MEMORY_LIMIT for the normal and
-> > the kdump kexec case. Therefore this patch introduces a new macro
-> > KEXEC_CRASH_CONTROL_MEMORY_LIMIT. This is set to
-> > KEXEC_CONTROL_MEMORY_LIMIT for all architectures that do not define
-> > KEXEC_CRASH_CONTROL_MEMORY_LIMIT.
+> Looking at this, I noticed a memory corruption bug introduce in:
+> ab22cbda6651d "[media] vp7045: get rid of on-stack dma buffers"
 > 
-> Hi Michael,
+> vp7045_properties.size_of_priv is sizeof(u8 *) so in vp7045_usb_probe()
+> the d->priv buffer gets allocated twice.  Once in:
+> 	dvb_usb_device_init()
+> 	-> dvb_usb_init()
 > 
-> Curious that why limit is different for kexec and kdump cases on s390
-> only.
+> And once explicitly to a larger buffer later on in the function with
+> a kmalloc().
+> 
+> So the two places that use the buffer will probably race and cause
+> memory corruption.
+> 
+> regards,
+> dan carpenter
 
-The standard kexec relocate_kernel code calls a machine instruction that
-must run below 2 GiB. For kdump we currently do not use the control page
-at all because no segments have to be moved in that case. Perhaps I am
-still missing something here?
+Damn. That (u8*)sized priv buffer should only hold a pointer to the
+transfer buffer allocated in the prope routine. But I botched that. 
+I will send a fixup in a minute.  
 
-Michael
-
+Regards,
+Flo
