@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab1HBT1v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 15:27:51 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:36259 "EHLO mgw2.diku.dk"
+	id S1754989Ab1HBTaw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 15:30:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43116 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754286Ab1HBT1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 15:27:44 -0400
-Date: Tue, 2 Aug 2011 21:27:38 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Andrea Righi <arighi@develer.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, trivial@kernel.org,
-        kernel-janitors@vger.kernel.org, Stefani Seibold <stefani@seibold.net>,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/11] kernel/kfifo.c: trivial: use BUG_ON
-In-Reply-To: <Pine.LNX.4.64.1108021349330.24349@ask.diku.dk>
-Message-ID: <Pine.LNX.4.64.1108022127150.1846@ask.diku.dk>
-References: <1312281304-11847-1-git-send-email-julia@diku.dk>
- <1312281304-11847-2-git-send-email-julia@diku.dk> <20110802113335.GA4185@thinkpad>
- <Pine.LNX.4.64.1108021349330.24349@ask.diku.dk>
+	id S1754153Ab1HBTaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 15:30:46 -0400
+Message-ID: <4E38510B.6090001@suse.cz>
+Date: Tue, 02 Aug 2011 21:33:31 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
+        xiyou.wangcong@gmail.com, rdunlap@xenotime.net,
+        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com
+Subject: Re: [PATCH] kconfig: Introduce IS_ENABLED(), IS_BUILTIN() and	IS_MODULE()
+References: <1311634718-32588-1-git-send-email-mmarek@suse.cz> <1311947497-4958-1-git-send-email-mmarek@suse.cz> <20110802173343.GA5251@merkur.ravnborg.org> <CACqU3MUy_EBaVB_VHW0EcbMcV9Qn_H=oh4ZKkCaUuPtbezpC4A@mail.gmail.com> <20110802192610.GA5338@merkur.ravnborg.org>
+In-Reply-To: <20110802192610.GA5338@merkur.ravnborg.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+Dne 2.8.2011 21:26, Sam Ravnborg napsal(a):
+>>>
+>>> If we do it like this then how about adding this to autoconf.h and avoid the extra file,
+>>> and the extra flag to gcc?
+>>>
+>> That would be intrusive for non-Linux users of kconfig. You would have
+>> to hardcode a <linux/kconfig.h> in autoconf.h, which mean other
+>> project would have to either mirror the Linux include tree structure,
+>> or modify kconfig for the desired include path, if the feature is
+>> desired at all. As I see it, Linux, through Kbuild, is a user of
+>> kconfig.
+> The idea was to entirely skip kconfig.h - and include the code in
+> autoconf.h verbatim - so no extra file.
 
-Allow the function to return 0 when 0 elements are asked for rather than
-crashing the kernel with BUG.
+We could do that. I went for the extra file because it was easier to
+edit a .h file than to edit a .c file that generates a .h file :).
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- var/julia/linuxcopy/kernel/kfifo.c |    6 ------
- 1 file changed, 6 deletions(-)
-
-diff -u -p a/kernel/kfifo.c b/kernel/kfifo.c
-index 01a0700..9f928ef 100644
---- a/var/linuxes/linux-next/kernel/kfifo.c
-+++ b/var/julia/linuxcopy/kernel/kfifo.c
-@@ -562,9 +562,6 @@ EXPORT_SYMBOL(__kfifo_to_user_r);
- unsigned int __kfifo_dma_in_prepare_r(struct __kfifo *fifo,
- 	struct scatterlist *sgl, int nents, unsigned int len, size_t recsize)
- {
--	if (!nents)
--		BUG();
--
- 	len = __kfifo_max_r(len, recsize);
- 
- 	if (len + recsize > kfifo_unused(fifo))
-@@ -586,9 +583,6 @@ EXPORT_SYMBOL(__kfifo_dma_in_finish_r);
- unsigned int __kfifo_dma_out_prepare_r(struct __kfifo *fifo,
- 	struct scatterlist *sgl, int nents, unsigned int len, size_t recsize)
- {
--	if (!nents)
--		BUG();
--
- 	len = __kfifo_max_r(len, recsize);
- 
- 	if (len + recsize > fifo->in - fifo->out)
+Michal
