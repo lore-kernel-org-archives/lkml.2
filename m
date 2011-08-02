@@ -1,166 +1,1162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab1HBXUh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 19:20:37 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:57308 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753460Ab1HBXUa convert rfc822-to-8bit (ORCPT
+	id S1753708Ab1HBXYW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 19:24:22 -0400
+Received: from vms173001pub.verizon.net ([206.46.173.1]:32829 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753419Ab1HBXYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 19:20:30 -0400
-X-Authenticated: #1587495
-X-Provags-ID: V01U2FsdGVkX1/bDv9VSyDbAgObspL9mWOnGBu+rhZ49KpgEIlxCM
-	jiqMAFARUYJbYL
-From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCH] rtl8192cu: add USB ID for Belkin n300 Micro USB wireless adapter
-Date: Wed, 3 Aug 2011 01:20:18 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0-0.slh.5-aptosid-686; KDE/4.6.5; i686; ; )
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201108022229.58532.s.L-H@gmx.de> <4E386FB9.2040507@lwfinger.net> <201108030035.50214.s.L-H@gmx.de>
-In-Reply-To: <201108030035.50214.s.L-H@gmx.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201108030120.21059.s.L-H@gmx.de>
-X-Y-GMX-Trusted: 0
+	Tue, 2 Aug 2011 19:24:15 -0400
+Date: Tue, 02 Aug 2011 19:24:10 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>, x86@kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] mrst_pmu: driver for Intel Moorestown Power Management Unit
+In-reply-to: <alpine.LFD.2.02.1108011116160.23581@x980>
+Message-id: <alpine.LFD.2.02.1108021916430.25237@x980>
+References: <alpine.LFD.2.02.1107122328180.4502@x980>
+ <20110713105105.63e2fbcb@lxorguk.ukuu.org.uk>
+ <alpine.LFD.2.02.1108011116160.23581@x980>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+From: Len Brown <len.brown@intel.com>
 
-On Wednesday 03 August 2011, Stefan Lippers-Hollmann wrote:
-> On Wednesday 03 August 2011, Larry Finger wrote:
-> > On 08/02/2011 03:43 PM, Stefan Lippers-Hollmann wrote:
-> > > On Tuesday 02 August 2011, Stefan Lippers-Hollmann wrote:
-> > > [1]	http://aptosid.com/index.php?name=PNphpBB2&file=viewtopic&t=1550&start=0
-> > > [2]	http://pastebin.com/ppZJ0GmU
-[...]
-> - no Oops if his USB ID is compiled into the module, that only happens
->   if he tries to inject it into an unpatched kernel with:
->   echo -n "050d 2103">  /sys/bus/usb/drivers/rtl8192cu/new_id
->   (and I'm reluctant to raise this as potential issue completely, due
->   to the tainted kernel condition on his system).
+The Moorestown (MRST) Power Management Unit (PMU) driver
+directs the SOC power states in the "Langwell" south complex (SCU).
 
-I can reproduce the reported Oops by injecting a (wrong) USB ID into 
-rtl8192cu myself on an untainted system. For reproducing the Oops, I 
-inject an unknown (wrong, the device I'm abusing for this test is a 
-Netgear WG111T, Atheros AR5523 based - no linux driver exists for this 
-device and no module claims its device IDs 0x1385 0x4251) USB ID 
-through sysfs facilities into rtl8192cu; all tests with kernel 
-3.0 + current -stable queue:
+It hooks pci_platform_pm_ops[] and thus observes all PCI ".set_state"
+requests.  For devices in the SC, the pmu driver translates those
+PCI requests into the appropriate commands for the SCU.
 
-# cat /proc/sys/kernel/tainted
-0
-# modprobe rtl8192cu
-# echo -n "1385 4251" > /sys/bus/usb/drivers/rtl8192cu/new_id
-[hotplug device]
-# dmesg
-[...]
-[   86.420998] usbcore: registered new interface driver rtl8192cu
-[  110.778029] usb 1-7: new high speed USB device number 5 using ehci_hcd
-[  110.893824] usb 1-7: New USB device found, idVendor=1385, idProduct=4251
-[  110.893830] usb 1-7: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-[  110.893836] usb 1-7: Product: WG111T
-[  110.893841] usb 1-7: Manufacturer: Atheros Communications Inc
-[  110.893845] usb 1-7: SerialNumber: 1.0
-[  110.894760] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
-[  110.894903] IP: [<ffffffffa0604747>] rtl_usb_probe+0x19b/0x74d [rtlwifi]
-[  110.895012] PGD 0 
-[  110.895012] Oops: 0000 [#1] PREEMPT SMP 
-[  110.895012] CPU 0 
-[  110.895012] Modules linked in: rtl8192cu rtl8192c_common rtlwifi mac80211 cfg80211 rfkill cpufreq_stats cpufreq_ondemand cpufreq_powersave cpufreq_conservative ppdev lp cpufreq_performance af_packet fuse nls_utf8 ntfs powernow_k8 freq_table mperf tda18218 af9013 ir_lirc_codec lirc_dev ir_sony_decoder ir_jvc_decoder ir_rc6_decoder ir_rc5_decoder ir_nec_decoder dvb_usb_af9015 dvb_usb dvb_core rc_core edac_core snd_intel8x0 snd_ac97_codec ac97_bus snd_pcm snd_seq snd_timer snd_seq_device radeon parport_pc ttm drm_kms_helper drm i2c_algo_bit k8temp pcspkr evdev psmouse edac_mce_amd serio_raw power_supply parport snd i2c_nforce2 i2c_core button soundcore processor snd_page_alloc ext4 mbcache jbd2 crc16 dm_mod btrfs zlib_deflate crc32c libcrc32c sg sr_mod sd_mod cdrom crc_t10dif ata_generic usbhid hid floppy thermal fan firewire_ohci pata_acpi firewire_core crc_itu_t pata_amd sata_nv e1000 libata ohci_hcd forcedeth scsi_mod ehci_hcd usbcore ssb mmc_core pcmcia pcmcia_core [last unloaded: scsi_wait_scan]
-[  110.895012] 
-[  110.895012] Pid: 577, comm: khubd Not tainted 3.0-0.slh.6-aptosid-amd64 #1 MICRO-STAR INTERNATIONAL CO., LTD MS-7185/MS-7185
-[  110.895012] RIP: 0010:[<ffffffffa0604747>]  [<ffffffffa0604747>] rtl_usb_probe+0x19b/0x74d [rtlwifi]
-[  110.895012] RSP: 0018:ffff88011da77a60  EFLAGS: 00010246
-[  110.895012] RAX: 0000000000000000 RBX: ffff88011fc09ca0 RCX: 0000000000000000
-[  110.895012] RDX: ffffffffa0608618 RSI: ffffffffa0607819 RDI: ffff88011fc08520
-[  110.895012] RBP: ffff88011f0a7088 R08: 000000000000ffff R09: 000000000000ffff
-[  110.895012] R10: 0000000000000000 R11: 000000000000fffb R12: ffff88011d5a6c30
-[  110.895012] R13: ffff88011fd54090 R14: ffff88011fc08520 R15: ffff88011fc09ca0
-[  110.895012] FS:  00007f6e9e1d37a0(0000) GS:ffff880127c00000(0000) knlGS:0000000000000000
-[  110.895012] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  110.895012] CR2: 0000000000000018 CR3: 000000011fe0f000 CR4: 00000000000006f0
-[  110.895012] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  110.895012] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  110.895012] Process khubd (pid: 577, threadinfo ffff88011da76000, task ffff88011dc5b700)
-[  110.895012] Stack:
-[  110.895012]  0000000000000246 ffffffff8129f3d2 ffff88011fd54090 ffff88011f0a7000
-[  110.895012]  ffff88011f0a7088 ffff88011d5a6c30 ffff88011f0a7000 ffffffffa0639528
-[  110.895012]  ffff88011fd54090 ffff88011d5a6c00 0000000000000000 ffffffffa0051f05
-[  110.895012] Call Trace:
-[  110.895012]  [<ffffffff8129f3d2>] ? __pm_runtime_set_status+0x132/0x1e0
-[  110.895012]  [<ffffffffa0051f05>] ? usb_probe_interface+0xe5/0x1e0 [usbcore]
-[  110.895012]  [<ffffffff8129657f>] ? driver_probe_device+0x6f/0x190
-[  110.895012]  [<ffffffff81296740>] ? __driver_attach+0xa0/0xa0
-[  110.895012]  [<ffffffff812952d3>] ? bus_for_each_drv+0x53/0x80
-[  110.895012]  [<ffffffff812964cf>] ? device_attach+0x9f/0xc0
-[  110.895012]  [<ffffffff81295c7d>] ? bus_probe_device+0x2d/0x50
-[  110.895012]  [<ffffffff81293f8d>] ? device_add+0x5ad/0x670
-[  110.895012]  [<ffffffff812927b2>] ? dev_set_name+0x42/0x50
-[  110.895012]  [<ffffffffa0050577>] ? usb_set_configuration+0x5d7/0x6d0 [usbcore]
-[  110.895012]  [<ffffffffa005904b>] ? generic_probe+0x3b/0xa0 [usbcore]
-[  110.895012]  [<ffffffff8129657f>] ? driver_probe_device+0x6f/0x190
-[  110.895012]  [<ffffffff81296740>] ? __driver_attach+0xa0/0xa0
-[  110.895012]  [<ffffffff812952d3>] ? bus_for_each_drv+0x53/0x80
-[  110.895012]  [<ffffffff812964cf>] ? device_attach+0x9f/0xc0
-[  110.895012]  [<ffffffff81295c7d>] ? bus_probe_device+0x2d/0x50
-[  110.895012]  [<ffffffff81293f8d>] ? device_add+0x5ad/0x670
-[  110.895012]  [<ffffffffa0048cd2>] ? usb_new_device+0x122/0x1b0 [usbcore]
-[  110.895012]  [<ffffffffa0049cb0>] ? hub_thread+0x7c0/0x1310 [usbcore]
-[  110.895012]  [<ffffffff813c8ed7>] ? schedule+0x2b7/0x860
-[  110.895012]  [<ffffffff81044616>] ? try_to_wake_up+0x1b6/0x270
-[  110.895012]  [<ffffffff8106a020>] ? abort_exclusive_wait+0xb0/0xb0
-[  110.895012]  [<ffffffffa00494f0>] ? usb_remote_wakeup+0x40/0x40 [usbcore]
-[  110.895012]  [<ffffffff8106985e>] ? kthread+0x7e/0x90
-[  110.895012]  [<ffffffff813cd1a4>] ? kernel_thread_helper+0x4/0x10
-[  110.895012]  [<ffffffff810697e0>] ? kthread_worker_fn+0x180/0x180
-[  110.895012]  [<ffffffff813cd1a0>] ? gs_change+0x13/0x13
-[  110.895012] Code: 29 60 a0 48 c7 83 60 06 00 00 70 29 60 a0 48 c7 83 68 06 00 00 50 29 60 a0 48 c7 83 70 06 00 00 f0 2b 60 a0 49 8b 87 38 27 00 00 
-[  110.895012]  8b 40 18 ff 50 10 49 8b 87 38 27 00 00 4c 89 f7 48 8b 40 18 
-[  110.895012] RIP  [<ffffffffa0604747>] rtl_usb_probe+0x19b/0x74d [rtlwifi]
-[  110.895012]  RSP <ffff88011da77a60>
-[  110.895012] CR2: 0000000000000018
-[  110.944291] ---[ end trace aa8fb4280a86af53 ]---
-# cat /proc/sys/kernel/tainted
-128
+The PMU driver helps implement S0i3, a deep system idle power idle state.
+Entry into S0i3 is via cpuidle, just like regular processor c-states.
+S0i3 depends on pre-conditions including uni-processor, graphics off,
+and certain IO devices in the SC must be off.  If those pre-conditions
+are met, then the PMU allows cpuidle to enter S0i3, otherwise such requests
+are demoted, either to Atom C4 or Atom C6.
 
-The same procedure (after rebooting) doesn't result in an Oops with 
-other modules, although they can't initialize this 'unknown' device 
-either, using rt2500usb as example:
-# cat /proc/sys/kernel/tainted
-0
-# modprobe rt2500usb
-# echo -n "1385 4251" > /sys/bus/usb/drivers/rt2500usb/new_id
-[hotplug device]
-# dmesg
-[...]
-[  112.676033] usb 1-7: new high speed USB device number 5 using ehci_hcd
-[  112.791945] usb 1-7: New USB device found, idVendor=1385, idProduct=4251
-[  112.791951] usb 1-7: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-[  112.791957] usb 1-7: Product: WG111T
-[  112.791961] usb 1-7: Manufacturer: Atheros Communications Inc
-[  112.791965] usb 1-7: SerialNumber: 1.0
-[  112.895037] usb 1-7: reset high speed USB device number 5 using ehci_hcd
-[  113.108950] phy0 -> rt2x00usb_vendor_request: Error - Vendor Request 0x09 failed for offset 0x0000 with error -32.
-[  113.208947] phy0 -> rt2x00usb_vendor_request: Error - Vendor Request 0x07 failed for offset 0x04d0 with error -32.
-[  113.308946] phy0 -> rt2x00usb_vendor_request: Error - Vendor Request 0x06 failed for offset 0x04ce with error -32.
-[  113.408950] phy0 -> rt2x00usb_vendor_request: Error - Vendor Request 0x07 failed for offset 0x04d0 with error -32.
-[  113.508946] phy0 -> rt2x00usb_vendor_request: Error - Vendor Request 0x07 failed for offset 0x04ce with error -32.
-[  113.608450] phy0 -> rt2x00usb_vendor_request: Error - Vendor Request 0x07 failed for offset 0x0400 with error -32.
-[  113.608457] phy0 -> rt2500usb_init_eeprom: Error - Invalid RT chipset detected.
-[  113.608463] phy0 -> rt2x00lib_probe_dev: Error - Failed to allocate device.
-[everything fine, as expected no issues - the wrong device just can't 
- get initialized]
-# cat /proc/sys/kernel/tainted
-0
-# reboot
+This driver is based on prototype work by Bruce Flemming,
+Illyas Mansoor, Rajeev D. Muralidhar, Vishwesh M. Rudramuni,
+Hari Seshadri and Sujith Thomas.  The current driver also
+includes contributions from H. Peter Anvin, Arjan van de Ven,
+Kristen Accardi, and Yong Wang.
 
-So at least the reported Oops is not specific to 050d:2103, but happens
-for any USB ID injected at runtime through sysfs and therefore appears
-to be a general issue with rtl8192cu.
+Thanks for additional review feedback from Alan Cox and Randy Dunlap.
 
-Regards
-	Stefan Lippers-Hollmann
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
+This driver is essentially platform-speciif idle code.
+It has been in linux-next via my idle-test tree,
+and I can push it via that tree route w/ appropriate acks.
+
+There are additional bits needed to use this driver,
+including platform-specific PCI hooks, and platform-specific
+S0i3 assembly language.
+
+ MAINTAINERS                     |    6 +
+ arch/x86/platform/mrst/Makefile |    1 +
+ arch/x86/platform/mrst/pmu.c    |  817 +++++++++++++++++++++++++++++++++++++++
+ arch/x86/platform/mrst/pmu.h    |  234 +++++++++++
+ 4 files changed, 1058 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/platform/mrst/pmu.c
+ create mode 100644 arch/x86/platform/mrst/pmu.h
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 187282d..d37b387 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3344,6 +3344,12 @@ F:	drivers/net/ixgb/
+ F:	drivers/net/ixgbe/
+ F:	drivers/net/ixgbevf/
+ 
++INTEL MRST PMU DRIVER
++M:	Len Brown <len.brown@intel.com>
++L:	linux-pm@lists.linux-foundation.org
++S:	Supported
++F:	arch/x86/platform/mrst/pmu.*
++
+ INTEL PRO/WIRELESS 2100 NETWORK CONNECTION SUPPORT
+ L:	linux-wireless@vger.kernel.org
+ S:	Orphan
+diff --git a/arch/x86/platform/mrst/Makefile b/arch/x86/platform/mrst/Makefile
+index f61ccdd..1ea3877 100644
+--- a/arch/x86/platform/mrst/Makefile
++++ b/arch/x86/platform/mrst/Makefile
+@@ -1,3 +1,4 @@
+ obj-$(CONFIG_X86_MRST)		+= mrst.o
+ obj-$(CONFIG_X86_MRST)		+= vrtc.o
+ obj-$(CONFIG_EARLY_PRINTK_MRST)	+= early_printk_mrst.o
++obj-$(CONFIG_X86_MRST)		+= pmu.o
+diff --git a/arch/x86/platform/mrst/pmu.c b/arch/x86/platform/mrst/pmu.c
+new file mode 100644
+index 0000000..c0cebfb
+--- /dev/null
++++ b/arch/x86/platform/mrst/pmu.c
+@@ -0,0 +1,817 @@
++/*
++ * mrst/pmu.c - driver for MRST Power Management Unit
++ *
++ * Copyright (c) 2011, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include <linux/cpuidle.h>
++#include <linux/debugfs.h>
++#include <linux/delay.h>
++#include <linux/interrupt.h>
++#include <linux/module.h>
++#include <linux/pci.h>
++#include <linux/seq_file.h>
++#include <linux/sfi.h>
++#include <asm/intel_scu_ipc.h>
++#include "pmu.h"
++
++#define IPCMSG_FW_REVISION	0xF4
++
++struct mrst_device {
++	u16 pci_dev_num;	/* DEBUG only */
++	u16 lss;
++	u16 latest_request;
++	unsigned int pci_state_counts[PCI_D3cold + 1]; /* DEBUG only */
++};
++
++/*
++ * comlete list of MRST PCI devices
++ */
++static struct mrst_device mrst_devs[] = {
++/*  0 */ { 0x0800, LSS_SPI0 },		/* Moorestown SPI Ctrl 0 */
++/*  1 */ { 0x0801, LSS_SPI1 },		/* Moorestown SPI Ctrl 1 */
++/*  2 */ { 0x0802, LSS_I2C0 },		/* Moorestown I2C 0 */
++/*  3 */ { 0x0803, LSS_I2C1 },		/* Moorestown I2C 1 */
++/*  4 */ { 0x0804, LSS_I2C2 },		/* Moorestown I2C 2 */
++/*  5 */ { 0x0805, LSS_KBD },		/* Moorestown Keyboard Ctrl */
++/*  6 */ { 0x0806, LSS_USB_HC },	/* Moorestown USB Ctrl */
++/*  7 */ { 0x0807, LSS_SD_HC0 },	/* Moorestown SD Host Ctrl 0 */
++/*  8 */ { 0x0808, LSS_SD_HC1 },	/* Moorestown SD Host Ctrl 1 */
++/*  9 */ { 0x0809, LSS_NAND },		/* Moorestown NAND Ctrl */
++/* 10 */ { 0x080a, LSS_AUDIO },		/* Moorestown Audio Ctrl */
++/* 11 */ { 0x080b, LSS_IMAGING },	/* Moorestown ISP */
++/* 12 */ { 0x080c, LSS_SECURITY },	/* Moorestown Security Controller */
++/* 13 */ { 0x080d, LSS_DISPLAY },	/* Moorestown External Displays */
++/* 14 */ { 0x080e, 0 },			/* Moorestown SCU IPC */
++/* 15 */ { 0x080f, LSS_GPIO },		/* Moorestown GPIO Controller */
++/* 16 */ { 0x0810, 0 },			/* Moorestown Power Management Unit */
++/* 17 */ { 0x0811, LSS_USB_OTG },	/* Moorestown OTG Ctrl */
++/* 18 */ { 0x0812, LSS_SPI2 },		/* Moorestown SPI Ctrl 2 */
++/* 19 */ { 0x0813, 0 },			/* Moorestown SC DMA */
++/* 20 */ { 0x0814, LSS_AUDIO_LPE },	/* Moorestown LPE DMA */
++/* 21 */ { 0x0815, LSS_AUDIO_SSP },	/* Moorestown SSP0 */
++
++/* 22 */ { 0x084F, LSS_SD_HC2 },	/* Moorestown SD Host Ctrl 2 */
++
++/* 23 */ { 0x4102, 0 },			/* Lincroft */
++/* 24 */ { 0x4110, 0 },			/* Lincroft */
++};
++
++/* n.b. We ignore PCI-id 0x815 in LSS9 b/c MeeGo has no driver for it */
++static u16 mrst_lss9_pci_ids[] = {0x080a, 0x0814, 0};
++static u16 mrst_lss10_pci_ids[] = {0x0800, 0x0801, 0x0802, 0x0803,
++					0x0804, 0x0805, 0x080f, 0};
++
++/* handle concurrent SMP invokations of pmu_pci_set_power_state() */
++static spinlock_t mrst_pmu_power_state_lock;
++
++static unsigned int wake_counters[MRST_NUM_LSS];	/* DEBUG only */
++static unsigned int pmu_irq_stats[INT_INVALID + 1];	/* DEBUG only */
++
++static int graphics_is_off;
++static int lss_s0i3_enabled;
++static bool mrst_pmu_s0i3_enable;
++
++/*  debug counters */
++static u32 pmu_wait_ready_calls;
++static u32 pmu_wait_ready_udelays;
++static u32 pmu_wait_ready_udelays_max;
++static u32 pmu_wait_done_calls;
++static u32 pmu_wait_done_udelays;
++static u32 pmu_wait_done_udelays_max;
++static u32 pmu_set_power_state_entry;
++static u32 pmu_set_power_state_send_cmd;
++
++static struct mrst_device *pci_id_2_mrst_dev(u16 pci_dev_num)
++{
++	int index = 0;
++
++	if ((pci_dev_num >= 0x0800) && (pci_dev_num <= 0x815))
++		index = pci_dev_num - 0x800;
++	else if (pci_dev_num == 0x084F)
++		index = 22;
++	else if (pci_dev_num == 0x4102)
++		index = 23;
++	else if (pci_dev_num == 0x4110)
++		index = 24;
++
++	if (pci_dev_num != mrst_devs[index].pci_dev_num) {
++		WARN_ONCE(1, FW_BUG "Unknown PCI device 0x%04X\n", pci_dev_num);
++		return 0;
++	}
++
++	return &mrst_devs[index];
++}
++
++/**
++ * mrst_pmu_validate_cstates
++ * @dev: cpuidle_device
++ *
++ * Certain states are not appropriate for governor to pick in some cases.
++ * This function will be called as cpuidle_device's prepare callback and
++ * thus tells governor to ignore such states when selecting the next state
++ * to enter.
++ */
++
++#define IDLE_STATE4_IS_C6	4
++#define IDLE_STATE5_IS_S0I3	5
++
++int mrst_pmu_invalid_cstates(void)
++{
++	int cpu = smp_processor_id();
++
++	/*
++	 * Demote to C4 if the PMU is busy.
++	 * Since LSS changes leave the busy bit clear...
++	 * busy means either the PMU is waiting for an ACK-C6 that
++	 * isn't coming due to an MWAIT that returned immediately;
++	 * or we returned from S0i3 successfully, and the PMU
++	 * is not done sending us interrupts.
++	 */
++	if (pmu_read_busy_status())
++		return 1 << IDLE_STATE4_IS_C6 | 1 << IDLE_STATE5_IS_S0I3;
++
++	/*
++	 * Disallow S0i3 if: PMU is not initialized, or CPU1 is active,
++	 * or if device LSS is insufficient, or the GPU is active,
++	 * or if it has been explicitly disabled.
++	 */
++	if (!pmu_reg || !cpumask_equal(cpu_online_mask, cpumask_of(cpu)) ||
++	    !lss_s0i3_enabled || !graphics_is_off || !mrst_pmu_s0i3_enable)
++		return 1 << IDLE_STATE5_IS_S0I3;
++	else
++		return 0;
++}
++
++/*
++ * pmu_update_wake_counters(): read PM_WKS, update wake_counters[]
++ * DEBUG only.
++ */
++static void pmu_update_wake_counters(void)
++{
++	int lss;
++	u32 wake_status;
++
++	wake_status = pmu_read_wks();
++
++	for (lss = 0; lss < MRST_NUM_LSS; ++lss) {
++		if (wake_status & (1 << lss))
++			wake_counters[lss]++;
++	}
++}
++
++int mrst_pmu_s0i3_entry(void)
++{
++	int status;
++
++	/* Clear any possible error conditions */
++	pmu_write_ics(0x300);
++
++	/* set wake control to current D-states */
++	pmu_write_wssc(S0I3_SSS_TARGET);
++
++	status = mrst_s0i3_entry(PM_S0I3_COMMAND, &pmu_reg->pm_cmd);
++	pmu_update_wake_counters();
++	return status;
++}
++
++/* poll for maximum of 5ms for busy bit to clear */
++static int pmu_wait_ready(void)
++{
++	int udelays;
++
++	pmu_wait_ready_calls++;
++
++	for (udelays = 0; udelays < 5000; ++udelays) {
++		if (udelays > pmu_wait_ready_udelays_max)
++			pmu_wait_ready_udelays_max = udelays;
++
++		if (pmu_read_busy_status() == 0)
++			return 0;
++
++		udelay(10);
++		pmu_wait_ready_udelays++;
++	}
++
++	/*
++	 * if this fires, observe
++	 * /sys/kernel/debug/mrst_pmu_wait_ready_calls
++	 * /sys/kernel/debug/mrst_pmu_wait_ready_udelays
++	 */
++	WARN_ONCE(1, "SCU not ready for 5ms");
++	return -EBUSY;
++}
++/* poll for maximum of 50ms us for busy bit to clear */
++static int pmu_wait_done(void)
++{
++	int udelays;
++
++	pmu_wait_done_calls++;
++
++	for (udelays = 0; udelays < 5000; ++udelays) {
++		if (udelays > pmu_wait_done_udelays_max)
++			pmu_wait_done_udelays_max = udelays;
++
++		if (pmu_read_busy_status() == 0)
++			return 0;
++
++		udelay(100);
++		pmu_wait_done_udelays++;
++	}
++
++	/*
++	 * if this fires, observe
++	 * /sys/kernel/debug/mrst_pmu_wait_done_calls
++	 * /sys/kernel/debug/mrst_pmu_wait_done_udelays
++	 */
++	WARN_ONCE(1, "SCU not done for 50ms");
++	return -EBUSY;
++}
++
++u32 mrst_pmu_msi_is_disabled(void)
++{
++	return pmu_msi_is_disabled();
++}
++
++void mrst_pmu_enable_msi(void)
++{
++	pmu_msi_enable();
++}
++
++/**
++ * pmu_irq - pmu driver interrupt handler
++ * Context: interrupt context
++ */
++static irqreturn_t pmu_irq(int irq, void *dummy)
++{
++	union pmu_pm_ics pmu_ics;
++
++	pmu_ics.value = pmu_read_ics();
++
++	if (!pmu_ics.bits.pending)
++		return IRQ_NONE;
++
++	switch (pmu_ics.bits.cause) {
++	case INT_SPURIOUS:
++	case INT_CMD_DONE:
++	case INT_CMD_ERR:
++	case INT_WAKE_RX:
++	case INT_SS_ERROR:
++	case INT_S0IX_MISS:
++	case INT_NO_ACKC6:
++		pmu_irq_stats[pmu_ics.bits.cause]++;
++		break;
++	default:
++		pmu_irq_stats[INT_INVALID]++;
++	}
++
++	pmu_write_ics(pmu_ics.value); /* Clear pending interrupt */
++
++	return IRQ_HANDLED;
++}
++
++/*
++ * Translate PCI power management to MRST LSS D-states
++ */
++static int pci_2_mrst_state(int lss, pci_power_t pci_state)
++{
++	switch (pci_state) {
++	case PCI_D0:
++		if (SSMSK(D0i1, lss) & D0I1_ACG_SSS_TARGET)
++			return D0i1;
++		else
++			return D0;
++	case PCI_D1:
++		return D0i1;
++	case PCI_D2:
++		return D0i2;
++	case PCI_D3hot:
++	case PCI_D3cold:
++		return D0i3;
++	default:
++		WARN(1, "pci_state %d\n", pci_state);
++		return 0;
++	}
++}
++
++static int pmu_issue_command(u32 pm_ssc)
++{
++	union pmu_pm_set_cfg_cmd_t command;
++
++	if (pmu_read_busy_status()) {
++		pr_debug("pmu is busy, Operation not permitted\n");
++		return -1;
++	}
++
++	/*
++	 * enable interrupts in PMU so that interrupts are
++	 * propagated when ioc bit for a particular set
++	 * command is set
++	 */
++
++	pmu_irq_enable();
++
++	/* Configure the sub systems for pmu2 */
++
++	pmu_write_ssc(pm_ssc);
++
++	/*
++	 * Send the set config command for pmu its configured
++	 * for mode CM_IMMEDIATE & hence with No Trigger
++	 */
++
++	command.pmu2_params.d_param.cfg_mode = CM_IMMEDIATE;
++	command.pmu2_params.d_param.cfg_delay = 0;
++	command.pmu2_params.d_param.rsvd = 0;
++
++	/* construct the command to send SET_CFG to particular PMU */
++	command.pmu2_params.d_param.cmd = SET_CFG_CMD;
++	command.pmu2_params.d_param.ioc = 0;
++	command.pmu2_params.d_param.mode_id = 0;
++	command.pmu2_params.d_param.sys_state = SYS_STATE_S0I0;
++
++	/* write the value of PM_CMD into particular PMU */
++	pr_debug("pmu command being written %x\n",
++			command.pmu_pm_set_cfg_cmd_value);
++
++	pmu_write_cmd(command.pmu_pm_set_cfg_cmd_value);
++
++	return 0;
++}
++
++static u16 pmu_min_lss_pci_req(u16 *ids, u16 pci_state)
++{
++	u16 existing_request;
++	int i;
++
++	for (i = 0; ids[i]; ++i) {
++		struct mrst_device *mrst_dev;
++
++		mrst_dev = pci_id_2_mrst_dev(ids[i]);
++		if (unlikely(!mrst_dev))
++			continue;
++
++		existing_request = mrst_dev->latest_request;
++		if (existing_request < pci_state)
++			pci_state = existing_request;
++	}
++	return pci_state;
++}
++
++/**
++ * pmu_pci_set_power_state - Callback function is used by all the PCI devices
++ *			for a platform  specific device power on/shutdown.
++ */
++
++int pmu_pci_set_power_state(struct pci_dev *pdev, pci_power_t pci_state)
++{
++	u32 old_sss, new_sss;
++	int status = 0;
++	struct mrst_device *mrst_dev;
++
++	pmu_set_power_state_entry++;
++
++	BUG_ON(pdev->vendor != PCI_VENDOR_ID_INTEL);
++	BUG_ON(pci_state < PCI_D0 || pci_state > PCI_D3cold);
++
++	mrst_dev = pci_id_2_mrst_dev(pdev->device);
++	if (unlikely(!mrst_dev))
++		return -ENODEV;
++
++	mrst_dev->pci_state_counts[pci_state]++;	/* count invocations */
++
++	/* PMU driver calls self as part of PCI initialization, ignore */
++	if (pdev->device == PCI_DEV_ID_MRST_PMU)
++		return 0;
++
++	BUG_ON(!pmu_reg); /* SW bug if called before initialized */
++
++	spin_lock(&mrst_pmu_power_state_lock);
++
++	if (pdev->d3_delay) {
++		dev_dbg(&pdev->dev, "d3_delay %d, should be 0\n",
++			pdev->d3_delay);
++		pdev->d3_delay = 0;
++	}
++	/*
++	 * If Lincroft graphics, simply remember state
++	 */
++	if ((pdev->class >> 16) == PCI_BASE_CLASS_DISPLAY
++		&& !((pdev->class & PCI_SUB_CLASS_MASK) >> 8)) {
++		if (pci_state == PCI_D0)
++			graphics_is_off = 0;
++		else
++			graphics_is_off = 1;
++		goto ret;
++	}
++
++	if (!mrst_dev->lss)
++		goto ret;	/* device with no LSS */
++
++	if (mrst_dev->latest_request == pci_state)
++		goto ret;	/* no change */
++
++	mrst_dev->latest_request = pci_state;	/* record latest request */
++
++	/*
++	 * LSS9 and LSS10 contain multiple PCI devices.
++	 * Use the lowest numbered (highest power) state in the LSS
++	 */
++	if (mrst_dev->lss == 9)
++		pci_state = pmu_min_lss_pci_req(mrst_lss9_pci_ids, pci_state);
++	else if (mrst_dev->lss == 10)
++		pci_state = pmu_min_lss_pci_req(mrst_lss10_pci_ids, pci_state);
++
++	status = pmu_wait_ready();
++	if (status)
++		goto ret;
++
++	old_sss = pmu_read_sss();
++	new_sss = old_sss & ~SSMSK(3, mrst_dev->lss);
++	new_sss |= SSMSK(pci_2_mrst_state(mrst_dev->lss, pci_state),
++			mrst_dev->lss);
++
++	if (new_sss == old_sss)
++		goto ret;	/* nothing to do */
++
++	pmu_set_power_state_send_cmd++;
++
++	status = pmu_issue_command(new_sss);
++
++	if (unlikely(status != 0)) {
++		dev_err(&pdev->dev, "Failed to Issue a PM command\n");
++		goto ret;
++	}
++
++	if (pmu_wait_done())
++		goto ret;
++
++	lss_s0i3_enabled =
++	((pmu_read_sss() & S0I3_SSS_TARGET) == S0I3_SSS_TARGET);
++ret:
++	spin_unlock(&mrst_pmu_power_state_lock);
++	return status;
++}
++
++#ifdef CONFIG_DEBUG_FS
++static char *d0ix_names[] = {"D0", "D0i1", "D0i2", "D0i3"};
++
++static inline const char *d0ix_name(int state)
++{
++	return d0ix_names[(int) state];
++}
++
++static int debug_mrst_pmu_show(struct seq_file *s, void *unused)
++{
++	struct pci_dev *pdev = NULL;
++	u32 cur_pmsss;
++	int lss;
++
++	seq_printf(s, "0x%08X D0I1_ACG_SSS_TARGET\n", D0I1_ACG_SSS_TARGET);
++
++	cur_pmsss = pmu_read_sss();
++
++	seq_printf(s, "0x%08X S0I3_SSS_TARGET\n", S0I3_SSS_TARGET);
++
++	seq_printf(s, "0x%08X Current SSS ", cur_pmsss);
++	seq_printf(s, lss_s0i3_enabled ? "\n" : "[BLOCKS s0i3]\n");
++
++	if (cpumask_equal(cpu_online_mask, cpumask_of(0)))
++		seq_printf(s, "cpu0 is only cpu online\n");
++	else
++		seq_printf(s, "cpu0 is NOT only cpu online [BLOCKS S0i3]\n");
++
++	seq_printf(s, "GFX: %s\n", graphics_is_off ? "" : "[BLOCKS s0i3]");
++
++
++	for_each_pci_dev(pdev) {
++		int pos;
++		u16 pmcsr;
++		struct mrst_device *mrst_dev;
++		int i;
++
++		mrst_dev = pci_id_2_mrst_dev(pdev->device);
++
++		seq_printf(s, "%s %04x/%04X %-16.16s ",
++			dev_name(&pdev->dev),
++			pdev->vendor, pdev->device,
++			dev_driver_string(&pdev->dev));
++
++		if (unlikely (!mrst_dev)) {
++			seq_printf(s, " UNKNOWN\n");
++			continue;
++		}
++
++		if (mrst_dev->lss)
++			seq_printf(s, "LSS %2d %-4s ", mrst_dev->lss,
++				d0ix_name(((cur_pmsss >>
++					(mrst_dev->lss * 2)) & 0x3)));
++		else
++			seq_printf(s, "            ");
++
++		/* PCI PM config space setting */
++		pos = pci_find_capability(pdev, PCI_CAP_ID_PM);
++		if (pos != 0) {
++			pci_read_config_word(pdev, pos + PCI_PM_CTRL, &pmcsr);
++		seq_printf(s, "PCI-%-4s",
++			pci_power_name(pmcsr & PCI_PM_CTRL_STATE_MASK));
++		} else {
++			seq_printf(s, "        ");
++		}
++
++		seq_printf(s, " %s ", pci_power_name(mrst_dev->latest_request));
++		for (i = 0; i <= PCI_D3cold; ++i)
++			seq_printf(s, "%d ", mrst_dev->pci_state_counts[i]);
++
++		if (mrst_dev->lss) {
++			unsigned int lssmask;
++
++			lssmask = SSMSK(D0i3, mrst_dev->lss);
++
++			if ((lssmask & S0I3_SSS_TARGET) &&
++				((lssmask & cur_pmsss) !=
++					(lssmask & S0I3_SSS_TARGET)))
++						seq_printf(s , "[BLOCKS s0i3]");
++		}
++
++		seq_printf(s, "\n");
++	}
++	seq_printf(s, "Wake Counters:\n");
++	for (lss = 0; lss < MRST_NUM_LSS; ++lss)
++		seq_printf(s, "LSS%d %d\n", lss, wake_counters[lss]);
++
++	seq_printf(s, "Interrupt Counters:\n");
++	seq_printf(s,
++		"INT_SPURIOUS \t%8u\n" "INT_CMD_DONE \t%8u\n"
++		"INT_CMD_ERR  \t%8u\n" "INT_WAKE_RX  \t%8u\n"
++		"INT_SS_ERROR \t%8u\n" "INT_S0IX_MISS\t%8u\n"
++		"INT_NO_ACKC6 \t%8u\n" "INT_INVALID  \t%8u\n",
++		pmu_irq_stats[INT_SPURIOUS], pmu_irq_stats[INT_CMD_DONE],
++		pmu_irq_stats[INT_CMD_ERR], pmu_irq_stats[INT_WAKE_RX],
++		pmu_irq_stats[INT_SS_ERROR], pmu_irq_stats[INT_S0IX_MISS],
++		pmu_irq_stats[INT_NO_ACKC6], pmu_irq_stats[INT_INVALID]);
++
++	seq_printf(s, "mrst_pmu_wait_ready_calls          %8d\n",
++			pmu_wait_ready_calls);
++	seq_printf(s, "mrst_pmu_wait_ready_udelays        %8d\n",
++			pmu_wait_ready_udelays);
++	seq_printf(s, "mrst_pmu_wait_ready_udelays_max    %8d\n",
++			pmu_wait_ready_udelays_max);
++	seq_printf(s, "mrst_pmu_wait_done_calls           %8d\n",
++			pmu_wait_done_calls);
++	seq_printf(s, "mrst_pmu_wait_done_udelays         %8d\n",
++			pmu_wait_done_udelays);
++	seq_printf(s, "mrst_pmu_wait_done_udelays_max     %8d\n",
++			pmu_wait_done_udelays_max);
++	seq_printf(s, "mrst_pmu_set_power_state_entry     %8d\n",
++			pmu_set_power_state_entry);
++	seq_printf(s, "mrst_pmu_set_power_state_send_cmd  %8d\n",
++			pmu_set_power_state_send_cmd);
++	seq_printf(s, "SCU busy: %d\n", pmu_read_busy_status());
++
++	return 0;
++}
++
++static int debug_mrst_pmu_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, debug_mrst_pmu_show, NULL);
++}
++
++static const struct file_operations devices_state_operations = {
++	.open		= debug_mrst_pmu_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++#endif	/* DEBUG_FS */
++
++/*
++ * Validate SCU PCI shim PCI vendor capability byte
++ * against LSS hard-coded in mrst_devs[] above.
++ * DEBUG only.
++ */
++static void pmu_scu_firmware_debug(void)
++{
++	struct pci_dev *pdev = NULL;
++
++	for_each_pci_dev(pdev) {
++		struct mrst_device *mrst_dev;
++		u8 pci_config_lss;
++		int pos;
++
++		mrst_dev = pci_id_2_mrst_dev(pdev->device);
++		if (unlikely(!mrst_dev)) {
++			printk(KERN_ERR FW_BUG "pmu: Unknown "
++				"PCI device 0x%04X\n", pdev->device);
++			continue;
++		}
++
++		if (mrst_dev->lss == 0)
++			continue;	 /* no LSS in our table */
++
++		pos = pci_find_capability(pdev, PCI_CAP_ID_VNDR);
++		if (!pos != 0) {
++			printk(KERN_ERR FW_BUG "pmu: 0x%04X "
++				"missing PCI Vendor Capability\n",
++				pdev->device);
++			continue;
++		}
++		pci_read_config_byte(pdev, pos + 4, &pci_config_lss);
++		if (!(pci_config_lss & PCI_VENDOR_CAP_LOG_SS_MASK)) {
++			printk(KERN_ERR FW_BUG "pmu: 0x%04X "
++				"invalid PCI Vendor Capability 0x%x "
++				" expected LSS 0x%X\n",
++				pdev->device, pci_config_lss, mrst_dev->lss);
++			continue;
++		}
++		pci_config_lss &= PCI_VENDOR_CAP_LOG_ID_MASK;
++
++		if (mrst_dev->lss == pci_config_lss)
++			continue;
++
++		printk(KERN_ERR FW_BUG "pmu: 0x%04X LSS = %d, expected %d\n",
++			pdev->device, pci_config_lss, mrst_dev->lss);
++	}
++}
++
++/**
++ * pmu_probe
++ */
++static int __devinit pmu_probe(struct pci_dev *pdev,
++				   const struct pci_device_id *pci_id)
++{
++	int ret;
++	struct mrst_pmu_reg *pmu;
++
++	/* Init the device */
++	ret = pci_enable_device(pdev);
++	if (ret) {
++		dev_err(&pdev->dev, "Unable to Enable PCI device\n");
++		return ret;
++	}
++
++	ret = pci_request_regions(pdev, MRST_PMU_DRV_NAME);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "Cannot obtain PCI resources, aborting\n");
++		goto out_err1;
++	}
++
++	/* Map the memory of PMU reg base */
++	pmu = pci_iomap(pdev, 0, 0);
++	if (!pmu) {
++		dev_err(&pdev->dev, "Unable to map the PMU address space\n");
++		ret = -ENOMEM;
++		goto out_err2;
++	}
++
++#ifdef CONFIG_DEBUG_FS
++	/* /sys/kernel/debug/mrst_pmu */
++	(void) debugfs_create_file("mrst_pmu", S_IFREG | S_IRUGO,
++				NULL, NULL, &devices_state_operations);
++#endif
++	pmu_reg = pmu;	/* success */
++
++	if (request_irq(pdev->irq, pmu_irq, 0, MRST_PMU_DRV_NAME, NULL)) {
++		dev_err(&pdev->dev, "Registering isr has failed\n");
++		ret = -1;
++		goto out_err3;
++	}
++
++	pmu_scu_firmware_debug();
++
++	pmu_write_wkc(S0I3_WAKE_SOURCES);	/* Enable S0i3 wakeup sources */
++
++	pmu_wait_ready();
++
++	pmu_write_ssc(D0I1_ACG_SSS_TARGET);	/* Enable Auto-Clock_Gating */
++	pmu_write_cmd(0x201);
++
++	spin_lock_init(&mrst_pmu_power_state_lock);
++
++	/* Enable the hardware interrupt */
++	pmu_irq_enable();
++	return 0;
++
++out_err3:
++	free_irq(pdev->irq, NULL);
++	pci_iounmap(pdev, pmu_reg);
++	pmu_reg = NULL;
++out_err2:
++	pci_release_region(pdev, 0);
++out_err1:
++	pci_disable_device(pdev);
++	return ret;
++}
++
++static void __devexit pmu_remove(struct pci_dev *pdev)
++{
++	dev_err(&pdev->dev, "Mid PM pmu_remove called\n");
++
++	/* Freeing up the irq */
++	free_irq(pdev->irq, NULL);
++
++	pci_iounmap(pdev, pmu_reg);
++	pmu_reg = NULL;
++
++	/* disable the current PCI device */
++	pci_release_region(pdev, 0);
++	pci_disable_device(pdev);
++}
++
++static DEFINE_PCI_DEVICE_TABLE(pmu_pci_ids) = {
++	{ PCI_VDEVICE(INTEL, PCI_DEV_ID_MRST_PMU), 0 },
++	{ }
++};
++
++MODULE_DEVICE_TABLE(pci, pmu_pci_ids);
++
++static struct pci_driver driver = {
++	.name = MRST_PMU_DRV_NAME,
++	.id_table = pmu_pci_ids,
++	.probe = pmu_probe,
++	.remove = __devexit_p(pmu_remove),
++};
++
++/**
++ * pmu_pci_register - register the PMU driver as PCI device
++ */
++static int __init pmu_pci_register(void)
++{
++	return pci_register_driver(&driver);
++}
++
++/* Register and probe via fs_initcall() to preceed device_initcall() */
++fs_initcall(pmu_pci_register);
++
++static void __exit mid_pci_cleanup(void)
++{
++	pci_unregister_driver(&driver);
++}
++
++static int ia_major;
++static int ia_minor;
++
++static int pmu_sfi_parse_oem(struct sfi_table_header *table)
++{
++	struct sfi_table_simple *sb;
++
++	sb = (struct sfi_table_simple *)table;
++	ia_major = (sb->pentry[1] >> 0) & 0xFFFF;
++	ia_minor = (sb->pentry[1] >> 16) & 0xFFFF;
++	printk(KERN_INFO "mrst_pmu: IA FW version v%x.%x\n",
++		ia_major, ia_minor);
++
++	return 0;
++}
++
++static int __init scu_fw_check(void)
++{
++	int ret;
++	u32 fw_version;
++
++	if (!pmu_reg)
++		return 0;	/* this driver didn't probe-out */
++
++	sfi_table_parse("OEMB", NULL, NULL, pmu_sfi_parse_oem);
++
++	if (ia_major < 0x6005 || ia_minor < 0x1525) {
++		WARN(1, "mrst_pmu: IA FW version too old\n");
++		return -1;
++	}
++
++	ret = intel_scu_ipc_command(IPCMSG_FW_REVISION, 0, NULL, 0,
++					&fw_version, 1);
++
++	if (ret) {
++		WARN(1, "mrst_pmu: IPC FW version? %d\n", ret);
++	} else {
++		int scu_major = (fw_version >> 8) & 0xFF;
++		int scu_minor = (fw_version >> 0) & 0xFF;
++
++		printk(KERN_INFO "mrst_pmu: firmware v%x\n", fw_version);
++
++		if ((scu_major >= 0xC0) && (scu_minor >= 0x49)) {
++			printk(KERN_INFO "mrst_pmu: enabling S0i3\n");
++			mrst_pmu_s0i3_enable = true;
++		} else {
++			WARN(1, "mrst_pmu: S0i3 disabled, old firmware %X.%X",
++					scu_major, scu_minor);
++		}
++	}
++	return 0;
++}
++late_initcall(scu_fw_check);
++module_exit(mid_pci_cleanup);
+diff --git a/arch/x86/platform/mrst/pmu.h b/arch/x86/platform/mrst/pmu.h
+new file mode 100644
+index 0000000..bfbfe64
+--- /dev/null
++++ b/arch/x86/platform/mrst/pmu.h
+@@ -0,0 +1,234 @@
++/*
++ * mrst/pmu.h - private definitions for MRST Power Management Unit mrst/pmu.c
++ *
++ * Copyright (c) 2011, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#ifndef _MRST_PMU_H_
++#define _MRST_PMU_H_
++
++#define PCI_DEV_ID_MRST_PMU		0x0810
++#define MRST_PMU_DRV_NAME		"mrst_pmu"
++#define	PCI_SUB_CLASS_MASK		0xFF00
++
++#define	PCI_VENDOR_CAP_LOG_ID_MASK	0x7F
++#define PCI_VENDOR_CAP_LOG_SS_MASK	0x80
++
++#define SUB_SYS_ALL_D0I1	0x01155555
++#define S0I3_WAKE_SOURCES	0x00001FFF
++
++#define PM_S0I3_COMMAND					\
++	((0 << 31) |	/* Reserved */			\
++	(0 << 30) |	/* Core must be idle */		\
++	(0xc2 << 22) |	/* ACK C6 trigger */		\
++	(3 << 19) |	/* Trigger on DMI message */	\
++	(3 << 16) |	/* Enter S0i3 */		\
++	(0 << 13) |	/* Numeric mode ID (sw) */	\
++	(3 << 9) |	/* Trigger mode */		\
++	(0 << 8) |	/* Do not interrupt */		\
++	(1 << 0))	/* Set configuration */
++
++#define	LSS_DMI		0
++#define	LSS_SD_HC0	1
++#define	LSS_SD_HC1	2
++#define	LSS_NAND	3
++#define	LSS_IMAGING	4
++#define	LSS_SECURITY	5
++#define	LSS_DISPLAY	6
++#define	LSS_USB_HC	7
++#define	LSS_USB_OTG	8
++#define	LSS_AUDIO	9
++#define	LSS_AUDIO_LPE	9
++#define	LSS_AUDIO_SSP	9
++#define	LSS_I2C0	10
++#define	LSS_I2C1	10
++#define	LSS_I2C2	10
++#define	LSS_KBD		10
++#define	LSS_SPI0	10
++#define	LSS_SPI1	10
++#define	LSS_SPI2	10
++#define	LSS_GPIO	10
++#define	LSS_SRAM	11	/* used by SCU, do not touch */
++#define	LSS_SD_HC2	12
++/* LSS hardware bits 15,14,13 are hardwired to 0, thus unusable */
++#define MRST_NUM_LSS	13
++
++#define MIN(a, b) (((a) < (b)) ? (a) : (b))
++
++#define	SSMSK(mask, lss) ((mask) << ((lss) * 2))
++#define	D0	0
++#define	D0i1	1
++#define	D0i2	2
++#define	D0i3	3
++
++#define S0I3_SSS_TARGET	(		\
++	SSMSK(D0i1, LSS_DMI) |		\
++	SSMSK(D0i3, LSS_SD_HC0) |	\
++	SSMSK(D0i3, LSS_SD_HC1) |	\
++	SSMSK(D0i3, LSS_NAND) |		\
++	SSMSK(D0i3, LSS_SD_HC2) |	\
++	SSMSK(D0i3, LSS_IMAGING) |	\
++	SSMSK(D0i3, LSS_SECURITY) |	\
++	SSMSK(D0i3, LSS_DISPLAY) |	\
++	SSMSK(D0i3, LSS_USB_HC) |	\
++	SSMSK(D0i3, LSS_USB_OTG) |	\
++	SSMSK(D0i3, LSS_AUDIO) |	\
++	SSMSK(D0i1, LSS_I2C0))
++
++/*
++ * D0i1 on Langwell is Autonomous Clock Gating (ACG).
++ * Enable ACG on every LSS except camera and audio
++ */
++#define D0I1_ACG_SSS_TARGET	 \
++	(SUB_SYS_ALL_D0I1 & ~SSMSK(D0i1, LSS_IMAGING) & ~SSMSK(D0i1, LSS_AUDIO))
++
++enum cm_mode {
++	CM_NOP,			/* ignore the config mode value */
++	CM_IMMEDIATE,
++	CM_DELAY,
++	CM_TRIGGER,
++	CM_INVALID
++};
++
++enum sys_state {
++	SYS_STATE_S0I0,
++	SYS_STATE_S0I1,
++	SYS_STATE_S0I2,
++	SYS_STATE_S0I3,
++	SYS_STATE_S3,
++	SYS_STATE_S5
++};
++
++#define SET_CFG_CMD	1
++
++enum int_status {
++	INT_SPURIOUS = 0,
++	INT_CMD_DONE = 1,
++	INT_CMD_ERR = 2,
++	INT_WAKE_RX = 3,
++	INT_SS_ERROR = 4,
++	INT_S0IX_MISS = 5,
++	INT_NO_ACKC6 = 6,
++	INT_INVALID = 7,
++};
++
++/* PMU register interface */
++static struct mrst_pmu_reg {
++	u32 pm_sts;		/* 0x00 */
++	u32 pm_cmd;		/* 0x04 */
++	u32 pm_ics;		/* 0x08 */
++	u32 _resv1;		/* 0x0C */
++	u32 pm_wkc[2];		/* 0x10 */
++	u32 pm_wks[2];		/* 0x18 */
++	u32 pm_ssc[4];		/* 0x20 */
++	u32 pm_sss[4];		/* 0x30 */
++	u32 pm_wssc[4];		/* 0x40 */
++	u32 pm_c3c4;		/* 0x50 */
++	u32 pm_c5c6;		/* 0x54 */
++	u32 pm_msi_disable;	/* 0x58 */
++} *pmu_reg;
++
++static inline u32 pmu_read_sts(void) { return readl(&pmu_reg->pm_sts); }
++static inline u32 pmu_read_ics(void) { return readl(&pmu_reg->pm_ics); }
++static inline u32 pmu_read_wks(void) { return readl(&pmu_reg->pm_wks[0]); }
++static inline u32 pmu_read_sss(void) { return readl(&pmu_reg->pm_sss[0]); }
++
++static inline void pmu_write_cmd(u32 arg) { writel(arg, &pmu_reg->pm_cmd); }
++static inline void pmu_write_ics(u32 arg) { writel(arg, &pmu_reg->pm_ics); }
++static inline void pmu_write_wkc(u32 arg) { writel(arg, &pmu_reg->pm_wkc[0]); }
++static inline void pmu_write_ssc(u32 arg) { writel(arg, &pmu_reg->pm_ssc[0]); }
++static inline void pmu_write_wssc(u32 arg)
++					{ writel(arg, &pmu_reg->pm_wssc[0]); }
++
++static inline void pmu_msi_enable(void) { writel(0, &pmu_reg->pm_msi_disable); }
++static inline u32 pmu_msi_is_disabled(void)
++				{ return readl(&pmu_reg->pm_msi_disable); }
++
++union pmu_pm_ics {
++	struct {
++		u32 cause:8;
++		u32 enable:1;
++		u32 pending:1;
++		u32 reserved:22;
++	} bits;
++	u32 value;
++};
++
++static inline void pmu_irq_enable(void)
++{
++	union pmu_pm_ics pmu_ics;
++
++	pmu_ics.value = pmu_read_ics();
++	pmu_ics.bits.enable = 1;
++	pmu_write_ics(pmu_ics.value);
++}
++
++union pmu_pm_status {
++	struct {
++		u32 pmu_rev:8;
++		u32 pmu_busy:1;
++		u32 mode_id:4;
++		u32 Reserved:19;
++	} pmu_status_parts;
++	u32 pmu_status_value;
++};
++
++static inline int pmu_read_busy_status(void)
++{
++	union pmu_pm_status result;
++
++	result.pmu_status_value = pmu_read_sts();
++
++	return result.pmu_status_parts.pmu_busy;
++}
++
++/* pmu set config parameters */
++struct cfg_delay_param_t {
++	u32 cmd:8;
++	u32 ioc:1;
++	u32 cfg_mode:4;
++	u32 mode_id:3;
++	u32 sys_state:3;
++	u32 cfg_delay:8;
++	u32 rsvd:5;
++};
++
++struct cfg_trig_param_t {
++	u32 cmd:8;
++	u32 ioc:1;
++	u32 cfg_mode:4;
++	u32 mode_id:3;
++	u32 sys_state:3;
++	u32 cfg_trig_type:3;
++	u32 cfg_trig_val:8;
++	u32 cmbi:1;
++	u32 rsvd1:1;
++};
++
++union pmu_pm_set_cfg_cmd_t {
++	union {
++		struct cfg_delay_param_t d_param;
++		struct cfg_trig_param_t t_param;
++	} pmu2_params;
++	u32 pmu_pm_set_cfg_cmd_value;
++};
++
++#ifdef FUTURE_PATCH
++extern int mrst_s0i3_entry(u32 regval, u32 *regaddr);
++#else
++static inline int mrst_s0i3_entry(u32 regval, u32 *regaddr) { return -1; }
++#endif
++#endif
+-- 
+1.7.6.396.ge0613
+
