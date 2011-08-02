@@ -1,132 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453Ab1HBMxS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 08:53:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61540 "EHLO mx1.redhat.com"
+	id S1754492Ab1HBNAZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 09:00:25 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:46682 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754004Ab1HBMxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 08:53:13 -0400
-Date: Tue, 2 Aug 2011 13:52:00 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Zdenek Kabelac <zkabelac@redhat.com>, Peter Rajnoha <prajnoha@redhat.com>,
-        Akinobu Mita <akinobu.mita@gmail.com>, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        Joe Perches <joe@perches.com>, Jonathan Brassow <jbrassow@redhat.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Mike Snitzer <snitzer@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>, Milan Broz <mbroz@redhat.com>
-Subject: [git pull] device-mapper patches for 3.0
-Message-ID: <20110802125200.GK31980@agk-dp.fab.redhat.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Zdenek Kabelac <zkabelac@redhat.com>,
-	Peter Rajnoha <prajnoha@redhat.com>,
-	Akinobu Mita <akinobu.mita@gmail.com>, dm-devel@redhat.com,
-	linux-kernel@vger.kernel.org, stable@kernel.org,
-	Joe Perches <joe@perches.com>,
-	Jonathan Brassow <jbrassow@redhat.com>,
-	"Kirill A. Shutemov" <kirill@shutemov.name>,
-	Mike Snitzer <snitzer@redhat.com>,
-	Mikulas Patocka <mpatocka@redhat.com>,
-	Milan Broz <mbroz@redhat.com>
+	id S1752096Ab1HBNAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 09:00:20 -0400
+X-Greylist: delayed 782 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Aug 2011 09:00:19 EDT
+Message-ID: <4E37F19F.6080107@parallels.com>
+Date: Tue, 2 Aug 2011 09:46:23 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Dave Chinner <david@fromorbit.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <containers@lists.linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@parallels.com>
+Subject: Re: [PATCH 2/4] limit nr_dentries per superblock
+References: <1311947059-17209-1-git-send-email-glommer@parallels.com> <1311947059-17209-3-git-send-email-glommer@parallels.com> <20110731011531.GL5404@dastard>
+In-Reply-To: <20110731011531.GL5404@dastard>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [187.106.54.7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull from:
+Hi David,
 
-  master.kernel.org:/pub/scm/linux/kernel/git/agk/linux-2.6-dm.git master
+Thank you for your comments. I actually agree with most of the things 
+you pointed out, so I'll focus my reply here only.
 
-to get the following device-mapper patches for inclusion in 3.0.
+> Also, this doesn't address the problem I originally commented on -
+> it only shrinks the dcache, not the inode or filesystem caches that
+> hold all the memory.
 
-The main enhancement this time is further integration with the md code, with
-raid1 now supported.  Patches making use of this will shortly go into userspace
-LVM, so it'll be possible to create Logical Volumes using the md raid
-implementations.
+I understand that the icache is a greater memory user than the dcache.
+I also understand that the icache can be dirty due to pending IO.
+I am also okay to shrink some of the icache every time we shrink the 
+dcache - and see below, this might happen if I change they way I am 
+calling the shrinker.
 
-(I had hoped to include the new thin provisioning target in this pull
-request, but I'm holding it back in linux-next for now because of some
-unresolved reports of data corruption.)
+However, since the dcache precedes the icache in the cache hierarchy,
+and is the actual entity pinning the icache into memory, I don't see a 
+reason to *limit* the icache size, since once the dcache is limited,
+anything holding the icache into memory will go away eventually, and the 
+shrinkers that run during memory pressure will be able to get rid of it.
 
-Akinobu Mita (1):
-      dm log: clean up bit little endian bitops
+> I mentioned the new per-sb shrinkers for a
+> reason - you should be calling them, not __shrink_dcache_sb(). i.e.
+> building a scan_control structure and calling
+> sb->shrinker.shrink(&sb->shrinker,&sc);
+>
 
-Alasdair G Kergon (4):
-      dm: fix idr leak on module removal
-      dm: suppress endian warnings
-      dm ioctl: prevent empty message
-      dm raid: tidy includes
+Would you be okay with having prune_super() being called whenever the
+nr_dentries_max limit is reached? It will effectively shrink both
+the icache and the dcache, using the dentry limit as a trigger only.
 
-Joe Perches (1):
-      dm: use vzalloc
+> I'm seriously starting to think that this needs to share an
+> implementation with the mm shrinker code, because it already
+> solves most of these problems...
 
-Jonathan Brassow (7):
-      dm snapshot: style cleanups
-      dm raid: cleanup parameter handling
-      dm raid: improve table parameters documentation
-      dm raid: add region_size parameter
-      dm raid: add write_mostly parameter
-      dm raid: support metadata devices
-      dm raid: add md raid1 support
-
-Kirill A. Shutemov (1):
-      dm log: userspace use list_move
-
-Mike Snitzer (9):
-      dm mpath: fix potential NULL pointer in feature arg processing
-      dm table: fix discard support
-      dm table: clean dm_get_device and move exports
-      dm table: share target argument parsing functions
-      dm flakey: use dm_target_offset and support discards
-      dm flakey: support feature args
-      dm flakey: add drop_writes
-      dm flakey: add corrupt_bio_byte feature
-      dm table: set flush capability based on underlying devices
-
-Mikulas Patocka (10):
-      dm snapshot: flush disk cache when merging
-      dm io: flush cpu cache with vmapped io
-      dm kcopyd: remove offset field from job structure
-      dm kcopyd: remove nr_pages field from job structure
-      dm snapshot: remove unused definitions
-      dm: ignore merge_bvec for snapshots when safe
-      dm snapshot: skip reading origin when overwriting complete chunk
-      dm ioctl: fill in device parameters in more ioctls
-      dm ioctl: introduce __get_dev_cell
-      dm ioctl: forbid multiple device specifiers
-
-Milan Broz (1):
-      dm crypt: optionally support discard requests
-
- Documentation/device-mapper/dm-crypt.txt  |   21 +-
- Documentation/device-mapper/dm-flakey.txt |   48 ++-
- Documentation/device-mapper/dm-raid.txt   |  138 ++++---
- drivers/md/Kconfig                        |    5 +-
- drivers/md/dm-crypt.c                     |   62 +++-
- drivers/md/dm-flakey.c                    |  270 +++++++++++--
- drivers/md/dm-io.c                        |   29 ++-
- drivers/md/dm-ioctl.c                     |   89 +++--
- drivers/md/dm-kcopyd.c                    |   42 ++-
- drivers/md/dm-log-userspace-base.c        |    3 +-
- drivers/md/dm-log.c                       |   32 +-
- drivers/md/dm-mpath.c                     |  147 ++-----
- drivers/md/dm-raid.c                      |  621 ++++++++++++++++++++++++++---
- drivers/md/dm-snap-persistent.c           |   80 ++--
- drivers/md/dm-snap.c                      |   84 +++-
- drivers/md/dm-table.c                     |  155 ++++++--
- drivers/md/dm.c                           |   75 ++++-
- drivers/md/dm.h                           |    2 +
- include/linux/device-mapper.h             |   43 ++
- include/linux/dm-ioctl.h                  |    4 +-
- include/linux/dm-kcopyd.h                 |   15 +
- 21 files changed, 1561 insertions(+), 404 deletions(-)
-
-Thanks,
-Alasdair.
+I have to think more about that. Hold on!
