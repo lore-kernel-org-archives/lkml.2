@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab1HBL3x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 07:29:53 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:54128 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866Ab1HBL3t (ORCPT
+	id S1754026Ab1HBLaf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 07:30:35 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48229 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753897Ab1HBLa3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 07:29:49 -0400
-Date: Tue, 02 Aug 2011 04:29:44 -0700 (PDT)
-Message-Id: <20110802.042944.2000448046653992449.davem@davemloft.net>
-To: paulmck@linux.vnet.ibm.com
-Cc: shemminger@vyatta.com, eric.dumazet@gmail.com, mchan@broadcom.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rcu: convert uses of rcu_assign_pointer(x, NULL) to
- RCU_INIT_POINTER
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110802103216.GB2352@linux.vnet.ibm.com>
-References: <20110801091900.1027396f@nehalam.ftrdhcpuser.net>
-	<20110801.224401.31810103988544647.davem@davemloft.net>
-	<20110802103216.GB2352@linux.vnet.ibm.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 2 Aug 2011 07:30:29 -0400
+Subject: Re: [PATCH 0/7] perf, x86: Implement AMD IBS
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110801052128.GW4590@erda.amd.com>
+References: <1311860812-28748-1-git-send-email-robert.richter@amd.com>
+	 <1311959236.5890.420.camel@twins>  <20110801052128.GW4590@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 02 Aug 2011 13:29:55 +0200
+Message-ID: <1312284595.1147.96.camel@twins>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 02 Aug 2011 04:29:45 -0700 (PDT)
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Tue, 2 Aug 2011 03:32:16 -0700
+On Mon, 2011-08-01 at 07:21 +0200, Robert Richter wrote:
 
-> This patch does not depend on Eric's earlier patch because
-> RCU_INIT_POINTER() already exists.  So although I would be happy to
-> carry this patch, there is no reason I can see not to run it up through
-> net-next.  Either way, the Coccinelle script does look generally
-> useful.  ;-)
+> IBS is supposed to be architectural spec'ed, meaning there are no
+> family checks. IBS features are detected using cpuid.
 > 
-> If you would prefer me to carry it, please let me know.  Otherwise:
-> 
-> Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> So the version of the raw sampling data format could be specified with
+> the u32 capability variable. I could put the caps value to the raw
+> sample data too right after the size field. An additional advantage
+> would be that 64 bit values are memory alligned then.
 
-I've queued it up for net-next, thanks!
+Seems like a good filler :-)
+
+> The Branch Target Address register that has been added to newer cpus
+> could simply be extended to the raw data sample, the data would still
+> be backward compatible. Userland can detect it existence from the
+> sample size or (better) from the ibs caps.
+
+Caps would be better.
+
+> Though it is treated architectural, it isn't in the AMD64 Architecture
+> Programmer's Manual (APM). The 10h BKDG is a good source, but extended
+> IBS features are described in the family 12h bkdg (same as for 15h)
+> and the capabilities are in the cpuid spec:
+> 
+>  http://support.amd.com/us/Processor_TechDocs/41131.pdf
+>  http://support.amd.com/us/Processor_TechDocs/25481.pdf 
+
+Right, so comparing Fam10 to Fam12,
+
++ IbsOpCtl.19:58
++ IbsOpData.38
+- IbsOpData2.4:5
++ IbsOpData3.19
++ IbsBrTarget
+
+Curious that they removed a few bits, those don't seem to be enumerated
+in the IBS capability field either.
