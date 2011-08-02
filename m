@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab1HBWG2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 18:06:28 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:50913 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755390Ab1HBWGX (ORCPT
+	id S1755560Ab1HBWLx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 18:11:53 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:41321 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755377Ab1HBWLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 18:06:23 -0400
-Date: Wed, 3 Aug 2011 00:06:19 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: Revert needed: udev spewing warnons on common systems in 3.0
-Message-ID: <20110802220619.GI27083@one.firstfloor.org>
-References: <20110802005206.GA3832@tassilo.jf.intel.com> <20110801183207.cea89a96.akpm@linux-foundation.org> <CA+55aFw=wX1CormdOAnsoK2ruDLp9SaEVh1EcTj8wvt+Kq2gAg@mail.gmail.com> <alpine.DEB.2.00.1108011916480.15596@chino.kir.corp.google.com> <20110802101614.009cdf42@lxorguk.ukuu.org.uk> <alpine.DEB.2.00.1108020249560.18935@chino.kir.corp.google.com> <20110802111117.10a73b89@lxorguk.ukuu.org.uk> <alpine.DEB.2.00.1108021439030.12258@chino.kir.corp.google.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1108021439030.12258@chino.kir.corp.google.com>
-User-Agent: Mutt/1.4.2.2i
+	Tue, 2 Aug 2011 18:11:46 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: balbi@ti.com
+Subject: Re: [PATCH][Resend] Remove unneeded version.h includes (and add where needed) for drivers/usb/
+Date: Wed, 3 Aug 2011 00:11:53 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37-gentoo-r3; KDE/4.6.5; x86_64; ; )
+Cc: Jesper Juhl <jj@chaosbits.net>, LKML <linux-kernel@vger.kernel.org>,
+        trivial@kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        linux-usb@vger.kernel.org, usb-storage@lists.one-eyed-alien.net
+References: <alpine.LNX.2.00.1108012329380.31999@swampdragon.chaosbits.net> <20110802211923.GB10120@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110802211923.GB10120@legolas.emea.dhcp.ti.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108030011.54322.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> All of the examples that I've cited that were fixed as a result of the 
-> printk_once() were through bugzilla for the developers of those 
-> applications, I didn't talk to any distro when I publically said I would 
-> handle all reports of this warning that people didn't know how to triage.
+Hi Felipe,
 
-The distros would have updated udev at some point anyways.
-But they won't do it for old releases.
+On Tuesday 02 August 2011 23:19:24 Felipe Balbi wrote:
+> On Mon, Aug 01, 2011 at 11:33:29PM +0200, Jesper Juhl wrote:
+> > It was pointed out by 'make versioncheck' that linux/version.h was not
+> > always being included where needed and sometimes included needlessly
+> > in drivers/usb/.
+> > This patch fixes up the includes.
+> > 
+> > For the UVC gadget driver bits, this was ACK'ed by Laurent Pinchart.
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > ---
+> > 
+> >  drivers/usb/gadget/uvc.h         |    1 +
+> >  drivers/usb/gadget/uvc_v4l2.c    |    1 -
+> >  drivers/usb/storage/realtek_cr.c |    1 -
+> >  3 files changed, 1 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/usb/gadget/uvc.h b/drivers/usb/gadget/uvc.h
+> > index 5b79194..81971fb 100644
+> > --- a/drivers/usb/gadget/uvc.h
+> > +++ b/drivers/usb/gadget/uvc.h
+> > @@ -56,6 +56,7 @@ struct uvc_event
+> > 
+> >  #include <linux/usb.h>	/* For usb_endpoint_* */
+> >  #include <linux/usb/gadget.h>
+> >  #include <linux/videodev2.h>
+> > 
+> > +#include <linux/version.h>
+> 
+> does uvc.h really needs <linux/version.h> ?? Laurent ?
 
-But the users who don't want to update will just be annoyed 
-(in Linus words) the backtrace forever. 
+uvc.h has
 
-The big problem I have with your "use kernel WARN_ONs to social engineer"
-approach is that the devalues a good mechanism to report kernel 
-problems.
+#define DRIVER_VERSION_NUMBER                   KERNEL_VERSION(0, 1, 0)
 
-Traditionally at least I looked at all backtraces
-and tried to get at the bottom of the problem to improve the kernel.
-I know from email that users reported those too.
+This is used in drivers/usb/gadget/uvc_v4l2.c only.
 
-Now that all my test systems spew them on every boot I cannot do 
-that anymore. When I see a backtrace scrolling by I now just
-think "Ah it's probably David Rientjes trying to social engineer
-someone again". 
+As the uvc gadget driver lives in-tree, the best fix is probably to remove 
+DRIVER_VERSION_NUMBER completely, and replace it with LINUX_VERSION_CODE where 
+it is used.
 
-And then some point noone will look at backtraces anymore because
-they have become normal.  Really serious problems will get missed.
+-- 
+Regards,
 
-And this is a bad thing.  
-
-IMHO still the only sensible thing that can be done with this patch
-is to revert it.
-
--Andi
-
+Laurent Pinchart
