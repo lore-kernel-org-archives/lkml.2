@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab1HBPLi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 11:11:38 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:38684 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752201Ab1HBPLc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 11:11:32 -0400
-Date: Tue, 2 Aug 2011 08:11:29 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        akpm <akpm@linux-foundation.org>,
-        torvalds <torvalds@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        J Freyensee <james_p_freyensee@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pti: add missing CONFIG_PCI dependency
-Message-Id: <20110802081129.b84a7bc7.rdunlap@xenotime.net>
-In-Reply-To: <20110802080834.GA9847@osiris.boeblingen.de.ibm.com>
-References: <20110802080834.GA9847@osiris.boeblingen.de.ibm.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1754083Ab1HBPU3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 11:20:29 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:51278 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753525Ab1HBPUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 11:20:21 -0400
+Date: Tue, 2 Aug 2011 17:20:14 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Andrea Righi <andrea@betterlinux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, trivial@kernel.org,
+        kernel-janitors@vger.kernel.org, Stefani Seibold <stefani@seibold.net>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/11] kernel/kfifo.c: trivial: use BUG_ON
+In-Reply-To: <20110802120329.GA9088@thinkpad>
+Message-ID: <Pine.LNX.4.64.1108021719450.2512@ask.diku.dk>
+References: <1312281304-11847-1-git-send-email-julia@diku.dk>
+ <1312281304-11847-2-git-send-email-julia@diku.dk> <20110802113335.GA4185@thinkpad>
+ <Pine.LNX.4.64.1108021349330.24349@ask.diku.dk> <20110802120329.GA9088@thinkpad>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Aug 2011 10:08:34 +0200 Heiko Carstens wrote:
+On Tue, 2 Aug 2011, Andrea Righi wrote:
 
-> From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> On Tue, Aug 02, 2011 at 01:52:49PM +0200, Julia Lawall wrote:
+> > On Tue, 2 Aug 2011, Andrea Righi wrote:
+> > 
+> > > On Tue, Aug 02, 2011 at 12:34:54PM +0200, Julia Lawall wrote:
+> > > > From: Julia Lawall <julia@diku.dk>
+> > > > 
+> > > > Use BUG_ON(x) rather than if(x) BUG();
+> > > > 
+> > > > The semantic patch that fixes this problem is as follows:
+> > > > (http://coccinelle.lip6.fr/)
+> > > > 
+> > > > // <smpl>
+> > > > @@ identifier x; @@
+> > > > -if (x) BUG();
+> > > > +BUG_ON(x);
+> > > > 
+> > > > @@ identifier x; @@
+> > > > -if (!x) BUG();
+> > > > +BUG_ON(!x);
+> > > > // </smpl>
+> > > > 
+> > > > Signed-off-by: Julia Lawall <julia@diku.dk>
+> > > > 
+> > > 
+> > > The patch looks good. However, I think we should just get rid of the
+> > > BUG_ON() there. If nents is 0, setup_sgl_buf() would just returns 0 and
+> > > nothing critical will happen.
+> > 
+> > I don't know the code at all.  Indeed, I'm not sure to see any uses of eg 
+> > __kfifo_dma_in_prepare_r, except in demo code.  But that would imply 
+> > returning 0 for two different reasons: asking for nothing and being out of 
+> > space.
+> > 
+> > julia
 > 
-> allmodconfig compile fails on s390 because of the new PTI driver:
-> 
-> drivers/misc/pti.c:407:3: error: implicit declaration of function 'pci_iounmap'
-> drivers/misc/pti.c:410:3: error: implicit declaration of function 'pci_release_region'
-> 
-> Add a 'depends on PCI' statement so it doesn't get compiled.
-> 
-> Cc: J Freyensee <james_p_freyensee@linux.intel.com>
+> Right. But I'd prefer to return nothing also when asking nothing rather
+> than crashing the kernel.
 
-James has already acked my identical patch.
-The problem seems to be that we don't have a drivers/misc/ maintainter to
-merge the patch.
+OK, that seems like a good point too.  I will send a new patch.
 
-Anyway:
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-
-
-> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> ---
->  drivers/misc/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -146,6 +146,7 @@ config PHANTOM
->  
->  config INTEL_MID_PTI
->  	tristate "Parallel Trace Interface for MIPI P1149.7 cJTAG standard"
-> +	depends on PCI
->  	default n
->  	help
->  	  The PTI (Parallel Trace Interface) driver directs
-> --
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+julia
