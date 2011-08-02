@@ -1,91 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab1HBXGt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 19:06:49 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36930 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118Ab1HBXGn (ORCPT
+	id S1753440Ab1HBXLb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 19:11:31 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:50710 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752737Ab1HBXL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 19:06:43 -0400
-Message-ID: <4E3882FE.6090108@lwfinger.net>
-Date: Tue, 02 Aug 2011 18:06:38 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
+	Tue, 2 Aug 2011 19:11:28 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:cc:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding;
+	b=MQK0JOEqsk+Zv8HBC7dXel2XGz0MywmZ2H+7dS3vmeJLJ00aQ+b+K8xFz7f3xm1Mk
+	Yq+kP8JMnYcxzyGeuV6rQ==
+Subject: [PATCH] x86: make e820 output consistent with other resource printks
+To: "H. Peter Anvin" <hpa@zytor.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
+Date: Tue, 02 Aug 2011 17:11:24 -0600
+Message-ID: <20110802231124.31471.93156.stgit@bhelgaas.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
-CC: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtl8192cu: add USB ID for Belkin n300 Micro USB wireless
- adapter
-References: <201108022229.58532.s.L-H@gmx.de> <201108022243.04377.s.L-H@gmx.de> <4E386FB9.2040507@lwfinger.net> <201108030035.50214.s.L-H@gmx.de>
-In-Reply-To: <201108030035.50214.s.L-H@gmx.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2011 05:35 PM, Stefan Lippers-Hollmann wrote:
-> Hi
->
-> On Wednesday 03 August 2011, Larry Finger wrote:
->> On 08/02/2011 03:43 PM, Stefan Lippers-Hollmann wrote:
->>> On Tuesday 02 August 2011, Stefan Lippers-Hollmann wrote:
-> [...]
->>>> +	{RTL_USB_DEVICE(0x050D, 0x2103, rtl92cu_hal_cfg)}, //Belkin - Edimax
->
-> Sorry about the C++ style comments, I meant to fix it, but forgot about
-> it in the end.
->
-> [...]
->>> [1]	http://aptosid.com/index.php?name=PNphpBB2&file=viewtopic&t=1550&start=0
->>> [2]	http://pastebin.com/ppZJ0GmU
->>
->> I have been holding a few new ID's that are in the vendor driver awaiting a
->> test. These include the following:
->>
->> +       {RTL_USB_DEVICE(USB_VENDER_ID_REALTEK, 0x817f, rtl92cu_hal_cfg)},
->> +       {RTL_USB_DEVICE(0x13d3, 0x3357, rtl92cu_hal_cfg)}, /* AzureWave */
->> +       {RTL_USB_DEVICE(0x13d3, 0x3358, rtl92cu_hal_cfg)}, /*Azwave 8188CE-VAU*/
->> -       {RTL_USB_DEVICE(0x3359, 0x13d3, rtl92cu_hal_cfg)},
->> +       {RTL_USB_DEVICE(0x13d3, 0x3359, rtl92cu_hal_cfg)},
->> +       {RTL_USB_DEVICE(0x4855, 0x0090, rtl92cu_hal_cfg)}, /* Feixun */
->> +       {RTL_USB_DEVICE(0x4855, 0x0091, rtl92cu_hal_cfg)}, /* NetweeN-Feixun */
->> +       {RTL_USB_DEVICE(0x9846, 0x9041, rtl92cu_hal_cfg)}, /* Netgear Cameo */
->> +       {RTL_USB_DEVICE(0x050d, 0x2102, rtl92cu_hal_cfg)}, /*Belkin-Sercomm*/
->> +       {RTL_USB_DEVICE(0x050d, 0x2103, rtl92cu_hal_cfg)}, /*Belkin-Edimax*/
->>
->> The deleted entry has the vendor and product reversed. The first one in the list
->> has been tested and works.
->>
->> Based on your report, I will drop the 050d entries. If you get a confirmation
->> that 050d,2103 works, then submit that patch.
->
-> I have now asked the reporter to check the state of rtl8192cu again,
-> current state is (with a kernel including my original patch):
-> - functionality confirmed on an unencrypted network
-> - WPA2-psk not conclusively tested, it may be out of range for his device.
-> ("EDIT: With my netbook I can get an IP address and use the neighbor's
->    unsecured network. Also, the Belkin device reports it at -47 dBm
->    signal strength, but my Toshiba netbook gives it -80 to -83 (which
->    may explain why the Belkin couldn't get an IP address), so there are
->    still some issues to sort.")
-> - no Oops if his USB ID is compiled into the module, that only happens
->    if he tries to inject it into an unpatched kernel with:
->    echo -n "050d 2103">   /sys/bus/usb/drivers/rtl8192cu/new_id
->    (and I'm reluctant to raise this as potential issue completely, due
->    to the tainted kernel condition on his system).
->
-> Hopefully he'll answer my further inquiries about the stability of his
-> Belkin n300 Micro USB soon.
+This tidies e820 output by adding an "e820" prefix and printing ranges
+similarly to the way we print struct resource with %pR, e.g.:
 
-I think that ID and 050d:2102 should be added to the kernel. AFAIK, all 
-RTL8192CU and all RTL8188CU chips are alike, at least as far as the programming 
-is concerned. At least if the device works with the new IDs, it likely works as 
-well as any other device. There are some reports of low performance from some 
-models, but none of them crash Linux. In addition, there is no diagnostic info 
-that would allow the debugging of the problem. My specific device does not show 
-this problem.
+  - BIOS-e820: 0000000000000000 - 000000000009f400 (usable)
+  + BIOS-e820: [mem 0x0000000000000000-0x000000000009f3ff] usable
 
-As you have seen, I sent the patch for the others.
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ arch/x86/kernel/e820.c |   53 ++++++++++++++++++++++++------------------------
+ 1 files changed, 27 insertions(+), 26 deletions(-)
 
-Larry
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 3e2ef84..b661c64 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -111,7 +111,9 @@ static void __init __e820_add_region(struct e820map *e820x, u64 start, u64 size,
+ 	int x = e820x->nr_map;
+ 
+ 	if (x >= ARRAY_SIZE(e820x->map)) {
+-		printk(KERN_ERR "Ooops! Too many entries in the memory map!\n");
++		printk(KERN_ERR "e820: too many entries; ignoring [mem %#010llx-%#010llx]\n",
++		       (unsigned long long) start,
++		       (unsigned long long) (start + size - 1));
+ 		return;
+ 	}
+ 
+@@ -131,19 +133,19 @@ static void __init e820_print_type(u32 type)
+ 	switch (type) {
+ 	case E820_RAM:
+ 	case E820_RESERVED_KERN:
+-		printk(KERN_CONT "(usable)");
++		printk(KERN_CONT "usable");
+ 		break;
+ 	case E820_RESERVED:
+-		printk(KERN_CONT "(reserved)");
++		printk(KERN_CONT "reserved");
+ 		break;
+ 	case E820_ACPI:
+-		printk(KERN_CONT "(ACPI data)");
++		printk(KERN_CONT "ACPI data");
+ 		break;
+ 	case E820_NVS:
+-		printk(KERN_CONT "(ACPI NVS)");
++		printk(KERN_CONT "ACPI NVS");
+ 		break;
+ 	case E820_UNUSABLE:
+-		printk(KERN_CONT "(unusable)");
++		printk(KERN_CONT "unusable");
+ 		break;
+ 	default:
+ 		printk(KERN_CONT "type %u", type);
+@@ -156,10 +158,10 @@ void __init e820_print_map(char *who)
+ 	int i;
+ 
+ 	for (i = 0; i < e820.nr_map; i++) {
+-		printk(KERN_INFO " %s: %016Lx - %016Lx ", who,
++		printk(KERN_INFO "%s: [mem %#018Lx-%#018Lx] ", who,
+ 		       (unsigned long long) e820.map[i].addr,
+ 		       (unsigned long long)
+-		       (e820.map[i].addr + e820.map[i].size));
++		       (e820.map[i].addr + e820.map[i].size - 1));
+ 		e820_print_type(e820.map[i].type);
+ 		printk(KERN_CONT "\n");
+ 	}
+@@ -438,9 +440,8 @@ static u64 __init __e820_update_range(struct e820map *e820x, u64 start,
+ 		size = ULLONG_MAX - start;
+ 
+ 	end = start + size;
+-	printk(KERN_DEBUG "e820 update range: %016Lx - %016Lx ",
+-		       (unsigned long long) start,
+-		       (unsigned long long) end);
++	printk(KERN_DEBUG "e820: update [mem %#010Lx-%#010Lx] ",
++	       (unsigned long long) start, (unsigned long long) (end - 1));
+ 	e820_print_type(old_type);
+ 	printk(KERN_CONT " ==> ");
+ 	e820_print_type(new_type);
+@@ -519,9 +520,8 @@ u64 __init e820_remove_range(u64 start, u64 size, unsigned old_type,
+ 		size = ULLONG_MAX - start;
+ 
+ 	end = start + size;
+-	printk(KERN_DEBUG "e820 remove range: %016Lx - %016Lx ",
+-		       (unsigned long long) start,
+-		       (unsigned long long) end);
++	printk(KERN_DEBUG "e820: remove [mem %#010Lx-%#010Lx] ",
++	       (unsigned long long) start, (unsigned long long) (end - 1));
+ 	if (checktype)
+ 		e820_print_type(old_type);
+ 	printk(KERN_CONT "\n");
+@@ -577,7 +577,7 @@ void __init update_e820(void)
+ 	if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
+ 		return;
+ 	e820.nr_map = nr_map;
+-	printk(KERN_INFO "modified physical RAM map:\n");
++	printk(KERN_INFO "e820: modified physical RAM map:\n");
+ 	e820_print_map("modified");
+ }
+ static void __init update_e820_saved(void)
+@@ -647,8 +647,8 @@ __init void e820_setup_gap(void)
+ 	if (!found) {
+ 		gapstart = (max_pfn << PAGE_SHIFT) + 1024*1024;
+ 		printk(KERN_ERR
+-	"PCI: Warning: Cannot find a gap in the 32bit address range\n"
+-	"PCI: Unassigned devices with 32bit resource registers may break!\n");
++	"e820: cannot find a gap in the 32bit address range\n"
++	"e820: PCI devices with unassigned 32bit BARs may break!\n");
+ 	}
+ #endif
+ 
+@@ -658,8 +658,8 @@ __init void e820_setup_gap(void)
+ 	pci_mem_start = gapstart;
+ 
+ 	printk(KERN_INFO
+-	       "Allocating PCI resources starting at %lx (gap: %lx:%lx)\n",
+-	       pci_mem_start, gapstart, gapsize);
++	       "e820: [mem %#010lx-%#010lx] available for PCI devices\n",
++	       gapstart, gapstart + gapsize - 1);
+ }
+ 
+ /**
+@@ -677,7 +677,7 @@ void __init parse_e820_ext(struct setup_data *sdata)
+ 	extmap = (struct e820entry *)(sdata->data);
+ 	__append_e820_map(extmap, entries);
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+-	printk(KERN_INFO "extended physical RAM map:\n");
++	printk(KERN_INFO "e820: extended physical RAM map:\n");
+ 	e820_print_map("extended");
+ }
+ 
+@@ -763,7 +763,7 @@ u64 __init early_reserve_e820(u64 startt, u64 sizet, u64 align)
+ 		return 0;
+ 	memblock_x86_reserve_range(addr, addr + sizet, "new next");
+ 	e820_update_range_saved(addr, sizet, E820_RAM, E820_RESERVED);
+-	printk(KERN_INFO "update e820_saved for early_reserve_e820\n");
++	printk(KERN_INFO "e820: update saved map for early_reserve_e820\n");
+ 	update_e820_saved();
+ 
+ 	return addr;
+@@ -812,7 +812,7 @@ static unsigned long __init e820_end_pfn(unsigned long limit_pfn, unsigned type)
+ 	if (last_pfn > max_arch_pfn)
+ 		last_pfn = max_arch_pfn;
+ 
+-	printk(KERN_INFO "last_pfn = %#lx max_arch_pfn = %#lx\n",
++	printk(KERN_INFO "e820: last_pfn = %#lx max_arch_pfn = %#lx\n",
+ 			 last_pfn, max_arch_pfn);
+ 	return last_pfn;
+ }
+@@ -916,7 +916,7 @@ void __init finish_e820_parsing(void)
+ 			early_panic("Invalid user supplied memory map");
+ 		e820.nr_map = nr;
+ 
+-		printk(KERN_INFO "user-defined physical RAM map:\n");
++		printk(KERN_INFO "e820: user-defined physical RAM map:\n");
+ 		e820_print_map("user");
+ 	}
+ }
+@@ -1024,8 +1024,9 @@ void __init e820_reserve_resources_late(void)
+ 			end = MAX_RESOURCE_SIZE;
+ 		if (start >= end)
+ 			continue;
+-		printk(KERN_DEBUG "reserve RAM buffer: %016llx - %016llx ",
+-			       start, end);
++		printk(KERN_DEBUG
++		       "e820: reserve RAM buffer [mem %#010llx-%#010llx]\n",
++		       start, end);
+ 		reserve_region_with_split(&iomem_resource, start, end,
+ 					  "RAM buffer");
+ 	}
+@@ -1075,7 +1076,7 @@ void __init setup_memory_map(void)
+ 
+ 	who = x86_init.resources.memory_setup();
+ 	memcpy(&e820_saved, &e820, sizeof(struct e820map));
+-	printk(KERN_INFO "BIOS-provided physical RAM map:\n");
++	printk(KERN_INFO "e820: BIOS-provided physical RAM map:\n");
+ 	e820_print_map(who);
+ }
+ 
+
