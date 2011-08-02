@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab1HBWyI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 18:54:08 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:48685 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab1HBWxy convert rfc822-to-8bit (ORCPT
+	id S1752969Ab1HBWzw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 18:55:52 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:40815 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750897Ab1HBWzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 18:53:54 -0400
+	Tue, 2 Aug 2011 18:55:46 -0400
+X-Sasl-enc: EZEg+HgTqwFy3xmM6jHeGTPSjo3aIC/HXPEFz00QTJo0 1312325745
+Date: Tue, 2 Aug 2011 15:54:36 -0700
+From: Greg KH <greg@kroah.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gma500: Fix clashes with DRM updates
+Message-ID: <20110802225436.GA30217@kroah.com>
+References: <20110726161536.4910.21396.stgit@localhost.localdomain>
+ <4E38601F.5090808@zytor.com>
+ <20110802204803.GA14460@kroah.com>
+ <4E38651C.1030008@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMOw1v5veDqE+=gbNBn3juXHOOp764d7F20XtwUJXZoBW45zyg@mail.gmail.com>
-References: <1306930476-1899-1-git-send-email-lucas.demarchi@profusion.mobi>
- <BANLkTin6CP-A+UsGXyu9wb7U34wEN7DKsw@mail.gmail.com> <m18vtkq57c.fsf@fess.ebiederm.org>
- <BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com> <20110602134338.0c56160e@lxorguk.ukuu.org.uk>
- <BANLkTik72cU_R5k9NLnqN_FNkm-y5Fk0nQ@mail.gmail.com> <m1hb88e3qs.fsf@fess.ebiederm.org>
- <BANLkTin5P8P_HR78qo0oyzeu9hpWazZqTw@mail.gmail.com> <20110608151732.2b321b9a.akpm@linux-foundation.org>
- <BANLkTinXwE0K5nJ649rhNxN06KvwLNDeCA@mail.gmail.com> <1307981153.1449.19.camel@mop>
- <CAMOw1v5veDqE+=gbNBn3juXHOOp764d7F20XtwUJXZoBW45zyg@mail.gmail.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Wed, 3 Aug 2011 00:53:33 +0200
-Message-ID: <CAPXgP12sxLmPXzXx_Qgf=JakmiZcuiMGmMKB8RG4sFU_U5f=jg@mail.gmail.com>
-Subject: Re: [PATCH] sysctl: add support for poll()
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>,
-        neilb@suse.de
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E38651C.1030008@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 04:17, Lucas De Marchi
-<lucas.demarchi@profusion.mobi> wrote:
-> On Mon, Jun 13, 2011 at 1:05 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
->> On Thu, 2011-06-09 at 15:16 +0200, Kay Sievers wrote:
->>> On Thu, Jun 9, 2011 at 00:17, Andrew Morton <akpm@linux-foundation.org> wrote:
->>
->>> > We already have several pollable procfs files, such as
->>> > fs/proc/base.c:mounts_poll() and I think drivers/md has one.  I do
->>> > think that any work in this area should end up with those custom
->>> > make-procfs-pollable hacks being identified and removed.
->>>
->>> For these files we can probably move the event counter into the
->>> seq_file structure, and get rid of the dance to kmalloc it and assign
->>> it to seq_file->private. That might simplify the logic a bit.
->>>
->>> [Adding Neil, to get his opinion of moving 'event' so seq_file and get
->>> rid of the malloc dance]
->>
->> I guess, we could do something like this, which looks quite a bit
->> simpler by moving the poll event counter into the dynamically allocated
->> seq_file structure itself, instead of having private structures
->> allocated on top to just carry the counter (patch is just
->> compile-tested).
->
-> Now that this cleanup made its way, could we look again to to the
-> pollable sysctl implementation?
+On Tue, Aug 02, 2011 at 01:59:08PM -0700, H. Peter Anvin wrote:
+> On 08/02/2011 01:48 PM, Greg KH wrote:
+> > On Tue, Aug 02, 2011 at 01:37:51PM -0700, H. Peter Anvin wrote:
+> >> On 07/26/2011 09:15 AM, Alan Cox wrote:
+> >>> From: Alan Cox <alan@linux.intel.com>
+> >>>
+> >>> The private object support has migrated from gma500 into the DRM core,
+> >>> remove our now clashing copy so -next can build.
+> >>>
+> >>> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> >>
+> >> This patch is needed in Linus' tree, as it is currently causing a build
+> >> failure for either i386 or x86_64 allyesconfig.
+> > 
+> > Ick, it is?  I don't see that here on my builds, what am I doing wrong?
+> > 
+> > confused,
+> > 
+> 
+> No idea, but do a "make allyesconfig" on Linus' tree and you'll see it.
 
-Can we please get support for poll() for /proc/sys files merged? Just
-like we do that for /proc already.
+Ah, it's a link error, now I see it.  I'll queue it up, and some other
+staging tree fixes and get them to Linus very soon now.
 
-We like to have notifications triggered by the kernel for selected
-files in /proc/sys.
+thanks,
 
-I don't really see any technical reasons to hold this back.
-
-Thanks,
-Kay
+greg k-h
