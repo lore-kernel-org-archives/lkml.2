@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab1HBRNU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 13:13:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:32847 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753475Ab1HBRNO (ORCPT
+	id S1754621Ab1HBRR5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 13:17:57 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45451 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754262Ab1HBRRu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 13:13:14 -0400
-Date: Tue, 2 Aug 2011 10:15:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Xiaotian Feng <xtfeng@gmail.com>, linux-mm@kvack.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: kernel BUG at mm/vmscan.c:1114
-Message-Id: <20110802101500.3f1d53c5.akpm@linux-foundation.org>
-In-Reply-To: <20110802142459.GF10436@suse.de>
-References: <CAJn8CcE20-co4xNOD8c+0jMeABrc1mjmGzju3xT34QwHHHFsUA@mail.gmail.com>
-	<CAJn8CcG-pNbg88+HLB=tRr26_R+A0RxZEWsJQg4iGe4eY2noXA@mail.gmail.com>
-	<20110802142459.GF10436@suse.de>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Aug 2011 13:17:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110802145237.e8b90cff7f6954f6a12d8b3b@canb.auug.org.au>
+References: <20110802145237.e8b90cff7f6954f6a12d8b3b@canb.auug.org.au>
+Date: Tue, 2 Aug 2011 13:17:49 -0400
+X-Google-Sender-Auth: GUQkPU-w6k3pbZ3vQocb_YdB5UU
+Message-ID: <CAP=VYLq5p0KD5QW-Ae3=MQojcBSGdngbVwbCC_iyh_VzkPkxGA@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the moduleh tree with Linus' tree
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Aug 2011 15:24:59 +0100 Mel Gorman <mgorman@suse.de> wrote:
+On Tue, Aug 2, 2011 at 12:52 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Paul,
+>
+> Today's linux-next merge of the moduleh tree got a conflict in
+> drivers/video/omap2/dss/rfbi.c between commit 24e6289c029b ("OMAP: DSS2:
+> remove extra includes from include/video/omapdss.h") from Linus' tree and
+> commit 06e632e042aa ("video: Add export.h for THIS_MODULE/EXPORT_SYMBOL
+> to drivers/video") from the moduleh tree.
+>
+> Just overlapping additions.  I fixed it up (see below) and can carry the
+> fix as necessary.
 
-> On Tue, Aug 02, 2011 at 03:09:57PM +0800, Xiaotian Feng wrote:
-> > Hi,
-> > __ __I'm hitting the kernel BUG at mm/vmscan.c:1114 twice, each time I
-> > was trying to build my kernel. The photo of crash screen and my config
-> > is attached. Thanks.
-> > Regards
-> > Xiaotian
-> 
-> I am obviously blind because in 3.0, I cannot see what BUG is at
-> mm/vmscan.c:1114 :(. I see
-> 
-> 1109:			/*
-> 1110:			 * If we don't have enough swap space, reclaiming of
-> 1111:			 * anon page which don't already have a swap slot is
-> 1112:			 * pointless.
-> 1113:			 */
-> 1114:			if (nr_swap_pages <= 0 && PageAnon(cursor_page) &&
-> 1115:			    !PageSwapCache(cursor_page))
-> 1116:				break;
-> 1117:
-> 1118:			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
-> 1119:				list_move(&cursor_page->lru, dst);
-> 1120:				mem_cgroup_del_lru(cursor_page);
-> 
-> Is this 3.0 vanilla or are there some other patches applied?
-> 
+I was making some cosmetic changes to commit logs (such as adding Acked-by
+etc) and so took the opportunity to just relocate the export.h
+addition up higher
+and out of the way, which should make this go away for you/Linus.
 
-"3.0.0+": Current mainline.
+Thanks for the heads up,
+Paul.
 
-static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
-		struct list_head *src, struct list_head *dst,
-		unsigned long *scanned, int order, int mode, int file)
-{
-	unsigned long nr_taken = 0;
-	unsigned long nr_lumpy_taken = 0;
-	unsigned long nr_lumpy_dirty = 0;
-	unsigned long nr_lumpy_failed = 0;
-	unsigned long scan;
-
-	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++) {
-		struct page *page;
-		unsigned long pfn;
-		unsigned long end_pfn;
-		unsigned long page_pfn;
-		int zone_id;
-
-		page = lru_to_page(src);
-		prefetchw_prev_lru_page(page, src, flags);
-
-		VM_BUG_ON(!PageLRU(page));
-
-		switch (__isolate_lru_page(page, mode, file)) {
-		case 0:
-			list_move(&page->lru, dst);
-			mem_cgroup_del_lru(page);
-			nr_taken += hpage_nr_pages(page);
-			break;
-
-		case -EBUSY:
-			/* else it is being freed elsewhere */
-			list_move(&page->lru, src);
-			mem_cgroup_rotate_lru_list(page, page_lru(page));
-			continue;
-
-		default:
--->>			BUG();
-		}
-
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --cc drivers/video/omap2/dss/rfbi.c
+> index 39f4c59,5dbd229..0000000
+> --- a/drivers/video/omap2/dss/rfbi.c
+> +++ b/drivers/video/omap2/dss/rfbi.c
+> @@@ -33,8 -33,7 +33,9 @@@
+>  #include <linux/hrtimer.h>
+>  #include <linux/seq_file.h>
+>  #include <linux/semaphore.h>
+>  +#include <linux/platform_device.h>
+>  +#include <linux/pm_runtime.h>
+> + #include <linux/export.h>
+>
+>  #include <video/omapdss.h>
+>  #include "dss.h"
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
