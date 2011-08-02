@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab1HBB3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 21:29:19 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58158 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527Ab1HBB3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 21:29:15 -0400
-Date: Tue, 2 Aug 2011 11:29:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: sedat.dilek@gmail.com, Sedat Dilek <sedat.dilek@googlemail.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: Tree for Aug 1
-Message-Id: <20110802112907.5ca1abdd81758bd3b0bb6321@canb.auug.org.au>
-In-Reply-To: <20110801145422.cccff7aa.rdunlap@xenotime.net>
-References: <20110801144732.7f5204b219f628f2a2a63b0c@canb.auug.org.au>
-	<CA+icZUXq9V6h6kJrjckpeDXQAbQ-skiKLwTjD7Luhz1mTqSM1w@mail.gmail.com>
-	<20110801145422.cccff7aa.rdunlap@xenotime.net>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+	id S1753479Ab1HBBaL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 21:30:11 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57693 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753289Ab1HBBaG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 21:30:06 -0400
+Date: Mon, 1 Aug 2011 18:32:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        rientjes@google.com
+Subject: Re: Revert needed: udev spewing warnons on common systems in 3.0
+Message-Id: <20110801183207.cea89a96.akpm@linux-foundation.org>
+In-Reply-To: <20110802005206.GA3832@tassilo.jf.intel.com>
+References: <20110802005206.GA3832@tassilo.jf.intel.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__2_Aug_2011_11_29_07_+1000_Eyq3xg_OauWMmYH+"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__2_Aug_2011_11_29_07_+1000_Eyq3xg_OauWMmYH+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 1 Aug 2011 17:52:06 -0700 Andi Kleen <andi@firstfloor.org> wrote:
 
-Hi all,
+> 
+> Hi Linus,
+> 
+> Can you please revert 
+> 
+> commit be8f684d73d8d916847e996bf69cef14352872c6
+> Author: David Rientjes <rientjes@google.com>
+> Date:   Mon Jul 25 17:12:18 2011 -0700
+> 
+>     oom: make deprecated use of oom_adj more verbose
+> 
+>     /proc/pid/oom_adj is deprecated and scheduled for removal in August 2012
+>     according to Documentation/feature-removal-schedule.txt.
+> 
+> 
+> This makes most of my test systems (suse 11.1, 11.2) spew scary WARN_ONs
+> on every boot. GNOME then also complains.
 
-On Mon, 1 Aug 2011 14:54:22 -0700 Randy Dunlap <rdunlap@xenotime.net> wrote:
->
-> On Mon, 1 Aug 2011 09:01:21 +0200 Sedat Dilek wrote:
->=20
-> > Just FYI: mmotm-tree still misses the fixup-patch from [1].
-> >=20
-> > [1] https://patchwork.kernel.org/patch/1021602/
->=20
-> Yes, I am applying this patch daily (among others).  :(
->=20
-> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+aw, what crap.
 
-OK, I will apply this patch to linux-next as a merge fixup on top of
-Andrew's tree.
+"/proc/%d/oom_adj is deprecated, please use /proc/%d/oom_score_adj instead."
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Once per boot.  That's not "scary".
 
---Signature=_Tue__2_Aug_2011_11_29_07_+1000_Eyq3xg_OauWMmYH+
-Content-Type: application/pgp-signature
+> While it doesn't cause actual 
+> misfunction it scares me every time I boot and other people who can't
+> read git logs like me will be unnecessary scared.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+What?  Look at the damn text - the only reason anyone would need to
+read a git log after looking at that is terminal cretinism.
 
-iQEcBAEBAgAGBQJON1LjAAoJEDMEi1NhKgbsrhYIAJGrl6DOkP9h4bis0IYh9DBc
-UZ3A1C/KwKoBoTZEYvuZWn3rn3fbAmmrY/TwkqapDmPgD2Po8DLdeynOQWdYJF7k
-wICpMPhUQj8cJATfSi4arGJHifbarqYg1Q959UmDrqf5UxoqrQI45rp2iRAws3zE
-zEZqJcWN7kAeYR3Y0jT6IT+jRHQi+951DB6SbTprPuaulOMPuyksuhBqb0WV7tmt
-49EWeg3wI2Vzc2jeq3QtBDO+SXNqSGziGcEr4yA8oesdHqe32h4Uk3hadGYLpKE9
-WB4p4GKfHvVm39Iz9TYBe0bwrF63XmEH4sDkvlbaNJRCEDnHjwEom34p1SRVeCY=
-=VsYQ
------END PGP SIGNATURE-----
+> Also the warning is completely useless: noone will be "fixing"
+> udev on old distributions.
 
---Signature=_Tue__2_Aug_2011_11_29_07_+1000_Eyq3xg_OauWMmYH+--
+I bet there were still old copies of /sbin/update lying around, but we
+still managed to remove sys_bdflush() this way.
+
+> IMHO that's not acceptable to break common user land like this.
+> Linux is supposed to be binary compatible and this patch is not
+> in this spirit.
+> 
+> Actually removing the file later should be still fine, but 
+> not printing out these scary messages.
+> 
+> I propose to revert this misguided patch for stable and 3.1
+> 
+
+I see lots of fake reasoning.  What's really going on here??
