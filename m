@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab1HBH5o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 03:57:44 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35073 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752092Ab1HBH5h (ORCPT
+	id S1752371Ab1HBH54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 03:57:56 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:57725 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307Ab1HBH5w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 03:57:37 -0400
-Date: Tue, 2 Aug 2011 16:57:29 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Anuj Aggarwal <anuj.aggarwal@ti.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: tps65023: Remove num_voltages array
-Message-ID: <20110802075728.GA9553@opensource.wolfsonmicro.com>
-References: <1312271310.12639.3.camel@phoenix>
+	Tue, 2 Aug 2011 03:57:52 -0400
+Date: Tue, 2 Aug 2011 09:57:35 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Fred Isaman <iisaman@citi.umich.edu>, linux-kernel@vger.kernel.org
+Subject: [PATCH] nfs: add missing prefetch.h include
+Message-ID: <20110802075735.GA3466@osiris.boeblingen.de.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1312271310.12639.3.camel@phoenix>
-X-Cookie: You are always busy.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 02, 2011 at 03:48:30PM +0800, Axel Lin wrote:
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-> @@ -519,12 +515,14 @@ static const struct tps_info tps65023_regs[] = {
->  		.name = "VDCDC2",
->  		.min_uV =  3300000,
->  		.max_uV = 3300000,
-> +		.table_len = 0,
->  		.fixed = 1,
->  	},
->  	{
->  		.name = "VDCDC3",
->  		.min_uV =  1800000,
->  		.max_uV = 1800000,
-> +		.table_len = 0,
->  		.fixed = 1,
+Fix this compile error on s390:
 
-No need to explicitly set things to zero, it's the default for things
-declared static.  If this isn't declared static then it should be.
+  CC [M]  fs/nfs/blocklayout/blocklayout.o
+fs/nfs/blocklayout/blocklayout.c: In function 'bl_end_io_read':
+fs/nfs/blocklayout/blocklayout.c:201:4: error: implicit declaration of function 'prefetchw'
+
+Introduced with 9549ec01 "pnfsblock: bl_read_pagelist".
+
+Cc: Fred Isaman <iisaman@citi.umich.edu>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
+ fs/nfs/blocklayout/blocklayout.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/fs/nfs/blocklayout/blocklayout.c
++++ b/fs/nfs/blocklayout/blocklayout.c
+@@ -36,6 +36,7 @@
+ #include <linux/namei.h>
+ #include <linux/bio.h>		/* struct bio */
+ #include <linux/buffer_head.h>	/* various write calls */
++#include <linux/prefetch.h>
+ 
+ #include "blocklayout.h"
+ 
