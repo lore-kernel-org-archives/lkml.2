@@ -1,115 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab1HBP3J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 11:29:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10058 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753525Ab1HBP3E convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 11:29:04 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Shaohua Li <shli@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>, msnitzer@redhat.com
-Subject: Re: [patch] blk-flush: fix flush policy calculation
-References: <x49d3go98ku.fsf@segfault.boston.devel.redhat.com>
-	<CANejiEXK7NSJo-0vshyX6RSqmRbHmyxAw8_wFQEwvTXrEQF3fg@mail.gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 02 Aug 2011 11:28:26 -0400
-In-Reply-To: <CANejiEXK7NSJo-0vshyX6RSqmRbHmyxAw8_wFQEwvTXrEQF3fg@mail.gmail.com>
-	(Shaohua Li's message of "Tue, 2 Aug 2011 09:20:57 +0800")
-Message-ID: <x49mxfru92d.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1754161Ab1HBPaw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 11:30:52 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:42873 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754004Ab1HBPap convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 11:30:45 -0400
+From: Alexey ORISHKO <alexey.orishko@stericsson.com>
+To: Joss Boyer <jwboyer@redhat.com>, Oliver Neukum <oliver@neukum.org>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 2 Aug 2011 17:30:31 +0200
+Subject: RE: [PATCH v3] usbnet/cdc_ncm: Don't use stack variables for DMA
+Thread-Topic: [PATCH v3] usbnet/cdc_ncm: Don't use stack variables for DMA
+Thread-Index: AcxRI0GrqXWoTOvdQr231lWWAoTKBwABBjJg
+Message-ID: <2AC7D4AD8BA1C640B4C60C61C8E520153E3DEF67AF@EXDCVYMBSTM006.EQ1STM.local>
+References: <20110802144826.GJ2096@zod.bos.redhat.com>
+In-Reply-To: <20110802144826.GJ2096@zod.bos.redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shaohua Li <shli@kernel.org> writes:
+> -----Original Message-----
+> From: Joss Boyer [mailto:jwboyer@redhat.com]
+> Sent: Tuesday, August 02, 2011 4:48 PM
+> To: Oliver Neukum; Alexey ORISHKO
+> Cc: gregkh@suse.de; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: [PATCH v3] usbnet/cdc_ncm: Don't use stack variables for DMA
+> 
+> From 1717b6b8b1de95ed4ca53b74d2ccb563fae9b898 Mon Sep 17 00:00:00 2001
+> From: Josh Boyer <jwboyer@redhat.com>
+> Date: Tue, 2 Aug 2011 08:09:56 -0400
+> Subject: [PATCH] usbnet/cdc_ncm: Don't use stack variables for DMA buffers
+> 
+> The cdc_ncm driver still has a few places where stack variables are passed
+> to the cdc_ncm_do_request function.  This triggers a stack trace in
+> lib/dma-debug.c if the CONFIG_DEBUG_DMA_API option is set.
+> 
+> Adjust these calls to pass parameters that have been allocated with kzalloc.
+> 
+> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+> ---
 
-> 2011/8/2 Jeff Moyer <jmoyer@redhat.com>:
->> Hi,
->>
->> Reading through the code in blk-flush.c, it appears that there is an
->> oversight in the policy returned from blk_flush_policy:
->>
->>        if (fflags & REQ_FLUSH) {
->>                if (rq->cmd_flags & REQ_FLUSH)
->>                        policy |= REQ_FSEQ_PREFLUSH;
->>                if (blk_rq_sectors(rq))
->>                        policy |= REQ_FSEQ_DATA;
->>                if (!(fflags & REQ_FUA) && (rq->cmd_flags & REQ_FUA))
->>                        policy |= REQ_FSEQ_POSTFLUSH;
->>        }
->>        return policy;
->>
->> This means that REQ_FSEQ_DATA can only be set if the queue flush_flags
->> include FLUSH and/or FUA.  However, the short-circuit for not issuing
->> flushes when the device doesn't need/support them depends on
->> REQ_FSEQ_DATA being set while the other two bits are clear:
->>
->>        /*
->>         * If there's data but flush is not necessary, the request can be
->>         * processed directly without going through flush machinery.  Queue
->>         * for normal execution.
->>         */
->>        if ((policy & REQ_FSEQ_DATA) &&
->>            !(policy & (REQ_FSEQ_PREFLUSH | REQ_FSEQ_POSTFLUSH))) {
->>                list_add_tail(&rq->queuelist, &q->queue_head);
->>                return;
->>        }
->>
->> Given the code as it stands, I don't think the body of this if statement
->> will ever be executed.  I've attached a fix for this below.  It seems
->> like this could be both a performance and a correctness issue, though
->> I've not run into any problems I can directly attribute to this (perhaps
->> due to file systems not issuing flushes when support is not advertised?).
->>
->> Comments are appreciated.
->>
->> Cheers,
->> Jeff
->>
->> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
->>
->> diff --git a/block/blk-flush.c b/block/blk-flush.c
->> index bb21e4c..3a06118 100644
->> --- a/block/blk-flush.c
->> +++ b/block/blk-flush.c
->> @@ -95,11 +95,11 @@ static unsigned int blk_flush_policy(unsigned int fflags, struct request *rq)
->>  {
->>        unsigned int policy = 0;
->>
->> +       if (blk_rq_sectors(rq))
->> +               policy |= REQ_FSEQ_DATA;
->>        if (fflags & REQ_FLUSH) {
->>                if (rq->cmd_flags & REQ_FLUSH)
->>                        policy |= REQ_FSEQ_PREFLUSH;
->> -               if (blk_rq_sectors(rq))
->> -                       policy |= REQ_FSEQ_DATA;
->>                if (!(fflags & REQ_FUA) && (rq->cmd_flags & REQ_FUA))
->>                        policy |= REQ_FSEQ_POSTFLUSH;
->>        }
->> --
-> __generic_make_request always handles this:
-> if ((bio->bi_rw & (REQ_FLUSH | REQ_FUA)) && !q->flush_flags) {
->                         bio->bi_rw &= ~(REQ_FLUSH | REQ_FUA);
->                         if (!nr_sectors) {
->                                 err = 0;
->                                 goto end_io;
->                         }
->                 }
->
+Tested with hardware on Ubuntu 11.04 64-bit (no CONFIG_DEBUG_DMA_API flag)
 
-dm-multipath exports flush and fua, even if underlying devices do not
-support those flags (but this will change shortly).  It then issues I/O
-using blk_insert_cloned_request, which bypasses generic_make_request.
-Plus, the logic was clearly wrong so I think we should take the proposed
-patch.
-
-Cheers,
-Jeff
+/alexey
