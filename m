@@ -1,71 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab1HBAlY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 20:41:24 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39906 "EHLO ogre.sisk.pl"
+	id S1753396Ab1HBAqc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 20:46:32 -0400
+Received: from mga03.intel.com ([143.182.124.21]:12418 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753263Ab1HBAlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 20:41:11 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Josef Bacik <josef@redhat.com>
-Subject: Re: [Regression] Commit 02c24a82187d5a628c68edfe71ae60dc135cd178 breaks s2disk
-Date: Tue, 2 Aug 2011 02:17:48 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>
-References: <201108020147.01136.rjw@sisk.pl>
-In-Reply-To: <201108020147.01136.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1753145Ab1HBAq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 20:46:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,303,1309762800"; 
+   d="scan'208";a="3218314"
+Subject: Re: [patch]block: document blk_plug
+From: Shaohua Li <shaohua.li@intel.com>
+To: Suresh Jayaraman <sjayaraman@suse.de>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <4E32A409.6060707@suse.de>
+References: <1311909215.15392.418.camel@sli10-conroe>
+	 <4E32A409.6060707@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 02 Aug 2011 08:46:10 +0800
+Message-ID: <1312245970.15392.446.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108020217.48952.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 02, 2011, Rafael J. Wysocki wrote:
-> Hi,
+On Fri, 2011-07-29 at 20:14 +0800, Suresh Jayaraman wrote:
+> On 07/29/2011 08:43 AM, Shaohua Li wrote:
+> > Andrew Morton is asking to document blk_plug, so here is my attempt.
+> > 
+> > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> > ---
+> >  include/linux/blkdev.h |   11 +++++++++++
+> >  1 file changed, 11 insertions(+)
+> > 
+> > Index: linux/include/linux/blkdev.h
+> > ===================================================================
+> > --- linux.orig/include/linux/blkdev.h	2011-07-29 10:51:29.000000000 +0800
+> > +++ linux/include/linux/blkdev.h	2011-07-29 11:07:49.000000000 +0800
+> > @@ -858,6 +858,17 @@ struct request_queue *blk_alloc_queue_no
+> >  extern void blk_put_queue(struct request_queue *);
+> >  
+> >  /*
+> > + * blk_plug gives each task a request list. Since blk_start_plug() called,
+> > + * requests from the task will be added to the per-task list and then moved
+> > + * to global request_queue in a batch way at appropriate time(either
+> > + * blk_finish_plug() is called or task goes to sleep). blk_plug has some
+> > + * advantages:
+> > + * 1. Better request merge. The assumption here is requests from a task have
+> > + *    better chances to be merged.
+> > + * 2. Better scalability. Requests are moved from per-task list to global
+> > + *    request_queue in a batch way, so the total times grabing global
+> > + *    request_queue lock are reduced.
+> > + *
 > 
-> Unfortunately s2disk (which is a user space tool for saving hibernate images)
-> doesn't work any more after your commit 02c24a82187d5a628c68edfe71ae60dc135cd178
-> (fs: push i_mutex and filemap_write_and_wait down into ->fsync() handlers).
-> The symptom is that the s2disk's resume counterpart cannot find the image in
-> the device even though s2disk considers it as successfully saved.
+> Hi Shaohua,
 > 
-> What happens is that s2disk opens a block device (disk partition to be precise)
-> directly and writes to it eventually calling fsync().  My interpretation of the
-> failure is that before commit 02c24a82187d5a628c68ed, when s2disk called fsync()
-> the VFS layer would run filemap_write_and_wait_range() that in turn would cause
-> the data to go to the disk, but after that commit this doesn't happen any more.
-> 
-> If I'm right, then not only s2disk, but any process writing directly to a block
-> device will have a problem with fsync().
+> This seems too brief atleast for someone like me who has not spent much
+> time with the code and also is not in kerneldoc format. Here's my attempt:
+Hi Suresh,
+I like the blk_start_plug part below. The blk_plug part needs more
+description to explain why we need it.
 
-Well, I'm not sure if the patch below is the right fix, but it evidently makes
-s2disk work for me again.
+
+> From: Suresh Jayaraman <sjayaraman@suse.de>
+> Subject: [PATCH] block: document blk-plug
+> 
+> Thus spake Andrew Morton:
+> 
+> "And I have the usual maintainability whine.  If someone comes up to
+> vmscan.c and sees it calling blk_start_plug(), how are they supposed to
+> work out why that call is there?  They go look at the blk_start_plug()
+> definition and it is undocumented.  I think we can do better than this?"
+> 
+> Shaohua Li attempted to document it. But, I think it was too brief and
+> was not in kerneldoc format. Here's my attempt to document it. 
+> 
+> Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
+> ---
+> 
+>  block/blk-core.c       |   10 ++++++++++
+>  include/linux/blkdev.h |   13 ++++++++-----
+>  2 files changed, 18 insertions(+), 5 deletions(-)
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index b850bed..355aa2c 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -2620,6 +2620,16 @@ EXPORT_SYMBOL(kblockd_schedule_delayed_work);
+>  
+>  #define PLUG_MAGIC	0x91827364
+>  
+> +/**
+> + * blk_start_plug - initialize blk_plug and track it inside the task_struct
+> + * @plug:	The &struct blk_plug that needs to be initialized
+> + *
+> + * Description:
+> + *   Tracking blk_plug inside the task_struct will help with flushing the
+> + *   pending I/O should the task end up blocking between blk_start_plug() and
+> + *   blk_finish_plug() and is important for deadlock avoidance and for the
+> + *   performance.
+> + */
+I'm not aware blk_plug is to avoid deadlock. It's most for performance
+to me. Jens, any idea?
 
 Thanks,
-Rafael
+Shaohua
 
----
- fs/block_dev.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-Index: linux-2.6/fs/block_dev.c
-===================================================================
---- linux-2.6.orig/fs/block_dev.c
-+++ linux-2.6/fs/block_dev.c
-@@ -387,6 +387,10 @@ int blkdev_fsync(struct file *filp, loff
- 	struct inode *bd_inode = filp->f_mapping->host;
- 	struct block_device *bdev = I_BDEV(bd_inode);
- 	int error;
-+	
-+	error = filemap_write_and_wait_range(filp->f_mapping, start, end);
-+	if (error)
-+		return error;
- 
- 	/*
- 	 * There is no need to serialise calls to blkdev_issue_flush with
