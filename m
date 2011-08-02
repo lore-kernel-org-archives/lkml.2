@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab1HBJ5h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 05:57:37 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:40120 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752848Ab1HBJ5b (ORCPT
+	id S1753232Ab1HBKCo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 06:02:44 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:61381 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab1HBKCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 05:57:31 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAF/JN05tgyMH/2dsb2JhbABCp194gUABAQU6PxAIA0YUJQMhiAHBFw6GNASjYQ
-Date: Tue, 2 Aug 2011 11:57:30 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-watchdog@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [RFC PATCH] watchdog: ep93xx: Use the WatchDog Timer Driver
-	Core.
-Message-ID: <20110802095729.GO4227@infomag.iguana.be>
-References: <201108011357.24745.hartleys@visionengravers.com>
+	Tue, 2 Aug 2011 06:02:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108011357.24745.hartleys@visionengravers.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1307616640-2013-1-git-send-email-mattias.wallin@stericsson.com>
+References: <1307616640-2013-1-git-send-email-mattias.wallin@stericsson.com>
+Date: Tue, 2 Aug 2011 12:02:39 +0200
+Message-ID: <CACRpkdYJK7yJrocEJYudeOW0JbcWMTiqrhz1-mNZO0jc0y3S6g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mfd: ab5500 chip register access
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mattias Wallin <mattias.wallin@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi H Hartley,
+On Thu, Jun 9, 2011 at 12:50 PM, Mattias Wallin
+<mattias.wallin@stericsson.com> wrote:
 
-[...]
-> @@ -210,43 +126,31 @@ static int __init ep93xx_wdt_init(void)
->  {
->  	int err;
->  
-> -	err = misc_register(&ep93xx_wdt_miscdev);
-> +	ep93xx_wdd.bootstatus = readl(EP93XX_WDT_WATCHDOG);
-> +	ep93xx_wdd.timeout = timeout;
-> +
-> +	err = watchdog_register_device(&ep93xx_wdd);
-> +	if (err)
-> +		return err;
->  
-> -	boot_status = __raw_readl(EP93XX_WDT_WATCHDOG) & 0x01 ? 1 : 0;
-> +	setup_timer(&timer, ep93xx_timer_ping, 1);
+> The analog baseband chip ab5500 is a multi functional chip
+> containing regulators, charging, gpio, USB and accessory detect.
+> It also contain various multimedia functionalities like digital
+> encoder and audio codec.
+> The core driver added with this patch provides register access via
+> i2c via PRCMU. Event handling implemented as irq_chip will come in
+> future patches since it depends on PRCMU functionality not yet
+> implemented.
+>
+> Signed-off-by: Mattias Wallin <mattias.wallin@stericsson.com>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Shouldn't the bootstatus setting be:
-ep93xx_wdd.bootstatus = readl(EP93XX_WDT_WATCHDOG) & 0x01 ? 1 : 0;
-(or something similar with the WDIOF_OVERHEAT, ... flags).
+Sam, what happened to these two patches? Something that needs
+to  be fixed about them?
 
-Kind regards,
-Wim.
-
+Thanks,
+Linus Walleij
