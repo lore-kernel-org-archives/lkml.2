@@ -1,303 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab1HBJQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 05:16:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36966 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752664Ab1HBJQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 05:16:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,305,1309762800"; 
-   d="scan'208";a="33254052"
-Date: Tue, 2 Aug 2011 12:16:40 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-watchdog@vger.kernel.org, wim@iguana.be
-Subject: Re: [RFC PATCH] watchdog: ep93xx: Use the WatchDog Timer Driver Core.
-Message-ID: <20110802091640.GF13218@intel.com>
-References: <201108011357.24745.hartleys@visionengravers.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108011357.24745.hartleys@visionengravers.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752964Ab1HBJTQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 05:19:16 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54058 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752812Ab1HBJTL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 05:19:11 -0400
+Date: Tue, 2 Aug 2011 17:18:56 +0800
+From: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, mchehab@redhat.com,
+        arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Palash.Bandyopadhyay@conexant.com, ruslan@rpisarev.org.ua,
+        Revent82@gmail.com
+Subject: Re: [PATCH] Staging: cx25821: fix coding style issues
+Message-ID: <20110802171856.044cd78d@inspire>
+In-Reply-To: <1312215262.11635.15.camel@Joe-Laptop>
+References: <1312191229-24718-1-git-send-email-leonidsbox@gmail.com>
+	<1312215262.11635.15.camel@Joe-Laptop>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 01:57:24PM -0700, H Hartley Sweeten wrote:
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Wim Van Sebroeck <wim@iguana.be> (maintainer:WATCHDOG DEVICE D...)
+Thanks for the review. I sent v2. I have a question, however...
 
-Nice. I'll try to test the patch later today.
+On Mon, 01 Aug 2011 09:14:22 -0700
+Joe Perches <joe@perches.com> wrote:
 
-I have few minor comments, see below.
-
+> On Mon, 2011-08-01 at 17:33 +0800, Leonid V. Fedorenchik wrote:
+> > Fix too long lines in cx25821-audio.h and cx25821-core.c
+> []
+> > diff --git a/drivers/staging/cx25821/cx25821-core.c b/drivers/staging/cx25821/cx25821-core.c
+> []
+> > @@ -972,8 +972,8 @@ static int cx25821_dev_setup(struct cx25821_dev *dev)
+> >  	dev->lmmio = ioremap(dev->base_io_addr, pci_resource_len(dev->pci, 0));
+> >  
+> >  	if (!dev->lmmio) {
+> > -		CX25821_ERR
+> > -		    ("ioremap failed, maybe increasing __VMALLOC_RESERVE in page.h\n");
+> > +		CX25821_ERR("ioremap failed, maybe increasing __VMALLOC_RESERVE"
+> > +								" in page.h\n");
 > 
-> ---
-> 
-> diff --git a/drivers/watchdog/ep93xx_wdt.c b/drivers/watchdog/ep93xx_wdt.c
-> index 726b7df..bb97351 100644
-> --- a/drivers/watchdog/ep93xx_wdt.c
-> +++ b/drivers/watchdog/ep93xx_wdt.c
-> @@ -24,11 +24,9 @@
->   */
->  
->  #include <linux/module.h>
-> -#include <linux/fs.h>
->  #include <linux/miscdevice.h>
+> Please do not split formats.
 
-Is the above header still needed?
+What is the reason to not split formats?
+I can see that in Documentation/CodingStyle in Chapter 2 it is OK to split
+formats if it is not making readability worse.
+So, is it for the sake of readability or is it new coding style rule for the
+kernel that is not in documentation yet or something else or am I misunderstood
+something?
 
->  #include <linux/watchdog.h>
->  #include <linux/timer.h>
-> -#include <linux/uaccess.h>
->  #include <linux/io.h>
->  #include <mach/hardware.h>
->  
-> @@ -39,15 +37,17 @@
->  #define WDT_TIMEOUT 30
->  
->  static int nowayout = WATCHDOG_NOWAYOUT;
-> +module_param(nowayout, int, 0);
-> +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started");
-> +
->  static int timeout = WDT_TIMEOUT;
-> +module_param(timeout, int, 0);
-> +MODULE_PARM_DESC(timeout,
-> +	"Watchdog timeout in seconds. (1<=timeout<=3600, default="
-> +				__MODULE_STRING(WDT_TIMEOUT) ")");
->  
->  static struct timer_list timer;
->  static unsigned long next_heartbeat;
-> -static unsigned long wdt_status;
-> -static unsigned long boot_status;
-> -
-> -#define WDT_IN_USE		0
-> -#define WDT_OK_TO_CLOSE		1
->  
->  #define EP93XX_WDT_REG(x)	(EP93XX_WATCHDOG_BASE + (x))
->  #define EP93XX_WDT_WATCHDOG	EP93XX_WDT_REG(0x00)
-> @@ -71,130 +71,46 @@ static inline void wdt_ping(void)
->  	__raw_writew(0x5555, EP93XX_WDT_WATCHDOG);
->  }
->  
-> -static void wdt_startup(void)
-> +static int void ep93xx_wdt_start(struct watchdog_device *wdd)
-              ^^^^
-extra 'void' above
-
->  {
-> -	next_heartbeat = jiffies + (timeout * HZ);
-> +	next_heartbeat = jiffies + (wdd->timeout * HZ);
->  
->  	wdt_enable();
->  	mod_timer(&timer, jiffies + WDT_INTERVAL);
-> +	return 0;
->  }
->  
-> -static void wdt_shutdown(void)
-> +static int ep93xx_wdt_stop(struct watchdog_device *wdd)
->  {
->  	del_timer_sync(&timer);
->  	wdt_disable();
-> +	return 0;
->  }
->  
-> -static void wdt_keepalive(void)
-> +static int ep93xx_wdt_keepalive(struct watchdog_device *wdd)
->  {
->  	/* user land ping */
-> -	next_heartbeat = jiffies + (timeout * HZ);
-> -}
-> -
-> -static int ep93xx_wdt_open(struct inode *inode, struct file *file)
-> -{
-> -	if (test_and_set_bit(WDT_IN_USE, &wdt_status))
-> -		return -EBUSY;
-> -
-> -	clear_bit(WDT_OK_TO_CLOSE, &wdt_status);
-> -
-> -	wdt_startup();
-> -
-> -	return nonseekable_open(inode, file);
-> -}
-> -
-> -static ssize_t
-> -ep93xx_wdt_write(struct file *file, const char __user *data, size_t len,
-> -		 loff_t *ppos)
-> -{
-> -	if (len) {
-> -		if (!nowayout) {
-> -			size_t i;
-> -
-> -			clear_bit(WDT_OK_TO_CLOSE, &wdt_status);
-> -
-> -			for (i = 0; i != len; i++) {
-> -				char c;
-> -
-> -				if (get_user(c, data + i))
-> -					return -EFAULT;
-> -
-> -				if (c == 'V')
-> -					set_bit(WDT_OK_TO_CLOSE, &wdt_status);
-> -				else
-> -					clear_bit(WDT_OK_TO_CLOSE, &wdt_status);
-> -			}
-> -		}
-> -		wdt_keepalive();
-> -	}
-> -
-> -	return len;
-> +	next_heartbeat = jiffies + (wdd->timeout * HZ);
-> +	return 0;
->  }
->  
-> -static const struct watchdog_info ident = {
-> -	.options = WDIOF_CARDRESET | WDIOF_MAGICCLOSE,
-> -	.identity = "EP93xx Watchdog",
-> +static const struct watchdog_info ep93xx_wdt_ident = {
-> +	.options	= WDIOF_CARDRESET | WDIOF_MAGICCLOSE,
-> +	.identity	= "EP93xx Watchdog",
->  };
->  
-> -static long ep93xx_wdt_ioctl(struct file *file,
-> -					unsigned int cmd, unsigned long arg)
-> -{
-> -	int ret = -ENOTTY;
-> -
-> -	switch (cmd) {
-> -	case WDIOC_GETSUPPORT:
-> -		ret = copy_to_user((struct watchdog_info __user *)arg, &ident,
-> -				sizeof(ident)) ? -EFAULT : 0;
-> -		break;
-> -
-> -	case WDIOC_GETSTATUS:
-> -		ret = put_user(0, (int __user *)arg);
-> -		break;
-> -
-> -	case WDIOC_GETBOOTSTATUS:
-> -		ret = put_user(boot_status, (int __user *)arg);
-> -		break;
-> -
-> -	case WDIOC_KEEPALIVE:
-> -		wdt_keepalive();
-> -		ret = 0;
-> -		break;
-> -
-> -	case WDIOC_GETTIMEOUT:
-> -		/* actually, it is 0.250 seconds.... */
-> -		ret = put_user(1, (int __user *)arg);
-> -		break;
-> -	}
-> -	return ret;
-> -}
-> -
-> -static int ep93xx_wdt_release(struct inode *inode, struct file *file)
-> -{
-> -	if (test_bit(WDT_OK_TO_CLOSE, &wdt_status))
-> -		wdt_shutdown();
-> -	else
-> -		printk(KERN_CRIT PFX
-> -			"Device closed unexpectedly - timer will not stop\n");
-> -
-> -	clear_bit(WDT_IN_USE, &wdt_status);
-> -	clear_bit(WDT_OK_TO_CLOSE, &wdt_status);
-> -
-> -	return 0;
-> -}
-> -
-> -static const struct file_operations ep93xx_wdt_fops = {
-> +static const struct watchdog_ops ep93xx_wdt_ops = {
->  	.owner		= THIS_MODULE,
-> -	.write		= ep93xx_wdt_write,
-> -	.unlocked_ioctl	= ep93xx_wdt_ioctl,
-> -	.open		= ep93xx_wdt_open,
-> -	.release	= ep93xx_wdt_release,
-> -	.llseek		= no_llseek,
-> +	.start		= ep93xx_wdt_start,
-> +	.stop		= ep93xx_wdt_stop,
-> +	.ping		= ep93xx_wdt_keepalive,
->  };
->  
-> -static struct miscdevice ep93xx_wdt_miscdev = {
-> -	.minor		= WATCHDOG_MINOR,
-> -	.name		= "watchdog",
-> -	.fops		= &ep93xx_wdt_fops,
-> +static struct watchdog_device ep93xx_wdd = {
-> +	.info		= &ep93xx_wdt_ident,
-> +	.ops		= &ep93xx_wdt_ops,
-> +	.min_timeout	= 1,
-> +	.max_timeout	= 3600,
->  };
->  
->  static void ep93xx_timer_ping(unsigned long data)
-> @@ -210,43 +126,31 @@ static int __init ep93xx_wdt_init(void)
->  {
->  	int err;
->  
-> -	err = misc_register(&ep93xx_wdt_miscdev);
-> +	ep93xx_wdd.bootstatus = readl(EP93XX_WDT_WATCHDOG);
-> +	ep93xx_wdd.timeout = timeout;
-
-Should you check that the given timeout is in valid range here, like it is
-done in the original driver?
-
-> +
-> +	err = watchdog_register_device(&ep93xx_wdd);
-> +	if (err)
-> +		return err;
->  
-> -	boot_status = __raw_readl(EP93XX_WDT_WATCHDOG) & 0x01 ? 1 : 0;
-> +	setup_timer(&timer, ep93xx_timer_ping, 1);
->  
->  	printk(KERN_INFO PFX "EP93XX watchdog, driver version "
->  		WDT_VERSION "%s\n",
-> -		(__raw_readl(EP93XX_WDT_WATCHDOG) & 0x08)
-> +		(ep93xx_wdd.bootstatus & 0x08)
->  		? " (nCS1 disable detected)" : "");
->  
-> -	if (timeout < 1 || timeout > 3600) {
-> -		timeout = WDT_TIMEOUT;
-> -		printk(KERN_INFO PFX
-> -			"timeout value must be 1<=x<=3600, using %d\n",
-> -			timeout);
-> -	}
-> -
-> -	setup_timer(&timer, ep93xx_timer_ping, 1);
-> -	return err;
-> +	return 0;
->  }
-> +module_init(ep93xx_wdt_init);
->  
->  static void __exit ep93xx_wdt_exit(void)
->  {
-> -	wdt_shutdown();
-> -	misc_deregister(&ep93xx_wdt_miscdev);
-> +	wdt_shutdown(&ep93xx_wdd);
-
-ep93xx_wdt_stop(&ep93xx_wdd);
-
-> +	watchdog_unregister_device(&ep93xx_wdd);
->  }
-> -
-> -module_init(ep93xx_wdt_init);
->  module_exit(ep93xx_wdt_exit);
->  
-> -module_param(nowayout, int, 0);
-> -MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started");
-> -
-> -module_param(timeout, int, 0);
-> -MODULE_PARM_DESC(timeout,
-> -	"Watchdog timeout in seconds. (1<=timeout<=3600, default="
-> -				__MODULE_STRING(WDT_TIMEOUT) ")");
-> -
->  MODULE_AUTHOR("Ray Lehtiniemi <rayl@mail.com>,"
->  		"Alessandro Zummo <a.zummo@towertech.it>");
->  MODULE_DESCRIPTION("EP93xx Watchdog");
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Leonid V. Fedorenchik
