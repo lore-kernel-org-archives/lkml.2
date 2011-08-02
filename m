@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab1HBOol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 10:44:41 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:50132 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753816Ab1HBOoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 10:44:34 -0400
-Message-ID: <4E380D19.7030307@parallels.com>
-Date: Tue, 2 Aug 2011 11:43:37 -0300
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
+	id S1753941Ab1HBOpk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 10:45:40 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:48353 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752664Ab1HBOpd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 10:45:33 -0400
+Message-ID: <4b1d9f7714d8b7e26365720f4338f9cc.squirrel@www.firstfloor.org>
+In-Reply-To: <20110802111117.10a73b89@lxorguk.ukuu.org.uk>
+References: <20110802005206.GA3832@tassilo.jf.intel.com>
+    <20110801183207.cea89a96.akpm@linux-foundation.org>
+    <CA+55aFw=wX1CormdOAnsoK2ruDLp9SaEVh1EcTj8wvt+Kq2gAg@mail.gmail.com>
+    <alpine.DEB.2.00.1108011916480.15596@chino.kir.corp.google.com>
+    <20110802101614.009cdf42@lxorguk.ukuu.org.uk>
+    <alpine.DEB.2.00.1108020249560.18935@chino.kir.corp.google.com>
+    <20110802111117.10a73b89@lxorguk.ukuu.org.uk>
+Date: Tue, 2 Aug 2011 16:45:28 +0200
+Subject: Re: Revert needed: udev spewing warnons on common systems in 3.0
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+Cc: "David Rientjes" <rientjes@google.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Andi Kleen" <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Dave Chinner <david@fromorbit.com>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>,
-        <containers@lists.linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Hugh Dickins <hughd@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@parallels.com>
-Subject: Re: [PATCH 4/4] parse options in the vfs level
-References: <1311947059-17209-1-git-send-email-glommer@parallels.com> <1311947059-17209-5-git-send-email-glommer@parallels.com> <20110731013456.GM5404@dastard> <4E37F5C6.8060908@parallels.com> <20110802141806.GL2203@ZenIV.linux.org.uk>
-In-Reply-To: <20110802141806.GL2203@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [187.106.54.7]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2011 11:18 AM, Al Viro wrote:
-> On Tue, Aug 02, 2011 at 10:04:06AM -0300, Glauber Costa wrote:
+>> That's obviously wrong since all of the applications that I've cited
+>> that have been fixed to date have been the result of users actually
+>> noticing the printk_once() and emailing me directly to pass it along to
+>> the appropriate parties.  I've also found other cases where bugzilla
+>> entries were created based on that single line warning by users, who in
+>> turn get distros and maintainers to convert to the new interface.
 >
->> I am not sure either, but I still believe my proposal is superior to
->> write-to-a-file specifically. Writing to a file, be it in proc, sys,
->> or wherever, leaves a window of opportunity open between mounting a
->> filesystem and limiting its caches. Doing it on mount is atomic.
->>
->> Effectively, I see this limit as a property of a particular instance
->> of a mounted filesystem. Since all properties of a filesystem are
->> specified during mount, this becomes a natural extension.
->
-> The trouble is, dentry tree is fundamentally a property of superblock.
-> It's shared between *all* instances of that fs in all mount trees...
+> And what did the users do - they complained to the distribution.
 
-And how is it different from any fs-specific options, like the ones extX 
-have, for instance ? Many of them seem to operate on a superblock.
+I don't think that's how distributions work. Usually they won't fix
+an old udev, but just eventually update to a new udev version when
+they release a new version of themselves.
 
-If you mount a superblock somewhere, you can tweak specifics about its 
-operation. If you mount it somewhere else, the assumption is you know 
-what you're doing.
+But the old release with the old udev will just stay around and people
+will continue to use it for many years.
 
+And that's fine because nothing is fundamentally broken here that
+needs urgent fixing (except for that bogus backtrace of course)
+
+The kernel has always done a great job in supporting old userland,
+this is just one of the rare exceptions.
+
+> Perhaps the right way to do it would be to file the bugzillas in the key
+> distros instead
+
+The right way is to add a one linker printk_once and then just wait
+for a few years.
+
+> Actually this raises a more interesting question - would it make sense to
+> have a moderated notification list for poking all the distributions about
+> things like old API expiry
+
+And? Even if the distributions scramble to follow you -- which
+is unlikely for old versions -- their users won't do it.
+
+-Andi
 
