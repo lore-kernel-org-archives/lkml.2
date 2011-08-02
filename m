@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704Ab1HBIgU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 04:36:20 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43005 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752410Ab1HBIgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 04:36:13 -0400
-Date: Tue, 2 Aug 2011 18:35:58 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Christie <michaelc@cs.wisc.edu>
-Subject: Re: linux-next: build warning after merge of the moduleh tree
-Message-Id: <20110802183558.fda9e3b1e9f3b93a70f6e494@canb.auug.org.au>
-In-Reply-To: <4E37A696.2090007@fusionio.com>
-References: <20110801132359.1de051cb8a4a2bdfdad7560c@canb.auug.org.au>
-	<4E37A696.2090007@fusionio.com>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+	id S1752681Ab1HBIiX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 04:38:23 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:33242 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410Ab1HBIiQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 04:38:16 -0400
+Subject: Re: [patch v2 04/10] kdump: Trigger kdump via panic notifier chain
+ on s390
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
+        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+In-Reply-To: <20110801204114.GJ3805@redhat.com>
+References: <20110727125504.491183728@linux.vnet.ibm.com>
+	 <20110727125808.028895659@linux.vnet.ibm.com>
+	 <20110801204114.GJ3805@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Tue, 02 Aug 2011 10:37:59 +0200
+Message-ID: <1312274279.4881.18.camel@br98xy6r>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__2_Aug_2011_18_35_58_+1000_CmC0BMshnmKGz0Ye"
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__2_Aug_2011_18_35_58_+1000_CmC0BMshnmKGz0Ye
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello Vivek,
 
-Hi Jens,
+On Mon, 2011-08-01 at 16:41 -0400, Vivek Goyal wrote:
+> On Wed, Jul 27, 2011 at 02:55:08PM +0200, Michael Holzheu wrote:
+> > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> > 
+> > On s390 we have the possibility to configure actions that are executed in
+> > case of a kernel panic. E.g. it is possible to automatically trigger an s390
+> > stand-alone dump. The actions are called via a panic notifier.  We also want
+> > to trigger kdump via the notifier call chain. Therefore this patch disables
+> > for s390 the direct kdump invocation in the panic() function.
+> 
+> Doesn't this reduce the reliability of the operation as you are assuming
+> that panic notifier list is fine and not corrupted.
 
-On Tue, 2 Aug 2011 09:26:14 +0200 Jens Axboe <jaxboe@fusionio.com> wrote:
->
-> Thanks, will you carry this until things are merged? Not easy for me to
-> fix up.
+Yes, this is correct. We have to rely that the notifier list is fine.
+Probably there is still room for improvement here.
 
-Yes, no problem.  It is possible that the module.h split may not even go
-into v3.1, in which case the fix patch will jst become part of the moduleh
-tree after the block tree is merged.
+> There might be other generic notifiers registerd on panic notifier list
+> too. So in your case, are there multiple subsystem registering for panic
+> notifiers? If not, why not call crash_kexec() directly. Are there any
+> other actions you want to take on panic then calling crash_kexec()?
 
-Though the feedback to the original patch writer is that they should have
-included module.h instead of relying on it being implicitly included.
+We have added the panic notifier in the past in order to be able to
+configure the action that should be done in case of panic using our
+shutdown actions infrastructure. We can configure the action using sysfs
+and we are able to configure that a stand-alone dump should be started
+as action for panic.
 
-You could include a patch to add an include of module.h to this file in
-your tree - that way even if the module.h split goes ahead, your tree
-won't get broken.  It could then be changed to the lighter weight
-export.h later.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Now with the two stage dump approach we would like to keep the
+possibility to trigger a stand-alone dump even if kdump is installed.
+The stand-alone dumper will be started in case of a kernel panic and
+then the procedure we discussed will happen: Jump into kdump and if
+program check occurs do stand-alone dump as backup.
 
---Signature=_Tue__2_Aug_2011_18_35_58_+1000_CmC0BMshnmKGz0Ye
-Content-Type: application/pgp-signature
+Michael
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJON7buAAoJEDMEi1NhKgbsCzEIAJjAD+rymdtholhTSXu6/xSn
-3HhTDNuGaXYD33Xg7Ajcz70kb3O0A8Oe95ZdAyc44eKpPtf7k0YQqZ7tgee6gQ3m
-G93Fj5HGmJvYkOW+2jK6ZuNg/JpdH3jCeCKdiRZMkVRmoBw0hFjkWSSWGuBO5gUM
-lVDyjFZpL5hkhmDMCEEoxjCE2TsS08y7m1Uv6vBDcismRSDkrrjSQ2P72ZUzykvd
-GoLX/NvqAZB9O/RO0RZl3dbfXd4fGhV8EdjwQr52KroRGLC6BVinuZJVx+5SWRAj
-+g9qL3NUzETa9WM0Gja2L4DIVdT6fDikp2Nk4tOmBpeiF+xJrg9J9Q+2aTOEq/c=
-=7z00
------END PGP SIGNATURE-----
-
---Signature=_Tue__2_Aug_2011_18_35_58_+1000_CmC0BMshnmKGz0Ye--
