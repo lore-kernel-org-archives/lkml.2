@@ -1,136 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001Ab1HBDxS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 23:53:18 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:52792 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753821Ab1HBDxG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 23:53:06 -0400
-From: Namhyung Kim <namhyung@gmail.com>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH 3/3] [SCSI] sd: update kernel doc comments
-Date: Tue,  2 Aug 2011 12:50:53 +0900
-Message-Id: <1312257053-2522-3-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1312257053-2522-1-git-send-email-namhyung@gmail.com>
-References: <1312257053-2522-1-git-send-email-namhyung@gmail.com>
+	id S1753972Ab1HBD7F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 23:59:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4364 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753775Ab1HBD65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 23:58:57 -0400
+Date: Tue, 2 Aug 2011 11:59:14 +0800
+From: Han Pingtian <phan@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org
+Subject: [BUG] perf kmem: Processed 0 events and LOST 75691!
+Message-ID: <20110802035914.GA6626@hpt.nay.redhat.com>
+Mail-Followup-To: linux-kernel@vger.kernel.org,
+	linux-perf-users@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a typo and update argument names.
+Hello,
 
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- drivers/scsi/sd.c |   31 +++++++++++++------------------
- 1 files changed, 13 insertions(+), 18 deletions(-)
+I got this with 3.0 perf, but the running kernel is a old one:
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index fbb522add124..496a4d9ca670 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -529,7 +529,7 @@ static void sd_config_discard(struct scsi_disk *sdkp, unsigned int mode)
- 
- /**
-  * scsi_setup_discard_cmnd - unmap blocks on thinly provisioned device
-- * @sdp: scsi device to operate one
-+ * @sdp: scsi device to operate on
-  * @rq: Request to prepare
-  *
-  * Will issue either UNMAP or WRITE SAME(16) depending on preference
-@@ -635,8 +635,8 @@ static void sd_unprep_fn(struct request_queue *q, struct request *rq)
- /**
-  *	sd_init_command - build a scsi (read or write) command from
-  *	information in the request structure.
-- *	@SCpnt: pointer to mid-level's per scsi command structure that
-- *	contains request and into which the scsi command is written
-+ *	@q: pointer to request queue structure
-+ *	@rq: request to prepare
-  *
-  *	Returns 1 if successful and 0 if error (or cannot be done now).
-  **/
-@@ -890,17 +890,12 @@ static int sd_prep_fn(struct request_queue *q, struct request *rq)
- 
- /**
-  *	sd_open - open a scsi disk device
-- *	@inode: only i_rdev member may be used
-- *	@filp: only f_mode and f_flags may be used
-+ *	@bdev: block device to open
-+ *	@mode: file open mode
-  *
-  *	Returns 0 if successful. Returns a negated errno value in case 
-  *	of error.
-  *
-- *	Note: This can be called from a user context (e.g. fsck(1) )
-- *	or from within the kernel (e.g. as a result of a mount(1) ).
-- *	In the latter case @inode and @filp carry an abridged amount
-- *	of information as noted above.
-- *
-  *	Locking: called with bdev->bd_mutex held.
-  **/
- static int sd_open(struct block_device *bdev, fmode_t mode)
-@@ -973,8 +968,8 @@ error_autopm:
- /**
-  *	sd_release - invoked when the (last) close(2) is called on this
-  *	scsi disk.
-- *	@inode: only i_rdev member may be used
-- *	@filp: only f_mode and f_flags may be used
-+ *	@disk: generic disk structure
-+ *	@mode: file open mode
-  *
-  *	Returns 0. 
-  *
-@@ -1031,8 +1026,8 @@ static int sd_getgeo(struct block_device *bdev, struct hd_geometry *geo)
- 
- /**
-  *	sd_ioctl - process an ioctl
-- *	@inode: only i_rdev/i_bdev members may be used
-- *	@filp: only f_mode and f_flags may be used
-+ *	@bdev: block device to process
-+ *	@mode: file open mode
-  *	@cmd: ioctl command number
-  *	@arg: this is third argument given to ioctl(2) system call.
-  *	Often contains a pointer.
-@@ -2198,7 +2193,7 @@ static void sd_read_app_tag_own(struct scsi_disk *sdkp, unsigned char *buffer)
- 
- /**
-  * sd_read_block_limits - Query disk device for preferred I/O sizes.
-- * @disk: disk to query
-+ * @sdkp: disk to query
-  */
- static void sd_read_block_limits(struct scsi_disk *sdkp)
- {
-@@ -2264,7 +2259,7 @@ static void sd_read_block_limits(struct scsi_disk *sdkp)
- 
- /**
-  * sd_read_block_characteristics - Query block dev. characteristics
-- * @disk: disk to query
-+ * @sdkp: disk to query
-  */
- static void sd_read_block_characteristics(struct scsi_disk *sdkp)
- {
-@@ -2290,7 +2285,7 @@ static void sd_read_block_characteristics(struct scsi_disk *sdkp)
- 
- /**
-  * sd_read_block_provisioning - Query provisioning VPD page
-- * @disk: disk to query
-+ * @sdkp: disk to query
-  */
- static void sd_read_block_provisioning(struct scsi_disk *sdkp)
- {
-@@ -2629,7 +2624,7 @@ static int sd_probe(struct device *dev)
-  *	sd_remove - called whenever a scsi disk (previously recognized by
-  *	sd_probe) is detached from the system. It is called (potentially
-  *	multiple times) during sd module unload.
-- *	@sdp: pointer to mid level scsi device object
-+ *	@dev: pointer to device object
-  *
-  *	Note: this function is invoked from the scsi mid-level.
-  *	This function potentially frees up a device name (e.g. /dev/sdc)
+[root@hp-dl580g7-01 perf]# ./perf kmem record sleep 1
+[ perf record: Woken up 0 times to write data ]
+[ perf record: Captured and wrote 21.789 MB perf.data (~951977 samples)
+]
+Processed 0 events and LOST 76148!
+
+Check IO/CPU overload!
+
+[root@hp-dl580g7-01 perf]# ./perf kmem stat
+Processed 0 events and LOST 76148!
+
+Check IO/CPU overload!
+
+
+SUMMARY
+=======
+Total bytes requested: 5725028
+Total bytes allocated: 6291512
+Total bytes wasted on internal fragmentation: 566484
+Internal fragmentation: 9.003941%
+Cross CPU allocations: 28/84295
+
+Is this a bug?
+
+Thanks.
+
 -- 
-1.7.6
-
+Han Pingtian
+Quality Engineer
+hpt @ #kernel-qe
+Red Hat, Inc
+Freedom ... courage ... Commitment ... ACCOUNTABILITY
