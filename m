@@ -1,90 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab1HBCev (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 22:34:51 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:31098 "EHLO
+	id S1753925Ab1HBCnr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 22:43:47 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:32053 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753206Ab1HBCeq (ORCPT
+	with ESMTP id S1753206Ab1HBCnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 22:34:46 -0400
+	Mon, 1 Aug 2011 22:43:41 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
 	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=ULc2mNBNywxKBF4lF01uWFdmdCBuoLsB0q8NmNCYkcglm2SNuycAXiJVQ3ToM6WKn
-	x0xmQmLf9QehbAWTYr/AQ==
-Date: Mon, 1 Aug 2011 19:34:40 -0700 (PDT)
+	b=SJcZvnrAIKAGiTYgVlvYYXo0Qts2JnFeaqXzK2T43d38C+H8edri1xDFtkWQIhjuA
+	dMWdqIWoWUSSuFYjSg4jg==
+Date: Mon, 1 Aug 2011 19:43:35 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andi Kleen <andi@firstfloor.org>
-cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: Revert needed: udev spewing warnons on common systems in 3.0
-In-Reply-To: <20110802005206.GA3832@tassilo.jf.intel.com>
-Message-ID: <alpine.DEB.2.00.1108011928530.15596@chino.kir.corp.google.com>
-References: <20110802005206.GA3832@tassilo.jf.intel.com>
+To: Pekka Enberg <penberg@kernel.org>
+cc: Christoph Lameter <cl@linux.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
+In-Reply-To: <CAOJsxLGyC4=WwGu7kUTwVKF3AxhfWjBg2sZu=W08RtVMHKk8eQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1108011939180.15596@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1107290145080.3279@tiger> <alpine.DEB.2.00.1107291002570.16178@router.home> <alpine.DEB.2.00.1107311136150.12538@chino.kir.corp.google.com> <alpine.DEB.2.00.1107311253560.12538@chino.kir.corp.google.com> <1312145146.24862.97.camel@jaguar>
+ <alpine.DEB.2.00.1107311426001.944@chino.kir.corp.google.com> <1312175306.24862.103.camel@jaguar> <alpine.DEB.2.00.1108010229150.1062@chino.kir.corp.google.com> <CAOJsxLGyC4=WwGu7kUTwVKF3AxhfWjBg2sZu=W08RtVMHKk8eQ@mail.gmail.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-1617763585-1312253016=:15596"
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Aug 2011, Andi Kleen wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
+--397155492-1617763585-1312253016=:15596
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Mon, 1 Aug 2011, Pekka Enberg wrote:
+
+> Looking at the data (in slightly reorganized form):
 > 
-> Hi Linus,
+>   alloc
+>   =====
 > 
-> Can you please revert 
+>     16 threads:
 > 
-> commit be8f684d73d8d916847e996bf69cef14352872c6
-> Author: David Rientjes <rientjes@google.com>
-> Date:   Mon Jul 25 17:12:18 2011 -0700
+>       cache           alloc_fastpath          alloc_slowpath
+>       kmalloc-256     4263275 (91.1%)         417445   (8.9%)
+>       kmalloc-1024    4636360 (99.1%)         42091    (0.9%)
+>       kmalloc-4096    2570312 (54.4%)         2155946  (45.6%)
 > 
->     oom: make deprecated use of oom_adj more verbose
+>     160 threads:
 > 
->     /proc/pid/oom_adj is deprecated and scheduled for removal in August 2012
->     according to Documentation/feature-removal-schedule.txt.
+>       cache           alloc_fastpath          alloc_slowpath
+>       kmalloc-256     10937512 (62.8%)        6490753  (37.2%)
+>       kmalloc-1024    17121172 (98.3%)        303547   (1.7%)
+>       kmalloc-4096    5526281  (31.7%)        11910454 (68.3%)
 > 
+>   free
+>   ====
 > 
-> This makes most of my test systems (suse 11.1, 11.2) spew scary WARN_ONs
-> on every boot. GNOME then also complains. While it doesn't cause actual 
-> misfunction it scares me every time I boot and other people who can't
-> read git logs like me will be unnecessary scared.
+>     16 threads:
+> 
+>       cache           free_fastpath           free_slowpath
+>       kmalloc-256     210115   (4.5%)         4470604  (95.5%)
+>       kmalloc-1024    3579699  (76.5%)        1098764  (23.5%)
+>       kmalloc-4096    67616    (1.4%)         4658678  (98.6%)
+> 
+>     160 threads:
+>       cache           free_fastpath           free_slowpath
+>       kmalloc-256     15469    (0.1%)         17412798 (99.9%)
+>       kmalloc-1024    11604742 (66.6%)        5819973  (33.4%)
+>       kmalloc-4096    14848    (0.1%)         17421902 (99.9%)
+> 
+> it's pretty sad to see how SLUB alloc fastpath utilization drops so
+> dramatically. Free fastpath utilization isn't all that great with 160
+> threads either but it seems to me that most of the performance
+> regression compared to SLAB still comes from the alloc paths.
 > 
 
-If you look at the warning, you should be able to infer that an 
-application is writing to /proc/pid/oom_adj when it should be using the 
-new /proc/pid/oom_score_adj interface instead.
-
-> Also the warning is completely useless: noone will be "fixing"
-> udev on old distributions.
-> 
-
-udev was fixed for v162, but admittedly that won't help on old 
-distributions.  The WARN_ONCE() was intended to be in place for a year 
-just like its previous form, printk_once(), and then the tunable will 
-disappear and result in no error message.
-
-> IMHO that's not acceptable to break common user land like this.
-> Linux is supposed to be binary compatible and this patch is not
-> in this spirit.
-> 
-
-Can you show additional breakage that still need to be fixed in userspace 
-applications (we can't do anything about old distributions, it'll be a 
-silent failure in a year's time)?  udev was fixed for v162, kde was fixed 
-for 4.6.1, chromium is in the process of being fixed as a result of this 
-WARN_ON() (see http://code.google.com/p/chromium/issues/detail?id=65009), 
-and opensshd was fixed in 5.7p1.  oom_adj isn't that common of an 
-interface, so if there are others that are largely popular than please let 
-me know and we'll get it fixed up.
-
-So I'm certainly not changing an interface and leaving people to fix it 
-up, I've been actively involved in doing so for the known userspace that 
-does touch the tunable.  I think it's better for users to be notified 
-whether by "scary" warnings in the log (come on, we should be able to warn 
-about deprecated interfaces in a log without mass failures) as some due 
-diligence before removing the tunable.  Most applications use it only to 
-disable oom killing entirely, so a silent failure and allowing a vital 
-task to be killed is the alternative to getting them fixed up.
+It's the opposite, the cumulative effects of the free slowpath is more 
+costly in terms of latency than the alloc slowpath because it occurs at a 
+greater frequency; the pattern that I described as "slab thrashing" before 
+causes a single free to a full slab, manipulation to get it back on the 
+partial list, then the alloc slowpath grabs it for a single allocation, 
+and requires another partial slab on the next alloc.
+--397155492-1617763585-1312253016=:15596--
