@@ -1,98 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465Ab1HBQFh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 12:05:37 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:52082 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258Ab1HBQFd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 12:05:33 -0400
+	id S1754481Ab1HBQRh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 12:17:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:51295 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753394Ab1HBQRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 12:17:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,307,1309762800"; 
+   d="scan'208";a="33413017"
+Message-ID: <4E382329.8080307@linux.intel.com>
+Date: Tue, 02 Aug 2011 09:17:45 -0700
+From: J Freyensee <james_p_freyensee@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110628 Thunderbird/5.0
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6vFT6daeE+5EsbDtEeUV-sYZgcMQd_=GSR+kqre7Opkgw@mail.gmail.com>
-References: <CACxGe6vFT6daeE+5EsbDtEeUV-sYZgcMQd_=GSR+kqre7Opkgw@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 2 Aug 2011 17:05:11 +0100
-X-Google-Sender-Auth: 0Q1fG0v2g_dQKqYZfUcZtvfVNro
-Message-ID: <CACxGe6sp9U1KB51C-5V2Xb02gDSQXGpouyrPg6tZgOQgc8TE8g@mail.gmail.com>
-Subject: Re: [GIT PULL] device tree fixes for v3.1
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        akpm <akpm@linux-foundation.org>,
+        torvalds <torvalds@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH] pti: add missing CONFIG_PCI dependency
+References: <20110802080834.GA9847@osiris.boeblingen.de.ibm.com> <20110802081129.b84a7bc7.rdunlap@xenotime.net>
+In-Reply-To: <20110802081129.b84a7bc7.rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oops, missed one patch.  Here's an updated pull req that includes a
-MAINTAINERS file change.
-
-g.
-
-The following changes since commit 5f66d2b58ca879e70740c82422354144845d6dd3:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/sfrench/cifs-2.6
-(2011-08-01 06:14:25 -1000)
-
-are available in the git repository at:
-
-  git://git.secretlab.ca/git/linux-2.6 devicetree/next
-
-Felipe Balbi (1):
-      of: address: use resource_size helper
-
-Jamie Iles (1):
-      of: constify property name parameters for helper functions
-
-Mark Brown (1):
-      MAINTAINERS: Add keyword match for of_match_table to device tree section
-
-Michal Simek (1):
-      input: xilinx_ps2: Add missing of_address.h header
-
- MAINTAINERS                      |    1 +
- drivers/input/serio/xilinx_ps2.c |    2 +-
- drivers/of/address.c             |    2 +-
- drivers/of/base.c                |    7 ++++---
- include/linux/of.h               |   15 +++++++++------
- 5 files changed, 16 insertions(+), 11 deletions(-)
-
-
-On Tue, Aug 2, 2011 at 4:54 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> Not much here to talk about here.  Pretty boring stuff.
+On 08/02/2011 08:11 AM, Randy Dunlap wrote:
+> On Tue, 2 Aug 2011 10:08:34 +0200 Heiko Carstens wrote:
 >
-> g.
->
-> The following changes since commit 5f66d2b58ca879e70740c82422354144845d6dd3:
->
->  Merge git://git.kernel.org/pub/scm/linux/kernel/git/sfrench/cifs-2.6
-> (2011-08-01 06:14:25 -1000)
->
-> are available in the git repository at:
->
->  git://git.secretlab.ca/git/linux-2.6 devicetree/next
->
-> Felipe Balbi (1):
->      of: address: use resource_size helper
->
-> Jamie Iles (1):
->      of: constify property name parameters for helper functions
->
-> Michal Simek (1):
->      input: xilinx_ps2: Add missing of_address.h header
->
->  drivers/input/serio/xilinx_ps2.c |    2 +-
->  drivers/of/address.c             |    2 +-
->  drivers/of/base.c                |    7 ++++---
->  include/linux/of.h               |   15 +++++++++------
->  4 files changed, 15 insertions(+), 11 deletions(-)
->
-> --
-> Grant Likely, B.Sc., P.Eng.
-> Secret Lab Technologies Ltd.
+>> From: Heiko Carstens<heiko.carstens@de.ibm.com>
+>>
+>> allmodconfig compile fails on s390 because of the new PTI driver:
+>>
+>> drivers/misc/pti.c:407:3: error: implicit declaration of function 'pci_iounmap'
+>> drivers/misc/pti.c:410:3: error: implicit declaration of function 'pci_release_region'
+>>
+>> Add a 'depends on PCI' statement so it doesn't get compiled.
+>>
+>> Cc: J Freyensee<james_p_freyensee@linux.intel.com>
 >
 
+Greg, did you see the patch go your way?
+
+http://marc.info/?l=linux-kernel&m=131007615706260&w=2
+
+Should I res-submit this patch to you through the linux-next mailing list?
+
+Thanks Greg,
+
+J
+
+> James has already acked my identical patch.
+> The problem seems to be that we don't have a drivers/misc/ maintainter to
+> merge the patch.
+>
+> Anyway:
+> Acked-by: Randy Dunlap<rdunlap@xenotime.net>
+>
+>
+>> Signed-off-by: Heiko Carstens<heiko.carstens@de.ibm.com>
+>> ---
+>>   drivers/misc/Kconfig |    1 +
+>>   1 file changed, 1 insertion(+)
+>>
+>> --- a/drivers/misc/Kconfig
+>> +++ b/drivers/misc/Kconfig
+>> @@ -146,6 +146,7 @@ config PHANTOM
+>>
+>>   config INTEL_MID_PTI
+>>   	tristate "Parallel Trace Interface for MIPI P1149.7 cJTAG standard"
+>> +	depends on PCI
+>>   	default n
+>>   	help
+>>   	  The PTI (Parallel Trace Interface) driver directs
+>> --
+>
+>
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
 
 
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+J (James/Jay) Freyensee
+Storage Technology Group
+Intel Corporation
