@@ -1,35 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754201Ab1HBBAS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 21:00:18 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:58133 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754153Ab1HBBAM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 21:00:12 -0400
-Date: Mon, 01 Aug 2011 18:00:06 -0700 (PDT)
-Message-Id: <20110801.180006.1259800889697506106.davem@davemloft.net>
-To: jj@chaosbits.net
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        rdunlap@xenotime.net, trivial@kernel.org
-Subject: Re: [PATCH] Documentation/bonding.txt: Update to 3.x version
- numbers
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.00.1108020056410.31999@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1108020056410.31999@swampdragon.chaosbits.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1753867Ab1HBBDC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 21:03:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53051 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753355Ab1HBBC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 21:02:57 -0400
+Message-ID: <4E374C9E.5000102@zytor.com>
+Date: Mon, 01 Aug 2011 18:02:22 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] x86/spinlocks optional for 3.1
+References: <201108011753.p71HrrTr011226@hera.kernel.org> <CA+55aFyKFP3KzVfSEO02TjjmMDDL5agCJjKERFdmStM4k9DtQQ@mail.gmail.com>
+In-Reply-To: <CA+55aFyKFP3KzVfSEO02TjjmMDDL5agCJjKERFdmStM4k9DtQQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 01 Aug 2011 18:00:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Juhl <jj@chaosbits.net>
-Date: Tue, 2 Aug 2011 00:58:16 +0200 (CEST)
+On 08/01/2011 05:04 PM, Linus Torvalds wrote:
+> 
+> If that xadd implementation could perhaps be shared, I wouldn't hate
+> it so much. As it is, I really don't see the point in pulling this.
+> 
 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+OK, no problem.  We'll rework it for 3.2.
 
-Applied, but please submit networking patches at least CC:'d
-to netdev@vger.kernel.org so it can be tracked properly.
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
