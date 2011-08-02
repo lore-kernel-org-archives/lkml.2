@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab1HBB5w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 21:57:52 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:12785
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753514Ab1HBB5t convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 21:57:49 -0400
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h8e2h8e3h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Tabi Timur-B04825 <B04825@freescale.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/misc: introduce Freescale Data Collection
- Manager driver
-Thread-Topic: [PATCH] drivers/misc: introduce Freescale Data Collection
- Manager driver
-Thread-Index: AQHMUJTQaH7yU/veBU63U1YHEq4M5pUI/TKAgAADJQCAAB+KgIAAAeoA
-Date: Tue, 2 Aug 2011 01:57:45 +0000
-Message-ID: <4E375998.1020901@freescale.com>
-References: <1312235334-15036-1-git-send-email-timur@freescale.com>
- <20110801234645.GA15792@sirena.org.uk> <4E373D88.80006@freescale.com>
- <20110802015050.GA17286@opensource.wolfsonmicro.com>
-In-Reply-To: <20110802015050.GA17286@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:5.0)
- Gecko/20110706 Firefox/5.0 SeaMonkey/2.2
-x-originating-ip: [68.203.10.197]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <E482168DC516654B86C6FCF367175A39@freescale.net>
-Content-Transfer-Encoding: 7BIT
+	id S1753744Ab1HBCWW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 22:22:22 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:26424 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753206Ab1HBCWP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 22:22:15 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=ajmysRBc0k06U/+qOgy5jMZJqUd55rv9i1p7uQB6L6+re5QGE7yOGOojpIdPx+htJ
+	2lG0+WgI3y3bjm3LcGeQA==
+Date: Mon, 1 Aug 2011 19:22:08 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: Revert needed: udev spewing warnons on common systems in 3.0
+In-Reply-To: <CA+55aFw=wX1CormdOAnsoK2ruDLp9SaEVh1EcTj8wvt+Kq2gAg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1108011916480.15596@chino.kir.corp.google.com>
+References: <20110802005206.GA3832@tassilo.jf.intel.com> <20110801183207.cea89a96.akpm@linux-foundation.org> <CA+55aFw=wX1CormdOAnsoK2ruDLp9SaEVh1EcTj8wvt+Kq2gAg@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-852114070-1312251729=:15596"
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown wrote:
-> I'd expect that things like the _lowest, _highest and _average
-> attributes which a number of drivers have are what you're looking for.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Yes, but then all I'm doing is presenting numbers that don't change to an 
-interface, simply on the basis that the numbers represent sensor values.
+--397155492-852114070-1312251729=:15596
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-If I'm running a sensor application, I'm doing it to get real-time 
-monitoring of the sensors in my system.  The DCM on our boards is not 
-capable of real-time results.  So you're not actually "monitoring" the 
-hardware.  The data from the DCM is available only *after* you stop 
-running the background process.
+On Mon, 1 Aug 2011, Linus Torvalds wrote:
 
-> At the very least it seems obvious how you might extend the interface if
-> some features you need are missing.  The subsystem has fairly extensive
-> documentation in Documentation/hwmon.
+> > aw, what crap.
+> >
+> > "/proc/%d/oom_adj is deprecated, please use /proc/%d/oom_score_adj instead."
+> >
+> > Once per boot.  That's not "scary".
+> 
+> It is when there is that totally pointless stack trace, and the kernel
+> bug reporting tool picks it up and tells the user that there was a
+> kernel oops.
+> 
+> Which it really does.
+> 
+> So if it was a "printk_once()" it would be fine. The WARN_ONCE() is
+> just annoying.
+> 
 
-I just don't see how it fits.  Yes, I could do it, but then I'd end up 
-with something that doesn't make any sense.  I would have to use a custom 
-interface to start monitoring and then another interface to stop it.  Then 
-I would query the results use the hwmon interface, but the results would 
-be static.  That just seems silly.
+It was a printk_once() when the tunable was scheduled to be removed two 
+years later.  Now that one year has passed since the oom killer rewrite 
+has been merged, it was changed to a WARN_ONCE() simply to attract more 
+attention to the issue.  The plan was to remove the tunable completely a 
+year from now as specified in Documentation/feature-removal-schedule.txt.
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+The intent here was to be more helpful than annoying or causing a problem 
+with a log parser that doesn't understand the different between a warning 
+and a panic or oops.
+
+We could change it to a more obvious multi-line notification that an 
+application is using a deprecated interface that wouldn't parse like the 
+WARN_ONCE() output if you'd like.  The single printk_once() obviously 
+wasn't sufficient over the course of a year to get enough applications to 
+change although things like udev, kde, and opensshd did.  chromium 
+actually noticed the new WARN_ON() behavior and is in the process of 
+fixing it because of that.
+--397155492-852114070-1312251729=:15596--
