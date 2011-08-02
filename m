@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab1HBLlf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 07:41:35 -0400
-Received: from trinity.develer.com ([83.149.158.210]:35866 "EHLO
-	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab1HBLl2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 07:41:28 -0400
-X-Greylist: delayed 470 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Aug 2011 07:41:28 EDT
-Date: Tue, 2 Aug 2011 13:33:35 +0200
-From: Andrea Righi <arighi@develer.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: Andrew Morton <akpm@linux-foundation.org>, trivial@kernel.org,
-        kernel-janitors@vger.kernel.org, Stefani Seibold <stefani@seibold.net>,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/11] kernel/kfifo.c: trivial: use BUG_ON
-Message-ID: <20110802113335.GA4185@thinkpad>
-References: <1312281304-11847-1-git-send-email-julia@diku.dk>
- <1312281304-11847-2-git-send-email-julia@diku.dk>
+	id S1754029Ab1HBLmp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 07:42:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23854 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753967Ab1HBLmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 07:42:38 -0400
+Message-ID: <4E37E2A0.9090109@redhat.com>
+Date: Tue, 02 Aug 2011 08:42:24 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312281304-11847-2-git-send-email-julia@diku.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Leonid V. Fedorenchik" <leonidsbox@gmail.com>
+CC: Joe Perches <joe@perches.com>, gregkh@suse.de, devel@driverdev.osuosl.org,
+        arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Palash.Bandyopadhyay@conexant.com, ruslan@rpisarev.org.ua,
+        Revent82@gmail.com
+Subject: Re: [PATCH] Staging: cx25821: fix coding style issues
+References: <1312191229-24718-1-git-send-email-leonidsbox@gmail.com> <1312215262.11635.15.camel@Joe-Laptop> <20110802171856.044cd78d@inspire>
+In-Reply-To: <20110802171856.044cd78d@inspire>
+X-Enigmail-Version: 1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 02, 2011 at 12:34:54PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
+Em 02-08-2011 06:18, Leonid V. Fedorenchik escreveu:
+> Thanks for the review. I sent v2. I have a question, however...
 > 
-> Use BUG_ON(x) rather than if(x) BUG();
+> On Mon, 01 Aug 2011 09:14:22 -0700
+> Joe Perches <joe@perches.com> wrote:
 > 
-> The semantic patch that fixes this problem is as follows:
-> (http://coccinelle.lip6.fr/)
+>> On Mon, 2011-08-01 at 17:33 +0800, Leonid V. Fedorenchik wrote:
+>>> Fix too long lines in cx25821-audio.h and cx25821-core.c
+>> []
+>>> diff --git a/drivers/staging/cx25821/cx25821-core.c b/drivers/staging/cx25821/cx25821-core.c
+>> []
+>>> @@ -972,8 +972,8 @@ static int cx25821_dev_setup(struct cx25821_dev *dev)
+>>>  	dev->lmmio = ioremap(dev->base_io_addr, pci_resource_len(dev->pci, 0));
+>>>  
+>>>  	if (!dev->lmmio) {
+>>> -		CX25821_ERR
+>>> -		    ("ioremap failed, maybe increasing __VMALLOC_RESERVE in page.h\n");
+>>> +		CX25821_ERR("ioremap failed, maybe increasing __VMALLOC_RESERVE"
+>>> +								" in page.h\n");
+>>
+>> Please do not split formats.
 > 
-> // <smpl>
-> @@ identifier x; @@
-> -if (x) BUG();
-> +BUG_ON(x);
-> 
-> @@ identifier x; @@
-> -if (!x) BUG();
-> +BUG_ON(!x);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
+> What is the reason to not split formats?
+> I can see that in Documentation/CodingStyle in Chapter 2 it is OK to split
+> formats if it is not making readability worse.
+> So, is it for the sake of readability or is it new coding style rule for the
+> kernel that is not in documentation yet or something else or am I misunderstood
+> something?
 
-The patch looks good. However, I think we should just get rid of the
-BUG_ON() there. If nents is 0, setup_sgl_buf() would just returns 0 and
-nothing critical will happen.
+Breaking long printk lines break things like:
+	git grep "__VMALLOC_RESERVE in page.h"
 
-Also consider that in __kfifo_dma_in_prepare(), the equivalent of
-__kfifo_dma_in_prepare_r() when recsize is 0, we don't check nents at
-all.
 
--Andrea
-
-> ---
->  kernel/kfifo.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff -u -p a/kernel/kfifo.c b/kernel/kfifo.c
-> --- a/kernel/kfifo.c
-> +++ b/kernel/kfifo.c
-> @@ -562,8 +562,7 @@ EXPORT_SYMBOL(__kfifo_to_user_r);
->  unsigned int __kfifo_dma_in_prepare_r(struct __kfifo *fifo,
->  	struct scatterlist *sgl, int nents, unsigned int len, size_t recsize)
->  {
-> -	if (!nents)
-> -		BUG();
-> +	BUG_ON(!nents);
->  
->  	len = __kfifo_max_r(len, recsize);
->  
-> @@ -586,8 +585,7 @@ EXPORT_SYMBOL(__kfifo_dma_in_finish_r);
->  unsigned int __kfifo_dma_out_prepare_r(struct __kfifo *fifo,
->  	struct scatterlist *sgl, int nents, unsigned int len, size_t recsize)
->  {
-> -	if (!nents)
-> -		BUG();
-> +	BUG_ON(!nents);
->  
->  	len = __kfifo_max_r(len, recsize);
->  
+Cheers,
+Mauro
