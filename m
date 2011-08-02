@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab1HBRC5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 13:02:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34693 "EHLO mx2.suse.de"
+	id S1754775Ab1HBRDD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 13:03:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34697 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754627Ab1HBRCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 13:02:51 -0400
-Date: Tue, 2 Aug 2011 19:02:49 +0200
+	id S1754764Ab1HBRC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 13:02:58 -0400
+Date: Tue, 2 Aug 2011 19:02:56 +0200
 From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: Have we changed /proc/stat idle statistics by NOHZ kernel?
-Message-ID: <20110802170249.GA23698@tiehlicka.suse.cz>
-References: <20110725143313.GE9445@tiehlicka.suse.cz>
- <20110801125916.1855ff3f.akpm@linux-foundation.org>
+To: Venki Pallipadi <venki@google.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH resend] x86, PAT: honor CONFIG_STRICT_DEVMEM if pat is
+ disabled
+Message-ID: <20110802170256.GB23698@tiehlicka.suse.cz>
+References: <20110801094611.AAF738A95F@mx2.suse.de>
+ <CABeCy1Y6ZO3igfRhdDQTSS0i2w9k2WTtJYwWUxuRT56UG9Zd8Q@mail.gmail.com>
+ <20110802080315.GA9473@tiehlicka.suse.cz>
+ <CABeCy1aCA_iGOYw65UK3Nr2W7u5zEOK24N-n0iCY=aQZNVcUEQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110801125916.1855ff3f.akpm@linux-foundation.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABeCy1aCA_iGOYw65UK3Nr2W7u5zEOK24N-n0iCY=aQZNVcUEQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 01-08-11 12:59:16, Andrew Morton wrote:
-> On Mon, 25 Jul 2011 16:33:13 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
+On Tue 02-08-11 09:33:28, Venki Pallipadi wrote:
+> On Tue, Aug 2, 2011 at 1:03 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> > On Mon 01-08-11 16:33:18, Venki Pallipadi wrote:
+> >> On Fri, Jul 22, 2011 at 2:01 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> >> >
+> >> > since 0124cecf (x86, PAT: disable /dev/mem mmap RAM with PAT) we are
+> >> > disabling access to the system RAM as if STRICT_DEVMEM was enabled by
+> >> > default. If we, however, disable pat by nopat kernel parameter we can
+> >> > access that memory without considering CONFIG_STRICT_DEVMEM.
+> >>
+> >> Looking at the code, I don't think this problem exists. Code in pat.c
+> >> disables /dev/mem mmap only when !CONFIG_STRICT_DEVMEM.
+> >
+> > Ahh yes, you are right. I got confused by having two separate
+> > range_is_allowed functions and didn't realize which one is called from
+> > which context.
+> >        mmap_mem
+> >          -> range_is_allowed [drivers/char/mem.c]
+> >               -EPERM
+> >          -> phys_mem_access_prot_allowed
+> >               -> range_is_allowed [arch/x86/mm/pat.c]
+> >
+> > So we really get stopped at the first check and do not get to the later
+> > one.
+> >
+> > While we are at it. {read,write}_mem checks only range_is_allowed (mem.c
+> > version) and it doesn't call phys_mem_access_prot_allowed so we do not
+> > consider PAT. {read,write}_kmem doesn't check the range at all.
+> > Is this correct?
+> > Why do we care _only_ about mmap?
+> >
 > 
-> > Hi,
-> > we have a customer reporting that /proc/stat doesn't provide correct
-> > results about idle time if the machine is idle.
-> > The issue is caused by the fact that tickles kernel doesn't update
-> > kstat_cpu(i).cpustat.idle while it is tickles. Tools that parse this
-> > file interpret the unchanged value as 0% idle since the last time.
-> > While I personally do not think that measuring the idle machine is
-> > that important one could say that the semantic of the file has changed
-> > with NOHZ which is not good as we are trying to keep this interface
-> > stable.
-> > One way to fix this is to consider the current status of idle in
-> > show_stat. The very primitive attempt of that can be seen bellow (on
-> > top of the current Linus tree). I know it has several issue it just
-> > illustrates what I am trying to say.  It will not work if jiffies
-> > overflow while the CPU was tickles and it also misses locking and
-> > handling !NOHZ configuration.
-> > 
-> > I have also noticed we have get_cpu_idle_time_us which should do
-> > something similar. Should it be used instead or it is more intrusive?
-> > 
-> > Btw. is this considered to be a problem at all?
-> > 
-> 
-> I'd consider it a bug and a regression.  If the machine was idle and
-> /proc/stat says "zero idle time" then that is simply incorrect.
-> 
-> Can we just cheat?  subtract elapsed R and D time from elapsed wall
-> time and print that out?
+> Yes. The problem with PAT and /dev/mem mmap is with untracked mmaps in
+> user address space. Once mapped the mappings can stay in user space
+> and if there is a page attribute change for that physical address
+> later kernel doesn't have handle on all such user space mappings that
+> may exist.
+> Read/Write on the other hand use direct mappings and will not cause
+> this problem. I have generally been suggesting tools that want to
+> access /dev/mem and are unable to mmap it due to PAT to use read/write
+> instead. /dev/mem on 32 bit has some problems of its own and the
+> recent patchset on mailing list fixes most of the issues there.
 
-I was thinking about that as well. Something like 
-now - (cpustat.user + cpustat.system + cpustat.iowait)
+OK, understood. Thanks for the clarification.
 
-but this has the similar problem because iowait is accounted the same
-way as idle.
-Or did you mean some other counters?
-
-I am currently looking into using get_cpu_idle_time_us which should be
-more convenient but I do not like that it calls update_ts_time_stats
-unconditionally (because then we will race with governors which use that
-function as well). 
-
-I will try to rip the core out of the function and reuse it here. 
 -- 
 Michal Hocko
 SUSE Labs
