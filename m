@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab1HBCnr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 22:43:47 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:32053 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753206Ab1HBCnl (ORCPT
+	id S1753626Ab1HBDpR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 23:45:17 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42060 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752675Ab1HBDpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 22:43:41 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=SJcZvnrAIKAGiTYgVlvYYXo0Qts2JnFeaqXzK2T43d38C+H8edri1xDFtkWQIhjuA
-	dMWdqIWoWUSSuFYjSg4jg==
-Date: Mon, 1 Aug 2011 19:43:35 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Pekka Enberg <penberg@kernel.org>
-cc: Christoph Lameter <cl@linux.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
-In-Reply-To: <CAOJsxLGyC4=WwGu7kUTwVKF3AxhfWjBg2sZu=W08RtVMHKk8eQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1108011939180.15596@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1107290145080.3279@tiger> <alpine.DEB.2.00.1107291002570.16178@router.home> <alpine.DEB.2.00.1107311136150.12538@chino.kir.corp.google.com> <alpine.DEB.2.00.1107311253560.12538@chino.kir.corp.google.com> <1312145146.24862.97.camel@jaguar>
- <alpine.DEB.2.00.1107311426001.944@chino.kir.corp.google.com> <1312175306.24862.103.camel@jaguar> <alpine.DEB.2.00.1108010229150.1062@chino.kir.corp.google.com> <CAOJsxLGyC4=WwGu7kUTwVKF3AxhfWjBg2sZu=W08RtVMHKk8eQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 1 Aug 2011 23:45:13 -0400
+Message-ID: <4E3772C5.70606@lwfinger.net>
+Date: Mon, 01 Aug 2011 22:45:09 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-1617763585-1312253016=:15596"
-X-System-Of-Record: true
+To: Jaroslaw Fedewicz <jafd@netstyle.com.ua>
+CC: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [Bug?] Machine hangs, rtl8192se possible cause
+References: <CAFdoEiT54o+NQKO=dAcOXgyf6GJ1E51w_H_p7PJyRmynz8Sbzg@mail.gmail.com>	<4E36C693.6000705@lwfinger.net> <CAFdoEiRBPMx0C+YXwd4-Q=_nHpOb+r2+GspwujZrPh6S4tDwEQ@mail.gmail.com>
+In-Reply-To: <CAFdoEiRBPMx0C+YXwd4-Q=_nHpOb+r2+GspwujZrPh6S4tDwEQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 08/01/2011 06:10 PM, Jaroslaw Fedewicz wrote:
+>
+> I'm using a fairly recent version of kernel from git (I think from
+> before yesterday). The mysterious hangs were there from the beginning,
+> but it also might be partly because ATI driver was messed up too at
+> these times. Later, ati appeared fixed but the hangs wouldn't go away.
 
---397155492-1617763585-1312253016=:15596
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+If that git tree is linux-2.6, or its new name, from Linus, then you have the 
+latest source.
 
-On Mon, 1 Aug 2011, Pekka Enberg wrote:
+> I don't think it's a panic proper, though. Nothing ever gets logged
+> along the lines of "panic". Even if I happen to have a text mode
+> console, it just freezes. If I have a panic or an oops proper, I'm
+> also kicked out of X11 to see it by the KMS. But not in this case.
+>
+> (Also, the laptop has neither Caps Lock nor Num Lock nor Scroll Lock
+> LEDs, so I can't see if they blink.)
 
-> Looking at the data (in slightly reorganized form):
-> 
->   alloc
->   =====
-> 
->     16 threads:
-> 
->       cache           alloc_fastpath          alloc_slowpath
->       kmalloc-256     4263275 (91.1%)         417445   (8.9%)
->       kmalloc-1024    4636360 (99.1%)         42091    (0.9%)
->       kmalloc-4096    2570312 (54.4%)         2155946  (45.6%)
-> 
->     160 threads:
-> 
->       cache           alloc_fastpath          alloc_slowpath
->       kmalloc-256     10937512 (62.8%)        6490753  (37.2%)
->       kmalloc-1024    17121172 (98.3%)        303547   (1.7%)
->       kmalloc-4096    5526281  (31.7%)        11910454 (68.3%)
-> 
->   free
->   ====
-> 
->     16 threads:
-> 
->       cache           free_fastpath           free_slowpath
->       kmalloc-256     210115   (4.5%)         4470604  (95.5%)
->       kmalloc-1024    3579699  (76.5%)        1098764  (23.5%)
->       kmalloc-4096    67616    (1.4%)         4658678  (98.6%)
-> 
->     160 threads:
->       cache           free_fastpath           free_slowpath
->       kmalloc-256     15469    (0.1%)         17412798 (99.9%)
->       kmalloc-1024    11604742 (66.6%)        5819973  (33.4%)
->       kmalloc-4096    14848    (0.1%)         17421902 (99.9%)
-> 
-> it's pretty sad to see how SLUB alloc fastpath utilization drops so
-> dramatically. Free fastpath utilization isn't all that great with 160
-> threads either but it seems to me that most of the performance
-> regression compared to SLAB still comes from the alloc paths.
-> 
+A kernel panic never logs anything to the disk. The only place you will see it 
+is on the logging console, or in netconsole output.
 
-It's the opposite, the cumulative effects of the free slowpath is more 
-costly in terms of latency than the alloc slowpath because it occurs at a 
-greater frequency; the pattern that I described as "slab thrashing" before 
-causes a single free to a full slab, manipulation to get it back on the 
-partial list, then the alloc slowpath grabs it for a single allocation, 
-and requires another partial slab on the next alloc.
---397155492-1617763585-1312253016=:15596--
+> What raised my suspicions is that I've never seen this happen when
+> rtl8192se wasn't compiled at all or was not loaded.
+>
+> The most problematic thing is that it does not hang right away. Most
+> of the time, I see the machine go into the catatonia after quite a
+> while, and as it is not the laptop I do most of my work on, I usually
+> see it hanged when screen PM has already kicked in. So I cannot really
+> read what the log might say on the matter.
+>
+> I cannot also trigger the freeze reliably. Most of the time it happens
+> "when you are not looking at it", and it usually happens either during
+> or just after high load averages and low to none network activity (a
+> typical scenario: build a firefox from sources, go outside, come home
+> 4 hours later, the laptop is turned on but dead by hanging; no
+> messages as the screen is obviously off; a less typical scenario is to
+> freeze during startup).
+>
+> I'm the last person ever to suggest anything on the subject, but could
+> it be a problem in the card's power management?
+
+Not likely. I have three different cards with differing configurations that I 
+have run for extended periods without seeing your problem. One of them is the 
+same as yours.
+
+Until you get some kind of dump from the system, I'm not sure what can be done.
+
+Larry
