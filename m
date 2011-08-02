@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173Ab1HBTyV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 15:54:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:43476 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754854Ab1HBTyP (ORCPT
+	id S1755149Ab1HBTyn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 15:54:43 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:58805 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755178Ab1HBTye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 15:54:15 -0400
-X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=3rvgeqzMqd0A:10 a=fjyTupFUh-wA:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=mpMdnlmFKti1S5SNY1DT+A==:17 a=yQdBAQUQAAAA:8 a=tBb2bbeoAAAA:8 a=TKLsw_x-MdzUqu3sgTgA:9 a=ngY0_tDh4hBme3U74mkA:7 a=CjuIK1q_8ugA:10 a=IcxpeKGZWnEA:10 a=YuKU6ANggZ8A:10 a=mpMdnlmFKti1S5SNY1DT+A==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 65.28.92.85
-Date: Tue, 02 Aug 2011 14:54:12 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-To: John W Linville <linville@tuxdriver.com>
-Cc: geert@linux-m68k.org, chaoming_li@realsil.com.cn,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] rtlwifi: Fix build errors on sh4 architecture
-Message-ID: <4e3855e4.8qPfeuR18XtAq7Vs%Larry.Finger@lwfinger.net>
-User-Agent: Heirloom mailx 12.2 01/07/07
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 2 Aug 2011 15:54:34 -0400
+Date: Tue, 2 Aug 2011 12:54:31 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org
+Subject: [PATCH -next] kvm: uses TASKSTATS, depends on NET
+Message-Id: <20110802125431.e1902bd1.rdunlap@xenotime.net>
+In-Reply-To: <20110802155727.a3d76babdd2c6fd5d33928c5@canb.auug.org.au>
+References: <20110802155727.a3d76babdd2c6fd5d33928c5@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When rtlwifi is built for the sh4 architecture, build errors of the following
-type occur. An explicit reference to <linux/io.h> should fix these. I have not
-setup the cross-build environment, thus this patch is untested on that platform.
-It does not cause any problems on i386 or x86_64.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-    v3.0/sh4/sh-allmodconfig v3.0/sh4/sh-allyesconfig
-src/drivers/net/wireless/rtlwifi/rtl8192c/../pci.h:290: error: implicit declaration of function 'outl': 4 errors in 2 logs
-    v3.0/sh4/sh-allmodconfig v3.0/sh4/sh-allyesconfig
-src/drivers/net/wireless/rtlwifi/rtl8192c/../pci.h:295: error: implicit declaration of function 'outb': 4 errors in 2 logs
-    v3.0/sh4/sh-allmodconfig v3.0/sh4/sh-allyesconfig
-src/drivers/net/wireless/rtlwifi/rtl8192c/../pci.h:300: error: implicit declaration of function 'inb': 4 errors in 2 logs
-    v3.0/sh4/sh-allmodconfig v3.0/sh4/sh-allyesconfig
-src/drivers/net/wireless/rtlwifi/rtl8192c/../pci.h:305: error: implicit declaration of function 'inw': 4 errors in 2 logs
+CONFIG_TASKSTATS just had a change to use netlink, including
+a change to "depends on NET".  Since "select" does not follow
+dependencies, KVM also needs to depend on NET to prevent build
+errors when CONFIG_NET is not enabled.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Sample of the reported "undefined reference" build errors:
+
+taskstats.c:(.text+0x8f686): undefined reference to `nla_put'
+taskstats.c:(.text+0x8f721): undefined reference to `nla_reserve'
+taskstats.c:(.text+0x8f8fb): undefined reference to `init_net'
+taskstats.c:(.text+0x8f905): undefined reference to `netlink_unicast'
+taskstats.c:(.text+0x8f934): undefined reference to `kfree_skb'
+taskstats.c:(.text+0x8f9e9): undefined reference to `skb_clone'
+taskstats.c:(.text+0x90060): undefined reference to `__alloc_skb'
+taskstats.c:(.text+0x901e9): undefined reference to `skb_put'
+taskstats.c:(.init.text+0x4665): undefined reference to `genl_register_family'
+taskstats.c:(.init.text+0x4699): undefined reference to `genl_register_ops'
+taskstats.c:(.init.text+0x4710): undefined reference to `genl_unregister_ops'
+taskstats.c:(.init.text+0x471c): undefined reference to `genl_unregister_family'
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 ---
+ arch/x86/kvm/Kconfig |    2 ++
+ 1 file changed, 2 insertions(+)
 
-John,
-
-I'm not sure where this goes. I guess that 3.2 would be OK, unless someone
-actually tries to build it on sh4. The only time I have seen the errors is
-in Geert's listing of errors and warnings.
-
-Larry
----
-
-Index: linux-2.6/drivers/net/wireless/rtlwifi/pci.h
-===================================================================
---- linux-2.6.orig/drivers/net/wireless/rtlwifi/pci.h
-+++ linux-2.6/drivers/net/wireless/rtlwifi/pci.h
-@@ -31,6 +31,7 @@
- #define __RTL_PCI_H__
- 
- #include <linux/pci.h>
-+#include <linux/io.h>
- /*
- 1: MSDU packet queue,
- 2: Rx Command Queue
+--- linux-next-20110802.orig/arch/x86/kvm/Kconfig
++++ linux-next-20110802/arch/x86/kvm/Kconfig
+@@ -22,6 +22,8 @@ config KVM
+ 	depends on HAVE_KVM
+ 	# for device assignment:
+ 	depends on PCI
++	# for TASKSTATS/TASK_DELAY_ACCT:
++	depends on NET
+ 	select PREEMPT_NOTIFIERS
+ 	select MMU_NOTIFIER
+ 	select ANON_INODES
