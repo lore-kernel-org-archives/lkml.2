@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab1HBH0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 03:26:24 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:55544 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470Ab1HBH0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 03:26:18 -0400
-X-ASG-Debug-ID: 1312269975-01de280c1e110450001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E37A696.2090007@fusionio.com>
-Date: Tue, 2 Aug 2011 09:26:14 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Christie <michaelc@cs.wisc.edu>
-Subject: Re: linux-next: build warning after merge of the moduleh tree
-References: <20110801132359.1de051cb8a4a2bdfdad7560c@canb.auug.org.au>
-X-ASG-Orig-Subj: Re: linux-next: build warning after merge of the moduleh tree
-In-Reply-To: <20110801132359.1de051cb8a4a2bdfdad7560c@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1751993Ab1HBHeZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 03:34:25 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52865 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470Ab1HBHeU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 03:34:20 -0400
+Subject: [PATCH] regulator: tps6507x: Remove num_voltages array
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 02 Aug 2011 15:34:12 +0800
+Message-ID: <1312270452.12639.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1312269975
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.70667
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-01 05:23, Stephen Rothwell wrote:
-> Hi Paul,
-> 
-> After merging the moduleh tree, today's linux-next build (x86_64
-> allmodconfig) produced this warning:
-> 
-> block/bsg-lib.c:75:1: warning: data definition has no type or storage class
-> block/bsg-lib.c:75:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-> block/bsg-lib.c:75:1: warning: parameter names (without types) in function declaration
-> block/bsg-lib.c:164:1: warning: data definition has no type or storage class
-> block/bsg-lib.c:164:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-> block/bsg-lib.c:164:1: warning: parameter names (without types) in function declaration
-> block/bsg-lib.c:210:1: warning: data definition has no type or storage class
-> block/bsg-lib.c:210:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-> block/bsg-lib.c:210:1: warning: parameter names (without types) in function declaration
-> block/bsg-lib.c:244:1: warning: data definition has no type or storage class
-> block/bsg-lib.c:244:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-> block/bsg-lib.c:244:1: warning: parameter names (without types) in function declaration
-> block/bsg-lib.c:297:1: warning: data definition has no type or storage class
-> block/bsg-lib.c:297:1: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL_GPL'
-> block/bsg-lib.c:297:1: warning: parameter names (without types) in function declaration
-> 
-> This is an interaction with commit aa387cc89567 ("block: add bsg helper
-> library") from the block tree.  That file should have included module.h
-> but now would need export.h it seems (just uses EXPORTSYMBOL_GPL).
-> 
-> I applied the following as a merge fix patch:
+We can get n_voltages for each regulator from table_len of struct tps_info.
 
-Thanks, will you carry this until things are merged? Not easy for me to
-fix up.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/tps6507x-regulator.c |    8 +-------
+ 1 files changed, 1 insertions(+), 7 deletions(-)
 
+diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
+index bfffabc..bdef703 100644
+--- a/drivers/regulator/tps6507x-regulator.c
++++ b/drivers/regulator/tps6507x-regulator.c
+@@ -90,12 +90,6 @@ static const u16 LDO2_VSEL_table[] = {
+ 	3000, 3100, 3200, 3300,
+ };
+ 
+-static unsigned int num_voltages[] = {ARRAY_SIZE(VDCDCx_VSEL_table),
+-				ARRAY_SIZE(VDCDCx_VSEL_table),
+-				ARRAY_SIZE(VDCDCx_VSEL_table),
+-				ARRAY_SIZE(LDO1_VSEL_table),
+-				ARRAY_SIZE(LDO2_VSEL_table)};
+-
+ struct tps_info {
+ 	const char *name;
+ 	unsigned min_uV;
+@@ -598,7 +592,7 @@ int tps6507x_pmic_probe(struct platform_device *pdev)
+ 
+ 		tps->desc[i].name = info->name;
+ 		tps->desc[i].id = i;
+-		tps->desc[i].n_voltages = num_voltages[i];
++		tps->desc[i].n_voltages = info->table_len;
+ 		tps->desc[i].ops = (i > TPS6507X_DCDC_3 ?
+ 		&tps6507x_pmic_ldo_ops : &tps6507x_pmic_dcdc_ops);
+ 		tps->desc[i].type = REGULATOR_VOLTAGE;
 -- 
-Jens Axboe
+1.7.4.1
+
+
 
