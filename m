@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab1HBOoV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 10:44:21 -0400
-Received: from blu0-omc1-s7.blu0.hotmail.com ([65.55.116.18]:8108 "EHLO
-	blu0-omc1-s7.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752342Ab1HBOoQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 10:44:16 -0400
-X-Originating-IP: [76.64.132.10]
-X-Originating-Email: [mpalenik@sympatico.ca]
-Message-ID: <BLU0-SMTP412A7434C588C9EBCFA177A83B0@phx.gbl>
-Date: Tue, 2 Aug 2011 10:44:19 -0400
-From: Martin Palenik <mpalenik@sympatico.ca>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1753914Ab1HBOol (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 10:44:41 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:50132 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753816Ab1HBOoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 10:44:34 -0400
+Message-ID: <4E380D19.7030307@parallels.com>
+Date: Tue, 2 Aug 2011 11:43:37 -0300
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Problem Kernel: 2.6.39.3 - ethernet e1000 dropping bogus packets
- ifconfig bond0
-References: <4E380CF6.1030702@sympatico.ca>
-In-Reply-To: <4E380CF6.1030702@sympatico.ca>
-X-Forwarded-Message-Id: <4E380CF6.1030702@sympatico.ca>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Dave Chinner <david@fromorbit.com>, <linux-kernel@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>,
+        <containers@lists.linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Hugh Dickins <hughd@google.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@parallels.com>
+Subject: Re: [PATCH 4/4] parse options in the vfs level
+References: <1311947059-17209-1-git-send-email-glommer@parallels.com> <1311947059-17209-5-git-send-email-glommer@parallels.com> <20110731013456.GM5404@dastard> <4E37F5C6.8060908@parallels.com> <20110802141806.GL2203@ZenIV.linux.org.uk>
+In-Reply-To: <20110802141806.GL2203@ZenIV.linux.org.uk>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 02 Aug 2011 14:44:14.0758 (UTC) FILETIME=[A64B1C60:01CC5122]
+X-Originating-IP: [187.106.54.7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel version 2.6.39.3
+On 08/02/2011 11:18 AM, Al Viro wrote:
+> On Tue, Aug 02, 2011 at 10:04:06AM -0300, Glauber Costa wrote:
+>
+>> I am not sure either, but I still believe my proposal is superior to
+>> write-to-a-file specifically. Writing to a file, be it in proc, sys,
+>> or wherever, leaves a window of opportunity open between mounting a
+>> filesystem and limiting its caches. Doing it on mount is atomic.
+>>
+>> Effectively, I see this limit as a property of a particular instance
+>> of a mounted filesystem. Since all properties of a filesystem are
+>> specified during mount, this becomes a natural extension.
+>
+> The trouble is, dentry tree is fundamentally a property of superblock.
+> It's shared between *all* instances of that fs in all mount trees...
 
-ifconfig is reporting thousands of dropped packets on a bonded ethernet 
-connection.
+And how is it different from any fs-specific options, like the ones extX 
+have, for instance ? Many of them seem to operate on a superblock.
 
-This does not happen on earlier linux kernels such as 2.6.32
+If you mount a superblock somewhere, you can tweak specifics about its 
+operation. If you mount it somewhere else, the assumption is you know 
+what you're doing.
 
-ethernet driver is intel e1000
 
-Gnu C                  4.4.3
-Gnu make               3.81
-binutils               2.20.1
-util-linux             2.17.2
-mount                  support
-module-init-tools      3.11.1
-e2fsprogs              1.41.11
-PPP                    2.4.5
-Linux C Library        2.11.1
-Dynamic linker (ldd)   2.11.1
-Procps                 3.2.8
-Net-tools              1.60
-Kbd                    1.15
-Sh-utils               7.4
-wireless-tools         30
-Modules Loaded         vboxnetadp vboxnetflt vboxdrv bonding joydev 
-w83627ehf hwmon_vid coretemp intel_agp lp intel_gtt parport usbhid hid 
-psmouse serio_raw ses enclosure ahci e1000e libahci
-
-These drops seem to occur when there is little traffic.  If I do a 
-tcpdump -i  bond0  no packets are reported dropped in ifconfig nor in 
-tcpipdump.  So it seems to be bogus dropped packets reported by ifconfig.
-
-Thank you for your time.
