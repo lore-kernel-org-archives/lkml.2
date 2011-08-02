@@ -1,149 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab1HBXOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 19:14:53 -0400
-Received: from powered.by.root24.eu ([91.121.20.142]:53519 "EHLO Root24.de"
+	id S1753514Ab1HBXQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 19:16:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52562 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752737Ab1HBXOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 19:14:46 -0400
-Message-ID: <4E3884E3.1090709@ionic.de>
-Date: Wed, 03 Aug 2011 01:14:43 +0200
-From: Mihai Moldovan <ionic@ionic.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1753411Ab1HBXQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 19:16:52 -0400
+Date: Tue, 2 Aug 2011 16:16:41 -0700
+From: Greg KH <gregkh@suse.de>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
+        James Morris <jmorris@namei.org>, neilb@suse.de
+Subject: Re: [PATCH] sysctl: add support for poll()
+Message-ID: <20110802231641.GA2598@suse.de>
+References: <BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com>
+ <20110602134338.0c56160e@lxorguk.ukuu.org.uk>
+ <BANLkTik72cU_R5k9NLnqN_FNkm-y5Fk0nQ@mail.gmail.com>
+ <m1hb88e3qs.fsf@fess.ebiederm.org>
+ <BANLkTin5P8P_HR78qo0oyzeu9hpWazZqTw@mail.gmail.com>
+ <20110608151732.2b321b9a.akpm@linux-foundation.org>
+ <BANLkTinXwE0K5nJ649rhNxN06KvwLNDeCA@mail.gmail.com>
+ <1307981153.1449.19.camel@mop>
+ <CAMOw1v5veDqE+=gbNBn3juXHOOp764d7F20XtwUJXZoBW45zyg@mail.gmail.com>
+ <CAPXgP12sxLmPXzXx_Qgf=JakmiZcuiMGmMKB8RG4sFU_U5f=jg@mail.gmail.com>
 MIME-Version: 1.0
-To: Dan Carpenter <error27@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: openssh-server: sshd (<pid>): /proc/<pid>/oom_adj is deprecated,
- please use /proc/<pid>/oom_score_adj instead.
-References: <20110514102014.12739.91576.reportbug@eiffel4.mcfm> <20110801122537.GA9469@mwanda> <alpine.DEB.2.00.1108011206130.28986@chino.kir.corp.google.com> <20110802225825.GE3839@shale.localdomain>
-In-Reply-To: <20110802225825.GE3839@shale.localdomain>
-X-Enigmail-Version: 1.2
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms020505040606050906070305"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPXgP12sxLmPXzXx_Qgf=JakmiZcuiMGmMKB8RG4sFU_U5f=jg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+On Wed, Aug 03, 2011 at 12:53:33AM +0200, Kay Sievers wrote:
+> On Tue, Jul 26, 2011 at 04:17, Lucas De Marchi
+> <lucas.demarchi@profusion.mobi> wrote:
+> > On Mon, Jun 13, 2011 at 1:05 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> >> On Thu, 2011-06-09 at 15:16 +0200, Kay Sievers wrote:
+> >>> On Thu, Jun 9, 2011 at 00:17, Andrew Morton <akpm@linux-foundation.org> wrote:
+> >>
+> >>> > We already have several pollable procfs files, such as
+> >>> > fs/proc/base.c:mounts_poll() and I think drivers/md has one.  I do
+> >>> > think that any work in this area should end up with those custom
+> >>> > make-procfs-pollable hacks being identified and removed.
+> >>>
+> >>> For these files we can probably move the event counter into the
+> >>> seq_file structure, and get rid of the dance to kmalloc it and assign
+> >>> it to seq_file->private. That might simplify the logic a bit.
+> >>>
+> >>> [Adding Neil, to get his opinion of moving 'event' so seq_file and get
+> >>> rid of the malloc dance]
+> >>
+> >> I guess, we could do something like this, which looks quite a bit
+> >> simpler by moving the poll event counter into the dynamically allocated
+> >> seq_file structure itself, instead of having private structures
+> >> allocated on top to just carry the counter (patch is just
+> >> compile-tested).
+> >
+> > Now that this cleanup made its way, could we look again to to the
+> > pollable sysctl implementation?
+> 
+> Can we please get support for poll() for /proc/sys files merged? Just
+> like we do that for /proc already.
+> 
+> We like to have notifications triggered by the kernel for selected
+> files in /proc/sys.
+> 
+> I don't really see any technical reasons to hold this back.
 
---------------ms020505040606050906070305
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Care to resend the patch so we can queue it up for 3.2?
 
-Hi Dan,
+thanks,
 
-
-* On 03.08.2011 12:58 AM, Dan Carpenter wrote:
-> Debian testing and Fedora 14 (and 15) are still using an old version
-> of sshd so in 3.1, I get a popup in gnome that a "kernel crash has
-> been detected."
-> [...]
-> There was a warning there for a year, and the distributions have one
-> more year to upgrade to the newer software, so it's valid to apply
-> pressure now.
->
-> Could we do it in a way that made it more clear that the problem was
-> an old version of openssh-server and not the kernel?  The information
-> is there, but it's overwhelmed in stack trace spam.  Also the kernel
-> is tainted now because of sshd.  Maybe the message could include a
-> link to a wiki page that told people which version off sshd uses the
-> new proc file.
-
-Please read and add your thoughts to this thread:
-https://lkml.org/lkml/2011/8/1/433
-
-(Actually you just created a duplicate discussion. ;))
-
-Best regards,
-
-
-Mihai
-
-
---------------ms020505040606050906070305
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIINBjCC
-BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
-MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
-KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
-8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
-DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
-2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
-zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
-Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
-HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
-MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
-dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
-c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
-Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
-c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
-UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
-p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
-+HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
-hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
-hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
-0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
-AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
-XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIGyjCCBbKgAwIBAgICBnIwDQYJKoZIhvcNAQEF
-BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
-ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
-bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMDAzMjMxNjI2NTZa
-Fw0xMjAzMjQwNTQ2MjJaMIHHMSAwHgYDVQQNExcxNjg2MTctOUo5elVlMUVuNHg5b3ZiTzEL
-MAkGA1UEBhMCREUxGzAZBgNVBAgTEkJhZGVuLVd1ZXJ0dGVtYmVyZzESMBAGA1UEBxMJS2Fy
-bHNydWhlMS0wKwYDVQQLEyRTdGFydENvbSBWZXJpZmllZCBDZXJ0aWZpY2F0ZSBNZW1iZXIx
-FzAVBgNVBAMTDk1paGFpIE1vbGRvdmFuMR0wGwYJKoZIhvcNAQkBFg5pb25pY0Bpb25pYy5k
-ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMssU6wPYwJJAxY07er/P6ANPXgz
-yCczuA+7q/eql1St56r91yQ534A4oeXEqRZvpMsDuvczNG1Yz80nLpM+lO3Wg8csxaGReewe
-RBIS3abf40HCIBVlOl7oTcmzZuzqz2KE70CHZ7p3k0WAEUfUb7AS8qrqxuoj0dtUkrdMwjoD
-rPWs3zJ+vHo5FU3sTvj2ksiStjG3NMERBT+1Gzf2pVx2cKJRBmqACbKZfwE9QufRqrZT8bWY
-i5DCV34RL7eVLnejLL+MvtarZv2K8Acojq9t7zO9Z+0rnlr6o46c2egVB+s/ol28q3DEce6f
-p1KrCiujqRqQwVQ8O/2ogg4l5h0CAwEAAaOCAvcwggLzMAkGA1UdEwQCMAAwCwYDVR0PBAQD
-AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU3JbCyOa+BBzV
-nBAKycZGQAzit2wwHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGQYDVR0RBBIw
-EIEOaW9uaWNAaW9uaWMuZGUwggFCBgNVHSAEggE5MIIBNTCCATEGCysGAQQBgbU3AQIBMIIB
-IDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5zdGFydHNzbC5jb20vcG9saWN5LnBkZjA0Bggr
-BgEFBQcCARYoaHR0cDovL3d3dy5zdGFydHNzbC5jb20vaW50ZXJtZWRpYXRlLnBkZjCBtwYI
-KwYBBQUHAgIwgaowFBYNU3RhcnRDb20gTHRkLjADAgEBGoGRTGltaXRlZCBMaWFiaWxpdHks
-IHNlZSBzZWN0aW9uICpMZWdhbCBMaW1pdGF0aW9ucyogb2YgdGhlIFN0YXJ0Q29tIENlcnRp
-ZmljYXRpb24gQXV0aG9yaXR5IFBvbGljeSBhdmFpbGFibGUgYXQgaHR0cDovL3d3dy5zdGFy
-dHNzbC5jb20vcG9saWN5LnBkZjBjBgNVHR8EXDBaMCugKaAnhiVodHRwOi8vd3d3LnN0YXJ0
-c3NsLmNvbS9jcnR1Mi1jcmwuY3JsMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9j
-cnR1Mi1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2Nz
-cC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMi9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczIuY2xpZW50LmNhLmNydDAjBgNV
-HRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBACle
-v1JwhVI4Pu8GzKRJzJdcYdsT7fJ9R5OzNnec4CADsb9Xu7HDyRa5qABBXihHvmo+fxGVe6Hy
-8TxPvZYCGaeUi2t6aodIFOTQDWcdEP9o7SynBOXHqsN2lZ08Q4MBuoGfquJi0XjpCNnLY9KS
-OZTHTwAIqGVH7lf99egY1Atfl+y/Lc0e6Sw/0qvcnaQSzwCZ/OkqVWSTGDZXwCDFuy6Cbwjy
-Kn9qshZzeMqvSKHmHPihzJQ6eVXImZgrgWk5FrBpO8d59xoqO32PbSyM0cZhqvkbG/nlWPbz
-Xn13+cgG7ajAGCg8XueMeh3m03sIIHinvgaeHOAqeO3TvVVv6WQxggPNMIIDyQIBATCBkzCB
-jDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3Vy
-ZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNz
-IDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgIGcjAJBgUrDgMCGgUAoIICDjAY
-BgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA4MDIyMzE0NDNa
-MCMGCSqGSIb3DQEJBDEWBBSuNiK3HCWzhYHl4BGv5bYbUMHwKzBfBgkqhkiG9w0BCQ8xUjBQ
-MAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzAOBggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwIC
-AUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgwgaQGCSsGAQQBgjcQBDGBljCBkzCBjDELMAkG
-A1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
-dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJp
-bWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgIGcjCBpgYLKoZIhvcNAQkQAgsxgZaggZMw
-gYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1
-cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFz
-cyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQICBnIwDQYJKoZIhvcNAQEBBQAE
-ggEAfsG+WGzQY3Adq/fL/uWFq3MdJxh6ghMyDTi00o+0TTTaalAJ8TVqBKgJdPcF+Z/kq0vA
-gbujxG2+w+h7njsH1If+/UUAMpg3b+f1FwiviM1bRNdAakX479pNMB4M/Gj7pcZtr13WVmOQ
-Eq2Rw4LCNN12lwhBiQzTlPMh7aJo96+Ztu8X+8KU6TeYNQvDdo1+TITxeKu1xe1gZ44LKq5O
-SE3DO8844b0lZsNAjzivyi7INOuVC3VFpI0T9GJlC3MEjLth9NQmNvVyBFHsbhK3Nz4MJlTV
-MihpvDx3E0gLiJ69P3Y/DC5GzV/dA0sPvdPGdoTxQQk2Vfzd3rlKjM/y5QAAAAAAAA==
---------------ms020505040606050906070305--
+greg k-h
