@@ -1,62 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415Ab1HBIFq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 04:05:46 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:42012 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259Ab1HBIFj (ORCPT
+	id S1752460Ab1HBIGz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 04:06:55 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:44015 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752314Ab1HBIGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 04:05:39 -0400
-Subject: Re: [patch v2 05/10] s390: Add PSW restart shutdown trigger
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
-        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-In-Reply-To: <20110801205402.GK3805@redhat.com>
-References: <20110727125504.491183728@linux.vnet.ibm.com>
-	 <20110727125808.172069159@linux.vnet.ibm.com>
-	 <20110801205402.GK3805@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Tue, 02 Aug 2011 10:05:16 +0200
-Message-ID: <1312272316.4881.4.camel@br98xy6r>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Aug 2011 04:06:49 -0400
+MIME-Version: 1.0
+Date: Tue, 2 Aug 2011 13:36:49 +0530
+Message-ID: <CAFPAmTQGkTstM1j0kJWng8rf9_wfBa427r69-5rQpFJCSQGZkw@mail.gmail.com>
+Subject: =?UTF-8?B?W1BBVENIXSBBUk0gOiBzcGFyc2VtZW06IENyYXNoZXMgb24gQVJNIHBsYXRmb3JtIHdoZQ==?=
+	=?UTF-8?B?biBzcGFyc2VtZW0gZW5hYmxlZCBpbiBsaW51eC0yLjYu4oCLMzUuMTMgZHVlIHRvIHBmbl92YWxpZCg=?=
+	=?UTF-8?B?4oCLKSBhbmQgcGZuX3ZhbGlkX+KAi3dpdGhpbigpLg==?=
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: stable@kernel.org
+Cc: Mel Gorman <mgorman@suse.de>, "Russell King\"" <rmk@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek,
+Hi,
 
-On Mon, 2011-08-01 at 16:54 -0400, Vivek Goyal wrote:
-> On Wed, Jul 27, 2011 at 02:55:09PM +0200, Michael Holzheu wrote:
-> > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> > 
-> > With this patch a new S390 shutdown trigger "restart" is added. If under
-> > z/VM "systerm restart" is entered or under the HMC the "PSW restart" button
-> > is pressed, the PSW located at 0 (31 bit) or 0x1a0 (64 bit) bit is loaded.
-> > Now we execute do_restart() that processes the restart action that is
-> > defined under /sys/firmware/shutdown_actions/on_restart. Currently the
-> > following actions are possible: reipl (default), stop, vmcmd, dump, and
-> > dump_reipl.
-> 
-> i know nothing about s390 but this sounds like a independent
-> functionality? I mean defining a restart trigger and associated actions
-> could be done even in current framework without kdump. IIUC, additional
-> kdump series only adds the ability to use kdump for second kernel instead
-> of using dump tools in case of "dump" or "dump_reipl" ?
-> 
-> If yes, then this patch probably does not have to be part of this series
-> and pushed in independetly?
+On my ARM machine, I have linux-2.6.35.13 installed and the total
+kernel memory is not aligned to the section size SECTION_SIZE_BITS.
 
-Yes, this is correct. We implemented the PSW restart functionality for
-kdump, but it can be used independently.
+I observe kernel crashes in the following 3 scenarios:
+i)    When we do a "cat /proc/pagetypeinfo": This happens because the
+pfn_valid() macro is not able to detect invalid PFNs in the loop in
+vmstat.c: pagetypeinfo_showblockcount_print().
+ii)    When we do "echo xxxx > /proc/vm/sys/min_free_kbytes": This
+happens because the pfn_valid() macro is not able to detect invalid
+PFNs in page_alloc.c: setup_zone_migrate_reserve().
+iii)   When I try to copy a really huge file: This happens because the
+CONFIG_HOLES_IN_ZONE config option is not set.
+       The code then crashes in the VM_BUG_ON in loop in
+move_freepages() as pfn_valid_within() did not compile correctly to
+pfn_valid().
 
-We will integrate this patch upstream independently from this series.
+This patch is a combination of :
+a)  Back-ported changes of the patch from Will Deacon found at:
+http://git.kernel.org/?p=linux/kernel/git/stable/linux-3.0.y.git;a=commit;h=7b7bf499f79de3f6c85a340c8453a78789523f85
+b) Addition of the CONFIG_HOLES_IN_ZONE config option to
+arch/arm/Kconfig in order to prevent crashes in move_freepages()
+when/if the total kernel memory is not aligned to SECTION_SIZE_BITS.
+This also leads to
+proper compilation of the pfn_valid_within() macro which otherwise
+will always return 1 to the caller.
 
-Michael
+Apologies for the last patch which I sent to these mailing lists in
+improper format.
 
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+---
+ arch/arm/include/asm/page.h |    2 +-
+ arch/arm/Kconfig            |    6 ++++++
+ arch/arm/mm/init.c          |    4 +++-
+ include/linux/mmzone.h      |    2 ++
+ 4 files changed, 12 insertions(+), 2 deletions(-)
+
+diff -uprN a/arch/arm/include/asm/page.h b/arch/arm/include/asm/page.h
+--- a/arch/arm/include/asm/page.h       2011-08-02 10:04:54.917207995 +0530
++++ b/arch/arm/include/asm/page.h       2011-08-02 10:14:45.464208248 +0530
+@@ -195,7 +195,7 @@ typedef unsigned long pgprot_t;
+
+ typedef struct page *pgtable_t;
+
+-#ifndef CONFIG_SPARSEMEM
++#ifdef CONFIG_ARCH_PROVIDES_PFN_VALID
+ extern int pfn_valid(unsigned long);
+ #endif
+
+diff -uprN a/arch/arm/Kconfig b/arch/arm/Kconfig
+--- a/arch/arm/Kconfig  2011-08-02 10:04:55.607207996 +0530
++++ b/arch/arm/Kconfig  2011-08-02 10:13:56.461207994 +0530
+@@ -1265,6 +1265,12 @@ config ARCH_SPARSEMEM_DEFAULT
+ config ARCH_SELECT_MEMORY_MODEL
+       def_bool ARCH_DISCONTIGMEM_ENABLE && ARCH_SPARSEMEM_ENABLE
+
++config ARCH_PROVIDES_PFN_VALID
++       def_bool ARCH_HAS_HOLES_MEMORYMODEL || !SPARSEMEM
++
++config HOLES_IN_ZONE
++       def_bool ARCH_HAS_HOLES_MEMORYMODEL || SPARSEMEM
++
+ config NODES_SHIFT
+       int
+       default "4" if ARCH_LH7A40X
+diff -uprN a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+--- a/arch/arm/mm/init.c        2011-08-02 10:04:55.492207995 +0530
++++ b/arch/arm/mm/init.c        2011-08-02 10:29:47.408208131 +0530
+@@ -325,7 +325,7 @@ static void __init bootmem_free_node(int
+       free_area_init_node(node, zone_size, min, zhole_size);
+ }
+
+-#ifndef CONFIG_SPARSEMEM
++#ifdef CONFIG_ARCH_PROVIDES_PFN_VALID
+ int pfn_valid(unsigned long pfn)
+ {
+       struct meminfo *mi = &meminfo;
+@@ -345,7 +345,9 @@ int pfn_valid(unsigned long pfn)
+       return 0;
+ }
+ EXPORT_SYMBOL(pfn_valid);
++#endif
+
++#ifndef CONFIG_SPARSEMEM
+ static void arm_memory_present(struct meminfo *mi, int node)
+ {
+ }
+diff -uprN a/include/linux/mmzone.h b/include/linux/mmzone.h
+--- a/include/linux/mmzone.h    2011-08-02 10:04:48.998207995 +0530
++++ b/include/linux/mmzone.h    2011-08-02 10:16:49.007207996 +0530
+@@ -1058,12 +1058,14 @@ static inline struct mem_section *__pfn_
+       return __nr_to_section(pfn_to_section_nr(pfn));
+ }
+
++#ifndef CONFIG_ARCH_PROVIDES_PFN_VALID
+ static inline int pfn_valid(unsigned long pfn)
+ {
+       if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
+               return 0;
+       return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
+ }
++#endif
+
+ static inline int pfn_present(unsigned long pfn)
+ {
+--
+
+Thanks,
+Kautuk.
