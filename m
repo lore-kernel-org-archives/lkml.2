@@ -1,153 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100Ab1HBTHw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 15:07:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18244 "EHLO mx1.redhat.com"
+	id S1755153Ab1HBTIh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 15:08:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19798 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755044Ab1HBTHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 15:07:45 -0400
-Date: Tue, 2 Aug 2011 15:36:57 -0300
+	id S1755042Ab1HBTIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 15:08:31 -0400
+Date: Tue, 2 Aug 2011 13:44:12 -0300
 From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 08/12] KVM: MMU: fast prefetch spte on invlpg path
-Message-ID: <20110802183657.GA6813@amt.cnet>
-References: <4E37DA49.1040000@cn.fujitsu.com>
- <4E37DB3E.2040306@cn.fujitsu.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Avi Kivity <avi@redhat.com>, trivial@kernel.org,
+        kernel-janitors@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/11] arch/x86/kvm/vmx.c: trivial: use BUG_ON
+Message-ID: <20110802164412.GC5144@amt.cnet>
+References: <1312281304-11847-1-git-send-email-julia@diku.dk>
+ <1312281304-11847-5-git-send-email-julia@diku.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E37DB3E.2040306@cn.fujitsu.com>
+In-Reply-To: <1312281304-11847-5-git-send-email-julia@diku.dk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 02, 2011 at 07:10:54PM +0800, Xiao Guangrong wrote:
-> Fast prefetch spte for the unsync shadow page on invlpg path
+On Tue, Aug 02, 2011 at 12:34:57PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  arch/x86/include/asm/kvm_host.h |    3 +--
->  arch/x86/kvm/mmu.c              |   37 +++++++++++++++----------------------
->  arch/x86/kvm/paging_tmpl.h      |   23 ++++++++++-------------
->  arch/x86/kvm/x86.c              |    4 ++--
->  4 files changed, 28 insertions(+), 39 deletions(-)
+> Use BUG_ON(x) rather than if(x) BUG();
 > 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index b256660..2c08458 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -456,7 +456,6 @@ struct kvm_arch {
->  	unsigned int n_requested_mmu_pages;
->  	unsigned int n_max_mmu_pages;
->  	unsigned int indirect_shadow_pages;
-> -	atomic_t invlpg_counter;
->  	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
->  	/*
->  	 * Hash table of struct kvm_mmu_page.
-> @@ -749,7 +748,7 @@ int fx_init(struct kvm_vcpu *vcpu);
->  void kvm_mmu_flush_tlb(struct kvm_vcpu *vcpu);
->  void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
->  		       const u8 *new, int bytes,
-> -		       bool guest_initiated, bool page_table_written);
-> +		       bool page_table_written);
->  int kvm_mmu_unprotect_page_virt(struct kvm_vcpu *vcpu, gva_t gva);
->  void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu);
->  int kvm_mmu_load(struct kvm_vcpu *vcpu);
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 8e97ffa..5517115 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -3526,7 +3526,7 @@ static bool last_updated_pte_accessed(struct kvm_vcpu *vcpu)
->  
->  void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
->  		       const u8 *new, int bytes,
-> -		       bool guest_initiated, bool page_table_written)
-> +		       bool page_table_written)
->  {
->  	gfn_t gfn = gpa >> PAGE_SHIFT;
->  	union kvm_mmu_page_role mask = { .word = 0 };
-> @@ -3535,7 +3535,7 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
->  	LIST_HEAD(invalid_list);
->  	u64 entry, gentry, *spte;
->  	unsigned pte_size, page_offset, misaligned, quadrant, offset;
-> -	int level, npte, invlpg_counter, r, flooded = 0;
-> +	int level, npte, r, flooded = 0;
->  	bool remote_flush, local_flush, zap_page;
->  
->  	/*
-> @@ -3550,19 +3550,16 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
->  
->  	pgprintk("%s: gpa %llx bytes %d\n", __func__, gpa, bytes);
->  
-> -	invlpg_counter = atomic_read(&vcpu->kvm->arch.invlpg_counter);
-> -
->  	/*
->  	 * Assume that the pte write on a page table of the same type
->  	 * as the current vcpu paging mode since we update the sptes only
->  	 * when they have the same mode.
->  	 */
-> -	if ((is_pae(vcpu) && bytes == 4) || !new) {
-> +	if (is_pae(vcpu) && bytes == 4) {
->  		/* Handle a 32-bit guest writing two halves of a 64-bit gpte */
-> -		if (is_pae(vcpu)) {
-> -			gpa &= ~(gpa_t)7;
-> -			bytes = 8;
-> -		}
-> +		gpa &= ~(gpa_t)7;
-> +		bytes = 8;
-> +
->  		r = kvm_read_guest(vcpu->kvm, gpa, &gentry, min(bytes, 8));
->  		if (r)
->  			gentry = 0;
-> @@ -3588,22 +3585,18 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
->  	 */
->  	mmu_topup_memory_caches(vcpu);
->  	spin_lock(&vcpu->kvm->mmu_lock);
-> -	if (atomic_read(&vcpu->kvm->arch.invlpg_counter) != invlpg_counter)
-> -		gentry = 0;
->  	kvm_mmu_free_some_pages(vcpu);
->  	++vcpu->kvm->stat.mmu_pte_write;
->  	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PTE_WRITE);
-> -	if (guest_initiated) {
-> -		if (gfn == vcpu->arch.last_pt_write_gfn
-> -		    && !last_updated_pte_accessed(vcpu)) {
-> -			++vcpu->arch.last_pt_write_count;
-> -			if (vcpu->arch.last_pt_write_count >= 3)
-> -				flooded = 1;
-> -		} else {
-> -			vcpu->arch.last_pt_write_gfn = gfn;
-> -			vcpu->arch.last_pt_write_count = 1;
-> -			vcpu->arch.last_pte_updated = NULL;
-> -		}
-> +	if (gfn == vcpu->arch.last_pt_write_gfn
-> +	    && !last_updated_pte_accessed(vcpu)) {
-> +		++vcpu->arch.last_pt_write_count;
-> +		if (vcpu->arch.last_pt_write_count >= 3)
-> +			flooded = 1;
-> +	} else {
-> +		vcpu->arch.last_pt_write_gfn = gfn;
-> +		vcpu->arch.last_pt_write_count = 1;
-> +		vcpu->arch.last_pte_updated = NULL;
->  	}
->  
->  	mask.cr0_wp = mask.cr4_pae = mask.nxe = 1;
-> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> index 0f915b5..3466229 100644
-> --- a/arch/x86/kvm/paging_tmpl.h
-> +++ b/arch/x86/kvm/paging_tmpl.h
-> @@ -666,20 +666,22 @@ static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
->  {
->  	struct kvm_shadow_walk_iterator iterator;
->  	struct kvm_mmu_page *sp;
-> -	gpa_t pte_gpa = -1;
->  	int level;
->  	u64 *sptep;
->  
->  	vcpu_clear_mmio_info(vcpu, gva);
-> +	mmu_topup_memory_caches(vcpu);
+> The semantic patch that fixes this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@ identifier x; @@
+> -if (x) BUG();
+> +BUG_ON(x);
+> 
+> @@ identifier x; @@
+> -if (!x) BUG();
+> +BUG_ON(!x);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Should handle failure.
+Applied, thanks.
 
