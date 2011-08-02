@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab1HBKhL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 06:37:11 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:59109 "EHLO mgw2.diku.dk"
+	id S1753520Ab1HBKhg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 06:37:36 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:59090 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753216Ab1HBKfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 06:35:15 -0400
+	id S1753164Ab1HBKfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 06:35:12 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Ohad Ben-Cohen <ohad@wizery.com>, trivial@kernel.org
-Cc: kernel-janitors@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
+To: Eric Moore <Eric.Moore@lsi.com>, trivial@kernel.org
+Cc: kernel-janitors@vger.kernel.org, support@lsi.com,
+        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 6/11] drivers/iommu/iommu.c: trivial: use BUG_ON
-Date: Tue,  2 Aug 2011 12:34:59 +0200
-Message-Id: <1312281304-11847-7-git-send-email-julia@diku.dk>
+Subject: [PATCH 2/11] drivers/message/fusion/mptsas.c: trivial: use BUG_ON
+Date: Tue,  2 Aug 2011 12:34:55 +0200
+Message-Id: <1312281304-11847-3-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1312281304-11847-1-git-send-email-julia@diku.dk>
 References: <1312281304-11847-1-git-send-email-julia@diku.dk>
@@ -40,20 +41,20 @@ The semantic patch that fixes this problem is as follows:
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/iommu/iommu.c |    3 +--
+ drivers/message/fusion/mptsas.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff -u -p a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
---- a/drivers/iommu/iommu.c
-+++ b/drivers/iommu/iommu.c
-@@ -27,8 +27,7 @@ static struct iommu_ops *iommu_ops;
+diff -u -p a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
+--- a/drivers/message/fusion/mptsas.c
++++ b/drivers/message/fusion/mptsas.c
+@@ -3410,8 +3410,7 @@ mptsas_expander_event_add(MPT_ADAPTER *i
+ 	__le64 sas_address;
  
- void register_iommu(struct iommu_ops *ops)
- {
--	if (iommu_ops)
+ 	port_info = kzalloc(sizeof(struct mptsas_portinfo), GFP_KERNEL);
+-	if (!port_info)
 -		BUG();
-+	BUG_ON(iommu_ops);
- 
- 	iommu_ops = ops;
- }
++	BUG_ON(!port_info);
+ 	port_info->num_phys = (expander_data->NumPhys) ?
+ 	    expander_data->NumPhys : 1;
+ 	port_info->phy_info = kcalloc(port_info->num_phys,
 
