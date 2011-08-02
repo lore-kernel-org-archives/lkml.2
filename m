@@ -1,103 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab1HBFDX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 01:03:23 -0400
-Received: from mail.windriver.com ([147.11.1.11]:38494 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807Ab1HBFDP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 01:03:15 -0400
-Date: Tue, 2 Aug 2011 01:02:54 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, Ingo Molnar <mingo@elte.hu>,
-        <torvalds@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <akpm@linux-foundation.org>, <linux-arch@vger.kernel.org>
-Subject: Re: [RFC/PULL 00/11] introduce export.h; reduce module.h usage
-Message-ID: <20110802050254.GI11811@windriver.com>
-References: <1311830178-30314-1-git-send-email-paul.gortmaker@windriver.com>
- <20110728071556.GA6497@elte.hu>
- <20110728154229.GA19589@windriver.com>
- <20110729112054.eaf20e1875990b05e9545d81@canb.auug.org.au>
- <CAMuHMdUJbZsJ1Q0DM4h3uGVCpe+q=28oxphbLzQ6kW4bn9ZoHA@mail.gmail.com>
+	id S1752966Ab1HBFEU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 01:04:20 -0400
+Received: from knuth.cs.hmc.edu ([134.173.42.100]:36429 "EHLO knuth.cs.hmc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751388Ab1HBFEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 01:04:15 -0400
+Date: Mon, 1 Aug 2011 23:04:11 -0600
+From: Adam Cozzette <acozzette@cs.hmc.edu>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: edwin_rong <edwin_rong@realsil.com.cn>, wwang <wei_wang@realsil.com.cn>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: ums-realtek driver uses stack memory for DMA
+Message-ID: <20110802050411.GC3857@[192.168.0.12]>
+References: <20110801210905.GC2096@zod.bos.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdUJbZsJ1Q0DM4h3uGVCpe+q=28oxphbLzQ6kW4bn9ZoHA@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110801210905.GC2096@zod.bos.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [RFC/PULL 00/11] introduce export.h; reduce module.h usage] On 01/08/2011 (Mon 13:49) Geert Uytterhoeven wrote:
-
-> Hi Paul,
+On Mon, Aug 01, 2011 at 05:09:06PM -0400, Josh Boyer wrote:
+> Hello,
 > 
-> On Fri, Jul 29, 2011 at 03:20, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > On Thu, 28 Jul 2011 11:42:29 -0400 Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-> >> [Re: [RFC/PULL 00/11] introduce export.h; reduce module.h usage] On 28/07/2011 (Thu 09:15) Ingo Molnar wrote:
-> >>
-> >> > * Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-> >> >
-> >> > > I don't think there really is any rocket science or contentious
-> >> > > stuff here. It is a sensible cleanup that adds organization and
-> >> > > speeds up compiles. The RFC I'm hoping for is more about how/when
-> >> > > we want to get this in tree.
-> >> >
-> >> > I'd suggest to stick it into linux-next ASAP, leave there for a few
-> >> > days and after fixing any potential fallout send it Linuswards.
-> >>
-> >> Hi Stephen,
-> >>
-> >> Would you please add this to linux-next?
-> >>
-> >> git://git.kernel.org/pub/scm/linux/kernel/git/paulg/linux.git#module.h-split
-> >
-> > OK, I will add it today.
+> We have a report that the ums-realtek driver is generating a backtrace
+> due to using stack variables for DMA buffers.  The backtrace is below
+> and you can view the bug report here:
+> https://bugzilla.redhat.com/show_bug.cgi?id=720054
 > 
-> This causes several failures in m68k defconfig (and allmodconfig, FWIW):
+> Looking through the code, it seems that every call to rts51x_read_mem,
+> rts51x_write_mem, and rts51x_read_status passes a stack variable to
+> rts51x_bulk_transport, which then calls usb_stor_bulk_transfer_buf with
+> this and generates the backtrace.  It is my understanding that the
+> driver should be passing variables that are not on the stack and have
+> been allocated with memory that will be suitable for the DMA api (e.g.
+> kmalloc).
 > 
-> http://kisskb.ellerman.id.au/kisskb/buildresult/4428037/
-> (http://kisskb.ellerman.id.au/kisskb/buildresult/4414683/)
-> 
-> Still recovering from holidays, so no patches attached.
+> Was this missed during the initial review and is anyone working on
+> adapting the driver to be compliant?
 
-I grabbed a m68k toolchain (and several others I didn't have)
-and expanded the arch support outside of the original testing
-I did on x86/x86_64/mips/arm/powerpc/sparc to include m68k.
+Could you try out this patch if it looks ok to you? I have not tested it because
+unfortunately I don't have the hardware. Right now it generates some compile
+warnings like this one:
 
-So your defconfig is restored green again, once it comes around in
-the build (it appears down in the order) -- and for the modconfig,
-it hasn't been building green for a while, but I still went over
-the log looking for and fixing any module.h related fallout.
+drivers/usb/storage/realtek_cr.c:419:40: warning: ‘buf[0]’ may be used uninitialized in this function [-Wuninitialized]
 
-I've just double checked it again and attached a local defconfig build
-log below.
+It think they are harmless but I didn't see an obvious way to get rid of them,
+so if you have any suggestions I would be glad to hear them.
 
-Thanks,
-Paul.
+This patch changed rts51x_read_mem, rts51x_write_mem, and rts51x_read_status to
+allocate temporary buffers with kmalloc. This way stack addresses are not used
+for DMA when these functions call rts51x_bulk_transport.
 
-paul@yow-lpgnfs-02:~/git/module.h/linux-2.6.git$ make O=../m68k-def -j50 2>&1 |grep 'warning:\|error:'
-<stdin>:1522:2: warning: #warning syscall recvmmsg not implemented
-<stdin>:1554:2: warning: #warning syscall sendmmsg not implemented
-/home/paul/git/module.h/linux-2.6.git/arch/m68k/mvme147/config.c:152:2: warning: #warning check me!
-/home/paul/git/module.h/linux-2.6.git/arch/m68k/mvme16x/config.c:261:2: warning: #warning check me!
-/home/paul/git/module.h/linux-2.6.git/security/keys/keyctl.c:1521:2: warning: #warning TIF_NOTIFY_RESUME not implemented
-/home/paul/git/module.h/linux-2.6.git/kernel/async.c:272:10: warning: 'starttime.tv64' may be used uninitialized in this function
-/home/paul/git/module.h/linux-2.6.git/kernel/async.c:123:10: warning: 'calltime.tv64' may be used uninitialized in this function
-/home/paul/git/module.h/linux-2.6.git/drivers/md/dm.c:1052:3: warning: statement with no effect
-/home/paul/git/module.h/linux-2.6.git/drivers/md/dm.c:1079:3: warning: statement with no effect
-/home/paul/git/module.h/linux-2.6.git/drivers/md/dm-table.c:1193:2: warning: statement with no effect
-/home/paul/git/module.h/linux-2.6.git/drivers/input/misc/hp_sdc_rtc.c:280:12: warning: 'hp_sdc_rtc_set_rt' defined but not used
-/home/paul/git/module.h/linux-2.6.git/drivers/input/misc/hp_sdc_rtc.c:320:12: warning: 'hp_sdc_rtc_set_fhs' defined but not used
-/home/paul/git/module.h/linux-2.6.git/drivers/input/misc/hp_sdc_rtc.c:360:12: warning: 'hp_sdc_rtc_set_i8042timer' defined but not used
-/home/paul/git/module.h/linux-2.6.git/drivers/input/misc/hp_sdc_rtc.c:112:20: warning: ignoring return value of 'down_interruptible', declared with attribute warn_unused_result
-/home/paul/git/module.h/linux-2.6.git/drivers/input/misc/hp_sdc_rtc.c:179:20: warning: ignoring return value of 'down_interruptible', declared with attribute warn_unused_result
-/home/paul/git/module.h/linux-2.6.git/drivers/input/misc/hp_sdc_rtc.c:183:20: warning: ignoring return value of 'down_interruptible', declared with attribute warn_unused_result
-/home/paul/git/module.h/linux-2.6.git/include/net/netfilter/xt_log.h:50:3: warning: value computed is not used
-/home/paul/git/module.h/linux-2.6.git/include/net/netfilter/xt_log.h:50:3: warning: value computed is not used
-/home/paul/git/module.h/linux-2.6.git/drivers/scsi/libsas/sas_scsi_host.c:117:3: warning: case value '2' not in enumerated type 'enum exec_status'
-paul@yow-lpgnfs-02:~/git/module.h/linux-2.6.git$ ls -l ../m68k-def/vmlinux
--rwxr-xr-x 1 paul paul 4951289 2011-08-02 00:59 ../m68k-def/vmlinux
-paul@yow-lpgnfs-02:~/git/module.h/linux-2.6.git$ 
+Signed-off-by: Adam Cozzette <acozzette@cs.hmc.edu>
+---
+ realtek_cr.c |   35 ++++++++++++++++++++++++++++++-----
+ 1 file changed, 30 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/usb/storage/realtek_cr.c b/drivers/usb/storage/realtek_cr.c
+index 34adc4b..232167a 100644
+--- a/drivers/usb/storage/realtek_cr.c
++++ b/drivers/usb/storage/realtek_cr.c
+@@ -320,6 +320,11 @@ static int rts51x_read_mem(struct us_data *us, u16 addr, u8 *data, u16 len)
+ {
+ 	int retval;
+ 	u8 cmnd[12] = { 0 };
++	u8 *buf;
++
++	buf = kmalloc(len, GFP_NOIO);
++	if (buf == NULL)
++		return USB_STOR_TRANSPORT_ERROR;
+ 
+ 	US_DEBUGP("%s, addr = 0x%x, len = %d\n", __func__, addr, len);
+ 
+@@ -331,10 +336,14 @@ static int rts51x_read_mem(struct us_data *us, u16 addr, u8 *data, u16 len)
+ 	cmnd[5] = (u8) len;
+ 
+ 	retval = rts51x_bulk_transport(us, 0, cmnd, 12,
+-				       data, len, DMA_FROM_DEVICE, NULL);
+-	if (retval != USB_STOR_TRANSPORT_GOOD)
++				       buf, len, DMA_FROM_DEVICE, NULL);
++	if (retval != USB_STOR_TRANSPORT_GOOD) {
++		kfree(buf);
+ 		return -EIO;
++	}
+ 
++	memcpy(data, buf, len);
++	kfree(buf);
+ 	return 0;
+ }
+ 
+@@ -342,6 +351,12 @@ static int rts51x_write_mem(struct us_data *us, u16 addr, u8 *data, u16 len)
+ {
+ 	int retval;
+ 	u8 cmnd[12] = { 0 };
++	u8 *buf;
++
++	buf = kmalloc(len, GFP_NOIO);
++	if (buf == NULL)
++		return USB_STOR_TRANSPORT_ERROR;
++	memcpy(buf, data, len);
+ 
+ 	US_DEBUGP("%s, addr = 0x%x, len = %d\n", __func__, addr, len);
+ 
+@@ -353,7 +368,8 @@ static int rts51x_write_mem(struct us_data *us, u16 addr, u8 *data, u16 len)
+ 	cmnd[5] = (u8) len;
+ 
+ 	retval = rts51x_bulk_transport(us, 0, cmnd, 12,
+-				       data, len, DMA_TO_DEVICE, NULL);
++				       buf, len, DMA_TO_DEVICE, NULL);
++	kfree(buf);
+ 	if (retval != USB_STOR_TRANSPORT_GOOD)
+ 		return -EIO;
+ 
+@@ -365,6 +381,11 @@ static int rts51x_read_status(struct us_data *us,
+ {
+ 	int retval;
+ 	u8 cmnd[12] = { 0 };
++	u8 *buf;
++
++	buf = kmalloc(len, GFP_NOIO);
++	if (buf == NULL)
++		return USB_STOR_TRANSPORT_ERROR;
+ 
+ 	US_DEBUGP("%s, lun = %d\n", __func__, lun);
+ 
+@@ -372,10 +393,14 @@ static int rts51x_read_status(struct us_data *us,
+ 	cmnd[1] = 0x09;
+ 
+ 	retval = rts51x_bulk_transport(us, lun, cmnd, 12,
+-				       status, len, DMA_FROM_DEVICE, actlen);
+-	if (retval != USB_STOR_TRANSPORT_GOOD)
++				       buf, len, DMA_FROM_DEVICE, actlen);
++	if (retval != USB_STOR_TRANSPORT_GOOD) {
++		kfree(buf);
+ 		return -EIO;
++	}
+ 
++	memcpy(status, buf, len);
++	kfree(buf);
+ 	return 0;
+ }
+ 
