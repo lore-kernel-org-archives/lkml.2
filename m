@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab1HBPxp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 11:53:45 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:43326 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754080Ab1HBPxj (ORCPT
+	id S1754292Ab1HBPzF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 11:55:05 -0400
+Received: from mail-ey0-f171.google.com ([209.85.215.171]:39433 "EHLO
+	mail-ey0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754099Ab1HBPzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 11:53:39 -0400
-Date: Tue, 2 Aug 2011 08:53:27 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jon Mason <mason@myri.com>, Jordan Hargrave <jordan_hargrave@dell.com>
-Subject: Re: linux-next: build failure after merge of the pci-current tree
-Message-ID: <20110802085327.61325b3c@jbarnes-desktop>
-In-Reply-To: <20110802112336.fd2d2b577a2a71892189733b@canb.auug.org.au>
-References: <20110802104838.ac7f46b54e8a3fcc4cdd9448@canb.auug.org.au>
-	<20110802112336.fd2d2b577a2a71892189733b@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Tue, 2 Aug 2011 11:55:03 -0400
+MIME-Version: 1.0
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 2 Aug 2011 16:54:39 +0100
+X-Google-Sender-Auth: 3j9o9Ko3ZU_-BrbMGkKpt1EH95U
+Message-ID: <CACxGe6vFT6daeE+5EsbDtEeUV-sYZgcMQd_=GSR+kqre7Opkgw@mail.gmail.com>
+Subject: [GIT PULL] device tree fixes for v3.1
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Aug 2011 11:23:36 +1000
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+Not much here to talk about here.  Pretty boring stuff.
 
-> Hi Jesse,
-> 
-> On Tue, 2 Aug 2011 10:48:38 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >
-> > After merging the pci-current tree, today's linux-next build (powerpc
-> > ppc64_defconfig) failed like this:
-> > 
-> > ERROR: ".pcie_bus_configure_settings" [drivers/pci/hotplug/pci_hotplug.ko] undefined!
-> > 
-> > Caused by commit b03e7495a862 ("PCI: Set PCI-E Max Payload Size on
-> > fabric").  Missing EXPORT_SYMBOL?
-> > 
-> > I have used the pci-current tree from next-20110801 for today.
-> 
-> And the same for the pci tree (which is identical today).
+g.
 
-Jon just sent me the fix and I pushed it out.  Should be fixed now.
+The following changes since commit 5f66d2b58ca879e70740c82422354144845d6dd3:
 
-Thanks,
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/sfrench/cifs-2.6
+(2011-08-01 06:14:25 -1000)
+
+are available in the git repository at:
+
+  git://git.secretlab.ca/git/linux-2.6 devicetree/next
+
+Felipe Balbi (1):
+      of: address: use resource_size helper
+
+Jamie Iles (1):
+      of: constify property name parameters for helper functions
+
+Michal Simek (1):
+      input: xilinx_ps2: Add missing of_address.h header
+
+ drivers/input/serio/xilinx_ps2.c |    2 +-
+ drivers/of/address.c             |    2 +-
+ drivers/of/base.c                |    7 ++++---
+ include/linux/of.h               |   15 +++++++++------
+ 4 files changed, 15 insertions(+), 11 deletions(-)
+
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
