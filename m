@@ -1,135 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801Ab1HBDvr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 23:51:47 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:41407
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752675Ab1HBDvl (ORCPT
+	id S1753951Ab1HBDxH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 23:53:07 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:52792 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752675Ab1HBDxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 23:51:41 -0400
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h2a8h668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Alan Cox <alan@linux.intel.com>
-CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH v2] serial:bfin_uart: Put TX IRQ in individual platform resource.
-Date: Tue, 2 Aug 2011 11:45:27 +0800
-Message-ID: <1312256727-13906-1-git-send-email-sonic.adi@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 1 Aug 2011 23:53:00 -0400
+From: Namhyung Kim <namhyung@gmail.com>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] [SCSI] sd: consolidate sector size alignment check in sd_pref_fn
+Date: Tue,  2 Aug 2011 12:50:51 +0900
+Message-Id: <1312257053-2522-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+Generalize common code to reduce code duplication.
 
-Serial TX IRQ is not RX IRQ plus 1 in some blackfin chips.
-Give individual platform resources to both TX and RX irqs.
-
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- drivers/tty/serial/bfin_uart.c |   35 +++++++++++++++++++++--------------
- 1 files changed, 21 insertions(+), 14 deletions(-)
+ drivers/scsi/sd.c |   32 ++++++++------------------------
+ 1 files changed, 8 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/tty/serial/bfin_uart.c b/drivers/tty/serial/bfin_uart.c
-index e08bc04..881c6e7 100644
---- a/drivers/tty/serial/bfin_uart.c
-+++ b/drivers/tty/serial/bfin_uart.c
-@@ -667,17 +667,17 @@ static int bfin_serial_startup(struct uart_port *port)
- 		kgdboc_break_enabled = 0;
- 	else {
- # endif
--	if (request_irq(uart->port.irq, bfin_serial_rx_int, IRQF_DISABLED,
-+	if (request_irq(uart->rx_irq, bfin_serial_rx_int, IRQF_DISABLED,
- 	     "BFIN_UART_RX", uart)) {
- 		printk(KERN_NOTICE "Unable to attach BlackFin UART RX interrupt\n");
- 		return -EBUSY;
- 	}
- 
- 	if (request_irq
--	    (uart->port.irq+1, bfin_serial_tx_int, IRQF_DISABLED,
-+	    (uart->tx_irq, bfin_serial_tx_int, IRQF_DISABLED,
- 	     "BFIN_UART_TX", uart)) {
- 		printk(KERN_NOTICE "Unable to attach BlackFin UART TX interrupt\n");
--		free_irq(uart->port.irq, uart);
-+		free_irq(uart->rx_irq, uart);
- 		return -EBUSY;
- 	}
- 
-@@ -692,7 +692,7 @@ static int bfin_serial_startup(struct uart_port *port)
- 		 */
- 		unsigned uart_dma_ch_rx, uart_dma_ch_tx;
- 
--		switch (uart->port.irq) {
-+		switch (uart->rx_irq) {
- 		case IRQ_UART3_RX:
- 			uart_dma_ch_rx = CH_UART3_RX;
- 			uart_dma_ch_tx = CH_UART3_TX;
-@@ -709,16 +709,16 @@ static int bfin_serial_startup(struct uart_port *port)
- 		if (uart_dma_ch_rx &&
- 			request_dma(uart_dma_ch_rx, "BFIN_UART_RX") < 0) {
- 			printk(KERN_NOTICE"Fail to attach UART interrupt\n");
--			free_irq(uart->port.irq, uart);
--			free_irq(uart->port.irq + 1, uart);
-+			free_irq(uart->rx_irq, uart);
-+			free_irq(uart->tx_irq, uart);
- 			return -EBUSY;
- 		}
- 		if (uart_dma_ch_tx &&
- 			request_dma(uart_dma_ch_tx, "BFIN_UART_TX") < 0) {
- 			printk(KERN_NOTICE "Fail to attach UART interrupt\n");
- 			free_dma(uart_dma_ch_rx);
--			free_irq(uart->port.irq, uart);
--			free_irq(uart->port.irq + 1, uart);
-+			free_irq(uart->rx_irq, uart);
-+			free_irq(uart->tx_irq, uart);
- 			return -EBUSY;
- 		}
- 	}
-@@ -785,8 +785,8 @@ static void bfin_serial_shutdown(struct uart_port *port)
- 		break;
- 	};
- #endif
--	free_irq(uart->port.irq, uart);
--	free_irq(uart->port.irq+1, uart);
-+	free_irq(uart->rx_irq, uart);
-+	free_irq(uart->tx_irq, uart);
- #endif
- 
- #ifdef CONFIG_SERIAL_BFIN_CTSRTS
-@@ -1319,14 +1319,21 @@ static int bfin_serial_probe(struct platform_device *pdev)
- 		}
- 		uart->port.mapbase = res->start;
- 
--		uart->port.irq = platform_get_irq(pdev, 0);
--		if (uart->port.irq < 0) {
--			dev_err(&pdev->dev, "No uart RX/TX IRQ specified\n");
-+		uart->tx_irq = platform_get_irq(pdev, 0);
-+		if (uart->tx_irq < 0) {
-+			dev_err(&pdev->dev, "No uart TX IRQ specified\n");
- 			ret = -ENOENT;
- 			goto out_error_unmap;
- 		}
- 
--		uart->status_irq = platform_get_irq(pdev, 1);
-+		uart->rx_irq = platform_get_irq(pdev, 1);
-+		if (uart->rx_irq < 0) {
-+			dev_err(&pdev->dev, "No uart RX IRQ specified\n");
-+			ret = -ENOENT;
-+			goto out_error_unmap;
-+		}
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 953773cb26d9..463a324835f4 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -735,36 +735,20 @@ static int sd_prep_fn(struct request_queue *q, struct request *rq)
+ 	 * and not force the scsi disk driver to use bounce buffers
+ 	 * for this.
+ 	 */
+-	if (sdp->sector_size == 1024) {
+-		if ((block & 1) || (blk_rq_sectors(rq) & 1)) {
+-			scmd_printk(KERN_ERR, SCpnt,
+-				    "Bad block number requested\n");
+-			goto out;
+-		} else {
+-			block = block >> 1;
+-			this_count = this_count >> 1;
+-		}
+-	}
+-	if (sdp->sector_size == 2048) {
+-		if ((block & 3) || (blk_rq_sectors(rq) & 3)) {
+-			scmd_printk(KERN_ERR, SCpnt,
+-				    "Bad block number requested\n");
+-			goto out;
+-		} else {
+-			block = block >> 2;
+-			this_count = this_count >> 2;
+-		}
+-	}
+-	if (sdp->sector_size == 4096) {
+-		if ((block & 7) || (blk_rq_sectors(rq) & 7)) {
++	if (sdp->sector_size > 512) {
++		int shift = ilog2(sdp->sector_size) - 9;
 +
-+		uart->status_irq = platform_get_irq(pdev, 2);
- 		if (uart->status_irq < 0) {
- 			dev_err(&pdev->dev, "No uart status IRQ specified\n");
- 			ret = -ENOENT;
++		if (!IS_ALIGNED(block, 1 << shift) ||
++		    !IS_ALIGNED(blk_rq_sectors(rq), 1 << shift)) {
+ 			scmd_printk(KERN_ERR, SCpnt,
+ 				    "Bad block number requested\n");
+ 			goto out;
+ 		} else {
+-			block = block >> 3;
+-			this_count = this_count >> 3;
++			block = block >> shift;
++			this_count = this_count >> shift;
+ 		}
+ 	}
++
+ 	if (rq_data_dir(rq) == WRITE) {
+ 		if (!sdp->writeable) {
+ 			goto out;
 -- 
-1.7.0.4
-
+1.7.6
 
