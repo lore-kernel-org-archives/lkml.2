@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349Ab1HBIDY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 04:03:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57239 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752245Ab1HBIDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 04:03:17 -0400
-Date: Tue, 2 Aug 2011 10:03:15 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Venki Pallipadi <venki@google.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH resend] x86, PAT: honor CONFIG_STRICT_DEVMEM if pat is
- disabled
-Message-ID: <20110802080315.GA9473@tiehlicka.suse.cz>
-References: <20110801094611.AAF738A95F@mx2.suse.de>
- <CABeCy1Y6ZO3igfRhdDQTSS0i2w9k2WTtJYwWUxuRT56UG9Zd8Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABeCy1Y6ZO3igfRhdDQTSS0i2w9k2WTtJYwWUxuRT56UG9Zd8Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752415Ab1HBIFq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 04:05:46 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:42012 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259Ab1HBIFj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 04:05:39 -0400
+Subject: Re: [patch v2 05/10] s390: Add PSW restart shutdown trigger
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
+        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+In-Reply-To: <20110801205402.GK3805@redhat.com>
+References: <20110727125504.491183728@linux.vnet.ibm.com>
+	 <20110727125808.172069159@linux.vnet.ibm.com>
+	 <20110801205402.GK3805@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Tue, 02 Aug 2011 10:05:16 +0200
+Message-ID: <1312272316.4881.4.camel@br98xy6r>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 01-08-11 16:33:18, Venki Pallipadi wrote:
-> On Fri, Jul 22, 2011 at 2:01 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> >
-> > since 0124cecf (x86, PAT: disable /dev/mem mmap RAM with PAT) we are
-> > disabling access to the system RAM as if STRICT_DEVMEM was enabled by
-> > default. If we, however, disable pat by nopat kernel parameter we can
-> > access that memory without considering CONFIG_STRICT_DEVMEM.
+Hello Vivek,
+
+On Mon, 2011-08-01 at 16:54 -0400, Vivek Goyal wrote:
+> On Wed, Jul 27, 2011 at 02:55:09PM +0200, Michael Holzheu wrote:
+> > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> > 
+> > With this patch a new S390 shutdown trigger "restart" is added. If under
+> > z/VM "systerm restart" is entered or under the HMC the "PSW restart" button
+> > is pressed, the PSW located at 0 (31 bit) or 0x1a0 (64 bit) bit is loaded.
+> > Now we execute do_restart() that processes the restart action that is
+> > defined under /sys/firmware/shutdown_actions/on_restart. Currently the
+> > following actions are possible: reipl (default), stop, vmcmd, dump, and
+> > dump_reipl.
 > 
-> Looking at the code, I don't think this problem exists. Code in pat.c
-> disables /dev/mem mmap only when !CONFIG_STRICT_DEVMEM.
+> i know nothing about s390 but this sounds like a independent
+> functionality? I mean defining a restart trigger and associated actions
+> could be done even in current framework without kdump. IIUC, additional
+> kdump series only adds the ability to use kdump for second kernel instead
+> of using dump tools in case of "dump" or "dump_reipl" ?
+> 
+> If yes, then this patch probably does not have to be part of this series
+> and pushed in independetly?
 
-Ahh yes, you are right. I got confused by having two separate
-range_is_allowed functions and didn't realize which one is called from
-which context.
-	mmap_mem
-	  -> range_is_allowed [drivers/char/mem.c]
-	       -EPERM
-	  -> phys_mem_access_prot_allowed
-	       -> range_is_allowed [arch/x86/mm/pat.c]
+Yes, this is correct. We implemented the PSW restart functionality for
+kdump, but it can be used independently.
 
-So we really get stopped at the first check and do not get to the later
-one.
+We will integrate this patch upstream independently from this series.
 
-While we are at it. {read,write}_mem checks only range_is_allowed (mem.c
-version) and it doesn't call phys_mem_access_prot_allowed so we do not
-consider PAT. {read,write}_kmem doesn't check the range at all.
-Is this correct?
-Why do we care _only_ about mmap?
+Michael
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
