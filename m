@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab1HBME5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 08:04:57 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:28956 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754120Ab1HBMEv (ORCPT
+	id S1754184Ab1HBMFE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 08:05:04 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:58960
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754146Ab1HBMEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 08:04:51 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AksEAH3lN055LCkBgWdsb2JhbABCp2AVAQEWJiWBQAEBBAE6HCMQCAMYLhQlAyETh2zBCQ6FVV8Eo3E
-Date: Tue, 2 Aug 2011 22:04:45 +1000
-From: Dave Chinner <david@fromorbit.com>
+	Tue, 2 Aug 2011 08:04:52 -0400
+Date: Tue, 2 Aug 2011 08:04:13 -0400
+From: Christoph Hellwig <hch@infradead.org>
 To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
+Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
         "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
 Subject: Re: xfstests 073 regression
-Message-ID: <20110802120445.GF12870@dastard>
+Message-ID: <20110802120413.GA18908@infradead.org>
 References: <20110730134422.GA1884@infradead.org>
  <20110731151014.GA23106@localhost>
  <20110731234749.GQ5404@dastard>
@@ -34,45 +32,39 @@ Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <20110802114428.GA6014@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, Aug 02, 2011 at 07:44:28PM +0800, Wu Fengguang wrote:
-> On Tue, Aug 02, 2011 at 12:52:42AM +0800, Christoph Hellwig wrote:
-> > wb_check_background_flush is indeed what we're hitting.
-> 
-> That means s_umount is NOT held by another queued writeback work.
+> What's that bdi 7:0?
 
-Right. We already kind of knew that was ocurring because there's
-a remount,ro going on.
+/dev/loop0
 
-> 
-> > See the trace output using a patch inspired by Curt's below:
-> > 
-> > # tracer: nop
-> > #
-> > #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
-> > #              | |       |          |         |
-> >            <...>-4279  [000]   113.034052: writeback_grab_super_failed: bdi 7:0: sb_dev 0:0 nr_pages=9223372036854775807 sync_mode=0 kupdate=0 range_cyclic=1 background=1 reason=wb_check_background_flush
-> >            <...>-4279  [000]   113.034052: writeback_grab_super_failed: bdi 7:0: sb_dev 0:0 nr_pages=9223372036854775807 sync_mode=0 kupdate=0 range_cyclic=1 background=1 reason=wb_check_background_flush
-> >            <...>-4279  [000]   113.034052: writeback_grab_super_failed: bdi 7:0: sb_dev 0:0 nr_pages=9223372036854775807 sync_mode=0 kupdate=0 range_cyclic=1 background=1 reason=wb_check_background_flush
-> 
-> What's that bdi 7:0? And sb_dev=0:0, nr_pages=9223372036854775807=0x7fffffffffffffff.
-> 
-> All are indicating some special bdi/inode.
+> And sb_dev=0:0
 
-#define LOOP_MAJOR 7
+that we didn't have sb specified in thhis wb_work
 
-It's a loop device. xfstests uses them quite a lot.
+> , nr_pages=9223372036854775807=0x7fffffffffffffff.
 
-Maybe it would be a good idea to run xfstests on an xfs filesystem
-in your regular writeback testing cycle to get decent coverage of
-this case?
+LONG_MAX.
 
-Cheers,
+It all fits perfectly:
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+static long wb_check_background_flush(struct bdi_writeback *wb)
+{
+        if (over_bground_thresh()) {
+		struct wb_writeback_work work = {
+			.nr_pages       = LONG_MAX,
+			.sync_mode	= WB_SYNC_NONE,
+			.for_background = 1,
+			.range_cyclic = 1,
+		};
+
+		return wb_writeback(wb, &work);
+	}
+
+	return 0;
+}
