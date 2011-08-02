@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347Ab1HBKgJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 06:36:09 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:59140 "EHLO mgw2.diku.dk"
+	id S1753476Ab1HBKgn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 06:36:43 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:59150 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753250Ab1HBKfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 06:35:17 -0400
+	id S1753272Ab1HBKfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 06:35:18 -0400
 From: Julia Lawall <julia@diku.dk>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>, trivial@kernel.org
-Cc: kernel-janitors@vger.kernel.org, linux-scsi@vger.kernel.org,
+To: Chris Mason <chris.mason@oracle.com>, trivial@kernel.org
+Cc: kernel-janitors@vger.kernel.org, linux-btrfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 9/11] drivers/target/target_core_rd.c: trivial: use BUG_ON
-Date: Tue,  2 Aug 2011 12:35:02 +0200
-Message-Id: <1312281304-11847-10-git-send-email-julia@diku.dk>
+Subject: [PATCH 8/11] fs/btrfs/volumes.c: trivial: use BUG_ON
+Date: Tue,  2 Aug 2011 12:35:01 +0200
+Message-Id: <1312281304-11847-9-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1312281304-11847-1-git-send-email-julia@diku.dk>
 References: <1312281304-11847-1-git-send-email-julia@diku.dk>
@@ -40,80 +40,22 @@ The semantic patch that fixes this problem is as follows:
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/target/target_core_rd.c |   24 ++++++++----------------
- 1 file changed, 8 insertions(+), 16 deletions(-)
+ fs/btrfs/volumes.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff -u -p a/drivers/target/target_core_rd.c b/drivers/target/target_core_rd.c
---- a/drivers/target/target_core_rd.c
-+++ b/drivers/target/target_core_rd.c
-@@ -390,12 +390,10 @@ static int rd_MEMCPY_read(struct rd_requ
- 				length = req->rd_size;
- 
- 			dst = sg_virt(&sg_d[i++]) + dst_offset;
--			if (!dst)
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index 19450bc..275be0f 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -1983,8 +1983,8 @@ again:
+ 						   found_key.offset);
+ 			if (ret == -ENOSPC)
+ 				failed++;
+-			else if (ret)
 -				BUG();
-+			BUG_ON(!dst);
++			else
++				BUG_ON(ret);
+ 		}
  
- 			src = sg_virt(&sg_s[j]) + src_offset;
--			if (!src)
--				BUG();
-+			BUG_ON(!src);
- 
- 			dst_offset = 0;
- 			src_offset = length;
-@@ -415,8 +413,7 @@ static int rd_MEMCPY_read(struct rd_requ
- 				length = req->rd_size;
- 
- 			dst = sg_virt(&sg_d[i]) + dst_offset;
--			if (!dst)
--				BUG();
-+			BUG_ON(!dst);
- 
- 			if (sg_d[i].length == length) {
- 				i++;
-@@ -425,8 +422,7 @@ static int rd_MEMCPY_read(struct rd_requ
- 				dst_offset = length;
- 
- 			src = sg_virt(&sg_s[j++]) + src_offset;
--			if (!src)
--				BUG();
-+			BUG_ON(!src);
- 
- 			src_offset = 0;
- 			page_end = 1;
-@@ -510,12 +506,10 @@ static int rd_MEMCPY_write(struct rd_req
- 				length = req->rd_size;
- 
- 			src = sg_virt(&sg_s[i++]) + src_offset;
--			if (!src)
--				BUG();
-+			BUG_ON(!src);
- 
- 			dst = sg_virt(&sg_d[j]) + dst_offset;
--			if (!dst)
--				BUG();
-+			BUG_ON(!dst);
- 
- 			src_offset = 0;
- 			dst_offset = length;
-@@ -535,8 +529,7 @@ static int rd_MEMCPY_write(struct rd_req
- 				length = req->rd_size;
- 
- 			src = sg_virt(&sg_s[i]) + src_offset;
--			if (!src)
--				BUG();
-+			BUG_ON(!src);
- 
- 			if (sg_s[i].length == length) {
- 				i++;
-@@ -545,8 +538,7 @@ static int rd_MEMCPY_write(struct rd_req
- 				src_offset = length;
- 
- 			dst = sg_virt(&sg_d[j++]) + dst_offset;
--			if (!dst)
--				BUG();
-+			BUG_ON(!dst);
- 
- 			dst_offset = 0;
- 			page_end = 1;
+ 		if (found_key.offset == 0)
 
