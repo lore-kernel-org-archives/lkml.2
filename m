@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab1HBLKq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 07:10:46 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49692 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753431Ab1HBLKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 07:10:39 -0400
-Message-ID: <4E37DBA4.4020606@cn.fujitsu.com>
-Date: Tue, 02 Aug 2011 19:12:36 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 11/12] KVM: MMU: fix detecting misaligned accessed
-References: <4E37DA49.1040000@cn.fujitsu.com>
-In-Reply-To: <4E37DA49.1040000@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-02 19:09:37,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-02 19:09:37,
-	Serialize complete at 2011-08-02 19:09:37
+	id S1753928Ab1HBLKy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 07:10:54 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:36591 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753872Ab1HBLKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 07:10:42 -0400
+Date: Tue, 2 Aug 2011 13:10:39 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Florian Mickler <florian@mickler.org>
+Cc: Dan Carpenter <error27@gmail.com>, linux-kernel@vger.kernel.org,
+        Tino Keitel <tino.keitel@tikei.de>, mchehab@infradead.org
+Subject: Re: USB related "unable to handle kernel paging request" in
+ 3.0.0-rc7
+Message-ID: <20110802131039.0972ff30@schatten.dmk.lab>
+In-Reply-To: <20110802124028.3b8dcd5a@schatten.dmk.lab>
+References: <20110722192722.GA9369@x61.home>
+	<20110802085447.GA4522@shale.localdomain>
+	<20110802115145.25b6a445@schatten.dmk.lab>
+	<20110802124028.3b8dcd5a@schatten.dmk.lab>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes, we only modify the last one byte of a pte to update status bit,
-for example, clear_bit is used to clear r/w bit in linux kernel and 'andb'
-instruction is used in this function, in this case, kvm_mmu_pte_write will
-treat it as misaligned access, and the shadow page table is zapped
+On Tue, 2 Aug 2011 12:40:28 +0200
+Florian Mickler <florian@mickler.org> wrote:
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/mmu.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+> This should fix it. 
+> 
+Tino, can you test if this also fixes your bug since
+ I don't have the hardware. 
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index c20c9ff..67eead6 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -3598,6 +3598,14 @@ static bool detect_write_misaligned(struct kvm_mmu_page *sp, gpa_t gpa,
- 
- 	offset = offset_in_page(gpa);
- 	pte_size = sp->role.cr4_pae ? 8 : 4;
-+
-+	/*
-+	 * Sometimes, the OS only writes the last one bytes to update status
-+	 * bits, for example, in linux, andb instruction is used in clear_bit().
-+	 */
-+	if (!(offset & (pte_size - 1)) && bytes == 1)
-+		return false;
-+
- 	misaligned = (offset ^ (offset + bytes - 1)) & ~(pte_size - 1);
- 	misaligned |= bytes < 4;
- 
--- 
-1.7.5.4
+At the moment I'm not seeing how the screwup Dan pointed out could
+have that effect though... ? The priv-buffer-pointer would have
+been simply overriden in the probe routine by the new buffer and it
+should have worked happily everafter (until the driver disconnect
+routine would have been called...) *headscratch*
 
+Regards,
+Flo
