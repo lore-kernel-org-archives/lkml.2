@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab1HBPdx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 11:33:53 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:29447 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753318Ab1HBPdt (ORCPT
+	id S1754081Ab1HBPgQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 11:36:16 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:51843 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753699Ab1HBPgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 11:33:49 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: grant.likely@secretlab.ca, niklas.hernaeus@linaro.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] fix for: Build a uImage with dtb already appended
-Date: Tue,  2 Aug 2011 16:33:27 +0100
-Message-Id: <1312299207-12735-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <20110802143148.21599.22870.stgit@ponder>
-References: <20110802143148.21599.22870.stgit@ponder>
+	Tue, 2 Aug 2011 11:36:08 -0400
+From: Per Forlin <per.forlin@stericsson.com>
+To: Felipe Balbi <balbi@ti.com>,
+        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linaro-dev@lists.linaro.org>, <users@igloocommunity.org>,
+        Per Forlin <per.forlin@linaro.org>
+Subject: [PATCH] usb: musb: ux500: set dma config for both src and dst
+Date: Tue, 2 Aug 2011 17:33:39 +0200
+Message-ID: <1312299219-9562-1-git-send-email-per.forlin@stericsson.com>
+X-Mailer: git-send-email 1.6.3.3
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- arch/arm/boot/Makefile |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+From: Per Forlin <per.forlin@linaro.org>
 
-diff --git a/arch/arm/boot/Makefile b/arch/arm/boot/Makefile
-index a64493b..68d6f23 100644
---- a/arch/arm/boot/Makefile
-+++ b/arch/arm/boot/Makefile
-@@ -75,8 +75,10 @@ quiet_cmd_uimage = UIMAGE  $@
+The dma driver requires both src and dst to be set.
+This fix is needed in order to run gadget mass storage.
+Patch is verified on snowball.
+
+Signed-off-by: Per Forlin <per.forlin@linaro.org>
+---
+ drivers/usb/musb/ux500_dma.c |   16 +++++++---------
+ 1 files changed, 7 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
+index cecace4..2313475 100644
+--- a/drivers/usb/musb/ux500_dma.c
++++ b/drivers/usb/musb/ux500_dma.c
+@@ -133,15 +133,13 @@ static bool ux500_configure_channel(struct dma_channel *channel,
+ 					DMA_SLAVE_BUSWIDTH_4_BYTES;
  
- ifeq ($(CONFIG_ZBOOT_ROM),y)
- $(obj)/uImage: LOADADDR=$(CONFIG_ZBOOT_ROM_TEXT)
-+$(obj)/uImage-dtb.%: LOADADDR=$(CONFIG_ZBOOT_ROM_TEXT)
- else
- $(obj)/uImage: LOADADDR=$(ZRELADDR)
-+$(obj)/uImage-dtb.%: LOADADDR=$(ZRELADDR)
- endif
+ 	slave_conf.direction = direction;
+-	if (direction == DMA_FROM_DEVICE) {
+-		slave_conf.src_addr = usb_fifo_addr;
+-		slave_conf.src_addr_width = addr_width;
+-		slave_conf.src_maxburst = 16;
+-	} else {
+-		slave_conf.dst_addr = usb_fifo_addr;
+-		slave_conf.dst_addr_width = addr_width;
+-		slave_conf.dst_maxburst = 16;
+-	}
++	slave_conf.src_addr = usb_fifo_addr;
++	slave_conf.src_addr_width = addr_width;
++	slave_conf.src_maxburst = 16;
++	slave_conf.dst_addr = usb_fifo_addr;
++	slave_conf.dst_addr_width = addr_width;
++	slave_conf.dst_maxburst = 16;
++
+ 	dma_chan->device->device_control(dma_chan, DMA_SLAVE_CONFIG,
+ 					     (unsigned long) &slave_conf);
  
- $(obj)/uImage: STARTADDR=$(LOADADDR)
 -- 
-1.7.4.1
+1.6.3.3
 
