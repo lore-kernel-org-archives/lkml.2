@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab1HBAsz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 20:48:55 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52686 "EHLO smtps.tip.net.au"
+	id S1753408Ab1HBAwQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 20:52:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27520 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753238Ab1HBAsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 20:48:47 -0400
-Date: Tue, 2 Aug 2011 10:48:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jon Mason <mason@myri.com>, Jordan Hargrave <jordan_hargrave@dell.com>
-Subject: linux-next: build failure after merge of the pci-current tree
-Message-Id: <20110802104838.ac7f46b54e8a3fcc4cdd9448@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__2_Aug_2011_10_48_38_+1000_6lB1GDLhmK=OoAsN"
+	id S1752530Ab1HBAwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 20:52:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,303,1309762800"; 
+   d="scan'208";a="34449940"
+Date: Mon, 1 Aug 2011 17:52:06 -0700
+From: Andi Kleen <andi@firstfloor.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        rientjes@google.com
+Subject: Revert needed: udev spewing warnons on common systems in 3.0
+Message-ID: <20110802005206.GA3832@tassilo.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__2_Aug_2011_10_48_38_+1000_6lB1GDLhmK=OoAsN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Jesse,
+Hi Linus,
 
-After merging the pci-current tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Can you please revert 
 
-ERROR: ".pcie_bus_configure_settings" [drivers/pci/hotplug/pci_hotplug.ko] =
-undefined!
+commit be8f684d73d8d916847e996bf69cef14352872c6
+Author: David Rientjes <rientjes@google.com>
+Date:   Mon Jul 25 17:12:18 2011 -0700
 
-Caused by commit b03e7495a862 ("PCI: Set PCI-E Max Payload Size on
-fabric").  Missing EXPORT_SYMBOL?
+    oom: make deprecated use of oom_adj more verbose
 
-I have used the pci-current tree from next-20110801 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+    /proc/pid/oom_adj is deprecated and scheduled for removal in August 2012
+    according to Documentation/feature-removal-schedule.txt.
 
---Signature=_Tue__2_Aug_2011_10_48_38_+1000_6lB1GDLhmK=OoAsN
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+This makes most of my test systems (suse 11.1, 11.2) spew scary WARN_ONs
+on every boot. GNOME then also complains. While it doesn't cause actual 
+misfunction it scares me every time I boot and other people who can't
+read git logs like me will be unnecessary scared.
 
-iQEcBAEBAgAGBQJON0lmAAoJEDMEi1NhKgbsjsUIAJ/AHpzxwYvpghrhFTvTcBz1
-NfuJgG5Y4QcZKspW6802iCbqQtXmA8J1v4T3SOOoCx3A5hAJbNgXEeyta0a/xSsZ
-HopZEqxaKw73kxUhf//SAjKpHPByDLDcv9tLN9COBs+cXEBgxe79X0p++DeF8n1k
-7dP+jI3dz4ZT5ClZ4rZSs3zigO/eSf58jO5lBKKGnEv5ku7WOiM4yExPLiNnmKSU
-YJ4SdGHJS5Jizllz6ET12geiCZqpHtQT8wFXAKsXMWIX+Pnmgd+yVp7hCdtn3UQb
-b1NPRNxgVG3j/nytkM3FuOeVS+dZP83aw+wAxNhL2IrLC5qvU2Ot2uP/sQONvT4=
-=0qtY
------END PGP SIGNATURE-----
+Also the warning is completely useless: noone will be "fixing"
+udev on old distributions.
 
---Signature=_Tue__2_Aug_2011_10_48_38_+1000_6lB1GDLhmK=OoAsN--
+IMHO that's not acceptable to break common user land like this.
+Linux is supposed to be binary compatible and this patch is not
+in this spirit.
+
+Actually removing the file later should be still fine, but 
+not printing out these scary messages.
+
+I propose to revert this misguided patch for stable and 3.1
+
+Thanks,
+
+-Andi
+
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
