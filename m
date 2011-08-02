@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab1HBVBE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 17:01:04 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35719 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755219Ab1HBVA7 (ORCPT
+	id S1755368Ab1HBVDf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 17:03:35 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:49154 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755272Ab1HBVDb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 17:00:59 -0400
-Message-ID: <4E386588.8060503@gmail.com>
-Date: Tue, 02 Aug 2011 23:00:56 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110729 Thunderbird/6.0
+	Tue, 2 Aug 2011 17:03:31 -0400
+Date: Tue, 2 Aug 2011 22:03:26 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, Mike Waychison <mikew@google.com>
+Subject: Re: [PATCH] efivars: fix warnings when CONFIG_PSTORE=n
+Message-ID: <20110802210326.GA2606@srcf.ucam.org>
+References: <4e3864a227625bd7d6@agluck-desktop.sc.intel.com>
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>,
-        Francis Moreau <francis.moro@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: v3.0: Weird kernel log message when resuming avout NMI received
-References: <CAC9WiBgbhLomH_CtLGKyxm2xD9=h1nJAy=-b24GOaUV+hg7bNg@mail.gmail.com> <20110731110641.GG2209@sun> <4E353A41.2010405@gmail.com> <20110802194855.GA3593@redhat.com>
-In-Reply-To: <20110802194855.GA3593@redhat.com>
-X-Enigmail-Version: 1.3a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4e3864a227625bd7d6@agluck-desktop.sc.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2011 09:48 PM, Don Zickus wrote:
-> On Sun, Jul 31, 2011 at 01:19:29PM +0200, Jiri Slaby wrote:
->> On 07/31/2011 01:06 PM, Cyrill Gorcunov wrote:
->>> On Sun, Jul 31, 2011 at 08:56:30AM +0200, Francis Moreau wrote:
->>>> Hello,
->>>>
->>>> I'm seeing those kernel message when resuming:
->>>>
->>>> [  524.973283] Uhhuh. NMI received for unknown reason 3d on CPU 0.
->>>> [  524.973288] Do you have a strange power saving mode enabled?
->>>> [  524.973289] Dazed and confused, but trying to continue
->>>>
->>>> I don't know if it's important or not because the system seems to work
->>>> after but maybe it worths to report
->>>>
->>>
->>> Hi Francis, cpu please?
->>
->> Hi, I'm seeing those too. For a longer time though. Please see
->> https://bugzilla.novell.com/show_bug.cgi?id=678882#c16
+On Tue, Aug 02, 2011 at 01:57:06PM -0700, Luck, Tony wrote:
+> drivers/firmware/efivars.c:161: warning: ‘utf16_strlen’ defined but not used
+> utf16_strlen() is only used inside CONFIG_PSTORE - put same #ifdef around the
+> definition of the function too.
 > 
-> That is with 2.6.37.  Lots of watchdog/perf nmi fixes have been added
-> since then (though dmesg suggests the watchdog is disabled due to a broken
-> PMU).
+> drivers/firmware/efivars.c:602: warning: initialization from incompatible pointer type
+> Between v1 and v2 of this patch series we decided to make the "part" number
+> unsigned - but missed fixing the stub version of efi_pstore_write()
+> 
+> Signed-off-by: Tony Luck <tony.luck@intel.com>
 
-No, comment 16 (the link above) is about 3.0.
+Acked-by: Matthew Garrett <mjg@redhat.com>
 
-> I think for the Core iX family, 2.6.39 and higher have been stable.
-
-It looks like not quite...
-
-regards,
 -- 
-js
+Matthew Garrett | mjg59@srcf.ucam.org
