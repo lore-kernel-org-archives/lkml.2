@@ -1,57 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab1HBTDf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 15:03:35 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:60621 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755006Ab1HBTDa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 15:03:30 -0400
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX18o2TUI33kobRsqErGU4jdj2T/EHOF8SgVe+2GGzv
-	GnvcSpHx9Fwxtz
-From: Sven Joachim <svenjoac@gmx.de>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: Re: [stable] [ANNOUNCE] The longterm Linux 2.6.35.14 kernel is released
-References: <20110801215908.GA11448@tassilo.jf.intel.com>
-	<87sjpk9ttf.fsf@turtle.gmx.de>
-	<20110802181751.GB7087@tassilo.jf.intel.com>
-	<87aabraca3.fsf@turtle.gmx.de> <20110802185501.GC32027@1wt.eu>
-Date: Tue, 02 Aug 2011 21:03:28 +0200
-In-Reply-To: <20110802185501.GC32027@1wt.eu> (Willy Tarreau's message of "Tue,
-	2 Aug 2011 20:55:01 +0200")
-Message-ID: <8739hjab5r.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.3.50 (gnu/linux)
+	id S1755100Ab1HBTHw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 15:07:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18244 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755044Ab1HBTHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 15:07:45 -0400
+Date: Tue, 2 Aug 2011 15:36:57 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 08/12] KVM: MMU: fast prefetch spte on invlpg path
+Message-ID: <20110802183657.GA6813@amt.cnet>
+References: <4E37DA49.1040000@cn.fujitsu.com>
+ <4E37DB3E.2040306@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E37DB3E.2040306@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-02 20:55 +0200, Willy Tarreau wrote:
+On Tue, Aug 02, 2011 at 07:10:54PM +0800, Xiao Guangrong wrote:
+> Fast prefetch spte for the unsync shadow page on invlpg path
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h |    3 +--
+>  arch/x86/kvm/mmu.c              |   37 +++++++++++++++----------------------
+>  arch/x86/kvm/paging_tmpl.h      |   23 ++++++++++-------------
+>  arch/x86/kvm/x86.c              |    4 ++--
+>  4 files changed, 28 insertions(+), 39 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index b256660..2c08458 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -456,7 +456,6 @@ struct kvm_arch {
+>  	unsigned int n_requested_mmu_pages;
+>  	unsigned int n_max_mmu_pages;
+>  	unsigned int indirect_shadow_pages;
+> -	atomic_t invlpg_counter;
+>  	struct hlist_head mmu_page_hash[KVM_NUM_MMU_PAGES];
+>  	/*
+>  	 * Hash table of struct kvm_mmu_page.
+> @@ -749,7 +748,7 @@ int fx_init(struct kvm_vcpu *vcpu);
+>  void kvm_mmu_flush_tlb(struct kvm_vcpu *vcpu);
+>  void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>  		       const u8 *new, int bytes,
+> -		       bool guest_initiated, bool page_table_written);
+> +		       bool page_table_written);
+>  int kvm_mmu_unprotect_page_virt(struct kvm_vcpu *vcpu, gva_t gva);
+>  void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu);
+>  int kvm_mmu_load(struct kvm_vcpu *vcpu);
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 8e97ffa..5517115 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -3526,7 +3526,7 @@ static bool last_updated_pte_accessed(struct kvm_vcpu *vcpu)
+>  
+>  void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>  		       const u8 *new, int bytes,
+> -		       bool guest_initiated, bool page_table_written)
+> +		       bool page_table_written)
+>  {
+>  	gfn_t gfn = gpa >> PAGE_SHIFT;
+>  	union kvm_mmu_page_role mask = { .word = 0 };
+> @@ -3535,7 +3535,7 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>  	LIST_HEAD(invalid_list);
+>  	u64 entry, gentry, *spte;
+>  	unsigned pte_size, page_offset, misaligned, quadrant, offset;
+> -	int level, npte, invlpg_counter, r, flooded = 0;
+> +	int level, npte, r, flooded = 0;
+>  	bool remote_flush, local_flush, zap_page;
+>  
+>  	/*
+> @@ -3550,19 +3550,16 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>  
+>  	pgprintk("%s: gpa %llx bytes %d\n", __func__, gpa, bytes);
+>  
+> -	invlpg_counter = atomic_read(&vcpu->kvm->arch.invlpg_counter);
+> -
+>  	/*
+>  	 * Assume that the pte write on a page table of the same type
+>  	 * as the current vcpu paging mode since we update the sptes only
+>  	 * when they have the same mode.
+>  	 */
+> -	if ((is_pae(vcpu) && bytes == 4) || !new) {
+> +	if (is_pae(vcpu) && bytes == 4) {
+>  		/* Handle a 32-bit guest writing two halves of a 64-bit gpte */
+> -		if (is_pae(vcpu)) {
+> -			gpa &= ~(gpa_t)7;
+> -			bytes = 8;
+> -		}
+> +		gpa &= ~(gpa_t)7;
+> +		bytes = 8;
+> +
+>  		r = kvm_read_guest(vcpu->kvm, gpa, &gentry, min(bytes, 8));
+>  		if (r)
+>  			gentry = 0;
+> @@ -3588,22 +3585,18 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>  	 */
+>  	mmu_topup_memory_caches(vcpu);
+>  	spin_lock(&vcpu->kvm->mmu_lock);
+> -	if (atomic_read(&vcpu->kvm->arch.invlpg_counter) != invlpg_counter)
+> -		gentry = 0;
+>  	kvm_mmu_free_some_pages(vcpu);
+>  	++vcpu->kvm->stat.mmu_pte_write;
+>  	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PTE_WRITE);
+> -	if (guest_initiated) {
+> -		if (gfn == vcpu->arch.last_pt_write_gfn
+> -		    && !last_updated_pte_accessed(vcpu)) {
+> -			++vcpu->arch.last_pt_write_count;
+> -			if (vcpu->arch.last_pt_write_count >= 3)
+> -				flooded = 1;
+> -		} else {
+> -			vcpu->arch.last_pt_write_gfn = gfn;
+> -			vcpu->arch.last_pt_write_count = 1;
+> -			vcpu->arch.last_pte_updated = NULL;
+> -		}
+> +	if (gfn == vcpu->arch.last_pt_write_gfn
+> +	    && !last_updated_pte_accessed(vcpu)) {
+> +		++vcpu->arch.last_pt_write_count;
+> +		if (vcpu->arch.last_pt_write_count >= 3)
+> +			flooded = 1;
+> +	} else {
+> +		vcpu->arch.last_pt_write_gfn = gfn;
+> +		vcpu->arch.last_pt_write_count = 1;
+> +		vcpu->arch.last_pte_updated = NULL;
+>  	}
+>  
+>  	mask.cr0_wp = mask.cr4_pae = mask.nxe = 1;
+> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+> index 0f915b5..3466229 100644
+> --- a/arch/x86/kvm/paging_tmpl.h
+> +++ b/arch/x86/kvm/paging_tmpl.h
+> @@ -666,20 +666,22 @@ static void FNAME(invlpg)(struct kvm_vcpu *vcpu, gva_t gva)
+>  {
+>  	struct kvm_shadow_walk_iterator iterator;
+>  	struct kvm_mmu_page *sp;
+> -	gpa_t pte_gpa = -1;
+>  	int level;
+>  	u64 *sptep;
+>  
+>  	vcpu_clear_mmio_info(vcpu, gva);
+> +	mmu_topup_memory_caches(vcpu);
 
-> On Tue, Aug 02, 2011 at 08:39:16PM +0200, Sven Joachim wrote:
->> I don't think that's the problem, since the v2.6.35.14 tag and the
->> commits that lead to it have been at
->> git.kernel.org/pub/scm/linux/kernel/git/longterm/linux-2.6.35.y.git for
->> at least twelve hours.  The problem is that while the tag is there, the
->> master branch is still at v2.6.35.13-original.  This happens if you just
->> "git push v2.6.35.14" without _also_ explicitly pushing the master
->> branch.  In that case, the commits leading to v2.6.35.14 get pushed (and
->> can be fetched with "git fetch -t") but are not on any branch.
->> 
->> Linus himself had already made this mistake at least twice, so it can
->> happen to anyone, I guess. :-)
->
-> I too made this mistake a few times. However I just checked Andi's tree
-> on hera and it's OK, master == v2.6.35.14, so possibly this is just a
-> synchronization issue. Let's wait a bit.
+Should handle failure.
 
-Yes, it seems so.  In gitweb I now see the master branch at v2.6.35.14
-as well, while it was at v2.6.35.13-original half an hour ago.
-
-Cheers,
-       Sven
