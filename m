@@ -1,86 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab1HBKWt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 06:22:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38034 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752673Ab1HBKWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 06:22:39 -0400
-Date: Tue, 2 Aug 2011 11:22:31 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: "Alex,Shi" <alex.shi@intel.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "P@draigBrady.com" <P@draigBrady.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andrea@cpushare.com" <andrea@cpushare.com>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "riel@redhat.com" <riel@redhat.com>, "luto@mit.edu" <luto@mit.edu>
-Subject: Re: [PATCH] kswapd: avoid unnecessary rebalance after an
- unsuccessful balancing
-Message-ID: <20110802102231.GC10436@suse.de>
-References: <1311952990-3844-1-git-send-email-alex.shi@intel.com>
- <20110729154031.GV3010@suse.de>
- <1312159517.27358.2446.camel@debian>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1312159517.27358.2446.camel@debian>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752885Ab1HBK22 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 06:28:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37943 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab1HBK2Y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 06:28:24 -0400
+Subject: Re: [PATCH] perf, x86: Add model 45 SandyBridge support
+From: Peter Zijlstra <peterz@infradead.org>
+To: Youquan Song <youquan.song@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ming.m.lin@intel.com,
+        anhua.xu@intel.com, chaohong.guo@intel.com, kent.liu@intel.com,
+        Youquan Song <youquan.song@linux.intel.com>
+In-Reply-To: <1312264895-2010-1-git-send-email-youquan.song@intel.com>
+References: <1312264895-2010-1-git-send-email-youquan.song@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 02 Aug 2011 12:27:50 +0200
+Message-ID: <1312280870.1147.32.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 08:45:17AM +0800, Alex,Shi wrote:
-> On Fri, 2011-07-29 at 23:40 +0800, Mel Gorman wrote:
-> > On Fri, Jul 29, 2011 at 11:23:10PM +0800, Alex Shi wrote:
-> > > In commit 215ddd66, Mel Gorman said kswapd is better to sleep after a
-> > > unsuccessful balancing if there is tighter reclaim request pending in
-> > > the balancing. In this scenario, the 'order' and 'classzone_idx'
-> > > that are checked for tighter request judgment is incorrect, since they
-> > > aren't the one kswapd should read from new pgdat, but the last time pgdat
-> > > value for just now balancing. Then kswapd will skip try_to_sleep func
-> > > and rebalance the last pgdat request. It's not our expected behavior.
-> > > 
-> > > So, I added new variables to distinguish the returned order/classzone_idx
-> > > from last balancing, that can resolved above issue in that scenario.
-> > > 
-> > 
-> > I'm afraid this changelog is very difficult to read and I do not see
-> > what problem you are trying to solve and I do not see what this patch
-> > might solve.
-> > 
-> > When balance_pgdat() returns with a lower classzone or order, the values
-> > stored in pgdat are not re-read and instead it tries to go to sleep
-> > based on the starting request. Something like;
+On Tue, 2011-08-02 at 14:01 +0800, Youquan Song wrote:
+> Add support to Romely-EP SandyBridge.
 > 
-> Thanks for your comments, I will use this comments style next time, list
-> request A, B etc. 
-> 
-> > 
-> > 1. Read pgdat request A (classzone_idx, order)
-> 
-> Assume the order of A > 0, like is 3.
-> 
-> > 2. balance_pgdat()
-> > 3.During pgdat, a new pgdat request B (classzone_idx, order) is placed
-> > 4. balance_pgdat() returns but failed so classzone_idx is lower
-> 
-> Another balance_pgdat() failure indicate is returned order == 0, am I
-> right? 
+> Signed-off-by: Youquan Song <youquan.song@intel.com>
+> Signed-off-by: Anhua Xu <anhua.xu@intel.com>
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 
-Yes.
+Hehe, lots of SOBs for 1 line ;-)
 
-> If so, the next step of kswapd is not trying to sleep, but do
-> request A balance again.  And I thought this behavior doesn't match the
-> comments in kswapd. 
-> 
-
-You're right. I was thinking only of classzone_idx. I see the point now.
-
-Acked-by: Mel Gorman <mgorman@suse.de>
-
--- 
-Mel Gorman
-SUSE Labs
+Thanks though!
