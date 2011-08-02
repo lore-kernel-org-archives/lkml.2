@@ -1,329 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab1HBWxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 18:53:38 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:41662 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817Ab1HBWv7 (ORCPT
+	id S1753462Ab1HBWxy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 18:53:54 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:59385 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753086Ab1HBWxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 18:51:59 -0400
-From: Len Brown <lenb@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 14/19] ACPI, APEI, GHES, Error records content based throttle
-Date: Tue, 02 Aug 2011 18:14:47 -0400
-Message-id: <40c454a7b8c7fab7a5fffb8713064ad811c9fc60.1312323131.git.len.brown@intel.com>
-X-Mailer: git-send-email 1.7.6.396.ge0613
-In-reply-to: <1312323292-2986-1-git-send-email-lenb@kernel.org>
-References: <1312323292-2986-1-git-send-email-lenb@kernel.org>
-In-reply-to: <ca7cc5110a313a609da40ae948978a585352564b.1312323131.git.len.brown@intel.com>
-References: <ca7cc5110a313a609da40ae948978a585352564b.1312323131.git.len.brown@intel.com>
-X-Patchwork-Hint: ignore
+	Tue, 2 Aug 2011 18:53:23 -0400
+Date: Tue, 2 Aug 2011 23:53:16 +0100
+From: Jamie Iles <jamie@jamieiles.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Daniel Drake <dsd@laptop.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Jamie Iles <jamie@jamieiles.com>
+Subject: Re: MTD-related kobject badness during linux-next boot
+Message-ID: <20110802225316.GF5063@pulham.picochip.com>
+References: <CAGq3pz4LHRkCqaJfqoMYe-=mn+s5CVZipab7bd8F3z+ou3xxVA@mail.gmail.com>
+ <CAN8TOE9mWEmS5YJqNrS9OrG=t+emeLcXNpKR1BiZ6VDJW7_c=A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN8TOE9mWEmS5YJqNrS9OrG=t+emeLcXNpKR1BiZ6VDJW7_c=A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Huang Ying <ying.huang@intel.com>
+Hi Brian,
 
-printk is used by GHES to report hardware errors.  Ratelimit is
-enforced on the printk to avoid too many hardware error reports in
-kernel log.  Because there may be thousands or even millions of
-corrected hardware errors during system running.
+On Tue, Aug 02, 2011 at 10:40:29AM -0700, Brian Norris wrote:
+> Since Dmitry's change, it looks like cafe_nand will add the master
+> device, then parse and register its partitions, if found. However, if
+> partitions are NOT found, then mtd_device_parse_register() falls back
+> to adding the master device, which was already added. In
+> drivers/mtd/mtdcore.c, see:
+> 
+>      int mtd_device_parse_register(struct mtd_info *mtd, const char **types,
+>      ...
+>      if (err > 0) {
+>      ...
+>      } else if (err == 0) {
+>              err = add_mtd_device(mtd);
+>      ...
+> 
+> 
+> So it looks like perhaps we can solve the problem by just killing the
+> "register the whole device first" and allow mtd_device_parse_register
+> to do it if there are no partitions. Any cafe_nand developers know if
+> this is a problem? i.e., is there a reason we need both the whole
+> device AND the partitions sent to add_mtd_device()? I'll send a full
+> patch with sign-off and description if there are no objections.
 
-Currently, a simple scheme is used.  That is, the total number of
-hardware error reporting is ratelimited.  This may cause some issues
-in practice.
+I think that's the right thing to do.  There's actually a comment in 
+drivers/mtd/mtdpart.c saying:
 
-For example, there are two kinds of hardware errors occurred in
-system.  One is corrected memory error, because the fault memory
-address is accessed frequently, there may be hundreds error report
-per-second.  The other is corrected PCIe AER error, it will be
-reported once per-second.  Because they share one ratelimit control
-structure, it is highly possible that only memory error is reported.
+	/* NOTE:  we don't arrange MTDs as a tree; it'd be error-prone
+         * to have the same data be in two different partitions.
+         */
 
-To avoid the above issue, an error record content based throttle
-algorithm is implemented in the patch.  Where after the first
-successful reporting, all error records that are same are throttled for
-some time, to let other kinds of error records have the opportunity to
-be reported.
+So I do think it should be the whole device *or* the partitions.  In any 
+case, your patch looks good to me.
 
-In above example, the memory errors will be throttled for some time,
-after being printked.  Then the PCIe AER error will be printked
-successfully.
-
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
----
- drivers/acpi/apei/ghes.c |  184 ++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 177 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-index d1a4021..931410d 100644
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -60,6 +60,21 @@
- 
- #define GHES_ESTATUS_POOL_MIN_ALLOC_ORDER 3
- 
-+/* This is just an estimation for memory pool allocation */
-+#define GHES_ESTATUS_CACHE_AVG_SIZE	512
-+
-+#define GHES_ESTATUS_CACHES_SIZE	4
-+
-+#define GHES_ESTATUS_IN_CACHE_MAX_NSEC	(10 * NSEC_PER_SEC)
-+/* Prevent too many caches are allocated because of RCU */
-+#define GHES_ESTATUS_CACHE_ALLOCED_MAX	(GHES_ESTATUS_CACHES_SIZE * 3 / 2)
-+
-+#define GHES_ESTATUS_CACHE_LEN(estatus_len)			\
-+	(sizeof(struct ghes_estatus_cache) + (estatus_len))
-+#define GHES_ESTATUS_FROM_CACHE(estatus_cache)			\
-+	((struct acpi_hest_generic_status *)			\
-+	 ((struct ghes_estatus_cache *)(estatus_cache) + 1))
-+
- #define GHES_ESTATUS_NODE_LEN(estatus_len)			\
- 	(sizeof(struct ghes_estatus_node) + (estatus_len))
- #define GHES_ESTATUS_FROM_NODE(estatus_node)				\
-@@ -94,6 +109,14 @@ struct ghes_estatus_node {
- 	struct acpi_hest_generic *generic;
- };
- 
-+struct ghes_estatus_cache {
-+	u32 estatus_len;
-+	atomic_t count;
-+	struct acpi_hest_generic *generic;
-+	unsigned long long time_in;
-+	struct rcu_head rcu;
-+};
-+
- int ghes_disable;
- module_param_named(disable, ghes_disable, bool, 0);
- 
-@@ -154,6 +177,9 @@ static unsigned long ghes_estatus_pool_size_request;
- static struct llist_head ghes_estatus_llist;
- static struct irq_work ghes_proc_irq_work;
- 
-+struct ghes_estatus_cache *ghes_estatus_caches[GHES_ESTATUS_CACHES_SIZE];
-+static atomic_t ghes_estatus_cache_alloced;
-+
- static int ghes_ioremap_init(void)
- {
- 	ghes_ioremap_area = __get_vm_area(PAGE_SIZE * GHES_IOREMAP_PAGES,
-@@ -458,9 +484,9 @@ static void __ghes_print_estatus(const char *pfx,
- 	apei_estatus_print(pfx, estatus);
- }
- 
--static void ghes_print_estatus(const char *pfx,
--			       const struct acpi_hest_generic *generic,
--			       const struct acpi_hest_generic_status *estatus)
-+static int ghes_print_estatus(const char *pfx,
-+			      const struct acpi_hest_generic *generic,
-+			      const struct acpi_hest_generic_status *estatus)
- {
- 	/* Not more than 2 messages every 5 seconds */
- 	static DEFINE_RATELIMIT_STATE(ratelimit_corrected, 5*HZ, 2);
-@@ -471,8 +497,137 @@ static void ghes_print_estatus(const char *pfx,
- 		ratelimit = &ratelimit_corrected;
- 	else
- 		ratelimit = &ratelimit_uncorrected;
--	if (__ratelimit(ratelimit))
-+	if (__ratelimit(ratelimit)) {
- 		__ghes_print_estatus(pfx, generic, estatus);
-+		return 1;
-+	}
-+	return 0;
-+}
-+
-+/*
-+ * GHES error status reporting throttle, to report more kinds of
-+ * errors, instead of just most frequently occurred errors.
-+ */
-+static int ghes_estatus_cached(struct acpi_hest_generic_status *estatus)
-+{
-+	u32 len;
-+	int i, cached = 0;
-+	unsigned long long now;
-+	struct ghes_estatus_cache *cache;
-+	struct acpi_hest_generic_status *cache_estatus;
-+
-+	len = apei_estatus_len(estatus);
-+	rcu_read_lock();
-+	for (i = 0; i < GHES_ESTATUS_CACHES_SIZE; i++) {
-+		cache = rcu_dereference(ghes_estatus_caches[i]);
-+		if (cache == NULL)
-+			continue;
-+		if (len != cache->estatus_len)
-+			continue;
-+		cache_estatus = GHES_ESTATUS_FROM_CACHE(cache);
-+		if (memcmp(estatus, cache_estatus, len))
-+			continue;
-+		atomic_inc(&cache->count);
-+		now = sched_clock();
-+		if (now - cache->time_in < GHES_ESTATUS_IN_CACHE_MAX_NSEC)
-+			cached = 1;
-+		break;
-+	}
-+	rcu_read_unlock();
-+	return cached;
-+}
-+
-+static struct ghes_estatus_cache *ghes_estatus_cache_alloc(
-+	struct acpi_hest_generic *generic,
-+	struct acpi_hest_generic_status *estatus)
-+{
-+	int alloced;
-+	u32 len, cache_len;
-+	struct ghes_estatus_cache *cache;
-+	struct acpi_hest_generic_status *cache_estatus;
-+
-+	alloced = atomic_add_return(1, &ghes_estatus_cache_alloced);
-+	if (alloced > GHES_ESTATUS_CACHE_ALLOCED_MAX) {
-+		atomic_dec(&ghes_estatus_cache_alloced);
-+		return NULL;
-+	}
-+	len = apei_estatus_len(estatus);
-+	cache_len = GHES_ESTATUS_CACHE_LEN(len);
-+	cache = (void *)gen_pool_alloc(ghes_estatus_pool, cache_len);
-+	if (!cache) {
-+		atomic_dec(&ghes_estatus_cache_alloced);
-+		return NULL;
-+	}
-+	cache_estatus = GHES_ESTATUS_FROM_CACHE(cache);
-+	memcpy(cache_estatus, estatus, len);
-+	cache->estatus_len = len;
-+	atomic_set(&cache->count, 0);
-+	cache->generic = generic;
-+	cache->time_in = sched_clock();
-+	return cache;
-+}
-+
-+static void ghes_estatus_cache_free(struct ghes_estatus_cache *cache)
-+{
-+	u32 len;
-+
-+	len = apei_estatus_len(GHES_ESTATUS_FROM_CACHE(cache));
-+	len = GHES_ESTATUS_CACHE_LEN(len);
-+	gen_pool_free(ghes_estatus_pool, (unsigned long)cache, len);
-+	atomic_dec(&ghes_estatus_cache_alloced);
-+}
-+
-+static void ghes_estatus_cache_rcu_free(struct rcu_head *head)
-+{
-+	struct ghes_estatus_cache *cache;
-+
-+	cache = container_of(head, struct ghes_estatus_cache, rcu);
-+	ghes_estatus_cache_free(cache);
-+}
-+
-+static void ghes_estatus_cache_add(
-+	struct acpi_hest_generic *generic,
-+	struct acpi_hest_generic_status *estatus)
-+{
-+	int i, slot = -1, count;
-+	unsigned long long now, duration, period, max_period = 0;
-+	struct ghes_estatus_cache *cache, *slot_cache = NULL, *new_cache;
-+
-+	new_cache = ghes_estatus_cache_alloc(generic, estatus);
-+	if (new_cache == NULL)
-+		return;
-+	rcu_read_lock();
-+	now = sched_clock();
-+	for (i = 0; i < GHES_ESTATUS_CACHES_SIZE; i++) {
-+		cache = rcu_dereference(ghes_estatus_caches[i]);
-+		if (cache == NULL) {
-+			slot = i;
-+			slot_cache = NULL;
-+			break;
-+		}
-+		duration = now - cache->time_in;
-+		if (duration >= GHES_ESTATUS_IN_CACHE_MAX_NSEC) {
-+			slot = i;
-+			slot_cache = cache;
-+			break;
-+		}
-+		count = atomic_read(&cache->count);
-+		period = duration / (count + 1);
-+		if (period > max_period) {
-+			max_period = period;
-+			slot = i;
-+			slot_cache = cache;
-+		}
-+	}
-+	/* new_cache must be put into array after its contents are written */
-+	smp_wmb();
-+	if (slot != -1 && cmpxchg(ghes_estatus_caches + slot,
-+				  slot_cache, new_cache) == slot_cache) {
-+		if (slot_cache)
-+			call_rcu(&slot_cache->rcu, ghes_estatus_cache_rcu_free);
-+	} else
-+		ghes_estatus_cache_free(new_cache);
-+	rcu_read_unlock();
- }
- 
- static int ghes_proc(struct ghes *ghes)
-@@ -482,9 +637,11 @@ static int ghes_proc(struct ghes *ghes)
- 	rc = ghes_read_estatus(ghes, 0);
- 	if (rc)
- 		goto out;
--	ghes_print_estatus(NULL, ghes->generic, ghes->estatus);
-+	if (!ghes_estatus_cached(ghes->estatus)) {
-+		if (ghes_print_estatus(NULL, ghes->generic, ghes->estatus))
-+			ghes_estatus_cache_add(ghes->generic, ghes->estatus);
-+	}
- 	ghes_do_proc(ghes->estatus);
--
- out:
- 	ghes_clear_estatus(ghes);
- 	return 0;
-@@ -546,6 +703,7 @@ static void ghes_proc_in_irq(struct irq_work *irq_work)
- {
- 	struct llist_node *llnode, *next, *tail = NULL;
- 	struct ghes_estatus_node *estatus_node;
-+	struct acpi_hest_generic *generic;
- 	struct acpi_hest_generic_status *estatus;
- 	u32 len, node_len;
- 
-@@ -569,7 +727,11 @@ static void ghes_proc_in_irq(struct irq_work *irq_work)
- 		len = apei_estatus_len(estatus);
- 		node_len = GHES_ESTATUS_NODE_LEN(len);
- 		ghes_do_proc(estatus);
--		ghes_print_estatus(NULL, estatus_node->generic, estatus);
-+		if (!ghes_estatus_cached(estatus)) {
-+			generic = estatus_node->generic;
-+			if (ghes_print_estatus(NULL, generic, estatus))
-+				ghes_estatus_cache_add(generic, estatus);
-+		}
- 		gen_pool_free(ghes_estatus_pool, (unsigned long)estatus_node,
- 			      node_len);
- 		llnode = next;
-@@ -622,6 +784,8 @@ static int ghes_notify_nmi(struct notifier_block *this,
- 		if (!(ghes->flags & GHES_TO_CLEAR))
- 			continue;
- #ifdef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+		if (ghes_estatus_cached(ghes->estatus))
-+			goto next;
- 		/* Save estatus for further processing in IRQ context */
- 		len = apei_estatus_len(ghes->estatus);
- 		node_len = GHES_ESTATUS_NODE_LEN(len);
-@@ -633,6 +797,7 @@ static int ghes_notify_nmi(struct notifier_block *this,
- 			memcpy(estatus, ghes->estatus, len);
- 			llist_add(&estatus_node->llnode, &ghes_estatus_llist);
- 		}
-+next:
- #endif
- 		ghes_clear_estatus(ghes);
- 	}
-@@ -847,6 +1012,11 @@ static int __init ghes_init(void)
- 	if (rc)
- 		goto err_ioremap_exit;
- 
-+	rc = ghes_estatus_pool_expand(GHES_ESTATUS_CACHE_AVG_SIZE *
-+				      GHES_ESTATUS_CACHE_ALLOCED_MAX);
-+	if (rc)
-+		goto err_pool_exit;
-+
- 	rc = platform_driver_register(&ghes_platform_driver);
- 	if (rc)
- 		goto err_pool_exit;
--- 
-1.7.6.396.ge0613
-
+Jamie
