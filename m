@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab1HBWxq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 18:53:46 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:41662 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704Ab1HBWvz (ORCPT
+	id S1753416Ab1HBWyI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 18:54:08 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:48685 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753461Ab1HBWxy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 18:51:55 -0400
-From: Len Brown <lenb@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 16/19] ACPI, APEI, GHES: Add hardware memory error recovery
- support
-Date: Tue, 02 Aug 2011 18:14:49 -0400
-Message-id: <70738ef3836dfd4dbdaffef5522f4584b601770d.1312323131.git.len.brown@intel.com>
-X-Mailer: git-send-email 1.7.6.396.ge0613
-In-reply-to: <1312323292-2986-1-git-send-email-lenb@kernel.org>
-References: <1312323292-2986-1-git-send-email-lenb@kernel.org>
-In-reply-to: <ca7cc5110a313a609da40ae948978a585352564b.1312323131.git.len.brown@intel.com>
-References: <ca7cc5110a313a609da40ae948978a585352564b.1312323131.git.len.brown@intel.com>
-X-Patchwork-Hint: ignore
+	Tue, 2 Aug 2011 18:53:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMOw1v5veDqE+=gbNBn3juXHOOp764d7F20XtwUJXZoBW45zyg@mail.gmail.com>
+References: <1306930476-1899-1-git-send-email-lucas.demarchi@profusion.mobi>
+ <BANLkTin6CP-A+UsGXyu9wb7U34wEN7DKsw@mail.gmail.com> <m18vtkq57c.fsf@fess.ebiederm.org>
+ <BANLkTimcPweT-HONEtVDn3mD2a6dUGDEYA@mail.gmail.com> <20110602134338.0c56160e@lxorguk.ukuu.org.uk>
+ <BANLkTik72cU_R5k9NLnqN_FNkm-y5Fk0nQ@mail.gmail.com> <m1hb88e3qs.fsf@fess.ebiederm.org>
+ <BANLkTin5P8P_HR78qo0oyzeu9hpWazZqTw@mail.gmail.com> <20110608151732.2b321b9a.akpm@linux-foundation.org>
+ <BANLkTinXwE0K5nJ649rhNxN06KvwLNDeCA@mail.gmail.com> <1307981153.1449.19.camel@mop>
+ <CAMOw1v5veDqE+=gbNBn3juXHOOp764d7F20XtwUJXZoBW45zyg@mail.gmail.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 3 Aug 2011 00:53:33 +0200
+Message-ID: <CAPXgP12sxLmPXzXx_Qgf=JakmiZcuiMGmMKB8RG4sFU_U5f=jg@mail.gmail.com>
+Subject: Re: [PATCH] sysctl: add support for poll()
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>,
+        neilb@suse.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Huang Ying <ying.huang@intel.com>
+On Tue, Jul 26, 2011 at 04:17, Lucas De Marchi
+<lucas.demarchi@profusion.mobi> wrote:
+> On Mon, Jun 13, 2011 at 1:05 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
+>> On Thu, 2011-06-09 at 15:16 +0200, Kay Sievers wrote:
+>>> On Thu, Jun 9, 2011 at 00:17, Andrew Morton <akpm@linux-foundation.org> wrote:
+>>
+>>> > We already have several pollable procfs files, such as
+>>> > fs/proc/base.c:mounts_poll() and I think drivers/md has one.  I do
+>>> > think that any work in this area should end up with those custom
+>>> > make-procfs-pollable hacks being identified and removed.
+>>>
+>>> For these files we can probably move the event counter into the
+>>> seq_file structure, and get rid of the dance to kmalloc it and assign
+>>> it to seq_file->private. That might simplify the logic a bit.
+>>>
+>>> [Adding Neil, to get his opinion of moving 'event' so seq_file and get
+>>> rid of the malloc dance]
+>>
+>> I guess, we could do something like this, which looks quite a bit
+>> simpler by moving the poll event counter into the dynamically allocated
+>> seq_file structure itself, instead of having private structures
+>> allocated on top to just carry the counter (patch is just
+>> compile-tested).
+>
+> Now that this cleanup made its way, could we look again to to the
+> pollable sysctl implementation?
 
-memory_failure_queue() is called when recoverable memory errors are
-notified by firmware to do the recovery work.
+Can we please get support for poll() for /proc/sys files merged? Just
+like we do that for /proc already.
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
----
- drivers/acpi/apei/Kconfig |    7 +++++++
- drivers/acpi/apei/ghes.c  |   24 +++++++++++++++++-------
- 2 files changed, 24 insertions(+), 7 deletions(-)
+We like to have notifications triggered by the kernel for selected
+files in /proc/sys.
 
-diff --git a/drivers/acpi/apei/Kconfig b/drivers/acpi/apei/Kconfig
-index 35596ea..c34aa51 100644
---- a/drivers/acpi/apei/Kconfig
-+++ b/drivers/acpi/apei/Kconfig
-@@ -32,6 +32,13 @@ config ACPI_APEI_PCIEAER
- 	  PCIe AER errors may be reported via APEI firmware first mode.
- 	  Turn on this option to enable the corresponding support.
- 
-+config ACPI_APEI_MEMORY_FAILURE
-+	bool "APEI memory error recovering support"
-+	depends on ACPI_APEI && MEMORY_FAILURE
-+	help
-+	  Memory errors may be reported via APEI firmware first mode.
-+	  Turn on this option to enable the memory recovering support.
-+
- config ACPI_APEI_EINJ
- 	tristate "APEI Error INJection (EINJ)"
- 	depends on ACPI_APEI && DEBUG_FS
-diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-index 931410d..e92c47c 100644
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -451,20 +451,30 @@ static void ghes_clear_estatus(struct ghes *ghes)
- 
- static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
- {
--	int sev, processed = 0;
-+	int sev, sec_sev;
- 	struct acpi_hest_generic_data *gdata;
- 
- 	sev = ghes_severity(estatus->error_severity);
- 	apei_estatus_for_each_section(estatus, gdata) {
--#ifdef CONFIG_X86_MCE
-+		sec_sev = ghes_severity(gdata->error_severity);
- 		if (!uuid_le_cmp(*(uuid_le *)gdata->section_type,
- 				 CPER_SEC_PLATFORM_MEM)) {
--			apei_mce_report_mem_error(
--				sev == GHES_SEV_CORRECTED,
--				(struct cper_sec_mem_err *)(gdata+1));
--			processed = 1;
--		}
-+			struct cper_sec_mem_err *mem_err;
-+			mem_err = (struct cper_sec_mem_err *)(gdata+1);
-+#ifdef CONFIG_X86_MCE
-+			apei_mce_report_mem_error(sev == GHES_SEV_CORRECTED,
-+						  mem_err);
- #endif
-+#ifdef CONFIG_ACPI_APEI_MEMORY_FAILURE
-+			if (sev == GHES_SEV_RECOVERABLE &&
-+			    sec_sev == GHES_SEV_RECOVERABLE &&
-+			    mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
-+				unsigned long pfn;
-+				pfn = mem_err->physical_addr >> PAGE_SHIFT;
-+				memory_failure_queue(pfn, 0, 0);
-+			}
-+#endif
-+		}
- 	}
- }
- 
--- 
-1.7.6.396.ge0613
+I don't really see any technical reasons to hold this back.
 
+Thanks,
+Kay
