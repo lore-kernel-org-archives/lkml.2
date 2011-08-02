@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408Ab1HBAwQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 20:52:16 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27520 "EHLO mga09.intel.com"
+	id S1753920Ab1HBA7a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 20:59:30 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56047 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752530Ab1HBAwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 20:52:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,303,1309762800"; 
-   d="scan'208";a="34449940"
-Date: Mon, 1 Aug 2011 17:52:06 -0700
-From: Andi Kleen <andi@firstfloor.org>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        rientjes@google.com
-Subject: Revert needed: udev spewing warnons on common systems in 3.0
-Message-ID: <20110802005206.GA3832@tassilo.jf.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753521Ab1HBA7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 20:59:25 -0400
+Date: Tue, 2 Aug 2011 10:59:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Brown <davidb@codeaurora.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Ohlstein <johlstei@codeaurora.org>
+Subject: linux-next: manual merge of the msm tree with Linus' tree
+Message-Id: <20110802105920.b17b44333263c79316a186c5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi David,
 
-Hi Linus,
+Today's linux-next merge of the msm tree got a conflict in
+arch/arm/mach-msm/io.c between commit 03db0729b760 ("msm: Remove
+chip-ifdefs for GPIO io mappings") from Linus' tree and commit
+5f0130d53e0e ("msm: dma: use a platform device for msm_dmov") from the
+msm tree.
 
-Can you please revert 
-
-commit be8f684d73d8d916847e996bf69cef14352872c6
-Author: David Rientjes <rientjes@google.com>
-Date:   Mon Jul 25 17:12:18 2011 -0700
-
-    oom: make deprecated use of oom_adj more verbose
-
-    /proc/pid/oom_adj is deprecated and scheduled for removal in August 2012
-    according to Documentation/feature-removal-schedule.txt.
-
-
-This makes most of my test systems (suse 11.1, 11.2) spew scary WARN_ONs
-on every boot. GNOME then also complains. While it doesn't cause actual 
-misfunction it scares me every time I boot and other people who can't
-read git logs like me will be unnecessary scared.
-
-Also the warning is completely useless: noone will be "fixing"
-udev on old distributions.
-
-IMHO that's not acceptable to break common user land like this.
-Linux is supposed to be binary compatible and this patch is not
-in this spirit.
-
-Actually removing the file later should be still fine, but 
-not printing out these scary messages.
-
-I propose to revert this misguided patch for stable and 3.1
-
-Thanks,
-
--Andi
-
-
+I fixed it up (see below) and can carry the fix as necessary.
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-msm/io.c
+index 140ddbb,1c86cda..0000000
+--- a/arch/arm/mach-msm/io.c
++++ b/arch/arm/mach-msm/io.c
+@@@ -42,9 -42,8 +42,8 @@@
+  static struct map_desc msm_io_desc[] __initdata = {
+  	MSM_DEVICE(VIC),
+  	MSM_CHIP_DEVICE(CSR, MSM7X00),
+- 	MSM_DEVICE(DMOV),
+ -	MSM_DEVICE(GPIO1),
+ -	MSM_DEVICE(GPIO2),
+ +	MSM_CHIP_DEVICE(GPIO1, MSM7X00),
+ +	MSM_CHIP_DEVICE(GPIO2, MSM7X00),
+  	MSM_DEVICE(CLK_CTL),
+  #ifdef CONFIG_MSM_DEBUG_UART
+  	MSM_DEVICE(DEBUG_UART),
+@@@ -75,9 -74,8 +74,8 @@@ void __init msm_map_common_io(void
+  static struct map_desc qsd8x50_io_desc[] __initdata = {
+  	MSM_DEVICE(VIC),
+  	MSM_CHIP_DEVICE(CSR, QSD8X50),
+- 	MSM_DEVICE(DMOV),
+ -	MSM_DEVICE(GPIO1),
+ -	MSM_DEVICE(GPIO2),
+ +	MSM_CHIP_DEVICE(GPIO1, QSD8X50),
+ +	MSM_CHIP_DEVICE(GPIO2, QSD8X50),
+  	MSM_DEVICE(CLK_CTL),
+  	MSM_DEVICE(SIRC),
+  	MSM_DEVICE(SCPLL),
+@@@ -134,9 -132,8 +132,8 @@@ void __init msm_map_msm8960_io(void
+  static struct map_desc msm7x30_io_desc[] __initdata = {
+  	MSM_DEVICE(VIC),
+  	MSM_CHIP_DEVICE(CSR, MSM7X30),
+- 	MSM_DEVICE(DMOV),
+ -	MSM_DEVICE(GPIO1),
+ -	MSM_DEVICE(GPIO2),
+ +	MSM_CHIP_DEVICE(GPIO1, MSM7X30),
+ +	MSM_CHIP_DEVICE(GPIO2, MSM7X30),
+  	MSM_DEVICE(CLK_CTL),
+  	MSM_DEVICE(CLK_CTL_SH2),
+  	MSM_DEVICE(AD5),
