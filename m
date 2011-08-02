@@ -1,67 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab1HBMld (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 08:41:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52352 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754255Ab1HBMl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 08:41:28 -0400
-Date: Tue, 2 Aug 2011 08:41:18 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Adam Cozzette <acozzette@cs.hmc.edu>
-Cc: edwin_rong <edwin_rong@realsil.com.cn>, wwang <wei_wang@realsil.com.cn>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: ums-realtek driver uses stack memory for DMA
-Message-ID: <20110802124117.GH2096@zod.bos.redhat.com>
-References: <20110801210905.GC2096@zod.bos.redhat.com>
- <20110802050411.GC3857@[192.168.0.12]>
+	id S1754459Ab1HBMpn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 08:45:43 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46721 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754347Ab1HBMph (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 08:45:37 -0400
+Date: Tue, 2 Aug 2011 16:45:30 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        Marc Zyngier <maz@misterjones.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        kernel-hardening@lists.openwall.com,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: [PATCH] shm: fix a race between shm_exit() and shm_init()
+Message-ID: <20110802124530.GA2543@albatros>
+References: <20110801180151.GA26686@albatros>
+ <20110801112021.25ec9041.akpm@linux-foundation.org>
+ <20110801190341.GA6898@albatros>
+ <CA+55aFw2kHWY1N=ox1er7c-3WL4OA8x0M=Keu7hvAncKUZd1tQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110802050411.GC3857@[192.168.0.12]>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFw2kHWY1N=ox1er7c-3WL4OA8x0M=Keu7hvAncKUZd1tQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 11:04:11PM -0600, Adam Cozzette wrote:
-> On Mon, Aug 01, 2011 at 05:09:06PM -0400, Josh Boyer wrote:
-> > Hello,
-> > 
-> > We have a report that the ums-realtek driver is generating a backtrace
-> > due to using stack variables for DMA buffers.  The backtrace is below
-> > and you can view the bug report here:
-> > https://bugzilla.redhat.com/show_bug.cgi?id=720054
-> > 
-> > Looking through the code, it seems that every call to rts51x_read_mem,
-> > rts51x_write_mem, and rts51x_read_status passes a stack variable to
-> > rts51x_bulk_transport, which then calls usb_stor_bulk_transfer_buf with
-> > this and generates the backtrace.  It is my understanding that the
-> > driver should be passing variables that are not on the stack and have
-> > been allocated with memory that will be suitable for the DMA api (e.g.
-> > kmalloc).
-> > 
-> > Was this missed during the initial review and is anyone working on
-> > adapting the driver to be compliant?
-> 
-> Could you try out this patch if it looks ok to you? I have not tested it because
-> unfortunately I don't have the hardware. Right now it generates some compile
-> warnings like this one:
-> 
-> drivers/usb/storage/realtek_cr.c:419:40: warning: ‘buf[0]’ may be used uninitialized in this function [-Wuninitialized]
-> 
-> It think they are harmless but I didn't see an obvious way to get rid of them,
-> so if you have any suggestions I would be glad to hear them.
-> 
-> This patch changed rts51x_read_mem, rts51x_write_mem, and rts51x_read_status to
-> allocate temporary buffers with kmalloc. This way stack addresses are not used
-> for DMA when these functions call rts51x_bulk_transport.
-> 
-> Signed-off-by: Adam Cozzette <acozzette@cs.hmc.edu>
+Hi,
 
-This looks pretty good.  I backported it to 3.0 and will do a scratch
-build for the bug reporter to test with.
+Manuel, Richard, Marc - can you test this patch, please?
 
-josh
+
+From: Vasiliy Kulikov <segoon@openwall.com>
+Subject: [PATCH] shm: fix a race between shm_exit() and shm_init()
+
+On thread exit shm_exit() is called, it uses shm_ids(ns).rw_mutex.
+It is initialized in shm_init(), but it is not called yet at the moment
+of kernel threads exit.  Some kernel threads are created in
+do_pre_smp_initcalls(), and shm_init() is called in do_initcalls().
+
+Static initialization of shm_ids(init_ipc_ns).rw_mutex fixes the race.
+
+It fixes a kernel oops:
+
+Unable to handle kernel NULL pointer dereference at virtual address 00000000
+...
+[<c0320090>] (__down_write_nested+0x88/0xe0) from [<c015da08>] (exit_shm+0x28/0x48)
+[<c015da08>] (exit_shm+0x28/0x48) from [<c002e550>] (do_exit+0x59c/0x750)
+[<c002e550>] (do_exit+0x59c/0x750) from [<c003eaac>] (____call_usermodehelper+0x13c/0x154)
+[<c003eaac>] (____call_usermodehelper+0x13c/0x154) from [<c000f630>] (kernel_thread_exit+0x0/0x8)
+Code: 1afffffa e597c00c e58d0000 e587d00c (e58cd000)
+
+Reported-by: Manuel Lauss <manuel.lauss@googlemail.com>
+Reported-by: Richard Weinberger <richard@nod.at>
+Reported-by: Marc Zyngier <maz@misterjones.org>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ ipc/msgutil.c |    6 ++++++
+ ipc/shm.c     |   11 ++++++++++-
+ ipc/util.c    |   30 +++++++++++++++++-------------
+ ipc/util.h    |    1 +
+ 4 files changed, 34 insertions(+), 14 deletions(-)
+
+diff --git a/ipc/msgutil.c b/ipc/msgutil.c
+index 8b5ce5d..6da67b6 100644
+--- a/ipc/msgutil.c
++++ b/ipc/msgutil.c
+@@ -20,6 +20,9 @@
+ 
+ DEFINE_SPINLOCK(mq_lock);
+ 
++#define INIT_IPC_SHM_IDS(name) \
++	{ .rw_mutex = __RWSEM_INITIALIZER(name.rw_mutex), }
++
+ /*
+  * The next 2 defines are here bc this is the only file
+  * compiled when either CONFIG_SYSVIPC and CONFIG_POSIX_MQUEUE
+@@ -27,6 +30,9 @@ DEFINE_SPINLOCK(mq_lock);
+  */
+ struct ipc_namespace init_ipc_ns = {
+ 	.count		= ATOMIC_INIT(1),
++	.ids	= {
++		[IPC_SHM_IDS] = INIT_IPC_SHM_IDS(init_ipc_ns.ids[IPC_SHM_IDS]),
++	},
+ #ifdef CONFIG_POSIX_MQUEUE
+ 	.mq_queues_max   = DFLT_QUEUESMAX,
+ 	.mq_msg_max      = DFLT_MSGMAX,
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 9fb044f..7d084a0 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -76,7 +76,16 @@ void shm_init_ns(struct ipc_namespace *ns)
+ 	ns->shm_ctlmni = SHMMNI;
+ 	ns->shm_rmid_forced = 0;
+ 	ns->shm_tot = 0;
+-	ipc_init_ids(&shm_ids(ns));
++
++	/*
++	 * For init_ipc_ns shm_ids().rw_mutex is statically initialized
++	 * as kernel threads should be able to use it in do_exit() before
++	 * shm_init(), which is called on do_initcall()
++	 */
++	if (ns == &init_ipc_ns)
++		__ipc_init_ids(&shm_ids(ns));
++	else
++		ipc_init_ids(&shm_ids(ns));
+ }
+ 
+ /*
+diff --git a/ipc/util.c b/ipc/util.c
+index 75261a3..673dde5 100644
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -108,31 +108,35 @@ static int __init ipc_init(void)
+ }
+ __initcall(ipc_init);
+ 
+-/**
+- *	ipc_init_ids		-	initialise IPC identifiers
+- *	@ids: Identifier set
+- *
+- *	Set up the sequence range to use for the ipc identifier range (limited
+- *	below IPCMNI) then initialise the ids idr.
+- */
+- 
+-void ipc_init_ids(struct ipc_ids *ids)
++void __ipc_init_ids(struct ipc_ids *ids)
+ {
+-	init_rwsem(&ids->rw_mutex);
+-
+ 	ids->in_use = 0;
+ 	ids->seq = 0;
+ 	{
+ 		int seq_limit = INT_MAX/SEQ_MULTIPLIER;
+ 		if (seq_limit > USHRT_MAX)
+ 			ids->seq_max = USHRT_MAX;
+-		 else
+-		 	ids->seq_max = seq_limit;
++		else
++			ids->seq_max = seq_limit;
+ 	}
+ 
+ 	idr_init(&ids->ipcs_idr);
+ }
+ 
++/**
++ *	ipc_init_ids		-	initialise IPC identifiers
++ *	@ids: Identifier set
++ *
++ *	Set up the sequence range to use for the ipc identifier range (limited
++ *	below IPCMNI) then initialise the ids idr.
++ */
++
++void ipc_init_ids(struct ipc_ids *ids)
++{
++	init_rwsem(&ids->rw_mutex);
++	__ipc_init_ids(ids);
++}
++
+ #ifdef CONFIG_PROC_FS
+ static const struct file_operations sysvipc_proc_fops;
+ /**
+diff --git a/ipc/util.h b/ipc/util.h
+index 6f5c20b..8bbcd9c 100644
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -80,6 +80,7 @@ struct seq_file;
+ struct ipc_ids;
+ 
+ void ipc_init_ids(struct ipc_ids *);
++void __ipc_init_ids(struct ipc_ids *ids);
+ #ifdef CONFIG_PROC_FS
+ void __init ipc_init_proc_interface(const char *path, const char *header,
+ 		int ids, int (*show)(struct seq_file *, void *));
+-- 
+1.7.0.4
+
