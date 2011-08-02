@@ -1,99 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab1HBBSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 21:18:10 -0400
-Received: from c60.cesmail.net ([216.154.195.49]:60120 "EHLO c60.cesmail.net"
+	id S1753229Ab1HBBS4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 21:18:56 -0400
+Received: from fieldses.org ([174.143.236.118]:60933 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752527Ab1HBBR7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 21:17:59 -0400
-Message-ID: <20110801211835.3tq9q5o50kwkk0c0-cebfxv@webmail.spamcop.net>
-Date: Mon, 01 Aug 2011 21:18:35 -0400
-From: Pavel Roskin <proski@gnu.org>
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Cc: linux-wireless <linux-wireless@vger.kernel.org>,
-        Julia Lawall <julia@diku.dk>, Nicolas Palix <Nicolas.Palix@inria.fr>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Compat-wireless release for 2011-08-01 is (NOT) baked
-References: <20110801190401.100CA40ED1@repository3.orbit-lab.org>
-	<4E370ECF.80509@gnu.org>
-	<CAB=NE6WyTKPx+0yt5P1ponajKUd70eqFJQLwH8s1_2hfPkoBTA@mail.gmail.com>
-In-Reply-To: <CAB=NE6WyTKPx+0yt5P1ponajKUd70eqFJQLwH8s1_2hfPkoBTA@mail.gmail.com>
+	id S1752527Ab1HBBSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 21:18:53 -0400
+Date: Mon, 1 Aug 2011 21:18:52 -0400
+To: Rob Landley <rob@landley.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Here's a unified kernel git repo covering 0.0.1 to the present.
+Message-ID: <20110802011851.GC16305@fieldses.org>
+References: <4E2A43F5.1020209@landley.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=UTF-8;
-	DelSp="Yes";
-	format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+In-Reply-To: <4E2A43F5.1020209@landley.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting "Luis R. Rodriguez" <mcgrof@gmail.com>:
+On Fri, Jul 22, 2011 at 10:45:57PM -0500, Rob Landley wrote:
+> Ever done a "git annotate" that stops at 2.6.12-rc2, and wanted to see 
+> the full history?  Here's an repository that goes all the way back to
+> 0.0.1 (through bitkeeper and all those old tarballs), which otherwise
+> works as normal (git pull updates it from Linus's tree, you can commit
+> to it and branch from it, etc)
+> 
+> Here's the tarball:
+> 
+>   http://www.kernel.org/pub/linux/kernel/people/landley/linux-fullhist.tar.bz2
+> 
+> To install it:
+> 
+>   1) Download, extract, cd into the directory.
+>   2) git checkout -f
+>   3) git pull
 
-> Question then is -- are we willing to require spatch for building the
-> tarballs? I'm OK with this, anyone else?
+Note if you use git-replace instead of grafts then you should be able to
+post it as a normal clone-able git tree.
 
-Good question!  I think it may be worth it, but let's consider the arguments.
+--b.
 
-Against:
-
-coccinelle is not nearly as widespread as other required tools (gcc,  
-make, patch).
-
-coccinelle depends on ocaml.  That's a whole programming language that  
-many systems (including my home system with Fedora 15) don't have  
-installed by default, even if the "development" was selected at the  
-system install.
-
-I don't know the status of coccinelle and ocaml packaging on various  
-distros.  Asking users to compile both to have the latest wireless  
-drivers is pretty cruel.
-
-Even Fedora 15, as I found out while writing this message, mispackages  
-coccinelle.  The dependency on ocaml-findlib is missing, so coccinelle  
-is not functional when installed by yum.  I'm going to report is as  
-soon as possible.
-
-There are two names, spatch and coccinelle.  That's going to be  
-confusing for the users.  They won't know which package to look for.   
-Some will look for both.
-
-For:
-
-There is no need to have any special variant of coccinelle to  
-cross-compile compat-wireless.
-
-Popularization of coccinelle and ocaml may be a good thing.  More  
-users means more eyeballs looking for bugs.
-
-Patches will become more clear, at least for those knowing the basics  
-of coccinelle syntax.  Non-trivial changes won't be buried in trivial  
-ones.
-
-compat-wireless will be more robust.
-
-It may be possible to port compat-wireless to more kernels.  Or maybe  
-more subsystems will be backported.  Replacing even large amounts of  
-code would become easier.
-
-While some people can be inconvenienced by the need to install  
-coccinelle, it's a solvable problem for most users.  On the other  
-hand, backporting compat-wireless to older kernels or backporting more  
-features is something that very few people can do, and those people  
-should not be bothered with trivial stuff too much.
-
-My experience shows that placing too much boring stuff on the  
-shoulders of the developers is detrimental to the users in the long  
-run.  It's one thing to require extensive testing, which can be  
-automated, or to require compatibility with older tools, which can be  
-easily achieved.  On the other hand, requiring to update huge patches  
-manually is boring and error prone.  Make the developers busy with  
-boring stuff, and they will stop making improvements that nobody else  
-can do.
-
--- 
-Regards,
-Pavel Roskin
+> 
+> Then use as normal.
+> 
+> This is based on the work of http://padator.org/linux.php with some
+> trivial cleanups.
+> 
+> Rob
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
