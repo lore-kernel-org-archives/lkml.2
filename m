@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750811Ab1HBEFR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 00:05:17 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:54750 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab1HBEFM (ORCPT
+	id S1750839Ab1HBEKh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 00:10:37 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64952 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab1HBEKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 00:05:12 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=Ri+rgUZKkkXfmccHR0Tjpz5QK7AwxxpEmzfYj0liR/2OmS/nQ7paby1vJrwM4Uk8m
-	zACSEyy5Hg59Zb+SUst8Q==
-Date: Mon, 1 Aug 2011 21:05:05 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Pekka Enberg <penberg@kernel.org>
-cc: Christoph Lameter <cl@linux.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
-In-Reply-To: <CAOJsxLHB9jPNyU2qztbEHG4AZWjauCLkwUVYr--8PuBBg1=MCA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1108012101310.6871@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1107290145080.3279@tiger> <alpine.DEB.2.00.1107291002570.16178@router.home> <alpine.DEB.2.00.1107311136150.12538@chino.kir.corp.google.com> <alpine.DEB.2.00.1107311253560.12538@chino.kir.corp.google.com> <1312145146.24862.97.camel@jaguar>
- <alpine.DEB.2.00.1107311426001.944@chino.kir.corp.google.com> <CAOJsxLHB9jPNyU2qztbEHG4AZWjauCLkwUVYr--8PuBBg1=MCA@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 2 Aug 2011 00:10:31 -0400
+Message-ID: <4E3778AD.8020306@landley.net>
+Date: Mon, 01 Aug 2011 23:10:21 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Here's a unified kernel git repo covering 0.0.1 to the present.
+References: <4E2A43F5.1020209@landley.net> <20110802011851.GC16305@fieldses.org>
+In-Reply-To: <20110802011851.GC16305@fieldses.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Aug 2011, Pekka Enberg wrote:
-
-> Btw, I haven't measured this recently but in my testing, SLAB has
-> pretty much always used more memory than SLUB. So 'throwing more
-> memory at the problem' is definitely a reasonable approach for SLUB.
+On 08/01/2011 08:18 PM, J. Bruce Fields wrote:
+> On Fri, Jul 22, 2011 at 10:45:57PM -0500, Rob Landley wrote:
+>> Ever done a "git annotate" that stops at 2.6.12-rc2, and wanted to see 
+>> the full history?  Here's an repository that goes all the way back to
+>> 0.0.1 (through bitkeeper and all those old tarballs), which otherwise
+>> works as normal (git pull updates it from Linus's tree, you can commit
+>> to it and branch from it, etc)
+>>
+>> Here's the tarball:
+>>
+>>   http://www.kernel.org/pub/linux/kernel/people/landley/linux-fullhist.tar.bz2
+>>
+>> To install it:
+>>
+>>   1) Download, extract, cd into the directory.
+>>   2) git checkout -f
+>>   3) git pull
 > 
+> Note if you use git-replace instead of grafts then you should be able to
+> post it as a normal clone-able git tree.
+> 
+> --b.
 
-Yes, slub _did_ use more memory than slab until the alignment of 
-struct page.  That cost an additional 128MB on each of these 64GB 
-machines, while the total slab usage on the client machine systemwide is 
-~75MB while running netperf TCP_RR with 160 threads.
+*shrug*  It worked for me?  I posted a link to the script it came from,
+you could ping that guy or tweak his script to do what you want.
+
+My general response to git trees is to convert them to mercurial because
+git's UI is utterly horrible, and its infrastructure overcomplicated.
+That said, it's what the kernel uses, so it's ubiquitous.
+
+I got pointed at another full history git repo earlier today, maybe
+it'll work better for you?  Haven't tried it myself, I'm pretty happy
+with the one I posted.
+
+  https://twitter.com/mirell/status/98086867580354560
+
+Rob
