@@ -1,944 +1,1714 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480Ab1HBHDe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 03:03:34 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57454 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048Ab1HBHD0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 03:03:26 -0400
-Message-ID: <4E37A13B.50106@bweb.at>
-Date: Tue, 02 Aug 2011 09:03:23 +0200
-From: Stephan Bertl <stephan@bweb.at>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110626 Icedove/3.1.11
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: PROBLEM: ThinkPad Edge: psmouse.c: TouchPad at isa0060/serio4/input0
- lost sync at byte 1
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1751773Ab1HBHEk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 03:04:40 -0400
+Received: from mail.perches.com ([173.55.12.10]:4449 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751048Ab1HBHEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 03:04:35 -0400
+From: Joe Perches <joe@perches.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH V2] ext4: Use current logging styles with "EXT4-fs: " prefix
+Date: Tue,  2 Aug 2011 00:04:25 -0700
+Message-Id: <bf4d8bd075e22d1dff35ad53c27a9794a6acb9ba.1312268536.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.131.g99019
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[1.]
-psmouse.c: TouchPad at isa0060/serio4/input0 lost sync at byte 1
+Always use "EXT4-fs: " logging message prefix so dmesg can be more
+easily grepped for EXT4 specific messages.
 
-[2.]
-Hi, i have got a ThinkPad Edge 11 with TouchPad and TrackPoint, and the 
-TouchPad repeatedly looses sync, so it ´hangs for some seconds, i tried 
-various workarounds with kernel parameters like i8042.noloop 
-i8042.nomux=1 psmouse.proto=imps etc... nothing really works.
+Add #define pr_fmt(fmt) "EXT4-fs: " fmt
+Add ccflags-$(CONFIG-EXT4_FS) to always enable -DDEBUG for pr_debug.
+Convert printks to pr_<level>.  Convert some bare printks to pr_cont.
+Consolidate split printks used in internal ext4_<warning|error>.
+Coalesce some long formats.
+Convert embedded function names to "%s: ", __func__.
+Neaten macro definitions that use fmt, arg...
+Correct macro definition of ext4_grp_locked_error to add ino and block.
+Add do {} while (0) to some macros, delete it from single lines.
+Add terminating newlines to a couple of messages.
+Remove terminating newline from ext4_warning use.
+Correct grammar in a few messages.
+Add casts to (unsigned long long) in 3 messages in xattr.c
+Miscellaneous whitespace neatening.
 
-GRUB_CMDLINE_LINUX="acpi_osi=linux noapic i8042.nomux=1 
-psmouse.proto=imps i8042.noloop"
+Signed-off-by: Joe Perches <joe@perches.com>
 
-I tried these parameters, now it looses sync too.
-
-psmouse.c: TouchPad at isa0060/serio1/input0 lost synchronization, 
-throwing 2 bytes away.
-
-[3.]
-psmouse, lost sync, Thinkpad, Edge, ThinkPadEdge
-
-[4.]
-Linux version 3.0.0 (root@stephan-thinkpad) (gcc version 4.6.1 (Debian 
-4.6.1-4) ) #2 SMP Thu Jul 28 21:35:13 CEST 2011
-
-[5.]
-no oops, but /var/log/messages
-
-Aug  2 08:55:01 stephan-thinkpad kernel: [  638.530041] psmouse.c: 
-TouchPad at isa0060/serio4/input0 lost sync at byte 4
-Aug  2 08:55:01 stephan-thinkpad kernel: [  638.531367] psmouse.c: 
-TouchPad at isa0060/serio4/input0 lost sync at byte 1
-Aug  2 08:55:01 stephan-thinkpad kernel: [  638.543811] psmouse.c: 
-TouchPad at isa0060/serio4/input0 - driver resynched.
-
-[6.]
 ---
 
-[7.]
-[7.1.]
----
-[7.2.]
-processor	: 0
-vendor_id	: AuthenticAMD
-cpu family	: 16
-model		: 6
-model name	: AMD Athlon(tm) II Neo K345 Dual-Core Processor
-stepping	: 3
-cpu MHz		: 800.000
-cache size	: 1024 KB
-physical id	: 0
-siblings	: 2
-core id		: 0
-cpu cores	: 2
-apicid		: 0
-initial apicid	: 0
-fpu		: yes
-fpu_exception	: yes
-cpuid level	: 5
-wp		: yes
-flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov 
-pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt 
-pdpe1gb rdtscp lm 3dnowext 3dnow constant_tsc rep_good nopl nonstop_tsc 
-extd_apicid pni monitor cx16 popcnt lahf_lm cmp_legacy svm extapic 
-cr8_legacy abm sse4a 3dnowprefetch osvw ibs skinit wdt nodeid_msr npt 
-lbrv svm_lock nrip_save
-bogomips	: 2794.36
-TLB size	: 1024 4K pages
-clflush size	: 64
-cache_alignment	: 64
-address sizes	: 48 bits physical, 48 bits virtual
-power management: ts ttp tm stc 100mhzsteps hwpstate
+Updated against Linus' commit c027a474a680
+with a couple more cleanups for new changes.
 
-processor	: 1
-vendor_id	: AuthenticAMD
-cpu family	: 16
-model		: 6
-model name	: AMD Athlon(tm) II Neo K345 Dual-Core Processor
-stepping	: 3
-cpu MHz		: 800.000
-cache size	: 1024 KB
-physical id	: 0
-siblings	: 2
-core id		: 1
-cpu cores	: 2
-apicid		: 1
-initial apicid	: 1
-fpu		: yes
-fpu_exception	: yes
-cpuid level	: 5
-wp		: yes
-flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov 
-pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt 
-pdpe1gb rdtscp lm 3dnowext 3dnow constant_tsc rep_good nopl nonstop_tsc 
-extd_apicid pni monitor cx16 popcnt lahf_lm cmp_legacy svm extapic 
-cr8_legacy abm sse4a 3dnowprefetch osvw ibs skinit wdt nodeid_msr npt 
-lbrv svm_lock nrip_save
-bogomips	: 2794.43
-TLB size	: 1024 4K pages
-clflush size	: 64
-cache_alignment	: 64
-address sizes	: 48 bits physical, 48 bits virtual
-power management: ts ttp tm stc 100mhzsteps hwpstate
+ fs/ext4/Makefile         |    2 +
+ fs/ext4/balloc.c         |   12 ++-
+ fs/ext4/block_validity.c |   11 ++-
+ fs/ext4/dir.c            |    5 +-
+ fs/ext4/ext4.h           |  102 ++++++++++++-----------
+ fs/ext4/extents.c        |   55 ++++++-------
+ fs/ext4/ialloc.c         |   41 ++++-----
+ fs/ext4/indirect.c       |    6 +-
+ fs/ext4/inode.c          |   28 ++++---
+ fs/ext4/mballoc.c        |   45 +++++------
+ fs/ext4/mballoc.h        |   19 ++--
+ fs/ext4/move_extent.c    |   24 +++---
+ fs/ext4/namei.c          |   72 ++++++++--------
+ fs/ext4/page-io.c        |    6 +-
+ fs/ext4/resize.c         |   30 +++----
+ fs/ext4/super.c          |  208 ++++++++++++++++++++++++++--------------------
+ fs/ext4/xattr.c          |   47 ++++++----
+ 17 files changed, 380 insertions(+), 333 deletions(-)
 
-[7.3.]
-cryptd 14517 0 - Live 0xffffffffa06b1000
-aes_x86_64 16796 2 - Live 0xffffffffa06ab000
-aes_generic 33026 1 aes_x86_64, Live 0xffffffffa06a1000
-cpufreq_powersave 12454 0 - Live 0xffffffffa069c000
-cpufreq_stats 12777 0 - Live 0xffffffffa0697000
-powernow_k8 17329 0 - Live 0xffffffffa0691000
-mperf 12411 1 powernow_k8, Live 0xffffffffa068c000
-cpufreq_userspace 12576 0 - Live 0xffffffffa0687000
-cpufreq_conservative 13105 0 - Live 0xffffffffa0664000
-parport_pc 26287 0 - Live 0xffffffffa067f000
-ppdev 16782 0 - Live 0xffffffffa0673000
-lp 17074 0 - Live 0xffffffffa0679000
-parport 35743 3 parport_pc,ppdev,lp, Live 0xffffffffa0669000
-rfcomm 40998 8 - Live 0xffffffffa0658000
-bnep 17470 2 - Live 0xffffffffa064e000
-binfmt_misc 16949 1 - Live 0xffffffffa0640000
-uinput 17360 1 - Live 0xffffffffa0648000
-fuse 69746 3 - Live 0xffffffffa062d000
-ip6table_filter 12540 0 - Live 0xffffffffa0628000
-ip6_tables 26056 1 ip6table_filter, Live 0xffffffffa061c000
-xt_tcpudp 12527 2 - Live 0xffffffffa0617000
-nf_conntrack_ipv4 18081 5 - Live 0xffffffffa0608000
-nf_defrag_ipv4 12483 1 nf_conntrack_ipv4, Live 0xffffffffa0603000
-xt_state 12503 5 - Live 0xffffffffa060e000
-nf_conntrack 64016 2 nf_conntrack_ipv4,xt_state, Live 0xffffffffa05f2000
-iptable_filter 12536 1 - Live 0xffffffffa054d000
-ip_tables 25967 1 iptable_filter, Live 0xffffffffa05ea000
-x_tables 22971 6 
-ip6table_filter,ip6_tables,xt_tcpudp,xt_state,iptable_filter,ip_tables, 
-Live 0xffffffffa0530000
-nfsd 299197 2 - Live 0xffffffffa059f000
-exportfs 12567 1 nfsd, Live 0xffffffffa0520000
-nfs 296537 0 - Live 0xffffffffa0555000
-lockd 79032 2 nfsd,nfs, Live 0xffffffffa0538000
-fscache 36033 1 nfs, Live 0xffffffffa0526000
-auth_rpcgss 44889 2 nfsd,nfs, Live 0xffffffffa044d000
-nfs_acl 12511 2 nfsd,nfs, Live 0xffffffffa02c5000
-sunrpc 191306 6 nfsd,nfs,lockd,auth_rpcgss,nfs_acl, Live 0xffffffffa04f0000
-ext2 70675 1 - Live 0xffffffffa04dd000
-loop 26506 0 - Live 0xffffffffa0445000
-snd_hda_codec_hdmi 30348 1 - Live 0xffffffffa043c000
-sg 29855 0 - Live 0xffffffffa04d4000
-usb_storage 47847 0 - Live 0xffffffffa04c7000
-uas 17272 0 - Live 0xffffffffa049e000
-btusb 17289 2 - Live 0xffffffffa0483000
-bluetooth 136092 23 rfcomm,bnep,btusb, Live 0xffffffffa04a4000
-uvcvideo 65871 0 - Live 0xffffffffa048c000
-videodev 74513 1 uvcvideo, Live 0xffffffffa046f000
-media 18109 2 uvcvideo,videodev, Live 0xffffffffa024f000
-v4l2_compat_ioctl32 16492 1 videodev, Live 0xffffffffa0348000
-arc4 12458 2 - Live 0xffffffffa034e000
-snd_hda_codec_conexant 53364 1 - Live 0xffffffffa045c000
-radeon 938309 2 - Live 0xffffffffa0355000
-snd_hda_intel 26018 1 - Live 0xffffffffa02bd000
-joydev 17063 0 - Live 0xffffffffa02a5000
-snd_hda_codec 80167 3 
-snd_hda_codec_hdmi,snd_hda_codec_conexant,snd_hda_intel, Live 
-0xffffffffa0333000
-rtl8192ce 72599 0 - Live 0xffffffffa0320000
-rtl8192c_common 60268 1 rtl8192ce, Live 0xffffffffa0310000
-rtlwifi 93087 1 rtl8192ce, Live 0xffffffffa02f8000
-ttm 56328 1 radeon, Live 0xffffffffa0296000
-snd_hwdep 13109 1 snd_hda_codec, Live 0xffffffffa023b000
-ohci_hcd 26418 0 - Live 0xffffffffa028e000
-drm_kms_helper 35137 1 radeon, Live 0xffffffffa0231000
-drm 182635 4 radeon,ttm,drm_kms_helper, Live 0xffffffffa02ca000
-i2c_algo_bit 12751 1 radeon, Live 0xffffffffa022c000
-thinkpad_acpi 65291 0 - Live 0xffffffffa02ac000
-snd_pcm 75241 3 snd_hda_codec_hdmi,snd_hda_intel,snd_hda_codec, Live 
-0xffffffffa027a000
-ehci_hcd 43856 0 - Live 0xffffffffa0215000
-i2c_piix4 12536 0 - Live 0xffffffffa0227000
-k10temp 12611 0 - Live 0xffffffffa0222000
-i2c_core 23736 6 
-videodev,radeon,drm_kms_helper,drm,i2c_algo_bit,i2c_piix4, Live 
-0xffffffffa0162000
-usbcore 139547 8 
-usb_storage,uas,btusb,uvcvideo,rtlwifi,ohci_hcd,ehci_hcd, Live 
-0xffffffffa0256000
-snd_seq 52897 0 - Live 0xffffffffa0241000
-evdev 17362 17 - Live 0xffffffffa01b8000
-nvram 12997 1 thinkpad_acpi, Live 0xffffffffa01fa000
-snd_timer 26768 2 snd_pcm,snd_seq, Live 0xffffffffa020d000
-snd_seq_device 13132 1 snd_seq, Live 0xffffffffa0173000
-mac80211 214045 3 rtl8192ce,rtl8192c_common,rtlwifi, Live 0xffffffffa01c4000
-pcspkr 12579 0 - Live 0xffffffffa0178000
-video 17628 0 - Live 0xffffffffa01be000
-r8169 45590 0 - Live 0xffffffffa0200000
-psmouse 59192 0 - Live 0xffffffffa017d000
-serio_raw 12806 0 - Live 0xffffffffa016e000
-mii 12675 1 r8169, Live 0xffffffffa0169000
-cfg80211 164569 2 rtlwifi,mac80211, Live 0xffffffffa018e000
-snd 60566 12 
-snd_hda_codec_hdmi,snd_hda_codec_conexant,snd_hda_intel,snd_hda_codec,snd_hwdep,thinkpad_acpi,snd_pcm,snd_seq,snd_timer,snd_seq_device, 
-Live 0xffffffffa0141000
-edac_core 43315 0 - Live 0xffffffffa0156000
-soundcore 13026 1 snd, Live 0xffffffffa013c000
-edac_mce_amd 21199 0 - Live 0xffffffffa0129000
-ac 12624 0 - Live 0xffffffffa0121000
-battery 13109 0 - Live 0xffffffffa0151000
-processor 27793 1 powernow_k8, Live 0xffffffffa0114000
-button 12937 0 - Live 0xffffffffa0133000
-wmi 17339 0 - Live 0xffffffffa010e000
-power_supply 13475 3 radeon,ac,battery, Live 0xffffffffa011c000
-snd_page_alloc 17065 2 snd_hda_intel,snd_pcm, Live 0xffffffffa0108000
-rfkill 18830 5 bluetooth,thinkpad_acpi,cfg80211, Live 0xffffffffa009b000
-ext4 361572 2 - Live 0xffffffffa00ae000
-mbcache 12985 2 ext2,ext4, Live 0xffffffffa00a5000
-jbd2 73015 1 ext4, Live 0xffffffffa0088000
-crc16 12343 2 bluetooth,ext4, Live 0xffffffffa0032000
-sd_mod 39758 5 - Live 0xffffffffa007d000
-crc_t10dif 12348 1 sd_mod, Live 0xffffffffa0071000
-ahci 25089 4 - Live 0xffffffffa0069000
-libahci 22685 1 ahci, Live 0xffffffffa0037000
-thermal 17383 0 - Live 0xffffffffa002c000
-thermal_sys 22005 3 video,processor,thermal, Live 0xffffffffa0076000
-libata 147989 2 ahci,libahci, Live 0xffffffffa003f000
-scsi_mod 173942 5 sg,usb_storage,uas,sd_mod,libata, Live 0xffffffffa0000000
-
-[7.4.]
-cat /proc/ioports
-0000-0cf7 : PCI Bus 0000:00
-   0000-001f : dma1
-   0020-0021 : pic1
-   0040-0043 : timer0
-   0050-0053 : timer1
-   0060-0060 : keyboard
-   0062-0062 : EC data
-   0064-0064 : keyboard
-   0066-0066 : EC cmd
-   0070-0071 : rtc0
-   0080-008f : dma page reg
-   00a0-00a1 : pic2
-   00c0-00df : dma2
-   00f0-00ff : fpu
-   0220-022f : pnp 00:08
-   03c0-03df : vga+
-   040b-040b : pnp 00:08
-   04d0-04d1 : pnp 00:08
-   04d6-04d6 : pnp 00:08
-   0530-0537 : pnp 00:08
-   087f-087f : pnp 00:08
-   0c00-0c01 : pnp 00:08
-   0c14-0c14 : pnp 00:08
-   0c50-0c52 : pnp 00:08
-   0c6c-0c6c : pnp 00:08
-   0c6f-0c6f : pnp 00:08
-   0cd0-0cd1 : pnp 00:08
-   0cd2-0cd3 : pnp 00:08
-   0cd4-0cd5 : pnp 00:08
-   0cd6-0cd7 : pnp 00:08
-   0cd8-0cdf : pnp 00:08
-0cf8-0cff : PCI conf1
-0d00-ffff : PCI Bus 0000:00
-   0f40-0f47 : pnp 00:08
-   0f50-0f51 : pnp 00:01
-   8000-805f : pnp 00:08
-     8000-8003 : ACPI PM1a_EVT_BLK
-     8004-8005 : ACPI PM1a_CNT_BLK
-     8008-800b : ACPI PM_TMR
-     8010-8015 : ACPI CPU throttle
-     8020-8027 : ACPI GPE0_BLK
-     8040-8047 : piix4_smbus
-   8100-81ff : pnp 00:08
-   8200-82ff : pnp 00:08
-     8200-8200 : ACPI PM2_CNT_BLK
-   8400-840f : 0000:00:11.0
-     8400-840f : ahci
-   8410-8413 : 0000:00:11.0
-     8410-8413 : ahci
-   8420-8427 : 0000:00:11.0
-     8420-8427 : ahci
-   8430-8433 : 0000:00:11.0
-     8430-8433 : ahci
-   8440-8447 : 0000:00:11.0
-     8440-8447 : ahci
-   9000-9fff : PCI Bus 0000:01
-     9000-90ff : 0000:01:05.0
-   a000-bfff : PCI Bus 0000:02
-     bc00-bcff : 0000:02:00.0
-       bc00-bcff : r8169
-   c000-cfff : PCI Bus 0000:08
-     c000-c0ff : 0000:08:00.0
-       c000-c0ff : rtlwifi
-
-
-cat /proc/iomem
-00000000-0000ffff : reserved
-00010000-0009dbff : System RAM
-0009dc00-0009ffff : reserved
-000a0000-000bffff : PCI Bus 0000:00
-000c0000-000cedff : Video ROM
-000cf000-000cffff : Adapter ROM
-000d0000-000fffff : reserved
-   000f0000-000fffff : System ROM
-00100000-afe8dfff : System RAM
-   01000000-013d1d89 : Kernel code
-   013d1d8a-0167147f : Kernel data
-   01710000-017dcfff : Kernel bss
-   a4000000-a7ffffff : GART
-afe8e000-afe9ffff : ACPI Non-volatile Storage
-afea0000-afeb0fff : ACPI Tables
-afeb1000-afeb2fff : ACPI Non-volatile Storage
-afeb3000-afefefff : reserved
-afeff000-afefffff : RAM buffer
-aff00000-bfffffff : reserved
-c0000000-dfffffff : PCI Bus 0000:00
-   c0000000-cfffffff : PCI Bus 0000:01
-     c0000000-cfffffff : 0000:01:05.0
-   d0000000-d03fffff : PCI Bus 0000:02
-     d0000000-d0003fff : 0000:02:00.0
-       d0000000-d0003fff : r8169
-     d0020000-d003ffff : 0000:02:00.0
-     d0200000-d0200fff : 0000:02:00.0
-       d0200000-d0200fff : r8169
-   d0400000-d05fffff : PCI Bus 0000:01
-     d0400000-d04fffff : 0000:01:05.0
-     d0500000-d050ffff : 0000:01:05.0
-     d0510000-d0513fff : 0000:01:05.1
-       d0510000-d0513fff : ICH HD audio
-   d0600000-d06fffff : PCI Bus 0000:08
-     d0600000-d0603fff : 0000:08:00.0
-       d0600000-d0603fff : rtlwifi
-   d0700000-d07fffff : PCI Bus 0000:02
-   d0900000-d0903fff : 0000:00:14.2
-     d0900000-d0903fff : ICH HD audio
-   d0904000-d0904fff : 0000:00:12.0
-     d0904000-d0904fff : ohci_hcd
-   d0905000-d0905fff : 0000:00:13.0
-     d0905000-d0905fff : ohci_hcd
-   d0906000-d09060ff : 0000:00:12.2
-     d0906000-d09060ff : ehci_hcd
-   d0906400-d09064ff : 0000:00:13.2
-     d0906400-d09064ff : ehci_hcd
-   d0906800-d0906bff : 0000:00:11.0
-     d0906800-d0906bff : ahci
-f0000000-ffffffff : PCI Bus 0000:00
-   fec00000-fec0ffff : reserved
-     fec00000-fec003ff : IOAPIC 0
-   fec10000-fec1001f : pnp 00:09
-   fed00000-fed003ff : HPET 0
-     fed00000-fed003ff : pnp 00:09
-   fed61000-fed613ff : pnp 00:09
-   fed80000-fed80fff : pnp 00:09
-   fee00000-fee00fff : Local APIC
-     fee00000-fee00fff : reserved
-       fee00000-fee00fff : pnp 00:01
-   fff00000-ffffffff : reserved
-100000000-13fffffff : System RAM
-
-[7.5.]
-00:00.0 Host bridge: Advanced Micro Devices [AMD] RS880 Host Bridge
-	Subsystem: Lenovo Device 21ca
-	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- 
-<TAbort- <MAbort+ >SERR- <PERR- INTx-
-	Latency: 0
-	Capabilities: [c4] HyperTransport: Slave or Primary Interface
-		Command: BaseUnitID=0 UnitCnt=12 MastHost- DefDir- DUL-
-		Link Control 0: CFlE- CST- CFE- <LkFail- Init+ EOC- TXO- <CRCErr=0 
-IsocEn- LSEn+ ExtCTL- 64b-
-		Link Config 0: MLWI=16bit DwFcIn- MLWO=16bit DwFcOut- LWI=16bit 
-DwFcInEn- LWO=16bit DwFcOutEn-
-		Link Control 1: CFlE- CST- CFE- <LkFail+ Init- EOC+ TXO+ <CRCErr=0 
-IsocEn- LSEn- ExtCTL- 64b-
-		Link Config 1: MLWI=8bit DwFcIn- MLWO=8bit DwFcOut- LWI=8bit DwFcInEn- 
-LWO=8bit DwFcOutEn-
-		Revision ID: 3.00
-		Link Frequency 0: 1.0GHz
-		Link Error 0: <Prot- <Ovfl- <EOC- CTLTm-
-		Link Frequency Capability 0: 200MHz+ 300MHz- 400MHz+ 500MHz- 600MHz+ 
-800MHz+ 1.0GHz+ 1.2GHz- 1.4GHz- 1.6GHz- Vend-
-		Feature Capability: IsocFC- LDTSTOP+ CRCTM- ECTLT- 64bA- UIDRD-
-		Link Frequency 1: 200MHz
-		Link Error 1: <Prot- <Ovfl- <EOC- CTLTm-
-		Link Frequency Capability 1: 200MHz- 300MHz- 400MHz- 500MHz- 600MHz- 
-800MHz- 1.0GHz- 1.2GHz- 1.4GHz- 1.6GHz- Vend-
-		Error Handling: PFlE- OFlE- PFE- OFE- EOCFE- RFE- CRCFE- SERRFE- CF- 
-RE- PNFE- ONFE- EOCNFE- RNFE- CRCNFE- SERRNFE-
-		Prefetchable memory behind bridge Upper: 00-00
-		Bus Number: 00
-	Capabilities: [54] HyperTransport: UnitID Clumping
-	Capabilities: [40] HyperTransport: Retry Mode
-	Capabilities: [9c] HyperTransport: #1a
-	Capabilities: [f8] HyperTransport: #1c
-
-00:01.0 PCI bridge: Advanced Micro Devices [AMD] RS780/RS880 PCI to PCI 
-bridge (int gfx) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- 
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 64
-	Bus: primary=00, secondary=01, subordinate=01, sec-latency=64
-	I/O behind bridge: 00009000-00009fff
-	Memory behind bridge: d0400000-d05fffff
-	Prefetchable memory behind bridge: 00000000c0000000-00000000cfffffff
-	Secondary status: 66MHz+ FastB2B- ParErr- DEVSEL=medium >TAbort- 
-<TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity- SERR- NoISA+ VGA+ MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: [44] HyperTransport: MSI Mapping Enable+ Fixed+
-	Capabilities: [b0] Subsystem: Advanced Micro Devices [AMD] RS780/RS880 
-PCI to PCI bridge (int gfx)
-
-00:04.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge 
-(PCIE port 0) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
-<MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 32 bytes
-	Bus: primary=00, secondary=02, subordinate=07, sec-latency=0
-	I/O behind bridge: 0000a000-0000bfff
-	Memory behind bridge: d0700000-d07fffff
-	Prefetchable memory behind bridge: 00000000d0000000-00000000d03fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
-<MAbort- <SERR- <PERR-
-	BridgeCtl: Parity- SERR- NoISA+ VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: [50] Power Management version 3
-		Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-	Capabilities: [58] Express (v2) Root Port (Slot+), MSI 00
-		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
-			ExtTag+ RBE+ FLReset-
-		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-			MaxPayload 128 bytes, MaxReadReq 128 bytes
-		DevSta:	CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
-		LnkCap:	Port #1, Speed 5GT/s, Width x1, ASPM L0s L1, Latency L0 <64ns, 
-L1 <1us
-			ClockPM- Surprise- LLActRep+ BwNot+
-		LnkCtl:	ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
-			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive+ 
-BWMgmt+ ABWMgmt-
-		SltCap:	AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd- HotPlug- Surprise-
-			Slot #4, PowerLimit 25.000W; Interlock- NoCompl+
-		SltCtl:	Enable: AttnBtn- PwrFlt- MRL- PresDet- CmdCplt- HPIrq- LinkChg-
-			Control: AttnInd Unknown, PwrInd Unknown, Power- Interlock-
-		SltSta:	Status: AttnBtn- PowerFlt- MRL- CmdCplt- PresDet+ Interlock-
-			Changed: MRL- PresDet+ LinkState+
-		RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- PMEIntEna+ CRSVisible-
-		RootCap: CRSVisible-
-		RootSta: PME ReqID 0000, PMEStatus- PMEPending-
-		DevCap2: Completion Timeout: Not Supported, TimeoutDis- ARIFwd-
-		DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis- ARIFwd-
-		LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-, 
-Selectable De-emphasis: -6dB
-			 Transmit Margin: Normal Operating Range, EnterModifiedCompliance- 
-ComplianceSOS-
-			 Compliance De-emphasis: -6dB
-		LnkSta2: Current De-emphasis Level: -6dB
-	Capabilities: [a0] MSI: Enable+ Count=1/1 Maskable- 64bit-
-		Address: fee0300c  Data: 4149
-	Capabilities: [b0] Subsystem: Lenovo Device 21ca
-	Capabilities: [b8] HyperTransport: MSI Mapping Enable+ Fixed+
-	Capabilities: [100 v1] Vendor Specific Information: ID=0001 Rev=1 
-Len=010 <?>
-	Capabilities: [110 v1] Virtual Channel
-		Caps:	LPEVC=0 RefClk=100ns PATEntryBits=1
-		Arb:	Fixed- WRR32- WRR64- WRR128-
-		Ctrl:	ArbSelect=Fixed
-		Status:	InProgress-
-		VC0:	Caps:	PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
-			Arb:	Fixed+ WRR32- WRR64- WRR128- TWRR128- WRR256-
-			Ctrl:	Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
-			Status:	NegoPending- InProgress-
-	Kernel driver in use: pcieport
-
-00:05.0 PCI bridge: Advanced Micro Devices [AMD] RS780 PCI to PCI bridge 
-(PCIE port 1) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
-<MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 32 bytes
-	Bus: primary=00, secondary=08, subordinate=08, sec-latency=0
-	I/O behind bridge: 0000c000-0000cfff
-	Memory behind bridge: d0600000-d06fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
-<MAbort- <SERR- <PERR-
-	BridgeCtl: Parity- SERR- NoISA+ VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: [50] Power Management version 3
-		Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-	Capabilities: [58] Express (v2) Root Port (Slot+), MSI 00
-		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
-			ExtTag+ RBE+ FLReset-
-		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-			MaxPayload 128 bytes, MaxReadReq 128 bytes
-		DevSta:	CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
-		LnkCap:	Port #2, Speed 5GT/s, Width x1, ASPM L0s L1, Latency L0 <64ns, 
-L1 <1us
-			ClockPM- Surprise- LLActRep+ BwNot+
-		LnkCtl:	ASPM L0s L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
-			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive+ 
-BWMgmt+ ABWMgmt-
-		SltCap:	AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd- HotPlug- Surprise-
-			Slot #5, PowerLimit 25.000W; Interlock- NoCompl+
-		SltCtl:	Enable: AttnBtn- PwrFlt- MRL- PresDet- CmdCplt- HPIrq- LinkChg-
-			Control: AttnInd Unknown, PwrInd Unknown, Power- Interlock-
-		SltSta:	Status: AttnBtn- PowerFlt- MRL- CmdCplt- PresDet+ Interlock-
-			Changed: MRL- PresDet+ LinkState+
-		RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- PMEIntEna+ CRSVisible-
-		RootCap: CRSVisible-
-		RootSta: PME ReqID 0000, PMEStatus- PMEPending-
-		DevCap2: Completion Timeout: Not Supported, TimeoutDis- ARIFwd-
-		DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis- ARIFwd-
-		LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-, 
-Selectable De-emphasis: -6dB
-			 Transmit Margin: Normal Operating Range, EnterModifiedCompliance- 
-ComplianceSOS-
-			 Compliance De-emphasis: -6dB
-		LnkSta2: Current De-emphasis Level: -6dB
-	Capabilities: [a0] MSI: Enable+ Count=1/1 Maskable- 64bit-
-		Address: fee0300c  Data: 4151
-	Capabilities: [b0] Subsystem: Lenovo Device 21ca
-	Capabilities: [b8] HyperTransport: MSI Mapping Enable+ Fixed+
-	Capabilities: [100 v1] Vendor Specific Information: ID=0001 Rev=1 
-Len=010 <?>
-	Capabilities: [110 v1] Virtual Channel
-		Caps:	LPEVC=0 RefClk=100ns PATEntryBits=1
-		Arb:	Fixed- WRR32- WRR64- WRR128-
-		Ctrl:	ArbSelect=Fixed
-		Status:	InProgress-
-		VC0:	Caps:	PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
-			Arb:	Fixed+ WRR32- WRR64- WRR128- TWRR128- WRR256-
-			Ctrl:	Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
-			Status:	NegoPending- InProgress-
-	Kernel driver in use: pcieport
-
-00:11.0 SATA controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 SATA 
-Controller [AHCI mode] (prog-if 01 [AHCI 1.0])
-	Subsystem: Lenovo Device 21ca
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx+
-	Status: Cap+ 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- 
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 64
-	Interrupt: pin A routed to IRQ 42
-	Region 0: I/O ports at 8440 [size=8]
-	Region 1: I/O ports at 8430 [size=4]
-	Region 2: I/O ports at 8420 [size=8]
-	Region 3: I/O ports at 8410 [size=4]
-	Region 4: I/O ports at 8400 [size=16]
-	Region 5: Memory at d0906800 (32-bit, non-prefetchable) [size=1K]
-	Capabilities: [50] MSI: Enable+ Count=1/8 Maskable- 64bit+
-		Address: 00000000fee0300c  Data: 4161
-	Capabilities: [70] SATA HBA v1.0 InCfgSpace
-	Capabilities: [a4] PCI Advanced Features
-		AFCap: TP+ FLR+
-		AFCtrl: FLR-
-		AFStatus: TP-
-	Kernel driver in use: ahci
-
-00:12.0 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB OHCI0 
-Controller (prog-if 10 [OHCI])
-	Subsystem: Lenovo Device 21ca
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap- 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- 
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 64, Cache Line Size: 32 bytes
-	Interrupt: pin A routed to IRQ 18
-	Region 0: Memory at d0904000 (32-bit, non-prefetchable) [size=4K]
-	Kernel driver in use: ohci_hcd
-
-00:12.2 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB EHCI 
-Controller (prog-if 20 [EHCI])
-	Subsystem: Lenovo Device 21ca
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- 
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 64, Cache Line Size: 32 bytes
-	Interrupt: pin B routed to IRQ 17
-	Region 0: Memory at d0906000 (32-bit, non-prefetchable) [size=256]
-	Capabilities: [c0] Power Management version 2
-		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0+,D1+,D2+,D3hot+,D3cold-)
-		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-		Bridge: PM- B3+
-	Capabilities: [e4] Debug port: BAR=1 offset=00e0
-	Kernel driver in use: ehci_hcd
-
-00:13.0 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB OHCI0 
-Controller (prog-if 10 [OHCI])
-	Subsystem: Lenovo Device 21ca
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap- 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- 
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 64, Cache Line Size: 32 bytes
-	Interrupt: pin A routed to IRQ 18
-	Region 0: Memory at d0905000 (32-bit, non-prefetchable) [size=4K]
-	Kernel driver in use: ohci_hcd
-
-00:13.2 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB EHCI 
-Controller (prog-if 20 [EHCI])
-	Subsystem: Lenovo Device 21ca
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- 
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 64, Cache Line Size: 32 bytes
-	Interrupt: pin B routed to IRQ 17
-	Region 0: Memory at d0906400 (32-bit, non-prefetchable) [size=256]
-	Capabilities: [c0] Power Management version 2
-		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0+,D1+,D2+,D3hot+,D3cold-)
-		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-		Bridge: PM- B3+
-	Capabilities: [e4] Debug port: BAR=1 offset=00e0
-	Kernel driver in use: ehci_hcd
-
-00:14.0 SMBus: ATI Technologies Inc SBx00 SMBus Controller (rev 42)
-	Control: I/O+ Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap- 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- 
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-	Kernel driver in use: piix4_smbus
-
-00:14.2 Audio device: ATI Technologies Inc SBx00 Azalia (Intel HDA) (rev 40)
-	Subsystem: Lenovo Device 21ca
-	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=slow >TAbort- <TAbort- 
-<MAbort- >SERR- <PERR- INTx-
-	Latency: 64, Cache Line Size: 32 bytes
-	Interrupt: pin A routed to IRQ 16
-	Region 0: Memory at d0900000 (64-bit, non-prefetchable) [size=16K]
-	Capabilities: [50] Power Management version 2
-		Flags: PMEClk- DSI- D1- D2- AuxCurrent=55mA 
-PME(D0+,D1-,D2-,D3hot+,D3cold+)
-		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-	Kernel driver in use: HDA Intel
-
-00:14.3 ISA bridge: ATI Technologies Inc SB7x0/SB8x0/SB9x0 LPC host 
-controller (rev 40)
-	Subsystem: Lenovo Device 21ca
-	Control: I/O+ Mem+ BusMaster+ SpecCycle+ MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap- 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- 
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0
-
-00:14.4 PCI bridge: ATI Technologies Inc SBx00 PCI to PCI Bridge (rev 
-40) (prog-if 01 [Subtractive decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap- 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- 
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 64
-	Bus: primary=00, secondary=09, subordinate=09, sec-latency=64
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: fff00000-000fffff
-	Secondary status: 66MHz- FastB2B+ ParErr- DEVSEL=medium >TAbort- 
-<TAbort- <MAbort+ <SERR- <PERR-
-	BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-
-00:18.0 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor 
-HyperTransport Configuration
-	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
-<MAbort- >SERR- <PERR- INTx-
-	Capabilities: [80] HyperTransport: Host or Secondary Interface
-		Command: WarmRst+ DblEnd- DevNum=0 ChainSide- HostHide+ Slave- 
-<EOCErr- DUL-
-		Link Control: CFlE- CST- CFE- <LkFail- Init+ EOC- TXO- <CRCErr=0 
-IsocEn- LSEn+ ExtCTL- 64b-
-		Link Config: MLWI=16bit DwFcIn- MLWO=16bit DwFcOut- LWI=16bit 
-DwFcInEn- LWO=16bit DwFcOutEn-
-		Revision ID: 3.00
-		Link Frequency: 1.0GHz
-		Link Error: <Prot- <Ovfl- <EOC- CTLTm-
-		Link Frequency Capability: 200MHz+ 300MHz- 400MHz+ 500MHz- 600MHz+ 
-800MHz+ 1.0GHz+ 1.2GHz- 1.4GHz- 1.6GHz- Vend-
-		Feature Capability: IsocFC+ LDTSTOP+ CRCTM- ECTLT- 64bA+ UIDRD- ExtRS- 
-UCnfE-
-
-00:18.1 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor 
-Address Map
-	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
-<MAbort- >SERR- <PERR- INTx-
-
-00:18.2 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor 
-DRAM Controller
-	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
-<MAbort- >SERR- <PERR- INTx-
-
-00:18.3 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor 
-Miscellaneous Control
-	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
-<MAbort- >SERR- <PERR- INTx-
-	Capabilities: [f0] Secure device <?>
-	Kernel driver in use: k10temp
-
-00:18.4 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor 
-Link Control
-	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
-<MAbort- >SERR- <PERR- INTx-
-
-01:05.0 VGA compatible controller: ATI Technologies Inc M880G [Mobility 
-Radeon HD 4200] (prog-if 00 [VGA controller])
-	Subsystem: Lenovo Device 21ca
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
-<MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 32 bytes
-	Interrupt: pin A routed to IRQ 18
-	Region 0: Memory at c0000000 (32-bit, prefetchable) [size=256M]
-	Region 1: I/O ports at 9000 [size=256]
-	Region 2: Memory at d0500000 (32-bit, non-prefetchable) [size=64K]
-	Region 5: Memory at d0400000 (32-bit, non-prefetchable) [size=1M]
-	Expansion ROM at <unassigned> [disabled]
-	Capabilities: [50] Power Management version 3
-		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
-		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-	Capabilities: [a0] MSI: Enable- Count=1/1 Maskable- 64bit+
-		Address: 0000000000000000  Data: 0000
-	Kernel driver in use: radeon
-
-01:05.1 Audio device: ATI Technologies Inc RS880 Audio Device [Radeon HD 
-4200]
-	Subsystem: ATI Technologies Inc Device 9712
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
-<MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 32 bytes
-	Interrupt: pin B routed to IRQ 19
-	Region 0: Memory at d0510000 (32-bit, non-prefetchable) [size=16K]
-	Capabilities: [50] Power Management version 3
-		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
-		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-	Capabilities: [a0] MSI: Enable- Count=1/1 Maskable- 64bit+
-		Address: 0000000000000000  Data: 0000
-	Kernel driver in use: HDA Intel
-
-02:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. 
-RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 03)
-	Subsystem: Lenovo Device 21c6
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
-<MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 32 bytes
-	Interrupt: pin A routed to IRQ 43
-	Region 0: I/O ports at bc00 [size=256]
-	Region 2: Memory at d0200000 (64-bit, prefetchable) [size=4K]
-	Region 4: Memory at d0000000 (64-bit, prefetchable) [size=16K]
-	[virtual] Expansion ROM at d0020000 [disabled] [size=128K]
-	Capabilities: [40] Power Management version 3
-		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=375mA 
-PME(D0+,D1+,D2+,D3hot+,D3cold+)
-		Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
-	Capabilities: [50] MSI: Enable+ Count=1/1 Maskable- 64bit+
-		Address: 00000000fee0300c  Data: 4169
-	Capabilities: [70] Express (v2) Endpoint, MSI 01
-		DevCap:	MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
-			ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
-		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop-
-			MaxPayload 128 bytes, MaxReadReq 4096 bytes
-		DevSta:	CorrErr+ UncorrErr- FatalErr- UnsuppReq+ AuxPwr+ TransPend-
-		LnkCap:	Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 
-<512ns, L1 <64us
-			ClockPM+ Surprise- LLActRep- BwNot-
-		LnkCtl:	ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
-			ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- 
-BWMgmt- ABWMgmt-
-		DevCap2: Completion Timeout: Not Supported, TimeoutDis+
-		DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
-		LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-, 
-Selectable De-emphasis: -6dB
-			 Transmit Margin: Normal Operating Range, EnterModifiedCompliance- 
-ComplianceSOS-
-			 Compliance De-emphasis: -6dB
-		LnkSta2: Current De-emphasis Level: -6dB
-	Capabilities: [ac] MSI-X: Enable- Count=4 Masked-
-		Vector table: BAR=4 offset=00000000
-		PBA: BAR=4 offset=00000800
-	Capabilities: [cc] Vital Product Data
-		Unknown small resource type 00, will not decode more.
-	Capabilities: [100 v1] Advanced Error Reporting
-		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- 
-MalfTLP- ECRC- UnsupReq- ACSViol-
-		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- 
-MalfTLP- ECRC- UnsupReq- ACSViol-
-		UESvrt:	DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ 
-MalfTLP+ ECRC- UnsupReq- ACSViol-
-		CESta:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
-		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
-		AERCap:	First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
-	Capabilities: [140 v1] Virtual Channel
-		Caps:	LPEVC=0 RefClk=100ns PATEntryBits=1
-		Arb:	Fixed- WRR32- WRR64- WRR128-
-		Ctrl:	ArbSelect=Fixed
-		Status:	InProgress-
-		VC0:	Caps:	PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
-			Arb:	Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
-			Ctrl:	Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
-			Status:	NegoPending- InProgress-
-	Capabilities: [160 v1] Device Serial Number 81-00-00-00-68-4c-e0-00
-	Kernel driver in use: r8169
-
-08:00.0 Network controller: Realtek Semiconductor Co., Ltd. RTL8188CE 
-802.11b/g/n WiFi Adapter (rev 01)
-	Subsystem: Realtek Semiconductor Co., Ltd. Device 8195
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
-Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- 
-<MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 32 bytes
-	Interrupt: pin A routed to IRQ 17
-	Region 0: I/O ports at c000 [size=256]
-	Region 2: Memory at d0600000 (64-bit, non-prefetchable) [size=16K]
-	Capabilities: [40] Power Management version 3
-		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=375mA 
-PME(D0+,D1+,D2+,D3hot+,D3cold+)
-		Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
-	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
-		Address: 0000000000000000  Data: 0000
-	Capabilities: [70] Express (v2) Endpoint, MSI 00
-		DevCap:	MaxPayload 128 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
-			ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
-		DevCtl:	Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-			RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop-
-			MaxPayload 128 bytes, MaxReadReq 512 bytes
-		DevSta:	CorrErr+ UncorrErr- FatalErr- UnsuppReq+ AuxPwr+ TransPend-
-		LnkCap:	Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 
-<512ns, L1 <64us
-			ClockPM+ Surprise- LLActRep- BwNot-
-		LnkCtl:	ASPM L0s L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
-			ExtSynch- ClockPM+ AutWidDis- BWInt- AutBWInt-
-		LnkSta:	Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- 
-BWMgmt- ABWMgmt-
-		DevCap2: Completion Timeout: Not Supported, TimeoutDis+
-		DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis+
-		LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-, 
-Selectable De-emphasis: -6dB
-			 Transmit Margin: Normal Operating Range, EnterModifiedCompliance- 
-ComplianceSOS-
-			 Compliance De-emphasis: -6dB
-		LnkSta2: Current De-emphasis Level: -6dB
-	Capabilities: [100 v1] Advanced Error Reporting
-		UESta:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- 
-MalfTLP- ECRC- UnsupReq- ACSViol-
-		UEMsk:	DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- 
-MalfTLP- ECRC- UnsupReq- ACSViol-
-		UESvrt:	DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ 
-MalfTLP+ ECRC- UnsupReq- ACSViol-
-		CESta:	RxErr+ BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
-		CEMsk:	RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
-		AERCap:	First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
-	Capabilities: [140 v1] Virtual Channel
-		Caps:	LPEVC=0 RefClk=100ns PATEntryBits=1
-		Arb:	Fixed- WRR32- WRR64- WRR128-
-		Ctrl:	ArbSelect=Fixed
-		Status:	InProgress-
-		VC0:	Caps:	PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
-			Arb:	Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
-			Ctrl:	Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
-			Status:	NegoPending- InProgress-
-	Capabilities: [160 v1] Device Serial Number 01-91-81-fe-ff-4c-e0-00
-	Kernel driver in use: rtl8192ce
-
-[7.6.]
----
-
-[7.7.]
-
-/var/log/messages
-
-Aug  2 08:46:11 stephan-thinkpad kernel: [  108.770067] psmouse.c: 
-TouchPad at isa0060/serio4/input0 lost sync at byte 1
-Aug  2 08:46:11 stephan-thinkpad kernel: [  108.772624] psmouse.c: 
-TouchPad at isa0060/serio4/input0 lost sync at byte 1
-Aug  2 08:46:11 stephan-thinkpad kernel: [  108.773972] psmouse.c: 
-TouchPad at isa0060/serio4/input0 lost sync at byte 1
-Aug  2 08:46:11 stephan-thinkpad kernel: [  108.775401] psmouse.c: 
-TouchPad at isa0060/serio4/input0 lost sync at byte 1
-Aug  2 08:46:11 stephan-thinkpad kernel: [  108.776496] psmouse.c: 
-TouchPad at isa0060/serio4/input0 lost sync at byte 1
-Aug  2 08:46:11 stephan-thinkpad kernel: [  108.776503] psmouse.c: 
-issuing reconnect request
-Aug  2 08:55:01 stephan-thinkpad kernel: [  638.530041] psmouse.c: 
-TouchPad at isa0060/serio4/input0 lost sync at byte 4
-Aug  2 08:55:01 stephan-thinkpad kernel: [  638.531367] psmouse.c: 
-TouchPad at isa0060/serio4/input0 lost sync at byte 1
-Aug  2 08:55:01 stephan-thinkpad kernel: [  638.543811] psmouse.c: 
-TouchPad at isa0060/serio4/input0 - driver resynched.
-Aug  2 08:57:18 stephan-thinkpad kernel: [  774.987821] psmouse.c: 
-TouchPad at isa0060/serio4/input0 lost sync at byte 4
-Aug  2 08:57:18 stephan-thinkpad kernel: [  774.989102] psmouse.c: 
-TouchPad at isa0060/serio4/input0 lost sync at byte 1
-Aug  2 08:57:18 stephan-thinkpad kernel: [  774.996836] psmouse.c: 
-TouchPad at isa0060/serio4/input0 - driver resynched.
+diff --git a/fs/ext4/Makefile b/fs/ext4/Makefile
+index 56fd8f86..617a5d8 100644
+--- a/fs/ext4/Makefile
++++ b/fs/ext4/Makefile
+@@ -2,6 +2,8 @@
+ # Makefile for the linux ext4-filesystem routines.
+ #
+ 
++ccflags-$(CONFIG_EXT4_FS) := -DDEBUG
++
+ obj-$(CONFIG_EXT4_FS) += ext4.o
+ 
+ ext4-y	:= balloc.o bitmap.o dir.o file.o fsync.o ialloc.o inode.o page-io.o \
+diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
+index f8224ad..d683e66 100644
+--- a/fs/ext4/balloc.c
++++ b/fs/ext4/balloc.c
+@@ -11,6 +11,8 @@
+  *        David S. Miller (davem@caip.rutgers.edu), 1995
+  */
+ 
++#define pr_fmt(fmt) "EXT4-fs: " fmt
++
+ #include <linux/time.h>
+ #include <linux/capability.h>
+ #include <linux/fs.h>
+@@ -515,14 +517,14 @@ ext4_fsblk_t ext4_count_free_blocks(struct super_block *sb)
+ 			continue;
+ 
+ 		x = ext4_count_free(bitmap_bh, sb->s_blocksize);
+-		printk(KERN_DEBUG "group %u: stored = %d, counted = %u\n",
+-			i, ext4_free_blks_count(sb, gdp), x);
++		pr_debug("group %u: stored = %d, counted = %u\n",
++			 i, ext4_free_blks_count(sb, gdp), x);
+ 		bitmap_count += x;
+ 	}
+ 	brelse(bitmap_bh);
+-	printk(KERN_DEBUG "ext4_count_free_blocks: stored = %llu"
+-		", computed = %llu, %llu\n", ext4_free_blocks_count(es),
+-	       desc_count, bitmap_count);
++	pr_debug("%s: stored = %llu, computed = %llu, %llu\n",
++		 __func__,
++		 ext4_free_blocks_count(es), desc_count, bitmap_count);
+ 	return bitmap_count;
+ #else
+ 	desc_count = 0;
+diff --git a/fs/ext4/block_validity.c b/fs/ext4/block_validity.c
+index 8efb2f0..2c5895d 100644
+--- a/fs/ext4/block_validity.c
++++ b/fs/ext4/block_validity.c
+@@ -8,6 +8,8 @@
+  * should never be used as data blocks by files or directories.
+  */
+ 
++#define pr_fmt(fmt) "EXT4-fs: " fmt
++
+ #include <linux/time.h>
+ #include <linux/fs.h>
+ #include <linux/namei.h>
+@@ -126,16 +128,17 @@ static void debug_print_tree(struct ext4_sb_info *sbi)
+ 	struct ext4_system_zone *entry;
+ 	int first = 1;
+ 
+-	printk(KERN_INFO "System zones: ");
++	pr_info("System zones: ");
+ 	node = rb_first(&sbi->system_blks);
+ 	while (node) {
+ 		entry = rb_entry(node, struct ext4_system_zone, node);
+-		printk("%s%llu-%llu", first ? "" : ", ",
+-		       entry->start_blk, entry->start_blk + entry->count - 1);
++		pr_cont("%s%llu-%llu",
++			first ? "" : ", ",
++			entry->start_blk, entry->start_blk + entry->count - 1);
+ 		first = 0;
+ 		node = rb_next(node);
+ 	}
+-	printk("\n");
++	pr_cont("\n");
+ }
+ 
+ int ext4_setup_system_zone(struct super_block *sb)
+diff --git a/fs/ext4/dir.c b/fs/ext4/dir.c
+index 164c560..90d1d20 100644
+--- a/fs/ext4/dir.c
++++ b/fs/ext4/dir.c
+@@ -21,6 +21,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) "EXT4-fs: " fmt
++
+ #include <linux/fs.h>
+ #include <linux/jbd2.h>
+ #include <linux/buffer_head.h>
+@@ -425,8 +427,7 @@ static int call_filldir(struct file *filp, void *dirent,
+ 	sb = inode->i_sb;
+ 
+ 	if (!fname) {
+-		printk(KERN_ERR "EXT4-fs: call_filldir: called with "
+-		       "null fname?!?\n");
++		pr_err("%s: called with null fname?!?\n", __func__);
+ 		return 0;
+ 	}
+ 	curr_pos = hash2pos(fname->hash, fname->minor_hash);
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index e717dfd..ed65da8 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -46,24 +46,22 @@
+  * Debug code
+  */
+ #ifdef EXT4FS_DEBUG
+-#define ext4_debug(f, a...)						\
+-	do {								\
+-		printk(KERN_DEBUG "EXT4-fs DEBUG (%s, %d): %s:",	\
+-			__FILE__, __LINE__, __func__);			\
+-		printk(KERN_DEBUG f, ## a);				\
+-	} while (0)
++#define ext4_debug(fmt, args...)				\
++	pr_debug("DEBUG (%s, %d): %s: " fmt,			\
++		 __FILE__, __LINE__, __func__, ##args)
+ #else
+-#define ext4_debug(f, a...)	do {} while (0)
++#define ext4_debug(fmt, args...)				\
++	no_printk(fmt, ##args)
+ #endif
+ 
+-#define EXT4_ERROR_INODE(inode, fmt, a...) \
+-	ext4_error_inode((inode), __func__, __LINE__, 0, (fmt), ## a)
++#define EXT4_ERROR_INODE(inode, fmt, args...)				\
++	ext4_error_inode((inode), __func__, __LINE__, 0, fmt, ##args)
+ 
+-#define EXT4_ERROR_INODE_BLOCK(inode, block, fmt, a...)			\
+-	ext4_error_inode((inode), __func__, __LINE__, (block), (fmt), ## a)
++#define EXT4_ERROR_INODE_BLOCK(inode, block, fmt, args...)		\
++	ext4_error_inode((inode), __func__, __LINE__, (block), fmt, ##args)
+ 
+-#define EXT4_ERROR_FILE(file, block, fmt, a...)				\
+-	ext4_error_file((file), __func__, __LINE__, (block), (fmt), ## a)
++#define EXT4_ERROR_FILE(file, block, fmt, args...)			\
++	ext4_error_file((file), __func__, __LINE__, (block), fmt, ##args)
+ 
+ /* data type for block offset of block group */
+ typedef int ext4_grpblk_t;
+@@ -411,9 +409,14 @@ enum {
+ };
+ 
+ #define TEST_FLAG_VALUE(FLAG) (EXT4_##FLAG##_FL == (1 << EXT4_INODE_##FLAG))
+-#define CHECK_FLAG_VALUE(FLAG) if (!TEST_FLAG_VALUE(FLAG)) { \
+-	printk(KERN_EMERG "EXT4 flag fail: " #FLAG ": %d %d\n", \
+-		EXT4_##FLAG##_FL, EXT4_INODE_##FLAG); BUG_ON(1); }
++#define CHECK_FLAG_VALUE(FLAG)						\
++do {									\
++	if (!TEST_FLAG_VALUE(FLAG)) {					\
++		pr_emerg("EXT4 flag fail: " #FLAG ": %d %d\n",		\
++			 EXT4_##FLAG##_FL, EXT4_INODE_##FLAG);		\
++		BUG_ON(1);						\
++	}								\
++} while (0)
+ 
+ /*
+  * Since it's pretty easy to mix up bit numbers and hex values, and we
+@@ -1877,42 +1880,45 @@ extern int ext4_group_extend(struct super_block *sb,
+ extern void *ext4_kvmalloc(size_t size, gfp_t flags);
+ extern void *ext4_kvzalloc(size_t size, gfp_t flags);
+ extern void ext4_kvfree(void *ptr);
+-extern void __ext4_error(struct super_block *, const char *, unsigned int,
+-			 const char *, ...)
+-	__attribute__ ((format (printf, 4, 5)));
+-#define ext4_error(sb, message...)	__ext4_error(sb, __func__,	\
+-						     __LINE__, ## message)
+-extern void ext4_error_inode(struct inode *, const char *, unsigned int,
+-			     ext4_fsblk_t, const char *, ...)
+-	__attribute__ ((format (printf, 5, 6)));
+-extern void ext4_error_file(struct file *, const char *, unsigned int,
+-			    ext4_fsblk_t, const char *, ...)
+-	__attribute__ ((format (printf, 5, 6)));
++
++extern __attribute__ ((format (printf, 4, 5)))
++void __ext4_error(struct super_block *, const char *func, unsigned int line,
++		  const char *fmt, ...);
++#define ext4_error(sb, fmt, args...)				\
++	__ext4_error(sb, __func__, __LINE__, fmt, ##args)
++
++extern __attribute__ ((format (printf, 5, 6)))
++void ext4_error_inode(struct inode *, const char *, unsigned int,
++		      ext4_fsblk_t, const char *fmt, ...);
++extern __attribute__ ((format (printf, 5, 6)))
++void ext4_error_file(struct file *, const char *, unsigned int,
++		     ext4_fsblk_t, const char *fmt, ...);
+ extern void __ext4_std_error(struct super_block *, const char *,
+ 			     unsigned int, int);
+-extern void __ext4_abort(struct super_block *, const char *, unsigned int,
+-		       const char *, ...)
+-	__attribute__ ((format (printf, 4, 5)));
+-#define ext4_abort(sb, message...)	__ext4_abort(sb, __func__, \
+-						       __LINE__, ## message)
+-extern void __ext4_warning(struct super_block *, const char *, unsigned int,
+-			  const char *, ...)
+-	__attribute__ ((format (printf, 4, 5)));
+-#define ext4_warning(sb, message...)	__ext4_warning(sb, __func__, \
+-						       __LINE__, ## message)
+-extern void ext4_msg(struct super_block *, const char *, const char *, ...)
+-	__attribute__ ((format (printf, 3, 4)));
++extern __attribute__ ((format (printf, 4, 5)))
++void __ext4_abort(struct super_block *, const char *func, unsigned int line,
++		  const char *fmt, ...);
++#define ext4_abort(sb, fmt, args...)			\
++	__ext4_abort(sb, __func__, __LINE__, fmt, ##args)
++extern __attribute__ ((format (printf, 4, 5)))
++void __ext4_warning(struct super_block *, const char *func, unsigned int line,
++		    const char *fmt, ...);
++#define ext4_warning(sb, fmt, args...)				\
++	__ext4_warning(sb, __func__, __LINE__, fmt, ##args)
++extern __attribute__ ((format (printf, 3, 4)))
++void ext4_msg(struct super_block *, const char *level, const char *fmt, ...);
+ extern void __dump_mmp_msg(struct super_block *, struct mmp_struct *mmp,
+ 			   const char *, unsigned int, const char *);
+-#define dump_mmp_msg(sb, mmp, msg)	__dump_mmp_msg(sb, mmp, __func__, \
+-						       __LINE__, msg)
+-extern void __ext4_grp_locked_error(const char *, unsigned int, \
+-				    struct super_block *, ext4_group_t, \
+-				    unsigned long, ext4_fsblk_t, \
+-				    const char *, ...)
+-	__attribute__ ((format (printf, 7, 8)));
+-#define ext4_grp_locked_error(sb, grp, message...) \
+-	__ext4_grp_locked_error(__func__, __LINE__, (sb), (grp), ## message)
++#define dump_mmp_msg(sb, mmp, msg)				\
++	__dump_mmp_msg(sb, mmp, __func__, __LINE__, msg)
++extern __attribute__ ((format (printf, 7, 8)))
++void __ext4_grp_locked_error(const char *func, unsigned int line,
++			     struct super_block *, ext4_group_t grp,
++			     unsigned long ino, ext4_fsblk_t block,
++			     const char *fmt, ...);
++#define ext4_grp_locked_error(sb, grp, ino, block, fmt, args...)	\
++	__ext4_grp_locked_error(__func__, __LINE__, sb, grp, ino, block, \
++				fmt, ##args)
+ extern void ext4_update_dynamic_rev(struct super_block *sb);
+ extern int ext4_update_compat_feature(handle_t *handle, struct super_block *sb,
+ 					__u32 compat);
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 57cf568..5c6601a 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -29,6 +29,8 @@
+  *   - smart tree reduction
+  */
+ 
++#define pr_fmt(fmt) "EXT4-fs: " fmt
++
+ #include <linux/module.h>
+ #include <linux/fs.h>
+ #include <linux/time.h>
+@@ -537,14 +539,14 @@ ext4_ext_binsearch_idx(struct inode *inode,
+ 
+ 		chix = ix = EXT_FIRST_INDEX(eh);
+ 		for (k = 0; k < le16_to_cpu(eh->eh_entries); k++, ix++) {
+-		  if (k != 0 &&
+-		      le32_to_cpu(ix->ei_block) <= le32_to_cpu(ix[-1].ei_block)) {
+-				printk(KERN_DEBUG "k=%d, ix=0x%p, "
+-				       "first=0x%p\n", k,
+-				       ix, EXT_FIRST_INDEX(eh));
+-				printk(KERN_DEBUG "%u <= %u\n",
+-				       le32_to_cpu(ix->ei_block),
+-				       le32_to_cpu(ix[-1].ei_block));
++			if (k != 0 &&
++			    le32_to_cpu(ix->ei_block) <=
++			    le32_to_cpu(ix[-1].ei_block)) {
++				pr_debug("k=%d, ix=0x%p, first=0x%p\n",
++					 k, ix, EXT_FIRST_INDEX(eh));
++				pr_debug("%u <= %u\n",
++					 le32_to_cpu(ix->ei_block),
++					 le32_to_cpu(ix[-1].ei_block));
+ 			}
+ 			BUG_ON(k && le32_to_cpu(ix->ei_block)
+ 					   <= le32_to_cpu(ix[-1].ei_block));
+@@ -2241,9 +2243,8 @@ static int ext4_remove_blocks(handle_t *handle, struct inode *inode,
+ 		ext4_free_blocks(handle, inode, 0, start, num, flags);
+ 
+ 	} else {
+-		printk(KERN_INFO "strange request: removal(2) "
+-				"%u-%u from %u:%u\n",
+-				from, to, le32_to_cpu(ex->ee_block), ee_len);
++		pr_info("strange request: removal(2) %u-%u from %u:%u\n",
++			from, to, le32_to_cpu(ex->ee_block), ee_len);
+ 	}
+ 	return 0;
+ }
+@@ -2653,17 +2654,17 @@ void ext4_ext_init(struct super_block *sb)
+ 
+ 	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_EXTENTS)) {
+ #if defined(AGGRESSIVE_TEST) || defined(CHECK_BINSEARCH) || defined(EXTENTS_STATS)
+-		printk(KERN_INFO "EXT4-fs: file extents enabled");
++		pr_info("file extents enabled");
+ #ifdef AGGRESSIVE_TEST
+-		printk(", aggressive tests");
++		pr_cont(", aggressive tests");
+ #endif
+ #ifdef CHECK_BINSEARCH
+-		printk(", check binsearch");
++		pr_cont(", check binsearch");
+ #endif
+ #ifdef EXTENTS_STATS
+-		printk(", stats");
++		pr_cont(", stats");
+ #endif
+-		printk("\n");
++		pr_cont("\n");
+ #endif
+ #ifdef EXTENTS_STATS
+ 		spin_lock_init(&EXT4_SB(sb)->s_ext_stats_lock);
+@@ -2684,11 +2685,11 @@ void ext4_ext_release(struct super_block *sb)
+ #ifdef EXTENTS_STATS
+ 	if (EXT4_SB(sb)->s_ext_blocks && EXT4_SB(sb)->s_ext_extents) {
+ 		struct ext4_sb_info *sbi = EXT4_SB(sb);
+-		printk(KERN_ERR "EXT4-fs: %lu blocks in %lu extents (%lu ave)\n",
+-			sbi->s_ext_blocks, sbi->s_ext_extents,
+-			sbi->s_ext_blocks / sbi->s_ext_extents);
+-		printk(KERN_ERR "EXT4-fs: extents: %lu min, %lu max, max depth %lu\n",
+-			sbi->s_ext_min, sbi->s_ext_max, sbi->s_depth_max);
++		pr_err("%lu blocks in %lu extents (%lu ave)\n",
++		       sbi->s_ext_blocks, sbi->s_ext_extents,
++		       sbi->s_ext_blocks / sbi->s_ext_extents);
++		pr_err("extents: %lu min, %lu max, max depth %lu\n",
++		       sbi->s_ext_min, sbi->s_ext_max, sbi->s_depth_max);
+ 	}
+ #endif
+ }
+@@ -3811,10 +3812,8 @@ retry:
+ 		if (ret <= 0) {
+ #ifdef EXT4FS_DEBUG
+ 			WARN_ON(ret <= 0);
+-			printk(KERN_ERR "%s: ext4_ext_map_blocks "
+-				    "returned error inode#%lu, block=%u, "
+-				    "max_blocks=%u", __func__,
+-				    inode->i_ino, map.m_lblk, max_blocks);
++			pr_err("%s: ext4_ext_map_blocks returned error inode#%lu, block=%u, max_blocks=%u\n",
++			       __func__, inode->i_ino, map.m_lblk, max_blocks);
+ #endif
+ 			ext4_mark_inode_dirty(handle, inode);
+ 			ret2 = ext4_journal_stop(handle);
+@@ -3887,10 +3886,8 @@ int ext4_convert_unwritten_extents(struct inode *inode, loff_t offset,
+ 				      EXT4_GET_BLOCKS_IO_CONVERT_EXT);
+ 		if (ret <= 0) {
+ 			WARN_ON(ret <= 0);
+-			printk(KERN_ERR "%s: ext4_ext_map_blocks "
+-				    "returned error inode#%lu, block=%u, "
+-				    "max_blocks=%u", __func__,
+-				    inode->i_ino, map.m_lblk, map.m_len);
++			pr_err("%s: ext4_ext_map_blocks returned error inode#%lu, block=%u, max_blocks=%u\n",
++			       __func__, inode->i_ino, map.m_lblk, map.m_len);
+ 		}
+ 		ext4_mark_inode_dirty(handle, inode);
+ 		ret2 = ext4_journal_stop(handle);
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index 9c63f27..c99d755 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -12,6 +12,8 @@
+  *        David S. Miller (davem@caip.rutgers.edu), 1995
+  */
+ 
++#define pr_fmt(fmt) "EXT4-fs: " fmt
++
+ #include <linux/time.h>
+ #include <linux/fs.h>
+ #include <linux/jbd2.h>
+@@ -195,18 +197,16 @@ void ext4_free_inode(handle_t *handle, struct inode *inode)
+ 	int fatal = 0, err, count, cleared;
+ 
+ 	if (atomic_read(&inode->i_count) > 1) {
+-		printk(KERN_ERR "ext4_free_inode: inode has count=%d\n",
+-		       atomic_read(&inode->i_count));
++		pr_err("%s: inode has count=%d\n",
++		       __func__, atomic_read(&inode->i_count));
+ 		return;
+ 	}
+ 	if (inode->i_nlink) {
+-		printk(KERN_ERR "ext4_free_inode: inode has nlink=%d\n",
+-		       inode->i_nlink);
++		pr_err("%s: inode has nlink=%d\n", __func__, inode->i_nlink);
+ 		return;
+ 	}
+ 	if (!sb) {
+-		printk(KERN_ERR "ext4_free_inode: inode on "
+-		       "nonexistent device\n");
++		pr_err("%s: inode on nonexistent device\n", __func__);
+ 		return;
+ 	}
+ 	sbi = EXT4_SB(sb);
+@@ -849,9 +849,8 @@ struct inode *ext4_new_inode(handle_t *handle, struct inode *dir, int mode,
+ 			ret2 = find_group_other(sb, dir, &group, mode);
+ 			if (ret2 == 0 && once) {
+ 				once = 0;
+-				printk(KERN_NOTICE "ext4: find_group_flex "
+-				       "failed, fallback succeeded dir %lu\n",
+-				       dir->i_ino);
++				pr_notice("find_group_flex failed, fallback succeeded dir %lu\n",
++					  dir->i_ino);
+ 			}
+ 		}
+ 		goto got_group;
+@@ -1144,17 +1143,15 @@ iget_failed:
+ 	inode = NULL;
+ bad_orphan:
+ 	ext4_warning(sb, "bad orphan inode %lu!  e2fsck was run?", ino);
+-	printk(KERN_NOTICE "ext4_test_bit(bit=%d, block=%llu) = %d\n",
++	pr_notice("ext4_test_bit(bit=%d, block=%llu) = %d\n",
+ 	       bit, (unsigned long long)bitmap_bh->b_blocknr,
+ 	       ext4_test_bit(bit, bitmap_bh->b_data));
+-	printk(KERN_NOTICE "inode=%p\n", inode);
++	pr_notice("inode=%p\n", inode);
+ 	if (inode) {
+-		printk(KERN_NOTICE "is_bad_inode(inode)=%d\n",
+-		       is_bad_inode(inode));
+-		printk(KERN_NOTICE "NEXT_ORPHAN(inode)=%u\n",
+-		       NEXT_ORPHAN(inode));
+-		printk(KERN_NOTICE "max_ino=%lu\n", max_ino);
+-		printk(KERN_NOTICE "i_nlink=%u\n", inode->i_nlink);
++		pr_notice("is_bad_inode(inode)=%d\n", is_bad_inode(inode));
++		pr_notice("NEXT_ORPHAN(inode)=%u\n", NEXT_ORPHAN(inode));
++		pr_notice("max_ino=%lu\n", max_ino);
++		pr_notice("i_nlink=%u\n", inode->i_nlink);
+ 		/* Avoid freeing blocks if we got a bad deleted inode */
+ 		if (inode->i_nlink == 0)
+ 			inode->i_blocks = 0;
+@@ -1190,14 +1187,14 @@ unsigned long ext4_count_free_inodes(struct super_block *sb)
+ 			continue;
+ 
+ 		x = ext4_count_free(bitmap_bh, EXT4_INODES_PER_GROUP(sb) / 8);
+-		printk(KERN_DEBUG "group %lu: stored = %d, counted = %lu\n",
+-			(unsigned long) i, ext4_free_inodes_count(sb, gdp), x);
++		pr_debug("group %lu: stored = %d, counted = %lu\n",
++			 (unsigned long)i, ext4_free_inodes_count(sb, gdp), x);
+ 		bitmap_count += x;
+ 	}
+ 	brelse(bitmap_bh);
+-	printk(KERN_DEBUG "ext4_count_free_inodes: "
+-	       "stored = %u, computed = %lu, %lu\n",
+-	       le32_to_cpu(es->s_free_inodes_count), desc_count, bitmap_count);
++	pr_debug("%s: stored = %u, computed = %lu, %lu\n",
++		 __func__, le32_to_cpu(es->s_free_inodes_count),
++		 desc_count, bitmap_count);
+ 	return desc_count;
+ #else
+ 	desc_count = 0;
+diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
+index b8602cd..3502914 100644
+--- a/fs/ext4/indirect.c
++++ b/fs/ext4/indirect.c
+@@ -20,6 +20,8 @@
+  *	(sct@redhat.com), 1993, 1998
+  */
+ 
++#define pr_fmt(fmt) "EXT4-fs: " fmt
++
+ #include <linux/module.h>
+ #include "ext4_jbd2.h"
+ #include "truncate.h"
+@@ -355,8 +357,8 @@ static int ext4_alloc_blocks(handle_t *handle, struct inode *inode,
+ 			 * for the first direct block
+ 			 */
+ 			new_blocks[index] = current_block;
+-			printk(KERN_INFO "%s returned more blocks than "
+-						"requested\n", __func__);
++			pr_info("%s: returned more blocks than requested\n",
++				__func__);
+ 			WARN_ON(1);
+ 			break;
+ 		}
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index d47264c..207cd36 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -18,6 +18,8 @@
+  *  Assorted race fixes, rewrite of ext4_get_block() by Al Viro, 2000
+  */
+ 
++#define pr_fmt(fmt) "EXT4-fs: " fmt
++
+ #include <linux/module.h>
+ #include <linux/fs.h>
+ #include <linux/time.h>
+@@ -1335,18 +1337,18 @@ static void ext4_da_block_invalidatepages(struct mpage_da_data *mpd)
+ static void ext4_print_free_blocks(struct inode *inode)
+ {
+ 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+-	printk(KERN_CRIT "Total free blocks count %lld\n",
+-	       ext4_count_free_blocks(inode->i_sb));
+-	printk(KERN_CRIT "Free/Dirty block details\n");
+-	printk(KERN_CRIT "free_blocks=%lld\n",
+-	       (long long) percpu_counter_sum(&sbi->s_freeblocks_counter));
+-	printk(KERN_CRIT "dirty_blocks=%lld\n",
+-	       (long long) percpu_counter_sum(&sbi->s_dirtyblocks_counter));
+-	printk(KERN_CRIT "Block reservation details\n");
+-	printk(KERN_CRIT "i_reserved_data_blocks=%u\n",
+-	       EXT4_I(inode)->i_reserved_data_blocks);
+-	printk(KERN_CRIT "i_reserved_meta_blocks=%u\n",
+-	       EXT4_I(inode)->i_reserved_meta_blocks);
++	pr_crit("Total free blocks count %lld\n",
++		ext4_count_free_blocks(inode->i_sb));
++	pr_crit("Free/Dirty block details\n");
++	pr_crit("free_blocks=%lld\n",
++		(long long) percpu_counter_sum(&sbi->s_freeblocks_counter));
++	pr_crit("dirty_blocks=%lld\n",
++		(long long) percpu_counter_sum(&sbi->s_dirtyblocks_counter));
++	pr_crit("Block reservation details\n");
++	pr_crit("i_reserved_data_blocks=%u\n",
++		EXT4_I(inode)->i_reserved_data_blocks);
++	pr_crit("i_reserved_meta_blocks=%u\n",
++		EXT4_I(inode)->i_reserved_meta_blocks);
+ 	return;
+ }
+ 
+@@ -2662,7 +2664,7 @@ static void ext4_end_io_buffer_write(struct buffer_head *bh, int uptodate)
+ 		goto out;
+ 
+ 	if (!(io_end->inode->i_sb->s_flags & MS_ACTIVE)) {
+-		printk("sb umounted, discard end_io request for inode %lu\n",
++		pr_info("sb umounted, discard end_io request for inode %lu\n",
+ 			io_end->inode->i_ino);
+ 		ext4_free_io_end(io_end);
+ 		goto out;
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 17a5a57..522c009 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -21,6 +21,8 @@
+  * mballoc.c contains the multiblocks allocation routines
+  */
+ 
++#define pr_fmt(fmt) "EXT4-fs: " fmt
++
+ #include "mballoc.h"
+ #include <linux/debugfs.h>
+ #include <linux/slab.h>
+@@ -526,9 +528,8 @@ static inline void mb_cmp_bitmaps(struct ext4_buddy *e4b, void *bitmap)
+ #define MB_CHECK_ASSERT(assert)						\
+ do {									\
+ 	if (!(assert)) {						\
+-		printk(KERN_EMERG					\
+-			"Assertion failure in %s() at %s:%d: \"%s\"\n",	\
+-			function, file, line, # assert);		\
++		pr_emerg("Assertion failure in %s() at %s:%d: \"%s\"\n", \
++			 function, file, line, # assert);		\
+ 		BUG();							\
+ 	}								\
+ } while (0)
+@@ -631,8 +632,7 @@ static int __mb_check_buddy(struct ext4_buddy *e4b, char *file,
+ 	return 0;
+ }
+ #undef MB_CHECK_ASSERT
+-#define mb_check_buddy(e4b) __mb_check_buddy(e4b,	\
+-					__FILE__, __func__, __LINE__)
++#define mb_check_buddy(e4b) __mb_check_buddy(e4b, __FILE__, __func__, __LINE__)
+ #else
+ #define mb_check_buddy(e4b)
+ #endif
+@@ -643,9 +643,9 @@ static int __mb_check_buddy(struct ext4_buddy *e4b, char *file,
+  * Clear the bits in bitmap which the blocks of the chunk(s) covered,
+  * then increase bb_counters[] for corresponded chunk size.
+  */
+-static void ext4_mb_mark_free_simple(struct super_block *sb,
+-				void *buddy, ext4_grpblk_t first, ext4_grpblk_t len,
+-					struct ext4_group_info *grp)
++static void ext4_mb_mark_free_simple(struct super_block *sb, void *buddy,
++				     ext4_grpblk_t first, ext4_grpblk_t len,
++				     struct ext4_group_info *grp)
+ {
+ 	struct ext4_sb_info *sbi = EXT4_SB(sb);
+ 	ext4_grpblk_t min;
+@@ -2081,7 +2081,7 @@ repeat:
+ 			 * Someone more lucky has already allocated it.
+ 			 * The only thing we can do is just take first
+ 			 * found block(s)
+-			printk(KERN_DEBUG "EXT4-fs: someone won our chunk\n");
++			pr_debug("someone won our chunk\n");
+ 			 */
+ 			ac->ac_b_ex.fe_group = 0;
+ 			ac->ac_b_ex.fe_start = 0;
+@@ -2225,8 +2225,7 @@ int ext4_mb_add_groupinfo(struct super_block *sb, ext4_group_t group,
+ 			EXT4_DESC_PER_BLOCK_BITS(sb);
+ 		meta_group_info = kmalloc(metalen, GFP_KERNEL);
+ 		if (meta_group_info == NULL) {
+-			ext4_msg(sb, KERN_ERR, "EXT4-fs: can't allocate mem "
+-				 "for a buddy group");
++			ext4_msg(sb, KERN_ERR, "can't allocate mem for a buddy group");
+ 			goto exit_meta_group_info;
+ 		}
+ 		sbi->s_group_info[group >> EXT4_DESC_PER_BLOCK_BITS(sb)] =
+@@ -2239,7 +2238,7 @@ int ext4_mb_add_groupinfo(struct super_block *sb, ext4_group_t group,
+ 
+ 	meta_group_info[i] = kmem_cache_alloc(cachep, GFP_KERNEL);
+ 	if (meta_group_info[i] == NULL) {
+-		ext4_msg(sb, KERN_ERR, "EXT4-fs: can't allocate buddy mem");
++		ext4_msg(sb, KERN_ERR, "can't allocate buddy mem");
+ 		goto exit_group_info;
+ 	}
+ 	memset(meta_group_info[i], 0, kmem_cache_size(cachep));
+@@ -2415,8 +2414,7 @@ static int ext4_groupinfo_create_slab(size_t size)
+ 
+ 	mutex_unlock(&ext4_grpinfo_slab_create_mutex);
+ 	if (!cachep) {
+-		printk(KERN_EMERG
+-		       "EXT4-fs: no memory for groupinfo slab cache\n");
++		pr_emerg("no memory for groupinfo slab cache\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -3883,11 +3881,11 @@ static void ext4_mb_show_ac(struct ext4_allocation_context *ac)
+ 	    (EXT4_SB(sb)->s_mount_flags & EXT4_MF_FS_ABORTED))
+ 		return;
+ 
+-	ext4_msg(ac->ac_sb, KERN_ERR, "EXT4-fs: Can't allocate:"
++	ext4_msg(ac->ac_sb, KERN_ERR, "Can't allocate:"
+ 			" Allocation context details:");
+-	ext4_msg(ac->ac_sb, KERN_ERR, "EXT4-fs: status %d flags %d",
++	ext4_msg(ac->ac_sb, KERN_ERR, "status %d flags %d",
+ 			ac->ac_status, ac->ac_flags);
+-	ext4_msg(ac->ac_sb, KERN_ERR, "EXT4-fs: orig %lu/%lu/%lu@%lu, "
++	ext4_msg(ac->ac_sb, KERN_ERR, "orig %lu/%lu/%lu@%lu, "
+ 		 	"goal %lu/%lu/%lu@%lu, "
+ 			"best %lu/%lu/%lu@%lu cr %d",
+ 			(unsigned long)ac->ac_o_ex.fe_group,
+@@ -3903,9 +3901,9 @@ static void ext4_mb_show_ac(struct ext4_allocation_context *ac)
+ 			(unsigned long)ac->ac_b_ex.fe_len,
+ 			(unsigned long)ac->ac_b_ex.fe_logical,
+ 			(int)ac->ac_criteria);
+-	ext4_msg(ac->ac_sb, KERN_ERR, "EXT4-fs: %lu scanned, %d found",
++	ext4_msg(ac->ac_sb, KERN_ERR, "%lu scanned, %d found",
+ 		 ac->ac_ex_scanned, ac->ac_found);
+-	ext4_msg(ac->ac_sb, KERN_ERR, "EXT4-fs: groups: ");
++	ext4_msg(ac->ac_sb, KERN_ERR, "groups: ");
+ 	ngroups = ext4_get_groups_count(sb);
+ 	for (i = 0; i < ngroups; i++) {
+ 		struct ext4_group_info *grp = ext4_get_group_info(sb, i);
+@@ -3920,17 +3918,14 @@ static void ext4_mb_show_ac(struct ext4_allocation_context *ac)
+ 			ext4_get_group_no_and_offset(sb, pa->pa_pstart,
+ 						     NULL, &start);
+ 			spin_unlock(&pa->pa_lock);
+-			printk(KERN_ERR "PA:%u:%d:%u \n", i,
+-			       start, pa->pa_len);
++			pr_err("PA:%u:%d:%u\n", i, start, pa->pa_len);
+ 		}
+ 		ext4_unlock_group(sb, i);
+ 
+ 		if (grp->bb_free == 0)
+ 			continue;
+-		printk(KERN_ERR "%u: %d/%d \n",
+-		       i, grp->bb_free, grp->bb_fragments);
++		pr_err("%u: %d/%d\n", i, grp->bb_free, grp->bb_fragments);
+ 	}
+-	printk(KERN_ERR "\n");
+ }
+ #else
+ static inline void ext4_mb_show_ac(struct ext4_allocation_context *ac)
+@@ -4710,7 +4705,7 @@ int ext4_group_add_blocks(handle_t *handle, struct super_block *sb,
+ 	 * boundary.
+ 	 */
+ 	if (bit + count > EXT4_BLOCKS_PER_GROUP(sb)) {
+-		ext4_warning(sb, "too much blocks added to group %u\n",
++		ext4_warning(sb, "too many blocks added to group %u\n",
+ 			     block_group);
+ 		err = -EINVAL;
+ 		goto error_return;
+diff --git a/fs/ext4/mballoc.h b/fs/ext4/mballoc.h
+index 9d4a636..a065bfb 100644
+--- a/fs/ext4/mballoc.h
++++ b/fs/ext4/mballoc.h
+@@ -39,16 +39,17 @@
+ #ifdef CONFIG_EXT4_DEBUG
+ extern u8 mb_enable_debug;
+ 
+-#define mb_debug(n, fmt, a...)	                                        \
+-	do {								\
+-		if ((n) <= mb_enable_debug) {		        	\
+-			printk(KERN_DEBUG "(%s, %d): %s: ",		\
+-			       __FILE__, __LINE__, __func__);		\
+-			printk(fmt, ## a);				\
+-		}							\
+-	} while (0)
++#define mb_debug(n, fmt, args...)					\
++do {									\
++	if ((n) <= mb_enable_debug) {					\
++		pr_debug("(%s, %d): %s: " fmt,				\
++			 __FILE__, __LINE__, __func__, ##args);		\
++	}								\
++} while (0)
+ #else
+-#define mb_debug(n, fmt, a...)
++#define mb_debug(n, fmt, args...)					\
++	no_printk(fmt, ##args)
++
+ #endif
+ 
+ #define EXT4_MB_HISTORY_ALLOC		1	/* allocation */
+diff --git a/fs/ext4/move_extent.c b/fs/ext4/move_extent.c
+index f57455a..8c74ad4 100644
+--- a/fs/ext4/move_extent.c
++++ b/fs/ext4/move_extent.c
+@@ -1027,12 +1027,12 @@ mext_check_arguments(struct inode *orig_inode,
+ 		/* TODO: eliminate this artificial restriction */
+ 		if (orig_start + *len > donor_blocks) {
+ 			ext4_debug("ext4 move extent: End offset [%llu] should "
+-				"be less than donor file blocks [%u]."
+-				"So adjust length from %llu to %llu "
+-				"[ino:orig %lu, donor %lu]\n",
+-				orig_start + *len, donor_blocks,
+-				*len, donor_blocks - orig_start,
+-				orig_inode->i_ino, donor_inode->i_ino);
++				   "be less than donor file blocks [%u]. "
++				   "So length adjusted from %llu to %llu "
++				   "[ino:orig %lu, donor %lu]\n",
++				   orig_start + *len, donor_blocks,
++				   *len, donor_blocks - orig_start,
++				   orig_inode->i_ino, donor_inode->i_ino);
+ 			*len = donor_blocks - orig_start;
+ 		}
+ 	} else {
+@@ -1047,12 +1047,12 @@ mext_check_arguments(struct inode *orig_inode,
+ 		}
+ 
+ 		if (orig_start + *len > orig_blocks) {
+-			ext4_debug("ext4 move extent: Adjust length "
+-				"from %llu to %llu. Because it should be "
+-				"less than original file blocks "
+-				"[ino:orig %lu, donor %lu]\n",
+-				*len, orig_blocks - orig_start,
+-				orig_inode->i_ino, donor_inode->i_ino);
++			ext4_debug("ext4 move extent: Adjusted length "
++				   "from %llu to %llu because it should be "
++				   "less than original file blocks "
++				   "[ino:orig %lu, donor %lu]\n",
++				   *len, orig_blocks - orig_start,
++				   orig_inode->i_ino, donor_inode->i_ino);
+ 			*len = orig_blocks - orig_start;
+ 		}
+ 	}
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 565a154..89db67b 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -24,6 +24,8 @@
+  *	Theodore Ts'o, 2002
+  */
+ 
++#define pr_fmt(fmt) "EXT4-fs: " fmt
++
+ #include <linux/fs.h>
+ #include <linux/pagemap.h>
+ #include <linux/jbd2.h>
+@@ -255,12 +257,12 @@ static inline unsigned dx_node_limit(struct inode *dir)
+ static void dx_show_index(char * label, struct dx_entry *entries)
+ {
+ 	int i, n = dx_get_count (entries);
+-	printk(KERN_DEBUG "%s index ", label);
++	pr_debug("%s index", label);
+ 	for (i = 0; i < n; i++) {
+-		printk("%x->%lu ", i ? dx_get_hash(entries + i) :
+-				0, (unsigned long)dx_get_block(entries + i));
++		pr_cont(" %x->%lu", i ? dx_get_hash(entries + i) :
++			0, (unsigned long)dx_get_block(entries + i));
+ 	}
+-	printk("\n");
++	pr_cont("\n");
+ }
+ 
+ struct stats
+@@ -277,7 +279,7 @@ static struct stats dx_show_leaf(struct dx_hash_info *hinfo, struct ext4_dir_ent
+ 	char *base = (char *) de;
+ 	struct dx_hash_info h = *hinfo;
+ 
+-	printk("names: ");
++	pr_info("names: ");
+ 	while ((char *) de < base + size)
+ 	{
+ 		if (de->inode)
+@@ -286,9 +288,9 @@ static struct stats dx_show_leaf(struct dx_hash_info *hinfo, struct ext4_dir_ent
+ 			{
+ 				int len = de->name_len;
+ 				char *name = de->name;
+-				while (len--) printk("%c", *name++);
++				while (len--) pr_cont("%c", *name++);
+ 				ext4fs_dirhash(de->name, de->name_len, &h);
+-				printk(":%x.%u ", h.hash,
++				pr_cont(":%x.%u ", h.hash,
+ 				       (unsigned) ((char *) de - base));
+ 			}
+ 			space += EXT4_DIR_REC_LEN(de->name_len);
+@@ -296,7 +298,7 @@ static struct stats dx_show_leaf(struct dx_hash_info *hinfo, struct ext4_dir_ent
+ 		}
+ 		de = ext4_next_entry(de, size);
+ 	}
+-	printk("(%i)\n", names);
++	pr_cont("(%i)\n", names);
+ 	return (struct stats) { names, space, 1 };
+ }
+ 
+@@ -308,14 +310,14 @@ struct stats dx_show_entries(struct dx_hash_info *hinfo, struct inode *dir,
+ 	unsigned bcount = 0;
+ 	struct buffer_head *bh;
+ 	int err;
+-	printk("%i indexed blocks...\n", count);
++	pr_info("%i indexed blocks...\n", count);
+ 	for (i = 0; i < count; i++, entries++)
+ 	{
+ 		ext4_lblk_t block = dx_get_block(entries);
+ 		ext4_lblk_t hash  = i ? dx_get_hash(entries): 0;
+ 		u32 range = i < count - 1? (dx_get_hash(entries + 1) - hash): ~hash;
+ 		struct stats stats;
+-		printk("%s%3u:%03u hash %8x/%8x ",levels?"":"   ", i, block, hash, range);
++		pr_info("%s%3u:%03u hash %8x/%8x ",levels?"":"   ", i, block, hash, range);
+ 		if (!(bh = ext4_bread (NULL,dir, block, 0,&err))) continue;
+ 		stats = levels?
+ 		   dx_show_entries(hinfo, dir, ((struct dx_node *) bh->b_data)->entries, levels - 1):
+@@ -326,9 +328,9 @@ struct stats dx_show_entries(struct dx_hash_info *hinfo, struct inode *dir,
+ 		brelse(bh);
+ 	}
+ 	if (bcount)
+-		printk(KERN_DEBUG "%snames %u, fullness %u (%u%%)\n",
+-		       levels ? "" : "   ", names, space/bcount,
+-		       (space/bcount)*100/blocksize);
++		pr_debug("%snames %u, fullness %u (%u%%)\n",
++			 levels ? "" : "   ", names, space/bcount,
++			 (space/bcount)*100/blocksize);
+ 	return (struct stats) { names, space, bcount};
+ }
+ #endif /* DX_DEBUG */
+@@ -401,7 +403,7 @@ dx_probe(const struct qstr *d_name, struct inode *dir,
+ 		goto fail;
+ 	}
+ 
+-	dxtrace(printk("Look up %x", hash));
++	dxtrace(pr_debug("Look up %x", hash));
+ 	while (1)
+ 	{
+ 		count = dx_get_count(entries);
+@@ -418,7 +420,7 @@ dx_probe(const struct qstr *d_name, struct inode *dir,
+ 		while (p <= q)
+ 		{
+ 			m = p + (q - p)/2;
+-			dxtrace(printk("."));
++			dxtrace(pr_cont("."));
+ 			if (dx_get_hash(m) > hash)
+ 				q = m - 1;
+ 			else
+@@ -431,7 +433,7 @@ dx_probe(const struct qstr *d_name, struct inode *dir,
+ 			at = entries;
+ 			while (n--)
+ 			{
+-				dxtrace(printk(","));
++				dxtrace(pr_cont(","));
+ 				if (dx_get_hash(++at) > hash)
+ 				{
+ 					at--;
+@@ -442,7 +444,9 @@ dx_probe(const struct qstr *d_name, struct inode *dir,
+ 		}
+ 
+ 		at = p - 1;
+-		dxtrace(printk(" %x->%u\n", at == entries? 0: dx_get_hash(at), dx_get_block(at)));
++		dxtrace(pr_cont(" %x->%u\n",
++				at == entries ? 0 : dx_get_hash(at),
++				dx_get_block(at)));
+ 		frame->bh = bh;
+ 		frame->entries = entries;
+ 		frame->at = at;
+@@ -572,8 +576,8 @@ static int htree_dirblock_to_tree(struct file *dir_file,
+ 	struct ext4_dir_entry_2 *de, *top;
+ 	int err, count = 0;
+ 
+-	dxtrace(printk(KERN_INFO "In htree dirblock_to_tree: block %lu\n",
+-							(unsigned long)block));
++	dxtrace(pr_info("In htree dirblock_to_tree: block %lu\n",
++			(unsigned long)block));
+ 	if (!(bh = ext4_bread (NULL, dir, block, 0, &err)))
+ 		return err;
+ 
+@@ -630,8 +634,8 @@ int ext4_htree_fill_tree(struct file *dir_file, __u32 start_hash,
+ 	int ret, err;
+ 	__u32 hashval;
+ 
+-	dxtrace(printk(KERN_DEBUG "In htree_fill_tree, start hash: %x:%x\n",
+-		       start_hash, start_minor_hash));
++	dxtrace(pr_debug("In htree_fill_tree, start hash: %x:%x\n",
++			 start_hash, start_minor_hash));
+ 	dir = dir_file->f_path.dentry->d_inode;
+ 	if (!(ext4_test_inode_flag(dir, EXT4_INODE_INDEX))) {
+ 		hinfo.hash_version = EXT4_SB(dir->i_sb)->s_def_hash_version;
+@@ -692,8 +696,8 @@ int ext4_htree_fill_tree(struct file *dir_file, __u32 start_hash,
+ 			break;
+ 	}
+ 	dx_release(frames);
+-	dxtrace(printk(KERN_DEBUG "Fill tree: returned %d entries, "
+-		       "next hash: %x\n", count, *next_hash));
++	dxtrace(pr_debug("Fill tree: returned %d entries, next hash: %x\n",
++			 count, *next_hash));
+ 	return count;
+ errout:
+ 	dx_release(frames);
+@@ -891,8 +895,7 @@ static struct buffer_head * ext4_find_entry (struct inode *dir,
+ 		 */
+ 		if (bh || (err != ERR_BAD_DX_DIR))
+ 			return bh;
+-		dxtrace(printk(KERN_DEBUG "ext4_find_entry: dx failed, "
+-			       "falling back\n"));
++		dxtrace(pr_debug("%s: dx failed, falling back\n", __func__));
+ 	}
+ 	nblocks = dir->i_size >> EXT4_BLOCK_SIZE_BITS(sb);
+ 	start = EXT4_I(dir)->i_dir_start_lookup;
+@@ -1013,7 +1016,7 @@ static struct buffer_head * ext4_dx_find_entry(struct inode *dir, const struct q
+ 
+ 	*err = -ENOENT;
+ errout:
+-	dxtrace(printk(KERN_DEBUG "%s not found\n", d_name->name));
++	dxtrace(pr_debug("%s not found\n", d_name->name));
+ 	dx_release (frames);
+ 	return NULL;
+ }
+@@ -1199,9 +1202,9 @@ static struct ext4_dir_entry_2 *do_split(handle_t *handle, struct inode *dir,
+ 	split = count - move;
+ 	hash2 = map[split].hash;
+ 	continued = hash2 == map[split - 1].hash;
+-	dxtrace(printk(KERN_INFO "Split block %lu at %x, %i/%i\n",
++	dxtrace(pr_info("Split block %lu at %x, %i/%i\n",
+ 			(unsigned long)dx_get_block(frame->at),
+-					hash2, split, count-split));
++			hash2, split, count-split));
+ 
+ 	/* Fancy dance to stay within two buffers */
+ 	de2 = dx_move_dirents(data1, data2, map + split, count - split, blocksize);
+@@ -1350,7 +1353,7 @@ static int make_indexed_dir(handle_t *handle, struct dentry *dentry,
+ 	struct fake_dirent *fde;
+ 
+ 	blocksize =  dir->i_sb->s_blocksize;
+-	dxtrace(printk(KERN_DEBUG "Creating index: inode %lu\n", dir->i_ino));
++	dxtrace(pr_debug("Creating index: inode %lu\n", dir->i_ino));
+ 	retval = ext4_journal_get_write_access(handle, bh);
+ 	if (retval) {
+ 		ext4_std_error(dir->i_sb, retval);
+@@ -1528,8 +1531,8 @@ static int ext4_dx_add_entry(handle_t *handle, struct dentry *dentry,
+ 		goto cleanup;
+ 
+ 	/* Block full, should compress but for now just split */
+-	dxtrace(printk(KERN_DEBUG "using %u of %u node entries\n",
+-		       dx_get_count(entries), dx_get_limit(entries)));
++	dxtrace(pr_debug("Using %u of %u node entries\n",
++			 dx_get_count(entries), dx_get_limit(entries)));
+ 	/* Need to split index? */
+ 	if (dx_get_count(entries) == dx_get_limit(entries)) {
+ 		ext4_lblk_t newblock;
+@@ -1560,8 +1563,8 @@ static int ext4_dx_add_entry(handle_t *handle, struct dentry *dentry,
+ 		if (levels) {
+ 			unsigned icount1 = icount/2, icount2 = icount - icount1;
+ 			unsigned hash2 = dx_get_hash(entries + icount1);
+-			dxtrace(printk(KERN_DEBUG "Split index %i/%i\n",
+-				       icount1, icount2));
++			dxtrace(pr_debug("Split index %i/%i\n",
++					 icount1, icount2));
+ 
+ 			BUFFER_TRACE(frame->bh, "get_write_access"); /* index root */
+ 			err = ext4_journal_get_write_access(handle,
+@@ -1590,8 +1593,7 @@ static int ext4_dx_add_entry(handle_t *handle, struct dentry *dentry,
+ 				goto journal_error;
+ 			brelse (bh2);
+ 		} else {
+-			dxtrace(printk(KERN_DEBUG
+-				       "Creating second level index...\n"));
++			dxtrace(pr_debug("Creating second level index...\n"));
+ 			memcpy((char *) entries2, (char *) entries,
+ 			       icount * sizeof(struct dx_entry));
+ 			dx_set_limit(entries2, dx_node_limit(dir));
+diff --git a/fs/ext4/page-io.c b/fs/ext4/page-io.c
+index 430c401..a2dc191 100644
+--- a/fs/ext4/page-io.c
++++ b/fs/ext4/page-io.c
+@@ -6,6 +6,8 @@
+  * Written by Theodore Ts'o, 2010.
+  */
+ 
++#define pr_fmt(fmt) "EXT4-fs: " fmt
++
+ #include <linux/module.h>
+ #include <linux/fs.h>
+ #include <linux/time.h>
+@@ -108,7 +110,7 @@ int ext4_end_io_nolock(ext4_io_end_t *io)
+ 
+ 	ret = ext4_convert_unwritten_extents(inode, offset, size);
+ 	if (ret < 0) {
+-		printk(KERN_EMERG "%s: failed to convert unwritten "
++		pr_emerg("%s: failed to convert unwritten "
+ 			"extents to written extents, error is %d "
+ 			"io is still on inode %lu aio dio list\n",
+ 		       __func__, ret, inode->i_ino);
+@@ -179,7 +181,7 @@ ext4_io_end_t *ext4_init_io_end(struct inode *inode, gfp_t flags)
+ static void buffer_io_error(struct buffer_head *bh)
+ {
+ 	char b[BDEVNAME_SIZE];
+-	printk(KERN_ERR "Buffer I/O error on device %s, logical block %llu\n",
++	pr_err("Buffer I/O error on device %s, logical block %llu\n",
+ 			bdevname(bh->b_bdev, b),
+ 			(unsigned long long)bh->b_blocknr);
+ }
+diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
+index 707d3f1..d0be841 100644
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -8,6 +8,7 @@
+  * This could probably be made into a module, because it is not often in use.
+  */
+ 
++#define pr_fmt(fmt) "EXT4-fs: " fmt
+ 
+ #define EXT4FS_DEBUG
+ 
+@@ -29,7 +30,7 @@ int ext4_resize_begin(struct super_block *sb)
+ 	 */
+ 	if (EXT4_SB(sb)->s_mount_state & EXT4_ERROR_FS) {
+ 		ext4_warning(sb, "There are errors in the filesystem, "
+-			     "so online resizing is not allowed\n");
++			     "so online resizing is not allowed");
+ 		return -EPERM;
+ 	}
+ 
+@@ -69,11 +70,10 @@ static int verify_group_input(struct super_block *sb,
+ 		input->blocks_count - 2 - overhead - sbi->s_itb_per_group;
+ 
+ 	if (test_opt(sb, DEBUG))
+-		printk(KERN_DEBUG "EXT4-fs: adding %s group %u: %u blocks "
+-		       "(%d free, %u reserved)\n",
+-		       ext4_bg_has_super(sb, input->group) ? "normal" :
+-		       "no-super", input->group, input->blocks_count,
+-		       free_blocks_count, input->reserved_blocks);
++		pr_debug("EXT4-fs: adding %s group %u: %u blocks (%d free, %u reserved)\n",
++			 ext4_bg_has_super(sb, input->group) ? "normal" :
++			 "no-super", input->group, input->blocks_count,
++			 free_blocks_count, input->reserved_blocks);
+ 
+ 	ext4_get_group_no_and_offset(sb, start, NULL, &offset);
+ 	if (group != sbi->s_groups_count)
+@@ -409,9 +409,8 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
+ 	int err;
+ 
+ 	if (test_opt(sb, DEBUG))
+-		printk(KERN_DEBUG
+-		       "EXT4-fs: ext4_add_new_gdb: adding group block %lu\n",
+-		       gdb_num);
++		pr_debug("ext4_add_new_gdb: adding group block %lu\n",
++			 gdb_num);
+ 
+ 	/*
+ 	 * If we are not using the primary superblock/GDT copy don't resize,
+@@ -992,16 +991,15 @@ int ext4_group_extend(struct super_block *sb, struct ext4_super_block *es,
+ 	o_blocks_count = ext4_blocks_count(es);
+ 
+ 	if (test_opt(sb, DEBUG))
+-		printk(KERN_DEBUG "EXT4-fs: extending last group from %llu to %llu blocks\n",
+-		       o_blocks_count, n_blocks_count);
++		pr_debug("extending last group from %llu to %llu blocks\n",
++			 o_blocks_count, n_blocks_count);
+ 
+ 	if (n_blocks_count == 0 || n_blocks_count == o_blocks_count)
+ 		return 0;
+ 
+ 	if (n_blocks_count > (sector_t)(~0ULL) >> (sb->s_blocksize_bits - 9)) {
+-		printk(KERN_ERR "EXT4-fs: filesystem on %s:"
+-			" too large to resize to %llu blocks safely\n",
+-			sb->s_id, n_blocks_count);
++		pr_err("filesystem on %s: too large to resize to %llu blocks safely\n",
++		       sb->s_id, n_blocks_count);
+ 		if (sizeof(sector_t) < 8)
+ 			ext4_warning(sb, "CONFIG_LBDAF not enabled");
+ 		return -EINVAL;
+@@ -1074,8 +1072,8 @@ int ext4_group_extend(struct super_block *sb, struct ext4_super_block *es,
+ 		goto exit_put;
+ 
+ 	if (test_opt(sb, DEBUG))
+-		printk(KERN_DEBUG "EXT4-fs: extended group to %llu blocks\n",
+-		       ext4_blocks_count(es));
++		pr_debug("extended group to %llu blocks\n",
++			 ext4_blocks_count(es));
+ 	update_backups(sb, EXT4_SB(sb)->s_sbh->b_blocknr, (char *)es,
+ 		       sizeof(struct ext4_super_block));
+ exit_put:
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index e2d88ba..591c643 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -16,6 +16,8 @@
+  *        David S. Miller (davem@caip.rutgers.edu), 1995
+  */
+ 
++#define pr_fmt(fmt) "EXT4-fs: " fmt
++
+ #include <linux/module.h>
+ #include <linux/string.h>
+ #include <linux/fs.h>
+@@ -374,7 +376,7 @@ void ext4_journal_abort_handle(const char *caller, unsigned int line,
+ 	if (is_handle_aborted(handle))
+ 		return;
+ 
+-	printk(KERN_ERR "%s:%d: aborting transaction: %s in %s\n",
++	pr_err("%s:%d: aborting transaction: %s in %s\n",
+ 	       caller, line, errstr, err_fn);
+ 
+ 	jbd2_journal_abort_handle(handle);
+@@ -460,8 +462,8 @@ void __ext4_error(struct super_block *sb, const char *function,
+ 	va_start(args, fmt);
+ 	vaf.fmt = fmt;
+ 	vaf.va = &args;
+-	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: comm %s: %pV\n",
+-	       sb->s_id, function, line, current->comm, &vaf);
++	pr_crit("error (device %s): %s:%d: comm %s: %pV\n",
++		sb->s_id, function, line, current->comm, &vaf);
+ 	va_end(args);
+ 
+ 	ext4_handle_error(sb);
+@@ -474,18 +476,27 @@ void ext4_error_inode(struct inode *inode, const char *function,
+ 	va_list args;
+ 	struct va_format vaf;
+ 	struct ext4_super_block *es = EXT4_SB(inode->i_sb)->s_es;
++	char cblock[sizeof("block:  ") + sizeof(unsigned long long) * 3];
+ 
+ 	es->s_last_error_ino = cpu_to_le32(inode->i_ino);
+ 	es->s_last_error_block = cpu_to_le64(block);
+ 	save_error_info(inode->i_sb, function, line);
++
++	if (block)
++		snprintf(cblock, sizeof(cblock), "block %llu: ",
++			 (unsigned long long)block);
++	else
++		cblock[0] = 0;
++
+ 	va_start(args, fmt);
++
+ 	vaf.fmt = fmt;
+ 	vaf.va = &args;
+-	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: inode #%lu: ",
+-	       inode->i_sb->s_id, function, line, inode->i_ino);
+-	if (block)
+-		printk(KERN_CONT "block %llu: ", block);
+-	printk(KERN_CONT "comm %s: %pV\n", current->comm, &vaf);
++
++	pr_crit("error (device %s): %s:%d: inode #%lu: %scomm %s: %pV\n",
++		inode->i_sb->s_id, function, line, inode->i_ino, cblock,
++		current->comm, &vaf);
++
+ 	va_end(args);
+ 
+ 	ext4_handle_error(inode->i_sb);
+@@ -500,6 +511,7 @@ void ext4_error_file(struct file *file, const char *function,
+ 	struct ext4_super_block *es;
+ 	struct inode *inode = file->f_dentry->d_inode;
+ 	char pathname[80], *path;
++	char cblock[sizeof("block:  ") + sizeof(unsigned long long) * 3];
+ 
+ 	es = EXT4_SB(inode->i_sb)->s_es;
+ 	es->s_last_error_ino = cpu_to_le32(inode->i_ino);
+@@ -507,15 +519,22 @@ void ext4_error_file(struct file *file, const char *function,
+ 	path = d_path(&(file->f_path), pathname, sizeof(pathname));
+ 	if (IS_ERR(path))
+ 		path = "(unknown)";
+-	printk(KERN_CRIT
+-	       "EXT4-fs error (device %s): %s:%d: inode #%lu: ",
+-	       inode->i_sb->s_id, function, line, inode->i_ino);
++
+ 	if (block)
+-		printk(KERN_CONT "block %llu: ", block);
++		snprintf(cblock, sizeof(cblock), "block %llu: ",
++			 (unsigned long long)block);
++	else
++		cblock[0] = 0;
++
+ 	va_start(args, fmt);
++
+ 	vaf.fmt = fmt;
+ 	vaf.va = &args;
+-	printk(KERN_CONT "comm %s: path %s: %pV\n", current->comm, path, &vaf);
++
++	pr_crit("error (device %s): %s:%d: inode #%lu: %scomm %s: path %s: %pV\n",
++		inode->i_sb->s_id, function, line, inode->i_ino,
++		cblock, current->comm, path, &vaf);
++
+ 	va_end(args);
+ 
+ 	ext4_handle_error(inode->i_sb);
+@@ -572,8 +591,8 @@ void __ext4_std_error(struct super_block *sb, const char *function,
+ 		return;
+ 
+ 	errstr = ext4_decode_error(sb, errno, nbuf);
+-	printk(KERN_CRIT "EXT4-fs error (device %s) in %s:%d: %s\n",
+-	       sb->s_id, function, line, errstr);
++	pr_crit("error (device %s) in %s:%d: %s\n",
++		sb->s_id, function, line, errstr);
+ 	save_error_info(sb, function, line);
+ 
+ 	ext4_handle_error(sb);
+@@ -593,13 +612,18 @@ void __ext4_abort(struct super_block *sb, const char *function,
+ 		unsigned int line, const char *fmt, ...)
+ {
+ 	va_list args;
++	struct va_format vaf;
+ 
+ 	save_error_info(sb, function, line);
++
+ 	va_start(args, fmt);
+-	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: ", sb->s_id,
+-	       function, line);
+-	vprintk(fmt, args);
+-	printk("\n");
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	pr_crit("error (device %s): %s:%d: %pV\n",
++		sb->s_id, function, line, &vaf);
++
+ 	va_end(args);
+ 
+ 	if ((sb->s_flags & MS_RDONLY) == 0) {
+@@ -620,9 +644,12 @@ void ext4_msg(struct super_block *sb, const char *prefix, const char *fmt, ...)
+ 	va_list args;
+ 
+ 	va_start(args, fmt);
++
+ 	vaf.fmt = fmt;
+ 	vaf.va = &args;
+-	printk("%sEXT4-fs (%s): %pV\n", prefix, sb->s_id, &vaf);
++
++	printk("%s" pr_fmt("(%s): %pV\n"), prefix, sb->s_id, &vaf);
++
+ 	va_end(args);
+ }
+ 
+@@ -633,10 +660,13 @@ void __ext4_warning(struct super_block *sb, const char *function,
+ 	va_list args;
+ 
+ 	va_start(args, fmt);
++
+ 	vaf.fmt = fmt;
+ 	vaf.va = &args;
+-	printk(KERN_WARNING "EXT4-fs warning (device %s): %s:%d: %pV\n",
+-	       sb->s_id, function, line, &vaf);
++
++	pr_warn("warning (device %s): %s:%d: %pV\n",
++		sb->s_id, function, line, &vaf);
++
+ 	va_end(args);
+ }
+ 
+@@ -650,22 +680,32 @@ __acquires(bitlock)
+ 	struct va_format vaf;
+ 	va_list args;
+ 	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
++	char cblock[sizeof("block:  ") + sizeof(unsigned long long) * 3];
++	char cinode[sizeof("inode:  ") + sizeof(unsigned long) * 3];
+ 
+ 	es->s_last_error_ino = cpu_to_le32(ino);
+ 	es->s_last_error_block = cpu_to_le64(block);
+ 	__save_error_info(sb, function, line);
+ 
++	if (ino)
++		snprintf(cinode, sizeof(cinode), " inode %lu:", ino);
++	else
++		cinode[0] = 0;
++
++	if (block)
++		snprintf(cblock, sizeof(cblock), " block %llu:",
++			 (unsigned long long)block);
++	else
++		cblock[0] = 0;
++
+ 	va_start(args, fmt);
+ 
+ 	vaf.fmt = fmt;
+ 	vaf.va = &args;
+-	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: group %u, ",
+-	       sb->s_id, function, line, grp);
+-	if (ino)
+-		printk(KERN_CONT "inode %lu: ", ino);
+-	if (block)
+-		printk(KERN_CONT "block %llu:", (unsigned long long) block);
+-	printk(KERN_CONT "%pV\n", &vaf);
++
++	pr_crit("error (device %s): %s:%d: group %u,%s%s %pV\n",
++		sb->s_id, function, line, grp, cinode, cblock, &vaf);
++
+ 	va_end(args);
+ 
+ 	if (test_opt(sb, ERRORS_CONT)) {
+@@ -767,11 +807,10 @@ static void dump_orphan_list(struct super_block *sb, struct ext4_sb_info *sbi)
+ 	ext4_msg(sb, KERN_ERR, "sb orphan head is %d",
+ 		 le32_to_cpu(sbi->s_es->s_last_orphan));
+ 
+-	printk(KERN_ERR "sb_info orphan list:\n");
++	pr_err("sb_info orphan list:\n");
+ 	list_for_each(l, &sbi->s_orphan) {
+ 		struct inode *inode = orphan_list_entry(l);
+-		printk(KERN_ERR "  "
+-		       "inode %s:%lu at %p: mode %o, nlink %d, next %d\n",
++		pr_err("  inode %s:%lu at %p: mode %o, nlink %d, next %d\n",
+ 		       inode->i_sb->s_id, inode->i_ino, inode,
+ 		       inode->i_mode, inode->i_nlink,
+ 		       NEXT_ORPHAN(inode));
+@@ -1411,8 +1450,7 @@ static ext4_fsblk_t get_sb_block(void **data)
+ 	/* TODO: use simple_strtoll with >32bit ext4 */
+ 	sb_block = simple_strtoul(options, &options, 0);
+ 	if (*options && *options != ',') {
+-		printk(KERN_ERR "EXT4-fs: Invalid sb specification: %s\n",
+-		       (char *) *data);
++		pr_err("Invalid sb specification: %s\n", (char *) *data);
+ 		return 1;
+ 	}
+ 	if (*options == ',')
+@@ -1435,27 +1473,25 @@ static int set_qf_name(struct super_block *sb, int qtype, substring_t *args)
+ 	if (sb_any_quota_loaded(sb) &&
+ 		!sbi->s_qf_names[qtype]) {
+ 		ext4_msg(sb, KERN_ERR,
+-			"Cannot change journaled "
+-			"quota options when quota turned on");
++			 "Cannot change journaled quota options when quota turned on");
+ 		return 0;
+ 	}
+ 	qname = match_strdup(args);
+ 	if (!qname) {
+ 		ext4_msg(sb, KERN_ERR,
+-			"Not enough memory for storing quotafile name");
++			 "Not enough memory for storing quotafile name");
+ 		return 0;
+ 	}
+ 	if (sbi->s_qf_names[qtype] &&
+ 		strcmp(sbi->s_qf_names[qtype], qname)) {
+ 		ext4_msg(sb, KERN_ERR,
+-			"%s quota file already specified", QTYPE2NAME(qtype));
++			 "%s quota file already specified", QTYPE2NAME(qtype));
+ 		kfree(qname);
+ 		return 0;
+ 	}
+ 	sbi->s_qf_names[qtype] = qname;
+ 	if (strchr(sbi->s_qf_names[qtype], '/')) {
+-		ext4_msg(sb, KERN_ERR,
+-			"quotafile must be on filesystem root");
++		ext4_msg(sb, KERN_ERR, "quotafile must be on filesystem root");
+ 		kfree(sbi->s_qf_names[qtype]);
+ 		sbi->s_qf_names[qtype] = NULL;
+ 		return 0;
+@@ -1471,8 +1507,8 @@ static int clear_qf_name(struct super_block *sb, int qtype)
+ 
+ 	if (sb_any_quota_loaded(sb) &&
+ 		sbi->s_qf_names[qtype]) {
+-		ext4_msg(sb, KERN_ERR, "Cannot change journaled quota options"
+-			" when quota turned on");
++		ext4_msg(sb, KERN_ERR,
++			 "Cannot change journaled quota options when quota turned on");
+ 		return 0;
+ 	}
+ 	/*
+@@ -1615,7 +1651,7 @@ static int parse_options(char *options, struct super_block *sb,
+ 		case Opt_journal_dev:
+ 			if (is_remount) {
+ 				ext4_msg(sb, KERN_ERR,
+-					"Cannot specify journal on remount");
++					 "Cannot specify journal on remount");
+ 				return 0;
+ 			}
+ 			if (match_int(&args[0], &option))
+@@ -1669,7 +1705,7 @@ static int parse_options(char *options, struct super_block *sb,
+ 			if (is_remount) {
+ 				if (test_opt(sb, DATA_FLAGS) != data_opt) {
+ 					ext4_msg(sb, KERN_ERR,
+-						"Cannot change data mode on remount");
++						 "Cannot change data mode on remount");
+ 					return 0;
+ 				}
+ 			} else {
+@@ -1712,9 +1748,8 @@ static int parse_options(char *options, struct super_block *sb,
+ set_qf_format:
+ 			if (sb_any_quota_loaded(sb) &&
+ 			    sbi->s_jquota_fmt != qfmt) {
+-				ext4_msg(sb, KERN_ERR, "Cannot change "
+-					"journaled quota options when "
+-					"quota turned on");
++				ext4_msg(sb, KERN_ERR,
++					 "Cannot change journaled quota options when quota turned on");
+ 				return 0;
+ 			}
+ 			sbi->s_jquota_fmt = qfmt;
+@@ -1730,8 +1765,8 @@ set_qf_format:
+ 			break;
+ 		case Opt_noquota:
+ 			if (sb_any_quota_loaded(sb)) {
+-				ext4_msg(sb, KERN_ERR, "Cannot change quota "
+-					"options when quota turned on");
++				ext4_msg(sb, KERN_ERR,
++					 "Cannot change quota options when quota turned on");
+ 				return 0;
+ 			}
+ 			clear_opt(sb, QUOTA);
+@@ -1742,8 +1777,7 @@ set_qf_format:
+ 		case Opt_quota:
+ 		case Opt_usrquota:
+ 		case Opt_grpquota:
+-			ext4_msg(sb, KERN_ERR,
+-				"quota options not supported");
++			ext4_msg(sb, KERN_ERR, "quota options not supported");
+ 			break;
+ 		case Opt_usrjquota:
+ 		case Opt_grpjquota:
+@@ -1753,7 +1787,7 @@ set_qf_format:
+ 		case Opt_jqfmt_vfsv0:
+ 		case Opt_jqfmt_vfsv1:
+ 			ext4_msg(sb, KERN_ERR,
+-				"journaled quota options not supported");
++				 "journaled quota options not supported");
+ 			break;
+ 		case Opt_noquota:
+ 			break;
+@@ -1780,8 +1814,7 @@ set_qf_format:
+ 		case Opt_resize:
+ 			if (!is_remount) {
+ 				ext4_msg(sb, KERN_ERR,
+-					"resize option only available "
+-					"for remount");
++					 "resize option only available for remount");
+ 				return 0;
+ 			}
+ 			if (match_int(&args[0], &option) != 0)
+@@ -1832,8 +1865,7 @@ set_qf_format:
+ 				return 0;
+ 			if (option && !is_power_of_2(option)) {
+ 				ext4_msg(sb, KERN_ERR,
+-					 "EXT4-fs: inode_readahead_blks"
+-					 " must be a power of 2");
++					 "inode_readahead_blks must be a power of 2");
+ 				return 0;
+ 			}
+ 			sbi->s_inode_readahead_blks = option;
+@@ -1968,8 +2000,7 @@ static int ext4_setup_super(struct super_block *sb, struct ext4_super_block *es,
+ 
+ 	ext4_commit_super(sb, 1);
+ 	if (test_opt(sb, DEBUG))
+-		printk(KERN_INFO "[EXT4 FS bs=%lu, gc=%u, "
+-				"bpg=%lu, ipg=%lu, mo=%04x, mo2=%04x]\n",
++		pr_info("bs=%lu, gc=%u, bpg=%lu, ipg=%lu, mo=%04x, mo2=%04x\n",
+ 			sb->s_blocksize,
+ 			sbi->s_groups_count,
+ 			EXT4_BLOCKS_PER_GROUP(sb),
+@@ -2224,16 +2255,16 @@ static void ext4_orphan_cleanup(struct super_block *sb,
+ 		dquot_initialize(inode);
+ 		if (inode->i_nlink) {
+ 			ext4_msg(sb, KERN_DEBUG,
+-				"%s: truncating inode %lu to %lld bytes",
+-				__func__, inode->i_ino, inode->i_size);
++				 "%s: truncating inode %lu to %lld bytes",
++				 __func__, inode->i_ino, inode->i_size);
+ 			jbd_debug(2, "truncating inode %lu to %lld bytes\n",
+ 				  inode->i_ino, inode->i_size);
+ 			ext4_truncate(inode);
+ 			nr_truncates++;
+ 		} else {
+ 			ext4_msg(sb, KERN_DEBUG,
+-				"%s: deleting unreferenced inode %lu",
+-				__func__, inode->i_ino);
++				 "%s: deleting unreferenced inode %lu",
++				 __func__, inode->i_ino);
+ 			jbd_debug(2, "deleting unreferenced inode %lu\n",
+ 				  inode->i_ino);
+ 			nr_orphans++;
+@@ -2703,32 +2734,32 @@ static void print_daily_error_info(unsigned long arg)
+ 		ext4_msg(sb, KERN_NOTICE, "error count: %u",
+ 			 le32_to_cpu(es->s_error_count));
+ 	if (es->s_first_error_time) {
+-		printk(KERN_NOTICE "EXT4-fs (%s): initial error at %u: %.*s:%d",
+-		       sb->s_id, le32_to_cpu(es->s_first_error_time),
+-		       (int) sizeof(es->s_first_error_func),
+-		       es->s_first_error_func,
+-		       le32_to_cpu(es->s_first_error_line));
++		pr_notice("(%s): initial error at %u: %.*s:%d",
++			  sb->s_id, le32_to_cpu(es->s_first_error_time),
++			  (int) sizeof(es->s_first_error_func),
++			  es->s_first_error_func,
++			  le32_to_cpu(es->s_first_error_line));
+ 		if (es->s_first_error_ino)
+-			printk(": inode %u",
+-			       le32_to_cpu(es->s_first_error_ino));
++			pr_cont(": inode %u",
++				le32_to_cpu(es->s_first_error_ino));
+ 		if (es->s_first_error_block)
+-			printk(": block %llu", (unsigned long long)
+-			       le64_to_cpu(es->s_first_error_block));
+-		printk("\n");
++			pr_cont(": block %llu", (unsigned long long)
++				le64_to_cpu(es->s_first_error_block));
++		pr_cont("\n");
+ 	}
+ 	if (es->s_last_error_time) {
+-		printk(KERN_NOTICE "EXT4-fs (%s): last error at %u: %.*s:%d",
+-		       sb->s_id, le32_to_cpu(es->s_last_error_time),
+-		       (int) sizeof(es->s_last_error_func),
+-		       es->s_last_error_func,
+-		       le32_to_cpu(es->s_last_error_line));
++		pr_notice("(%s): last error at %u: %.*s:%d",
++			  sb->s_id, le32_to_cpu(es->s_last_error_time),
++			  (int) sizeof(es->s_last_error_func),
++			  es->s_last_error_func,
++			  le32_to_cpu(es->s_last_error_line));
+ 		if (es->s_last_error_ino)
+-			printk(": inode %u",
+-			       le32_to_cpu(es->s_last_error_ino));
++			pr_cont(": inode %u",
++				le32_to_cpu(es->s_last_error_ino));
+ 		if (es->s_last_error_block)
+-			printk(": block %llu", (unsigned long long)
+-			       le64_to_cpu(es->s_last_error_block));
+-		printk("\n");
++			pr_cont(": block %llu", (unsigned long long)
++				le64_to_cpu(es->s_last_error_block));
++		pr_cont("\n");
+ 	}
+ 	mod_timer(&sbi->s_err_report, jiffies + 24*60*60*HZ);  /* Once a day */
+ }
+@@ -2919,9 +2950,8 @@ static int ext4_run_lazyinit_thread(void)
+ 		ext4_clear_request_list();
+ 		kfree(ext4_li_info);
+ 		ext4_li_info = NULL;
+-		printk(KERN_CRIT "EXT4: error %d creating inode table "
+-				 "initialization thread\n",
+-				 err);
++		pr_crit("error %d creating inode table initialization thread\n",
++			err);
+ 		return err;
+ 	}
+ 	ext4_li_info->li_state |= EXT4_LAZYINIT_RUNNING;
+@@ -3626,7 +3656,7 @@ no_journal:
+ 	EXT4_SB(sb)->dio_unwritten_wq =
+ 		alloc_workqueue("ext4-dio-unwritten", WQ_MEM_RECLAIM | WQ_UNBOUND, 1);
+ 	if (!EXT4_SB(sb)->dio_unwritten_wq) {
+-		printk(KERN_ERR "EXT4-fs: failed to create DIO workqueue\n");
++		pr_err("failed to create DIO workqueue\n");
+ 		goto failed_mount_wq;
+ 	}
+ 
+@@ -4863,8 +4893,7 @@ static inline void register_as_ext2(void)
+ {
+ 	int err = register_filesystem(&ext2_fs_type);
+ 	if (err)
+-		printk(KERN_WARNING
+-		       "EXT4-fs: Unable to register as ext2 (%d)\n", err);
++		pr_warn("Unable to register as ext2 (%d)\n", err);
+ }
+ 
+ static inline void unregister_as_ext2(void)
+@@ -4894,8 +4923,7 @@ static inline void register_as_ext3(void)
+ {
+ 	int err = register_filesystem(&ext3_fs_type);
+ 	if (err)
+-		printk(KERN_WARNING
+-		       "EXT4-fs: Unable to register as ext3 (%d)\n", err);
++		pr_warn("Unable to register as ext3 (%d)\n", err);
+ }
+ 
+ static inline void unregister_as_ext3(void)
+diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
+index c757adc..3264345 100644
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -50,6 +50,8 @@
+  * by the buffer lock.
+  */
+ 
++#define pr_fmt(fmt) "EXT4-fs: " fmt
++
+ #include <linux/init.h>
+ #include <linux/fs.h>
+ #include <linux/slab.h>
+@@ -67,23 +69,27 @@
+ #define IS_LAST_ENTRY(entry) (*(__u32 *)(entry) == 0)
+ 
+ #ifdef EXT4_XATTR_DEBUG
+-# define ea_idebug(inode, f...) do { \
+-		printk(KERN_DEBUG "inode %s:%lu: ", \
+-			inode->i_sb->s_id, inode->i_ino); \
+-		printk(f); \
+-		printk("\n"); \
+-	} while (0)
+-# define ea_bdebug(bh, f...) do { \
+-		char b[BDEVNAME_SIZE]; \
+-		printk(KERN_DEBUG "block %s:%lu: ", \
+-			bdevname(bh->b_bdev, b), \
+-			(unsigned long) bh->b_blocknr); \
+-		printk(f); \
+-		printk("\n"); \
+-	} while (0)
++# define ea_idebug(inode, fmt, args...)				\
++do {								\
++	pr_debug("inode %s:%lu: " fmt "\n",			\
++		 inode->i_sb->s_id, inode->i_ino, ##args);	\
++} while (0)
++# define ea_bdebug(bh, fmt, args...)				\
++do {								\
++	char b[BDEVNAME_SIZE];					\
++	pr_debug("block %s:%lu: " fmt "\n",			\
++		 bdevname(bh->b_bdev, b),			\
++		 (unsigned long)bh->b_blocknr, ##args);		\
++} while (0)
+ #else
+-# define ea_idebug(f...)
+-# define ea_bdebug(f...)
++static inline __attribute__((format (printf, 2, 3)))
++void ea_idebug(const struct inode *inode, const char *fmt, ...)
++{
++}
++static inline __attribute__((format (printf, 2, 3)))
++void ea_bdebug(const struct buffer_head *bh, const char *fmt, ...)
++{
++}
+ #endif
+ 
+ static void ext4_xattr_cache_insert(struct buffer_head *);
+@@ -220,7 +226,8 @@ ext4_xattr_block_get(struct inode *inode, int name_index, const char *name,
+ 	error = -ENODATA;
+ 	if (!EXT4_I(inode)->i_file_acl)
+ 		goto cleanup;
+-	ea_idebug(inode, "reading block %u", EXT4_I(inode)->i_file_acl);
++	ea_idebug(inode, "reading block %llu",
++		  (unsigned long long)EXT4_I(inode)->i_file_acl);
+ 	bh = sb_bread(inode->i_sb, EXT4_I(inode)->i_file_acl);
+ 	if (!bh)
+ 		goto cleanup;
+@@ -363,7 +370,8 @@ ext4_xattr_block_list(struct dentry *dentry, char *buffer, size_t buffer_size)
+ 	error = 0;
+ 	if (!EXT4_I(inode)->i_file_acl)
+ 		goto cleanup;
+-	ea_idebug(inode, "reading block %u", EXT4_I(inode)->i_file_acl);
++	ea_idebug(inode, "reading block %llu",
++		  (unsigned long long)EXT4_I(inode)->i_file_acl);
+ 	bh = sb_bread(inode->i_sb, EXT4_I(inode)->i_file_acl);
+ 	error = -EIO;
+ 	if (!bh)
+@@ -828,7 +836,8 @@ inserted:
+ 			if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
+ 				BUG_ON(block > EXT4_MAX_BLOCK_FILE_PHYS);
+ 
+-			ea_idebug(inode, "creating block %d", block);
++			ea_idebug(inode, "creating block %llu",
++				  (unsigned long long)block);
+ 
+ 			new_bh = sb_getblk(sb, block);
+ 			if (!new_bh) {
+-- 
+1.7.6.131.g99019
 
