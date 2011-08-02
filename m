@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505Ab1HBK7f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 06:59:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50168 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239Ab1HBK7a convert rfc822-to-8bit (ORCPT
+	id S1753540Ab1HBK7u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 06:59:50 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38640 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752878Ab1HBK7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 06:59:30 -0400
-Subject: Re: [kernel.org users] linux-next changes
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        users@kernel.org
-In-Reply-To: <20110802200834.c7993f608603560002bc4b94@canb.auug.org.au>
-References: <20110802200834.c7993f608603560002bc4b94@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 02 Aug 2011 12:58:45 +0200
-Message-ID: <1312282725.1147.52.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 2 Aug 2011 06:59:47 -0400
+From: Marcus Folkesson <marcus.folkesson@gmail.com>
+To: Liam Girdwood <lrg@ti.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCHv2 0/4] regulator: tps65023: patch updates
+Date: Tue,  2 Aug 2011 12:59:30 +0200
+Message-Id: <1312282774-30880-1-git-send-email-marcus.folkesson@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <marcus.folkesson@gmail.com>
+References: <marcus.folkesson@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-02 at 20:08 +1000, Stephen Rothwell wrote:
-> It is now only about 40MB relative to Linus' tree (as opposed to 300M
-> for the complete tree. 
+This is version 2 of the tps65023 regulator patch set.
 
-Yay, thanks Stephen!
+Changes from previous patches:
+ * Split up [PATCH 1/3] into two seperate patches ([PATCHv2 [1-2]/4])
+ * Declared tps_driver_data.info as const for avoiding awkward typecastings
+ * Removed table-length structs and uses tps->table_len instead. (As Axel Lin suggested in lkml)
+
