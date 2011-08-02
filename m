@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab1HBWQI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 18:16:08 -0400
-Received: from vms173009pub.verizon.net ([206.46.173.9]:57182 "EHLO
-	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755633Ab1HBWPk (ORCPT
+	id S1755720Ab1HBWQP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 18:16:15 -0400
+Received: from vms173017pub.verizon.net ([206.46.173.17]:64035 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755671Ab1HBWPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 18:15:40 -0400
+	Tue, 2 Aug 2011 18:15:52 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
 Cc: Huang Ying <ying.huang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: [PATCH 08/19] ACPI, APEI, Add APEI bit support in generic _OSC call
-Date: Tue, 02 Aug 2011 18:14:41 -0400
-Message-id: <eccddd32ced0df8f9130024157bf8d37df860d76.1312323131.git.len.brown@intel.com>
+Subject: [PATCH 09/19] ACPI, APEI, Add WHEA _OSC support
+Date: Tue, 02 Aug 2011 18:14:42 -0400
+Message-id: <9fb0bfe1408d5506b7b83d13d1eed573fd71d67d.1312323131.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.6.396.ge0613
 In-reply-to: <1312323292-2986-1-git-send-email-lenb@kernel.org>
 References: <1312323292-2986-1-git-send-email-lenb@kernel.org>
@@ -25,86 +25,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Huang Ying <ying.huang@intel.com>
 
-In APEI firmware first mode, hardware error is reported by hardware to
-firmware firstly, then firmware reports the error to Linux in a GHES
-error record via POLL/SCI/IRQ/NMI etc.
-
-This may result in some issues if OS has no full APEI support.  So
-some firmware implementation will work in a back-compatible mode by
-default.  Where firmware will only notify OS in old-fashion, without
-GHES record.  For example, for a fatal hardware error, only NMI is
-signaled, no GHES record.
-
-To gain full APEI power on these machines, APEI bit in generic _OSC
-call can be specified to tell firmware that Linux has full APEI
-support.  This patch adds the APEI bit support in generic _OSC call.
+APEI firmware first mode must be turned on explicitly on some
+machines, otherwise there may be no GHES hardware error record for
+hardware error notification.  APEI bit in generic _OSC call can be
+used to do that, but on some machine, a special WHEA _OSC call must be
+used.  This patch adds the support to that WHEA _OSC call.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Reviewed-by: Andi Kleen <ak@linux.intel.com>
 Reviewed-by: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/bus.c   |   16 ++++++++++++++--
- include/linux/acpi.h |    2 ++
- 2 files changed, 16 insertions(+), 2 deletions(-)
+ drivers/acpi/apei/apei-base.c     |   26 ++++++++++++++++++++++++++
+ drivers/acpi/apei/apei-internal.h |    2 ++
+ drivers/acpi/apei/ghes.c          |   10 ++++++++++
+ 3 files changed, 38 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-index d1e06c1..43ce3b0 100644
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -39,6 +39,7 @@
- #include <linux/pci.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
-+#include <acpi/apei.h>
- #include <linux/dmi.h>
- #include <linux/suspend.h>
- 
-@@ -519,6 +520,7 @@ out_kfree:
+diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
+index 0714194..8041248 100644
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -604,3 +604,29 @@ struct dentry *apei_get_debugfs_dir(void)
+ 	return dapei;
  }
- EXPORT_SYMBOL(acpi_run_osc);
- 
-+bool osc_sb_apei_support_acked;
- static u8 sb_uuid_str[] = "0811B06E-4A27-44F9-8D60-3CBBC22E7B48";
- static void acpi_bus_osc_support(void)
- {
-@@ -541,11 +543,21 @@ static void acpi_bus_osc_support(void)
- #if defined(CONFIG_ACPI_PROCESSOR) || defined(CONFIG_ACPI_PROCESSOR_MODULE)
- 	capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_PPC_OST_SUPPORT;
- #endif
+ EXPORT_SYMBOL_GPL(apei_get_debugfs_dir);
 +
-+#ifdef CONFIG_ACPI_APEI_GHES
-+	if (!ghes_disable)
-+		capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_APEI_SUPPORT;
-+#endif
- 	if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle)))
- 		return;
--	if (ACPI_SUCCESS(acpi_run_osc(handle, &context)))
-+	if (ACPI_SUCCESS(acpi_run_osc(handle, &context))) {
-+		u32 *capbuf_ret = context.ret.pointer;
-+		if (context.ret.length > OSC_SUPPORT_TYPE)
-+			osc_sb_apei_support_acked =
-+				capbuf_ret[OSC_SUPPORT_TYPE] & OSC_SB_APEI_SUPPORT;
- 		kfree(context.ret.pointer);
--	/* do we need to check the returned cap? Sounds no */
++int apei_osc_setup(void)
++{
++	static u8 whea_uuid_str[] = "ed855e0c-6c90-47bf-a62a-26de0fc5ad5c";
++	acpi_handle handle;
++	u32 capbuf[3];
++	struct acpi_osc_context context = {
++		.uuid_str	= whea_uuid_str,
++		.rev		= 1,
++		.cap.length	= sizeof(capbuf),
++		.cap.pointer	= capbuf,
++	};
++
++	capbuf[OSC_QUERY_TYPE] = OSC_QUERY_ENABLE;
++	capbuf[OSC_SUPPORT_TYPE] = 0;
++	capbuf[OSC_CONTROL_TYPE] = 0;
++
++	if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle))
++	    || ACPI_FAILURE(acpi_run_osc(handle, &context)))
++		return -EIO;
++	else {
++		kfree(context.ret.pointer);
++		return 0;
 +	}
-+	/* do we need to check other returned cap? Sounds no */
- }
- 
- /* --------------------------------------------------------------------------
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 1deb2a7..e19527d 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -280,6 +280,8 @@ acpi_status acpi_run_osc(acpi_handle handle, struct acpi_osc_context *context);
- #define OSC_SB_CPUHP_OST_SUPPORT	8
- #define OSC_SB_APEI_SUPPORT		16
- 
-+extern bool osc_sb_apei_support_acked;
++}
++EXPORT_SYMBOL_GPL(apei_osc_setup);
+diff --git a/drivers/acpi/apei/apei-internal.h b/drivers/acpi/apei/apei-internal.h
+index f286cf7..f57050e 100644
+--- a/drivers/acpi/apei/apei-internal.h
++++ b/drivers/acpi/apei/apei-internal.h
+@@ -124,4 +124,6 @@ void apei_estatus_print(const char *pfx,
+ 			const struct acpi_hest_generic_status *estatus);
+ int apei_estatus_check_header(const struct acpi_hest_generic_status *estatus);
+ int apei_estatus_check(const struct acpi_hest_generic_status *estatus);
 +
- /* PCI defined _OSC bits */
- /* _OSC DW1 Definition (OS Support Fields) */
- #define OSC_EXT_PCI_CONFIG_SUPPORT		1
++int apei_osc_setup(void);
+ #endif
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index b142b94..b1390a6 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -681,6 +681,16 @@ static int __init ghes_init(void)
+ 	if (rc)
+ 		goto err_ioremap_exit;
+ 
++	rc = apei_osc_setup();
++	if (rc == 0 && osc_sb_apei_support_acked)
++		pr_info(GHES_PFX "APEI firmware first mode is enabled by APEI bit and WHEA _OSC.\n");
++	else if (rc == 0 && !osc_sb_apei_support_acked)
++		pr_info(GHES_PFX "APEI firmware first mode is enabled by WHEA _OSC.\n");
++	else if (rc && osc_sb_apei_support_acked)
++		pr_info(GHES_PFX "APEI firmware first mode is enabled by APEI bit.\n");
++	else
++		pr_info(GHES_PFX "Failed to enable APEI firmware first mode.\n");
++
+ 	return 0;
+ err_ioremap_exit:
+ 	ghes_ioremap_exit();
 -- 
 1.7.6.396.ge0613
 
