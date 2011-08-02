@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462Ab1HBWxy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 18:53:54 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:59385 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753086Ab1HBWxX (ORCPT
+	id S1753436Ab1HBWxq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 18:53:46 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:41662 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704Ab1HBWvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 18:53:23 -0400
-Date: Tue, 2 Aug 2011 23:53:16 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Daniel Drake <dsd@laptop.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Jamie Iles <jamie@jamieiles.com>
-Subject: Re: MTD-related kobject badness during linux-next boot
-Message-ID: <20110802225316.GF5063@pulham.picochip.com>
-References: <CAGq3pz4LHRkCqaJfqoMYe-=mn+s5CVZipab7bd8F3z+ou3xxVA@mail.gmail.com>
- <CAN8TOE9mWEmS5YJqNrS9OrG=t+emeLcXNpKR1BiZ6VDJW7_c=A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN8TOE9mWEmS5YJqNrS9OrG=t+emeLcXNpKR1BiZ6VDJW7_c=A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 2 Aug 2011 18:51:55 -0400
+From: Len Brown <lenb@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Cc: Huang Ying <ying.huang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: [PATCH 16/19] ACPI, APEI, GHES: Add hardware memory error recovery
+ support
+Date: Tue, 02 Aug 2011 18:14:49 -0400
+Message-id: <70738ef3836dfd4dbdaffef5522f4584b601770d.1312323131.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.7.6.396.ge0613
+In-reply-to: <1312323292-2986-1-git-send-email-lenb@kernel.org>
+References: <1312323292-2986-1-git-send-email-lenb@kernel.org>
+In-reply-to: <ca7cc5110a313a609da40ae948978a585352564b.1312323131.git.len.brown@intel.com>
+References: <ca7cc5110a313a609da40ae948978a585352564b.1312323131.git.len.brown@intel.com>
+X-Patchwork-Hint: ignore
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Brian,
+From: Huang Ying <ying.huang@intel.com>
 
-On Tue, Aug 02, 2011 at 10:40:29AM -0700, Brian Norris wrote:
-> Since Dmitry's change, it looks like cafe_nand will add the master
-> device, then parse and register its partitions, if found. However, if
-> partitions are NOT found, then mtd_device_parse_register() falls back
-> to adding the master device, which was already added. In
-> drivers/mtd/mtdcore.c, see:
-> 
->      int mtd_device_parse_register(struct mtd_info *mtd, const char **types,
->      ...
->      if (err > 0) {
->      ...
->      } else if (err == 0) {
->              err = add_mtd_device(mtd);
->      ...
-> 
-> 
-> So it looks like perhaps we can solve the problem by just killing the
-> "register the whole device first" and allow mtd_device_parse_register
-> to do it if there are no partitions. Any cafe_nand developers know if
-> this is a problem? i.e., is there a reason we need both the whole
-> device AND the partitions sent to add_mtd_device()? I'll send a full
-> patch with sign-off and description if there are no objections.
+memory_failure_queue() is called when recoverable memory errors are
+notified by firmware to do the recovery work.
 
-I think that's the right thing to do.  There's actually a comment in 
-drivers/mtd/mtdpart.c saying:
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
+ drivers/acpi/apei/Kconfig |    7 +++++++
+ drivers/acpi/apei/ghes.c  |   24 +++++++++++++++++-------
+ 2 files changed, 24 insertions(+), 7 deletions(-)
 
-	/* NOTE:  we don't arrange MTDs as a tree; it'd be error-prone
-         * to have the same data be in two different partitions.
-         */
+diff --git a/drivers/acpi/apei/Kconfig b/drivers/acpi/apei/Kconfig
+index 35596ea..c34aa51 100644
+--- a/drivers/acpi/apei/Kconfig
++++ b/drivers/acpi/apei/Kconfig
+@@ -32,6 +32,13 @@ config ACPI_APEI_PCIEAER
+ 	  PCIe AER errors may be reported via APEI firmware first mode.
+ 	  Turn on this option to enable the corresponding support.
+ 
++config ACPI_APEI_MEMORY_FAILURE
++	bool "APEI memory error recovering support"
++	depends on ACPI_APEI && MEMORY_FAILURE
++	help
++	  Memory errors may be reported via APEI firmware first mode.
++	  Turn on this option to enable the memory recovering support.
++
+ config ACPI_APEI_EINJ
+ 	tristate "APEI Error INJection (EINJ)"
+ 	depends on ACPI_APEI && DEBUG_FS
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index 931410d..e92c47c 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -451,20 +451,30 @@ static void ghes_clear_estatus(struct ghes *ghes)
+ 
+ static void ghes_do_proc(const struct acpi_hest_generic_status *estatus)
+ {
+-	int sev, processed = 0;
++	int sev, sec_sev;
+ 	struct acpi_hest_generic_data *gdata;
+ 
+ 	sev = ghes_severity(estatus->error_severity);
+ 	apei_estatus_for_each_section(estatus, gdata) {
+-#ifdef CONFIG_X86_MCE
++		sec_sev = ghes_severity(gdata->error_severity);
+ 		if (!uuid_le_cmp(*(uuid_le *)gdata->section_type,
+ 				 CPER_SEC_PLATFORM_MEM)) {
+-			apei_mce_report_mem_error(
+-				sev == GHES_SEV_CORRECTED,
+-				(struct cper_sec_mem_err *)(gdata+1));
+-			processed = 1;
+-		}
++			struct cper_sec_mem_err *mem_err;
++			mem_err = (struct cper_sec_mem_err *)(gdata+1);
++#ifdef CONFIG_X86_MCE
++			apei_mce_report_mem_error(sev == GHES_SEV_CORRECTED,
++						  mem_err);
+ #endif
++#ifdef CONFIG_ACPI_APEI_MEMORY_FAILURE
++			if (sev == GHES_SEV_RECOVERABLE &&
++			    sec_sev == GHES_SEV_RECOVERABLE &&
++			    mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
++				unsigned long pfn;
++				pfn = mem_err->physical_addr >> PAGE_SHIFT;
++				memory_failure_queue(pfn, 0, 0);
++			}
++#endif
++		}
+ 	}
+ }
+ 
+-- 
+1.7.6.396.ge0613
 
-So I do think it should be the whole device *or* the partitions.  In any 
-case, your patch looks good to me.
-
-Jamie
