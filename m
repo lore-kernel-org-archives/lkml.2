@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab1HBQdg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 12:33:36 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:5821 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753699Ab1HBQdb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 12:33:31 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=k73Br5H0bG2YQ5fVKtT0GCKpLfGQcb60EJcD/B8y6nidbzrEz8uZbQbLYdDvQbICL
-	ZXMp+HbX373IZ4KYSQTzQ==
+	id S1754614Ab1HBQgd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 12:36:33 -0400
+Received: from mga14.intel.com ([143.182.124.37]:7841 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753699Ab1HBQg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 12:36:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,307,1309762800"; 
+   d="scan'208";a="34324185"
+Message-ID: <4E382798.1090505@linux.intel.com>
+Date: Tue, 02 Aug 2011 09:36:40 -0700
+From: J Freyensee <james_p_freyensee@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110628 Thunderbird/5.0
 MIME-Version: 1.0
-In-Reply-To: <20110802080315.GA9473@tiehlicka.suse.cz>
-References: <20110801094611.AAF738A95F@mx2.suse.de>
-	<CABeCy1Y6ZO3igfRhdDQTSS0i2w9k2WTtJYwWUxuRT56UG9Zd8Q@mail.gmail.com>
-	<20110802080315.GA9473@tiehlicka.suse.cz>
-Date: Tue, 2 Aug 2011 09:33:28 -0700
-Message-ID: <CABeCy1aCA_iGOYw65UK3Nr2W7u5zEOK24N-n0iCY=aQZNVcUEQ@mail.gmail.com>
-Subject: Re: [PATCH resend] x86, PAT: honor CONFIG_STRICT_DEVMEM if pat is disabled
-From: Venki Pallipadi <venki@google.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Greg KH <gregkh@suse.de>
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        akpm <akpm@linux-foundation.org>,
+        torvalds <torvalds@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] pti: add missing CONFIG_PCI dependency
+References: <20110802080834.GA9847@osiris.boeblingen.de.ibm.com> <20110802081129.b84a7bc7.rdunlap@xenotime.net> <4E382329.8080307@linux.intel.com> <20110802162417.GA1101@suse.de>
+In-Reply-To: <20110802162417.GA1101@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 2, 2011 at 1:03 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Mon 01-08-11 16:33:18, Venki Pallipadi wrote:
->> On Fri, Jul 22, 2011 at 2:01 AM, Michal Hocko <mhocko@suse.cz> wrote:
->> >
->> > since 0124cecf (x86, PAT: disable /dev/mem mmap RAM with PAT) we are
->> > disabling access to the system RAM as if STRICT_DEVMEM was enabled by
->> > default. If we, however, disable pat by nopat kernel parameter we can
->> > access that memory without considering CONFIG_STRICT_DEVMEM.
+On 08/02/2011 09:24 AM, Greg KH wrote:
+> On Tue, Aug 02, 2011 at 09:17:45AM -0700, J Freyensee wrote:
+>> On 08/02/2011 08:11 AM, Randy Dunlap wrote:
+>>> On Tue, 2 Aug 2011 10:08:34 +0200 Heiko Carstens wrote:
+>>>
+>>>> From: Heiko Carstens<heiko.carstens@de.ibm.com>
+>>>>
+>>>> allmodconfig compile fails on s390 because of the new PTI driver:
+>>>>
+>>>> drivers/misc/pti.c:407:3: error: implicit declaration of function 'pci_iounmap'
+>>>> drivers/misc/pti.c:410:3: error: implicit declaration of function 'pci_release_region'
+>>>>
+>>>> Add a 'depends on PCI' statement so it doesn't get compiled.
+>>>>
+>>>> Cc: J Freyensee<james_p_freyensee@linux.intel.com>
+>>>
 >>
->> Looking at the code, I don't think this problem exists. Code in pat.c
->> disables /dev/mem mmap only when !CONFIG_STRICT_DEVMEM.
+>> Greg, did you see the patch go your way?
+>>
+>> http://marc.info/?l=linux-kernel&m=131007615706260&w=2
+>>
+>> Should I res-submit this patch to you through the linux-next mailing list?
 >
-> Ahh yes, you are right. I got confused by having two separate
-> range_is_allowed functions and didn't realize which one is called from
-> which context.
->        mmap_mem
->          -> range_is_allowed [drivers/char/mem.c]
->               -EPERM
->          -> phys_mem_access_prot_allowed
->               -> range_is_allowed [arch/x86/mm/pat.c]
->
-> So we really get stopped at the first check and do not get to the later
-> one.
->
-> While we are at it. {read,write}_mem checks only range_is_allowed (mem.c
-> version) and it doesn't call phys_mem_access_prot_allowed so we do not
-> consider PAT. {read,write}_kmem doesn't check the range at all.
-> Is this correct?
-> Why do we care _only_ about mmap?
->
+> I'll pick it up, it's in my "to-apply" queue now.
 
-Yes. The problem with PAT and /dev/mem mmap is with untracked mmaps in
-user address space. Once mapped the mappings can stay in user space
-and if there is a page attribute change for that physical address
-later kernel doesn't have handle on all such user space mappings that
-may exist.
-Read/Write on the other hand use direct mappings and will not cause
-this problem. I have generally been suggesting tools that want to
-access /dev/mem and are unable to mmap it due to PAT to use read/write
-instead. /dev/mem on 32 bit has some problems of its own and the
-recent patchset on mailing list fixes most of the issues there.
+Thanks Greg.
 
-Thanks,
-Venki
+There probably is one more pti patch that has not been applied as well. 
+  Stephen Rothwell asked about drivers/misc patches a week ago and I 
+responded about this additional patch I also sent:
+
+http://marc.info/?l=linux-next&m=131016084730837&w=2
+
+I apologize for the confusion.
+
+
+>
+> thanks,
+>
+> greg k-h
+
+
+-- 
+J (James/Jay) Freyensee
+Storage Technology Group
+Intel Corporation
