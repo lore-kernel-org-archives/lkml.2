@@ -1,49 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab1HBII5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 04:08:57 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:34283 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310Ab1HBIIv (ORCPT
+	id S1752580Ab1HBI0o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 04:26:44 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:17922 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab1HBI0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 04:08:51 -0400
-Date: Tue, 2 Aug 2011 10:08:34 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: J Freyensee <james_p_freyensee@linux.intel.com>,
+	Tue, 2 Aug 2011 04:26:38 -0400
+Date: Tue, 2 Aug 2011 10:26:36 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Joe Perches <joe@perches.com>
+cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Andy Grover <agrover@redhat.com>, Roland Dreier <roland@kernel.org>,
+        Christoph Hellwig <hch@lst.de>, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] pti: add missing CONFIG_PCI dependency
-Message-ID: <20110802080834.GA9847@osiris.boeblingen.de.ibm.com>
+Subject: [PATCH v3] Fix leak in
+ drivers/target/iscsi/iscsi_target_parameters.c::iscsi_copy_param_list()
+In-Reply-To: <1312241542.11635.21.camel@Joe-Laptop>
+Message-ID: <alpine.LNX.2.00.1108021023530.1692@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1108010017030.28695@swampdragon.chaosbits.net>  <1312152274.11635.8.camel@Joe-Laptop>  <alpine.LNX.2.00.1108012230080.31999@swampdragon.chaosbits.net> <1312241542.11635.21.camel@Joe-Laptop>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+On Mon, 1 Aug 2011, Joe Perches wrote:
 
-allmodconfig compile fails on s390 because of the new PTI driver:
+> On Mon, 2011-08-01 at 22:32 +0200, Jesper Juhl wrote:
+> > diff --git a/drivers/target/iscsi/iscsi_target_parameters.c b/drivers/target/iscsi/iscsi_target_parameters.c
+> []
+> > @@ -572,6 +572,17 @@ int iscsi_copy_param_list(
+> []
+> > +		if (!new_param->name || !new_param->value) {
+> []
+> > +			pr_err("Unable to allocate memory for parameter "
+> > +				"name/value.\n");
+> 
+> I know you didn't change these lines, but could you please
+> remember to coalesce formats to a single line next time?
+> 
 
-drivers/misc/pti.c:407:3: error: implicit declaration of function 'pci_iounmap'
-drivers/misc/pti.c:410:3: error: implicit declaration of function 'pci_release_region'
+Ok, let me try once more. I hope this is now acceptable.
 
-Add a 'depends on PCI' statement so it doesn't get compiled.
 
-Cc: J Freyensee <james_p_freyensee@linux.intel.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Jesper Juhl <jj@chaosbits.net>
+Subject: [PATCH v3] Fix leak in drivers/target/iscsi/iscsi_target_parameters.c::iscsi_copy_param_list()
+
+We leak memory if the allocations for 'new_param->name' or
+'new_param->value' fail.
+
+We also do a lot of variable assignments that are completely pointless
+if the allocations fail.
+
+So, let's move the allocations before the assignments and also make
+sure that we free whatever was allocated to one if the allocation fail.
+
+There's also some small CodingStyle fixups in there (curly braces on
+both branches of if statement, only one variable per line) since I was
+in the area anyway. And finally, error messages in the function are
+put on a single line for easy grep'abillity.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- drivers/misc/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/target/iscsi/iscsi_target_parameters.c |   43 +++++++++---------------
+ 1 files changed, 16 insertions(+), 27 deletions(-)
 
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -146,6 +146,7 @@ config PHANTOM
+diff --git a/drivers/target/iscsi/iscsi_target_parameters.c b/drivers/target/iscsi/iscsi_target_parameters.c
+index 252e246..497b2e7 100644
+--- a/drivers/target/iscsi/iscsi_target_parameters.c
++++ b/drivers/target/iscsi/iscsi_target_parameters.c
+@@ -545,13 +545,13 @@ int iscsi_copy_param_list(
+ 	struct iscsi_param_list *src_param_list,
+ 	int leading)
+ {
+-	struct iscsi_param *new_param = NULL, *param = NULL;
++	struct iscsi_param *param = NULL;
++	struct iscsi_param *new_param = NULL;
+ 	struct iscsi_param_list *param_list = NULL;
  
- config INTEL_MID_PTI
- 	tristate "Parallel Trace Interface for MIPI P1149.7 cJTAG standard"
-+	depends on PCI
- 	default n
- 	help
- 	  The PTI (Parallel Trace Interface) driver directs
+ 	param_list = kzalloc(sizeof(struct iscsi_param_list), GFP_KERNEL);
+ 	if (!param_list) {
+-		pr_err("Unable to allocate memory for"
+-				" struct iscsi_param_list.\n");
++		pr_err("Unable to allocate memory for struct iscsi_param_list.\n");
+ 		goto err_out;
+ 	}
+ 	INIT_LIST_HEAD(&param_list->param_list);
+@@ -567,8 +567,17 @@ int iscsi_copy_param_list(
+ 
+ 		new_param = kzalloc(sizeof(struct iscsi_param), GFP_KERNEL);
+ 		if (!new_param) {
+-			pr_err("Unable to allocate memory for"
+-				" struct iscsi_param.\n");
++			pr_err("Unable to allocate memory for struct iscsi_param.\n");
++			goto err_out;
++		}
++
++		new_param->name = kstrdup(param->name, GFP_KERNEL);
++		new_param->value = kstrdup(param->value, GFP_KERNEL);
++		if (!new_param->value || !new_param->name) {
++			kfree(new_param->value);
++			kfree(new_param->name);
++			kfree(new_param);
++			pr_err("Unable to allocate memory for parameter name/value.\n");
+ 			goto err_out;
+ 		}
+ 
+@@ -580,32 +589,12 @@ int iscsi_copy_param_list(
+ 		new_param->use = param->use;
+ 		new_param->type_range = param->type_range;
+ 
+-		new_param->name = kzalloc(strlen(param->name) + 1, GFP_KERNEL);
+-		if (!new_param->name) {
+-			pr_err("Unable to allocate memory for"
+-				" parameter name.\n");
+-			goto err_out;
+-		}
+-
+-		new_param->value = kzalloc(strlen(param->value) + 1,
+-				GFP_KERNEL);
+-		if (!new_param->value) {
+-			pr_err("Unable to allocate memory for"
+-				" parameter value.\n");
+-			goto err_out;
+-		}
+-
+-		memcpy(new_param->name, param->name, strlen(param->name));
+-		new_param->name[strlen(param->name)] = '\0';
+-		memcpy(new_param->value, param->value, strlen(param->value));
+-		new_param->value[strlen(param->value)] = '\0';
+-
+ 		list_add_tail(&new_param->p_list, &param_list->param_list);
+ 	}
+ 
+-	if (!list_empty(&param_list->param_list))
++	if (!list_empty(&param_list->param_list)) {
+ 		*dst_param_list = param_list;
+-	else {
++	} else {
+ 		pr_err("No parameters allocated.\n");
+ 		goto err_out;
+ 	}
+-- 
+1.7.6
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
