@@ -1,39 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483Ab1HBBj7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Aug 2011 21:39:59 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60553 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753355Ab1HBBjw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Aug 2011 21:39:52 -0400
-Date: Tue, 2 Aug 2011 02:39:47 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Josef Bacik <josef@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Jan Kara <jack@suse.cz>
-Subject: Re: [Regression] Commit 02c24a82187d5a628c68edfe71ae60dc135cd178
- breaks s2disk
-Message-ID: <20110802013947.GK2203@ZenIV.linux.org.uk>
-References: <201108020147.01136.rjw@sisk.pl>
- <201108020217.48952.rjw@sisk.pl>
- <CA+55aFxPAowBwgK7JqN0uH-ytvg+BKdE3yBGF0z_6kNDNcOYcQ@mail.gmail.com>
- <20110802013027.GJ2203@ZenIV.linux.org.uk>
+	id S1753655Ab1HBBmF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Aug 2011 21:42:05 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38877 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753161Ab1HBBl7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Aug 2011 21:41:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110802013027.GJ2203@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110801183207.cea89a96.akpm@linux-foundation.org>
+References: <20110802005206.GA3832@tassilo.jf.intel.com> <20110801183207.cea89a96.akpm@linux-foundation.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 1 Aug 2011 15:41:37 -1000
+Message-ID: <CA+55aFw=wX1CormdOAnsoK2ruDLp9SaEVh1EcTj8wvt+Kq2gAg@mail.gmail.com>
+Subject: Re: Revert needed: udev spewing warnons on common systems in 3.0
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        rientjes@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 02, 2011 at 02:30:27AM +0100, Al Viro wrote:
+On Mon, Aug 1, 2011 at 3:32 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+>
+> aw, what crap.
+>
+> "/proc/%d/oom_adj is deprecated, please use /proc/%d/oom_score_adj instead."
+>
+> Once per boot.  That's not "scary".
 
-> Applied (in file->f_mapping variant; it is equal to bdev->bd_mapping,
-> but what's wrong with using ->f_mapping here?)
+It is when there is that totally pointless stack trace, and the kernel
+bug reporting tool picks it up and tells the user that there was a
+kernel oops.
 
-BTW, I've put s-o-b: Rafael J. Wysocki <rjw@sisk.pl> in there.  Rafael,
-do you have any problems with that?
+Which it really does.
+
+So if it was a "printk_once()" it would be fine. The WARN_ONCE() is
+just annoying.
+
+             Linus
