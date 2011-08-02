@@ -1,138 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344Ab1HBUzz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 16:55:55 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:11001 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755254Ab1HBUzt (ORCPT
+	id S1755363Ab1HBU4L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 16:56:11 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48527 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755351Ab1HBU4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 16:55:49 -0400
-Message-ID: <4E386454.1090502@tilera.com>
-Date: Tue, 2 Aug 2011 16:55:48 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [GIT PULL] arch/tile updates for 3.1
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 2 Aug 2011 16:56:03 -0400
+Date: Tue, 2 Aug 2011 13:55:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        Marc Zyngier <maz@misterjones.org>, Ingo Molnar <mingo@elte.hu>,
+        kernel-hardening@lists.openwall.com,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH] shm: fix a race between shm_exit() and shm_init()
+Message-Id: <20110802135512.b49c9de1.akpm@linux-foundation.org>
+In-Reply-To: <20110802124530.GA2543@albatros>
+References: <20110801180151.GA26686@albatros>
+	<20110801112021.25ec9041.akpm@linux-foundation.org>
+	<20110801190341.GA6898@albatros>
+	<CA+55aFw2kHWY1N=ox1er7c-3WL4OA8x0M=Keu7hvAncKUZd1tQ@mail.gmail.com>
+	<20110802124530.GA2543@albatros>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, 2 Aug 2011 16:45:30 +0400
+Vasiliy Kulikov <segoon@openwall.com> wrote:
 
-Please pull for 3.1 from:
+> On thread exit shm_exit() is called, it uses shm_ids(ns).rw_mutex.
+> It is initialized in shm_init(), but it is not called yet at the moment
+> of kernel threads exit.  Some kernel threads are created in
+> do_pre_smp_initcalls(), and shm_init() is called in do_initcalls().
+> 
+> Static initialization of shm_ids(init_ipc_ns).rw_mutex fixes the race.
+> 
+> It fixes a kernel oops:
+> 
+> Unable to handle kernel NULL pointer dereference at virtual address 00000000
+> ...
+> [<c0320090>] (__down_write_nested+0x88/0xe0) from [<c015da08>] (exit_shm+0x28/0x48)
+> [<c015da08>] (exit_shm+0x28/0x48) from [<c002e550>] (do_exit+0x59c/0x750)
+> [<c002e550>] (do_exit+0x59c/0x750) from [<c003eaac>] (____call_usermodehelper+0x13c/0x154)
+> [<c003eaac>] (____call_usermodehelper+0x13c/0x154) from [<c000f630>] (kernel_thread_exit+0x0/0x8)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git master
+erm, wait.  There's no reason I can think of why a kernel thread needs
+to call shm_exit() at all?
 
-These are a set of relatively minor changes for arch/tile, including a
-new character driver to support the standard boot device (a SPI flash ROM).
-Thanks!
+Is that a regular kernel thread exiting, or is it a
+call_usermodehelper() worker thread?  It *looks* like
+____call_usermodehelper()'s kernel_execve() failed, so
+____call_usermodehelper() directly called do_exit().
 
-Chris Metcalf (6):
-      tile: use generic-y format for one-line asm-generic headers
-      ioctl-number.txt: add the tile hardwall ioctl range
-      arch/tile: add hypervisor-based character driver for SPI flash ROM
-      arch/tile: remove useless set_fixmap_nocache() macro
+Something's still screwed up here - we shouldn't be trying to run
+usermode helper applications before shm_init() has been run - usermode
+helpers can use ipc!
 
-John Stultz (1):
-      clocksource: tile: convert to use clocksource_register_hz
+Can someone who can reproduce this please work out if and why we're
+calling call_usermodehelper() under do_pre_smp_initcalls()?  Something
+like this...
 
-Julia Lawall (1):
-      arch/tile/mm/init.c: trivial: use BUG_ON
-
- Documentation/ioctl/ioctl-number.txt      |    1 +
- arch/tile/include/asm/Kbuild              |   38 +++
- arch/tile/include/asm/bug.h               |    1 -
- arch/tile/include/asm/bugs.h              |    1 -
- arch/tile/include/asm/cputime.h           |    1 -
- arch/tile/include/asm/device.h            |    1 -
- arch/tile/include/asm/div64.h             |    1 -
- arch/tile/include/asm/emergency-restart.h |    1 -
- arch/tile/include/asm/errno.h             |    1 -
- arch/tile/include/asm/fb.h                |    1 -
- arch/tile/include/asm/fcntl.h             |    1 -
- arch/tile/include/asm/fixmap.h            |    6 -
- arch/tile/include/asm/ioctl.h             |    1 -
- arch/tile/include/asm/ioctls.h            |    1 -
- arch/tile/include/asm/ipc.h               |    1 -
- arch/tile/include/asm/ipcbuf.h            |    1 -
- arch/tile/include/asm/irq_regs.h          |    1 -
- arch/tile/include/asm/kdebug.h            |    1 -
- arch/tile/include/asm/local.h             |    1 -
- arch/tile/include/asm/module.h            |    1 -
- arch/tile/include/asm/msgbuf.h            |    1 -
- arch/tile/include/asm/mutex.h             |    1 -
- arch/tile/include/asm/param.h             |    1 -
- arch/tile/include/asm/parport.h           |    1 -
- arch/tile/include/asm/poll.h              |    1 -
- arch/tile/include/asm/posix_types.h       |    1 -
- arch/tile/include/asm/resource.h          |    1 -
- arch/tile/include/asm/scatterlist.h       |    1 -
- arch/tile/include/asm/sembuf.h            |    1 -
- arch/tile/include/asm/serial.h            |    1 -
- arch/tile/include/asm/shmbuf.h            |    1 -
- arch/tile/include/asm/shmparam.h          |    1 -
- arch/tile/include/asm/socket.h            |    1 -
- arch/tile/include/asm/sockios.h           |    1 -
- arch/tile/include/asm/statfs.h            |    1 -
- arch/tile/include/asm/termbits.h          |    1 -
- arch/tile/include/asm/termios.h           |    1 -
- arch/tile/include/asm/types.h             |    1 -
- arch/tile/include/asm/ucontext.h          |    1 -
- arch/tile/include/asm/xor.h               |    1 -
- arch/tile/include/hv/drv_srom_intf.h      |   41 +++
- arch/tile/kernel/time.c                   |    5 +-
- arch/tile/mm/init.c                       |    3 +-
- drivers/char/Kconfig                      |   11 +
- drivers/char/Makefile                     |    2 +
- drivers/char/tile-srom.c                  |  481 +++++++++++++++++++++++++++++
- 46 files changed, 576 insertions(+), 49 deletions(-)
- delete mode 100644 arch/tile/include/asm/bug.h
- delete mode 100644 arch/tile/include/asm/bugs.h
- delete mode 100644 arch/tile/include/asm/cputime.h
- delete mode 100644 arch/tile/include/asm/device.h
- delete mode 100644 arch/tile/include/asm/div64.h
- delete mode 100644 arch/tile/include/asm/emergency-restart.h
- delete mode 100644 arch/tile/include/asm/errno.h
- delete mode 100644 arch/tile/include/asm/fb.h
- delete mode 100644 arch/tile/include/asm/fcntl.h
- delete mode 100644 arch/tile/include/asm/ioctl.h
- delete mode 100644 arch/tile/include/asm/ioctls.h
- delete mode 100644 arch/tile/include/asm/ipc.h
- delete mode 100644 arch/tile/include/asm/ipcbuf.h
- delete mode 100644 arch/tile/include/asm/irq_regs.h
- delete mode 100644 arch/tile/include/asm/kdebug.h
- delete mode 100644 arch/tile/include/asm/local.h
- delete mode 100644 arch/tile/include/asm/module.h
- delete mode 100644 arch/tile/include/asm/msgbuf.h
- delete mode 100644 arch/tile/include/asm/mutex.h
- delete mode 100644 arch/tile/include/asm/param.h
- delete mode 100644 arch/tile/include/asm/parport.h
- delete mode 100644 arch/tile/include/asm/poll.h
- delete mode 100644 arch/tile/include/asm/posix_types.h
- delete mode 100644 arch/tile/include/asm/resource.h
- delete mode 100644 arch/tile/include/asm/scatterlist.h
- delete mode 100644 arch/tile/include/asm/sembuf.h
- delete mode 100644 arch/tile/include/asm/serial.h
- delete mode 100644 arch/tile/include/asm/shmbuf.h
- delete mode 100644 arch/tile/include/asm/shmparam.h
- delete mode 100644 arch/tile/include/asm/socket.h
- delete mode 100644 arch/tile/include/asm/sockios.h
- delete mode 100644 arch/tile/include/asm/statfs.h
- delete mode 100644 arch/tile/include/asm/termbits.h
- delete mode 100644 arch/tile/include/asm/termios.h
- delete mode 100644 arch/tile/include/asm/types.h
- delete mode 100644 arch/tile/include/asm/ucontext.h
- delete mode 100644 arch/tile/include/asm/xor.h
- create mode 100644 arch/tile/include/hv/drv_srom_intf.h
- create mode 100644 drivers/char/tile-srom.c
-
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+--- a/init/main.c~a
++++ a/init/main.c
+@@ -722,12 +722,16 @@ static void __init do_basic_setup(void)
+ 	do_initcalls();
+ }
+ 
++int in_do_pre_smp_initcalls;
++
+ static void __init do_pre_smp_initcalls(void)
+ {
+ 	initcall_t *fn;
+ 
++	in_do_pre_smp_initcalls = 1;
+ 	for (fn = __initcall_start; fn < __early_initcall_end; fn++)
+ 		do_one_initcall(*fn);
++	in_do_pre_smp_initcalls = 0;
+ }
+ 
+ static void run_init_process(const char *init_filename)
+--- a/kernel/kmod.c~a
++++ a/kernel/kmod.c
+@@ -412,12 +412,17 @@ EXPORT_SYMBOL(call_usermodehelper_setfns
+  * asynchronously if wait is not set, and runs as a child of keventd.
+  * (ie. it runs with full root capabilities).
+  */
++
++extern int in_do_pre_smp_initcalls;
++
+ int call_usermodehelper_exec(struct subprocess_info *sub_info,
+ 			     enum umh_wait wait)
+ {
+ 	DECLARE_COMPLETION_ONSTACK(done);
+ 	int retval = 0;
+ 
++	if (in_do_pre_smp_initcalls)
++		dump_stack();
+ 	helper_lock();
+ 	if (sub_info->path[0] == '\0')
+ 		goto out;
+_
 
