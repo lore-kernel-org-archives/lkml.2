@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab1HBOK5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 10:10:57 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:44482 "HELO
+	id S1753065Ab1HBOPK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 10:15:10 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:45969 "HELO
 	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750972Ab1HBOKu (ORCPT
+	by vger.kernel.org with SMTP id S1751867Ab1HBOPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 10:10:50 -0400
+	Tue, 2 Aug 2011 10:15:06 -0400
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: wzvU3sUVM1n8jRiMxKhjIWLXY33MnIGIm5hkcw8_s1qqhSr
- ejpFnggptFbi1OBlnqZkUT5lWNrPdLETjFrDF5p9uARJlSHpb6thMFUA.fBn
- XZtOsnki8yYuNfbiQyAlkMmhza8nCTBf3v5_sZu8SWFSJ8qbMBikQDktL39q
- NIwdu0VnwLcynYglC1X456ryljGB.k_g2mtJMXkbFKsUQ7Ej0k5C5RWAgxP.
- 2rDhrlmNtyEzry6.k4xPvT6nL16lmMQRRJlYmQ9tm7iSGxXsMjjZz7OCDG_j
- 9QupOBjGbK46U1UXBLo_VnT_m.DHzlVgoCE8Eyu2D.Rz9hbH.JX5YMFmTo28
- mQNNkKCmx3t7XUO_TBH1876jg
+X-YMail-OSG: zBRh5rwVM1ncbmLBRv6QxJg3pBYTSifWj0hD.wunBJ2OO_n
+ 5tcg5tBjMSamO6A17603O9.XWwk9iz9z2DObnV6Ja9RqMkXpMdyb2LmdOSs_
+ uBeJgakhBvzblkIKpvQqTgmRMyDVc.7Xd2zP8Sh97Hoa4a.6_nLm91Q7LaO6
+ 8_HsFtItacd8hMvBYJYhxhtBuCHg3w0pRAHf1QldZ.fmy5xlnXtJYo2JeheD
+ WMd5bZKwloesp5sJ6gQ8XHzymDPvuA5Btx3b7c2XbUnqzFYHXy70kF6fd1vL
+ 68HkFkAXdxgrCSv3Qb5nJbkL2ocK0Ij1h8OfqGIsHh2lZp9Ol
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 2 Aug 2011 09:10:46 -0500 (CDT)
+Date: Tue, 2 Aug 2011 09:15:03 -0500 (CDT)
 From: Christoph Lameter <cl@linux.com>
 X-X-Sender: cl@router.home
 To: David Rientjes <rientjes@google.com>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>, Andi Kleen <andi@firstfloor.org>,
-        tj@kernel.org, Metathronius Galabant <m.galabant@googlemail.com>,
-        Matt Mackall <mpm@selenic.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Adrian Drzewiecki <z@drze.net>, linux-kernel@vger.kernel.org
-Subject: Re: [slub p3 0/7] SLUB: [RFC] Per cpu partial lists V3
-In-Reply-To: <alpine.DEB.2.00.1108012112420.7373@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1108020909100.18524@router.home>
-References: <20110801162823.755182213@linux.com> <alpine.DEB.2.00.1108012112420.7373@chino.kir.corp.google.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
+In-Reply-To: <alpine.DEB.2.00.1108012101310.6871@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1108020913180.18965@router.home>
+References: <alpine.DEB.2.00.1107290145080.3279@tiger> <alpine.DEB.2.00.1107291002570.16178@router.home> <alpine.DEB.2.00.1107311136150.12538@chino.kir.corp.google.com> <alpine.DEB.2.00.1107311253560.12538@chino.kir.corp.google.com> <1312145146.24862.97.camel@jaguar>
+ <alpine.DEB.2.00.1107311426001.944@chino.kir.corp.google.com> <CAOJsxLHB9jPNyU2qztbEHG4AZWjauCLkwUVYr--8PuBBg1=MCA@mail.gmail.com> <alpine.DEB.2.00.1108012101310.6871@chino.kir.corp.google.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -37,35 +37,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 1 Aug 2011, David Rientjes wrote:
 
+> On Mon, 1 Aug 2011, Pekka Enberg wrote:
 >
-> This applied nicely to Linus' tree so I've moved to testing atop that
-> rather than slub/lockless on the same netperf testing environment as the
-> slab vs. slub comparison.  The benchmarking completed without error and
-> here are the results:
+> > Btw, I haven't measured this recently but in my testing, SLAB has
+> > pretty much always used more memory than SLUB. So 'throwing more
+> > memory at the problem' is definitely a reasonable approach for SLUB.
+> >
 >
-> 	threads		before		after
-> 	 16		75509		75443  (-0.1%)
-> 	 32		118121		117558 (-0.5%)
-> 	 48		149997		149514 (-0.3%)
-> 	 64		185216		186772 (+0.8%)
-> 	 80		221195		222612 (+0.6%)
-> 	 96		239732		241089 (+0.6%)
-> 	112		261967		266643 (+1.8%)
-> 	128		272946		281794 (+3.2%)
-> 	144		279202		289421 (+3.7%)
-> 	160		285745		297216 (+4.0%)
->
-> So the patchset certainly looks helpful, especially if it improves other
-> benchmarks as well.
+> Yes, slub _did_ use more memory than slab until the alignment of
+> struct page.  That cost an additional 128MB on each of these 64GB
+> machines, while the total slab usage on the client machine systemwide is
+> ~75MB while running netperf TCP_RR with 160 threads.
 
-The problem is that the partial approach has not been fine tuned yet for
-these larger loads. And the proper knobs are not implemented yet.
-
-> I'll review the patches individually, starting with the cleanup patches
-> that can hopefully be pushed quickly while we discuss per-cpu partial
-> lists further.
-
-I am currently reworking the patches to operate on a linked list instead
-of a very small array of pointers to page structs. That will allow much
-larger per cpu partial lists and a dynamic configuration of the sizes.
+I guess that calculation did not include metadata structures (alien caches
+and the NR_CPU arrays in kmem_cache) etc? These are particularly costly on SLAB.
 
