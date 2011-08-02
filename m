@@ -1,37 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab1HBK22 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 06:28:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37943 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039Ab1HBK2Y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 06:28:24 -0400
-Subject: Re: [PATCH] perf, x86: Add model 45 SandyBridge support
-From: Peter Zijlstra <peterz@infradead.org>
-To: Youquan Song <youquan.song@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, ming.m.lin@intel.com,
-        anhua.xu@intel.com, chaohong.guo@intel.com, kent.liu@intel.com,
-        Youquan Song <youquan.song@linux.intel.com>
-In-Reply-To: <1312264895-2010-1-git-send-email-youquan.song@intel.com>
-References: <1312264895-2010-1-git-send-email-youquan.song@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 02 Aug 2011 12:27:50 +0200
-Message-ID: <1312280870.1147.32.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753110Ab1HBKcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 06:32:23 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:36544 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751826Ab1HBKcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 06:32:20 -0400
+Date: Tue, 2 Aug 2011 03:32:16 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: shemminger@vyatta.com, eric.dumazet@gmail.com, mchan@broadcom.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rcu: convert uses of rcu_assign_pointer(x, NULL) to
+ RCU_INIT_POINTER
+Message-ID: <20110802103216.GB2352@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110801052342.GD2307@linux.vnet.ibm.com>
+ <1312188453.2719.1.camel@edumazet-laptop>
+ <20110801091900.1027396f@nehalam.ftrdhcpuser.net>
+ <20110801.224401.31810103988544647.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110801.224401.31810103988544647.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-02 at 14:01 +0800, Youquan Song wrote:
-> Add support to Romely-EP SandyBridge.
+On Mon, Aug 01, 2011 at 10:44:01PM -0700, David Miller wrote:
+> From: Stephen Hemminger <shemminger@vyatta.com>
+> Date: Mon, 1 Aug 2011 09:19:00 -0700
 > 
-> Signed-off-by: Youquan Song <youquan.song@intel.com>
-> Signed-off-by: Anhua Xu <anhua.xu@intel.com>
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > When assigning a NULL value to an RCU protected pointer, no barrier
+> > is needed. The rcu_assign_pointer, used to handle that but will soon
+> > change to not handle the special case.
+> > 
+> > Convert all rcu_assign_pointer of NULL value.
+> > 
+> > //smpl
+> > @@ expression P; @@
+> > 
+> > - rcu_assign_pointer(P, NULL)
+> > + RCU_INIT_POINTER(P, NULL)
+> > 
+> > // </smpl>
+> > 
+> > 
+> > Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+> 
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-Hehe, lots of SOBs for 1 line ;-)
+Very good, thank you!
 
-Thanks though!
+This patch does not depend on Eric's earlier patch because
+RCU_INIT_POINTER() already exists.  So although I would be happy to
+carry this patch, there is no reason I can see not to run it up through
+net-next.  Either way, the Coccinelle script does look generally
+useful.  ;-)
+
+If you would prefer me to carry it, please let me know.  Otherwise:
+
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+							Thanx, Paul
