@@ -1,152 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab1HBI1o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 04:27:44 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:41288 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752085Ab1HBI1j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 04:27:39 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EADK0N05tgyMH/2dsb2JhbABCp194ggE/GBdGDRgDIRMJh2UCwSUOhVVfBJxmhns
-Date: Tue, 2 Aug 2011 10:27:37 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        David Engraf <david.engraf@sysgo.com>,
-        Paul Mundt <lethal@linux-sh.org>, Mart Gerrits <mart1987@gmail.com>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: [GIT PULL REQUEST] watchdog - Fixes
-Message-ID: <20110802082737.GA7843@infomag.iguana.be>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752704Ab1HBIgU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 04:36:20 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43005 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752410Ab1HBIgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 04:36:13 -0400
+Date: Tue, 2 Aug 2011 18:35:58 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Christie <michaelc@cs.wisc.edu>
+Subject: Re: linux-next: build warning after merge of the moduleh tree
+Message-Id: <20110802183558.fda9e3b1e9f3b93a70f6e494@canb.auug.org.au>
+In-Reply-To: <4E37A696.2090007@fusionio.com>
+References: <20110801132359.1de051cb8a4a2bdfdad7560c@canb.auug.org.au>
+	<4E37A696.2090007@fusionio.com>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__2_Aug_2011_18_35_58_+1000_CmC0BMshnmKGz0Ye"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+--Signature=_Tue__2_Aug_2011_18_35_58_+1000_CmC0BMshnmKGz0Ye
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please pull from 'master' branch of
-	git://git.kernel.org/pub/scm/linux/kernel/git/wim/linux-watchdog.git
-or if master.kernel.org hasn't synced up yet:
-	master.kernel.org:/pub/scm/linux/kernel/git/wim/linux-watchdog.git
+Hi Jens,
 
-This will update the following files:
+On Tue, 2 Aug 2011 09:26:14 +0200 Jens Axboe <jaxboe@fusionio.com> wrote:
+>
+> Thanks, will you carry this until things are merged? Not easy for me to
+> fix up.
 
- drivers/watchdog/Kconfig  |    3 ---
- drivers/watchdog/nv_tco.c |    8 ++++++++
- drivers/watchdog/shwdt.c  |    2 +-
- 3 files changed, 9 insertions(+), 4 deletions(-)
+Yes, no problem.  It is possible that the module.h split may not even go
+into v3.1, in which case the fix patch will jst become part of the moduleh
+tree after the block tree is merged.
 
-with these Changes:
+Though the feedback to the original patch writer is that they should have
+included module.h instead of relying on it being implicitly included.
 
-Author: Josh Boyer <jwboyer@redhat.com>
-Date:   Sat Jul 30 10:18:48 2011 -0400
+You could include a patch to add an include of module.h to this file in
+your tree - that way even if the module.h split goes ahead, your tree
+won't get broken.  It could then be changed to the lighter weight
+export.h later.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-    watchdog: Cleanup WATCHDOG_CORE help text
-    
-    The newly added WATCHDOG_CORE option is a bool, but the help text suggests
-    it can be built as a module.  Fix it up.
-    
-    Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+--Signature=_Tue__2_Aug_2011_18_35_58_+1000_CmC0BMshnmKGz0Ye
+Content-Type: application/pgp-signature
 
-Author: Mart Gerrits <mart1987@gmail.com>
-Date:   Sat Jul 30 16:59:12 2011 +0200
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-    watchdog: Fix POST failure on ASUS P5N32-E SLI and similar boards
-    
-    At present the module does not unset the NO_REBOOT bit upon shutdown, this
-    causes the BIOS to fail the POST once and reset. During the next boot it
-    displays the following error message:
-    
-    ***** Warning: System BOOT Fail *****
-    Your system last boot fail or POST interrupted.
-    Please enter setup to load default and reboot again.
-    Press F1 to continue, DEL to enter SETUP
-    
-    With this patch the NO_REBOOT flag will be unset on shutdown and thus stop
-    this failure from occurring.
-    
-    Tested on 'ASUS P5N32-E SLI with BIOS revision 1801' and
-              'ASUS P5N32-E SLI PLUS with BIOS revision 1502'.
-    
-    Signed-off-by: Mart Gerrits <mart1987@gmail.com>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+iQEcBAEBAgAGBQJON7buAAoJEDMEi1NhKgbsCzEIAJjAD+rymdtholhTSXu6/xSn
+3HhTDNuGaXYD33Xg7Ajcz70kb3O0A8Oe95ZdAyc44eKpPtf7k0YQqZ7tgee6gQ3m
+G93Fj5HGmJvYkOW+2jK6ZuNg/JpdH3jCeCKdiRZMkVRmoBw0hFjkWSSWGuBO5gUM
+lVDyjFZpL5hkhmDMCEEoxjCE2TsS08y7m1Uv6vBDcismRSDkrrjSQ2P72ZUzykvd
+GoLX/NvqAZB9O/RO0RZl3dbfXd4fGhV8EdjwQr52KroRGLC6BVinuZJVx+5SWRAj
++g9qL3NUzETa9WM0Gja2L4DIVdT6fDikp2Nk4tOmBpeiF+xJrg9J9Q+2aTOEq/c=
+=7z00
+-----END PGP SIGNATURE-----
 
-Author: David Engraf <david.engraf@sysgo.com>
-Date:   Wed Jul 20 15:03:39 2011 +0200
-
-    watchdog: shwdt: fix usage of mod_timer
-    
-    Fix the usage of mod_timer() and make the driver usable. mod_timer() must
-    be called with an absolute timeout in jiffies. The old implementation
-    used a relative timeout thus the hardware watchdog was never triggered.
-    
-    Signed-off-by: David Engraf <david.engraf@sysgo.com>
-    Signed-off-by: Paul Mundt <lethal@linux-sh.org>
-    Signed-off-by: Wim Van sebroeck <wim@iguana.be>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Cc: stable <stable@kernel.org>
-
-The Changes can also be looked at on:
-	http://www.kernel.org/git/?p=linux/kernel/git/wim/linux-watchdog.git;a=summary
-
-For completeness, I added the overal diff below.
-
-Greetings,
-Wim.
-
-================================================================================
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index f441726..86b0735 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -36,9 +36,6 @@ config WATCHDOG_CORE
- 	  and gives them the /dev/watchdog interface (and later also the
- 	  sysfs interface).
- 
--	  To compile this driver as a module, choose M here: the module will
--	  be called watchdog.
--
- config WATCHDOG_NOWAYOUT
- 	bool "Disable watchdog shutdown on close"
- 	help
-diff --git a/drivers/watchdog/nv_tco.c b/drivers/watchdog/nv_tco.c
-index afa78a5..809f41c 100644
---- a/drivers/watchdog/nv_tco.c
-+++ b/drivers/watchdog/nv_tco.c
-@@ -458,7 +458,15 @@ static int __devexit nv_tco_remove(struct platform_device *dev)
- 
- static void nv_tco_shutdown(struct platform_device *dev)
- {
-+	u32 val;
-+
- 	tco_timer_stop();
-+
-+	/* Some BIOSes fail the POST (once) if the NO_REBOOT flag is not
-+	 * unset during shutdown. */
-+	pci_read_config_dword(tco_pci, MCP51_SMBUS_SETUP_B, &val);
-+	val &= ~MCP51_SMBUS_SETUP_B_TCO_REBOOT;
-+	pci_write_config_dword(tco_pci, MCP51_SMBUS_SETUP_B, val);
- }
- 
- static struct platform_driver nv_tco_driver = {
-diff --git a/drivers/watchdog/shwdt.c b/drivers/watchdog/shwdt.c
-index db84f23..a267dc0 100644
---- a/drivers/watchdog/shwdt.c
-+++ b/drivers/watchdog/shwdt.c
-@@ -64,7 +64,7 @@
-  * misses its deadline, the kernel timer will allow the WDT to overflow.
-  */
- static int clock_division_ratio = WTCSR_CKS_4096;
--#define next_ping_period(cks)	msecs_to_jiffies(cks - 4)
-+#define next_ping_period(cks)	(jiffies + msecs_to_jiffies(cks - 4))
- 
- static const struct watchdog_info sh_wdt_info;
- static struct platform_device *sh_wdt_dev;
+--Signature=_Tue__2_Aug_2011_18_35_58_+1000_CmC0BMshnmKGz0Ye--
