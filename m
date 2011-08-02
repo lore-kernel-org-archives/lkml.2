@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957Ab1HBKOY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 06:14:24 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:36742 "EHLO linux-mips.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751783Ab1HBKOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 06:14:18 -0400
-Date: Tue, 2 Aug 2011 10:24:38 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, linux-mips@linux-mips.org
-Subject: Re: [PATCH 2/7] MIPS: static should be at beginning of declaration
-Message-ID: <20110802092438.GA18229@linux-mips.org>
-References: <alpine.LNX.2.00.1107092304160.25516@swampdragon.chaosbits.net>
- <alpine.LNX.2.00.1107092311190.25516@swampdragon.chaosbits.net>
+	id S1752427Ab1HBKPo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 06:15:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25525 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750998Ab1HBKPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 06:15:38 -0400
+Date: Tue, 2 Aug 2011 11:15:33 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Joe Thornber <thornber@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: Re: linux-next: build failure after merge of the moduleh tree
+Message-ID: <20110802101533.GQ10499@agk-dp.fab.redhat.com>
+Mail-Followup-To: Alasdair G Kergon <agk@redhat.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	Paul Gortmaker <paul.gortmaker@windriver.com>,
+	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Joe Thornber <thornber@redhat.com>,
+	Mike Snitzer <snitzer@redhat.com>
+References: <20110802151306.4fb9904e55fe9b489a3cf29d@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LNX.2.00.1107092311190.25516@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110802151306.4fb9904e55fe9b489a3cf29d@canb.auug.org.au>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 09, 2011 at 11:12:35PM +0200, Jesper Juhl wrote:
+On Tue, Aug 02, 2011 at 03:13:06PM +1000, Stephen Rothwell wrote:
+> This really is a bug in the original patch as you should explicitly
+> include module.h if you are using the module facilities.
 
-> Make sure that the 'static' keywork is at the beginning of declaration
-> for arch/mips/include/asm/mach-jz4740/gpio.h
-> 
-> This gets rid of warnings like
->   warning: ‘static’ is not at beginning of declaration
-> when building with -Wold-style-declaration (and/or -Wextra which also
-> enables it).
-> Also a few tiny whitespace changes.
+Fixed, thanks.
 
-> - const static struct jz_gpio_bulk_request i2c_pins[] = {
-> + static const struct jz_gpio_bulk_request i2c_pins[] = {
-
-Quite surprising - but that still was valid C - just type for example:
-
-int typedef (*func(const char op))(int a, int b[static const a = 3]);
-
-  Ralf
+Alasdair
