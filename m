@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753139Ab1HBJ5M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 05:57:12 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53586 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751584Ab1HBJ5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 05:57:01 -0400
-Date: Tue, 2 Aug 2011 19:56:51 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: ftpadmin@kernel.org
-Cc: sedat.dilek@gmail.com, Sedat Dilek <sedat.dilek@googlemail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-next <linux-next@vger.kernel.org>
-Subject: Re: linux-next lines double on <www.kernel.org>
-Message-Id: <20110802195651.33d3081a17dbf478bb2c6094@canb.auug.org.au>
-In-Reply-To: <CA+icZUW04NV6SO36rOHGNaCvktByLFk666TPCRcu21LXQsSSag@mail.gmail.com>
-References: <CA+icZUW04NV6SO36rOHGNaCvktByLFk666TPCRcu21LXQsSSag@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__2_Aug_2011_19_56_51_+1000_Z5p9Q/wbGrGIVGij"
+	id S1753246Ab1HBJ5h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 05:57:37 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:40120 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752848Ab1HBJ5b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 05:57:31 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAF/JN05tgyMH/2dsb2JhbABCp194gUABAQU6PxAIA0YUJQMhiAHBFw6GNASjYQ
+Date: Tue, 2 Aug 2011 11:57:30 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-watchdog@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: [RFC PATCH] watchdog: ep93xx: Use the WatchDog Timer Driver
+	Core.
+Message-ID: <20110802095729.GO4227@infomag.iguana.be>
+References: <201108011357.24745.hartleys@visionengravers.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201108011357.24745.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__2_Aug_2011_19_56_51_+1000_Z5p9Q/wbGrGIVGij
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi H Hartley,
 
-Hi,
+[...]
+> @@ -210,43 +126,31 @@ static int __init ep93xx_wdt_init(void)
+>  {
+>  	int err;
+>  
+> -	err = misc_register(&ep93xx_wdt_miscdev);
+> +	ep93xx_wdd.bootstatus = readl(EP93XX_WDT_WATCHDOG);
+> +	ep93xx_wdd.timeout = timeout;
+> +
+> +	err = watchdog_register_device(&ep93xx_wdd);
+> +	if (err)
+> +		return err;
+>  
+> -	boot_status = __raw_readl(EP93XX_WDT_WATCHDOG) & 0x01 ? 1 : 0;
+> +	setup_timer(&timer, ep93xx_timer_ping, 1);
 
-On Tue, 2 Aug 2011 11:48:05 +0200 Sedat Dilek <sedat.dilek@googlemail.com> =
-wrote:
->
-> if you have these double lines to value highly the work of linux-next,
-> I have nothing against it :-).
-> But I guess it is not intended.
+Shouldn't the bootstatus setting be:
+ep93xx_wdd.bootstatus = readl(EP93XX_WDT_WATCHDOG) & 0x01 ? 1 : 0;
+(or something similar with the WDIOF_OVERHEAT, ... flags).
 
-I guess this is because I now have two trees: linux-next and
-linux-next-history.  Sorry about that, but maybe the page generetor needs
-a little more filtering.
+Kind regards,
+Wim.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__2_Aug_2011_19_56_51_+1000_Z5p9Q/wbGrGIVGij
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJON8njAAoJEDMEi1NhKgbsRokH/3zNmP9A2Z0paNBDm+IX9PBb
-3DEW8IIUXRAhvdobLK3FsdVbnT+3VX2hDS8e1LLW59v6l0uJMC7V/iJrEAuRe3Yw
-GdQiPbS1on/KfXeDyYMOPd+lYr86ng5J1bOPX6a0WBFLzlsqBe5mrzh6DnZuYKr0
-WWt0xPAF9/PHAjeIz4kCHfqWozw4blAq5VC0rJ1VbNXTCZPuc/S+F1xrKUZnOOVA
-TewTwPUqPdTnBTxmT31MJI1tep5uF2/HRWKNCLU7aVstoqDB4AeBD8InDch/O2Uu
-pxpkQSRSDvUR5IjeRM1/e0gbN2aAuWXpvmUvjxp0rNyT9nsI0hOpFH+73fGKZVg=
-=Pyoq
------END PGP SIGNATURE-----
-
---Signature=_Tue__2_Aug_2011_19_56_51_+1000_Z5p9Q/wbGrGIVGij--
