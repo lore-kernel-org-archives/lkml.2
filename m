@@ -1,98 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab1HBWvH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 18:51:07 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:44143 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786Ab1HBWu5 convert rfc822-to-8bit (ORCPT
+	id S1752764Ab1HBWuz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 18:50:55 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:40757 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752349Ab1HBWus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 18:50:57 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=lEiMHgf6CO6W8FDqvA/dohDrdu4ESgv87ZC/YYNT5oaRhtCETStGF8gNoEbjTWlX0
-	DczBwiTDRRVIe80IznZ6Q==
+	Tue, 2 Aug 2011 18:50:48 -0400
+Date: Wed, 3 Aug 2011 01:50:42 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: balbi@ti.com, Jesper Juhl <jj@chaosbits.net>,
+        LKML <linux-kernel@vger.kernel.org>, trivial@kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        linux-usb@vger.kernel.org, usb-storage@lists.one-eyed-alien.net
+Subject: Re: [PATCH][Resend] Remove unneeded version.h includes (and add
+ where needed) for drivers/usb/
+Message-ID: <20110802225041.GA10284@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <alpine.LNX.2.00.1108012329380.31999@swampdragon.chaosbits.net>
+ <20110802211923.GB10120@legolas.emea.dhcp.ti.com>
+ <201108030011.54322.laurent.pinchart@ideasonboard.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGTjWtAyCZ9fyBeEcsrSmpzK4Lgae5uyHCfO2LExeYLSrx+4jg@mail.gmail.com>
-References: <20110719203843.646.73383.stgit@mike2.sea.corp.google.com>
-	<20110719203853.646.50974.stgit@mike2.sea.corp.google.com>
-	<20110729204529.GB3207@stro.at>
-	<CAGTjWtCYb0NOBFsMxWKWEwN-pdOD1fqimHco3nk_N-tKQvxdyQ@mail.gmail.com>
-	<20110802210912.GB20986@stro.at>
-	<CAGTjWtAyCZ9fyBeEcsrSmpzK4Lgae5uyHCfO2LExeYLSrx+4jg@mail.gmail.com>
-Date: Tue, 2 Aug 2011 15:50:53 -0700
-Message-ID: <CABV1ukGS8RN9BGC-TDB5L=yOUc1cUB3OuspGXKGwdwGtCvrZQg@mail.gmail.com>
-Subject: Re: [PATCH v1 2/2] run-init: Add drop_capabilities support.
-From: "Andrew G. Morgan" <agm@google.com>
-To: Mike Waychison <mikew@google.com>
-Cc: Maximilian Attems <max@stro.at>, Eric Northup <digitaleric@google.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
-        Eric Paris <eparis@parisplace.org>, klibc@zytor.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
+Content-Disposition: inline
+In-Reply-To: <201108030011.54322.laurent.pinchart@ideasonboard.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Which part of the version check are you dropping?
 
-Also, I'm not clear you need/want to drop the permitted/effective
-bits. All that will survive the exec() are the inheritable bits.
+--tKW2IUtsqtDRztdT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cheers
+Hi Laurent,
 
-Andrew
+On Wed, Aug 03, 2011 at 12:11:53AM +0200, Laurent Pinchart wrote:
+> Hi Felipe,
+>=20
+> On Tuesday 02 August 2011 23:19:24 Felipe Balbi wrote:
+> > On Mon, Aug 01, 2011 at 11:33:29PM +0200, Jesper Juhl wrote:
+> > > It was pointed out by 'make versioncheck' that linux/version.h was not
+> > > always being included where needed and sometimes included needlessly
+> > > in drivers/usb/.
+> > > This patch fixes up the includes.
+> > >=20
+> > > For the UVC gadget driver bits, this was ACK'ed by Laurent Pinchart.
+> > >=20
+> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > > ---
+> > >=20
+> > >  drivers/usb/gadget/uvc.h         |    1 +
+> > >  drivers/usb/gadget/uvc_v4l2.c    |    1 -
+> > >  drivers/usb/storage/realtek_cr.c |    1 -
+> > >  3 files changed, 1 insertions(+), 2 deletions(-)
+> > >=20
+> > > diff --git a/drivers/usb/gadget/uvc.h b/drivers/usb/gadget/uvc.h
+> > > index 5b79194..81971fb 100644
+> > > --- a/drivers/usb/gadget/uvc.h
+> > > +++ b/drivers/usb/gadget/uvc.h
+> > > @@ -56,6 +56,7 @@ struct uvc_event
+> > >=20
+> > >  #include <linux/usb.h>	/* For usb_endpoint_* */
+> > >  #include <linux/usb/gadget.h>
+> > >  #include <linux/videodev2.h>
+> > >=20
+> > > +#include <linux/version.h>
+> >=20
+> > does uvc.h really needs <linux/version.h> ?? Laurent ?
+>=20
+> uvc.h has
+>=20
+> #define DRIVER_VERSION_NUMBER                   KERNEL_VERSION(0, 1, 0)
+>=20
+> This is used in drivers/usb/gadget/uvc_v4l2.c only.
+>=20
+> As the uvc gadget driver lives in-tree, the best fix is probably to remov=
+e=20
+> DRIVER_VERSION_NUMBER completely, and replace it with LINUX_VERSION_CODE =
+where=20
+> it is used.
 
-On Tue, Aug 2, 2011 at 2:42 PM, Mike Waychison <mikew@google.com> wrote:
-> On Tue, Aug 2, 2011 at 2:09 PM, Maximilian Attems <max@stro.at> wrote:
->> On Fri, 29 Jul 2011, Mike Waychison wrote:
->>
->>> On Fri, Jul 29, 2011 at 1:45 PM, Maximilian Attems <max@stro.at> wrote:
->>> > On Tue, 19 Jul 2011, Mike Waychison wrote:
->>> >
->>> >> This patch adds the ability to run-init to allow the dropping of
->>> >> POSIX capabilities.
->>> >>
->>> >> This works by adding a "-d" flag to run-init, which takes a comma
->>> >> separated list of capability names that should be dropped right before
->>> >> exec'ing the real init binary.
->>> >>
->>> >> kinit is also modified by this change, such that it understands the same
->>> >> argument when prepended with "drop_capabilities=" on the kernel command
->>> >> line.
->>> >>
->>> >> When processing capabilities to drop, CAP_SETPCAP is special cased to be
->>> >> dropped last, so that the order that capabilities are given does not
->>> >> cause dropping of later enumerated capabilities to fail if it is listed
->>> >> early on.
->>> >>
->>> >> Dropping of capabilities happens in three parts.  We explicitly drop the
->>> >> capability from init's inherited, permitted and effective masks.  We
->>> >> also drop the capability from the bounding set using PR_CAPBSET_DROP.
->>> >> Lastly, if available, we drop the capabilities from the bset and
->>> >> inheritted masks exposed at /proc/sys/kernel/usermodehelper if available
->>> >> (introduced in v3.0.0).
->>> >
->>> > hmm as 3.0 is out, I don't think we need more backward compatibility.
->>> > do you have a strong arg for it?
->>> > especially since this is an *optional* calling arg I really don't see
->>> > the need of that backward crap.
->>>
->>> I'd like to keep it for the time being. I'm still building both 2.6.34
->>> and 2.6.39 kernels at the moment, though I can maintain these last few
->>> compatibility bits in-house if that makes it easier for you.
->>
->> you include anyway linux/version.h, would build disabling help you?
->> that way that macro doesn't need duplicating.
->>
->
-> For correctness sake, I think it's still a runtime check thing
-> (consider the case of an image that is reused between kernel builds).
->
-> Reflecting on it a bit more though, I'd be okay if we removed the
-> version check altogether and just made it warn if the file isn't
-> present.
->
+yeah, I can agree with that, but do you need a MODULE_VERSION() anyway ?
+Would it be better to just remove the MODULE_VERSION altogether as
+there's no real benefit from having it ?
+
+--=20
+balbi
+
+--tKW2IUtsqtDRztdT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOOH9BAAoJEAv8Txj19kN1+88H/jH+9/fwg8DgGksH1bZct50I
+rXYg0XyninWFDY0fc/Im3hGwFFUeCKd4PGE6+8KRWAjZfrQ2LmnsLR6v7IqaAKQY
+B7o8DkFksaVw+YxgNXVjC3SrZPOf3ZN0ENQvKDZamoSxkUVRE74exeGxb0tTCbW8
+gYgwUAMSUI48jPoMMPew4+baHMeG4P6Ee/ZZHi1+/YAgS7kzoYHDxUDEw5R6WQA+
+ewFrjODz14kwTOmu2utPHJOOQGsCYxN3GsDmDGsI7TtzL+KIFtv1mJGapUTUh6uV
+88uQg5iYxFFolB1Ea2RWQD/BWpLd6lfk6jcABjJrfoZnE6X+Fx2f4QBf7n23hco=
+=3oiv
+-----END PGP SIGNATURE-----
+
+--tKW2IUtsqtDRztdT--
