@@ -1,146 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab1HBLH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 07:07:29 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49877 "EHLO song.cn.fujitsu.com"
+	id S1753857Ab1HBLHx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 07:07:53 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63834 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753553Ab1HBLHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 07:07:23 -0400
-Message-ID: <4E37DADE.1070306@cn.fujitsu.com>
-Date: Tue, 02 Aug 2011 19:09:18 +0800
+	id S1753526Ab1HBLHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 07:07:47 -0400
+Message-ID: <4E37DAFC.80708@cn.fujitsu.com>
+Date: Tue, 02 Aug 2011 19:09:48 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 05/12] KVM: x86: fast emulate repeat string write instructions
+Subject: [PATCH v2 06/12] KVM: MMU: do not mark access bit on pte write path
 References: <4E37DA49.1040000@cn.fujitsu.com>
 In-Reply-To: <4E37DA49.1040000@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-02 19:06:18,
+ 2011-08-02 19:06:48,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-02 19:06:19,
-	Serialize complete at 2011-08-02 19:06:19
+ 2011-08-02 19:06:49,
+	Serialize complete at 2011-08-02 19:06:49
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We usually use repeat string instructions to clear the page, for example,
-we call memset to clear a page table, stosb is used in this function, and
-repeated for 1024 times, that means we should occupy mmu lock for 1024 times
-and walking shadow page cache for 1024 times, it is terrible
-
-In fact, if it is the repeat string instructions emulated and it is not a
-IO/MMIO access, we can zap all the corresponding shadow pages and return to the
-guest, then the mapping can became writable and we can directly write the page
+In current code, the accessed bit is always set when page fault occurred,
+do not need to set it on pte write path
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/include/asm/kvm_emulate.h |    1 +
- arch/x86/kvm/x86.c                 |   37 +++++++++++++++++++++++++++++------
- 2 files changed, 31 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    1 -
+ arch/x86/kvm/mmu.c              |   22 +---------------------
+ 2 files changed, 1 insertions(+), 22 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
-index 049a6f5..66abd82 100644
---- a/arch/x86/include/asm/kvm_emulate.h
-+++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -245,6 +245,7 @@ struct x86_emulate_ctxt {
- 	bool perm_ok; /* do not check permissions if true */
- 	bool only_vendor_specific_insn;
- 	bool page_table_written_insn;
-+	bool pio_mmio_emulate;
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index a386755..b256660 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -355,7 +355,6 @@ struct kvm_vcpu_arch {
+ 	gfn_t last_pt_write_gfn;
+ 	int   last_pt_write_count;
+ 	u64  *last_pte_updated;
+-	gfn_t last_pte_gfn;
  
- 	bool have_exception;
- 	struct x86_exception exception;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 5400a65..64f920d 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4073,7 +4073,7 @@ struct read_write_emulator_ops {
- 	int (*read_write_prepare)(struct kvm_vcpu *vcpu, void *val,
- 				  int bytes);
- 	int (*read_write_emulate)(struct kvm_vcpu *vcpu, gpa_t gpa,
--				  void *val, int bytes);
-+				  void *val, int bytes, int *retvalue);
- 	int (*read_write_mmio)(struct kvm_vcpu *vcpu, gpa_t gpa,
- 			       int bytes, void *val);
- 	int (*read_write_exit_mmio)(struct kvm_vcpu *vcpu, gpa_t gpa,
-@@ -4095,18 +4095,37 @@ static int read_prepare(struct kvm_vcpu *vcpu, void *val, int bytes)
+ 	struct fpu guest_fpu;
+ 	u64 xcr0;
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 82d5d5a..f76be59 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2204,11 +2204,6 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 	if (set_mmio_spte(sptep, gfn, pfn, pte_access))
+ 		return 0;
+ 
+-	/*
+-	 * We don't set the accessed bit, since we sometimes want to see
+-	 * whether the guest actually used the pte (in order to detect
+-	 * demand paging).
+-	 */
+ 	spte = PT_PRESENT_MASK;
+ 	if (!speculative)
+ 		spte |= shadow_accessed_mask;
+@@ -2359,10 +2354,8 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		}
+ 	}
+ 	kvm_release_pfn_clean(pfn);
+-	if (speculative) {
++	if (speculative)
+ 		vcpu->arch.last_pte_updated = sptep;
+-		vcpu->arch.last_pte_gfn = gfn;
+-	}
  }
  
- static int read_emulate(struct kvm_vcpu *vcpu, gpa_t gpa,
--			void *val, int bytes)
-+			void *val, int bytes, int *retvalue)
- {
-+	*retvalue = X86EMUL_CONTINUE;
- 	return !kvm_read_guest(vcpu->kvm, gpa, val, bytes);
+ static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
+@@ -3527,18 +3520,6 @@ static bool last_updated_pte_accessed(struct kvm_vcpu *vcpu)
+ 	return !!(spte && (*spte & shadow_accessed_mask));
  }
  
- static int write_emulate(struct kvm_vcpu *vcpu, gpa_t gpa,
--			 void *val, int bytes)
-+			 void *val, int bytes, int *retvalue)
- {
- 	struct x86_emulate_ctxt *ctxt = &vcpu->arch.emulate_ctxt;
-+	bool page_table_written = ctxt->page_table_written_insn;
- 
--	return emulator_write_phys(vcpu, gpa, val, bytes,
--				   ctxt->page_table_written_insn);
-+	*retvalue = X86EMUL_CONTINUE;
-+
-+	/*
-+	 * Zap the shadow page and retry the instruction if it is
-+	 * the repetition instruction and no need to be emulated
-+	 * for every repetition(neither io access nor mmio access).
-+	 * The later access can make the page writable and #PF
-+	 * can be avoided.
-+	 *
-+	 * We can not do this if the guest is in real mode since all
-+	 * exceptions are intercepted in real mode, if the emulation
-+	 * is caused by exception, we will retry this emulation for every.
-+	 */
-+	if (ctxt->rep_prefix && !ctxt->pio_mmio_emulate && is_protmode(vcpu)) {
-+		page_table_written = false;
-+		*retvalue = X86EMUL_RETRY_INSTR;
-+	}
-+
-+	return emulator_write_phys(vcpu, gpa, val, bytes, page_table_written);
- }
- 
- static int write_mmio(struct kvm_vcpu *vcpu, gpa_t gpa, int bytes, void *val)
-@@ -4167,10 +4186,12 @@ static int emulator_read_write_onepage(unsigned long addr, void *val,
- 	if (ret)
- 		goto mmio;
- 
--	if (ops->read_write_emulate(vcpu, gpa, val, bytes))
--		return X86EMUL_CONTINUE;
-+	if (ops->read_write_emulate(vcpu, gpa, val, bytes, &ret))
-+		return ret;
- 
- mmio:
-+	vcpu->arch.emulate_ctxt.pio_mmio_emulate = true;
-+
- 	/*
- 	 * Is this MMIO handled locally?
- 	 */
-@@ -4336,6 +4357,7 @@ static int emulator_pio_in_out(struct kvm_vcpu *vcpu, int size,
- {
- 	trace_kvm_pio(!in, port, size, count);
- 
-+	vcpu->arch.emulate_ctxt.pio_mmio_emulate = true;
- 	vcpu->arch.pio.port = port;
- 	vcpu->arch.pio.in = in;
- 	vcpu->arch.pio.count  = count;
-@@ -4828,6 +4850,7 @@ int x86_emulate_instruction(struct kvm_vcpu *vcpu,
- 		ctxt->have_exception = false;
- 		ctxt->perm_ok = false;
- 		ctxt->page_table_written_insn = false;
-+		ctxt->pio_mmio_emulate = false;
- 
- 		ctxt->only_vendor_specific_insn
- 			= emulation_type & EMULTYPE_TRAP_UD;
+-static void kvm_mmu_access_page(struct kvm_vcpu *vcpu, gfn_t gfn)
+-{
+-	u64 *spte = vcpu->arch.last_pte_updated;
+-
+-	if (spte
+-	    && vcpu->arch.last_pte_gfn == gfn
+-	    && shadow_accessed_mask
+-	    && !(*spte & shadow_accessed_mask)
+-	    && is_shadow_present_pte(*spte))
+-		set_bit(PT_ACCESSED_SHIFT, (unsigned long *)spte);
+-}
+-
+ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 		       const u8 *new, int bytes,
+ 		       bool guest_initiated, bool page_table_written)
+@@ -3609,7 +3590,6 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+ 	++vcpu->kvm->stat.mmu_pte_write;
+ 	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_PTE_WRITE);
+ 	if (guest_initiated) {
+-		kvm_mmu_access_page(vcpu, gfn);
+ 		if (gfn == vcpu->arch.last_pt_write_gfn
+ 		    && !last_updated_pte_accessed(vcpu)) {
+ 			++vcpu->arch.last_pt_write_count;
 -- 
 1.7.5.4
 
