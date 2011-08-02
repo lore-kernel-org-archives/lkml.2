@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751547Ab1HBEwt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 00:52:49 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33003 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750808Ab1HBEwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 00:52:42 -0400
-Date: Tue, 2 Aug 2011 14:52:37 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: linux-next: manual merge of the moduleh tree with Linus' tree
-Message-Id: <20110802145237.e8b90cff7f6954f6a12d8b3b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+	id S1751449Ab1HBEzM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 00:55:12 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60549 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808Ab1HBEzG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 00:55:06 -0400
+Subject: [PATCH] regulator: Ensure enough enable time for max8649
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 02 Aug 2011 12:54:56 +0800
+Message-ID: <1312260896.6161.1.camel@phoenix>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Integer division may truncate the result, thus max8649_enable_time() may return
+slightly shorter enable time. This patch fixes it.
 
-Today's linux-next merge of the moduleh tree got a conflict in
-drivers/video/omap2/dss/rfbi.c between commit 24e6289c029b ("OMAP: DSS2:
-remove extra includes from include/video/omapdss.h") from Linus' tree and
-commit 06e632e042aa ("video: Add export.h for THIS_MODULE/EXPORT_SYMBOL
-to drivers/video") from the moduleh tree.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/max8649.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Just overlapping additions.  I fixed it up (see below) and can carry the
-fix as necessary.
+diff --git a/drivers/regulator/max8649.c b/drivers/regulator/max8649.c
+index 30eb9e5..1062cf9 100644
+--- a/drivers/regulator/max8649.c
++++ b/drivers/regulator/max8649.c
+@@ -221,7 +221,7 @@ static int max8649_enable_time(struct regulator_dev *rdev)
+ 	ret = (ret & MAX8649_RAMP_MASK) >> 5;
+ 	rate = (32 * 1000) >> ret;	/* uV/uS */
+ 
+-	return (voltage / rate);
++	return DIV_ROUND_UP(voltage, rate);
+ }
+ 
+ static int max8649_set_mode(struct regulator_dev *rdev, unsigned int mode)
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+1.7.4.1
 
-diff --cc drivers/video/omap2/dss/rfbi.c
-index 39f4c59,5dbd229..0000000
---- a/drivers/video/omap2/dss/rfbi.c
-+++ b/drivers/video/omap2/dss/rfbi.c
-@@@ -33,8 -33,7 +33,9 @@@
-  #include <linux/hrtimer.h>
-  #include <linux/seq_file.h>
-  #include <linux/semaphore.h>
- +#include <linux/platform_device.h>
- +#include <linux/pm_runtime.h>
-+ #include <linux/export.h>
-  
-  #include <video/omapdss.h>
-  #include "dss.h"
+
+
