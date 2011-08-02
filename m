@@ -1,170 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572Ab1HBOZm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 10:25:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46197 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab1HBOZf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 10:25:35 -0400
-X-Greylist: delayed 1014 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Aug 2011 10:25:35 EDT
-Date: Tue, 2 Aug 2011 09:08:32 -0500
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, dhowells@redhat.com,
-        netdev@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/14] allow root in container to copy namespaces (v3)
-Message-ID: <20110802140832.GA26646@sergelap>
-References: <1311706717-7398-1-git-send-email-serge@hallyn.com>
- <1311706717-7398-3-git-send-email-serge@hallyn.com>
- <m1hb67fh9l.fsf@fess.ebiederm.org>
- <20110729172748.GB18935@hallyn.com>
- <m1ei146a6t.fsf@fess.ebiederm.org>
+	id S1753510Ab1HBO1T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 10:27:19 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:53501 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753250Ab1HBO1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 10:27:11 -0400
+Date: Tue, 2 Aug 2011 10:27:08 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Luke Kenneth Casson Leighton <luke.leighton@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: corrupted ext4 1000gb filesystem (2.6.32, debian stable)
+Message-ID: <20110802142708.GA2967@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Luke Kenneth Casson Leighton <luke.leighton@gmail.com>,
+	linux-kernel@vger.kernel.org
+References: <CAPweEDyUJZ8ggm0zhMquKNM6Kd-ejjUXrCMR3TnJngukSHAFkw@mail.gmail.com>
+ <CAPweEDyW9aTKJzUrVdANjK5mG0DW9+R4GRCG5_oaaX8RTEezwg@mail.gmail.com>
+ <CAPweEDxo1_KaHSmqjg6YJz688g0=wsb4n3fZ0YRiUK_NWt_Kww@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <m1ei146a6t.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPweEDxo1_KaHSmqjg6YJz688g0=wsb4n3fZ0YRiUK_NWt_Kww@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> The dangers of changing the namespace of a process remain the same,
-> confused suid programs.  I don't believe there are any unique new
-> dangers. 
+On Tue, Aug 02, 2011 at 02:14:19PM +0100, Luke Kenneth Casson Leighton wrote:
+> On Tue, Aug 2, 2011 at 1:15 AM, Luke Kenneth Casson Leighton
+> <luke.leighton@gmail.com> wrote:
 > 
-> Not allowing joining namespaces you already have a copy of is just
-> a matter of making it hard to get things wrong.
+> > ok, um... i have a bit more information about this situation, to
+> > report.  two consecutive runs of fsck.ext4, and the filesystem still
+> > reports errors after the first run "corrected" all errors. i'd say
+> > that was a bit serious.
 > 
-> I would feel more a bit more comfortable if the way we did this was
-> to move all of the capable calls into the per namespace methods
-> and then changed them one namespace at a time.  I don't think
+>  rright - apologies but i've located the likely source of the problem
+> - e2fsck.  the issue is that the bitmaps for the 3-way RAID1 mirror
+> were corrupted.  thus, the filesystem would be fixed by e2fsck, only
+> to be completely buggered up by picking wildly inappropriate sections
+> of the drive... that presumably by either bad luck or by a powercut
+> and writes occurring at the time happened to be on inode blocks.
 
-The patch belows moves them into the per namespace methods, for
-what it's worth.  If you like I can change them, for now, to
-'capable(CAP_SYS_ADMIN)' targeted at init_user_ns, but if we're
-targetting at the userns owning the destination namespace, it
-seems this must be sufficient...
+E2fsck doesn't depend on the bitmaps; those are regenerated based on
+the information from the inode tables.
 
-> there are any fundmanetal dangers of allowing unshare without
-> the global CAP_SYS_ADMIN, but it would be good to be able to audit
+Assuming that the disks are stable --- that is, a read from a block
+returns the same contents all the time, and writes are not lost (i.e.,
+after a write, reads to that block return the written data
+consistently), then there should not be any corruptions found after
+the first run of e2fsck fixes all errors.
 
-If you have suspicions that there may in fact be dangers, then
-perhaps this whole patch should be delayed, and copy_namespaces()
-and unshare_nsproxy_namespaces() should continue to check global
-CAP_SYS_ADMIN?  The only part which would remain would be the
-moving of the setns capable check into the per-ns ->install
-method, but it would check the global CAP_SYS_ADMIN?
+That being said, there have been cases where that's not true, and I
+consider that a bug in e2fsck.  
 
-> and make or revoke the decision one namespace at a time.
-> 
-> Eric
-> 
-> 
-> > Changelog:
-> >   Jul 29: setns: target capability check for setns
-> >           When changing to another namespace, make sure that we have
-> >           the CAP_SYS_ADMIN capability targeted at the user namespace
-> >           owning the new ns.
-> >
-> > Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-> > Cc: Eric W. Biederman <ebiederm@xmission.com>
-> > ---
-> >  ipc/namespace.c          |    3 +++
-> >  kernel/fork.c            |    4 ++--
-> >  kernel/nsproxy.c         |    7 ++-----
-> >  kernel/utsname.c         |    3 +++
-> >  net/core/net_namespace.c |    3 +++
-> >  5 files changed, 13 insertions(+), 7 deletions(-)
-> >
-> > diff --git a/ipc/namespace.c b/ipc/namespace.c
-> > index ce0a647..f527e49 100644
-> > --- a/ipc/namespace.c
-> > +++ b/ipc/namespace.c
-> > @@ -163,6 +163,9 @@ static void ipcns_put(void *ns)
-> >  
-> >  static int ipcns_install(struct nsproxy *nsproxy, void *ns)
-> >  {
-> > +	struct ipc_namespace *newns = ns;
-> > +	if (!ns_capable(newns->user_ns, CAP_SYS_ADMIN))
-> > +		return -1;
-> >  	/* Ditch state from the old ipc namespace */
-> >  	exit_sem(current);
-> >  	put_ipc_ns(nsproxy->ipc_ns);
-> > diff --git a/kernel/fork.c b/kernel/fork.c
-> > index e7ceaca..f9fac70 100644
-> > --- a/kernel/fork.c
-> > +++ b/kernel/fork.c
-> > @@ -1488,8 +1488,8 @@ long do_fork(unsigned long clone_flags,
-> >  		/* hopefully this check will go away when userns support is
-> >  		 * complete
-> >  		 */
-> > -		if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SETUID) ||
-> > -				!capable(CAP_SETGID))
-> > +		if (!nsown_capable(CAP_SYS_ADMIN) || !nsown_capable(CAP_SETUID) ||
-> > +				!nsown_capable(CAP_SETGID))
-> >  			return -EPERM;
-> >  	}
-> >  
-> > diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-> > index 9aeab4b..cadcee0 100644
-> > --- a/kernel/nsproxy.c
-> > +++ b/kernel/nsproxy.c
-> > @@ -134,7 +134,7 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
-> >  				CLONE_NEWPID | CLONE_NEWNET)))
-> >  		return 0;
-> >  
-> > -	if (!capable(CAP_SYS_ADMIN)) {
-> > +	if (!nsown_capable(CAP_SYS_ADMIN)) {
-> >  		err = -EPERM;
-> >  		goto out;
-> >  	}
-> > @@ -191,7 +191,7 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
-> >  			       CLONE_NEWNET)))
-> >  		return 0;
-> >  
-> > -	if (!capable(CAP_SYS_ADMIN))
-> > +	if (!nsown_capable(CAP_SYS_ADMIN))
-> >  		return -EPERM;
-> >  
-> >  	*new_nsp = create_new_namespaces(unshare_flags, current,
-> > @@ -241,9 +241,6 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
-> >  	struct file *file;
-> >  	int err;
-> >  
-> > -	if (!capable(CAP_SYS_ADMIN))
-> > -		return -EPERM;
-> > -
-> >  	file = proc_ns_fget(fd);
-> >  	if (IS_ERR(file))
-> >  		return PTR_ERR(file);
-> > diff --git a/kernel/utsname.c b/kernel/utsname.c
-> > index bff131b..8f648cc 100644
-> > --- a/kernel/utsname.c
-> > +++ b/kernel/utsname.c
-> > @@ -104,6 +104,9 @@ static void utsns_put(void *ns)
-> >  
-> >  static int utsns_install(struct nsproxy *nsproxy, void *ns)
-> >  {
-> > +	struct uts_namespace *newns = ns;
-> > +	if (!ns_capable(newns->user_ns, CAP_SYS_ADMIN))
-> > +		return -1;
-> >  	get_uts_ns(ns);
-> >  	put_uts_ns(nsproxy->uts_ns);
-> >  	nsproxy->uts_ns = ns;
-> > diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-> > index 5bbdbf0..90c97f6 100644
-> > --- a/net/core/net_namespace.c
-> > +++ b/net/core/net_namespace.c
-> > @@ -620,6 +620,9 @@ static void netns_put(void *ns)
-> >  
-> >  static int netns_install(struct nsproxy *nsproxy, void *ns)
-> >  {
-> > +	struct net *net = ns;
-> > +	if (!ns_capable(net->user_ns, CAP_SYS_ADMIN))
-> > +		return -1;
-> >  	put_net(nsproxy->net_ns);
-> >  	nsproxy->net_ns = get_net(ns);
-> >  	return 0;
+*However*, if you have a RAID1 setup where the data on the disks are
+consistent, this can be the cause of much mischief.  Depending on
+which disk you read from the mirror, you might get different results.
+Once that's the case, all bets with e2fsck are off.
+
+I suggest you make sure that your RAID1 mirror is stable first of all;
+in general, you *have* to fix problems with the storage stack from the
+lowest level on up.  First make sure the hard drives are all sane;
+then make sure the partition table and/or LVM setups are sane; then
+make sure any RAID setups are sane; and only *then* run a
+filesystem-level checker.  This is true regardless of what file system
+you use.
+
+Finally, I strongly recommend that when you are doing this kind of
+repair work, that you save a copy of everything you do useing a
+program like "script".  A transcript of the e2fsck output can be
+critally useful.  Reviewing the transcript can also be useful in
+identifying mistakes that you might have made during the recovery
+process.
+
+Regards,
+
+						- Ted
+
+P.S.  Note that if you are running e2fsck, and you haven't mounted
+the disk yet, if you are seeing failures after a second run of e2fsck,
+then it obviously can be a failing in the ext4 kernel code.
