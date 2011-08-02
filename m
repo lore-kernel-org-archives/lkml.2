@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab1HBKiI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 06:38:08 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:57243 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab1HBKiC convert rfc822-to-8bit (ORCPT
+	id S1753349Ab1HBKil (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 06:38:41 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39922 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752793Ab1HBKig convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 06:38:02 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20110802112907.5ca1abdd81758bd3b0bb6321@canb.auug.org.au>
-References: <20110801144732.7f5204b219f628f2a2a63b0c@canb.auug.org.au>
-	<CA+icZUXq9V6h6kJrjckpeDXQAbQ-skiKLwTjD7Luhz1mTqSM1w@mail.gmail.com>
-	<20110801145422.cccff7aa.rdunlap@xenotime.net>
-	<20110802112907.5ca1abdd81758bd3b0bb6321@canb.auug.org.au>
-Date: Tue, 2 Aug 2011 12:38:01 +0200
-Message-ID: <CA+icZUUDm+o+tikdVgGM3AGhjYdPSXPN+cQkQ8LT_h0+7n9uAQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for Aug 1
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 2 Aug 2011 06:38:36 -0400
+Subject: Re: [PATCH 6/7] perf, x86: Example code for AMD IBS
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Michael Cree <mcree@orcon.net.nz>,
+        Lin Ming <ming.m.lin@intel.com>
+In-Reply-To: <20110801055008.GZ4590@erda.amd.com>
+References: <1311860812-28748-1-git-send-email-robert.richter@amd.com>
+	 <1311860812-28748-7-git-send-email-robert.richter@amd.com>
+	 <1311958729.5890.413.camel@twins>  <20110801055008.GZ4590@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Tue, 02 Aug 2011 12:37:54 +0200
+Message-ID: <1312281474.1147.40.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 2, 2011 at 3:29 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> On Mon, 1 Aug 2011 14:54:22 -0700 Randy Dunlap <rdunlap@xenotime.net> wrote:
->>
->> On Mon, 1 Aug 2011 09:01:21 +0200 Sedat Dilek wrote:
->>
->> > Just FYI: mmotm-tree still misses the fixup-patch from [1].
->> >
->> > [1] https://patchwork.kernel.org/patch/1021602/
->>
->> Yes, I am applying this patch daily (among others).  :(
->>
->> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
->
-> OK, I will apply this patch to linux-next as a merge fixup on top of
-> Andrew's tree.
->
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
->
+On Mon, 2011-08-01 at 07:50 +0200, Robert Richter wrote:
+> On 29.07.11 12:58:49, Peter Zijlstra wrote:
+> > On Thu, 2011-07-28 at 15:46 +0200, Robert Richter wrote:
+> > >  tools/perf/Documentation/examples/ibs.c    |  436 ++++++++++++++++++++++++++++
+> > 
+> > That really isn't the place for this..
+> > 
+> > Also, how similar is the Alpha PMU to AMD IBS?
+> 
+> Would you prefer
+> 
+>  tools/perf/Documentation/examples/x86/ibs.c
+> 
+> instead?
 
-Thanks for taking care, Stephen.
-Just FYI: Andrew will carry the fix as
-"consolidate-config_debug_strict_user_copy_checks-fix.patch" in his
-tree.
+Possibly, but having just looked at the example again I don't really see
+it doing anything perf-record doesn't already do, so why does it deserve
+to live at all?
 
-- Sedat -
+Initially I thought it was a record+report like example, some code
+interpreting the 'mess' that comes out of IBS would be most appreciated
+and I think we can even ship that as perf-ibs-report/perf-ibs-annotate
+or so (and if its still remotely similar to its Alpha precursor that
+might make the Alpha folks happy too).
+
+> Actually I wasn't sure if this place is ok at all. But I wanted to
+> publish the code for reference and testing. There isn't somthing
+> similar already there, and the perf tool code is also not the best
+> place to implement such cpu specific features.
+> 
+> But putting it to the documentation is common practice for library
+> packages (e.g. libpapi and libpfm). If the example is not for the
+> given architecture it won't be added to the package documentation.
+> This example won't be installed at all. Even for very special features
+> an example is important since it is often not part of the generic
+> implementation.
+
+Right, its just that I'm not seeing the extra value at all, aside from
+maybe the IBS_*_DEFAULT values that should live as an event config
+(poking mlin to see where he's at with those patches..).
