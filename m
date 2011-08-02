@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab1HBQgd (ORCPT <rfc822;w@1wt.eu>);
+	id S1754633Ab1HBQgn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 12:36:43 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:38022 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754612Ab1HBQgd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Aug 2011 12:36:33 -0400
-Received: from mga14.intel.com ([143.182.124.37]:7841 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753699Ab1HBQg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 12:36:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,307,1309762800"; 
-   d="scan'208";a="34324185"
-Message-ID: <4E382798.1090505@linux.intel.com>
-Date: Tue, 02 Aug 2011 09:36:40 -0700
-From: J Freyensee <james_p_freyensee@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110628 Thunderbird/5.0
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 6zjj1yoVM1kNhNkLKxkI.Yx_PSwb2daNCCFTe8jkmrhx6qz
+ MbGZbkc6aJqqLcTiHahpU4F4Djw8PQD2n0.P12EY1sUlGMoNa6i0Ytfc.XBA
+ V1HiyBFL14T7diQQwDLs9elRVJiPQ9P8DL9xuySa31dWgWRnTr.S6s6bbI8X
+ XXNUx40j0YMFmLuZO_TwNJjmNww_nrfioms3iQMSgZ.ubbk6UB8orowS3EkV
+ _G71f_HborE3HFhBrqZJARBdlgtgE3Dwn8TtGF2BtpcYNQEIOeJgQPckH5sB
+ PMAfRP8KtTNneFYn4MXcU3rbBRipJK7bH5WMGtBSD85H3idXZ
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 2 Aug 2011 11:36:29 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
+In-Reply-To: <alpine.DEB.2.00.1108020915370.1114@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1108021131250.21126@router.home>
+References: <alpine.DEB.2.00.1107290145080.3279@tiger> <alpine.DEB.2.00.1107291002570.16178@router.home> <alpine.DEB.2.00.1107311136150.12538@chino.kir.corp.google.com> <alpine.DEB.2.00.1107311253560.12538@chino.kir.corp.google.com> <1312145146.24862.97.camel@jaguar>
+ <alpine.DEB.2.00.1107311426001.944@chino.kir.corp.google.com> <CAOJsxLHB9jPNyU2qztbEHG4AZWjauCLkwUVYr--8PuBBg1=MCA@mail.gmail.com> <alpine.DEB.2.00.1108012101310.6871@chino.kir.corp.google.com> <alpine.DEB.2.00.1108020913180.18965@router.home>
+ <alpine.DEB.2.00.1108020915370.1114@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        akpm <akpm@linux-foundation.org>,
-        torvalds <torvalds@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] pti: add missing CONFIG_PCI dependency
-References: <20110802080834.GA9847@osiris.boeblingen.de.ibm.com> <20110802081129.b84a7bc7.rdunlap@xenotime.net> <4E382329.8080307@linux.intel.com> <20110802162417.GA1101@suse.de>
-In-Reply-To: <20110802162417.GA1101@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2011 09:24 AM, Greg KH wrote:
-> On Tue, Aug 02, 2011 at 09:17:45AM -0700, J Freyensee wrote:
->> On 08/02/2011 08:11 AM, Randy Dunlap wrote:
->>> On Tue, 2 Aug 2011 10:08:34 +0200 Heiko Carstens wrote:
->>>
->>>> From: Heiko Carstens<heiko.carstens@de.ibm.com>
->>>>
->>>> allmodconfig compile fails on s390 because of the new PTI driver:
->>>>
->>>> drivers/misc/pti.c:407:3: error: implicit declaration of function 'pci_iounmap'
->>>> drivers/misc/pti.c:410:3: error: implicit declaration of function 'pci_release_region'
->>>>
->>>> Add a 'depends on PCI' statement so it doesn't get compiled.
->>>>
->>>> Cc: J Freyensee<james_p_freyensee@linux.intel.com>
->>>
->>
->> Greg, did you see the patch go your way?
->>
->> http://marc.info/?l=linux-kernel&m=131007615706260&w=2
->>
->> Should I res-submit this patch to you through the linux-next mailing list?
->
-> I'll pick it up, it's in my "to-apply" queue now.
+On Tue, 2 Aug 2011, David Rientjes wrote:
 
-Thanks Greg.
+> allocator, in this case.  And the per-cpu partial list will add even
+> additional slab usage for slub, so this is where my "throwing more memory
+> at slub to get better performance" came from.  I understand that this is a
+> large NUMA machine, though, and the cost of slub may be substantially
+> lower on smaller machines.
 
-There probably is one more pti patch that has not been applied as well. 
-  Stephen Rothwell asked about drivers/misc patches a week ago and I 
-responded about this additional patch I also sent:
-
-http://marc.info/?l=linux-next&m=131016084730837&w=2
-
-I apologize for the confusion.
+The per cpu partial lists only add the need for more memory if other
+processors have to allocate new pages because they do not have enough
+partial slab pages to satisfy their needs. That can be tuned by a cap on
+objects.
 
 
->
-> thanks,
->
-> greg k-h
-
-
--- 
-J (James/Jay) Freyensee
-Storage Technology Group
-Intel Corporation
