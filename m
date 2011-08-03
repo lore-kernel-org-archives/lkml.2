@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428Ab1HCTYp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 15:24:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54255 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755380Ab1HCTYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 15:24:40 -0400
-Date: Wed, 3 Aug 2011 21:21:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        Richard Weinberger <richard@nod.at>,
-        Marc Zyngier <marc.zyngier@arm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] shm: optimize exit_shm()
-Message-ID: <20110803192138.GB31267@redhat.com>
-References: <20110803140456.GA14393@redhat.com> <20110803182417.GA2510@albatros> <20110803182826.GB2865@albatros>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110803182826.GB2865@albatros>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755380Ab1HCT0S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 15:26:18 -0400
+Received: from vms173013pub.verizon.net ([206.46.173.13]:59630 "EHLO
+	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab1HCT0O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 15:26:14 -0400
+Date: Wed, 03 Aug 2011 15:26:07 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [GIT PATCH] APEI patches for Linux 3.1
+In-reply-to: <CA+55aFxST2J+LDMB=1ctnw2WGxV+a-cm3FE-1AjwnXMNDkt32g@mail.gmail.com>
+Message-id: <alpine.LFD.2.02.1108031523080.22067@x980>
+References: <alpine.LFD.2.02.1108031137590.22067@x980>
+ <CA+55aFxST2J+LDMB=1ctnw2WGxV+a-cm3FE-1AjwnXMNDkt32g@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03, Vasiliy Kulikov wrote:
->
-> As .in_use may be changed to zero while current
-> process was sleeping in down_write(),
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-sfi-2.6.git apei-release
+> 
+> Hmm:
+> 
+>   fatal: Couldn't find remote ref apei-release
+> 
+> Forgot yo push?
 
-Yes,
+Push went here:
 
-> we should check .in_use once again after
-> down_write().
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git apei-release
 
-Why?
+I fat-fingered the update to my script that formated the pull-request 
+message.
 
-It doesn't hurt to recheck and I think the patch is correct.
-But the changelog looks confusing.
+thanks,
+-Len
 
-Oleg.
 
