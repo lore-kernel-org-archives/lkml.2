@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481Ab1HCOZP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 10:25:15 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:53808 "EHLO
+	id S1754384Ab1HCOZM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 10:25:12 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:47899 "EHLO
 	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753552Ab1HCOZI (ORCPT
+	with ESMTP id S1752356Ab1HCOZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 10:25:08 -0400
+	Wed, 3 Aug 2011 10:25:07 -0400
 From: Eric B Munson <emunson@mgebm.net>
 To: kvm@vger.kernel.org
 Cc: kvm-ia64@vger.kernel.org, kvm-ppc@vger.kernel.org, avi@redhat.com,
         riel@redhat.com, glommer@redhat.com, linux-kernel@vger.kernel.org,
         aliguori@us.ibm.com, raharper@us.ibm.com,
         Eric B Munson <emunson@mgebm.net>
-Subject: [RFC PATCH 2/3] Add functions to check if the host has stopped the vm
-Date: Wed,  3 Aug 2011 10:25:00 -0400
-Message-Id: <1312381501-27746-3-git-send-email-emunson@mgebm.net>
+Subject: [RFC PATCH 1/3] Add flag to indicate that a vm was stopped by the host
+Date: Wed,  3 Aug 2011 10:24:59 -0400
+Message-Id: <1312381501-27746-2-git-send-email-emunson@mgebm.net>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1312381501-27746-1-git-send-email-emunson@mgebm.net>
 References: <1312381501-27746-1-git-send-email-emunson@mgebm.net>
@@ -23,53 +23,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a host stops or suspends a VM it will set a flag to show this.  The
-watchdog will use these functions to determine if a softlockup is real, or the
-result of a suspended VM.
+This flag will be used to check if the vm was stopped by the host when a soft
+lockup was detected.
 
 Signed-off-by: Eric B Munson <emunson@mgebm.net>
 ---
- arch/x86/include/asm/pvclock.h |    3 +++
- arch/x86/kernel/kvmclock.c     |   12 ++++++++++++
- 2 files changed, 15 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/pvclock-abi.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
-index a518c0a..a9e9b4f 100644
---- a/arch/x86/include/asm/pvclock.h
-+++ b/arch/x86/include/asm/pvclock.h
-@@ -13,6 +13,9 @@ void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
- 			    struct timespec *ts);
- void pvclock_resume(void);
+diff --git a/arch/x86/include/asm/pvclock-abi.h b/arch/x86/include/asm/pvclock-abi.h
+index 35f2d19..10e738a 100644
+--- a/arch/x86/include/asm/pvclock-abi.h
++++ b/arch/x86/include/asm/pvclock-abi.h
+@@ -40,5 +40,6 @@ struct pvclock_wall_clock {
+ } __attribute__((__packed__));
  
-+bool kvm_check_host_stopped(void);
-+void kvm_clear_host_stopped(void);
-+
- /*
-  * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
-  * yielding a 64-bit result.
-diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-index c1a0188..5a42582 100644
---- a/arch/x86/kernel/kvmclock.c
-+++ b/arch/x86/kernel/kvmclock.c
-@@ -113,6 +113,18 @@ static void kvm_get_preset_lpj(void)
- 	preset_lpj = lpj;
- }
- 
-+bool kvm_check_host_stopped()
-+{
-+	struct pvclock_vcpu_time_info *src = &per_cpu(hv_clock, 0);
-+	return (src->flags & PVCLOCK_STOPPED) != 0;
-+}
-+
-+void kvm_clear_host_stopped()
-+{
-+	struct pvclock_vcpu_time_info *src = &per_cpu(hv_clock, 0);
-+	src->flags = src->flags & (~PVCLOCK_STOPPED);
-+}
-+
- static struct clocksource kvm_clock = {
- 	.name = "kvm-clock",
- 	.read = kvm_clock_get_cycles,
+ #define PVCLOCK_TSC_STABLE_BIT	(1 << 0)
++#define PVCLOCK_STOPPED		(1 << 1)
+ #endif /* __ASSEMBLY__ */
+ #endif /* _ASM_X86_PVCLOCK_ABI_H */
 -- 
 1.7.4.1
 
