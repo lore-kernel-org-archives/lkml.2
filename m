@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab1HCCJP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 22:09:15 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:33470 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab1HCCJH (ORCPT
+	id S1753327Ab1HCCMi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 22:12:38 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:58673 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab1HCCMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 22:09:07 -0400
-Message-ID: <4E38ADA0.4030304@oracle.com>
-Date: Wed, 03 Aug 2011 10:08:32 +0800
+	Tue, 2 Aug 2011 22:12:33 -0400
+Message-ID: <4E38AE71.5040008@oracle.com>
+Date: Wed, 03 Aug 2011 10:12:01 +0800
 From: Joe Jin <joe.jin@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
@@ -20,46 +20,61 @@ To: Daniel Stodden <daniel.stodden@citrix.com>,
         Kurt C Hackel <KURT.HACKEL@oracle.com>
 CC: Greg Marsden <greg.marsden@oracle.com>,
         "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/3] xen-blkback: refactor vbd remove/disconnect.
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Jin <joe.jin@oracle.com>
+Subject: [PATCH 1/3] xen-blkback: add remove_requested to xen_blkif and some
+ declares
+References: <4E38ADA0.4030304@oracle.com>
+In-Reply-To: <4E38ADA0.4030304@oracle.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090207.4E38ADB9.0063,ss=1,re=0.000,fgs=0
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090202.4E38AE89.0034,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset is a backport and original patch's author is Daniel Stodden:
-http://xenbits.xen.org/hg/XCP/linux-2.6.32.pq.hg/file/tip/CA-7672-blkback-shutdown.patch
+Add remove_requested to xen_blkif and some declares.
 
-Initial issue:
-  When we do block device attach/detach test with below steps, umount hang
-  in guest and the guest unable to shutdown:
-  
-  1. start guest with the latest kernel.
-  2. attach new block device by xm block-attach in Dom0
-  3. mount new disk in guest
-  4. execute xm block-detach to detach the block device in dom0 until timeout
-  5. try to unmount the disk in guest, umount hung. at here, any IOs to the 
-     device will hang.
-  
-Root cause:
-  This caused by 'xm block-detach' in Dom0 set backend device's state to
-  'XenbusStateClosing', frontend received the notification and 
-  blkfront_closing() be called, at the moment, the disk still using by guest,
-  so frontend refused to close. In the blkfront_closing(), frontend send a
-  notification to backend said that the its state switched to 'Closing', when
-  backend got the event, it will disconnect from real device, at here any IO
-  request will be stuck, even tried to release the disk by umount.
+Signed-off-by: Joe Jin <joe.jin@oracle.com>
+Cc: Daniel Stodden <daniel.stodden@citrix.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Annie Li <annie.li@oracle.com>
+Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>
+---
+ drivers/block/xen-blkback/common.h |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-  So this may fix either frontend or backend, I have send a fix for frontend:
-  https://lkml.org/lkml/2011/7/8/159
-  Ian think we should fix it from backend and he pointed out Daniel Stodden have
-  submitted a patch(see above link) for xen-blkback, I tried it and it works 
-  well.
+diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
+index 9e40b28..453fecf 100644
+--- a/drivers/block/xen-blkback/common.h
++++ b/drivers/block/xen-blkback/common.h
+@@ -49,6 +49,7 @@
+ 	pr_debug(DRV_PFX "(%s:%d) " fmt ".\n",	\
+ 		 __func__, __LINE__, ##args)
+ 
++#define WPRINTK(fmt, args...) printk(KERN_WARNING "xen-blkback: " fmt, ##args)
+ 
+ /* Not a real protocol.  Used to generate ring structs which contain
+  * the elements common to all protocols only.  This way we get a
+@@ -145,6 +146,7 @@ struct xen_blkif {
+ 	/* Back pointer to the backend_info. */
+ 	struct backend_info	*be;
+ 	/* Private fields. */
++	int			remove_requested;
+ 	spinlock_t		blk_ring_lock;
+ 	atomic_t		refcnt;
+ 
+@@ -198,6 +200,9 @@ int xen_blkbk_flush_diskcache(struct xenbus_transaction xbt,
+ 
+ struct xenbus_device *xen_blkbk_xenbus(struct backend_info *be);
+ 
++void xen_vbd_sync(struct xen_vbd *vbd);
++void xen_blkback_close(struct xen_blkif *blkif);
++
+ static inline void blkif_get_x86_32_req(struct blkif_request *dst,
+ 					struct blkif_x86_32_request *src)
+ {
 
- drivers/block/xen-blkback/blkback.c |   10 +--
- drivers/block/xen-blkback/common.h  |    5 +
- drivers/block/xen-blkback/xenbus.c  |  202 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-------
- 3 files changed, 191 insertions(+), 26 deletions(-)
+
