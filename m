@@ -1,49 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab1HCKsF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 06:48:05 -0400
+	id S1754689Ab1HCKsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 06:48:21 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:51970 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753181Ab1HCKr4 (ORCPT
+	with ESMTP id S1753775Ab1HCKsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 06:47:56 -0400
+	Wed, 3 Aug 2011 06:48:01 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, jack@suse.cz,
         hch@infradead.org, akpm@linux-foundation.org,
         toshi.okajima@jp.fujitsu.com, mszeredi@suse.cz
-Subject: [PATCH v5 0/4] read-only remount race fix
-Date: Wed,  3 Aug 2011 12:48:37 +0200
-Message-Id: <1312368521-7911-1-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 2/4] vfs: keep list of mounts for each superblock
+Date: Wed,  3 Aug 2011 12:48:39 +0200
+Message-Id: <1312368521-7911-3-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1312368521-7911-1-git-send-email-miklos@szeredi.hu>
+References: <1312368521-7911-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al,
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Here's an update of the read-only remount race fixes.
+Keep track of vfsmounts belonging to a superblock.  List is protected
+by vfsmount_lock.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git read-only-remount-fixes.v5
-
-Please apply.
-
-Thanks,
-Miklos
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
-
-
-Miklos Szeredi (4):
-      vfs: ignore error on forced remount
-      vfs: keep list of mounts for each superblock
-      vfs: protect remounting superblock read-only
-      vfs: fs_may_remount_ro: turn unnecessary check into a WARN_ON
-
----
- fs/file_table.c       |    7 ++++-
- fs/internal.h         |    1 +
- fs/namespace.c        |   50 ++++++++++++++++++++++++++++++++++++++++++++++++-
- fs/super.c            |   27 +++++++++++++++++++++----
- include/linux/fs.h    |    4 +++
+ fs/namespace.c        |   10 ++++++++++
+ fs/super.c            |    2 ++
+ include/linux/fs.h    |    1 +
  include/linux/mount.h |    1 +
- 6 files changed, 82 insertions(+), 8 deletions(-)
+ 4 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 22bfe82..c369c32 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -696,6 +696,11 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void
+ 	mnt->mnt_sb = root->d_sb;
+ 	mnt->mnt_mountpoint = mnt->mnt_root;
+ 	mnt->mnt_parent = mnt;
++
++	br_write_lock(vfsmount_lock);
++	list_add_tail(&mnt->mnt_instance, &mnt->mnt_sb->s_mounts);
++	br_write_unlock(vfsmount_lock);
++
+ 	return mnt;
+ }
+ EXPORT_SYMBOL_GPL(vfs_kern_mount);
+@@ -745,6 +750,10 @@ static struct vfsmount *clone_mnt(struct vfsmount *old, struct dentry *root,
+ 			if (!list_empty(&old->mnt_expire))
+ 				list_add(&mnt->mnt_expire, &old->mnt_expire);
+ 		}
++
++		br_write_lock(vfsmount_lock);
++		list_add_tail(&mnt->mnt_instance, &mnt->mnt_sb->s_mounts);
++		br_write_unlock(vfsmount_lock);
+ 	}
+ 	return mnt;
+ 
+@@ -805,6 +814,7 @@ put_again:
+ 		acct_auto_close_mnt(mnt);
+ 		goto put_again;
+ 	}
++	list_del(&mnt->mnt_instance);
+ 	br_write_unlock(vfsmount_lock);
+ 	mntfree(mnt);
+ }
+diff --git a/fs/super.c b/fs/super.c
+index 5398975..994003b 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -142,6 +142,7 @@ static struct super_block *alloc_super(struct file_system_type *type)
+ 		INIT_LIST_HEAD(&s->s_dentry_lru);
+ 		INIT_LIST_HEAD(&s->s_inode_lru);
+ 		spin_lock_init(&s->s_inode_lru_lock);
++		INIT_LIST_HEAD(&s->s_mounts);
+ 		init_rwsem(&s->s_umount);
+ 		mutex_init(&s->s_lock);
+ 		lockdep_set_class(&s->s_umount, &type->s_umount_key);
+@@ -200,6 +201,7 @@ static inline void destroy_super(struct super_block *s)
+ 	free_percpu(s->s_files);
+ #endif
+ 	security_sb_free(s);
++	WARN_ON(!list_empty(&s->s_mounts));
+ 	kfree(s->s_subtype);
+ 	kfree(s->s_options);
+ 	kfree(s);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 786b3b1..ca046b4 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1395,6 +1395,7 @@ struct super_block {
+ #else
+ 	struct list_head	s_files;
+ #endif
++	struct list_head	s_mounts;	/* list of mounts */
+ 	/* s_dentry_lru, s_nr_dentry_unused protected by dcache.c lru locks */
+ 	struct list_head	s_dentry_lru;	/* unused dentry lru */
+ 	int			s_nr_dentry_unused;	/* # of dentry on lru */
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 33fe53d..f88c726 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -67,6 +67,7 @@ struct vfsmount {
+ #endif
+ 	struct list_head mnt_mounts;	/* list of children, anchored here */
+ 	struct list_head mnt_child;	/* and going through their mnt_child */
++	struct list_head mnt_instance;	/* mount instance on sb->s_mounts */
+ 	int mnt_flags;
+ 	/* 4 bytes hole on 64bits arches without fsnotify */
+ #ifdef CONFIG_FSNOTIFY
+-- 
+1.7.3.4
+
