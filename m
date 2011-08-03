@@ -1,301 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab1HCBL6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 21:11:58 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38196 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828Ab1HCBLx (ORCPT
+	id S1754065Ab1HCBQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 21:16:58 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:26949 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753828Ab1HCBQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 21:11:53 -0400
-Date: Tue, 2 Aug 2011 22:12:50 -0300
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-To: Greg KH <gregkh@suse.de>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Howells <dhowells@redhat.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
-        James Morris <jmorris@namei.org>, neilb@suse.de
-Subject: Re: [PATCH] sysctl: add support for poll()
-Message-ID: <20110803011250.GA27227@vigoh>
-References: <20110602134338.0c56160e@lxorguk.ukuu.org.uk>
- <BANLkTik72cU_R5k9NLnqN_FNkm-y5Fk0nQ@mail.gmail.com>
- <m1hb88e3qs.fsf@fess.ebiederm.org>
- <BANLkTin5P8P_HR78qo0oyzeu9hpWazZqTw@mail.gmail.com>
- <20110608151732.2b321b9a.akpm@linux-foundation.org>
- <BANLkTinXwE0K5nJ649rhNxN06KvwLNDeCA@mail.gmail.com>
- <1307981153.1449.19.camel@mop>
- <CAMOw1v5veDqE+=gbNBn3juXHOOp764d7F20XtwUJXZoBW45zyg@mail.gmail.com>
- <CAPXgP12sxLmPXzXx_Qgf=JakmiZcuiMGmMKB8RG4sFU_U5f=jg@mail.gmail.com>
- <20110802231641.GA2598@suse.de>
+	Tue, 2 Aug 2011 21:16:55 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:cc:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding:x-system-of-record;
+	b=k7C+6FDUvISE9tg4EKSiIunARc8vGv+0e1ppzbgAGK01vSaoz8MdOg36Rh6m3mmmp
+	j2dp5J3VoDzcICu/nASvQ==
+Subject: [PATCH v2] kinit: Add drop_capabilities support.
+To: "H. Peter Anvin" <hpa@zytor.com>, Maximilian Attems <max@stro.at>,
+        "Andrew G. Morgan" <agm@google.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Eric Northup <digitaleric@google.com>
+From: Mike Waychison <mikew@google.com>
+Cc: Eric Paris <eparis@parisplace.org>, klibc@zytor.com,
+        linux-kernel@vger.kernel.org
+Date: Tue, 02 Aug 2011 18:16:40 -0700
+Message-ID: <20110803011640.15597.16377.stgit@mike2.sea.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110802231641.GA2598@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From dae691ba16a6c6c50ca05e2cd69bdc808f2c4f89 Mon Sep 17 00:00:00 2001
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Wed, 1 Jun 2011 09:14:36 -0300
-Subject: [PATCH] sysctl: add support for poll()
-Cc: linux-kernel@vger.kernel.org
+This patch adds the ability to kinit to allow the dropping of POSIX
+capabilities.
 
-Adding support for poll() in sysctl fs allows userspace to receive
-notifications when an entry in sysctl changes. This way it's possible to
-know when hostname/domainname is changed due to the respective syscall
-has been called or its file under /proc/sys has been written to.
+kinit is modified by this change, such that it understands the new
+kernel command line "drop_capabilities=" that specifies a comma
+separated list of capability names that should be dropped before
+switching over to the next init in the boot strap (typically on the root
+disk).
 
-Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Acked-By: Kay Sievers <kay.sievers@vrfy.org>
+When processing capabilities to drop, CAP_SETPCAP is special cased to be
+dropped last, so that the order that capabilities are given does not
+cause dropping of later enumerated capabilities to fail if it is listed
+early on.
+
+Dropping of capabilities happens in three parts.  We explicitly drop the
+capability from init's inherited masks.  We also drop the capability
+from the bounding set using PR_CAPBSET_DROP so that later setuid execs
+are bounded.  Lastly, we drop the capabilities from the bset and
+inheritted masks exposed at /proc/sys/kernel/usermodehelper if available
+(introduced in Linux v3.0.0).
+
+In all paths, we treat errors as fatal, as we do not want to continue to
+boot if there was a problem dropping capabilities.  We fail because the
+new drop_capabilities= option on the command line mandates enforcement
+of a security policy, and we should err on the side of caution if we
+ever fail to satisfy the administrator's intention.
+
+Signed-off-by: Mike Waychison <mikew@google.com>
 ---
- fs/proc/proc_sysctl.c   |   40 ++++++++++++++++++++++++++++++++++++++++
- include/linux/sysctl.h  |    8 ++++++++
- include/linux/utsname.h |   16 ++++++++++++++++
- kernel/sys.c            |    2 ++
- kernel/utsname_sysctl.c |   36 ++++++++++++++++++++++++++++++++++++
- 5 files changed, 102 insertions(+), 0 deletions(-)
+v2
+    - Only drop from the inherited capabilities mask.  Only this mask
+      was required as per Andrew Morgan.  This also allows us to
+      continue having capabilities to call run-init later on, allowing
+      the following:
+    - Moved dropping of capabilities out of run-init and into kinit.
+      This was required to ensure access to the proc filesystem, which
+      is required for manipulating the masks the kernel uses when
+      spawning new tasks on the kernel's behalf via the
+      call_usermodehelper() routine.
+    - Fixed paths to the usermodehelper settings files.
+    - Fixed sscanf to allow for a newline character when reading the
+      usermodehelper capability mask settings.
+    - Fixed the return check of the write to the usermodehelper files.
+      These proc files return 0 on successful write(2).
+    - Added a format atttribute to the fail() wrapper for better
+      compiler warnings.
+    - Removed kernel version check.  The boot will now always fail if we
+      could not manipulate the usermodehelper settings.
+    - Sent as a single patch as capset/capget are now in klibc master.
+---
+ usr/kinit/Kbuild         |    1 
+ usr/kinit/capabilities.c |  237 ++++++++++++++++++++++++++++++++++++++++++++++
+ usr/kinit/kinit.c        |    2 
+ usr/kinit/kinit.h        |    2 
+ 4 files changed, 242 insertions(+), 0 deletions(-)
+ create mode 100644 usr/kinit/capabilities.c
 
-diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-index 1a77dbe..cf4bc7c 100644
---- a/fs/proc/proc_sysctl.c
-+++ b/fs/proc/proc_sysctl.c
-@@ -3,6 +3,7 @@
-  */
- #include <linux/init.h>
- #include <linux/sysctl.h>
-+#include <linux/poll.h>
- #include <linux/proc_fs.h>
- #include <linux/security.h>
- #include <linux/namei.h>
-@@ -176,6 +177,43 @@ static ssize_t proc_sys_write(struct file *filp, const char __user *buf,
- 	return proc_sys_call_handler(filp, (void __user *)buf, count, ppos, 1);
- }
+diff --git a/usr/kinit/Kbuild b/usr/kinit/Kbuild
+index ff1d449..8f6d08e 100644
+--- a/usr/kinit/Kbuild
++++ b/usr/kinit/Kbuild
+@@ -10,6 +10,7 @@ kinit-y  := lib.a
+ kinit-y  += kinit.o do_mounts.o ramdisk_load.o initrd.o
+ kinit-y  += getintfile.o readfile.o xpio.o
+ kinit-y  += do_mounts_md.o do_mounts_mtd.o nfsroot.o
++kinit-y  += capabilities.o
  
-+static int proc_sys_open(struct inode *inode, struct file *filp)
+ kinit-y  += ipconfig/
+ kinit-y  += nfsmount/
+diff --git a/usr/kinit/capabilities.c b/usr/kinit/capabilities.c
+new file mode 100644
+index 0000000..ad4d6ea
+--- /dev/null
++++ b/usr/kinit/capabilities.c
+@@ -0,0 +1,237 @@
++/*
++ * Copyright 2011 Google Inc. All Rights Reserved
++ * Author: mikew@google.com (Mike Waychison)
++ */
++
++/*
++ * We have to include the klibc types.h here to keep the kernel's
++ * types.h from being used.
++ */
++#include <sys/types.h>
++
++#include <sys/capability.h>
++#include <sys/prctl.h>
++#include <sys/utsname.h>
++#include <errno.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <unistd.h>
++
++#include "kinit.h"
++
++#define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))
++
++#define MAKE_CAP(cap) [cap] = { .cap_name = #cap }
++
++struct capability {
++	const char *cap_name;
++} capabilities[] = {
++	MAKE_CAP(CAP_CHOWN),
++	MAKE_CAP(CAP_DAC_OVERRIDE),
++	MAKE_CAP(CAP_DAC_READ_SEARCH),
++	MAKE_CAP(CAP_FOWNER),
++	MAKE_CAP(CAP_FSETID),
++	MAKE_CAP(CAP_KILL),
++	MAKE_CAP(CAP_SETGID),
++	MAKE_CAP(CAP_SETUID),
++	MAKE_CAP(CAP_SETPCAP),
++	MAKE_CAP(CAP_LINUX_IMMUTABLE),
++	MAKE_CAP(CAP_NET_BIND_SERVICE),
++	MAKE_CAP(CAP_NET_BROADCAST),
++	MAKE_CAP(CAP_NET_ADMIN),
++	MAKE_CAP(CAP_NET_RAW),
++	MAKE_CAP(CAP_IPC_LOCK),
++	MAKE_CAP(CAP_IPC_OWNER),
++	MAKE_CAP(CAP_SYS_MODULE),
++	MAKE_CAP(CAP_SYS_RAWIO),
++	MAKE_CAP(CAP_SYS_CHROOT),
++	MAKE_CAP(CAP_SYS_PTRACE),
++	MAKE_CAP(CAP_SYS_PACCT),
++	MAKE_CAP(CAP_SYS_ADMIN),
++	MAKE_CAP(CAP_SYS_BOOT),
++	MAKE_CAP(CAP_SYS_NICE),
++	MAKE_CAP(CAP_SYS_RESOURCE),
++	MAKE_CAP(CAP_SYS_TIME),
++	MAKE_CAP(CAP_SYS_TTY_CONFIG),
++	MAKE_CAP(CAP_MKNOD),
++	MAKE_CAP(CAP_LEASE),
++	MAKE_CAP(CAP_AUDIT_WRITE),
++	MAKE_CAP(CAP_AUDIT_CONTROL),
++	MAKE_CAP(CAP_SETFCAP),
++	MAKE_CAP(CAP_MAC_OVERRIDE),
++	MAKE_CAP(CAP_MAC_ADMIN),
++	MAKE_CAP(CAP_SYSLOG),
++};
++
++static void fail(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
++static void fail(const char *fmt, ...)
 +{
-+	struct ctl_table *table = PROC_I(inode)->sysctl_entry;
++	va_list args;
 +
-+	if (table->poll) {
-+		unsigned long event = atomic_read(&table->poll->event);
++	va_start(args, fmt);
++	vfprintf(stderr, fmt, args);
++	va_end(args);
++	exit(1);
++}
 +
-+		filp->private_data = (void *)event;
++/*
++ * Find the capability ordinal by name, and return its ordinal.
++ * Returns -1 on failure.
++ */
++static int find_capability(const char *s)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(capabilities); i++) {
++		if (capabilities[i].cap_name
++		 && strcasecmp(s, capabilities[i].cap_name) == 0) {
++			return i;
++		}
++	}
++	return -1;
++}
++
++static void do_capset(int cap_ordinal)
++{
++	struct __user_cap_header_struct hdr;
++	struct __user_cap_data_struct caps[2];
++
++	/* Get the current capability mask */
++	hdr.version = _LINUX_CAPABILITY_VERSION_3;
++	hdr.pid = getpid();
++	if (capget(&hdr, caps)) {
++		perror("capget()");
++		exit(1);
 +	}
 +
++	/* Drop the bits */
++	if (cap_ordinal < 32)
++		caps[0].inheritable &= ~(1U << cap_ordinal);
++	else
++		caps[1].inheritable &= ~(1U << (cap_ordinal - 32));
++
++	/* And drop the capability. */
++	hdr.version = _LINUX_CAPABILITY_VERSION_3;
++	hdr.pid = getpid();
++	if (capset(&hdr, caps))
++		fail("Couldn't drop the capability \"%s\"\n",
++		     capabilities[cap_ordinal].cap_name);
++}
++
++static void do_bset(int cap_ordinal)
++{
++	int ret;
++
++	ret = prctl(PR_CAPBSET_READ, cap_ordinal);
++	if (ret == 1) {
++		ret = prctl(PR_CAPBSET_DROP, cap_ordinal);
++		if (ret != 0)
++			fail("Error dropping capability %s from bset\n",
++			     capabilities[cap_ordinal].cap_name);
++	} else if (ret < 0)
++		fail("Kernel doesn't recognize capability %d\n", cap_ordinal);
++}
++
++static void do_usermodehelper_file(const char *filename, int cap_ordinal)
++{
++	uint32_t lo32, hi32;
++	FILE *file;
++	static const size_t buf_size = 80;
++	char buf[buf_size];
++	char tail;
++	size_t bytes_read;
++	int ret;
++
++	/* Try and open the file */
++	file = fopen(filename, "r+");
++	if (!file && errno == ENOENT)
++		fail("Could not disable usermode helpers capabilities as "
++		     "%s is not available\n", filename);
++	if (!file)
++		fail("Failed to access file %s errno %d\n", filename, errno);
++
++	/* Read and process the current bits */
++	bytes_read = fread(buf, 1, buf_size - 1, file);
++	if (bytes_read == 0)
++		fail("Trouble reading %s\n", filename);
++	buf[bytes_read] = '\0';
++	ret = sscanf(buf, "%u %u %c", &lo32, &hi32, &tail);
++	if (ret != 2)
++		fail("Failed to understand %s \"%s\"\n", filename, buf);
++
++	/* Clear the bits in the local copy */
++	if (cap_ordinal < 32)
++		lo32 &= ~(1 << cap_ordinal);
++	else
++		hi32 &= ~(1 << (cap_ordinal - 32));
++
++	/* Commit the new bit masks to the kernel */
++	sprintf(buf, "%u %u", lo32, hi32);
++	ret = fwrite(buf, 1, strlen(buf) + 1, file);
++	if (ret != 0)
++		fail("Failed to commit usermode helper bitmasks: %d\n", ret);
++
++	/* Cleanup */
++	fclose(file);
++}
++
++static void do_usermodehelper(int cap_ordinal)
++{
++	static const char * const files[] = {
++		"/proc/sys/kernel/usermodehelper/bset",
++		"/proc/sys/kernel/usermodehelper/inheritable",
++	};
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(files); i++)
++		do_usermodehelper_file(files[i], cap_ordinal);
++}
++
++static void drop_capability(int cap_ordinal)
++{
++	do_usermodehelper(cap_ordinal);
++	do_bset(cap_ordinal);
++	do_capset(cap_ordinal);
++
++	printf("Dropped capability: %s\n", capabilities[cap_ordinal].cap_name);
++}
++
++int drop_capabilities(const char *caps)
++{
++	char *s, *saveptr = NULL;
++	char *token;
++	int drop_setpcap = 0;
++
++	if (!caps)
++		return 0;
++
++	/* Create a duplicate string that can be modified. */
++	s = strdup(caps);
++	if (!s)
++		fail("Failed to drop caps as requested.  Exiting\n");
++
++	token = strtok_r(s, ",", &saveptr);
++	while (token) {
++		int cap_ordinal = find_capability(token);
++
++		if (cap_ordinal < 0)
++			fail("Could not understand capability name \"%s\" "
++			     "on command line, failing init\n", token);
++
++		/* We handle CAP_SETPCAP last because it is needed to
++		 * drop all other caps. */
++		if (cap_ordinal == CAP_SETPCAP)
++			drop_setpcap = 1;
++		else
++			drop_capability(cap_ordinal);
++
++		token = strtok_r(NULL, ",", &saveptr);
++	}
++
++	if (drop_setpcap)
++		drop_capability(CAP_SETPCAP);
++
++	free(s);
 +	return 0;
 +}
-+
-+static unsigned int proc_sys_poll(struct file *filp, poll_table *wait)
-+{
-+	struct inode *inode = filp->f_path.dentry->d_inode;
-+	struct ctl_table *table = PROC_I(inode)->sysctl_entry;
-+	unsigned long event = (unsigned long)filp->private_data;
-+	unsigned int ret = POLLIN | POLLRDNORM;
-+
-+	if (!table->proc_handler)
-+		goto out;
-+
-+	if (!table->poll)
-+		goto out;
-+
-+	poll_wait(filp, &table->poll->wait, wait);
-+
-+	if (event != atomic_read(&table->poll->event)) {
-+		filp->private_data = (void *)(unsigned long)atomic_read(
-+						&table->poll->event);
-+		ret = POLLIN | POLLRDNORM | POLLERR | POLLPRI;
-+	}
-+
-+out:
-+	return ret;
-+}
+diff --git a/usr/kinit/kinit.c b/usr/kinit/kinit.c
+index 4a1f40b..098873b 100644
+--- a/usr/kinit/kinit.c
++++ b/usr/kinit/kinit.c
+@@ -288,6 +288,8 @@ int main(int argc, char *argv[])
+ 	check_path("/root");
+ 	do_mounts(cmdc, cmdv);
  
- static int proc_sys_fill_cache(struct file *filp, void *dirent,
- 				filldir_t filldir,
-@@ -364,6 +402,8 @@ static int proc_sys_getattr(struct vfsmount *mnt, struct dentry *dentry, struct
- }
- 
- static const struct file_operations proc_sys_file_operations = {
-+	.open		= proc_sys_open,
-+	.poll		= proc_sys_poll,
- 	.read		= proc_sys_read,
- 	.write		= proc_sys_write,
- 	.llseek		= default_llseek,
-diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
-index 11684d9..96c89ba 100644
---- a/include/linux/sysctl.h
-+++ b/include/linux/sysctl.h
-@@ -25,6 +25,7 @@
- #include <linux/kernel.h>
- #include <linux/types.h>
- #include <linux/compiler.h>
-+#include <linux/wait.h>
- 
- struct completion;
- 
-@@ -1011,6 +1012,12 @@ extern int proc_do_large_bitmap(struct ctl_table *, int,
-  * cover common cases.
-  */
- 
-+/* Support for userspace poll() to watch for changes */
-+struct ctl_table_poll {
-+	atomic_t event;
-+	wait_queue_head_t wait;
-+};
++	drop_capabilities(get_arg(cmdc, cmdv, "drop_capabilities="));
 +
- /* A sysctl table is an array of struct ctl_table: */
- struct ctl_table 
- {
-@@ -1021,6 +1028,7 @@ struct ctl_table
- 	struct ctl_table *child;
- 	struct ctl_table *parent;	/* Automatically set */
- 	proc_handler *proc_handler;	/* Callback for text formatting */
-+	struct ctl_table_poll *poll;
- 	void *extra1;
- 	void *extra2;
- };
-diff --git a/include/linux/utsname.h b/include/linux/utsname.h
-index 4e5b021..c714ed7 100644
---- a/include/linux/utsname.h
-+++ b/include/linux/utsname.h
-@@ -37,6 +37,14 @@ struct new_utsname {
- #include <linux/nsproxy.h>
- #include <linux/err.h>
- 
-+enum uts_proc {
-+	UTS_PROC_OSTYPE,
-+	UTS_PROC_OSRELEASE,
-+	UTS_PROC_VERSION,
-+	UTS_PROC_HOSTNAME,
-+	UTS_PROC_DOMAINNAME,
-+};
-+
- struct user_namespace;
- extern struct user_namespace init_user_ns;
- 
-@@ -80,6 +88,14 @@ static inline struct uts_namespace *copy_utsname(unsigned long flags,
+ 	if (mnt_procfs) {
+ 		umount2("/proc", 0);
+ 		mnt_procfs = 0;
+diff --git a/usr/kinit/kinit.h b/usr/kinit/kinit.h
+index c2e67b7..85960d8 100644
+--- a/usr/kinit/kinit.h
++++ b/usr/kinit/kinit.h
+@@ -65,4 +65,6 @@ static inline void dump_args(int argc, char *argv[])
  }
  #endif
  
-+#ifdef CONFIG_PROC_SYSCTL
-+extern void uts_proc_notify(enum uts_proc proc);
-+#else
-+static inline void uts_proc_notify(enum uts_proc proc)
-+{
-+}
-+#endif
++int drop_capabilities(const char *caps);
 +
- static inline struct new_utsname *utsname(void)
- {
- 	return &current->nsproxy->uts_ns->name;
-diff --git a/kernel/sys.c b/kernel/sys.c
-index a101ba3..2347043 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1241,6 +1241,7 @@ SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
- 		memset(u->nodename + len, 0, sizeof(u->nodename) - len);
- 		errno = 0;
- 	}
-+	uts_proc_notify(UTS_PROC_HOSTNAME);
- 	up_write(&uts_sem);
- 	return errno;
- }
-@@ -1291,6 +1292,7 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
- 		memset(u->domainname + len, 0, sizeof(u->domainname) - len);
- 		errno = 0;
- 	}
-+	uts_proc_notify(UTS_PROC_DOMAINNAME);
- 	up_write(&uts_sem);
- 	return errno;
- }
-diff --git a/kernel/utsname_sysctl.c b/kernel/utsname_sysctl.c
-index a2cd77e..e96b766 100644
---- a/kernel/utsname_sysctl.c
-+++ b/kernel/utsname_sysctl.c
-@@ -13,6 +13,7 @@
- #include <linux/uts.h>
- #include <linux/utsname.h>
- #include <linux/sysctl.h>
-+#include <linux/wait.h>
- 
- static void *get_uts(ctl_table *table, int write)
- {
-@@ -51,12 +52,28 @@ static int proc_do_uts_string(ctl_table *table, int write,
- 	uts_table.data = get_uts(table, write);
- 	r = proc_dostring(&uts_table,write,buffer,lenp, ppos);
- 	put_uts(table, write, uts_table.data);
-+
-+	if (write) {
-+		atomic_inc(&table->poll->event);
-+		wake_up_interruptible(&table->poll->wait);
-+	}
-+
- 	return r;
- }
- #else
- #define proc_do_uts_string NULL
- #endif
- 
-+static struct ctl_table_poll hostname_poll = {
-+	.event		= ATOMIC_INIT(0),
-+	.wait		= __WAIT_QUEUE_HEAD_INITIALIZER(hostname_poll.wait),
-+};
-+
-+static struct ctl_table_poll domainname_poll = {
-+	.event		= ATOMIC_INIT(0),
-+	.wait		= __WAIT_QUEUE_HEAD_INITIALIZER(domainname_poll.wait),
-+};
-+
- static struct ctl_table uts_kern_table[] = {
- 	{
- 		.procname	= "ostype",
-@@ -85,6 +102,7 @@ static struct ctl_table uts_kern_table[] = {
- 		.maxlen		= sizeof(init_uts_ns.name.nodename),
- 		.mode		= 0644,
- 		.proc_handler	= proc_do_uts_string,
-+		.poll		= &hostname_poll,
- 	},
- 	{
- 		.procname	= "domainname",
-@@ -92,6 +110,7 @@ static struct ctl_table uts_kern_table[] = {
- 		.maxlen		= sizeof(init_uts_ns.name.domainname),
- 		.mode		= 0644,
- 		.proc_handler	= proc_do_uts_string,
-+		.poll		= &domainname_poll,
- 	},
- 	{}
- };
-@@ -105,6 +124,23 @@ static struct ctl_table uts_root_table[] = {
- 	{}
- };
- 
-+#ifdef CONFIG_PROC_SYSCTL
-+/*
-+ * Notify userspace about a change in a certain entry of uts_kern_table,
-+ * identified by the parameter proc.
-+ */
-+void uts_proc_notify(enum uts_proc proc)
-+{
-+	struct ctl_table *table = &uts_kern_table[proc];
-+
-+	if (!table->poll)
-+		return;
-+
-+	atomic_inc(&table->poll->event);
-+	wake_up_interruptible(&table->poll->wait);
-+}
-+#endif
-+
- static int __init utsname_sysctl_init(void)
- {
- 	register_sysctl_table(uts_root_table);
--- 
-1.7.6
+ #endif				/* KINIT_H */
 
