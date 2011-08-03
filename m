@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755128Ab1HCQX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 12:23:27 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:7795 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755063Ab1HCQXV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 12:23:21 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-160.messagelabs.com!1312388595!17893635!26
-X-StarScan-Version: 6.2.17; banners=-,-,-
-X-Originating-IP: [216.166.12.97]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "wim@iguana.be" <wim@iguana.be>
-Date: Wed, 3 Aug 2011 11:22:57 -0500
-Subject: RE: [RFC PATCH] watchdog: ep93xx: Use the WatchDog Timer Driver
- Core.
-Thread-Topic: [RFC PATCH] watchdog: ep93xx: Use the WatchDog Timer Driver
- Core.
-Thread-Index: AcxRtZA3E4exo+rlQhqsBNZdXTW6xwAQ+FEg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F001F3882B8876@AUSP01VMBX24.collaborationhost.net>
-References: <201108011357.24745.hartleys@visionengravers.com>
- <20110802091640.GF13218@intel.com>
- <ADE657CA350FB648AAC2C43247A983F001F3882B8535@AUSP01VMBX24.collaborationhost.net>
- <20110803081559.GI13218@intel.com>
-In-Reply-To: <20110803081559.GI13218@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752879Ab1HCQ00 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 12:26:26 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:35602 "EHLO linux-mips.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751398Ab1HCQ0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 12:26:20 -0400
+Date: Wed, 3 Aug 2011 17:17:45 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: benh@kernel.crashing.org, yinghai@kernel.org, hpa@zytor.com,
+        tony.luck@intel.com, schwidefsky@de.ibm.com, liqin.chen@sunplusct.com,
+        lethal@linux-sh.org, davem@davemloft.net, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, mingo@redhat.com,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH 19/23] mips: Use HAVE_MEMBLOCK_NODE_MAP
+Message-ID: <20110803161745.GA13266@linux-mips.org>
+References: <1311694534-5161-1-git-send-email-tj@kernel.org>
+ <1311694534-5161-20-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311694534-5161-20-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 03, 2011 1:16 AM, Mika Westerberg wrote:
-> On Tue, Aug 02, 2011 at 11:55:36AM -0500, H Hartley Sweeten wrote:
->>>> -static const struct watchdog_info ident = {
->>>> -	.options = WDIOF_CARDRESET | WDIOF_MAGICCLOSE,
->>>> -	.identity = "EP93xx Watchdog",
->>>> +static const struct watchdog_info ep93xx_wdt_ident = {
->>>> +	.options	= WDIOF_CARDRESET | WDIOF_MAGICCLOSE,
->>>> +	.identity	= "EP93xx Watchdog",
->>>>  };
->
-> One more thing I noticed: you should add WDIOF_KEEPALIVEPING to the options
-> field. Otherwise it doesn't support ioctl(..., WDIOC_KEEPALIVE) which was
-> supported in the original driver.
+On Tue, Jul 26, 2011 at 05:35:30PM +0200, Tejun Heo wrote:
 
-I noticed that yesterday.  I'll fix it and repost the patch shortly.
+> mips used early_node_map[] just to prime free_area_init_nodes().  Now
+> memblock can be used for the same purpose and early_node_map[] is
+> scheduled to be dropped.  Use memblock instead.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Cc: linux-mips@linux-mips.org
+> ---
+> Only compile tested.  Thanks.
+> 
+>  arch/mips/Kconfig                |    3 +++
+>  arch/mips/kernel/setup.c         |    3 ++-
+>  arch/mips/sgi-ip27/ip27-memory.c |    5 +++--
+>  3 files changed, 8 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+> index 653da62..368b2ec 100644
+> --- a/arch/mips/Kconfig
+> +++ b/arch/mips/Kconfig
+> @@ -24,6 +24,9 @@ config MIPS
+>  	select GENERIC_IRQ_PROBE
+>  	select GENERIC_IRQ_SHOW
+>  	select HAVE_ARCH_JUMP_LABEL
+> +	select HAVE_MEMBLOCK
 
-Thanks,
-Hartley
+This means <linux/memblock.h> will include <asm/memblock.h> which does
+not exist for MIPS.  Did you accidentally not post this new file?
+
+  Ralf
