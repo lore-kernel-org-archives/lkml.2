@@ -1,413 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab1HCIC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 04:02:58 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:52207 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab1HCICu (ORCPT
+	id S1752694Ab1HCIDS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 04:03:18 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:48416 "EHLO
+	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab1HCIDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 04:02:50 -0400
-From: Ravishnakar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH v2] Staging: comedi: fix warning issue in pcl818.c
-Date: Wed,  3 Aug 2011 13:32:39 +0530
-Message-Id: <1312358559-5674-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <[PATCH]Staging: comedi: fix warning issues in pcl818.c>
-References: <[PATCH]Staging: comedi: fix warning issues in pcl818.c>
+	Wed, 3 Aug 2011 04:03:07 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.13 with qID p7382rH1031364, This message is released by code: ctaloc0852
+From: <wei_wang@realsil.com.cn>
+To: <gregkh@suse.de>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>
+CC: wwang <wei_wang@realsil.com.cn>
+Subject: [PATCH] staging:rts_pstor:modify thread synchronization flow
+Date: Wed, 3 Aug 2011 16:00:25 +0800
+X-BOX-Message-Id: p7382rH1031364
+Message-ID: <1312358425-8442-1-git-send-email-wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.6
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+From: wwang <wei_wang@realsil.com.cn>
 
-This is a patch to the pcl818.c file that fixes up a printk(),brace coding style and initilise statics to NULL warning found by the checkpatch.pl tool
+Using different completion variables to synchronize different kernel threads
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+Signed-off-by: wwang <wei_wang@realsil.com.cn>
 ---
- drivers/staging/comedi/drivers/pcl818.c |  121 +++++++++++++++++----------------
- 1 files changed, 59 insertions(+), 62 deletions(-)
+ drivers/staging/rts_pstor/rtsx.c |  109 +++++++++++++++-----------------------
+ drivers/staging/rts_pstor/rtsx.h |    9 +++-
+ 2 files changed, 50 insertions(+), 68 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
-index b45a9bd..18d318c 100644
---- a/drivers/staging/comedi/drivers/pcl818.c
-+++ b/drivers/staging/comedi/drivers/pcl818.c
-@@ -252,8 +252,8 @@ static int pcl818_attach(struct comedi_device *dev,
- static int pcl818_detach(struct comedi_device *dev);
+diff --git a/drivers/staging/rts_pstor/rtsx.c b/drivers/staging/rts_pstor/rtsx.c
+index 5ff59f2..16c73fb 100644
+--- a/drivers/staging/rts_pstor/rtsx.c
++++ b/drivers/staging/rts_pstor/rtsx.c
+@@ -66,12 +66,6 @@ static int msi_en;
+ module_param(msi_en, int, S_IRUGO | S_IWUSR);
+ MODULE_PARM_DESC(msi_en, "enable msi");
  
- #ifdef unused
--static int RTC_lock = 0;	/* RTC lock */
--static int RTC_timer_lock = 0;	/* RTC int lock */
-+static int RTC_lock;	/* RTC lock */
-+static int RTC_timer_lock;	/* RTC int lock */
- #endif
- 
- struct pcl818_board {
-@@ -463,10 +463,8 @@ static int pcl818_ao_insn_read(struct comedi_device *dev,
- 	int n;
- 	int chan = CR_CHAN(insn->chanspec);
- 
--	for (n = 0; n < insn->n; n++) {
-+	for (n = 0; n < insn->n; n++)
- 		data[n] = devpriv->ao_readback[chan];
--	}
+-/* These are used to make sure the module doesn't unload before all the
+- * threads have exited.
+- */
+-static atomic_t total_threads = ATOMIC_INIT(0);
+-static DECLARE_COMPLETION(threads_gone);
 -
- 	return n;
- }
+ static irqreturn_t rtsx_interrupt(int irq, void *dev_id);
  
-@@ -571,9 +569,9 @@ conv_finish:
- 		return IRQ_HANDLED;
- 	}
- 	devpriv->act_chanlist_pos++;
--	if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len) {
-+	if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len)
- 		devpriv->act_chanlist_pos = 0;
--	}
-+
- 	s->async->cur_chan++;
- 	if (s->async->cur_chan >= devpriv->ai_n_chan) {
- 		/*  printk("E"); */
-@@ -645,9 +643,9 @@ static irqreturn_t interrupt_pcl818_ai_mode13_dma(int irq, void *d)
- 		comedi_buf_put(s->async, ptr[bufptr++] >> 4);	/*  get one sample */
+ /***********************************************************************
+@@ -192,7 +186,7 @@ static int queuecommand_lck(struct scsi_cmnd *srb,
+ 	/* enqueue the command and wake up the control thread */
+ 	srb->scsi_done = done;
+ 	chip->srb = srb;
+-	up(&(dev->sema));
++	complete(&dev->cmnd_ready);
  
- 		devpriv->act_chanlist_pos++;
--		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len) {
-+		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len)
- 			devpriv->act_chanlist_pos = 0;
--		}
-+
- 		s->async->cur_chan++;
- 		if (s->async->cur_chan >= devpriv->ai_n_chan) {
- 			s->async->cur_chan = 0;
-@@ -805,11 +803,10 @@ static irqreturn_t interrupt_pcl818_ai_mode13_fifo(int irq, void *d)
- 		return IRQ_HANDLED;
- 	}
- 
--	if (lo & 2) {
-+	if (lo & 2)
- 		len = 512;
--	} else {
-+	else
- 		len = 0;
--	}
- 
- 	for (i = 0; i < len; i++) {
- 		lo = inb(dev->iobase + PCL818_FI_DATALO);
-@@ -827,9 +824,9 @@ static irqreturn_t interrupt_pcl818_ai_mode13_fifo(int irq, void *d)
- 		comedi_buf_put(s->async, (lo >> 4) | (inb(dev->iobase + PCL818_FI_DATAHI) << 4));	/*  get one sample */
- 
- 		devpriv->act_chanlist_pos++;
--		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len) {
-+		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len)
- 			devpriv->act_chanlist_pos = 0;
--		}
-+
- 		s->async->cur_chan++;
- 		if (s->async->cur_chan >= devpriv->ai_n_chan) {
- 			s->async->cur_chan = 0;
-@@ -1009,7 +1006,7 @@ static int pcl818_ai_cmd_mode(int mode, struct comedi_device *dev,
- 	int divisor1 = 0, divisor2 = 0;
- 	unsigned int seglen;
- 
--	printk("pcl818_ai_cmd_mode()\n");
-+	dev_dbg(dev->hw_dev, "pcl818_ai_cmd_mode()\n");
- 	if ((!dev->irq) && (!devpriv->dma_rtc)) {
- 		comedi_error(dev, "IRQ not defined!");
- 		return -EINVAL;
-@@ -1112,7 +1109,7 @@ static int pcl818_ai_cmd_mode(int mode, struct comedi_device *dev,
- 		break;
- 	}
- #endif
--	printk("pcl818_ai_cmd_mode() end\n");
-+	dev_dbg(dev->hw_dev, "pcl818_ai_cmd_mode() end\n");
  	return 0;
  }
+@@ -475,7 +469,7 @@ static int rtsx_control_thread(void *__dev)
+ 	current->flags |= PF_NOFREEZE;
  
-@@ -1309,11 +1306,9 @@ static void setup_channel_list(struct comedi_device *dev,
- */
- static int check_single_ended(unsigned int port)
+ 	for (;;) {
+-		if (down_interruptible(&dev->sema))
++		if (wait_for_completion_interruptible(&dev->cmnd_ready))
+ 			break;
+ 
+ 		/* lock the device pointers */
+@@ -557,8 +551,6 @@ SkipForAbort:
+ 		mutex_unlock(&dev->dev_mutex);
+ 	} /* for (;;) */
+ 
+-	scsi_host_put(host);
+-
+ 	/* notify the exit routine that we're actually exiting now
+ 	 *
+ 	 * complete()/wait_for_completion() is similar to up()/down(),
+@@ -573,7 +565,7 @@ SkipForAbort:
+ 	 * This is important in preemption kernels, which transfer the flow
+ 	 * of execution immediately upon a complete().
+ 	 */
+-	complete_and_exit(&threads_gone, 0);
++	complete_and_exit(&dev->control_exit, 0);
+ }
+ 
+ 
+@@ -581,7 +573,6 @@ static int rtsx_polling_thread(void *__dev)
  {
--	if (inb(port + PCL818_STATUS) & 0x20) {
-+	if (inb(port + PCL818_STATUS) & 0x20)
- 		return 1;
--	} else {
--		return 0;
--	}
-+	return 0;
+ 	struct rtsx_dev *dev = (struct rtsx_dev *)__dev;
+ 	struct rtsx_chip *chip = dev->chip;
+-	struct Scsi_Host *host = rtsx_to_host(dev);
+ 	struct sd_info *sd_card = &(chip->sd_card);
+ 	struct xd_info *xd_card = &(chip->xd_card);
+ 	struct ms_info *ms_card = &(chip->ms_card);
+@@ -621,8 +612,7 @@ static int rtsx_polling_thread(void *__dev)
+ 		mutex_unlock(&dev->dev_mutex);
+ 	}
+ 
+-	scsi_host_put(host);
+-	complete_and_exit(&threads_gone, 0);
++	complete_and_exit(&dev->polling_exit, 0);
  }
  
  /*
-@@ -1352,9 +1347,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 	if (!cmd->stop_src || tmp != cmd->stop_src)
- 		err++;
- 
--	if (err) {
-+	if (err)
- 		return 1;
--	}
- 
- 	/* step 2: make sure trigger sources are unique and mutually compatible */
- 
-@@ -1377,9 +1371,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 	if (cmd->stop_src != TRIG_NONE && cmd->stop_src != TRIG_COUNT)
- 		err++;
- 
--	if (err) {
-+	if (err)
- 		return 2;
--	}
- 
- 	/* step 3: make sure arguments are trivially compatible */
- 
-@@ -1421,9 +1414,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 		}
- 	}
- 
--	if (err) {
-+	if (err)
- 		return 3;
--	}
- 
- 	/* step 4: fix up any arguments */
- 
-@@ -1438,9 +1430,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 			err++;
- 	}
- 
--	if (err) {
-+	if (err)
- 		return 4;
--	}
- 
- 	/* step 5: complain about special chanlist considerations */
- 
-@@ -1461,7 +1452,7 @@ static int ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	struct comedi_cmd *cmd = &s->async->cmd;
- 	int retval;
- 
--	printk("pcl818_ai_cmd()\n");
-+	dev_dbg(dev->hw_dev, "pcl818_ai_cmd()\n");
- 	devpriv->ai_n_chan = cmd->chanlist_len;
- 	devpriv->ai_chanlist = cmd->chanlist;
- 	devpriv->ai_flags = cmd->flags;
-@@ -1470,17 +1461,16 @@ static int ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	devpriv->ai_timer1 = 0;
- 	devpriv->ai_timer2 = 0;
- 
--	if (cmd->stop_src == TRIG_COUNT) {
-+	if (cmd->stop_src == TRIG_COUNT)
- 		devpriv->ai_scans = cmd->stop_arg;
--	} else {
-+	else
- 		devpriv->ai_scans = 0;
--	}
- 
- 	if (cmd->scan_begin_src == TRIG_FOLLOW) {	/*  mode 1, 3 */
- 		if (cmd->convert_src == TRIG_TIMER) {	/*  mode 1 */
- 			devpriv->ai_timer1 = cmd->convert_arg;
- 			retval = pcl818_ai_cmd_mode(1, dev, s);
--			printk("pcl818_ai_cmd() end\n");
-+			dev_dbg(dev->hw_dev, "pcl818_ai_cmd() end\n");
- 			return retval;
- 		}
- 		if (cmd->convert_src == TRIG_EXT) {	/*  mode 3 */
-@@ -1499,7 +1489,7 @@ static int pcl818_ai_cancel(struct comedi_device *dev,
- 			    struct comedi_subdevice *s)
+@@ -699,29 +689,38 @@ static void rtsx_release_resources(struct rtsx_dev *dev)
  {
- 	if (devpriv->irq_blocked > 0) {
--		printk("pcl818_ai_cancel()\n");
-+		dev_dbg(dev->hw_dev, "pcl818_ai_cancel()\n");
- 		devpriv->irq_was_now_closed = 1;
+ 	printk(KERN_INFO "-- %s\n", __func__);
  
- 		switch (devpriv->ai_mode) {
-@@ -1549,7 +1539,7 @@ static int pcl818_ai_cancel(struct comedi_device *dev,
++	/* Tell the control thread to exit.  The SCSI host must
++	 * already have been removed so it won't try to queue
++	 * any more commands.
++	 */
++	printk(KERN_INFO "-- sending exit command to thread\n");
++	complete(&dev->cmnd_ready);
++	if (dev->ctl_thread)
++		wait_for_completion(&dev->control_exit);
++	if (dev->polling_thread)
++		wait_for_completion(&dev->polling_exit);
++
++	wait_timeout(200);
++
+ 	if (dev->rtsx_resv_buf) {
+-		dma_free_coherent(&(dev->pci->dev), HOST_CMDS_BUF_LEN,
++		dma_free_coherent(&(dev->pci->dev), RTSX_RESV_BUF_LEN,
+ 				dev->rtsx_resv_buf, dev->rtsx_resv_buf_addr);
+ 		dev->chip->host_cmds_ptr = NULL;
+ 		dev->chip->host_sg_tbl_ptr = NULL;
  	}
  
- end:
--	printk("pcl818_ai_cancel() end\n");
-+	dev_dbg(dev->hw_dev, "pcl818_ai_cancel() end\n");
- 	return 0;
+-	pci_disable_device(dev->pci);
+-	pci_release_regions(dev->pci);
+-
+-	if (dev->irq > 0) {
++	if (dev->irq > 0)
+ 		free_irq(dev->irq, (void *)dev);
+-	}
+-	if (dev->chip->msi_en) {
++	if (dev->chip->msi_en)
+ 		pci_disable_msi(dev->pci);
+-	}
++	if (dev->remap_addr)
++		iounmap(dev->remap_addr);
+ 
+-	/* Tell the control thread to exit.  The SCSI host must
+-	 * already have been removed so it won't try to queue
+-	 * any more commands.
+-	 */
+-	printk(KERN_INFO "-- sending exit command to thread\n");
+-	up(&dev->sema);
++	pci_disable_device(dev->pci);
++	pci_release_regions(dev->pci);
++
++	rtsx_release_chip(dev->chip);
++	kfree(dev->chip);
  }
  
-@@ -1633,11 +1623,11 @@ static int set_rtc_irq_bit(unsigned char bit)
- 	save_flags(flags);
- 	cli();
- 	val = CMOS_READ(RTC_CONTROL);
--	if (bit) {
-+	if (bit)
- 		val |= RTC_PIE;
--	} else {
-+	else
- 		val &= ~RTC_PIE;
--	}
-+
- 	CMOS_WRITE(val, RTC_CONTROL);
- 	CMOS_READ(RTC_INTR_FLAGS);
- 	restore_flags(flags);
-@@ -1754,7 +1744,7 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ /* First stage of disconnect processing: stop all commands and remove
+@@ -739,6 +738,7 @@ static void quiesce_and_remove_host(struct rtsx_dev *dev)
+ 	scsi_unlock(host);
+ 	mutex_unlock(&dev->dev_mutex);
+ 	wake_up(&dev->delay_wait);
++	wait_for_completion(&dev->scanning_done);
  
- 	/* claim our I/O space */
- 	iobase = it->options[0];
--	printk("comedi%d: pcl818:  board=%s, ioport=0x%03lx",
-+	printk(KERN_INFO "comedi%d: pcl818:  board=%s, ioport=0x%03lx",
- 	       dev->minor, this_board->name, iobase);
- 	devpriv->io_range = this_board->io_range;
- 	if ((this_board->fifo) && (it->options[2] == -1)) {	/*  we've board with FIFO and we want to use FIFO */
-@@ -1762,17 +1752,19 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		devpriv->usefifo = 1;
- 	}
- 	if (!request_region(iobase, devpriv->io_range, "pcl818")) {
--		printk("I/O port conflict\n");
-+		printk(KERN_ERR "I/O port conflict\n");
- 		return -EIO;
+ 	/* Wait some time to let other threads exist */
+ 	wait_timeout(100);
+@@ -793,8 +793,7 @@ static int rtsx_scan_thread(void *__dev)
+ 		/* Should we unbind if no devices were detected? */
  	}
  
-+	printk(KERN_CONT ", I/O port detected\n");
- 	dev->iobase = iobase;
- 
- 	if (pcl818_check(iobase)) {
--		printk(", I can't detect board. FAIL!\n");
-+		printk(KERN_WARNING "I can't detect board. FAIL!\n");
- 		return -EIO;
- 	}
- 
-+	printk(KERN_CONT ", Board is detected successfully\n");
- 	/* set up some name stuff */
- 	dev->board_name = this_board->name;
- 	/* grab our IRQ */
-@@ -1782,30 +1774,29 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		if (irq) {	/* we want to use IRQ */
- 			if (((1 << irq) & this_board->IRQbits) == 0) {
- 				printk
--				    (", IRQ %u is out of allowed range, DISABLING IT",
-+				printk(KERN_CONT ", IRQ %u is out of allowed range,"
-+				"DISABLING IT",	irq);
- 				irq = 0;	/* Bad IRQ */
- 			} else {
- 				if (request_irq
- 				    (irq, interrupt_pcl818, 0, "pcl818", dev)) {
- 					printk
--					    (", unable to allocate IRQ %u, DISABLING IT",
-+					printk(KERN_CONT ", unable to allocate IRQ %u,"
-+					"DISABLING IT", irq);
- 					irq = 0;	/* Can't use IRQ */
- 				} else {
--					printk(", irq=%u", irq);
-+					printk(KERN_CONT ", irq=%u", irq);
- 				}
- 			}
- 		}
- 	}
- 
- 	dev->irq = irq;
--	if (irq) {
--		devpriv->irq_free = 1;
--	} /* 1=we have allocated irq */
--	else {
-+	if (irq)
-+		devpriv->irq_free = 1;   /* 1=we have allocated irq */
-+	else
- 		devpriv->irq_free = 0;
--	}
-+
- 	devpriv->irq_blocked = 0;	/* number of subdevice which use IRQ */
- 	devpriv->ai_mode = 0;	/* mode of irq */
- 
-@@ -1825,7 +1816,7 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 				 "pcl818 DMA (RTC)", dev)) {
- 			devpriv->dma_rtc = 1;
- 			devpriv->rtc_irq = RTC_IRQ;
--			printk(", dma_irq=%u", devpriv->rtc_irq);
-+			printk(KERN_CONT ", dma_irq=%u", devpriv->rtc_irq);
- 		} else {
- 			RTC_lock--;
- 			if (RTC_lock == 0) {
-@@ -1850,23 +1841,26 @@ no_rtc:
- 		if (dma < 1)
- 			goto no_dma;	/* DMA disabled */
- 		if (((1 << dma) & this_board->DMAbits) == 0) {
--			printk(", DMA is out of allowed range, FAIL!\n");
-+			printk(KERN_WARNING "DMA is out of allowed range, FAIL!\n");
- 			return -EINVAL;	/* Bad DMA */
- 		}
-+		printk(KERN_CONT ", DMA is in allowed range\n");
- 		ret = request_dma(dma, "pcl818");
- 		if (ret) {
--			printk(", unable to allocate DMA %u, FAIL!\n", dma);
-+			printk(KERN_WARNNG "unable to allocate DMA %u,"
-+			"FAIL!\n", dma);
- 			return -EBUSY;	/* DMA isn't free */
- 		}
-+		printk(KERN_CONT ", DMA allocated successfully\n");
- 		devpriv->dma = dma;
--		printk(", dma=%u", dma);
-+		printk(KERN_CONT ", dma=%u", dma);
- 		pages = 2;	/* we need 16KB */
- 		devpriv->dmabuf[0] = __get_dma_pages(GFP_KERNEL, pages);
- 		if (!devpriv->dmabuf[0]) {
--			printk(", unable to allocate DMA buffer, FAIL!\n");
-+			printk(KERN_WARNING "unable to allocate DMA buffer, FAIL!\n");
- 			/* maybe experiment with try_to_free_pages() will help .... */
- 			return -EBUSY;	/* no buffer :-( */
- 		}
-+		printk(KERN_CONT ", DMA buffer allocated successfully\n");
- 		devpriv->dmapages[0] = pages;
- 		devpriv->hwdmaptr[0] = virt_to_bus((void *)devpriv->dmabuf[0]);
- 		devpriv->hwdmasize[0] = (1 << pages) * PAGE_SIZE;
-@@ -1874,10 +1868,11 @@ no_rtc:
- 		if (devpriv->dma_rtc == 0) {	/*  we must do duble buff :-( */
- 			devpriv->dmabuf[1] = __get_dma_pages(GFP_KERNEL, pages);
- 			if (!devpriv->dmabuf[1]) {
--				printk
--				    (", unable to allocate DMA buffer, FAIL!\n");
-+				printk(KERN_WARNING
-+				"unable to allocate DMA buffer, FAIL!\n");
- 				return -EBUSY;
- 			}
-+			printk(KERN_CONT ", DMA buffer allocated successfully\n");
- 			devpriv->dmapages[1] = pages;
- 			devpriv->hwdmaptr[1] =
- 			    virt_to_bus((void *)devpriv->dmabuf[1]);
-@@ -1901,11 +1896,11 @@ no_dma:
- 		if (check_single_ended(dev->iobase)) {
- 			s->n_chan = this_board->n_aichan_se;
- 			s->subdev_flags |= SDF_COMMON | SDF_GROUND;
--			printk(", %dchans S.E. DAC", s->n_chan);
-+			printk(KERN_CONT ", %dchans S.E. DAC", s->n_chan);
- 		} else {
- 			s->n_chan = this_board->n_aichan_diff;
- 			s->subdev_flags |= SDF_DIFF;
--			printk(", %dchans DIFF DAC", s->n_chan);
-+			printk(KERN_CONT ", %dchans DIFF DAC", s->n_chan);
- 		}
- 		s->maxdata = this_board->ai_maxdata;
- 		s->len_chanlist = s->n_chan;
-@@ -2017,11 +2012,10 @@ no_dma:
- 	}
- 
- 	/* select 1/10MHz oscilator */
--	if ((it->options[3] == 0) || (it->options[3] == 10)) {
-+	if ((it->options[3] == 0) || (it->options[3] == 10))
- 		devpriv->i8253_osc_base = 100;
--	} else {
-+	else
- 		devpriv->i8253_osc_base = 1000;
--	}
- 
- 	/* max sampling speed */
- 	devpriv->ns_min = this_board->ns_min;
-@@ -2033,7 +2027,7 @@ no_dma:
- 
- 	pcl818_reset(dev);
- 
--	printk("\n");
-+	printk(KERN_CONT "\n");
- 
- 	return 0;
+-	scsi_host_put(rtsx_to_host(dev));
+-	complete_and_exit(&threads_gone, 0);
++	complete_and_exit(&dev->scanning_done, 0);
  }
+ 
+ static void rtsx_init_options(struct rtsx_chip *chip)
+@@ -941,8 +940,11 @@ static int __devinit rtsx_probe(struct pci_dev *pci, const struct pci_device_id
+ 
+ 	spin_lock_init(&dev->reg_lock);
+ 	mutex_init(&(dev->dev_mutex));
+-	sema_init(&(dev->sema), 0);
++	init_completion(&dev->cmnd_ready);
++	init_completion(&dev->control_exit);
++	init_completion(&dev->polling_exit);
+ 	init_completion(&(dev->notify));
++	init_completion(&dev->scanning_done);
+ 	init_waitqueue_head(&dev->delay_wait);
+ 
+ 	dev->pci = pci;
+@@ -992,28 +994,22 @@ static int __devinit rtsx_probe(struct pci_dev *pci, const struct pci_device_id
+ 	pci_set_master(pci);
+ 	synchronize_irq(dev->irq);
+ 
+-	err = scsi_add_host(host, &pci->dev);
+-	if (err) {
+-		printk(KERN_ERR "Unable to add the scsi host\n");
+-		goto errout;
+-	}
+-
+ 	rtsx_init_chip(dev->chip);
+ 
+ 	/* Start up our control thread */
+-	th = kthread_create(rtsx_control_thread, dev, CR_DRIVER_NAME);
++	th = kthread_run(rtsx_control_thread, dev, CR_DRIVER_NAME);
+ 	if (IS_ERR(th)) {
+ 		printk(KERN_ERR "Unable to start control thread\n");
+ 		err = PTR_ERR(th);
+ 		goto errout;
+ 	}
++	dev->ctl_thread = th;
+ 
+-	/* Take a reference to the host for the control thread and
+-	 * count it among all the threads we have launched.  Then
+-	 * start it up. */
+-	scsi_host_get(rtsx_to_host(dev));
+-	atomic_inc(&total_threads);
+-	wake_up_process(th);
++	err = scsi_add_host(host, &pci->dev);
++	if (err) {
++		printk(KERN_ERR "Unable to add the scsi host\n");
++		goto errout;
++	}
+ 
+ 	/* Start up the thread for delayed SCSI-device scanning */
+ 	th = kthread_create(rtsx_scan_thread, dev, "rtsx-scan");
+@@ -1024,28 +1020,17 @@ static int __devinit rtsx_probe(struct pci_dev *pci, const struct pci_device_id
+ 		goto errout;
+ 	}
+ 
+-	/* Take a reference to the host for the scanning thread and
+-	 * count it among all the threads we have launched.  Then
+-	 * start it up. */
+-	scsi_host_get(rtsx_to_host(dev));
+-	atomic_inc(&total_threads);
+ 	wake_up_process(th);
+ 
+ 	/* Start up the thread for polling thread */
+-	th = kthread_create(rtsx_polling_thread, dev, "rtsx-polling");
++	th = kthread_run(rtsx_polling_thread, dev, "rtsx-polling");
+ 	if (IS_ERR(th)) {
+ 		printk(KERN_ERR "Unable to start the device-polling thread\n");
+ 		quiesce_and_remove_host(dev);
+ 		err = PTR_ERR(th);
+ 		goto errout;
+ 	}
+-
+-	/* Take a reference to the host for the polling thread and
+-	 * count it among all the threads we have launched.  Then
+-	 * start it up. */
+-	scsi_host_get(rtsx_to_host(dev));
+-	atomic_inc(&total_threads);
+-	wake_up_process(th);
++	dev->polling_thread = th;
+ 
+ 	pci_set_drvdata(pci, dev);
+ 
+@@ -1108,16 +1093,6 @@ static void __exit rtsx_exit(void)
+ 
+ 	pci_unregister_driver(&driver);
+ 
+-	/* Don't return until all of our control and scanning threads
+-	 * have exited.  Since each thread signals threads_gone as its
+-	 * last act, we have to call wait_for_completion the right number
+-	 * of times.
+-	 */
+-	while (atomic_read(&total_threads) > 0) {
+-		wait_for_completion(&threads_gone);
+-		atomic_dec(&total_threads);
+-	}
+-
+ 	printk(KERN_INFO "%s module exit\n", CR_DRIVER_NAME);
+ }
+ 
+diff --git a/drivers/staging/rts_pstor/rtsx.h b/drivers/staging/rts_pstor/rtsx.h
+index 247615b..86e47c2 100644
+--- a/drivers/staging/rts_pstor/rtsx.h
++++ b/drivers/staging/rts_pstor/rtsx.h
+@@ -112,9 +112,16 @@ struct rtsx_dev {
+ 	/* locks */
+ 	spinlock_t 		reg_lock;
+ 
++	struct task_struct	*ctl_thread;	 /* the control thread   */
++	struct task_struct	*polling_thread; /* the polling thread   */
++
+ 	/* mutual exclusion and synchronization structures */
+-	struct semaphore	sema;		 /* to sleep thread on	    */
++	struct completion	cmnd_ready;	 /* to sleep thread on	    */
++	struct completion	control_exit;	 /* control thread exit	    */
++	struct completion	polling_exit;	 /* polling thread exit	    */
+ 	struct completion	notify;		 /* thread begin/end	    */
++	struct completion	scanning_done;	 /* wait for scan thread    */
++
+ 	wait_queue_head_t	delay_wait;	 /* wait during scan, reset */
+ 	struct mutex		dev_mutex;
+ 
 -- 
-1.6.5.2
+1.7.6
 
