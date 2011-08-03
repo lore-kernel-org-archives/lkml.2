@@ -1,67 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab1HCVF3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 17:05:29 -0400
-Received: from mail.cs.tu-berlin.de ([130.149.17.13]:36904 "EHLO
-	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755292Ab1HCVFY (ORCPT
+	id S1755396Ab1HCVF6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 17:05:58 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:47625 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752956Ab1HCVFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 17:05:24 -0400
-Message-ID: <4E39B806.6020405@cs.tu-berlin.de>
-Date: Wed, 03 Aug 2011 23:05:10 +0200
-From: =?UTF-8?B?SmFuIFNjaMO2bmhlcnI=?= <schnhrr@cs.tu-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110508 Lightning/1.0b2 Thunderbird/3.1.10
+	Wed, 3 Aug 2011 17:05:52 -0400
+Message-ID: <4E39B82C.2010108@lwfinger.net>
+Date: Wed, 03 Aug 2011 16:05:48 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFCv2 0/8] sched: Enforce order of leaf CFS runqueues
- (and list cleanup)
-References: <1311793825-31933-1-git-send-email-schnhrr@cs.tu-berlin.de>
-In-Reply-To: <1311793825-31933-1-git-send-email-schnhrr@cs.tu-berlin.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>
+Subject: Re: Linux Wireless USB-Stick Question
+References: <alpine.DEB.2.02.1108031550100.4278@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.02.1108031550100.4278@p34.internal.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On 08/03/2011 02:53 PM, Justin Piszcz wrote:
+> Hi,
+>
+> Under Windows, you can achieve 10-15MiB/s..
+>
+> Under Linux, even with 150mbps USB wireless adapters, the max never appears to
+> go above > 3-4MiB/s, to work around this, order more USB-wifi ticks and run them
+> in parallel far away from each other with USB
+> extenders:
+>
+> box1:
+> -------------
+> wlan0 IEEE 802.11bg ESSID:"hidden"
+> Bit Rate=54 Mb/s Tx-Power=20 dBm
+> wlan1 IEEE 802.11bgn ESSID:"hidden"
+> Bit Rate=58.5 Mb/s Tx-Power=20 dBm
+> wlan2 IEEE 802.11bgn ESSID:"hidden"
+> Bit Rate=39 Mb/s Tx-Power=20 dBm
+>
+> box2:
+> -------------
+> wlan0 IEEE 802.11bgn ESSID:"hidden"
+> Bit Rate=58.5 Mb/s Tx-Power=20 dBm
+> wlan1 IEEE 802.11bgn ESSID:"hidden"
+> Bit Rate=52 Mb/s Tx-Power=20 dBm
+> wlan2 IEEE 802.11bgn ESSID:"hidden"
+> Bit Rate=52 Mb/s Tx-Power=20 dBm
+>
+> But I was curious if anyone had achieved > 10 MiB/s with any wireless adapter
+> with Linux?
+>
+> Also, those native Linux USB adapters (carl) work good, so far.
+> With the patch provided earlier for the rt2800usb driver, it is no longer
+> crashing under 3.0 so I put two of them on a single box plus a carl based one,
+> now I get better I/O, e.g. 4MiB/s x 6 = 24MiB/s.
 
-Am 27.07.2011 21:10, schrieb Jan H. Schönherr:
-> Patch 1: After inventing __list_link(), I realized, that this
-> 	 function already existed, but with a different name.
-> 
-> 	 This patch just does some renaming. Not really needed,
-> 	 but if I use the old naming in patch 2 it's really 
-> 	 hard to understand what's actually going on.
-> 
-> 	 It also helps to increase the readability of the existing
-> 	 code, see patches 6-8.
-> 
-> Patch 2: This introduces new list functions to splice RCU lists
-> 	 and handle deleted RCU list entries.
-> 
-> Patch 3: The actual bugfix.
-> 
-> Patch 4+5: Follow-ups to patch 1. Some more renaming and use of
-> 	   appropriate functions.
-> 
-> Patch 6: Another follow-up to patch 1, improving the readability of
-> 	 the list routines a bit.
-> 
-> Patch 7+8: Follow-ups to patch 2. Make use of the introduced
->            functionality in the already existing code.
+On a 150 Mbps connection running the following script
 
+#!/bin/sh
 
-I am wondering, whether v3 should consist basically only of
-patches 2 and 3, i. e. the minimal approach, or if you would
-take all of them?
+dest="sonylap" # set the servername
 
-If you prefer the minimal version, I would make another patch
-set out of the other patches. But as there seems to be no official
-maintainer for list related functionality, I would appreciate
-some hints who I should put on the TO/CC list.
+while true ; do
+netperf -t TCP_MAERTS -H $dest
+netperf -t TCP_STREAM -H $dest
+netperf -t TCP_SENDFILE -H $dest
+done
 
-Regards
-Jan
+I get the following for a D-Link DWA-130 containing a Realtek RTL8192SU with 
+driver r8712u:
+
+finger@larrylap:~/bcm_git/vendor-driver/5.10.56.46> ~/netperf.sh
+TCP MAERTS TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to sonylap (192.168.1.50) 
+port 0 AF_INET
+Recv   Send    Send
+Socket Socket  Message  Elapsed
+Size   Size    Size     Time     Throughput
+bytes  bytes   bytes    secs.    10^6bits/sec
+
+  87380  16384  16384    10.04      53.52
+TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to sonylap (192.168.1.50) 
+port 0 AF_INET
+Recv   Send    Send
+Socket Socket  Message  Elapsed
+Size   Size    Size     Time     Throughput
+bytes  bytes   bytes    secs.    10^6bits/sec
+
+  87380  16384  16384    10.03      55.58
+TCP SENDFILE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to sonylap 
+(192.168.1.50) port 0 AF_INET
+Recv   Send    Send
+Socket Socket  Message  Elapsed
+Size   Size    Size     Time     Throughput
+bytes  bytes   bytes    secs.    10^6bits/sec
+
+  87380  16384  16384    10.06      65.26
+
+I claim that 50-65 Mbps is pretty good.
+
+We get better than 10 Mbps with lots of different adapters.
+
+Larry
