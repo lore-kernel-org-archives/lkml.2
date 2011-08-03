@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab1HCN4v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 09:56:51 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:56591 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753528Ab1HCN4k (ORCPT
+	id S1753853Ab1HCN5C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 09:57:02 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:42740 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753709Ab1HCN4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 09:56:40 -0400
-Subject: Re: [PATCH] avr32: use set_current_blocked() in
- handle_signal/sys_rt_sigreturn
-From: Matt Fleming <matt@console-pimps.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110803133928.GA12990@redhat.com>
-References: <1312362279.10579.38.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <20110803130813.GA11708@redhat.com>  <20110803133928.GA12990@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 03 Aug 2011 14:56:37 +0100
-Message-ID: <1312379797.10579.59.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Aug 2011 09:56:55 -0400
+Date: Wed, 3 Aug 2011 16:56:51 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Per Forlin <per.forlin@linaro.org>
+Cc: balbi@ti.com, Per Forlin <per.forlin@stericsson.com>,
+        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        users@igloocommunity.org
+Subject: Re: [PATCH] usb: musb: ux500: set dma config for both src and dst
+Message-ID: <20110803135650.GQ11080@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1312299219-9562-1-git-send-email-per.forlin@stericsson.com>
+ <20110803133138.GO11080@legolas.emea.dhcp.ti.com>
+ <CAJ0pr183rzgoaVStgb=8Umxy3tKheTVE4vJia4qjCdwTjKmA-A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5xr6Gr0irOxp3+3c"
+Content-Disposition: inline
+In-Reply-To: <CAJ0pr183rzgoaVStgb=8Umxy3tKheTVE4vJia4qjCdwTjKmA-A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-03 at 15:39 +0200, Oleg Nesterov wrote:
-> On 08/03, Oleg Nesterov wrote:
+
+--5xr6Gr0irOxp3+3c
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Aug 03, 2011 at 03:53:10PM +0200, Per Forlin wrote:
+> On 3 August 2011 15:31, Felipe Balbi <balbi@ti.com> wrote:
+> > On Tue, Aug 02, 2011 at 05:33:39PM +0200, Per Forlin wrote:
+> >> From: Per Forlin <per.forlin@linaro.org>
+> >>
+> >> The dma driver requires both src and dst to be set.
+> >> This fix is needed in order to run gadget mass storage.
+> >> Patch is verified on snowball.
+> >>
+> >> Signed-off-by: Per Forlin <per.forlin@linaro.org>
 > >
-> > On 08/03, Matt Fleming wrote:
-> > >
-> > > 	 * Block the signal if we were unsuccessful.
-> > > 	 */
-> > > 	if (ret != 0 || !(ka->sa.sa_flags & SA_NODEFER)) {
-> > > 		spin_lock_irq(&current->sighand->siglock);
-> > > 		sigorsets(&current->blocked, &current->blocked,
-> > > 			  &ka->sa.sa_mask);
-> > > 		sigaddset(&current->blocked, sig);
-> > > 		recalc_sigpending();
-> > > 		spin_unlock_irq(&current->sighand->siglock);
-> > > 	}
+> > should this go for stable too ??
 > >
-> > Agreed, this looks "obviously wrong". We should block the !SA_NODEFER
-> > signal it was delivered.
-> 
-> (I meant, it is was successfully delivered).
-> 
-> While at it, I'd also suggest another patch on top of Matt's.
-> Uncompiled/untested.
-> 
-> ------------------------------------------------------------------------------
-> [PATCH] avr32: use set_current_blocked() in handle_signal/sys_rt_sigreturn
+> Short answer no.
+>=20
+> Reason:
+> I ran into this bug when applying upcoming dma driver patches. Adding
+> this patch now will makes sure the musb driver works when the dma
+> driver is updated..
+> Up until now the dma driver only use the peripheral end point
+> configuration and set it for both src and dst. Upcoming patches (not
+> sure if they are submitted yet) will allow src and dst to be different
+> therefore the client must set both.
 
-Actually this was the reason that I spotted this bug. I'm going through
-all the code that sets current->blocked manually and making it use
-set_current_blocked() ;-)
+ok, good ;-)
 
-Moving most of the recalc_pending() callers into one place
-(set_current_blocked()) makes my signal scalability series a lot
-smaller.
+--=20
+balbi
 
+--5xr6Gr0irOxp3+3c
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOOVOiAAoJEAv8Txj19kN1Tf0H/38bYsy+8r2CF5popA1aMmUh
+NTew8avugBeVukdHUTqe/xmzZKOKdYC7/UgUR9USrZ+VKJpGhuQzaE1NiBLIgHwu
+hSpiFizC3oL/pvBS/utMKi7R005DW4/o9jREigtClBB/CvCaEHhrZbOQHwoLfZy0
+1hu4lRBaPecNBxjKj2/eliatiRzoNPEiUK3FoYWTM4fRRLKFdYPSSDpg8AuGe2vR
+JuR2VWWB2iTOejSXFTDpES9eJ8Cn4xmu3gxlrYAmDKKaYXhaSXYXS64ghTY9EupL
+FSigYJOUTkRLpPbPdhrF+2dzcdIs5Yb5IGl77/ANAZ46JID/dpYsxninHCe04wM=
+=jsum
+-----END PGP SIGNATURE-----
+
+--5xr6Gr0irOxp3+3c--
