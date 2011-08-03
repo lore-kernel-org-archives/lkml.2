@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab1HCX2q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:28:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33736 "EHLO mx2.suse.de"
+	id S1756081Ab1HCX2g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:28:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33718 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932087Ab1HCX2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:28:13 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:47 2011
-Message-Id: <20110803221247.021608637@clark.kroah.org>
+	id S1756150Ab1HCX2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:28:06 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:46 2011
+Message-Id: <20110803221246.816641671@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:00:50 -0700
+Date: Wed, 03 Aug 2011 15:00:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [030/102] firewire: cdev: return -ENOTTY for unimplemented ioctls, not -EINVAL
+        Guo-Fu Tseng <cooldavid@cooldavid.org>,
+        Chris Wright <chrisw@sous-sol.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [028/102] jme: Fix unmap error (Causing system freeze)
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,59 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: Guo-Fu Tseng <cooldavid@cooldavid.org>
 
-commit d873d794235efa590ab3c94d5ee22bb1fab19ac4 upstream.
+commit 94c5b41b327e08de0ddf563237855f55080652a1 upstream.
 
-On Jun 27 Linus Torvalds wrote:
-> The correct error code for "I don't understand this ioctl" is ENOTTY.
-> The naming may be odd, but you should think of that error value as a
-> "unrecognized ioctl number, you're feeding me random numbers that I
-> don't understand and I assume for historical reasons that you tried to
-> do some tty operation on me".
-[...]
-> The EINVAL thing goes way back, and is a disaster. It predates Linux
-> itself, as far as I can tell. You'll find lots of man-pages that have
-> this line in it:
->
->   EINVAL Request or argp is not valid.
->
-> and it shows up in POSIX etc. And sadly, it generally shows up
-> _before_ the line that says
->
->   ENOTTY The specified request does not apply to the kind of object
-> that the descriptor d references.
->
-> so a lot of people get to the EINVAL, and never even notice the ENOTTY.
-[...]
-> At least glibc (and hopefully other C libraries) use a _string_ that
-> makes much more sense: strerror(ENOTTY) is "Inappropriate ioctl for
-> device"
+This patch add the missing dma_unmap().
+Which solved the critical issue of system freeze on heavy load.
 
-So let's correct this in the <linux/firewire-cdev.h> ABI while it is
-still young, relative to distributor adoption.
+Michal Miroslaw's rejected patch:
+[PATCH v2 10/46] net: jme: convert to generic DMA API
+Pointed out the issue also, thank you Michal.
+But the fix was incorrect. It would unmap needed address
+when low memory.
 
-Side note:  We return -ENOTTY not only on _IOC_TYPE or _IOC_NR mismatch,
-but also on _IOC_SIZE mismatch.  An ioctl with an unsupported size of
-argument structure can be seen as an unsupported version of that ioctl.
+Got lots of feedback from End user and Gentoo Bugzilla.
+https://bugs.gentoo.org/show_bug.cgi?id=373109
+Thank you all. :)
 
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Guo-Fu Tseng <cooldavid@cooldavid.org>
+Acked-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/firewire/core-cdev.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/jme.c |   20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -1583,7 +1583,7 @@ static int dispatch_ioctl(struct client
- 	if (_IOC_TYPE(cmd) != '#' ||
- 	    _IOC_NR(cmd) >= ARRAY_SIZE(ioctl_handlers) ||
- 	    _IOC_SIZE(cmd) > sizeof(buffer))
--		return -EINVAL;
-+		return -ENOTTY;
+--- a/drivers/net/jme.c
++++ b/drivers/net/jme.c
+@@ -753,20 +753,28 @@ jme_make_new_rx_buf(struct jme_adapter *
+ 	struct jme_ring *rxring = &(jme->rxring[0]);
+ 	struct jme_buffer_info *rxbi = rxring->bufinf + i;
+ 	struct sk_buff *skb;
++	dma_addr_t mapping;
  
- 	if (_IOC_DIR(cmd) == _IOC_READ)
- 		memset(&buffer, 0, _IOC_SIZE(cmd));
+ 	skb = netdev_alloc_skb(jme->dev,
+ 		jme->dev->mtu + RX_EXTRA_LEN);
+ 	if (unlikely(!skb))
+ 		return -ENOMEM;
+ 
++	mapping = pci_map_page(jme->pdev, virt_to_page(skb->data),
++			       offset_in_page(skb->data), skb_tailroom(skb),
++			       PCI_DMA_FROMDEVICE);
++	if (unlikely(pci_dma_mapping_error(jme->pdev, mapping))) {
++		dev_kfree_skb(skb);
++		return -ENOMEM;
++	}
++
++	if (likely(rxbi->mapping))
++		pci_unmap_page(jme->pdev, rxbi->mapping,
++			       rxbi->len, PCI_DMA_FROMDEVICE);
++
+ 	rxbi->skb = skb;
+ 	rxbi->len = skb_tailroom(skb);
+-	rxbi->mapping = pci_map_page(jme->pdev,
+-					virt_to_page(skb->data),
+-					offset_in_page(skb->data),
+-					rxbi->len,
+-					PCI_DMA_FROMDEVICE);
+-
++	rxbi->mapping = mapping;
+ 	return 0;
+ }
+ 
 
 
