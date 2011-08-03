@@ -1,115 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab1HCQfn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 12:35:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48264 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754095Ab1HCQfg convert rfc822-to-8bit (ORCPT
+	id S1754219Ab1HCQhy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 12:37:54 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:41088 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753403Ab1HCQhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 12:35:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,311,1309762800"; 
-   d="scan'208";a="33932092"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Andy Lutomirski <luto@MIT.EDU>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 3 Aug 2011 09:34:46 -0700
-Subject: RE: [PATCH 1/2] x86: Enable fast strings on Intel if BIOS hasn't
- already
-Thread-Topic: [PATCH 1/2] x86: Enable fast strings on Intel if BIOS hasn't
- already
-Thread-Index: AcxR9LghuvjCfSGqS26nXXnq4vkJFAAA433w
-Message-ID: <493994B35A117E4F832F97C4719C4C040132BE85FE@orsmsx505.amr.corp.intel.com>
-References: <cover.1312386029.git.luto@mit.edu>
- <add0a25293cd8bea549e6aea4f38ccc279a64556.1312386029.git.luto@mit.edu>
-In-Reply-To: <add0a25293cd8bea549e6aea4f38ccc279a64556.1312386029.git.luto@mit.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 3 Aug 2011 12:37:47 -0400
+Date: Wed, 3 Aug 2011 09:37:45 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: mmotm 2011-08-02-16-19 uploaded (fault-inject.h)
+Message-Id: <20110803093745.0fcb7b76.rdunlap@xenotime.net>
+In-Reply-To: <201108022357.p72NvsZM022462@imap1.linux-foundation.org>
+References: <201108022357.p72NvsZM022462@imap1.linux-foundation.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 02 Aug 2011 16:19:30 -0700 akpm@linux-foundation.org wrote:
 
-
-> -----Original Message-----
-> From: Andy Lutomirski [mailto:luto@MIT.EDU]
-> Sent: Wednesday, August 03, 2011 8:47 AM
-> To: x86@kernel.org; linux-kernel@vger.kernel.org
-> Cc: Yu, Fenghua; Andy Lutomirski
-> Subject: [PATCH 1/2] x86: Enable fast strings on Intel if BIOS hasn't
-> already
+> The mm-of-the-moment snapshot 2011-08-02-16-19 has been uploaded to
 > 
-> I have two Sandy Bridge systems and neither one enables fast strings
-> in BIOS.  I can't find anything in the manual that says that only
-> BIOS should enable or disable the feature, so try to enable it at
-> bootup.
+>    http://userweb.kernel.org/~akpm/mmotm/
 > 
-> Signed-off-by: Andy Lutomirski <luto@mit.edu>
-> ---
->  arch/x86/kernel/cpu/intel.c |   17 +++++++++++++++--
->  1 files changed, 15 insertions(+), 2 deletions(-)
+> and will soon be available at
+>    git://zen-kernel.org/kernel/mmotm.git
+> or
+>    git://git.cmpxchg.org/linux-mmotm.git
 > 
-> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-> index ed6086e..6b20fef 100644
-> --- a/arch/x86/kernel/cpu/intel.c
-> +++ b/arch/x86/kernel/cpu/intel.c
-> @@ -30,6 +30,7 @@
->  static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
->  {
->  	u64 misc_enable;
-> +	bool allow_fast_string = true;
-> 
->  	/* Unmask CPUID levels if masked: */
->  	if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
-> @@ -118,10 +119,11 @@ static void __cpuinit early_init_intel(struct
-> cpuinfo_x86 *c)
->  	 * (model 2) with the same problem.
->  	 */
->  	if (c->x86 == 15) {
-> -		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
-> +		allow_fast_string = false;
-> +		printk(KERN_INFO "kmemcheck: Disabling fast string
-> operations\n");
+> It contains the following patches against 3.0:
 
-Please don't move this printk() here. Keep it in the original place. If fast string bit is 0 already, we don't need to print the info.
+> fault-injection-add-ability-to-export-fault_attr-in-arbitrary-directory.patch
 
-> 
-> +		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
->  		if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING) {
-> -			printk(KERN_INFO "kmemcheck: Disabling fast string
-> operations\n");
-> 
->  			misc_enable &= ~MSR_IA32_MISC_ENABLE_FAST_STRING;
->  			wrmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
-> @@ -135,6 +137,17 @@ static void __cpuinit early_init_intel(struct
-> cpuinfo_x86 *c)
+Please drop the ';' at the end of the second line below:
 
-You also need to change the comment right before this code. With your patch, the comment is out-of-date.
++static inline struct dentry *fault_create_debugfs_attr(const char *name,
++			struct dentry *parent, struct fault_attr *attr);
+ {
++	return ERR_PTR(-ENODEV);
+ }
 
->  	 */
->  	if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
->  		rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
-> +
-> +		if (allow_fast_string &&
-> +		    !(misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)) {
-> +			misc_enable |= MSR_IA32_MISC_ENABLE_FAST_STRING;
-> +			wrmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
-> +			printk(KERN_INFO "Enabled fast string operations\n");
-> +
-> +			/* Re-read to make sure it stuck. */
-> +			rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
-> +		}
-> +
->  		if (!(misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)) {
->  			printk(KERN_INFO "Disabled fast string
-> operations\n");
->  			setup_clear_cpu_cap(X86_FEATURE_REP_GOOD);
-> --
-> 1.7.6
+It causes lots of build errors.
 
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
