@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab1HCOAK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 10:00:10 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:58440 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139Ab1HCOAE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 10:00:04 -0400
+	id S1753863Ab1HCOAz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 10:00:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64807 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753408Ab1HCOAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 10:00:51 -0400
+Date: Wed, 3 Aug 2011 16:00:19 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 3/8] ext4: Warn if direct reclaim tries to writeback pages
+Message-ID: <20110803140019.GA31026@redhat.com>
+References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
+ <1311265730-5324-4-git-send-email-mgorman@suse.de>
+ <20110803105819.GA27199@redhat.com>
+ <20110803110629.GB27199@redhat.com>
+ <20110803134420.GH19099@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20110803135604.GA29761@dumpdata.com>
-References: <cover.1312378163.git.luto@mit.edu> <20110803135322.GC29501@dumpdata.com>
- <20110803135604.GA29761@dumpdata.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 3 Aug 2011 09:59:43 -0400
-X-Google-Sender-Auth: zRiuNel17RwxNqWl_wsB0Rgut3Y
-Message-ID: <CAObL_7FavQH29CENHptZphDDv7ja2P9MVM5Uj47G68ccDumBBg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/6] Collected vdso/vsyscall fixes for 3.1
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jeremy@goop.org, keir.xen@gmail.com, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110803134420.GH19099@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 3, 2011 at 9:56 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Wed, Aug 03, 2011 at 09:53:22AM -0400, Konrad Rzeszutek Wilk wrote:
->> On Wed, Aug 03, 2011 at 09:31:48AM -0400, Andy Lutomirski wrote:
->> > This fixes various problems that cropped up with the vdso patches.
->> >
->> >  - Patch 1 fixes an information leak to userspace.
->> >  - Patches 2 and 3 fix the kernel build on gold.
->> >  - Patches 4 and 5 fix Xen (I hope).
->> >  - Patch 6 (optional) adds a trace event to vsyscall emulation.  It will
->> >    make it easier to handle performance regression reports :)
->>
->> Hm, you seemed to have the x86 maintainers on your email..
->
-> I definitly need some coffee. What I meant was that you missing putting
-> the x86 maintainers on this patchset. They are the ones that will handle this.
->
-> I put them on the To list for you.
+On Wed, Aug 03, 2011 at 02:44:20PM +0100, Mel Gorman wrote:
+> On Wed, Aug 03, 2011 at 01:06:29PM +0200, Johannes Weiner wrote:
+> > On Wed, Aug 03, 2011 at 12:58:19PM +0200, Johannes Weiner wrote:
+> > > On Thu, Jul 21, 2011 at 05:28:45PM +0100, Mel Gorman wrote:
+> > > > Direct reclaim should never writeback pages. Warn if an attempt
+> > > > is made.
+> > > > 
+> > > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > > 
+> > > Acked-by: Johannes Weiner <jweiner@redhat.com>
+> > 
+> > Oops, too fast.
+> > 
+> > Shouldn't the WARN_ON() be at the top of the function, rather than
+> > just warn when the write is deferred due to delalloc?
+> 
+> I thought it made more sense to put the warning at the point where ext4
+> would normally ignore ->writepage.
+> 
+> That said, in my current revision of the series, I've dropped these
+> patches altogether as page migration should be able to trigger the same
+> warnings but be called from paths that are of less concern for stack
+> overflows (or at the very least be looked at as a separate series).
 
-Are you sure about that coffee?  I'm pretty sure I had x86@kernel.org in there.
+Doesn't this only apply to btrfs which has no own .migratepage aop for
+file pages?  The others use buffer_migrate_page.
 
---Andy
+But if you dropped them anyway, it does not matter :)
