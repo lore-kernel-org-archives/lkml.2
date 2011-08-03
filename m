@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941Ab1HCCYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 22:24:25 -0400
-Received: from boletus.uvigo.es ([193.146.32.99]:55828 "EHLO boletus.uvigo.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752918Ab1HCCYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 22:24:18 -0400
-X-Greylist: delayed 2420 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Aug 2011 22:24:17 EDT
-Message-ID: <20110803034113.fojrfp3v34gkkcs0@correoweb.uvigo.es>
-Date: Wed, 03 Aug 2011 03:41:13 +0200
-From: MONEY GRAM CUSTOMER CARE <info@moneygram.com>
-Reply-to: m.gram42@yahoo.com.my
-To: undisclosed-recipients:;
-Subject: MONEY GRAM CUSTOMER CARE
+	id S1753959Ab1HCC3L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 22:29:11 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:27770 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752918Ab1HCC3B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 22:29:01 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjMFAGqxOE55LCkBgWdsb2JhbABCmEiPERUBARYmJYIBHCMYXSUDNMZFDoY0BJsuiEM
+Date: Wed, 3 Aug 2011 12:28:57 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [regression, 3.1, rcu] rcu_sched_state detected stall on CPU 8
+ (t=15000 jiffies)
+Message-ID: <20110803022857.GH12870@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
-X-Remote-Browser: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.1;
-	Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR
-	3.0.30729; Media Center PC 6.0; InfoPath.2; Crazy Browser 2.0.1)
-X-Originating-IP: 41.206.12.44
-X-Uvigo-A-Spam_score: -0.4
-X-Uvigo-A-Spam_score_int: -3
-X-Uvigo-A-Spam_bar: /
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MONEY GRAM CUSTOMER CARE
-21st Floor, Jalan Kampar,
-Plaza Permata, 50400, Kuala Lumpur ,
-Wilayah Persekutuan Malaysia
+Hi Paul,
 
-My associate has helped me to send your first payment of $5000 USD to you
-as instructed by the Malaysian Government and Mr. David Cameron the United
-Kingdom prime minister after the last G20 meeting that was held in
-Malaysia, making you one of the beneficiaries.Here is the information
-below.
+I've had this hang a couple of times now, so I figured it isn't an
+isolated event. I am getting kernels occassionally hanging with the
+following output occurring:
 
-MONEY TRANSFER REFERENCE: 2116-3297
-SENDER'S NAME: Patrick Lee Chun
-AMOUNT: US$5000
+[   62.812011] INFO: rcu_sched_state detected stall on CPU 8 (t=15000 jiffies)
+[  242.936009] INFO: rcu_sched_state detected stall on CPU 8 (t=60031 jiffies)
 
-We will keep sending you $5000 USD twice a week until the FULL payment of
-($820000.00 United State Dollars)is completed.
+And that just goes on until I reboot the machine. e.g. from a test
+run on a 2p VM that I didn't check on over the weekend:
 
-A certificate will be made to change the Receivers Name to your name as
-stated by the Malaysian Government,reconfirm your {1}Full Names {2}address
-{3}Mobile Number
+[220167.108005] INFO: rcu_sched_state detected stall on CPU 0 (t=54681420 jiffies)
+[220347.228004] INFO: rcu_sched_state detected stall on CPU 0 (t=54726450 jiffies)
+[220527.348003] INFO: rcu_sched_state detected stall on CPU 0 (t=54771480 jiffies)
+[220707.468006] INFO: rcu_sched_state detected stall on CPU 0 (t=54816510 jiffies)
+[220887.588003] INFO: rcu_sched_state detected stall on CPU 0 (t=54861540 jiffies)
+[221067.708003] INFO: rcu_sched_state detected stall on CPU 0 (t=54906570 jiffies)
+[221247.828004] INFO: rcu_sched_state detected stall on CPU 0 (t=54951600 jiffies)
+[221427.948003] INFO: rcu_sched_state detected stall on CPU 0 (t=54996630 jiffies)
+[221608.068003] INFO: rcu_sched_state detected stall on CPU 0 (t=55041660 jiffies)
+[221788.188019] INFO: rcu_sched_state detected stall on CPU 0 (t=55086690 jiffies)
+[221968.308014] INFO: rcu_sched_state detected stall on CPU 0 (t=55131720 jiffies)
+[222148.428010] INFO: rcu_sched_state detected stall on CPU 0 (t=55176750 jiffies)
 
-via Email to: m.gram42@yahoo.com.my
+I've seen it on 2p and now a 16p test VM. This one occurred
+during boot of the 16p VM:
 
-Note: You cannot pickup the money until the certificate is obtained by you.
+[    2.600499] kjournald starting.  Commit interval 5 seconds
+[    2.600878] EXT3-fs (sda1): mounted filesystem with ordered data mode
+[    2.600995] VFS: Mounted root (ext3 filesystem) readonly on device 8:1.
+[    2.612351] Freeing unused kernel memory: 2824k freed
+INIT: version 2.88 booting
+Using makefile-style concurrent boot in runlevel S.
+[   62.812011] INFO: rcu_sched_state detected stall on CPU 8 (t=15000 jiffies)
+[  242.936009] INFO: rcu_sched_state detected stall on CPU 8 (t=60031 jiffies)
 
-Money Gram Agent
-Mr. Allan Davis.
-Tel: +(60)1-6240-6207
-For more info: www.g20.org
+While the console still echos characters, the boot process is
+not making progress.
 
+I've had this happen under heavy CPU and IO load, sometimes hours
+after boot e.g. one was mid-way through a 4th run of xfstests which
+takes about 80mins to do a complete run. There doesn't appear to be
+any pattern to when it occurs and I cannot reproduce it on command,
+so tracking it down might be difficult.
 
+Cheers,
 
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
