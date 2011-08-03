@@ -1,106 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab1HCRoO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 13:44:14 -0400
-Received: from lucidpixels.com ([72.73.18.11]:59220 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754149Ab1HCRoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 13:44:12 -0400
-Date: Wed, 3 Aug 2011 13:44:10 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-cc: Andreas Hartmann <andihartmann@01019freenet.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Ivo van Doorn <IvDoorn@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
-        "users@rt2x00.serialmonkey.com" <users@rt2x00.serialmonkey.com>
-Subject: Re: [PATCH] rt2x00: rt2800: fix zeroing skb structure
-In-Reply-To: <alpine.DEB.2.02.1108031328030.9421@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1108031339280.9421@p34.internal.lan>
-References: <alpine.DEB.2.02.1107271851410.25432@p34.internal.lan> <4E318BD0.40202@lwfinger.net> <20110730113009.GA2847@redhat.com> <20110730113255.GB2847@redhat.com> <alpine.DEB.2.02.1107300736010.4925@p34.internal.lan> <alpine.DEB.2.02.1107301015340.4925@p34.internal.lan>
- <alpine.DEB.2.02.1107301031560.4925@p34.internal.lan> <4E341DC4.9010107@01019freenet.de> <alpine.DEB.2.02.1107301305590.4925@p34.internal.lan> <20110803160050.GA18882@redhat.com> <alpine.DEB.2.02.1108031328030.9421@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1755006Ab1HCRpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 13:45:52 -0400
+Received: from vms173017pub.verizon.net ([206.46.173.17]:43022 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754149Ab1HCRpr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 13:45:47 -0400
+Date: Wed, 03 Aug 2011 13:45:32 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+Cc: linux-pm@lists.linux-foundation.org, linuxppc-dev@ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH V1 3/7] cpuidle: stop using pm_idle
+In-reply-to: <20110607162947.6848.79430.stgit@tringupt.in.ibm.com>
+Message-id: <alpine.LFD.2.02.1108031341200.22067@x980>
+References: <20110607162847.6848.44707.stgit@tringupt.in.ibm.com>
+ <20110607162947.6848.79430.stgit@tringupt.in.ibm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 7 Jun 2011, Trinabh Gupta wrote:
 
+> From: Len Brown <len.brown@intel.com>
+> 
+> pm_idle does not scale as an idle handler registration mechanism.
+> Don't use it for cpuidle.  Instead, call cpuidle directly, and
+> allow architectures to use pm_idle as an arch-specific default
+> if they need it.  ie.
+> 
+> cpu_idle()
+> 	...
+> 	if(cpuidle_call_idle())
 
-On Wed, 3 Aug 2011, Justin Piszcz wrote:
+Looks like you forgot to correct my typo that you pointed out earlier,
+s/cpuidle_call_idle/cpuidle_idle_call/
 
->
->
-> On Wed, 3 Aug 2011, Stanislaw Gruszka wrote:
->
->> On Sat, Jul 30, 2011 at 01:07:11PM -0400, Justin Piszcz wrote:
->>> Here you go, crash 2:
->>> http://home.comcast.net/~jpiszcz/20110730/2630-rt2800usb-crash2p1.jpg
->>> http://home.comcast.net/~jpiszcz/20110730/2630-rt2800usb-crash2p2.jpg
->> 
->> Here is next (draw) patch to test:
->
-> Thanks,
->
-> # patch -p1 < ../patch4
-> patching file drivers/net/wireless/rt2x00/rt2800lib.c
-> patching file drivers/net/wireless/rt2x00/rt2800lib.h
-> patching file drivers/net/wireless/rt2x00/rt2800usb.c
-> patching file drivers/net/wireless/rt2x00/rt2x00queue.c
-> patching file drivers/net/wireless/rt2x00/rt2x00usb.c
-> #
->
-> I'll give this driver one more chance (quickly) and let you know if it 
-> crashes
-> afterwards (usually crashes in 5-10 minutes), but most likely I am going to
-> move over to some other wireless usb sticks, got a couple think penguin usb
-> wifi sticks that use the carl driver, 'open source' wireless usb sticks, 
-> going to give them a try next.
->
-> Also got some other ones as well, hopefully one of them will work without
-> 900ms of lag.  The rt2870sta was the best driver in 2.6.38.x series that I
-> have ever used for wireless USB sticks.
->
-> Justin.
->
->
+both in the comment here and for arm and sh below.
 
-Hi,
+Thanks for including the From: above, that is correct form.
+But note in the future that when you modify somebody else's patch,
+you should append a note about what you changed,
+and also add your signed-off-by, so we can
+track the changes.
 
-Tested that patch:
+thanks,
+-Len
 
-1. The driver no longer automatically loads, I had to manually modprobe it.
-2. After loading, I get this (keep getting these)
-
-[  384.054538] phy0 -> rt2800_txdone: Error - Data pending
-[  384.072773] phy0 -> rt2800_txdone: Error - Data pending
-[  384.096545] phy0 -> rt2800_txdone: Error - Data pending
-[  384.117301] phy0 -> rt2800_txdone: Error - Data pending
-[  384.537586] phy0 -> rt2800_txdone: Error - Data pending
-[  384.555716] phy0 -> rt2800_txdone: Error - Data pending
-[  384.573903] phy0 -> rt2800_txdone: Error - Data pending
-[  384.599465] phy0 -> rt2800_txdone: Error - Data pending
-[  384.618523] phy0 -> rt2800_txdone: Error - Data pending
-
-No crash yet, but bad ping again too (always with the rt2800usb) driver:
-
-64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=1 ttl=64 time=53.1 ms
-64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=2 ttl=64 time=285 ms
-64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=3 ttl=64 time=89.6 ms
-64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=4 ttl=64 time=120 ms
-64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=5 ttl=64 time=42.2 ms
-64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=6 ttl=64 time=156 ms
-64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=7 ttl=64 time=77.2 ms
-
-(Have another machine, testing the carl driver kernel 3.0 on it)
-
-Not having too much luck there either.
-
-[586342.990975] carl9170: Unknown symbol __ieee80211_get_tx_led_name (err 0)
-[586342.991059] carl9170: Unknown symbol __ieee80211_get_assoc_led_name (err 0)
-[586459.214057] carl9170: Unknown symbol __ieee80211_get_tx_led_name (err 0)
-[586459.214131] carl9170: Unknown symbol __ieee80211_get_assoc_led_name (err 0)
-
-Justin.
-
+> 		pm_idle();
+> 
+> cc: x86@kernel.org
+> cc: Kevin Hilman <khilman@deeprootsystems.com>
+> cc: Paul Mundt <lethal@linux-sh.org>
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> 
+> ---
+> 
+>  arch/arm/kernel/process.c    |    4 +++-
+>  arch/sh/kernel/idle.c        |    6 ++++--
+>  arch/x86/kernel/process_32.c |    4 +++-
+>  arch/x86/kernel/process_64.c |    4 +++-
+>  drivers/cpuidle/cpuidle.c    |   39 ++++++++++++++++++---------------------
+>  include/linux/cpuidle.h      |    2 ++
+>  6 files changed, 33 insertions(+), 26 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+> index 5e1e541..d7ee0d4 100644
+> --- a/arch/arm/kernel/process.c
+> +++ b/arch/arm/kernel/process.c
+> @@ -30,6 +30,7 @@
+>  #include <linux/uaccess.h>
+>  #include <linux/random.h>
+>  #include <linux/hw_breakpoint.h>
+> +#include <linux/cpuidle.h>
+>  
+>  #include <asm/cacheflush.h>
+>  #include <asm/leds.h>
+> @@ -196,7 +197,8 @@ void cpu_idle(void)
+>  				cpu_relax();
+>  			} else {
+>  				stop_critical_timings();
+> -				pm_idle();
+> +				if (cpuidle_call_idle())
+> +					pm_idle();
+>  				start_critical_timings();
+>  				/*
+>  				 * This will eventually be removed - pm_idle
+> diff --git a/arch/sh/kernel/idle.c b/arch/sh/kernel/idle.c
+> index 425d604..9c7099e 100644
+> --- a/arch/sh/kernel/idle.c
+> +++ b/arch/sh/kernel/idle.c
+> @@ -16,12 +16,13 @@
+>  #include <linux/thread_info.h>
+>  #include <linux/irqflags.h>
+>  #include <linux/smp.h>
+> +#include <linux/cpuidle.h>
+>  #include <asm/pgalloc.h>
+>  #include <asm/system.h>
+>  #include <asm/atomic.h>
+>  #include <asm/smp.h>
+>  
+> -void (*pm_idle)(void) = NULL;
+> +static void (*pm_idle)(void);
+>  
+>  static int hlt_counter;
+>  
+> @@ -100,7 +101,8 @@ void cpu_idle(void)
+>  			local_irq_disable();
+>  			/* Don't trace irqs off for idle */
+>  			stop_critical_timings();
+> -			pm_idle();
+> +			if (cpuidle_call_idle())
+> +				pm_idle();
+>  			/*
+>  			 * Sanity check to ensure that pm_idle() returns
+>  			 * with IRQs enabled
+> diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+> index 8d12878..61fadbe 100644
+> --- a/arch/x86/kernel/process_32.c
+> +++ b/arch/x86/kernel/process_32.c
+> @@ -38,6 +38,7 @@
+>  #include <linux/uaccess.h>
+>  #include <linux/io.h>
+>  #include <linux/kdebug.h>
+> +#include <linux/cpuidle.h>
+>  
+>  #include <asm/pgtable.h>
+>  #include <asm/system.h>
+> @@ -109,7 +110,8 @@ void cpu_idle(void)
+>  			local_irq_disable();
+>  			/* Don't trace irqs off for idle */
+>  			stop_critical_timings();
+> -			pm_idle();
+> +			if (cpuidle_idle_call())
+> +				pm_idle();
+>  			start_critical_timings();
+>  		}
+>  		tick_nohz_restart_sched_tick();
+> diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+> index 6c9dd92..62c219a 100644
+> --- a/arch/x86/kernel/process_64.c
+> +++ b/arch/x86/kernel/process_64.c
+> @@ -37,6 +37,7 @@
+>  #include <linux/uaccess.h>
+>  #include <linux/io.h>
+>  #include <linux/ftrace.h>
+> +#include <linux/cpuidle.h>
+>  
+>  #include <asm/pgtable.h>
+>  #include <asm/system.h>
+> @@ -136,7 +137,8 @@ void cpu_idle(void)
+>  			enter_idle();
+>  			/* Don't trace irqs off for idle */
+>  			stop_critical_timings();
+> -			pm_idle();
+> +			if (cpuidle_idle_call())
+> +				pm_idle();
+>  			start_critical_timings();
+>  
+>  			/* In many cases the interrupt that ended idle
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index 8d7303b..304e378 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -25,10 +25,10 @@ DEFINE_PER_CPU(struct cpuidle_device *, cpuidle_devices);
+>  
+>  DEFINE_MUTEX(cpuidle_lock);
+>  LIST_HEAD(cpuidle_detected_devices);
+> -static void (*pm_idle_old)(void);
+>  
+>  static int enabled_devices;
+>  static int off __read_mostly;
+> +static int initialized __read_mostly;
+>  
+>  int cpuidle_disabled(void)
+>  {
+> @@ -56,27 +56,24 @@ static int __cpuidle_register_device(struct cpuidle_device *dev);
+>   * cpuidle_idle_call - the main idle loop
+>   *
+>   * NOTE: no locks or semaphores should be used here
+> + * return non-zero on failure
+>   */
+> -static void cpuidle_idle_call(void)
+> +int cpuidle_idle_call(void)
+>  {
+>  	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+>  	struct cpuidle_driver *drv = cpuidle_get_driver();
+>  	struct cpuidle_state *target_state;
+>  	int next_state, entered_state;
+>  
+> -	/* check if the device is ready */
+> -	if (!dev || !dev->enabled) {
+> -		if (pm_idle_old)
+> -			pm_idle_old();
+> -		else
+> -#if defined(CONFIG_ARCH_HAS_DEFAULT_IDLE)
+> -			default_idle();
+> -#else
+> -			local_irq_enable();
+> -#endif
+> -		return;
+> -	}
+> +	if (off)
+> +		return -ENODEV;
+> +
+> +	if (!initialized)
+> +		return -ENODEV;
+>  
+> +	/* check if the device is ready */
+> +	if (!dev || !dev->enabled)
+> +		return -EBUSY;
+>  #if 0
+>  	/* shows regressions, re-enable for 2.6.29 */
+>  	/*
+> @@ -90,7 +87,7 @@ static void cpuidle_idle_call(void)
+>  	next_state = cpuidle_curr_governor->select(drv, dev);
+>  	if (need_resched()) {
+>  		local_irq_enable();
+> -		return;
+> +		return 0;
+>  	}
+>  
+>  	target_state = &drv->states[next_state];
+> @@ -116,6 +113,8 @@ static void cpuidle_idle_call(void)
+>  	/* give the governor an opportunity to reflect on the outcome */
+>  	if (cpuidle_curr_governor->reflect)
+>  		cpuidle_curr_governor->reflect(dev, entered_state);
+> +
+> +	return 0;
+>  }
+>  
+>  /**
+> @@ -123,10 +122,10 @@ static void cpuidle_idle_call(void)
+>   */
+>  void cpuidle_install_idle_handler(void)
+>  {
+> -	if (enabled_devices && (pm_idle != cpuidle_idle_call)) {
+> +	if (enabled_devices) {
+>  		/* Make sure all changes finished before we switch to new idle */
+>  		smp_wmb();
+> -		pm_idle = cpuidle_idle_call;
+> +		initialized = 1;
+>  	}
+>  }
+>  
+> @@ -135,8 +134,8 @@ void cpuidle_install_idle_handler(void)
+>   */
+>  void cpuidle_uninstall_idle_handler(void)
+>  {
+> -	if (enabled_devices && pm_idle_old && (pm_idle != pm_idle_old)) {
+> -		pm_idle = pm_idle_old;
+> +	if (enabled_devices) {
+> +		initialized = 0;
+>  		cpuidle_kick_cpus();
+>  	}
+>  }
+> @@ -410,8 +409,6 @@ static int __init cpuidle_init(void)
+>  	if (cpuidle_disabled())
+>  		return -ENODEV;
+>  
+> -	pm_idle_old = pm_idle;
+> -
+>  	ret = cpuidle_add_class_sysfs(&cpu_sysdev_class);
+>  	if (ret)
+>  		return ret;
+> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+> index 2786787..c904188 100644
+> --- a/include/linux/cpuidle.h
+> +++ b/include/linux/cpuidle.h
+> @@ -128,6 +128,7 @@ struct cpuidle_driver {
+>  
+>  #ifdef CONFIG_CPU_IDLE
+>  extern void disable_cpuidle(void);
+> +extern int cpuidle_idle_call(void);
+>  
+>  extern int cpuidle_register_driver(struct cpuidle_driver *drv);
+>  struct cpuidle_driver *cpuidle_get_driver(void);
+> @@ -142,6 +143,7 @@ extern void cpuidle_disable_device(struct cpuidle_device *dev);
+>  
+>  #else
+>  static inline void disable_cpuidle(void) { }
+> +static inline int cpuidle_idle_call(void) { return -ENODEV; }
+>  
+>  static inline int cpuidle_register_driver(struct cpuidle_driver *drv)
+>  {return -ENODEV; }
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
