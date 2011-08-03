@@ -1,290 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab1HCUWX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 16:22:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44101 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755719Ab1HCUWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 16:22:18 -0400
-Date: Wed, 3 Aug 2011 22:21:46 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/5] mm: writeback: throttle __GFP_WRITE on per-zone
- dirty limits
-Message-ID: <20110803202146.GB5873@redhat.com>
-References: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
- <1311625159-13771-5-git-send-email-jweiner@redhat.com>
- <20110726144242.GD3010@suse.de>
-MIME-Version: 1.0
+	id S1755604Ab1HCUX1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 16:23:27 -0400
+Received: from mail6.webfaction.com ([74.55.86.74]:56306 "EHLO
+	smtp.webfaction.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755501Ab1HCUXX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 16:23:23 -0400
+Subject: Re: [PATCH 00/11] RFC: KBUS messaging subsystem
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110726144242.GD3010@suse.de>
+From: Tony Ibbs <tibs@tonyibbs.co.uk>
+In-Reply-To: <201105171050.38903.florian@openwrt.org>
+Date: Wed, 3 Aug 2011 21:23:19 +0100
+Cc: Jonathan Corbet <corbet@lwn.net>, Grant Likely <grant.likely@secretlab.ca>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Linux-embedded" <linux-embedded@vger.kernel.org>,
+        Tibs at Kynesim <tibs@kynesim.co.uk>,
+        Richard Watts <rrw@kynesim.co.uk>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B8A97132-FADB-4476-8386-16FB5900D47F@tonyibbs.co.uk>
+References: <cover.1300450604.git.tibs@tonyibbs.co.uk> <20110322133640.5d5c88e4@bike.lwn.net> <201105171050.38903.florian@openwrt.org>
+To: Florian Fainelli <florian@openwrt.org>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 03:42:42PM +0100, Mel Gorman wrote:
-> On Mon, Jul 25, 2011 at 10:19:18PM +0200, Johannes Weiner wrote:
-> > From: Johannes Weiner <hannes@cmpxchg.org>
-> > 
-> > Allow allocators to pass __GFP_WRITE when they know in advance that
-> > the allocated page will be written to and become dirty soon.
-> > 
-> > The page allocator will then attempt to distribute those allocations
-> > across zones, such that no single zone will end up full of dirty and
-> > thus more or less unreclaimable pages.
-> > 
+
+On 17 May 2011, at 09:50, Florian Fainelli wrote:
+
+> Sorry for this late answer.
+
+And apologies for my own late response. I'll try to keep this short as
+I hope the "Restatement" side-thread will address some of it.
+
+> On Tuesday 22 March 2011 20:36:40 Jonathan Corbet wrote:
+>> 
+>> - Why kbus over, say, a user-space daemon and unix-domain sockets?  I'm
+>>  not sure I see the advantage that comes with putting this into kernel
+>>  space.
 > 
-> On 32-bit, this idea increases lowmem pressure. Ordinarily, this is
-> only a problem when the higher zone is really large and management
-> structures can only be allocated from the lower zones. Granted,
-> it is rare this is the case but in the last 6 months, I've seen at
-> least one bug report that could be attributed to lowmem pressure
-> (24G x86 machine).
-> 
-> A brief explanation as to why this is not a problem may be needed.
+> I also fail to see why this would be required. In my opininon you are trading 
+> the reliability over complexity by putting this in the kernel.
 
-Only lowmem is considered dirtyable memory per default, so more
-highmem does not mean more dirty pages.  If the highmem zone is equal
-to or bigger than the lowmem zones, the amount of dirtyable memory
-(dirty_ratio * lowmem) can still be placed completely into the highmem
-zone (dirty_ratio * highmem) - if the gfp_mask allows for it.
+I hope that's addressed in the "So why did we write it as a kernel
+module?" section of the "Restatement" message thread. Basically,
+I believe a kernel module is smaller and "steals" reliability from
+code written and tested by others. That doesn't mean it's a good
+solution "in the wild", of course (privately we can add whatever we
+want to the kernel, but in public it is and must be controlled).
 
-For this patchset, I (blindly) copied this highmem exclusion also when
-it comes to allocation placement, with the result that no highmem page
-is allowed for __GFP_WRITE.  I need to fix this.
+> Indeed, I would also suggest having a look at what generic netlink already 
+> provides like messages per application PID, multicasting and marshaling. If 
+> you intend to keep a part of it in the kernel, you should have a look at this, 
+> because from my experience with generic netlink, most of the hard job you are 
+> re-doing here, has already been done in a generic manner.
 
-But generally, this patchset rather protects lower zones.  As the
-higher zones fill up with first-dirty-then-clean-pages, subsequent
-allocations for soon-dirty pages fill up the lower zones.  The
-per-zone dirty limit prevents that and forces the allocator to reclaim
-the clean pages of the higher zone(s) instead.  This was observable
-with the DMA zone during testing for example, which hat consistently
-less dirty pages in it on the patched kernel.
+If we do end up heading that way, I hope you won't mind if I ask
+you for advice!
 
-> > The global dirty limits are put in proportion to the respective zone's
-> > amount of dirtyable memory and the allocation denied when the limit of
-> > that zone is reached.
-> > 
-> 
-> What are the risks of a process stalling on dirty pages in a high zone
-> that is very small (e.g. 64M) ?
-
-It will fall back to the lower zones.  I should have added that...
-
-The allocation will only stall if all considered zones reached their
-dirty limits.  At this point, the implementation basically bangs its
-head against the wall until it passes out, hoping the flushers catch
-up in the meantime.  There might be some space for improvement.
-
-> > @@ -85,6 +86,7 @@ struct vm_area_struct;
-> >  
-> >  #define __GFP_NO_KSWAPD	((__force gfp_t)___GFP_NO_KSWAPD)
-> >  #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
-> > +#define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Will be dirtied soon */
-> >  
-> 
-> /* May be dirtied soon */ :)
-
-Right :)
-
-> > diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> > index 41dc871..ce673ec 100644
-> > --- a/mm/page-writeback.c
-> > +++ b/mm/page-writeback.c
-> > @@ -154,6 +154,18 @@ static unsigned long determine_dirtyable_memory(void)
-> >  	return x + 1;	/* Ensure that we never return 0 */
-> >  }
-> >  
-> > +static unsigned long zone_dirtyable_memory(struct zone *zone)
-> > +{
-> 
-> Terse comment there :)
-
-I tried to write more but was forced to balance dirty laundry.
-
-"Document interfaces" is on the todo list for the next version,
-though.
-
-> > +	unsigned long x = 1; /* Ensure that we never return 0 */
-> > +
-> > +	if (is_highmem(zone) && !vm_highmem_is_dirtyable)
-> > +		return x;
-> > +
-> > +	x += zone_page_state(zone, NR_FREE_PAGES);
-> > +	x += zone_reclaimable_pages(zone);
-> > +	return x;
-> > +}
-> 
-> It's very similar to determine_dirtyable_memory(). Would be preferable
-> if the shared a core function of some sort even if that was implemented
-> as by "if (zone == NULL)". Otherwise, these will get out of sync
-> eventually.
-
-That makes sense, I'll do that.
-
-> > @@ -378,6 +390,24 @@ int bdi_set_max_ratio(struct backing_dev_info *bdi, unsigned max_ratio)
-> >  }
-> >  EXPORT_SYMBOL(bdi_set_max_ratio);
-> >  
-> > +static void sanitize_dirty_limits(unsigned long *pbackground,
-> > +				  unsigned long *pdirty)
-> > +{
-> 
-> Maybe a small comment saying to look at the comment in
-> global_dirty_limits() to see what this is doing and why.
-> 
-> sanitize feels like an odd name to me. The arguements are not
-> "objectionable" in some way that needs to be corrected.
-> scale_dirty_limits maybe?
-
-The background limit is kind of sanitized if it exceeds the foreground
-limit.  But yeah, the name sucks given that this is not all the
-function does.
-
-I'll just go with scale_dirty_limits().
-
-> > @@ -661,6 +710,57 @@ void throttle_vm_writeout(gfp_t gfp_mask)
-> >          }
-> >  }
-> >  
-> > +bool zone_dirty_ok(struct zone *zone)
-> > +{
-> > +	unsigned long background_thresh, dirty_thresh;
-> > +	unsigned long nr_reclaimable, nr_writeback;
-> > +
-> > +	zone_dirty_limits(zone, &background_thresh, &dirty_thresh);
-> > +
-> > +	nr_reclaimable = zone_page_state(zone, NR_FILE_DIRTY) +
-> > +		zone_page_state(zone, NR_UNSTABLE_NFS);
-> > +	nr_writeback = zone_page_state(zone, NR_WRITEBACK);
-> > +
-> > +	return nr_reclaimable + nr_writeback <= dirty_thresh;
-> > +}
-> > +
-> > +void try_to_writeback_pages(struct zonelist *zonelist, gfp_t gfp_mask,
-> > +			    nodemask_t *nodemask)
-> > +{
-> > +	unsigned int nr_exceeded = 0;
-> > +	unsigned int nr_zones = 0;
-> > +	struct zoneref *z;
-> > +	struct zone *zone;
-> > +
-> > +	for_each_zone_zonelist_nodemask(zone, z, zonelist, gfp_zone(gfp_mask),
-> > +					nodemask) {
-> > +		unsigned long background_thresh, dirty_thresh;
-> > +		unsigned long nr_reclaimable, nr_writeback;
-> > +
-> > +		nr_zones++;
-> > +
-> > +		zone_dirty_limits(zone, &background_thresh, &dirty_thresh);
-> > +
-> > +		nr_reclaimable = zone_page_state(zone, NR_FILE_DIRTY) +
-> > +			zone_page_state(zone, NR_UNSTABLE_NFS);
-> > +		nr_writeback = zone_page_state(zone, NR_WRITEBACK);
-> > +
-> > +		if (nr_reclaimable + nr_writeback <= background_thresh)
-> > +			continue;
-> > +
-> > +		if (nr_reclaimable > nr_writeback)
-> > +			wakeup_flusher_threads(nr_reclaimable - nr_writeback);
-> > +
-> 
-> This is a potential mess. wakeup_flusher_threads() ultimately
-> calls "work = kzalloc(sizeof(*work), GFP_ATOMIC)" from the page
-> allocator. Under enough pressure, particularly if the machine has
-> very little memory, you may see this spewing out warning messages
-> which ironically will have to be written to syslog dirtying more
-> pages.  I know I've made the same mistake at least once by calling
-> wakeup_flusher_thrads() from page reclaim.
-
-Oops.  Actually, I chose to do this as I remembered your patches
-trying to add calls like this.
-
-The problem really is that I have no better idea what to do if all
-considered zones exceed their dirty limit.
-
-I think it would be much better to do nothing more than to check for
-the global dirty limit and wait for some writeback, then try other
-means of reclaim.  If fallback to other nodes is allowed, all
-dirtyable zones have been considered and the global dirty limit MUST
-be exceeded, writeback is happening.  If a specific node is requested
-that has reached its per-zone dirty limits, there are likely clean
-pages around to reclaim.
-
-> It's also still not controlling where the pages are being
-> written from.  On a large enough NUMA machine, there is a risk that
-> wakeup_flusher_treads() will be called very frequently to write pages
-> from remote nodes that are not in trouble.
-
-> > +		if (nr_reclaimable + nr_writeback <= dirty_thresh)
-> > +			continue;
-> > +
-> > +		nr_exceeded++;
-> > +	}
-> > +
-> > +	if (nr_zones == nr_exceeded)
-> > +		congestion_wait(BLK_RW_ASYNC, HZ/10);
-> > +}
-> > +
-> 
-> So, you congestion wait but then potentially continue on even
-> though it is still over the dirty limits.  Should this be more like
-> throttle_vm_writeout()?
-
-I need to think about what to do here in general a bit more.
-
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > index 4e8985a..1fac154 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -1666,6 +1666,9 @@ zonelist_scan:
-> >  			!cpuset_zone_allowed_softwall(zone, gfp_mask))
-> >  				goto try_next_zone;
-> >  
-> > +		if ((gfp_mask & __GFP_WRITE) && !zone_dirty_ok(zone))
-> > +			goto this_zone_full;
-> > +
-> 
-> So this part needs to explain why using the lower zones does not
-> potentially cause lowmem pressure on 32-bit. It's not a show stopper
-> as such but it shouldn't be ignored either.
-
-Agreed.
-
-> > @@ -2135,6 +2154,14 @@ rebalance:
-> >  	if (test_thread_flag(TIF_MEMDIE) && !(gfp_mask & __GFP_NOFAIL))
-> >  		goto nopage;
-> >  
-> > +	/* Try writing back pages if per-zone dirty limits are reached */
-> > +	page = __alloc_pages_writeback(gfp_mask, order, zonelist,
-> > +				       high_zoneidx, nodemask,
-> > +				       alloc_flags, preferred_zone,
-> > +				       migratetype);
-> > +	if (page)
-> > +		goto got_pg;
-> > +
-> 
-> I like the general idea but we are still not controlling where
-> pages are being written from, the potential lowmem pressure problem
-> needs to be addressed and care needs to be taken with the frequency
-> wakeup_flusher_threads is called due to it using kmalloc.
-> 
-> I suspect where the performance gain is being seen is due to
-> the flusher threads being woken earlier, more frequently and are
-> aggressively writing due to wakeup_flusher_threads() passing in loads
-> of requests. As you are seeing a performance gain, that is interesting
-> in itself if it is true.
-
-As written in another email, the flushers are never woken through this
-code in the tests.  The benefits really come from keeping enough clean
-pages in the zones and reduce reclaim latencies.
-
-Thanks for your input.
+All the best,
+	Tibs
 
