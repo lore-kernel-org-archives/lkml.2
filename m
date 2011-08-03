@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab1HCCMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 22:12:38 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:58673 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab1HCCMd (ORCPT
+	id S1753621Ab1HCCNh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 22:13:37 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:34570 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab1HCCNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 22:12:33 -0400
-Message-ID: <4E38AE71.5040008@oracle.com>
-Date: Wed, 03 Aug 2011 10:12:01 +0800
+	Tue, 2 Aug 2011 22:13:31 -0400
+Message-ID: <4E38AEAE.5070108@oracle.com>
+Date: Wed, 03 Aug 2011 10:13:02 +0800
 From: Joe Jin <joe.jin@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
@@ -22,19 +22,22 @@ CC: Greg Marsden <greg.marsden@oracle.com>,
         "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Joe Jin <joe.jin@oracle.com>
-Subject: [PATCH 1/3] xen-blkback: add remove_requested to xen_blkif and some
- declares
+Subject: [PATCH 2/3] xen-blkback: repleace check kthread_should_stop() to
+ remove_requested in xen_blkif_schedule() loop.
 References: <4E38ADA0.4030304@oracle.com>
 In-Reply-To: <4E38ADA0.4030304@oracle.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090202.4E38AE89.0034,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4E38AEC5.0025:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add remove_requested to xen_blkif and some declares.
+When backend state change to XenbusStateClosed, remove_requested will be set,
+so repleace check kthread_should_stop() to remove_requested in 
+xen_blkif_schedule() loop.
 
 Signed-off-by: Joe Jin <joe.jin@oracle.com>
 Cc: Daniel Stodden <daniel.stodden@citrix.com>
@@ -42,39 +45,55 @@ Cc: Jens Axboe <jaxboe@fusionio.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Annie Li <annie.li@oracle.com>
 Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>
----
- drivers/block/xen-blkback/common.h |    5 +++++
- 1 file changed, 5 insertions(+)
+--
+ drivers/block/xen-blkback/blkback.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
-index 9e40b28..453fecf 100644
---- a/drivers/block/xen-blkback/common.h
-+++ b/drivers/block/xen-blkback/common.h
-@@ -49,6 +49,7 @@
- 	pr_debug(DRV_PFX "(%s:%d) " fmt ".\n",	\
- 		 __func__, __LINE__, ##args)
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index 2330a9a..3d64b52 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -274,7 +274,7 @@ int xen_blkif_schedule(void *arg)
  
-+#define WPRINTK(fmt, args...) printk(KERN_WARNING "xen-blkback: " fmt, ##args)
+ 	xen_blkif_get(blkif);
  
- /* Not a real protocol.  Used to generate ring structs which contain
-  * the elements common to all protocols only.  This way we get a
-@@ -145,6 +146,7 @@ struct xen_blkif {
- 	/* Back pointer to the backend_info. */
- 	struct backend_info	*be;
- 	/* Private fields. */
-+	int			remove_requested;
- 	spinlock_t		blk_ring_lock;
- 	atomic_t		refcnt;
+-	while (!kthread_should_stop()) {
++	while (!blkif->remove_requested) {
+ 		if (try_to_freeze())
+ 			continue;
+ 		if (unlikely(vbd->size != vbd_sz(vbd)))
+@@ -282,11 +282,11 @@ int xen_blkif_schedule(void *arg)
  
-@@ -198,6 +200,9 @@ int xen_blkbk_flush_diskcache(struct xenbus_transaction xbt,
+ 		wait_event_interruptible(
+ 			blkif->wq,
+-			blkif->waiting_reqs || kthread_should_stop());
++			blkif->waiting_reqs || blkif->remove_requested);
+ 		wait_event_interruptible(
+ 			blkbk->pending_free_wq,
+ 			!list_empty(&blkbk->pending_free) ||
+-			kthread_should_stop());
++			blkif->remove_requested);
  
- struct xenbus_device *xen_blkbk_xenbus(struct backend_info *be);
+ 		blkif->waiting_reqs = 0;
+ 		smp_mb(); /* clear flag *before* checking for work */
+@@ -301,8 +301,8 @@ int xen_blkif_schedule(void *arg)
+ 	if (log_stats)
+ 		print_stats(blkif);
  
-+void xen_vbd_sync(struct xen_vbd *vbd);
-+void xen_blkback_close(struct xen_blkif *blkif);
-+
- static inline void blkif_get_x86_32_req(struct blkif_request *dst,
- 					struct blkif_x86_32_request *src)
- {
+-	blkif->xenblkd = NULL;
+ 	xen_blkif_put(blkif);
++	xen_blkback_close(blkif);
+ 
+ 	return 0;
+ }
+@@ -476,7 +476,7 @@ __do_block_io_op(struct xen_blkif *blkif)
+ 		if (RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, rc))
+ 			break;
+ 
+-		if (kthread_should_stop()) {
++		if (blkif->remove_requested) {
+ 			more_to_do = 1;
+ 			break;
+ 		}
 
 
