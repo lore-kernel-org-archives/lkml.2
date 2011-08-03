@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847Ab1HCN1G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 09:27:06 -0400
-Received: from mga03.intel.com ([143.182.124.21]:37590 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755752Ab1HCN07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 09:26:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,310,1309762800"; 
-   d="scan'208";a="34676810"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-CC: "guenter.roeck@ericsson.com" <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 3 Aug 2011 18:56:53 +0530
-Subject: RE: [lm-sensors] coretemp: Support for Intel Atom E6XX CPU
- (TunnelCreek)?
-Thread-Topic: [lm-sensors] coretemp: Support for Intel Atom E6XX CPU
- (TunnelCreek)?
-Thread-Index: AcxR3QgffFqvw6qdQK2BGFveHXvEjAAA886g
-Message-ID: <D6D887BA8C9DFF48B5233887EF04654109E88956B7@bgsmsx502.gar.corp.intel.com>
-References: <201106271220.51953.alexander.stein@systec-electronic.com>
- <1309193405.8271.645.camel@groeck
- <D6D887BA8C9DFF48B5233887EF04654109E84A62C7@bgsmsx502.gar.corp.intel.com>
- <201108031458.01805.alexander.stein@systec-electronic.com>
-In-Reply-To: <201108031458.01805.alexander.stein@systec-electronic.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1755864Ab1HCN2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 09:28:24 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:36377 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755764Ab1HCN2Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 09:28:16 -0400
+Message-ID: <4E394CC0.7050208@stericsson.com>
+Date: Wed, 3 Aug 2011 15:27:28 +0200
+From: =?ISO-8859-1?Q?Per_F=F6rlin?= <per.forlin@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
+To: "balbi@ti.com" <balbi@ti.com>
+Cc: Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Per Forlin <per.forlin@linaro.org>
+Subject: Re: [PATCH] usb: musb: ux500: replace missing DBG with dev_dbg
+References: <1312374137-10629-1-git-send-email-per.forlin@stericsson.com> <20110803131749.GL11080@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110803131749.GL11080@legolas.emea.dhcp.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p73DRGU0003347
 
-Hi All,
+On 08/03/2011 03:17 PM, Felipe Balbi wrote:
+> On Wed, Aug 03, 2011 at 02:22:17PM +0200, Per Forlin wrote:
+>> From: Per Forlin <per.forlin@linaro.org>
+>>
+>> ux500_dma.c fail to compile becase DBG has been removed from musb_debug.
+>> Use dev_dbg for all prints.
+>>
+>> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+>> Acked-by: Mian Yousaf Kaukab<mian.yousaf.kaukab@stericsson.com>
+> 
+> applied, thanks. Let me know if this should go to stable and I can make
+> sure of adding stable to the Cc list.
+> 
+I checked v3.0, and both ux500_dma and cppi_dma use DBG. These two files wont build in v3.0. Please CC stable.
 
-Yes I checked with some Atom Guys here.
-Apparently there is no way to know it from the OS Level.
+I am about to send patch to fix cppi_dma as well. Should I CC stable when I post it?
 
-Sorry,
-Durga
+/Per
 
-> -----Original Message-----
-> From: Alexander Stein [mailto:alexander.stein@systec-electronic.com]
-> Sent: Wednesday, August 03, 2011 6:28 PM
-> To: R, Durgadoss
-> Cc: guenter.roeck@ericsson.com; Jean Delvare; Yu, Fenghua; lm-sensors@lm-
-> sensors.org; linux-kernel@vger.kernel.org
-> Subject: Re: [lm-sensors] coretemp: Support for Intel Atom E6XX CPU
-> (TunnelCreek)?
-> 
-> Hello,
-> 
-> On Monday 27 June 2011 18:54:44 R, Durgadoss wrote:
-> > > Unfortunately, looking at Alexander's /proc/cpuinfo output, it looks
-> > > like the E6xx chips have no mention of E6xx in the CPU ID string, which
-> > > unfortunately kills the idea.
-> > >
-> > > Do you know if there is _any_ means to distinguish E6xx from E6xxT ?
-> >
-> > Sorry I do not know. But I can ask some folks here and get back
-> > to you guys. Should not take more time, once I identify the right
-> > person to ask :-)
-> 
-> Any news on this topic?
-> 
-> Regards,
-> Alexander
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
