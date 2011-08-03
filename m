@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab1HCOfi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 10:35:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38554 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753872Ab1HCOfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 10:35:32 -0400
-Date: Wed, 3 Aug 2011 15:35:27 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 3/8] ext4: Warn if direct reclaim tries to writeback pages
-Message-ID: <20110803143527.GM19099@suse.de>
-References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
- <1311265730-5324-4-git-send-email-mgorman@suse.de>
- <20110803105819.GA27199@redhat.com>
- <20110803110629.GB27199@redhat.com>
- <20110803134420.GH19099@suse.de>
- <20110803140019.GA31026@redhat.com>
+	id S1754713Ab1HCOkj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 10:40:39 -0400
+Received: from webbox1416.server-home.net ([77.236.96.61]:33021 "EHLO
+	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754220Ab1HCOkc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 10:40:32 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: "guenter.roeck@ericsson.com" <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: Re: [lm-sensors] coretemp: Support for Intel Atom E6XX CPU (TunnelCreek)?
+Date: Wed, 3 Aug 2011 16:40:30 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; x86_64; ; )
+Cc: "R, Durgadoss" <durgadoss.r@intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <201106271220.51953.alexander.stein@systec-electronic.com> <201108031458.01805.alexander.stein@systec-electronic.com> <D6D887BA8C9DFF48B5233887EF04654109E88956B7@bgsmsx502.gar.corp.intel.com>
+In-Reply-To: <D6D887BA8C9DFF48B5233887EF04654109E88956B7@bgsmsx502.gar.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110803140019.GA31026@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108031640.31196.alexander.stein@systec-electronic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 03, 2011 at 04:00:19PM +0200, Johannes Weiner wrote:
-> On Wed, Aug 03, 2011 at 02:44:20PM +0100, Mel Gorman wrote:
-> > On Wed, Aug 03, 2011 at 01:06:29PM +0200, Johannes Weiner wrote:
-> > > On Wed, Aug 03, 2011 at 12:58:19PM +0200, Johannes Weiner wrote:
-> > > > On Thu, Jul 21, 2011 at 05:28:45PM +0100, Mel Gorman wrote:
-> > > > > Direct reclaim should never writeback pages. Warn if an attempt
-> > > > > is made.
-> > > > > 
-> > > > > Signed-off-by: Mel Gorman <mgorman@suse.de>
+Hi,
+
+On Wednesday 03 August 2011 15:26:53 R, Durgadoss wrote:
+> Yes I checked with some Atom Guys here.
+> Apparently there is no way to know it from the OS Level.
+> 
+> > On Monday 27 June 2011 18:54:44 R, Durgadoss wrote:
+> > > > Unfortunately, looking at Alexander's /proc/cpuinfo output, it looks
+> > > > like the E6xx chips have no mention of E6xx in the CPU ID string,
+> > > > which unfortunately kills the idea.
 > > > > 
-> > > > Acked-by: Johannes Weiner <jweiner@redhat.com>
+> > > > Do you know if there is _any_ means to distinguish E6xx from E6xxT ?
 > > > 
-> > > Oops, too fast.
-> > > 
-> > > Shouldn't the WARN_ON() be at the top of the function, rather than
-> > > just warn when the write is deferred due to delalloc?
-> > 
-> > I thought it made more sense to put the warning at the point where ext4
-> > would normally ignore ->writepage.
-> > 
-> > That said, in my current revision of the series, I've dropped these
-> > patches altogether as page migration should be able to trigger the same
-> > warnings but be called from paths that are of less concern for stack
-> > overflows (or at the very least be looked at as a separate series).
-> 
-> Doesn't this only apply to btrfs which has no own .migratepage aop for
-> file pages?  The others use buffer_migrate_page.
-> 
+> > > Sorry I do not know. But I can ask some folks here and get back
+> > > to you guys. Should not take more time, once I identify the right
+> > > person to ask :-)
 
-Bah, you're right. It was btrfs I was looking at during the time I
-decided to drop the patches and I didn't think it through. I only
-needed to drop the btrfs one.
+So, is there a possibility to add a module parameter to force a either 
+specific tjmax or the T model for E6xx?
 
-> But if you dropped them anyway, it does not matter :)
-
-I put back in the xfs and ext4 checks. The ext4 check is still in the
-same place.
-
--- 
-Mel Gorman
-SUSE Labs
+Regards,
+Alexander
