@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab1HCOTg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 10:19:36 -0400
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:38790 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754184Ab1HCOTb (ORCPT
+	id S1754230Ab1HCOZK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 10:25:10 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:33446 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab1HCOZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 10:19:31 -0400
-Subject: [PATCH] [TRIVIAL] Fix kernel-doc comment typo '@id'
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 03 Aug 2011 16:18:39 +0200
-Message-ID: <1312381119.30457.5.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Aug 2011 10:25:07 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: kvm@vger.kernel.org
+Cc: kvm-ia64@vger.kernel.org, kvm-ppc@vger.kernel.org, avi@redhat.com,
+        riel@redhat.com, glommer@redhat.com, linux-kernel@vger.kernel.org,
+        aliguori@us.ibm.com, raharper@us.ibm.com,
+        Eric B Munson <emunson@mgebm.net>
+Subject: [RFC PATCH 0/3] Avoid soft lockup message when KVM is stopped by host
+Date: Wed,  3 Aug 2011 10:24:58 -0400
+Message-Id: <1312381501-27746-1-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Tested with scripts/kernel-doc only.
+This set is just a rough first pass at avoiding soft lockup warnings when a host
+pauses the execution of a guest.  A flag is set by the host in the shared page
+used for the pvclock when the host goes to stop the guest.  When the guest
+resumes and detects a soft lockup, this flag is checked and cleared and the soft
+lockup message is skipped.
 
- lib/idr.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+This currently breaks the build for non-x86 architectures but part of what I am
+looking for here is how to go about adding the function stubs for everything
+else.
 
-diff --git a/lib/idr.c b/lib/idr.c
-index e15502e..e0abbc1 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -858,7 +858,7 @@ EXPORT_SYMBOL(ida_get_new_above);
-  * and go back to the idr_pre_get() call.  If the idr is full, it will
-  * return %-ENOSPC.
-  *
-- * @id returns a value in the range %0 ... %0x7fffffff.
-+ * @p_id returns a value in the range %0 ... %0x7fffffff.
-  */
- int ida_get_new(struct ida *ida, int *p_id)
- {
+Eric B Munson (3):
+  Add flag to indicate that a vm was stopped by the host
+  Add functions to check if the host has stopped the vm
+  Add check for suspended vm in softlockup detector
+
+ arch/x86/include/asm/pvclock-abi.h |    1 +
+ arch/x86/include/asm/pvclock.h     |    3 +++
+ arch/x86/kernel/kvmclock.c         |   12 ++++++++++++
+ kernel/watchdog.c                  |   11 +++++++++++
+ 4 files changed, 27 insertions(+), 0 deletions(-)
+
 -- 
-1.7.4.4
+1.7.4.1
 
