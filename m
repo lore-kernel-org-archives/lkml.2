@@ -1,38 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792Ab1HCEnG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 00:43:06 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:53385 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab1HCEnA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 00:43:00 -0400
-X-Nat-Received: from [202.181.97.72]:52699 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1312346578.12826
-Message-Id: <201108030442.p734gwO9050751@www262.sakura.ne.jp>
-Subject: git commit id and tarball's filename mapping.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: linux-kernel@vger.kernel.org
+	id S1753349Ab1HCErW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 00:47:22 -0400
+Received: from knuth.cs.hmc.edu ([134.173.42.100]:49692 "EHLO knuth.cs.hmc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751612Ab1HCErR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 00:47:17 -0400
+Date: Tue, 2 Aug 2011 22:47:15 -0600
+From: Adam Cozzette <acozzette@cs.hmc.edu>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: psmouse-base.c: printk messages still list old filename
+Message-ID: <20110803044714.GC23520@[192.168.0.12]>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Wed, 03 Aug 2011 13:42:58 +0900
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 03082011 #5774370, status: clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi Dmitry,
 
-I regularly test kernels extracted from tarballs rather than from git. I have
-problems with estimating range to "git bisect" because I can't know commit id
-as of a tarball was archived. I would appreciate if there is a mapping table
-that contains commit id and tarball's filename.
+I was looking at drivers/input/mouse/psmouse-base.c and I saw that there are a
+number of printk messages that refer to the nonexistent file psmouse.c, e.g.:
 
-0123456789012345678901234567890123456789 linux-3.0.tar.bz2
-1234567890123456789012345678901234567890 patch-3.0-git1.bz2
-2345678901234567890123456789012345678901 patch-3.0-git2.bz2
-3456789012345678901234567890123456789012 patch-3.0-git3.bz2
-  (...snipped...)
-7890123456789012345678901234567890123456 patch-3.0-git17.bz2
-8901234567890123456789012345678901234567 linux-3.1-rc1.tar.bz2
+    printk(KERN_NOTICE "psmouse.c: %s at %s - driver resynched.\n",
+        psmouse->name, psmouse->phys);
+
+I saw on the archives that you had a patch lined up for this last year. Is that
+patch still on the way or has it been dropped? I would be happy to provide a new
+patch for this if it is still something that needs to be fixed.
+
+Thank you,
+Adam
+
+-- 
+Adam Cozzette
+Harvey Mudd College Class of 2012
