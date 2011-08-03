@@ -1,97 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab1HCN4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 09:56:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35526 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753208Ab1HCN43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 09:56:29 -0400
-Date: Wed, 3 Aug 2011 14:56:24 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 6/8] mm: vmscan: Throttle reclaim if encountering too
- many dirty pages under writeback
-Message-ID: <20110803135624.GJ19099@suse.de>
-References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
- <1311265730-5324-7-git-send-email-mgorman@suse.de>
- <20110803111940.GD27199@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110803111940.GD27199@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753655Ab1HCN4v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 09:56:51 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:56591 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753528Ab1HCN4k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 09:56:40 -0400
+Subject: Re: [PATCH] avr32: use set_current_blocked() in
+ handle_signal/sys_rt_sigreturn
+From: Matt Fleming <matt@console-pimps.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110803133928.GA12990@redhat.com>
+References: <1312362279.10579.38.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <20110803130813.GA11708@redhat.com>  <20110803133928.GA12990@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 03 Aug 2011 14:56:37 +0100
+Message-ID: <1312379797.10579.59.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 03, 2011 at 01:19:40PM +0200, Johannes Weiner wrote:
-> On Thu, Jul 21, 2011 at 05:28:48PM +0100, Mel Gorman wrote:
-> > Workloads that are allocating frequently and writing files place a
-> > large number of dirty pages on the LRU. With use-once logic, it is
-> > possible for them to reach the end of the LRU quickly requiring the
-> > reclaimer to scan more to find clean pages. Ordinarily, processes that
-> > are dirtying memory will get throttled by dirty balancing but this
-> > is a global heuristic and does not take into account that LRUs are
-> > maintained on a per-zone basis. This can lead to a situation whereby
-> > reclaim is scanning heavily, skipping over a large number of pages
-> > under writeback and recycling them around the LRU consuming CPU.
-> > 
-> > This patch checks how many of the number of pages isolated from the
-> > LRU were dirty. If a percentage of them are dirty, the process will be
-> > throttled if a blocking device is congested or the zone being scanned
-> > is marked congested. The percentage that must be dirty depends on
-> > the priority. At default priority, all of them must be dirty. At
-> > DEF_PRIORITY-1, 50% of them must be dirty, DEF_PRIORITY-2, 25%
-> > etc. i.e.  as pressure increases the greater the likelihood the process
-> > will get throttled to allow the flusher threads to make some progress.
-> > 
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > ---
-> >  mm/vmscan.c |   21 ++++++++++++++++++---
-> >  1 files changed, 18 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index cf7b501..b0060f8 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -720,7 +720,8 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
-> >  static unsigned long shrink_page_list(struct list_head *page_list,
-> >  				      struct zone *zone,
-> >  				      struct scan_control *sc,
-> > -				      int priority)
-> > +				      int priority,
-> > +				      unsigned long *ret_nr_dirty)
-> >  {
-> >  	LIST_HEAD(ret_pages);
-> >  	LIST_HEAD(free_pages);
-> > @@ -971,6 +972,7 @@ keep_lumpy:
-> >  
-> >  	list_splice(&ret_pages, page_list);
-> >  	count_vm_events(PGACTIVATE, pgactivate);
-> > +	*ret_nr_dirty += nr_dirty;
+On Wed, 2011-08-03 at 15:39 +0200, Oleg Nesterov wrote:
+> On 08/03, Oleg Nesterov wrote:
+> >
+> > On 08/03, Matt Fleming wrote:
+> > >
+> > > 	 * Block the signal if we were unsuccessful.
+> > > 	 */
+> > > 	if (ret != 0 || !(ka->sa.sa_flags & SA_NODEFER)) {
+> > > 		spin_lock_irq(&current->sighand->siglock);
+> > > 		sigorsets(&current->blocked, &current->blocked,
+> > > 			  &ka->sa.sa_mask);
+> > > 		sigaddset(&current->blocked, sig);
+> > > 		recalc_sigpending();
+> > > 		spin_unlock_irq(&current->sighand->siglock);
+> > > 	}
+> >
+> > Agreed, this looks "obviously wrong". We should block the !SA_NODEFER
+> > signal it was delivered.
 > 
-> Note that this includes anon pages, which means that swapping is
-> throttled as well.
+> (I meant, it is was successfully delivered).
 > 
-
-Yes it does. In the current revision of the series, I'm not using
-nr_dirty as it throttles too aggressively. Instead the number of pages
-under writeback is counted and that is used for the throttling decision.
-It still potentially includes anon pages but that is reasonable.
-
-> I don't think it is a downside to throttle swapping during IO
-> congestion - waiting for pages under writeback to become reclaimable
-> is better than kicking off even more IO in this case as well - but the
-> changelog and the comments should include it, I guess.
+> While at it, I'd also suggest another patch on top of Matt's.
+> Uncompiled/untested.
 > 
+> ------------------------------------------------------------------------------
+> [PATCH] avr32: use set_current_blocked() in handle_signal/sys_rt_sigreturn
 
-Fair point. I've updated the changelog accordingly. Thanks.
+Actually this was the reason that I spotted this bug. I'm going through
+all the code that sets current->blocked manually and making it use
+set_current_blocked() ;-)
 
--- 
-Mel Gorman
-SUSE Labs
+Moving most of the recalc_pending() callers into one place
+(set_current_blocked()) makes my signal scalability series a lot
+smaller.
+
