@@ -1,108 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab1HCIyt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 04:54:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44087 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753031Ab1HCIyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 04:54:41 -0400
-Date: Wed, 3 Aug 2011 09:54:37 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: kernel BUG at mm/vmscan.c:1114
-Message-ID: <20110803085437.GB19099@suse.de>
-References: <CAJn8CcE20-co4xNOD8c+0jMeABrc1mjmGzju3xT34QwHHHFsUA@mail.gmail.com>
- <CAJn8CcG-pNbg88+HLB=tRr26_R+A0RxZEWsJQg4iGe4eY2noXA@mail.gmail.com>
- <20110802002226.3ff0b342.akpm@linux-foundation.org>
- <CAJn8CcGTwhAaqghqWOYN9mGvRZDzyd9UJbYARz7NGA-7NvFg9Q@mail.gmail.com>
+	id S1753163Ab1HCIzo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 04:55:44 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:58893 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752148Ab1HCIzh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 04:55:37 -0400
+Message-ID: <4E390CF9.60503@stericsson.com>
+Date: Wed, 3 Aug 2011 10:55:21 +0200
+From: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <CAJn8CcGTwhAaqghqWOYN9mGvRZDzyd9UJbYARz7NGA-7NvFg9Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Per FORLIN <per.forlin@stericsson.com>, Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "users@igloocommunity.org" <users@igloocommunity.org>,
+        Per Forlin <per.forlin@linaro.org>
+Subject: Re: [PATCH] usb: musb: ux500: set dma config for both src and dst
+References: <1312299219-9562-1-git-send-email-per.forlin@stericsson.com>
+In-Reply-To: <1312299219-9562-1-git-send-email-per.forlin@stericsson.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 03, 2011 at 02:44:20PM +0800, Xiaotian Feng wrote:
-> On Tue, Aug 2, 2011 at 3:22 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > On Tue, 2 Aug 2011 15:09:57 +0800 Xiaotian Feng <xtfeng@gmail.com> wrote:
-> >
-> >> __ __I'm hitting the kernel BUG at mm/vmscan.c:1114 twice, each time I
-> >> was trying to build my kernel. The photo of crash screen and my config
-> >> is attached.
-> >
-> > hm, now why has that started happening?
-> >
-> > Perhaps you could apply this debug patch, see if we can narrow it down?
-> >
-> 
-> I will try it then, but it isn't very reproducible :(
-> But my system hung after some list corruption warnings... I hit the
-> corruption 4 times...
-> 
+On 08/02/2011 05:33 PM, Per FORLIN wrote:
+> From: Per Forlin<per.forlin@linaro.org>
+>
+> The dma driver requires both src and dst to be set.
+> This fix is needed in order to run gadget mass storage.
+> Patch is verified on snowball.
+>
+> Signed-off-by: Per Forlin<per.forlin@linaro.org>
+> ---
+>   drivers/usb/musb/ux500_dma.c |   16 +++++++---------
+>   1 files changed, 7 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
+> index cecace4..2313475 100644
+> --- a/drivers/usb/musb/ux500_dma.c
+> +++ b/drivers/usb/musb/ux500_dma.c
+> @@ -133,15 +133,13 @@ static bool ux500_configure_channel(struct dma_channel *channel,
+>   					DMA_SLAVE_BUSWIDTH_4_BYTES;
+>
+>   	slave_conf.direction = direction;
+> -	if (direction == DMA_FROM_DEVICE) {
+> -		slave_conf.src_addr = usb_fifo_addr;
+> -		slave_conf.src_addr_width = addr_width;
+> -		slave_conf.src_maxburst = 16;
+> -	} else {
+> -		slave_conf.dst_addr = usb_fifo_addr;
+> -		slave_conf.dst_addr_width = addr_width;
+> -		slave_conf.dst_maxburst = 16;
+> -	}
+> +	slave_conf.src_addr = usb_fifo_addr;
+> +	slave_conf.src_addr_width = addr_width;
+> +	slave_conf.src_maxburst = 16;
+> +	slave_conf.dst_addr = usb_fifo_addr;
+> +	slave_conf.dst_addr_width = addr_width;
+> +	slave_conf.dst_maxburst = 16;
+> +
+>   	dma_chan->device->device_control(dma_chan, DMA_SLAVE_CONFIG,
+>   					     (unsigned long)&slave_conf);
+>
+>    
 
-That is very unexpected but if lists are being corrupted, it could
-explain the previously reported bug as that bug looked like an active
-page on an inactive list.
+Acked-by: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
 
-What was the last working kernel? Can you bisect?
-
->  [ 1220.468089] ------------[ cut here ]------------
->  [ 1220.468099] WARNING: at lib/list_debug.c:56 __list_del_entry+0x82/0xd0()
->  [ 1220.468102] Hardware name: 42424XC
->  [ 1220.468104] list_del corruption. next->prev should be
-> ffffea0000e069a0, but was ffff880100216c78
->  [ 1220.468106] Modules linked in: ip6table_filter ip6_tables
-> ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4
-> xt_state nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp
-> iptable_filter ip_tables x_tables binfmt_misc bridge stp parport_pc
-> ppdev snd_hda_codec_conexant snd_hda_intel snd_hda_codec thinkpad_acpi
-> snd_hwdep snd_pcm i915 snd_seq_midi snd_rawmidi arc4 cryptd
-> snd_seq_midi_event aes_x86_64 snd_seq drm_kms_helper iwlagn snd_timer
-> aes_generic drm snd_seq_device mac80211 psmouse uvcvideo videodev snd
-> v4l2_compat_ioctl32 soundcore snd_page_alloc serio_raw i2c_algo_bit
-> btusb tpm_tis tpm tpm_bios video cfg80211 bluetooth nvram lp joydev
-> parport usbhid hid ahci libahci firewire_ohci firewire_core e1000e
-> sdhci_pci sdhci crc_itu_t
->  [ 1220.468185] Pid: 1168, comm: Xorg Tainted: G        W   3.0.0+ #23
->  [ 1220.468188] Call Trace:
->  [ 1220.468190]  <IRQ>  [<ffffffff8106db3f>] warn_slowpath_common+0x7f/0xc0
->  [ 1220.468201]  [<ffffffff8106dc36>] warn_slowpath_fmt+0x46/0x50
->  [ 1220.468206]  [<ffffffff81332a52>] __list_del_entry+0x82/0xd0
->  [ 1220.468210]  [<ffffffff81332ab1>] list_del+0x11/0x40
->  [ 1220.468216]  [<ffffffff8117a212>] __slab_free+0x362/0x3d0
->  [ 1220.468222]  [<ffffffff811c6606>] ? bvec_free_bs+0x26/0x40
->  [ 1220.468226]  [<ffffffff8117b767>] ? kmem_cache_free+0x97/0x220
->  [ 1220.468230]  [<ffffffff811c6606>] ? bvec_free_bs+0x26/0x40
->  [ 1220.468234]  [<ffffffff811c6606>] ? bvec_free_bs+0x26/0x40
->  [ 1220.468239]  [<ffffffff8117b8df>] kmem_cache_free+0x20f/0x220
->  [ 1220.468243]  [<ffffffff811c6606>] bvec_free_bs+0x26/0x40
->  [ 1220.468247]  [<ffffffff811c6654>] bio_free+0x34/0x70
->  [ 1220.468250]  [<ffffffff811c66a5>] bio_fs_de
-> 
-
-This warning and the page reclaim warning are on paths that are
-commonly used and I would expect to see multiple reports. I wonder
-what is happening on your machine that is so unusual.
-
-Have you run memtest on this machine for a few hours and badblocks
-on the disk to ensure this is not hardware trouble?
-
-> So is it possible that my previous BUG is triggered by slab list corruption?
-
-Not directly, but clearly there is something very wrong.
-
-If slub corruption reports are very common and kernel 3.0 is fine, my
-strongest candidate for the corruption would be the SLUB lockless
-patches. Try
-
-git diff e4a46182e1bcc2ddacff5a35f6b52398b51f1b11..9e577e8b46ab0c38970c0f0cd7eae62e6dffddee | patch -p1 -R
-
-They should revert cleanly with offsets.
+Thanks,
 
 -- 
-Mel Gorman
-SUSE Labs
+Mian Yousaf Kaukab
+
