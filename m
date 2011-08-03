@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab1HCTlW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 15:41:22 -0400
-Received: from smtp-out0.tiscali.nl ([195.241.79.175]:54004 "EHLO
-	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab1HCTlR (ORCPT
+	id S1755535Ab1HCTlb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 15:41:31 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45783 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab1HCTl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 15:41:17 -0400
-Subject: [PATCH] CFQ: clarify code touching 'cic_index' a bit
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 03 Aug 2011 21:41:12 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.1.3 (3.1.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1312400476.22854.1.camel@t41.thuisdomein>
-Mime-Version: 1.0
+	Wed, 3 Aug 2011 15:41:26 -0400
+Date: Wed, 3 Aug 2011 23:41:21 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Manuel Lauss <manuel.lauss@googlemail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Weinberger <richard@nod.at>,
+        Marc Zyngier <marc.zyngier@arm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] shm: optimize exit_shm()
+Message-ID: <20110803194121.GA6960@albatros>
+References: <20110803140456.GA14393@redhat.com>
+ <20110803182417.GA2510@albatros>
+ <20110803182826.GB2865@albatros>
+ <CAOLZvyFQPCsU7bnyv=iyz3FSBF72iYiLGKarvCfq6Z=2i_bOVw@mail.gmail.com>
+ <20110803191639.GA6306@albatros>
+ <20110803192930.GA320@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110803192930.GA320@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
- block/cfq-iosched.c |   17 ++++++++---------
- 1 files changed, 8 insertions(+), 9 deletions(-)
+On Wed, Aug 03, 2011 at 21:29 +0200, Oleg Nesterov wrote:
+> On 08/03, Vasiliy Kulikov wrote:
+> >
+> > On Wed, Aug 03, 2011 at 21:08 +0200, Manuel Lauss wrote:
+> > > > +
+> > > >        /* Destroy all already created segments, but not mapped yet */
+> > > >        down_write(&shm_ids(ns).rw_mutex);
+> > > >        if (shm_ids(ns).in_use)
+> > >
+> > > This check here is now unnecessary, yes?
+> >
+> > No, as I said in the comment above, other task may be holding the mutex and
+> > deleting the last shm segment.  So, current task will see in_use == 1
+> > before down_write(), but == 0 after it.
+> 
+> And? Why we can not do idr_for_each() in this (unikely) case?
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 1f96ad6..601a24c 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -3948,39 +3948,38 @@ static void cfq_exit_queue(struct elevator_queue *e)
- 	kfree(cfqd);
- }
- 
--static int cfq_alloc_cic_index(void)
-+static int cfq_alloc_cic_index(int *cic_index)
- {
--	int index, error;
-+	int error;
- 
- 	do {
- 		if (!ida_pre_get(&cic_index_ida, GFP_KERNEL))
- 			return -ENOMEM;
- 
- 		spin_lock(&cic_index_lock);
--		error = ida_get_new(&cic_index_ida, &index);
-+		error = ida_get_new(&cic_index_ida, cic_index);
- 		spin_unlock(&cic_index_lock);
- 		if (error && error != -EAGAIN)
- 			return error;
- 	} while (error);
- 
--	return index;
-+	return 0;
- }
- 
- static void *cfq_init_queue(struct request_queue *q)
- {
- 	struct cfq_data *cfqd;
--	int i, j;
-+	int i, j, cic_index;
- 	struct cfq_group *cfqg;
- 	struct cfq_rb_root *st;
- 
--	i = cfq_alloc_cic_index();
--	if (i < 0)
-+	if (cfq_alloc_cic_index(&cic_index))
- 		return NULL;
- 
- 	cfqd = kmalloc_node(sizeof(*cfqd), GFP_KERNEL | __GFP_ZERO, q->node);
- 	if (!cfqd) {
- 		spin_lock(&cic_index_lock);
--		ida_remove(&cic_index_ida, i);
-+		ida_remove(&cic_index_ida, cic_index);
- 		spin_unlock(&cic_index_lock);
- 		return NULL;
- 	}
-@@ -3989,7 +3988,7 @@ static void *cfq_init_queue(struct request_queue *q)
- 	 * Don't need take queue_lock in the routine, since we are
- 	 * initializing the ioscheduler, and nobody is using cfqd
- 	 */
--	cfqd->cic_index = i;
-+	cfqd->cic_index = cic_index;
- 
- 	/* Init root service tree */
- 	cfqd->grp_service_tree = CFQ_RB_ROOT;
+Because it's pointless.  idr_for_each() would not find any used segment.
+
+> > > And this also fixes the oops.
+> >
+> > Yes, but it only hides the real problem - tasks' dependency on initialized
+> > init_*_ns.
+> 
+> This is true, but your patch has the same dependency, but pretends
+> it doesn't ;) and it complicates the code.
+
+I didn't say that .in_use check fixes the oops.  The description says
+nothing about it.  It does an optimization, which is said in the
+description.
+
 -- 
-1.7.6
-
-
-
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
