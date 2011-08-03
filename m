@@ -1,119 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab1HCVS0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 17:18:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55306 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755319Ab1HCVSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 17:18:20 -0400
-Date: Wed, 3 Aug 2011 17:18:17 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] CFQ: clarify cleverness regarding cic->key
-Message-ID: <20110803211817.GG32385@redhat.com>
-References: <1312397690.30457.10.camel@x61.thuisdomein>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312397690.30457.10.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755029Ab1HCVgp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 17:36:45 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52907 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab1HCVgj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 17:36:39 -0400
+Subject: Re: [PATCH RFCv2 0/8] sched: Enforce order of leaf CFS runqueues
+ (and list cleanup)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jan =?ISO-8859-1?Q?Sch=F6nherr?= <schnhrr@cs.tu-berlin.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dipankar Sarma <dipankar@in.ibm.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <4E39B806.6020405@cs.tu-berlin.de>
+References: <1311793825-31933-1-git-send-email-schnhrr@cs.tu-berlin.de>
+	 <4E39B806.6020405@cs.tu-berlin.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 03 Aug 2011 23:35:45 +0200
+Message-ID: <1312407345.1147.329.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 03, 2011 at 08:54:50PM +0200, Paul Bolle wrote:
-> Add (and edit) a few comments to make the cleverness regarding cic->key
-> more obvious.
+On Wed, 2011-08-03 at 23:05 +0200, Jan Schönherr wrote:
+> Hi Peter,
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-
-> 0) Not even compile tested.
+> Am 27.07.2011 21:10, schrieb Jan H. Schönherr:
+> > Patch 1: After inventing __list_link(), I realized, that this
+> > 	 function already existed, but with a different name.
+> > 
+> > 	 This patch just does some renaming. Not really needed,
+> > 	 but if I use the old naming in patch 2 it's really 
+> > 	 hard to understand what's actually going on.
+> > 
+> > 	 It also helps to increase the readability of the existing
+> > 	 code, see patches 6-8.
+> > 
+> > Patch 2: This introduces new list functions to splice RCU lists
+> > 	 and handle deleted RCU list entries.
+> > 
+> > Patch 3: The actual bugfix.
+> > 
+> > Patch 4+5: Follow-ups to patch 1. Some more renaming and use of
+> > 	   appropriate functions.
+> > 
+> > Patch 6: Another follow-up to patch 1, improving the readability of
+> > 	 the list routines a bit.
+> > 
+> > Patch 7+8: Follow-ups to patch 2. Make use of the introduced
+> >            functionality in the already existing code.
 > 
-> 1) It seems I ran into another CFQ corner case again. This forces me to
-> study this code once more. I found the clever dual use of cic->key
-> rather non-obvious. But perhaps this is a common idiom. Anyhow, are
-> these comments too verbose? 
 > 
->  block/cfq-iosched.c       |   11 +++++++++--
->  include/linux/iocontext.h |    2 ++
->  2 files changed, 11 insertions(+), 2 deletions(-)
+> I am wondering, whether v3 should consist basically only of
+> patches 2 and 3, i. e. the minimal approach, or if you would
+> take all of them?
 > 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 1f96ad6..c1618dd 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -480,6 +480,10 @@ static inline void cic_set_cfqq(struct cfq_io_context *cic,
->  #define CIC_DEAD_KEY	1ul
->  #define CIC_DEAD_INDEX_SHIFT	1
->  
-> +/*
-> + * We mangle cic_index so it will always be an odd number, and then cast it to
-> + * a void pointer, so it can never be a valid pointer to a struct cfq_data.
-> + */
->  static inline void *cfqd_dead_key(struct cfq_data *cfqd)
->  {
->  	return (void *)(cfqd->cic_index << CIC_DEAD_INDEX_SHIFT | CIC_DEAD_KEY);
-> @@ -489,6 +493,8 @@ static inline struct cfq_data *cic_to_cfqd(struct cfq_io_context *cic)
->  {
->  	struct cfq_data *cfqd = cic->key;
->  
-> +	/* if this is an odd number it can't be valid a pointer to a
-> +	 * struct cfq_data, so this must be dead cic */
+> If you prefer the minimal version, I would make another patch
+> set out of the other patches. But as there seems to be no official
+> maintainer for list related functionality, I would appreciate
+> some hints who I should put on the TO/CC list.
 
-Use following format for comments.
+Ha, good question, so what we can do is I can take the minimal patch-set
+through the scheduler tree once we un-confuse ourself with those list
+ops and at least one of the Paul's has had a look too (such tricksy code
+deserves more eye balls).
 
-	/*
-	 * comment.
-	 */
+After that we can maybe trick Andrew Morton into carrying the generic
+cleanups etc.. at any rate, try and Cc everybody who's files you're
+touching on the various patches (scripts/get_maintaineres.pl --no-git or
+so should get you an idea).
 
-
-Apart from this minor nit, documentation looks fine to me.
-
-Thanks
-Vivek
-
->  	if (unlikely((unsigned long) cfqd & CIC_DEAD_KEY))
->  		return NULL;
->  
-> @@ -2708,6 +2714,7 @@ static void cic_free_func(struct io_context *ioc, struct cfq_io_context *cic)
->  	BUG_ON(!(dead_key & CIC_DEAD_KEY));
->  
->  	spin_lock_irqsave(&ioc->lock, flags);
-> +	/* we must demangle dead_key into a valid radix tree index again */
->  	radix_tree_delete(&ioc->radix_root, dead_key >> CIC_DEAD_INDEX_SHIFT);
->  	hlist_del_rcu(&cic->cic_list);
->  	spin_unlock_irqrestore(&ioc->lock, flags);
-> @@ -3141,8 +3148,8 @@ cfq_cic_lookup(struct cfq_data *cfqd, struct io_context *ioc)
->  }
->  
->  /*
-> - * Add cic into ioc, using cfqd as the search key. This enables us to lookup
-> - * the process specific cfq io context when entered from the block layer.
-> + * Add cic into ioc, using cic_index as the search key. This enables us to
-> + * lookup the process specific cfq io context when entered from the block layer.
->   * Also adds the cic to a per-cfqd list, used when this queue is removed.
->   */
->  static int cfq_cic_link(struct cfq_data *cfqd, struct io_context *ioc,
-> diff --git a/include/linux/iocontext.h b/include/linux/iocontext.h
-> index 5037a0a..a7f2c83 100644
-> --- a/include/linux/iocontext.h
-> +++ b/include/linux/iocontext.h
-> @@ -14,6 +14,8 @@ struct cfq_ttime {
->  };
->  
->  struct cfq_io_context {
-> +	/* either a valid pointer to a struct cfq_data or a (mangled) index
-> +	 * to io_context->radix_root */
->  	void *key;
->  
->  	struct cfq_queue *cfqq[2];
-> -- 
-> 1.7.4.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Alternatively we could try and trick Ingo into pushing them, but
+generally Andrew is maintainer of misc. stuff.
