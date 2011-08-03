@@ -1,133 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751689Ab1HCEFE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 00:05:04 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3813 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab1HCEE5 (ORCPT
+	id S1751762Ab1HCEGU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 00:06:20 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:37725 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751278Ab1HCEGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 00:04:57 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 02 Aug 2011 21:04:57 -0700
-From: Wei Ni <wni@nvidia.com>
-To: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "mike@compulab.co.il" <mike@compulab.co.il>,
-        "gking@nvidia.com" <gking@nvidia.com>,
-        Nitin Kumbhar <nkumbhar@nvidia.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'dianders@chromium.org'" <dianders@chromium.org>,
-        Wei Ni <wni@nvidia.com>
-Date: Wed, 3 Aug 2011 12:04:50 +0800
-Subject: RE: [PATCH] mfd: tps6586x: add api to power off tps6586x
-Thread-Topic: [PATCH] mfd: tps6586x: add api to power off tps6586x
-Thread-Index: AcxM8APtsjYdo1KaShSxA6U5vowmFgEojTqA
-Message-ID: <6B4D417B830BC44B8026029FD256F7F1C2CD7600C9@HKMAIL01.nvidia.com>
-References: <1311834636-15940-1-git-send-email-wni@nvidia.com>
-In-Reply-To: <1311834636-15940-1-git-send-email-wni@nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Wed, 3 Aug 2011 00:06:16 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlkDAILGOE55LCkBgWdsb2JhbABCp1oVAQEWJiWBQAEBBTocIxAIAxguFCUDIRPGbw6GNASjcQ
+Date: Wed, 3 Aug 2011 14:06:13 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: fio posixaio performance problem
+Message-ID: <20110803040613.GJ12870@dastard>
+References: <4E38C314.8070305@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E38C314.8070305@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p73457rk001683
 
-Hello, could anyone review this patch?
+On Wed, Aug 03, 2011 at 11:40:04AM +0800, Gui Jianfeng wrote:
+> Hi,
+> 
+> I ran a fio test to simulate qemu-kvm io behaviour.
+> When job number is greater than 2, IO performance is
+> really bad.
+> 
+> 1 thread: aggrb=15,129KB/s
+> 4 thread: aggrb=1,049KB/s
+> 
+> Kernel: lastest upstream
+> 
+> Any idea?
+> 
+> ---
+> [global]
+> runtime=30
+> time_based=1
+> size=1G
+> group_reporting=1
+> ioengine=posixaio
+> exec_prerun='echo 3 > /proc/sys/vm/drop_caches'
+> thread=1
+> 
+> [kvmio-1]
+> description=kvmio-1
+> numjobs=4
+> rw=write
+> bs=4k
+> direct=1
+> filename=/mnt/sda4/1G.img
 
-Thanks
-Wei.
-nvpublic
+What filesystem?
 
->-----Original Message-----
->From: Wei Ni
->Sent: Thursday, July 28, 2011 2:31 PM
->To: sameo@linux.intel.com; mike@compulab.co.il; gking@nvidia.com; Nitin Kumbhar
->Cc: linux-kernel@vger.kernel.org; Wei Ni
->Subject: [PATCH] mfd: tps6586x: add api to power off tps6586x
->
->From: Wei Ni <wni@nvidia.com>
->
->Add an api to put tps6586x in sleep mode by resetting EXITSLREQ and
->setting SLEEP_MODE in SUPPLYENE register. It will power off ldos.
->
->Signed-off-by: Wei Ni <wni@nvidia.com>
->Signed-off-by: Nitin Kumbhar <nkumbhar@nvidia.com>
->---
-> drivers/mfd/tps6586x.c       |   29 +++++++++++++++++++++++++++++
-> include/linux/mfd/tps6586x.h |    1 +
-> 2 files changed, 30 insertions(+), 0 deletions(-)
->
->diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
->index bba26d9..d0eaa0a 100644
->--- a/drivers/mfd/tps6586x.c
->+++ b/drivers/mfd/tps6586x.c
->@@ -27,6 +27,10 @@
-> #include <linux/mfd/core.h>
-> #include <linux/mfd/tps6586x.h>
->
->+#define TPS6586X_SUPPLYENE	0x14
->+#define EXITSLREQ_BIT		BIT(1) /* Exit sleep mode request */
->+#define SLEEP_MODE_BIT		BIT(3) /* Sleep mode */
->+
-> /* GPIO control registers */
-> #define TPS6586X_GPIOSET1	0x5d
-> #define TPS6586X_GPIOSET2	0x5e
->@@ -251,6 +255,29 @@ out:
-> }
-> EXPORT_SYMBOL_GPL(tps6586x_update);
->
->+static struct i2c_client *tps6586x_i2c_client;
->+int tps6586x_power_off(void)
->+{
->+	struct device *dev = NULL;
->+	int ret = -EINVAL;
->+
->+	if (!tps6586x_i2c_client)
->+		return ret;
->+
->+	dev = &tps6586x_i2c_client->dev;
->+
->+	ret = tps6586x_clr_bits(dev, TPS6586X_SUPPLYENE, EXITSLREQ_BIT);
->+	if (ret)
->+		return ret;
->+
->+	ret = tps6586x_set_bits(dev, TPS6586X_SUPPLYENE, SLEEP_MODE_BIT);
->+	if (ret)
->+		return ret;
->+
->+	return 0;
->+}
->+EXPORT_SYMBOL_GPL(tps6586x_power_off);
->+
-> static int tps6586x_gpio_get(struct gpio_chip *gc, unsigned offset)
-> {
-> 	struct tps6586x *tps6586x = container_of(gc, struct tps6586x, gpio);
->@@ -525,6 +552,8 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
-> 		goto err_add_devs;
-> 	}
->
->+	tps6586x_i2c_client = client;
->+
-> 	return 0;
->
-> err_add_devs:
->diff --git a/include/linux/mfd/tps6586x.h b/include/linux/mfd/tps6586x.h
->index b6bab1b..cfbf387 100644
->--- a/include/linux/mfd/tps6586x.h
->+++ b/include/linux/mfd/tps6586x.h
->@@ -74,5 +74,6 @@ extern int tps6586x_set_bits(struct device *dev, int reg, uint8_t bit_mask);
-> extern int tps6586x_clr_bits(struct device *dev, int reg, uint8_t bit_mask);
-> extern int tps6586x_update(struct device *dev, int reg, uint8_t val,
-> 			   uint8_t mask);
->+extern int tps6586x_power_off(void);
->
-> #endif /*__LINUX_MFD_TPS6586X_H */
->--
->1.7.0
+Cheers,
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
