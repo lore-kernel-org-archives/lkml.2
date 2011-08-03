@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959Ab1HCC3L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 22:29:11 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:27770 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752918Ab1HCC3B (ORCPT
+	id S1754004Ab1HCCbP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 22:31:15 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50972 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753836Ab1HCCbJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 22:29:01 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjMFAGqxOE55LCkBgWdsb2JhbABCmEiPERUBARYmJYIBHCMYXSUDNMZFDoY0BJsuiEM
-Date: Wed, 3 Aug 2011 12:28:57 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [regression, 3.1, rcu] rcu_sched_state detected stall on CPU 8
- (t=15000 jiffies)
-Message-ID: <20110803022857.GH12870@dastard>
+	Tue, 2 Aug 2011 22:31:09 -0400
+Message-ID: <4E38B2F1.8040903@cn.fujitsu.com>
+Date: Wed, 03 Aug 2011 10:31:13 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wang Sheng-Hui <shhuiw@gmail.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] jbd/jbd2: add pointer type conversion on void *arg from
+ void * to journal_t * explicitly in kjournald/kjournald2
+References: <4E38AB50.9040804@gmail.com> <4E38AC92.4090501@cn.fujitsu.com> <4E38AFC2.3070608@gmail.com>
+In-Reply-To: <4E38AFC2.3070608@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-03 10:30:00,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-03 10:30:09
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Wang Sheng-Hui wrote:
+> On 2011年08月03日 10:04, Li Zefan wrote:
+>> 09:58, Wang Sheng-Hui wrote:
+>>> The patch is against 3.0
+>>>
+>>> The arg of kjournald/kjournald2 is void *, and points to type
+>>> journal_t. We should convert it to journal_t * explicitly in
+>>> the kjournald/kjournald2 function body.
+>>>
+>>
+>> Why?
+>>
+>> Implicit convertion from void * to foo * is ok. Did the compiler
+>> complain about this to you?
+> 
+> I remember any * can be assigned directly to void * in ANSI C, but
+> void * should be converted to specific point * type. Right?
+> 
 
-I've had this hang a couple of times now, so I figured it isn't an
-isolated event. I am getting kernels occassionally hanging with the
-following output occurring:
+No.
 
-[   62.812011] INFO: rcu_sched_state detected stall on CPU 8 (t=15000 jiffies)
-[  242.936009] INFO: rcu_sched_state detected stall on CPU 8 (t=60031 jiffies)
+> And I checked the code of kswapd, in which explicitly conversion is
+> taken on the arg *. I think it should do so in journal.c too.
+> 
 
-And that just goes on until I reboot the machine. e.g. from a test
-run on a 2p VM that I didn't check on over the weekend:
-
-[220167.108005] INFO: rcu_sched_state detected stall on CPU 0 (t=54681420 jiffies)
-[220347.228004] INFO: rcu_sched_state detected stall on CPU 0 (t=54726450 jiffies)
-[220527.348003] INFO: rcu_sched_state detected stall on CPU 0 (t=54771480 jiffies)
-[220707.468006] INFO: rcu_sched_state detected stall on CPU 0 (t=54816510 jiffies)
-[220887.588003] INFO: rcu_sched_state detected stall on CPU 0 (t=54861540 jiffies)
-[221067.708003] INFO: rcu_sched_state detected stall on CPU 0 (t=54906570 jiffies)
-[221247.828004] INFO: rcu_sched_state detected stall on CPU 0 (t=54951600 jiffies)
-[221427.948003] INFO: rcu_sched_state detected stall on CPU 0 (t=54996630 jiffies)
-[221608.068003] INFO: rcu_sched_state detected stall on CPU 0 (t=55041660 jiffies)
-[221788.188019] INFO: rcu_sched_state detected stall on CPU 0 (t=55086690 jiffies)
-[221968.308014] INFO: rcu_sched_state detected stall on CPU 0 (t=55131720 jiffies)
-[222148.428010] INFO: rcu_sched_state detected stall on CPU 0 (t=55176750 jiffies)
-
-I've seen it on 2p and now a 16p test VM. This one occurred
-during boot of the 16p VM:
-
-[    2.600499] kjournald starting.  Commit interval 5 seconds
-[    2.600878] EXT3-fs (sda1): mounted filesystem with ordered data mode
-[    2.600995] VFS: Mounted root (ext3 filesystem) readonly on device 8:1.
-[    2.612351] Freeing unused kernel memory: 2824k freed
-INIT: version 2.88 booting
-Using makefile-style concurrent boot in runlevel S.
-[   62.812011] INFO: rcu_sched_state detected stall on CPU 8 (t=15000 jiffies)
-[  242.936009] INFO: rcu_sched_state detected stall on CPU 8 (t=60031 jiffies)
-
-While the console still echos characters, the boot process is
-not making progress.
-
-I've had this happen under heavy CPU and IO load, sometimes hours
-after boot e.g. one was mid-way through a 4th run of xfstests which
-takes about 80mins to do a complete run. There doesn't appear to be
-any pattern to when it occurs and I cannot reproduce it on command,
-so tracking it down might be difficult.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Please check more similar code.
