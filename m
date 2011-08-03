@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230Ab1HCXb0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:31:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34100 "EHLO mx2.suse.de"
+	id S932243Ab1HCXbc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:31:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34123 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756278Ab1HCXaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:30:23 -0400
+	id S1756234Ab1HCXab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:30:31 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:54 2011
-Message-Id: <20110803221253.960428735@clark.kroah.org>
+Message-Id: <20110803221254.165992347@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:58 -0700
+Date: Wed, 03 Aug 2011 15:02:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Julia Lawall <julia@diku.dk>, Takashi Iwai <tiwai@suse.de>
-Subject: [098/102] ALSA: sound/core/pcm_compat.c: adjust array index
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [100/102] dm snapshot: flush disk cache when merging
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julia Lawall <julia@diku.dk>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit ca9380fd68514c7bc952282c1b4fc70607e9fe43 upstream.
+commit 762a80d9fc9f690a3a35983f3b4619a220650808 upstream.
 
-Convert array index from the loop bound to the loop index.
+This patch makes dm-snapshot flush disk cache when writing metadata for
+merging snapshot.
 
-A simplified version of the semantic patch that fixes this problem is as
-follows: (http://coccinelle.lip6.fr/)
+Without cache flushing the disk may reorder metadata write and other
+data writes and there is a possibility of data corruption in case of
+power fault.
 
-// <smpl>
-@@
-expression e1,e2,ar;
-@@
-
-for(e1 = 0; e1 < e2; e1++) { <...
-  ar[
-- e2
-+ e1
-  ]
-  ...> }
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/core/pcm_compat.c |    2 +-
+ drivers/md/dm-snap-persistent.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/core/pcm_compat.c
-+++ b/sound/core/pcm_compat.c
-@@ -342,7 +342,7 @@ static int snd_pcm_ioctl_xfern_compat(st
- 			kfree(bufs);
- 			return -EFAULT;
- 		}
--		bufs[ch] = compat_ptr(ptr);
-+		bufs[i] = compat_ptr(ptr);
- 		bufptr++;
- 	}
- 	if (dir == SNDRV_PCM_STREAM_PLAYBACK)
+--- a/drivers/md/dm-snap-persistent.c
++++ b/drivers/md/dm-snap-persistent.c
+@@ -753,7 +753,7 @@ static int persistent_commit_merge(struc
+ 	for (i = 0; i < nr_merged; i++)
+ 		clear_exception(ps, ps->current_committed - 1 - i);
+ 
+-	r = area_io(ps, WRITE);
++	r = area_io(ps, WRITE_FLUSH_FUA);
+ 	if (r < 0)
+ 		return r;
+ 
 
 
