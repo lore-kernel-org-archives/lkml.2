@@ -1,91 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab1HCQkN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 12:40:13 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:46469 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab1HCQkJ convert rfc822-to-8bit (ORCPT
+	id S1754149Ab1HCQmJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 12:42:09 -0400
+Received: from mga07.intel.com ([143.182.124.22]:36372 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752654Ab1HCQmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 12:40:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <493994B35A117E4F832F97C4719C4C040132BE85FE@orsmsx505.amr.corp.intel.com>
-References: <cover.1312386029.git.luto@mit.edu> <add0a25293cd8bea549e6aea4f38ccc279a64556.1312386029.git.luto@mit.edu>
- <493994B35A117E4F832F97C4719C4C040132BE85FE@orsmsx505.amr.corp.intel.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 3 Aug 2011 12:39:49 -0400
-X-Google-Sender-Auth: 1EsTXDoqgnobmq0XpSJ8Oe4duWM
-Message-ID: <CAObL_7Hgg=Fwxw7-F8tFn6bqJL1CyVwELOTBShxDnJPV=3kcrg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] x86: Enable fast strings on Intel if BIOS hasn't already
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 3 Aug 2011 12:42:05 -0400
+X-Greylist: delayed 580 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Aug 2011 12:42:05 EDT
+From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] xen: asm/io.h should not include xen.h if XEN is disabled
+Date: Wed,  3 Aug 2011 19:33:00 +0300
+Message-Id: <049cae3c2e2923ea7efbd205257e9e22b3df5e1a.1312388919.git.dmitry.kasatkin@intel.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 3, 2011 at 12:34 PM, Yu, Fenghua <fenghua.yu@intel.com> wrote:
->
->
->> -----Original Message-----
->> From: Andy Lutomirski [mailto:luto@MIT.EDU]
->> Sent: Wednesday, August 03, 2011 8:47 AM
->> To: x86@kernel.org; linux-kernel@vger.kernel.org
->> Cc: Yu, Fenghua; Andy Lutomirski
->> Subject: [PATCH 1/2] x86: Enable fast strings on Intel if BIOS hasn't
->> already
->>
->> I have two Sandy Bridge systems and neither one enables fast strings
->> in BIOS.  I can't find anything in the manual that says that only
->> BIOS should enable or disable the feature, so try to enable it at
->> bootup.
->>
->> Signed-off-by: Andy Lutomirski <luto@mit.edu>
->> ---
->>  arch/x86/kernel/cpu/intel.c |   17 +++++++++++++++--
->>  1 files changed, 15 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
->> index ed6086e..6b20fef 100644
->> --- a/arch/x86/kernel/cpu/intel.c
->> +++ b/arch/x86/kernel/cpu/intel.c
->> @@ -30,6 +30,7 @@
->>  static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
->>  {
->>       u64 misc_enable;
->> +     bool allow_fast_string = true;
->>
->>       /* Unmask CPUID levels if masked: */
->>       if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
->> @@ -118,10 +119,11 @@ static void __cpuinit early_init_intel(struct
->> cpuinfo_x86 *c)
->>        * (model 2) with the same problem.
->>        */
->>       if (c->x86 == 15) {
->> -             rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
->> +             allow_fast_string = false;
->> +             printk(KERN_INFO "kmemcheck: Disabling fast string
->> operations\n");
->
-> Please don't move this printk() here. Keep it in the original place. If fast string bit is 0 already, we don't need to print the info.
+kernel-devel package with kernel headers have no <include/xen> directory
+if XEN is disabled. Modules which inclide asm/io.h won't compile.
 
-I'll rework it.
+XEN related content is behind the CONFIG_XEN flag in the io.h.
+And <xen/xen.h> should be also behind CONFIG_XEN flag.
 
->
->>
->> +             rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
->>               if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING) {
->> -                     printk(KERN_INFO "kmemcheck: Disabling fast string
->> operations\n");
->>
->>                       misc_enable &= ~MSR_IA32_MISC_ENABLE_FAST_STRING;
->>                       wrmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
->> @@ -135,6 +137,17 @@ static void __cpuinit early_init_intel(struct
->> cpuinfo_x86 *c)
->
-> You also need to change the comment right before this code. With your patch, the comment is out-of-date.
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+---
+ arch/x86/include/asm/io.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Will do.
+diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+index 0722730..ef26712 100644
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -41,7 +41,9 @@
+ #include <asm-generic/int-ll64.h>
+ #include <asm/page.h>
+ 
++#ifdef CONFIG_XEN
+ #include <xen/xen.h>
++#endif
+ 
+ #define build_mmio_read(name, size, type, reg, barrier) \
+ static inline type name(const volatile void __iomem *addr) \
+-- 
+1.7.4.1
 
---Andy
