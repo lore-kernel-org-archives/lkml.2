@@ -1,92 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab1HCBFh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 21:05:37 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:52589 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828Ab1HCBFa (ORCPT
+	id S1754051Ab1HCBL6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 21:11:58 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38196 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753828Ab1HCBLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 21:05:30 -0400
-From: Namhyung Kim <namhyung@gmail.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] [SCSI] sd: consolidate sector size alignment check in sd_prep_fn
-Date: Wed,  3 Aug 2011 10:03:24 +0900
-Message-Id: <1312333404-3088-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1312302550.11352.9.camel@mulgrave>
-References: <1312302550.11352.9.camel@mulgrave>
+	Tue, 2 Aug 2011 21:11:53 -0400
+Date: Tue, 2 Aug 2011 22:12:50 -0300
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+To: Greg KH <gregkh@suse.de>
+Cc: Kay Sievers <kay.sievers@vrfy.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Howells <dhowells@redhat.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, Jiri Slaby <jslaby@suse.cz>,
+        James Morris <jmorris@namei.org>, neilb@suse.de
+Subject: Re: [PATCH] sysctl: add support for poll()
+Message-ID: <20110803011250.GA27227@vigoh>
+References: <20110602134338.0c56160e@lxorguk.ukuu.org.uk>
+ <BANLkTik72cU_R5k9NLnqN_FNkm-y5Fk0nQ@mail.gmail.com>
+ <m1hb88e3qs.fsf@fess.ebiederm.org>
+ <BANLkTin5P8P_HR78qo0oyzeu9hpWazZqTw@mail.gmail.com>
+ <20110608151732.2b321b9a.akpm@linux-foundation.org>
+ <BANLkTinXwE0K5nJ649rhNxN06KvwLNDeCA@mail.gmail.com>
+ <1307981153.1449.19.camel@mop>
+ <CAMOw1v5veDqE+=gbNBn3juXHOOp764d7F20XtwUJXZoBW45zyg@mail.gmail.com>
+ <CAPXgP12sxLmPXzXx_Qgf=JakmiZcuiMGmMKB8RG4sFU_U5f=jg@mail.gmail.com>
+ <20110802231641.GA2598@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110802231641.GA2598@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generalize common code to reduce code duplication.
+>From dae691ba16a6c6c50ca05e2cd69bdc808f2c4f89 Mon Sep 17 00:00:00 2001
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Wed, 1 Jun 2011 09:14:36 -0300
+Subject: [PATCH] sysctl: add support for poll()
+Cc: linux-kernel@vger.kernel.org
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Adding support for poll() in sysctl fs allows userspace to receive
+notifications when an entry in sysctl changes. This way it's possible to
+know when hostname/domainname is changed due to the respective syscall
+has been called or its file under /proc/sys has been written to.
+
+Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Acked-By: Kay Sievers <kay.sievers@vrfy.org>
 ---
- drivers/scsi/sd.c |   36 ++++++++++++------------------------
- 1 files changed, 12 insertions(+), 24 deletions(-)
+ fs/proc/proc_sysctl.c   |   40 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/sysctl.h  |    8 ++++++++
+ include/linux/utsname.h |   16 ++++++++++++++++
+ kernel/sys.c            |    2 ++
+ kernel/utsname_sysctl.c |   36 ++++++++++++++++++++++++++++++++++++
+ 5 files changed, 102 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 953773cb26d9..fb9d997ece9d 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -651,6 +651,7 @@ static int sd_prep_fn(struct request_queue *q, struct request *rq)
- 	unsigned int this_count = blk_rq_sectors(rq);
- 	int ret, host_dif;
- 	unsigned char protect;
-+	int sector_shift;
+diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
+index 1a77dbe..cf4bc7c 100644
+--- a/fs/proc/proc_sysctl.c
++++ b/fs/proc/proc_sysctl.c
+@@ -3,6 +3,7 @@
+  */
+ #include <linux/init.h>
+ #include <linux/sysctl.h>
++#include <linux/poll.h>
+ #include <linux/proc_fs.h>
+ #include <linux/security.h>
+ #include <linux/namei.h>
+@@ -176,6 +177,43 @@ static ssize_t proc_sys_write(struct file *filp, const char __user *buf,
+ 	return proc_sys_call_handler(filp, (void __user *)buf, count, ppos, 1);
+ }
  
- 	/*
- 	 * Discard request come in as REQ_TYPE_FS but we turn them into
-@@ -735,36 +736,23 @@ static int sd_prep_fn(struct request_queue *q, struct request *rq)
- 	 * and not force the scsi disk driver to use bounce buffers
- 	 * for this.
- 	 */
--	if (sdp->sector_size == 1024) {
--		if ((block & 1) || (blk_rq_sectors(rq) & 1)) {
-+	sector_shift = 0;
-+	switch (sdp->sector_size) {
-+	case 4096: sector_shift++;	/* fall through */
-+	case 2048: sector_shift++;	/* fall through */
-+	case 1024: sector_shift++;
++static int proc_sys_open(struct inode *inode, struct file *filp)
++{
++	struct ctl_table *table = PROC_I(inode)->sysctl_entry;
 +
-+		if (!IS_ALIGNED(block, 1 << sector_shift) ||
-+		    !IS_ALIGNED(blk_rq_sectors(rq), 1 << sector_shift)) {
- 			scmd_printk(KERN_ERR, SCpnt,
- 				    "Bad block number requested\n");
- 			goto out;
- 		} else {
--			block = block >> 1;
--			this_count = this_count >> 1;
--		}
--	}
--	if (sdp->sector_size == 2048) {
--		if ((block & 3) || (blk_rq_sectors(rq) & 3)) {
--			scmd_printk(KERN_ERR, SCpnt,
--				    "Bad block number requested\n");
--			goto out;
--		} else {
--			block = block >> 2;
--			this_count = this_count >> 2;
--		}
--	}
--	if (sdp->sector_size == 4096) {
--		if ((block & 7) || (blk_rq_sectors(rq) & 7)) {
--			scmd_printk(KERN_ERR, SCpnt,
--				    "Bad block number requested\n");
--			goto out;
--		} else {
--			block = block >> 3;
--			this_count = this_count >> 3;
-+			block = block >> sector_shift;
-+			this_count = this_count >> sector_shift;
- 		}
++	if (table->poll) {
++		unsigned long event = atomic_read(&table->poll->event);
++
++		filp->private_data = (void *)event;
++	}
++
++	return 0;
++}
++
++static unsigned int proc_sys_poll(struct file *filp, poll_table *wait)
++{
++	struct inode *inode = filp->f_path.dentry->d_inode;
++	struct ctl_table *table = PROC_I(inode)->sysctl_entry;
++	unsigned long event = (unsigned long)filp->private_data;
++	unsigned int ret = POLLIN | POLLRDNORM;
++
++	if (!table->proc_handler)
++		goto out;
++
++	if (!table->poll)
++		goto out;
++
++	poll_wait(filp, &table->poll->wait, wait);
++
++	if (event != atomic_read(&table->poll->event)) {
++		filp->private_data = (void *)(unsigned long)atomic_read(
++						&table->poll->event);
++		ret = POLLIN | POLLRDNORM | POLLERR | POLLPRI;
++	}
++
++out:
++	return ret;
++}
+ 
+ static int proc_sys_fill_cache(struct file *filp, void *dirent,
+ 				filldir_t filldir,
+@@ -364,6 +402,8 @@ static int proc_sys_getattr(struct vfsmount *mnt, struct dentry *dentry, struct
+ }
+ 
+ static const struct file_operations proc_sys_file_operations = {
++	.open		= proc_sys_open,
++	.poll		= proc_sys_poll,
+ 	.read		= proc_sys_read,
+ 	.write		= proc_sys_write,
+ 	.llseek		= default_llseek,
+diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+index 11684d9..96c89ba 100644
+--- a/include/linux/sysctl.h
++++ b/include/linux/sysctl.h
+@@ -25,6 +25,7 @@
+ #include <linux/kernel.h>
+ #include <linux/types.h>
+ #include <linux/compiler.h>
++#include <linux/wait.h>
+ 
+ struct completion;
+ 
+@@ -1011,6 +1012,12 @@ extern int proc_do_large_bitmap(struct ctl_table *, int,
+  * cover common cases.
+  */
+ 
++/* Support for userspace poll() to watch for changes */
++struct ctl_table_poll {
++	atomic_t event;
++	wait_queue_head_t wait;
++};
++
+ /* A sysctl table is an array of struct ctl_table: */
+ struct ctl_table 
+ {
+@@ -1021,6 +1028,7 @@ struct ctl_table
+ 	struct ctl_table *child;
+ 	struct ctl_table *parent;	/* Automatically set */
+ 	proc_handler *proc_handler;	/* Callback for text formatting */
++	struct ctl_table_poll *poll;
+ 	void *extra1;
+ 	void *extra2;
+ };
+diff --git a/include/linux/utsname.h b/include/linux/utsname.h
+index 4e5b021..c714ed7 100644
+--- a/include/linux/utsname.h
++++ b/include/linux/utsname.h
+@@ -37,6 +37,14 @@ struct new_utsname {
+ #include <linux/nsproxy.h>
+ #include <linux/err.h>
+ 
++enum uts_proc {
++	UTS_PROC_OSTYPE,
++	UTS_PROC_OSRELEASE,
++	UTS_PROC_VERSION,
++	UTS_PROC_HOSTNAME,
++	UTS_PROC_DOMAINNAME,
++};
++
+ struct user_namespace;
+ extern struct user_namespace init_user_ns;
+ 
+@@ -80,6 +88,14 @@ static inline struct uts_namespace *copy_utsname(unsigned long flags,
+ }
+ #endif
+ 
++#ifdef CONFIG_PROC_SYSCTL
++extern void uts_proc_notify(enum uts_proc proc);
++#else
++static inline void uts_proc_notify(enum uts_proc proc)
++{
++}
++#endif
++
+ static inline struct new_utsname *utsname(void)
+ {
+ 	return &current->nsproxy->uts_ns->name;
+diff --git a/kernel/sys.c b/kernel/sys.c
+index a101ba3..2347043 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1241,6 +1241,7 @@ SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
+ 		memset(u->nodename + len, 0, sizeof(u->nodename) - len);
+ 		errno = 0;
  	}
++	uts_proc_notify(UTS_PROC_HOSTNAME);
+ 	up_write(&uts_sem);
+ 	return errno;
+ }
+@@ -1291,6 +1292,7 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
+ 		memset(u->domainname + len, 0, sizeof(u->domainname) - len);
+ 		errno = 0;
+ 	}
++	uts_proc_notify(UTS_PROC_DOMAINNAME);
+ 	up_write(&uts_sem);
+ 	return errno;
+ }
+diff --git a/kernel/utsname_sysctl.c b/kernel/utsname_sysctl.c
+index a2cd77e..e96b766 100644
+--- a/kernel/utsname_sysctl.c
++++ b/kernel/utsname_sysctl.c
+@@ -13,6 +13,7 @@
+ #include <linux/uts.h>
+ #include <linux/utsname.h>
+ #include <linux/sysctl.h>
++#include <linux/wait.h>
+ 
+ static void *get_uts(ctl_table *table, int write)
+ {
+@@ -51,12 +52,28 @@ static int proc_do_uts_string(ctl_table *table, int write,
+ 	uts_table.data = get_uts(table, write);
+ 	r = proc_dostring(&uts_table,write,buffer,lenp, ppos);
+ 	put_uts(table, write, uts_table.data);
 +
- 	if (rq_data_dir(rq) == WRITE) {
- 		if (!sdp->writeable) {
- 			goto out;
++	if (write) {
++		atomic_inc(&table->poll->event);
++		wake_up_interruptible(&table->poll->wait);
++	}
++
+ 	return r;
+ }
+ #else
+ #define proc_do_uts_string NULL
+ #endif
+ 
++static struct ctl_table_poll hostname_poll = {
++	.event		= ATOMIC_INIT(0),
++	.wait		= __WAIT_QUEUE_HEAD_INITIALIZER(hostname_poll.wait),
++};
++
++static struct ctl_table_poll domainname_poll = {
++	.event		= ATOMIC_INIT(0),
++	.wait		= __WAIT_QUEUE_HEAD_INITIALIZER(domainname_poll.wait),
++};
++
+ static struct ctl_table uts_kern_table[] = {
+ 	{
+ 		.procname	= "ostype",
+@@ -85,6 +102,7 @@ static struct ctl_table uts_kern_table[] = {
+ 		.maxlen		= sizeof(init_uts_ns.name.nodename),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_do_uts_string,
++		.poll		= &hostname_poll,
+ 	},
+ 	{
+ 		.procname	= "domainname",
+@@ -92,6 +110,7 @@ static struct ctl_table uts_kern_table[] = {
+ 		.maxlen		= sizeof(init_uts_ns.name.domainname),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_do_uts_string,
++		.poll		= &domainname_poll,
+ 	},
+ 	{}
+ };
+@@ -105,6 +124,23 @@ static struct ctl_table uts_root_table[] = {
+ 	{}
+ };
+ 
++#ifdef CONFIG_PROC_SYSCTL
++/*
++ * Notify userspace about a change in a certain entry of uts_kern_table,
++ * identified by the parameter proc.
++ */
++void uts_proc_notify(enum uts_proc proc)
++{
++	struct ctl_table *table = &uts_kern_table[proc];
++
++	if (!table->poll)
++		return;
++
++	atomic_inc(&table->poll->event);
++	wake_up_interruptible(&table->poll->wait);
++}
++#endif
++
+ static int __init utsname_sysctl_init(void)
+ {
+ 	register_sysctl_table(uts_root_table);
 -- 
 1.7.6
 
