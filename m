@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab1HCX2I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:28:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33700 "EHLO mx2.suse.de"
+	id S932128Ab1HCX2X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:28:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33728 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756131Ab1HCX15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:27:57 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:46 2011
-Message-Id: <20110803221246.626130921@clark.kroah.org>
+	id S932118Ab1HCX2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:28:10 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:47 2011
+Message-Id: <20110803221246.917881526@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:00:46 -0700
+Date: Wed, 03 Aug 2011 15:00:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Pavel Shilovsky <piastryyy@gmail.com>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [026/102] CIFS: Fix oops while mounting with prefixpath
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [029/102] ethtool: Allow zero-length register dumps again
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <piastryyy@gmail.com>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-commit f5bc1e755d23d022bf948904386337fc3e5e29a8 upstream.
+commit 67ae7cf1eeda777f79259c4c6cb17a0bd28dee71 upstream.
 
-commit fec11dd9a0109fe52fd631e5c510778d6cbff6cc caused
-a regression when we have already mounted //server/share/a
-and want to mount //server/share/a/b.
+Some drivers (ab)use the ethtool_ops::get_regs operation to expose
+only a hardware revision ID.  Commit
+a77f5db361ed9953b5b749353ea2c7fed2bf8d93 ('ethtool: Allocate register
+dump buffer with vmalloc()') had the side-effect of breaking these, as
+vmalloc() returns a null pointer for size=0 whereas kmalloc() did not.
 
-The problem is that lookup_one_len calls __lookup_hash
-with nd pointer as NULL. Then __lookup_hash calls
-do_revalidate in the case when dentry exists and we end
-up with NULL pointer deference in cifs_d_revalidate:
+For backward-compatibility, allow zero-length dumps again.
 
-if (nd->flags & LOOKUP_RCU)
-	return -ECHILD;
-
-Fix this by checking nd for NULL.
-
-Signed-off-by: Pavel Shilovsky <piastryyy@gmail.com>
-Reviewed-by: Shirish Pargaonkar <shirishp@us.ibm.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Reported-by: Kalle Valo <kvalo@qca.qualcomm.com>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/dir.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/ethtool.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -641,7 +641,7 @@ lookup_out:
- static int
- cifs_d_revalidate(struct dentry *direntry, struct nameidata *nd)
- {
--	if (nd->flags & LOOKUP_RCU)
-+	if (nd && (nd->flags & LOOKUP_RCU))
- 		return -ECHILD;
+--- a/net/core/ethtool.c
++++ b/net/core/ethtool.c
+@@ -1227,7 +1227,7 @@ static int ethtool_get_regs(struct net_d
+ 		regs.len = reglen;
  
- 	if (direntry->d_inode) {
+ 	regbuf = vzalloc(reglen);
+-	if (!regbuf)
++	if (reglen && !regbuf)
+ 		return -ENOMEM;
+ 
+ 	ops->get_regs(dev, &regs, regbuf);
+@@ -1236,7 +1236,7 @@ static int ethtool_get_regs(struct net_d
+ 	if (copy_to_user(useraddr, &regs, sizeof(regs)))
+ 		goto out;
+ 	useraddr += offsetof(struct ethtool_regs, data);
+-	if (copy_to_user(useraddr, regbuf, regs.len))
++	if (regbuf && copy_to_user(useraddr, regbuf, regs.len))
+ 		goto out;
+ 	ret = 0;
+ 
 
 
