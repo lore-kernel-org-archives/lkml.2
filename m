@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab1HCPyh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 11:54:37 -0400
-Received: from www17.your-server.de ([213.133.104.17]:58363 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752952Ab1HCPyf (ORCPT
+	id S1754192Ab1HCQAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 12:00:09 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:51519 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068Ab1HCQAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 11:54:35 -0400
-Subject: Re: [PATCH 8/20] drivers/parport: Use kzalloc
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Julia Lawall <julia@diku.dk>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Date: Wed, 03 Aug 2011 17:54:04 +0200
-In-Reply-To: <Pine.LNX.4.64.1005132200410.6282@ask.diku.dk>
-References: <Pine.LNX.4.64.1005132200410.6282@ask.diku.dk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1312386848.2629.21.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+	Wed, 3 Aug 2011 12:00:06 -0400
+From: Namhyung Kim <namhyung@gmail.com>
+To: Neil Brown <neilb@suse.de>
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] md: use REQ_NOIDLE flag in md_super_write()
+Date: Thu,  4 Aug 2011 00:57:57 +0900
+Message-Id: <1312387077-26617-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 13.05.2010, 22:01 +0200 schrieb Julia Lawall:
+Queue idling is used for the anticipation of immediate
+sequencial I/O's but md_super_write() is a kind of one-
+shot operation, coupled with md_super_wait(), so the
+idling in this case will be just a waste of time.
 
-> From: Julia Lawall <julia@diku.dk>
-> 
-> Use kzalloc rather than the combination of kmalloc and memset.
-> 
-> The semantic patch that makes this change is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression x,size,flags;
-> statement S;
-> @@
-> 
-> -x = kmalloc(size,flags);
-> +x = kzalloc(size,flags);
->  if (x == NULL) S
-> -memset(x, 0, size);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+Specifying REQ_NOIDLE prevents it. Instead of adding
+the flag to submit_bio() directly, use pre-defined
+macro WRITE_FLUSH_FUA.
 
-Reviewed-by: Thomas Meyer <thomas@m3y3r.de>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ drivers/md/md.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> 
-> ---
->  drivers/parport/share.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff -u -p a/drivers/parport/share.c b/drivers/parport/share.c
-> --- a/drivers/parport/share.c
-> +++ b/drivers/parport/share.c
-> @@ -282,14 +282,13 @@ struct parport *parport_register_port(un
->  	int device;
->  	char *name;
->  
-> -	tmp = kmalloc(sizeof(struct parport), GFP_KERNEL);
-> +	tmp = kzalloc(sizeof(struct parport), GFP_KERNEL);
->  	if (!tmp) {
->  		printk(KERN_WARNING "parport: memory squeeze\n");
->  		return NULL;
->  	}
->  
->  	/* Init our structure */
-> - 	memset(tmp, 0, sizeof(struct parport));
->  	tmp->base = base;
->  	tmp->irq = irq;
->  	tmp->dma = dma;
-
-
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index d97a62534798..8650e9a0ce7c 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -848,7 +848,7 @@ void md_super_write(mddev_t *mddev, mdk_rdev_t *rdev,
+ 	bio->bi_end_io = super_written;
+ 
+ 	atomic_inc(&mddev->pending_writes);
+-	submit_bio(REQ_WRITE | REQ_SYNC | REQ_FLUSH | REQ_FUA, bio);
++	submit_bio(WRITE_FLUSH_FUA, bio);
+ }
+ 
+ void md_super_wait(mddev_t *mddev)
+-- 
+1.7.6
 
