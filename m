@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab1HCTHJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 15:07:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32729 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754568Ab1HCTG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 15:06:59 -0400
-Date: Wed, 3 Aug 2011 21:06:23 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andi Kleen <ak@linux.intel.com>, linux-mm@kvack.org,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
-        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/5] mm: writeback: throttle __GFP_WRITE on per-zone
- dirty limits
-Message-ID: <20110803190623.GA5873@redhat.com>
-References: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
- <1311625159-13771-5-git-send-email-jweiner@redhat.com>
- <20110725203705.GA21691@tassilo.jf.intel.com>
- <CAEwNFnARzetfqZqjh_9-d+FOHtrCEwaSxgqBy_D+apxsNqzqkg@mail.gmail.com>
+	id S1755307Ab1HCTIR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 15:08:17 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44684 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754568Ab1HCTII convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 15:08:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAEwNFnARzetfqZqjh_9-d+FOHtrCEwaSxgqBy_D+apxsNqzqkg@mail.gmail.com>
+In-Reply-To: <20110803182826.GB2865@albatros>
+References: <20110803140456.GA14393@redhat.com>
+	<20110803182417.GA2510@albatros>
+	<20110803182826.GB2865@albatros>
+Date: Wed, 3 Aug 2011 21:08:06 +0200
+Message-ID: <CAOLZvyFQPCsU7bnyv=iyz3FSBF72iYiLGKarvCfq6Z=2i_bOVw@mail.gmail.com>
+Subject: Re: [PATCH] shm: optimize exit_shm()
+From: Manuel Lauss <manuel.lauss@googlemail.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Richard Weinberger <richard@nod.at>,
+        Marc Zyngier <marc.zyngier@arm.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 26, 2011 at 08:40:59AM +0900, Minchan Kim wrote:
-> Hi Andi,
-> 
-> On Tue, Jul 26, 2011 at 5:37 AM, Andi Kleen <ak@linux.intel.com> wrote:
-> >> The global dirty limits are put in proportion to the respective zone's
-> >> amount of dirtyable memory and the allocation denied when the limit of
-> >> that zone is reached.
-> >>
-> >> Before the allocation fails, the allocator slowpath has a stage before
-> >> compaction and reclaim, where the flusher threads are kicked and the
-> >> allocator ultimately has to wait for writeback if still none of the
-> >> zones has become eligible for allocation again in the meantime.
-> >>
-> >
-> > I don't really like this. It seems wrong to make memory
-> > placement depend on dirtyness.
-> >
-> > Just try to explain it to some system administrator or tuner: her
-> > head will explode and for good reasons.
-> >
-> > On the other hand I like doing round-robin in filemap by default
-> > (I think that is what your patch essentially does)
-> > We should have made  this default long ago. It avoids most of the
-> > "IO fills up local node" problems people run into all the time.
-> >
-> > So I would rather just change the default in filemap allocation.
+Hello,
 
-It's not only a problem that exists solely on a node-level but also on
-a zone-level.  Round-robin over the nodes does not fix the problem
-that a small zone can fill up with dirty pages before the global dirty
-limit kicks in.
+On Wed, Aug 3, 2011 at 8:28 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> We may check .in_use == 0 without holding the rw_mutex as .in_use is int
+> and reads of ints are atomic.  As .in_use may be changed to zero while current
+> process was sleeping in down_write(), we should check .in_use once again after
+> down_write().
+>
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> ---
+>  ipc/shm.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+>
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index 4e3c883..855ddc0 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -304,6 +304,9 @@ void exit_shm(struct task_struct *task)
+>  {
+>        struct ipc_namespace *ns = task->nsproxy->ipc_ns;
+>
+> +       if (shm_ids(ns).in_use == 0)
+> +               return;
+> +
+>        /* Destroy all already created segments, but not mapped yet */
+>        down_write(&shm_ids(ns).rw_mutex);
+>        if (shm_ids(ns).in_use)
 
-> Just out of curiosity.
-> Why do you want to consider only filemap allocation, not IO(ie,
-> filemap + sys_[read/write]) allocation?
+This check here is now unnecessary, yes?
 
-I guess Andi was referring to the page cache (mapping file offsets to
-pages), rather than mmaps (mapping virtual addresses to pages).
+And this also fixes the oops.
 
-mm/filemap.c::__page_cache_alloc()
+Manuel
