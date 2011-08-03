@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab1HCG5h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 02:57:37 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59609 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750811Ab1HCG5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 02:57:31 -0400
-Message-ID: <4E38D8B7.70006@cn.fujitsu.com>
-Date: Wed, 03 Aug 2011 13:12:23 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: fio posixaio performance problem
-References: <4E38C314.8070305@cn.fujitsu.com> <20110803040613.GJ12870@dastard> <4E38D2F5.5050702@cn.fujitsu.com>
-In-Reply-To: <4E38D2F5.5050702@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-03 13:11:02,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-03 13:11:05,
-	Serialize complete at 2011-08-03 13:11:05
+	id S1752513Ab1HCG71 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 02:59:27 -0400
+Received: from www84.your-server.de ([213.133.104.84]:34001 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752150Ab1HCG7T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 02:59:19 -0400
+X-Greylist: delayed 1774 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Aug 2011 02:59:19 EDT
+Subject: Re: [PATCH 1/11] kernel/kfifo.c: trivial: use BUG_ON
+From: Stefani Seibold <stefani@seibold.net>
+To: Andrea Righi <arighi@develer.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, trivial@kernel.org,
+        kernel-janitors@vger.kernel.org, Stefani Seibold <stefani@seibold.net>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>, linux-kernel@vger.kernel.org
+In-Reply-To: <Pine.LNX.4.64.1108021349330.24349@ask.diku.dk>
+References: <1312281304-11847-1-git-send-email-julia@diku.dk>
+	 <1312281304-11847-2-git-send-email-julia@diku.dk>
+	 <20110802113335.GA4185@thinkpad>
+	 <Pine.LNX.4.64.1108021349330.24349@ask.diku.dk>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 03 Aug 2011 08:30:40 +0200
+Message-ID: <1312353040.30326.0.camel@wall-e>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-8-3 12:47, Gui Jianfeng wrote:
-> On 2011-8-3 12:06, Dave Chinner wrote:
->> On Wed, Aug 03, 2011 at 11:40:04AM +0800, Gui Jianfeng wrote:
->>> Hi,
->>>
->>> I ran a fio test to simulate qemu-kvm io behaviour.
->>> When job number is greater than 2, IO performance is
->>> really bad.
->>>
->>> 1 thread: aggrb=15,129KB/s
->>> 4 thread: aggrb=1,049KB/s
->>>
->>> Kernel: lastest upstream
->>>
->>> Any idea?
->>>
->>> ---
->>> [global]
->>> runtime=30
->>> time_based=1
->>> size=1G
->>> group_reporting=1
->>> ioengine=posixaio
->>> exec_prerun='echo 3 > /proc/sys/vm/drop_caches'
->>> thread=1
->>>
->>> [kvmio-1]
->>> description=kvmio-1
->>> numjobs=4
->>> rw=write
->>> bs=4k
->>> direct=1
->>> filename=/mnt/sda4/1G.img
->>
->> What filesystem?
-> 
-> Ext4
+From: Julia Lawall <julia@diku.dk>
 
-BTW, even if on Ext3, the problem is still there.
+Allow the function to return 0 when 0 elements are asked for rather than
+crashing the kernel with BUG.
 
-Thanks,
-Gui
+Signed-off-by: Julia Lawall <julia@diku.dk>
+Acked-by: Stefano Seibold <stefani@seibold.net>
 
-> 
-> Thanks,
-> Gui
-> 
->>
->> Cheers,
->>
->> Dave.
-> 
+---
+ var/julia/linuxcopy/kernel/kfifo.c |    6 ------
+ 1 file changed, 6 deletions(-)
+
+diff -u -p a/kernel/kfifo.c b/kernel/kfifo.c
+index 01a0700..9f928ef 100644
+--- a/var/linuxes/linux-next/kernel/kfifo.c
++++ b/var/julia/linuxcopy/kernel/kfifo.c
+@@ -562,9 +562,6 @@ EXPORT_SYMBOL(__kfifo_to_user_r);
+ unsigned int __kfifo_dma_in_prepare_r(struct __kfifo *fifo,
+ 	struct scatterlist *sgl, int nents, unsigned int len, size_t recsize)
+ {
+-	if (!nents)
+-		BUG();
+-
+ 	len = __kfifo_max_r(len, recsize);
+ 
+ 	if (len + recsize > kfifo_unused(fifo))
+@@ -586,9 +583,6 @@ EXPORT_SYMBOL(__kfifo_dma_in_finish_r);
+ unsigned int __kfifo_dma_out_prepare_r(struct __kfifo *fifo,
+ 	struct scatterlist *sgl, int nents, unsigned int len, size_t recsize)
+ {
+-	if (!nents)
+-		BUG();
+-
+ 	len = __kfifo_max_r(len, recsize);
+ 
+ 	if (len + recsize > fifo->in - fifo->out)
 
 
