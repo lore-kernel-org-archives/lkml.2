@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab1HCFfT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 01:35:19 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47160 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753067Ab1HCFfR (ORCPT
+	id S1754775Ab1HCFiv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 01:38:51 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22536 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753777Ab1HCFip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 01:35:17 -0400
-Date: Wed, 3 Aug 2011 14:35:11 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH] cpufreq: Fix build of s3c64xx cpufreq driver for header
- change
-Message-ID: <20110803053510.GB16141@opensource.wolfsonmicro.com>
-References: <1311952766-11693-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <4E3442F9.2060901@windriver.com>
- <20110801002933.GB20641@opensource.wolfsonmicro.com>
- <20110802043853.GH11811@windriver.com>
+	Wed, 3 Aug 2011 01:38:45 -0400
+Date: Wed, 3 Aug 2011 07:38:43 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Li Zefan <lizf@cn.fujitsu.com>
+cc: Wang Sheng-Hui <shhuiw@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] jbd/jbd2: add pointer type conversion on void *arg from
+ void * to journal_t * explicitly in kjournald/kjournald2
+In-Reply-To: <4E38AC92.4090501@cn.fujitsu.com>
+Message-ID: <alpine.LNX.2.00.1108030737020.4521@swampdragon.chaosbits.net>
+References: <4E38AB50.9040804@gmail.com> <4E38AC92.4090501@cn.fujitsu.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110802043853.GH11811@windriver.com>
-X-Cookie: You have a truly strong individuality.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 02, 2011 at 12:38:54AM -0400, Paul Gortmaker wrote:
+On Wed, 3 Aug 2011, Li Zefan wrote:
 
-> It is all taken care of, so you don't have to worry.  It isn't a change
-> specific to any Samsung headers.  If you are interested to know the
+> 09:58, Wang Sheng-Hui wrote:
+> > The patch is against 3.0
+> > 
+> > The arg of kjournald/kjournald2 is void *, and points to type
+> > journal_t. We should convert it to journal_t * explicitly in
+> > the kjournald/kjournald2 function body.
+> > 
+> 
+> Why?
+> 
+> Implicit convertion from void * to foo * is ok. Did the compiler
+> complain about this to you?
+> 
 
-I'm not worried, I'm now perfectly aware of the source of the breakage.
-My goal is to make sure that you're aware that there are other patches
-for this stuff that have been submitted separately which you're likely
-to collide with if you're fixing these issues yourself.
+Not only is it perfectly OK to rely on the implicit conversion, a lot of 
+work has gone into actively removing such unneeded explicit casts over the 
+years, so let's not introduce new ones.
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
