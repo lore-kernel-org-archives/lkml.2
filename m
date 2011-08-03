@@ -1,35 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab1HCK6v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 06:58:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53303 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753107Ab1HCK6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 06:58:46 -0400
-Date: Wed, 3 Aug 2011 12:58:19 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 3/8] ext4: Warn if direct reclaim tries to writeback pages
-Message-ID: <20110803105819.GA27199@redhat.com>
-References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
- <1311265730-5324-4-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311265730-5324-4-git-send-email-mgorman@suse.de>
+	id S1754817Ab1HCLAL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 07:00:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34587 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753107Ab1HCLAE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 07:00:04 -0400
+Subject: Re: [tip:perf/urgent] perf sched: Fix list of events, dropping
+ unsupported ':r' modifier
+From: Peter Zijlstra <peterz@infradead.org>
+To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, fweisbec@gmail.com,
+        robert.richter@amd.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
+Cc: linux-tip-commits@vger.kernel.org
+In-Reply-To: <tip-9710118bd4e7f3406865171cb9b9c94547c1c2f9@git.kernel.org>
+References: <AANLkTim=jawJyBj0iFd0r4-LCKzvjFW+NddzJMD5GUB9@mail.gmail.com>
+	 <tip-9710118bd4e7f3406865171cb9b9c94547c1c2f9@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 03 Aug 2011 12:59:21 +0200
+Message-ID: <1312369161.1147.292.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 21, 2011 at 05:28:45PM +0100, Mel Gorman wrote:
-> Direct reclaim should never writeback pages. Warn if an attempt
-> is made.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+On Fri, 2011-01-14 at 07:25 +0000, tip-bot for Stephane Eranian wrote:
+> Looks to me like the :r modifier is not supported anymore, so remove it from
+> the list of events. 
 
-Acked-by: Johannes Weiner <jweiner@redhat.com>
+acme, why is that anyway? -R is a fun way to save some typing, but not
+supporting :r anymore takes away the option of not getting
+PERF_SAMPLE_RAW output for every event.
