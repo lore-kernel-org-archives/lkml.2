@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853Ab1HCXFK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:05:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51318 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754570Ab1HCXFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:05:06 -0400
-Message-ID: <4E39D400.2080507@zytor.com>
-Date: Wed, 03 Aug 2011 16:04:32 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1755873Ab1HCXKf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:10:35 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:58274 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754570Ab1HCXKa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:10:30 -0400
 MIME-Version: 1.0
-To: Len Brown <lenb@kernel.org>
-CC: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 1/5] mrst_pmu: driver for Intel Moorestown Power Management
- Unit
-References: <1312400648-17636-1-git-send-email-lenb@kernel.org> <8e24ed2af46a5d008d85bfeb128d25efc394a3fd.1312400543.git.len.brown@intel.com>
-In-Reply-To: <8e24ed2af46a5d008d85bfeb128d25efc394a3fd.1312400543.git.len.brown@intel.com>
+In-Reply-To: <1312405454-29386-1-git-send-email-matt@console-pimps.org>
+References: <1312405454-29386-1-git-send-email-matt@console-pimps.org>
+Date: Wed, 3 Aug 2011 16:10:29 -0700
+Message-ID: <CA+8MBbKn3PMG5o1R377vQPV-_PPFU_ZsEp7ZpYC6=1dJZodyEQ@mail.gmail.com>
+Subject: Re: [PATCH] x86, efi: Don't recursively acquire rtc_lock
+From: Tony Luck <tony.luck@gmail.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@linux.intel.com>,
+        Jan Beulich <JBeulich@novell.com>, Matthew Garrett <mjg@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Alessandro Zummo <a.zummo@towertech.it>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2011 12:44 PM, Len Brown wrote:
-> From: Len Brown <len.brown@intel.com>
-> 
-> The Moorestown (MRST) Power Management Unit (PMU) driver
-> directs the SOC power states in the "Langwell" south complex (SCU).
-> 
-> It hooks pci_platform_pm_ops[] and thus observes all PCI ".set_state"
-> requests.  For devices in the SC, the pmu driver translates those
-> PCI requests into the appropriate commands for the SCU.
-> 
-> The PMU driver helps implement S0i3, a deep system idle power idle state.
-> Entry into S0i3 is via cpuidle, just like regular processor c-states.
-> S0i3 depends on pre-conditions including uni-processor, graphics off,
-> and certain IO devices in the SC must be off.  If those pre-conditions
-> are met, then the PMU allows cpuidle to enter S0i3, otherwise such requests
-> are demoted, either to Atom C4 or Atom C6.
-> 
-> This driver is based on prototype work by Bruce Flemming,
-> Illyas Mansoor, Rajeev D. Muralidhar, Vishwesh M. Rudramuni,
-> Hari Seshadri and Sujith Thomas.  The current driver also
-> includes contributions from H. Peter Anvin, Arjan van de Ven,
-> Kristen Accardi, and Yong Wang.
-> 
-> Thanks for additional review feedback from Alan Cox and Randy Dunlap.
-> 
-> Signed-off-by: Len Brown <len.brown@intel.com>
-> Acked-by: Alan Cox <alan@linux.intel.com>
-> ---
->  MAINTAINERS                     |    6 +
->  arch/x86/platform/mrst/Makefile |    1 +
->  arch/x86/platform/mrst/pmu.c    |  817 +++++++++++++++++++++++++++++++++++++++
->  arch/x86/platform/mrst/pmu.h    |  234 +++++++++++
->  4 files changed, 1058 insertions(+), 0 deletions(-)
->  create mode 100644 arch/x86/platform/mrst/pmu.c
->  create mode 100644 arch/x86/platform/mrst/pmu.h
-> 
+On Wed, Aug 3, 2011 at 2:04 PM, Matt Fleming <matt@console-pimps.org> wrote:
+> From: Matt Fleming <matt.fleming@linux.intel.com>
+>
+> A deadlock was introduced on x86 in commit ef68c8f87ed1 ("x86:
+> Serialize EFI time accesses on rtc_lock") because efi_get_time() and
+> friends can be called with rtc_lock already held by
+> read_persistent_time(), e.g.
+>
+> timekeeping_init()
+>    read_persistent_clock()     <-- acquire rtc_lock
+>        efi_get_time()
+>            phys_efi_get_time() <-- acquire rtc_lock <DEADLOCK>
+>
+> Move the locking up into the caller of efi.get_time() and provide some
+> wrappers for use in other parts of the kernel instead of calling
+> efi.get_time(), etc directly. This way we can hide the rtc_lock dance
+> inside of arch/x86.
 
-Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+ia64 bits look ok (they build & boot too - which is always a plus :-)
 
-	-hpa
-
+Acked-by: Tony Luck <tony.luck@intel.com>
