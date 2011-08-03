@@ -1,128 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab1HCVuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 17:50:10 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:62069 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755141Ab1HCVuH (ORCPT
+	id S1755487Ab1HCVvT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 17:51:19 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:41689 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755287Ab1HCVvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 17:50:07 -0400
-Date: Wed, 3 Aug 2011 17:49:48 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Joe Jin <joe.jin@oracle.com>
-Cc: Daniel Stodden <daniel.stodden@citrix.com>,
-        Jens Axboe <jaxboe@fusionio.com>, Annie Li <annie.li@oracle.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Kurt C Hackel <KURT.HACKEL@oracle.com>,
-        Greg Marsden <greg.marsden@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v2 0/3] xen-blkback: refactor vbd remove/disconnect.
-Message-ID: <20110803214947.GA12168@dumpdata.com>
-References: <4E38E4A2.3070003@oracle.com>
+	Wed, 3 Aug 2011 17:51:13 -0400
+Message-ID: <4E39C2CE.1000800@gmail.com>
+Date: Wed, 03 Aug 2011 23:51:10 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E38E4A2.3070003@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090209.4E39C286.0058,ss=1,re=0.000,fgs=0
+To: Matt Fleming <matt@console-pimps.org>
+CC: linux-kernel@vger.kernel.org, syslinux@zytor.com
+Subject: Re: efilinux release 0.8
+References: <1311853470.21232.31.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1311853470.21232.31.camel@mfleming-mobl1.ger.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 03, 2011 at 02:03:14PM +0800, Joe Jin wrote:
-> This patchset is a backport and original patch author is Daniel Stodden:
-> http://xenbits.xen.org/hg/XCP/linux-2.6.32.pq.hg/file/tip/CA-7672-blkback-shutdown.patch
-> 
-> Initial issue:
->   When we do block device attach/detach test with below steps, umount hang
->   in guest and the guest unable to shutdown:
+On 07/28/2011 01:44 PM, Matt Fleming wrote:
+> Hi,
+>
+> I'm pleased to announce release 0.8 of efilinux, a reference
+> implementation of a minimal UEFI bootloader. This bootloader has no
+> bells or whistles, it is simply a prototype with the minimum amount of
+> smarts required to load a linux kernel (though loaders for other formats
+> could be added).
+>
+> Currently it only supports booting x86-64 bzImages but i386 support is
+> planned for release 0.9, with a 1.0 release coming after a thorough
+> round of testing.
+>
+> If anyone has the time and inclination I'd really appreciate it if they
+> could have a play with it on their machines and report any bugs. Testing
+> has mainly been done under qemu up to this point so there are bound to
+> be some lurking bugs that only show up on real hardware.
+>
+> As there is no configuration file parser all config is done via
+> command-line arguments. To boot a kernel simply type,
+>
+> Shell> efilinux -l
+> efilinux loader 0.8
+> Devices:
+>
+> 	0. "Acpi(PNP0A03,0)/Pci(1|1)/Ata(Primary,Master)"
+>
+> Shell> efilinux -f Acpi(PNP0A03,0)/Pci(1|1)/Ata(Primary,Master):\bzimage
+>
+> efilinux understands the LILO-style initrd= kernel command-line
+> argument, but the full device path to the initrd is required. A kernel
+> command-line can be passed at the end of the command-line, e.g.
+>
+> Shell> efilinux -f bzimage console=ttyS0 root=/dev/sdb
+>
+> The latest release is available at,
+>
+> 	git://git.kernel.org/pub/scm/boot/efilinux/efilinux.git
+>
+> This project is a preview of the EFI stub patches that I hope to push
+> into the kernel. The EFI stub will allow a bzImage to masquerade as an
+> EFI application, such that the firmware will load the bzImage and jump
+> to its entry point without requiring a bootloader at all.
+>
 
-So the patchset looks good and it fixes the guest hanging.. but
->   
->   1. start guest with the latest kernel.
->   2. attach new block device by xm block-attach in Dom0
+Yuck, it's case sensitive and it requires you to type all that?
+Here's a patch to accept 0:\vmlinuz initrd=0:\initrd.img and zap the sensitivity.
 
-So I think your patch while it fixes this problem it introduces a bug:
+I alter name in file_open, but it seems nothing else requires it anyhow,
+so I didn't see a need to copy or revert it.
 
-I did this in Dom0:
+For what it's worth, it didn't seem to boot on my asrock P67 pro3.
 
-18:10:23 # 5 :~/
-> xm block-attach 1 phy:/dev/sda xvda w
+Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
 
-and did _not_ attach the disk in the guest. Then I did
+---
+diff --git a/fs/fs.c b/fs/fs.c
+index b799c00..555ced3 100644
+--- a/fs/fs.c
++++ b/fs/fs.c
+@@ -66,6 +66,21 @@ file_open(CHAR16 *name, struct file **file)
+ 	if (!f)
+ 		return EFI_OUT_OF_RESOURCES;
+ 
++	for (dev_len = 0; name[dev_len]; ++dev_len) {
++		if (name[dev_len] == ':') break;
++	}
++	if (!name[dev_len] || !dev_len)
++		goto notfound;
++	name[dev_len] = 0;
++
++	if (name[0] >= '0' && name[0] <= '9') {
++		i = Atoi(name);
++		if (i >= nr_fs_devices)
++			goto notfound;
++		f->handle = fs_devices[i].fh;
++		goto found;
++	}
++
+ 	for (i = 0; i < nr_fs_devices; i++) {
+ 		EFI_DEVICE_PATH *path;
+ 		CHAR16 *dev;
+@@ -73,23 +88,20 @@ file_open(CHAR16 *name, struct file **file)
+ 		path = DevicePathFromHandle(fs_devices[i].handle);
+ 		dev = DevicePathToStr(path);
+ 
+-		if (!StrnCmp(dev, name, StrLen(dev))) {
++		if (!StriCmp(dev, name)) {
+ 			f->handle = fs_devices[i].fh;
+-			dev_len = StrLen(dev);
+ 			free_pool(dev);
+ 			break;
+ 		}
+ 
+ 		free_pool(dev);
+ 	}
++	if (i == nr_fs_devices)
++		goto notfound;
+ 
+-	if (i == nr_fs_devices) {
+-		err = EFI_NOT_FOUND;
+-		goto fail;
+-	}
+-
++found:
+ 	/* Strip the device name */
+-	filename = name + dev_len;
++	filename = name + dev_len + 1;
+ 
+ 	/* skip any path separators */
+ 	while (*filename == ':' || *filename == '\\')
+@@ -104,6 +116,8 @@ file_open(CHAR16 *name, struct file **file)
+ 	*file = f;
+ 
+ 	return err;
++notfound:
++	err  = EFI_NOT_FOUND;
+ fail:
+ 	Print(L"Unable to open file \"%s\"", name);
+ 	free(f);
 
-
-18:10:35 # 6 :~/
-> xm block-list 1
-Vdev  BE handle state evt-ch ring-ref BE-path
-51712  0    0     4      18     770   /local/domain/0/backend/vbd/1/51712
-
-18:10:39 # 7 :~/
-> xm block-detach 1 51712
-
-18:10:46 # 8 :~/
-> xm block-list 1
-
-
-
-If I try the same sequence of events with your patch, I get this:
-
-1:28:06 # 1 :~/ 
-> xm list
-Name                                        ID   Mem VCPUs      State   Time(s)
-Domain-0                                     0  1500     4     r-----   1246.6
-sda                                          2  2048     2     -b----   1034.7
-sdb                                          6  2048     2     -b----      3.4
-21:28:09 # 2 :~/ 
-> xm block-list 6
-
-21:28:22 # 4 :~/ 
-> xm block-attach 6 phy:/dev/sdb xvda w
-
-[did not do anything in the guest]
-21:28:33 # 5 :~/ 
-> xm block-list 6
-Vdev  BE handle state evt-ch ring-ref BE-path
-51712  0    0     4      18     770   /local/domain/0/backend/vbd/6/51712  
-
-21:28:37 # 6 :~/ 
-> xm block-detach 6 51712
-Error: Device 51712 (vbd) could not be disconnected.
-Usage: xm block-detach <Domain> <DevId> [-f|--force]
-
-Destroy a domain's virtual block device.
-
-21:30:30 # 7 :~/
-
-Any ideas?
->   3. mount new disk in guest
->   4. execute xm block-detach to detach the block device in dom0 until timeout
->   5. try to unmount the disk in guest, umount hung. at here, any IOs to the 
->      device will hang.
->   
-> Root cause:
->   This caused by 'xm block-detach' in Dom0 set backend device's state to
->   'XenbusStateClosing', frontend received the notification and 
->   blkfront_closing() be called, at the moment, the disk still using by guest,
->   so frontend refused to close. In the blkfront_closing(), frontend send a
->   notification to backend said that the its state switched to 'Closing', when
->   backend got the event, it will disconnect from real device, at here any IO
->   request will be stuck, even tried to release the disk by umount.
-> 
->   So this may fix either frontend or backend, I have send a fix for frontend:
->   https://lkml.org/lkml/2011/7/8/159
->   Ian think we should fix it from backend and he pointed out Daniel Stodden have
->   submitted a patch(see above link) for xen-blkback, I tried it and it works 
->   well.
-> 
-> Changes:
->   v2:
->     - Reformat code style.
->     - Per Knoard suggestions, change some int defines to bool.
-> 
->  drivers/block/xen-blkback/blkback.c |   10 +--
->  drivers/block/xen-blkback/common.h  |    5 +
->  drivers/block/xen-blkback/xenbus.c  |  203 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-------
->  3 files changed, 192 insertions(+), 26 deletions(-)
