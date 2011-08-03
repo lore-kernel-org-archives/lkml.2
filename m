@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932189Ab1HCXak (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:30:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33977 "EHLO mx2.suse.de"
+	id S1756306Ab1HCXat (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:30:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33982 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932161Ab1HCX3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:29:41 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:52 2011
-Message-Id: <20110803221252.494275979@clark.kroah.org>
+	id S1756186Ab1HCX3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:29:44 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:49 2011
+Message-Id: <20110803221249.738174322@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:44 -0700
+Date: Wed, 03 Aug 2011 15:01:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [084/102] EHCI: fix direction handling for interrupt data toggles
+        John Lumby <johnlumby@hotmail.com>,
+        Maynard Johnson <maynardj@us.ibm.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [057/102] oprofile, x86: Fix nmi-unsafe callgraph support
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,72 +27,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Robert Richter <robert.richter@amd.com>
 
-commit e04f5f7e423018bcec84c11af2058cdce87816f3 upstream.
+commit a0e3e70243f5b270bc3eca718f0a9fa5e6b8262e upstream.
 
-This patch (as1480) fixes a rather obscure bug in ehci-hcd.  The
-qh_update() routine needs to know the number and direction of the
-endpoint corresponding to its QH argument.  The number can be taken
-directly from the QH data structure, but the direction isn't stored
-there.  The direction is taken instead from the first qTD linked to
-the QH.
+Current oprofile's x86 callgraph support may trigger page faults
+throwing the BUG_ON(in_nmi()) message below. This patch fixes this by
+using the same nmi-safe copy-from-user code as in perf.
 
-However, it turns out that for interrupt transfers, qh_update() gets
-called before the qTDs are linked to the QH.  As a result, qh_update()
-computes a bogus direction value, which messes up the endpoint toggle
-handling.  Under the right combination of circumstances this causes
-usb_reset_endpoint() not to work correctly, which causes packets to be
-dropped and communications to fail.
+------------[ cut here ]------------
+kernel BUG at .../arch/x86/kernel/traps.c:436!
+invalid opcode: 0000 [#1] SMP
+last sysfs file: /sys/devices/pci0000:00/0000:00:0a.0/0000:07:00.0/0000:08:04.0/net/eth0/broadcast
+CPU 5
+Modules linked in:
 
-Now, it's silly for the QH structure not to have direct access to all
-the descriptor information for the corresponding endpoint.  Ultimately
-it may get a pointer to the usb_host_endpoint structure; for now,
-adding a copy of the direction flag solves the immediate problem.
+Pid: 8611, comm: opcontrol Not tainted 2.6.39-00007-gfe47ae7 #1 Advanced Micro Device Anaheim/Anaheim
+RIP: 0010:[<ffffffff813e8e35>]  [<ffffffff813e8e35>] do_nmi+0x22/0x1ee
+RSP: 0000:ffff88042fd47f28  EFLAGS: 00010002
+RAX: ffff88042c0a7fd8 RBX: 0000000000000001 RCX: 00000000c0000101
+RDX: 00000000ffff8804 RSI: ffffffffffffffff RDI: ffff88042fd47f58
+RBP: ffff88042fd47f48 R08: 0000000000000004 R09: 0000000000001484
+R10: 0000000000000001 R11: 0000000000000000 R12: ffff88042fd47f58
+R13: 0000000000000000 R14: ffff88042fd47d98 R15: 0000000000000020
+FS:  00007fca25e56700(0000) GS:ffff88042fd40000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000074 CR3: 000000042d28b000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process opcontrol (pid: 8611, threadinfo ffff88042c0a6000, task ffff88042c532310)
+Stack:
+ 0000000000000000 0000000000000001 ffff88042c0a7fd8 0000000000000000
+ ffff88042fd47de8 ffffffff813e897a 0000000000000020 ffff88042fd47d98
+ 0000000000000000 ffff88042c0a7fd8 ffff88042fd47de8 0000000000000074
+Call Trace:
+ <NMI>
+ [<ffffffff813e897a>] nmi+0x1a/0x20
+ [<ffffffff813f08ab>] ? bad_to_user+0x25/0x771
+ <<EOE>>
+Code: ff 59 5b 41 5c 41 5d c9 c3 55 65 48 8b 04 25 88 b5 00 00 48 89 e5 41 55 41 54 49 89 fc 53 48 83 ec 08 f6 80 47 e0 ff ff 04 74 04 <0f> 0b eb fe 81 80 44 e0 ff ff 00 00 01 04 65 ff 04 25 c4 0f 01
+RIP  [<ffffffff813e8e35>] do_nmi+0x22/0x1ee
+ RSP <ffff88042fd47f28>
+---[ end trace ed6752185092104b ]---
+Kernel panic - not syncing: Fatal exception in interrupt
+Pid: 8611, comm: opcontrol Tainted: G      D     2.6.39-00007-gfe47ae7 #1
+Call Trace:
+ <NMI>  [<ffffffff813e5e0a>] panic+0x8c/0x188
+ [<ffffffff813e915c>] oops_end+0x81/0x8e
+ [<ffffffff8100403d>] die+0x55/0x5e
+ [<ffffffff813e8c45>] do_trap+0x11c/0x12b
+ [<ffffffff810023c8>] do_invalid_op+0x91/0x9a
+ [<ffffffff813e8e35>] ? do_nmi+0x22/0x1ee
+ [<ffffffff8131e6fa>] ? oprofile_add_sample+0x83/0x95
+ [<ffffffff81321670>] ? op_amd_check_ctrs+0x4f/0x2cf
+ [<ffffffff813ee4d5>] invalid_op+0x15/0x20
+ [<ffffffff813e8e35>] ? do_nmi+0x22/0x1ee
+ [<ffffffff813e8e7a>] ? do_nmi+0x67/0x1ee
+ [<ffffffff813e897a>] nmi+0x1a/0x20
+ [<ffffffff813f08ab>] ? bad_to_user+0x25/0x771
+ <<EOE>>
 
-This allows the Spyder2 color-calibration system (a low-speed USB
-device that sends all its interrupt data packets with the toggle set
-to 0 and hance requires constant use of usb_reset_endpoint) to work
-when connected through a high-speed hub.  Thanks to Graeme Gill for
-supplying the hardware that allowed me to track down this bug.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Graeme Gill <graeme@argyllcms.com>
+Cc: John Lumby <johnlumby@hotmail.com>
+Cc: Maynard Johnson <maynardj@us.ibm.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-q.c |    3 ++-
- drivers/usb/host/ehci.h   |    1 +
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/oprofile/backtrace.c |   56 +++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 47 insertions(+), 9 deletions(-)
 
---- a/drivers/usb/host/ehci-q.c
-+++ b/drivers/usb/host/ehci-q.c
-@@ -103,7 +103,7 @@ qh_update (struct ehci_hcd *ehci, struct
- 	if (!(hw->hw_info1 & cpu_to_hc32(ehci, 1 << 14))) {
- 		unsigned	is_out, epnum;
+--- a/arch/x86/oprofile/backtrace.c
++++ b/arch/x86/oprofile/backtrace.c
+@@ -11,10 +11,12 @@
+ #include <linux/oprofile.h>
+ #include <linux/sched.h>
+ #include <linux/mm.h>
++#include <linux/compat.h>
++#include <linux/highmem.h>
++
+ #include <asm/ptrace.h>
+ #include <asm/uaccess.h>
+ #include <asm/stacktrace.h>
+-#include <linux/compat.h>
  
--		is_out = !(qtd->hw_token & cpu_to_hc32(ehci, 1 << 8));
-+		is_out = qh->is_out;
- 		epnum = (hc32_to_cpup(ehci, &hw->hw_info1) >> 8) & 0x0f;
- 		if (unlikely (!usb_gettoggle (qh->dev, epnum, is_out))) {
- 			hw->hw_token &= ~cpu_to_hc32(ehci, QTD_TOGGLE);
-@@ -946,6 +946,7 @@ done:
- 	hw = qh->hw;
- 	hw->hw_info1 = cpu_to_hc32(ehci, info1);
- 	hw->hw_info2 = cpu_to_hc32(ehci, info2);
-+	qh->is_out = !is_input;
- 	usb_settoggle (urb->dev, usb_pipeendpoint (urb->pipe), !is_input, 1);
- 	qh_refresh (ehci, qh);
- 	return qh;
---- a/drivers/usb/host/ehci.h
-+++ b/drivers/usb/host/ehci.h
-@@ -375,6 +375,7 @@ struct ehci_qh {
- #define NO_FRAME ((unsigned short)~0)			/* pick new start */
- 
- 	struct usb_device	*dev;		/* access to TT */
-+	unsigned		is_out:1;	/* bulk or intr OUT */
- 	unsigned		clearing_tt:1;	/* Clear-TT-Buf in progress */
+ static int backtrace_stack(void *data, char *name)
+ {
+@@ -36,17 +38,53 @@ static struct stacktrace_ops backtrace_o
+ 	.walk_stack	= print_context_stack,
  };
  
++/* from arch/x86/kernel/cpu/perf_event.c: */
++
++/*
++ * best effort, GUP based copy_from_user() that assumes IRQ or NMI context
++ */
++static unsigned long
++copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
++{
++	unsigned long offset, addr = (unsigned long)from;
++	unsigned long size, len = 0;
++	struct page *page;
++	void *map;
++	int ret;
++
++	do {
++		ret = __get_user_pages_fast(addr, 1, 0, &page);
++		if (!ret)
++			break;
++
++		offset = addr & (PAGE_SIZE - 1);
++		size = min(PAGE_SIZE - offset, n - len);
++
++		map = kmap_atomic(page);
++		memcpy(to, map+offset, size);
++		kunmap_atomic(map);
++		put_page(page);
++
++		len  += size;
++		to   += size;
++		addr += size;
++
++	} while (len < n);
++
++	return len;
++}
++
+ #ifdef CONFIG_COMPAT
+ static struct stack_frame_ia32 *
+ dump_user_backtrace_32(struct stack_frame_ia32 *head)
+ {
++	/* Also check accessibility of one struct frame_head beyond: */
+ 	struct stack_frame_ia32 bufhead[2];
+ 	struct stack_frame_ia32 *fp;
++	unsigned long bytes;
+ 
+-	/* Also check accessibility of one struct frame_head beyond */
+-	if (!access_ok(VERIFY_READ, head, sizeof(bufhead)))
+-		return NULL;
+-	if (__copy_from_user_inatomic(bufhead, head, sizeof(bufhead)))
++	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
++	if (bytes != sizeof(bufhead))
+ 		return NULL;
+ 
+ 	fp = (struct stack_frame_ia32 *) compat_ptr(bufhead[0].next_frame);
+@@ -87,12 +125,12 @@ x86_backtrace_32(struct pt_regs * const
+ 
+ static struct stack_frame *dump_user_backtrace(struct stack_frame *head)
+ {
++	/* Also check accessibility of one struct frame_head beyond: */
+ 	struct stack_frame bufhead[2];
++	unsigned long bytes;
+ 
+-	/* Also check accessibility of one struct stack_frame beyond */
+-	if (!access_ok(VERIFY_READ, head, sizeof(bufhead)))
+-		return NULL;
+-	if (__copy_from_user_inatomic(bufhead, head, sizeof(bufhead)))
++	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
++	if (bytes != sizeof(bufhead))
+ 		return NULL;
+ 
+ 	oprofile_add_trace(bufhead[0].return_address);
 
 
