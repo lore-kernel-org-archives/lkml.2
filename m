@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275Ab1HCXaW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:30:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33920 "EHLO mx2.suse.de"
+	id S932147Ab1HCXaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:30:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33886 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932099Ab1HCX3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:29:21 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:52 2011
-Message-Id: <20110803221251.977690774@clark.kroah.org>
+	id S1756210Ab1HCX3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:29:06 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:51 2011
+Message-Id: <20110803221251.585512951@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:39 -0700
+Date: Wed, 03 Aug 2011 15:01:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [079/102] NFSv4: Dont use the delegation->inode in nfs_mark_return_delegation()
+        Casey Bodley <cbodley@citi.umich.edu>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [075/102] nfsd: dont break lease on CLAIM_DELEGATE_CUR
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,77 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Casey Bodley <cbodley@citi.umich.edu>
 
-commit ed1e6211a0a134ff23592c6f057af982ad5dab52 upstream.
+commit 0c12eaffdf09466f36a9ffe970dda8f4aeb6efc0 upstream.
 
-nfs_mark_return_delegation() is usually called without any locking, and
-so it is not safe to dereference delegation->inode. Since the inode is
-only used to discover the nfs_client anyway, it makes more sense to
-have the callers pass a valid pointer to the nfs_server as a parameter.
+CLAIM_DELEGATE_CUR is used in response to a broken lease; allowing it
+to break the lease and return EAGAIN leaves the client unable to make
+progress in returning the delegation
 
-Reported-by: Ian Kent <raven@themaw.net>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+nfs4_get_vfs_file() now takes struct nfsd4_open for access to the
+claim type, and calls nfsd_open() with NFSD_MAY_NOT_BREAK_LEASE when
+claim type is CLAIM_DELEGATE_CUR
+
+Signed-off-by: Casey Bodley <cbodley@citi.umich.edu>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/delegation.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ fs/nfsd/nfs4state.c |   18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -398,12 +398,11 @@ int nfs_inode_return_delegation(struct i
- 	return err;
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -2556,12 +2556,18 @@ static inline int nfs4_access_to_access(
+ 	return flags;
  }
  
--static void nfs_mark_return_delegation(struct nfs_delegation *delegation)
-+static void nfs_mark_return_delegation(struct nfs_server *server,
-+		struct nfs_delegation *delegation)
+-static __be32 nfs4_get_vfs_file(struct svc_rqst *rqstp, struct nfs4_file
+-*fp, struct svc_fh *cur_fh, u32 nfs4_access)
++static __be32 nfs4_get_vfs_file(struct svc_rqst *rqstp, struct nfs4_file *fp,
++		struct svc_fh *cur_fh, struct nfsd4_open *open)
  {
--	struct nfs_client *clp = NFS_SERVER(delegation->inode)->nfs_client;
--
- 	set_bit(NFS_DELEGATION_RETURN, &delegation->flags);
--	set_bit(NFS4CLNT_DELEGRETURN, &clp->cl_state);
-+	set_bit(NFS4CLNT_DELEGRETURN, &server->nfs_client->cl_state);
- }
+ 	__be32 status;
+-	int oflag = nfs4_access_to_omode(nfs4_access);
+-	int access = nfs4_access_to_access(nfs4_access);
++	int oflag = nfs4_access_to_omode(open->op_share_access);
++	int access = nfs4_access_to_access(open->op_share_access);
++
++	/* CLAIM_DELEGATE_CUR is used in response to a broken lease;
++	 * allowing it to break the lease and return EAGAIN leaves the
++	 * client unable to make progress in returning the delegation */
++	if (open->op_claim_type == NFS4_OPEN_CLAIM_DELEGATE_CUR)
++		access |= NFSD_MAY_NOT_BREAK_LEASE;
  
- /**
-@@ -441,7 +440,7 @@ static void nfs_mark_return_all_delegati
- 		if ((delegation->type == (FMODE_READ|FMODE_WRITE)) && !(flags & FMODE_WRITE))
- 			continue;
- 		if (delegation->type & flags)
--			nfs_mark_return_delegation(delegation);
-+			nfs_mark_return_delegation(server, delegation);
+ 	if (!fp->fi_fds[oflag]) {
+ 		status = nfsd_open(rqstp, cur_fh, S_IFREG, access,
+@@ -2586,7 +2592,7 @@ nfs4_new_open(struct svc_rqst *rqstp, st
+ 	if (stp == NULL)
+ 		return nfserr_resource;
+ 
+-	status = nfs4_get_vfs_file(rqstp, fp, cur_fh, open->op_share_access);
++	status = nfs4_get_vfs_file(rqstp, fp, cur_fh, open);
+ 	if (status) {
+ 		kmem_cache_free(stateid_slab, stp);
+ 		return status;
+@@ -2619,7 +2625,7 @@ nfs4_upgrade_open(struct svc_rqst *rqstp
+ 
+ 	new_access = !test_bit(op_share_access, &stp->st_access_bmap);
+ 	if (new_access) {
+-		status = nfs4_get_vfs_file(rqstp, fp, cur_fh, op_share_access);
++		status = nfs4_get_vfs_file(rqstp, fp, cur_fh, open);
+ 		if (status)
+ 			return status;
  	}
- }
- 
-@@ -508,7 +507,7 @@ static void nfs_mark_return_unreferenced
- 	list_for_each_entry_rcu(delegation, &server->delegations, super_list) {
- 		if (test_and_clear_bit(NFS_DELEGATION_REFERENCED, &delegation->flags))
- 			continue;
--		nfs_mark_return_delegation(delegation);
-+		nfs_mark_return_delegation(server, delegation);
- 	}
- }
- 
-@@ -539,7 +538,8 @@ void nfs_expire_unreferenced_delegations
- int nfs_async_inode_return_delegation(struct inode *inode,
- 				      const nfs4_stateid *stateid)
- {
--	struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
-+	struct nfs_server *server = NFS_SERVER(inode);
-+	struct nfs_client *clp = server->nfs_client;
- 	struct nfs_delegation *delegation;
- 
- 	rcu_read_lock();
-@@ -549,7 +549,7 @@ int nfs_async_inode_return_delegation(st
- 		rcu_read_unlock();
- 		return -ENOENT;
- 	}
--	nfs_mark_return_delegation(delegation);
-+	nfs_mark_return_delegation(server, delegation);
- 	rcu_read_unlock();
- 
- 	nfs_delegation_run_state_manager(clp);
 
 
