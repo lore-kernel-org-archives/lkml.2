@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab1HCX2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:28:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33668 "EHLO mx2.suse.de"
+	id S1756229Ab1HCXkB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:40:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33806 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756150Ab1HCX1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:27:43 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:46 2011
-Message-Id: <20110803221246.422803782@clark.kroah.org>
+	id S1756130Ab1HCX2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:28:38 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:50 2011
+Message-Id: <20110803221250.879500135@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:00:44 -0700
+Date: Wed, 03 Aug 2011 15:01:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kalle Valo <kvalo@qca.qualcomm.com>
-Subject: [024/102] ath6kl: fix crash when interface is closed but scan is ongoing
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Miklos Szeredi <miklos@szeredi.hu>
+Subject: [068/102] mm/backing-dev.c: reset bdi min_ratio in bdi_unregister()
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,96 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kalle Valo <kvalo@qca.qualcomm.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 98ab5c7755b5cc9e1a8f2a57ccb22eac5e13ec50 upstream.
+commit ccb6108f5b0b541d3eb332c3a73e645c0f84278e upstream.
 
-When ath6kl module was resumed while a scan was ongoing, for example during
-suspend, the driver would crash in ar6k_cfg80211_scanComplete_event():
+Vito said:
 
-[26581.586440] Call Trace:
-[26581.586440]  [<f99ffeda>] ? ar6k_cfg80211_scanComplete_event+0xaa/0xaa [ath6kl]
-[26581.586440]  [<f9a0a020>] wmi_iterate_nodes+0xb/0xd [ath6kl]
-[26581.586440]  [<f99ffe78>] ar6k_cfg80211_scanComplete_event+0x48/0xaa [ath6kl]
-[26581.586440]  [<f9a038ae>] ar6000_close+0x77/0x7e [ath6kl]
-[26581.586440]  [<c139c25d>] __dev_close_many+0x87/0xab
-[26581.586440]  [<c139c30a>] dev_close_many+0x54/0xab
-[26581.586440]  [<c139c437>] rollback_registered_many+0xa5/0x19e
-[26581.586440]  [<c139c595>] rollback_registered+0x23/0x2f
-[26581.586440]  [<c139c5ed>] unregister_netdevice_queue+0x4c/0x69
-[26581.586440]  [<c139c6b2>] unregister_netdev+0x18/0x1f
-[26581.586440]  [<f9a00d4c>] ar6000_destroy+0xf8/0x115 [ath6kl]
-[26581.586440]  [<f9a0c765>] ar6k_cleanup_module+0x20/0x29 [ath6kl]
-[26581.586440]  [<c1062843>] sys_delete_module+0x181/0x1d9
-[26581.586440]  [<c105876b>] ? lock_release_holdtime+0x2b/0xcd
-[26581.586440]  [<c10b55dc>] ? sys_munmap+0x3b/0x42
-[26581.586440]  [<c14a99dc>] ? restore_all+0xf/0xf
-[26581.586440]  [<c14aeb6c>] sysenter_do_call+0x12/0x32
-[26581.586440] Code: 89 53 6c 75 07 89 d8 e8 c0 ff ff ff 89 f0 e8 2c f2 a9 c7 5b 5e 5d c3 55 89 e5 57 56 53 89 c3 83 ec 08 89 55 f0 8d 78 04 89 4d ec <8b> b0 b8 00 00 00 46 89 b0 b8 00 00 00 89 f8 e8 ae ed a9 c7 8b
+: The system has many usb disks coming and going day to day, with their
+: respective bdi's having min_ratio set to 1 when inserted.  It works for
+: some time until eventually min_ratio can no longer be set, even when the
+: active set of bdi's seen in /sys/class/bdi/*/min_ratio doesn't add up to
+: anywhere near 100.
+:
+: This then leads to an unrelated starvation problem caused by write-heavy
+: fuse mounts being used atop the usb disks, a problem the min_ratio setting
+: at the underlying devices bdi effectively prevents.
 
-Fix the function not to iterate nodes when the scan is aborted. The nodes
-are already freed when the module is being unloaded. Patch "ath6kl: Fix a
-kernel panic furing suspend/resume" tried to fix this already but it wasn't
-enough as a pointer was still used even after the null check. This patch
-removes the null check entirely as the wmi structure is not accessed anymore
-during module unload.
+Fix this leakage by resetting the bdi min_ratio when unregistering the
+BDI.
 
-Also fix a bug where the status was checked as a bitfield with '&' operator.
-But it's not a bitfield, just a regular (enum like) value.
-
-Signed-off-by: Kalle Valo <kvalo@qca.qualcomm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Reported-by: Vito Caputo <lkml@pengaru.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/ath6kl/os/linux/cfg80211.c |   31 ++++++++++++++++-------------
- 1 file changed, 18 insertions(+), 13 deletions(-)
+ mm/backing-dev.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/staging/ath6kl/os/linux/cfg80211.c
-+++ b/drivers/staging/ath6kl/os/linux/cfg80211.c
-@@ -867,26 +867,31 @@ ar6k_cfg80211_scanComplete_event(struct
- 
-     AR_DEBUG_PRINTF(ATH_DEBUG_INFO, ("%s: status %d\n", __func__, status));
- 
--    if(ar->scan_request)
--    {
--        /* Translate data to cfg80211 mgmt format */
--	if (ar->arWmi)
--		wmi_iterate_nodes(ar->arWmi, ar6k_cfg80211_scan_node, ar->wdev->wiphy);
-+    if (!ar->scan_request)
-+	    return;
- 
--        cfg80211_scan_done(ar->scan_request,
--            ((status & A_ECANCELED) || (status & A_EBUSY)) ? true : false);
-+    if ((status == A_ECANCELED) || (status == A_EBUSY)) {
-+	    cfg80211_scan_done(ar->scan_request, true);
-+	    goto out;
-+    }
-+
-+    /* Translate data to cfg80211 mgmt format */
-+    wmi_iterate_nodes(ar->arWmi, ar6k_cfg80211_scan_node, ar->wdev->wiphy);
- 
--        if(ar->scan_request->n_ssids &&
--           ar->scan_request->ssids[0].ssid_len) {
-+    cfg80211_scan_done(ar->scan_request, false);
-+
-+    if(ar->scan_request->n_ssids &&
-+       ar->scan_request->ssids[0].ssid_len) {
-             u8 i;
- 
-             for (i = 0; i < ar->scan_request->n_ssids; i++) {
--                wmi_probedSsid_cmd(ar->arWmi, i+1, DISABLE_SSID_FLAG,
--                                   0, NULL);
-+		    wmi_probedSsid_cmd(ar->arWmi, i+1, DISABLE_SSID_FLAG,
-+				       0, NULL);
-             }
--        }
--        ar->scan_request = NULL;
-     }
-+
-+out:
-+    ar->scan_request = NULL;
- }
- 
- static int
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -606,6 +606,7 @@ static void bdi_prune_sb(struct backing_
+ void bdi_unregister(struct backing_dev_info *bdi)
+ {
+ 	if (bdi->dev) {
++		bdi_set_min_ratio(bdi, 0);
+ 		trace_writeback_bdi_unregister(bdi);
+ 		bdi_prune_sb(bdi);
+ 		del_timer_sync(&bdi->wb.wakeup_timer);
 
 
