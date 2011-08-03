@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab1HCNVU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 09:21:20 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:46000 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755752Ab1HCNVQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 09:21:16 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -22.9
-Message-ID: <4E394B48.8080506@tremplin-utc.net>
-Date: Wed, 03 Aug 2011 15:21:12 +0200
-From: =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Mandriva/3.1.11-1 (2011.0) Thunderbird/3.1.11
+	id S1755847Ab1HCN1G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 09:27:06 -0400
+Received: from mga03.intel.com ([143.182.124.21]:37590 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755752Ab1HCN07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 09:26:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,310,1309762800"; 
+   d="scan'208";a="34676810"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+CC: "guenter.roeck@ericsson.com" <guenter.roeck@ericsson.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 3 Aug 2011 18:56:53 +0530
+Subject: RE: [lm-sensors] coretemp: Support for Intel Atom E6XX CPU
+ (TunnelCreek)?
+Thread-Topic: [lm-sensors] coretemp: Support for Intel Atom E6XX CPU
+ (TunnelCreek)?
+Thread-Index: AcxR3QgffFqvw6qdQK2BGFveHXvEjAAA886g
+Message-ID: <D6D887BA8C9DFF48B5233887EF04654109E88956B7@bgsmsx502.gar.corp.intel.com>
+References: <201106271220.51953.alexander.stein@systec-electronic.com>
+ <1309193405.8271.645.camel@groeck
+ <D6D887BA8C9DFF48B5233887EF04654109E84A62C7@bgsmsx502.gar.corp.intel.com>
+ <201108031458.01805.alexander.stein@systec-electronic.com>
+In-Reply-To: <201108031458.01805.alexander.stein@systec-electronic.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Christian Lamparter <chunkeey@googlemail.com>,
-        Matthew Garrett <mjg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH 01/10] lis3lv02d: avoid divide by zero due to unchecked
-References: <4E2D8858.8000900@tremplin-utc.net>	<4E2D88C7.30409@tremplin-utc.net>	<20110801132906.2d4cd28e.akpm@linux-foundation.org>	<201108012311.17881.chunkeey@googlemail.com> <20110801142946.94542ff3.akpm@linux-foundation.org>
-In-Reply-To: <20110801142946.94542ff3.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p73DRGU0003347
 
-Op 01-08-11 23:29, Andrew Morton schreef:
-> On Mon, 1 Aug 2011 23:11:17 +0200
-> Christian Lamparter<chunkeey@googlemail.com>  wrote:
->
->> On Monday, August 01, 2011 10:29:06 PM Andrew Morton wrote:
->>> On Mon, 25 Jul 2011 17:16:23 +0200
->>> __ric Piel<eric.piel@tremplin-utc.net>  wrote:
->>>
->>>> +static int lis3lv02d_get_pwron_wait(struct lis3lv02d *lis3)
->>>> +{
->>>> +	int div = lis3lv02d_get_odr();
->>>> +
->>>> +	if (WARN_ONCE(div == 0, "device returned spurious data"))
->>>> +		return -ENXIO;
->>>> +
->>>> +	/* LIS3 power on delay is quite long */
->>>> +	msleep(lis3->pwron_delay / div);
->>>> +	return 0;
->>>> +}
->>>
->>> The WARN_ONCE may not be very useful.  The user gets worried, might
->>> report it (often to a distro, not to you!).  But we won't actually *do*
->>> anything with the information?
->> The sensor is used to park the hdd in case of an "accident". However,
->> if the sensors is not working, the user should at least get a WARN
->> that something is very wrong, right?
->
-> Well if we're doing this for the user's benefit (most WARNs are for developers)
-> then the message should be user-useful.  That one isn't, really.
->
-> Can we come up with some text which is more useful to the user/operator and
-> won't require him/her/it to send emails and raise bug reports?
->
-> Also, the stack trace which WARN emits is not useful in this application?
-Thanks Andrew for pointing out this.
-Indeed, a WARN with such a message seems not the best way to explain 
-what's is going on. IIRC, Christian suspects the bug happens due to some 
-weird things that the bios does. So do you think this code looks better?
+Hi All,
 
-if (div == 0) {
-   pr_warn_once("device returned spurious data, it will not be used. "
-	       "It might be a hardware or firmware bug. "
-	       "Contact the driver's authors if you think it is not.");
-   return -ENXIO;
-}
+Yes I checked with some Atom Guys here.
+Apparently there is no way to know it from the OS Level.
 
-If every one likes it, I'll update the patch and send you the new version.
+Sorry,
+Durga
 
-See you,
-Éric
+> -----Original Message-----
+> From: Alexander Stein [mailto:alexander.stein@systec-electronic.com]
+> Sent: Wednesday, August 03, 2011 6:28 PM
+> To: R, Durgadoss
+> Cc: guenter.roeck@ericsson.com; Jean Delvare; Yu, Fenghua; lm-sensors@lm-
+> sensors.org; linux-kernel@vger.kernel.org
+> Subject: Re: [lm-sensors] coretemp: Support for Intel Atom E6XX CPU
+> (TunnelCreek)?
+> 
+> Hello,
+> 
+> On Monday 27 June 2011 18:54:44 R, Durgadoss wrote:
+> > > Unfortunately, looking at Alexander's /proc/cpuinfo output, it looks
+> > > like the E6xx chips have no mention of E6xx in the CPU ID string, which
+> > > unfortunately kills the idea.
+> > >
+> > > Do you know if there is _any_ means to distinguish E6xx from E6xxT ?
+> >
+> > Sorry I do not know. But I can ask some folks here and get back
+> > to you guys. Should not take more time, once I identify the right
+> > person to ask :-)
+> 
+> Any news on this topic?
+> 
+> Regards,
+> Alexander
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
