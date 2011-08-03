@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab1HCWEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 18:04:35 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:14845 "EHLO
+	id S1755708Ab1HCWMA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 18:12:00 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:15034 "EHLO
 	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755471Ab1HCWE3 (ORCPT
+	with ESMTP id S1755533Ab1HCWL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 18:04:29 -0400
-Message-ID: <4E39C5EB.8070701@cavium.com>
-Date: Wed, 03 Aug 2011 15:04:27 -0700
+	Wed, 3 Aug 2011 18:11:56 -0400
+Message-ID: <4E39C7A7.3000302@cavium.com>
+Date: Wed, 03 Aug 2011 15:11:51 -0700
 From: David Daney <david.daney@cavium.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
@@ -16,143 +16,137 @@ To: devicetree-discuss@lists.ozlabs.org,
         Grant Likely <grant.likely@secretlab.ca>
 CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         linux-mips <linux-mips@linux-mips.org>
-Subject: How to describe I2C and MDIO bus multiplexers with the device tree?
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Aug 2011 22:04:28.0557 (UTC) FILETIME=[508EBBD0:01CC5229]
+Subject: Re: How to describe I2C and MDIO bus multiplexers with the device
+ tree?
+References: <4E39C5EB.8070701@cavium.com>
+In-Reply-To: <4E39C5EB.8070701@cavium.com>
+Content-Type: multipart/mixed;
+ boundary="------------060008040202090804020408"
+X-OriginalArrivalTime: 03 Aug 2011 22:11:56.0419 (UTC) FILETIME=[5B810D30:01CC522A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
+--------------060008040202090804020408
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-I have a board (ASCII art representation below) that has a bunch of
-PHY devices that are connected behind a MDIO bus switch/multiplexer.
-This multiplexer is in turn controlled by GPIO pins on a I2C GPIO port
-expander.  which is in turn on a I2C bus switch/multiplexer.
+On 08/03/2011 03:04 PM, David Daney wrote:
+>
+> I have a board (ASCII art representation below) that has a bunch of
+> PHY devices that are connected behind a MDIO bus switch/multiplexer.
+> This multiplexer is in turn controlled by GPIO pins on a I2C GPIO port
+> expander. which is in turn on a I2C bus switch/multiplexer.
+>
+> There is another switch/multiplexer that is controlled directly via I2C.
+>
+> Q: How can this be represented?
+>
+> My attempt is below...
+>
+> I2C-0 MDIO-1 MDIO-0
+> | | |
+> | |--------------| | |
 
-There is another switch/multiplexer that is controlled directly via I2C.
+Crap, my mailer ate the ASCII art.
 
-Q: How can this be represented?
+Attached is the text file that should make it through.
 
-My attempt is below...
 
-   I2C-0 
-   MDIO-1            MDIO-0
-    | 
-    |                 |
-    |         |--------------| 
-    |                 |
-    |         |              +---- I2C-A ----- 
-    |                 |
-    +---------+ multiplexor  | 
-    |                 |
-    |         |              +---- I2C-B ----- 
-    |                 |
-    |         |  I2C-0x70    | 
-    |                 |
-    |         |              +---- I2C-C ----- 
-    |                 |
-    |         |              | 
-    |                 |
-    |         |              +---- I2C-D ----- 
-    |                 |
-    |         |              | 
-    |                 |
-    |         |              +---- I2C-E ----- 
-    |                 |
-    |         |              | 
-    |                 |
-    |         |              +---- I2C-F --------+ 
-    |                 |
-    |         |              |                   | 
-    |                 |
-    |         |              +---- I2C-G --+     | 
-    |                 |
-    |         |--------------|             |     | 
-    |                 |
-    |                                      |     | 
-    |                 |
-    |        |------------|          +-----+     | 
-    |                 |
-    |        |            |          |           | 
-    |                 |
-    +--------+  ds1337 RTC|          |           | 
-    |                 |
-    |        | I2C-0x68   |          |     |-----+-----| 
-|--------+---------|       |
-    |        |------------|          |     | GPIO      |          | 
-              |       |
-    |                                |     | Port      +--Pin 3---+ 
-multiplexor     |       |
-    |                                |     | Expander  +--Pin 4---+ 
-              |       |
-    |                                |     |           |          | 
-74CBTLV3253     |       |
-    |                                |     |I2C-0x38   |          | 
-              |       |
-    |                                |     |           |          | 
-              |       |
-    |                                |     |-----------| 
-|-+--------------+-|       |
-    |                                |                              | 
-            |         |
-    |                                |                              | 
-            |         |
-    |                           |----+-----|                        M 
-            M         |
-    |                           | GPIO     |                        D 
-            D         |
-    |                           | Port     |                        I 
-            I         |
-    |                           | Expander |                        O 
-            O         |
-    |                           |          |                        | 
-            |         |
-    |                           |I2C-0x38  |                        W 
-            X         |
-    |                           |----------|                        | 
-            |         |
-    |                                                               | 
-            |         |
-    |                                                               | 
-            |         |
-    | 
-|----+---|     |----+---|     |
-    |                                                          | 
-|     |        |     |
-    |                                                          | PHY-11 
-|     | PHY-21 |     |
-    |                                                          | PHY-12 
-|     | PHY-22 |     |
-    |                                                          | PHY-13 
-|     | PHY-23 |     |
-    |                                                          | PHY-14 
-|     | PHY-24 |     |
-    | 
-|--------|     |--------|     |
-    | 
-                      |
-    |         |-------------| 
-                      |
-    |         | multiplexor | 
-                      |
-    |         |  I2C-0x77 
-+----------------------------------------------------------------+
-    +---------+   foo       |
-    |         |             |
-    |         |-+--------+--|
-    |           |        |
-                |        |
-                M        M
-                D        D
-                I        I
-                O        O
-                |        |
-                Y        Z
-                |        |
-          |-----+--|  |--+----|
-          | PHY-3  |  | PHY-4 |
-          |--------|  |-------|
+>
+> Some notes/questions:
+>
+> o mdio-mux@0 is a child of soc@0, but conceptually it might just as
+> well be floating in space.
+>
+> o The parent-bus property of both mdio-mux@0 and mdio-mux@77 denotes
+> the connection of the multiplexer to its 'parent' bus.
+>
+> o The cell-index property of the multiplexed bus instances denotes the
+> sub-bus of the switch/multiplexer the children are connected to.
+> Would a different property name be better here?
+>
+> o For mdio-mux@0 the driver will use the cell-index to determine how
+> to program the gpios that control the switch/multiplexer.
+>
+> Am I totally insane?
+> David Daney
+
+
+--------------060008040202090804020408
+Content-Type: text/plain;
+ name="multiplexer-1.txt"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="multiplexer-1.txt"
+
+  I2C-0                                                                  MDIO-1            MDIO-0
+   |                                                                      |                 |
+   |         |--------------|                                             |                 |
+   |         |              +---- I2C-A -----                             |                 |
+   +---------+ multiplexor  |                                             |                 |
+   |         |              +---- I2C-B -----                             |                 |
+   |         |  I2C-0x70    |                                             |                 |
+   |         |              +---- I2C-C -----                             |                 |
+   |         |              |                                             |                 |
+   |         |              +---- I2C-D -----                             |                 |
+   |         |              |                                             |                 |
+   |         |              +---- I2C-E -----                             |                 |
+   |         |              |                                             |                 |
+   |         |              +---- I2C-F --------+                         |                 |
+   |         |              |                   |                         |                 |
+   |         |              +---- I2C-G --+     |                         |                 |
+   |         |--------------|             |     |                         |                 |
+   |                                      |     |                         |                 |
+   |        |------------|          +-----+     |                         |                 |
+   |        |            |          |           |                         |                 |
+   +--------+  ds1337 RTC|          |           |                         |                 |
+   |        | I2C-0x68   |          |     |-----+-----|          |--------+---------|       |
+   |        |------------|          |     | GPIO      |          |                  |       |
+   |                                |     | Port      +--Pin 3---+  multiplexor     |       |
+   |                                |     | Expander  +--Pin 4---+                  |       |
+   |                                |     |           |          |  74CBTLV3253     |       |
+   |                                |     |I2C-0x38   |          |                  |       |
+   |                                |     |           |          |                  |       |
+   |                                |     |-----------|          |-+--------------+-|       |
+   |                                |                              |              |         |
+   |                                |                              |              |         |
+   |                           |----+-----|                        M              M         |
+   |                           | GPIO     |                        D              D         |
+   |                           | Port     |                        I              I         |
+   |                           | Expander |                        O              O         |
+   |                           |          |                        |              |         |
+   |                           |I2C-0x38  |                        W              X         |
+   |                           |----------|                        |              |         |
+   |                                                               |              |         |
+   |                                                               |              |         |
+   |                                                          |----+---|     |----+---|     |
+   |                                                          |        |     |        |     |
+   |                                                          | PHY-11 |     | PHY-21 |     |
+   |                                                          | PHY-12 |     | PHY-22 |     |
+   |                                                          | PHY-13 |     | PHY-23 |     |
+   |                                                          | PHY-14 |     | PHY-24 |     |
+   |                                                          |--------|     |--------|     |
+   |                                                                                        |
+   |         |-------------|                                                                |
+   |         | multiplexor |                                                                |
+   |         |  I2C-0x77   +----------------------------------------------------------------+
+   +---------+   foo       |
+   |         |             |
+   |         |-+--------+--|
+   |           |        |
+               |        |
+               M        M
+               D        D
+               I        I
+               O        O
+               |        |
+               Y        Z
+               |        |
+         |-----+--|  |--+----|
+         | PHY-3  |  | PHY-4 |
+         |--------|  |-------|
 
 
 
@@ -348,21 +342,4 @@ multiplexor     |       |
 
 };
 
-
-Some notes/questions:
-
-o mdio-mux@0 is a child of soc@0, but conceptually it might just as
-   well be floating in space.
-
-o The parent-bus property of both mdio-mux@0 and mdio-mux@77 denotes
-   the connection of the multiplexer to its 'parent' bus.
-
-o The cell-index property of the multiplexed bus instances denotes the
-   sub-bus of the switch/multiplexer the children are connected to.
-   Would a different property name be better here?
-
-o For mdio-mux@0 the driver will use the cell-index to determine how
-   to program the gpios that control the switch/multiplexer.
-
-Am I totally insane?
-David Daney
+--------------060008040202090804020408--
