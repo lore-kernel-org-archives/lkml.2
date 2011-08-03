@@ -1,388 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab1HCCo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 22:44:29 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:52345 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753843Ab1HCCo0 convert rfc822-to-8bit (ORCPT
+	id S1754112Ab1HCCwa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 22:52:30 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:41467 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753385Ab1HCCw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 22:44:26 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=WBPGasKgGYp2U2Yf2N0XfpzHRHWVWF9i/dznGS3UgFnM73Clsvi8B83C+WLQhyDRN
-	MwBGk1PfK5GepBFMhYC1g==
+	Tue, 2 Aug 2011 22:52:26 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlkDAN20OE55LCkBgWdsb2JhbABCp1kVAQEWJiWBQAEBBTocIxAIAxguFCUDNMZTDoY0BJsuiEM
+Date: Wed, 3 Aug 2011 12:52:22 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [regression, 3.1, rcu] rcu_sched_state detected stall on CPU 8
+ (t=15000 jiffies)
+Message-ID: <20110803025222.GI12870@dastard>
+References: <20110803022857.GH12870@dastard>
 MIME-Version: 1.0
-In-Reply-To: <20110803011640.15597.16377.stgit@mike2.sea.corp.google.com>
-References: <20110803011640.15597.16377.stgit@mike2.sea.corp.google.com>
-Date: Tue, 2 Aug 2011 19:44:23 -0700
-Message-ID: <CABV1ukEiHm2kHwLxFzAdSVix3Kuc1gvgHPZxU3OZ6M_E7DMgWQ@mail.gmail.com>
-Subject: Re: [PATCH v2] kinit: Add drop_capabilities support.
-From: "Andrew G. Morgan" <agm@google.com>
-To: Mike Waychison <mikew@google.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Maximilian Attems <max@stro.at>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Eric Northup <digitaleric@google.com>,
-        Eric Paris <eparis@parisplace.org>, klibc@zytor.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110803022857.GH12870@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 2, 2011 at 6:16 PM, Mike Waychison <mikew@google.com> wrote:
-> This patch adds the ability to kinit to allow the dropping of POSIX
-> capabilities.
->
-> kinit is modified by this change, such that it understands the new
-> kernel command line "drop_capabilities=" that specifies a comma
-> separated list of capability names that should be dropped before
-> switching over to the next init in the boot strap (typically on the root
-> disk).
->
-> When processing capabilities to drop, CAP_SETPCAP is special cased to be
-> dropped last, so that the order that capabilities are given does not
-> cause dropping of later enumerated capabilities to fail if it is listed
-> early on.
+On Wed, Aug 03, 2011 at 12:28:57PM +1000, Dave Chinner wrote:
+> Hi Paul,
+> 
+> I've had this hang a couple of times now, so I figured it isn't an
+> isolated event. I am getting kernels occassionally hanging with the
+> following output occurring:
+> 
+> [   62.812011] INFO: rcu_sched_state detected stall on CPU 8 (t=15000 jiffies)
+> [  242.936009] INFO: rcu_sched_state detected stall on CPU 8 (t=60031 jiffies)
+> 
+> And that just goes on until I reboot the machine. e.g. from a test
+> run on a 2p VM that I didn't check on over the weekend:
+> 
+> [220167.108005] INFO: rcu_sched_state detected stall on CPU 0 (t=54681420 jiffies)
+> [220347.228004] INFO: rcu_sched_state detected stall on CPU 0 (t=54726450 jiffies)
+> [220527.348003] INFO: rcu_sched_state detected stall on CPU 0 (t=54771480 jiffies)
+> [220707.468006] INFO: rcu_sched_state detected stall on CPU 0 (t=54816510 jiffies)
+> [220887.588003] INFO: rcu_sched_state detected stall on CPU 0 (t=54861540 jiffies)
+> [221067.708003] INFO: rcu_sched_state detected stall on CPU 0 (t=54906570 jiffies)
+> [221247.828004] INFO: rcu_sched_state detected stall on CPU 0 (t=54951600 jiffies)
+> [221427.948003] INFO: rcu_sched_state detected stall on CPU 0 (t=54996630 jiffies)
+> [221608.068003] INFO: rcu_sched_state detected stall on CPU 0 (t=55041660 jiffies)
+> [221788.188019] INFO: rcu_sched_state detected stall on CPU 0 (t=55086690 jiffies)
+> [221968.308014] INFO: rcu_sched_state detected stall on CPU 0 (t=55131720 jiffies)
+> [222148.428010] INFO: rcu_sched_state detected stall on CPU 0 (t=55176750 jiffies)
+> 
+> I've seen it on 2p and now a 16p test VM. This one occurred
+> during boot of the 16p VM:
+> 
+> [    2.600499] kjournald starting.  Commit interval 5 seconds
+> [    2.600878] EXT3-fs (sda1): mounted filesystem with ordered data mode
+> [    2.600995] VFS: Mounted root (ext3 filesystem) readonly on device 8:1.
+> [    2.612351] Freeing unused kernel memory: 2824k freed
+> INIT: version 2.88 booting
+> Using makefile-style concurrent boot in runlevel S.
+> [   62.812011] INFO: rcu_sched_state detected stall on CPU 8 (t=15000 jiffies)
+> [  242.936009] INFO: rcu_sched_state detected stall on CPU 8 (t=60031 jiffies)
+> 
+> While the console still echos characters, the boot process is
+> not making progress.
+> 
+> I've had this happen under heavy CPU and IO load, sometimes hours
+> after boot e.g. one was mid-way through a 4th run of xfstests which
+> takes about 80mins to do a complete run. There doesn't appear to be
+> any pattern to when it occurs and I cannot reproduce it on command,
+> so tracking it down might be difficult.
 
-Given your change to only touch the inheritable set, you do not need
-to treat CAP_SETPCAP any differently from the other capabilities,
-since dropping it from the inheritable and bounding set will not
-affect the running process in any problematic way until it runs
-exec().
+This might be a false alarm - I've just diagnosed(*) that a kernel
+thread was stuck in a hard loop therefore not giving up the CPU.
 
->
-> Dropping of capabilities happens in three parts.  We explicitly drop the
-> capability from init's inherited masks.  We also drop the capability
-> from the bounding set using PR_CAPBSET_DROP so that later setuid execs
-> are bounded.  Lastly, we drop the capabilities from the bset and
-> inheritted masks exposed at /proc/sys/kernel/usermodehelper if available
+Perhaps this is error message could be more informative?
+The detector is acting like the hung task detector, except it's
+working on kernel code stuck in a loop burning CPU, so maybe dumping
+a stack trace of the spinning CPU (i.e. similar to sysrq-l output)
+might be a useful addition to tracking down such stalls?
 
-s/tt/t/
+Cheers,
 
-Cheers
+Dave.
 
-Andrew
-
-> (introduced in Linux v3.0.0).
->
-> In all paths, we treat errors as fatal, as we do not want to continue to
-> boot if there was a problem dropping capabilities.  We fail because the
-> new drop_capabilities= option on the command line mandates enforcement
-> of a security policy, and we should err on the side of caution if we
-> ever fail to satisfy the administrator's intention.
->
-> Signed-off-by: Mike Waychison <mikew@google.com>
-> ---
-> v2
->    - Only drop from the inherited capabilities mask.  Only this mask
->      was required as per Andrew Morgan.  This also allows us to
->      continue having capabilities to call run-init later on, allowing
->      the following:
->    - Moved dropping of capabilities out of run-init and into kinit.
->      This was required to ensure access to the proc filesystem, which
->      is required for manipulating the masks the kernel uses when
->      spawning new tasks on the kernel's behalf via the
->      call_usermodehelper() routine.
->    - Fixed paths to the usermodehelper settings files.
->    - Fixed sscanf to allow for a newline character when reading the
->      usermodehelper capability mask settings.
->    - Fixed the return check of the write to the usermodehelper files.
->      These proc files return 0 on successful write(2).
->    - Added a format atttribute to the fail() wrapper for better
->      compiler warnings.
->    - Removed kernel version check.  The boot will now always fail if we
->      could not manipulate the usermodehelper settings.
->    - Sent as a single patch as capset/capget are now in klibc master.
-> ---
->  usr/kinit/Kbuild         |    1
->  usr/kinit/capabilities.c |  237 ++++++++++++++++++++++++++++++++++++++++++++++
->  usr/kinit/kinit.c        |    2
->  usr/kinit/kinit.h        |    2
->  4 files changed, 242 insertions(+), 0 deletions(-)
->  create mode 100644 usr/kinit/capabilities.c
->
-> diff --git a/usr/kinit/Kbuild b/usr/kinit/Kbuild
-> index ff1d449..8f6d08e 100644
-> --- a/usr/kinit/Kbuild
-> +++ b/usr/kinit/Kbuild
-> @@ -10,6 +10,7 @@ kinit-y  := lib.a
->  kinit-y  += kinit.o do_mounts.o ramdisk_load.o initrd.o
->  kinit-y  += getintfile.o readfile.o xpio.o
->  kinit-y  += do_mounts_md.o do_mounts_mtd.o nfsroot.o
-> +kinit-y  += capabilities.o
->
->  kinit-y  += ipconfig/
->  kinit-y  += nfsmount/
-> diff --git a/usr/kinit/capabilities.c b/usr/kinit/capabilities.c
-> new file mode 100644
-> index 0000000..ad4d6ea
-> --- /dev/null
-> +++ b/usr/kinit/capabilities.c
-> @@ -0,0 +1,237 @@
-> +/*
-> + * Copyright 2011 Google Inc. All Rights Reserved
-> + * Author: mikew@google.com (Mike Waychison)
-> + */
-> +
-> +/*
-> + * We have to include the klibc types.h here to keep the kernel's
-> + * types.h from being used.
-> + */
-> +#include <sys/types.h>
-> +
-> +#include <sys/capability.h>
-> +#include <sys/prctl.h>
-> +#include <sys/utsname.h>
-> +#include <errno.h>
-> +#include <stdio.h>
-> +#include <stdlib.h>
-> +#include <string.h>
-> +#include <unistd.h>
-> +
-> +#include "kinit.h"
-> +
-> +#define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))
-> +
-> +#define MAKE_CAP(cap) [cap] = { .cap_name = #cap }
-> +
-> +struct capability {
-> +       const char *cap_name;
-> +} capabilities[] = {
-> +       MAKE_CAP(CAP_CHOWN),
-> +       MAKE_CAP(CAP_DAC_OVERRIDE),
-> +       MAKE_CAP(CAP_DAC_READ_SEARCH),
-> +       MAKE_CAP(CAP_FOWNER),
-> +       MAKE_CAP(CAP_FSETID),
-> +       MAKE_CAP(CAP_KILL),
-> +       MAKE_CAP(CAP_SETGID),
-> +       MAKE_CAP(CAP_SETUID),
-> +       MAKE_CAP(CAP_SETPCAP),
-> +       MAKE_CAP(CAP_LINUX_IMMUTABLE),
-> +       MAKE_CAP(CAP_NET_BIND_SERVICE),
-> +       MAKE_CAP(CAP_NET_BROADCAST),
-> +       MAKE_CAP(CAP_NET_ADMIN),
-> +       MAKE_CAP(CAP_NET_RAW),
-> +       MAKE_CAP(CAP_IPC_LOCK),
-> +       MAKE_CAP(CAP_IPC_OWNER),
-> +       MAKE_CAP(CAP_SYS_MODULE),
-> +       MAKE_CAP(CAP_SYS_RAWIO),
-> +       MAKE_CAP(CAP_SYS_CHROOT),
-> +       MAKE_CAP(CAP_SYS_PTRACE),
-> +       MAKE_CAP(CAP_SYS_PACCT),
-> +       MAKE_CAP(CAP_SYS_ADMIN),
-> +       MAKE_CAP(CAP_SYS_BOOT),
-> +       MAKE_CAP(CAP_SYS_NICE),
-> +       MAKE_CAP(CAP_SYS_RESOURCE),
-> +       MAKE_CAP(CAP_SYS_TIME),
-> +       MAKE_CAP(CAP_SYS_TTY_CONFIG),
-> +       MAKE_CAP(CAP_MKNOD),
-> +       MAKE_CAP(CAP_LEASE),
-> +       MAKE_CAP(CAP_AUDIT_WRITE),
-> +       MAKE_CAP(CAP_AUDIT_CONTROL),
-> +       MAKE_CAP(CAP_SETFCAP),
-> +       MAKE_CAP(CAP_MAC_OVERRIDE),
-> +       MAKE_CAP(CAP_MAC_ADMIN),
-> +       MAKE_CAP(CAP_SYSLOG),
-> +};
-> +
-> +static void fail(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
-> +static void fail(const char *fmt, ...)
-> +{
-> +       va_list args;
-> +
-> +       va_start(args, fmt);
-> +       vfprintf(stderr, fmt, args);
-> +       va_end(args);
-> +       exit(1);
-> +}
-> +
-> +/*
-> + * Find the capability ordinal by name, and return its ordinal.
-> + * Returns -1 on failure.
-> + */
-> +static int find_capability(const char *s)
-> +{
-> +       int i;
-> +
-> +       for (i = 0; i < ARRAY_SIZE(capabilities); i++) {
-> +               if (capabilities[i].cap_name
-> +                && strcasecmp(s, capabilities[i].cap_name) == 0) {
-> +                       return i;
-> +               }
-> +       }
-> +       return -1;
-> +}
-> +
-> +static void do_capset(int cap_ordinal)
-> +{
-> +       struct __user_cap_header_struct hdr;
-> +       struct __user_cap_data_struct caps[2];
-> +
-> +       /* Get the current capability mask */
-> +       hdr.version = _LINUX_CAPABILITY_VERSION_3;
-> +       hdr.pid = getpid();
-> +       if (capget(&hdr, caps)) {
-> +               perror("capget()");
-> +               exit(1);
-> +       }
-> +
-> +       /* Drop the bits */
-> +       if (cap_ordinal < 32)
-> +               caps[0].inheritable &= ~(1U << cap_ordinal);
-> +       else
-> +               caps[1].inheritable &= ~(1U << (cap_ordinal - 32));
-> +
-> +       /* And drop the capability. */
-> +       hdr.version = _LINUX_CAPABILITY_VERSION_3;
-> +       hdr.pid = getpid();
-> +       if (capset(&hdr, caps))
-> +               fail("Couldn't drop the capability \"%s\"\n",
-> +                    capabilities[cap_ordinal].cap_name);
-> +}
-> +
-> +static void do_bset(int cap_ordinal)
-> +{
-> +       int ret;
-> +
-> +       ret = prctl(PR_CAPBSET_READ, cap_ordinal);
-> +       if (ret == 1) {
-> +               ret = prctl(PR_CAPBSET_DROP, cap_ordinal);
-> +               if (ret != 0)
-> +                       fail("Error dropping capability %s from bset\n",
-> +                            capabilities[cap_ordinal].cap_name);
-> +       } else if (ret < 0)
-> +               fail("Kernel doesn't recognize capability %d\n", cap_ordinal);
-> +}
-> +
-> +static void do_usermodehelper_file(const char *filename, int cap_ordinal)
-> +{
-> +       uint32_t lo32, hi32;
-> +       FILE *file;
-> +       static const size_t buf_size = 80;
-> +       char buf[buf_size];
-> +       char tail;
-> +       size_t bytes_read;
-> +       int ret;
-> +
-> +       /* Try and open the file */
-> +       file = fopen(filename, "r+");
-> +       if (!file && errno == ENOENT)
-> +               fail("Could not disable usermode helpers capabilities as "
-> +                    "%s is not available\n", filename);
-> +       if (!file)
-> +               fail("Failed to access file %s errno %d\n", filename, errno);
-> +
-> +       /* Read and process the current bits */
-> +       bytes_read = fread(buf, 1, buf_size - 1, file);
-> +       if (bytes_read == 0)
-> +               fail("Trouble reading %s\n", filename);
-> +       buf[bytes_read] = '\0';
-> +       ret = sscanf(buf, "%u %u %c", &lo32, &hi32, &tail);
-> +       if (ret != 2)
-> +               fail("Failed to understand %s \"%s\"\n", filename, buf);
-> +
-> +       /* Clear the bits in the local copy */
-> +       if (cap_ordinal < 32)
-> +               lo32 &= ~(1 << cap_ordinal);
-> +       else
-> +               hi32 &= ~(1 << (cap_ordinal - 32));
-> +
-> +       /* Commit the new bit masks to the kernel */
-> +       sprintf(buf, "%u %u", lo32, hi32);
-> +       ret = fwrite(buf, 1, strlen(buf) + 1, file);
-> +       if (ret != 0)
-> +               fail("Failed to commit usermode helper bitmasks: %d\n", ret);
-> +
-> +       /* Cleanup */
-> +       fclose(file);
-> +}
-> +
-> +static void do_usermodehelper(int cap_ordinal)
-> +{
-> +       static const char * const files[] = {
-> +               "/proc/sys/kernel/usermodehelper/bset",
-> +               "/proc/sys/kernel/usermodehelper/inheritable",
-> +       };
-> +       int i;
-> +
-> +       for (i = 0; i < ARRAY_SIZE(files); i++)
-> +               do_usermodehelper_file(files[i], cap_ordinal);
-> +}
-> +
-> +static void drop_capability(int cap_ordinal)
-> +{
-> +       do_usermodehelper(cap_ordinal);
-> +       do_bset(cap_ordinal);
-> +       do_capset(cap_ordinal);
-> +
-> +       printf("Dropped capability: %s\n", capabilities[cap_ordinal].cap_name);
-> +}
-> +
-> +int drop_capabilities(const char *caps)
-> +{
-> +       char *s, *saveptr = NULL;
-> +       char *token;
-> +       int drop_setpcap = 0;
-> +
-> +       if (!caps)
-> +               return 0;
-> +
-> +       /* Create a duplicate string that can be modified. */
-> +       s = strdup(caps);
-> +       if (!s)
-> +               fail("Failed to drop caps as requested.  Exiting\n");
-> +
-> +       token = strtok_r(s, ",", &saveptr);
-> +       while (token) {
-> +               int cap_ordinal = find_capability(token);
-> +
-> +               if (cap_ordinal < 0)
-> +                       fail("Could not understand capability name \"%s\" "
-> +                            "on command line, failing init\n", token);
-> +
-> +               /* We handle CAP_SETPCAP last because it is needed to
-> +                * drop all other caps. */
-> +               if (cap_ordinal == CAP_SETPCAP)
-> +                       drop_setpcap = 1;
-> +               else
-> +                       drop_capability(cap_ordinal);
-> +
-> +               token = strtok_r(NULL, ",", &saveptr);
-> +       }
-> +
-> +       if (drop_setpcap)
-> +               drop_capability(CAP_SETPCAP);
-> +
-> +       free(s);
-> +       return 0;
-> +}
-> diff --git a/usr/kinit/kinit.c b/usr/kinit/kinit.c
-> index 4a1f40b..098873b 100644
-> --- a/usr/kinit/kinit.c
-> +++ b/usr/kinit/kinit.c
-> @@ -288,6 +288,8 @@ int main(int argc, char *argv[])
->        check_path("/root");
->        do_mounts(cmdc, cmdv);
->
-> +       drop_capabilities(get_arg(cmdc, cmdv, "drop_capabilities="));
-> +
->        if (mnt_procfs) {
->                umount2("/proc", 0);
->                mnt_procfs = 0;
-> diff --git a/usr/kinit/kinit.h b/usr/kinit/kinit.h
-> index c2e67b7..85960d8 100644
-> --- a/usr/kinit/kinit.h
-> +++ b/usr/kinit/kinit.h
-> @@ -65,4 +65,6 @@ static inline void dump_args(int argc, char *argv[])
->  }
->  #endif
->
-> +int drop_capabilities(const char *caps);
-> +
->  #endif                         /* KINIT_H */
->
->
+(*) luckily the kernel was still responding to the kvm sendkey
+command so I could get at sysrq dumps to the console...
+-- 
+Dave Chinner
+david@fromorbit.com
