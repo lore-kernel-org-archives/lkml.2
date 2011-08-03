@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab1HCL1S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 07:27:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24223 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753632Ab1HCL1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 07:27:13 -0400
-Date: Wed, 3 Aug 2011 13:26:30 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 7/8] mm: vmscan: Immediately reclaim end-of-LRU dirty
- pages when writeback completes
-Message-ID: <20110803112630.GE27199@redhat.com>
-References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
- <1311265730-5324-8-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311265730-5324-8-git-send-email-mgorman@suse.de>
+	id S1754817Ab1HCL3j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 07:29:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37582 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753870Ab1HCL3d convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 07:29:33 -0400
+Subject: Re: Use "make -s" to silence everything except warnings/error
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <20110803110502.GA18323@merkur.ravnborg.org>
+References: <20110803110502.GA18323@merkur.ravnborg.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 03 Aug 2011 13:28:55 +0200
+Message-ID: <1312370935.1147.297.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 21, 2011 at 05:28:49PM +0100, Mel Gorman wrote:
-> When direct reclaim encounters a dirty page, it gets recycled around
-> the LRU for another cycle. This patch marks the page PageReclaim
-> similar to deactivate_page() so that the page gets reclaimed almost
-> immediately after the page gets cleaned. This is to avoid reclaiming
-> clean pages that are younger than a dirty page encountered at the
-> end of the LRU that might have been something like a use-once page.
+On Wed, 2011-08-03 at 13:05 +0200, Sam Ravnborg wrote:
+> Hi Peter.
 > 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Saw in an old thread that you mentioned that warnings were missed because
+> your computer is too quick.
+> 
+> If you pass "-s" like this:
+> 
+>     make -s -j4 ...
+> 
+> then you will no longer see the one-line-per-file output.
+> 
+> But warnings are displayed and is thus much more visible.
+> 
+> Just a hint in case you did not know.
 
-Apart from the naming of the counter (I like nr_reclaim_preferred),
+Ooh, nice. Thanks!
 
-Acked-by: Johannes Weiner <jweiner@redhat.com>
+Maybe I'll even write an awk script that'll colour the warnings of
+important bits like kernel/ and mm/ so as not to be confused with driver
+noise.
+
+Then again, it looks like my default config is now completely warning
+free, so procrastination is likely :-)
