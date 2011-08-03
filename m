@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107Ab1HCX1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:27:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33641 "EHLO mx2.suse.de"
+	id S932324Ab1HCXlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:41:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33676 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756034Ab1HCX1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:27:33 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:48 2011
-Message-Id: <20110803221248.906958376@clark.kroah.org>
+	id S1756152Ab1HCX1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:27:46 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:49 2011
+Message-Id: <20110803221249.213270027@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:09 -0700
+Date: Wed, 03 Aug 2011 15:01:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [049/102] drm/radeon/kms: add missing vddci setting on NI+
+        Peng Tao <peng_tao@emc.com>, Jim Rees <rees@umich.edu>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [052/102] pnfs: save layoutcommit lwb at layout header
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +26,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Peng Tao <bergwolf@gmail.com>
 
-commit 4639dd21e759e32125adc7171abf6cb8140d54cf upstream.
+commit acff5880539fe33897d016c0f3dcf062e67c61b6 upstream.
 
-Need to add vddci setting to pm init as well as
-resume.  Fixes hangs on load on some boards.
+No need to save it for every lseg.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=38754
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+[Needed in v3.0]
+Signed-off-by: Peng Tao <peng_tao@emc.com>
+Signed-off-by: Jim Rees <rees@umich.edu>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_pm.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/nfs/nfs4filelayout.c |    2 +-
+ fs/nfs/pnfs.c           |   10 ++++++----
+ fs/nfs/pnfs.h           |    2 +-
+ 3 files changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_pm.c
-+++ b/drivers/gpu/drm/radeon/radeon_pm.c
-@@ -594,6 +594,9 @@ int radeon_pm_init(struct radeon_device
- 			if (rdev->pm.default_vddc)
- 				radeon_atom_set_voltage(rdev, rdev->pm.default_vddc,
- 							SET_VOLTAGE_TYPE_ASIC_VDDC);
-+			if (rdev->pm.default_vddci)
-+				radeon_atom_set_voltage(rdev, rdev->pm.default_vddci,
-+							SET_VOLTAGE_TYPE_ASIC_VDDCI);
- 			if (rdev->pm.default_sclk)
- 				radeon_set_engine_clock(rdev, rdev->pm.default_sclk);
- 			if (rdev->pm.default_mclk)
+--- a/fs/nfs/nfs4filelayout.c
++++ b/fs/nfs/nfs4filelayout.c
+@@ -170,7 +170,7 @@ filelayout_set_layoutcommit(struct nfs_w
+ 
+ 	pnfs_set_layoutcommit(wdata);
+ 	dprintk("%s ionde %lu pls_end_pos %lu\n", __func__, wdata->inode->i_ino,
+-		(unsigned long) wdata->lseg->pls_end_pos);
++		(unsigned long) NFS_I(wdata->inode)->layout->plh_lwb);
+ }
+ 
+ /*
+--- a/fs/nfs/pnfs.c
++++ b/fs/nfs/pnfs.c
+@@ -1224,9 +1224,11 @@ pnfs_set_layoutcommit(struct nfs_write_d
+ 		dprintk("%s: Set layoutcommit for inode %lu ",
+ 			__func__, wdata->inode->i_ino);
+ 	}
+-	if (end_pos > wdata->lseg->pls_end_pos)
+-		wdata->lseg->pls_end_pos = end_pos;
++	if (end_pos > nfsi->layout->plh_lwb)
++		nfsi->layout->plh_lwb = end_pos;
+ 	spin_unlock(&nfsi->vfs_inode.i_lock);
++	dprintk("%s: lseg %p end_pos %llu\n",
++		__func__, wdata->lseg, nfsi->layout->plh_lwb);
+ 
+ 	/* if pnfs_layoutcommit_inode() runs between inode locks, the next one
+ 	 * will be a noop because NFS_INO_LAYOUTCOMMIT will not be set */
+@@ -1278,9 +1280,9 @@ pnfs_layoutcommit_inode(struct inode *in
+ 	 */
+ 	lseg = pnfs_list_write_lseg(inode);
+ 
+-	end_pos = lseg->pls_end_pos;
++	end_pos = nfsi->layout->plh_lwb;
+ 	cred = lseg->pls_lc_cred;
+-	lseg->pls_end_pos = 0;
++	nfsi->layout->plh_lwb = 0;
+ 	lseg->pls_lc_cred = NULL;
+ 
+ 	memcpy(&data->args.stateid.data, nfsi->layout->plh_stateid.data,
+--- a/fs/nfs/pnfs.h
++++ b/fs/nfs/pnfs.h
+@@ -45,7 +45,6 @@ struct pnfs_layout_segment {
+ 	unsigned long pls_flags;
+ 	struct pnfs_layout_hdr *pls_layout;
+ 	struct rpc_cred	*pls_lc_cred; /* LAYOUTCOMMIT credential */
+-	loff_t pls_end_pos; /* LAYOUTCOMMIT write end */
+ };
+ 
+ enum pnfs_try_status {
+@@ -124,6 +123,7 @@ struct pnfs_layout_hdr {
+ 	unsigned long		plh_block_lgets; /* block LAYOUTGET if >0 */
+ 	u32			plh_barrier; /* ignore lower seqids */
+ 	unsigned long		plh_flags;
++	loff_t			plh_lwb; /* last write byte for layoutcommit */
+ 	struct inode		*plh_inode;
+ };
+ 
 
 
