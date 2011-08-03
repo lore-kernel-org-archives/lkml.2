@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab1HCXaK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:30:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33894 "EHLO mx2.suse.de"
+	id S932189Ab1HCXak (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:30:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33977 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756211Ab1HCX3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:29:10 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:51 2011
-Message-Id: <20110803221251.685552460@clark.kroah.org>
+	id S932161Ab1HCX3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:29:41 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:52 2011
+Message-Id: <20110803221252.494275979@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:36 -0700
+Date: Wed, 03 Aug 2011 15:01:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [076/102] nfsd4: remember to put RW access on stateid destruction
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [084/102] EHCI: fix direction handling for interrupt data toggles
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,62 +25,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 499f3edc23ca0431f3a0a6736b3a40944c81bf3b upstream.
+commit e04f5f7e423018bcec84c11af2058cdce87816f3 upstream.
 
-Without this, for example,
+This patch (as1480) fixes a rather obscure bug in ehci-hcd.  The
+qh_update() routine needs to know the number and direction of the
+endpoint corresponding to its QH argument.  The number can be taken
+directly from the QH data structure, but the direction isn't stored
+there.  The direction is taken instead from the first qTD linked to
+the QH.
 
-	open read
-	open read+write
-	close
+However, it turns out that for interrupt transfers, qh_update() gets
+called before the qTDs are linked to the QH.  As a result, qh_update()
+computes a bogus direction value, which messes up the endpoint toggle
+handling.  Under the right combination of circumstances this causes
+usb_reset_endpoint() not to work correctly, which causes packets to be
+dropped and communications to fail.
 
-will result in a struct file leak.
+Now, it's silly for the QH structure not to have direct access to all
+the descriptor information for the corresponding endpoint.  Ultimately
+it may get a pointer to the usb_host_endpoint structure; for now,
+adding a copy of the direction flag solves the immediate problem.
 
-Regression from 7d94784293096c0a46897acdb83be5abd9278ece "nfsd4: fix
-downgrade/lock logic".
+This allows the Spyder2 color-calibration system (a low-speed USB
+device that sends all its interrupt data packets with the toggle set
+to 0 and hance requires constant use of usb_reset_endpoint) to work
+when connected through a high-speed hub.  Thanks to Graeme Gill for
+supplying the hardware that allowed me to track down this bug.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Graeme Gill <graeme@argyllcms.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfs4state.c |   17 ++++++-----------
- 1 file changed, 6 insertions(+), 11 deletions(-)
+ drivers/usb/host/ehci-q.c |    3 ++-
+ drivers/usb/host/ehci.h   |    1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -381,14 +381,6 @@ static int nfs4_access_to_omode(u32 acce
- 	BUG();
- }
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -103,7 +103,7 @@ qh_update (struct ehci_hcd *ehci, struct
+ 	if (!(hw->hw_info1 & cpu_to_hc32(ehci, 1 << 14))) {
+ 		unsigned	is_out, epnum;
  
--static int nfs4_access_bmap_to_omode(struct nfs4_stateid *stp)
--{
--	unsigned int access;
--
--	set_access(&access, stp->st_access_bmap);
--	return nfs4_access_to_omode(access);
--}
--
- static void unhash_generic_stateid(struct nfs4_stateid *stp)
- {
- 	list_del(&stp->st_hash);
-@@ -398,11 +390,14 @@ static void unhash_generic_stateid(struc
+-		is_out = !(qtd->hw_token & cpu_to_hc32(ehci, 1 << 8));
++		is_out = qh->is_out;
+ 		epnum = (hc32_to_cpup(ehci, &hw->hw_info1) >> 8) & 0x0f;
+ 		if (unlikely (!usb_gettoggle (qh->dev, epnum, is_out))) {
+ 			hw->hw_token &= ~cpu_to_hc32(ehci, QTD_TOGGLE);
+@@ -946,6 +946,7 @@ done:
+ 	hw = qh->hw;
+ 	hw->hw_info1 = cpu_to_hc32(ehci, info1);
+ 	hw->hw_info2 = cpu_to_hc32(ehci, info2);
++	qh->is_out = !is_input;
+ 	usb_settoggle (urb->dev, usb_pipeendpoint (urb->pipe), !is_input, 1);
+ 	qh_refresh (ehci, qh);
+ 	return qh;
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -375,6 +375,7 @@ struct ehci_qh {
+ #define NO_FRAME ((unsigned short)~0)			/* pick new start */
  
- static void free_generic_stateid(struct nfs4_stateid *stp)
- {
--	int oflag;
-+	int i;
+ 	struct usb_device	*dev;		/* access to TT */
++	unsigned		is_out:1;	/* bulk or intr OUT */
+ 	unsigned		clearing_tt:1;	/* Clear-TT-Buf in progress */
+ };
  
- 	if (stp->st_access_bmap) {
--		oflag = nfs4_access_bmap_to_omode(stp);
--		nfs4_file_put_access(stp->st_file, oflag);
-+		for (i = 1; i < 4; i++) {
-+			if (test_bit(i, &stp->st_access_bmap))
-+				nfs4_file_put_access(stp->st_file,
-+						nfs4_access_to_omode(i));
-+		}
- 	}
- 	put_nfs4_file(stp->st_file);
- 	kmem_cache_free(stateid_slab, stp);
 
 
