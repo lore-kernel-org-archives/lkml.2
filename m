@@ -1,78 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab1HCNcT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 09:32:19 -0400
+	id S1754972Ab1HCNc1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 09:32:27 -0400
 Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:59062 "EHLO
 	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753208Ab1HCNcM (ORCPT
+	by vger.kernel.org with ESMTP id S1754626Ab1HCNcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 09:32:12 -0400
-X-AuditID: 12074423-b7b31ae000000a3c-bf-4e394ddf6ac1
+	Wed, 3 Aug 2011 09:32:14 -0400
+X-AuditID: 12074423-b7b31ae000000a3c-c6-4e394de1dcfb
 From: Andy Lutomirski <luto@MIT.EDU>
 To: x86@kernel.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, jeremy@goop.org,
         keir.xen@gmail.com, xen-devel@lists.xensource.com,
         virtualization@lists.linux-foundation.org,
         Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH v2 0/6] Collected vdso/vsyscall fixes for 3.1
-Date: Wed,  3 Aug 2011 09:31:48 -0400
-Message-Id: <cover.1312378163.git.luto@mit.edu>
+Subject: [PATCH v2 2/6] x86-64: Move the "user" vsyscall segment out of the data segment.
+Date: Wed,  3 Aug 2011 09:31:50 -0400
+Message-Id: <f0716870c297242a841b949953d80c0d87bf3d3f.1312378163.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsUixCmqrXvf19LP4Pk/YYu+K0fZLR7Ne8Rq
+In-Reply-To: <cover.1312378163.git.luto@mit.edu>
+References: <cover.1312378163.git.luto@mit.edu>
+In-Reply-To: <cover.1312378163.git.luto@mit.edu>
+References: <cover.1312378163.git.luto@mit.edu>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsUixG6novvQ19LPYN9pfYu+K0fZLR7Ne8Rq
 	MXXZXFaLZYufMlpc3jWHzWL52XlsFj82PGa1uDflPbsDh8fOWXfZPTZfXM3ksWlVJ5vH5BvL
-	GT229+1i9/j49BaLx+dNcgHsUVw2Kak5mWWpRfp2CVwZa+ZuYy94w1PxYNt7pgbGbZxdjJwc
-	EgImEl9XH2WFsMUkLtxbz9bFyMUhJLCPUeLel35GkISQwHpGiat9XBCJp0wSU5b8ZQFJsAmo
-	SHQsfcAEYosIOEm0TvjIBFLELPCMUWLT0TPMIAlhAVuJleueghWxCKhKPG24AGbzCuhLLJvW
-	ywyxWk7iyOXnTBMYeRYwMqxilE3JrdLNTczMKU5N1i1OTszLSy3SNdPLzSzRS00p3cQICjd2
-	F+UdjH8OKh1iFOBgVOLhZZS38BNiTSwrrsw9xCjJwaQkyrvcy9JPiC8pP6UyI7E4I76oNCe1
-	+BCjBAezkghvOy9QjjclsbIqtSgfJiXNwaIkzpvr/d9XSCA9sSQ1OzW1ILUIJivDwaEkwcsP
-	jCshwaLU9NSKtMycEoQ0EwcnyHAeoOE2IDW8xQWJucWZ6RD5U4yKUuK8hiAJAZBERmkeXC8s
-	HbxiFAd6RZiXAaSKB5hK4LpfAQ1mAhr8/70FyOCSRISUVAPjCYXdV22yNebvOZC1Olumcgaf
-	4E798rRVi/YYM/afXRX5pbda3q1LrSvm6O7qnAnqu1u493EZTj904GB28Tup60Zr9jGsqJm7
-	X0lNgv+r39zUH4Xrk2wv5mhyXRc6ts+qXXPjC7PNJ9aJ9Ds1b+PzfSloLXR5qvq0QwILDD4X
-	n/TPtCxyTelTYinOSDTUYi4qTgQAu8lryuICAAA=
+	GT229+1i9/j49BaLx+dNcgHsUVw2Kak5mWWpRfp2CVwZO2atZC+Yw1cxf8FO5gbGFdxdjJwc
+	EgImEjvWXmOBsMUkLtxbzwZiCwnsY5S4/Uu0i5ELyF7PKPHr90pWCOcpk8S+/U/BqtgEVCQ6
+	lj5gArFFBJwkWid8ZAIpYhZ4xiix6egZZpCEsECkxK+F79hBbBYBVYmJh5oYQWxegSCJF1cO
+	Q62Wkzhy+TnYIE4BA4lVC54DxTmAtulLPFiTj0N4AqPAAkaGVYyyKblVurmJmTnFqcm6xcmJ
+	eXmpRbpmermZJXqpKaWbGMGh7KK8g/HPQaVDjAIcjEo8vIzyFn5CrIllxZW5hxglOZiURHmX
+	e1n6CfEl5adUZiQWZ8QXleakFh9ilOBgVhLhbecFyvGmJFZWpRblw6SkOViUxHlzvf/7Cgmk
+	J5akZqemFqQWwWRlODiUJHj5gTErJFiUmp5akZaZU4KQZuLgBBnOAzTcBqSGt7ggMbc4Mx0i
+	f4pRUUqc1xAkIQCSyCjNg+uFpZpXjOJArwjzMoBU8QDTFFz3K6DBTECD/7+3ABlckoiQkmpg
+	VHgVMNvx+qX42yv0ZtbJnuLX3f1OtDM/aUOsV2TPtOg7wawyKydpmE1ecbFTfpWr9iU78R03
+	EysuTAhfZdt+llFfoOy+ub1XGWPT8a1Hbgnk77Tr5vveMqeNl91rynzhU6t4LW8XaItp3JLV
+	kO+ZVXQj5yb3r2Y9XXvhPX8UTz+Pc1qy+4S4EktxRqKhFnNRcSIASxVuXBADAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes various problems that cropped up with the vdso patches.
+The kernel's loader doesn't seem to care, but gold complains.
 
- - Patch 1 fixes an information leak to userspace.
- - Patches 2 and 3 fix the kernel build on gold.
- - Patches 4 and 5 fix Xen (I hope).
- - Patch 6 (optional) adds a trace event to vsyscall emulation.  It will
-   make it easier to handle performance regression reports :)
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
+Reported-by: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+---
+ arch/x86/kernel/vmlinux.lds.S |   36 ++++++++++++++++++------------------
+ 1 files changed, 18 insertions(+), 18 deletions(-)
 
-[1] https://gitorious.org/linux-test-utils/linux-clock-tests
-
-Changes from v1:
- - Improve changelog message for "x86-64/xen: Enable the vvar mapping"
- - Fix 32-bit build.
- - Add patch 6.
-
-Andy Lutomirski (6):
-  x86-64: Pad vDSO to a page boundary
-  x86-64: Move the "user" vsyscall segment out of the data segment.
-  x86-64: Work around gold bug 13023
-  x86-64/xen: Enable the vvar mapping
-  x86-64: Add user_64bit_mode paravirt op
-  x86-64: Add vsyscall:emulate_vsyscall trace event
-
- arch/x86/include/asm/desc.h           |    4 +-
- arch/x86/include/asm/paravirt_types.h |    6 ++++
- arch/x86/include/asm/ptrace.h         |   19 +++++++++++++
- arch/x86/kernel/paravirt.c            |    4 +++
- arch/x86/kernel/step.c                |    2 +-
- arch/x86/kernel/vmlinux.lds.S         |   46 ++++++++++++++++++---------------
- arch/x86/kernel/vsyscall_64.c         |   12 +++++---
- arch/x86/kernel/vsyscall_trace.h      |   29 ++++++++++++++++++++
- arch/x86/mm/fault.c                   |    2 +-
- arch/x86/vdso/vdso.S                  |    1 +
- arch/x86/xen/enlighten.c              |    4 +++
- arch/x86/xen/mmu.c                    |    4 ++-
- 12 files changed, 102 insertions(+), 31 deletions(-)
- create mode 100644 arch/x86/kernel/vsyscall_trace.h
-
+diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+index 4aa9c54..e79fb39 100644
+--- a/arch/x86/kernel/vmlinux.lds.S
++++ b/arch/x86/kernel/vmlinux.lds.S
+@@ -154,6 +154,24 @@ SECTIONS
+ 
+ #ifdef CONFIG_X86_64
+ 
++	. = ALIGN(PAGE_SIZE);
++	__vvar_page = .;
++
++	.vvar : AT(ADDR(.vvar) - LOAD_OFFSET) {
++
++	      /* Place all vvars at the offsets in asm/vvar.h. */
++#define EMIT_VVAR(name, offset) 		\
++		. = offset;		\
++		*(.vvar_ ## name)
++#define __VVAR_KERNEL_LDS
++#include <asm/vvar.h>
++#undef __VVAR_KERNEL_LDS
++#undef EMIT_VVAR
++
++	} :data
++
++       . = ALIGN(__vvar_page + PAGE_SIZE, PAGE_SIZE);
++
+ #define VSYSCALL_ADDR (-10*1024*1024)
+ 
+ #define VLOAD_OFFSET (VSYSCALL_ADDR - __vsyscall_0 + LOAD_OFFSET)
+@@ -162,7 +180,6 @@ SECTIONS
+ #define VVIRT_OFFSET (VSYSCALL_ADDR - __vsyscall_0)
+ #define VVIRT(x) (ADDR(x) - VVIRT_OFFSET)
+ 
+-	. = ALIGN(4096);
+ 	__vsyscall_0 = .;
+ 
+ 	. = VSYSCALL_ADDR;
+@@ -185,23 +202,6 @@ SECTIONS
+ #undef VVIRT_OFFSET
+ #undef VVIRT
+ 
+-	__vvar_page = .;
+-
+-	.vvar : AT(ADDR(.vvar) - LOAD_OFFSET) {
+-
+-	      /* Place all vvars at the offsets in asm/vvar.h. */
+-#define EMIT_VVAR(name, offset) 		\
+-		. = offset;		\
+-		*(.vvar_ ## name)
+-#define __VVAR_KERNEL_LDS
+-#include <asm/vvar.h>
+-#undef __VVAR_KERNEL_LDS
+-#undef EMIT_VVAR
+-
+-	} :data
+-
+-       . = ALIGN(__vvar_page + PAGE_SIZE, PAGE_SIZE);
+-
+ #endif /* CONFIG_X86_64 */
+ 
+ 	/* Init code and data - will be freed after init */
 -- 
 1.7.6
 
