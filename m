@@ -1,86 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab1HCJsk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 05:48:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63318 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753565Ab1HCJsf convert rfc822-to-8bit (ORCPT
+	id S1753971Ab1HCJvG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 05:51:06 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:42342 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753610Ab1HCJu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 05:48:35 -0400
-Message-ID: <4E391986.90108@cn.fujitsu.com>
-Date: Wed, 03 Aug 2011 17:48:54 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Shaohua Li <shli@kernel.org>
-CC: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: fio posixaio performance problem
-References: <4E38C314.8070305@cn.fujitsu.com> <CANejiEViuKky1A7Xh0MQKBVNMj_fgzwayWyON7hFGfP3wa62SQ@mail.gmail.com> <4E3902C7.9050907@cn.fujitsu.com> <CANejiEVqFt4j1-qTVnxEAe75z0y010s=ST2XtCDDTqDEQT=EcQ@mail.gmail.com>
-In-Reply-To: <CANejiEVqFt4j1-qTVnxEAe75z0y010s=ST2XtCDDTqDEQT=EcQ@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-03 17:47:35,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-03 17:47:35
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+	Wed, 3 Aug 2011 05:50:57 -0400
+Subject: Re: [patch v2 04/10] kdump: Trigger kdump via panic notifier chain
+ on s390
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
+        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+In-Reply-To: <20110802192147.GJ6399@redhat.com>
+References: <20110727125504.491183728@linux.vnet.ibm.com>
+	 <20110727125808.028895659@linux.vnet.ibm.com>
+	 <20110801204114.GJ3805@redhat.com> <1312274279.4881.18.camel@br98xy6r>
+	 <20110802192147.GJ6399@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Wed, 03 Aug 2011 11:50:39 +0200
+Message-ID: <1312365039.3783.36.camel@br98xy6r>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-8-3 16:22, Shaohua Li wrote:
-> 2011/8/3 Gui Jianfeng <guijianfeng@cn.fujitsu.com>:
->> On 2011-8-3 15:38, Shaohua Li wrote:
->>> 2011/8/3 Gui Jianfeng <guijianfeng@cn.fujitsu.com>:
->>>> Hi,
->>>>
->>>> I ran a fio test to simulate qemu-kvm io behaviour.
->>>> When job number is greater than 2, IO performance is
->>>> really bad.
->>>>
->>>> 1 thread: aggrb=15,129KB/s
->>>> 4 thread: aggrb=1,049KB/s
->>>>
->>>> Kernel: lastest upstream
->>>>
->>>> Any idea?
->>>>
->>>> ---
->>>> [global]
->>>> runtime=30
->>>> time_based=1
->>>> size=1G
->>>> group_reporting=1
->>>> ioengine=posixaio
->>>> exec_prerun='echo 3 > /proc/sys/vm/drop_caches'
->>>> thread=1
->>>>
->>>> [kvmio-1]
->>>> description=kvmio-1
->>>> numjobs=4
->>>> rw=write
->>>> bs=4k
->>>> direct=1
->>>> filename=/mnt/sda4/1G.img
->>> Hmm, the test runs always about 15M/s at my side regardless how many threads.
->>
->> CFQ£¿
-> yes.
-> 
->> what's the slice_idle value?
-> default value. I didn't change it.
+Hello Vivek,
 
-Hmm, I use a sata disk, and can reproduce this bug every time...
-
-Thanks,
-Gui
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Tue, 2011-08-02 at 15:21 -0400, Vivek Goyal wrote:
+> > We have added the panic notifier in the past in order to be able to
+> > configure the action that should be done in case of panic using our
+> > shutdown actions infrastructure. We can configure the action using sysfs
+> > and we are able to configure that a stand-alone dump should be started
+> > as action for panic.
+> > 
+> > Now with the two stage dump approach we would like to keep the
+> > possibility to trigger a stand-alone dump even if kdump is installed.
+> > The stand-alone dumper will be started in case of a kernel panic and
+> > then the procedure we discussed will happen: Jump into kdump and if
+> > program check occurs do stand-alone dump as backup.
 > 
+> Frankly speaking this jumping to stand alone kernel by default is not
+> making any sense to me. Once you have already determined from /sys that
+> in case of crash a user has set the action to kdump, then we should
+> simply call crash_kexec()
+
+If the user has set the panic action to kdump, we jump directly to
+crash_kexec(). This then works like on all other architectures.
+
+Only if the user has specified panic action stand-alone dump, we do the
+detour via the stand-alone dump tools.
+
+> like other architectures and jump to stand
+> alone kernel only if some piece of code is corrupted and that action
+> failed.
 > 
+> What's the point of jumping to stand alone kenrel in case of panic()
+> and then re-enter it back to original kernel using crash_kexec(). Sound
+> like a very odd design choice to me.
+> 
+> I am now I am repeating this question umpteen time simply because
+> I never got a good answer except "we have to do it this way".
+
+Sometimes communication is really hard and frustrating.
+... but at least we are still communicating.
+
+Ok very last try:
+
+* We can use the same mechanism for manual dump and automatic dump on
+panic: IPL the stand-alone dump tools. kdump check and backup
+stand-alone dump is implemented only in the stand-alone dump code. If we
+would do it like you suggested, we would have to do it twice - in the
+kernel and in the stand-alone dump tools:
+- kernel: Try kdump and if kdump fails trigger standalone dump tool
+- Stand-alone dump tool: Try kdump and if kdump fails do full dump
+
+* Still the panic action is configured via sysfs as the user is already
+used to on s390.
+
+* It fits much better into our whole s390 infrastructure. Believe me, we
+have discussed that here a long time. I think you do not have a full
+overview here. Perhaps you just have to believe that.
+
+Michael
 
 
