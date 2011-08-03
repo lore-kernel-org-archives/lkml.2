@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab1HCJCb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 05:02:31 -0400
-Received: from symlink.to.noone.org ([85.10.207.172]:49554 "EHLO sym.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752637Ab1HCJCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 05:02:24 -0400
-Date: Wed, 3 Aug 2011 11:02:23 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] net/usb: Use kzalloc
-Message-ID: <20110803090223.GM4587@distanz.ch>
-References: <1312301372.2629.10.camel@localhost.localdomain>
+	id S1753250Ab1HCJCp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 05:02:45 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:51214 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753219Ab1HCJCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 05:02:38 -0400
+Message-ID: <4E390EBA.7060507@cn.fujitsu.com>
+Date: Wed, 03 Aug 2011 17:02:50 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312301372.2629.10.camel@localhost.localdomain>
-X-Editor: Vi IMproved 7.1
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Mel Gorman <mgorman@suse.de>
+CC: Xiaotian Feng <xtfeng@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: kernel BUG at mm/vmscan.c:1114
+References: <CAJn8CcE20-co4xNOD8c+0jMeABrc1mjmGzju3xT34QwHHHFsUA@mail.gmail.com> <CAJn8CcG-pNbg88+HLB=tRr26_R+A0RxZEWsJQg4iGe4eY2noXA@mail.gmail.com> <20110802002226.3ff0b342.akpm@linux-foundation.org> <CAJn8CcGTwhAaqghqWOYN9mGvRZDzyd9UJbYARz7NGA-7NvFg9Q@mail.gmail.com> <20110803085437.GB19099@suse.de>
+In-Reply-To: <20110803085437.GB19099@suse.de>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-03 17:01:37,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-03 17:01:38,
+	Serialize complete at 2011-08-03 17:01:38
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please add a Signed-off-by line as mentioned in
-Documentation/SubmittingPatches.
-
-Also you should Cc: the proper maintainer and list (in this case
-netdev). You can use scripts/get_maintainers.pl to get this information
-
-Cheers
-Tobias
-
-On 2011-08-02 at 18:09:28 +0200, Thomas Meyer <thomas@m3y3r.de> wrote:
-> --- a/drivers/net/usb/cdc_ncm.c 2011-07-26 00:46:08.126846923 +0200
-> +++ b/drivers/net/usb/cdc_ncm.c 2011-08-01 20:20:43.396390040 +0200
-> @@ -479,12 +479,10 @@ static int cdc_ncm_bind(struct usbnet *d
->  	int temp;
->  	u8 iface_no;
->  
-> -	ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
-> +	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
->  	if (ctx == NULL)
->  		return -ENODEV;
->  
-> -	memset(ctx, 0, sizeof(*ctx));
-> -
->  	init_timer(&ctx->tx_timer);
->  	spin_lock_init(&ctx->mtx);
->  	ctx->netdev = dev->net;
+16:54, Mel Gorman wrote:
+> On Wed, Aug 03, 2011 at 02:44:20PM +0800, Xiaotian Feng wrote:
+>> On Tue, Aug 2, 2011 at 3:22 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+>>> On Tue, 2 Aug 2011 15:09:57 +0800 Xiaotian Feng <xtfeng@gmail.com> wrote:
+>>>
+>>>> __ __I'm hitting the kernel BUG at mm/vmscan.c:1114 twice, each time I
+>>>> was trying to build my kernel. The photo of crash screen and my config
+>>>> is attached.
+>>>
+>>> hm, now why has that started happening?
+>>>
+>>> Perhaps you could apply this debug patch, see if we can narrow it down?
+>>>
+>>
+>> I will try it then, but it isn't very reproducible :(
+>> But my system hung after some list corruption warnings... I hit the
+>> corruption 4 times...
+>>
 > 
+> That is very unexpected but if lists are being corrupted, it could
+> explain the previously reported bug as that bug looked like an active
+> page on an inactive list.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> What was the last working kernel? Can you bisect?
 > 
+
+I just triggered the same BUG_ON() while running xfstests to test btrfs,
+but I forgot to remember which test case was running when it happaned,
+case 134 or around.
+
+--
+Li Zefan
