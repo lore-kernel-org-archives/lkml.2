@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab1HCOJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 10:09:56 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:38228 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753650Ab1HCOJw (ORCPT
+	id S1754061Ab1HCOLa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 10:11:30 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:50128 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076Ab1HCOLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 10:09:52 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: W5eDuNIVM1mh3LP1YwrsMr5kbQx9d0vk6iRgvffNHQNNnjS
- VJSXYAsE1XvLI028XKhexoRNNdEOniSGSSIwlCH2muyAsgFeAv2kSOJCHFkX
- ru0Id2ogaR1TYYcEit4LTD58NTIPbQdPG3UxiyVHRXmbuQC9GMc.Wcf8HIDr
- BQmyYydeVN789oR5rXTMwr262toBzd8t0gmMmcHPr_FjaafKZIt5.xCHdHkG
- w8ucCC.annxtLMUn85BWtPta2gA9Aj5vfbEmhMsXAwYLzbYI3Y7S7qlQZEHn
- sMaqKVy8vilqQVVQjbjAYw3RyKgpDHSKJygGRhYCaZKVrt4.0
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 3 Aug 2011 09:09:48 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: David Rientjes <rientjes@google.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
-In-Reply-To: <alpine.DEB.2.00.1108020938200.1114@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1108030908100.24201@router.home>
-References: <alpine.DEB.2.00.1107290145080.3279@tiger> <alpine.DEB.2.00.1107291002570.16178@router.home> <alpine.DEB.2.00.1107311136150.12538@chino.kir.corp.google.com> <alpine.DEB.2.00.1107311253560.12538@chino.kir.corp.google.com> <1312145146.24862.97.camel@jaguar>
- <alpine.DEB.2.00.1107311426001.944@chino.kir.corp.google.com> <CAOJsxLHB9jPNyU2qztbEHG4AZWjauCLkwUVYr--8PuBBg1=MCA@mail.gmail.com> <alpine.DEB.2.00.1108012101310.6871@chino.kir.corp.google.com> <alpine.DEB.2.00.1108020913180.18965@router.home>
- <alpine.DEB.2.00.1108020915370.1114@chino.kir.corp.google.com> <alpine.DEB.2.00.1108021131250.21126@router.home> <alpine.DEB.2.00.1108020938200.1114@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 3 Aug 2011 10:11:24 -0400
+Message-ID: <4E3956FC.5090104@gmail.com>
+Date: Wed, 03 Aug 2011 08:11:08 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Peter Zijlstra <peterz@infradead.org>, Han Pingtian <phan@redhat.com>
+CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, jolsa@redhat.com
+Subject: Re: perf complains losting events
+References: <20110803102858.GB2790@hpt.nay.redhat.com> <1312368852.1147.290.camel@twins>
+In-Reply-To: <1312368852.1147.290.camel@twins>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Aug 2011, David Rientjes wrote:
+On 08/03/2011 04:54 AM, Peter Zijlstra wrote:
+> On Wed, 2011-08-03 at 18:28 +0800, Han Pingtian wrote:
+>> Hi,
+>>
+>> I find there is a comment about losting events:
+>>
+>> /*
+>>  * The kernel collects the number of events it couldn't send in a stretch and
+>>  * when possible sends this number in a PERF_RECORD_LOST event. The number of
+>>  * such "chunks" of lost events is stored in .nr_events[PERF_EVENT_LOST] while
+>>  * total_lost tells exactly how many events the kernel in fact lost, i.e. it is
+>>  * the sum of all struct lost_event.lost fields reported.
+>>  *
+>>  * The total_period is needed because by default auto-freq is used, so
+>>  * multipling nr_events[PERF_EVENT_SAMPLE] by a frequency isn't possible to get
+>>  * the total number of low level events, it is necessary to to sum all struct
+>>  * sample_event.period and stash the result in total_period.
+>>  */
+>>
+>> So my question is, whether the losting of events is a problem? 
+>> I have saw it many times:
+>>
+>> [root@hp-dl580g7-01 perf]# ./perf kmem record sleep 1
+>> [ perf record: Woken up 0 times to write data ]
+>> [ perf record: Captured and wrote 21.789 MB perf.data (~951977 samples)
+>> ]
+>> Processed 0 events and LOST 76148!
+>>
+>> Check IO/CPU overload!
+>>
+>> [root@hp-dl580g7-01 perf]# ./perf kmem stat
+>> Processed 0 events and LOST 76148!
+>>
+>> Check IO/CPU overload!
+>>
+>>
+>> SUMMARY
+>> =======
+>> Total bytes requested: 5725028
+>> Total bytes allocated: 6291512
+>> Total bytes wasted on internal fragmentation: 566484
+>> Internal fragmentation: 9.003941%
+>> Cross CPU allocations: 28/84295
+> 
+> Just means there's too many event to process, if you run record as a
+> realtime task its less:
+> 
+> $ perf record -a -r 1 -R -f -c 1 -e kmem:kmalloc -e kmem:kmalloc_node -e
+> kmem:kfree -e kmem:kmem_cache_alloc -e kmem:kmem_cache_alloc_node -e
+> kmem:kmem_cache_free -- sleep 2
+> [ perf record: Woken up 2 times to write data ]
+> [ perf record: Captured and wrote 3.642 MB perf.data (~159113 samples) ]
+> Processed 0 events and LOST 7213!
+> 
+> On the question on if its a problem, that very much depends on what you
+> want to do and what kind of precision you need from you data..
+> 
+> I suspect that once we start writing one file per cpu this again will
+> improve somewhat. Acme was going to work on that.. dunno what his plans
+> are.
 
-> On Tue, 2 Aug 2011, Christoph Lameter wrote:
->
-> > The per cpu partial lists only add the need for more memory if other
-> > processors have to allocate new pages because they do not have enough
-> > partial slab pages to satisfy their needs. That can be tuned by a cap on
-> > objects.
-> >
->
-> The netperf benchmark isn't representative of a heavy slab consuming
-> workload, I routinely run jobs on these machines that use 20 times the
-> amount of slab.  From what I saw in the earlier posting of the per-cpu
-> partial list patch, the min_partial value is set to half of what it was
-> previously as a per-node partial list.  Since these are 16-core, 4 node
-> systems, that would mean that after a kmem_cache_shrink() on a cache that
-> leaves empty slab on the partial lists that we've doubled the memory for
-> slub's partial lists systemwide.
+Increasing the number of memory pages helps too (-m arg).
 
-Cutting down the potential number of empty slabs that we might possible
-keep around because we have no partial slabs per node increases memory
-usage?
+David
 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-perf-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
