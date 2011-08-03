@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab1HCO2s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 10:28:48 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:50496 "EHLO
+	id S1754549Ab1HCO24 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 10:28:56 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:41541 "EHLO
 	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752356Ab1HCO2l (ORCPT
+	by vger.kernel.org with ESMTP id S1754071Ab1HCO2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 10:28:41 -0400
-X-Sasl-enc: Y/hnIntqrGi/0CrXAIMe+RzGN383kUbm8FQcLpQEuInc 1312381720
-Date: Wed, 3 Aug 2011 07:26:28 -0700
+	Wed, 3 Aug 2011 10:28:42 -0400
+X-Sasl-enc: 2x4N6Nf6SXtfKfC/gP49wOlRN951MvOr18iZ3G7lZjbz 1312381721
+Date: Wed, 3 Aug 2011 07:26:43 -0700
 From: Greg KH <greg@kroah.com>
-To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-Cc: ngupta@vflare.org, dan.magenheimer@oracle.com, gregkh@suse.de,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        sfr@canb.auug.org.au, paul.gortmaker@windriver.com,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH] zcache: include module.h for MODULE_LICENSE
-Message-ID: <20110803142628.GA9756@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+Subject: Re: linux-next: build failure after merge of the moduleh tree
+Message-ID: <20110803142643.GB9756@kroah.com>
 References: <20110803141641.00402b8e49dd68aa58c458ac@canb.auug.org.au>
- <1312380040-28249-1-git-send-email-cascardo@holoscopio.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1312380040-28249-1-git-send-email-cascardo@holoscopio.com>
+In-Reply-To: <20110803141641.00402b8e49dd68aa58c458ac@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 03, 2011 at 11:00:40AM -0300, Thadeu Lima de Souza Cascardo wrote:
-> The oncoming cleanup of module.h usage requires the explicit inclusion
-> of module.h when it was otherwise being included indirectly. Otherwise,
-> building zcache will fail.
+On Wed, Aug 03, 2011 at 02:16:41PM +1000, Stephen Rothwell wrote:
+> Hi Paul,
 > 
-> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+> After merging the moduleh tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/staging/zcache/zcache-main.c:57:16: error: expected declaration specifiers or '...' before string constant
+> drivers/staging/zcache/zcache-main.c:57:1: warning: data definition has no type or storage class
+> drivers/staging/zcache/zcache-main.c:57:1: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+> drivers/staging/zcache/zcache-main.c:57:16: warning: function declaration isn't a prototype
+> 
+> Caused by commit fd6b68bbac9f ("staging: zcache: module is GPL")
+> interacting with the module.h split up.
+> 
+> Greg, this file needs module.h even in upstream.
 
-Thanks, but you forgot the Reported-by: tag for this patch that you
-should have added.  I've added it this time but please be more careful
-next time.
+Ick, sorry about that, now fixed.
 
 greg k-h
