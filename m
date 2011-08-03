@@ -1,66 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620Ab1HCOZS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 10:25:18 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:34333 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754003Ab1HCOZI (ORCPT
+	id S1754339Ab1HCO2s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 10:28:48 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:50496 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752356Ab1HCO2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 10:25:08 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: kvm@vger.kernel.org
-Cc: kvm-ia64@vger.kernel.org, kvm-ppc@vger.kernel.org, avi@redhat.com,
-        riel@redhat.com, glommer@redhat.com, linux-kernel@vger.kernel.org,
-        aliguori@us.ibm.com, raharper@us.ibm.com,
-        Eric B Munson <emunson@mgebm.net>
-Subject: [RFC PATCH 3/3] Add check for suspended vm in softlockup detector
-Date: Wed,  3 Aug 2011 10:25:01 -0400
-Message-Id: <1312381501-27746-4-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1312381501-27746-1-git-send-email-emunson@mgebm.net>
-References: <1312381501-27746-1-git-send-email-emunson@mgebm.net>
+	Wed, 3 Aug 2011 10:28:41 -0400
+X-Sasl-enc: Y/hnIntqrGi/0CrXAIMe+RzGN383kUbm8FQcLpQEuInc 1312381720
+Date: Wed, 3 Aug 2011 07:26:28 -0700
+From: Greg KH <greg@kroah.com>
+To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+Cc: ngupta@vflare.org, dan.magenheimer@oracle.com, gregkh@suse.de,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        sfr@canb.auug.org.au, paul.gortmaker@windriver.com,
+        linux-next@vger.kernel.org
+Subject: Re: [PATCH] zcache: include module.h for MODULE_LICENSE
+Message-ID: <20110803142628.GA9756@kroah.com>
+References: <20110803141641.00402b8e49dd68aa58c458ac@canb.auug.org.au>
+ <1312380040-28249-1-git-send-email-cascardo@holoscopio.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312380040-28249-1-git-send-email-cascardo@holoscopio.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A suspended VM can cause spurious soft lockup warnings.  To avoid these, the
-watchdog now checks if the kernel knows it was stopped by the host and skips
-the warning if so.
+On Wed, Aug 03, 2011 at 11:00:40AM -0300, Thadeu Lima de Souza Cascardo wrote:
+> The oncoming cleanup of module.h usage requires the explicit inclusion
+> of module.h when it was otherwise being included indirectly. Otherwise,
+> building zcache will fail.
+> 
+> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
----
- kernel/watchdog.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+Thanks, but you forgot the Reported-by: tag for this patch that you
+should have added.  I've added it this time but please be more careful
+next time.
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 36491cd..9cd03b3 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -25,6 +25,7 @@
- #include <linux/sysctl.h>
- 
- #include <asm/irq_regs.h>
-+#include <asm/pvclock.h>
- #include <linux/perf_event.h>
- 
- int watchdog_enabled = 1;
-@@ -292,6 +293,16 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
- 	 */
- 	duration = is_softlockup(touch_ts);
- 	if (unlikely(duration)) {
-+		/*
-+		 * If a virtual machine is stopped by the host it can look to
-+		 * the watchdog like a soft lockup, check to see if the host
-+		 * stopped the vm before we issue the warning
-+		 */
-+		if (kvm_check_host_stopped()) {
-+			kvm_clear_host_stopped();
-+			return HRTIMER_RESTART;
-+		}
-+
- 		/* only warn once */
- 		if (__this_cpu_read(soft_watchdog_warn) == true)
- 			return HRTIMER_RESTART;
--- 
-1.7.4.1
-
+greg k-h
