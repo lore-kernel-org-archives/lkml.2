@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab1HCOIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 10:08:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46372 "EHLO mx1.redhat.com"
+	id S1754023Ab1HCOJd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 10:09:33 -0400
+Received: from cernmx30.cern.ch ([137.138.144.177]:5040 "EHLO CERNMX30.cern.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753511Ab1HCOIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 10:08:50 -0400
-Date: Wed, 3 Aug 2011 16:04:56 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Manuel Lauss <manuel.lauss@googlemail.com>,
-        Richard Weinberger <richard@nod.at>,
-        Marc Zyngier <marc.zyngier@arm.com>, linux-kernel@vger.kernel.org
-Subject: Re: + shm-fix-a-race-between-shm_exit-and-shm_init.patch added to
-	-mm tree
-Message-ID: <20110803140456.GA14393@redhat.com>
+	id S1753511Ab1HCOJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 10:09:28 -0400
+Date: Wed, 3 Aug 2011 16:06:30 +0200
+From: Manohar Vanga <manohar.vanga@cern.ch>
+To: Martyn Welch <martyn.welch@ge.com>
+CC: <gregkh@suse.de>, <cota@braap.org>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/8] staging: vme: add functions for bridge module
+ refcounting
+Message-ID: <20110803140630.GA29460@becoht-mvanga>
+Mail-Followup-To: Martyn Welch <martyn.welch@ge.com>, gregkh@suse.de,
+	cota@braap.org, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org
+References: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch>
+ <1312194053-32310-6-git-send-email-manohar.vanga@cern.ch>
+ <4E39555C.30507@ge.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4E39555C.30507@ge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [137.138.192.18]
+Keywords: CERN SpamKiller Note: -50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Vasiliy Kulikov <segoon@openwall.com>
->
-> On thread exit shm_exit_ns() is called, it uses shm_ids(ns).rw_mutex.  It
-> is initialized in shm_init(), but it is not called yet at the moment of
-> kernel threads exit.  Some kernel threads are created in
-> do_pre_smp_initcalls(), and shm_init() is called in do_initcalls().
->
-> Static initialization of shm_ids(init_ipc_ns).rw_mutex fixes the race.
+Hey Martyn,
 
-Yes, it is safe to call down_right() now.
+> Can we not do this inside vme_master_request, vme_slave_request, etc?
+> 
+> I.e. Add reference count when resources are given out.
+> 
+> This would then be done in the vme_*_free routines.
 
-But the code does
+I agree this would be much better. I will change this and resend :)
 
-	down_write(rw_mutex);
-	if (.in_use)
-		idr_for_each(.ipcs_idr);
-
-and thus it relies on the static initializer anyway. it is not safe
-to do idr_for_each() before idr_init() in theory.
-
-And since we rely on .in_use == 0, why we can't move this check
-outside of down_write/up_right to a) optimize the code and b)
-fix the problem?
-
-Oleg.
-
+Thanks!
+--
+/manohar
