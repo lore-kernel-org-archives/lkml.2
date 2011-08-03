@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159Ab1HCX3k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:29:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33820 "EHLO mx2.suse.de"
+	id S932144Ab1HCX3b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:29:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33828 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756161Ab1HCX2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:28:42 -0400
+	id S1756181Ab1HCX2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:28:45 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:51 2011
-Message-Id: <20110803221250.982268883@clark.kroah.org>
+Message-Id: <20110803221251.075701537@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:29 -0700
+Date: Wed, 03 Aug 2011 15:01:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Christian Zankel <chris@zankel.net>, Oleg Nesterov <oleg@redhat.com>
-Subject: [069/102] xtensa: prevent arbitrary read in ptrace
+        Maxim Patlasov <maxim.patlasov@gmail.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [070/102] ext4: fix i_blocks/quota accounting when extent insertion fails
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +26,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Maxim Patlasov <maxim.patlasov@gmail.com>
 
-commit 0d0138ebe24b94065580bd2601f8bb7eb6152f56 upstream.
+commit 7132de744ba76930d13033061018ddd7e3e8cd91 upstream.
 
-Prevent an arbitrary kernel read.  Check the user pointer with access_ok()
-before copying data in.
+The current implementation of ext4_free_blocks() always calls
+dquot_free_block This looks quite sensible in the most cases: blocks
+to be freed are associated with inode and were accounted in quota and
+i_blocks some time ago.
 
-[akpm@linux-foundation.org: s/EIO/EFAULT/]
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Cc: Christian Zankel <chris@zankel.net>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+However, there is a case when blocks to free were not accounted by the
+time calling ext4_free_blocks() yet:
+
+1. delalloc is on, write_begin pre-allocated some space in quota
+2. write-back happens, ext4 allocates some blocks in ext4_ext_map_blocks()
+3. then ext4_ext_map_blocks() gets an error (e.g.  ENOSPC) from
+   ext4_ext_insert_extent() and calls ext4_free_blocks().
+
+In this scenario, ext4_free_blocks() calls dquot_free_block() who, in
+turn, decrements i_blocks for blocks which were not accounted yet (due
+to delalloc) After clean umount, e2fsck reports something like:
+
+> Inode 21, i_blocks is 5080, should be 5128.  Fix<y>?
+because i_blocks was erroneously decremented as explained above.
+
+The patch fixes the problem by passing the new flag
+EXT4_FREE_BLOCKS_NO_QUOT_UPDATE to ext4_free_blocks(), to request
+that the dquot_free_block() call be skipped.
+
+Signed-off-by: Maxim Patlasov <maxim.patlasov@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/xtensa/kernel/ptrace.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/ext4/ext4.h    |    1 +
+ fs/ext4/extents.c |    4 +++-
+ fs/ext4/mballoc.c |    2 +-
+ 3 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/xtensa/kernel/ptrace.c
-+++ b/arch/xtensa/kernel/ptrace.c
-@@ -147,6 +147,9 @@ int ptrace_setxregs(struct task_struct *
- 	elf_xtregs_t *xtregs = uregs;
- 	int ret = 0;
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -526,6 +526,7 @@ struct ext4_new_group_data {
+ #define EXT4_FREE_BLOCKS_METADATA	0x0001
+ #define EXT4_FREE_BLOCKS_FORGET		0x0002
+ #define EXT4_FREE_BLOCKS_VALIDATED	0x0004
++#define EXT4_FREE_BLOCKS_NO_QUOT_UPDATE	0x0008
  
-+	if (!access_ok(VERIFY_READ, uregs, sizeof(elf_xtregs_t)))
-+		return -EFAULT;
-+
- #if XTENSA_HAVE_COPROCESSORS
- 	/* Flush all coprocessors before we overwrite them. */
- 	coprocessor_flush_all(ti);
+ /*
+  * ioctl commands
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -3601,12 +3601,14 @@ int ext4_ext_map_blocks(handle_t *handle
+ 
+ 	err = ext4_ext_insert_extent(handle, inode, path, &newex, flags);
+ 	if (err) {
++		int fb_flags = flags & EXT4_GET_BLOCKS_DELALLOC_RESERVE ?
++			EXT4_FREE_BLOCKS_NO_QUOT_UPDATE : 0;
+ 		/* free data blocks we just allocated */
+ 		/* not a good idea to call discard here directly,
+ 		 * but otherwise we'd need to call it every free() */
+ 		ext4_discard_preallocations(inode);
+ 		ext4_free_blocks(handle, inode, NULL, ext4_ext_pblock(&newex),
+-				 ext4_ext_get_actual_len(&newex), 0);
++				 ext4_ext_get_actual_len(&newex), fb_flags);
+ 		goto out2;
+ 	}
+ 
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4637,7 +4637,7 @@ do_more:
+ 	}
+ 	ext4_mark_super_dirty(sb);
+ error_return:
+-	if (freed)
++	if (freed && !(flags & EXT4_FREE_BLOCKS_NO_QUOT_UPDATE))
+ 		dquot_free_block(inode, freed);
+ 	brelse(bitmap_bh);
+ 	ext4_std_error(sb, err);
 
 
