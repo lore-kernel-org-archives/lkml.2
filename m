@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab1HCRXU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 13:23:20 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:62669 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398Ab1HCRXP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 13:23:15 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6427"; a="107673254"
-Date: Wed, 3 Aug 2011 10:23:13 -0700
-From: Larry Bassel <lbassel@codeaurora.org>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Larry Bassel <lbassel@codeaurora.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: questions about memory hotplug
-Message-ID: <20110803172313.GD3466@labbmf-linux.qualcomm.com>
-References: <20110729221230.GA3466@labbmf-linux.qualcomm.com>
- <20110730093055.GA10672@sli10-conroe.sh.intel.com>
- <20110801170850.GB3466@labbmf-linux.qualcomm.com>
- <1312247376.15392.454.camel@sli10-conroe>
- <1312358106.15392.466.camel@sli10-conroe>
+	id S1753752Ab1HCRb1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 13:31:27 -0400
+Received: from lucidpixels.com ([72.73.18.11]:35761 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752654Ab1HCRbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 13:31:20 -0400
+Date: Wed, 3 Aug 2011 13:31:19 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+cc: Andreas Hartmann <andihartmann@01019freenet.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Ivo van Doorn <IvDoorn@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
+        "users@rt2x00.serialmonkey.com" <users@rt2x00.serialmonkey.com>
+Subject: Re: [PATCH] rt2x00: rt2800: fix zeroing skb structure
+In-Reply-To: <20110803160050.GA18882@redhat.com>
+Message-ID: <alpine.DEB.2.02.1108031328030.9421@p34.internal.lan>
+References: <alpine.DEB.2.02.1107271851410.25432@p34.internal.lan> <4E318BD0.40202@lwfinger.net> <20110730113009.GA2847@redhat.com> <20110730113255.GB2847@redhat.com> <alpine.DEB.2.02.1107300736010.4925@p34.internal.lan> <alpine.DEB.2.02.1107301015340.4925@p34.internal.lan>
+ <alpine.DEB.2.02.1107301031560.4925@p34.internal.lan> <4E341DC4.9010107@01019freenet.de> <alpine.DEB.2.02.1107301305590.4925@p34.internal.lan> <20110803160050.GA18882@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312358106.15392.466.camel@sli10-conroe>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03 Aug 11 15:55, Shaohua Li wrote:
-> On Tue, 2011-08-02 at 09:09 +0800, Shaohua Li wrote:
-> > On Tue, 2011-08-02 at 01:08 +0800, Larry Bassel wrote:
-> > > 
-> > > In use case #1 yes, maybe not in #2 (we can arrange it to be
-> > > at the end of memory, but then might waste memory as it may
-> > > not be aligned on a SPARSEMEM section boundary and so would
-> > > need to be padded).
-> > then maybe the new migrate type I suggested can help here for the
-> > non-aligned memory. Anyway, let me do an experiment.
-> so your problem is to offline memory in arbitrary address and size (eg,
-> might not be at the end, and maybe smaller than a section)
 
-Yes (and online it again). Also the decision to (attempt to)
-on/offline must be done from userspace (as memory hotplug does already).
 
-> 
-> I had a hack. In my machine, I have DMA, DMA32, and NORMAL zone.
-> At boot time, I mark 500M~600M ranges as MOVABLE_NOFB. the range is in
-> DMA32 and not section size aligned.
+On Wed, 3 Aug 2011, Stanislaw Gruszka wrote:
 
-A few questions:
+> On Sat, Jul 30, 2011 at 01:07:11PM -0400, Justin Piszcz wrote:
+>> Here you go, crash 2:
+>> http://home.comcast.net/~jpiszcz/20110730/2630-rt2800usb-crash2p1.jpg
+>> http://home.comcast.net/~jpiszcz/20110730/2630-rt2800usb-crash2p2.jpg
+>
+> Here is next (draw) patch to test:
 
-* You still use SPARSEMEM though, correct?
-* Would there be any problem using NORMAL memory as MOVABLE_NOFB?
-* So you don't use ZONE_MOVABLE or kernelcore= or movablecore=
-at all?
-* Do you online/offline using the /sys/devices/system/memory files?
-If so, does the kernel still attempt to on/offline the entire
-section (as it does now) or only the MOVABLE_NOFB part?
-If not, how do you on/offline memory?
+Thanks,
 
-> MOVABLE_NOFB is a new migrate type I
-> added. That range memory is movable, but other type of allocation can't
-> fallback into such ranges. so such range memory can only be used by
-> userspace.
+# patch -p1 < ../patch4
+patching file drivers/net/wireless/rt2x00/rt2800lib.c
+patching file drivers/net/wireless/rt2x00/rt2800lib.h
+patching file drivers/net/wireless/rt2x00/rt2800usb.c
+patching file drivers/net/wireless/rt2x00/rt2x00queue.c
+patching file drivers/net/wireless/rt2x00/rt2x00usb.c
+#
 
-And the kernel will not reserve memory from it either (I had to put a
-hack in an earlier version of what I'm doing to not allow reserving
-from the movable zone because otherwise the existence of these
-reserved pages would block logical hotremove), correct?
+I'll give this driver one more chance (quickly) and let you know if it crashes
+afterwards (usually crashes in 5-10 minutes), but most likely I am going to
+move over to some other wireless usb sticks, got a couple think penguin usb
+wifi sticks that use the carl driver, 'open source' wireless usb sticks, 
+going to give them a try next.
 
-> I then run a memory stress test and do memory online/offline for the
-> range at runtime, the offline always success.
-> Does this meet your usage? If yes, I'll cook it up a little bit.
+Also got some other ones as well, hopefully one of them will work without
+900ms of lag.  The rt2870sta was the best driver in 2.6.38.x series that I
+have ever used for wireless USB sticks.
 
-Yes, this looks very promising.
-Do you see any reason this can't be backported to 2.6.38?
+Justin.
 
-Thank you very much for your help here.
-
-Larry
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
