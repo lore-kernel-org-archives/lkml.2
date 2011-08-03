@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149Ab1HCQmJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 12:42:09 -0400
-Received: from mga07.intel.com ([143.182.124.22]:36372 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752654Ab1HCQmF (ORCPT
+	id S1754719Ab1HCQmk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 12:42:40 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:48275 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754283Ab1HCQmd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 12:42:05 -0400
-X-Greylist: delayed 580 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Aug 2011 12:42:05 EDT
-From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] xen: asm/io.h should not include xen.h if XEN is disabled
-Date: Wed,  3 Aug 2011 19:33:00 +0300
-Message-Id: <049cae3c2e2923ea7efbd205257e9e22b3df5e1a.1312388919.git.dmitry.kasatkin@intel.com>
-X-Mailer: git-send-email 1.7.4.1
+	Wed, 3 Aug 2011 12:42:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAObL_7GuAmzyjo5AmYxbTeiAqFtVk1N+opzWEzwJu8Mgrvts7g@mail.gmail.com>
+References: <cover.1312386029.git.luto@mit.edu> <5bec80947da3fb72f2f18fbe6d924a69f83fbed9.1312386029.git.luto@mit.edu>
+ <alpine.LFD.2.02.1108031214470.22067@x980> <CAObL_7GuAmzyjo5AmYxbTeiAqFtVk1N+opzWEzwJu8Mgrvts7g@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Wed, 3 Aug 2011 12:42:13 -0400
+X-Google-Sender-Auth: BbYisz1cd33moE48JNzPWR_qC4o
+Message-ID: <CAObL_7FNa20Hsd0v-hs1vz=ejnkdaT+Yr=wwM681GbZJiuLkMQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] x86: Enable monitor/mwait on Intel if BIOS hasn't already
+To: Len Brown <lenb@kernel.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernel-devel package with kernel headers have no <include/xen> directory
-if XEN is disabled. Modules which inclide asm/io.h won't compile.
+On Wed, Aug 3, 2011 at 12:22 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+> On Wed, Aug 3, 2011 at 12:15 PM, Len Brown <lenb@kernel.org> wrote:
+>> On Wed, 3 Aug 2011, Andy Lutomirski wrote:
+>>
+>>> I have a Sandy Bridge machine with an Intel BIOS that enables
+>>> monitor/mwait on all but the boot CPU.  With this patch, intel_idle
+>>> works.
+>>
+>> What machine has this BIOS bug, and are you running
+>> the latest version of the BIOS?
+>
+> Intel DQ67SW, version SWQ6710H.86A.0051.2011.0413.1154.  This is not
+> quite up-to-date -- I'll test a newer BIOS.
 
-XEN related content is behind the CONFIG_XEN flag in the io.h.
-And <xen/xen.h> should be also behind CONFIG_XEN flag.
+SWQ6710H.86A.0053.2011.0615.1535 has the same problem.  It fixed ASPM, though :)
 
-Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
----
- arch/x86/include/asm/io.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Should I redo the patch with a printk to warn about the firmware bug?
 
-diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
-index 0722730..ef26712 100644
---- a/arch/x86/include/asm/io.h
-+++ b/arch/x86/include/asm/io.h
-@@ -41,7 +41,9 @@
- #include <asm-generic/int-ll64.h>
- #include <asm/page.h>
- 
-+#ifdef CONFIG_XEN
- #include <xen/xen.h>
-+#endif
- 
- #define build_mmio_read(name, size, type, reg, barrier) \
- static inline type name(const volatile void __iomem *addr) \
--- 
-1.7.4.1
+--Andy
 
+>
+> (Enabling monitor/mwait on some but not all CPUs is obnoxious, too.  I
+> think it's just dumb luck that Linux notices at all and doesn't
+> crash.)
+>
+> --Andy
+>
