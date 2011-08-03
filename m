@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab1HCX3s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:29:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33857 "EHLO mx2.suse.de"
+	id S1756243Ab1HCX34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:29:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33876 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756196Ab1HCX2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:28:55 -0400
+	id S1756206Ab1HCX3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:29:03 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:51 2011
-Message-Id: <20110803221251.387258955@clark.kroah.org>
+Message-Id: <20110803221251.483780276@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:33 -0700
+Date: Wed, 03 Aug 2011 15:01:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thieu Le <thieule@chromium.org>,
-        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Subject: [073/102] ecryptfs: Make inode bdi consistent with superblock bdi
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
+        Roberto Sassu <roberto.sassu@polito.it>
+Subject: [074/102] eCryptfs: Unlock keys needed by ecryptfsd
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,30 +26,180 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thieu Le <thieule@chromium.org>
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 
-commit 985ca0e626e195ea08a1a82b8dbeb6719747429a upstream.
+commit b2987a5e05ec7a1af7ca42e5d5349d7a22753031 upstream.
 
-Make the inode mapping bdi consistent with the superblock bdi so that
-dirty pages are flushed properly.
+Fixes a regression caused by b5695d04634fa4ccca7dcbc05bb4a66522f02e0b
 
-Signed-off-by: Thieu Le <thieule@chromium.org>
+Kernel keyring keys containing eCryptfs authentication tokens should not
+be write locked when calling out to ecryptfsd to wrap and unwrap file
+encryption keys. The eCryptfs kernel code can not hold the key's write
+lock because ecryptfsd needs to request the key after receiving such a
+request from the kernel.
+
+Without this fix, all file opens and creates will timeout and fail when
+using the eCryptfs PKI infrastructure. This is not an issue when using
+passphrase-based mount keys, which is the most widely deployed eCryptfs
+configuration.
+
 Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Acked-by: Roberto Sassu <roberto.sassu@polito.it>
+Tested-by: Roberto Sassu <roberto.sassu@polito.it>
+Tested-by: Alexis Hafner1 <haf@zurich.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ecryptfs/inode.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/ecryptfs/keystore.c |   47 +++++++++++++++++++++++++----------------------
+ 1 file changed, 25 insertions(+), 22 deletions(-)
 
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -69,6 +69,7 @@ static int ecryptfs_inode_set(struct ino
- 	inode->i_ino = lower_inode->i_ino;
- 	inode->i_version++;
- 	inode->i_mapping->a_ops = &ecryptfs_aops;
-+	inode->i_mapping->backing_dev_info = inode->i_sb->s_bdi;
+--- a/fs/ecryptfs/keystore.c
++++ b/fs/ecryptfs/keystore.c
+@@ -1868,11 +1868,6 @@ int ecryptfs_parse_packet_set(struct ecr
+ 	 * just one will be sufficient to decrypt to get the FEK. */
+ find_next_matching_auth_tok:
+ 	found_auth_tok = 0;
+-	if (auth_tok_key) {
+-		up_write(&(auth_tok_key->sem));
+-		key_put(auth_tok_key);
+-		auth_tok_key = NULL;
+-	}
+ 	list_for_each_entry(auth_tok_list_item, &auth_tok_list, list) {
+ 		candidate_auth_tok = &auth_tok_list_item->auth_tok;
+ 		if (unlikely(ecryptfs_verbosity > 0)) {
+@@ -1909,14 +1904,22 @@ found_matching_auth_tok:
+ 		memcpy(&(candidate_auth_tok->token.private_key),
+ 		       &(matching_auth_tok->token.private_key),
+ 		       sizeof(struct ecryptfs_private_key));
++		up_write(&(auth_tok_key->sem));
++		key_put(auth_tok_key);
+ 		rc = decrypt_pki_encrypted_session_key(candidate_auth_tok,
+ 						       crypt_stat);
+ 	} else if (candidate_auth_tok->token_type == ECRYPTFS_PASSWORD) {
+ 		memcpy(&(candidate_auth_tok->token.password),
+ 		       &(matching_auth_tok->token.password),
+ 		       sizeof(struct ecryptfs_password));
++		up_write(&(auth_tok_key->sem));
++		key_put(auth_tok_key);
+ 		rc = decrypt_passphrase_encrypted_session_key(
+ 			candidate_auth_tok, crypt_stat);
++	} else {
++		up_write(&(auth_tok_key->sem));
++		key_put(auth_tok_key);
++		rc = -EINVAL;
+ 	}
+ 	if (rc) {
+ 		struct ecryptfs_auth_tok_list_item *auth_tok_list_item_tmp;
+@@ -1956,15 +1959,12 @@ found_matching_auth_tok:
+ out_wipe_list:
+ 	wipe_auth_tok_list(&auth_tok_list);
+ out:
+-	if (auth_tok_key) {
+-		up_write(&(auth_tok_key->sem));
+-		key_put(auth_tok_key);
+-	}
+ 	return rc;
+ }
  
- 	if (S_ISLNK(inode->i_mode))
- 		inode->i_op = &ecryptfs_symlink_iops;
+ static int
+-pki_encrypt_session_key(struct ecryptfs_auth_tok *auth_tok,
++pki_encrypt_session_key(struct key *auth_tok_key,
++			struct ecryptfs_auth_tok *auth_tok,
+ 			struct ecryptfs_crypt_stat *crypt_stat,
+ 			struct ecryptfs_key_record *key_rec)
+ {
+@@ -1979,6 +1979,8 @@ pki_encrypt_session_key(struct ecryptfs_
+ 					 crypt_stat->cipher,
+ 					 crypt_stat->key_size),
+ 				 crypt_stat, &payload, &payload_len);
++	up_write(&(auth_tok_key->sem));
++	key_put(auth_tok_key);
+ 	if (rc) {
+ 		ecryptfs_printk(KERN_ERR, "Error generating tag 66 packet\n");
+ 		goto out;
+@@ -2008,6 +2010,8 @@ out:
+  * write_tag_1_packet - Write an RFC2440-compatible tag 1 (public key) packet
+  * @dest: Buffer into which to write the packet
+  * @remaining_bytes: Maximum number of bytes that can be writtn
++ * @auth_tok_key: The authentication token key to unlock and put when done with
++ *                @auth_tok
+  * @auth_tok: The authentication token used for generating the tag 1 packet
+  * @crypt_stat: The cryptographic context
+  * @key_rec: The key record struct for the tag 1 packet
+@@ -2018,7 +2022,7 @@ out:
+  */
+ static int
+ write_tag_1_packet(char *dest, size_t *remaining_bytes,
+-		   struct ecryptfs_auth_tok *auth_tok,
++		   struct key *auth_tok_key, struct ecryptfs_auth_tok *auth_tok,
+ 		   struct ecryptfs_crypt_stat *crypt_stat,
+ 		   struct ecryptfs_key_record *key_rec, size_t *packet_size)
+ {
+@@ -2039,12 +2043,15 @@ write_tag_1_packet(char *dest, size_t *r
+ 		memcpy(key_rec->enc_key,
+ 		       auth_tok->session_key.encrypted_key,
+ 		       auth_tok->session_key.encrypted_key_size);
++		up_write(&(auth_tok_key->sem));
++		key_put(auth_tok_key);
+ 		goto encrypted_session_key_set;
+ 	}
+ 	if (auth_tok->session_key.encrypted_key_size == 0)
+ 		auth_tok->session_key.encrypted_key_size =
+ 			auth_tok->token.private_key.key_size;
+-	rc = pki_encrypt_session_key(auth_tok, crypt_stat, key_rec);
++	rc = pki_encrypt_session_key(auth_tok_key, auth_tok, crypt_stat,
++				     key_rec);
+ 	if (rc) {
+ 		printk(KERN_ERR "Failed to encrypt session key via a key "
+ 		       "module; rc = [%d]\n", rc);
+@@ -2421,6 +2428,8 @@ ecryptfs_generate_key_packet_set(char *d
+ 						&max, auth_tok,
+ 						crypt_stat, key_rec,
+ 						&written);
++			up_write(&(auth_tok_key->sem));
++			key_put(auth_tok_key);
+ 			if (rc) {
+ 				ecryptfs_printk(KERN_WARNING, "Error "
+ 						"writing tag 3 packet\n");
+@@ -2438,8 +2447,8 @@ ecryptfs_generate_key_packet_set(char *d
+ 			}
+ 			(*len) += written;
+ 		} else if (auth_tok->token_type == ECRYPTFS_PRIVATE_KEY) {
+-			rc = write_tag_1_packet(dest_base + (*len),
+-						&max, auth_tok,
++			rc = write_tag_1_packet(dest_base + (*len), &max,
++						auth_tok_key, auth_tok,
+ 						crypt_stat, key_rec, &written);
+ 			if (rc) {
+ 				ecryptfs_printk(KERN_WARNING, "Error "
+@@ -2448,14 +2457,13 @@ ecryptfs_generate_key_packet_set(char *d
+ 			}
+ 			(*len) += written;
+ 		} else {
++			up_write(&(auth_tok_key->sem));
++			key_put(auth_tok_key);
+ 			ecryptfs_printk(KERN_WARNING, "Unsupported "
+ 					"authentication token type\n");
+ 			rc = -EINVAL;
+ 			goto out_free;
+ 		}
+-		up_write(&(auth_tok_key->sem));
+-		key_put(auth_tok_key);
+-		auth_tok_key = NULL;
+ 	}
+ 	if (likely(max > 0)) {
+ 		dest_base[(*len)] = 0x00;
+@@ -2468,11 +2476,6 @@ out_free:
+ out:
+ 	if (rc)
+ 		(*len) = 0;
+-	if (auth_tok_key) {
+-		up_write(&(auth_tok_key->sem));
+-		key_put(auth_tok_key);
+-	}
+-
+ 	mutex_unlock(&crypt_stat->keysig_list_mutex);
+ 	return rc;
+ }
 
 
