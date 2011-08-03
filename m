@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab1HCRb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 13:31:27 -0400
-Received: from lucidpixels.com ([72.73.18.11]:35761 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752654Ab1HCRbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 13:31:20 -0400
-Date: Wed, 3 Aug 2011 13:31:19 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-cc: Andreas Hartmann <andihartmann@01019freenet.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Ivo van Doorn <IvDoorn@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
-        "users@rt2x00.serialmonkey.com" <users@rt2x00.serialmonkey.com>
-Subject: Re: [PATCH] rt2x00: rt2800: fix zeroing skb structure
-In-Reply-To: <20110803160050.GA18882@redhat.com>
-Message-ID: <alpine.DEB.2.02.1108031328030.9421@p34.internal.lan>
-References: <alpine.DEB.2.02.1107271851410.25432@p34.internal.lan> <4E318BD0.40202@lwfinger.net> <20110730113009.GA2847@redhat.com> <20110730113255.GB2847@redhat.com> <alpine.DEB.2.02.1107300736010.4925@p34.internal.lan> <alpine.DEB.2.02.1107301015340.4925@p34.internal.lan>
- <alpine.DEB.2.02.1107301031560.4925@p34.internal.lan> <4E341DC4.9010107@01019freenet.de> <alpine.DEB.2.02.1107301305590.4925@p34.internal.lan> <20110803160050.GA18882@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1754219Ab1HCRd5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 13:33:57 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:50708 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943Ab1HCRdu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 13:33:50 -0400
+Subject: [GIT PULL] target fixes for v3.1-rc1
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Andy Grover <agrover@redhat.com>, Roland Dreier <roland@kernel.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Patil, Kiran" <kiran.patil@intel.com>,
+        "Love, Robert W" <robert.w.love@intel.com>
+Content-Type: text/plain
+Date: Wed, 03 Aug 2011 10:23:47 -0700
+Message-Id: <1312392227.28195.28.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
+The following are target bugfixes for v3.1-rc1 that have been brewing in
+for-next since the initial drivers/target/iscsi merge last week.
 
-On Wed, 3 Aug 2011, Stanislaw Gruszka wrote:
+This includes an important fix in transport_generic_wait_for_tasks() to
+address an OOPs with direct I/O submission exception handling that
+iscsi-target was triggering during testing, a tcm_fc memory corruption
+bugfix from Kiran Patil to address failures with DDP HW offload enabled
+in the ft_recv_write_data() path, along with some other minor fixes from
+various folks.
 
-> On Sat, Jul 30, 2011 at 01:07:11PM -0400, Justin Piszcz wrote:
->> Here you go, crash 2:
->> http://home.comcast.net/~jpiszcz/20110730/2630-rt2800usb-crash2p1.jpg
->> http://home.comcast.net/~jpiszcz/20110730/2630-rt2800usb-crash2p2.jpg
->
-> Here is next (draw) patch to test:
+Please pull from:
 
-Thanks,
+  master.kernel.org:/pub/scm/linux/kernel/git/nab/target-pending.git for-next
 
-# patch -p1 < ../patch4
-patching file drivers/net/wireless/rt2x00/rt2800lib.c
-patching file drivers/net/wireless/rt2x00/rt2800lib.h
-patching file drivers/net/wireless/rt2x00/rt2800usb.c
-patching file drivers/net/wireless/rt2x00/rt2x00queue.c
-patching file drivers/net/wireless/rt2x00/rt2x00usb.c
-#
+This tree is also available from kernel.org mirrors at:
 
-I'll give this driver one more chance (quickly) and let you know if it crashes
-afterwards (usually crashes in 5-10 minutes), but most likely I am going to
-move over to some other wireless usb sticks, got a couple think penguin usb
-wifi sticks that use the carl driver, 'open source' wireless usb sticks, 
-going to give them a try next.
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
 
-Also got some other ones as well, hopefully one of them will work without
-900ms of lag.  The rt2870sta was the best driver in 2.6.38.x series that I
-have ever used for wireless USB sticks.
+This series has been made against the same linux-2.6.git HEAD:
 
-Justin.
+commit bbd9d6f7fbb0305c9a592bf05a32e87eb364a4ff
+Merge: 8e20487 5a9a436
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Fri Jul 22 19:02:39 2011 -0700
+
+    Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6
+
+Thanks!
+
+--nab
+
+Dan Carpenter (2):
+  iscsi-target: Fix NULL dereference on allocation failure
+  iscsi-target: strlen() doesn't count the terminator
+
+Kiran Patil (1):
+  tcm_fc: Handle DDP/SW fc_frame_payload_get failures in
+    ft_recv_write_data
+
+Nicholas Bellinger (6):
+  iscsi-target: Fix uninitialized usage of cmd->pad_bytes
+  iscsi-target: Fix snprintf usage with MAX_PORTAL_LEN
+  iscsi-target: Fix CONFIG_SMP=n and CONFIG_MODULES=n build failure
+  MAINTAINERS: Add target-devel list for drivers/target/
+  target: Fix WRITE_SAME_16 lba assignment breakage
+  target: Fix bug for transport_generic_wait_for_tasks with direct
+    operation
+
+Randy Dunlap (1):
+  target: iscsi_target depends on NET
+
+ MAINTAINERS                                  |    1 +
+ drivers/target/iscsi/Kconfig                 |    1 +
+ drivers/target/iscsi/iscsi_target.c          |   15 ++-
+ drivers/target/iscsi/iscsi_target_configfs.c |    2 +-
+ drivers/target/iscsi/iscsi_target_nego.c     |    2 +-
+ drivers/target/target_core_transport.c       |   33 +++++++-
+ drivers/target/tcm_fc/tcm_fc.h               |    5 +
+ drivers/target/tcm_fc/tfc_cmd.c              |    1 +
+ drivers/target/tcm_fc/tfc_io.c               |  121 +++++++++++++++-----------
+ 9 files changed, 122 insertions(+), 59 deletions(-)
+
 
