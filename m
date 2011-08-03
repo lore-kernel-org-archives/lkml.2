@@ -1,116 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab1HCMWu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 08:22:50 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:48293 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755015Ab1HCMWn (ORCPT
+	id S1755582Ab1HCMkX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 08:40:23 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47945 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948Ab1HCMkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 08:22:43 -0400
-From: Per Forlin <per.forlin@stericsson.com>
-To: Felipe Balbi <balbi@ti.com>,
-        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linaro-dev@lists.linaro.org>, Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH] usb: musb: ux500: replace missing DBG with dev_dbg
-Date: Wed, 3 Aug 2011 14:22:17 +0200
-Message-ID: <1312374137-10629-1-git-send-email-per.forlin@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
+	Wed, 3 Aug 2011 08:40:18 -0400
+Date: Wed, 3 Aug 2011 13:39:53 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: linus.walleij@linaro.org, pratyush.anand@st.com, rajeev-dlh.kumar@st.com,
+        bhupesh.sharma@st.com, shiraz.hashim@st.com, vinod.koul@intel.com,
+        linux-kernel@vger.kernel.org, vipin.kumar@st.com,
+        armando.visconti@st.com, amit.virdi@st.com, vipulkumar.samar@st.com,
+        viresh.linux@gmail.com, deepak.sikri@st.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V2 08/20] dmaengine/amba-pl08x: support runtime PM
+Message-ID: <20110803123953.GB23953@n2100.arm.linux.org.uk>
+References: <cover.1312190881.git.viresh.kumar@st.com> <bc59bbd3709a7af1723d37ab846bf44c6867c00e.1312190881.git.viresh.kumar@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <bc59bbd3709a7af1723d37ab846bf44c6867c00e.1312190881.git.viresh.kumar@st.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Per Forlin <per.forlin@linaro.org>
+On Mon, Aug 01, 2011 at 03:07:18PM +0530, Viresh Kumar wrote:
+> Insert notifiers for the runtime PM API. With this the runtime PM layer kicks in
+> to action where used. This will also handle enabling/disabling of interface
+> clock (Code will be added in amba/bus.c by Russell King).
 
-ux500_dma.c fail to compile becase DBG has been removed from musb_debug.
-Use dev_dbg for all prints.
+I don't think this is correct...
 
-Signed-off-by: Per Forlin <per.forlin@linaro.org>
-Acked-by: Mian Yousaf Kaukab<mian.yousaf.kaukab@stericsson.com>
----
- drivers/usb/musb/ux500_dma.c |   22 ++++++++++++++--------
- 1 files changed, 14 insertions(+), 8 deletions(-)
+> @@ -879,11 +880,19 @@ static void pl08x_free_txd_list(struct pl08x_driver_data *pl08x,
+>   */
+>  static int pl08x_alloc_chan_resources(struct dma_chan *chan)
+>  {
+> +	struct pl08x_dma_chan *plchan = to_pl08x_chan(chan);
+> +	struct pl08x_driver_data *pl08x = plchan->host;
+> +
+> +	pm_runtime_resume(&pl08x->adev->dev);
 
-diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
-index 2313475..ef4333f 100644
---- a/drivers/usb/musb/ux500_dma.c
-+++ b/drivers/usb/musb/ux500_dma.c
-@@ -65,7 +65,8 @@ static void ux500_tx_work(struct work_struct *data)
- 	struct musb *musb = hw_ep->musb;
- 	unsigned long flags;
- 
--	DBG(4, "DMA tx transfer done on hw_ep=%d\n", hw_ep->epnum);
-+	dev_dbg(musb->controller, "DMA tx transfer done on hw_ep=%d\n",
-+		hw_ep->epnum);
- 
- 	spin_lock_irqsave(&musb->lock, flags);
- 	ux500_channel->channel.actual_len = ux500_channel->cur_len;
-@@ -84,7 +85,8 @@ static void ux500_rx_work(struct work_struct *data)
- 	struct musb *musb = hw_ep->musb;
- 	unsigned long flags;
- 
--	DBG(4, "DMA rx transfer done on hw_ep=%d\n", hw_ep->epnum);
-+	dev_dbg(musb->controller, "DMA rx transfer done on hw_ep=%d\n",
-+		hw_ep->epnum);
- 
- 	spin_lock_irqsave(&musb->lock, flags);
- 	ux500_channel->channel.actual_len = ux500_channel->cur_len;
-@@ -116,9 +118,11 @@ static bool ux500_configure_channel(struct dma_channel *channel,
- 	enum dma_slave_buswidth addr_width;
- 	dma_addr_t usb_fifo_addr = (MUSB_FIFO_OFFSET(hw_ep->epnum) +
- 					ux500_channel->controller->phy_base);
-+	struct musb *musb = ux500_channel->controller->private_data;
- 
--	DBG(4, "packet_sz=%d, mode=%d, dma_addr=0x%x, len=%d is_tx=%d\n",
--			packet_sz, mode, dma_addr, len, ux500_channel->is_tx);
-+	dev_dbg(musb->controller,
-+		"packet_sz=%d, mode=%d, dma_addr=0x%x, len=%d is_tx=%d\n",
-+		packet_sz, mode, dma_addr, len, ux500_channel->is_tx);
- 
- 	ux500_channel->cur_len = len;
- 
-@@ -164,6 +168,7 @@ static struct dma_channel *ux500_dma_channel_allocate(struct dma_controller *c,
- 	struct ux500_dma_controller *controller = container_of(c,
- 			struct ux500_dma_controller, controller);
- 	struct ux500_dma_channel *ux500_channel = NULL;
-+	struct musb *musb = controller->private_data;
- 	u8 ch_num = hw_ep->epnum - 1;
- 	u32 max_ch;
- 
-@@ -190,7 +195,7 @@ static struct dma_channel *ux500_dma_channel_allocate(struct dma_controller *c,
- 	ux500_channel->hw_ep = hw_ep;
- 	ux500_channel->is_allocated = 1;
- 
--	DBG(7, "hw_ep=%d, is_tx=0x%x, channel=%d\n",
-+	dev_dbg(musb->controller, "hw_ep=%d, is_tx=0x%x, channel=%d\n",
- 		hw_ep->epnum, is_tx, ch_num);
- 
- 	return &(ux500_channel->channel);
-@@ -199,8 +204,9 @@ static struct dma_channel *ux500_dma_channel_allocate(struct dma_controller *c,
- static void ux500_dma_channel_release(struct dma_channel *channel)
- {
- 	struct ux500_dma_channel *ux500_channel = channel->private_data;
-+	struct musb *musb = ux500_channel->controller->private_data;
- 
--	DBG(7, "channel=%d\n", ux500_channel->ch_num);
-+	dev_dbg(musb->controller, "channel=%d\n", ux500_channel->ch_num);
- 
- 	if (ux500_channel->is_allocated) {
- 		ux500_channel->is_allocated = 0;
-@@ -250,8 +256,8 @@ static int ux500_dma_channel_abort(struct dma_channel *channel)
- 	void __iomem *epio = musb->endpoints[ux500_channel->hw_ep->epnum].regs;
- 	u16 csr;
- 
--	DBG(4, "channel=%d, is_tx=%d\n", ux500_channel->ch_num,
--						ux500_channel->is_tx);
-+	dev_dbg(musb->controller, "channel=%d, is_tx=%d\n",
-+		ux500_channel->ch_num, ux500_channel->is_tx);
- 
- 	if (channel->status == MUSB_DMA_STATUS_BUSY) {
- 		if (ux500_channel->is_tx) {
--- 
-1.6.3.3
+Shouldn't this be pm_runtime_get_sync() ?
 
+>  	return 0;
+>  }
+>  
+>  static void pl08x_free_chan_resources(struct dma_chan *chan)
+>  {
+> +	struct pl08x_dma_chan *plchan = to_pl08x_chan(chan);
+> +	struct pl08x_driver_data *pl08x = plchan->host;
+> +
+> +	pm_runtime_suspend(&pl08x->adev->dev);
+
+And pm_runtime_put() ?
+
+>  }
+>  
+>  /*
+> @@ -1993,6 +2002,8 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
+>  	dev_info(&pl08x->adev->dev, "DMA: PL%03x rev%u at 0x%08llx irq %d\n",
+>  		 amba_part(adev), amba_rev(adev),
+>  		 (unsigned long long)adev->res.start, adev->irq[0]);
+> +
+> +	pm_runtime_suspend(&adev->dev);
+
+And pm_runtime_put() ?
+
+We don't want to call pm_runtime_suspend/resume directly because that
+could have bad consequences if more than one channel is in use.
+
+The enabling and disabling of runtime PM for AMBA devices will be handled
+in the core code...
+
+Lastly, we may want to make this even tighter to the actual period that
+the DMA is being used, rather than just the period that a driver has
+been allocated a channel.  I'd rather have it done that way now (and
+tested) so that we achieve maximal effect from runtime PM, rather than
+having something which needs to be revisited again.
+
+IOW, if this is worth doing, then its worth doing properly first time.
