@@ -1,226 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756427Ab1HCXgp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:36:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34013 "EHLO mx2.suse.de"
+	id S1756311Ab1HCXhM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:37:12 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:43392 "EHLO smtp.infotech.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756240Ab1HCX3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:29:55 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:50 2011
-Message-Id: <20110803221250.048938589@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:20 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [060/102] tracing: Fix bug when reading system filters on module removal
-In-Reply-To: <20110803221345.GA10346@kroah.com>
+	id S1756086Ab1HCXgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:36:38 -0400
+X-Greylist: delayed 410 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Aug 2011 19:36:38 EDT
+Message-ID: <4E39D9E1.2080301@interlog.com>
+Date: Wed, 03 Aug 2011 19:29:37 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: SCSI development list <linux-scsi@vger.kernel.org>
+CC: =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
+        Ritesh Raj Sarraf <rrs@researchut.com>,
+        "Robin H. Johnson" <robbat2@gentoo.org>,
+        Martin Pitt <mpitt@debian.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        ronnie sahlberg <ronniesahlberg@gmail.com>
+Subject: [Announce] sg3_utils-1.32 available
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let us know.
+sg3_utils is a package of command line utilities for sending
+SCSI and some ATA commands to devices. This package targets
+the linux kernel (lk) 2.6 and lk 2.4 series. It also has
+ports to FreeBSD, Tru64, Solaris, and Windows (cygwin and mingw).
 
-------------------
+A new utility called sg_sanitize has been added and there has
+been a major rework of the sg_ses utility. This version tracks
+various changes made by www.t10.org since February 2011.
 
-From: Steven Rostedt <srostedt@redhat.com>
+For an overview of sg3_utils and downloads see this page:
+     http://sg.danny.cz/sg/sg3_utils.html
+The SG_IO ioctl is discussed at:
+     http://sg.danny.cz/sg/sg_io.html
+A full changelog can be found at:
+     http://sg.danny.cz/sg/p/sg3_utils.ChangeLog
 
-commit e9dbfae53eeb9fc3d4bb7da3df87fa9875f5da02 upstream.
+A release announcement will be sent to freshmeat.net .
 
-The event system is freed when its nr_events is set to zero. This happens
-when a module created an event system and then later the module is
-removed. Modules may share systems, so the system is allocated when
-it is created and freed when the modules are unloaded and all the
-events under the system are removed (nr_events set to zero).
+Changelog for sg3_utils-1.32 [20110730] [svn: r410]
+   - sg_sanitize: new utility for command added in sb3r27
+   - sg_sat_identify: add '--ident' to output WWN
+   - sg_ses: major rework of descriptor output
+     - add --index, --descriptor, --join, --clear, --get,
+       and --set options
+   - sg_raw: exit status corrections
+   - sg_decode_sense: add --nospace and --hex options
+   - sg_logs: fix bug with large --maxlen
+     - zero response length when resid implies it is invalid
+     - add scope field to lb provisioning lpage (sb3r27)
+   - sg_inq: sync version descriptors with spc4r31
+   - sg_lib_data: sync asc/ascq codes with spc4r31
+   - sg_vpd: add LBPRZ field in LB provisioning VPD page
+   - sg_format: allow format of pdt 7 (some MO drives)
+   - sg_cmd_basic: sg_cmds_process_resp() handle status good
+     with a sense key other than no_sense (e.g. completed)
+   - add README.iscsi
 
-The problem arises when a task opened the "filter" file for the
-system. If the module is unloaded and it removed the last event for
-that system, the system structure is freed. If the task that opened
-the filter file accesses the "filter" file after the system has
-been freed, the system will access an invalid pointer.
+Changelog for sg3_utils-1.31 [20110216] [svn: r386]
+...
 
-By adding a ref_count, and using it to keep track of what
-is using the event system, we can free it after all users
-are finished with the event system.
-
-Reported-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- kernel/trace/trace.h               |    1 
- kernel/trace/trace_events.c        |   86 ++++++++++++++++++++++++++++++++-----
- kernel/trace/trace_events_filter.c |    6 ++
- 3 files changed, 82 insertions(+), 11 deletions(-)
-
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -677,6 +677,7 @@ struct event_subsystem {
- 	struct dentry		*entry;
- 	struct event_filter	*filter;
- 	int			nr_events;
-+	int			ref_count;
- };
- 
- #define FILTER_PRED_INVALID	((unsigned short)-1)
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -244,6 +244,35 @@ static void ftrace_clear_events(void)
- 	mutex_unlock(&event_mutex);
- }
- 
-+static void __put_system(struct event_subsystem *system)
-+{
-+	struct event_filter *filter = system->filter;
-+
-+	WARN_ON_ONCE(system->ref_count == 0);
-+	if (--system->ref_count)
-+		return;
-+
-+	if (filter) {
-+		kfree(filter->filter_string);
-+		kfree(filter);
-+	}
-+	kfree(system->name);
-+	kfree(system);
-+}
-+
-+static void __get_system(struct event_subsystem *system)
-+{
-+	WARN_ON_ONCE(system->ref_count == 0);
-+	system->ref_count++;
-+}
-+
-+static void put_system(struct event_subsystem *system)
-+{
-+	mutex_lock(&event_mutex);
-+	__put_system(system);
-+	mutex_unlock(&event_mutex);
-+}
-+
- /*
-  * __ftrace_set_clr_event(NULL, NULL, NULL, set) will set/unset all events.
-  */
-@@ -826,6 +855,47 @@ event_filter_write(struct file *filp, co
- 	return cnt;
- }
- 
-+static LIST_HEAD(event_subsystems);
-+
-+static int subsystem_open(struct inode *inode, struct file *filp)
-+{
-+	struct event_subsystem *system = NULL;
-+	int ret;
-+
-+	/* Make sure the system still exists */
-+	mutex_lock(&event_mutex);
-+	list_for_each_entry(system, &event_subsystems, list) {
-+		if (system == inode->i_private) {
-+			/* Don't open systems with no events */
-+			if (!system->nr_events) {
-+				system = NULL;
-+				break;
-+			}
-+			__get_system(system);
-+			break;
-+		}
-+	}
-+	mutex_unlock(&event_mutex);
-+
-+	if (system != inode->i_private)
-+		return -ENODEV;
-+
-+	ret = tracing_open_generic(inode, filp);
-+	if (ret < 0)
-+		put_system(system);
-+
-+	return ret;
-+}
-+
-+static int subsystem_release(struct inode *inode, struct file *file)
-+{
-+	struct event_subsystem *system = inode->i_private;
-+
-+	put_system(system);
-+
-+	return 0;
-+}
-+
- static ssize_t
- subsystem_filter_read(struct file *filp, char __user *ubuf, size_t cnt,
- 		      loff_t *ppos)
-@@ -963,10 +1033,11 @@ static const struct file_operations ftra
- };
- 
- static const struct file_operations ftrace_subsystem_filter_fops = {
--	.open = tracing_open_generic,
-+	.open = subsystem_open,
- 	.read = subsystem_filter_read,
- 	.write = subsystem_filter_write,
- 	.llseek = default_llseek,
-+	.release = subsystem_release,
- };
- 
- static const struct file_operations ftrace_system_enable_fops = {
-@@ -1002,8 +1073,6 @@ static struct dentry *event_trace_events
- 	return d_events;
- }
- 
--static LIST_HEAD(event_subsystems);
--
- static struct dentry *
- event_subsystem_dir(const char *name, struct dentry *d_events)
- {
-@@ -1013,6 +1082,7 @@ event_subsystem_dir(const char *name, st
- 	/* First see if we did not already create this dir */
- 	list_for_each_entry(system, &event_subsystems, list) {
- 		if (strcmp(system->name, name) == 0) {
-+			__get_system(system);
- 			system->nr_events++;
- 			return system->entry;
- 		}
-@@ -1035,6 +1105,7 @@ event_subsystem_dir(const char *name, st
- 	}
- 
- 	system->nr_events = 1;
-+	system->ref_count = 1;
- 	system->name = kstrdup(name, GFP_KERNEL);
- 	if (!system->name) {
- 		debugfs_remove(system->entry);
-@@ -1184,16 +1255,9 @@ static void remove_subsystem_dir(const c
- 	list_for_each_entry(system, &event_subsystems, list) {
- 		if (strcmp(system->name, name) == 0) {
- 			if (!--system->nr_events) {
--				struct event_filter *filter = system->filter;
--
- 				debugfs_remove_recursive(system->entry);
- 				list_del(&system->list);
--				if (filter) {
--					kfree(filter->filter_string);
--					kfree(filter);
--				}
--				kfree(system->name);
--				kfree(system);
-+				__put_system(system);
- 			}
- 			break;
- 		}
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -1886,6 +1886,12 @@ int apply_subsystem_event_filter(struct
- 
- 	mutex_lock(&event_mutex);
- 
-+	/* Make sure the system still has events */
-+	if (!system->nr_events) {
-+		err = -ENODEV;
-+		goto out_unlock;
-+	}
-+
- 	if (!strcmp(strstrip(filter_string), "0")) {
- 		filter_free_subsystem_preds(system);
- 		remove_filter_string(system->filter);
-
+Doug Gilbert
 
