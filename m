@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756404Ab1HCXgR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:36:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34076 "EHLO mx2.suse.de"
+	id S1756413Ab1HCXgl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:36:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34035 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756262Ab1HCXaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:30:13 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:53 2011
-Message-Id: <20110803221253.651625635@clark.kroah.org>
+	id S932135Ab1HCXaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:30:03 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:50 2011
+Message-Id: <20110803221250.269386284@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:55 -0700
+Date: Wed, 03 Aug 2011 15:01:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [095/102] rt2x00: Add device ID for RT539F device.
+        Lasse Collin <lasse.collin@tukaani.org>
+Subject: [062/102] XZ: Fix missing <linux/kernel.h> include
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,29 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gertjan van Wingerde <gwingerde@gmail.com>
+From: Lasse Collin <lasse.collin@tukaani.org>
 
-commit 71e0b38c2914018b01f3f08b43ee9e3328197699 upstream.
+commit 81d67439855a7f928d90965d832aa4f2fb677342 upstream.
 
-Reported-by: Wim Vander Schelden <wim@fixnum.org>
-Signed-off-by: Gertjan van Wingerde <gwingerde@gmail.com>
-Signed-off-by: Ivo van Doorn <IvDoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+<linux/kernel.h> is needed for min_t. The old version
+happened to work on x86 because <asm/unaligned.h>
+indirectly includes <linux/kernel.h>, but it didn't
+work on ARM.
+
+<linux/kernel.h> includes <asm/byteorder.h> so it's
+not necessary to include it explicitly anymore.
+
+Signed-off-by: Lasse Collin <lasse.collin@tukaani.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/rt2x00/rt2800pci.c |    1 +
- 1 file changed, 1 insertion(+)
+ lib/xz/xz_private.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rt2x00/rt2800pci.c
-+++ b/drivers/net/wireless/rt2x00/rt2800pci.c
-@@ -1158,6 +1158,7 @@ static DEFINE_PCI_DEVICE_TABLE(rt2800pci
- #endif
- #ifdef CONFIG_RT2800PCI_RT53XX
- 	{ PCI_DEVICE(0x1814, 0x5390) },
-+	{ PCI_DEVICE(0x1814, 0x539f) },
- #endif
- 	{ 0, }
- };
+--- a/lib/xz/xz_private.h
++++ b/lib/xz/xz_private.h
+@@ -12,7 +12,7 @@
+ 
+ #ifdef __KERNEL__
+ #	include <linux/xz.h>
+-#	include <asm/byteorder.h>
++#	include <linux/kernel.h>
+ #	include <asm/unaligned.h>
+ 	/* XZ_PREBOOT may be defined only via decompress_unxz.c. */
+ #	ifndef XZ_PREBOOT
 
 
