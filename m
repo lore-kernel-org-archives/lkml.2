@@ -1,77 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930Ab1HCIyR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 04:54:17 -0400
-Received: from exprod5og104.obsmtp.com ([64.18.0.178]:46841 "EHLO
-	exprod5og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148Ab1HCIyI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 04:54:08 -0400
-Message-ID: <4E390CAB.20305@ge.com>
-Date: Wed, 03 Aug 2011 09:54:03 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1752629Ab1HCIyt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 04:54:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44087 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753031Ab1HCIyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 04:54:41 -0400
+Date: Wed, 3 Aug 2011 09:54:37 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Xiaotian Feng <xtfeng@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: kernel BUG at mm/vmscan.c:1114
+Message-ID: <20110803085437.GB19099@suse.de>
+References: <CAJn8CcE20-co4xNOD8c+0jMeABrc1mjmGzju3xT34QwHHHFsUA@mail.gmail.com>
+ <CAJn8CcG-pNbg88+HLB=tRr26_R+A0RxZEWsJQg4iGe4eY2noXA@mail.gmail.com>
+ <20110802002226.3ff0b342.akpm@linux-foundation.org>
+ <CAJn8CcGTwhAaqghqWOYN9mGvRZDzyd9UJbYARz7NGA-7NvFg9Q@mail.gmail.com>
 MIME-Version: 1.0
-To: gregkh@suse.de, cota@braap.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] staging: vme: allow explicit assignment of bus numbers
-References: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch>	<1312194053-32310-3-git-send-email-manohar.vanga@cern.ch>	<4E36A4EA.30404@ge.com> <20110801143102.GA9705@becoht-mvanga>	<4E36CB29.2030907@ge.com> <20110802115434.GA25063@becoht-mvanga> <4E381043.7080501@ge.com>
-In-Reply-To: <4E381043.7080501@ge.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Aug 2011 08:50:56.0003 (UTC) FILETIME=[75438D30:01CC51BA]
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CAJn8CcGTwhAaqghqWOYN9mGvRZDzyd9UJbYARz7NGA-7NvFg9Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/08/11 15:57, Martyn Welch wrote:
+On Wed, Aug 03, 2011 at 02:44:20PM +0800, Xiaotian Feng wrote:
+> On Tue, Aug 2, 2011 at 3:22 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Tue, 2 Aug 2011 15:09:57 +0800 Xiaotian Feng <xtfeng@gmail.com> wrote:
+> >
+> >> __ __I'm hitting the kernel BUG at mm/vmscan.c:1114 twice, each time I
+> >> was trying to build my kernel. The photo of crash screen and my config
+> >> is attached.
+> >
+> > hm, now why has that started happening?
+> >
+> > Perhaps you could apply this debug patch, see if we can narrow it down?
+> >
 > 
-> Which part of the example udev rule I gave is a fixed identifier? It
-> identifies the CDROM based on system topology, using the PCI bus numbering and
-> SCSI bus numbering.
-> 
-> For example, for a device sitting on VME, in the A32 address space at 0x30000,
-> via a PCI-VME bridge on PCI bus 2, device 0d, we could provide something like
-> this:
-> 
-> vme-a32:30000-pci-0000:02:0d.0
+> I will try it then, but it isn't very reproducible :(
+> But my system hung after some list corruption warnings... I hit the
+> corruption 4 times...
 > 
 
-Hmm, thinking about it, that's not right either.
+That is very unexpected but if lists are being corrupted, it could
+explain the previously reported bug as that bug looked like an active
+page on an inactive list.
 
-The VME bridge would be at "pci-0000:02:0d.0". In the current scheme this
-would be given a bus number and we should be able to discover from sysfs which
-bus numbers are used for which VME bridges. For example, as the usb buses are
-enumerated:
+What was the last working kernel? Can you bisect?
 
-$ ls -la /sys/bus/usb/devices/usb*
-lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb1 ->
-../../../devices/pci0000:00/0000:00:1a.7/usb1
-lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb2 ->
-../../../devices/pci0000:00/0000:00:1d.7/usb2
-lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb3 ->
-../../../devices/pci0000:00/0000:00:1a.0/usb3
-lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb4 ->
-../../../devices/pci0000:00/0000:00:1a.1/usb4
-lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb5 ->
-../../../devices/pci0000:00/0000:00:1a.2/usb5
-lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb6 ->
-../../../devices/pci0000:00/0000:00:1d.0/usb6
-lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb7 ->
-../../../devices/pci0000:00/0000:00:1d.1/usb7
-lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb8 ->
-../../../devices/pci0000:00/0000:00:1d.2/usb8
-$
+>  [ 1220.468089] ------------[ cut here ]------------
+>  [ 1220.468099] WARNING: at lib/list_debug.c:56 __list_del_entry+0x82/0xd0()
+>  [ 1220.468102] Hardware name: 42424XC
+>  [ 1220.468104] list_del corruption. next->prev should be
+> ffffea0000e069a0, but was ffff880100216c78
+>  [ 1220.468106] Modules linked in: ip6table_filter ip6_tables
+> ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4
+> xt_state nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp
+> iptable_filter ip_tables x_tables binfmt_misc bridge stp parport_pc
+> ppdev snd_hda_codec_conexant snd_hda_intel snd_hda_codec thinkpad_acpi
+> snd_hwdep snd_pcm i915 snd_seq_midi snd_rawmidi arc4 cryptd
+> snd_seq_midi_event aes_x86_64 snd_seq drm_kms_helper iwlagn snd_timer
+> aes_generic drm snd_seq_device mac80211 psmouse uvcvideo videodev snd
+> v4l2_compat_ioctl32 soundcore snd_page_alloc serio_raw i2c_algo_bit
+> btusb tpm_tis tpm tpm_bios video cfg80211 bluetooth nvram lp joydev
+> parport usbhid hid ahci libahci firewire_ohci firewire_core e1000e
+> sdhci_pci sdhci crc_itu_t
+>  [ 1220.468185] Pid: 1168, comm: Xorg Tainted: G        W   3.0.0+ #23
+>  [ 1220.468188] Call Trace:
+>  [ 1220.468190]  <IRQ>  [<ffffffff8106db3f>] warn_slowpath_common+0x7f/0xc0
+>  [ 1220.468201]  [<ffffffff8106dc36>] warn_slowpath_fmt+0x46/0x50
+>  [ 1220.468206]  [<ffffffff81332a52>] __list_del_entry+0x82/0xd0
+>  [ 1220.468210]  [<ffffffff81332ab1>] list_del+0x11/0x40
+>  [ 1220.468216]  [<ffffffff8117a212>] __slab_free+0x362/0x3d0
+>  [ 1220.468222]  [<ffffffff811c6606>] ? bvec_free_bs+0x26/0x40
+>  [ 1220.468226]  [<ffffffff8117b767>] ? kmem_cache_free+0x97/0x220
+>  [ 1220.468230]  [<ffffffff811c6606>] ? bvec_free_bs+0x26/0x40
+>  [ 1220.468234]  [<ffffffff811c6606>] ? bvec_free_bs+0x26/0x40
+>  [ 1220.468239]  [<ffffffff8117b8df>] kmem_cache_free+0x20f/0x220
+>  [ 1220.468243]  [<ffffffff811c6606>] bvec_free_bs+0x26/0x40
+>  [ 1220.468247]  [<ffffffff811c6654>] bio_free+0x34/0x70
+>  [ 1220.468250]  [<ffffffff811c66a5>] bio_fs_de
+> 
 
-Whilst it would be nice to be able to change the bus numbering, I don't think
-that passing numbers into the bridge driver at load time is the correct approach.
+This warning and the page reclaim warning are on paths that are
+commonly used and I would expect to see multiple reports. I wonder
+what is happening on your machine that is so unusual.
 
-Martyn
+Have you run memtest on this machine for a few hours and badblocks
+on the disk to ensure this is not hardware trouble?
+
+> So is it possible that my previous BUG is triggered by slab list corruption?
+
+Not directly, but clearly there is something very wrong.
+
+If slub corruption reports are very common and kernel 3.0 is fine, my
+strongest candidate for the corruption would be the SLUB lockless
+patches. Try
+
+git diff e4a46182e1bcc2ddacff5a35f6b52398b51f1b11..9e577e8b46ab0c38970c0f0cd7eae62e6dffddee | patch -p1 -R
+
+They should revert cleanly with offsets.
 
 -- 
-Martyn Welch (Principal Software Engineer) | Registered in England and
-GE Intelligent Platforms                   | Wales (3828642) at 100
-T +44(0)127322748                          | Barbirolli Square, Manchester,
-E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
+Mel Gorman
+SUSE Labs
