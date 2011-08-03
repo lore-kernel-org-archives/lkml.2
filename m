@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab1HCQGP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 12:06:15 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:7949 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443Ab1HCQGI (ORCPT
+	id S1754791Ab1HCQOF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 12:14:05 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36351 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753709Ab1HCQOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 12:06:08 -0400
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzzz2dh87h2a8h668h839h8e2h8e3h944h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:160.36.179.113;KIP:(null);UIP:(null);IPVD:NLI;H:kedge4.utk.tennessee.edu;RD:kedge4.utk.tennessee.edu;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 3 Aug 2011 12:05:54 -0400
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [perf] enable raw OFFCORE_EVENTS for non-perf userspace
-Message-ID: <alpine.DEB.2.00.1108031200390.703@cl320.eecs.utk.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 3 Aug 2011 12:14:01 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
+        toshi.okajima@jp.fujitsu.com
+Subject: Re: [PATCH 1/4] vfs: ignore error on forced remount
+References: <1312368521-7911-1-git-send-email-miklos@szeredi.hu>
+	<1312368521-7911-2-git-send-email-miklos@szeredi.hu>
+	<20110803104914.GA32126@infradead.org>
+Date: Wed, 03 Aug 2011 18:15:05 +0200
+In-Reply-To: <20110803104914.GA32126@infradead.org> (Christoph Hellwig's
+	message of "Wed, 3 Aug 2011 06:49:14 -0400")
+Message-ID: <87hb5y4gl2.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-OriginatorOrg: utk.edu
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+Christoph Hellwig <hch@infradead.org> writes:
 
-I propose we just enable raw OFFCORE_EVENT support and get it over with.
+> On Wed, Aug 03, 2011 at 12:48:38PM +0200, Miklos Szeredi wrote:
+>> From: Miklos Szeredi <mszeredi@suse.cz>
+>> 
+>> On emergency remount we want to force MS_RDONLY on the super block
+>> even if ->remount_fs() failed for some reason.
+>
+> Eww, dangerous territory.  At the very least we should log something
+> in the kernel log for thise case.
 
-There is a lot of demand for this from PAPI users, and so we encourage 
-them to apply the below patch.  PAPI supports this out of the box.
+Like this?
 
-The current "block" against using this feature *DOES NOT WORK*.
-It silently fails if you try to use the config1 field to set it.
+Thanks,
+Miklos
+----
 
-Even worse, if some previous user has set the OFFCORE_RSP_0 msr
-(say by running "perf stat -e LLC-load-misses") then
-the msr *stays set* and if you try to set the config1 field on your own
-it looks like it worked, but instead it is using whatever value the
-kernel last used.
+Subject: vfs: ignore error on forced remount
 
-So there's a lot of userspace confusion about this, and you can't even 
-reliably tell if the feature is turned off or not because it fails 
-silently in unpredictable ways.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Thanks
+On emergency remount we want to force MS_RDONLY on the super block
+even if ->remount_fs() failed for some reason.
 
-Vince
-vweaver1@eecs.utk.edu
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/super.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 4ee3abf..28f9ca9 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -604,12 +604,8 @@ static int x86_setup_perfctr(struct perf_event *event)
- 			return -EOPNOTSUPP;
+Index: linux-2.6/fs/super.c
+===================================================================
+--- linux-2.6.orig/fs/super.c	2011-08-03 16:54:26.000000000 +0200
++++ linux-2.6/fs/super.c	2011-08-03 17:11:56.000000000 +0200
+@@ -727,8 +727,13 @@ int do_remount_sb(struct super_block *sb
+ 
+ 	if (sb->s_op->remount_fs) {
+ 		retval = sb->s_op->remount_fs(sb, &flags, data);
+-		if (retval)
+-			return retval;
++		if (retval) {
++			if(!force)
++				return retval;
++			/* If forced remount, go ahead despite any errors */
++			WARN(1, "forced remount of a %s fs returned %i\n",
++			     sb->s_type->name, retval);
++		}
  	}
+ 	sb->s_flags = (sb->s_flags & ~MS_RMT_MASK) | (flags & MS_RMT_MASK);
  
--	/*
--	 * Do not allow config1 (extended registers) to propagate,
--	 * there's no sane user-space generalization yet:
--	 */
- 	if (attr->type == PERF_TYPE_RAW)
--		return 0;
-+		return x86_pmu_extra_regs(event->attr.config, event);
- 
- 	if (attr->type == PERF_TYPE_HW_CACHE)
- 		return set_ext_hw_attr(hwc, event);
-
