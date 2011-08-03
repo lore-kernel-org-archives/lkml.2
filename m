@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab1HCX11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:27:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33604 "EHLO mx2.suse.de"
+	id S1756156Ab1HCX14 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:27:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33660 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756118Ab1HCX1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:27:19 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:48 2011
-Message-Id: <20110803221248.501511003@clark.kroah.org>
+	id S1756142Ab1HCX1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:27:40 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:49 2011
+Message-Id: <20110803221249.110300342@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:05 -0700
+Date: Wed, 03 Aug 2011 15:01:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [045/102] [SCSI] pmcraid: reject negative request size
+        Takashi Iwai <tiwai@suse.de>
+Subject: [051/102] ALSA: hda - Fix duplicated DAC assignments for Realtek
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit b5b515445f4f5a905c5dd27e6e682868ccd6c09d upstream.
+commit c48a8fb0d31d6147d8d76b8e2ad7f51a2fbb5c4d upstream.
 
-There's a code path in pmcraid that can be reached via device ioctl that
-causes all sorts of ugliness, including heap corruption or triggering the
-OOM killer due to consecutive allocation of large numbers of pages.
+Copying hp_pins and speaker_pins from line_out_pins may confuse the
+parser, and it can lead to duplicated initializations for the same pin
+with a wrong DAC assignment.  The problem appears in 3.0 kernel code.
 
-First, the user can call pmcraid_chr_ioctl(), with a type
-PMCRAID_PASSTHROUGH_IOCTL.  This calls through to
-pmcraid_ioctl_passthrough().  Next, a pmcraid_passthrough_ioctl_buffer
-is copied in, and the request_size variable is set to
-buffer->ioarcb.data_transfer_length, which is an arbitrary 32-bit
-signed value provided by the user.  If a negative value is provided
-here, bad things can happen.  For example,
-pmcraid_build_passthrough_ioadls() is called with this request_size,
-which immediately calls pmcraid_alloc_sglist() with a negative size.
-The resulting math on allocating a scatter list can result in an
-overflow in the kzalloc() call (if num_elem is 0, the sglist will be
-smaller than expected), or if num_elem is unexpectedly large the
-subsequent loop will call alloc_pages() repeatedly, a high number of
-pages will be allocated and the OOM killer might be invoked.
-
-It looks like preventing this value from being negative in
-pmcraid_ioctl_passthrough() would be sufficient.
-
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/pmcraid.c |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/pci/hda/patch_realtek.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/pmcraid.c
-+++ b/drivers/scsi/pmcraid.c
-@@ -3871,6 +3871,9 @@ static long pmcraid_ioctl_passthrough(
- 			pmcraid_err("couldn't build passthrough ioadls\n");
- 			goto out_free_buffer;
- 		}
-+	} else if (request_size < 0) {
-+		rc = -EINVAL;
-+		goto out_free_buffer;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -1578,13 +1578,15 @@ static void alc_init_auto_hp(struct hda_
+ 	if (present == 3)
+ 		spec->automute_hp_lo = 1; /* both HP and LO automute */
+ 
+-	if (!cfg->speaker_pins[0]) {
++	if (!cfg->speaker_pins[0] &&
++	    cfg->line_out_type == AUTO_PIN_SPEAKER_OUT) {
+ 		memcpy(cfg->speaker_pins, cfg->line_out_pins,
+ 		       sizeof(cfg->speaker_pins));
+ 		cfg->speaker_outs = cfg->line_outs;
  	}
  
- 	/* If data is being written into the device, copy the data from user
+-	if (!cfg->hp_pins[0]) {
++	if (!cfg->hp_pins[0] &&
++	    cfg->line_out_type == AUTO_PIN_HP_OUT) {
+ 		memcpy(cfg->hp_pins, cfg->line_out_pins,
+ 		       sizeof(cfg->hp_pins));
+ 		cfg->hp_outs = cfg->line_outs;
+@@ -1603,6 +1605,7 @@ static void alc_init_auto_hp(struct hda_
+ 		spec->automute_mode = ALC_AUTOMUTE_PIN;
+ 	}
+ 	if (spec->automute && cfg->line_out_pins[0] &&
++	    cfg->speaker_pins[0] &&
+ 	    cfg->line_out_pins[0] != cfg->hp_pins[0] &&
+ 	    cfg->line_out_pins[0] != cfg->speaker_pins[0]) {
+ 		for (i = 0; i < cfg->line_outs; i++) {
 
 
