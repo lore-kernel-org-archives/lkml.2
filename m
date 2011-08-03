@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab1HCLhj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 07:37:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57404 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753971Ab1HCLhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 07:37:34 -0400
-Date: Wed, 3 Aug 2011 13:37:06 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 8/8] mm: vmscan: Do not writeback filesystem pages from
- kswapd
-Message-ID: <20110803113706.GF27199@redhat.com>
-References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
- <1311265730-5324-9-git-send-email-mgorman@suse.de>
+	id S1754973Ab1HCLhw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 07:37:52 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:58745 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754938Ab1HCLhn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 07:37:43 -0400
+Date: Wed, 3 Aug 2011 13:37:11 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, robert.richter@amd.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/urgent] perf sched: Fix list of events, dropping
+ unsupported ':r' modifier
+Message-ID: <20110803113706.GA5768@somewhere.redhat.com>
+References: <AANLkTim=jawJyBj0iFd0r4-LCKzvjFW+NddzJMD5GUB9@mail.gmail.com>
+ <tip-9710118bd4e7f3406865171cb9b9c94547c1c2f9@git.kernel.org>
+ <1312369161.1147.292.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1311265730-5324-9-git-send-email-mgorman@suse.de>
+In-Reply-To: <1312369161.1147.292.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 21, 2011 at 05:28:50PM +0100, Mel Gorman wrote:
-> Assuming that flusher threads will always write back dirty pages promptly
-> then it is always faster for reclaimers to wait for flushers. This patch
-> prevents kswapd writing back any filesystem pages.
+On Wed, Aug 03, 2011 at 12:59:21PM +0200, Peter Zijlstra wrote:
+> On Fri, 2011-01-14 at 07:25 +0000, tip-bot for Stephane Eranian wrote:
+> > Looks to me like the :r modifier is not supported anymore, so remove it from
+> > the list of events. 
 > 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> acme, why is that anyway? -R is a fun way to save some typing, but not
+> supporting :r anymore takes away the option of not getting
+> PERF_SAMPLE_RAW output for every event.
 
-Relying on the flushers may mean that every dirty page in the system
-has to be written back before the pages from the zone of interest are
-clean.
+Because it was very non obvious for people to select this -R or :r
+every time they wanted to use trace events for tracing. I think
+there was complaints about that. Moreover nobody seemed to use
+trace events for non-tracing (perf report, top, annotate, ...)
+so we decided to always have RAW records so that it works for
+every cases...unless we lose events because of that.
 
-De-facto we have only one mechanism to stay on top of the dirty pages
-from a per-zone perspective, and that is single-page writeout from
-reclaim.
-
-While we all agree that this sucks, we can not remove it unless we
-have a replacement that makes zones reclaimable in a reasonable time
-frame (or keep them reclaimable in the first place, what per-zone
-dirty limits attempt to do).
-
-As such, please include
-
-Nacked-by: Johannes Weiner <jweiner@redhat.com>
+We can still bring an option to force disabling of raw records.
