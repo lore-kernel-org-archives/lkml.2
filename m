@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab1HCHSb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 03:18:31 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63291 "EHLO
+	id S1752148Ab1HCH0W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 03:26:22 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49099 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750849Ab1HCHSX (ORCPT
+	with ESMTP id S1751259Ab1HCH0Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 03:18:23 -0400
-Subject: [PATCH RESEND] omap1: select GENERIC_IRQ_CHIP for TI OMAP1
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Kevin Hilman <khilman@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 03 Aug 2011 15:18:17 +0800
-Message-ID: <1312355897.14329.5.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Aug 2011 03:26:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110802081129.b84a7bc7.rdunlap@xenotime.net>
+References: <20110802080834.GA9847@osiris.boeblingen.de.ibm.com>
+	<20110802081129.b84a7bc7.rdunlap@xenotime.net>
+Date: Wed, 3 Aug 2011 09:20:48 +0200
+X-Google-Sender-Auth: zshImYY7NHOUPvG5vCrzvE0e4aI
+Message-ID: <CAMuHMdUNh8tYrVn60aHY2dZ1jZNbBrhe_+V5AVxBTZqnTvH__A@mail.gmail.com>
+Subject: Re: [PATCH] pti: add missing CONFIG_PCI dependency
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        akpm <akpm@linux-foundation.org>,
+        torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        J Freyensee <james_p_freyensee@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The gpio-omap driver has been converted to use generic IRQ chip.
-Thus select GENERIC_IRQ_CHIP for TI OMAP1 to fix below build error.
+On Tue, Aug 2, 2011 at 17:11, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On Tue, 2 Aug 2011 10:08:34 +0200 Heiko Carstens wrote:
+>
+>> From: Heiko Carstens <heiko.carstens@de.ibm.com>
+>>
+>> allmodconfig compile fails on s390 because of the new PTI driver:
+>>
+>> drivers/misc/pti.c:407:3: error: implicit declaration of function 'pci_iounmap'
+>> drivers/misc/pti.c:410:3: error: implicit declaration of function 'pci_release_region'
+>>
+>> Add a 'depends on PCI' statement so it doesn't get compiled.
+>>
+>> Cc: J Freyensee <james_p_freyensee@linux.intel.com>
+>
+> James has already acked my identical patch.
+> The problem seems to be that we don't have a drivers/misc/ maintainter to
+> merge the patch.
+>
+> Anyway:
+> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
- LD      vmlinux
-drivers/built-in.o: In function `omap_mpuio_alloc_gc':
-drivers/gpio/gpio-omap.c:1087: undefined reference to `irq_alloc_generic_chip'
-drivers/gpio/gpio-omap.c:1100: undefined reference to `irq_setup_generic_chip'
-drivers/built-in.o: In function `omap_gpio_show_rev':
-drivers/gpio/gpio-omap.c:998: undefined reference to `irq_gc_mask_clr_bit'
-drivers/gpio/gpio-omap.c:998: undefined reference to `irq_gc_mask_set_bit'
-make: *** [vmlinux] Error 1
+It's also missing
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-Kevin already sent a similar patch.  http://marc.info/?l=linux-omap&m=130749135312468&w=2
-But I still have the build error with make omap1_defconfig in today's linux-next tree.
-So here is a resend.
+#include <linux/slab.h>
+#include <linux/uaccess.h>
 
-Regards,
-Axel
- arch/arm/plat-omap/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Cfr. http://kisskb.ellerman.id.au/kisskb/buildresult/4429212/
 
-diff --git a/arch/arm/plat-omap/Kconfig b/arch/arm/plat-omap/Kconfig
-index 6e6735f..bb8f4a6 100644
---- a/arch/arm/plat-omap/Kconfig
-+++ b/arch/arm/plat-omap/Kconfig
-@@ -13,6 +13,7 @@ config ARCH_OMAP1
- 	bool "TI OMAP1"
- 	select CLKDEV_LOOKUP
- 	select CLKSRC_MMIO
-+	select GENERIC_IRQ_CHIP
- 	help
- 	  "Systems based on omap7xx, omap15xx or omap16xx"
- 
--- 
-1.7.4.1
+drivers/misc/pti.c:249: error: implicit declaration of function 'kmalloc'
+drivers/misc/pti.c:657: error: implicit declaration of function 'copy_from_user'
+drivers/misc/pti.c:848: error: implicit declaration of function 'kzalloc'
 
+Gr{oetje,eeting}s,
 
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
