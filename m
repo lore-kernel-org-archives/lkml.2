@@ -1,85 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab1HCQsx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 12:48:53 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63383 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939Ab1HCQsr convert rfc822-to-8bit (ORCPT
+	id S1754230Ab1HCRAA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 13:00:00 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:41441 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934Ab1HCQ7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 12:48:47 -0400
-Date: Wed, 3 Aug 2011 18:48:37 +0200
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Gergely Nagy <algernon@balabit.hu>,
-        david@lang.hm, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Marc Koschewski <marc@osknowledge.org>,
-        lkml <linux-kernel@vger.kernel.org>, James Morris <jmorris@namei.org>,
-        Nick Bowler <nbowler@elliptictech.com>
-Subject: [PATCH/RFC] cap_syslog: make CAP_SYS_ADMIN deprecation notice less
- alarming
-Message-ID: <20110803164837.GA2669@elie>
-References: <20110210144057.GA7193@mail.hallyn.com>
- <AANLkTin-2uDkjPuSPmUE_HZdpxk9zd=Qop=nf==jsyLA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <AANLkTin-2uDkjPuSPmUE_HZdpxk9zd=Qop=nf==jsyLA@mail.gmail.com>
-User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
+	Wed, 3 Aug 2011 12:59:52 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH] fs/9p: Add OS dependent open flags in 9p protocol
+Date: Wed,  3 Aug 2011 22:28:43 +0530
+Message-Id: <1312390723-4561-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-syslog-ng versions in active use assume that CAP_SYS_ADMIN is
-sufficent to access syslog.  As a result, ever since CAP_SYSLOG was
-introduce in v2.6.38-rc1~429^2~18 (security: Define CAP_SYSLOG,
-2010-11-25), they have triggered a warning, complete with kernel
-backtrace.
+From: Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>
 
-v2.6.38-rc5~46 (cap_syslog: accept CAP_SYS_ADMIN for now, 2011-02-10)
-made things a little better by removing the regression in behavior,
-just keeping the WARN_ONCE.  But still, this is a warning that adds
-many lines to syslog, sets a taint flag, and alarms sysadmins when
-nothing worse has happened than use of an old userspace with a recent
-kernel.
+Some of the flags are OS/arch dependent we add a 9p
+protocol value which maps to asm-generic/fcntl.h values in Linux
 
-Convert the WARN_ONCE to a printk_once to avoid this while continuing
-to give userspace developers a hint that this is an unwanted
-backward-compatibility feature and won't be around forever.
-
-Reported-by: Ralf Hildebrandt <ralf.hildebrandt@charite.de>
-Reported-by: Niels <zorglub_olsen@hotmail.com>
-Reported-by: Paweł Sikora <pluto@agmk.net>
-Liked-by: Gergely Nagy <algernon@madhouse-project.org>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Venkateswararao Jujjuri <jvrao@linux.vnet.ibm.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
-Hi,
+ fs/9p/v9fs_vfs.h       |    2 +
+ fs/9p/vfs_file.c       |    2 +-
+ fs/9p/vfs_inode.c      |   16 ++++++++++++++-
+ fs/9p/vfs_inode_dotl.c |   49 +++++++++++++++++++++++++++++++++++++++++++++++-
+ include/net/9p/9p.h    |   23 ++++++++++++++++++++++
+ 5 files changed, 89 insertions(+), 3 deletions(-)
 
-Nothing urgent about this, but it seems to be a frequently[1] reported[2]
-source of unnecessary worry.  Thoughts?
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1145040
-[2] http://thread.gmane.org/gmane.linux.kernel/1153808
-
-Context: http://bugs.debian.org/cgi-bin/bugreport.cgi?msg=32;bug=636501
-
- kernel/printk.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 37dff342..db64c951 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -318,7 +318,8 @@ static int check_syslog_permissions(int type, bool from_file)
- 			return 0;
- 		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
- 		if (capable(CAP_SYS_ADMIN)) {
--			WARN_ONCE(1, "Attempt to access syslog with CAP_SYS_ADMIN "
-+			printk_once(KERN_WARNING
-+				 "Attempt to access syslog with CAP_SYS_ADMIN "
- 				 "but no CAP_SYSLOG (deprecated).\n");
- 			return 0;
- 		}
+diff --git a/fs/9p/v9fs_vfs.h b/fs/9p/v9fs_vfs.h
+index bd86d22..f9a28ea 100644
+--- a/fs/9p/v9fs_vfs.h
++++ b/fs/9p/v9fs_vfs.h
+@@ -82,4 +82,6 @@ static inline void v9fs_invalidate_inode_attr(struct inode *inode)
+ 	v9inode->cache_validity |= V9FS_INO_INVALID_ATTR;
+ 	return;
+ }
++
++int v9fs_open_to_dotl_flags(int flags);
+ #endif
+diff --git a/fs/9p/vfs_file.c b/fs/9p/vfs_file.c
+index ffed558..56907e4 100644
+--- a/fs/9p/vfs_file.c
++++ b/fs/9p/vfs_file.c
+@@ -65,7 +65,7 @@ int v9fs_file_open(struct inode *inode, struct file *file)
+ 	v9inode = V9FS_I(inode);
+ 	v9ses = v9fs_inode2v9ses(inode);
+ 	if (v9fs_proto_dotl(v9ses))
+-		omode = file->f_flags;
++		omode = v9fs_open_to_dotl_flags(file->f_flags);
+ 	else
+ 		omode = v9fs_uflags2omode(file->f_flags,
+ 					v9fs_proto_dotu(v9ses));
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index dc645a3..7ced952 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -553,6 +553,19 @@ v9fs_inode_from_fid(struct v9fs_session_info *v9ses, struct p9_fid *fid,
+ }
+ 
+ /**
++ * v9fs_at_to_dotl_flags- convert Linux specific AT flags to
++ * plan 9 AT flag.
++ * @flags: flags to convert
++ */
++static int v9fs_at_to_dotl_flags(int flags)
++{
++	int rflags = 0;
++	if (flags & AT_REMOVEDIR)
++		rflags |= P9_DOTL_AT_REMOVEDIR;
++	return rflags;
++}
++
++/**
+  * v9fs_remove - helper function to remove files and directories
+  * @dir: directory inode that is being deleted
+  * @dentry:  dentry that is being deleted
+@@ -579,7 +592,8 @@ static int v9fs_remove(struct inode *dir, struct dentry *dentry, int flags)
+ 		return retval;
+ 	}
+ 	if (v9fs_proto_dotl(v9ses))
+-		retval = p9_client_unlinkat(dfid, dentry->d_name.name, flags);
++		retval = p9_client_unlinkat(dfid, dentry->d_name.name,
++					    v9fs_at_to_dotl_flags(flags));
+ 	if (retval == -EOPNOTSUPP) {
+ 		/* Try the one based on path */
+ 		v9fid = v9fs_fid_clone(dentry);
+diff --git a/fs/9p/vfs_inode_dotl.c b/fs/9p/vfs_inode_dotl.c
+index 818bf6f..2d719ca 100644
+--- a/fs/9p/vfs_inode_dotl.c
++++ b/fs/9p/vfs_inode_dotl.c
+@@ -192,6 +192,52 @@ v9fs_inode_from_fid_dotl(struct v9fs_session_info *v9ses, struct p9_fid *fid,
+ }
+ 
+ /**
++ * v9fs_open_to_dotl_flags- convert Linux specific open flags to
++ * plan 9 open flag.
++ * @flags: flags to convert
++ */
++int v9fs_open_to_dotl_flags(int flags)
++{
++	int rflags = 0;
++
++	if (flags & O_WRONLY)
++		rflags |= P9_DOTL_WRONLY;
++	if (flags & O_RDWR)
++		rflags |= P9_DOTL_RDWR;
++	if (flags & O_CREAT)
++		rflags |= P9_DOTL_CREAT;
++	if (flags & O_EXCL)
++		rflags |= P9_DOTL_EXCL;
++	if (flags & O_NOCTTY)
++		rflags |= P9_DOTL_NOCTTY;
++	if (flags & O_TRUNC)
++		rflags |= P9_DOTL_TRUNC;
++	if (flags & O_APPEND)
++		rflags |= P9_DOTL_APPEND;
++	if (flags & O_NONBLOCK)
++		rflags |= P9_DOTL_NONBLOCK;
++	if (flags & O_DSYNC)
++		rflags |= P9_DOTL_DSYNC;
++	if (flags & FASYNC)
++		rflags |= P9_DOTL_FASYNC;
++	if (flags & O_DIRECT)
++		rflags |= P9_DOTL_DIRECT;
++	if (flags & O_LARGEFILE)
++		rflags |= P9_DOTL_LARGEFILE;
++	if (flags & O_DIRECTORY)
++		rflags |= P9_DOTL_DIRECTORY;
++	if (flags & O_NOFOLLOW)
++		rflags |= P9_DOTL_NOFOLLOW;
++	if (flags & O_NOATIME)
++		rflags |= P9_DOTL_NOATIME;
++	if (flags & O_CLOEXEC)
++		rflags |= P9_DOTL_CLOEXEC;
++	if (flags & O_SYNC)
++		rflags |= P9_DOTL_SYNC;
++	return rflags;
++}
++
++/**
+  * v9fs_vfs_create_dotl - VFS hook to create files for 9P2000.L protocol.
+  * @dir: directory inode that is being created
+  * @dentry:  dentry that is being deleted
+@@ -259,7 +305,8 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
+ 			   "Failed to get acl values in creat %d\n", err);
+ 		goto error;
+ 	}
+-	err = p9_client_create_dotl(ofid, name, flags, mode, gid, &qid);
++	err = p9_client_create_dotl(ofid, name, v9fs_open_to_dotl_flags(flags),
++				    mode, gid, &qid);
+ 	if (err < 0) {
+ 		P9_DPRINTK(P9_DEBUG_VFS,
+ 				"p9_client_open_dotl failed in creat %d\n",
+diff --git a/include/net/9p/9p.h b/include/net/9p/9p.h
+index 700d41e..fbfe88e 100644
+--- a/include/net/9p/9p.h
++++ b/include/net/9p/9p.h
+@@ -288,6 +288,29 @@ enum p9_perm_t {
+ 	P9_DMSETVTX = 0x00010000,
+ };
+ 
++/* 9p2000.L open flags */
++#define P9_DOTL_RDONLY        00000000
++#define P9_DOTL_WRONLY        00000001
++#define P9_DOTL_RDWR          00000002
++#define P9_DOTL_CREAT         00000100
++#define P9_DOTL_EXCL          00000200
++#define P9_DOTL_NOCTTY        00000400
++#define P9_DOTL_TRUNC         00001000
++#define P9_DOTL_APPEND        00002000
++#define P9_DOTL_NONBLOCK      00004000
++#define P9_DOTL_DSYNC         00010000
++#define P9_DOTL_FASYNC        00020000
++#define P9_DOTL_DIRECT        00040000
++#define P9_DOTL_LARGEFILE     00100000
++#define P9_DOTL_DIRECTORY     00200000
++#define P9_DOTL_NOFOLLOW      00400000
++#define P9_DOTL_NOATIME       01000000
++#define P9_DOTL_CLOEXEC       02000000
++#define P9_DOTL_SYNC          04000000
++
++/* 9p2000.L at flags */
++#define P9_DOTL_AT_REMOVEDIR		0x200
++
+ /**
+  * enum p9_qid_t - QID types
+  * @P9_QTDIR: directory
 -- 
-1.7.6
+1.7.4.1
 
