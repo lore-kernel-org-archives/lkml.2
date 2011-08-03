@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471Ab1HCN4b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 09:56:31 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:33136 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783Ab1HCN4Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 09:56:25 -0400
-Date: Wed, 3 Aug 2011 09:56:04 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andy Lutomirski <luto@mit.edu>, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org
-Cc: x86@kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jeremy@goop.org, keir.xen@gmail.com, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v2 0/6] Collected vdso/vsyscall fixes for 3.1
-Message-ID: <20110803135604.GA29761@dumpdata.com>
-References: <cover.1312378163.git.luto@mit.edu>
- <20110803135322.GC29501@dumpdata.com>
+	id S1753529Ab1HCN4l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 09:56:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35526 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753208Ab1HCN43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 09:56:29 -0400
+Date: Wed, 3 Aug 2011 14:56:24 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 6/8] mm: vmscan: Throttle reclaim if encountering too
+ many dirty pages under writeback
+Message-ID: <20110803135624.GJ19099@suse.de>
+References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
+ <1311265730-5324-7-git-send-email-mgorman@suse.de>
+ <20110803111940.GD27199@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20110803135322.GC29501@dumpdata.com>
+In-Reply-To: <20110803111940.GD27199@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090206.4E39537E.00AA,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 03, 2011 at 09:53:22AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Wed, Aug 03, 2011 at 09:31:48AM -0400, Andy Lutomirski wrote:
-> > This fixes various problems that cropped up with the vdso patches.
+On Wed, Aug 03, 2011 at 01:19:40PM +0200, Johannes Weiner wrote:
+> On Thu, Jul 21, 2011 at 05:28:48PM +0100, Mel Gorman wrote:
+> > Workloads that are allocating frequently and writing files place a
+> > large number of dirty pages on the LRU. With use-once logic, it is
+> > possible for them to reach the end of the LRU quickly requiring the
+> > reclaimer to scan more to find clean pages. Ordinarily, processes that
+> > are dirtying memory will get throttled by dirty balancing but this
+> > is a global heuristic and does not take into account that LRUs are
+> > maintained on a per-zone basis. This can lead to a situation whereby
+> > reclaim is scanning heavily, skipping over a large number of pages
+> > under writeback and recycling them around the LRU consuming CPU.
 > > 
-> >  - Patch 1 fixes an information leak to userspace.
-> >  - Patches 2 and 3 fix the kernel build on gold.
-> >  - Patches 4 and 5 fix Xen (I hope).
-> >  - Patch 6 (optional) adds a trace event to vsyscall emulation.  It will
-> >    make it easier to handle performance regression reports :)
+> > This patch checks how many of the number of pages isolated from the
+> > LRU were dirty. If a percentage of them are dirty, the process will be
+> > throttled if a blocking device is congested or the zone being scanned
+> > is marked congested. The percentage that must be dirty depends on
+> > the priority. At default priority, all of them must be dirty. At
+> > DEF_PRIORITY-1, 50% of them must be dirty, DEF_PRIORITY-2, 25%
+> > etc. i.e.  as pressure increases the greater the likelihood the process
+> > will get throttled to allow the flusher threads to make some progress.
+> > 
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  mm/vmscan.c |   21 ++++++++++++++++++---
+> >  1 files changed, 18 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index cf7b501..b0060f8 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -720,7 +720,8 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
+> >  static unsigned long shrink_page_list(struct list_head *page_list,
+> >  				      struct zone *zone,
+> >  				      struct scan_control *sc,
+> > -				      int priority)
+> > +				      int priority,
+> > +				      unsigned long *ret_nr_dirty)
+> >  {
+> >  	LIST_HEAD(ret_pages);
+> >  	LIST_HEAD(free_pages);
+> > @@ -971,6 +972,7 @@ keep_lumpy:
+> >  
+> >  	list_splice(&ret_pages, page_list);
+> >  	count_vm_events(PGACTIVATE, pgactivate);
+> > +	*ret_nr_dirty += nr_dirty;
 > 
-> Hm, you seemed to have the x86 maintainers on your email..
+> Note that this includes anon pages, which means that swapping is
+> throttled as well.
+> 
 
-I definitly need some coffee. What I meant was that you missing putting
-the x86 maintainers on this patchset. They are the ones that will handle this.
+Yes it does. In the current revision of the series, I'm not using
+nr_dirty as it throttles too aggressively. Instead the number of pages
+under writeback is counted and that is used for the throttling decision.
+It still potentially includes anon pages but that is reasonable.
 
-I put them on the To list for you.
-> > 
-> > [1] https://gitorious.org/linux-test-utils/linux-clock-tests
-> > 
-> > Changes from v1:
-> >  - Improve changelog message for "x86-64/xen: Enable the vvar mapping"
-> >  - Fix 32-bit build.
-> >  - Add patch 6.
-> > 
-> > Andy Lutomirski (6):
-> >   x86-64: Pad vDSO to a page boundary
-> >   x86-64: Move the "user" vsyscall segment out of the data segment.
-> >   x86-64: Work around gold bug 13023
-> >   x86-64/xen: Enable the vvar mapping
-> >   x86-64: Add user_64bit_mode paravirt op
-> >   x86-64: Add vsyscall:emulate_vsyscall trace event
-> > 
-> >  arch/x86/include/asm/desc.h           |    4 +-
-> >  arch/x86/include/asm/paravirt_types.h |    6 ++++
-> >  arch/x86/include/asm/ptrace.h         |   19 +++++++++++++
-> >  arch/x86/kernel/paravirt.c            |    4 +++
-> >  arch/x86/kernel/step.c                |    2 +-
-> >  arch/x86/kernel/vmlinux.lds.S         |   46 ++++++++++++++++++---------------
-> >  arch/x86/kernel/vsyscall_64.c         |   12 +++++---
-> >  arch/x86/kernel/vsyscall_trace.h      |   29 ++++++++++++++++++++
-> >  arch/x86/mm/fault.c                   |    2 +-
-> >  arch/x86/vdso/vdso.S                  |    1 +
-> >  arch/x86/xen/enlighten.c              |    4 +++
-> >  arch/x86/xen/mmu.c                    |    4 ++-
-> >  12 files changed, 102 insertions(+), 31 deletions(-)
-> >  create mode 100644 arch/x86/kernel/vsyscall_trace.h
-> > 
-> > -- 
-> > 1.7.6
+> I don't think it is a downside to throttle swapping during IO
+> congestion - waiting for pages under writeback to become reclaimable
+> is better than kicking off even more IO in this case as well - but the
+> changelog and the comments should include it, I guess.
+> 
+
+Fair point. I've updated the changelog accordingly. Thanks.
+
+-- 
+Mel Gorman
+SUSE Labs
