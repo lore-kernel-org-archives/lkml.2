@@ -1,53 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571Ab1HCMVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 08:21:31 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39565 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755547Ab1HCMVZ convert rfc822-to-8bit (ORCPT
+	id S1755539Ab1HCMWu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 08:22:50 -0400
+Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:48293 "EHLO
+	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755015Ab1HCMWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 08:21:25 -0400
+	Wed, 3 Aug 2011 08:22:43 -0400
+From: Per Forlin <per.forlin@stericsson.com>
+To: Felipe Balbi <balbi@ti.com>,
+        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linaro-dev@lists.linaro.org>, Per Forlin <per.forlin@linaro.org>
+Subject: [PATCH] usb: musb: ux500: replace missing DBG with dev_dbg
+Date: Wed, 3 Aug 2011 14:22:17 +0200
+Message-ID: <1312374137-10629-1-git-send-email-per.forlin@stericsson.com>
+X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1108022151490.28467@chino.kir.corp.google.com>
-References: <20110514102014.12739.91576.reportbug@eiffel4.mcfm>
-	<20110801122537.GA9469@mwanda>
-	<alpine.DEB.2.00.1108011206130.28986@chino.kir.corp.google.com>
-	<20110802225825.GE3839@shale.localdomain>
-	<alpine.DEB.2.00.1108022151490.28467@chino.kir.corp.google.com>
-Date: Wed, 3 Aug 2011 14:21:24 +0200
-Message-ID: <CAKWSe6BUZqs+YBxPqhO0hsa_Xhju7yHiAj4s3QdH+fh5+65Cxg@mail.gmail.com>
-Subject: Re: openssh-server: sshd (<pid>): /proc/<pid>/oom_adj is deprecated,
- please use /proc/<pid>/oom_score_adj instead.
-From: Alessandro Suardi <alessandro.suardi@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Dan Carpenter <error27@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 3, 2011 at 6:53 AM, David Rientjes <rientjes@google.com> wrote:
-> On Wed, 3 Aug 2011, Dan Carpenter wrote:
->
->> Could we do it in a way that made it more clear that the problem was
->> an old version of openssh-server and not the kernel?  The information
->> is there, but it's overwhelmed in stack trace spam.  Also the kernel
->> is tainted now because of sshd.  Maybe the message could include a
->> link to a wiki page that told people which version off sshd uses the
->> new proc file.
->>
->
-> Would you like to ack http://marc.info/?l=linux-kernel&m=131227886118365?
+From: Per Forlin <per.forlin@linaro.org>
 
-As a side note, Fedora 15 has new openssh packages with the backport of the
- 5.7p1 fix to use /proc/<pid>/oom_score_adj.
+ux500_dma.c fail to compile becase DBG has been removed from musb_debug.
+Use dev_dbg for all prints.
 
-Kudos to the Fedora dev team for the quick turnaround on my bug report:
-https://bugzilla.redhat.com/show_bug.cgi?id=727335
+Signed-off-by: Per Forlin <per.forlin@linaro.org>
+Acked-by: Mian Yousaf Kaukab<mian.yousaf.kaukab@stericsson.com>
+---
+ drivers/usb/musb/ux500_dma.c |   22 ++++++++++++++--------
+ 1 files changed, 14 insertions(+), 8 deletions(-)
 
---alessandro
+diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
+index 2313475..ef4333f 100644
+--- a/drivers/usb/musb/ux500_dma.c
++++ b/drivers/usb/musb/ux500_dma.c
+@@ -65,7 +65,8 @@ static void ux500_tx_work(struct work_struct *data)
+ 	struct musb *musb = hw_ep->musb;
+ 	unsigned long flags;
+ 
+-	DBG(4, "DMA tx transfer done on hw_ep=%d\n", hw_ep->epnum);
++	dev_dbg(musb->controller, "DMA tx transfer done on hw_ep=%d\n",
++		hw_ep->epnum);
+ 
+ 	spin_lock_irqsave(&musb->lock, flags);
+ 	ux500_channel->channel.actual_len = ux500_channel->cur_len;
+@@ -84,7 +85,8 @@ static void ux500_rx_work(struct work_struct *data)
+ 	struct musb *musb = hw_ep->musb;
+ 	unsigned long flags;
+ 
+-	DBG(4, "DMA rx transfer done on hw_ep=%d\n", hw_ep->epnum);
++	dev_dbg(musb->controller, "DMA rx transfer done on hw_ep=%d\n",
++		hw_ep->epnum);
+ 
+ 	spin_lock_irqsave(&musb->lock, flags);
+ 	ux500_channel->channel.actual_len = ux500_channel->cur_len;
+@@ -116,9 +118,11 @@ static bool ux500_configure_channel(struct dma_channel *channel,
+ 	enum dma_slave_buswidth addr_width;
+ 	dma_addr_t usb_fifo_addr = (MUSB_FIFO_OFFSET(hw_ep->epnum) +
+ 					ux500_channel->controller->phy_base);
++	struct musb *musb = ux500_channel->controller->private_data;
+ 
+-	DBG(4, "packet_sz=%d, mode=%d, dma_addr=0x%x, len=%d is_tx=%d\n",
+-			packet_sz, mode, dma_addr, len, ux500_channel->is_tx);
++	dev_dbg(musb->controller,
++		"packet_sz=%d, mode=%d, dma_addr=0x%x, len=%d is_tx=%d\n",
++		packet_sz, mode, dma_addr, len, ux500_channel->is_tx);
+ 
+ 	ux500_channel->cur_len = len;
+ 
+@@ -164,6 +168,7 @@ static struct dma_channel *ux500_dma_channel_allocate(struct dma_controller *c,
+ 	struct ux500_dma_controller *controller = container_of(c,
+ 			struct ux500_dma_controller, controller);
+ 	struct ux500_dma_channel *ux500_channel = NULL;
++	struct musb *musb = controller->private_data;
+ 	u8 ch_num = hw_ep->epnum - 1;
+ 	u32 max_ch;
+ 
+@@ -190,7 +195,7 @@ static struct dma_channel *ux500_dma_channel_allocate(struct dma_controller *c,
+ 	ux500_channel->hw_ep = hw_ep;
+ 	ux500_channel->is_allocated = 1;
+ 
+-	DBG(7, "hw_ep=%d, is_tx=0x%x, channel=%d\n",
++	dev_dbg(musb->controller, "hw_ep=%d, is_tx=0x%x, channel=%d\n",
+ 		hw_ep->epnum, is_tx, ch_num);
+ 
+ 	return &(ux500_channel->channel);
+@@ -199,8 +204,9 @@ static struct dma_channel *ux500_dma_channel_allocate(struct dma_controller *c,
+ static void ux500_dma_channel_release(struct dma_channel *channel)
+ {
+ 	struct ux500_dma_channel *ux500_channel = channel->private_data;
++	struct musb *musb = ux500_channel->controller->private_data;
+ 
+-	DBG(7, "channel=%d\n", ux500_channel->ch_num);
++	dev_dbg(musb->controller, "channel=%d\n", ux500_channel->ch_num);
+ 
+ 	if (ux500_channel->is_allocated) {
+ 		ux500_channel->is_allocated = 0;
+@@ -250,8 +256,8 @@ static int ux500_dma_channel_abort(struct dma_channel *channel)
+ 	void __iomem *epio = musb->endpoints[ux500_channel->hw_ep->epnum].regs;
+ 	u16 csr;
+ 
+-	DBG(4, "channel=%d, is_tx=%d\n", ux500_channel->ch_num,
+-						ux500_channel->is_tx);
++	dev_dbg(musb->controller, "channel=%d, is_tx=%d\n",
++		ux500_channel->ch_num, ux500_channel->is_tx);
+ 
+ 	if (channel->status == MUSB_DMA_STATUS_BUSY) {
+ 		if (ux500_channel->is_tx) {
+-- 
+1.6.3.3
 
- "There's always a siren singing you to shipwreck"
-
-   (Radiohead, "There There")
