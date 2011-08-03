@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab1HCXZF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:25:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33268 "EHLO mx2.suse.de"
+	id S1755894Ab1HCXZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:25:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33287 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754650Ab1HCXZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:25:02 -0400
+	id S1755932Ab1HCXZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:25:09 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:45 2011
-Message-Id: <20110803221245.200438611@clark.kroah.org>
+Message-Id: <20110803221245.404143672@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:00:31 -0700
+Date: Wed, 03 Aug 2011 15:00:33 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [011/102] Staging: hv: netvsc: Increase the timeout value in the netvsc driver
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [013/102] USB: EHCI: go back to using the system clock for QH unlinks
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,75 +25,213 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 5c5781b3f88567211ecaaada13431af15c8c6003 upstream.
+commit 004c19682884d4f40000ce1ded53f4a1d0b18206 upstream.
 
-On some loaded windows hosts, we have discovered that the host may not
-respond to guest requests within the specified time (one second)
-as evidenced by the guest timing out. Fix this problem by increasing
-the timeout to 5 seconds.
+This patch (as1477) fixes a problem affecting a few types of EHCI
+controller.  Contrary to what one might expect, these controllers
+automatically stop their internal frame counter when no ports are
+enabled.  Since ehci-hcd currently relies on the frame counter for
+determining when it should unlink QHs from the async schedule, those
+controllers run into trouble: The frame counter stops and the QHs
+never get unlinked.
 
-It may be useful to apply this patch to the 3.0 kernel as well.
+Some systems have also experienced other problems traced back to
+commit b963801164618e25fbdc0cd452ce49c3628b46c8 (USB: ehci-hcd unlink
+speedups), which made the original switch from using the system clock
+to using the frame counter.  It never became clear what the reason was
+for these problems, but evidently it is related to use of the frame
+counter.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+To fix all these problems, this patch more or less reverts that commit
+and goes back to using the system clock.  But this can't be done
+cleanly because other changes have since been made to the scan_async()
+subroutine.  One of these changes involved the tricky logic that tries
+to avoid rescanning QHs that have already been seen when the scanning
+loop is restarted, which happens whenever an URB is given back.
+Switching back to clock-based unlinks would make this logic even more
+complicated.
+
+Therefore the new code doesn't rescan the entire async list whenever a
+giveback occurs.  Instead it rescans only the current QH and continues
+on from there.  This requires the use of a separate pointer to keep
+track of the next QH to scan, since the current QH may be unlinked
+while the scanning is in progress.  That new pointer must be global,
+so that it can be adjusted forward whenever the _next_ QH gets
+unlinked.  (uhci-hcd uses this same trick.)
+
+Simplification of the scanning loop removes a level of indentation,
+which accounts for the size of the patch.  The amount of code changed
+is relatively small, and it isn't exactly a reversion of the
+b963801164 commit.
+
+This fixes Bugzilla #32432.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Matej Kenda <matejken@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/hv/netvsc.c       |    4 ++--
- drivers/staging/hv/rndis_filter.c |    6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/usb/host/ehci-hcd.c |    8 +---
+ drivers/usb/host/ehci-q.c   |   86 +++++++++++++++++++++-----------------------
+ drivers/usb/host/ehci.h     |    3 +
+ 3 files changed, 47 insertions(+), 50 deletions(-)
 
---- a/drivers/staging/hv/netvsc.c
-+++ b/drivers/staging/hv/netvsc.c
-@@ -270,7 +270,7 @@ static int netvsc_init_recv_buf(struct h
- 		goto cleanup;
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -94,7 +94,8 @@ static const char	hcd_name [] = "ehci_hc
+ #define EHCI_IAA_MSECS		10		/* arbitrary */
+ #define EHCI_IO_JIFFIES		(HZ/10)		/* io watchdog > irq_thresh */
+ #define EHCI_ASYNC_JIFFIES	(HZ/20)		/* async idle timeout */
+-#define EHCI_SHRINK_FRAMES	5		/* async qh unlink delay */
++#define EHCI_SHRINK_JIFFIES	(DIV_ROUND_UP(HZ, 200) + 1)
++						/* 200-ms async qh unlink delay */
+ 
+ /* Initial IRQ latency:  faster than hw default */
+ static int log2_irq_thresh = 0;		// 0 to 6
+@@ -152,10 +153,7 @@ timer_action(struct ehci_hcd *ehci, enum
+ 			break;
+ 		/* case TIMER_ASYNC_SHRINK: */
+ 		default:
+-			/* add a jiffie since we synch against the
+-			 * 8 KHz uframe counter.
+-			 */
+-			t = DIV_ROUND_UP(EHCI_SHRINK_FRAMES * HZ, 1000) + 1;
++			t = EHCI_SHRINK_JIFFIES;
+ 			break;
+ 		}
+ 		mod_timer(&ehci->watchdog, t + jiffies);
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -1231,6 +1231,8 @@ static void start_unlink_async (struct e
+ 
+ 	prev->hw->hw_next = qh->hw->hw_next;
+ 	prev->qh_next = qh->qh_next;
++	if (ehci->qh_scan_next == qh)
++		ehci->qh_scan_next = qh->qh_next.qh;
+ 	wmb ();
+ 
+ 	/* If the controller isn't running, we don't have to wait for it */
+@@ -1256,53 +1258,49 @@ static void scan_async (struct ehci_hcd
+ 	struct ehci_qh		*qh;
+ 	enum ehci_timer_action	action = TIMER_IO_WATCHDOG;
+ 
+-	ehci->stamp = ehci_readl(ehci, &ehci->regs->frame_index);
+ 	timer_action_done (ehci, TIMER_ASYNC_SHRINK);
+-rescan:
+ 	stopped = !HC_IS_RUNNING(ehci_to_hcd(ehci)->state);
+-	qh = ehci->async->qh_next.qh;
+-	if (likely (qh != NULL)) {
+-		do {
+-			/* clean any finished work for this qh */
+-			if (!list_empty(&qh->qtd_list) && (stopped ||
+-					qh->stamp != ehci->stamp)) {
+-				int temp;
+-
+-				/* unlinks could happen here; completion
+-				 * reporting drops the lock.  rescan using
+-				 * the latest schedule, but don't rescan
+-				 * qhs we already finished (no looping)
+-				 * unless the controller is stopped.
+-				 */
+-				qh = qh_get (qh);
+-				qh->stamp = ehci->stamp;
+-				temp = qh_completions (ehci, qh);
+-				if (qh->needs_rescan)
+-					unlink_async(ehci, qh);
+-				qh_put (qh);
+-				if (temp != 0) {
+-					goto rescan;
+-				}
+-			}
+-
+-			/* unlink idle entries, reducing DMA usage as well
+-			 * as HCD schedule-scanning costs.  delay for any qh
+-			 * we just scanned, there's a not-unusual case that it
+-			 * doesn't stay idle for long.
+-			 * (plus, avoids some kind of re-activation race.)
+-			 */
+-			if (list_empty(&qh->qtd_list)
+-					&& qh->qh_state == QH_STATE_LINKED) {
+-				if (!ehci->reclaim && (stopped ||
+-					((ehci->stamp - qh->stamp) & 0x1fff)
+-						>= EHCI_SHRINK_FRAMES * 8))
+-					start_unlink_async(ehci, qh);
+-				else
+-					action = TIMER_ASYNC_SHRINK;
+-			}
+ 
+-			qh = qh->qh_next.qh;
+-		} while (qh);
++	ehci->qh_scan_next = ehci->async->qh_next.qh;
++	while (ehci->qh_scan_next) {
++		qh = ehci->qh_scan_next;
++		ehci->qh_scan_next = qh->qh_next.qh;
++ rescan:
++		/* clean any finished work for this qh */
++		if (!list_empty(&qh->qtd_list)) {
++			int temp;
++
++			/*
++			 * Unlinks could happen here; completion reporting
++			 * drops the lock.  That's why ehci->qh_scan_next
++			 * always holds the next qh to scan; if the next qh
++			 * gets unlinked then ehci->qh_scan_next is adjusted
++			 * in start_unlink_async().
++			 */
++			qh = qh_get(qh);
++			temp = qh_completions(ehci, qh);
++			if (qh->needs_rescan)
++				unlink_async(ehci, qh);
++			qh->unlink_time = jiffies + EHCI_SHRINK_JIFFIES;
++			qh_put(qh);
++			if (temp != 0)
++				goto rescan;
++		}
++
++		/* unlink idle entries, reducing DMA usage as well
++		 * as HCD schedule-scanning costs.  delay for any qh
++		 * we just scanned, there's a not-unusual case that it
++		 * doesn't stay idle for long.
++		 * (plus, avoids some kind of re-activation race.)
++		 */
++		if (list_empty(&qh->qtd_list)
++				&& qh->qh_state == QH_STATE_LINKED) {
++			if (!ehci->reclaim && (stopped ||
++					time_after_eq(jiffies, qh->unlink_time)))
++				start_unlink_async(ehci, qh);
++			else
++				action = TIMER_ASYNC_SHRINK;
++		}
  	}
+ 	if (action == TIMER_ASYNC_SHRINK)
+ 		timer_action (ehci, TIMER_ASYNC_SHRINK);
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -75,6 +75,7 @@ struct ehci_hcd {			/* one per controlle
+ 	struct ehci_qh		*async;
+ 	struct ehci_qh		*dummy;		/* For AMD quirk use */
+ 	struct ehci_qh		*reclaim;
++	struct ehci_qh		*qh_scan_next;
+ 	unsigned		scanning : 1;
  
--	t = wait_for_completion_timeout(&net_device->channel_init_wait, HZ);
-+	t = wait_for_completion_timeout(&net_device->channel_init_wait, 5*HZ);
- 	BUG_ON(t == 0);
+ 	/* periodic schedule support */
+@@ -117,7 +118,6 @@ struct ehci_hcd {			/* one per controlle
+ 	struct timer_list	iaa_watchdog;
+ 	struct timer_list	watchdog;
+ 	unsigned long		actions;
+-	unsigned		stamp;
+ 	unsigned		periodic_stamp;
+ 	unsigned		random_frame;
+ 	unsigned long		next_statechange;
+@@ -343,6 +343,7 @@ struct ehci_qh {
+ 	struct ehci_qh		*reclaim;	/* next to reclaim */
  
+ 	struct ehci_hcd		*ehci;
++	unsigned long		unlink_time;
  
-@@ -513,7 +513,7 @@ static int netvsc_connect_vsp(struct hv_
- 	if (ret != 0)
- 		goto cleanup;
- 
--	t = wait_for_completion_timeout(&net_device->channel_init_wait, HZ);
-+	t = wait_for_completion_timeout(&net_device->channel_init_wait, 5*HZ);
- 
- 	if (t == 0) {
- 		ret = -ETIMEDOUT;
---- a/drivers/staging/hv/rndis_filter.c
-+++ b/drivers/staging/hv/rndis_filter.c
-@@ -467,7 +467,7 @@ static int rndis_filter_query_device(str
- 	if (ret != 0)
- 		goto Cleanup;
- 
--	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
- 	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto Cleanup;
-@@ -543,7 +543,7 @@ static int rndis_filter_set_packet_filte
- 	if (ret != 0)
- 		goto Cleanup;
- 
--	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
- 
- 	if (t == 0) {
- 		ret = -1;
-@@ -600,7 +600,7 @@ static int rndis_filter_init_device(stru
- 	}
- 
- 
--	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
- 
- 	if (t == 0) {
- 		ret = -ETIMEDOUT;
+ 	/*
+ 	 * Do NOT use atomic operations for QH refcounting. On some CPUs
 
 
