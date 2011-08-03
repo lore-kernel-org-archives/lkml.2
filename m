@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab1HCX3Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:29:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33755 "EHLO mx2.suse.de"
+	id S1756159Ab1HCX24 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:28:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33748 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932123Ab1HCX2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:28:20 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:46 2011
-Message-Id: <20110803221246.233448186@clark.kroah.org>
+	id S932121Ab1HCX2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:28:17 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:47 2011
+Message-Id: <20110803221247.121601684@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:00:42 -0700
+Date: Wed, 03 Aug 2011 15:00:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: [022/102] ASoC: Mark cache as dirty when suspending
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [031/102] firewire: cdev: prevent race between first get_info ioctl and bus reset event queuing
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +25,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit 7be4ba24a3ea53bc8ade841635e4d4a59e98ceb5 upstream.
+commit 93b37905f70083d6143f5f4dba0a45cc64379a62 upstream.
 
-Since quite a few drivers are not managing to flag the cache as needing
-to be resynced after suspend and it's a reasonable thing to do flag the
-cache as needing sync automatically when suspending.
+Between open(2) of a /dev/fw* and the first FW_CDEV_IOC_GET_INFO
+ioctl(2) on it, the kernel already queues FW_CDEV_EVENT_BUS_RESET events
+to be read(2) by the client.  The get_info ioctl is practically always
+issued right away after open, hence this condition only occurs if the
+client opens during a bus reset, especially during a rapid series of bus
+resets.
 
-The expectation is that systems will mainly only keep the CODEC powered
-when doing audio through the CODEC so we won't actually suspend the
-device anyway; drivers which want to can override this behaviour when
-they resume.
+The problem with this condition is twofold:
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+  - These bus reset events carry the (as yet undocumented) @closure
+    value of 0.  But it is not the kernel's place to choose closures;
+    they are privat to the client.  E.g., this 0 value forced from the
+    kernel makes it unsafe for clients to dereference it as a pointer to
+    a closure object without NULL pointer check.
+
+  - It is impossible for clients to determine the relative order of bus
+    reset events from get_info ioctl(2) versus those from read(2),
+    except in one way:  By comparison of closure values.  Again, such a
+    procedure imposes complexity on clients and reduces freedom in use
+    of the bus reset closure.
+
+So, change the ABI to suppress queuing of bus reset events before the
+first FW_CDEV_IOC_GET_INFO ioctl was issued by the client.
+
+Note, this ABI change cannot be version-controlled.  The kernel cannot
+distinguish old from new clients before the first FW_CDEV_IOC_GET_INFO
+ioctl.
+
+We will try to back-merge this change into currently maintained stable/
+longterm series, and we only document the new behaviour.  The old
+behavior is now considered a kernel bug, which it basically is.
+
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: <stable@kernel.org>
 
 ---
- sound/soc/soc-core.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/firewire/core-cdev.c  |   18 ++++++++++--------
+ include/linux/firewire-cdev.h |    3 +++
+ 2 files changed, 13 insertions(+), 8 deletions(-)
 
---- a/sound/soc/soc-core.c
-+++ b/sound/soc/soc-core.c
-@@ -1124,6 +1124,7 @@ int snd_soc_suspend(struct device *dev)
- 			case SND_SOC_BIAS_OFF:
- 				codec->driver->suspend(codec, PMSG_SUSPEND);
- 				codec->suspended = 1;
-+				codec->cache_sync = 1;
- 				break;
- 			default:
- 				dev_dbg(codec->dev, "CODEC is on over suspend\n");
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -253,14 +253,11 @@ static int fw_device_op_open(struct inod
+ 	init_waitqueue_head(&client->wait);
+ 	init_waitqueue_head(&client->tx_flush_wait);
+ 	INIT_LIST_HEAD(&client->phy_receiver_link);
++	INIT_LIST_HEAD(&client->link);
+ 	kref_init(&client->kref);
+ 
+ 	file->private_data = client;
+ 
+-	mutex_lock(&device->client_list_mutex);
+-	list_add_tail(&client->link, &device->client_list);
+-	mutex_unlock(&device->client_list_mutex);
+-
+ 	return nonseekable_open(inode, file);
+ }
+ 
+@@ -451,15 +448,20 @@ static int ioctl_get_info(struct client
+ 	if (ret != 0)
+ 		return -EFAULT;
+ 
++	mutex_lock(&client->device->client_list_mutex);
++
+ 	client->bus_reset_closure = a->bus_reset_closure;
+ 	if (a->bus_reset != 0) {
+ 		fill_bus_reset_event(&bus_reset, client);
+-		if (copy_to_user(u64_to_uptr(a->bus_reset),
+-				 &bus_reset, sizeof(bus_reset)))
+-			return -EFAULT;
++		ret = copy_to_user(u64_to_uptr(a->bus_reset),
++				   &bus_reset, sizeof(bus_reset));
+ 	}
++	if (ret == 0 && list_empty(&client->link))
++		list_add_tail(&client->link, &client->device->client_list);
+ 
+-	return 0;
++	mutex_unlock(&client->device->client_list_mutex);
++
++	return ret ? -EFAULT : 0;
+ }
+ 
+ static int add_client_resource(struct client *client,
+--- a/include/linux/firewire-cdev.h
++++ b/include/linux/firewire-cdev.h
+@@ -475,6 +475,9 @@ union fw_cdev_event {
+  *		of the bus.  This does not cause a bus reset to happen.
+  * @bus_reset_closure: Value of &closure in this and subsequent bus reset events
+  * @card:	The index of the card this device belongs to
++ *
++ * As a side effect, reception of %FW_CDEV_EVENT_BUS_RESET events to be read(2)
++ * is started by this ioctl.
+  */
+ struct fw_cdev_get_info {
+ 	__u32 version;
 
 
