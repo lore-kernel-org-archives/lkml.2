@@ -1,162 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123Ab1HCXmh (ORCPT <rfc822;w@1wt.eu>);
+	id S1756217Ab1HCXms (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:42:48 -0400
+Received: from smtp13.ono.com ([62.42.230.16]:34051 "EHLO resmaa13.ono.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932113Ab1HCXmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Aug 2011 19:42:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33579 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756132Ab1HCX1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:27:08 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:48 2011
-Message-Id: <20110803221248.201726662@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:02 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kay Sievers <kay.sievers@vrfy.org>, Tejun Heo <tj@kernel.org>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [042/102] [SCSI] sr: check_events() ignore GET_EVENT when TUR says otherwise
-In-Reply-To: <20110803221345.GA10346@kroah.com>
+Date: Thu, 4 Aug 2011 01:42:34 +0200
+From: JA Magallon <jamagallon@ono.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Metadata space in BTRFS
+Message-ID: <20110804014234.01d9f05a@werewolf.home>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.5; x86_64-mandriva-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let us know.
+Hi all...
 
-------------------
+Just a simple question.
+I'm trying to use a 16GB SDHC card formatted in btrfs, and the system
+eats about 2GB for its metadata space. When the card fills, the
+situation is like this:
 
-From: Kay Sievers <kay.sievers@vrfy.org>
+werewolf:/media/home# btrfs fi df .
+Data: total=13.22GB, used=13.22GB
+System, DUP: total=8.00MB, used=4.00KB
+System: total=4.00MB, used=0.00
+Metadata, DUP: total=1.00GB, used=58.43MB
+Metadata: total=8.00MB, used=0.00
 
-commit 79b9677d885d1a792bc103f2febb06f91f92de43 upstream.
+I lose about 2Gb wrt ext4. Is there any way to shrink this metadata
+space ?
 
-Some broken devices indicates that media has changed on every
-GET_EVENT_STATUS_NOTIFICATION.  This translates into MEDIA_CHANGE
-uevent on every open() which lets udev run into a loop.
-
-Verify GET_EVENT result against TUR and if it generates spurious
-events for several times in a row, ignore the GET_EVENT events, and
-trust only the TUR status.
-
-This is the log of a USB stick with a (broken) fake CDROM drive:
-
- scsi 5:0:0:0: Direct-Access     SanDisk  U3 Cruzer Micro  8.02 PQ: 0 ANSI: 0 CCS
- sd 5:0:0:0: Attached scsi generic sg3 type 0
- scsi 5:0:0:1: CD-ROM            SanDisk  U3 Cruzer Micro  8.02 PQ: 0 ANSI: 0
- sd 5:0:0:0: [sdb] Attached SCSI removable disk
- sr2: scsi3-mmc drive: 48x/48x tray
- sr 5:0:0:1: Attached scsi CD-ROM sr2
- sr 5:0:0:1: Attached scsi generic sg4 type 5
- sr2: GET_EVENT and TUR disagree continuously, suppress GET_EVENT events
- sd 5:0:0:0: [sdb] 31777279 512-byte logical blocks: (16.2 GB/15.1 GiB)
- sd 5:0:0:0: [sdb] No Caching mode page present
- sd 5:0:0:0: [sdb] Assuming drive cache: write through
- sd 5:0:0:0: [sdb] No Caching mode page present
- sd 5:0:0:0: [sdb] Assuming drive cache: write through
- sdb: sdb1
-
--tj: Updated to consider only spurious GET_EVENT events among
-     different types of disagreement and allow using TUR for kernel
-     event polling after GET_EVENT is ignored.
-
-Reported-By: Markus Rathgeb maggu2810@googlemail.com
-Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/scsi/sr.c |   46 ++++++++++++++++++++++++++++++++++++++++++----
- drivers/scsi/sr.h |    7 +++++++
- 2 files changed, 49 insertions(+), 4 deletions(-)
-
---- a/drivers/scsi/sr.c
-+++ b/drivers/scsi/sr.c
-@@ -221,14 +221,33 @@ static unsigned int sr_check_events(stru
- 		return 0;
- 
- 	events = sr_get_events(cd->device);
-+	cd->get_event_changed |= events & DISK_EVENT_MEDIA_CHANGE;
-+
-+	/*
-+	 * If earlier GET_EVENT_STATUS_NOTIFICATION and TUR did not agree
-+	 * for several times in a row.  We rely on TUR only for this likely
-+	 * broken device, to prevent generating incorrect media changed
-+	 * events for every open().
-+	 */
-+	if (cd->ignore_get_event) {
-+		events &= ~DISK_EVENT_MEDIA_CHANGE;
-+		goto do_tur;
-+	}
-+
- 	/*
- 	 * GET_EVENT_STATUS_NOTIFICATION is enough unless MEDIA_CHANGE
- 	 * is being cleared.  Note that there are devices which hang
- 	 * if asked to execute TUR repeatedly.
- 	 */
--	if (!(clearing & DISK_EVENT_MEDIA_CHANGE))
--		goto skip_tur;
-+	if (cd->device->changed) {
-+		events |= DISK_EVENT_MEDIA_CHANGE;
-+		cd->device->changed = 0;
-+		cd->tur_changed = true;
-+	}
- 
-+	if (!(clearing & DISK_EVENT_MEDIA_CHANGE))
-+		return events;
-+do_tur:
- 	/* let's see whether the media is there with TUR */
- 	last_present = cd->media_present;
- 	ret = scsi_test_unit_ready(cd->device, SR_TIMEOUT, MAX_RETRIES, &sshdr);
-@@ -242,12 +261,31 @@ static unsigned int sr_check_events(stru
- 		(scsi_sense_valid(&sshdr) && sshdr.asc != 0x3a);
- 
- 	if (last_present != cd->media_present)
--		events |= DISK_EVENT_MEDIA_CHANGE;
--skip_tur:
-+		cd->device->changed = 1;
-+
- 	if (cd->device->changed) {
- 		events |= DISK_EVENT_MEDIA_CHANGE;
- 		cd->device->changed = 0;
-+		cd->tur_changed = true;
-+	}
-+
-+	if (cd->ignore_get_event)
-+		return events;
-+
-+	/* check whether GET_EVENT is reporting spurious MEDIA_CHANGE */
-+	if (!cd->tur_changed) {
-+		if (cd->get_event_changed) {
-+			if (cd->tur_mismatch++ > 8) {
-+				sdev_printk(KERN_WARNING, cd->device,
-+					    "GET_EVENT and TUR disagree continuously, suppress GET_EVENT events\n");
-+				cd->ignore_get_event = true;
-+			}
-+		} else {
-+			cd->tur_mismatch = 0;
-+		}
- 	}
-+	cd->tur_changed = false;
-+	cd->get_event_changed = false;
- 
- 	return events;
- }
---- a/drivers/scsi/sr.h
-+++ b/drivers/scsi/sr.h
-@@ -41,6 +41,13 @@ typedef struct scsi_cd {
- 	unsigned readcd_known:1;	/* drive supports READ_CD (0xbe) */
- 	unsigned readcd_cdda:1;	/* reading audio data using READ_CD */
- 	unsigned media_present:1;	/* media is present */
-+
-+	/* GET_EVENT spurious event handling, blk layer guarantees exclusion */
-+	int tur_mismatch;		/* nr of get_event TUR mismatches */
-+	bool tur_changed:1;		/* changed according to TUR */
-+	bool get_event_changed:1;	/* changed according to GET_EVENT */
-+	bool ignore_get_event:1;	/* GET_EVENT is unreliable, use TUR */
-+
- 	struct cdrom_device_info cdi;
- 	/* We hold gendisk and scsi_device references on probe and use
- 	 * the refs on this kref to decide when to release them */
-
+TIA
 
