@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449Ab1HCXhR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:37:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34005 "EHLO mx2.suse.de"
+	id S932159Ab1HCX3k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:29:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33820 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756196Ab1HCX3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:29:52 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:50 2011
-Message-Id: <20110803221249.934109440@clark.kroah.org>
+	id S1756161Ab1HCX2m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:28:42 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:51 2011
+Message-Id: <20110803221250.982268883@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:19 -0700
+Date: Wed, 03 Aug 2011 15:01:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Michael Cree <mcree@orcon.net.nz>, Ingo Molnar <mingo@elte.hu>
-Subject: [059/102] irq_work, alpha: Fix up arch hooks
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Christian Zankel <chris@zankel.net>, Oleg Nesterov <oleg@redhat.com>
+Subject: [069/102] xtensa: prevent arbitrary read in ptrace
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 0f933625e7b6c3d91878ae95e341bf1984db7eaf upstream.
+commit 0d0138ebe24b94065580bd2601f8bb7eb6152f56 upstream.
 
-Commit e360adbe29 ("irq_work: Add generic hardirq context
-callbacks") fouled up the Alpha bit, not properly naming the
-arch specific function that raises the 'self-IPI'.
+Prevent an arbitrary kernel read.  Check the user pointer with access_ok()
+before copying data in.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michael Cree <mcree@orcon.net.nz>
-Link: http://lkml.kernel.org/n/tip-gukh0txmql2l4thgrekzzbfy@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+[akpm@linux-foundation.org: s/EIO/EFAULT/]
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Christian Zankel <chris@zankel.net>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/alpha/kernel/time.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/xtensa/kernel/ptrace.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/alpha/kernel/time.c
-+++ b/arch/alpha/kernel/time.c
-@@ -91,7 +91,7 @@ DEFINE_PER_CPU(u8, irq_work_pending);
- #define test_irq_work_pending()      __get_cpu_var(irq_work_pending)
- #define clear_irq_work_pending()     __get_cpu_var(irq_work_pending) = 0
+--- a/arch/xtensa/kernel/ptrace.c
++++ b/arch/xtensa/kernel/ptrace.c
+@@ -147,6 +147,9 @@ int ptrace_setxregs(struct task_struct *
+ 	elf_xtregs_t *xtregs = uregs;
+ 	int ret = 0;
  
--void set_irq_work_pending(void)
-+void arch_irq_work_raise(void)
- {
- 	set_irq_work_pending_flag();
- }
++	if (!access_ok(VERIFY_READ, uregs, sizeof(elf_xtregs_t)))
++		return -EFAULT;
++
+ #if XTENSA_HAVE_COPROCESSORS
+ 	/* Flush all coprocessors before we overwrite them. */
+ 	coprocessor_flush_all(ti);
 
 
