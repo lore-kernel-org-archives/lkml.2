@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272Ab1HCXex (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:34:53 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:58912 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932215Ab1HCXec (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:34:32 -0400
-X-Sasl-enc: Bx0gGA5y6df9ZfM+GCaljFR+qwawxd4cir/qLFQvCF5x 1312414471
-Date: Wed, 3 Aug 2011 16:34:26 -0700
-From: Greg KH <greg@kroah.com>
-To: Paul Clements <paul.clements@us.sios.com>
-Cc: andrew morton <akpm@linux-foundation.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        nbd-general@lists.sourceforge.net
-Subject: Re: [PATCH] nbd: nbd sysfs framework
-Message-ID: <20110803233426.GA18216@kroah.com>
-References: <CAECXXi5kZJk+86-2SJRWqMUCj31cL4tb1qTbaueMxeEg2VFcDw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAECXXi5kZJk+86-2SJRWqMUCj31cL4tb1qTbaueMxeEg2VFcDw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932177Ab1HCXae (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:30:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33956 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932151Ab1HCX3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:29:34 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:52 2011
+Message-Id: <20110803221252.386156028@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 03 Aug 2011 15:01:43 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [083/102] EHCI: only power off port if over-current is active
+In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 03, 2011 at 07:15:51PM -0400, Paul Clements wrote:
-> Description: The patch creates a new sysfs entry framework for nbd.
+3.0-stable review patch.  If anyone has any objections, please let us know.
 
-Why?  What does this buy us except an increase in code size for no added
-benifit?  You seem to be stripping out the driver layer here and using
-"raw" kobjects, why?  That's generally never a good idea (hint, I think
-you just caused a race and userspace bug with your change as well
-because of this...)
+------------------
 
-confused,
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
-greg k-h
+commit 81463c1d707186adbbe534016cd1249edeab0dac upstream.
+
+MAX4967 USB power supply chip we use on our boards signals over-current when
+power is not enabled; once it's enabled, over-current signal returns to normal.
+That unfortunately caused the endless stream of "over-current change on port"
+messages. The EHCI root hub code reacts on every over-current signal change
+with powering off the port -- such change event is generated the moment the
+port power is enabled, so once enabled the power is immediately cut off.
+I think we should only cut off power when we're seeing the active over-current
+signal, so I'm adding such check to that code. I also think that the fact that
+we've cut off the port power should be reflected in the result of GetPortStatus
+request immediately, hence I'm adding a PORTSCn register readback after write...
+
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/usb/host/ehci-hub.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -891,10 +891,11 @@ static int ehci_hub_control (
+ 			 * power switching; they're allowed to just limit the
+ 			 * current.  khubd will turn the power back on.
+ 			 */
+-			if (HCS_PPC (ehci->hcs_params)){
++			if ((temp & PORT_OC) && HCS_PPC(ehci->hcs_params)) {
+ 				ehci_writel(ehci,
+ 					temp & ~(PORT_RWC_BITS | PORT_POWER),
+ 					status_reg);
++				temp = ehci_readl(ehci, status_reg);
+ 			}
+ 		}
+ 
+
+
