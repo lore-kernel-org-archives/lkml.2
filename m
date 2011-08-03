@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab1HCXmU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:42:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33590 "EHLO mx2.suse.de"
+	id S932123Ab1HCXmh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:42:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33579 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932068Ab1HCX1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:27:11 -0400
+	id S1756132Ab1HCX1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:27:08 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:48 2011
-Message-Id: <20110803221248.299530529@clark.kroah.org>
+Message-Id: <20110803221248.201726662@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:03 -0700
+Date: Wed, 03 Aug 2011 15:01:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Douglas Gilbert <dgilbert@interlog.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, Tejun Heo <tj@kernel.org>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [043/102] [SCSI] ses: requesting a fault indication
+Subject: [042/102] [SCSI] sr: check_events() ignore GET_EVENT when TUR says otherwise
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +26,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Douglas Gilbert <dgilbert@interlog.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
 
-commit 2a350cab9daf9a46322d83b091bb05cf54ccf6ab upstream.
+commit 79b9677d885d1a792bc103f2febb06f91f92de43 upstream.
 
-Noticed that when the sysfs interface of the SCSI SES
-driver was used to request a fault indication the LED
-flashed but the buzzer didn't sound. So it was doing
-what REQUEST IDENT (locate) should do.
+Some broken devices indicates that media has changed on every
+GET_EVENT_STATUS_NOTIFICATION.  This translates into MEDIA_CHANGE
+uevent on every open() which lets udev run into a loop.
 
-Changelog:
-   - fix the setting of REQUEST FAULT for the device slot
-     and array device slot elements in the enclosure control
-     diagnostic page
-   - note the potentially defective code that reads the
-     FAULT SENSED and FAULT REQUESTED bits from the enclosure
-     status diagnostic page
+Verify GET_EVENT result against TUR and if it generates spurious
+events for several times in a row, ignore the GET_EVENT events, and
+trust only the TUR status.
 
-The attached patch is against git/scsi-misc-2.6
+This is the log of a USB stick with a (broken) fake CDROM drive:
 
-Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
+ scsi 5:0:0:0: Direct-Access     SanDisk  U3 Cruzer Micro  8.02 PQ: 0 ANSI: 0 CCS
+ sd 5:0:0:0: Attached scsi generic sg3 type 0
+ scsi 5:0:0:1: CD-ROM            SanDisk  U3 Cruzer Micro  8.02 PQ: 0 ANSI: 0
+ sd 5:0:0:0: [sdb] Attached SCSI removable disk
+ sr2: scsi3-mmc drive: 48x/48x tray
+ sr 5:0:0:1: Attached scsi CD-ROM sr2
+ sr 5:0:0:1: Attached scsi generic sg4 type 5
+ sr2: GET_EVENT and TUR disagree continuously, suppress GET_EVENT events
+ sd 5:0:0:0: [sdb] 31777279 512-byte logical blocks: (16.2 GB/15.1 GiB)
+ sd 5:0:0:0: [sdb] No Caching mode page present
+ sd 5:0:0:0: [sdb] Assuming drive cache: write through
+ sd 5:0:0:0: [sdb] No Caching mode page present
+ sd 5:0:0:0: [sdb] Assuming drive cache: write through
+ sdb: sdb1
+
+-tj: Updated to consider only spurious GET_EVENT events among
+     different types of disagreement and allow using TUR for kernel
+     event polling after GET_EVENT is ignored.
+
+Reported-By: Markus Rathgeb maggu2810@googlemail.com
+Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/ses.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/scsi/sr.c |   46 ++++++++++++++++++++++++++++++++++++++++++----
+ drivers/scsi/sr.h |    7 +++++++
+ 2 files changed, 49 insertions(+), 4 deletions(-)
 
---- a/drivers/scsi/ses.c
-+++ b/drivers/scsi/ses.c
-@@ -160,6 +160,10 @@ static unsigned char *ses_get_page2_desc
- 	return NULL;
- }
+--- a/drivers/scsi/sr.c
++++ b/drivers/scsi/sr.c
+@@ -221,14 +221,33 @@ static unsigned int sr_check_events(stru
+ 		return 0;
  
-+/* For device slot and array device slot elements, byte 3 bit 6
-+ * is "fault sensed" while byte 3 bit 5 is "fault reqstd". As this
-+ * code stands these bits are shifted 4 positions right so in
-+ * sysfs they will appear as bits 2 and 1 respectively. Strange. */
- static void ses_get_fault(struct enclosure_device *edev,
- 			  struct enclosure_component *ecomp)
- {
-@@ -181,7 +185,7 @@ static int ses_set_fault(struct enclosur
- 		/* zero is disabled */
- 		break;
- 	case ENCLOSURE_SETTING_ENABLED:
--		desc[2] = 0x02;
-+		desc[3] = 0x20;
- 		break;
- 	default:
- 		/* SES doesn't do the SGPIO blink settings */
+ 	events = sr_get_events(cd->device);
++	cd->get_event_changed |= events & DISK_EVENT_MEDIA_CHANGE;
++
++	/*
++	 * If earlier GET_EVENT_STATUS_NOTIFICATION and TUR did not agree
++	 * for several times in a row.  We rely on TUR only for this likely
++	 * broken device, to prevent generating incorrect media changed
++	 * events for every open().
++	 */
++	if (cd->ignore_get_event) {
++		events &= ~DISK_EVENT_MEDIA_CHANGE;
++		goto do_tur;
++	}
++
+ 	/*
+ 	 * GET_EVENT_STATUS_NOTIFICATION is enough unless MEDIA_CHANGE
+ 	 * is being cleared.  Note that there are devices which hang
+ 	 * if asked to execute TUR repeatedly.
+ 	 */
+-	if (!(clearing & DISK_EVENT_MEDIA_CHANGE))
+-		goto skip_tur;
++	if (cd->device->changed) {
++		events |= DISK_EVENT_MEDIA_CHANGE;
++		cd->device->changed = 0;
++		cd->tur_changed = true;
++	}
+ 
++	if (!(clearing & DISK_EVENT_MEDIA_CHANGE))
++		return events;
++do_tur:
+ 	/* let's see whether the media is there with TUR */
+ 	last_present = cd->media_present;
+ 	ret = scsi_test_unit_ready(cd->device, SR_TIMEOUT, MAX_RETRIES, &sshdr);
+@@ -242,12 +261,31 @@ static unsigned int sr_check_events(stru
+ 		(scsi_sense_valid(&sshdr) && sshdr.asc != 0x3a);
+ 
+ 	if (last_present != cd->media_present)
+-		events |= DISK_EVENT_MEDIA_CHANGE;
+-skip_tur:
++		cd->device->changed = 1;
++
+ 	if (cd->device->changed) {
+ 		events |= DISK_EVENT_MEDIA_CHANGE;
+ 		cd->device->changed = 0;
++		cd->tur_changed = true;
++	}
++
++	if (cd->ignore_get_event)
++		return events;
++
++	/* check whether GET_EVENT is reporting spurious MEDIA_CHANGE */
++	if (!cd->tur_changed) {
++		if (cd->get_event_changed) {
++			if (cd->tur_mismatch++ > 8) {
++				sdev_printk(KERN_WARNING, cd->device,
++					    "GET_EVENT and TUR disagree continuously, suppress GET_EVENT events\n");
++				cd->ignore_get_event = true;
++			}
++		} else {
++			cd->tur_mismatch = 0;
++		}
+ 	}
++	cd->tur_changed = false;
++	cd->get_event_changed = false;
+ 
+ 	return events;
+ }
+--- a/drivers/scsi/sr.h
++++ b/drivers/scsi/sr.h
+@@ -41,6 +41,13 @@ typedef struct scsi_cd {
+ 	unsigned readcd_known:1;	/* drive supports READ_CD (0xbe) */
+ 	unsigned readcd_cdda:1;	/* reading audio data using READ_CD */
+ 	unsigned media_present:1;	/* media is present */
++
++	/* GET_EVENT spurious event handling, blk layer guarantees exclusion */
++	int tur_mismatch;		/* nr of get_event TUR mismatches */
++	bool tur_changed:1;		/* changed according to TUR */
++	bool get_event_changed:1;	/* changed according to GET_EVENT */
++	bool ignore_get_event:1;	/* GET_EVENT is unreliable, use TUR */
++
+ 	struct cdrom_device_info cdi;
+ 	/* We hold gendisk and scsi_device references on probe and use
+ 	 * the refs on this kref to decide when to release them */
 
 
