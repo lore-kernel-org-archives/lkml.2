@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932292Ab1HCXcu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:32:50 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33065 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756308Ab1HCXck (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:32:40 -0400
-MIME-Version: 1.0
-Date: Wed, 3 Aug 2011 19:32:39 -0400
-Message-ID: <CAECXXi5Q=NwrD3AsnUp41cX1PpM8Qf468-f_ENi8LDpfgyrotA@mail.gmail.com>
-Subject: [PATCH] nbd: new nbd sysfs entries
-From: Paul Clements <paul.clements@us.sios.com>
-To: andrew morton <akpm@linux-foundation.org>
-Cc: kernel list <linux-kernel@vger.kernel.org>,
-        nbd-general@lists.sourceforge.net
-Content-Type: multipart/mixed; boundary=001636c92489b74cb204a9a2477b
+	id S932218Ab1HCXbW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:31:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34091 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932172Ab1HCXaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:30:20 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:53 2011
+Message-Id: <20110803221253.867272438@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 03 Aug 2011 15:01:57 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        David Engraf <david.engraf@sysgo.com>,
+        Paul Mundt <lethal@linux-sh.org>, Wim Van sebroeck <wim@iguana.be>
+Subject: [097/102] watchdog: shwdt: fix usage of mod_timer
+In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001636c92489b74cb204a9a2477b
-Content-Type: text/plain; charset=ISO-8859-1
+3.0-stable review patch.  If anyone has any objections, please let us know.
 
-Description: Add 3 new sysfs entries to nbd.
+------------------
 
-# cat /sys/block/nbd6/nbd/peer
-127.0.0.1
-# cat /sys/block/nbd6/nbd/flags
-0
-# cat /sys/block/nbd6/nbd/xmit_timeout
-6
+From: David Engraf <david.engraf@sysgo.com>
 
-This patch depends on patch nbd-sysfs-framework.diff
+commit bea1906620ce72b63f83735c4cc2642b25ec54ae upstream.
 
---001636c92489b74cb204a9a2477b
-Content-Type: text/x-patch; charset=US-ASCII; name="nbd-sysfs-entries.diff"
-Content-Disposition: attachment; filename="nbd-sysfs-entries.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gqwxljx91
+Fix the usage of mod_timer() and make the driver usable. mod_timer() must
+be called with an absolute timeout in jiffies. The old implementation
+used a relative timeout thus the hardware watchdog was never triggered.
 
-RGVzY3JpcHRpb246IEFkZCAzIG5ldyBzeXNmcyBlbnRyaWVzIHRvIG5iZC4KCiMgY2F0IC9zeXMv
-YmxvY2svbmJkNi9uYmQvcGVlciAKMTI3LjAuMC4xCiMgY2F0IC9zeXMvYmxvY2svbmJkNi9uYmQv
-ZmxhZ3MgCjAKIyBjYXQgL3N5cy9ibG9jay9uYmQ2L25iZC94bWl0X3RpbWVvdXQgCjYKClRoaXMg
-cGF0Y2ggZGVwZW5kcyBvbiBwYXRjaCBuYmQtc3lzZnMtZnJhbWV3b3JrLmRpZmYKCkZyb206IFBh
-dWwgQ2xlbWVudHMgPHBhdWwuY2xlbWVudHNAc3RlZWxleWUuY29tPgpTaWduZWQtb2ZmLWJ5OiBQ
-YXVsIENsZW1lbnRzIDxwYXVsLmNsZW1lbnRzQHN0ZWVsZXllLmNvbT4KLS0tCgogbmJkLmMgfCAg
-IDc5ICsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
-KysrKysrKysrKystLQogMSBmaWxlIGNoYW5nZWQsIDc3IGluc2VydGlvbnMoKyksIDIgZGVsZXRp
-b25zKC0pCgpkaWZmIC0tZ2l0IGEvZHJpdmVycy9ibG9jay9uYmQuYyBiL2RyaXZlcnMvYmxvY2sv
-bmJkLmMKaW5kZXggMjNmMzYxOS4uNDRjZDQxZCAxMDA2NDQKLS0tIGEvZHJpdmVycy9ibG9jay9u
-YmQuYworKysgYi9kcml2ZXJzL2Jsb2NrL25iZC5jCkBAIC0xMzYsNyArMTM2LDcgQEAgc3RhdGlj
-IHZvaWQgc29ja19zaHV0ZG93bihzdHJ1Y3QgbmJkX2RldmljZSAqbG8sIGludCBsb2NrKQogCQlt
-dXRleF91bmxvY2soJmxvLT50eF9sb2NrKTsKIH0KIAotc3RhdGljIHZvaWQgbmJkX3htaXRfdGlt
-ZW91dCh1bnNpZ25lZCBsb25nIGFyZykKK3N0YXRpYyB2b2lkIHhtaXRfdGltZW91dCh1bnNpZ25l
-ZCBsb25nIGFyZykKIHsKIAlzdHJ1Y3QgdGFza19zdHJ1Y3QgKnRhc2sgPSAoc3RydWN0IHRhc2tf
-c3RydWN0ICopYXJnOwogCkBAIC0xODMsNyArMTgzLDcgQEAgc3RhdGljIGludCBzb2NrX3htaXQo
-c3RydWN0IG5iZF9kZXZpY2UgKmxvLCBpbnQgc2VuZCwgdm9pZCAqYnVmLCBpbnQgc2l6ZSwKIAog
-CQkJaWYgKGxvLT54bWl0X3RpbWVvdXQpIHsKIAkJCQlpbml0X3RpbWVyKCZ0aSk7Ci0JCQkJdGku
-ZnVuY3Rpb24gPSBuYmRfeG1pdF90aW1lb3V0OworCQkJCXRpLmZ1bmN0aW9uID0geG1pdF90aW1l
-b3V0OwogCQkJCXRpLmRhdGEgPSAodW5zaWduZWQgbG9uZyljdXJyZW50OwogCQkJCXRpLmV4cGly
-ZXMgPSBqaWZmaWVzICsgbG8tPnhtaXRfdGltZW91dDsKIAkJCQlhZGRfdGltZXIoJnRpKTsKQEAg
-LTcxOSwxNiArNzE5LDkxIEBAIHN0cnVjdCBuYmRfc3lzZnNfZW50cnkgewogCXNzaXplX3QgKCpz
-dG9yZSkoc3RydWN0IG5iZF9kZXZpY2UgKiwgY29uc3QgY2hhciAqLCBzaXplX3QpOwogfTsKIAor
-c3RhdGljIHNzaXplX3QKK3BlZXJfc2hvdyhzdHJ1Y3QgbmJkX2RldmljZSAqbG8sIGNoYXIgKnBh
-Z2UpCit7CisJc3RydWN0IHNvY2tldCAqc29jayA9IGxvLT5zb2NrOworCXN0cnVjdCBzb2NrYWRk
-cl9zdG9yYWdlIGFkZHI7CisJc3RydWN0IHNvY2thZGRyICpzYSA9IChzdHJ1Y3Qgc29ja2FkZHIg
-KikmYWRkcjsKKwlzdHJ1Y3Qgc29ja2FkZHJfaW4gKnNpbiA9IChzdHJ1Y3Qgc29ja2FkZHJfaW4g
-KikmYWRkcjsKKwlzdHJ1Y3Qgc29ja2FkZHJfaW42ICpzaW42ID0gKHN0cnVjdCBzb2NrYWRkcl9p
-bjYgKikmYWRkcjsKKwlpbnQgZXJyLCBsZW47CisKKwlpZiAoIXNvY2spCisJCWdvdG8gZXJyOwor
-CisJZXJyID0ga2VybmVsX2dldHBlZXJuYW1lKHNvY2ssIHNhLCAmbGVuKTsKKwlpZiAoZXJyIDwg
-MCkKKwkJZ290byBlcnI7CisKKwlpZiAoc2EtPnNhX2ZhbWlseSA9PSBBRl9JTkVUNikKKwkJcmV0
-dXJuIHNwcmludGYocGFnZSwgIiVwSTZcbiIsICZzaW42LT5zaW42X2FkZHIpOworCWVsc2UgaWYg
-KHNhLT5zYV9mYW1pbHkgPT0gQUZfSU5FVCkKKwkJcmV0dXJuIHNwcmludGYocGFnZSwgIiVwSTRc
-biIsICZzaW4tPnNpbl9hZGRyKTsKK2VycjoKKwlyZXR1cm4gMDsKK30KKwogc3RhdGljIHNzaXpl
-X3QgcGlkX3Nob3coc3RydWN0IG5iZF9kZXZpY2UgKmxvLCBjaGFyICpwYWdlKQogewogCXJldHVy
-biBzcHJpbnRmKHBhZ2UsICIlbGRcbiIsIChsb25nKWxvLT5waWQpOwogfQogCitzdGF0aWMgc3Np
-emVfdAorZmxhZ3Nfc2hvdyhzdHJ1Y3QgbmJkX2RldmljZSAqbG8sIGNoYXIgKnBhZ2UpCit7CisJ
-cmV0dXJuIHNwcmludGYocGFnZSwgIiV4XG4iLCBsby0+ZmxhZ3MpOworfQorCitzdGF0aWMgc3Np
-emVfdAorZmxhZ3Nfc3RvcmUoc3RydWN0IG5iZF9kZXZpY2UgKmxvLCBjb25zdCBjaGFyICpidWYs
-IHNpemVfdCBsZW4pCit7CisJbG9uZyBuOworCisJaWYgKHN0cmljdF9zdHJ0b2woYnVmLCAxNiwg
-Jm4pKQorCQlyZXR1cm4gLUVJTlZBTDsKKworCWxvLT5mbGFncyA9IG47CisKKwlyZXR1cm4gbGVu
-OworfQorCitzdGF0aWMgc3NpemVfdAoreG1pdF90aW1lb3V0X3Nob3coc3RydWN0IG5iZF9kZXZp
-Y2UgKmxvLCBjaGFyICpwYWdlKQoreworCXJldHVybiBzcHJpbnRmKHBhZ2UsICIlZFxuIiwgbG8t
-PnhtaXRfdGltZW91dCAvIEhaKTsKK30KKworc3RhdGljIHNzaXplX3QKK3htaXRfdGltZW91dF9z
-dG9yZShzdHJ1Y3QgbmJkX2RldmljZSAqbG8sIGNvbnN0IGNoYXIgKmJ1Ziwgc2l6ZV90IGxlbikK
-K3sKKwlsb25nIG47CisKKwlpZiAoc3RyaWN0X3N0cnRvbChidWYsIDEwLCAmbikpCisJCXJldHVy
-biAtRUlOVkFMOworCisJbG8tPnhtaXRfdGltZW91dCA9IG4gKiBIWjsKKworCXJldHVybiBsZW47
-Cit9CisKK3N0YXRpYyBzdHJ1Y3QgbmJkX3N5c2ZzX2VudHJ5IG5iZF9wZWVyID0KK19fQVRUUihw
-ZWVyLCBTX0lSVUdPLCBwZWVyX3Nob3csIE5VTEwpOworCiBzdGF0aWMgc3RydWN0IG5iZF9zeXNm
-c19lbnRyeSBuYmRfcGlkID0KIF9fQVRUUihwaWQsIFNfSVJVR08sIHBpZF9zaG93LCBOVUxMKTsK
-IAorc3RhdGljIHN0cnVjdCBuYmRfc3lzZnNfZW50cnkgbmJkX2ZsYWdzID0KK19fQVRUUihmbGFn
-cywgU19JUlVHT3xTX0lXVVNSLCBmbGFnc19zaG93LCBmbGFnc19zdG9yZSk7CisKK3N0YXRpYyBz
-dHJ1Y3QgbmJkX3N5c2ZzX2VudHJ5IG5iZF94bWl0X3RpbWVvdXQgPQorX19BVFRSKHhtaXRfdGlt
-ZW91dCwgU19JUlVHT3xTX0lXVVNSLCB4bWl0X3RpbWVvdXRfc2hvdywgeG1pdF90aW1lb3V0X3N0
-b3JlKTsKKwogc3RhdGljIHN0cnVjdCBhdHRyaWJ1dGUgKm5iZF9kZWZhdWx0X2F0dHJzW10gPSB7
-CisJJm5iZF9wZWVyLmF0dHIsCiAJJm5iZF9waWQuYXR0ciwKKwkmbmJkX2ZsYWdzLmF0dHIsCisJ
-Jm5iZF94bWl0X3RpbWVvdXQuYXR0ciwKIAlOVUxMLAogfTsKIAo=
---001636c92489b74cb204a9a2477b--
+Signed-off-by: David Engraf <david.engraf@sysgo.com>
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Wim Van sebroeck <wim@iguana.be>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/watchdog/shwdt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/watchdog/shwdt.c
++++ b/drivers/watchdog/shwdt.c
+@@ -64,7 +64,7 @@
+  * misses its deadline, the kernel timer will allow the WDT to overflow.
+  */
+ static int clock_division_ratio = WTCSR_CKS_4096;
+-#define next_ping_period(cks)	msecs_to_jiffies(cks - 4)
++#define next_ping_period(cks)	(jiffies + msecs_to_jiffies(cks - 4))
+ 
+ static const struct watchdog_info sh_wdt_info;
+ static struct platform_device *sh_wdt_dev;
+
+
