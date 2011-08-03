@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228Ab1HCXiw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:38:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33902 "EHLO mx2.suse.de"
+	id S932136Ab1HCXjK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:39:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33847 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756214Ab1HCX3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:29:13 -0400
+	id S1756160Ab1HCX2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:28:52 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:51 2011
-Message-Id: <20110803221251.774246649@clark.kroah.org>
+Message-Id: <20110803221251.285616836@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:37 -0700
+Date: Wed, 03 Aug 2011 15:01:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [077/102] nfsd4: fix file leak on open_downgrade
+        Sage Weil <sage@newdream.net>, Jan Kara <jack@suse.cz>
+Subject: [072/102] ext3: Fix oops in ext3_try_to_allocate_with_rsv()
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,103 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-commit f197c27196a5e7631b89e2e92daa096fcf7c302c upstream.
+commit ad95c5e9bc8b5885f94dce720137cac8fa8da4c9 upstream.
 
-Stateid's hold a read reference for a read open, a write reference for a
-write open, and an additional one of each for each read+write open.  The
-latter wasn't getting put on a downgrade, so something like:
+Block allocation is called from two places: ext3_get_blocks_handle() and
+ext3_xattr_block_set(). These two callers are not necessarily synchronized
+because xattr code holds only xattr_sem and i_mutex, and
+ext3_get_blocks_handle() may hold only truncate_mutex when called from
+writepage() path. Block reservation code does not expect two concurrent
+allocations to happen to the same inode and thus assertions can be triggered
+or reservation structure corruption can occur.
 
-	open RW
-	open R
-	downgrade to R
+Fix the problem by taking truncate_mutex in xattr code to serialize
+allocations.
 
-was resulting in a file leak.
-
-Also fix an imbalance in an error path.
-
-Regression from 7d94784293096c0a46897acdb83be5abd9278ece "nfsd4: fix
-downgrade/lock logic".
-
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+CC: Sage Weil <sage@newdream.net>
+Reported-by: Fyodor Ustinov <ufm@ufm.su>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfs4state.c |   31 ++++++++-----------------------
- 1 file changed, 8 insertions(+), 23 deletions(-)
+ fs/ext3/xattr.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -2332,15 +2332,6 @@ out:
- 	return ret;
- }
- 
--static inline void
--nfs4_file_downgrade(struct nfs4_file *fp, unsigned int share_access)
--{
--	if (share_access & NFS4_SHARE_ACCESS_WRITE)
--		nfs4_file_put_access(fp, O_WRONLY);
--	if (share_access & NFS4_SHARE_ACCESS_READ)
--		nfs4_file_put_access(fp, O_RDONLY);
--}
--
- static void nfsd_break_one_deleg(struct nfs4_delegation *dp)
- {
- 	/* We're assuming the state code never drops its reference
-@@ -2627,7 +2618,7 @@ nfs4_upgrade_open(struct svc_rqst *rqstp
- 	status = nfsd4_truncate(rqstp, cur_fh, open);
- 	if (status) {
- 		if (new_access) {
--			int oflag = nfs4_access_to_omode(new_access);
-+			int oflag = nfs4_access_to_omode(op_share_access);
- 			nfs4_file_put_access(fp, oflag);
- 		}
- 		return status;
-@@ -3385,18 +3376,15 @@ out:
- 	return status;
- }
- 
--
--/*
-- * unset all bits in union bitmap (bmap) that
-- * do not exist in share (from successful OPEN_DOWNGRADE)
-- */
--static void
--reset_union_bmap_access(unsigned long access, unsigned long *bmap)
-+static inline void nfs4_file_downgrade(struct nfs4_stateid *stp, unsigned int to_access)
- {
- 	int i;
+--- a/fs/ext3/xattr.c
++++ b/fs/ext3/xattr.c
+@@ -803,8 +803,16 @@ inserted:
+ 			/* We need to allocate a new block */
+ 			ext3_fsblk_t goal = ext3_group_first_block_no(sb,
+ 						EXT3_I(inode)->i_block_group);
+-			ext3_fsblk_t block = ext3_new_block(handle, inode,
+-							goal, &error);
++			ext3_fsblk_t block;
 +
- 	for (i = 1; i < 4; i++) {
--		if ((i & access) != i)
--			__clear_bit(i, bmap);
-+		if (test_bit(i, &stp->st_access_bmap) && !(i & to_access)) {
-+			nfs4_file_put_access(stp->st_file, i);
-+			__clear_bit(i, &stp->st_access_bmap);
-+		}
- 	}
- }
- 
-@@ -3417,7 +3405,6 @@ nfsd4_open_downgrade(struct svc_rqst *rq
- {
- 	__be32 status;
- 	struct nfs4_stateid *stp;
--	unsigned int share_access;
- 
- 	dprintk("NFSD: nfsd4_open_downgrade on file %.*s\n", 
- 			(int)cstate->current_fh.fh_dentry->d_name.len,
-@@ -3446,10 +3433,8 @@ nfsd4_open_downgrade(struct svc_rqst *rq
- 			stp->st_deny_bmap, od->od_share_deny);
- 		goto out;
- 	}
--	set_access(&share_access, stp->st_access_bmap);
--	nfs4_file_downgrade(stp->st_file, share_access & ~od->od_share_access);
-+	nfs4_file_downgrade(stp, od->od_share_access);
- 
--	reset_union_bmap_access(od->od_share_access, &stp->st_access_bmap);
- 	reset_union_bmap_deny(od->od_share_deny, &stp->st_deny_bmap);
- 
- 	update_stateid(&stp->st_stateid);
++			/*
++			 * Protect us agaist concurrent allocations to the
++			 * same inode from ext3_..._writepage(). Reservation
++			 * code does not expect racing allocations.
++			 */
++			mutex_lock(&EXT3_I(inode)->truncate_mutex);
++			block = ext3_new_block(handle, inode, goal, &error);
++			mutex_unlock(&EXT3_I(inode)->truncate_mutex);
+ 			if (error)
+ 				goto cleanup;
+ 			ea_idebug(inode, "creating block %d", block);
 
 
