@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab1HCT7J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 15:59:09 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:35071 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754668Ab1HCT7E (ORCPT
+	id S1754907Ab1HCUDD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 16:03:03 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:51599 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754118Ab1HCUC4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 15:59:04 -0400
-From: Jim Cromie <jim.cromie@gmail.com>
-To: jbaron@redhat.com
-Cc: joe@perches.com, linux-kernel@vger.kernel.org,
-        Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 44/48] dynamic_debug: add space unconditionally at end of dynamic-prefix
-Date: Wed,  3 Aug 2011 13:58:34 -0600
-Message-Id: <1312401514-20061-2-git-send-email-jim.cromie@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1312401514-20061-1-git-send-email-jim.cromie@gmail.com>
-References: <1312401514-20061-1-git-send-email-jim.cromie@gmail.com>
+	Wed, 3 Aug 2011 16:02:56 -0400
+Date: Wed, 3 Aug 2011 13:02:53 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [GIT PATCH] APEI patches for Linux 3.1
+Message-Id: <20110803130253.db8dd045.rdunlap@xenotime.net>
+In-Reply-To: <CA+8MBbKavpgkf-ByB5-x9k5NCnW_W9Nkp2pQMXTGvTZEdTYg1w@mail.gmail.com>
+References: <alpine.LFD.2.02.1108031137590.22067@x980>
+	<CA+55aFxST2J+LDMB=1ctnw2WGxV+a-cm3FE-1AjwnXMNDkt32g@mail.gmail.com>
+	<CA+8MBbKavpgkf-ByB5-x9k5NCnW_W9Nkp2pQMXTGvTZEdTYg1w@mail.gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dynamic_emit_prefix() currently adds a space after line-number,
-but not otherwize.  For readability, add space unconditionally.
+On Wed, 3 Aug 2011 12:10:14 -0700 Tony Luck wrote:
 
-Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+> On Wed, Aug 3, 2011 at 9:26 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >  fatal: Couldn't find remote ref apei-release
+> >
+> > Forgot yo push?
+> 
+> Looks like he pushed to the wrong tree. There is a 3 hour old
+> apei-release branch here:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6.git
+> apei-release
+
+Len did send a follow-up (correction) email that said:
+
+typo fixed -- the real tree is here
+
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git apei-release
+
+
 ---
- lib/dynamic_debug.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 321c1b70..d7494a0 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -676,7 +676,8 @@ static char *dynamic_emit_prefix(const struct _ddebug *desc, char *buf)
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
- 		pos += snprintf(buf + pos, LEFT(pos), "%s:", desc->function);
- 	if (desc->flags & _DPRINTK_FLAGS_INCL_LINENO)
--		pos += snprintf(buf + pos, LEFT(pos), "%d ", desc->lineno);
-+		pos += snprintf(buf + pos, LEFT(pos), "%d:", desc->lineno);
-+	pos += snprintf(buf + pos, LEFT(pos), " ");
- 
- 	return buf;
- }
--- 
-1.7.4.1
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
