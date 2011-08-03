@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932303Ab1HCXeE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:34:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34188 "EHLO mx2.suse.de"
+	id S932309Ab1HCXeW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:34:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34159 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932204Ab1HCXaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:30:55 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:53 2011
-Message-Id: <20110803221253.116409755@clark.kroah.org>
+	id S1756075Ab1HCXap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:30:45 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:52 2011
+Message-Id: <20110803221252.820068993@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:50 -0700
+Date: Wed, 03 Aug 2011 15:01:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [090/102] hvc_console: Improve tty/console put_chars handling
+        Stephen Warren <swarren@nvidia.com>
+Subject: [087/102] tty/serial: Fix XSCALE serial ports, e.g. ce4100
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,57 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit 8c2381af0d3ef62a681dac5a141b6dabb27bf2e1 upstream.
+commit 5568181f188ae9485a0cdbea5ea48f63d186a298 upstream.
 
-Currently, the hvc_console_print() function drops console output if the
-hvc backend's put_chars() returns 0.  This patch changes this behavior
-to allow a retry through returning -EAGAIN.
+Commit 4539c24fe4f92c09ee668ef959d3e8180df619b9 "tty/serial: Add
+explicit PORT_TEGRA type" introduced separate flags describing the need
+for IER bits UUE and RTOIE. Both bits are required for the XSCALE port
+type. While that patch updated uart_config[] as required, the auto-probing
+code wasn't updated to set the RTOIE flag when an XSCALE port type was
+detected. This caused such ports to stop working. This patch rectifies
+that.
 
-This change also affects the hvc_push() function.  Both functions are
-changed to handle -EAGAIN and to retry the put_chars() operation.
-
-If a hvc backend returns -EAGAIN, the retry handling differs:
-
-  - hvc_console_print() spins to write the complete console output.
-  - hvc_push() behaves the same way as for returning 0.
-
-Now hvc backends can indirectly control the way how console output is
-handled through the hvc console layer.
-
-Signed-off-by: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-Acked-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Tested-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/tty/hvc/hvc_console.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/tty/serial/8250.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/hvc/hvc_console.c
-+++ b/drivers/tty/hvc/hvc_console.c
-@@ -163,8 +163,10 @@ static void hvc_console_print(struct con
- 		} else {
- 			r = cons_ops[index]->put_chars(vtermnos[index], c, i);
- 			if (r <= 0) {
--				/* throw away chars on error */
--				i = 0;
-+				/* throw away characters on error
-+				 * but spin in case of -EAGAIN */
-+				if (r != -EAGAIN)
-+					i = 0;
- 			} else if (r > 0) {
- 				i -= r;
- 				if (i > 0)
-@@ -448,7 +450,7 @@ static int hvc_push(struct hvc_struct *h
- 
- 	n = hp->ops->put_chars(hp->vtermno, hp->outbuf, hp->n_outbuf);
- 	if (n <= 0) {
--		if (n == 0) {
-+		if (n == 0 || n == -EAGAIN) {
- 			hp->do_wakeup = 1;
- 			return 0;
+--- a/drivers/tty/serial/8250.c
++++ b/drivers/tty/serial/8250.c
+@@ -1107,7 +1107,7 @@ static void autoconfig_16550a(struct uar
+ 			 */
+ 			DEBUG_AUTOCONF("Xscale ");
+ 			up->port.type = PORT_XSCALE;
+-			up->capabilities |= UART_CAP_UUE;
++			up->capabilities |= UART_CAP_UUE | UART_CAP_RTOIE;
+ 			return;
  		}
+ 	} else {
 
 
