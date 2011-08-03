@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932065Ab1HCX1K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:27:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33563 "EHLO mx2.suse.de"
+	id S932182Ab1HCXmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:42:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33590 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756112Ab1HCX1A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:27:00 -0400
+	id S932068Ab1HCX1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:27:11 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:48 2011
-Message-Id: <20110803221248.089218344@clark.kroah.org>
+Message-Id: <20110803221248.299530529@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:01 -0700
+Date: Wed, 03 Aug 2011 15:01:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Werner Fink <werner@novell.com>, Ankit Jain <jankit@suse.de>,
+        Douglas Gilbert <dgilbert@interlog.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [041/102] [SCSI] Blacklist Traxdata CDR4120 and IOMEGA Zip drive to avoid lock ups.
+Subject: [043/102] [SCSI] ses: requesting a fault indication
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Werner Fink <werner@novell.com>
+From: Douglas Gilbert <dgilbert@interlog.com>
 
-commit 82103978189e9731658cd32da5eb85ab7b8542b8 upstream.
+commit 2a350cab9daf9a46322d83b091bb05cf54ccf6ab upstream.
 
-This patch resulted from the discussion at
-https://bugzilla.novell.com/show_bug.cgi?id=679277,
-https://bugzilla.novell.com/show_bug.cgi?id=681840 .
+Noticed that when the sysfs interface of the SCSI SES
+driver was used to request a fault indication the LED
+flashed but the buzzer didn't sound. So it was doing
+what REQUEST IDENT (locate) should do.
 
-Signed-off-by: Werner Fink <werner@novell.com>
-Signed-off-by: Ankit Jain <jankit@suse.de>
+Changelog:
+   - fix the setting of REQUEST FAULT for the device slot
+     and array device slot elements in the enclosure control
+     diagnostic page
+   - note the potentially defective code that reads the
+     FAULT SENSED and FAULT REQUESTED bits from the enclosure
+     status diagnostic page
+
+The attached patch is against git/scsi-misc-2.6
+
+Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/scsi_devinfo.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/scsi/ses.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/scsi_devinfo.c
-+++ b/drivers/scsi/scsi_devinfo.c
-@@ -197,6 +197,7 @@ static struct {
- 	{"IBM", "ProFibre 4000R", "*", BLIST_SPARSELUN | BLIST_LARGELUN},
- 	{"IBM", "2105", NULL, BLIST_RETRY_HWERROR},
- 	{"iomega", "jaz 1GB", "J.86", BLIST_NOTQ | BLIST_NOLUN},
-+	{"IOMEGA", "ZIP", NULL, BLIST_NOTQ | BLIST_NOLUN},
- 	{"IOMEGA", "Io20S         *F", NULL, BLIST_KEY},
- 	{"INSITE", "Floptical   F*8I", NULL, BLIST_KEY},
- 	{"INSITE", "I325VM", NULL, BLIST_KEY},
-@@ -243,6 +244,7 @@ static struct {
- 	{"Tornado-", "F4", "*", BLIST_NOREPORTLUN},
- 	{"TOSHIBA", "CDROM", NULL, BLIST_ISROM},
- 	{"TOSHIBA", "CD-ROM", NULL, BLIST_ISROM},
-+	{"Traxdata", "CDR4120", NULL, BLIST_NOLUN},	/* locks up */
- 	{"USB2.0", "SMARTMEDIA/XD", NULL, BLIST_FORCELUN | BLIST_INQUIRY_36},
- 	{"WangDAT", "Model 2600", "01.7", BLIST_SELECT_NO_ATN},
- 	{"WangDAT", "Model 3200", "02.2", BLIST_SELECT_NO_ATN},
+--- a/drivers/scsi/ses.c
++++ b/drivers/scsi/ses.c
+@@ -160,6 +160,10 @@ static unsigned char *ses_get_page2_desc
+ 	return NULL;
+ }
+ 
++/* For device slot and array device slot elements, byte 3 bit 6
++ * is "fault sensed" while byte 3 bit 5 is "fault reqstd". As this
++ * code stands these bits are shifted 4 positions right so in
++ * sysfs they will appear as bits 2 and 1 respectively. Strange. */
+ static void ses_get_fault(struct enclosure_device *edev,
+ 			  struct enclosure_component *ecomp)
+ {
+@@ -181,7 +185,7 @@ static int ses_set_fault(struct enclosur
+ 		/* zero is disabled */
+ 		break;
+ 	case ENCLOSURE_SETTING_ENABLED:
+-		desc[2] = 0x02;
++		desc[3] = 0x20;
+ 		break;
+ 	default:
+ 		/* SES doesn't do the SGPIO blink settings */
 
 
