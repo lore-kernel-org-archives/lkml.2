@@ -1,108 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab1HCVF6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 17:05:58 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:47625 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956Ab1HCVFw (ORCPT
+	id S1755380Ab1HCVJU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 17:09:20 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:29186 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752956Ab1HCVJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 17:05:52 -0400
-Message-ID: <4E39B82C.2010108@lwfinger.net>
-Date: Wed, 03 Aug 2011 16:05:48 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-CC: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Piszcz <ap@solarrain.com>
-Subject: Re: Linux Wireless USB-Stick Question
-References: <alpine.DEB.2.02.1108031550100.4278@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.02.1108031550100.4278@p34.internal.lan>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Aug 2011 17:09:15 -0400
+From: Bryan Freed <bfreed@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: tpmdd-devel@lists.sourceforge.net, m.selhorst@sirrix.com,
+        srajiv@linux.vnet.ibm.com, debora@linux.vnet.ibm.com,
+        Bryan Freed <bfreed@chromium.org>
+Subject: [PATCH] CHROMIUM: tpm: tpm_tis_i2c: Lock the I2C adapter for a sequence of requests.
+Date: Wed,  3 Aug 2011 14:08:50 -0700
+Message-Id: <1312405730-22741-1-git-send-email-bfreed@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2011 02:53 PM, Justin Piszcz wrote:
-> Hi,
->
-> Under Windows, you can achieve 10-15MiB/s..
->
-> Under Linux, even with 150mbps USB wireless adapters, the max never appears to
-> go above > 3-4MiB/s, to work around this, order more USB-wifi ticks and run them
-> in parallel far away from each other with USB
-> extenders:
->
-> box1:
-> -------------
-> wlan0 IEEE 802.11bg ESSID:"hidden"
-> Bit Rate=54 Mb/s Tx-Power=20 dBm
-> wlan1 IEEE 802.11bgn ESSID:"hidden"
-> Bit Rate=58.5 Mb/s Tx-Power=20 dBm
-> wlan2 IEEE 802.11bgn ESSID:"hidden"
-> Bit Rate=39 Mb/s Tx-Power=20 dBm
->
-> box2:
-> -------------
-> wlan0 IEEE 802.11bgn ESSID:"hidden"
-> Bit Rate=58.5 Mb/s Tx-Power=20 dBm
-> wlan1 IEEE 802.11bgn ESSID:"hidden"
-> Bit Rate=52 Mb/s Tx-Power=20 dBm
-> wlan2 IEEE 802.11bgn ESSID:"hidden"
-> Bit Rate=52 Mb/s Tx-Power=20 dBm
->
-> But I was curious if anyone had achieved > 10 MiB/s with any wireless adapter
-> with Linux?
->
-> Also, those native Linux USB adapters (carl) work good, so far.
-> With the patch provided earlier for the rt2800usb driver, it is no longer
-> crashing under 3.0 so I put two of them on a single box plus a carl based one,
-> now I get better I/O, e.g. 4MiB/s x 6 = 24MiB/s.
+This is derived from Peter Huewe's recommended fix:
 
-On a 150 Mbps connection running the following script
+On some ChromeOS systems, a TPM sharing the I2C bus with another device
+gets confused when it sees I2C requests to that other device.
+This change locks the I2C adapter for the duration of the full sequence
+of I2C requests the TPM needs to complete.
 
-#!/bin/sh
+smbus_xfer is not supported, but SMBUS is not supported by the original
+driver, either.
 
-dest="sonylap" # set the servername
+Signed-off-by: Bryan Freed <bfreed@chromium.org>
+---
+ drivers/char/tpm/tpm_tis_i2c.c |   42 ++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 38 insertions(+), 4 deletions(-)
 
-while true ; do
-netperf -t TCP_MAERTS -H $dest
-netperf -t TCP_STREAM -H $dest
-netperf -t TCP_SENDFILE -H $dest
-done
+diff --git a/drivers/char/tpm/tpm_tis_i2c.c b/drivers/char/tpm/tpm_tis_i2c.c
+index 8696b5f..4bd182e 100644
+--- a/drivers/char/tpm/tpm_tis_i2c.c
++++ b/drivers/char/tpm/tpm_tis_i2c.c
+@@ -64,6 +64,28 @@ static struct tpm_inf_dev tpm_dev;
+ 
+ 
+ /*
++ * Copy i2c-core:i2c_transfer() as close as possible without the adapter locks
++ * and algorithm check.  These are done by the caller for atomicity.
++ */
++static int i2c_transfer_nolock(struct i2c_adapter *adap, struct i2c_msg *msgs,
++			       int num)
++{
++	unsigned long orig_jiffies;
++	int ret, try;
++
++	/* Retry automatically on arbitration loss */
++	orig_jiffies = jiffies;
++	for (ret = 0, try = 0; try <= adap->retries; try++) {
++		ret = adap->algo->master_xfer(adap, msgs, num);
++		if (ret != -EAGAIN)
++			break;
++		if (time_after(jiffies, orig_jiffies + adap->timeout))
++			break;
++	}
++	return ret;
++}
++
++/*
+  * iic_tpm_read() - read from TPM register
+  * @addr: register address to read from
+  * @buffer: provided by caller
+@@ -86,8 +108,13 @@ static int iic_tpm_read(u8 addr, u8 *buffer, size_t len)
+ 	int rc;
+ 	int count;
+ 
++	/* Lock the adapter for the duration of the whole sequence. */
++	if (!tpm_dev.client->adapter->algo->master_xfer)
++		return -EOPNOTSUPP;
++	i2c_lock_adapter(tpm_dev.client->adapter);
++
+ 	for (count = 0; count < MAX_COUNT; count++) {
+-		rc = i2c_transfer(tpm_dev.client->adapter, &msg1, 1);
++		rc = i2c_transfer_nolock(tpm_dev.client->adapter, &msg1, 1);
+ 		if (rc > 0)
+ 			break; /* break here to skip sleep */
+ 
+@@ -95,19 +122,21 @@ static int iic_tpm_read(u8 addr, u8 *buffer, size_t len)
+ 	}
+ 
+ 	if (rc <= 0)
+-		return -EIO;
++		goto out;
+ 
+ 	/* After the TPM has successfully received the register address it needs
+ 	 * some time, thus we're sleeping here again, before retrieving the data
+ 	 */
+ 	for (count = 0; count < MAX_COUNT; count++) {
+ 		usleep_range(SLEEP_DURATION_LOW, SLEEP_DURATION_HI);
+-		rc = i2c_transfer(tpm_dev.client->adapter, &msg2, 1);
++		rc = i2c_transfer_nolock(tpm_dev.client->adapter, &msg2, 1);
+ 		if (rc > 0)
+ 			break;
+ 
+ 	}
+ 
++out:
++	i2c_unlock_adapter(tpm_dev.client->adapter);
+ 	if (rc <= 0)
+ 		return -EIO;
+ 
+@@ -124,17 +153,22 @@ static int iic_tpm_write_generic(u8 addr, u8 *buffer, size_t len,
+ 
+ 	struct i2c_msg msg1 = { tpm_dev.client->addr, 0, len + 1, tpm_dev.buf };
+ 
++	if (!tpm_dev.client->adapter->algo->master_xfer)
++		return -EOPNOTSUPP;
++	i2c_lock_adapter(tpm_dev.client->adapter);
++
+ 	tpm_dev.buf[0] = addr;
+ 	memcpy(&(tpm_dev.buf[1]), buffer, len);
+ 
+ 	for (count = 0; count < max_count; count++) {
+-		rc = i2c_transfer(tpm_dev.client->adapter, &msg1, 1);
++		rc = i2c_transfer_nolock(tpm_dev.client->adapter, &msg1, 1);
+ 		if (rc > 0)
+ 			break;
+ 
+ 		usleep_range(sleep_low, sleep_hi);
+ 	}
+ 
++	i2c_unlock_adapter(tpm_dev.client->adapter);
+ 	if (rc <= 0)
+ 		return -EIO;
+ 
+-- 
+1.7.3.1
 
-I get the following for a D-Link DWA-130 containing a Realtek RTL8192SU with 
-driver r8712u:
-
-finger@larrylap:~/bcm_git/vendor-driver/5.10.56.46> ~/netperf.sh
-TCP MAERTS TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to sonylap (192.168.1.50) 
-port 0 AF_INET
-Recv   Send    Send
-Socket Socket  Message  Elapsed
-Size   Size    Size     Time     Throughput
-bytes  bytes   bytes    secs.    10^6bits/sec
-
-  87380  16384  16384    10.04      53.52
-TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to sonylap (192.168.1.50) 
-port 0 AF_INET
-Recv   Send    Send
-Socket Socket  Message  Elapsed
-Size   Size    Size     Time     Throughput
-bytes  bytes   bytes    secs.    10^6bits/sec
-
-  87380  16384  16384    10.03      55.58
-TCP SENDFILE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to sonylap 
-(192.168.1.50) port 0 AF_INET
-Recv   Send    Send
-Socket Socket  Message  Elapsed
-Size   Size    Size     Time     Throughput
-bytes  bytes   bytes    secs.    10^6bits/sec
-
-  87380  16384  16384    10.06      65.26
-
-I claim that 50-65 Mbps is pretty good.
-
-We get better than 10 Mbps with lots of different adapters.
-
-Larry
