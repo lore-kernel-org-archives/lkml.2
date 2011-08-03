@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab1HCJQc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 05:16:32 -0400
-Received: from exprod5og110.obsmtp.com ([64.18.0.20]:56434 "EHLO
-	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995Ab1HCJQ1 (ORCPT
+	id S1753533Ab1HCJWl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 05:22:41 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59268 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752629Ab1HCJWg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 05:16:27 -0400
-Message-ID: <4E3911E7.10401@ge.com>
-Date: Wed, 03 Aug 2011 10:16:23 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Wed, 3 Aug 2011 05:22:36 -0400
+Message-ID: <4E3913CC.7010907@cn.fujitsu.com>
+Date: Wed, 03 Aug 2011 17:24:28 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Manohar Vanga <manohar.vanga@cern.ch>
-CC: gregkh@suse.de, cota@braap.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/8] staging: vme: make match() driver specific to improve
- non-VME64x support
-References: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch> <1312194053-32310-9-git-send-email-manohar.vanga@cern.ch>
-In-Reply-To: <1312194053-32310-9-git-send-email-manohar.vanga@cern.ch>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Aug 2011 09:13:15.0243 (UTC) FILETIME=[93835BB0:01CC51BD]
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 02/12] KVM: x86: tag the instructions which are used
+ to write page table
+References: <4E37DA49.1040000@cn.fujitsu.com> <4E37DA73.7010908@cn.fujitsu.com> <4E37EB8E.6080207@redhat.com> <4E38E477.2000208@cn.fujitsu.com> <4E39021F.8070508@redhat.com>
+In-Reply-To: <4E39021F.8070508@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-03 17:21:27,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-03 17:21:29
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/11 11:20, Manohar Vanga wrote:
-> For jumper based boards (non VME64x), there is no mechanism
-> for detecting the card that is plugged into a specific slot. This
-> leads to issues in non-autodiscovery crates/cards when a card is
-> plugged into a slot that is "claimed" by a different driver. In
-> reality, there is no problem, but the driver rejects such a
-> configuration due to its dependence on the concept of slots.
+Hi Avi,
+
+On 08/03/2011 04:09 PM, Avi Kivity wrote:
+> On 08/03/2011 09:02 AM, Xiao Guangrong wrote:
+>> >  Note we don't need to actually emulate, just decode, since page_fault can tell us whether a write failed due to page tables or mmio.
+>> >
+>>
+>> This is a interesting feature. If it happens, i will just drop the shadow pages
+>> and retry these instructions directly.
 > 
-> This patch makes the concept of slots less critical and pushes the
-> driver match() to individual drivers (similar to what happens in the
-> ISA bus in driver/base/isa.c). This allows drivers to register the
-> number of devices that they expect without any restrictions. Devices
-> in this new model are now formatted as $driver_name-$bus_id.$device_id
-> (as compared to the earlier vme-$bus_id.$slot_number).
+> Note it's a little dangerous.  If the guest uses a non-page-table modifying instruction on the PDE that points to the instruction, then we will unmap the instruction and go to an infinite loop.
 > 
 
-I haven't got any hardware old enough to hand to play with how ISA devices get
-bound into the device model. I was thinking that we may be able to do
-vme-$bus_id.$device_id, but this would require the $device_id to be unique per
-bus, which isn't an issue on buses such as PCI (or I guess USB) where such
-enumeration is built into the spec. With the exception of VME64x, which I
-guess we should really be treating as a special case (I guess most cards in
-actual use don't follow this standard), we are much closer to the ISA bus. I
-assume that $driver_name-$bus_id.$device_id is roughly in line with how ISA
-would do this (IIRC, ther would only ever be one ISA bus on a board, so the
-bus entry wouldn't be needed, but we clearly need this)?
+Yes, it is.
 
-Martyn
+> Maybe it's better to emulate if we can't find a fix for that.
+> 
+> One way would be to emulate every 20 instructions; this breaks us out of the loop but reduces costly emulations to 5%.
+> 
 
--- 
-Martyn Welch (Principal Software Engineer) | Registered in England and
-GE Intelligent Platforms                   | Wales (3828642) at 100
-T +44(0)127322748                          | Barbirolli Square, Manchester,
-E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
+After much thought about this, may be this optimization is not good since:
+- it is little complex
+- this optimization is only applied to the instruction emulation caused by #PF
+- it does not improve too much:
+  if we emulate the instruction, we need to do:
+  - decode instruction
+  - emulate it
+  - zap shadow pages
+  And do this, it can return to the guest, the guest can run the next instruction
+
+  if we retry the instruction, we need to do:
+  - decode instruction
+  - zap shadow pages
+  then return to the guest and retry the instruction, however, we will get page fault
+  again(since the mapping is still read-only), so we will get another VM-exit and need
+  to do:
+  # trigger page fault
+  - handle the page fault and change the mapping to writable
+  - retry the instruction
+  until now, the guest can run the next instruction
+
+So, i do not think the new way is better, your opinion？
+
+
+  
+  
