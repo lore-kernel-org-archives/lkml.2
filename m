@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237Ab1HCXdl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:33:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34212 "EHLO mx2.suse.de"
+	id S932226Ab1HCXdb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:33:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34220 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756322Ab1HCXbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:31:02 -0400
+	id S1756329Ab1HCXbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:31:06 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:53 2011
-Message-Id: <20110803221253.336284856@clark.kroah.org>
+Message-Id: <20110803221253.453586565@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:52 -0700
+Date: Wed, 03 Aug 2011 15:01:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         John Johansen <john.johansen@canonical.com>
-Subject: [092/102] AppArmor: Fix reference to rcu protected pointer outside of rcu_read_lock
+Subject: [093/102] AppArmor: Fix masking of capabilities in complain mode
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,42 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: John Johansen <john.johansen@canonical.com>
 
-commit 04fdc099f9c80c7775dbac388fc97e156d4d47e7 upstream.
+commit 25e75dff519bcce2cb35023105e7df51d7b9e691 upstream.
 
-The pointer returned from tracehook_tracer_task() is only valid inside
-the rcu_read_lock.  However the tracer pointer obtained is being passed
-to aa_may_ptrace outside of the rcu_read_lock critical section.
+AppArmor is masking the capabilities returned by capget against the
+capabilities mask in the profile.  This is wrong, in complain mode the
+profile has effectively all capabilities, as the profile restrictions are
+not being enforced, merely tested against to determine if an access is
+known by the profile.
 
-Mover the aa_may_ptrace test into the rcu_read_lock critical section, to
-fix this.
+This can result in the wrong behavior of security conscience applications
+like sshd which examine their capability set, and change their behavior
+accordingly.  In this case because of the masked capability set being
+returned sshd fails due to DAC checks, even when the profile is in complain
+mode.
 
-Kernels affected: 2.6.36 - 3.0
+Kernels affected: 2.6.36 - 3.0.
 
-Reported-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: John Johansen <john.johansen@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/apparmor/domain.c |    2 +-
+ security/apparmor/lsm.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/security/apparmor/domain.c
-+++ b/security/apparmor/domain.c
-@@ -73,7 +73,6 @@ static int may_change_ptraced_domain(str
- 		cred = get_task_cred(tracer);
- 		tracerp = aa_cred_profile(cred);
+--- a/security/apparmor/lsm.c
++++ b/security/apparmor/lsm.c
+@@ -127,7 +127,7 @@ static int apparmor_capget(struct task_s
+ 	*inheritable = cred->cap_inheritable;
+ 	*permitted = cred->cap_permitted;
+ 
+-	if (!unconfined(profile)) {
++	if (!unconfined(profile) && !COMPLAIN_MODE(profile)) {
+ 		*effective = cap_intersect(*effective, profile->caps.allow);
+ 		*permitted = cap_intersect(*permitted, profile->caps.allow);
  	}
--	rcu_read_unlock();
- 
- 	/* not ptraced */
- 	if (!tracer || unconfined(tracerp))
-@@ -82,6 +81,7 @@ static int may_change_ptraced_domain(str
- 	error = aa_may_ptrace(tracer, tracerp, to_profile, PTRACE_MODE_ATTACH);
- 
- out:
-+	rcu_read_unlock();
- 	if (cred)
- 		put_cred(cred);
- 
 
 
