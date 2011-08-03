@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab1HCXdb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:33:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34220 "EHLO mx2.suse.de"
+	id S932303Ab1HCXeE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:34:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34188 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756329Ab1HCXbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:31:06 -0400
+	id S932204Ab1HCXaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:30:55 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:53 2011
-Message-Id: <20110803221253.453586565@clark.kroah.org>
+Message-Id: <20110803221253.116409755@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:53 -0700
+Date: Wed, 03 Aug 2011 15:01:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        John Johansen <john.johansen@canonical.com>
-Subject: [093/102] AppArmor: Fix masking of capabilities in complain mode
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [090/102] hvc_console: Improve tty/console put_chars handling
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Johansen <john.johansen@canonical.com>
+From: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
 
-commit 25e75dff519bcce2cb35023105e7df51d7b9e691 upstream.
+commit 8c2381af0d3ef62a681dac5a141b6dabb27bf2e1 upstream.
 
-AppArmor is masking the capabilities returned by capget against the
-capabilities mask in the profile.  This is wrong, in complain mode the
-profile has effectively all capabilities, as the profile restrictions are
-not being enforced, merely tested against to determine if an access is
-known by the profile.
+Currently, the hvc_console_print() function drops console output if the
+hvc backend's put_chars() returns 0.  This patch changes this behavior
+to allow a retry through returning -EAGAIN.
 
-This can result in the wrong behavior of security conscience applications
-like sshd which examine their capability set, and change their behavior
-accordingly.  In this case because of the masked capability set being
-returned sshd fails due to DAC checks, even when the profile is in complain
-mode.
+This change also affects the hvc_push() function.  Both functions are
+changed to handle -EAGAIN and to retry the put_chars() operation.
 
-Kernels affected: 2.6.36 - 3.0.
+If a hvc backend returns -EAGAIN, the retry handling differs:
 
-Signed-off-by: John Johansen <john.johansen@canonical.com>
+  - hvc_console_print() spins to write the complete console output.
+  - hvc_push() behaves the same way as for returning 0.
+
+Now hvc backends can indirectly control the way how console output is
+handled through the hvc console layer.
+
+Signed-off-by: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+Acked-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- security/apparmor/lsm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/hvc/hvc_console.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/security/apparmor/lsm.c
-+++ b/security/apparmor/lsm.c
-@@ -127,7 +127,7 @@ static int apparmor_capget(struct task_s
- 	*inheritable = cred->cap_inheritable;
- 	*permitted = cred->cap_permitted;
+--- a/drivers/tty/hvc/hvc_console.c
++++ b/drivers/tty/hvc/hvc_console.c
+@@ -163,8 +163,10 @@ static void hvc_console_print(struct con
+ 		} else {
+ 			r = cons_ops[index]->put_chars(vtermnos[index], c, i);
+ 			if (r <= 0) {
+-				/* throw away chars on error */
+-				i = 0;
++				/* throw away characters on error
++				 * but spin in case of -EAGAIN */
++				if (r != -EAGAIN)
++					i = 0;
+ 			} else if (r > 0) {
+ 				i -= r;
+ 				if (i > 0)
+@@ -448,7 +450,7 @@ static int hvc_push(struct hvc_struct *h
  
--	if (!unconfined(profile)) {
-+	if (!unconfined(profile) && !COMPLAIN_MODE(profile)) {
- 		*effective = cap_intersect(*effective, profile->caps.allow);
- 		*permitted = cap_intersect(*permitted, profile->caps.allow);
- 	}
+ 	n = hp->ops->put_chars(hp->vtermno, hp->outbuf, hp->n_outbuf);
+ 	if (n <= 0) {
+-		if (n == 0) {
++		if (n == 0 || n == -EAGAIN) {
+ 			hp->do_wakeup = 1;
+ 			return 0;
+ 		}
 
 
