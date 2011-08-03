@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756420Ab1HCXiT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:38:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33926 "EHLO mx2.suse.de"
+	id S1756228Ab1HCXiw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:38:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33902 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932100Ab1HCX3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:29:24 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:52 2011
-Message-Id: <20110803221252.078486284@clark.kroah.org>
+	id S1756214Ab1HCX3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:29:13 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:51 2011
+Message-Id: <20110803221251.774246649@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:40 -0700
+Date: Wed, 03 Aug 2011 15:01:37 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [080/102] NFS: Fix spurious readdir cookie loop messages
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [077/102] nfsd4: fix file leak on open_downgrade
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,183 +25,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 0c0308066ca53fdf1423895f3a42838b67b3a5a8 upstream.
+commit f197c27196a5e7631b89e2e92daa096fcf7c302c upstream.
 
-If the directory contents change, then we have to accept that the
-file->f_pos value may shrink if we do a 'search-by-cookie'. In that
-case, we should turn off the loop detection and let the NFS client
-try to recover.
+Stateid's hold a read reference for a read open, a write reference for a
+write open, and an additional one of each for each read+write open.  The
+latter wasn't getting put on a downgrade, so something like:
 
-The patch also fixes a second loop detection bug by ensuring
-that after turning on the ctx->duped flag, we read at least one new
-cookie into ctx->dir_cookie before attempting to match with
-ctx->dup_cookie.
+	open RW
+	open R
+	downgrade to R
 
-Reported-by: Petr Vandrovec <petr@vandrovec.name>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+was resulting in a file leak.
+
+Also fix an imbalance in an error path.
+
+Regression from 7d94784293096c0a46897acdb83be5abd9278ece "nfsd4: fix
+downgrade/lock logic".
+
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/dir.c           |   56 ++++++++++++++++++++++++++++---------------------
- include/linux/nfs_fs.h |    3 +-
- 2 files changed, 35 insertions(+), 24 deletions(-)
+ fs/nfsd/nfs4state.c |   31 ++++++++-----------------------
+ 1 file changed, 8 insertions(+), 23 deletions(-)
 
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -134,18 +134,19 @@ const struct inode_operations nfs4_dir_i
- 
- #endif /* CONFIG_NFS_V4 */
- 
--static struct nfs_open_dir_context *alloc_nfs_open_dir_context(struct rpc_cred *cred)
-+static struct nfs_open_dir_context *alloc_nfs_open_dir_context(struct inode *dir, struct rpc_cred *cred)
- {
- 	struct nfs_open_dir_context *ctx;
- 	ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
- 	if (ctx != NULL) {
- 		ctx->duped = 0;
-+		ctx->attr_gencount = NFS_I(dir)->attr_gencount;
- 		ctx->dir_cookie = 0;
- 		ctx->dup_cookie = 0;
- 		ctx->cred = get_rpccred(cred);
--	} else
--		ctx = ERR_PTR(-ENOMEM);
--	return ctx;
-+		return ctx;
-+	}
-+	return  ERR_PTR(-ENOMEM);
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -2332,15 +2332,6 @@ out:
+ 	return ret;
  }
  
- static void put_nfs_open_dir_context(struct nfs_open_dir_context *ctx)
-@@ -173,7 +174,7 @@ nfs_opendir(struct inode *inode, struct
- 	cred = rpc_lookup_cred();
- 	if (IS_ERR(cred))
- 		return PTR_ERR(cred);
--	ctx = alloc_nfs_open_dir_context(cred);
-+	ctx = alloc_nfs_open_dir_context(inode, cred);
- 	if (IS_ERR(ctx)) {
- 		res = PTR_ERR(ctx);
- 		goto out;
-@@ -323,7 +324,6 @@ int nfs_readdir_search_for_pos(struct nf
+-static inline void
+-nfs4_file_downgrade(struct nfs4_file *fp, unsigned int share_access)
+-{
+-	if (share_access & NFS4_SHARE_ACCESS_WRITE)
+-		nfs4_file_put_access(fp, O_WRONLY);
+-	if (share_access & NFS4_SHARE_ACCESS_READ)
+-		nfs4_file_put_access(fp, O_RDONLY);
+-}
+-
+ static void nfsd_break_one_deleg(struct nfs4_delegation *dp)
  {
- 	loff_t diff = desc->file->f_pos - desc->current_index;
- 	unsigned int index;
--	struct nfs_open_dir_context *ctx = desc->file->private_data;
- 
- 	if (diff < 0)
- 		goto out_eof;
-@@ -336,7 +336,6 @@ int nfs_readdir_search_for_pos(struct nf
- 	index = (unsigned int)diff;
- 	*desc->dir_cookie = array->array[index].cookie;
- 	desc->cache_entry_index = index;
--	ctx->duped = 0;
- 	return 0;
- out_eof:
- 	desc->eof = 1;
-@@ -349,14 +348,33 @@ int nfs_readdir_search_for_cookie(struct
- 	int i;
- 	loff_t new_pos;
- 	int status = -EAGAIN;
--	struct nfs_open_dir_context *ctx = desc->file->private_data;
- 
- 	for (i = 0; i < array->size; i++) {
- 		if (array->array[i].cookie == *desc->dir_cookie) {
-+			struct nfs_inode *nfsi = NFS_I(desc->file->f_path.dentry->d_inode);
-+			struct nfs_open_dir_context *ctx = desc->file->private_data;
-+
- 			new_pos = desc->current_index + i;
--			if (new_pos < desc->file->f_pos) {
-+			if (ctx->attr_gencount != nfsi->attr_gencount
-+			    || (nfsi->cache_validity & (NFS_INO_INVALID_ATTR|NFS_INO_INVALID_DATA))) {
-+				ctx->duped = 0;
-+				ctx->attr_gencount = nfsi->attr_gencount;
-+			} else if (new_pos < desc->file->f_pos) {
-+				if (ctx->duped > 0
-+				    && ctx->dup_cookie == *desc->dir_cookie) {
-+					if (printk_ratelimit()) {
-+						pr_notice("NFS: directory %s/%s contains a readdir loop."
-+								"Please contact your server vendor.  "
-+								"Offending cookie: %llu\n",
-+								desc->file->f_dentry->d_parent->d_name.name,
-+								desc->file->f_dentry->d_name.name,
-+								*desc->dir_cookie);
-+					}
-+					status = -ELOOP;
-+					goto out;
-+				}
- 				ctx->dup_cookie = *desc->dir_cookie;
--				ctx->duped = 1;
-+				ctx->duped = -1;
- 			}
- 			desc->file->f_pos = new_pos;
- 			desc->cache_entry_index = i;
-@@ -368,6 +386,7 @@ int nfs_readdir_search_for_cookie(struct
- 		if (*desc->dir_cookie == array->last_cookie)
- 			desc->eof = 1;
- 	}
-+out:
+ 	/* We're assuming the state code never drops its reference
+@@ -2627,7 +2618,7 @@ nfs4_upgrade_open(struct svc_rqst *rqstp
+ 	status = nfsd4_truncate(rqstp, cur_fh, open);
+ 	if (status) {
+ 		if (new_access) {
+-			int oflag = nfs4_access_to_omode(new_access);
++			int oflag = nfs4_access_to_omode(op_share_access);
+ 			nfs4_file_put_access(fp, oflag);
+ 		}
+ 		return status;
+@@ -3385,18 +3376,15 @@ out:
  	return status;
  }
  
-@@ -740,19 +759,6 @@ int nfs_do_filldir(nfs_readdir_descripto
- 	struct nfs_cache_array *array = NULL;
- 	struct nfs_open_dir_context *ctx = file->private_data;
- 
--	if (ctx->duped != 0 && ctx->dup_cookie == *desc->dir_cookie) {
--		if (printk_ratelimit()) {
--			pr_notice("NFS: directory %s/%s contains a readdir loop.  "
--				"Please contact your server vendor.  "
--				"Offending cookie: %llu\n",
--				file->f_dentry->d_parent->d_name.name,
--				file->f_dentry->d_name.name,
--				*desc->dir_cookie);
--		}
--		res = -ELOOP;
--		goto out;
--	}
 -
- 	array = nfs_readdir_get_array(desc->page);
- 	if (IS_ERR(array)) {
- 		res = PTR_ERR(array);
-@@ -774,6 +780,8 @@ int nfs_do_filldir(nfs_readdir_descripto
- 			*desc->dir_cookie = array->array[i+1].cookie;
- 		else
- 			*desc->dir_cookie = array->last_cookie;
-+		if (ctx->duped != 0)
-+			ctx->duped = 1;
+-/*
+- * unset all bits in union bitmap (bmap) that
+- * do not exist in share (from successful OPEN_DOWNGRADE)
+- */
+-static void
+-reset_union_bmap_access(unsigned long access, unsigned long *bmap)
++static inline void nfs4_file_downgrade(struct nfs4_stateid *stp, unsigned int to_access)
+ {
+ 	int i;
++
+ 	for (i = 1; i < 4; i++) {
+-		if ((i & access) != i)
+-			__clear_bit(i, bmap);
++		if (test_bit(i, &stp->st_access_bmap) && !(i & to_access)) {
++			nfs4_file_put_access(stp->st_file, i);
++			__clear_bit(i, &stp->st_access_bmap);
++		}
  	}
- 	if (array->eof_index >= 0)
- 		desc->eof = 1;
-@@ -805,6 +813,7 @@ int uncached_readdir(nfs_readdir_descrip
- 	struct page	*page = NULL;
- 	int		status;
- 	struct inode *inode = desc->file->f_path.dentry->d_inode;
-+	struct nfs_open_dir_context *ctx = desc->file->private_data;
+ }
  
- 	dfprintk(DIRCACHE, "NFS: uncached_readdir() searching for cookie %Lu\n",
- 			(unsigned long long)*desc->dir_cookie);
-@@ -818,6 +827,7 @@ int uncached_readdir(nfs_readdir_descrip
- 	desc->page_index = 0;
- 	desc->last_cookie = *desc->dir_cookie;
- 	desc->page = page;
-+	ctx->duped = 0;
+@@ -3417,7 +3405,6 @@ nfsd4_open_downgrade(struct svc_rqst *rq
+ {
+ 	__be32 status;
+ 	struct nfs4_stateid *stp;
+-	unsigned int share_access;
  
- 	status = nfs_readdir_xdr_to_array(desc, page, inode);
- 	if (status < 0)
---- a/include/linux/nfs_fs.h
-+++ b/include/linux/nfs_fs.h
-@@ -99,9 +99,10 @@ struct nfs_open_context {
+ 	dprintk("NFSD: nfsd4_open_downgrade on file %.*s\n", 
+ 			(int)cstate->current_fh.fh_dentry->d_name.len,
+@@ -3446,10 +3433,8 @@ nfsd4_open_downgrade(struct svc_rqst *rq
+ 			stp->st_deny_bmap, od->od_share_deny);
+ 		goto out;
+ 	}
+-	set_access(&share_access, stp->st_access_bmap);
+-	nfs4_file_downgrade(stp->st_file, share_access & ~od->od_share_access);
++	nfs4_file_downgrade(stp, od->od_share_access);
  
- struct nfs_open_dir_context {
- 	struct rpc_cred *cred;
-+	unsigned long attr_gencount;
- 	__u64 dir_cookie;
- 	__u64 dup_cookie;
--	int duped;
-+	signed char duped;
- };
+-	reset_union_bmap_access(od->od_share_access, &stp->st_access_bmap);
+ 	reset_union_bmap_deny(od->od_share_deny, &stp->st_deny_bmap);
  
- /*
+ 	update_stateid(&stp->st_stateid);
 
 
