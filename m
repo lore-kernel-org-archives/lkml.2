@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab1HCIrI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 04:47:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61509 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752082Ab1HCIrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 04:47:00 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <0f579173fd1c9f5dba6703ed8e44a767edf948b5.1312323131.git.len.brown@intel.com>
-References: <0f579173fd1c9f5dba6703ed8e44a767edf948b5.1312323131.git.len.brown@intel.com> <1312323292-2986-1-git-send-email-lenb@kernel.org> <ca7cc5110a313a609da40ae948978a585352564b.1312323131.git.len.brown@intel.com> 
-To: Len Brown <lenb@kernel.org>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
-        Richard Henderson <rth@twiddle.net>, Mikael Starvik <starvik@axis.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Tony Luck <tony.luck@intel.com>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
-        Kyle McMartin <kyle@mcmartin.ca>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Chen Liqin <liqin.chen@sunplusct.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ingo Molnar <mingo@redhat.com>, Chris Zankel <chris@zankel.net>,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 10/19] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
-Date: Wed, 03 Aug 2011 09:44:30 +0100
-Message-ID: <5527.1312361070@redhat.com>
+	id S1752930Ab1HCIyR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 04:54:17 -0400
+Received: from exprod5og104.obsmtp.com ([64.18.0.178]:46841 "EHLO
+	exprod5og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752148Ab1HCIyI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 04:54:08 -0400
+Message-ID: <4E390CAB.20305@ge.com>
+Date: Wed, 03 Aug 2011 09:54:03 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: gregkh@suse.de, cota@braap.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/8] staging: vme: allow explicit assignment of bus numbers
+References: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch>	<1312194053-32310-3-git-send-email-manohar.vanga@cern.ch>	<4E36A4EA.30404@ge.com> <20110801143102.GA9705@becoht-mvanga>	<4E36CB29.2030907@ge.com> <20110802115434.GA25063@becoht-mvanga> <4E381043.7080501@ge.com>
+In-Reply-To: <4E381043.7080501@ge.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 03 Aug 2011 08:50:56.0003 (UTC) FILETIME=[75438D30:01CC51BA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Len Brown <lenb@kernel.org> wrote:
+On 02/08/11 15:57, Martyn Welch wrote:
+> 
+> Which part of the example udev rule I gave is a fixed identifier? It
+> identifies the CDROM based on system topology, using the PCI bus numbering and
+> SCSI bus numbering.
+> 
+> For example, for a device sitting on VME, in the A32 address space at 0x30000,
+> via a PCI-VME bridge on PCI bus 2, device 0d, we could provide something like
+> this:
+> 
+> vme-a32:30000-pci-0000:02:0d.0
+> 
 
-> From: Huang Ying <ying.huang@intel.com>
-> 
-> cmpxchg() is widely used by lockless code, including NMI-safe lockless
-> code.  But on some architectures, the cmpxchg() implementation is not
-> NMI-safe, on these architectures the lockless code may need a
-> spin_trylock_irqsave() based implementation.
-> 
-> This patch adds a Kconfig option: ARCH_HAVE_NMI_SAFE_CMPXCHG, so that
-> NMI-safe lockless code can depend on it or provide different
-> implementation according to it.
-> 
-> On many architectures, cmpxchg is only NMI-safe for several specific
-> operand sizes. So, ARCH_HAVE_NMI_SAFE_CMPXCHG define in this patch
-> only guarantees cmpxchg is NMI-safe for sizeof(unsigned long).
-> 
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> Acked-by: Mike Frysinger <vapier@gentoo.org>
-> Acked-by: Paul Mundt <lethal@linux-sh.org>
-> Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-> Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-> CC: Richard Henderson <rth@twiddle.net>
-> CC: Mikael Starvik <starvik@axis.com>
-> CC: David Howells <dhowells@redhat.com>
-> CC: Yoshinori Sato <ysato@users.sourceforge.jp>
-> CC: Tony Luck <tony.luck@intel.com>
-> CC: Hirokazu Takata <takata@linux-m32r.org>
-> CC: Geert Uytterhoeven <geert@linux-m68k.org>
-> CC: Michal Simek <monstr@monstr.eu>
-> CC: Ralf Baechle <ralf@linux-mips.org>
-> CC: Kyle McMartin <kyle@mcmartin.ca>
-> CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> CC: Chen Liqin <liqin.chen@sunplusct.com>
-> CC: "David S. Miller" <davem@davemloft.net>
-> CC: Ingo Molnar <mingo@redhat.com>
-> CC: Chris Zankel <chris@zankel.net>
-> Signed-off-by: Len Brown <len.brown@intel.com>
+Hmm, thinking about it, that's not right either.
 
-Acked-by: David Howells <dhowells@redhat.com> [FRV]
+The VME bridge would be at "pci-0000:02:0d.0". In the current scheme this
+would be given a bus number and we should be able to discover from sysfs which
+bus numbers are used for which VME bridges. For example, as the usb buses are
+enumerated:
+
+$ ls -la /sys/bus/usb/devices/usb*
+lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb1 ->
+../../../devices/pci0000:00/0000:00:1a.7/usb1
+lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb2 ->
+../../../devices/pci0000:00/0000:00:1d.7/usb2
+lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb3 ->
+../../../devices/pci0000:00/0000:00:1a.0/usb3
+lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb4 ->
+../../../devices/pci0000:00/0000:00:1a.1/usb4
+lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb5 ->
+../../../devices/pci0000:00/0000:00:1a.2/usb5
+lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb6 ->
+../../../devices/pci0000:00/0000:00:1d.0/usb6
+lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb7 ->
+../../../devices/pci0000:00/0000:00:1d.1/usb7
+lrwxrwxrwx 1 root root 0 2011-08-03 09:29 /sys/bus/usb/devices/usb8 ->
+../../../devices/pci0000:00/0000:00:1d.2/usb8
+$
+
+Whilst it would be nice to be able to change the bus numbering, I don't think
+that passing numbers into the bridge driver at load time is the correct approach.
+
+Martyn
+
+-- 
+Martyn Welch (Principal Software Engineer) | Registered in England and
+GE Intelligent Platforms                   | Wales (3828642) at 100
+T +44(0)127322748                          | Barbirolli Square, Manchester,
+E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
