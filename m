@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694Ab1HCIcQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 04:32:16 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:34225 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935Ab1HCIcH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 04:32:07 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6426"; a="107767592"
-Message-ID: <4E390785.4060007@codeaurora.org>
-Date: Wed, 03 Aug 2011 01:32:05 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: git commit id and tarball's filename mapping.
-References: <201108030442.p734gwO9050751@www262.sakura.ne.jp>
-In-Reply-To: <201108030442.p734gwO9050751@www262.sakura.ne.jp>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S1752831Ab1HCIrI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 04:47:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61509 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752082Ab1HCIrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 04:47:00 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <0f579173fd1c9f5dba6703ed8e44a767edf948b5.1312323131.git.len.brown@intel.com>
+References: <0f579173fd1c9f5dba6703ed8e44a767edf948b5.1312323131.git.len.brown@intel.com> <1312323292-2986-1-git-send-email-lenb@kernel.org> <ca7cc5110a313a609da40ae948978a585352564b.1312323131.git.len.brown@intel.com> 
+To: Len Brown <lenb@kernel.org>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Huang Ying <ying.huang@intel.com>,
+        Richard Henderson <rth@twiddle.net>, Mikael Starvik <starvik@axis.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Tony Luck <tony.luck@intel.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Michal Simek <monstr@monstr.eu>, Ralf Baechle <ralf@linux-mips.org>,
+        Kyle McMartin <kyle@mcmartin.ca>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Chen Liqin <liqin.chen@sunplusct.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@redhat.com>, Chris Zankel <chris@zankel.net>,
+        Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH 10/19] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
+Date: Wed, 03 Aug 2011 09:44:30 +0100
+Message-ID: <5527.1312361070@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/2/2011 9:42 PM, Tetsuo Handa wrote:
-> Hello.
->
-> I regularly test kernels extracted from tarballs rather than from git. I have
-> problems with estimating range to "git bisect" because I can't know commit id
-> as of a tarball was archived. I would appreciate if there is a mapping table
-> that contains commit id and tarball's filename.
->
-> 0123456789012345678901234567890123456789 linux-3.0.tar.bz2
-> 1234567890123456789012345678901234567890 patch-3.0-git1.bz2
-> 2345678901234567890123456789012345678901 patch-3.0-git2.bz2
-> 3456789012345678901234567890123456789012 patch-3.0-git3.bz2
->   (...snipped...)
-> 7890123456789012345678901234567890123456 patch-3.0-git17.bz2
-> 8901234567890123456789012345678901234567 linux-3.1-rc1.tar.bz2
->
+Len Brown <lenb@kernel.org> wrote:
 
-Could you use git get-tar-commit-id?
+> From: Huang Ying <ying.huang@intel.com>
+> 
+> cmpxchg() is widely used by lockless code, including NMI-safe lockless
+> code.  But on some architectures, the cmpxchg() implementation is not
+> NMI-safe, on these architectures the lockless code may need a
+> spin_trylock_irqsave() based implementation.
+> 
+> This patch adds a Kconfig option: ARCH_HAVE_NMI_SAFE_CMPXCHG, so that
+> NMI-safe lockless code can depend on it or provide different
+> implementation according to it.
+> 
+> On many architectures, cmpxchg is only NMI-safe for several specific
+> operand sizes. So, ARCH_HAVE_NMI_SAFE_CMPXCHG define in this patch
+> only guarantees cmpxchg is NMI-safe for sizeof(unsigned long).
+> 
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> Acked-by: Mike Frysinger <vapier@gentoo.org>
+> Acked-by: Paul Mundt <lethal@linux-sh.org>
+> Acked-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+> Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+> CC: Richard Henderson <rth@twiddle.net>
+> CC: Mikael Starvik <starvik@axis.com>
+> CC: David Howells <dhowells@redhat.com>
+> CC: Yoshinori Sato <ysato@users.sourceforge.jp>
+> CC: Tony Luck <tony.luck@intel.com>
+> CC: Hirokazu Takata <takata@linux-m32r.org>
+> CC: Geert Uytterhoeven <geert@linux-m68k.org>
+> CC: Michal Simek <monstr@monstr.eu>
+> CC: Ralf Baechle <ralf@linux-mips.org>
+> CC: Kyle McMartin <kyle@mcmartin.ca>
+> CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> CC: Chen Liqin <liqin.chen@sunplusct.com>
+> CC: "David S. Miller" <davem@davemloft.net>
+> CC: Ingo Molnar <mingo@redhat.com>
+> CC: Chris Zankel <chris@zankel.net>
+> Signed-off-by: Len Brown <len.brown@intel.com>
 
-$ git get-tar-commit-id < linux-3.0.tar
-
-It won't work for the patch ones though.
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Acked-by: David Howells <dhowells@redhat.com> [FRV]
