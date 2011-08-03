@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425Ab1HCKgN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 06:36:13 -0400
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:54361 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753872Ab1HCKgJ (ORCPT
+	id S1754516Ab1HCKlL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 06:41:11 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:53560 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754114Ab1HCKlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 06:36:09 -0400
-Date: Wed, 3 Aug 2011 13:36:04 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Per Forlin <per.forlin@stericsson.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        users@igloocommunity.org, Per Forlin <per.forlin@linaro.org>
-Subject: Re: [PATCH] usb: musb: ux500: set dma config for both src and dst
-Message-ID: <20110803103603.GE11080@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1312299219-9562-1-git-send-email-per.forlin@stericsson.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="so9zsI5B81VjUb/o"
-Content-Disposition: inline
-In-Reply-To: <1312299219-9562-1-git-send-email-per.forlin@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 3 Aug 2011 06:41:07 -0400
+Subject: Re: [patch v2 03/10] kdump: Add size to elfcorehdr kernel parameter
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
+        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+In-Reply-To: <20110802185501.GG6399@redhat.com>
+References: <20110727125504.491183728@linux.vnet.ibm.com>
+	 <20110727125807.853426542@linux.vnet.ibm.com>
+	 <20110801203607.GI3805@redhat.com> <1312276087.4881.24.camel@br98xy6r>
+	 <20110802185501.GG6399@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: IBM
+Date: Wed, 03 Aug 2011 12:40:44 +0200
+Message-ID: <1312368044.3783.39.camel@br98xy6r>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Vivek,
 
---so9zsI5B81VjUb/o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2011-08-02 at 14:55 -0400, Vivek Goyal wrote:
+> On Tue, Aug 02, 2011 at 11:08:07AM +0200, Michael Holzheu wrote:
+> > Hello Vivek,
+> > 
+> > > Generally vmcore parses elfcorehdr to figure out the sizes. kexec-tools
+> > > knows about it and relevant memory is excluded from second kernel's map
+> > > with the help of memmap= command line option.
+> > > 
+> > > Can you please mention that this is only s390 specific requirement as
+> > > there are no memmap= equivalent options and somehow dump tools wants
+> > > to know how big the elf header size is?
+> > 
+> > I updated the description: 
+> > 
+> > Currently only the address of the pre-allocated ELF header is passed with
+> > the elfcorehdr= kernel parameter. In order to reserve memory for the header
+> > in the 2nd kernel also the size is required. Current kdump architecture
+> > backends use different methods to do that, e.g. x86 uses the memmap= kernel
+> > parameter. On s390 there is no easy way to transfer this information.
+> > Therefore the elfcorehdr kernel parameter is extended to also pass the size.
+> > This now can also be used as standard mechanism by all future kdump
+> > architecture backends.
+> > 
+> > The syntax of the kernel parameter is extended as follows:
+> > 
+> > elfcorehdr=[size[KMG]@]offset[KMG]
+> > 
+> > This change is backward compatible because elfcorehdr=size is still allowed.
+> > 
+> > Ok?
+> 
+> Yes, this one looks ok.
 
-On Tue, Aug 02, 2011 at 05:33:39PM +0200, Per Forlin wrote:
-> From: Per Forlin <per.forlin@linaro.org>
->=20
-> The dma driver requires both src and dst to be set.
-> This fix is needed in order to run gadget mass storage.
-> Patch is verified on snowball.
->=20
-> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+With that description change: Do I get an "Acked-by" for this patch from
+you?
 
-applied, thanks
+Michael
 
---=20
-balbi
-
---so9zsI5B81VjUb/o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOOSSTAAoJEAv8Txj19kN1v3QH/R1+FeW6ugWAWGL/NoGrogHQ
-FcGhQlPalWFpx1Uxe7knoJhATnyxI7oATKOIRKDBo/B7rHsjettBD3Fqj04xJ6N3
-cYF+TXDXa/WWakguIykofRJG9r5loR4yptN4pJCX1HlFR1B66NPk0bEMNYDBpuGY
-QkUerpm7OeI1QixIabsK2PNyp1CmZilJiH5fn5VPG35MVMHftNJqzzhmSqBhJdFG
-MSzgh5XbQRrA5a6TydEHgcpE+m1lQY05eooUreenHsXYIhjNvFyM3/S7xwVf69PA
-AE+WVMbDeKZuK0aoGdozsNd2AFJoTlD/PKY7FwM7tUwuZNvO4Tw3s6eMg8qdRj4=
-=gcFW
------END PGP SIGNATURE-----
-
---so9zsI5B81VjUb/o--
