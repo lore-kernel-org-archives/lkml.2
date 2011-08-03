@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab1HCAGW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 20:06:22 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40749 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267Ab1HCAGP convert rfc822-to-8bit (ORCPT
+	id S1753843Ab1HCAID (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 20:08:03 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:46461 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753267Ab1HCAHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 20:06:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110722090317.GH2622@htj.dyndns.org>
-References: <CAN8TOE9CCSiS2koyx=UsZj=9KwaWZW5yDjUUqgJf2=qZU70k1w@mail.gmail.com>
-	<20110713131407.GN2872@htj.dyndns.org>
-	<CAN8TOE9Rjujf9aLQGONDULNasFiQmVkiUPWUDX=Vf0Nx2pka7w@mail.gmail.com>
-	<20110721084917.GE3455@htj.dyndns.org>
-	<CAN8TOE_dCg6Wi_trE97hXjBPnZi4jpLyoeUEVrbMpgDH-BwKWA@mail.gmail.com>
-	<20110722090317.GH2622@htj.dyndns.org>
-Date: Tue, 2 Aug 2011 17:06:13 -0700
-Message-ID: <CAN8TOE8ZoE0xRvLPhDZtKZSwXg1mQLGtp8f2C75S+XuCrFM1YA@mail.gmail.com>
-Subject: Re: ahci_start_engine compliance with AHCI spec
-From: Brian Norris <computersforpeace@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-ide@vger.kernel.org, Valdis.Kletnieks@vt.edu,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jeff Garzik <jgarzik@pobox.com>,
-        Michael Leun <lkml20100708@newton.leun.net>,
-        linux-kernel@vger.kernel.org, Jian Peng <jipeng2005@gmail.com>,
-        Kevin Cernekee <cernekee@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 2 Aug 2011 20:07:55 -0400
+Date: Tue, 02 Aug 2011 17:06:37 -0700 (PDT)
+Message-Id: <20110802.170637.389945963010848876.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless-next 2011-08-02
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110802.143955.1785360722763378138.davem@davemloft.net>
+References: <20110802181131.GH14167@tuxdriver.com>
+	<20110802.143955.1785360722763378138.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 02 Aug 2011 17:06:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+From: David Miller <davem@davemloft.net>
+Date: Tue, 02 Aug 2011 14:39:55 -0700 (PDT)
 
-I wanted to follow up a bit on your last comments.
+> From: "John W. Linville" <linville@tuxdriver.com>
+> Date: Tue, 2 Aug 2011 14:11:31 -0400
+> 
+>> Here are a few more fixes intended for 3.1.  Dan Carpenter gives us an
+>> off-by-one fix in the scan trigger code for nl80211.  Felix gives us a
+>> fix for tx power initialization for ath9k.  Larry fixes an oops on ARM
+>> by rewriting some init code to avoid checking something that doesn't get
+>> initialized on ARM.  This round's big hero is Stanislaw, who gives us a
+>> brown paper bag fix for some skb handling in rt2x00, an ath9k fix to
+>> avoid hangs on systems w/ ASPM disabled, and an iwlegacy fix to ensure
+>> that tx power settings are applied properly.
+>> 
+>> Please let me know if there are problems!
+> 
+> I'll pull this, but I think once you've sent me all of your features
+> for the merge window you should drop "-next" from the name of the
+> tree and/or branches you ask me to pull from.
+> 
+> This makes it entirely clear that you're sending me bug fixes and not
+> features and cleanups.
 
-On Fri, Jul 22, 2011 at 2:03 AM, Tejun Heo <tj@kernel.org> wrote:
-> The problem is that both my and your approach aren't ultimately safe
-> on this particular IP block.  I don't think it's possible make things
-> completely safe for it.  There's no mutual exclusion against PHY
-> events - be it flaky signal, power surge or actual hotplug - and
-> driver operation.  No matter how careful the driver behaves, if PHY
-> events happen after the last check before starting DMA engine, DRQ may
-> be set by the time driver gets to it.
+Well, this thing is not based upon the plain net GIT tree, because
+when I pull it I get a bunch of things from Linus's tree which are
+not in the net tree yet.
 
-Can DRQ be set from 0->1 without a software-initiated action? I didn't
-think it was directly tied to PHY events, and so we can fairly well
-predict that it will remain 0.
+Please fix this up.
 
-On the other hand, PxSSTS.DET can be affected by PHY, but I don't
-believe DET != 3 directly triggers this hardware bug.
-
-> The IP block you're dealing with is inherently buggy.  What the spec
-> means, I think, is the DMA engine might not start or behave properly
-> if enabled while DRQ is set, which is fine.  Driver will notice that,
-> reset stuff and retry.  It is *completely* different from "the
-> controller becomes brick until power cycled if that happens".  So, we
-> can work around all we want but that is one buggy controller.  If
-> possible, please tell the manufacturer or licensor to fix it.
-
-Yes, I believe the hardware designers know how buggy this is...but
-it's still worth some effort to fix the software as well as possible
-for current hardware behavior.
-
-> For now, let's first try removing ahci_start_engine() call from
-> port_start and see how that goes.
-
-Thanks for the help, and happy testing!
-
-Brian
+Thanks.
