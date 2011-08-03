@@ -1,39 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab1HCPx5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 11:53:57 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:58953 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752639Ab1HCPxv (ORCPT
+	id S1754263Ab1HCPyh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 11:54:37 -0400
+Received: from www17.your-server.de ([213.133.104.17]:58363 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752952Ab1HCPyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 11:53:51 -0400
-X-Sasl-enc: w5GxGxWX9MyKUE6NVNRwXftHG6H7YOBh0M+INY6h9mfQ 1312386830
-Date: Wed, 3 Aug 2011 08:39:37 -0700
-From: Greg KH <greg@kroah.com>
-To: wei_wang@realsil.com.cn
-Cc: gregkh@suse.de, devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging:rts_pstor:modify thread synchronization flow
-Message-ID: <20110803153937.GB3479@kroah.com>
-References: <1312358425-8442-1-git-send-email-wei_wang@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312358425-8442-1-git-send-email-wei_wang@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 3 Aug 2011 11:54:35 -0400
+Subject: Re: [PATCH 8/20] drivers/parport: Use kzalloc
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Julia Lawall <julia@diku.dk>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Date: Wed, 03 Aug 2011 17:54:04 +0200
+In-Reply-To: <Pine.LNX.4.64.1005132200410.6282@ask.diku.dk>
+References: <Pine.LNX.4.64.1005132200410.6282@ask.diku.dk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1312386848.2629.21.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 03, 2011 at 04:00:25PM +0800, wei_wang@realsil.com.cn wrote:
-> From: wwang <wei_wang@realsil.com.cn>
+Am Donnerstag, den 13.05.2010, 22:01 +0200 schrieb Julia Lawall:
+
+> From: Julia Lawall <julia@diku.dk>
 > 
-> Using different completion variables to synchronize different kernel threads
+> Use kzalloc rather than the combination of kmalloc and memset.
 > 
-> Signed-off-by: wwang <wei_wang@realsil.com.cn>
+> The semantic patch that makes this change is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression x,size,flags;
+> statement S;
+> @@
+> 
+> -x = kmalloc(size,flags);
+> +x = kzalloc(size,flags);
+>  if (x == NULL) S
+> -memset(x, 0, size);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Is this fixing a bug that is seen now, or is this just a nice "cleanup"
-patch that can wait for the 3.2 kernel release?
+Reviewed-by: Thomas Meyer <thomas@m3y3r.de>
 
-thanks,
+> 
+> ---
+>  drivers/parport/share.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff -u -p a/drivers/parport/share.c b/drivers/parport/share.c
+> --- a/drivers/parport/share.c
+> +++ b/drivers/parport/share.c
+> @@ -282,14 +282,13 @@ struct parport *parport_register_port(un
+>  	int device;
+>  	char *name;
+>  
+> -	tmp = kmalloc(sizeof(struct parport), GFP_KERNEL);
+> +	tmp = kzalloc(sizeof(struct parport), GFP_KERNEL);
+>  	if (!tmp) {
+>  		printk(KERN_WARNING "parport: memory squeeze\n");
+>  		return NULL;
+>  	}
+>  
+>  	/* Init our structure */
+> - 	memset(tmp, 0, sizeof(struct parport));
+>  	tmp->base = base;
+>  	tmp->irq = irq;
+>  	tmp->dma = dma;
 
-greg k-h
+
+
