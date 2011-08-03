@@ -1,85 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582Ab1HCMkX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 08:40:23 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47945 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754948Ab1HCMkS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 08:40:18 -0400
-Date: Wed, 3 Aug 2011 13:39:53 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: linus.walleij@linaro.org, pratyush.anand@st.com, rajeev-dlh.kumar@st.com,
-        bhupesh.sharma@st.com, shiraz.hashim@st.com, vinod.koul@intel.com,
-        linux-kernel@vger.kernel.org, vipin.kumar@st.com,
-        armando.visconti@st.com, amit.virdi@st.com, vipulkumar.samar@st.com,
-        viresh.linux@gmail.com, deepak.sikri@st.com, dan.j.williams@intel.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V2 08/20] dmaengine/amba-pl08x: support runtime PM
-Message-ID: <20110803123953.GB23953@n2100.arm.linux.org.uk>
-References: <cover.1312190881.git.viresh.kumar@st.com> <bc59bbd3709a7af1723d37ab846bf44c6867c00e.1312190881.git.viresh.kumar@st.com>
+	id S1755596Ab1HCMmh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 08:42:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36679 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754948Ab1HCMmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 08:42:31 -0400
+Date: Wed, 3 Aug 2011 09:37:27 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mm/mempolicy.c: make sys_mbind & sys_set_mempolicy aware of
+ task_struct->mems_allowed
+Message-ID: <20110803123721.GA2892@x61.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <bc59bbd3709a7af1723d37ab846bf44c6867c00e.1312190881.git.viresh.kumar@st.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 03:07:18PM +0530, Viresh Kumar wrote:
-> Insert notifiers for the runtime PM API. With this the runtime PM layer kicks in
-> to action where used. This will also handle enabling/disabling of interface
-> clock (Code will be added in amba/bus.c by Russell King).
+Among several other features enabled when CONFIG_CPUSETS is defined, task_struct is enhanced with the nodemask_t mems_allowed element that serves to register/report on which memory nodes the task may obtain memory. Also, two new lines that reflect the value registered at task_struct->mems_allowed are added to the '/proc/[pid]/status' file:
+	  Mems_allowed:   ...,00000000,0000000f
+	  Mems_allowed_list:      0-3
 
-I don't think this is correct...
+The system calls sys_mbind and sys_set_mempolicy, which serve to cope with NUMA memory policies, and receive a nodemask_t parameter, do not set task_struct->mems_allowed accordingly to their received nodemask, when CONFIG_CPUSETS is defined. This unawareness causes unexpected values being reported at '/proc/[pid]/status' Mems_allowed fields, for applications relying on those syscalls, or spawned by numactl.
 
-> @@ -879,11 +880,19 @@ static void pl08x_free_txd_list(struct pl08x_driver_data *pl08x,
->   */
->  static int pl08x_alloc_chan_resources(struct dma_chan *chan)
->  {
-> +	struct pl08x_dma_chan *plchan = to_pl08x_chan(chan);
-> +	struct pl08x_driver_data *pl08x = plchan->host;
-> +
-> +	pm_runtime_resume(&pl08x->adev->dev);
+Despite not affecting the memory policy operation itself, the aforementioned unawareness is source of confusion and annoyance when one is trying to figure out which resources are bound to a given task.
 
-Shouldn't this be pm_runtime_get_sync() ?
+Reproduceability:
+a. in a NUMA box, spaw a bash shell with numactl setting a nodelist to --membind, or --interleave:
+[root@localhost ~]# numactl --membind=1,2 /bin/bash
 
->  	return 0;
->  }
->  
->  static void pl08x_free_chan_resources(struct dma_chan *chan)
->  {
-> +	struct pl08x_dma_chan *plchan = to_pl08x_chan(chan);
-> +	struct pl08x_driver_data *pl08x = plchan->host;
-> +
-> +	pm_runtime_suspend(&pl08x->adev->dev);
+b. in the spawned bash shell, verify '/proc/$$/status' Mems_allowed field:
+[root@localhost ~]# grep Mems_allowed /proc/$$/status
+Mems_allowed:     ...,00000000,0000000f
+Mems_allowed_list:	0-3
 
-And pm_runtime_put() ?
+As we can check, the expected reported list would be "1,2", instead of "0-3".
 
->  }
->  
->  /*
-> @@ -1993,6 +2002,8 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
->  	dev_info(&pl08x->adev->dev, "DMA: PL%03x rev%u at 0x%08llx irq %d\n",
->  		 amba_part(adev), amba_rev(adev),
->  		 (unsigned long long)adev->res.start, adev->irq[0]);
-> +
-> +	pm_runtime_suspend(&adev->dev);
+The attached patch is a proposal to make sys_mbind and sys_set_mempolicy system calls properly set task_struct->mems_allowed, in order to avoid the scenario shown above.
 
-And pm_runtime_put() ?
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+---
+ mm/mempolicy.c |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
 
-We don't want to call pm_runtime_suspend/resume directly because that
-could have bad consequences if more than one channel is in use.
-
-The enabling and disabling of runtime PM for AMBA devices will be handled
-in the core code...
-
-Lastly, we may want to make this even tighter to the actual period that
-the DMA is being used, rather than just the period that a driver has
-been allocated a channel.  I'd rather have it done that way now (and
-tested) so that we achieve maximal effect from runtime PM, rather than
-having something which needs to be revisited again.
-
-IOW, if this is worth doing, then its worth doing properly first time.
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 8b57173..bc966da 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -95,6 +95,14 @@
+ #include <asm/uaccess.h>
+ #include <linux/random.h>
+ 
++#ifdef CONFIG_CPUSETS
++#include <linux/cpuset.h>
++#else
++static inline void set_mems_allowed(nodemask_t nodemask)
++{
++}
++#endif
++
+ #include "internal.h"
+ 
+ /* Internal flags */
+@@ -1256,7 +1264,10 @@ SYSCALL_DEFINE6(mbind, unsigned long, start, unsigned long, len,
+ 	err = get_nodes(&nodes, nmask, maxnode);
+ 	if (err)
+ 		return err;
+-	return do_mbind(start, len, mode, mode_flags, &nodes, flags);
++	err = do_mbind(start, len, mode, mode_flags, &nodes, flags);
++	if (!err)
++		set_mems_allowed(nodes);
++	return err;
+ }
+ 
+ /* Set the process memory policy */
+@@ -1276,7 +1287,10 @@ SYSCALL_DEFINE3(set_mempolicy, int, mode, unsigned long __user *, nmask,
+ 	err = get_nodes(&nodes, nmask, maxnode);
+ 	if (err)
+ 		return err;
+-	return do_set_mempolicy(mode, flags, &nodes);
++	err = do_set_mempolicy(mode, flags, &nodes);
++	if (!err)
++		set_mems_allowed(nodes);
++	return err;
+ }
+ 
+ SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
+-- 
+1.7.6
