@@ -1,99 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab1HCMmh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 08:42:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36679 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754948Ab1HCMmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 08:42:31 -0400
-Date: Wed, 3 Aug 2011 09:37:27 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mm/mempolicy.c: make sys_mbind & sys_set_mempolicy aware of
- task_struct->mems_allowed
-Message-ID: <20110803123721.GA2892@x61.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755612Ab1HCMpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 08:45:53 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:33995 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755492Ab1HCMps (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 08:45:48 -0400
+Date: Wed, 3 Aug 2011 13:48:51 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Len Brown <lenb@kernel.org>
+Cc: x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] mrst_pmu: driver for Intel Moorestown Power
+ Management Unit
+Message-ID: <20110803134851.36995d0c@lxorguk.ukuu.org.uk>
+In-Reply-To: <alpine.LFD.2.02.1108021916430.25237@x980>
+References: <alpine.LFD.2.02.1107122328180.4502@x980>
+	<20110713105105.63e2fbcb@lxorguk.ukuu.org.uk>
+	<alpine.LFD.2.02.1108011116160.23581@x980>
+	<alpine.LFD.2.02.1108021916430.25237@x980>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Among several other features enabled when CONFIG_CPUSETS is defined, task_struct is enhanced with the nodemask_t mems_allowed element that serves to register/report on which memory nodes the task may obtain memory. Also, two new lines that reflect the value registered at task_struct->mems_allowed are added to the '/proc/[pid]/status' file:
-	  Mems_allowed:   ...,00000000,0000000f
-	  Mems_allowed_list:      0-3
+> This driver is essentially platform-speciif idle code.
+> It has been in linux-next via my idle-test tree,
+> and I can push it via that tree route w/ appropriate acks.
 
-The system calls sys_mbind and sys_set_mempolicy, which serve to cope with NUMA memory policies, and receive a nodemask_t parameter, do not set task_struct->mems_allowed accordingly to their received nodemask, when CONFIG_CPUSETS is defined. This unawareness causes unexpected values being reported at '/proc/[pid]/status' Mems_allowed fields, for applications relying on those syscalls, or spawned by numactl.
+Looks good to me
 
-Despite not affecting the memory policy operation itself, the aforementioned unawareness is source of confusion and annoyance when one is trying to figure out which resources are bound to a given task.
+Acked-by: Alan Cox <alan@linux.intel.com>
 
-Reproduceability:
-a. in a NUMA box, spaw a bash shell with numactl setting a nodelist to --membind, or --interleave:
-[root@localhost ~]# numactl --membind=1,2 /bin/bash
-
-b. in the spawned bash shell, verify '/proc/$$/status' Mems_allowed field:
-[root@localhost ~]# grep Mems_allowed /proc/$$/status
-Mems_allowed:     ...,00000000,0000000f
-Mems_allowed_list:	0-3
-
-As we can check, the expected reported list would be "1,2", instead of "0-3".
-
-The attached patch is a proposal to make sys_mbind and sys_set_mempolicy system calls properly set task_struct->mems_allowed, in order to avoid the scenario shown above.
-
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
----
- mm/mempolicy.c |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 8b57173..bc966da 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -95,6 +95,14 @@
- #include <asm/uaccess.h>
- #include <linux/random.h>
- 
-+#ifdef CONFIG_CPUSETS
-+#include <linux/cpuset.h>
-+#else
-+static inline void set_mems_allowed(nodemask_t nodemask)
-+{
-+}
-+#endif
-+
- #include "internal.h"
- 
- /* Internal flags */
-@@ -1256,7 +1264,10 @@ SYSCALL_DEFINE6(mbind, unsigned long, start, unsigned long, len,
- 	err = get_nodes(&nodes, nmask, maxnode);
- 	if (err)
- 		return err;
--	return do_mbind(start, len, mode, mode_flags, &nodes, flags);
-+	err = do_mbind(start, len, mode, mode_flags, &nodes, flags);
-+	if (!err)
-+		set_mems_allowed(nodes);
-+	return err;
- }
- 
- /* Set the process memory policy */
-@@ -1276,7 +1287,10 @@ SYSCALL_DEFINE3(set_mempolicy, int, mode, unsigned long __user *, nmask,
- 	err = get_nodes(&nodes, nmask, maxnode);
- 	if (err)
- 		return err;
--	return do_set_mempolicy(mode, flags, &nodes);
-+	err = do_set_mempolicy(mode, flags, &nodes);
-+	if (!err)
-+		set_mems_allowed(nodes);
-+	return err;
- }
- 
- SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
--- 
-1.7.6
