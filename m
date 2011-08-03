@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab1HCX1O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:27:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33572 "EHLO mx2.suse.de"
+	id S932104Ab1HCX11 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:27:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33604 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756125Ab1HCX1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:27:04 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:46 2011
-Message-Id: <20110803221246.336181022@clark.kroah.org>
+	id S1756118Ab1HCX1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:27:19 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:48 2011
+Message-Id: <20110803221248.501511003@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:00:43 -0700
+Date: Wed, 03 Aug 2011 15:01:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kalle Valo <kvalo@qca.qualcomm.com>
-Subject: [023/102] ath6kl: cache firmware
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [045/102] [SCSI] pmcraid: reject negative request size
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,169 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kalle Valo <kvalo@qca.qualcomm.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit b42a7b1bc7c0f535dfe35b2c934f239c60bb8d30 upstream.
+commit b5b515445f4f5a905c5dd27e6e682868ccd6c09d upstream.
 
-Drivers should not request firmware during resume. Fix ath6kl to
-cache the firmware instead.
+There's a code path in pmcraid that can be reached via device ioctl that
+causes all sorts of ugliness, including heap corruption or triggering the
+OOM killer due to consecutive allocation of large numbers of pages.
 
-Signed-off-by: Kalle Valo <kvalo@qca.qualcomm.com>
+First, the user can call pmcraid_chr_ioctl(), with a type
+PMCRAID_PASSTHROUGH_IOCTL.  This calls through to
+pmcraid_ioctl_passthrough().  Next, a pmcraid_passthrough_ioctl_buffer
+is copied in, and the request_size variable is set to
+buffer->ioarcb.data_transfer_length, which is an arbitrary 32-bit
+signed value provided by the user.  If a negative value is provided
+here, bad things can happen.  For example,
+pmcraid_build_passthrough_ioadls() is called with this request_size,
+which immediately calls pmcraid_alloc_sglist() with a negative size.
+The resulting math on allocating a scatter list can result in an
+overflow in the kzalloc() call (if num_elem is 0, the sglist will be
+smaller than expected), or if num_elem is unexpectedly large the
+subsequent loop will call alloc_pages() repeatedly, a high number of
+pages will be allocated and the OOM killer might be invoked.
+
+It looks like preventing this value from being negative in
+pmcraid_ioctl_passthrough() would be sufficient.
+
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/ath6kl/os/linux/ar6000_drv.c         |   49 +++++++++++++------
- drivers/staging/ath6kl/os/linux/include/ar6000_drv.h |    9 +++
- 2 files changed, 43 insertions(+), 15 deletions(-)
+ drivers/scsi/pmcraid.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/staging/ath6kl/os/linux/ar6000_drv.c
-+++ b/drivers/staging/ath6kl/os/linux/ar6000_drv.c
-@@ -954,9 +954,13 @@ ar6000_transfer_bin_file(struct ar6_soft
-     const char *filename;
-     const struct firmware *fw_entry;
-     u32 fw_entry_size;
-+    u8 **buf;
-+    size_t *buf_len;
+--- a/drivers/scsi/pmcraid.c
++++ b/drivers/scsi/pmcraid.c
+@@ -3871,6 +3871,9 @@ static long pmcraid_ioctl_passthrough(
+ 			pmcraid_err("couldn't build passthrough ioadls\n");
+ 			goto out_free_buffer;
+ 		}
++	} else if (request_size < 0) {
++		rc = -EINVAL;
++		goto out_free_buffer;
+ 	}
  
-     switch (file) {
-         case AR6K_OTP_FILE:
-+		buf = &ar->fw_otp;
-+		buf_len = &ar->fw_otp_len;
-             if (ar->arVersion.target_ver == AR6003_REV1_VERSION) {
-                 filename = AR6003_REV1_OTP_FILE;
-             } else if (ar->arVersion.target_ver == AR6003_REV2_VERSION) {
-@@ -970,6 +974,8 @@ ar6000_transfer_bin_file(struct ar6_soft
-             break;
- 
-         case AR6K_FIRMWARE_FILE:
-+		buf = &ar->fw;
-+		buf_len = &ar->fw_len;
-             if (ar->arVersion.target_ver == AR6003_REV1_VERSION) {
-                 filename = AR6003_REV1_FIRMWARE_FILE;
-             } else if (ar->arVersion.target_ver == AR6003_REV2_VERSION) {
-@@ -1028,6 +1034,8 @@ ar6000_transfer_bin_file(struct ar6_soft
-             break;
- 
-         case AR6K_PATCH_FILE:
-+		buf = &ar->fw_patch;
-+		buf_len = &ar->fw_patch_len;
-             if (ar->arVersion.target_ver == AR6003_REV1_VERSION) {
-                 filename = AR6003_REV1_PATCH_FILE;
-             } else if (ar->arVersion.target_ver == AR6003_REV2_VERSION) {
-@@ -1041,6 +1049,8 @@ ar6000_transfer_bin_file(struct ar6_soft
-             break;
- 
-         case AR6K_BOARD_DATA_FILE:
-+		buf = &ar->fw_data;
-+		buf_len = &ar->fw_data_len;
-             if (ar->arVersion.target_ver == AR6003_REV1_VERSION) {
-                 filename = AR6003_REV1_BOARD_DATA_FILE;
-             } else if (ar->arVersion.target_ver == AR6003_REV2_VERSION) {
-@@ -1057,23 +1067,29 @@ ar6000_transfer_bin_file(struct ar6_soft
-             AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Unknown file type: %d\n", file));
-             return A_ERROR;
-     }
--    if ((A_REQUEST_FIRMWARE(&fw_entry, filename, ((struct device *)ar->osDevInfo.pOSDevice))) != 0)
--    {
--        AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Failed to get %s\n", filename));
--        return A_ENOENT;
-+
-+    if (*buf == NULL) {
-+	    if ((A_REQUEST_FIRMWARE(&fw_entry, filename, ((struct device *)ar->osDevInfo.pOSDevice))) != 0) {
-+		    AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("Failed to get %s\n", filename));
-+		    return A_ENOENT;
-+	    }
-+
-+	    *buf = kmemdup(fw_entry->data, fw_entry->size, GFP_KERNEL);
-+	    *buf_len = fw_entry->size;
-+	    A_RELEASE_FIRMWARE(fw_entry);
-     }
- 
- #ifdef SOFTMAC_FILE_USED
--    if (file==AR6K_BOARD_DATA_FILE && fw_entry->data) {
--        ar6000_softmac_update(ar, (u8 *)fw_entry->data, fw_entry->size);
-+    if (file==AR6K_BOARD_DATA_FILE && *buf_len) {
-+        ar6000_softmac_update(ar, *buf, *buf_len);
-     }
- #endif 
- 
- 
--    fw_entry_size = fw_entry->size;
-+    fw_entry_size = *buf_len;
- 
-     /* Load extended board data for AR6003 */
--    if ((file==AR6K_BOARD_DATA_FILE) && (fw_entry->data)) {
-+    if ((file==AR6K_BOARD_DATA_FILE) && *buf) {
-         u32 board_ext_address;
-         u32 board_ext_data_size;
-         u32 board_data_size;
-@@ -1089,14 +1105,13 @@ ar6000_transfer_bin_file(struct ar6_soft
-         AR_DEBUG_PRINTF(ATH_DEBUG_INFO, ("Board extended Data download address: 0x%x\n", board_ext_address));
- 
-         /* check whether the target has allocated memory for extended board data and file contains extended board data */
--        if ((board_ext_address) && (fw_entry->size == (board_data_size + board_ext_data_size))) {
-+        if ((board_ext_address) && (*buf_len == (board_data_size + board_ext_data_size))) {
-             u32 param;
- 
--            status = BMIWriteMemory(ar->arHifDevice, board_ext_address, (u8 *)(fw_entry->data + board_data_size), board_ext_data_size);
-+            status = BMIWriteMemory(ar->arHifDevice, board_ext_address, (u8 *)(*buf + board_data_size), board_ext_data_size);
- 
-             if (status) {
-                 AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("BMI operation failed: %d\n", __LINE__));
--                A_RELEASE_FIRMWARE(fw_entry);
-                 return A_ERROR;
-             }
- 
-@@ -1110,17 +1125,16 @@ ar6000_transfer_bin_file(struct ar6_soft
-     }
- 
-     if (compressed) {
--        status = BMIFastDownload(ar->arHifDevice, address, (u8 *)fw_entry->data, fw_entry_size);
-+        status = BMIFastDownload(ar->arHifDevice, address, *buf, fw_entry_size);
-     } else {
--        status = BMIWriteMemory(ar->arHifDevice, address, (u8 *)fw_entry->data, fw_entry_size);
-+        status = BMIWriteMemory(ar->arHifDevice, address, *buf, fw_entry_size);
-     }
- 
-     if (status) {
-         AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("BMI operation failed: %d\n", __LINE__));
--        A_RELEASE_FIRMWARE(fw_entry);
-         return A_ERROR;
-     }
--    A_RELEASE_FIRMWARE(fw_entry);
-+
-     return 0;
- }
- 
-@@ -2088,6 +2102,11 @@ ar6000_destroy(struct net_device *dev, u
-     ar6000_remove_ap_interface();
- #endif /*CONFIG_AP_VIRTUAL_ADAPTER_SUPPORT */
- 
-+    kfree(ar->fw_otp);
-+    kfree(ar->fw);
-+    kfree(ar->fw_patch);
-+    kfree(ar->fw_data);
-+
-     AR_DEBUG_PRINTF(ATH_DEBUG_INFO,("-ar6000_destroy \n"));
- }
- 
---- a/drivers/staging/ath6kl/os/linux/include/ar6000_drv.h
-+++ b/drivers/staging/ath6kl/os/linux/include/ar6000_drv.h
-@@ -651,6 +651,15 @@ struct ar6_softc {
-     void                    *arApDev;
- #endif
-     u8 arAutoAuthStage;
-+
-+	u8 *fw_otp;
-+	size_t fw_otp_len;
-+	u8 *fw;
-+	size_t fw_len;
-+	u8 *fw_patch;
-+	size_t fw_patch_len;
-+	u8 *fw_data;
-+	size_t fw_data_len;
- };
- 
- #ifdef CONFIG_AP_VIRTUAL_ADAPTER_SUPPORT
+ 	/* If data is being written into the device, copy the data from user
 
 
