@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab1HCXbN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:31:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34063 "EHLO mx2.suse.de"
+	id S932200Ab1HCXao (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:30:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33997 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756253Ab1HCXaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:30:09 -0400
+	id S1756075Ab1HCX3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:29:48 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:49 2011
-Message-Id: <20110803221249.403979017@clark.kroah.org>
+Message-Id: <20110803221249.845705599@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:14 -0700
+Date: Wed, 03 Aug 2011 15:01:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peng Tao <peng_tao@emc.com>, Boaz Harrosh <bharrosh@panasas.com>,
-        Jim Rees <rees@umich.edu>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [054/102] pnfs: let layoutcommit handle a list of lseg
+        Anton Blanchard <anton@samba.org>, Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [058/102] powerpc/kdump: Fix timeout in crash_kexec_wait_realmode
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,160 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peng Tao <peng_tao@emc.com>
+From: Michael Neuling <mikey@neuling.org>
 
-commit a9bae5666d0510ad69bdb437371c9a3e6b770705 upstream.
+commit 63f21a56f1cc0b800a4c00349c59448f82473d19 upstream.
 
-There can be multiple lseg per file, so layoutcommit should be
-able to handle it.
+The existing code it pretty ugly.  How about we clean it up even more
+like this?
 
-[Needed in v3.0]
-Signed-off-by: Peng Tao <peng_tao@emc.com>
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
-Signed-off-by: Jim Rees <rees@umich.edu>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Anton Blanchard <anton@samba.org>
+
+We check for timeout expiry in the outer loop, but we also need to
+check it in the inner loop or we can lock up forever waiting for a
+CPU to hit real mode.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/nfs4proc.c       |    8 +++++++-
- fs/nfs/pnfs.c           |   32 ++++++++++++++++----------------
- fs/nfs/pnfs.h           |    2 ++
- include/linux/nfs_xdr.h |    2 +-
- 4 files changed, 26 insertions(+), 18 deletions(-)
+ arch/powerpc/kernel/crash.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -5850,9 +5850,15 @@ nfs4_layoutcommit_done(struct rpc_task *
- static void nfs4_layoutcommit_release(void *calldata)
- {
- 	struct nfs4_layoutcommit_data *data = calldata;
-+	struct pnfs_layout_segment *lseg, *tmp;
+--- a/arch/powerpc/kernel/crash.c
++++ b/arch/powerpc/kernel/crash.c
+@@ -242,12 +242,8 @@ static void crash_kexec_wait_realmode(in
  
- 	/* Matched by references in pnfs_set_layoutcommit */
--	put_lseg(data->lseg);
-+	list_for_each_entry_safe(lseg, tmp, &data->lseg_list, pls_lc_list) {
-+		list_del_init(&lseg->pls_lc_list);
-+		if (test_and_clear_bit(NFS_LSEG_LAYOUTCOMMIT,
-+				       &lseg->pls_flags))
-+			put_lseg(lseg);
-+	}
- 	put_rpccred(data->cred);
- 	kfree(data);
- }
---- a/fs/nfs/pnfs.c
-+++ b/fs/nfs/pnfs.c
-@@ -224,6 +224,7 @@ static void
- init_lseg(struct pnfs_layout_hdr *lo, struct pnfs_layout_segment *lseg)
- {
- 	INIT_LIST_HEAD(&lseg->pls_list);
-+	INIT_LIST_HEAD(&lseg->pls_lc_list);
- 	atomic_set(&lseg->pls_refcount, 1);
- 	smp_mb();
- 	set_bit(NFS_LSEG_VALID, &lseg->pls_flags);
-@@ -1201,16 +1202,17 @@ pnfs_try_to_read_data(struct nfs_read_da
- }
- 
- /*
-- * Currently there is only one (whole file) write lseg.
-+ * There can be multiple RW segments.
-  */
--static struct pnfs_layout_segment *pnfs_list_write_lseg(struct inode *inode)
-+static void pnfs_list_write_lseg(struct inode *inode, struct list_head *listp)
- {
--	struct pnfs_layout_segment *lseg, *rv = NULL;
-+	struct pnfs_layout_segment *lseg;
- 
--	list_for_each_entry(lseg, &NFS_I(inode)->layout->plh_segs, pls_list)
--		if (lseg->pls_range.iomode == IOMODE_RW)
--			rv = lseg;
--	return rv;
-+	list_for_each_entry(lseg, &NFS_I(inode)->layout->plh_segs, pls_list) {
-+		if (lseg->pls_range.iomode == IOMODE_RW &&
-+		    test_bit(NFS_LSEG_LAYOUTCOMMIT, &lseg->pls_flags))
-+			list_add(&lseg->pls_lc_list, listp);
-+	}
- }
- 
- void
-@@ -1222,12 +1224,14 @@ pnfs_set_layoutcommit(struct nfs_write_d
- 
- 	spin_lock(&nfsi->vfs_inode.i_lock);
- 	if (!test_and_set_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags)) {
--		/* references matched in nfs4_layoutcommit_release */
--		get_lseg(wdata->lseg);
- 		mark_as_dirty = true;
- 		dprintk("%s: Set layoutcommit for inode %lu ",
- 			__func__, wdata->inode->i_ino);
- 	}
-+	if (!test_and_set_bit(NFS_LSEG_LAYOUTCOMMIT, &wdata->lseg->pls_flags)) {
-+		/* references matched in nfs4_layoutcommit_release */
-+		get_lseg(wdata->lseg);
-+	}
- 	if (end_pos > nfsi->layout->plh_lwb)
- 		nfsi->layout->plh_lwb = end_pos;
- 	spin_unlock(&nfsi->vfs_inode.i_lock);
-@@ -1254,7 +1258,6 @@ pnfs_layoutcommit_inode(struct inode *in
- {
- 	struct nfs4_layoutcommit_data *data;
- 	struct nfs_inode *nfsi = NFS_I(inode);
--	struct pnfs_layout_segment *lseg;
- 	loff_t end_pos;
- 	int status = 0;
- 
-@@ -1271,17 +1274,15 @@ pnfs_layoutcommit_inode(struct inode *in
- 		goto out;
- 	}
- 
-+	INIT_LIST_HEAD(&data->lseg_list);
- 	spin_lock(&inode->i_lock);
- 	if (!test_and_clear_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags)) {
- 		spin_unlock(&inode->i_lock);
- 		kfree(data);
- 		goto out;
- 	}
--	/*
--	 * Currently only one (whole file) write lseg which is referenced
--	 * in pnfs_set_layoutcommit and will be found.
--	 */
--	lseg = pnfs_list_write_lseg(inode);
-+
-+	pnfs_list_write_lseg(inode, &data->lseg_list);
- 
- 	end_pos = nfsi->layout->plh_lwb;
- 	nfsi->layout->plh_lwb = 0;
-@@ -1291,7 +1292,6 @@ pnfs_layoutcommit_inode(struct inode *in
- 	spin_unlock(&inode->i_lock);
- 
- 	data->args.inode = inode;
--	data->lseg = lseg;
- 	data->cred = get_rpccred(nfsi->layout->plh_lc_cred);
- 	nfs_fattr_init(&data->fattr);
- 	data->args.bitmask = NFS_SERVER(inode)->cache_consistency_bitmask;
---- a/fs/nfs/pnfs.h
-+++ b/fs/nfs/pnfs.h
-@@ -36,10 +36,12 @@
- enum {
- 	NFS_LSEG_VALID = 0,	/* cleared when lseg is recalled/returned */
- 	NFS_LSEG_ROC,		/* roc bit received from server */
-+	NFS_LSEG_LAYOUTCOMMIT,	/* layoutcommit bit set for layoutcommit */
- };
- 
- struct pnfs_layout_segment {
- 	struct list_head pls_list;
-+	struct list_head pls_lc_list;
- 	struct pnfs_layout_range pls_range;
- 	atomic_t pls_refcount;
- 	unsigned long pls_flags;
---- a/include/linux/nfs_xdr.h
-+++ b/include/linux/nfs_xdr.h
-@@ -262,7 +262,7 @@ struct nfs4_layoutcommit_res {
- struct nfs4_layoutcommit_data {
- 	struct rpc_task task;
- 	struct nfs_fattr fattr;
--	struct pnfs_layout_segment *lseg;
-+	struct list_head lseg_list;
- 	struct rpc_cred *cred;
- 	struct nfs4_layoutcommit_args args;
- 	struct nfs4_layoutcommit_res res;
+ 		while (paca[i].kexec_state < KEXEC_STATE_REAL_MODE) {
+ 			barrier();
+-			if (!cpu_possible(i)) {
++			if (!cpu_possible(i) || !cpu_online(i) || (msecs <= 0))
+ 				break;
+-			}
+-			if (!cpu_online(i)) {
+-				break;
+-			}
+ 			msecs--;
+ 			mdelay(1);
+ 		}
 
 
