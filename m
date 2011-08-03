@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab1HCTCK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 15:02:10 -0400
-Received: from eazy.amigager.de ([213.239.192.238]:59521 "EHLO
-	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab1HCTCD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 15:02:03 -0400
-Date: Wed, 3 Aug 2011 21:02:04 +0200
-From: Tino Keitel <tino.keitel@tikei.de>
-To: Florian Mickler <florian@mickler.org>
-Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org, error27@gmail.com
-Subject: Re: [PATCH] [media] vp7045: fix buffer setup
-Message-ID: <20110803190204.GA18377@mac.home>
-Mail-Followup-To: Florian Mickler <florian@mickler.org>,
-	mchehab@infradead.org, linux-kernel@vger.kernel.org,
-	error27@gmail.com
-References: <20110722192722.GA9369@x61.home>
- <1312288145-22292-1-git-send-email-florian@mickler.org>
+	id S1755316Ab1HCTHJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 15:07:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32729 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754568Ab1HCTG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 15:06:59 -0400
+Date: Wed, 3 Aug 2011 21:06:23 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andi Kleen <ak@linux.intel.com>, linux-mm@kvack.org,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [patch 4/5] mm: writeback: throttle __GFP_WRITE on per-zone
+ dirty limits
+Message-ID: <20110803190623.GA5873@redhat.com>
+References: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
+ <1311625159-13771-5-git-send-email-jweiner@redhat.com>
+ <20110725203705.GA21691@tassilo.jf.intel.com>
+ <CAEwNFnARzetfqZqjh_9-d+FOHtrCEwaSxgqBy_D+apxsNqzqkg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1312288145-22292-1-git-send-email-florian@mickler.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAEwNFnARzetfqZqjh_9-d+FOHtrCEwaSxgqBy_D+apxsNqzqkg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 02, 2011 at 14:29:05 +0200, Florian Mickler wrote:
-> dvb_usb_device_init calls the frontend_attach method of this driver which
-> uses vp7045_usb_ob. In order to have a buffer ready in vp7045_usb_op, it has to
-> be allocated before that happens.
+On Tue, Jul 26, 2011 at 08:40:59AM +0900, Minchan Kim wrote:
+> Hi Andi,
 > 
-> Luckily we can use the whole private data as the buffer as it gets separately
-> allocated on the heap via kzalloc in dvb_usb_device_init and is thus apt for
-> use via usb_control_msg.
-> 
-> This fixes a
-> 	BUG: unable to handle kernel paging request at 0000000000001e78
-> 
-> reported by Tino Keitel and diagnosed by Dan Carpenter.
-> 
-> Reported-by: Tino Keitel <tino.keitel@tikei.de>
-> Reported-by: Dan Carpenter <error27@gmail.com>
-> Signed-off-by: Florian Mickler <florian@mickler.org>
-> ---
-> 
-> Tino, can you test this?
+> On Tue, Jul 26, 2011 at 5:37 AM, Andi Kleen <ak@linux.intel.com> wrote:
+> >> The global dirty limits are put in proportion to the respective zone's
+> >> amount of dirtyable memory and the allocation denied when the limit of
+> >> that zone is reached.
+> >>
+> >> Before the allocation fails, the allocator slowpath has a stage before
+> >> compaction and reclaim, where the flusher threads are kicked and the
+> >> allocator ultimately has to wait for writeback if still none of the
+> >> zones has become eligible for allocation again in the meantime.
+> >>
+> >
+> > I don't really like this. It seems wrong to make memory
+> > placement depend on dirtyness.
+> >
+> > Just try to explain it to some system administrator or tuner: her
+> > head will explode and for good reasons.
+> >
+> > On the other hand I like doing round-robin in filemap by default
+> > (I think that is what your patch essentially does)
+> > We should have made  this default long ago. It avoids most of the
+> > "IO fills up local node" problems people run into all the time.
+> >
+> > So I would rather just change the default in filemap allocation.
 
-Hi,
+It's not only a problem that exists solely on a node-level but also on
+a zone-level.  Round-robin over the nodes does not fix the problem
+that a small zone can fill up with dirty pages before the global dirty
+limit kicks in.
 
-thanks for the patch. It works fine on top of 3.0. No more Oops at
-boot, and the DVB-T receiver is working.
+> Just out of curiosity.
+> Why do you want to consider only filemap allocation, not IO(ie,
+> filemap + sys_[read/write]) allocation?
 
-Regards,
-Tino
+I guess Andi was referring to the page cache (mapping file offsets to
+pages), rather than mmaps (mapping virtual addresses to pages).
+
+mm/filemap.c::__page_cache_alloc()
