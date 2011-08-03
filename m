@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756162Ab1HCXpE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:45:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33388 "EHLO mx2.suse.de"
+	id S1756035Ab1HCXpZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:45:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33371 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755950Ab1HCX0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:26:03 -0400
+	id S1755997Ab1HCXZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:25:56 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:44 2011
-Message-Id: <20110803221244.694847938@clark.kroah.org>
+Message-Id: <20110803221244.490352893@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:00:26 -0700
+Date: Wed, 03 Aug 2011 15:00:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tobias Klauser <tklauser@distanz.ch>
-Subject: [006/102] Staging: usbip: vhci-hcd: Do not kill already dead RX/TX kthread
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [004/102] bridge: send proper message_age in config BPDU
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +26,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tobias Klauser <tklauser@distanz.ch>
+From: stephen hemminger <shemminger@vyatta.com>
 
-commit 8547d4cc2b616e4f1dafebe2c673fc986422b506 upstream.
+commit 0c03150e7ea8f7fcd03cfef29385e0010b22ee92 upstream.
 
-When unbinding a device on the host which was still attached on the
-client, I got a NULL pointer dereference on the client. This turned out
-to be due to kthread_stop() being called on an already dead kthread.
+A bridge topology with three systems:
 
-Here is how I was able to reproduce the problem:
+      +------+  +------+
+      | A(2) |--| B(1) |
+      +------+  +------+
+           \    /
+          +------+
+          | C(3) |
+          +------+
 
- server:# usbip bind -b 1-2
-                                client:# usbip attach -h server -b 1-2
- server:# usbip unbind -b 1-2
+What is supposed to happen:
+ * bridge with the lowest ID is elected root (for example: B)
+ * C detects that A->C is higher cost path and puts in blocking state
 
-This patch fixes the problem by checking the kthread before attempting
-to kill it, as it is done on the opposite side in
-stub_shutdown_connection().
+What happens. Bridge with lowest id (B) is elected correctly as
+root and things start out fine initially. But then config BPDU
+doesn't get transmitted from A -> C. Because of that
+the link from A-C is transistioned to the forwarding state.
 
-Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
+The root cause of this is that the configuration messages
+is generated with bogus message age, and dropped before
+sending.
+
+In the standardmessage_age is supposed to be:
+  the time since the generation of the Configuration BPDU by
+  the Root that instigated the generation of this Configuration BPDU.
+
+Reimplement this by recording the timestamp (age + jiffies) when
+recording config information. The old code incorrectly used the time
+elapsed on the ageing timer which was incorrect.
+
+See also:
+  https://bugzilla.vyatta.com/show_bug.cgi?id=7164
+
+Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/usbip/vhci_hcd.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/bridge/br_private.h |    1 +
+ net/bridge/br_stp.c     |    4 ++--
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/usbip/vhci_hcd.c
-+++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -846,9 +846,9 @@ static void vhci_shutdown_connection(str
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -124,6 +124,7 @@ struct net_bridge_port
+ 	bridge_id			designated_bridge;
+ 	u32				path_cost;
+ 	u32				designated_cost;
++	unsigned long			designated_age;
+ 
+ 	struct timer_list		forward_delay_timer;
+ 	struct timer_list		hold_timer;
+--- a/net/bridge/br_stp.c
++++ b/net/bridge/br_stp.c
+@@ -164,8 +164,7 @@ void br_transmit_config(struct net_bridg
+ 	else {
+ 		struct net_bridge_port *root
+ 			= br_get_port(br, br->root_port);
+-		bpdu.message_age = br->max_age
+-			- (root->message_age_timer.expires - jiffies)
++		bpdu.message_age = (jiffies - root->designated_age)
+ 			+ MESSAGE_AGE_INCR;
  	}
+ 	bpdu.max_age = br->max_age;
+@@ -189,6 +188,7 @@ static inline void br_record_config_info
+ 	p->designated_cost = bpdu->root_path_cost;
+ 	p->designated_bridge = bpdu->bridge_id;
+ 	p->designated_port = bpdu->port_id;
++	p->designated_age = jiffies + bpdu->message_age;
  
- 	/* kill threads related to this sdev, if v.c. exists */
--	if (vdev->ud.tcp_rx)
-+	if (vdev->ud.tcp_rx && !task_is_dead(vdev->ud.tcp_rx))
- 		kthread_stop(vdev->ud.tcp_rx);
--	if (vdev->ud.tcp_tx)
-+	if (vdev->ud.tcp_tx && !task_is_dead(vdev->ud.tcp_tx))
- 		kthread_stop(vdev->ud.tcp_tx);
- 
- 	pr_info("stop threads\n");
+ 	mod_timer(&p->message_age_timer, jiffies
+ 		  + (p->br->max_age - bpdu->message_age));
 
 
