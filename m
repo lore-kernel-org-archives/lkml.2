@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959Ab1HCAzK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 20:55:10 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:31382 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753548Ab1HCAzH (ORCPT
+	id S1753986Ab1HCA6L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 20:58:11 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:15815 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753572Ab1HCA6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 20:55:07 -0400
-X-AuditID: cbfee610-b7ce5ae00000749c-1f-4e389c69408c
-Date: Wed, 03 Aug 2011 00:55:05 +0000 (GMT)
+	Tue, 2 Aug 2011 20:58:06 -0400
+X-AuditID: cbfee61a-b7cf0ae000006bc6-12-4e389d1c20b6
+Date: Wed, 03 Aug 2011 09:58:03 +0900
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: Re: regulator: max8952 init a mutex but never use it
-To: Liam Girdwood <lrg@ti.com>, Axel Lin <axel.lin@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+Subject: [PATCH] regulator: max8952: removed unused mutex.
+In-reply-to: <4E37FE95.7090808@ti.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        myungjoo.ham@gmail.com
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20110803004927278@myungjoo.ham
-Msgkey: 20110803004927278@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20110803004927278@myungjoo.ham
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <18774335.313851312332903932.JavaMail.weblogic@epml15>
+        myungjoo.ham@gmail.com, Liam Girdwood <lrg@ti.com>
+Message-id: <1312333083-22615-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+Content-transfer-encoding: 7BIT
+References: <4E37FE95.7090808@ti.com>
+X-OriginalArrivalTime: 03 Aug 2011 00:58:07.0232 (UTC)
+ FILETIME=[6828A000:01CC5178]
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p730tMgg001161
 
-Sender : Liam Girdwood<lrg@ti.com> / Date : 2011-08-02 22:41 (GMT+09:00)
-> On 02/08/11 13:16, Axel Lin wrote:
-> > hi,
-> > The max8952 regulator driver init a mutex but never use it,
-> > do we really need the mutex? Or should we just remove it?
-> > 
-> 
-> It can be removed if it is not being used anywhere.
-> 
-> Liam
-> 
-> 
+This patch removes a mutex that is never used in the driver.
 
-Yes, that should be removed. It is something that was used with removed code before sending the patch.
+Reported-by: Axel Lin
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+---
+ drivers/regulator/max8952.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-Thank you.
+diff --git a/drivers/regulator/max8952.c b/drivers/regulator/max8952.c
+index daff7fd..2fa8a81 100644
+--- a/drivers/regulator/max8952.c
++++ b/drivers/regulator/max8952.c
+@@ -26,7 +26,6 @@
+ #include <linux/platform_device.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/max8952.h>
+-#include <linux/mutex.h>
+ #include <linux/gpio.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
+@@ -47,7 +46,6 @@ enum {
+ struct max8952_data {
+ 	struct i2c_client	*client;
+ 	struct device		*dev;
+-	struct mutex		mutex;
+ 	struct max8952_platform_data *pdata;
+ 	struct regulator_dev	*rdev;
+ 
+@@ -208,7 +206,6 @@ static int __devinit max8952_pmic_probe(struct i2c_client *client,
+ 	max8952->client = client;
+ 	max8952->dev = &client->dev;
+ 	max8952->pdata = pdata;
+-	mutex_init(&max8952->mutex);
+ 
+ 	max8952->rdev = regulator_register(&regulator, max8952->dev,
+ 			&pdata->reg_data, max8952);
+-- 
+1.7.4.1
 
-
-Cheers!
-MyungJoo
-
- MyungJoo Ham (ÇÔ¸íÁÖ)
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: +82-10-6714-2858 / office: +82-31-279-8033ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
