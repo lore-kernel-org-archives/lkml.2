@@ -1,113 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab1HCXO7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:14:59 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:27893 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755760Ab1HCXOx convert rfc822-to-8bit (ORCPT
+	id S1755914Ab1HCXP5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:15:57 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:40661 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755760Ab1HCXPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:14:53 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=MR/Ez6GMNLhGEYbtxsknmvPmKSIcmZSt6KpiROU46f4BZTMw1zidTmghq2nLAFisr
-	rpL1z0L3CRUvq4k086xlQ==
+	Wed, 3 Aug 2011 19:15:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110729050437.GB9069@legolas.emea.dhcp.ti.com>
-References: <1311206974.2945.198.camel@work-vm>
-	<20110729050437.GB9069@legolas.emea.dhcp.ti.com>
-Date: Wed, 3 Aug 2011 16:14:50 -0700
-Message-ID: <CAMbhsRQvc9dHJ5Er4x177NNE4Yg+4fbM2kmYhVUTPN8ug_WqhQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH] musb: Avoid musb_gadget_pullup "Unhandled fault"
- oops on omap4
-From: Colin Cross <ccross@google.com>
-To: balbi@ti.com
-Cc: John Stultz <john.stultz@linaro.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Date: Wed, 3 Aug 2011 19:15:51 -0400
+Message-ID: <CAECXXi5kZJk+86-2SJRWqMUCj31cL4tb1qTbaueMxeEg2VFcDw@mail.gmail.com>
+Subject: [PATCH] nbd: nbd sysfs framework
+From: Paul Clements <paul.clements@us.sios.com>
+To: andrew morton <akpm@linux-foundation.org>
+Cc: kernel list <linux-kernel@vger.kernel.org>,
+        nbd-general@lists.sourceforge.net
+Content-Type: multipart/mixed; boundary=001636c5be01a4148104a9a20b21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 28, 2011 at 10:04 PM, Felipe Balbi <balbi@ti.com> wrote:
-> hi,
->
-> On Wed, Jul 20, 2011 at 05:09:34PM -0700, John Stultz wrote:
->> I've recently run across an "Unhandled fault: imprecise external abort"
->> oops that is caused when a driver called usb_gadget_connect() when there
->> was no cable plugged into the musb gadget port.
->>
->> You can see the oops message here:
->> https://launchpadlibrarian.net/75635123/minicom.txt
->>
->> Doing some digging, it seemed the problem was triggered when reading
->> from the musb registers in musb_pullup() when the device controller is
->> powered down.
->>
->> Looking at other examples of where the registers were accessed, I
->> noticed they were always enclosed by pm_runtime_get/put calls. So I
->> added such calls to the musb_gadget_pullup() function and it seemed to
->> resolve the problem.
->>
->> Now, full disclosure: this was triggered with the out-of-tree Android
->> adb gadget driver. However, I suspect the same behavior could be
->> triggered using the composite gadget driver as well, so I think this is
->> a generic issue. However, if I'm wrong, let me know and I'll try to make
->> sure the fix is done in the right place.
->>
->> If this is the right fix, it probably should be queued for 3.1 and
->> 3.0-stable.
->>
->> Comments and feedback would be greatly appreciated!
->>
->>
->> Reported-by: Zach Pfeffer <zach.pfeffer@linaro.org>
->> Signed-off-by: John Stultz <john.stultz@linaro.org>
->
-> Applied, thanks.
->
-> improved commit log slightly:
->
-> commit 7e1bb0fdcc9b51ebec0a1e5e06ff075aab55c941
-> Author: John Stultz <john.stultz@linaro.org>
-> Date:   Wed Jul 20 17:09:34 2011 -0700
->
->    usb: musb: fix oops on musb_gadget_pullup
->
->    an 'unhandled fault' is causes when a gadget driver calls
->    usb_gadget_connect() while the USB cable isn't plugged into
->    the OTG port.
->
->    the fault is caused by an access to MUSB's memory space
->    while its clock is turned off due to pm_runtime kicking
->    in.
->
->    in order to fix the fault, we enclose musb_gadget_pullup()
->    with pm_runtime_get_sync() ... pm_runtime_put() calls to
->    be sure we will always reach that path with clock turned on.
->
->    [ balbi@ti.com : simplified commit log; removed few things
->        which didn't belong there ]
->
->    Cc: stable@kernel.org
->    Reported-by: Zach Pfeffer <zach.pfeffer@linaro.org>
->    Signed-off-by: John Stultz <john.stultz@linaro.org>
->    Signed-off-by: Felipe Balbi <balbi@ti.com>
->
-> --
-> balbi
->
+--001636c5be01a4148104a9a20b21
+Content-Type: text/plain; charset=ISO-8859-1
 
-musb_pullup can get called from usb_function_deactivate in atomic
-context (usb_function_deactivate -> usb_gadget_disconnect ->
-musb_pullup), and pm_runtime_get_sync is not safe in atomic context
-unless pm_runtime_irq_safe has been called in musb-core.c (which I'm
-not sure it is safe to do).
+Description: The patch creates a new sysfs entry framework for nbd. The
+single existing sysfs entry for nbd (pid) now uses the framework.
 
-Since this already gets called in atomic context, you might as well
-put the irq-safe pm_runtime calls inside the if statement, and avoid
-unnecessary wakeups.
+From: Paul Clements <paul.clements@steeleye.com>
+Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+
+--001636c5be01a4148104a9a20b21
+Content-Type: text/x-patch; charset=US-ASCII; name="nbd-sysfs-framework.diff"
+Content-Disposition: attachment; filename="nbd-sysfs-framework.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gqwwt0i30
+
+RGVzY3JpcHRpb246IFRoZSBwYXRjaCBjcmVhdGVzIGEgbmV3IHN5c2ZzIGVudHJ5IGZyYW1ld29y
+ayBmb3IgbmJkLiBUaGUKc2luZ2xlIGV4aXN0aW5nIHN5c2ZzIGVudHJ5IGZvciBuYmQgKHBpZCkg
+bm93IHVzZXMgdGhlIGZyYW1ld29yay4KCkZyb206IFBhdWwgQ2xlbWVudHMgPHBhdWwuY2xlbWVu
+dHNAc3RlZWxleWUuY29tPgpTaWduZWQtb2ZmLWJ5OiBQYXVsIENsZW1lbnRzIDxwYXVsLmNsZW1l
+bnRzQHN0ZWVsZXllLmNvbT4KLS0tCgogZHJpdmVycy9ibG9jay9uYmQuYyB8ICAgODcgKysrKysr
+KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKystLS0tLS0tLS0tLS0tLQogaW5jbHVkZS9s
+aW51eC9uYmQuaCB8ICAgIDEgCiAyIGZpbGVzIGNoYW5nZWQsIDY2IGluc2VydGlvbnMoKyksIDIy
+IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvYmxvY2svbmJkLmMgYi9kcml2ZXJz
+L2Jsb2NrL25iZC5jCmluZGV4IGU2ZmM3MTYuLjIzZjM2MTkgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMv
+YmxvY2svbmJkLmMKKysrIGIvZHJpdmVycy9ibG9jay9uYmQuYwpAQCAtMzgzLDM5ICszODMsMTcg
+QEAgaGFyZGVycm9yOgogCXJldHVybiBOVUxMOwogfQogCi1zdGF0aWMgc3NpemVfdCBwaWRfc2hv
+dyhzdHJ1Y3QgZGV2aWNlICpkZXYsCi0JCQlzdHJ1Y3QgZGV2aWNlX2F0dHJpYnV0ZSAqYXR0ciwg
+Y2hhciAqYnVmKQotewotCXN0cnVjdCBnZW5kaXNrICpkaXNrID0gZGV2X3RvX2Rpc2soZGV2KTsK
+LQotCXJldHVybiBzcHJpbnRmKGJ1ZiwgIiVsZFxuIiwKLQkJKGxvbmcpICgoc3RydWN0IG5iZF9k
+ZXZpY2UgKilkaXNrLT5wcml2YXRlX2RhdGEpLT5waWQpOwotfQotCi1zdGF0aWMgc3RydWN0IGRl
+dmljZV9hdHRyaWJ1dGUgcGlkX2F0dHIgPSB7Ci0JLmF0dHIgPSB7IC5uYW1lID0gInBpZCIsIC5t
+b2RlID0gU19JUlVHT30sCi0JLnNob3cgPSBwaWRfc2hvdywKLX07Ci0KIHN0YXRpYyBpbnQgbmJk
+X2RvX2l0KHN0cnVjdCBuYmRfZGV2aWNlICpsbykKIHsKIAlzdHJ1Y3QgcmVxdWVzdCAqcmVxOwot
+CWludCByZXQ7CiAKIAlCVUdfT04obG8tPm1hZ2ljICE9IExPX01BR0lDKTsKIAogCWxvLT5waWQg
+PSBjdXJyZW50LT5waWQ7Ci0JcmV0ID0gc3lzZnNfY3JlYXRlX2ZpbGUoJmRpc2tfdG9fZGV2KGxv
+LT5kaXNrKS0+a29iaiwgJnBpZF9hdHRyLmF0dHIpOwotCWlmIChyZXQpIHsKLQkJcHJpbnRrKEtF
+Uk5fRVJSICJuYmQ6IHN5c2ZzX2NyZWF0ZV9maWxlIGZhaWxlZCEiKTsKLQkJbG8tPnBpZCA9IDA7
+Ci0JCXJldHVybiByZXQ7Ci0JfQogCiAJd2hpbGUgKChyZXEgPSBuYmRfcmVhZF9zdGF0KGxvKSkg
+IT0gTlVMTCkKIAkJbmJkX2VuZF9yZXF1ZXN0KHJlcSk7CiAKLQlzeXNmc19yZW1vdmVfZmlsZSgm
+ZGlza190b19kZXYobG8tPmRpc2spLT5rb2JqLCAmcGlkX2F0dHIuYXR0cik7CiAJbG8tPnBpZCA9
+IDA7CiAJcmV0dXJuIDA7CiB9CkBAIC03MzUsNiArNzEzLDY3IEBAIHN0YXRpYyBjb25zdCBzdHJ1
+Y3QgYmxvY2tfZGV2aWNlX29wZXJhdGlvbnMgbmJkX2ZvcHMgPQogICogIChKdXN0IHNtaWxleSBj
+b25mdXNlcyBlbWFjcyA6LSkKICAqLwogCitzdHJ1Y3QgbmJkX3N5c2ZzX2VudHJ5IHsKKwlzdHJ1
+Y3QgYXR0cmlidXRlIGF0dHI7CisJc3NpemVfdCAoKnNob3cpKHN0cnVjdCBuYmRfZGV2aWNlICos
+IGNoYXIgKik7CisJc3NpemVfdCAoKnN0b3JlKShzdHJ1Y3QgbmJkX2RldmljZSAqLCBjb25zdCBj
+aGFyICosIHNpemVfdCk7Cit9OworCitzdGF0aWMgc3NpemVfdCBwaWRfc2hvdyhzdHJ1Y3QgbmJk
+X2RldmljZSAqbG8sIGNoYXIgKnBhZ2UpCit7CisJcmV0dXJuIHNwcmludGYocGFnZSwgIiVsZFxu
+IiwgKGxvbmcpbG8tPnBpZCk7Cit9CisKK3N0YXRpYyBzdHJ1Y3QgbmJkX3N5c2ZzX2VudHJ5IG5i
+ZF9waWQgPQorX19BVFRSKHBpZCwgU19JUlVHTywgcGlkX3Nob3csIE5VTEwpOworCitzdGF0aWMg
+c3RydWN0IGF0dHJpYnV0ZSAqbmJkX2RlZmF1bHRfYXR0cnNbXSA9IHsKKwkmbmJkX3BpZC5hdHRy
+LAorCU5VTEwsCit9OworCitzdGF0aWMgc3NpemVfdAorbmJkX2F0dHJfc2hvdyhzdHJ1Y3Qga29i
+amVjdCAqa29iaiwgc3RydWN0IGF0dHJpYnV0ZSAqYXR0ciwgY2hhciAqcGFnZSkKK3sKKwlzdHJ1
+Y3QgbmJkX3N5c2ZzX2VudHJ5ICplbnRyeSA9IGNvbnRhaW5lcl9vZihhdHRyLCBzdHJ1Y3QgbmJk
+X3N5c2ZzX2VudHJ5LCBhdHRyKTsKKwlzdHJ1Y3QgbmJkX2RldmljZSAqbG8gPSBjb250YWluZXJf
+b2Yoa29iaiwgc3RydWN0IG5iZF9kZXZpY2UsIGtvYmopOworCXNzaXplX3QgcnY7CisKKwlpZiAo
+IWVudHJ5LT5zaG93KQorCQlyZXR1cm4gLUVJTzsKKwlydiA9IGVudHJ5LT5zaG93KGxvLCBwYWdl
+KTsKKwlyZXR1cm4gcnY7Cit9CisKK3N0YXRpYyBzc2l6ZV90CituYmRfYXR0cl9zdG9yZShzdHJ1
+Y3Qga29iamVjdCAqa29iaiwgc3RydWN0IGF0dHJpYnV0ZSAqYXR0ciwKKwkgICAgICBjb25zdCBj
+aGFyICpwYWdlLCBzaXplX3QgbGVuZ3RoKQoreworCXN0cnVjdCBuYmRfc3lzZnNfZW50cnkgKmVu
+dHJ5ID0gY29udGFpbmVyX29mKGF0dHIsIHN0cnVjdCBuYmRfc3lzZnNfZW50cnksIGF0dHIpOwor
+CXN0cnVjdCBuYmRfZGV2aWNlICpsbyA9IGNvbnRhaW5lcl9vZihrb2JqLCBzdHJ1Y3QgbmJkX2Rl
+dmljZSwga29iaik7CisJc3NpemVfdCBydjsKKworCWlmICghZW50cnktPnN0b3JlKQorCQlyZXR1
+cm4gLUVJTzsKKwlpZiAoIWNhcGFibGUoQ0FQX1NZU19BRE1JTikpCisJCXJldHVybiAtRUFDQ0VT
+OworCW11dGV4X2xvY2soJmxvLT50eF9sb2NrKTsKKwlydiA9IGVudHJ5LT5zdG9yZShsbywgcGFn
+ZSwgbGVuZ3RoKTsKKwltdXRleF91bmxvY2soJmxvLT50eF9sb2NrKTsKKworCXJldHVybiBydjsK
+K30KKworc3RhdGljIGNvbnN0IHN0cnVjdCBzeXNmc19vcHMgbmJkX3N5c2ZzX29wcyA9IHsKKwku
+c2hvdyAgID0gbmJkX2F0dHJfc2hvdywKKwkuc3RvcmUgID0gbmJkX2F0dHJfc3RvcmUsCit9Owor
+CitzdGF0aWMgc3RydWN0IGtvYmpfdHlwZSBuYmRfa3R5cGUgPSB7CisJLnN5c2ZzX29wcyAgICAg
+ID0gJm5iZF9zeXNmc19vcHMsCisJLmRlZmF1bHRfYXR0cnMgID0gbmJkX2RlZmF1bHRfYXR0cnMs
+Cit9OworCiBzdGF0aWMgaW50IF9faW5pdCBuYmRfaW5pdCh2b2lkKQogewogCWludCBlcnIgPSAt
+RU5PTUVNOwpAQCAtNzg2LDYgKzgyNSw3IEBAIHN0YXRpYyBpbnQgX19pbml0IG5iZF9pbml0KHZv
+aWQpCiAJZHByaW50ayhEQkdfSU5JVCwgIm5iZDogZGVidWdmbGFncz0weCV4XG4iLCBkZWJ1Z2Zs
+YWdzKTsKIAogCWZvciAoaSA9IDA7IGkgPCBuYmRzX21heDsgaSsrKSB7CisJCWludCBlcnJvcjsK
+IAkJc3RydWN0IGdlbmRpc2sgKmRpc2sgPSBuYmRfZGV2W2ldLmRpc2s7CiAJCW5iZF9kZXZbaV0u
+ZmlsZSA9IE5VTEw7CiAJCW5iZF9kZXZbaV0ubWFnaWMgPSBMT19NQUdJQzsKQEAgLTgwNSw2ICs4
+NDUsOCBAQCBzdGF0aWMgaW50IF9faW5pdCBuYmRfaW5pdCh2b2lkKQogCQlzcHJpbnRmKGRpc2st
+PmRpc2tfbmFtZSwgIm5iZCVkIiwgaSk7CiAJCXNldF9jYXBhY2l0eShkaXNrLCAwKTsKIAkJYWRk
+X2Rpc2soZGlzayk7CisJCWVycm9yID0ga29iamVjdF9pbml0X2FuZF9hZGQoJm5iZF9kZXZbaV0u
+a29iaiwgJm5iZF9rdHlwZSwKKwkJCQkmZGlza190b19kZXYoZGlzayktPmtvYmosICIlcyIsICJu
+YmQiKTsKIAl9CiAKIAlyZXR1cm4gMDsKQEAgLTgyOCw2ICs4NzAsNyBAQCBzdGF0aWMgdm9pZCBf
+X2V4aXQgbmJkX2NsZWFudXAodm9pZCkKIAkJCWJsa19jbGVhbnVwX3F1ZXVlKGRpc2stPnF1ZXVl
+KTsKIAkJCXB1dF9kaXNrKGRpc2spOwogCQl9CisJCWtvYmplY3RfZGVsKCZuYmRfZGV2W2ldLmtv
+YmopOwogCX0KIAl1bnJlZ2lzdGVyX2Jsa2RldihOQkRfTUFKT1IsICJuYmQiKTsKIAlrZnJlZShu
+YmRfZGV2KTsKZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvbmJkLmggYi9pbmNsdWRlL2xpbnV4
+L25iZC5oCmluZGV4IGQxNDZjYTEuLmM3OTVlMjggMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgv
+bmJkLmgKKysrIGIvaW5jbHVkZS9saW51eC9uYmQuaApAQCAtNjgsNiArNjgsNyBAQCBzdHJ1Y3Qg
+bmJkX2RldmljZSB7CiAJdTY0IGJ5dGVzaXplOwogCXBpZF90IHBpZDsgLyogcGlkIG9mIG5iZC1j
+bGllbnQsIGlmIGF0dGFjaGVkICovCiAJaW50IHhtaXRfdGltZW91dDsKKwlzdHJ1Y3Qga29iamVj
+dCBrb2JqOwogfTsKIAogI2VuZGlmCg==
+--001636c5be01a4148104a9a20b21--
