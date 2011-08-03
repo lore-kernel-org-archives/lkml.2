@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903Ab1HDFzf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 01:55:35 -0400
-Received: from mga09.intel.com ([134.134.136.24]:44747 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750891Ab1HDFzS convert rfc822-to-8bit (ORCPT
+	id S1751651Ab1HDGCY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 02:02:24 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50640 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773Ab1HDGCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 01:55:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,315,1309762800"; 
-   d="scan'208";a="35251341"
-From: "Zhang, Yanmin" <yanmin.zhang@intel.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-CC: "Nguyen, Tom L" <tom.l.nguyen@intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>
-Date: Thu, 4 Aug 2011 13:54:19 +0800
-Subject: RE: [rfc] suppress excessive AER output
-Thread-Topic: [rfc] suppress excessive AER output
-Thread-Index: AcxSLXixeN47dUE9Rvq0X5g1AfiqHAAPWeeg
-Message-ID: <33AB447FBD802F4E932063B962385B3512D9615780@shsmsx501.ccr.corp.intel.com>
-References: <20110803223407.GA20646@redhat.com>
-In-Reply-To: <20110803223407.GA20646@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 4 Aug 2011 02:02:18 -0400
+Date: Wed, 3 Aug 2011 19:29:22 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Nigel Cunningham <nigel@tuxonice.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Christoph <cr2005@u-club.de>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] PM / Freezer: Freeze filesystems along with
+ freezing processes (was: Re: PM / hibernate xfs lock up /
+ xfs_reclaim_inodes_ag)
+Message-ID: <20110803172922.GA2126@ucw.cz>
+References: <4E1C70AD.1010101@u-club.de>
+ <20110727103308.GA20805@infradead.org>
+ <4E300317.7090108@tuxonice.net>
+ <201108032315.06012.rjw@sisk.pl>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201108032315.06012.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+Hi!
 
-How about adding a new module parameter aer_printk_limit, so user space could reset it any time?
+> Freeze all filesystems during the freezing of tasks by calling
+> freeze_bdev() for each of them and thaw them during the thawing
+> of tasks with the help of thaw_bdev().
+> 
+> This is needed by hibernation, because some filesystems (e.g. XFS)
+> deadlock with the preallocation of memory used by it if the memory
+> pressure caused by it is too heavy.
+> 
+> The additional benefit of this change is that, if something goes
+> wrong after filesystems have been frozen, they will stay in a
+> consistent state and journal replays won't be necessary (e.g. after
+> a failing suspend or resume).  In particular, this should help to
+> solve a long-standing issue that in some cases during resume from
+> hibernation the boot loader causes the journal to be replied for the
+> filesystem containing the kernel image and initrd causing it to
+> become inconsistent with the information stored in the hibernation
+> image.
 
-Yanmin
+> +/**
+> + * freeze_filesystems - Force all filesystems into a consistent state.
+> + */
+> +void freeze_filesystems(void)
+> +{
+> +	struct super_block *sb;
+> +
+> +	lockdep_off();
 
------Original Message-----
-From: Dave Jones [mailto:davej@redhat.com] 
-Sent: Thursday, August 04, 2011 6:34 AM
-To: Linux Kernel
-Cc: Nguyen, Tom L; Zhang, Yanmin
-Subject: [rfc] suppress excessive AER output
+Ouch. So... why do we need to silence this?
 
-I have a machine that has developed some kind of problem with
-its onboard ethernet.  It still boots, but spewed almost 1.5G of text
-(2381585 instances of the warning below) before we realised what
-was going on, and blacklisted the igb driver.
+> +	/*
+> +	 * Freeze in reverse order so filesystems dependant upon others are
+> +	 * frozen in the right order (eg. loopback on ext3).
+> +	 */
+> +	list_for_each_entry_reverse(sb, &super_blocks, s_list) {
+> +		if (!sb->s_root || !sb->s_bdev ||
+> +		    (sb->s_frozen == SB_FREEZE_TRANS) ||
+> +		    (sb->s_flags & MS_RDONLY) ||
+> +		    (sb->s_flags & MS_FROZEN))
+> +			continue;
 
-Is it worth logging every single error when we're flooding like this ?
-It seems unlikely that we'll find useful information in amongst that much data
-that wasn't already in the first 100 instances.
+Should we stop NFS from modifying remote server, too?
 
-I picked 100 in the (untested) example patch below arbitarily, but the exact
-value could be smaller, or slightly bigger..
+Plus... ext3 writes to read-only filesystems on mount; not sure if it
+does it later. But RDONLY means 'user cant write to it' not 'bdev will
+not be modified'. Should we freeze all?
 
-could we do something like this maybe ?
+How can 'already frozen' happen?
 
-	Dave
+> +	list_for_each_entry(sb, &super_blocks, s_list)
+> +		if (sb->s_flags & MS_FROZEN) {
+> +			sb->s_flags &= ~MS_FROZEN;
+> +			thaw_bdev(sb->s_bdev, sb);
+> +		}
 
-diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
-index 3ea5173..4ec88c6 100644
---- a/drivers/pci/pcie/aer/aerdrv_errprint.c
-+++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
-@@ -153,6 +153,17 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
- {
- 	int id = ((dev->bus->number << 8) | dev->devfn);
- 	char prefix[44];
-+	static unsigned long aer_printk_limit = 0;
-+
-+	aer_printk_limit++;
-+
-+	if (aer_printk_limit > 100)
-+		return;
-+
-+	if (aer_printk_limit == 100) {
-+		printk(KERN_ERR "Reached limit of 100 AER errors. Further AER output suppressed.\n");
-+		return;
-+	}
- 
- 	snprintf(prefix, sizeof(prefix), "%s%s %s: ",
- 		 (info->severity == AER_CORRECTABLE) ? KERN_WARNING : KERN_ERR,
+...because we'll unfreeze it even if we did not freeze it...
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
