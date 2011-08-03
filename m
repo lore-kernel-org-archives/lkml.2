@@ -1,57 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab1HCTyA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 15:54:00 -0400
-Received: from lucidpixels.com ([72.73.18.11]:34272 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755569Ab1HCTxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 15:53:52 -0400
-Date: Wed, 3 Aug 2011 15:53:51 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-cc: Alan Piszcz <ap@solarrain.com>
-Subject: Linux Wireless USB-Stick Question
-Message-ID: <alpine.DEB.2.02.1108031550100.4278@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753830Ab1HCT5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 15:57:36 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:49548 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752383Ab1HCT5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 15:57:30 -0400
+Date: Wed, 3 Aug 2011 14:57:24 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH] specific do_timer_cpu value for nohz off mode
+Message-ID: <20110803195724.GA9722@sgi.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Jiffies updates are currently done by the tick_do_timer_cpu.  This has a
+non-deterministic value that can be any running cpu on the system.  It
+changes dynamically in nohz mode.  When nohz mode is off, it gets set to
+a more static, but still non-deterministic value.
 
-Under Windows, you can achieve 10-15MiB/s..
+While the nohz behavior is necessary, is there a reason why the nohz off
+case can't have a specific value, say 0 as it was on earlier kernels?
+If the cpu is offlined, let the value change at that time (note that the
+x86 arch disallows offlining cpu 0).
 
-Under Linux, even with 150mbps USB wireless adapters, the max never 
-appears to go above > 3-4MiB/s, to work around this, order more 
-USB-wifi ticks and run them in parallel far away from each other with USB
-extenders:
+There are certain cases where this would be advantageous, especially where
+timely jiffies updates may not necessarily occur on specific processors.
 
-box1:
--------------
-wlan0     IEEE 802.11bg  ESSID:"hidden"
-           Bit Rate=54 Mb/s   Tx-Power=20 dBm
-wlan1     IEEE 802.11bgn  ESSID:"hidden"
-           Bit Rate=58.5 Mb/s   Tx-Power=20 dBm
-wlan2     IEEE 802.11bgn  ESSID:"hidden"
-           Bit Rate=39 Mb/s   Tx-Power=20 dBm
+The following sample patch presents one way that this could be done.
+Processors wait for the selected cpu to enter high resolution mode before
+they do so.
 
-box2:
--------------
-wlan0     IEEE 802.11bgn  ESSID:"hidden"
-           Bit Rate=58.5 Mb/s   Tx-Power=20 dBm
-wlan1     IEEE 802.11bgn  ESSID:"hidden"
-           Bit Rate=52 Mb/s   Tx-Power=20 dBm
-wlan2     IEEE 802.11bgn  ESSID:"hidden"
-           Bit Rate=52 Mb/s   Tx-Power=20 dBm
+Note that this patch is not hotplug aware (however, should the
+tick_static_do_timer_cpu be offlined, the tick_do_timer_cpu simply becomes
+another cpu anyway).
 
-But I was curious if anyone had achieved > 10 MiB/s with any wireless 
-adapter with Linux?
+Comments on this idea, or the sample patch?
 
-Also, those native Linux USB adapters (carl) work good, so far.
-With the patch provided earlier for the rt2800usb driver, it is no longer 
-crashing under 3.0 so I put two of them on a single box plus a carl based 
-one, now I get better I/O, e.g. 4MiB/s x 6 = 24MiB/s.
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+---
+ Documentation/kernel-parameters.txt |    8 +++++
+ kernel/time/tick-sched.c            |   46 ++++++++++++++++++++++++++++++++
+ 2 files changed, 54 insertions(+)
 
-Justin.
+Index: linux/kernel/time/tick-sched.c
+===================================================================
+--- linux.orig/kernel/time/tick-sched.c
++++ linux/kernel/time/tick-sched.c
+@@ -30,11 +30,54 @@
+  */
+ static DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
+ 
++DECLARE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases);
++
+ /*
+  * The time, when the last jiffy update happened. Protected by xtime_lock.
+  */
+ static ktime_t last_jiffies_update;
+ 
++/*
++ * Static tick_do_timer_cpu
++ */
++static int tick_static_do_timer_cpu __read_mostly = -1;
++
++/*
++ * Set tick_do_timer_cpu to a static cpu.
++ *
++ * Supported on systems w/nohz=off only.
++ * Selected cpu can be offlined.  If this is done, another cpu will be chosen,
++ * but will not revert back if selected cpu is onlined again.
++ */
++static int __init setup_static_do_timer_cpu(char *s)
++{
++	if (kstrtoint(s, 0, &tick_static_do_timer_cpu) < 0) {
++		printk(KERN_WARNING "Invalid tick_static_do_timer_cpu specified\n");
++		return 0;
++	}
++	printk(KERN_INFO "Set tick_static_do_timer_cpu %d\n",
++		tick_static_do_timer_cpu);
++
++	return 1;
++}
++__setup("do_timer_cpu=", setup_static_do_timer_cpu);
++
++/*
++ * Check to see if we need to wait for the selected static do_timer_cpu
++ * to enter high res mode first.
++ */
++static int wait_for_static_do_timer_cpu(void)
++{
++	if (tick_static_do_timer_cpu == -1)
++		return 0;
++
++	if (smp_processor_id() != tick_static_do_timer_cpu &&
++	    !*per_cpu_ptr(&hrtimer_bases.hres_active, tick_static_do_timer_cpu))
++		return 1;
++
++	return 0;
++}
++
+ struct tick_sched *tick_get_tick_sched(int cpu)
+ {
+ 	return &per_cpu(tick_cpu_sched, cpu);
+@@ -848,6 +891,9 @@ int tick_check_oneshot_change(int allow_
+ {
+ 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
+ 
++	if (!allow_nohz && !tick_nohz_enabled && wait_for_static_do_timer_cpu())
++		return 0;
++
+ 	if (!test_and_clear_bit(0, &ts->check_clocks))
+ 		return 0;
+ 
+Index: linux/Documentation/kernel-parameters.txt
+===================================================================
+--- linux.orig/Documentation/kernel-parameters.txt
++++ linux/Documentation/kernel-parameters.txt
+@@ -665,6 +665,14 @@ bytes respectively. Such letter suffixes
+ 			The filter can be disabled or changed to another
+ 			driver later using sysfs.
+ 
++	do_timer_cpu=<cpu number>
++			This selects the cpu to process jiffies updates
++			when nohz mode is disabled.
++			Works only with high resolution mode enabled.
++			The selected cpu can be offlined.  If this is done,
++			another cpu will be chosen, but will not revert back
++			if the selected cpu is onlined again.
++
+ 	dscc4.setup=	[NET]
+ 
+ 	earlycon=	[KNL] Output early console device and options.
+
