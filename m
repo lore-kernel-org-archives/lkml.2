@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab1HCXj0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:39:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33837 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756085Ab1HCX2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:28:48 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:51 2011
-Message-Id: <20110803221251.188535402@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:31 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiaying Zhang <jiayingz@google.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [071/102] ext4: free allocated and pre-allocated blocks when check_eofblocks_fl fails
-In-Reply-To: <20110803221345.GA10346@kroah.com>
+	id S932208Ab1HCXjh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:39:37 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:33738 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932142Ab1HCXj1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:39:27 -0400
+Date: Wed, 03 Aug 2011 16:38:06 -0700 (PDT)
+Message-Id: <20110803.163806.1160463770968078206.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2011-08-03
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110803144754.GB30439@tuxdriver.com>
+References: <20110803144754.GB30439@tuxdriver.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 03 Aug 2011 16:38:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let us know.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Wed, 3 Aug 2011 10:47:55 -0400
 
-------------------
+> The following changes since commit 28f4881cbf9ce285edfc245a8990af36d21c062f:
+> 
+>   bnx2x: Clear MDIO access warning during first driver load (2011-08-03 03:22:18 -0700)
+> 
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-davem
+> 
 
-From: Jiaying Zhang <jiayingz@google.com>
-
-commit 575a1d4bdfa2ea9fc10733013136145b497e1be0 upstream.
-
-Upon corrupted inode or disk failures, we may fail after we already
-allocate some blocks from the inode or take some blocks from the
-inode's preallocation list, but before we successfully insert the
-corresponding extent to the extent tree. In this case, we should free
-any allocated blocks and discard the inode's preallocated blocks
-because the entries in the inode's preallocation list may be in an
-inconsistent state.
-
-Signed-off-by: Jiaying Zhang <jiayingz@google.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/ext4/extents.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -3596,10 +3596,9 @@ int ext4_ext_map_blocks(handle_t *handle
- 	}
- 
- 	err = check_eofblocks_fl(handle, inode, map->m_lblk, path, ar.len);
--	if (err)
--		goto out2;
--
--	err = ext4_ext_insert_extent(handle, inode, path, &newex, flags);
-+	if (!err)
-+		err = ext4_ext_insert_extent(handle, inode, path,
-+					     &newex, flags);
- 	if (err) {
- 		int fb_flags = flags & EXT4_GET_BLOCKS_DELALLOC_RESERVE ?
- 			EXT4_FREE_BLOCKS_NO_QUOT_UPDATE : 0;
-
-
+Looks a lot better, pulled, thanks!
