@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163Ab1HCIzo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 04:55:44 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:58893 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752148Ab1HCIzh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 04:55:37 -0400
-Message-ID: <4E390CF9.60503@stericsson.com>
-Date: Wed, 3 Aug 2011 10:55:21 +0200
-From: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
+	id S1753379Ab1HCJCb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 05:02:31 -0400
+Received: from symlink.to.noone.org ([85.10.207.172]:49554 "EHLO sym.noone.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752637Ab1HCJCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 05:02:24 -0400
+Date: Wed, 3 Aug 2011 11:02:23 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] net/usb: Use kzalloc
+Message-ID: <20110803090223.GM4587@distanz.ch>
+References: <1312301372.2629.10.camel@localhost.localdomain>
 MIME-Version: 1.0
-To: Per FORLIN <per.forlin@stericsson.com>, Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "users@igloocommunity.org" <users@igloocommunity.org>,
-        Per Forlin <per.forlin@linaro.org>
-Subject: Re: [PATCH] usb: musb: ux500: set dma config for both src and dst
-References: <1312299219-9562-1-git-send-email-per.forlin@stericsson.com>
-In-Reply-To: <1312299219-9562-1-git-send-email-per.forlin@stericsson.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312301372.2629.10.camel@localhost.localdomain>
+X-Editor: Vi IMproved 7.1
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/02/2011 05:33 PM, Per FORLIN wrote:
-> From: Per Forlin<per.forlin@linaro.org>
->
-> The dma driver requires both src and dst to be set.
-> This fix is needed in order to run gadget mass storage.
-> Patch is verified on snowball.
->
-> Signed-off-by: Per Forlin<per.forlin@linaro.org>
-> ---
->   drivers/usb/musb/ux500_dma.c |   16 +++++++---------
->   1 files changed, 7 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
-> index cecace4..2313475 100644
-> --- a/drivers/usb/musb/ux500_dma.c
-> +++ b/drivers/usb/musb/ux500_dma.c
-> @@ -133,15 +133,13 @@ static bool ux500_configure_channel(struct dma_channel *channel,
->   					DMA_SLAVE_BUSWIDTH_4_BYTES;
->
->   	slave_conf.direction = direction;
-> -	if (direction == DMA_FROM_DEVICE) {
-> -		slave_conf.src_addr = usb_fifo_addr;
-> -		slave_conf.src_addr_width = addr_width;
-> -		slave_conf.src_maxburst = 16;
-> -	} else {
-> -		slave_conf.dst_addr = usb_fifo_addr;
-> -		slave_conf.dst_addr_width = addr_width;
-> -		slave_conf.dst_maxburst = 16;
-> -	}
-> +	slave_conf.src_addr = usb_fifo_addr;
-> +	slave_conf.src_addr_width = addr_width;
-> +	slave_conf.src_maxburst = 16;
-> +	slave_conf.dst_addr = usb_fifo_addr;
-> +	slave_conf.dst_addr_width = addr_width;
-> +	slave_conf.dst_maxburst = 16;
-> +
->   	dma_chan->device->device_control(dma_chan, DMA_SLAVE_CONFIG,
->   					     (unsigned long)&slave_conf);
->
->    
+Please add a Signed-off-by line as mentioned in
+Documentation/SubmittingPatches.
 
-Acked-by: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+Also you should Cc: the proper maintainer and list (in this case
+netdev). You can use scripts/get_maintainers.pl to get this information
 
-Thanks,
+Cheers
+Tobias
 
--- 
-Mian Yousaf Kaukab
-
+On 2011-08-02 at 18:09:28 +0200, Thomas Meyer <thomas@m3y3r.de> wrote:
+> --- a/drivers/net/usb/cdc_ncm.c 2011-07-26 00:46:08.126846923 +0200
+> +++ b/drivers/net/usb/cdc_ncm.c 2011-08-01 20:20:43.396390040 +0200
+> @@ -479,12 +479,10 @@ static int cdc_ncm_bind(struct usbnet *d
+>  	int temp;
+>  	u8 iface_no;
+>  
+> -	ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
+> +	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
+>  	if (ctx == NULL)
+>  		return -ENODEV;
+>  
+> -	memset(ctx, 0, sizeof(*ctx));
+> -
+>  	init_timer(&ctx->tx_timer);
+>  	spin_lock_init(&ctx->mtx);
+>  	ctx->netdev = dev->net;
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
