@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab1HCLuo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 07:50:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49730 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754943Ab1HCLui convert rfc822-to-8bit (ORCPT
+	id S1755464Ab1HCL5T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 07:57:19 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:51913 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755428Ab1HCL5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 07:50:38 -0400
-Subject: Re: [stable] [perf] overflow/perf_count_sw_cpu_clock crashes
- recent kernels
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Greg KH <greg@kroah.com>
-Cc: Vince Weaver <vweaver1@eecs.utk.edu>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        stable <stable@kernel.org>
-In-Reply-To: <20110802163529.GA1341@kroah.com>
-References: <alpine.DEB.2.00.1107221210160.21367@cl320.eecs.utk.edu>
-	 <alpine.DEB.2.00.1107271446460.406@cl320.eecs.utk.edu>
-	 <1311878830.2617.373.camel@laptop> <20110729050514.GA24999@kroah.com>
-	 <1311940750.5890.348.camel@twins>  <20110802163529.GA1341@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 03 Aug 2011 13:49:31 +0200
-Message-ID: <1312372171.1147.302.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 3 Aug 2011 07:57:11 -0400
+Date: Wed, 3 Aug 2011 13:57:05 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, robert.richter@amd.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/urgent] perf sched: Fix list of events, dropping
+ unsupported ':r' modifier
+Message-ID: <20110803115703.GB5768@somewhere.redhat.com>
+References: <AANLkTim=jawJyBj0iFd0r4-LCKzvjFW+NddzJMD5GUB9@mail.gmail.com>
+ <tip-9710118bd4e7f3406865171cb9b9c94547c1c2f9@git.kernel.org>
+ <1312369161.1147.292.camel@twins>
+ <20110803113706.GA5768@somewhere.redhat.com>
+ <1312371741.1147.301.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312371741.1147.301.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-02 at 09:35 -0700, Greg KH wrote:
-> On Fri, Jul 29, 2011 at 01:59:10PM +0200, Peter Zijlstra wrote:
-> > On Thu, 2011-07-28 at 22:05 -0700, Greg KH wrote:
+On Wed, Aug 03, 2011 at 01:42:21PM +0200, Peter Zijlstra wrote:
+> On Wed, 2011-08-03 at 13:37 +0200, Frederic Weisbecker wrote:
+> > On Wed, Aug 03, 2011 at 12:59:21PM +0200, Peter Zijlstra wrote:
+> > > On Fri, 2011-01-14 at 07:25 +0000, tip-bot for Stephane Eranian wrote:
+> > > > Looks to me like the :r modifier is not supported anymore, so remove it from
+> > > > the list of events. 
 > > > 
-> > > What is that commit id so it can be properly referenced in the patch
-> > > below?  And what tree should this patch go into?  .39?  3.0?  Anything
-> > > newer? 
+> > > acme, why is that anyway? -R is a fun way to save some typing, but not
+> > > supporting :r anymore takes away the option of not getting
+> > > PERF_SAMPLE_RAW output for every event.
 > > 
-> > .32+ in as far as anybody is still maintaining them, if it fails to
-> > apply to any of them (quite possible) do tell and I can provide
-> > backports etc..
+> > Because it was very non obvious for people to select this -R or :r
+> > every time they wanted to use trace events for tracing. I think
+> > there was complaints about that. Moreover nobody seemed to use
+> > trace events for non-tracing (perf report, top, annotate, ...)
+> > so we decided to always have RAW records so that it works for
+> > every cases...unless we lose events because of that.
+> > 
+> > We can still bring an option to force disabling of raw records.
 > 
-> I've applied it to 3.0, and it didn't apply to any older kernel due to
-> file movements, so if you could, can you provide a version for
-> .32-stable?
+> That just doesn't compute, they still have to use -R, so what's the harm
+> in also having :r?
 
+Nope -R is the default/forced behaviour already.
+But even if it wasn't I don't see much the point of ":r". Who wants
+to run two trace events and only record the traces of one?
 
----
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Also taking away options just because it confuses people sounds like
+> gnome, lets just not go there.
 
-The below patch is for -stable only, upstream has a much larger patch
-that contains the below hunk in commit a8b0ca17b80e92faab46ee7179ba9e99ccb61233
+You're right but options should be there only to be able to override
+sane default common uses. And not the opposite. And the common use
+of trace events is for tracing.
 
-Vince found that under certain circumstances software event overflows
-go wrong and deadlock. Avoid trying to delete a timer from the timer
-callback.
+We should rather enable tracing by default and disable it through
+an option. Like --no-trace or so.
 
-Reported-by: Vince Weaver <vweaver1@eecs.utk.edu>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/perf_event.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 183d437..8f97aea 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -3693,12 +3693,8 @@ static int __perf_event_overflow(struct perf_event *event, int nmi,
- 	if (events && atomic_dec_and_test(&event->event_limit)) {
- 		ret = 1;
- 		event->pending_kill = POLL_HUP;
--		if (nmi) {
--			event->pending_disable = 1;
--			perf_pending_queue(&event->pending,
--					   perf_pending_event);
--		} else
--			perf_event_disable(event);
-+		event->pending_disable = 1;
-+		perf_pending_queue(&event->pending, perf_pending_event);
- 	}
- 
- 	perf_event_output(event, nmi, data, regs);
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tip-commits" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
