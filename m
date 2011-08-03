@@ -1,395 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192Ab1HCGHq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 02:07:46 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:27165 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab1HCGHl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 02:07:41 -0400
-Message-ID: <4E38E58D.6080007@oracle.com>
-Date: Wed, 03 Aug 2011 14:07:09 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1755061Ab1HCGK1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 02:10:27 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49795 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751655Ab1HCGKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 02:10:21 -0400
+Date: Wed, 3 Aug 2011 08:10:16 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch] oom: change warning for deprecated oom_adj to avoid
+ WARN_ONCE()
+Message-ID: <20110803061016.GC16170@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	David Rientjes <rientjes@google.com>,
+	Andi Kleen <andi@firstfloor.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-kernel@vger.kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>
+References: <20110802005206.GA3832@tassilo.jf.intel.com>
+ <alpine.DEB.2.00.1108011928530.15596@chino.kir.corp.google.com>
+ <m2pqko1h38.fsf@firstfloor.org>
+ <alpine.DEB.2.00.1108020236140.18935@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Joe Jin <joe.jin@oracle.com>
-CC: Daniel Stodden <daniel.stodden@citrix.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Annie Li <annie.li@oracle.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Kurt C Hackel <KURT.HACKEL@oracle.com>,
-        Greg Marsden <greg.marsden@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH -v2 3/3] xen-blkback: refactor vbd remove/disconnect.
-References: <4E38E4A2.3070003@oracle.com>
-In-Reply-To: <4E38E4A2.3070003@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090208.4E38E5A6.0009,ss=1,re=-2.300,fgs=0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1108020236140.18935@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch refactor vbd remove/disconnect.
-1. Add blkback shutdown watch for the remove/disconnect.
-2. Don't disconnect backend when frontend state is XenbusStateClosing
-   until frontend state changed to XenbusStateClosed.
+On Tue, Aug 02, 2011 at 02:54:01AM -0700, David Rientjes wrote:
+> On Mon, 1 Aug 2011, Andi Kleen wrote:
+> 
+> > Simply backtraces are not supposed to happen unless something 
+> > is really broken. That's not the case here. The old distribution
+> > works perfectly fine and will continue to do so.
+> > 
+> 
+> It won't work perfectly fine in a year when the tunable is removed 
+> completely and the code that was writing OOM_DISABLE to /proc/pid/oom_adj 
+> just fails and the task that was supposed to be prevented from being 
+> killed at all costs may now be killed.  The printk_once() over the past 
+> year didn't get that fixed up like the other applications I mentioned did, 
+> so we need to attract more attention.
+> 
+> > I still think reverting this patch is the right thing to do.
+> > 
+> 
+> Reverting the patch is ludicrous, otherwise there is little possibility 
+> that the remaining users of the deprecated interface will change if they 
+> haven't done so already.  I'm perfectly happy with changing it to a 
+> different style of warning other than using WARN_ONCE() like I've already 
+> said.  That doesn't require a revert.
+> 
+> I'm fine with this patch if Linus would like to apply it.
+> 
+> 
+> oom: change warning for deprecated oom_adj to avoid WARN_ONCE()
+> 
+> WARN_ONCE() emits a stack trace to the kernel log which leads userspace 
+> parsers to interpret it as being a serious error or malfunction within the 
+> kernel.  Change the warning to appear more like a lockdep warning while 
+> still trying to preserve the intention of be8f684d73d8 (oom: make 
+> deprecated use of oom_adj more verbose) to attract more attention to the 
+> use of a deprecated interface.
+> 
+> Reported-by: Andi Kleen <andi@firstfloor.org>
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  fs/proc/base.c |   13 ++++++++++---
+>  1 files changed, 10 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -1066,6 +1066,7 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
+>  	char buffer[PROC_NUMBUF];
+>  	int oom_adjust;
+>  	unsigned long flags;
+> +	static bool warning_printed;
+>  	int err;
+>  
+>  	memset(buffer, 0, sizeof(buffer));
+> @@ -1118,9 +1119,15 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
+>  	 * Warn that /proc/pid/oom_adj is deprecated, see
+>  	 * Documentation/feature-removal-schedule.txt.
+>  	 */
+> -	WARN_ONCE(1, "%s (%d): /proc/%d/oom_adj is deprecated, please use /proc/%d/oom_score_adj instead.\n",
+> -		  current->comm, task_pid_nr(current), task_pid_nr(task),
+> -		  task_pid_nr(task));
+> +	if (!warning_printed) {
+> +		warning_printed = true;
+> +		printk("\n===============================================================================\n");
+> +		printk("%s (%d): /proc/%d/oom_adj is deprecated, please use /proc/%d/oom_score_adj instead.\n",
+> +			current->comm, task_pid_nr(current), task_pid_nr(task),
+> +			task_pid_nr(task));
+> +		printk("===============================================================================\n\n");
 
-Signed-off-by: Joe Jin <joe.jin@oracle.com>
-Cc: Daniel Stodden <daniel.stodden@citrix.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Annie Li <annie.li@oracle.com>
-Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>
----
- drivers/block/xen-blkback/xenbus.c |  203 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 182 insertions(+), 21 deletions(-)
+You're missing the KERN_WARNING level. Why don't you use pr_warn_once +
+pr_cont_once? No need for the warning_printed too, it gets defined in
+another scope by the pr_warn_once macro automatically.
 
-diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
-index 3f129b4..32d4c3c 100644
---- a/drivers/block/xen-blkback/xenbus.c
-+++ b/drivers/block/xen-blkback/xenbus.c
-@@ -25,16 +25,25 @@ struct backend_info {
- 	struct xenbus_device	*dev;
- 	struct xen_blkif	*blkif;
- 	struct xenbus_watch	backend_watch;
-+	struct xenbus_watch	shutdown_watch;
- 	unsigned		major;
- 	unsigned		minor;
- 	char			*mode;
-+	bool			group_added;
-+	char			*nodename;
-+	atomic_t		refcnt;
-+	pid_t			kthread_pid;
-+	bool			shutdown_signalled;
- };
- 
-+DEFINE_SEMAPHORE(blkback_dev_sem);
-+
- static struct kmem_cache *xen_blkif_cachep;
- static void connect(struct backend_info *);
- static int connect_ring(struct backend_info *);
- static void backend_changed(struct xenbus_watch *, const char **,
- 			    unsigned int);
-+static void xen_vbd_free(struct xen_vbd *vbd);
- 
- struct xenbus_device *xen_blkbk_xenbus(struct backend_info *be)
- {
-@@ -99,6 +108,16 @@ static void xen_update_blkif_status(struct xen_blkif *blkif)
- 		blkif->xenblkd = NULL;
- 		xenbus_dev_error(blkif->be->dev, err, "start xenblkd");
- 	}
-+
-+	blkif->be->kthread_pid = blkif->xenblkd->pid;
-+	atomic_inc(&blkif->be->refcnt);
-+
-+	err = xenbus_printf(XBT_NIL, blkif->be->dev->nodename, "kthread-pid",
-+			    "%d", blkif->xenblkd->pid);
-+	if (err) {
-+		xenbus_dev_error(blkif->be->dev, err, "write kthread-pid");
-+		return;
-+	}
- }
- 
- static struct xen_blkif *xen_blkif_alloc(domid_t domid)
-@@ -213,11 +232,6 @@ static int xen_blkif_map(struct xen_blkif *blkif, unsigned long shared_page,
- 
- static void xen_blkif_disconnect(struct xen_blkif *blkif)
- {
--	if (blkif->xenblkd) {
--		kthread_stop(blkif->xenblkd);
--		blkif->xenblkd = NULL;
--	}
--
- 	atomic_dec(&blkif->refcnt);
- 	wait_event(blkif->waiting_to_free, atomic_read(&blkif->refcnt) == 0);
- 	atomic_inc(&blkif->refcnt);
-@@ -296,6 +310,7 @@ VBD_SHOW(mode, "%s\n", be->mode);
- int xenvbd_sysfs_addif(struct xenbus_device *dev)
- {
- 	int error;
-+	struct backend_info *be = dev_get_drvdata(&dev->dev);
- 
- 	error = device_create_file(&dev->dev, &dev_attr_physical_device);
- 	if (error)
-@@ -309,6 +324,8 @@ int xenvbd_sysfs_addif(struct xenbus_device *dev)
- 	if (error)
- 		goto fail3;
- 
-+	be->group_added = true;
-+
- 	return 0;
- 
- fail3:	sysfs_remove_group(&dev->dev.kobj, &xen_vbdstat_group);
-@@ -319,11 +336,73 @@ fail1:	device_remove_file(&dev->dev, &dev_attr_physical_device);
- 
- void xenvbd_sysfs_delif(struct xenbus_device *dev)
- {
-+	struct backend_info *be = dev_get_drvdata(&dev->dev);
-+	if (!be->group_added)
-+		return;
- 	sysfs_remove_group(&dev->dev.kobj, &xen_vbdstat_group);
- 	device_remove_file(&dev->dev, &dev_attr_mode);
- 	device_remove_file(&dev->dev, &dev_attr_physical_device);
-+	be->group_added = false;
-+}
-+
-+static int xenvbd_kthread_remove(struct backend_info *be)
-+{
-+	struct xen_blkif *blkif = be->blkif;
-+
-+	if (!blkif || !blkif->xenblkd)
-+		return 0;
-+
-+	blkif->remove_requested = true;
-+	wake_up_process(blkif->xenblkd);
-+
-+	return -EBUSY;
-+}
-+
-+static void xenvbd_signal_shutdown(struct backend_info *be)
-+{
-+	int err;
-+
-+	down(&blkback_dev_sem);
-+
-+	if (be->shutdown_signalled)
-+		goto out;
-+
-+	err = xenbus_write(XBT_NIL, be->nodename, "shutdown-done", "");
-+	if (err)
-+		WPRINTK("Error writing shutdown-done for %s: %d\n",
-+			be->nodename, err);
-+
-+	if (be->dev)
-+		xenbus_switch_state(be->dev, XenbusStateClosed);
-+
-+	be->shutdown_signalled = true;
-+
-+ out:
-+	up(&blkback_dev_sem);
- }
- 
-+static void backend_release(struct backend_info *be)
-+{
-+	struct xen_blkif *blkif = be->blkif;
-+
-+	if (current->pid == be->kthread_pid)
-+		xenvbd_signal_shutdown(be);
-+
-+	if (!atomic_dec_and_test(&be->refcnt))
-+		return;
-+
-+	xenvbd_signal_shutdown(be);
-+
-+	if (blkif) {
-+		xen_blkif_disconnect(blkif);
-+		xen_vbd_free(&blkif->vbd);
-+		xen_blkif_free(blkif);
-+		be->blkif = NULL;
-+	}
-+
-+	kfree(be->nodename);
-+	kfree(be);
-+}
- 
- static void xen_vbd_free(struct xen_vbd *vbd)
- {
-@@ -332,6 +411,12 @@ static void xen_vbd_free(struct xen_vbd *vbd)
- 	vbd->bdev = NULL;
- }
- 
-+void xen_vbd_sync(struct xen_vbd *vbd)
-+{
-+	if (vbd->bdev)
-+		fsync_bdev(vbd->bdev);
-+}
-+
- static int xen_vbd_create(struct xen_blkif *blkif, blkif_vdev_t handle,
- 			  unsigned major, unsigned minor, int readonly,
- 			  int cdrom)
-@@ -384,8 +469,9 @@ static int xen_blkbk_remove(struct xenbus_device *dev)
- 
- 	DPRINTK("");
- 
--	if (be->major || be->minor)
--		xenvbd_sysfs_delif(dev);
-+	down(&blkback_dev_sem);
-+	be->dev = NULL;
-+	up(&blkback_dev_sem);
- 
- 	if (be->backend_watch.node) {
- 		unregister_xenbus_watch(&be->backend_watch);
-@@ -393,18 +479,73 @@ static int xen_blkbk_remove(struct xenbus_device *dev)
- 		be->backend_watch.node = NULL;
- 	}
- 
--	if (be->blkif) {
--		xen_blkif_disconnect(be->blkif);
--		xen_vbd_free(&be->blkif->vbd);
--		xen_blkif_free(be->blkif);
--		be->blkif = NULL;
-+	if (be->shutdown_watch.node) {
-+		unregister_xenbus_watch(&be->shutdown_watch);
-+		kfree(be->shutdown_watch.node);
-+		be->shutdown_watch.node = NULL;
- 	}
- 
--	kfree(be);
-+	if (xenvbd_kthread_remove(be))
-+		WPRINTK("BAD REMOVE REQUEST for %s\n", be->nodename);
-+
-+	xenvbd_sysfs_delif(dev);
-+	backend_release(be);
-+
- 	dev_set_drvdata(&dev->dev, NULL);
-+
- 	return 0;
- }
- 
-+/*
-+ * called by kthread when closing
-+ */
-+void xen_blkback_close(struct xen_blkif *blkif)
-+{
-+	xen_blkif_disconnect(blkif);
-+	xen_vbd_sync(&blkif->vbd);
-+	blkif->remove_requested = false;
-+
-+	down(&blkback_dev_sem);
-+	if (blkif->be->dev)
-+		xenvbd_sysfs_delif(blkif->be->dev);
-+	up(&blkback_dev_sem);
-+
-+	backend_release(blkif->be);
-+	blkif->xenblkd = NULL;
-+}
-+
-+static void xenvbd_start_shutdown(struct xenbus_watch *watch,
-+			   const char **vec, unsigned int length)
-+{
-+	int err;
-+	char *type;
-+	unsigned int len;
-+	struct backend_info *be
-+		= container_of(watch, struct backend_info, shutdown_watch);
-+	struct xenbus_device *dev = be->dev;
-+
-+	if (be->shutdown_signalled)
-+		return;
-+
-+	type = xenbus_read(XBT_NIL, dev->nodename, "shutdown-request", &len);
-+	err  = (IS_ERR(type) ? PTR_ERR(type) : 0);
-+
-+	if (XENBUS_EXIST_ERR(err))
-+		return;
-+
-+	if (err) {
-+		xenbus_dev_fatal(dev, err, "reading shutdown-request");
-+		return;
-+	}
-+
-+	xenbus_switch_state(dev, XenbusStateClosing);
-+
-+	if (len == sizeof("force") - 1 && !memcmp(type, "force", len))
-+		if (!xenvbd_kthread_remove(be))
-+			xenvbd_signal_shutdown(be); /* shutdown immediately */
-+
-+	kfree(type);
-+}
- int xen_blkbk_flush_diskcache(struct xenbus_transaction xbt,
- 			      struct backend_info *be, int state)
- {
-@@ -437,6 +578,15 @@ static int xen_blkbk_probe(struct xenbus_device *dev,
- 	}
- 	be->dev = dev;
- 	dev_set_drvdata(&dev->dev, be);
-+	atomic_set(&be->refcnt, 1);
-+
-+	be->nodename = kasprintf(GFP_KERNEL, "%s", dev->nodename);
-+	if (!be->nodename) {
-+		xenbus_dev_fatal(dev, -ENOMEM,
-+				 "allocating backend structure");
-+		kfree(be);
-+		return -ENOMEM;
-+	}
- 
- 	be->blkif = xen_blkif_alloc(dev->otherend_id);
- 	if (IS_ERR(be->blkif)) {
-@@ -454,6 +604,12 @@ static int xen_blkbk_probe(struct xenbus_device *dev,
- 	if (err)
- 		goto fail;
- 
-+	err = xenbus_watch_pathfmt(dev, &be->shutdown_watch,
-+				   xenvbd_start_shutdown, "%s/%s",
-+				   dev->nodename, "shutdown-request");
-+	if (err)
-+		goto fail;
-+
- 	err = xenbus_switch_state(dev, XenbusStateInitWait);
- 	if (err)
- 		goto fail;
-@@ -567,13 +723,17 @@ static void frontend_changed(struct xenbus_device *dev,
- 	struct backend_info *be = dev_get_drvdata(&dev->dev);
- 	int err;
- 
--	DPRINTK("%s", xenbus_strstate(frontend_state));
-+	DPRINTK("%s: %s", dev->nodename, xenbus_strstate(frontend_state));
- 
- 	switch (frontend_state) {
- 	case XenbusStateInitialising:
- 		if (dev->state == XenbusStateClosed) {
- 			pr_info(DRV_PFX "%s: prepare for reconnect\n",
- 				dev->nodename);
-+
-+			xenbus_rm(XBT_NIL, dev->nodename, "shutdown-done");
-+			be->shutdown_signalled = false;
-+
- 			xenbus_switch_state(dev, XenbusStateInitWait);
- 		}
- 		break;
-@@ -590,7 +750,7 @@ static void frontend_changed(struct xenbus_device *dev,
- 
- 		/*
- 		 * Enforce precondition before potential leak point.
--		 * blkif_disconnect() is idempotent.
-+		 * xen_blkif_disconnect() is idempotent.
- 		 */
- 		xen_blkif_disconnect(be->blkif);
- 
-@@ -601,17 +761,16 @@ static void frontend_changed(struct xenbus_device *dev,
- 		break;
- 
- 	case XenbusStateClosing:
--		xen_blkif_disconnect(be->blkif);
- 		xenbus_switch_state(dev, XenbusStateClosing);
- 		break;
- 
- 	case XenbusStateClosed:
--		xenbus_switch_state(dev, XenbusStateClosed);
--		if (xenbus_dev_is_online(dev))
--			break;
--		/* fall through if not online */
-+		if (!xenvbd_kthread_remove(be))
-+			xenvbd_signal_shutdown(be);
-+		break;
-+
- 	case XenbusStateUnknown:
--		/* implies blkif_disconnect() via blkback_remove() */
-+		/* implies xen_blkif_disconnect() via blkback_remove() */
- 		device_unregister(&dev->dev);
- 		break;
- 
-@@ -620,6 +779,8 @@ static void frontend_changed(struct xenbus_device *dev,
- 				 frontend_state);
- 		break;
- 	}
-+
-+	DPRINTK("%s: %s", dev->nodename, xenbus_strstate(dev->state));
- }
- 
- 
-
+-- 
+Regards/Gruss,
+    Boris.
