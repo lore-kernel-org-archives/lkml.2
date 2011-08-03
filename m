@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292Ab1HCXa2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:30:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33936 "EHLO mx2.suse.de"
+	id S932286Ab1HCXcF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:32:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34241 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756234Ab1HCX31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:29:27 -0400
+	id S1756349Ab1HCXbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:31:12 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:52 2011
-Message-Id: <20110803221252.182252047@clark.kroah.org>
+Message-Id: <20110803221252.604974758@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:41 -0700
+Date: Wed, 03 Aug 2011 15:01:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [081/102] proc: fix a race in do_io_accounting()
+        Sven Neumann <s.neumann@raumfeld.com>, linux-wireless@vger.kernel.org,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Daniel Mack <daniel@zonque.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [085/102] cfg80211: really ignore the regulatory request
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,77 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Sven Neumann <s.neumann@raumfeld.com>
 
-commit 293eb1e7772b25a93647c798c7b89bf26c2da2e0 upstream.
+commit a203c2aa4cefccb879c879b8e1cad1a09a679e55 upstream.
 
-If an inode's mode permits opening /proc/PID/io and the resulting file
-descriptor is kept across execve() of a setuid or similar binary, the
-ptrace_may_access() check tries to prevent using this fd against the
-task with escalated privileges.
+At the beginning of wiphy_update_regulatory() a check is performed
+whether the request is to be ignored. Then the request is sent to
+the driver nevertheless. This happens even if last_request points
+to NULL, leading to a crash in the driver:
 
-Unfortunately, there is a race in the check against execve().  If
-execve() is processed after the ptrace check, but before the actual io
-information gathering, io statistics will be gathered from the
-privileged process.  At least in theory this might lead to gathering
-sensible information (like ssh/ftp password length) that wouldn't be
-available otherwise.
+ [<bf01d864>] (lbs_set_11d_domain_info+0x28/0x1e4 [libertas]) from [<c03b714c>] (wiphy_update_regulatory+0x4d0/0x4f4)
+ [<c03b714c>] (wiphy_update_regulatory+0x4d0/0x4f4) from [<c03b4008>] (wiphy_register+0x354/0x420)
+ [<c03b4008>] (wiphy_register+0x354/0x420) from [<bf01b17c>] (lbs_cfg_register+0x80/0x164 [libertas])
+ [<bf01b17c>] (lbs_cfg_register+0x80/0x164 [libertas]) from [<bf020e64>] (lbs_start_card+0x20/0x88 [libertas])
+ [<bf020e64>] (lbs_start_card+0x20/0x88 [libertas]) from [<bf02cbd8>] (if_sdio_probe+0x898/0x9c0 [libertas_sdio])
 
-Holding task->signal->cred_guard_mutex while gathering the io
-information should protect against the race.
+Fix this by returning early. Also remove the out: label as it is
+not any longer needed.
 
-The order of locking is similar to the one inside of ptrace_attach():
-first goes cred_guard_mutex, then lock_task_sighand().
-
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sven Neumann <s.neumann@raumfeld.com>
+Cc: linux-wireless@vger.kernel.org
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Cc: Daniel Mack <daniel@zonque.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/base.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ net/wireless/reg.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2707,9 +2707,16 @@ static int do_io_accounting(struct task_
- {
- 	struct task_io_accounting acct = task->ioac;
- 	unsigned long flags;
-+	int result;
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -1125,12 +1125,13 @@ void wiphy_update_regulatory(struct wiph
+ 	enum ieee80211_band band;
  
--	if (!ptrace_may_access(task, PTRACE_MODE_READ))
--		return -EACCES;
-+	result = mutex_lock_killable(&task->signal->cred_guard_mutex);
-+	if (result)
-+		return result;
+ 	if (ignore_reg_update(wiphy, initiator))
+-		goto out;
++		return;
 +
-+	if (!ptrace_may_access(task, PTRACE_MODE_READ)) {
-+		result = -EACCES;
-+		goto out_unlock;
-+	}
- 
- 	if (whole && lock_task_sighand(task, &flags)) {
- 		struct task_struct *t = task;
-@@ -2720,7 +2727,7 @@ static int do_io_accounting(struct task_
- 
- 		unlock_task_sighand(task, &flags);
+ 	for (band = 0; band < IEEE80211_NUM_BANDS; band++) {
+ 		if (wiphy->bands[band])
+ 			handle_band(wiphy, band, initiator);
  	}
--	return sprintf(buffer,
-+	result = sprintf(buffer,
- 			"rchar: %llu\n"
- 			"wchar: %llu\n"
- 			"syscr: %llu\n"
-@@ -2735,6 +2742,9 @@ static int do_io_accounting(struct task_
- 			(unsigned long long)acct.read_bytes,
- 			(unsigned long long)acct.write_bytes,
- 			(unsigned long long)acct.cancelled_write_bytes);
-+out_unlock:
-+	mutex_unlock(&task->signal->cred_guard_mutex);
-+	return result;
- }
- 
- static int proc_tid_io_accounting(struct task_struct *task, char *buffer)
+-out:
++
+ 	reg_process_beacons(wiphy);
+ 	reg_process_ht_flags(wiphy);
+ 	if (wiphy->reg_notifier)
 
 
