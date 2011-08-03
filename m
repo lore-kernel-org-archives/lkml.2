@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab1HCXhr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:37:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33943 "EHLO mx2.suse.de"
+	id S1756235Ab1HCX31 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:29:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33799 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932142Ab1HCX3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:29:30 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:52 2011
-Message-Id: <20110803221252.283200933@clark.kroah.org>
+	id S932139Ab1HCX2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:28:35 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:50 2011
+Message-Id: <20110803221250.782719100@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:01:42 -0700
+Date: Wed, 03 Aug 2011 15:01:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alek Du <alek.du@intel.com>, Alan Cox <alan@linux.intel.com>
-Subject: [082/102] n_gsm: fix the wrong FCS handling
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Laight <David.Laight@ACULAB.COM>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Darren Hart <darren.hart@intel.com>
+Subject: [067/102] mm/futex: fix futex writes on archs with SW tracking of dirty & young
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +28,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Du, Alek" <alek.du@intel.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit f086ced17191fa0c5712539d2b680eae3dc972a1 upstream.
+commit 2efaca927f5cd7ecd0f1554b8f9b6a9a2c329c03 upstream.
 
-FCS could be GSM0_SOF, so will break state machine...
+I haven't reproduced it myself but the fail scenario is that on such
+machines (notably ARM and some embedded powerpc), if you manage to hit
+that futex path on a writable page whose dirty bit has gone from the PTE,
+you'll livelock inside the kernel from what I can tell.
 
-[This byte isn't quoted in any way so a SOF here doesn't imply an error
- occurred.]
+It will go in a loop of trying the atomic access, failing, trying gup to
+"fix it up", getting succcess from gup, go back to the atomic access,
+failing again because dirty wasn't fixed etc...
 
-Signed-off-by: Alek Du <alek.du@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-[Trivial but best backported once its in 3.1rc I think]
+So I think you essentially hang in the kernel.
+
+The scenario is probably rare'ish because affected architecture are
+embedded and tend to not swap much (if at all) so we probably rarely hit
+the case where dirty is missing or young is missing, but I think Shan has
+a piece of SW that can reliably reproduce it using a shared writable
+mapping & fork or something like that.
+
+On archs who use SW tracking of dirty & young, a page without dirty is
+effectively mapped read-only and a page without young unaccessible in the
+PTE.
+
+Additionally, some architectures might lazily flush the TLB when relaxing
+write protection (by doing only a local flush), and expect a fault to
+invalidate the stale entry if it's still present on another processor.
+
+The futex code assumes that if the "in_atomic()" access -EFAULT's, it can
+"fix it up" by causing get_user_pages() which would then be equivalent to
+taking the fault.
+
+However that isn't the case.  get_user_pages() will not call
+handle_mm_fault() in the case where the PTE seems to have the right
+permissions, regardless of the dirty and young state.  It will eventually
+update those bits ...  in the struct page, but not in the PTE.
+
+Additionally, it will not handle the lazy TLB flushing that can be
+required by some architectures in the fault case.
+
+Basically, gup is the wrong interface for the job.  The patch provides a
+more appropriate one which boils down to just calling handle_mm_fault()
+since what we are trying to do is simulate a real page fault.
+
+The futex code currently attempts to write to user memory within a
+pagefault disabled section, and if that fails, tries to fix it up using
+get_user_pages().
+
+This doesn't work on archs where the dirty and young bits are maintained
+by software, since they will gate access permission in the TLB, and will
+not be updated by gup().
+
+In addition, there's an expectation on some archs that a spurious write
+fault triggers a local TLB flush, and that is missing from the picture as
+well.
+
+I decided that adding those "features" to gup() would be too much for this
+already too complex function, and instead added a new simpler
+fixup_user_fault() which is essentially a wrapper around handle_mm_fault()
+which the futex code can call.
+
+[akpm@linux-foundation.org: coding-style fixes]
+[akpm@linux-foundation.org: fix some nits Darren saw, fiddle comment layout]
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Shan Hai <haishan.bai@gmail.com>
+Tested-by: Shan Hai <haishan.bai@gmail.com>
+Cc: David Laight <David.Laight@ACULAB.COM>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Darren Hart <darren.hart@intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/tty/n_gsm.c |    4 ----
- 1 file changed, 4 deletions(-)
+ include/linux/mm.h |    2 +
+ kernel/futex.c     |    4 +--
+ mm/memory.c        |   58 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 61 insertions(+), 3 deletions(-)
 
---- a/drivers/tty/n_gsm.c
-+++ b/drivers/tty/n_gsm.c
-@@ -1823,10 +1823,6 @@ static void gsm0_receive(struct gsm_mux
- 		break;
- 	case GSM_FCS:		/* FCS follows the packet */
- 		gsm->received_fcs = c;
--		if (c == GSM0_SOF) {
--			gsm->state = GSM_SEARCH;
--			break;
--		}
- 		gsm_queue(gsm);
- 		gsm->state = GSM_SSOF;
- 		break;
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -985,6 +985,8 @@ int get_user_pages(struct task_struct *t
+ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 			struct page **pages);
+ struct page *get_dump_page(unsigned long addr);
++extern int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
++			    unsigned long address, unsigned int fault_flags);
+ 
+ extern int try_to_release_page(struct page * page, gfp_t gfp_mask);
+ extern void do_invalidatepage(struct page *page, unsigned long offset);
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -355,8 +355,8 @@ static int fault_in_user_writeable(u32 _
+ 	int ret;
+ 
+ 	down_read(&mm->mmap_sem);
+-	ret = get_user_pages(current, mm, (unsigned long)uaddr,
+-			     1, 1, 0, NULL, NULL);
++	ret = fixup_user_fault(current, mm, (unsigned long)uaddr,
++			       FAULT_FLAG_WRITE);
+ 	up_read(&mm->mmap_sem);
+ 
+ 	return ret < 0 ? ret : 0;
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1816,7 +1816,63 @@ next_page:
+ }
+ EXPORT_SYMBOL(__get_user_pages);
+ 
+-/**
++/*
++ * fixup_user_fault() - manually resolve a user page fault
++ * @tsk:	the task_struct to use for page fault accounting, or
++ *		NULL if faults are not to be recorded.
++ * @mm:		mm_struct of target mm
++ * @address:	user address
++ * @fault_flags:flags to pass down to handle_mm_fault()
++ *
++ * This is meant to be called in the specific scenario where for locking reasons
++ * we try to access user memory in atomic context (within a pagefault_disable()
++ * section), this returns -EFAULT, and we want to resolve the user fault before
++ * trying again.
++ *
++ * Typically this is meant to be used by the futex code.
++ *
++ * The main difference with get_user_pages() is that this function will
++ * unconditionally call handle_mm_fault() which will in turn perform all the
++ * necessary SW fixup of the dirty and young bits in the PTE, while
++ * handle_mm_fault() only guarantees to update these in the struct page.
++ *
++ * This is important for some architectures where those bits also gate the
++ * access permission to the page because they are maintained in software.  On
++ * such architectures, gup() will not be enough to make a subsequent access
++ * succeed.
++ *
++ * This should be called with the mm_sem held for read.
++ */
++int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
++		     unsigned long address, unsigned int fault_flags)
++{
++	struct vm_area_struct *vma;
++	int ret;
++
++	vma = find_extend_vma(mm, address);
++	if (!vma || address < vma->vm_start)
++		return -EFAULT;
++
++	ret = handle_mm_fault(mm, vma, address, fault_flags);
++	if (ret & VM_FAULT_ERROR) {
++		if (ret & VM_FAULT_OOM)
++			return -ENOMEM;
++		if (ret & (VM_FAULT_HWPOISON | VM_FAULT_HWPOISON_LARGE))
++			return -EHWPOISON;
++		if (ret & VM_FAULT_SIGBUS)
++			return -EFAULT;
++		BUG();
++	}
++	if (tsk) {
++		if (ret & VM_FAULT_MAJOR)
++			tsk->maj_flt++;
++		else
++			tsk->min_flt++;
++	}
++	return 0;
++}
++
++/*
+  * get_user_pages() - pin user pages in memory
+  * @tsk:	the task_struct to use for page fault accounting, or
+  *		NULL if faults are not to be recorded.
 
 
