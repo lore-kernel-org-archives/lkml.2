@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935Ab1HCHLA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 03:11:00 -0400
-Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:46582 "EHLO
-	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750901Ab1HCHK5 (ORCPT
+	id S1751998Ab1HCHRK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 03:17:10 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63694 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849Ab1HCHRG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 03:10:57 -0400
-X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Aug 2011 03:10:57 EDT
-Subject: Re: [PATCH] Staging: comedi: fix printk issue in pcl818.c
-From: Joe Perches <joe@perches.com>
-To: Ravishankar <ravishankarkm32@gmail.com>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>
-In-Reply-To: <1312349090-31007-1-git-send-email-ravishankarkm32@gmail.com>
-References: <[PATCH]Staging: Comedi: fix printk issues in pcl818.c>
-	 <1312349090-31007-1-git-send-email-ravishankarkm32@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 02 Aug 2011 23:10:53 -0700
-Message-ID: <1312351854.26546.9.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Aug 2011 03:17:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110802075735.GA3466@osiris.boeblingen.de.ibm.com>
+References: <20110802075735.GA3466@osiris.boeblingen.de.ibm.com>
+Date: Wed, 3 Aug 2011 09:17:04 +0200
+X-Google-Sender-Auth: LIpUecOKEuYAoSvl6nOlGbs9aMA
+Message-ID: <CAMuHMdXp+B7SJCy5yOQwdxWK7dkbiFVUp_QAtSyxMV8DYUHwfg@mail.gmail.com>
+Subject: Re: [PATCH] nfs: add missing prefetch.h include
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Fred Isaman <iisaman@citi.umich.edu>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-03 at 10:54 +0530, Ravishankar wrote:
-> From: Ravishankar <ravi.shankar@greenturtles.in>
-> This is a patch to the pcl818.c file that fixes up a printk warning found by the checkpatch.pl tool
+On Tue, Aug 2, 2011 at 09:57, Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
+> From: Heiko Carstens <heiko.carstens@de.ibm.com>
+>
+> Fix this compile error on s390:
+>
+>  CC [M]  fs/nfs/blocklayout/blocklayout.o
+> fs/nfs/blocklayout/blocklayout.c: In function 'bl_end_io_read':
+> fs/nfs/blocklayout/blocklayout.c:201:4: error: implicit declaration of function 'prefetchw'
+>
+> Introduced with 9549ec01 "pnfsblock: bl_read_pagelist".
+>
+> Cc: Fred Isaman <iisaman@citi.umich.edu>
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-This patch does a lot more than fix a printk warning.
+M68k also needs this, so
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Please make your patch descriptions match your patch.
+> ---
+>  fs/nfs/blocklayout/blocklayout.c |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> --- a/fs/nfs/blocklayout/blocklayout.c
+> +++ b/fs/nfs/blocklayout/blocklayout.c
+> @@ -36,6 +36,7 @@
+>  #include <linux/namei.h>
+>  #include <linux/bio.h>         /* struct bio */
+>  #include <linux/buffer_head.h> /* various write calls */
+> +#include <linux/prefetch.h>
+>
+>  #include "blocklayout.h"
 
->  drivers/staging/comedi/drivers/pcl818.c |  118 +++++++++++++++----------------
+Gr{oetje,eeting}s,
 
-> @@ -1461,7 +1452,7 @@ static int ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
->  	struct comedi_cmd *cmd = &s->async->cmd;
->  	int retval;
->  
-> -	printk("pcl818_ai_cmd()\n");
-> +	dev_dbg(dev->hw_dev "pcl818_ai_cmd()\n");
+                        Geert
 
-Compile your patches _before_ sending them.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
