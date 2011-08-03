@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab1HCLgO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 07:36:14 -0400
-Received: from bipbip.grupopie.com ([195.23.16.24]:42996 "EHLO
-	bipbip.grupopie.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753577Ab1HCLgH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 07:36:07 -0400
-Message-ID: <4E3932A4.7030101@grupopie.com>
-Date: Wed, 03 Aug 2011 12:36:04 +0100
-From: Paulo Marques <pmarques@grupopie.com>
-Organization: Grupo PIE
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1754005Ab1HCLhj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 07:37:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57404 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753971Ab1HCLhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 07:37:34 -0400
+Date: Wed, 3 Aug 2011 13:37:06 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 8/8] mm: vmscan: Do not writeback filesystem pages from
+ kswapd
+Message-ID: <20110803113706.GF27199@redhat.com>
+References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
+ <1311265730-5324-9-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-To: Thomas Meyer <thomas@m3y3r.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] Use resource_size()
-References: <1312303347.2629.17.camel@localhost.localdomain>
-In-Reply-To: <1312303347.2629.17.camel@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311265730-5324-9-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Meyer wrote:
->  Use resource_size function on resource object
->  instead of explicit computation.
+On Thu, Jul 21, 2011 at 05:28:50PM +0100, Mel Gorman wrote:
+> Assuming that flusher threads will always write back dirty pages promptly
+> then it is always faster for reclaimers to wait for flushers. This patch
+> prevents kswapd writing back any filesystem pages.
 > 
->  The semantic patch that makes this output is available
->  in scripts/coccinelle/api/resource_size.cocci.
-> 
->  More information about semantic patching is available at
->  http://coccinelle.lip6.fr/
-> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-[...]
+Relying on the flushers may mean that every dirty page in the system
+has to be written back before the pages from the zone of interest are
+clean.
 
-> diff -u -p a/drivers/xen/xen-pciback/conf_space_header.c b/drivers/xen/xen-pciback/conf_space_header.c
-> --- a/drivers/xen/xen-pciback/conf_space_header.c 2011-07-26 00:46:09.730171570 +0200
-> +++ b/drivers/xen/xen-pciback/conf_space_header.c 2011-08-01 23:02:39.180421787 +0200
-> @@ -187,7 +187,7 @@ static inline void read_dev_bar(struct p
->  
->  	bar_info->val = res[pos].start |
->  			(res[pos].flags & PCI_REGION_FLAG_MASK);
-> -	bar_info->len_val = res[pos].end - res[pos].start + 1;
-> +	bar_info->len_val = resource_size(res);
+De-facto we have only one mechanism to stay on top of the dirty pages
+from a per-zone perspective, and that is single-page writeout from
+reclaim.
 
-I didn't look at the code around this, but looking just at the patch,
-this seems like it should be:
+While we all agree that this sucks, we can not remove it unless we
+have a replacement that makes zones reclaimable in a reasonable time
+frame (or keep them reclaimable in the first place, what per-zone
+dirty limits attempt to do).
 
-bar_info->len_val = resource_size(&res[pos]);
+As such, please include
 
-or something like that...
-
--- 
-Paulo Marques - www.grupopie.com
-
-"As far as we know, our computer has never had an undetected error."
-Weisert
+Nacked-by: Johannes Weiner <jweiner@redhat.com>
