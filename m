@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab1HCSmK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 14:42:10 -0400
-Received: from lucidpixels.com ([72.73.18.11]:37731 "EHLO lucidpixels.com"
+	id S1755151Ab1HCSmz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 14:42:55 -0400
+Received: from mga02.intel.com ([134.134.136.20]:38873 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755142Ab1HCSmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 14:42:06 -0400
-Date: Wed, 3 Aug 2011 14:42:04 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-cc: Andreas Hartmann <andihartmann@01019freenet.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Ivo van Doorn <IvDoorn@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
-        "users@rt2x00.serialmonkey.com" <users@rt2x00.serialmonkey.com>
-Subject: Re: [PATCH] rt2x00: rt2800: fix zeroing skb structure
-In-Reply-To: <alpine.DEB.2.02.1108031433570.9421@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1108031441140.9421@p34.internal.lan>
-References: <20110730113009.GA2847@redhat.com> <20110730113255.GB2847@redhat.com> <alpine.DEB.2.02.1107300736010.4925@p34.internal.lan> <alpine.DEB.2.02.1107301015340.4925@p34.internal.lan> <alpine.DEB.2.02.1107301031560.4925@p34.internal.lan>
- <4E341DC4.9010107@01019freenet.de> <alpine.DEB.2.02.1107301305590.4925@p34.internal.lan> <20110803160050.GA18882@redhat.com> <alpine.DEB.2.02.1108031328030.9421@p34.internal.lan> <alpine.DEB.2.02.1108031339280.9421@p34.internal.lan> <20110803183349.GA5956@redhat.com>
- <alpine.DEB.2.02.1108031433570.9421@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1753980Ab1HCSmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 14:42:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,311,1309762800"; 
+   d="scan'208";a="35095929"
+Subject: [patch] gma500: restore the wb attribute for the scratch page
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "Cox, Alan" <alan.cox@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        "x86@kernel.org" <x86@kernel.org>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Wed, 03 Aug 2011 11:42:26 -0700
+Message-Id: <1312396946.7884.7.camel@sbsiddha-MOBL3.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Alan, Found this while checking who is using set_pages_uc() in the
+current mainline code. I am also looking to see if we should add bug
+check in __free_page() to avoid this kind of attribute leak or better
+yet, restore the wb attribute in __free_page() itself (perhaps using
+something like arch_free_page).
 
+---
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: gma500: restore the wb attribute for the scratch page
 
-On Wed, 3 Aug 2011, Justin Piszcz wrote:
+psb_driver_load() is changing the scratch_page attribute to uncached.
+Restore the write-back attribute before freeing the page in the unload
+routine.
 
->
->
-> On Wed, 3 Aug 2011, Stanislaw Gruszka wrote:
->
->> On Wed, Aug 03, 2011 at 01:44:10PM -0400, Justin Piszcz wrote:
->>> Tested that patch:
->>>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ drivers/staging/gma500/psb_drv.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Hi,
+diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
+index b2cdce7..cb45ad7 100644
+--- a/drivers/staging/gma500/psb_drv.c
++++ b/drivers/staging/gma500/psb_drv.c
+@@ -285,6 +285,7 @@ static int psb_driver_unload(struct drm_device *dev)
+ 		}
+ 		psb_gtt_takedown(dev);
+ 		if (dev_priv->scratch_page) {
++			set_pages_wb(dev_priv->scratch_page, 1);
+ 			__free_page(dev_priv->scratch_page);
+ 			dev_priv->scratch_page = NULL;
+ 		}
 
-[ 3552.765072] phy0 -> rt2800_txdone: Error - Data pending
-[ 3552.774580] phy0 -> rt2800_txdone: Error - Data pending
-[ 3985.215031] ieee80211 phy0: wlan0: No probe response from AP (hidden) after 500ms, disconnecting.
-[ 3985.262684] cfg80211: Calling CRDA for country: XX
-[ 4011.806042] wlan0: authenticate with (hidden) (try 1)
-[ 4011.807577] wlan0: authenticated
-[ 4011.824287] wlan0: associate with (hidden) (try 1)
-[ 4011.828180] wlan0: RX ReassocResp from (hidden) (capab=0x431 status=0 aid=2)
-[ 4011.828189] wlan0: associated
-[ 4035.209032] ieee80211 phy0: wlan0: No probe response from AP (hidden) after 500ms, disconnecting.
-[ 4035.248719] cfg80211: Calling CRDA to update world regulatory domain
-[ 4061.777466] wlan0: authenticate with (hidden) (try 1)
-[ 4061.786410] wlan0: authenticated
-[ 4061.818460] wlan0: associate with (hidden) (try 1)
-[ 4061.822059] wlan0: RX ReassocResp from (hidden) (capab=0x431 status=0 aid=2)
-[ 4061.822068] wlan0: associated
-
-Saw this on the rt2800usb driver (w/ your patch), is this normal?
-
-Justin.
 
