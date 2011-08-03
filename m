@@ -1,413 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab1HCFZG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 01:25:06 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45198 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754452Ab1HCFZC (ORCPT
+	id S1754660Ab1HCFa5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 01:30:57 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35791 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754604Ab1HCFaw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 01:25:02 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH] Staging: comedi: fix printk issue in pcl818.c
-Date: Wed,  3 Aug 2011 10:54:50 +0530
-Message-Id: <1312349090-31007-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <[PATCH]Staging: Comedi: fix printk issues in pcl818.c>
-References: <[PATCH]Staging: Comedi: fix printk issues in pcl818.c>
+	Wed, 3 Aug 2011 01:30:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110802135512.b49c9de1.akpm@linux-foundation.org>
+References: <20110801180151.GA26686@albatros>
+	<20110801112021.25ec9041.akpm@linux-foundation.org>
+	<20110801190341.GA6898@albatros>
+	<CA+55aFw2kHWY1N=ox1er7c-3WL4OA8x0M=Keu7hvAncKUZd1tQ@mail.gmail.com>
+	<20110802124530.GA2543@albatros>
+	<20110802135512.b49c9de1.akpm@linux-foundation.org>
+Date: Wed, 3 Aug 2011 07:30:52 +0200
+Message-ID: <CAOLZvyErAWMmJoSNw5Bicycc3CByWW024Azp8OL6zHHH-QQH1g@mail.gmail.com>
+Subject: Re: [PATCH] shm: fix a race between shm_exit() and shm_init()
+From: Manuel Lauss <manuel.lauss@googlemail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Vasiliy Kulikov <segoon@openwall.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        Marc Zyngier <maz@misterjones.org>, Ingo Molnar <mingo@elte.hu>,
+        kernel-hardening@lists.openwall.com,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+On Tue, Aug 2, 2011 at 10:55 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 2 Aug 2011 16:45:30 +0400
+> Vasiliy Kulikov <segoon@openwall.com> wrote:
+>
+>> On thread exit shm_exit() is called, it uses shm_ids(ns).rw_mutex.
+>> It is initialized in shm_init(), but it is not called yet at the moment
+>> of kernel threads exit.  Some kernel threads are created in
+>> do_pre_smp_initcalls(), and shm_init() is called in do_initcalls().
+>>
+>> Static initialization of shm_ids(init_ipc_ns).rw_mutex fixes the race.
+>>
+>> It fixes a kernel oops:
+>>
+>> Unable to handle kernel NULL pointer dereference at virtual address 00000000
+>> ...
+>> [<c0320090>] (__down_write_nested+0x88/0xe0) from [<c015da08>] (exit_shm+0x28/0x48)
+>> [<c015da08>] (exit_shm+0x28/0x48) from [<c002e550>] (do_exit+0x59c/0x750)
+>> [<c002e550>] (do_exit+0x59c/0x750) from [<c003eaac>] (____call_usermodehelper+0x13c/0x154)
+>> [<c003eaac>] (____call_usermodehelper+0x13c/0x154) from [<c000f630>] (kernel_thread_exit+0x0/0x8)
+>
+> erm, wait.  There's no reason I can think of why a kernel thread needs
+> to call shm_exit() at all?
+>
+> Is that a regular kernel thread exiting, or is it a
+> call_usermodehelper() worker thread?  It *looks* like
+> ____call_usermodehelper()'s kernel_execve() failed, so
+> ____call_usermodehelper() directly called do_exit().
+>
+> Something's still screwed up here - we shouldn't be trying to run
+> usermode helper applications before shm_init() has been run - usermode
+> helpers can use ipc!
+>
+> Can someone who can reproduce this please work out if and why we're
+> calling call_usermodehelper() under do_pre_smp_initcalls()?  Something
+> like this...
 
-This is a patch to the pcl818.c file that fixes up a printk warning found by the checkpatch.pl tool
+I applied your test patch, but it didn't print anything new (it's a
+single-cpu system).
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/pcl818.c |  118 +++++++++++++++----------------
- 1 files changed, 56 insertions(+), 62 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/pcl818.c b/drivers/staging/comedi/drivers/pcl818.c
-index b45a9bd..18d318c 100644
---- a/drivers/staging/comedi/drivers/pcl818.c
-+++ b/drivers/staging/comedi/drivers/pcl818.c
-@@ -252,8 +252,8 @@ static int pcl818_attach(struct comedi_device *dev,
- static int pcl818_detach(struct comedi_device *dev);
- 
- #ifdef unused
--static int RTC_lock = 0;	/* RTC lock */
--static int RTC_timer_lock = 0;	/* RTC int lock */
-+static int RTC_lock;	/* RTC lock */
-+static int RTC_timer_lock;	/* RTC int lock */
- #endif
- 
- struct pcl818_board {
-@@ -463,10 +463,8 @@ static int pcl818_ao_insn_read(struct comedi_device *dev,
- 	int n;
- 	int chan = CR_CHAN(insn->chanspec);
- 
--	for (n = 0; n < insn->n; n++) {
-+	for (n = 0; n < insn->n; n++)
- 		data[n] = devpriv->ao_readback[chan];
--	}
--
- 	return n;
- }
- 
-@@ -571,9 +569,9 @@ conv_finish:
- 		return IRQ_HANDLED;
- 	}
- 	devpriv->act_chanlist_pos++;
--	if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len) {
-+	if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len)
- 		devpriv->act_chanlist_pos = 0;
--	}
-+
- 	s->async->cur_chan++;
- 	if (s->async->cur_chan >= devpriv->ai_n_chan) {
- 		/*  printk("E"); */
-@@ -645,9 +643,9 @@ static irqreturn_t interrupt_pcl818_ai_mode13_dma(int irq, void *d)
- 		comedi_buf_put(s->async, ptr[bufptr++] >> 4);	/*  get one sample */
- 
- 		devpriv->act_chanlist_pos++;
--		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len) {
-+		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len)
- 			devpriv->act_chanlist_pos = 0;
--		}
-+
- 		s->async->cur_chan++;
- 		if (s->async->cur_chan >= devpriv->ai_n_chan) {
- 			s->async->cur_chan = 0;
-@@ -805,11 +803,10 @@ static irqreturn_t interrupt_pcl818_ai_mode13_fifo(int irq, void *d)
- 		return IRQ_HANDLED;
- 	}
- 
--	if (lo & 2) {
-+	if (lo & 2)
- 		len = 512;
--	} else {
-+	else
- 		len = 0;
--	}
- 
- 	for (i = 0; i < len; i++) {
- 		lo = inb(dev->iobase + PCL818_FI_DATALO);
-@@ -827,9 +824,9 @@ static irqreturn_t interrupt_pcl818_ai_mode13_fifo(int irq, void *d)
- 		comedi_buf_put(s->async, (lo >> 4) | (inb(dev->iobase + PCL818_FI_DATAHI) << 4));	/*  get one sample */
- 
- 		devpriv->act_chanlist_pos++;
--		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len) {
-+		if (devpriv->act_chanlist_pos >= devpriv->act_chanlist_len)
- 			devpriv->act_chanlist_pos = 0;
--		}
-+
- 		s->async->cur_chan++;
- 		if (s->async->cur_chan >= devpriv->ai_n_chan) {
- 			s->async->cur_chan = 0;
-@@ -1009,7 +1006,7 @@ static int pcl818_ai_cmd_mode(int mode, struct comedi_device *dev,
- 	int divisor1 = 0, divisor2 = 0;
- 	unsigned int seglen;
- 
--	printk("pcl818_ai_cmd_mode()\n");
-+	dev_dbg(dev->hw_dev "pcl818_ai_cmd_mode()\n");
- 	if ((!dev->irq) && (!devpriv->dma_rtc)) {
- 		comedi_error(dev, "IRQ not defined!");
- 		return -EINVAL;
-@@ -1112,7 +1109,7 @@ static int pcl818_ai_cmd_mode(int mode, struct comedi_device *dev,
- 		break;
- 	}
- #endif
--	printk("pcl818_ai_cmd_mode() end\n");
-+	dev_dbg(dev->hw_dev "pcl818_ai_cmd_mode() end\n");
- 	return 0;
- }
- 
-@@ -1309,11 +1306,9 @@ static void setup_channel_list(struct comedi_device *dev,
- */
- static int check_single_ended(unsigned int port)
- {
--	if (inb(port + PCL818_STATUS) & 0x20) {
-+	if (inb(port + PCL818_STATUS) & 0x20)
- 		return 1;
--	} else {
--		return 0;
--	}
-+	return 0;
- }
- 
- /*
-@@ -1352,9 +1347,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 	if (!cmd->stop_src || tmp != cmd->stop_src)
- 		err++;
- 
--	if (err) {
-+	if (err)
- 		return 1;
--	}
- 
- 	/* step 2: make sure trigger sources are unique and mutually compatible */
- 
-@@ -1377,9 +1371,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 	if (cmd->stop_src != TRIG_NONE && cmd->stop_src != TRIG_COUNT)
- 		err++;
- 
--	if (err) {
-+	if (err)
- 		return 2;
--	}
- 
- 	/* step 3: make sure arguments are trivially compatible */
- 
-@@ -1421,9 +1414,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 		}
- 	}
- 
--	if (err) {
-+	if (err)
- 		return 3;
--	}
- 
- 	/* step 4: fix up any arguments */
- 
-@@ -1438,9 +1430,8 @@ static int ai_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 			err++;
- 	}
- 
--	if (err) {
-+	if (err)
- 		return 4;
--	}
- 
- 	/* step 5: complain about special chanlist considerations */
- 
-@@ -1461,7 +1452,7 @@ static int ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	struct comedi_cmd *cmd = &s->async->cmd;
- 	int retval;
- 
--	printk("pcl818_ai_cmd()\n");
-+	dev_dbg(dev->hw_dev "pcl818_ai_cmd()\n");
- 	devpriv->ai_n_chan = cmd->chanlist_len;
- 	devpriv->ai_chanlist = cmd->chanlist;
- 	devpriv->ai_flags = cmd->flags;
-@@ -1470,17 +1461,16 @@ static int ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	devpriv->ai_timer1 = 0;
- 	devpriv->ai_timer2 = 0;
- 
--	if (cmd->stop_src == TRIG_COUNT) {
-+	if (cmd->stop_src == TRIG_COUNT)
- 		devpriv->ai_scans = cmd->stop_arg;
--	} else {
-+	else
- 		devpriv->ai_scans = 0;
--	}
- 
- 	if (cmd->scan_begin_src == TRIG_FOLLOW) {	/*  mode 1, 3 */
- 		if (cmd->convert_src == TRIG_TIMER) {	/*  mode 1 */
- 			devpriv->ai_timer1 = cmd->convert_arg;
- 			retval = pcl818_ai_cmd_mode(1, dev, s);
--			printk("pcl818_ai_cmd() end\n");
-+			dev_dbg(dev->hw_dev "pcl818_ai_cmd() end\n");
- 			return retval;
- 		}
- 		if (cmd->convert_src == TRIG_EXT) {	/*  mode 3 */
-@@ -1499,7 +1489,7 @@ static int pcl818_ai_cancel(struct comedi_device *dev,
- 			    struct comedi_subdevice *s)
- {
- 	if (devpriv->irq_blocked > 0) {
--		printk("pcl818_ai_cancel()\n");
-+		dev_dbg(dev->hw_dev "pcl818_ai_cancel()\n");
- 		devpriv->irq_was_now_closed = 1;
- 
- 		switch (devpriv->ai_mode) {
-@@ -1549,7 +1539,7 @@ static int pcl818_ai_cancel(struct comedi_device *dev,
- 	}
- 
- end:
--	printk("pcl818_ai_cancel() end\n");
-+	dev_dbg(dev->hw_dev "pcl818_ai_cancel() end\n");
- 	return 0;
- }
- 
-@@ -1633,11 +1623,11 @@ static int set_rtc_irq_bit(unsigned char bit)
- 	save_flags(flags);
- 	cli();
- 	val = CMOS_READ(RTC_CONTROL);
--	if (bit) {
-+	if (bit)
- 		val |= RTC_PIE;
--	} else {
-+	else
- 		val &= ~RTC_PIE;
--	}
-+
- 	CMOS_WRITE(val, RTC_CONTROL);
- 	CMOS_READ(RTC_INTR_FLAGS);
- 	restore_flags(flags);
-@@ -1754,7 +1744,7 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- 	/* claim our I/O space */
- 	iobase = it->options[0];
--	printk("comedi%d: pcl818:  board=%s, ioport=0x%03lx",
-+	printk(KERN_INFO "comedi%d: pcl818:  board=%s, ioport=0x%03lx",
- 	       dev->minor, this_board->name, iobase);
- 	devpriv->io_range = this_board->io_range;
- 	if ((this_board->fifo) && (it->options[2] == -1)) {	/*  we've board with FIFO and we want to use FIFO */
-@@ -1762,17 +1752,19 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		devpriv->usefifo = 1;
- 	}
- 	if (!request_region(iobase, devpriv->io_range, "pcl818")) {
--		printk("I/O port conflict\n");
-+		printk(KERN_ERR "I/O port conflict\n");
- 		return -EIO;
- 	}
- 
-+	printk(KERN_CONT ", I/O port detected\n");
- 	dev->iobase = iobase;
- 
- 	if (pcl818_check(iobase)) {
--		printk(", I can't detect board. FAIL!\n");
-+		printk(KERN_WARNING "I can't detect board. FAIL!\n");
- 		return -EIO;
- 	}
- 
-+	printk(KERN_CONT ", Board is detected successfully\n");
- 	/* set up some name stuff */
- 	dev->board_name = this_board->name;
- 	/* grab our IRQ */
-@@ -1782,30 +1774,29 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		if (irq) {	/* we want to use IRQ */
- 			if (((1 << irq) & this_board->IRQbits) == 0) {
- 				printk
--				    (", IRQ %u is out of allowed range, DISABLING IT",
-+				printk(KERN_CONT ", IRQ %u is out of allowed range,"
-+				"DISABLING IT",	irq);
- 				irq = 0;	/* Bad IRQ */
- 			} else {
- 				if (request_irq
- 				    (irq, interrupt_pcl818, 0, "pcl818", dev)) {
- 					printk
--					    (", unable to allocate IRQ %u, DISABLING IT",
-+					printk(KERN_CONT ", unable to allocate IRQ %u,"
-+					"DISABLING IT", irq);
- 					irq = 0;	/* Can't use IRQ */
- 				} else {
--					printk(", irq=%u", irq);
-+					printk(KERN_CONT ", irq=%u", irq);
- 				}
- 			}
- 		}
- 	}
- 
- 	dev->irq = irq;
--	if (irq) {
--		devpriv->irq_free = 1;
--	} /* 1=we have allocated irq */
--	else {
-+	if (irq)
-+		devpriv->irq_free = 1;   /* 1=we have allocated irq */
-+	else
- 		devpriv->irq_free = 0;
--	}
-+
- 	devpriv->irq_blocked = 0;	/* number of subdevice which use IRQ */
- 	devpriv->ai_mode = 0;	/* mode of irq */
- 
-@@ -1825,7 +1816,7 @@ static int pcl818_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 				 "pcl818 DMA (RTC)", dev)) {
- 			devpriv->dma_rtc = 1;
- 			devpriv->rtc_irq = RTC_IRQ;
--			printk(", dma_irq=%u", devpriv->rtc_irq);
-+			printk(KERN_CONT ", dma_irq=%u", devpriv->rtc_irq);
- 		} else {
- 			RTC_lock--;
- 			if (RTC_lock == 0) {
-@@ -1850,23 +1841,26 @@ no_rtc:
- 		if (dma < 1)
- 			goto no_dma;	/* DMA disabled */
- 		if (((1 << dma) & this_board->DMAbits) == 0) {
--			printk(", DMA is out of allowed range, FAIL!\n");
-+			printk(KERN_WARNING "DMA is out of allowed range, FAIL!\n");
- 			return -EINVAL;	/* Bad DMA */
- 		}
-+		printk(KERN_CONT ", DMA is in allowed range\n");
- 		ret = request_dma(dma, "pcl818");
- 		if (ret) {
--			printk(", unable to allocate DMA %u, FAIL!\n", dma);
-+			printk(KERN_WARNNG "unable to allocate DMA %u,"
-+			"FAIL!\n", dma);
- 			return -EBUSY;	/* DMA isn't free */
- 		}
-+		printk(KERN_CONT ", DMA allocated successfully\n")
- 		devpriv->dma = dma;
--		printk(", dma=%u", dma);
-+		printk(KERN_CONT ", dma=%u", dma);
- 		pages = 2;	/* we need 16KB */
- 		devpriv->dmabuf[0] = __get_dma_pages(GFP_KERNEL, pages);
- 		if (!devpriv->dmabuf[0]) {
--			printk(", unable to allocate DMA buffer, FAIL!\n");
-+			printk(KERN_WARNING "unable to allocate DMA buffer, FAIL!\n");
- 			/* maybe experiment with try_to_free_pages() will help .... */
- 			return -EBUSY;	/* no buffer :-( */
- 		}
-+		printk(KERN_CONT ", DMA buffer allocated successfully\n");
- 		devpriv->dmapages[0] = pages;
- 		devpriv->hwdmaptr[0] = virt_to_bus((void *)devpriv->dmabuf[0]);
- 		devpriv->hwdmasize[0] = (1 << pages) * PAGE_SIZE;
-@@ -1874,10 +1868,11 @@ no_rtc:
- 		if (devpriv->dma_rtc == 0) {	/*  we must do duble buff :-( */
- 			devpriv->dmabuf[1] = __get_dma_pages(GFP_KERNEL, pages);
- 			if (!devpriv->dmabuf[1]) {
--				printk
--				    (", unable to allocate DMA buffer, FAIL!\n");
-+				printk(KERN_WARNING
-+				"unable to allocate DMA buffer, FAIL!\n");
- 				return -EBUSY;
- 			}
-+			printk(KERN_CONT ", DMA buffer allocated successfully\n");
- 			devpriv->dmapages[1] = pages;
- 			devpriv->hwdmaptr[1] =
- 			    virt_to_bus((void *)devpriv->dmabuf[1]);
-@@ -1901,11 +1896,11 @@ no_dma:
- 		if (check_single_ended(dev->iobase)) {
- 			s->n_chan = this_board->n_aichan_se;
- 			s->subdev_flags |= SDF_COMMON | SDF_GROUND;
--			printk(", %dchans S.E. DAC", s->n_chan);
-+			printk(KERN_CONT ", %dchans S.E. DAC", s->n_chan);
- 		} else {
- 			s->n_chan = this_board->n_aichan_diff;
- 			s->subdev_flags |= SDF_DIFF;
--			printk(", %dchans DIFF DAC", s->n_chan);
-+			printk(KERN_CONT ", %dchans DIFF DAC", s->n_chan);
- 		}
- 		s->maxdata = this_board->ai_maxdata;
- 		s->len_chanlist = s->n_chan;
-@@ -2017,11 +2012,10 @@ no_dma:
- 	}
- 
- 	/* select 1/10MHz oscilator */
--	if ((it->options[3] == 0) || (it->options[3] == 10)) {
-+	if ((it->options[3] == 0) || (it->options[3] == 10))
- 		devpriv->i8253_osc_base = 100;
--	} else {
-+	else
- 		devpriv->i8253_osc_base = 1000;
--	}
- 
- 	/* max sampling speed */
- 	devpriv->ns_min = this_board->ns_min;
-@@ -2033,7 +2027,7 @@ no_dma:
- 
- 	pcl818_reset(dev);
- 
--	printk("\n");
-+	printk(KERN_CONT "\n");
- 
- 	return 0;
- }
--- 
-1.6.5.2
+Linux version 3.0.0-db1200-07143-g9c8749b (mano@flagship) (gcc version
+4.5.2 (Gentoo 4.5.2 p1.1) ) #14 Wed Aug 3 07:23:37 CEST 2011
+CPU revision is: 04030202 (Au1250)
+(PRId 04030202) @ 696.00 MHz
+Alchemy/AMD/RMI DB1200 Board, CPLD Rev 2  Board-ID 12  Daughtercard ID 15
+Determined physical RAM map:
+ memory: 10000000 @ 00000000 (usable)
+Zone PFN ranges:
+  Normal   0x00000000 -> 0x00010000
+Movable zone start PFN for each node
+early_node_map[1] active PFN ranges
+    0: 0x00000000 -> 0x00010000
+On node 0 totalpages: 65536
+free_area_init_node: node 0, pgdat 806cc1a0, node_mem_map 81000000
+  Normal zone: 512 pages used for memmap
+  Normal zone: 0 pages reserved
+  Normal zone: 65024 pages, LIFO batch:15
+pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
+pcpu-alloc: [0] 0
+Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 65024
+Kernel command line:  root=/dev/hda1 rootfstype=ext2 console=tty
+console=ttyS0,115200 video=au1200fb:panel:bs
+PID hash table entries: 1024 (order: 0, 4096 bytes)
+Dentry cache hash table entries: 32768 (order: 5, 131072 bytes)
+Inode-cache hash table entries: 16384 (order: 4, 65536 bytes)
+Primary instruction cache 16kB, VIPT, 4-way, linesize 32 bytes.
+Primary data cache 16kB, 4-way, VIPT, no aliases, linesize 32 bytes
+Memory: 252456k/262144k available (4839k kernel code, 9688k reserved,
+1098k data, 200k init, 0k highmem)
+NR_IRQS:128
+Alchemy clocksource installed
+Console: colour dummy device 80x25
+console [tty0] enabled
+Calibrating delay loop (skipped) preset value.. 696.00 BogoMIPS (lpj=3480000)
+pid_max: default: 32768 minimum: 301
+Mount-cache hash table entries: 512
+CPU 0 Unable to handle kernel paging request at virtual address
+00000000, epc == 805b86ec, ra == 802a6f1c
+Oops[#1]:
+Cpu 0
+$ 0   : 00000000 10003c00 00000000 10003c01
+$ 4   : 806b6584 8fc45e60 806b6588 8fc3f520
+$ 8   : 00000000 00000000 0016e35f 00000000
+$12   : 00000080 00000010 00000010 8fc3001c
+$16   : 8fc3f520 00000000 00000000 00000000
+$20   : 00000000 00000000 8fc45eb4 00000000
+$24   : 00000000 8011ef30
+$28   : 8fc44000 8fc45e50 00000001 802a6f1c
+Hi    : 00000000
+Lo    : 00000000
+epc   : 805b86ec __down_write_nested+0x68/0xf0
+    Not tainted
+ra    : 802a6f1c exit_shm+0x24/0x54
+Status: 10003c02    KERNEL EXL
+Cause : 0080800c
+BadVA : 00000000
+PrId  : 04030202 (Au1250)
+Process kworker/u:0 (pid: 9, threadinfo=8fc44000, task=8fc3f520, tls=00000000)
+Stack : 00000000 00000000 00000000 00000000 806b6588 00000000 8fc3f520 00000002
+        8fc2c000 806b6584 00000000 802a6f1c 00000000 00000000 00000000 00000000
+        806b6530 00000000 8fc3f520 801280b8 04000200 00040000 00000000 00008000
+        00000000 00000000 40000000 00000000 00000000 00000000 8fc28ca0 8fc153a0
+        00000000 00000000 00000000 00000000 00000000 00000000 00000000 80138b68
+        ...
+Call Trace:
+[<805b86ec>] __down_write_nested+0x68/0xf0
+[<802a6f1c>] exit_shm+0x24/0x54
+[<801280b8>] do_exit+0x50c/0x664
+[<80138b68>] ____call_usermodehelper+0xfc/0x118
+[<8010573c>] kernel_thread_helper+0x10/0x18
 
+
+Code: ac850008  afa60010  afa20014 <ac450000> 40016000  30630001
+3421001f  3821001f  00611825
+Disabling lock debugging due to kernel taint
+Fixing recursive fault but reboot is needed!
+NET: Registered protocol family 16
+bio: create slab <bio-0> at 0
+SCSI subsystem initialized
+libata version 3.00 loaded.
+usbcore: registered new interface driver usbfs
+usbcore: registered new interface driver hub
+usbcore: registered new device driver usb
+Advanced Linux Sound Architecture Driver Version 1.0.24.
+Bluetooth: Core ver 2.16
+NET: Registered protocol family 31
+Bluetooth: HCI device and connection manager initialized
+Bluetooth: HCI socket layer initialized
+Bluetooth: L2CAP socket layer initialized
+Bluetooth: SCO socket layer initialized
+cfg80211: Calling CRDA to update world regulatory domain
+Switching to clocksource alchemy-counter1
+Switched to NOHz mode on CPU #0
+NET: Registered protocol family 2
+IP route cache hash table entries: 2048 (order: 1, 8192 bytes)
+TCP established hash table entries: 8192 (order: 4, 65536 bytes)
+TCP bind hash table entries: 8192 (order: 3, 32768 bytes)
+TCP: Hash tables configured (established 8192 bind 8192)
+TCP reno registered
+UDP hash table entries: 256 (order: 0, 4096 bytes)
+UDP-Lite hash table entries: 256 (order: 0, 4096 bytes)
+NET: Registered protocol family 1
+RPC: Registered named UNIX socket transport module.
+RPC: Registered udp transport module.
+RPC: Registered tcp transport module.
+RPC: Registered tcp NFSv4.1 backchannel transport module.
+DB1200 device configuration:
+ S6.8 OFF: PSC0 mode I2C
+   OTG port VBUS supply available!
+ S6.7 OFF: PSC1 mode AC97
+audit: initializing netlink socket (disabled)
+type=2000 audit(0.120:1): initialized
+squashfs: version 4.0 (2009/01/31) Phillip Lougher
+Registering the id_resolver key type
+nfs4filelayout_init: NFSv4 File Layout Driver Registering...
+Installing knfsd (copyright (C) 1996 okir@monad.swb.de).
+JFFS2 version 2.2. (NAND) (SUMMARY)  ┬® 2001-2006 Red Hat, Inc.
+msgmni has been set to 493
+NET: Registered protocol family 38
+Block layer SCSI generic (bsg) driver version 0.4 loaded (major 253)
+io scheduler noop registered (default)
+au1200fb: LCD controller driver for AU1200 processors
+au1200fb: Panel 5 Samsung_1024x768_TFT
+au1200fb: Win 2 0-FS gfx, 1-video, 2-ovly gfx, 3-ovly gfx
+Panel(Samsung_1024x768_TFT), 1024x768
+[...]
+Manuel
