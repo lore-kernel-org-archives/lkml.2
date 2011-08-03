@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab1HCXof (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:44:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33413 "EHLO mx2.suse.de"
+	id S1756103Ab1HCXow (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 19:44:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33397 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755966Ab1HCX0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:26:14 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:45 2011
-Message-Id: <20110803221244.994023887@clark.kroah.org>
+	id S1755967Ab1HCX0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 19:26:06 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Aug  3 15:12:44 2011
+Message-Id: <20110803221244.792017780@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 03 Aug 2011 15:00:29 -0700
+Date: Wed, 03 Aug 2011 15:00:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: [009/102] Staging: hv: storvsc: Increase the timeout value in the storvsc driver
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: [007/102] staging: r8192e_pci: Handle duplicate PCI ID 0x10ec:0x8192 conflict with rtl8192se
 In-Reply-To: <20110803221345.GA10346@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,76 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 46d2eb6d82ef44be58ae192c35e8cd52485f02eb upstream.
+commit 1c50bf7e415cf6ce9545dbecc2ac0d89d3916c53 upstream.
 
-On some loaded windows hosts, we have discovered that the host may not
-respond to guest requests within the specified time (one second)
-as evidenced by the guest timing out. Fix this problem by increasing
-the timeout to 5 seconds.
+There are two devices with PCI ID 0x10ec:0x8192, namely RTL8192E and
+RTL8192SE. The method of distinguishing them is by the revision ID
+at offset 0x8 of the PCI configuration space. If the value is 0x10,
+then the device uses rtl8192se for a driver.
 
-It may be useful to apply this patch to the 3.0 kernel as well.
-the 3.0 kernel as well.
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/hv/storvsc.c     |    8 ++++----
- drivers/staging/hv/storvsc_drv.c |    2 +-
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/staging/rtl8192e/r8192E_core.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/staging/hv/storvsc.c
-+++ b/drivers/staging/hv/storvsc.c
-@@ -135,7 +135,7 @@ static int storvsc_channel_init(struct h
- 	if (ret != 0)
- 		goto cleanup;
+--- a/drivers/staging/rtl8192e/r8192E_core.c
++++ b/drivers/staging/rtl8192e/r8192E_core.c
+@@ -4532,6 +4532,7 @@ static int __devinit rtl8192_pci_probe(s
+ 	u8 unit = 0;
+ 	int ret = -ENODEV;
+ 	unsigned long pmem_start, pmem_len, pmem_flags;
++	u8 revisionid;
  
--	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
- 	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
-@@ -163,7 +163,7 @@ static int storvsc_channel_init(struct h
- 	if (ret != 0)
- 		goto cleanup;
+ 	RT_TRACE(COMP_INIT,"Configuring chip resources\n");
  
--	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
- 	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
-@@ -192,7 +192,7 @@ static int storvsc_channel_init(struct h
- 	if (ret != 0)
- 		goto cleanup;
+@@ -4592,6 +4593,11 @@ static int __devinit rtl8192_pci_probe(s
+          pci_write_config_byte(pdev, 0x41, 0x00);
  
--	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
- 	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
-@@ -222,7 +222,7 @@ static int storvsc_channel_init(struct h
- 	if (ret != 0)
- 		goto cleanup;
  
--	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
- 	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -393,7 +393,7 @@ static int storvsc_host_reset(struct hv_
- 	if (ret != 0)
- 		goto cleanup;
++	pci_read_config_byte(pdev, 0x08, &revisionid);
++	/* If the revisionid is 0x10, the device uses rtl8192se. */
++	if (pdev->device == 0x8192 && revisionid == 0x10)
++		goto fail1;
++
+ 	pci_read_config_byte(pdev, 0x05, &unit);
+ 	pci_write_config_byte(pdev, 0x05, unit & (~0x04));
  
--	t = wait_for_completion_timeout(&request->wait_event, HZ);
-+	t = wait_for_completion_timeout(&request->wait_event, 5*HZ);
- 	if (t == 0) {
- 		ret = -ETIMEDOUT;
- 		goto cleanup;
 
 
