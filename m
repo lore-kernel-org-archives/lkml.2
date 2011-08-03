@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab1HCRAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 13:00:22 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:33048
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754283Ab1HCRAT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 13:00:19 -0400
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzzz2dh87h2a8h668h839h8e2h8e3h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:160.36.179.132;KIP:(null);UIP:(null);IPVD:NLI;H:kedge1.utk.tennessee.edu;RD:kedge1.utk.tennessee.edu;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 3 Aug 2011 13:00:12 -0400
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [perf] enable raw OFFCORE_EVENTS for non-perf userspace
-In-Reply-To: <alpine.DEB.2.00.1108031200390.703@cl320.eecs.utk.edu>
-Message-ID: <alpine.DEB.2.00.1108031254120.4627@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1108031200390.703@cl320.eecs.utk.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754665Ab1HCRGu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 13:06:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15188 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751934Ab1HCRGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 13:06:44 -0400
+Date: Wed, 3 Aug 2011 14:06:27 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, mingo@redhat.com, hpa@zytor.com,
+        eranian@google.com, linux-kernel@vger.kernel.org,
+        robert.richter@amd.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/urgent] perf sched: Fix list of events, dropping
+	unsupported ':r' modifier
+Message-ID: <20110803170627.GB29321@ghostprotocols.net>
+References: <AANLkTim=jawJyBj0iFd0r4-LCKzvjFW+NddzJMD5GUB9@mail.gmail.com> <tip-9710118bd4e7f3406865171cb9b9c94547c1c2f9@git.kernel.org> <1312369161.1147.292.camel@twins> <20110803113706.GA5768@somewhere.redhat.com> <1312371741.1147.301.camel@twins> <20110803115703.GB5768@somewhere.redhat.com> <1312373135.1147.308.camel@twins> <20110803121119.GC5768@somewhere.redhat.com> <1312373931.1147.314.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-OriginatorOrg: utk.edu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312373931.1147.314.camel@twins>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Wed, Aug 03, 2011 at 02:18:51PM +0200, Peter Zijlstra escreveu:
+> On Wed, 2011-08-03 at 14:11 +0200, Frederic Weisbecker wrote:
+> > Look at tools/perf/util/parse-events.c:parse_single_tracepoint_event()
+> 
+> fscking tinkerers.. that's horrid... strncmp("record") seriously wtf
+> were you smoking, Acme why did you ever merge crap like that?
 
-and in case we don't want to be nice to userspace and want to brutally 
-suppress anyone not using the "perf" tool, here's a patch that 
-returns EINVAL for any raw access that sets config1.
-
-I actually tested to make sure the patch doesn't break PAPI, unlike my 
-last attempt.
-
-Currently we "block" access to setting the config1 value from userspace
-by silently failing.  This can cause unexpected behavior (especially if
-the kernel is using the OFFCORE_RSP_0 msr internally) and also makes it 
-impossible to test if OFFCORE_RESPONSE events are being blocked or not.
-
-This hackish patch causes an EINVAL to propogate back to userspace
-by setting an invalid value to the config1 field.
-
-I personally think this patch is a step backward, and the right thing to 
-do is give users full access to their own hardware.  But the current state 
-of affairs is bad for tools like PAPI too.
-
-
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 4ee3abf..72baf25 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -608,8 +608,11 @@ static int x86_setup_perfctr(struct perf_event *event)
- 	 * Do not allow config1 (extended registers) to propagate,
- 	 * there's no sane user-space generalization yet:
- 	 */
--	if (attr->type == PERF_TYPE_RAW)
--		return 0;
-+	if (attr->type == PERF_TYPE_RAW) {
-+		/* I HATE THIS PATCH AND EVERYTHING IT STANDS FOR.  --  VMW */
-+		event->attr.config1=0xffffffff;  /* invalid, will be caught */
-+		return x86_pmu_extra_regs(event->attr.config, event);
-+	}
+I haven't :-)
  
- 	if (attr->type == PERF_TYPE_HW_CACHE)
- 		return set_ext_hw_attr(hwc, event);
+> Also, acme that can break stuff, remember the whole different
+> ->sample_format discussion?
 
+Yes, the evsel/evlist abstractions were in part motivated by the
+multiple perf_event_attr->sample_type in the same session.
+
+Being 5 weeks AFK was really nice but left me with a rather large
+backlog :-)
+
+> /me stomps off and goes do something useful, this userspace is like all
+> other userspace.. a steaming pile of shit.
+
+Nah, its all code, no matter what side of the fence.
+
+- Arnaldo
