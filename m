@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab1HCCbP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 22:31:15 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50972 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753836Ab1HCCbJ convert rfc822-to-8bit (ORCPT
+	id S1754029Ab1HCCg2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 22:36:28 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:61682 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753843Ab1HCCgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 22:31:09 -0400
-Message-ID: <4E38B2F1.8040903@cn.fujitsu.com>
-Date: Wed, 03 Aug 2011 10:31:13 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Tue, 2 Aug 2011 22:36:21 -0400
+Message-ID: <4E38B41F.9070807@gmail.com>
+Date: Wed, 03 Aug 2011 10:36:15 +0800
+From: Hui Zhu <teawater@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] jbd/jbd2: add pointer type conversion on void *arg from
- void * to journal_t * explicitly in kjournald/kjournald2
-References: <4E38AB50.9040804@gmail.com> <4E38AC92.4090501@cn.fujitsu.com> <4E38AFC2.3070608@gmail.com>
-In-Reply-To: <4E38AFC2.3070608@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-03 10:30:00,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-03 10:30:09
+To: Andrew Morton <akpm@linux-foundation.org>, "Joe Perches joe"@perches.com
+CC: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix a argument WARN bug of scripts/checkpatch.pl
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wang Sheng-Hui wrote:
-> On 2011年08月03日 10:04, Li Zefan wrote:
->> 09:58, Wang Sheng-Hui wrote:
->>> The patch is against 3.0
->>>
->>> The arg of kjournald/kjournald2 is void *, and points to type
->>> journal_t. We should convert it to journal_t * explicitly in
->>> the kjournald/kjournald2 function body.
->>>
->>
->> Why?
->>
->> Implicit convertion from void * to foo * is ok. Did the compiler
->> complain about this to you?
-> 
-> I remember any * can be assigned directly to void * in ANSI C, but
-> void * should be converted to specific point * type. Right?
-> 
+Hi Joe,
 
-No.
+Thanks for your help.
 
-> And I checked the code of kswapd, in which explicitly conversion is
-> taken on the arg *. I think it should do so in journal.c too.
-> 
+Best,
+Hui
 
-Please check more similar code.
+The following part is the original patch:
+
+Get following error with a patch that have min_t error:
+Use of uninitialized value in concatenation (.) or string at
+scripts/checkpatch.pl line 1256.
+WARNING:
+This is because:
+				}
+				WARN("$call() should probably be ${call}_t($cast, $arg1, $arg2)\n" . $herecurr);
+			}
+It lost the first argument.
+So make a patch to fix it.
+
+Signed-off-by: Hui Zhu <teawater@gmail.com>
+Acked-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2574,7 +2574,8 @@ sub process {
+ 				} else {
+ 					$cast = $cast2;
+ 				}
+-				WARN("$call() should probably be ${call}_t($cast, $arg1, $arg2)\n" . $herecurr);
++				WARN("MINMAX",
++				     "$call() should probably be ${call}_t($cast, $arg1, $arg2)\n" . $herecurr);
+ 			}
+ 		}
