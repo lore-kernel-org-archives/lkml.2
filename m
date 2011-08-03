@@ -1,125 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab1HCRoC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 13:44:02 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50788 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752077Ab1HCRnz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 13:43:55 -0400
-Subject: Re: [PATCH 6/8] drivers: add Contiguous Memory Allocator
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Daniel Walker <dwalker@codeaurora.org>,
-        Jonathan Corbet <corbet@lwn.net>, Mel Gorman <mel@csn.ul.ie>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        ksummit-2011-discuss@lists.linux-foundation.org
-In-Reply-To: <201107051427.44899.arnd@arndb.de>
-References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com>
-	 <1309851710-3828-7-git-send-email-m.szyprowski@samsung.com>
-	 <20110705113345.GA8286@n2100.arm.linux.org.uk>
-	 <201107051427.44899.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 03 Aug 2011 12:43:50 -0500
-Message-ID: <1312393430.2855.51.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1754991Ab1HCRoO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 13:44:14 -0400
+Received: from lucidpixels.com ([72.73.18.11]:59220 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754149Ab1HCRoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 13:44:12 -0400
+Date: Wed, 3 Aug 2011 13:44:10 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+cc: Andreas Hartmann <andihartmann@01019freenet.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Ivo van Doorn <IvDoorn@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, Alan Piszcz <ap@solarrain.com>,
+        "users@rt2x00.serialmonkey.com" <users@rt2x00.serialmonkey.com>
+Subject: Re: [PATCH] rt2x00: rt2800: fix zeroing skb structure
+In-Reply-To: <alpine.DEB.2.02.1108031328030.9421@p34.internal.lan>
+Message-ID: <alpine.DEB.2.02.1108031339280.9421@p34.internal.lan>
+References: <alpine.DEB.2.02.1107271851410.25432@p34.internal.lan> <4E318BD0.40202@lwfinger.net> <20110730113009.GA2847@redhat.com> <20110730113255.GB2847@redhat.com> <alpine.DEB.2.02.1107300736010.4925@p34.internal.lan> <alpine.DEB.2.02.1107301015340.4925@p34.internal.lan>
+ <alpine.DEB.2.02.1107301031560.4925@p34.internal.lan> <4E341DC4.9010107@01019freenet.de> <alpine.DEB.2.02.1107301305590.4925@p34.internal.lan> <20110803160050.GA18882@redhat.com> <alpine.DEB.2.02.1108031328030.9421@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc to ks-discuss added, since this may be a relevant topic]
 
-On Tue, 2011-07-05 at 14:27 +0200, Arnd Bergmann wrote:
-> On Tuesday 05 July 2011, Russell King - ARM Linux wrote:
-> > On Tue, Jul 05, 2011 at 09:41:48AM +0200, Marek Szyprowski wrote:
-> > > The Contiguous Memory Allocator is a set of helper functions for DMA
-> > > mapping framework that improves allocations of contiguous memory chunks.
-> > > 
-> > > CMA grabs memory on system boot, marks it with CMA_MIGRATE_TYPE and
-> > > gives back to the system. Kernel is allowed to allocate movable pages
-> > > within CMA's managed memory so that it can be used for example for page
-> > > cache when DMA mapping do not use it. On dma_alloc_from_contiguous()
-> > > request such pages are migrated out of CMA area to free required
-> > > contiguous block and fulfill the request. This allows to allocate large
-> > > contiguous chunks of memory at any time assuming that there is enough
-> > > free memory available in the system.
-> > > 
-> > > This code is heavily based on earlier works by Michal Nazarewicz.
-> > 
-> > And how are you addressing the technical concerns about aliasing of
-> > cache attributes which I keep bringing up with this and you keep
-> > ignoring and telling me that I'm standing in your way.
 
-Just to chime in here, parisc has an identical issue.  If the CPU ever
-sees an alias with different attributes for the same page, it will HPMC
-the box (that's basically the bios will kill the system as being
-architecturally inconsistent), so an architecture neutral solution on
-this point is essential to us as well.
+On Wed, 3 Aug 2011, Justin Piszcz wrote:
 
-> This is of course an important issue, and it's the one item listed as
-> TODO in the introductory mail that sent.
-> 
-> It's also a preexisting problem as far as I can tell, and it needs
-> to be solved in __dma_alloc for both cases, dma_alloc_from_contiguous
-> and __alloc_system_pages as introduced in patch 7.
-> 
-> We've discussed this back and forth, and it always comes down to
-> one of two ugly solutions:
-> 
-> 1. Put all of the MIGRATE_CMA and pages into highmem and change
-> __alloc_system_pages so it also allocates only from highmem pages.
-> The consequences of this are that we always need to build kernels
-> with highmem enabled and that we have less lowmem on systems that
-> are already small, both of which can be fairly expensive unless
-> you have lots of highmem already.
+>
+>
+> On Wed, 3 Aug 2011, Stanislaw Gruszka wrote:
+>
+>> On Sat, Jul 30, 2011 at 01:07:11PM -0400, Justin Piszcz wrote:
+>>> Here you go, crash 2:
+>>> http://home.comcast.net/~jpiszcz/20110730/2630-rt2800usb-crash2p1.jpg
+>>> http://home.comcast.net/~jpiszcz/20110730/2630-rt2800usb-crash2p2.jpg
+>> 
+>> Here is next (draw) patch to test:
+>
+> Thanks,
+>
+> # patch -p1 < ../patch4
+> patching file drivers/net/wireless/rt2x00/rt2800lib.c
+> patching file drivers/net/wireless/rt2x00/rt2800lib.h
+> patching file drivers/net/wireless/rt2x00/rt2800usb.c
+> patching file drivers/net/wireless/rt2x00/rt2x00queue.c
+> patching file drivers/net/wireless/rt2x00/rt2x00usb.c
+> #
+>
+> I'll give this driver one more chance (quickly) and let you know if it 
+> crashes
+> afterwards (usually crashes in 5-10 minutes), but most likely I am going to
+> move over to some other wireless usb sticks, got a couple think penguin usb
+> wifi sticks that use the carl driver, 'open source' wireless usb sticks, 
+> going to give them a try next.
+>
+> Also got some other ones as well, hopefully one of them will work without
+> 900ms of lag.  The rt2870sta was the best driver in 2.6.38.x series that I
+> have ever used for wireless USB sticks.
+>
+> Justin.
+>
+>
 
-So this would require that systems using the API have a highmem? (parisc
-doesn't today).
+Hi,
 
-> 2. Add logic to unmap pages from the linear mapping, which is
-> very expensive because it forces the use of small pages in the
-> linear mapping (or in parts of it), and possibly means walking
-> all page tables to remove the PTEs on alloc and put them back
-> in on free.
-> 
-> I believe that Chunsang Jeong from Linaro is planning to
-> implement both variants and post them for review, so we can
-> decide which one to merge, or even to merge both and make
-> it a configuration option. See also
-> https://blueprints.launchpad.net/linaro-mm-sig/+spec/engr-mm-dma-mapping-2011.07
-> 
-> I don't think we need to make merging the CMA patches depending on
-> the other patches, it's clear that both need to be solved, and
-> they are independent enough.
+Tested that patch:
 
-I assume from the above that ARM has a hardware page walker?
+1. The driver no longer automatically loads, I had to manually modprobe it.
+2. After loading, I get this (keep getting these)
 
-The way I'd fix this on parisc, because we have a software based TLB, is
-to rely on the fact that a page may only be used either for DMA or for
-Page Cache, so the aliases should never be interleaved.  Since you know
-the point at which the page flips from DMA to Cache (and vice versa),
-I'd purge the TLB entry and flush the page at that point and rely on the
-usage guarantees to ensure that the alias TLB entry doesn't reappear.
-This isn't inexpensive but the majority of the cost is the cache flush
-which is a requirement to clean the aliases anyway (a TLB entry purge is
-pretty cheap).
+[  384.054538] phy0 -> rt2800_txdone: Error - Data pending
+[  384.072773] phy0 -> rt2800_txdone: Error - Data pending
+[  384.096545] phy0 -> rt2800_txdone: Error - Data pending
+[  384.117301] phy0 -> rt2800_txdone: Error - Data pending
+[  384.537586] phy0 -> rt2800_txdone: Error - Data pending
+[  384.555716] phy0 -> rt2800_txdone: Error - Data pending
+[  384.573903] phy0 -> rt2800_txdone: Error - Data pending
+[  384.599465] phy0 -> rt2800_txdone: Error - Data pending
+[  384.618523] phy0 -> rt2800_txdone: Error - Data pending
 
-Would this work for the ARM hardware walker as well?  It would require
-you to have a TLB entry purge instruction as well as some architectural
-guarantees about not speculating the TLB.
+No crash yet, but bad ping again too (always with the rt2800usb) driver:
 
-James
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=1 ttl=64 time=53.1 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=2 ttl=64 time=285 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=3 ttl=64 time=89.6 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=4 ttl=64 time=120 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=5 ttl=64 time=42.2 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=6 ttl=64 time=156 ms
+64 bytes from atomw.internal.lan (192.168.0.2): icmp_req=7 ttl=64 time=77.2 ms
 
+(Have another machine, testing the carl driver kernel 3.0 on it)
+
+Not having too much luck there either.
+
+[586342.990975] carl9170: Unknown symbol __ieee80211_get_tx_led_name (err 0)
+[586342.991059] carl9170: Unknown symbol __ieee80211_get_assoc_led_name (err 0)
+[586459.214057] carl9170: Unknown symbol __ieee80211_get_tx_led_name (err 0)
+[586459.214131] carl9170: Unknown symbol __ieee80211_get_assoc_led_name (err 0)
+
+Justin.
 
