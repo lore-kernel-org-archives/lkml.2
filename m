@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab1HCNmS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 09:42:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28769 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751070Ab1HCNmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 09:42:10 -0400
-Date: Wed, 3 Aug 2011 15:39:28 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] avr32: use set_current_blocked() in
-	handle_signal/sys_rt_sigreturn
-Message-ID: <20110803133928.GA12990@redhat.com>
-References: <1312362279.10579.38.camel@mfleming-mobl1.ger.corp.intel.com> <20110803130813.GA11708@redhat.com>
+	id S1752436Ab1HCNnM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 09:43:12 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:44149 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751056Ab1HCNnH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 09:43:07 -0400
+Date: Wed, 3 Aug 2011 16:43:03 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Per Forlin <per.forlin@stericsson.com>
+Cc: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, stable@kernel.org,
+        Per Forlin <per.forlin@linaro.org>
+Subject: Re: [PATCH] usb: musb: cppi: fix build errors due to DBG and missing
+ musb variable
+Message-ID: <20110803134302.GP11080@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1312378755-7919-1-git-send-email-per.forlin@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7kD9y3RnPUgTZee0"
 Content-Disposition: inline
-In-Reply-To: <20110803130813.GA11708@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1312378755-7919-1-git-send-email-per.forlin@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03, Oleg Nesterov wrote:
->
-> On 08/03, Matt Fleming wrote:
-> >
-> > 	 * Block the signal if we were unsuccessful.
-> > 	 */
-> > 	if (ret != 0 || !(ka->sa.sa_flags & SA_NODEFER)) {
-> > 		spin_lock_irq(&current->sighand->siglock);
-> > 		sigorsets(&current->blocked, &current->blocked,
-> > 			  &ka->sa.sa_mask);
-> > 		sigaddset(&current->blocked, sig);
-> > 		recalc_sigpending();
-> > 		spin_unlock_irq(&current->sighand->siglock);
-> > 	}
->
-> Agreed, this looks "obviously wrong". We should block the !SA_NODEFER
-> signal it was delivered.
 
-(I meant, it is was successfully delivered).
+--7kD9y3RnPUgTZee0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-While at it, I'd also suggest another patch on top of Matt's.
-Uncompiled/untested.
+Hi,
 
-------------------------------------------------------------------------------
-[PATCH] avr32: use set_current_blocked() in handle_signal/sys_rt_sigreturn
+On Wed, Aug 03, 2011 at 03:39:15PM +0200, Per Forlin wrote:
+> From: Per Forlin <per.forlin@linaro.org>
+>=20
+> Replace DBG with dev_dbg add fix invalid access of musb->controller.
+> With this patch cppi_dma builds successfully.
+>=20
+> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+> Cc: <stable@kernel.org>
 
-It is wrong to change ->blocked directly, see e6fa16ab.
-Change  handle_signal() and sys_rt_sigreturn() to use
-the right helper, set_current_blocked().
+applied, thanks
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+--=20
+balbi
 
- signal.c |   15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+--7kD9y3RnPUgTZee0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
---- x/arch/avr32/kernel/signal.c
-+++ x/arch/avr32/kernel/signal.c
-@@ -87,10 +87,7 @@ asmlinkage int sys_rt_sigreturn(struct p
- 		goto badframe;
- 
- 	sigdelsetmask(&set, ~_BLOCKABLE);
--	spin_lock_irq(&current->sighand->siglock);
--	current->blocked = set;
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+	set_current_blocked(&set);
- 
- 	if (restore_sigcontext(regs, &frame->uc.uc_mcontext))
- 		goto badframe;
-@@ -226,6 +223,7 @@ static inline void
- handle_signal(unsigned long sig, struct k_sigaction *ka, siginfo_t *info,
- 	      sigset_t *oldset, struct pt_regs *regs, int syscall)
- {
-+	sigset_t blocked;
- 	int ret;
- 
- 	/*
-@@ -246,13 +244,10 @@ handle_signal(unsigned long sig, struct 
- 	/*
- 	 * Block the signal if we were successful.
- 	 */
--	spin_lock_irq(&current->sighand->siglock);
--	sigorsets(&current->blocked, &current->blocked,
--		  &ka->sa.sa_mask);
-+	sigorsets(&blocked, &current->blocked, &ka->sa.sa_mask);
- 	if (!(ka->sa.sa_flags & SA_NODEFER))
--		sigaddset(&current->blocked, sig);
--	recalc_sigpending();
--	spin_unlock_irq(&current->sighand->siglock);
-+		sigaddset(&blocked, sig);
-+	set_current_blocked(&blocked);
- }
- 
- /*
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJOOVBmAAoJEAv8Txj19kN1gKYIAJmc6OE2mIyEcbRnXM/fmFCN
+wAQB7xZGDHGcKScMVmL4hJKms1jhVCGaf06Q4WtR+OAe/Xk24YNd24it/O4PAy51
+lwXEE2YOYNPtUL/Au4vBuCiX+C7GdqvIoXsF/F583l3pnrqH+aRFklMw4IrRJBXc
+8d3LtkzKhZojhP3foiCc8MTr5Q4MR9341vhKK/7rz+ctRniclWX4jlaaECrTTgYy
+qUxwOdF1O0/KFQbSnPURmznzakL9TfdCQP19/Ib7fBnT7m+v0WQTQvbTjd0Cu3lT
+mjM+D4FVL+9Ej87+lUtEDuFfkLr5MGoZ8BiP01v+TdyqSgSsmZXIJMDh5BnL+vQ=
+=9Gqu
+-----END PGP SIGNATURE-----
+
+--7kD9y3RnPUgTZee0--
