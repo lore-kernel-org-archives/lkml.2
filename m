@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110Ab1HCCDz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Aug 2011 22:03:55 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62619 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751812Ab1HCCDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Aug 2011 22:03:51 -0400
-Message-ID: <4E38AC92.4090501@cn.fujitsu.com>
-Date: Wed, 03 Aug 2011 10:04:02 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1753385Ab1HCCJP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Aug 2011 22:09:15 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:33470 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab1HCCJH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Aug 2011 22:09:07 -0400
+Message-ID: <4E38ADA0.4030304@oracle.com>
+Date: Wed, 03 Aug 2011 10:08:32 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-To: Wang Sheng-Hui <shhuiw@gmail.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] jbd/jbd2: add pointer type conversion on void *arg from
- void * to journal_t * explicitly in kjournald/kjournald2
-References: <4E38AB50.9040804@gmail.com>
-In-Reply-To: <4E38AB50.9040804@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-03 10:02:49,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-03 10:02:51,
-	Serialize complete at 2011-08-03 10:02:51
-Content-Transfer-Encoding: 7bit
+To: Daniel Stodden <daniel.stodden@citrix.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Annie Li <annie.li@oracle.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        Kurt C Hackel <KURT.HACKEL@oracle.com>
+CC: Greg Marsden <greg.marsden@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/3] xen-blkback: refactor vbd remove/disconnect.
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090207.4E38ADB9.0063,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-09:58, Wang Sheng-Hui wrote:
-> The patch is against 3.0
-> 
-> The arg of kjournald/kjournald2 is void *, and points to type
-> journal_t. We should convert it to journal_t * explicitly in
-> the kjournald/kjournald2 function body.
-> 
+This patchset is a backport and original patch's author is Daniel Stodden:
+http://xenbits.xen.org/hg/XCP/linux-2.6.32.pq.hg/file/tip/CA-7672-blkback-shutdown.patch
 
-Why?
+Initial issue:
+  When we do block device attach/detach test with below steps, umount hang
+  in guest and the guest unable to shutdown:
+  
+  1. start guest with the latest kernel.
+  2. attach new block device by xm block-attach in Dom0
+  3. mount new disk in guest
+  4. execute xm block-detach to detach the block device in dom0 until timeout
+  5. try to unmount the disk in guest, umount hung. at here, any IOs to the 
+     device will hang.
+  
+Root cause:
+  This caused by 'xm block-detach' in Dom0 set backend device's state to
+  'XenbusStateClosing', frontend received the notification and 
+  blkfront_closing() be called, at the moment, the disk still using by guest,
+  so frontend refused to close. In the blkfront_closing(), frontend send a
+  notification to backend said that the its state switched to 'Closing', when
+  backend got the event, it will disconnect from real device, at here any IO
+  request will be stuck, even tried to release the disk by umount.
 
-Implicit convertion from void * to foo * is ok. Did the compiler
-complain about this to you?
+  So this may fix either frontend or backend, I have send a fix for frontend:
+  https://lkml.org/lkml/2011/7/8/159
+  Ian think we should fix it from backend and he pointed out Daniel Stodden have
+  submitted a patch(see above link) for xen-blkback, I tried it and it works 
+  well.
 
-> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> ---
->  fs/jbd/journal.c  |    2 +-
->  fs/jbd2/journal.c |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-> index e2d4285..32956fd 100644
-> --- a/fs/jbd/journal.c
-> +++ b/fs/jbd/journal.c
-> @@ -116,7 +116,7 @@ static void commit_timeout(unsigned long __data)
->  
->  static int kjournald(void *arg)
->  {
-> -	journal_t *journal = arg;
-> +	journal_t *journal = (journal_t *)arg;
->  	transaction_t *transaction;
->  
->  	/*
-> diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-> index 0dfa5b5..c4f4bfc 100644
-> --- a/fs/jbd2/journal.c
-> +++ b/fs/jbd2/journal.c
-> @@ -129,7 +129,7 @@ static void commit_timeout(unsigned long __data)
->  
->  static int kjournald2(void *arg)
->  {
-> -	journal_t *journal = arg;
-> +	journal_t *journal = (journal_t *)arg;
->  	transaction_t *transaction;
->  
->  	/*
+ drivers/block/xen-blkback/blkback.c |   10 +--
+ drivers/block/xen-blkback/common.h  |    5 +
+ drivers/block/xen-blkback/xenbus.c  |  202 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-------
+ 3 files changed, 191 insertions(+), 26 deletions(-)
