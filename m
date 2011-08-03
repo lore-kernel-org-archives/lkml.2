@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab1HCITy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 04:19:54 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34779 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752177Ab1HCITs (ORCPT
+	id S1752177Ab1HCIXB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 04:23:01 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:42654 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab1HCIWv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 04:19:48 -0400
+	Wed, 3 Aug 2011 04:22:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <d844457bba74be419d2434c533fdb4e1@localhost>
-References: <20110801180151.GA26686@albatros> <20110801112021.25ec9041.akpm@linux-foundation.org>
- <20110801190341.GA6898@albatros> <CA+55aFw2kHWY1N=ox1er7c-3WL4OA8x0M=Keu7hvAncKUZd1tQ@mail.gmail.com>
- <20110802124530.GA2543@albatros> <20110802135512.b49c9de1.akpm@linux-foundation.org>
- <d844457bba74be419d2434c533fdb4e1@localhost>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 2 Aug 2011 22:19:24 -1000
-Message-ID: <CA+55aFx+JOeDoNzs+1wfdK3kpNPyS9wpU1OT=VAwvWPXfMVuDQ@mail.gmail.com>
-Subject: Re: [PATCH] shm: fix a race between shm_exit() and shm_init()
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        Ingo Molnar <mingo@elte.hu>, kernel-hardening@lists.openwall.com,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4E3902C7.9050907@cn.fujitsu.com>
+References: <4E38C314.8070305@cn.fujitsu.com>
+	<CANejiEViuKky1A7Xh0MQKBVNMj_fgzwayWyON7hFGfP3wa62SQ@mail.gmail.com>
+	<4E3902C7.9050907@cn.fujitsu.com>
+Date: Wed, 3 Aug 2011 16:22:50 +0800
+X-Google-Sender-Auth: ileHEiI947M7VWHpw-R3_fN9bnI
+Message-ID: <CANejiEVqFt4j1-qTVnxEAe75z0y010s=ST2XtCDDTqDEQT=EcQ@mail.gmail.com>
+Subject: Re: fio posixaio performance problem
+From: Shaohua Li <shli@kernel.org>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 2, 2011 at 10:05 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+2011/8/3 Gui Jianfeng <guijianfeng@cn.fujitsu.com>:
+> On 2011-8-3 15:38, Shaohua Li wrote:
+>> 2011/8/3 Gui Jianfeng <guijianfeng@cn.fujitsu.com>:
+>>> Hi,
+>>>
+>>> I ran a fio test to simulate qemu-kvm io behaviour.
+>>> When job number is greater than 2, IO performance is
+>>> really bad.
+>>>
+>>> 1 thread: aggrb=15,129KB/s
+>>> 4 thread: aggrb=1,049KB/s
+>>>
+>>> Kernel: lastest upstream
+>>>
+>>> Any idea?
+>>>
+>>> ---
+>>> [global]
+>>> runtime=30
+>>> time_based=1
+>>> size=1G
+>>> group_reporting=1
+>>> ioengine=posixaio
+>>> exec_prerun='echo 3 > /proc/sys/vm/drop_caches'
+>>> thread=1
+>>>
+>>> [kvmio-1]
+>>> description=kvmio-1
+>>> numjobs=4
+>>> rw=write
+>>> bs=4k
+>>> direct=1
+>>> filename=/mnt/sda4/1G.img
+>> Hmm, the test runs always about 15M/s at my side regardless how many threads.
 >
-> Reordering the initcalls seems the easiest solution, but it is still very
-> fragile...
+> CFQ£¿
+yes.
 
-So that's what I tried to do, by making it a "pure_initcall()". Even
-that didn't seem to be enough according to Manuel.
-
-Can you try my patch (that makes just that ipc ns init be a
-pure_initcall(), together with your hack on top of Andrew's? What is
-it that happens so early that even pure_initcall() hasn't been done
-yet?
-
-             Linus
+> what's the slice_idle value?
+default value. I didn't change it.
