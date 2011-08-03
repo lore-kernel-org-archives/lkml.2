@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab1HCN6s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 09:58:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35668 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752943Ab1HCN6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 09:58:43 -0400
-Date: Wed, 3 Aug 2011 14:58:39 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        XFS <xfs@oss.sgi.com>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 8/8] mm: vmscan: Do not writeback filesystem pages from
- kswapd
-Message-ID: <20110803135839.GL19099@suse.de>
-References: <1311265730-5324-1-git-send-email-mgorman@suse.de>
- <1311265730-5324-9-git-send-email-mgorman@suse.de>
- <20110803113706.GF27199@redhat.com>
+	id S1753571Ab1HCOAK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 10:00:10 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:58440 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139Ab1HCOAE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 10:00:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110803113706.GF27199@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110803135604.GA29761@dumpdata.com>
+References: <cover.1312378163.git.luto@mit.edu> <20110803135322.GC29501@dumpdata.com>
+ <20110803135604.GA29761@dumpdata.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Wed, 3 Aug 2011 09:59:43 -0400
+X-Google-Sender-Auth: zRiuNel17RwxNqWl_wsB0Rgut3Y
+Message-ID: <CAObL_7FavQH29CENHptZphDDv7ja2P9MVM5Uj47G68ccDumBBg@mail.gmail.com>
+Subject: Re: [PATCH v2 0/6] Collected vdso/vsyscall fixes for 3.1
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        jeremy@goop.org, keir.xen@gmail.com, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 03, 2011 at 01:37:06PM +0200, Johannes Weiner wrote:
-> On Thu, Jul 21, 2011 at 05:28:50PM +0100, Mel Gorman wrote:
-> > Assuming that flusher threads will always write back dirty pages promptly
-> > then it is always faster for reclaimers to wait for flushers. This patch
-> > prevents kswapd writing back any filesystem pages.
-> > 
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> 
-> Relying on the flushers may mean that every dirty page in the system
-> has to be written back before the pages from the zone of interest are
-> clean.
-> 
+On Wed, Aug 3, 2011 at 9:56 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Wed, Aug 03, 2011 at 09:53:22AM -0400, Konrad Rzeszutek Wilk wrote:
+>> On Wed, Aug 03, 2011 at 09:31:48AM -0400, Andy Lutomirski wrote:
+>> > This fixes various problems that cropped up with the vdso patches.
+>> >
+>> >  - Patch 1 fixes an information leak to userspace.
+>> >  - Patches 2 and 3 fix the kernel build on gold.
+>> >  - Patches 4 and 5 fix Xen (I hope).
+>> >  - Patch 6 (optional) adds a trace event to vsyscall emulation.  It will
+>> >    make it easier to handle performance regression reports :)
+>>
+>> Hm, you seemed to have the x86 maintainers on your email..
+>
+> I definitly need some coffee. What I meant was that you missing putting
+> the x86 maintainers on this patchset. They are the ones that will handle this.
+>
+> I put them on the To list for you.
 
-Yes.
+Are you sure about that coffee?  I'm pretty sure I had x86@kernel.org in there.
 
-> De-facto we have only one mechanism to stay on top of the dirty pages
-> from a per-zone perspective, and that is single-page writeout from
-> reclaim.
-> 
-
-Yes.
-
-> While we all agree that this sucks, we can not remove it unless we
-> have a replacement that makes zones reclaimable in a reasonable time
-> frame (or keep them reclaimable in the first place, what per-zone
-> dirty limits attempt to do).
-> 
-> As such, please include
-> 
-> Nacked-by: Johannes Weiner <jweiner@redhat.com>
-
-I've already dropped the patch. If I could, I would have signed this at
-the time as
-
-Signed-off-but-naking-it-anyway: Mel Gorman <mgorman@suse.de
-
--- 
-Mel Gorman
-SUSE Labs
+--Andy
