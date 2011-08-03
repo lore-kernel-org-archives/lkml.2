@@ -1,102 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab1HCNce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 09:32:34 -0400
-Received: from DMZ-MAILSEC-SCANNER-4.MIT.EDU ([18.9.25.15]:61147 "EHLO
-	dmz-mailsec-scanner-4.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754726Ab1HCNcQ (ORCPT
+	id S1755614Ab1HCNcm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 09:32:42 -0400
+Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:59062 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754828Ab1HCNcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 09:32:16 -0400
-X-AuditID: 1209190f-b7b44ae000000a24-80-4e394d482a0b
+	Wed, 3 Aug 2011 09:32:20 -0400
+X-AuditID: 12074423-b7b31ae000000a3c-dd-4e394de7bbfe
 From: Andy Lutomirski <luto@MIT.EDU>
 To: x86@kernel.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, jeremy@goop.org,
         keir.xen@gmail.com, xen-devel@lists.xensource.com,
         virtualization@lists.linux-foundation.org,
         Andy Lutomirski <luto@MIT.EDU>
-Subject: [PATCH v2 3/6] x86-64: Work around gold bug 13023
-Date: Wed,  3 Aug 2011 09:31:51 -0400
-Message-Id: <0b260cb806f1f9a25c00ce8377a5f035d57f557a.1312378163.git.luto@mit.edu>
+Subject: [PATCH v2 4/6] x86-64/xen: Enable the vvar mapping
+Date: Wed,  3 Aug 2011 09:31:52 -0400
+Message-Id: <4659478ed2f3480938f96491c2ecbe2b2e113a23.1312378163.git.luto@mit.edu>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <cover.1312378163.git.luto@mit.edu>
 References: <cover.1312378163.git.luto@mit.edu>
 In-Reply-To: <cover.1312378163.git.luto@mit.edu>
 References: <cover.1312378163.git.luto@mit.edu>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsUixCmqrevha+lnsPuemEXflaPsFo/mPWK1
-	mLpsLqvFssVPGS0u75rDZrH87Dw2ix8bHrNa3Jvynt2Bw2PnrLvsHpsvrmby2LSqk81j8o3l
-	jB7b+3axe3x8eovF4/MmuQD2KC6blNSczLLUIn27BK6MDSsvMhWs46/o2/2MpYFxLk8XIyeH
-	hICJxNxNb1khbDGJC/fWs3UxcnEICexjlPg1bQJYQkhgPaPE5H/xEImnTBK/X/xiBkmwCahI
-	dCx9wARiiwg4SbRO+MgEUsQs8IxRYtPRM0BFHBzCAlYSc16HgtSwCKhKfHx+mAXE5hUIkmh/
-	1Q+1WU7iyOXnYHM4BQwkVi14zgLSKiSgL/FgTT4O4QmMAgsYGVYxyqbkVunmJmbmFKcm6xYn
-	J+blpRbpmujlZpbopaaUbmIEB7Ik/w7GbweVDjEKcDAq8fAyylv4CbEmlhVX5h5ilORgUhLl
-	Xe5l6SfEl5SfUpmRWJwRX1Sak1p8iFGCg1lJhLedFyjHm5JYWZValA+TkuZgURLnLff+7ysk
-	kJ5YkpqdmlqQWgSTleHgUJLg9QJGrJBgUWp6akVaZk4JQpqJgxNkOA/Q8HKQGt7igsTc4sx0
-	iPwpRkUpcV5DkIQASCKjNA+uF5ZoXjGKA70izGsLUsUDTFJw3a+ABjMBDf7/3gJkcEkiQkqq
-	gTEwP+PSYouwB3JyieeYuN8dyZMSTo9bxvbm3aVZi9ckX8nPZVvu3lGTftD4Q06QYS+Dt2D8
-	Yq5VAfZ3bpslBq+1mrHp6YwpG4WK9HvOXsycyvl6Y9jhHzfZpzzwetPMfONjiKK6xgG2TjHW
-	SWdi1X5P8Ivr/M/rn7nulNmSt+89/Xpbcq3lmZVYijMSDbWYi4oTAYz/ky8PAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsUixCmqrPvc19LPYOUhHYu+K0fZLR7Ne8Rq
+	MXXZXFaLZYufMlpc3jWHzWL52XlsFj82PGa1uDflPbsDh8fOWXfZPTZfXM3ksWlVJ5vH5BvL
+	GT229+1i9/j49BaLx+dNcgHsUVw2Kak5mWWpRfp2CVwZN78nFJzgqfj+iKOBcR1XFyMnh4SA
+	icSlT1/ZIWwxiQv31rOB2EIC+xgl2m64dzFyAdnrGSXuXb3GDOE8ZZL4MfsIWAebgIpEx9IH
+	TCC2iICTROuEj0wgRcwCzxglNh09wwySEBawlpj56iiYzSKgKtHWd5YFxOYVCJJ4ePcBG8Rq
+	OYkjl5+DDeIUMJBYteA5UA0H0DZ9iQdr8nEIT2AUWMDIsIpRNiW3Sjc3MTOnODVZtzg5MS8v
+	tUjXTC83s0QvNaV0EyMojNldlHcw/jmodIhRgINRiYeXUd7CT4g1say4MvcQoyQHk5Io73Iv
+	Sz8hvqT8lMqMxOKM+KLSnNTiQ4wSHMxKIrztvEA53pTEyqrUonyYlDQHi5I4b673f18hgfTE
+	ktTs1NSC1CKYrA4Hh8DZ22+5BVpm/w2XYsnLz0tVkuDlB8azkGBRanpqRVpmTglCORMHJ8gy
+	HqBlNiA1vMUFibnFmekQ+VOMuhxXJxw+yigENkhKnNcQpEgApCijNA9uDiw9vWIUB3pTmJcB
+	pIoHmNrgJr0CWsIEtOT/ewuQJSWJCCmpBsb6F0UF/n0LhfhV9QrfB9u9sLStO+d7cQ+fzIXF
+	vksnXfnQsu783cosJ6HgRQ0qe9e94Ljt0jVb5O+Xxw8azaZUimVw/PEsDqupOfnoj1bwrmTl
+	7WveC0WX9r8NnapmXrqm7IJJoZTEtCWH9mWWf8zO561WO+te8+eAs+EUecbUziXffc+1FSqx
+	FGckGmoxFxUnAgA88RVXKgMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gold has trouble assigning numbers to the location counter inside of
-an output section description.  The bug was triggered by
-9fd67b4ed0714ab718f1f9bd14c344af336a6df7, which consolidated all of
-the vsyscall sections into a single section.  The workaround is IMO
-still nicer than the old way of doing it.
+Xen needs to handle VVAR_PAGE, introduced in git commit:
+9fd67b4ed0714ab718f1f9bd14c344af336a6df7
+x86-64: Give vvars their own page
 
-This produces an apparently valid kernel image and passes my vdso
-tests on both GNU ld version 2.21.51.0.6-2.fc15 20110118 and GNU
-gold (version 2.21.51.0.6-2.fc15 20110118) 1.10 as distributed by
-Fedora 15.
+Otherwise we die during bootup with a message like:
+
+(XEN) mm.c:940:d10 Error getting mfn 1888 (pfn 1e3e48) from L1 entry
+      8000000001888465 for l1e_owner=10, pg_owner=10
+(XEN) mm.c:5049:d10 ptwr_emulate: could not get_page_from_l1e()
+[    0.000000] BUG: unable to handle kernel NULL pointer dereference at (null)
+[    0.000000] IP: [<ffffffff8103a930>] xen_set_pte+0x20/0xe0
 
 Signed-off-by: Andy Lutomirski <luto@mit.edu>
-Reported-by: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/kernel/vmlinux.lds.S |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
+ arch/x86/xen/mmu.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index e79fb39..8f3a265 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -158,10 +158,12 @@ SECTIONS
- 	__vvar_page = .;
- 
- 	.vvar : AT(ADDR(.vvar) - LOAD_OFFSET) {
-+		/* work around gold bug 13023 */
-+		__vvar_beginning_hack = .;
- 
--	      /* Place all vvars at the offsets in asm/vvar.h. */
--#define EMIT_VVAR(name, offset) 		\
--		. = offset;		\
-+		/* Place all vvars at the offsets in asm/vvar.h. */
-+#define EMIT_VVAR(name, offset) 			\
-+		. = __vvar_beginning_hack + offset;	\
- 		*(.vvar_ ## name)
- #define __VVAR_KERNEL_LDS
- #include <asm/vvar.h>
-@@ -184,15 +186,17 @@ SECTIONS
- 
- 	. = VSYSCALL_ADDR;
- 	.vsyscall : AT(VLOAD(.vsyscall)) {
-+		/* work around gold bug 13023 */
-+		__vsyscall_beginning_hack = .;
- 		*(.vsyscall_0)
- 
--		. = 1024;
-+		. = __vsyscall_beginning_hack + 1024;
- 		*(.vsyscall_1)
- 
--		. = 2048;
-+		. = __vsyscall_beginning_hack + 2048;
- 		*(.vsyscall_2)
- 
--		. = 4096;  /* Pad the whole page. */
-+		. = __vsyscall_beginning_hack + 4096;  /* Pad the whole page. */
- 	} :user =0xcc
- 	. = ALIGN(__vsyscall_0 + PAGE_SIZE, PAGE_SIZE);
- 
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index f987bde..8cce339 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1916,6 +1916,7 @@ static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
+ # endif
+ #else
+ 	case VSYSCALL_LAST_PAGE ... VSYSCALL_FIRST_PAGE:
++	case VVAR_PAGE:
+ #endif
+ 	case FIX_TEXT_POKE0:
+ 	case FIX_TEXT_POKE1:
+@@ -1956,7 +1957,8 @@ static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
+ #ifdef CONFIG_X86_64
+ 	/* Replicate changes to map the vsyscall page into the user
+ 	   pagetable vsyscall mapping. */
+-	if (idx >= VSYSCALL_LAST_PAGE && idx <= VSYSCALL_FIRST_PAGE) {
++	if ((idx >= VSYSCALL_LAST_PAGE && idx <= VSYSCALL_FIRST_PAGE) ||
++	    idx == VVAR_PAGE) {
+ 		unsigned long vaddr = __fix_to_virt(idx);
+ 		set_pte_vaddr_pud(level3_user_vsyscall, vaddr, pte);
+ 	}
 -- 
 1.7.6
 
