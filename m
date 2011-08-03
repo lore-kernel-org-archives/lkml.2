@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab1HCJmD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 05:42:03 -0400
-Received: from fnsrvlx3.fnbs.net.my ([202.9.108.191]:60430 "EHLO
-	smtp-gw.fnbs.net.my" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753776Ab1HCJlz (ORCPT
+	id S1753935Ab1HCJsk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 05:48:40 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63318 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753565Ab1HCJsf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 05:41:55 -0400
-X-Greylist: delayed 1527 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Aug 2011 05:41:55 EDT
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS));
-From: processingunit15@yahoo.com.hk
-Reply-to: processingunit15@yahoo.com.hk
-Subject: PICK UP FIRST PAYMENT FROM WESTERN UNION!!!!!!!!!!!!!!
-X-Mailer: v3.1s ( 41.155.65.71 - ravi )
-X-Originating-IP: 41.155.65.71
-Date: Wed, 03 Aug 2011 17:16:22 +0800
-Message-id: <4e3911e6.109.6ae7.220225011@kasturi.edu.my>
+	Wed, 3 Aug 2011 05:48:35 -0400
+Message-ID: <4E391986.90108@cn.fujitsu.com>
+Date: Wed, 03 Aug 2011 17:48:54 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-X-To-Not-Matched: true
-X-SpamDetect: **********: 10.8 sd=10.8  [221]98%12.4(51,69) [50]70%0.9(X-To-Not-Matched:tru) [11]64%0.3(UppercaseSubject) [129]44%-0.0(from_return_nomatch) [27]46%-0.0(X-LangGuess:English)
-X-Aspam: Words 0.0 -furnish +united -transaction -director +western -heart -investing -australia -forget 
-X-Aspam: URLS scored 3.0 westernunion.com 
-X-Aspam: Best match was sample aspam_bad\m9852.msg
-X-Aspam: Total 3.0
-X-LangGuess: English
-To: unlisted-recipients:; (no To-header on input)
+To: Shaohua Li <shli@kernel.org>
+CC: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: fio posixaio performance problem
+References: <4E38C314.8070305@cn.fujitsu.com> <CANejiEViuKky1A7Xh0MQKBVNMj_fgzwayWyON7hFGfP3wa62SQ@mail.gmail.com> <4E3902C7.9050907@cn.fujitsu.com> <CANejiEVqFt4j1-qTVnxEAe75z0y010s=ST2XtCDDTqDEQT=EcQ@mail.gmail.com>
+In-Reply-To: <CANejiEVqFt4j1-qTVnxEAe75z0y010s=ST2XtCDDTqDEQT=EcQ@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-03 17:47:35,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-03 17:47:35
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-How are you doing today?
+On 2011-8-3 16:22, Shaohua Li wrote:
+> 2011/8/3 Gui Jianfeng <guijianfeng@cn.fujitsu.com>:
+>> On 2011-8-3 15:38, Shaohua Li wrote:
+>>> 2011/8/3 Gui Jianfeng <guijianfeng@cn.fujitsu.com>:
+>>>> Hi,
+>>>>
+>>>> I ran a fio test to simulate qemu-kvm io behaviour.
+>>>> When job number is greater than 2, IO performance is
+>>>> really bad.
+>>>>
+>>>> 1 thread: aggrb=15,129KB/s
+>>>> 4 thread: aggrb=1,049KB/s
+>>>>
+>>>> Kernel: lastest upstream
+>>>>
+>>>> Any idea?
+>>>>
+>>>> ---
+>>>> [global]
+>>>> runtime=30
+>>>> time_based=1
+>>>> size=1G
+>>>> group_reporting=1
+>>>> ioengine=posixaio
+>>>> exec_prerun='echo 3 > /proc/sys/vm/drop_caches'
+>>>> thread=1
+>>>>
+>>>> [kvmio-1]
+>>>> description=kvmio-1
+>>>> numjobs=4
+>>>> rw=write
+>>>> bs=4k
+>>>> direct=1
+>>>> filename=/mnt/sda4/1G.img
+>>> Hmm, the test runs always about 15M/s at my side regardless how many threads.
+>>
+>> CFQ£¿
+> yes.
+> 
+>> what's the slice_idle value?
+> default value. I didn't change it.
 
-I write to inform you that we have already sent you
-USD5000.00 dollars through Western union as we have been
-given the mandate to transfer your full compensation payment
-of USD1.800,000.00 via western union by the United Nation
-Government. I called to give you the information through
-phone as internet hackers are many, but i cannot reach you
-for over one week now and even this morning. So,I decided to
-email you the MTCN and Sender's Name so that you can pick it
-up this USD5000.00 to enable us send another USD5000.00 by
-tomorrow as you knows we will be sending you only USD5000.00
-per-day.Please pick up this information, you are to run fast
-to any western union in your country to pick up the
-USD5000.00 and send us e-mail back so we can send you
-another payment tomorrow.
+Hmm, I use a sata disk, and can reproduce this bug every time...
 
-Manager: Mr. Jack Russells
-website: www.westernunion.com
-Email: processingunit15@yahoo.com.hk
+Thanks,
+Gui
 
-E-mail me once you picked up this USD5000.00 today.
-Here is the western union information to pick up the
-USD5000.00,
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
-MTCN : 782 543 4236
-SENDER'S NAME: MARYLIN JOHNSON
-TEXT QUESTION: IN GOD
-ANSWER:WE TRUST
-AMOUNT SENT: $5000.00 USD
-COUNTRY:NIGERIA
 
-I am waiting for your E-mail once you pick up USD5000.00,
-
-For more information call +2347064648799
-
-Thanks
-Mr. Ryan Morgan
-
-Regards,
-
-R.R.Ravi
-Senior Executive
-International Student Department
-Kasturi College International
