@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab1HDPUJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 11:20:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47452 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753912Ab1HDPUG convert rfc822-to-8bit (ORCPT
+	id S1754008Ab1HDPZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 11:25:58 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:42866 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751850Ab1HDPZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 11:20:06 -0400
-Subject: Re: Regression in 3.0-git - bisected to commit
- dd4e5d3ac4a76b868daf30e35bd572def96c30ed
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4E3AB5E0.5080506@lwfinger.net>
-References: <4E3AB5E0.5080506@lwfinger.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 04 Aug 2011 17:19:10 +0200
-Message-ID: <1312471150.16729.37.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 4 Aug 2011 11:25:55 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: Da1FzxQVM1n2dtdeHz0ff_RrRaEJDlL3R2ids8AZYH0R331
+ 7wcjV1FW2mFBNxsYRp8LCZo1d87UPoex5lcr8buD8oYuzhCIYHfWUdr1yyTG
+ mTlzhuMq5s__WZzOod_y4pMPz5udqEHGEG3nJJl4TPujbUbfgU_ZYWG0ni5h
+ M.VWWZA4ThvSX4jpKGWzPPzxDOA.4B0ChtI0fs_95bFTIvuT_6r097OVt.MY
+ hh4im3kd_HQoTyOu5z2ajMLPrfw0n2OvlVgIaMVpDhaJV1DNZ5hAS7HRiYCP
+ gvLlXJvlUJYY6GJa9T3vWwLhejZNkxrtJUebXAh3sqMovIji0hujXFWRcyvW
+ MflA0dcxvZ.PD5lsNiTiZEMHLnfOuEEpeNn8ALxwAds7sTg--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 4 Aug 2011 10:25:53 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: Huang Ying <ying.huang@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [listll] Fix fetching of head->first in lockless lists.
+In-Reply-To: <20110804151725.GA21597@Krystal>
+Message-ID: <alpine.DEB.2.00.1108041021250.24277@router.home>
+References: <alpine.DEB.2.00.1108040942360.24277@router.home> <20110804151725.GA21597@Krystal>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-04 at 10:08 -0500, Larry Finger wrote:
-> The logs for a recent git pull from Linus's tree show the warning below. The 
-> problem has been bisected to commit dd4e5d3ac4a7 with the commit message of
-> 
-> ===============
-> lockdep: Fix trace_[soft,hard]irqs_[on,off]() recursion
+On Thu, 4 Aug 2011, Mathieu Desnoyers wrote:
 
-Thanks, but yes that's known, and a patch has been queued for merger
-that should solve this:
+> * Christoph Lameter (cl@linux.com) wrote:
+> >
+> > The fetching of head->first must occur in the cmpxchg loop.
+> >
+> > With the current code head->first may change after the content were assigned to
+> > the "entry" variable. Entry then not be change anymore in the loop and be
+> > used as old_entry for the cmpxchg. The cmpxchg will then therefore
+> > compare "entry" to list->head. This will always fail if list->head has
+> > changed. The restarting of the loop will not fetch head->first again. So
+> > we could have a hang there.
+> >
+> > I guess this only works now because the compiler optimizations pull
+> > the fetching of head->first into the loop.
+>
+> Hi Christoph,
+>
+> The cmpxchg re-fetch the head->first (this is its return value). The:
+>
+>   } while ((entry = cmpxchg(&head->first, old_entry, new)) != old_entry);
+>
+> Takes care of the re-read and populating "entry" with an updated value.
 
-https://lkml.org/lkml/2011/8/4/60
+I know but that is not the problem.
 
-
+The code does not refetch the contents in old_entry (which got its value
+from entry which was obtained before the loop was entered!). So Old entry
+is constant even after a cmpxchg has failed. If head->first has changed
+then we will repeatedly comparing the new value to "old_entry" (aka
+"entry") as it was before the loop was entered.
