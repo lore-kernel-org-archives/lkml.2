@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab1HDWFd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 18:05:33 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:55431 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755795Ab1HDWF0 (ORCPT
+	id S1755949Ab1HDWGN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 18:06:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35185 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755795Ab1HDWGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 18:05:26 -0400
-Date: Thu, 4 Aug 2011 15:05:24 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Nitin Gupta <ngupta@vflare.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        gregkh@suse.de
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] zcache: Fix build error when sysfs is not defined
-Message-Id: <20110804150524.2dcfcecf.rdunlap@xenotime.net>
-In-Reply-To: <1297484079-12562-1-git-send-email-ngupta@vflare.org>
-References: <1297484079-12562-1-git-send-email-ngupta@vflare.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Thu, 4 Aug 2011 18:06:08 -0400
+Date: Thu, 4 Aug 2011 17:06:02 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: Serge Hallyn <serge@hallyn.com>
+Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com, ebiederm@xmission.com,
+        containers@lists.linux-foundation.org, netdev@vger.kernel.org,
+        akpm@osdl.org
+Subject: Re: [PATCH 10/14] net/core/scm.c: target capable() calls to user_ns
+ owning the net_ns
+Message-ID: <20110804220602.GA32347@sergelap>
+References: <1311706717-7398-1-git-send-email-serge@hallyn.com>
+ <1311706717-7398-11-git-send-email-serge@hallyn.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311706717-7398-11-git-send-email-serge@hallyn.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Feb 2011 23:14:39 -0500 Nitin Gupta wrote:
-
-> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-> ---
->  drivers/staging/zcache/zcache.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+Quoting Serge Hallyn (serge@hallyn.com):
+> From: Serge E. Hallyn <serge.hallyn@canonical.com>
 > 
-> diff --git a/drivers/staging/zcache/zcache.c b/drivers/staging/zcache/zcache.c
-> index 61be849..8cd3fd8 100644
-> --- a/drivers/staging/zcache/zcache.c
-> +++ b/drivers/staging/zcache/zcache.c
-> @@ -1590,9 +1590,9 @@ __setup("nofrontswap", no_frontswap);
->  
->  static int __init zcache_init(void)
->  {
-> -#ifdef CONFIG_SYSFS
->  	int ret = 0;
->  
-> +#ifdef CONFIG_SYSFS
->  	ret = sysfs_create_group(mm_kobj, &zcache_attr_group);
->  	if (ret) {
->  		pr_err("zcache: can't create sysfs\n");
-> -- 
+> The uid/gid comparisons don't have to be pulled out.  This just seemed
+> more easily proved correct.
 
-OMG.  This patch still needs to be applied to linux-next 20110804..........
-sad.
+The following needs to be folded into this patch:
 
+From: Serge Hallyn <serge.hallyn@canonical.com>
+Date: Thu, 4 Aug 2011 21:48:13 +0000
+Subject: [PATCH 2/2] fold up - net/core/scm.c: cred is const
 
+Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ net/core/scm.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/core/scm.c b/net/core/scm.c
+index 21b5d0b..528fa36 100644
+--- a/net/core/scm.c
++++ b/net/core/scm.c
+@@ -43,7 +43,7 @@
+  *	setu(g)id.
+  */
+ 
+-static __inline__ bool uidequiv(struct cred *src, struct ucred *tgt,
++static __inline__ bool uidequiv(const struct cred *src, struct ucred *tgt,
+ 			       struct user_namespace *ns)
+ {
+ 	if (src->user_ns != ns)
+@@ -57,7 +57,7 @@ check_capable:
+ 	return false;
+ }
+ 
+-static __inline__ bool gidequiv(struct cred *src, struct ucred *tgt,
++static __inline__ bool gidequiv(const struct cred *src, struct ucred *tgt,
+ 			       struct user_namespace *ns)
+ {
+ 	if (src->user_ns != ns)
+-- 
+1.7.5.4
+
