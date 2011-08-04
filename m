@@ -1,142 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab1HDO6L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 10:58:11 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59598 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665Ab1HDO6J (ORCPT
+	id S1754850Ab1HDO6t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 10:58:49 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55734 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754540Ab1HDO6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 10:58:09 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@amd64.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/4] perf evlist: Introduce 'disable' method
-Date: Thu,  4 Aug 2011 11:57:16 -0300
-Message-Id: <1312469838-2884-3-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1312469838-2884-1-git-send-email-acme@infradead.org>
-References: <1312469838-2884-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 4 Aug 2011 10:58:43 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Avi Kivity <avi@redhat.com>, Andre Przywara <Andre.Przywara@amd.com>,
+        Martin Pohlack <Martin.Pohlack@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH -v3 0/3] x86, AMD: Correct F15h IC aliasing issue
+Date: Thu,  4 Aug 2011 16:58:35 +0200
+Message-Id: <1312469918-6641-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.4.rc2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-To remove the last case of access to the FD() macro outside the library.
+Hi,
 
-Inspired by a patch by Borislav that moved the FD() macro to util.h, for
-namespace concerns I rather preferred to constrain it to ev{sel,list}.c.
+here's an updated and revised patchset addressing all comments from last
+time:
 
-Cc: Borislav Petkov <bp@amd64.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-qn893qsstcg366tkucu649qj@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+* saturate bits [14:12] instead of clearing them
+* calculate the mask from the CPUID 0x8000_0005 IC identifier instead of
+hardcoding it
+
+Please take a look and apply, if no objections.
+
+Thanks.
+
 ---
- tools/perf/builtin-record.c |   19 ++-----------------
- tools/perf/util/evlist.c    |   13 +++++++++++++
- tools/perf/util/evlist.h    |    2 ++
- 3 files changed, 17 insertions(+), 17 deletions(-)
+Changelog:
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 80dc5b7..f6426b4 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -30,8 +30,6 @@
- #include <sched.h>
- #include <sys/mman.h>
- 
--#define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
--
- enum write_mode_t {
- 	WRITE_FORCE,
- 	WRITE_APPEND
-@@ -438,7 +436,6 @@ static void mmap_read_all(void)
- 
- static int __cmd_record(int argc, const char **argv)
- {
--	int i;
- 	struct stat st;
- 	int flags;
- 	int err;
-@@ -682,7 +679,6 @@ static int __cmd_record(int argc, const char **argv)
- 
- 	for (;;) {
- 		int hits = samples;
--		int thread;
- 
- 		mmap_read_all();
- 
-@@ -693,19 +689,8 @@ static int __cmd_record(int argc, const char **argv)
- 			waking++;
- 		}
- 
--		if (done) {
--			for (i = 0; i < evsel_list->cpus->nr; i++) {
--				struct perf_evsel *pos;
--
--				list_for_each_entry(pos, &evsel_list->entries, node) {
--					for (thread = 0;
--						thread < evsel_list->threads->nr;
--						thread++)
--						ioctl(FD(pos, i, thread),
--							PERF_EVENT_IOC_DISABLE);
--				}
--			}
--		}
-+		if (done)
-+			perf_evlist__disable(evsel_list);
- 	}
- 
- 	if (quiet || signr == SIGUSR1)
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index b021ea9..e03e7bc 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -91,6 +91,19 @@ int perf_evlist__add_default(struct perf_evlist *evlist)
- 	return 0;
- }
- 
-+void perf_evlist__disable(struct perf_evlist *evlist)
-+{
-+	int cpu, thread;
-+	struct perf_evsel *pos;
-+
-+	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
-+		list_for_each_entry(pos, &evlist->entries, node) {
-+			for (thread = 0; thread < evlist->threads->nr; thread++)
-+				ioctl(FD(pos, cpu, thread), PERF_EVENT_IOC_DISABLE);
-+		}
-+	}
-+}
-+
- int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
- {
- 	int nfds = evlist->cpus->nr * evlist->threads->nr * evlist->nr_entries;
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index b2b8623..ce85ae9 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -53,6 +53,8 @@ int perf_evlist__alloc_mmap(struct perf_evlist *evlist);
- int perf_evlist__mmap(struct perf_evlist *evlist, int pages, bool overwrite);
- void perf_evlist__munmap(struct perf_evlist *evlist);
- 
-+void perf_evlist__disable(struct perf_evlist *evlist);
-+
- static inline void perf_evlist__set_maps(struct perf_evlist *evlist,
- 					 struct cpu_map *cpus,
- 					 struct thread_map *threads)
--- 
-1.6.2.5
+v2:
+here's the second version of this patch which actually turned into a
+small patchset. As Ingo suggested, the initial patch stays first to ease
+backporting and the following 3 patches address (hopefully) all review
+comments from the initial submission. The patchset has been tested with
+Debian's old stable lenny (i.e. 5.0) distro in a 32-bit environment and
+all worked as expected.
+
+Below some performance data to show that there is no noticeable
+performance degradation introduced by the changeset.
+
+So please, do take a look again and let me know.
+
+Thanks.
+
+VA alignment enabled.
+====================
+
+ Performance counter stats for './build.sh' (10 runs):
+
+    3187047.935990 task-clock                #   24.001 CPUs utilized            ( +-  1.37% )
+           510,888 context-switches          #    0.000 M/sec                    ( +-  0.44% )
+            60,712 CPU-migrations            #    0.000 M/sec                    ( +-  0.51% )
+        26,046,891 page-faults               #    0.008 M/sec                    ( +-  0.00% )
+ 1,841,068,123,735 cycles                    #    0.578 GHz                      ( +-  1.10% ) [63.39%]
+   560,044,437,348 stalled-cycles-frontend   #   30.42% frontend cycles idle     ( +-  1.13% ) [64.65%]
+   436,165,228,465 stalled-cycles-backend    #   23.69% backend  cycles idle     ( +-  1.19% ) [67.21%]
+ 1,461,854,088,667 instructions              #    0.79  insns per cycle
+                                             #    0.38  stalled cycles per insn  ( +-  0.77% ) [70.31%]
+   334,169,452,362 branches                  #  104.852 M/sec                    ( +-  1.20% ) [69.43%]
+    21,485,007,982 branch-misses             #    6.43% of all branches          ( +-  0.68% ) [65.01%]
+
+     132.787483539 seconds time elapsed                                          ( +-  1.37% )
+
+
+VA alignment disabled
+=====================
+
+Performance counter stats for './build.sh' (10 runs):
+
+    3173688.887193 task-clock                #   24.001 CPUs utilized            ( +-  1.37% )
+           511,425 context-switches          #    0.000 M/sec                    ( +-  0.28% )
+            60,522 CPU-migrations            #    0.000 M/sec                    ( +-  0.60% )
+        26,046,902 page-faults               #    0.008 M/sec                    ( +-  0.00% )
+ 1,832,825,813,094 cycles                    #    0.578 GHz                      ( +-  0.96% ) [63.60%]
+   563,123,451,900 stalled-cycles-frontend   #   30.72% frontend cycles idle     ( +-  0.96% ) [63.97%]
+   439,565,070,106 stalled-cycles-backend    #   23.98% backend  cycles idle     ( +-  1.23% ) [66.69%]
+ 1,465,314,643,020 instructions              #    0.80  insns per cycle
+                                             #    0.38  stalled cycles per insn  ( +-  0.74% ) [70.11%]
+   332,416,669,982 branches                  #  104.741 M/sec                    ( +-  0.85% ) [69.71%]
+    21,181,821,204 branch-misses             #    6.37% of all branches          ( +-  0.97% ) [65.93%]
+
+     132.230903628 seconds time elapsed                                          ( +-  1.37% )
+
+stock 3.0
+=========
+
+ Performance counter stats for './build.sh' (10 runs):
+
+    3369707.240439 task-clock                #   24.001 CPUs utilized            ( +-  1.18% )
+           510,450 context-switches          #    0.000 M/sec                    ( +-  0.29% )
+            58,906 CPU-migrations            #    0.000 M/sec                    ( +-  0.35% )
+        26,057,272 page-faults               #    0.008 M/sec                    ( +-  0.00% )
+ 1,836,326,075,063 cycles                    #    0.545 GHz                      ( +-  1.05% ) [63.51%]
+   561,850,647,545 stalled-cycles-frontend   #   30.60% frontend cycles idle     ( +-  1.03% ) [64.17%]
+   439,923,021,200 stalled-cycles-backend    #   23.96% backend  cycles idle     ( +-  1.10% ) [66.64%]
+ 1,467,236,934,265 instructions              #    0.80  insns per cycle
+                                             #    0.38  stalled cycles per insn  ( +-  0.87% ) [70.06%]
+   331,937,054,120 branches                  #   98.506 M/sec                    ( +-  0.81% ) [69.83%]
+    21,228,553,080 branch-misses             #    6.40% of all branches          ( +-  0.87% ) [65.79%]
+
+     140.398317711 seconds time elapsed                                          ( +-  1.18% )
+
 
