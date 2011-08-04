@@ -1,46 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005Ab1HDQA7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 12:00:59 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44093 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754618Ab1HDQA5 (ORCPT
+	id S1754979Ab1HDQFX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 12:05:23 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:53564 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753895Ab1HDQFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 12:00:57 -0400
-Message-ID: <4E3AC235.1060104@lwfinger.net>
-Date: Thu, 04 Aug 2011 11:00:53 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
-MIME-Version: 1.0
+	Thu, 4 Aug 2011 12:05:22 -0400
+Date: Thu, 4 Aug 2011 19:04:16 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Regression in 3.0-git - bisected to commit dd4e5d3ac4a76b868daf30e35bd572def96c30ed
-References: <4E3AB5E0.5080506@lwfinger.net> <1312471150.16729.37.camel@twins>
-In-Reply-To: <1312471150.16729.37.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: select_task_rq_fair: WARNING: at kernel/lockdep.c match_held_lock
+Message-ID: <20110804160415.GC3562@swordfish.minsk.epam.com>
+References: <20110804141306.GA3536@swordfish.minsk.epam.com>
+ <1312470358.16729.25.camel@twins>
+ <20110804153752.GA3562@swordfish.minsk.epam.com>
+ <1312472867.16729.38.camel@twins>
+ <20110804155347.GB3562@swordfish.minsk.epam.com>
+ <1312473473.16729.44.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312473473.16729.44.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2011 10:19 AM, Peter Zijlstra wrote:
-> On Thu, 2011-08-04 at 10:08 -0500, Larry Finger wrote:
->> The logs for a recent git pull from Linus's tree show the warning below. The
->> problem has been bisected to commit dd4e5d3ac4a7 with the commit message of
->>
->> ===============
->> lockdep: Fix trace_[soft,hard]irqs_[on,off]() recursion
->
-> Thanks, but yes that's known, and a patch has been queued for merger
-> that should solve this:
->
-> https://lkml.org/lkml/2011/8/4/60
+On (08/04/11 17:57), Peter Zijlstra wrote:
+> > > > > > [  132.794685] WARNING: at kernel/lockdep.c:3117 match_held_lock+0xf6/0x12e()
+> > > 
+> > > Just to double check, that line is:
+> > > 
+> > >                 if (DEBUG_LOCKS_WARN_ON(!hlock->nest_lock))
+> > > 
+> > > in your kernel source?
+> > > 
+> > 
+> > Nope, that's `if (DEBUG_LOCKS_WARN_ON(!class))'
+> > 
+> > 3106 static int match_held_lock(struct held_lock *hlock, struct lockdep_map *lock)
+> > 3107 {                                                                                                                                                                                                                             
+> > 3108     if (hlock->instance == lock)
+> > 3109         return 1;
+> > 3110 
+> > 3111     if (hlock->references) {
+> > 3112         struct lock_class *class = lock->class_cache[0];
+> > 3113 
+> > 3114         if (!class)
+> > 3115             class = look_up_lock_class(lock, 0);
+> > 3116 
+> > 3117         if (DEBUG_LOCKS_WARN_ON(!class))
+> > 3118             return 0;
+> > 3119 
+> > 3120         if (DEBUG_LOCKS_WARN_ON(!hlock->nest_lock))
+> > 3121             return 0;
+> > 3122 
+> > 3123         if (hlock->class_idx == class - lock_classes + 1)
+> > 3124             return 1;
+> > 3125     }
+> > 3126 
+> > 3127     return 0;
+> > 3128 }
+> > 3129 
+> 
+> Ah, in that case my previous analysis was pointless and I shall need to
+> scratch my head some more. 
+> 
 
-Sorry for the noise. I expected that this was a known problem and searched for 
-it. I probably used the wrong number of digits in the hash.
+That was a good idea to check what's going on on 3117 line. Well, your analysis
+was correct, it's just we have different match_held_lock() lines, and I guess we 
+may have different lines within match_held_lock()-callers in that case.
 
-Your patch does fix the issue for me.
+Just for note, I'm using the latest
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+$ git pull
+Already up-to-date.
 
-Thanks,
 
-Larry
+	Sergey
