@@ -1,149 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab1HDPKs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 11:10:48 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64031 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752910Ab1HDPKp (ORCPT
+	id S1754626Ab1HDPOY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 11:14:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43194 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753337Ab1HDPOX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 11:10:45 -0400
-Message-ID: <4E3AB66E.7070201@gmail.com>
-Date: Thu, 04 Aug 2011 09:10:38 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH 3/6] perf: add reference time event
-References: <1307490806-24548-1-git-send-email-dsahern@gmail.com> <1307490946-24673-1-git-send-email-dsahern@gmail.com> <20110617133230.GC25197@somewhere.redhat.com> <4DFB5F0B.4020903@gmail.com> <20110617141707.GE25197@somewhere.redhat.com> <4E1A7A0D.8000806@gmail.com> <20110712143024.GA9201@somewhere>
-In-Reply-To: <20110712143024.GA9201@somewhere>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Aug 2011 11:14:23 -0400
+Subject: Re: select_task_rq_fair: WARNING: at kernel/lockdep.c
+ match_held_lock
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+In-Reply-To: <1312470358.16729.25.camel@twins>
+References: <20110804141306.GA3536@swordfish.minsk.epam.com>
+	 <1312470358.16729.25.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 04 Aug 2011 17:13:40 +0200
+Message-ID: <1312470820.16729.31.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2011 08:30 AM, Frederic Weisbecker wrote:
-> On Sun, Jul 10, 2011 at 10:20:29PM -0600, David Ahern wrote:
->> On 06/17/2011 08:17 AM, Frederic Weisbecker wrote:
->>> On Fri, Jun 17, 2011 at 08:04:59AM -0600, David Ahern wrote:
->>>>
->>>>
->>>> On 06/17/2011 07:32 AM, Frederic Weisbecker wrote:
->>>>> On Tue, Jun 07, 2011 at 05:55:46PM -0600, David Ahern wrote:
->>>>>> For initial perf_clock to time-of-day correlation.
->>>>>>
->>>>>> Signed-off-by: David Ahern <dsahern@gmail.com>
->>>>>> ---
->>>>>>  tools/perf/util/event.c   |    1 +
->>>>>>  tools/perf/util/event.h   |    8 ++++++++
->>>>>>  tools/perf/util/session.c |    4 ++++
->>>>>>  tools/perf/util/session.h |    3 ++-
->>>>>>  4 files changed, 15 insertions(+), 1 deletions(-)
->>>>>>
->>>>>> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
->>>>>> index 3c1b8a6..1a89a04 100644
->>>>>> --- a/tools/perf/util/event.c
->>>>>> +++ b/tools/perf/util/event.c
->>>>>> @@ -24,6 +24,7 @@ static const char *perf_event__names[] = {
->>>>>>  	[PERF_RECORD_HEADER_TRACING_DATA]	= "TRACING_DATA",
->>>>>>  	[PERF_RECORD_HEADER_BUILD_ID]		= "BUILD_ID",
->>>>>>  	[PERF_RECORD_FINISHED_ROUND]		= "FINISHED_ROUND",
->>>>>> +	[PERF_RECORD_REFTIME]			= "REF_TIME",
->>>>>>  };
->>>>>>  
->>>>>>  const char *perf_event__name(unsigned int id)
->>>>>> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
->>>>>> index 1d7f664..f481f90 100644
->>>>>> --- a/tools/perf/util/event.h
->>>>>> +++ b/tools/perf/util/event.h
->>>>>> @@ -98,6 +98,7 @@ enum perf_user_event_type { /* above any possible kernel type */
->>>>>>  	PERF_RECORD_HEADER_TRACING_DATA		= 66,
->>>>>>  	PERF_RECORD_HEADER_BUILD_ID		= 67,
->>>>>>  	PERF_RECORD_FINISHED_ROUND		= 68,
->>>>>> +	PERF_RECORD_REFTIME			= 69,
->>>>>
->>>>> We would like to avoid adding more custom events like these. They were very convenient
->>>>> but they steal the kernel event type space. They are deemed for removal in the long term.
->>>>>
->>>>> Another idea to achieve what you want would be to create a new perf event header feature,
->>>>> like HEADER_TRACE_INFO or HEADER_BUILD_ID are. Then use that to create a space in the perf
->>>>> file to save that couple of clocks initial values.
->>>>
->>>> you mean like this:
->>>> https://lkml.org/lkml/2010/12/7/813
->>>>
->>>> David
->>>
->>> Exactly, why did you change?
->>
->> Finally getting back to this.
->>
->> The answer to the 'why' is that putting a reference timestamp in the
->> header field does not work for file appends across reboots. ie., the case:
->> perf record --tod ...
->> reboot
->> perf record -A --tod ...
+On Thu, 2011-08-04 at 17:05 +0200, Peter Zijlstra wrote:
+> On Thu, 2011-08-04 at 17:13 +0300, Sergey Senozhatsky wrote:
+> > Hello,
+> > Got the following trace on 3.0-git19 (07865-g1280ea8):
+> > 
+> > [  132.794685] WARNING: at kernel/lockdep.c:3117 match_held_lock+0xf6/0x12e()
+> > [  132.794687] Hardware name: Aspire 5741G    
+> > [  132.794689] Modules linked in: kvm_intel kvm tun ipv6 microcode snd_hda_codec_hdmi snd_hda_codec_realtek broadcom snd_hda_intel snd_hda_codec tg3 snd_pcm snd_timer snd soundcore acer_wmi evdev libphy sparse_keymap psmouse snd_page_alloc
+> > pcspkr battery ac wmi button ehci_hcd sr_mod cdrom usbcore sd_mod ahci
+> > [  132.794731] Pid: 4029, comm: qemu-system-x86 Not tainted 3.1.0-dbg-07865-g1280ea8-dirty #668
+> > [  132.794733] Call Trace:
+> > [  132.794736]  <IRQ>  [<ffffffff8103e4e0>] warn_slowpath_common+0x7e/0x96
+> > [  132.794744]  [<ffffffff8103e50d>] warn_slowpath_null+0x15/0x17
+> > [  132.794748]  [<ffffffff8106dcee>] match_held_lock+0xf6/0x12e
+> > [  132.794751]  [<ffffffff8106dd88>] lock_is_held+0x62/0xa6
+> > [  132.794757]  [<ffffffff81086471>] cgroup_lock_is_held+0x10/0x12
+> > [  132.794762]  [<ffffffff810368a2>] set_task_cpu+0x1ac/0x3e3
+> > [  132.794766]  [<ffffffff8103856a>] ? select_task_rq_fair+0x5c0/0x9ca
+> > [  132.794769]  [<ffffffff8103748d>] ? try_to_wake_up+0x29/0x28b
+> > [  132.794773]  [<ffffffff8103748d>] ? try_to_wake_up+0x29/0x28b
+> > [  132.794779]  [<ffffffff812552a5>] ? do_raw_spin_lock+0x6b/0x122
+> > [  132.794783]  [<ffffffff81037603>] try_to_wake_up+0x19f/0x28b
+> > [  132.794787]  [<ffffffff810603ed>] ? update_rmtp+0x65/0x65
+> > [  132.794790]  [<ffffffff8103770e>] wake_up_process+0x10/0x12
+> > [  132.794794]  [<ffffffff8106040a>] hrtimer_wakeup+0x1d/0x21
+> > [  132.794797]  [<ffffffff81060816>] __run_hrtimer+0x1b1/0x372
+> > [  132.794800]  [<ffffffff810613a2>] hrtimer_interrupt+0xe6/0x1b0
+> > [  132.794805]  [<ffffffff810185d5>] smp_apic_timer_interrupt+0x80/0x93
+> > [  132.794810]  [<ffffffff81493af3>] apic_timer_interrupt+0x73/0x80
+> > [  132.794812]  <EOI>  [<ffffffff810fb998>] ? do_mmu_notifier_register+0x66/0x125
+> > [  132.794822]  [<ffffffff810ec132>] ? mm_take_all_locks+0x10b/0x165
+> > [  132.794826]  [<ffffffff810ec160>] ? mm_take_all_locks+0x139/0x165
+> > [  132.794829]  [<ffffffff810ec132>] ? mm_take_all_locks+0x10b/0x165
+> > [  132.794832]  [<ffffffff810fb9a0>] do_mmu_notifier_register+0x6e/0x125
+> > [  132.794836]  [<ffffffff810fba72>] mmu_notifier_register+0xe/0x10
+> > [  132.794852]  [<ffffffffa01fcc0d>] kvm_dev_ioctl+0x297/0x400 [kvm]
+> > [  132.794857]  [<ffffffff81119022>] do_vfs_ioctl+0x46c/0x4ad
+> > [  132.794862]  [<ffffffff8110a68d>] ? fget_light+0xed/0x2a7
+> > [  132.794867]  [<ffffffff81492fca>] ? sysret_check+0x2e/0x69
+> > [  132.794871]  [<ffffffff811190b4>] sys_ioctl+0x51/0x75
+> > [  132.794875]  [<ffffffff81492f92>] system_call_fastpath+0x16/0x1b
+> > [  132.794877] ---[ end trace 298584c4014cd2b8 ]---
 > 
-> Damn append mode. I doubt that thing is really used. And it just complexifies
-> everything. It might be wise to get rid of it?
-> 
-> Ingo, Peter, Arnaldo?
->  
->> perf_clock timestamps change across reboots so the reference time
->> created by the first invocation is not valid for the append case. The
->> discussion then drifted towards having a kernel side event which per
->> past patch sets has its own issues.
->>
->> So to summarize the options proposed to date and issues with the proposals:
->> 1. reference timestamp in header
->>    - does not work for appends across reboots
->>
->> 2. synthesized events
->>    - preference against them
->>
->> 3. kernel side event
->>    - cannot generate an initial sample (with counter value and
->> perf_clock timestamp) on demand - e.g., start of session; a proposal to
->> use an ioctl to add one to the event stream was shot down
->>
->> At this point the only idea that comes to mind is to use a combination
->> of 2 and 3: add the kernel side clock event
->> (https://lkml.org/lkml/2011/2/18/11), read the realtime clock counter,
->> read the monotonic clock timestamp (ie., perf_clock value), and
->> synthesize a perf sample that is written to the file. The append case
->> (with mismatch in --tod options between record invocations) would be
->> handled by having the kernel side clock event in the event list
->> (perf_evlist__equal would fail if --tod was not used for all invocations).
-> 
-> Actually you first have to face a deeper problem. events are not stored
-> in order in the flow, but they are sorted from perf_session__process_events().
-> 
-> The bunch of sorted events is flushed periodically and sent to the consumer.
-> 
-> See flush_sample_queue().
-> 
-> And this sorting is made on top of the sample->time timestamps. So events
-> are first sorted on sample->time and only afterward you have access to your
-> gtod tracepoint samples. But if that gtod sample has been taken after a reboot
-> then its sample->time is not consistant with the rest. It is not well sorted
-> and thus the reftime won't be updated at the right moment.
-> 
-> So the problem is that reftime update already depends on a consistant cpu
-> timestamp.
-> 
-> I can't think about a sane way to work around that. Sorting on gtod + cpu timestamp
-> is not a solution because gtod can change.
-> 
-> I'd rather propose to refuse append mode as long as we have any timestamp. That includes
-> gtod but also sample timestamps. They are buggy if we reboot.
+> Curious, how easy is that to reproduce? That really shouldn't happen and
+> its not immediately obvious how it could happen.
 
-Arnaldo's sending patches, so I take it he's dug out from backlog. ;-)
+In particular, mm_take_all_locks() which is called from
+do_mmu_notifier_register() uses mutex_lock_nest_lock() in both
+vm_lock_anon_vma() and vm_lock_mapping(), both times using mm->mmap_sem
+as the nest lock.
 
-Any objections to not allowing append mode for perf-record if samples
-contain timestamps?
+As per __lock_acquire() any lock that passes in a nest_lock will set
+hlock->references and also assign this nest_lock to hlock->nest_lock,
+and as per lock_acquire() all that is done with IRQs disabled, so the
+interrupt in question should not be able to observe the state where
+->references is set, but ->nest_lock is not.
 
-David
+So I'm at a loss explaining how match_held_lock() observes exactly that,
+a lock for which ->references is set, but no ->nest_lock, that should be
+impossible.
+
+
