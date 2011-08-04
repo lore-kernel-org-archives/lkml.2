@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546Ab1HDUZf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 16:25:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25544 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753154Ab1HDUZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 16:25:30 -0400
-Date: Thu, 4 Aug 2011 16:25:18 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
-        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: Re: [patch v2 02/10] kdump: Make kimage_load_crash_segment() weak
-Message-ID: <20110804202518.GD429@redhat.com>
-References: <20110727125504.491183728@linux.vnet.ibm.com>
- <20110727125807.695225427@linux.vnet.ibm.com>
- <20110801203143.GH3805@redhat.com>
- <1312277403.4881.26.camel@br98xy6r>
- <20110802185530.GH6399@redhat.com>
- <1312368088.3783.40.camel@br98xy6r>
+	id S1754627Ab1HDUZm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 16:25:42 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:21681 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754604Ab1HDUZg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 16:25:36 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAJr+Ok5R8j0b/2dsb2JhbAA6CadpeIFAAQEFJxMcIxAIA0YUJQMhLodTwUsOgxeDHQSjYQ
+Date: Thu, 4 Aug 2011 22:25:33 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 01/11] watchdog: WatchDog Timer Driver Core - Add basic
+	framework
+Message-ID: <20110804202533.GV4227@infomag.iguana.be>
+References: <1310392522-9949-1-git-send-email-wim@iguana.be> <4E1B8089.90103@metafoo.de> <20110722193211.GL31767@infomag.iguana.be> <4E2B987E.6070107@metafoo.de> <20110727202450.GB4227@infomag.iguana.be> <4E327C50.2010103@metafoo.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1312368088.3783.40.camel@br98xy6r>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E327C50.2010103@metafoo.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 03, 2011 at 12:41:28PM +0200, Michael Holzheu wrote:
-> On Tue, 2011-08-02 at 14:55 -0400, Vivek Goyal wrote:
-> > On Tue, Aug 02, 2011 at 11:30:03AM +0200, Michael Holzheu wrote:
-> > > Hello Vivek,
-> > > 
-> > > On Mon, 2011-08-01 at 16:31 -0400, Vivek Goyal wrote:
-> > > > On Wed, Jul 27, 2011 at 02:55:06PM +0200, Michael Holzheu wrote:
-> > > 
-> > > [snip]
-> > > 
-> > > > > --- a/kernel/kexec.c
-> > > > > +++ b/kernel/kexec.c
-> > > > > @@ -842,8 +842,8 @@ out:
-> > > > >  	return result;
-> > > > >  }
-> > > > >  
-> > > > > -static int kimage_load_crash_segment(struct kimage *image,
-> > > > > -					struct kexec_segment *segment)
-> > > > > +int __weak kimage_load_crash_segment(struct kimage *image,
-> > > > > +				     struct kexec_segment *segment)
-> > > > 
-> > > > A comment here why we are making it weak should help in increasing
-> > > > the code readability.
-> > > 
-> > > What about the following:
-> > > 
-> > > /*
-> > >  * Load crash segment into memory. Architecture code can override this
-> > >  * function. E.g. this is necessary for architectures that do not
-> > >  * create page tables for crashkernel memory.
-> > >  */
-> > > int __weak kimage_load_crash_segment(struct kimage *image,
+Hi Lars,
+
+> >>>>> +int watchdog_dev_unregister(struct watchdog_device *watchdog)
+> >>>>> +{
+> >>>>> +	/* Check that a watchdog device was registered in the past */
+> >>>>> +	if (!test_bit(0, &watchdog_dev_busy) || !wdd)
+> >>>>> +		return -ENODEV;
+> >>>>> +
+> >>>>> +	/* We can only unregister the watchdog device that was registered */
+> >>>>> +	if (watchdog != wdd) {
+> >>>>> +		pr_err("%s: watchdog was not registered as /dev/watchdog.\n",
+> >>>>> +			watchdog->info->identity);
+> >>>>> +		return -ENODEV;
+> >>>>> +	}
+> >>>>> +
+> >>>>> +	/* Unregister the miscdevice */
+> >>>>> +	misc_deregister(&watchdog_miscdev);
+> >>>>> +	wdd = NULL;
+> >>>>> +	clear_bit(0, &watchdog_dev_busy);
+> >>>>> +	return 0;
+> >>>>> +}
+> >>>>
+> >>>> What happens if the watchdog gets unregistered if the device is still opened?
+> >>>> Even though if you'd check wdd for not being NULL in the file callbacks there
+> >>>> is still a chance for races if the devices is unregistered at the same time as
+> >>>> the callback is running. You'd either need a big lock to protect from having a
+> >>>> file callback and unregister running concurrently or add ref-counting to the
+> >>>> watchdog_device, the later best done by embedding a struct device and using the
+> >>>> device driver model.
+> >>>
+> >>> You cannot unload the watchdog-drivers module if /dev/watchdog is still open.
+> >>> So if the watchdog_unregister function is in the exit function of the module
+> >>> then we are safe. But I think you have a point if that is not the case.
+> >>> Solution would be to return an error when the watchdog_unregister_device routine
+> >>> is called and the WDOG_DEV_OPEN bit is set. Will create an extra patch for that.
+> >>>
+> >>
+> >> The problem is, that this doesn't fit nicely into the linux device driver
+> >> model, because it doesn't allow the removal of a device to fail. So you'll
+> >> still end of with undefined behavior.
 > > 
-> > This looks better.
+> > It's not an issue now. But we will indeed have to tackle it, when we start using
+> > the device driver model.
+> > 
 > 
-> With that comment change: Do I get an "Acked-by" for this patch from
-> you?
+> Well, the framework itself might not be using the device driver model yet, but
+> drivers using the framework do. For example for a driver using a platform
+> device there would be no correct solution for handling an error from
+> watchdog_unregister in the drivers remove callback.
 
-Yes, looks good to me.
+That is correct. we have nothing for handling the error. So I didn't introduce
+a fix for it neither. What I wanted to tell was:
+* a driver now registers a miscdevice in its init function and deregisters it
+during the exit function. You cannot unload the module as long as the miscdevice
+for the watchdog is open.
+* a driver that uses the core will register the watchdog device during init and
+will only unregister it during exit. Because we prevent the driver of being
+unloaded (via try_module_get and module_put), you cannot unload the module as
+long as /dev/watchdog is open. So the unregister will not take place.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+So in it's current form, we still have no issue.
 
-Thanks
-Vivek
+Kind regards,
+Wim.
+
+
