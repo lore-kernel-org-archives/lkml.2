@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756521Ab1HDBPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 21:15:33 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:60421 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753169Ab1HDBP0 (ORCPT
+	id S1755973Ab1HDBQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 21:16:19 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:55240 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169Ab1HDBQM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 21:15:26 -0400
-Date: Wed, 3 Aug 2011 18:15:24 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, Tony Luck <tony.luck@intel.com>
-Subject: [PATCH -next] efivars: fix build warning when PSTORE is not enabled
-Message-Id: <20110803181524.6b7062d1.rdunlap@xenotime.net>
-In-Reply-To: <20110804104927.be96accd4f255d2537d7372a@canb.auug.org.au>
-References: <20110803151651.687fc6f377e255eccf58301b@canb.auug.org.au>
-	<20110803104030.3c6443ab.rdunlap@xenotime.net>
-	<20110804104927.be96accd4f255d2537d7372a@canb.auug.org.au>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Wed, 3 Aug 2011 21:16:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFzG+s9KvSOJHvsUczG_d66f+QbBWiWfqLC21mHswnfm-A@mail.gmail.com>
+References: <20110801180151.GA26686@albatros> <20110801112021.25ec9041.akpm@linux-foundation.org>
+ <20110801190341.GA6898@albatros> <CA+55aFw2kHWY1N=ox1er7c-3WL4OA8x0M=Keu7hvAncKUZd1tQ@mail.gmail.com>
+ <20110802124530.GA2543@albatros> <20110802135512.b49c9de1.akpm@linux-foundation.org>
+ <d844457bba74be419d2434c533fdb4e1@localhost> <CA+55aFx+JOeDoNzs+1wfdK3kpNPyS9wpU1OT=VAwvWPXfMVuDQ@mail.gmail.com>
+ <20110803113033.1c3c6960@taxman.wild-wind.fr.eu.org> <CA+55aFzw-K6XvDzTwHRyqQWdkDO8Zqz8Ak1qgNTzf6a3L9=80A@mail.gmail.com>
+ <20110803175016.fb80b7f3.akpm@linux-foundation.org> <CA+55aFzG+s9KvSOJHvsUczG_d66f+QbBWiWfqLC21mHswnfm-A@mail.gmail.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 4 Aug 2011 03:15:51 +0200
+Message-ID: <CAPXgP1258BjQ8vsdpicq0oxS0Onva9DYu5se6dmQKsT+-He-UQ@mail.gmail.com>
+Subject: Re: [PATCH] shm: fix a race between shm_exit() and shm_init()
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>, Ingo Molnar <mingo@elte.hu>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Greg KH <greg@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Aug 2011 10:49:27 +1000 Stephen Rothwell wrote:
+On Thu, Aug 4, 2011 at 03:01, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wed, Aug 3, 2011 at 2:50 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+>>
+>> Well, it's still a workaround.  We'll still have driver_init() trying
+>> to run userspace helpers at an inappropriate time, and failing to do
+>> so.  Either something will break or it should not be attempting
+>> attempting to do this at all.
+>
+> Well, it has never worked before either, so I wouldn't call it a
+> "workaround", more of a "insane subsystems do user-mode helpers for
+> crazy small things, and at crazy times. Stop them from wasting our
+> time and effort at those crazy times when we know they would fail
+> anyway".
+>
+>> Perhaps Kay and Greg can suggest how we can fix all this up?
+>
+> I think just not calling user-mode when user-mode isn't ready is a real fix.
 
-> Hi Randy,
-> 
-> On Wed, 3 Aug 2011 10:40:30 -0700 Randy Dunlap <rdunlap@xenotime.net> wrote:
-> >
-> > What is this warning about?  I don't see the problem.
-> > 
-> > The warning only happens on i386 AFAIK.  Must be some typedef glitch?
-> > 
-> > drivers/firmware/efivars.c:602: warning: initialization from incompatible pointer type
-> 
-> The second argument to the write method in a pstore_info is supposed to
-> be "unsigned int" but the assigned function has "int" in the
-> !CONFIG_PSTORE version.
+Yes, we should default to off, and probably only enable it just right
+before we start /sbin/init from the mounted root or in initramfs.
+There should be no useful use of /sbin/hotplug before we mounted root,
+or unpacked initramfs.
 
-Dang, I missed that second version of the write function.  Thanks.
+> The fact that the device models send an absolutely *insane* amount of
+> events for everything, and don't track "this is the bootup device
+> scan" on their own is kind of sad, but it's how they roll. This fixes
+> it at a core level, so that the device layer doesn't have to track the
+> "am I booting, or is this a dynamic event?" at all.
 
----
-From: Randy Dunlap <rdunlap@xenotime.net>
+It is insane, and the entire uevent hookup with /sbin/hotplug should
+just be removed. We send from 1000 to many 1000s of events at bootup,
+and forking a binary here makes not much sense these days.
 
-Fix efivars.c build warning when CONFIG_PSTORE is not enabled:
+All distros default to CONFIG_UEVENT_HELPER_PATH="" because nothing
+else really works anymore, some boxes don't even boot up.
+/sbin/hotplug worked fine when we all had one USB mouse connected and
+needed to load like 5 drivers for the system, but not today.
 
-drivers/firmware/efivars.c:602: warning: initialization from incompatible pointer type
+It's a broken concept today, at least in the way we plug it into the
+driver core makes no sense today, it is just a heritage from the old
+days.
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: matthew.e.tolentino@intel.com
----
- drivers/firmware/efivars.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- linux-next-20110803.orig/drivers/firmware/efivars.c
-+++ linux-next-20110803/drivers/firmware/efivars.c
-@@ -580,8 +580,8 @@ static ssize_t efi_pstore_read(u64 *id, 
- 	return -1;
- }
- 
--static u64 efi_pstore_write(enum pstore_type_id type, int part, size_t size,
--			    struct pstore_info *psi)
-+static u64 efi_pstore_write(enum pstore_type_id type, unsigned int part,
-+			    size_t size, struct pstore_info *psi)
- {
- 	return 0;
- }
+Kay
