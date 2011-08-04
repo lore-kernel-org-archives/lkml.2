@@ -1,38 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab1HDHRn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 03:17:43 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:58837 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab1HDHRj (ORCPT
+	id S1752321Ab1HDHSb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 03:18:31 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:49213 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849Ab1HDHSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 03:17:39 -0400
-X-Nat-Received: from [202.181.97.72]:55355 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1312442149.28962
-Message-Id: <201108040715.p747FnXa042677@www262.sakura.ne.jp>
-Subject: Re: [3.0-git16] Oops at driver_uevent_store().
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: lacombar@gmail.com, bunk@stusta.de
-Cc: greg@kroah.com, akpm@linux-foundation.org, torvalds@linux-foundation.org,
+	Thu, 4 Aug 2011 03:18:25 -0400
+Date: Thu, 04 Aug 2011 00:13:42 -0700 (PDT)
+Message-Id: <20110804.001342.605515217661107454.davem@davemloft.net>
+To: grant.likely@secretlab.ca
+Cc: sfr@canb.auug.org.au, devicetree-discuss@lists.ozlabs.org,
+        shawn.guo@linaro.org, torvalds@linux-foundation.org,
         linux-kernel@vger.kernel.org
-MIME-Version: 1.0
+Subject: Re: [PATCH] drivers/of: Fix sparc build failure caused by
+ of_alias_scan
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110804070033.20042.28741.stgit@ponder>
+References: <20110804070033.20042.28741.stgit@ponder>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Date: Thu, 04 Aug 2011 16:15:49 +0900
-References: <201108040221.p742Lk3R069631@www262.sakura.ne.jp> <CACqU3MWQsh2cS8ck=c1-bOy-W649j0FjtNeOQbPaijAaCQ9wgA@mail.gmail.com> <201108040355.p743tBkv092694@www262.sakura.ne.jp> <CACqU3MVbHPuOjg9cY_GWdBGz3HPw3u7R3S14OOObN8-CFXGVaw@mail.gmail.com>
-In-Reply-To: <CACqU3MVbHPuOjg9cY_GWdBGz3HPw3u7R3S14OOObN8-CFXGVaw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 04082011 #5784654, status: clean
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 04 Aug 2011 00:13:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaud Lacombe wrote:
-> Marking `pci_eisa_driver' as __refdata fix the warning and leave the
-> struct untouched:
-> 
-> diff --git a/drivers/eisa/pci_eisa.c b/drivers/eisa/pci_eisa.c
-> index 30da70d..cdae207 100644
-> --- a/drivers/eisa/pci_eisa.c
-> +++ b/drivers/eisa/pci_eisa.c
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 04 Aug 2011 08:05:42 +0100
 
-This patch solved the oops. Thank you.
+> Commit 750f463a, "dt: add of_alias_scan and of_alias_get_id" breaks
+> platforms that don't use CONFIG_OF_FLATTREE, like SPARC and OLPC.  Fix
+> it by only building it on platforms using the flat tree.
+> 
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+
+Grant this is completely bogus see my email I just posted on
+linux-next.
