@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab1HDXaO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 19:30:14 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59658 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753294Ab1HDXaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 19:30:09 -0400
-Date: Fri, 5 Aug 2011 09:29:41 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Len Brown <len.brown@intel.com>,
-        "Mark Brown (broonie@opensource.wolfsonmicro.com)" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: next-200110804 ARM build break (cpuidle_call_idle)
-Message-Id: <20110805092941.136089871cddff926cf1dbb7@canb.auug.org.au>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF049EEAB704@HQMAIL01.nvidia.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF049EEAB704@HQMAIL01.nvidia.com>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__5_Aug_2011_09_29_41_+1000_WCO2L_eqLY+.2t5T"
+	id S1755415Ab1HDXc1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 19:32:27 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:46542 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754685Ab1HDXc1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 19:32:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110804162551.2b92b2cf@debxo>
+References: <20110804162551.2b92b2cf@debxo>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Fri, 5 Aug 2011 00:32:06 +0100
+Message-ID: <CAMPhdO_gC1vQEA6aMhS=4RaM2dNo9WYPPia1+juRH7q1T=E0Og@mail.gmail.com>
+Subject: Re: [PATCH RFC v1] ARM: olpc: Add support for calling into the
+ XO-1.75's OpenFirmware (OFW)
+To: Andres Salomon <dilinger@queued.net>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Russell King <linux@arm.linux.org.uk>, Mitch Bradley <wmb@laptop.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, dsd@laptop.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__5_Aug_2011_09_29_41_+1000_WCO2L_eqLY+.2t5T
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Stephen,
-
-On Thu, 4 Aug 2011 13:35:59 -0700 Stephen Warren <swarren@nvidia.com> wrote:
+On Fri, Aug 5, 2011 at 12:25 AM, Andres Salomon <dilinger@queued.net> wrote:
+> Add support for saving OFW's cif, and later calling into it to run OFW
+> commands from the kernel.  OFW remains resident in memory after boot,
+> and the physical/virtual addresses are passed in a boot tag.  We parse
+> that, and map the addresses.
 >
-> With next-20110804, I'm seeing the following on ARM:
->=20
-> arch/arm/kernel/process.c: In function 'cpu_idle':
-> arch/arm/kernel/process.c:200: error: implicit declaration of function 'c=
-puidle_call_idle'
->=20
-> This was previously fixed with:
->=20
-> https://lkml.org/lkml/2011/4/4/109
->=20
-> Commit 5f8cf82 (cpuidle: stop using pm_idle) converted arches to use
-> cpuidle_idle_call() but contained typos on ARM and SH transposing the
-> function name into cpuidle_call_idle().
->=20
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
->=20
-> (which I think was included directly in linux-next according to that
-> email thread)
+> This is currently only used by the OLPC XO-1.75, so it's named olpc_ofw().
+>
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
+> ---
+>  Documentation/arm/Setup                  |    2 +
+>  arch/arm/Kconfig                         |    8 ++
+>  arch/arm/include/asm/olpc_ofw.h          |   23 ++++++
+>  arch/arm/include/asm/setup.h             |   24 ++++++
+>  arch/arm/mach-mmp/Makefile               |    1 +
+>  arch/arm/mach-mmp/include/mach/vmalloc.h |    2 +-
+>  arch/arm/mach-mmp/olpc-xo-1-75.c         |    7 ++
+>  arch/arm/mach-mmp/olpc_ofw.c             |  118 ++++++++++++++++++++++++++++++
+>  8 files changed, 184 insertions(+), 1 deletions(-)
+>  create mode 100644 arch/arm/include/asm/olpc_ofw.h
+>  create mode 100644 arch/arm/mach-mmp/olpc_ofw.c
+>
+>
+> I'm looking for input on our mechanism for calling into OLPC's openfirmware
+> on arm.  Some of the x86 folks are cc'd
+> as they had lots of comment when we did this for x86 OLPC machines.
+>
+> There's a device tree patch on top of this that can be seen here:
+> http://dev.laptop.org/git/olpc-3.0/patch/?id=12377851f9a64a9e2098adf09f858bed7d3eae7c
+>
+> Unlike the XO-1, I'd like to get this OFW communication mechanism ACKed prior to
+> OLPC's mass production of these units.
 
-Yeah, briefly by the looks of things.
-
-> However, commit 5f8cf82 isn't in linux-next any more, but instead,
-> a0bfa13 "cpuidle: stop depending on pm_idle" has replaced it, and has
-> the same issue.
-
-It was included first on April 4 and removed after I apllied tha bove fix
-on April 15.  From April 18 on, it was not in the tree at all.  I don't
-know why it has come back :-(
-
-> Applying Mark's previous fix solves the build problem.
-
-Hi Len.  This patch was wrong the first time around ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__5_Aug_2011_09_29_41_+1000_WCO2L_eqLY+.2t5T
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOOytlAAoJEDMEi1NhKgbsvXEH/2++LQJEqHMklMya5zX2dAL8
-IIpp+PLez1CIPwgUaPbBW3C8BtMctj+Tp9ZtTMjAIEYda6FfipxlNW6fjvA7z9Uq
-s4KvPILXncPsi5dhRf90ixPSIWyVCOdexZ4SJaWuz6SaAnf7/2y3yOJLLLxPJ8nk
-vW7D46aGAfwpiMuK86s4dZTXEh4sAjLFhW0R74cMdGo35lbovgES8I6NnQWwhINh
-sDH/Hr2XQjLZYTFlWGqi1yvzfaDIxKObabeP2ZfgR0DLkdffZ9xIEFwvt0r1KiYN
-NB3IiNoIF2HlEOBU0klWyqMm9lJVWs6kYBo3ibNps+cx+On4ILNq9F4LrAVcntI=
-=SaTq
------END PGP SIGNATURE-----
-
---Signature=_Fri__5_Aug_2011_09_29_41_+1000_WCO2L_eqLY+.2t5T--
+Not really sure if it's the standard way of calling back into GFW, Grant?
