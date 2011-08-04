@@ -1,200 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab1HDKJV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 06:09:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49567 "EHLO mx1.redhat.com"
+	id S1753610Ab1HDKJM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 06:09:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29970 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753414Ab1HDKIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 06:08:39 -0400
+	id S1753373Ab1HDKIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 06:08:34 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 05/10] tracing/filter: Unify predicate tree walking, change check_pred_tree function to use it
-Date: Thu,  4 Aug 2011 12:08:21 +0200
-Message-Id: <1312452506-5100-6-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 02/10] tracing/filter: Separate predicate init and filter addition
+Date: Thu,  4 Aug 2011 12:08:18 +0200
+Message-Id: <1312452506-5100-3-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1312452506-5100-1-git-send-email-jolsa@redhat.com>
 References: <1312452506-5100-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding walk_pred_tree function to be used for walking throught
-the filter predicates.
+Separating the filter_pred initialization from code
+that adds the filter_pred to the filter.
 
-For each predicate the callback function is called, allowing
-users to add their own functionality or customize their way
-through the filter predicates.
+The create_pred returns initialized predicate, which
+is added to the filter by filter_add_pred function.
 
-Changing check_pred_tree function to use walk_pred_tree.
+Keeping dry_run variable inside replace_preds function.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- kernel/trace/trace_events_filter.c |  137 ++++++++++++++++++++++-------------
- 1 files changed, 86 insertions(+), 51 deletions(-)
+ kernel/trace/trace_events_filter.c |   56 +++++++++++++++---------------------
+ 1 files changed, 23 insertions(+), 33 deletions(-)
 
 diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 0948905..5b889d4 100644
+index cb295a1..61c8dec 100644
 --- a/kernel/trace/trace_events_filter.c
 +++ b/kernel/trace/trace_events_filter.c
-@@ -381,6 +381,63 @@ get_pred_parent(struct filter_pred *pred, struct filter_pred *preds,
- 	return pred;
- }
- 
-+enum walk_return {
-+	WALK_PRED_ABORT,
-+	WALK_PRED_PARENT,
-+	WALK_PRED_DEFAULT,
-+};
-+
-+typedef int (*filter_pred_walkcb_t) (enum move_type move,
-+				     struct filter_pred *pred,
-+				     int *err, void *data);
-+
-+static int walk_pred_tree(struct filter_pred *preds,
-+			  struct filter_pred *root,
-+			  filter_pred_walkcb_t cb, void *data)
-+{
-+	struct filter_pred *pred = root;
-+	enum move_type move = MOVE_DOWN;
-+	int done = 0;
-+
-+	if  (!preds)
-+		return -EINVAL;
-+
-+	do {
-+		int err = 0, ret;
-+
-+		ret = cb(move, pred, &err, data);
-+		if (ret == WALK_PRED_ABORT)
-+			return err;
-+		if (ret == WALK_PRED_PARENT)
-+			goto get_parent;
-+
-+		switch (move) {
-+		case MOVE_DOWN:
-+			if (pred->left != FILTER_PRED_INVALID) {
-+				pred = &preds[pred->left];
-+				continue;
-+			}
-+			goto get_parent;
-+		case MOVE_UP_FROM_LEFT:
-+			pred = &preds[pred->right];
-+			move = MOVE_DOWN;
-+			continue;
-+		case MOVE_UP_FROM_RIGHT:
-+ get_parent:
-+			if (pred == root)
-+				break;
-+			pred = get_pred_parent(pred, preds,
-+					       pred->parent,
-+					       &move);
-+			continue;
-+		}
-+		done = 1;
-+	} while (!done);
-+
-+	/* We are fine. */
-+	return 0;
-+}
-+
- /*
-  * A series of AND or ORs where found together. Instead of
-  * climbing up and down the tree branches, an array of the
-@@ -1321,6 +1378,23 @@ static int count_preds(struct filter_parse_state *ps)
- 	return n_preds;
- }
- 
-+struct check_pred_data {
-+	int count;
-+	int max;
-+};
-+
-+static int check_pred_tree_cb(enum move_type move, struct filter_pred *pred,
-+			      int *err, void *data)
-+{
-+	struct check_pred_data *d = data;
-+
-+	if (WARN_ON(d->count++ > d->max)) {
-+		*err = -EINVAL;
-+		return WALK_PRED_ABORT;
-+	}
-+	return WALK_PRED_DEFAULT;
-+}
-+
- /*
-  * The tree is walked at filtering of an event. If the tree is not correctly
-  * built, it may cause an infinite loop. Check here that the tree does
-@@ -1329,58 +1403,19 @@ static int count_preds(struct filter_parse_state *ps)
- static int check_pred_tree(struct event_filter *filter,
- 			   struct filter_pred *root)
+@@ -685,8 +685,7 @@ __pop_pred_stack(struct pred_stack *stack)
+ static int filter_set_pred(struct event_filter *filter,
+ 			   int idx,
+ 			   struct pred_stack *stack,
+-			   struct filter_pred *src,
+-			   filter_pred_fn_t fn)
++			   struct filter_pred *src)
  {
--	struct filter_pred *preds;
--	struct filter_pred *pred;
--	enum move_type move = MOVE_DOWN;
--	int count = 0;
--	int done = 0;
--	int max;
--
--	/*
--	 * The max that we can hit a node is three times.
--	 * Once going down, once coming up from left, and
--	 * once coming up from right. This is more than enough
--	 * since leafs are only hit a single time.
--	 */
--	max = 3 * filter->n_preds;
--
--	preds = filter->preds;
--	if  (!preds)
--		return -EINVAL;
--	pred = root;
--
--	do {
--		if (WARN_ON(count++ > max))
--			return -EINVAL;
--
--		switch (move) {
--		case MOVE_DOWN:
--			if (pred->left != FILTER_PRED_INVALID) {
--				pred = &preds[pred->left];
--				continue;
--			}
--			/* A leaf at the root is just a leaf in the tree */
--			if (pred == root)
--				break;
--			pred = get_pred_parent(pred, preds,
--					       pred->parent, &move);
--			continue;
--		case MOVE_UP_FROM_LEFT:
--			pred = &preds[pred->right];
--			move = MOVE_DOWN;
--			continue;
--		case MOVE_UP_FROM_RIGHT:
--			if (pred == root)
--				break;
--			pred = get_pred_parent(pred, preds,
--					       pred->parent, &move);
--			continue;
--		}
--		done = 1;
--	} while (!done);
-+	struct check_pred_data data = {
-+		/*
-+		 * The max that we can hit a node is three times.
-+		 * Once going down, once coming up from left, and
-+		 * once coming up from right. This is more than enough
-+		 * since leafs are only hit a single time.
-+		 */
-+		.max   = 3 * filter->n_preds,
-+		.count = 0,
-+	};
+ 	struct filter_pred *dest = &filter->preds[idx];
+ 	struct filter_pred *left;
+@@ -698,7 +697,6 @@ static int filter_set_pred(struct event_filter *filter,
+ 		if (!dest->field_name)
+ 			return -ENOMEM;
+ 	}
+-	dest->fn = fn;
+ 	dest->index = idx;
  
--	/* We are fine. */
--	return 0;
-+	return walk_pred_tree(filter->preds, root,
-+			      check_pred_tree_cb, &data);
+ 	if (dest->op == OP_OR || dest->op == OP_AND) {
+@@ -836,12 +834,10 @@ static void filter_free_subsystem_filters(struct event_subsystem *system)
+ 	}
  }
  
- static int count_leafs(struct filter_pred *preds, struct filter_pred *root)
+-static int filter_add_pred_fn(struct filter_parse_state *ps,
+-			      struct ftrace_event_call *call,
+-			      struct event_filter *filter,
+-			      struct filter_pred *pred,
+-			      struct pred_stack *stack,
+-			      filter_pred_fn_t fn)
++static int filter_add_pred(struct filter_parse_state *ps,
++			   struct event_filter *filter,
++			   struct filter_pred *pred,
++			   struct pred_stack *stack)
+ {
+ 	int idx, err;
+ 
+@@ -852,7 +848,7 @@ static int filter_add_pred_fn(struct filter_parse_state *ps,
+ 
+ 	idx = filter->n_preds;
+ 	filter_clear_pred(&filter->preds[idx]);
+-	err = filter_set_pred(filter, idx, stack, pred, fn);
++	err = filter_set_pred(filter, idx, stack, pred);
+ 	if (err)
+ 		return err;
+ 
+@@ -933,25 +929,16 @@ static filter_pred_fn_t select_comparison_fn(int op, int field_size,
+ 	return fn;
+ }
+ 
+-static int filter_add_pred(struct filter_parse_state *ps,
+-			   struct ftrace_event_call *call,
+-			   struct event_filter *filter,
+-			   struct filter_pred *pred,
+-			   struct pred_stack *stack,
+-			   bool dry_run)
++static int init_pred(struct filter_parse_state *ps,
++		     struct ftrace_event_call *call,
++		     struct filter_pred *pred)
++
+ {
+ 	struct ftrace_event_field *field;
+-	filter_pred_fn_t fn;
++	filter_pred_fn_t fn = filter_pred_none;
+ 	unsigned long long val;
+ 	int ret;
+ 
+-	fn = pred->fn = filter_pred_none;
+-
+-	if (pred->op == OP_AND)
+-		goto add_pred_fn;
+-	else if (pred->op == OP_OR)
+-		goto add_pred_fn;
+-
+ 	field = find_event_field(call, pred->field_name);
+ 	if (!field) {
+ 		parse_error(ps, FILT_ERR_FIELD_NOT_FOUND, 0);
+@@ -997,9 +984,7 @@ static int filter_add_pred(struct filter_parse_state *ps,
+ 	if (pred->op == OP_NE)
+ 		pred->not = 1;
+ 
+-add_pred_fn:
+-	if (!dry_run)
+-		return filter_add_pred_fn(ps, call, filter, pred, stack, fn);
++	pred->fn = fn;
+ 	return 0;
+ }
+ 
+@@ -1299,6 +1284,7 @@ parse_operand:
+ }
+ 
+ static struct filter_pred *create_pred(struct filter_parse_state *ps,
++				       struct ftrace_event_call *call,
+ 				       int op, char *operand1, char *operand2)
+ {
+ 	static struct filter_pred pred;
+@@ -1321,7 +1307,7 @@ static struct filter_pred *create_pred(struct filter_parse_state *ps,
+ 	strcpy(pred.regex.pattern, operand2);
+ 	pred.regex.len = strlen(pred.regex.pattern);
+ 
+-	return &pred;
++	return init_pred(ps, call, &pred) ? NULL : &pred;
+ }
+ 
+ static int check_preds(struct filter_parse_state *ps)
+@@ -1630,16 +1616,20 @@ static int replace_preds(struct ftrace_event_call *call,
+ 			goto fail;
+ 		}
+ 
+-		pred = create_pred(ps, elt->op, operand1, operand2);
++		pred = create_pred(ps, call, elt->op, operand1, operand2);
+ 		if (!pred) {
+ 			err = -ENOMEM;
+ 			goto fail;
+ 		}
+-		err = filter_add_pred(ps, call, filter, pred, &stack, dry_run);
+-		filter_free_pred(pred);
+-		if (err)
+-			goto fail;
++		if (!dry_run) {
++			err = filter_add_pred(ps, filter, pred, &stack);
++			if (err) {
++				filter_free_pred(pred);
++				goto fail;
++			}
++		}
+ 
++		filter_free_pred(pred);
+ 		operand1 = operand2 = NULL;
+ 	}
+ 
 -- 
 1.7.1
 
