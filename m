@@ -1,121 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab1HDCRL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 22:17:11 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:63445 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753626Ab1HDCRG (ORCPT
+	id S932128Ab1HDCWJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 22:22:09 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:56737 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755018Ab1HDCWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 22:17:06 -0400
+	Wed, 3 Aug 2011 22:22:00 -0400
+X-Nat-Received: from [202.181.97.72]:58532 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1312424506.18772
+Message-Id: <201108040221.p742Lk3R069631@www262.sakura.ne.jp>
+Subject: Re: [3.0-git16] Oops at driver_uevent_store().
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: lacombar@gmail.com, greg@kroah.com
+Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <20110803233426.GA18216@kroah.com>
-References: <CAECXXi5kZJk+86-2SJRWqMUCj31cL4tb1qTbaueMxeEg2VFcDw@mail.gmail.com>
-	<20110803233426.GA18216@kroah.com>
-Date: Wed, 3 Aug 2011 22:17:04 -0400
-Message-ID: <CAECXXi5pkRAY_dVSwSUrj5RQzsJ2YVx6xXovzpuRDOEOq92s9g@mail.gmail.com>
-Subject: Re: [PATCH] nbd: nbd sysfs framework
-From: Paul Clements <paul.clements@us.sios.com>
-To: Greg KH <greg@kroah.com>
-Cc: andrew morton <akpm@linux-foundation.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        nbd-general@lists.sourceforge.net
-Content-Type: multipart/mixed; boundary=001636c92489b7998a04a9a4932e
+Content-Transfer-Encoding: 7bit
+Date: Thu, 04 Aug 2011 11:21:45 +0900
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 04082011 #5783366, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001636c92489b7998a04a9a4932e
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Commit 005bdad7 "eisa/pci_eisa.c: fix section mismatch" triggers oops.
+Reverting it solved the oops. Is this rather a sysfs bug?
 
-On Wed, Aug 3, 2011 at 7:34 PM, Greg KH <greg@kroah.com> wrote:
-> On Wed, Aug 03, 2011 at 07:15:51PM -0400, Paul Clements wrote:
->> Description: The patch creates a new sysfs entry framework for nbd.
->
-> Why? =A0What does this buy us except an increase in code size for no adde=
-d
-> benifit? =A0You seem to be stripping out the driver layer here and using
-> "raw" kobjects, why?
+[    7.460292] dracut: Mounted root filesystem /dev/sda1
+[    7.603017] dracut: Loading SELinux policy
+[    7.976804] dracut: /sbin/load_policy: Can't load policy: No such device
+[    8.095959] dracut: Switching root
+[    9.452334] udev: starting version 147
+[    9.456695] BUG: unable to handle kernel paging request at c15dd684
+[    9.457860] IP: [<c12408a0>] driver_uevent_store+0x20/0x40
+[    9.457860] *pde = 01d60067 *pte = 015dd162 
+[    9.457860] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+[    9.457860] Modules linked in:
+[    9.457860] 
+[    9.457860] Pid: 2914, comm: udevadm Tainted: G        W   3.0.0-03636-g005bdad #12 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
+[    9.457860] EIP: 0060:[<c12408a0>] EFLAGS: 00010246 CPU: 1
+[    9.457861] EIP is at driver_uevent_store+0x20/0x40
+[    9.457861] EAX: 00000000 EBX: 00000003 ECX: ffffffff EDX: f4422000
+[    9.457861] ESI: c15dd650 EDI: 00000003 EBP: f4b63f30 ESP: f4b63f24
+[    9.457861]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[    9.459164] Process udevadm (pid: 2914, ti=f4b62000 task=f49f87e0 task.ti=f4b62000)
+[    9.463514] Stack:
+[    9.464278]  00000000 c1240880 f4d61f70 f4b63f40 c12405e7 c13e0240 f5c1bea8 f4b63f64
+[    9.465858]  c111cf6c 00000003 c13e0240 f4f82f84 f4d61f70 f18cdf20 00000003 bfe20f1e
+[    9.465858]  f4b63f8c c10c6bba f4b63f98 f18cdf28 00000020 c111ced0 f4b63fa0 f18cdf20
+[    9.467123] Call Trace:
+[    9.468030]  [<c1240880>] ? bus_uevent_store+0x40/0x40
+[    9.469764]  [<c12405e7>] drv_attr_store+0x27/0x40
+[    9.469856]  [<c111cf6c>] sysfs_write_file+0x9c/0xf0
+[    9.469856]  [<c10c6bba>] vfs_write+0x9a/0x140
+[    9.469857]  [<c111ced0>] ? sysfs_open_file+0x1e0/0x1e0
+[    9.469857]  [<c10c6d2d>] sys_write+0x3d/0x70
+[    9.469857]  [<c13be60c>] sysenter_do_call+0x12/0x32
+[    9.469857] Code: f8 89 ec 5d c3 8d b6 00 00 00 00 55 89 e5 83 ec 0c 89 5d f8 89 cb 89 75 fc 8d 4d f4 89 c6 89 d0 89 da e8 34 b5 f7 ff 85 c0 75 0b <8b> 46 34 8b 55 f4 e8 b5 b9 f7 ff 89 d8 8b 75 fc 8b 5d f8 89 ec 
+[    9.469964] EIP: [<c12408a0>] driver_uevent_store+0x20/0x40 SS:ESP 0068:f4b63f24
+[    9.471828] CR2: 00000000c15dd684
+[    9.472987] ---[ end trace 93d72a36b9146f25 ]---
+[    9.959305] pcnet32: pcnet32.c:v1.35 21.Apr.2008 tsbogend@alpha.franken.de
+[    9.961686] pcnet32 0000:02:01.0: PCI INT A -> GSI 19 (level, low) -> IRQ 19
+[    9.963766] pcnet32: PCnet/PCI II 79C970A at 0x2000, 00:0c:29:6c:1a:76 assigned IRQ 19
 
-Not sure what I was thinking...just in a hurry, I think.
+Config is at http://I-love.SAKURA.ne.jp/tmp/config-3.0-git16 .
 
-Is the following a little better?
-
-Thanks for your feedback.
-
---
-Paul
-
---001636c92489b7998a04a9a4932e
-Content-Type: text/x-patch; charset=US-ASCII; name="tmp.diff"
-Content-Disposition: attachment; filename="tmp.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gqx3cfxv0
-
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvYmxvY2svbmJkLmMgYi9kcml2ZXJzL2Jsb2NrL25iZC5jCmlu
-ZGV4IGU2ZmM3MTYuLmExZTc2MTUgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvYmxvY2svbmJkLmMKKysr
-IGIvZHJpdmVycy9ibG9jay9uYmQuYwpAQCAtMzgzLDM5ICszODMsMTcgQEAgaGFyZGVycm9yOgog
-CXJldHVybiBOVUxMOwogfQogCi1zdGF0aWMgc3NpemVfdCBwaWRfc2hvdyhzdHJ1Y3QgZGV2aWNl
-ICpkZXYsCi0JCQlzdHJ1Y3QgZGV2aWNlX2F0dHJpYnV0ZSAqYXR0ciwgY2hhciAqYnVmKQotewot
-CXN0cnVjdCBnZW5kaXNrICpkaXNrID0gZGV2X3RvX2Rpc2soZGV2KTsKLQotCXJldHVybiBzcHJp
-bnRmKGJ1ZiwgIiVsZFxuIiwKLQkJKGxvbmcpICgoc3RydWN0IG5iZF9kZXZpY2UgKilkaXNrLT5w
-cml2YXRlX2RhdGEpLT5waWQpOwotfQotCi1zdGF0aWMgc3RydWN0IGRldmljZV9hdHRyaWJ1dGUg
-cGlkX2F0dHIgPSB7Ci0JLmF0dHIgPSB7IC5uYW1lID0gInBpZCIsIC5tb2RlID0gU19JUlVHT30s
-Ci0JLnNob3cgPSBwaWRfc2hvdywKLX07Ci0KIHN0YXRpYyBpbnQgbmJkX2RvX2l0KHN0cnVjdCBu
-YmRfZGV2aWNlICpsbykKIHsKIAlzdHJ1Y3QgcmVxdWVzdCAqcmVxOwotCWludCByZXQ7CiAKIAlC
-VUdfT04obG8tPm1hZ2ljICE9IExPX01BR0lDKTsKIAogCWxvLT5waWQgPSBjdXJyZW50LT5waWQ7
-Ci0JcmV0ID0gc3lzZnNfY3JlYXRlX2ZpbGUoJmRpc2tfdG9fZGV2KGxvLT5kaXNrKS0+a29iaiwg
-JnBpZF9hdHRyLmF0dHIpOwotCWlmIChyZXQpIHsKLQkJcHJpbnRrKEtFUk5fRVJSICJuYmQ6IHN5
-c2ZzX2NyZWF0ZV9maWxlIGZhaWxlZCEiKTsKLQkJbG8tPnBpZCA9IDA7Ci0JCXJldHVybiByZXQ7
-Ci0JfQogCiAJd2hpbGUgKChyZXEgPSBuYmRfcmVhZF9zdGF0KGxvKSkgIT0gTlVMTCkKIAkJbmJk
-X2VuZF9yZXF1ZXN0KHJlcSk7CiAKLQlzeXNmc19yZW1vdmVfZmlsZSgmZGlza190b19kZXYobG8t
-PmRpc2spLT5rb2JqLCAmcGlkX2F0dHIuYXR0cik7CiAJbG8tPnBpZCA9IDA7CiAJcmV0dXJuIDA7
-CiB9CkBAIC03MzUsNiArNzEzLDc1IEBAIHN0YXRpYyBjb25zdCBzdHJ1Y3QgYmxvY2tfZGV2aWNl
-X29wZXJhdGlvbnMgbmJkX2ZvcHMgPQogICogIChKdXN0IHNtaWxleSBjb25mdXNlcyBlbWFjcyA6
-LSkKICAqLwogCitzdHJ1Y3QgbmJkX3N5c2ZzX2VudHJ5IHsKKwlzdHJ1Y3QgZGV2aWNlX2F0dHJp
-YnV0ZSBkZXZfYXR0cjsKKwlzc2l6ZV90ICgqc2hvdykoc3RydWN0IG5iZF9kZXZpY2UgKiwgY2hh
-ciAqKTsKKwlzc2l6ZV90ICgqc3RvcmUpKHN0cnVjdCBuYmRfZGV2aWNlICosIGNvbnN0IGNoYXIg
-Kiwgc2l6ZV90KTsKK307CisKK3N0YXRpYyBzc2l6ZV90IHBpZF9zaG93KHN0cnVjdCBuYmRfZGV2
-aWNlICpsbywgY2hhciAqcGFnZSkKK3sKKwlyZXR1cm4gc3ByaW50ZihwYWdlLCAiJWxkXG4iLCAo
-bG9uZylsby0+cGlkKTsKK30KKworI2RlZmluZSBOQkRfQVRUUihfdmFyLCBfbmFtZSwgX3Blcm0s
-IF9zaG93LCBfc3RvcmUpIFwKKwlzdGF0aWMgc3RydWN0IG5iZF9zeXNmc19lbnRyeSBfdmFyID0g
-eyBcCisJLmRldl9hdHRyID0gX19BVFRSKF9uYW1lLCBfcGVybSwgbmJkX2F0dHJfc2hvdywgbmJk
-X2F0dHJfc3RvcmUpLCBcCisJLnNob3cgPSBfc2hvdywgXAorCS5zdG9yZSA9IF9zdG9yZSBcCit9
-CisKKy8vIHN0YXRpYyBzdHJ1Y3QgbmJkX3N5c2ZzX2VudHJ5IG5iZF9waWQgPQorLy8gX19BVFRS
-KHBpZCwgU19JUlVHTywgcGlkX3Nob3csIE5VTEwpOworCitzdGF0aWMgc3NpemVfdAorbmJkX2F0
-dHJfc2hvdyhzdHJ1Y3QgZGV2aWNlICpkZXYsIHN0cnVjdCBkZXZpY2VfYXR0cmlidXRlICphdHRy
-LCBjaGFyICpwYWdlKQoreworCXN0cnVjdCBuYmRfc3lzZnNfZW50cnkgKmVudHJ5ID0gY29udGFp
-bmVyX29mKGF0dHIsCisJCQlzdHJ1Y3QgbmJkX3N5c2ZzX2VudHJ5LCBkZXZfYXR0cik7CisJc3Ry
-dWN0IG5iZF9kZXZpY2UgKmxvID0KKwkJCShzdHJ1Y3QgbmJkX2RldmljZSAqKWRldl90b19kaXNr
-KGRldiktPnByaXZhdGVfZGF0YTsKKwlzc2l6ZV90IHJ2OworCisJaWYgKCFlbnRyeS0+c2hvdyB8
-fCAhbG8pCisJCXJldHVybiAtRUlPOworCXJ2ID0gZW50cnktPnNob3cobG8sIHBhZ2UpOworCXJl
-dHVybiBydjsKK30KKworc3RhdGljIHNzaXplX3QKK25iZF9hdHRyX3N0b3JlKHN0cnVjdCBkZXZp
-Y2UgKmRldiwgc3RydWN0IGRldmljZV9hdHRyaWJ1dGUgKmF0dHIsCisJICAgICAgY29uc3QgY2hh
-ciAqcGFnZSwgc2l6ZV90IGxlbmd0aCkKK3sKKwlzdHJ1Y3QgbmJkX3N5c2ZzX2VudHJ5ICplbnRy
-eSA9IGNvbnRhaW5lcl9vZihhdHRyLAorCQkJc3RydWN0IG5iZF9zeXNmc19lbnRyeSwgZGV2X2F0
-dHIpOworCXN0cnVjdCBuYmRfZGV2aWNlICpsbyA9CisJCQkoc3RydWN0IG5iZF9kZXZpY2UgKilk
-ZXZfdG9fZGlzayhkZXYpLT5wcml2YXRlX2RhdGE7CisJc3NpemVfdCBydjsKKworCWlmICghZW50
-cnktPnN0b3JlKQorCQlyZXR1cm4gLUVJTzsKKwlpZiAoIWNhcGFibGUoQ0FQX1NZU19BRE1JTikp
-CisJCXJldHVybiAtRUFDQ0VTOworCW11dGV4X2xvY2soJmxvLT50eF9sb2NrKTsKKwlydiA9IGVu
-dHJ5LT5zdG9yZShsbywgcGFnZSwgbGVuZ3RoKTsKKwltdXRleF91bmxvY2soJmxvLT50eF9sb2Nr
-KTsKKworCXJldHVybiBydjsKK30KKworTkJEX0FUVFIobmJkX3BpZCwgcGlkLCBTX0lSVUdPLCBw
-aWRfc2hvdywgTlVMTCk7CisKK3N0YXRpYyBzdHJ1Y3QgYXR0cmlidXRlICpuYmRfYXR0cnNbXSA9
-IHsKKwkmbmJkX3BpZC5kZXZfYXR0ci5hdHRyLAorCU5VTEwsCit9OworCitzdGF0aWMgc3RydWN0
-IGF0dHJpYnV0ZV9ncm91cCBuYmRfYXR0cl9ncm91cCA9IHsKKwkubmFtZSA9ICJuYmQiLAorCS5h
-dHRycyA9IG5iZF9hdHRycywKK307CisKIHN0YXRpYyBpbnQgX19pbml0IG5iZF9pbml0KHZvaWQp
-CiB7CiAJaW50IGVyciA9IC1FTk9NRU07CkBAIC03ODYsNiArODMzLDcgQEAgc3RhdGljIGludCBf
-X2luaXQgbmJkX2luaXQodm9pZCkKIAlkcHJpbnRrKERCR19JTklULCAibmJkOiBkZWJ1Z2ZsYWdz
-PTB4JXhcbiIsIGRlYnVnZmxhZ3MpOwogCiAJZm9yIChpID0gMDsgaSA8IG5iZHNfbWF4OyBpKysp
-IHsKKwkJaW50IGVycm9yOwogCQlzdHJ1Y3QgZ2VuZGlzayAqZGlzayA9IG5iZF9kZXZbaV0uZGlz
-azsKIAkJbmJkX2RldltpXS5maWxlID0gTlVMTDsKIAkJbmJkX2RldltpXS5tYWdpYyA9IExPX01B
-R0lDOwpAQCAtODA1LDYgKzg1Myw4IEBAIHN0YXRpYyBpbnQgX19pbml0IG5iZF9pbml0KHZvaWQp
-CiAJCXNwcmludGYoZGlzay0+ZGlza19uYW1lLCAibmJkJWQiLCBpKTsKIAkJc2V0X2NhcGFjaXR5
-KGRpc2ssIDApOwogCQlhZGRfZGlzayhkaXNrKTsKKwkJZXJyb3IgPSBzeXNmc19jcmVhdGVfZ3Jv
-dXAoJmRpc2tfdG9fZGV2KGRpc2spLT5rb2JqLAorCQkJCSZuYmRfYXR0cl9ncm91cCk7CiAJfQog
-CiAJcmV0dXJuIDA7CkBAIC04MjQsNiArODc0LDggQEAgc3RhdGljIHZvaWQgX19leGl0IG5iZF9j
-bGVhbnVwKHZvaWQpCiAJCXN0cnVjdCBnZW5kaXNrICpkaXNrID0gbmJkX2RldltpXS5kaXNrOwog
-CQluYmRfZGV2W2ldLm1hZ2ljID0gMDsKIAkJaWYgKGRpc2spIHsKKwkJCXN5c2ZzX3JlbW92ZV9n
-cm91cCgmZGlza190b19kZXYoZGlzayktPmtvYmosCisJCQkJCSZuYmRfYXR0cl9ncm91cCk7CiAJ
-CQlkZWxfZ2VuZGlzayhkaXNrKTsKIAkJCWJsa19jbGVhbnVwX3F1ZXVlKGRpc2stPnF1ZXVlKTsK
-IAkJCXB1dF9kaXNrKGRpc2spOwo=
---001636c92489b7998a04a9a4932e--
+Regards.
