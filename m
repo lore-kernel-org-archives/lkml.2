@@ -1,23 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab1HDK3s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 06:29:48 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:59158 "EHLO mgw2.diku.dk"
+	id S1753967Ab1HDKaG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 06:30:06 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:59163 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753592Ab1HDK3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 06:29:40 -0400
+	id S1753635Ab1HDK3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 06:29:41 -0400
 From: Julia Lawall <julia@diku.dk>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH 0/4] delete useless initialization
-Date: Thu,  4 Aug 2011 12:29:30 +0200
-Message-Id: <1312453774-23333-1-git-send-email-julia@diku.dk>
+To: Jan Kara <jack@suse.cz>
+Cc: kernel-janitors@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] fs/ext3/balloc.c: delete useless initialization
+Date: Thu,  4 Aug 2011 12:29:31 +0200
+Message-Id: <1312453774-23333-2-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1312453774-23333-1-git-send-email-julia@diku.dk>
+References: <1312453774-23333-1-git-send-email-julia@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches fix cases where a variable is initialized in some non-trivial
-way, and the result is immediately overwritten with the result of some
-allocation function.
+From: Julia Lawall <julia@diku.dk>
+
+Delete nontrivial initialization that is immediately overwritten by the
+result of an allocation function.
+
+The semantic match that makes this change is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+type T;
+identifier i;
+expression e;
+@@
+
+(
+T i = \(0\|NULL\|ERR_PTR(...)\);
+|
+-T i = e;
++T i;
+)
+... when != i
+i = \(kzalloc\|kcalloc\|kmalloc\)(...);
+
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ fs/ext3/balloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff -u -p a/fs/ext3/balloc.c b/fs/ext3/balloc.c
+--- a/fs/ext3/balloc.c
++++ b/fs/ext3/balloc.c
+@@ -427,7 +427,7 @@ static inline int rsv_is_empty(struct ex
+ void ext3_init_block_alloc_info(struct inode *inode)
+ {
+ 	struct ext3_inode_info *ei = EXT3_I(inode);
+-	struct ext3_block_alloc_info *block_i = ei->i_block_alloc_info;
++	struct ext3_block_alloc_info *block_i;
+ 	struct super_block *sb = inode->i_sb;
+ 
+ 	block_i = kmalloc(sizeof(*block_i), GFP_NOFS);
 
