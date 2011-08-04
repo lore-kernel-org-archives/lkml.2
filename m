@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab1HDAsa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 20:48:30 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42075 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755894Ab1HDAsY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 20:48:24 -0400
-Date: Wed, 3 Aug 2011 17:50:16 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Marc Zyngier <marc.zyngier@arm.com>, Vasiliy Kulikov <segoon@openwall.com>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>, Ingo Molnar <mingo@elte.hu>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] shm: fix a race between shm_exit() and shm_init()
-Message-Id: <20110803175016.fb80b7f3.akpm@linux-foundation.org>
-In-Reply-To: <CA+55aFzw-K6XvDzTwHRyqQWdkDO8Zqz8Ak1qgNTzf6a3L9=80A@mail.gmail.com>
-References: <20110801180151.GA26686@albatros>
-	<20110801112021.25ec9041.akpm@linux-foundation.org>
-	<20110801190341.GA6898@albatros>
-	<CA+55aFw2kHWY1N=ox1er7c-3WL4OA8x0M=Keu7hvAncKUZd1tQ@mail.gmail.com>
-	<20110802124530.GA2543@albatros>
-	<20110802135512.b49c9de1.akpm@linux-foundation.org>
-	<d844457bba74be419d2434c533fdb4e1@localhost>
-	<CA+55aFx+JOeDoNzs+1wfdK3kpNPyS9wpU1OT=VAwvWPXfMVuDQ@mail.gmail.com>
-	<20110803113033.1c3c6960@taxman.wild-wind.fr.eu.org>
-	<CA+55aFzw-K6XvDzTwHRyqQWdkDO8Zqz8Ak1qgNTzf6a3L9=80A@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1756322Ab1HDAtn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 20:49:43 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35089 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756182Ab1HDAtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 20:49:36 -0400
+Date: Thu, 4 Aug 2011 10:49:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, Tony Luck <tony.luck@intel.com>
+Subject: Re: linux-next: Tree for Aug 3 (efivars/pstore)
+Message-Id: <20110804104927.be96accd4f255d2537d7372a@canb.auug.org.au>
+In-Reply-To: <20110803104030.3c6443ab.rdunlap@xenotime.net>
+References: <20110803151651.687fc6f377e255eccf58301b@canb.auug.org.au>
+	<20110803104030.3c6443ab.rdunlap@xenotime.net>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__4_Aug_2011_10_49_27_+1000_G+QZc3kG1ifK01Q6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Aug 2011 14:35:09 -1000 Linus Torvalds <torvalds@linux-foundation.org> wrote:
+--Signature=_Thu__4_Aug_2011_10_49_27_+1000_G+QZc3kG1ifK01Q6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -369,9 +369,12 @@ static noinline void __init_refok rest_init(void)
->  	init_idle_bootup_task(current);
->  	preempt_enable_no_resched();
->  	schedule();
-> -	preempt_disable();
-> +
-> +	/* At this point, we can enable user mode helper functionality */
-> +	usermodehelper_enable();
->  
->  	/* Call into cpu_idle with preempt disabled */
-> +	preempt_disable();
->  	cpu_idle();
->  }
+Hi Randy,
 
-Well, it's still a workaround.  We'll still have driver_init() trying
-to run userspace helpers at an inappropriate time, and failing to do
-so.  Either something will break or it should not be attempting
-attempting to do this at all.
+On Wed, 3 Aug 2011 10:40:30 -0700 Randy Dunlap <rdunlap@xenotime.net> wrote:
+>
+> What is this warning about?  I don't see the problem.
+>=20
+> The warning only happens on i386 AFAIK.  Must be some typedef glitch?
+>=20
+> drivers/firmware/efivars.c:602: warning: initialization from incompatible=
+ pointer type
 
-Perhaps Kay and Greg can suggest how we can fix all this up?
+The second argument to the write method in a pstore_info is supposed to
+be "unsigned int" but the assigned function has "int" in the
+!CONFIG_PSTORE version.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__4_Aug_2011_10_49_27_+1000_G+QZc3kG1ifK01Q6
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOOeyXAAoJEDMEi1NhKgbsdMUH/015pHB1inkGgEZy2ymkBd2r
+W4uPpfF1U2+/kzafjhX+dQb0K+4qHrCnhY3nl7LufYNPgVb4BnhSvt2fJU6ZbEgf
+q5ZsarZSXp3yfmtEf9RyhnKDJSXHdtaxZtZ30m4PfW2uHUkSa6AAEVR0bW/oCdng
+W1bWhW6goF5aKjFyipWuuW2kCVokVvVJIQhnr65939GGH+ZJNPz6k1wZpQWz6PuM
+rTp7APHMahBzRmFTlyAYvVzusppjQZkX0be1EmeCDukq4NQbXvBVd7lZ6gjQqOpv
+xfErraKqHBJEJ9UXl1kM910YA4kcYrS5JQxrxhk67Kk/gMrckljPQIpnWMFdbZk=
+=rw0I
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__4_Aug_2011_10_49_27_+1000_G+QZc3kG1ifK01Q6--
