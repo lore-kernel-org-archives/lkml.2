@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab1HDJly (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 05:41:54 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:39098 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751796Ab1HDJlu (ORCPT
+	id S1752793Ab1HDJmY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 05:42:24 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:63380 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796Ab1HDJmU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 05:41:50 -0400
-Message-ID: <4E3A6949.2050109@st.com>
-Date: Thu, 4 Aug 2011 15:11:29 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	Thu, 4 Aug 2011 05:42:20 -0400
 MIME-Version: 1.0
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>
-Subject: Re: [PATCH V3 08/20] dmaengine/amba-pl08x: support runtime PM
-References: <cover.1312190881.git.viresh.kumar@st.com>	 <cbf7119fa968fa54077729aabf1ecca5d21db629.1312190881.git.viresh.kumar@st.com> <1312447973.1539.24.camel@vkoul-udesk3>
-In-Reply-To: <1312447973.1539.24.camel@vkoul-udesk3>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110804.001314.1812549734453730417.davem@davemloft.net>
+References: <20110804142858.f7f2f128e5a038beb20aa87b@canb.auug.org.au>
+ <20110804163629.e866b8f3052b7ac34dc83912@canb.auug.org.au>
+ <CACxGe6ss62FFwQOk49dHqEN_35iVTSz0bFg4eH1T_iSeipiJaw@mail.gmail.com> <20110804.001314.1812549734453730417.davem@davemloft.net>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 4 Aug 2011 10:41:52 +0100
+X-Google-Sender-Auth: xZAaFvDbz5Lx4YdC5EhEPfGubro
+Message-ID: <CACxGe6u7EPGm7jrt2vCmosc+S4pg6_2afAQMJJJ=1CJ=KpDC2w@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (devicetree tree related)
+To: David Miller <davem@davemloft.net>
+Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shawn.guo@linaro.org,
+        torvalds@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2011 02:22 PM, Koul, Vinod wrote:
-> i dont think pm_runtime_put_sync() is the right thing to do here. This
-> will call your suspend and return after suspend has been called. This
-> will delay your probe completion and have impact on system boot time,
-> this is a very wrong approach.
-> Please move this to _put, so that suspend will be called asynchronously
-> 
-> Also while at it why should you require all the _put calls to be _sync
-> type?
+On Thu, Aug 4, 2011 at 8:13 AM, David Miller <davem@davemloft.net> wrote:
+> In fact this points out that of_alias_scan() was only placed into one
+> of the two FT unflattening sites, it needs to go into both as well as
+> places that build the device tree from real OpenFirmware calls.  And
+> that makes an even stronger argument for adding an allocator function
+> pointer arg to this thing.
 
-That was a mistake, and i already fixed this in a reply to Russell's mail
-today.
+No argument from me here.  However, I completely broke sparc by
+applying it so I needed to post an ASAP fix with the least possible
+impact.  A followup patch for v3.2 would have be written to generalize
+alias parsing for v3.2
+
+On Thu, Aug 4, 2011 at 9:17 AM, David Miller <davem@davemloft.net> wrote:
+[...]
+> So even though it is implicitly creating properties, it doesn't update
+> the in-kernel device tree nor does it update the OpenFirmware
+> etc. copy.
+>
+> This behvaior is undesirable and makes no sense.  This IMX serial
+> driver merely wants increasing incrementing indexes for the serial
+> nodes it finds, and there are much better ways to do that.
+
+Rolling the assigned ids into the alias list was a convenient & cheap
+way of making sure the id assigned would be unique, but fair enough.
+Shawn and I will talk about implementing a better solution.
+
+[...]
+> This stuff needs more work, I would like to suggest that you just
+> revert at this point.
+
+Very well, I'll prepare a revert branch and ask Linus to pull.
+
+g.
 
 -- 
-viresh
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
