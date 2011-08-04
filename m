@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab1HCX6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 19:58:21 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52630 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755872Ab1HCX6R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 19:58:17 -0400
-Subject: [PATCH] tpm: tpm_nsc: Fix a double free of pdev in cleanup_nsc
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Leendert van Doorn <leendert@watson.ibm.com>,
-        Debora Velarde <debora@linux.vnet.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>,
-        tpmdd-devel@lists.sourceforge.net
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 04 Aug 2011 07:58:07 +0800
-Message-ID: <1312415887.2604.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755993Ab1HDAIe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 20:08:34 -0400
+Received: from plexity.net ([206.123.115.38]:37809 "EHLO plexity.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755928Ab1HDAIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 20:08:30 -0400
+X-Greylist: delayed 464 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Aug 2011 20:08:30 EDT
+Date: Wed, 3 Aug 2011 17:08:30 -0700
+From: Deepak Saxena <dsaxena@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>, patches@linaro.org
+Subject: [PATCH] Remove CLOCK_TICK_RATE from acpi_pm clocksource driver
+Message-ID: <20110804000830.GD23503@plexity.net>
+Reply-To: dsaxena@plexity.net
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-platform_device_unregister() will release all resources
-and remove it from the subsystem, then drop reference count by
-calling platform_device_put().
+The acpi_pm clocksource driver uses CLOCK_TICK_RATE which is
+defined as PIT_TICK_RATE on x86. This patch cleans it up to
+just use the later so that CLOCK_TICK_RATE can be depecrated.
 
-We should not call kfree(pdev) after platform_device_unregister(pdev).
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Deepak Saxena <dsaxena@linaro.org>
 ---
- drivers/char/tpm/tpm_nsc.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/clocksource/acpi_pm.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm_nsc.c b/drivers/char/tpm/tpm_nsc.c
-index 82facc9..4d24648 100644
---- a/drivers/char/tpm/tpm_nsc.c
-+++ b/drivers/char/tpm/tpm_nsc.c
-@@ -396,8 +396,6 @@ static void __exit cleanup_nsc(void)
- 	if (pdev) {
- 		tpm_nsc_remove(&pdev->dev);
- 		platform_device_unregister(pdev);
--		kfree(pdev);
--		pdev = NULL;
- 	}
- 
- 	platform_driver_unregister(&nsc_drv);
+diff --git a/drivers/clocksource/acpi_pm.c b/drivers/clocksource/acpi_pm.c
+index effe797..6b5cf02 100644
+--- a/drivers/clocksource/acpi_pm.c
++++ b/drivers/clocksource/acpi_pm.c
+@@ -143,7 +143,7 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_SERVERWORKS, PCI_DEVICE_ID_SERVERWORKS_LE,
+ #ifndef CONFIG_X86_64
+ #include <asm/mach_timer.h>
+ #define PMTMR_EXPECTED_RATE \
+-  ((CALIBRATE_LATCH * (PMTMR_TICKS_PER_SEC >> 10)) / (CLOCK_TICK_RATE>>10))
++  ((CALIBRATE_LATCH * (PMTMR_TICKS_PER_SEC >> 10)) / (PIT_TICK_RATE>>10))
+ /*
+  * Some boards have the PMTMR running way too fast. We check
+  * the PMTMR rate against PIT channel 2 to catch these cases.
 -- 
 1.7.4.1
-
-
 
