@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751134Ab1HDE0y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 00:26:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42767 "EHLO mx2.suse.de"
+	id S1750964Ab1HDE3K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 00:29:10 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51927 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722Ab1HDE0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 00:26:49 -0400
-Date: Thu, 4 Aug 2011 14:26:39 +1000
-From: NeilBrown <neilb@suse.de>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] md: use REQ_NOIDLE flag in md_super_write()
-Message-ID: <20110804142639.6484de94@notabene.brown>
-In-Reply-To: <1312387077-26617-1-git-send-email-namhyung@gmail.com>
-References: <1312387077-26617-1-git-send-email-namhyung@gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+	id S1750722Ab1HDE3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 00:29:07 -0400
+Date: Thu, 4 Aug 2011 14:28:58 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: linux-next: build failure after merge of the final tree (devicetree
+ tree related)
+Message-Id: <20110804142858.f7f2f128e5a038beb20aa87b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__4_Aug_2011_14_28_58_+1000_QyBWkUB4CFNM4Sgv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  4 Aug 2011 00:57:57 +0900 Namhyung Kim <namhyung@gmail.com> wrote:
+--Signature=_Thu__4_Aug_2011_14_28_58_+1000_QyBWkUB4CFNM4Sgv
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Queue idling is used for the anticipation of immediate
-> sequencial I/O's but md_super_write() is a kind of one-
-> shot operation, coupled with md_super_wait(), so the
-> idling in this case will be just a waste of time.
-> 
-> Specifying REQ_NOIDLE prevents it. Instead of adding
-> the flag to submit_bio() directly, use pre-defined
-> macro WRITE_FLUSH_FUA.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> ---
->  drivers/md/md.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/md/md.c b/drivers/md/md.c
-> index d97a62534798..8650e9a0ce7c 100644
-> --- a/drivers/md/md.c
-> +++ b/drivers/md/md.c
-> @@ -848,7 +848,7 @@ void md_super_write(mddev_t *mddev, mdk_rdev_t *rdev,
->  	bio->bi_end_io = super_written;
->  
->  	atomic_inc(&mddev->pending_writes);
-> -	submit_bio(REQ_WRITE | REQ_SYNC | REQ_FLUSH | REQ_FUA, bio);
-> +	submit_bio(WRITE_FLUSH_FUA, bio);
->  }
->  
->  void md_super_wait(mddev_t *mddev)
+Hi all,
 
-Applied, thanks.
+After merging the final tree, today's linux-next build (sparc64 defconfig)
+failed like this:
 
-NeilBrown
+drivers/built-in.o: In function `of_alias_scan':
+(.init.text+0x6074): undefined reference to `early_init_dt_alloc_memory_arc=
+h'
 
+Caused by commit 750f463a749e ("dt: add of_alias_scan and of_alias_get_id").
 
+I have reverted that patch for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__4_Aug_2011_14_28_58_+1000_QyBWkUB4CFNM4Sgv
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOOiAKAAoJEDMEi1NhKgbsrBAH+wZkpYjN9+0MZ9ahPtdU1iGC
+N2Kxwl8+Q+QRh53wWT3Afvp96Bjg146Uxz6/BsTX8Ks9g3+scCFZ0BMBDltmbobB
+zD7o4/NnIaNazJwL4QB0gYMZjWMTjpINAyZyrfECn4HyuA+rwydg65Nrmt8B3r3n
+YMh+GNth54ZwtKj3eDLyJCtHhEQ/56Xmy2OLRa/zcrIqnOB3mDR3Bo4YdRrFw+cZ
+dn1eBzVXOH2aNDVKVgcn5rUBXTLBxmlLlIJr6IPgMvbxsMeHMHtduCcoSmoU8vUE
+0yA3Vc1cXoPMTEGaTcLKPJ3C9zL+fc5v5lIBuiNozgVPMMrxR2Sr8IZi0NnsnUE=
+=eKyt
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__4_Aug_2011_14_28_58_+1000_QyBWkUB4CFNM4Sgv--
