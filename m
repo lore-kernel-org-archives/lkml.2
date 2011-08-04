@@ -1,102 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab1HDLqI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 07:46:08 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33958 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab1HDLqF convert rfc822-to-8bit (ORCPT
+	id S1753904Ab1HDLrc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 07:47:32 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:35332 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752727Ab1HDLra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 07:46:05 -0400
+	Thu, 4 Aug 2011 07:47:30 -0400
+Date: Thu, 4 Aug 2011 14:47:27 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: balbi@ti.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH] dt: remove of_alias_get_id() reference
+Message-ID: <20110804114725.GK17540@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <20110804102950.10845.67898.stgit@ponder>
+ <20110804103336.GE17540@legolas.emea.dhcp.ti.com>
+ <CACxGe6vnspztEnUH5odGnK4x_K9Ej3Nt7BxikVQwOr9Uh_ED7g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110801154636.GA2096@zod.bos.redhat.com>
-References: <20110801154636.GA2096@zod.bos.redhat.com>
-Date: Thu, 4 Aug 2011 07:46:03 -0400
-Message-ID: <CA+5PVA5EZWHv_tuzA22twGQ7rZZ2zhqi1zs6OiFbpORiiYbzMg@mail.gmail.com>
-Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
-From: Josh Boyer <jwboyer@gmail.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Mit9XoPEfICDqq/V"
+Content-Disposition: inline
+In-Reply-To: <CACxGe6vnspztEnUH5odGnK4x_K9Ej3Nt7BxikVQwOr9Uh_ED7g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 1, 2011 at 11:46 AM, Josh Boyer <jwboyer@redhat.com> wrote:
-> We're seeing a scheduling while atomic backtrace in rawhide from pidmap_init
-> (https://bugzilla.redhat.com/show_bug.cgi?id=726877).  While this seems
-> mostly harmless given that there isn't anything else to schedule to at
-> this point, I do wonder why things are marked as needing rescheduled so
-> early.
->
-> We get to might_sleep through the might_sleep_if call in
-> slab_pre_alloc_hook because both kzalloc and KMEM_CACHE are called with
-> GFP_KERNEL.  That eventually has a call chain like:
->
-> might_resched->_cond_resched->should_resched
->
-> which apparently returns true.  Why the initial thread says it should
-> reschedule at this point, I'm not sure.
->
-> I tried cheating by making the kzalloc call in pidmap_init use GFP_IOFS
-> instead of GFP_KERNEL to avoid the might_sleep_if call, and that worked
-> but I can't do the same for the kmalloc calls in kmem_cache_create, so
-> getting to the bottom of why should_resched is returning true seems to
-> be a better approach.
 
-A bit more info on this.
+--Mit9XoPEfICDqq/V
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-What seems to be happening is that late_time_init is called, which
-gets around to calling hpet_time_init, which enables the HPET, and
-then calls setup_default_timer_irq.  setup_default_timer_irq in
-arch/x86/kernel/time.c calls setup_irq with the timer_interrupt
-handler.
+On Thu, Aug 04, 2011 at 12:42:41PM +0100, Grant Likely wrote:
+> On Thu, Aug 4, 2011 at 11:33 AM, Felipe Balbi <balbi@ti.com> wrote:
+> > On Thu, Aug 04, 2011 at 11:30:27AM +0100, Grant Likely wrote:
+> >> of_alias_get_id() is broken and being reverted. =A0Remove the reference
+> >> to it and replace with a single incrementing id number.
+> >>
+> >> There is no risk of regression here on the imx driver since the imx
+> >> change to use of_alias_get_id() is commit 22698aa2, "serial/imx: add
+> >> device tree probe support" which is new for v3.1, and it won't get
+> >> used unless CONFIG_OF is enabled and the board is booted using a
+> >> device tree. =A0A single incrementing integer is sufficient for now.
+> >>
+> >> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> >> Acked-by: Shawn Guo <shawn.guo@linaro.org>
+> >> ---
+> >>
+> >> I'm about to ask Linus to pull this patch through the devicetree/merge
+> >> branch along with the of_alias revert.
+> >>
+> >> =A0drivers/tty/serial/imx.c | =A0 13 ++++---------
+> >> =A01 files changed, 4 insertions(+), 9 deletions(-)
+> >>
+> >> diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+> >> index 827db76..7e91b3d 100644
+> >> --- a/drivers/tty/serial/imx.c
+> >> +++ b/drivers/tty/serial/imx.c
+> >> @@ -1286,22 +1286,17 @@ static int serial_imx_resume(struct platform_d=
+evice *dev)
+> >> =A0static int serial_imx_probe_dt(struct imx_port *sport,
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 struct platform_device *pdev)
+> >> =A0{
+> >> + =A0 =A0 static int portnum =3D 0;
+> >
+> > would it be better to use an IDR here ?
+>=20
+> Hmmm, I've not looked at idr before.  Yes, it would probably be the
+> right thing to do.  This patch is needed to fix a build failure, but
+> when it is reworked for v3.2 I think idr should be considered.
+> Thanks!
 
-At this point the timer interrupt hits, and then tick_handle_periodic is called
+no problem ;-)
 
-timer int
-tick_handle_periodic -> tick_periodic -> update_process_times ->
-rcu_check_callbacks -> rcu_pending ->
-__rcp_pending -> set_need_resched (this is called around line 1685 in
-kernel/rcutree.c)
+--=20
+balbi
 
-So what's happening is that once the timer interrupt starts, RCU is
-coming in and marking current as needing reschedule, and that in turn
-makes the slab_pre_alloc_hook -> might_sleep_if -> might_sleep ->
-might_resched -> _cond_resched to trigger when pidmap_init calls
-kzalloc later on and produce the oops below later on in the init
-sequence.  I believe we see this because of all the debugging options
-we have enabled in the kernel configs.
+--Mit9XoPEfICDqq/V
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-This might be normal for all I know, but the oops is rather annoying.
-It seems RCU isn't in a quiescent state, we aren't preemptible yet,
-and it _really_ wants to reschedule things to make itself happy.
-Anyone have any thoughts on how to either keep RCU from marking
-current as needing reschdule so early, or otherwise working around the
-bug?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-josh
+iQEcBAEBAgAGBQJOOobNAAoJEAv8Txj19kN1j3kIAIdRVuQSDt2IuXrCQTzGrIh+
+AwdZVUuXrwSLOAaiWuh+W+Kl9PTXxad8t7PH1lXulk3goTsHGL82isuJaNvF2h1d
+F445R8ludhOpeB2dFTQQ5gWzwSf67Veuh6RfOY2CbOrJ2yyOuXLxz4esvnR7Eg59
+aT/zXSCG+qBYwOZna+uw8Ppe4mr/4Jnc1/6jyEqs6o91VY6MCJyDrBgcvs8aoEF0
+hPPRFfwYufRA4bc1hkwLeZTttKm7xeQHYLn/8vgeXWsNODD3P71TnRhoMz08LyGs
+Xo2EIxSqt8jMdCuwc57yQ6g71ZWbqVDzWtkCgJGNgJnHiQ0FZjn9AEIWPFidOHE=
+=h9oy
+-----END PGP SIGNATURE-----
 
-[    0.007005] pid_max: default: 32768 minimum: 301
-[    0.008619] BUG: scheduling while atomic: swapper/0/0x10000002
-[    0.009004] no locks held by swapper/0.
-[    0.010005] Modules linked in:
-[    0.010628] Pid: 0, comm: swapper Not tainted
-3.1.0-0.rc0.git18.1.fc17.x86_64 #17
-[    0.011004] Call Trace:
-[    0.012009]  [<ffffffff814e5c9e>] __schedule_bug+0x75/0x7a
-[    0.013011]  [<ffffffff814edced>] schedule+0x95/0x7bb
-[    0.013621]  [<ffffffff81077199>] ? kzalloc.constprop.3+0x29/0x2b
-[    0.014007]  [<ffffffff81056cbf>] __cond_resched+0x28/0x34
-[    0.015006]  [<ffffffff814ee62b>] _cond_resched+0x19/0x22
-[    0.015630]  [<ffffffff8112d1b1>] slab_pre_alloc_hook+0x3b/0x54
-[    0.016006]  [<ffffffff8112f9ea>] kmem_cache_alloc_trace+0x29/0xca
-[    0.017006]  [<ffffffff81077199>] kzalloc.constprop.3+0x29/0x2b
-[    0.017646]  [<ffffffff81d6793b>] pidmap_init+0xb7/0xf6
-[    0.018007]  [<ffffffff81d4f05a>] start_kernel+0x898/0x92f
-[    0.019006]  [<ffffffff81d4e2c4>] x86_64_start_reservations+0xaf/0xb3
-[    0.019653]  [<ffffffff81d4e140>] ? early_idt_handlers+0x140/0x140
-[    0.020006]  [<ffffffff81d4e3ca>] x86_64_start_kernel+0x102/0x111
-[    0.021288] Security Framework initialized
-[    0.022011] SELinux:  Initializing.
+--Mit9XoPEfICDqq/V--
