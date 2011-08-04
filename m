@@ -1,47 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342Ab1HDAwy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 20:52:54 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47476 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755913Ab1HDAwt (ORCPT
+	id S1756385Ab1HDAyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 20:54:09 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:50501 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756231Ab1HDAyA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 20:52:49 -0400
+	Wed, 3 Aug 2011 20:54:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1108031523080.22067@x980>
-References: <alpine.LFD.2.02.1108031137590.22067@x980> <CA+55aFxST2J+LDMB=1ctnw2WGxV+a-cm3FE-1AjwnXMNDkt32g@mail.gmail.com>
- <alpine.LFD.2.02.1108031523080.22067@x980>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 3 Aug 2011 14:52:26 -1000
-Message-ID: <CA+55aFxE6b=idv+fF5h1U3EnDqHSCK2b6+36sResmhJKvAZQ3A@mail.gmail.com>
-Subject: Re: [GIT PATCH] APEI patches for Linux 3.1
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20110803175101.GC32385@redhat.com>
+References: <4E38C314.8070305@cn.fujitsu.com>
+	<CANejiEViuKky1A7Xh0MQKBVNMj_fgzwayWyON7hFGfP3wa62SQ@mail.gmail.com>
+	<4E3902C7.9050907@cn.fujitsu.com>
+	<CANejiEVqFt4j1-qTVnxEAe75z0y010s=ST2XtCDDTqDEQT=EcQ@mail.gmail.com>
+	<4E391986.90108@cn.fujitsu.com>
+	<20110803154533.GB32385@redhat.com>
+	<20110803175101.GC32385@redhat.com>
+Date: Thu, 4 Aug 2011 08:53:59 +0800
+X-Google-Sender-Auth: 5goMHeUugx13jQ4hIT3Dll-UgH8
+Message-ID: <CANejiEXAtzExExqmTXA=hmpGh8DVVo9ncbRMdkB+avq+G3LuqQ@mail.gmail.com>
+Subject: Re: fio posixaio performance problem
+From: Shaohua Li <shli@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 3, 2011 at 9:26 AM, Len Brown <lenb@kernel.org> wrote:
+2011/8/4 Vivek Goyal <vgoyal@redhat.com>:
+> On Wed, Aug 03, 2011 at 11:45:33AM -0400, Vivek Goyal wrote:
+>> On Wed, Aug 03, 2011 at 05:48:54PM +0800, Gui Jianfeng wrote:
+>> > On 2011-8-3 16:22, Shaohua Li wrote:
+>> > > 2011/8/3 Gui Jianfeng <guijianfeng@cn.fujitsu.com>:
+>> > >> On 2011-8-3 15:38, Shaohua Li wrote:
+>> > >>> 2011/8/3 Gui Jianfeng <guijianfeng@cn.fujitsu.com>:
+>> > >>>> Hi,
+>> > >>>>
+>> > >>>> I ran a fio test to simulate qemu-kvm io behaviour.
+>> > >>>> When job number is greater than 2, IO performance is
+>> > >>>> really bad.
+>> > >>>>
+>> > >>>> 1 thread: aggrb=15,129KB/s
+>> > >>>> 4 thread: aggrb=1,049KB/s
+>> > >>>>
+>> > >>>> Kernel: lastest upstream
+>> > >>>>
+>> > >>>> Any idea?
+>> > >>>>
+>> > >>>> ---
+>> > >>>> [global]
+>> > >>>> runtime=30
+>> > >>>> time_based=1
+>> > >>>> size=1G
+>> > >>>> group_reporting=1
+>> > >>>> ioengine=posixaio
+>> > >>>> exec_prerun='echo 3 > /proc/sys/vm/drop_caches'
+>> > >>>> thread=1
+>> > >>>>
+>> > >>>> [kvmio-1]
+>> > >>>> description=kvmio-1
+>> > >>>> numjobs=4
+>> > >>>> rw=write
+>> > >>>> bs=4k
+>> > >>>> direct=1
+>> > >>>> filename=/mnt/sda4/1G.img
+>> > >>> Hmm, the test runs always about 15M/s at my side regardless how many threads.
+>> > >>
+>> > >> CFQ£¿
+>> > > yes.
+>> > >
+>> > >> what's the slice_idle value?
+>> > > default value. I didn't change it.
+>> >
+>> > Hmm, I use a sata disk, and can reproduce this bug every time...
+>>
+>> Do you have blktrace of run with 4 jobs?
 >
-> Push went here:
+> I can't reproduce it too. On my sata disk single thread is getting around
+> 23-24MB/s and 4 threads get around 19-20MB/sec. Some of the throughput
+> is gone into seeking so that is expected.
 >
-> git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git apei-release
-
-No it didn't.
-
-Apparently it went into linux-idle.
-
-Christ, Len. You send me *two* bogus pull requests, and all your pull
-requests  come in at the very end of the merge cycle, when I very
-clearly asked people to try hard to avoid that since I'm supposed to
-be on vacation.
-
-And several of those commits are from today, and cannot have had any testing.
-
-In short: even though Tony told me where to look, I'm not seeing any
-reason to pull this thing. The merge window is not for development,
-and you're simply not making me get the warm and fuzzies about this
-late pull request.
-
-             Linus
+> I think what you are trying to point out is idling issue. In your workload
+> every thread is doing sync-idle IO. So idling is enabled on each thread.
+> On my system I see that next thread preempts the current idle thread
+> because they all are doing IO in nearby area of file and rq_close() is
+> true hence preemption is allowed.
+>
+> On your system, I think somehow rq_close() is not true hence preemption
+> does not take place and we continue to idle on that thread. That also
+> is not necessarily too bad but it might be happening that we are waiting
+> for completion of IO from some other thread before this thread (we are
+> idling on) can do more writes due to some filesystem rescrition and
+> that can lead to sudden throughput drop. blktrace will give some idea.
+with idle, the workload fallbacks like the one thread case, I don't
+expect so big reduction.
+I saw some back seek in the workload because we have rq_close() preempt here.
+is it possible back seek penality in the disk is big?
