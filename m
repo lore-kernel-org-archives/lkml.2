@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab1HDPyw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 11:54:52 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47666 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068Ab1HDPyt (ORCPT
+	id S1754802Ab1HDP4Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 11:56:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54982 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab1HDP4M convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 11:54:49 -0400
-Date: Thu, 4 Aug 2011 18:53:47 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: select_task_rq_fair: WARNING: at kernel/lockdep.c match_held_lock
-Message-ID: <20110804155347.GB3562@swordfish.minsk.epam.com>
-References: <20110804141306.GA3536@swordfish.minsk.epam.com>
- <1312470358.16729.25.camel@twins>
- <20110804153752.GA3562@swordfish.minsk.epam.com>
- <1312472867.16729.38.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312472867.16729.38.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 4 Aug 2011 11:56:12 -0400
+Subject: Re: [perf] enable raw OFFCORE_EVENTS for non-perf userspace
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+In-Reply-To: <alpine.DEB.2.00.1108031200390.703@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1108031200390.703@cl320.eecs.utk.edu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 04 Aug 2011 17:55:30 +0200
+Message-ID: <1312473330.16729.42.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (08/04/11 17:47), Peter Zijlstra wrote:
-> On Thu, 2011-08-04 at 18:37 +0300, Sergey Senozhatsky wrote:
-> > > > [  132.794685] WARNING: at kernel/lockdep.c:3117 match_held_lock+0xf6/0x12e()
+On Wed, 2011-08-03 at 12:05 -0400, Vince Weaver wrote:
+> Hello
 > 
-> Just to double check, that line is:
+> I propose we just enable raw OFFCORE_EVENT support and get it over with.
 > 
->                 if (DEBUG_LOCKS_WARN_ON(!hlock->nest_lock))
+> There is a lot of demand for this from PAPI users, and so we encourage 
+> them to apply the below patch.  PAPI supports this out of the box.
 > 
-> in your kernel source?
+> The current "block" against using this feature *DOES NOT WORK*.
+> It silently fails if you try to use the config1 field to set it.
 > 
-
-Nope, that's `if (DEBUG_LOCKS_WARN_ON(!class))'
-
-3106 static int match_held_lock(struct held_lock *hlock, struct lockdep_map *lock)
-3107 {                                                                                                                                                                                                                             
-3108     if (hlock->instance == lock)
-3109         return 1;
-3110 
-3111     if (hlock->references) {
-3112         struct lock_class *class = lock->class_cache[0];
-3113 
-3114         if (!class)
-3115             class = look_up_lock_class(lock, 0);
-3116 
-3117         if (DEBUG_LOCKS_WARN_ON(!class))
-3118             return 0;
-3119 
-3120         if (DEBUG_LOCKS_WARN_ON(!hlock->nest_lock))
-3121             return 0;
-3122 
-3123         if (hlock->class_idx == class - lock_classes + 1)
-3124             return 1;
-3125     }
-3126 
-3127     return 0;
-3128 }
-3129 
+> Even worse, if some previous user has set the OFFCORE_RSP_0 msr
+> (say by running "perf stat -e LLC-load-misses") then
+> the msr *stays set* and if you try to set the config1 field on your own
+> it looks like it worked, but instead it is using whatever value the
+> kernel last used.
+> 
+> So there's a lot of userspace confusion about this, and you can't even 
+> reliably tell if the feature is turned off or not because it fails 
+> silently in unpredictable ways.
 
 
-	Sergey
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 4ee3abf..28f9ca9 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -604,12 +604,8 @@ static int x86_setup_perfctr(struct perf_event *event)
+>  			return -EOPNOTSUPP;
+>  	}
+>  
+> -	/*
+> -	 * Do not allow config1 (extended registers) to propagate,
+> -	 * there's no sane user-space generalization yet:
+> -	 */
+>  	if (attr->type == PERF_TYPE_RAW)
+> -		return 0;
+> +		return x86_pmu_extra_regs(event->attr.config, event);
+>  
+>  	if (attr->type == PERF_TYPE_HW_CACHE)
+>  		return set_ext_hw_attr(hwc, event);
+
+
+I'm inclined to merge this, aside from snb, the offcore stuff is
+actually quite usable now. Ingo can we somehow persuade you?
+
+Anybody who knows how to program the snb offcore please tell. I mean we
+have all the code to poke at the right registers, and the SDM lists all
+the various bits that go where and a few constraints on how to combine
+said bits, but I've really no idea what any of it means.
+
+
