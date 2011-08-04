@@ -1,71 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305Ab1HDHeH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 03:34:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49497 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276Ab1HDHeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 03:34:00 -0400
-Date: Thu, 4 Aug 2011 09:33:57 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [BUGFIX][PATCH] memcg: fix oom schedule_timeout
-Message-ID: <20110804073357.GC31039@tiehlicka.suse.cz>
-References: <20110803121532.1ab8d76c.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1751796Ab1HDHli (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 03:41:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40902 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751084Ab1HDHlc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 03:41:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110803121532.1ab8d76c.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201108040715.p747FnXa042677@www262.sakura.ne.jp>
+References: <201108040221.p742Lk3R069631@www262.sakura.ne.jp>
+ <CACqU3MWQsh2cS8ck=c1-bOy-W649j0FjtNeOQbPaijAaCQ9wgA@mail.gmail.com>
+ <201108040355.p743tBkv092694@www262.sakura.ne.jp> <CACqU3MVbHPuOjg9cY_GWdBGz3HPw3u7R3S14OOObN8-CFXGVaw@mail.gmail.com>
+ <201108040715.p747FnXa042677@www262.sakura.ne.jp>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 3 Aug 2011 21:41:05 -1000
+Message-ID: <CA+55aFwwGhRFjME-AmbB3DLb3Ux-vTBijMq1HS3VrSB47RV46w@mail.gmail.com>
+Subject: Re: [3.0-git16] Oops at driver_uevent_store().
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: lacombar@gmail.com, bunk@stusta.de, greg@kroah.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 03-08-11 12:15:32, KAMEZAWA Hiroyuki wrote:
-> 
-> This patch is onto the latest mmotm.
-> 
-> ==
-> Before calling schedule_timeout(), task state should be changed.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+2011/8/3 Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>:
+> Arnaud Lacombe wrote:
+>> Marking `pci_eisa_driver' as __refdata fix the warning and leave the
+>> struct untouched:
+>>
+>> diff --git a/drivers/eisa/pci_eisa.c b/drivers/eisa/pci_eisa.c
+>> index 30da70d..cdae207 100644
+>> --- a/drivers/eisa/pci_eisa.c
+>> +++ b/drivers/eisa/pci_eisa.c
+>
+> This patch solved the oops. Thank you.
 
-Looks good.
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Arnaud, thanks. Sign-off and slightly cleaned-up changelog?
 
-> ---
->  mm/memcontrol.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: mmotm-Aug3/mm/memcontrol.c
-> ===================================================================
-> --- mmotm-Aug3.orig/mm/memcontrol.c
-> +++ mmotm-Aug3/mm/memcontrol.c
-> @@ -2005,7 +2005,7 @@ bool mem_cgroup_handle_oom(struct mem_cg
->  	if (test_thread_flag(TIF_MEMDIE) || fatal_signal_pending(current))
->  		return false;
->  	/* Give chance to dying process */
-> -	schedule_timeout(1);
-> +	schedule_timeout_uninterruptible(1);
->  	return true;
->  }
->  
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+          Linus
