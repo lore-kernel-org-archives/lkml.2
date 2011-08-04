@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab1HDO54 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 10:57:56 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54007 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665Ab1HDO5f (ORCPT
+	id S1754809Ab1HDO6L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 10:58:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59598 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665Ab1HDO6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 10:57:35 -0400
+	Thu, 4 Aug 2011 10:58:09 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
+        Borislav Petkov <bp@amd64.org>, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/4] perf python: Add PERF_RECORD_{LOST,READ,SAMPLE} routine tables
-Date: Thu,  4 Aug 2011 11:57:17 -0300
-Message-Id: <1312469838-2884-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 2/4] perf evlist: Introduce 'disable' method
+Date: Thu,  4 Aug 2011 11:57:16 -0300
+Message-Id: <1312469838-2884-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1312469838-2884-1-git-send-email-acme@infradead.org>
 References: <1312469838-2884-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,179 +29,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-So those friggin "spurious" PERF_RECORD_MMAP events were actually a
-brain fart copy'n'paste error in the python binding, doh. I.e. they
-weren't MMAPs, just SAMPLEs.
+To remove the last case of access to the FD() macro outside the library.
 
-Fix it by providing routines for these events instead of using the MMAP
-ones.
+Inspired by a patch by Borislav that moved the FD() macro to util.h, for
+namespace concerns I rather preferred to constrain it to ev{sel,list}.c.
 
+Cc: Borislav Petkov <bp@amd64.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-b0rc8y5jd03f9f11kftodvkm@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-qn893qsstcg366tkucu649qj@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/python.c |  115 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 112 insertions(+), 3 deletions(-)
+ tools/perf/builtin-record.c |   19 ++-----------------
+ tools/perf/util/evlist.c    |   13 +++++++++++++
+ tools/perf/util/evlist.h    |    2 ++
+ 3 files changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
-index 8e0b5a3..cbc8f21 100644
---- a/tools/perf/util/python.c
-+++ b/tools/perf/util/python.c
-@@ -187,16 +187,119 @@ static PyTypeObject pyrf_throttle_event__type = {
- 	.tp_repr	= (reprfunc)pyrf_throttle_event__repr,
- };
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 80dc5b7..f6426b4 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -30,8 +30,6 @@
+ #include <sched.h>
+ #include <sys/mman.h>
  
-+static char pyrf_lost_event__doc[] = PyDoc_STR("perf lost event object.");
-+
-+static PyMemberDef pyrf_lost_event__members[] = {
-+	sample_members
-+	member_def(lost_event, id, T_ULONGLONG, "event id"),
-+	member_def(lost_event, lost, T_ULONGLONG, "number of lost events"),
-+	{ .name = NULL, },
-+};
-+
-+static PyObject *pyrf_lost_event__repr(struct pyrf_event *pevent)
-+{
-+	PyObject *ret;
-+	char *s;
-+
-+	if (asprintf(&s, "{ type: lost, id: %#" PRIx64 ", "
-+			 "lost: %#" PRIx64 " }",
-+		     pevent->event.lost.id, pevent->event.lost.lost) < 0) {
-+		ret = PyErr_NoMemory();
-+	} else {
-+		ret = PyString_FromString(s);
-+		free(s);
-+	}
-+	return ret;
-+}
-+
-+static PyTypeObject pyrf_lost_event__type = {
-+	PyVarObject_HEAD_INIT(NULL, 0)
-+	.tp_name	= "perf.lost_event",
-+	.tp_basicsize	= sizeof(struct pyrf_event),
-+	.tp_flags	= Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-+	.tp_doc		= pyrf_lost_event__doc,
-+	.tp_members	= pyrf_lost_event__members,
-+	.tp_repr	= (reprfunc)pyrf_lost_event__repr,
-+};
-+
-+static char pyrf_read_event__doc[] = PyDoc_STR("perf read event object.");
-+
-+static PyMemberDef pyrf_read_event__members[] = {
-+	sample_members
-+	member_def(read_event, pid, T_UINT, "event pid"),
-+	member_def(read_event, tid, T_UINT, "event tid"),
-+	{ .name = NULL, },
-+};
-+
-+static PyObject *pyrf_read_event__repr(struct pyrf_event *pevent)
-+{
-+	return PyString_FromFormat("{ type: read, pid: %u, tid: %u }",
-+				   pevent->event.read.pid,
-+				   pevent->event.read.tid);
-+	/*
-+ 	 * FIXME: return the array of read values,
-+ 	 * making this method useful ;-)
-+ 	 */
-+}
-+
-+static PyTypeObject pyrf_read_event__type = {
-+	PyVarObject_HEAD_INIT(NULL, 0)
-+	.tp_name	= "perf.read_event",
-+	.tp_basicsize	= sizeof(struct pyrf_event),
-+	.tp_flags	= Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-+	.tp_doc		= pyrf_read_event__doc,
-+	.tp_members	= pyrf_read_event__members,
-+	.tp_repr	= (reprfunc)pyrf_read_event__repr,
-+};
-+
-+static char pyrf_sample_event__doc[] = PyDoc_STR("perf sample event object.");
-+
-+static PyMemberDef pyrf_sample_event__members[] = {
-+	sample_members
-+	member_def(perf_event_header, type, T_UINT, "event type"),
-+	{ .name = NULL, },
-+};
-+
-+static PyObject *pyrf_sample_event__repr(struct pyrf_event *pevent)
-+{
-+	PyObject *ret;
-+	char *s;
-+
-+	if (asprintf(&s, "{ type: sample }") < 0) {
-+		ret = PyErr_NoMemory();
-+	} else {
-+		ret = PyString_FromString(s);
-+		free(s);
-+	}
-+	return ret;
-+}
-+
-+static PyTypeObject pyrf_sample_event__type = {
-+	PyVarObject_HEAD_INIT(NULL, 0)
-+	.tp_name	= "perf.sample_event",
-+	.tp_basicsize	= sizeof(struct pyrf_event),
-+	.tp_flags	= Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
-+	.tp_doc		= pyrf_sample_event__doc,
-+	.tp_members	= pyrf_sample_event__members,
-+	.tp_repr	= (reprfunc)pyrf_sample_event__repr,
-+};
-+
- static int pyrf_event__setup_types(void)
+-#define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+-
+ enum write_mode_t {
+ 	WRITE_FORCE,
+ 	WRITE_APPEND
+@@ -438,7 +436,6 @@ static void mmap_read_all(void)
+ 
+ static int __cmd_record(int argc, const char **argv)
  {
+-	int i;
+ 	struct stat st;
+ 	int flags;
  	int err;
- 	pyrf_mmap_event__type.tp_new =
- 	pyrf_task_event__type.tp_new =
- 	pyrf_comm_event__type.tp_new =
-+	pyrf_lost_event__type.tp_new =
-+	pyrf_read_event__type.tp_new =
-+	pyrf_sample_event__type.tp_new =
- 	pyrf_throttle_event__type.tp_new = PyType_GenericNew;
- 	err = PyType_Ready(&pyrf_mmap_event__type);
- 	if (err < 0)
- 		goto out;
-+	err = PyType_Ready(&pyrf_lost_event__type);
-+	if (err < 0)
-+		goto out;
- 	err = PyType_Ready(&pyrf_task_event__type);
- 	if (err < 0)
- 		goto out;
-@@ -206,20 +309,26 @@ static int pyrf_event__setup_types(void)
- 	err = PyType_Ready(&pyrf_throttle_event__type);
- 	if (err < 0)
- 		goto out;
-+	err = PyType_Ready(&pyrf_read_event__type);
-+	if (err < 0)
-+		goto out;
-+	err = PyType_Ready(&pyrf_sample_event__type);
-+	if (err < 0)
-+		goto out;
- out:
- 	return err;
+@@ -682,7 +679,6 @@ static int __cmd_record(int argc, const char **argv)
+ 
+ 	for (;;) {
+ 		int hits = samples;
+-		int thread;
+ 
+ 		mmap_read_all();
+ 
+@@ -693,19 +689,8 @@ static int __cmd_record(int argc, const char **argv)
+ 			waking++;
+ 		}
+ 
+-		if (done) {
+-			for (i = 0; i < evsel_list->cpus->nr; i++) {
+-				struct perf_evsel *pos;
+-
+-				list_for_each_entry(pos, &evsel_list->entries, node) {
+-					for (thread = 0;
+-						thread < evsel_list->threads->nr;
+-						thread++)
+-						ioctl(FD(pos, i, thread),
+-							PERF_EVENT_IOC_DISABLE);
+-				}
+-			}
+-		}
++		if (done)
++			perf_evlist__disable(evsel_list);
+ 	}
+ 
+ 	if (quiet || signr == SIGUSR1)
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index b021ea9..e03e7bc 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -91,6 +91,19 @@ int perf_evlist__add_default(struct perf_evlist *evlist)
+ 	return 0;
  }
  
- static PyTypeObject *pyrf_event__type[] = {
- 	[PERF_RECORD_MMAP]	 = &pyrf_mmap_event__type,
--	[PERF_RECORD_LOST]	 = &pyrf_mmap_event__type,
-+	[PERF_RECORD_LOST]	 = &pyrf_lost_event__type,
- 	[PERF_RECORD_COMM]	 = &pyrf_comm_event__type,
- 	[PERF_RECORD_EXIT]	 = &pyrf_task_event__type,
- 	[PERF_RECORD_THROTTLE]	 = &pyrf_throttle_event__type,
- 	[PERF_RECORD_UNTHROTTLE] = &pyrf_throttle_event__type,
- 	[PERF_RECORD_FORK]	 = &pyrf_task_event__type,
--	[PERF_RECORD_READ]	 = &pyrf_mmap_event__type,
--	[PERF_RECORD_SAMPLE]	 = &pyrf_mmap_event__type,
-+	[PERF_RECORD_READ]	 = &pyrf_read_event__type,
-+	[PERF_RECORD_SAMPLE]	 = &pyrf_sample_event__type,
- };
++void perf_evlist__disable(struct perf_evlist *evlist)
++{
++	int cpu, thread;
++	struct perf_evsel *pos;
++
++	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
++		list_for_each_entry(pos, &evlist->entries, node) {
++			for (thread = 0; thread < evlist->threads->nr; thread++)
++				ioctl(FD(pos, cpu, thread), PERF_EVENT_IOC_DISABLE);
++		}
++	}
++}
++
+ int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
+ {
+ 	int nfds = evlist->cpus->nr * evlist->threads->nr * evlist->nr_entries;
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index b2b8623..ce85ae9 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -53,6 +53,8 @@ int perf_evlist__alloc_mmap(struct perf_evlist *evlist);
+ int perf_evlist__mmap(struct perf_evlist *evlist, int pages, bool overwrite);
+ void perf_evlist__munmap(struct perf_evlist *evlist);
  
- static PyObject *pyrf_event__new(union perf_event *event)
++void perf_evlist__disable(struct perf_evlist *evlist);
++
+ static inline void perf_evlist__set_maps(struct perf_evlist *evlist,
+ 					 struct cpu_map *cpus,
+ 					 struct thread_map *threads)
 -- 
 1.6.2.5
 
