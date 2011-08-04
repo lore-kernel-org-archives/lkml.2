@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab1HDKaB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 06:30:01 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:59154 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753603Ab1HDK3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 06:29:40 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Jan Kara <jack@suse.cz>
-Cc: kernel-janitors@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] fs/ext2/balloc.c: delete useless initialization
-Date: Thu,  4 Aug 2011 12:29:32 +0200
-Message-Id: <1312453774-23333-3-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1312453774-23333-1-git-send-email-julia@diku.dk>
-References: <1312453774-23333-1-git-send-email-julia@diku.dk>
+	id S1754047Ab1HDKaf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 06:30:35 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45427 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951Ab1HDKaa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 06:30:30 -0400
+Subject: [PATCH] dt: remove of_alias_get_id() reference
+To: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+From: Grant Likely <grant.likely@secretlab.ca>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Date: Thu, 04 Aug 2011 11:30:27 +0100
+Message-ID: <20110804102950.10845.67898.stgit@ponder>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+of_alias_get_id() is broken and being reverted.  Remove the reference
+to it and replace with a single incrementing id number.
 
-Delete nontrivial initialization that is immediately overwritten by the
-result of an allocation function.
+There is no risk of regression here on the imx driver since the imx
+change to use of_alias_get_id() is commit 22698aa2, "serial/imx: add
+device tree probe support" which is new for v3.1, and it won't get
+used unless CONFIG_OF is enabled and the board is booted using a
+device tree.  A single incrementing integer is sufficient for now.
 
-The semantic match that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
-
-// <smpl>
-@@
-type T;
-identifier i;
-expression e;
-@@
-
-(
-T i = \(0\|NULL\|ERR_PTR(...)\);
-|
--T i = e;
-+T i;
-)
-... when != i
-i = \(kzalloc\|kcalloc\|kmalloc\)(...);
-
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 ---
- fs/ext2/balloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff -u -p a/fs/ext2/balloc.c b/fs/ext2/balloc.c
---- a/fs/ext2/balloc.c
-+++ b/fs/ext2/balloc.c
-@@ -421,7 +421,7 @@ static inline int rsv_is_empty(struct ex
- void ext2_init_block_alloc_info(struct inode *inode)
+I'm about to ask Linus to pull this patch through the devicetree/merge
+branch along with the of_alias revert.
+
+ drivers/tty/serial/imx.c |   13 ++++---------
+ 1 files changed, 4 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index 827db76..7e91b3d 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -1286,22 +1286,17 @@ static int serial_imx_resume(struct platform_device *dev)
+ static int serial_imx_probe_dt(struct imx_port *sport,
+ 		struct platform_device *pdev)
  {
- 	struct ext2_inode_info *ei = EXT2_I(inode);
--	struct ext2_block_alloc_info *block_i = ei->i_block_alloc_info;
-+	struct ext2_block_alloc_info *block_i;
- 	struct super_block *sb = inode->i_sb;
++	static int portnum = 0;
+ 	struct device_node *np = pdev->dev.of_node;
+ 	const struct of_device_id *of_id =
+ 			of_match_device(imx_uart_dt_ids, &pdev->dev);
+-	int ret;
  
- 	block_i = kmalloc(sizeof(*block_i), GFP_NOFS);
+ 	if (!np)
+ 		return -ENODEV;
+ 
+-	ret = of_alias_get_id(np, "serial");
+-	if (ret < 0) {
+-		pr_err("%s: failed to get alias id, errno %d\n",
+-			__func__, ret);
+-		return -ENODEV;
+-	} else {
+-		sport->port.line = ret;
+-	}
++	sport->port.line = portnum++;
++	if (sport->port.line >= UART_NR)
++		return -EINVAL;
+ 
+ 	if (of_get_property(np, "fsl,uart-has-rtscts", NULL))
+ 		sport->have_rtscts = 1;
 
