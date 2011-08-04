@@ -1,133 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab1HDIkd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 04:40:33 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:57477 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216Ab1HDIk0 (ORCPT
+	id S1752872Ab1HDInT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 04:43:19 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:37074 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751836Ab1HDInN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 04:40:26 -0400
-Date: Thu, 4 Aug 2011 11:40:15 +0300
-From: Adrian Bunk <bunk@kernel.org>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>, greg@kroah.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [3.0-git16] Oops at driver_uevent_store().
-Message-ID: <20110804084015.GG29013@localhost.pp.htv.fi>
-References: <201108040221.p742Lk3R069631@www262.sakura.ne.jp>
- <CACqU3MWQsh2cS8ck=c1-bOy-W649j0FjtNeOQbPaijAaCQ9wgA@mail.gmail.com>
- <201108040355.p743tBkv092694@www262.sakura.ne.jp>
- <CACqU3MVbHPuOjg9cY_GWdBGz3HPw3u7R3S14OOObN8-CFXGVaw@mail.gmail.com>
+	Thu, 4 Aug 2011 04:43:13 -0400
+Message-ID: <4E3A5B89.9000703@st.com>
+Date: Thu, 4 Aug 2011 14:12:49 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CACqU3MVbHPuOjg9cY_GWdBGz3HPw3u7R3S14OOObN8-CFXGVaw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V2 08/20] dmaengine/amba-pl08x: support runtime PM
+References: <cover.1312190881.git.viresh.kumar@st.com>	 <bc59bbd3709a7af1723d37ab846bf44c6867c00e.1312190881.git.viresh.kumar@st.com>	 <20110803123953.GB23953@n2100.arm.linux.org.uk>  <4E3A2BFC.3070907@st.com>	 <1312436185.1536.570.camel@vkoul-udesk3>  <4E3A3CB7.8040505@st.com> <1312442926.1539.0.camel@vkoul-udesk3>
+In-Reply-To: <1312442926.1539.0.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 01:47:11AM -0400, Arnaud Lacombe wrote:
-> Hi,
+On 08/04/2011 12:58 PM, Koul, Vinod wrote:
+>> > 
+>> > Until this point we are not touching the registers at all. And they will
+>> > accessed after this point only.
+> But from maintainability POV it should be at the start.
 > 
-> [Added Adrian Bunk to the Cc: list]
 
-Thanks.
+Sorry for missing this earlier, I looked at the code again and
+realized why i put it at the end of the routine.
 
-> 2011/8/3 Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>:
->...
-> commit 74b9a297866d0416edd0be5014cb0810de049c6a
-> Author: Adrian Bunk <bunk@stusta.de>
-> Date:   Mon Mar 26 21:32:27 2007 -0800
-> 
->     [PATCH] drivers/eisa/pci_eisa.c:pci_eisa_init() should be init
-> 
->       WARNING: drivers/built-in.o - Section mismatch: reference to
-> .init.text:eisa_root_register from .text between 'pci_eisa_init' (at
-> offset 0xabf670) and 'virtual_eisa_release'
-> 
->     AFAIK a PCI to EISA bridge isn't anything hotpluggable, so
->     pci_eisa_init() can become __init.
-> 
->     Signed-off-by: Adrian Bunk <bunk@stusta.de>
->     Cc: Greg KH <greg@kroah.com>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> 
-> 
-> To gain a few bytes, 'pci_eisa_init' is freed, but its reference is
-> kept in `pci_eisa_driver' which triggers the warning. The commit log
-> points out that PCI to EISA should not be hotpluggable, so it is not
-> expected to be ever executed again (which would trigger a crash).
+The routine looks like this
 
-This was not for gaining a few bytes, and I'm not exactly seeing why I'm 
-to blame here, since my patch is invariant to what your patch does:
+        for (all channels)
+                if (!ch->serving)
+                        break;
 
-Calling pci_eisa_init outside of __init:
-- might have crashed before my patch and
-- after my patch and
-- after your patch
-since eisa_root_register() is __init.
+        if (i == pl08x->vd->channels) {
+                /* No physical channel available, cope with it */
+                return NULL;
+        }
 
-> Marking `pci_eisa_driver' as __refdata fix the warning and leave the
-> struct untouched:
-> 
-> diff --git a/drivers/eisa/pci_eisa.c b/drivers/eisa/pci_eisa.c
-> index 30da70d..cdae207 100644
-> --- a/drivers/eisa/pci_eisa.c
-> +++ b/drivers/eisa/pci_eisa.c
-> @@ -45,13 +45,13 @@ static int __init pci_eisa_init(struct pci_dev *pdev,
->         return 0;
->  }
-> 
-> -static struct pci_device_id __initdata pci_eisa_pci_tbl[] = {
-> +static struct pci_device_id pci_eisa_pci_tbl[] = {
->         { PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
->           PCI_CLASS_BRIDGE_EISA << 8, 0xffff00, 0 },
->         { 0, }
->  };
-> 
-> -static struct pci_driver __initdata pci_eisa_driver = {
-> +static struct pci_driver __refdata pci_eisa_driver = {
->         .name           = "pci_eisa",
->         .id_table       = pci_eisa_pci_tbl,
->         .probe          = pci_eisa_init,
+        pm_runtime_get_sync(&pl08x->adev->dev);
 
-So the commit that broke it was not mine, but
-
-commit 005bdad7b80ac017ca21d795639d4214b9844a84
-Author: Arnaud Lacombe <lacombar@gmail.com>
-Date:   Mon Jul 25 17:13:04 2011 -0700
-
-    eisa/pci_eisa.c: fix section mismatch
-    
-    Fixes
-    
-      WARNING: vmlinux.o(.data+0x15d3ac): Section mismatch in reference from the
-      The variable pci_eisa_driver references the function __init pci_eisa_init(
-      If the reference is valid then annotate the variable with __init* or __ref
-      *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
-    
-    Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
-    Cc: Greg KH <greg@kroah.com>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-
-
-Please don't blame me for bugs you introduced.
-
-
->  - Arnaud
-
-cu
-Adrian
+So, this has to be put at end only. We don't want to call this if no physical
+channel is free.
 
 -- 
-
-       "Is there not promise of rain?" Ling Tan asked suddenly out
-        of the darkness. There had been need of rain for many days.
-       "Only a promise," Lao Er said.
-                                       Pearl S. Buck - Dragon Seed
-
+viresh
