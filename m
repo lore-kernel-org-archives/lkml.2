@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab1HDJLE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 05:11:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57280 "EHLO mx2.suse.de"
+	id S1753228Ab1HDJMw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 05:12:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:25361 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753004Ab1HDJK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 05:10:57 -0400
-Subject: Re: [PATCH 2/4] vfs: keep list of mounts for each superblock
-From: Miklos Szeredi <mszeredi@suse.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jack@suse.cz, hch@infradead.org,
-        akpm@linux-foundation.org, toshi.okajima@jp.fujitsu.com
-In-Reply-To: <20110803221707.GM2203@ZenIV.linux.org.uk>
-References: <1312368521-7911-1-git-send-email-miklos@szeredi.hu>
-	 <1312368521-7911-3-git-send-email-miklos@szeredi.hu>
-	 <20110803221707.GM2203@ZenIV.linux.org.uk>
+	id S1752817Ab1HDJMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 05:12:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,315,1309762800"; 
+   d="scan'208";a="35035703"
+Subject: Re: [PATCH V2 07/20] dmaengine/amba-pl08x: Changing few prints to
+ dev_dbg from dev_info
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: linus.walleij@linaro.org, pratyush.anand@st.com, rajeev-dlh.kumar@st.com,
+        linux@arm.linux.org.uk, bhupesh.sharma@st.com, shiraz.hashim@st.com,
+        linux-kernel@vger.kernel.org, vipin.kumar@st.com,
+        armando.visconti@st.com, amit.virdi@st.com, vipulkumar.samar@st.com,
+        viresh.linux@gmail.com, deepak.sikri@st.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <5752f0202ff197d548999395d68131053693e4b3.1312190881.git.viresh.kumar@st.com>
+References: <cover.1312190881.git.viresh.kumar@st.com>
+	 <5752f0202ff197d548999395d68131053693e4b3.1312190881.git.viresh.kumar@st.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 04 Aug 2011 11:10:54 +0200
-Message-ID: <1312449054.6032.22.camel@tucsk.pomaz.szeredi.hu>
+Date: Thu, 04 Aug 2011 13:58:47 +0530
+Message-ID: <1312446527.1539.2.camel@vkoul-udesk3>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-03 at 23:17 +0100, Al Viro wrote:
-> On Wed, Aug 03, 2011 at 12:48:39PM +0200, Miklos Szeredi wrote:
-> > @@ -696,6 +696,11 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void
-> >  	mnt->mnt_sb = root->d_sb;
-> >  	mnt->mnt_mountpoint = mnt->mnt_root;
-> >  	mnt->mnt_parent = mnt;
-> > +
-> > +	br_write_lock(vfsmount_lock);
-> > +	list_add_tail(&mnt->mnt_instance, &mnt->mnt_sb->s_mounts);
-> > +	br_write_unlock(vfsmount_lock);
+On Mon, 2011-08-01 at 15:07 +0530, Viresh Kumar wrote:
+> For 8 memory and 16 slave channels 35 boot print lines are printed. And that is
+> too much. Most of this would be more useful for debugging. So moving few of them
+> to dev_dbg instead of dev_info. Now only 3 prints will be printed.
 > 
-> Racy.
+> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/dma/amba-pl08x.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> > @@ -745,6 +750,10 @@ static struct vfsmount *clone_mnt(struct vfsmount *old, struct dentry *root,
-> >  			if (!list_empty(&old->mnt_expire))
-> >  				list_add(&mnt->mnt_expire, &old->mnt_expire);
-> >  		}
-> > +
-> > +		br_write_lock(vfsmount_lock);
-> > +		list_add_tail(&mnt->mnt_instance, &mnt->mnt_sb->s_mounts);
-> > +		br_write_unlock(vfsmount_lock);
-> 
-> Ditto.  If you expect to be able to find *all* vfsmounts over given sb,
-> this locking is simply wrong.
+> diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+> index 6c52959..3fbaf0e 100644
+> --- a/drivers/dma/amba-pl08x.c
+> +++ b/drivers/dma/amba-pl08x.c
+> @@ -1717,7 +1717,7 @@ static int pl08x_dma_init_virtual_channels(struct pl08x_driver_data *pl08x,
+>  			kfree(chan);
+>  			continue;
+>  		}
+> -		dev_info(&pl08x->adev->dev,
+> +		dev_dbg(&pl08x->adev->dev,
+>  			 "initialize virtual channel \"%s\"\n",
+>  			 chan->name);
+>  
+> @@ -1945,7 +1945,7 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
+>  		spin_lock_init(&ch->lock);
+>  		ch->serving = NULL;
+>  		ch->signal = -1;
+> -		dev_info(&adev->dev,
+> +		dev_dbg(&adev->dev,
+>  			 "physical channel %d is %s\n", i,
+>  			 pl08x_phy_channel_busy(ch) ? "BUSY" : "FREE");
+>  	}
+ahh, this looks ugly, can you pls fix the print to make them look
+better. Single line or fmt string is one line should be ok, arg can be
+moved to second.
 
-I don't understand.  All accesses to mnt_instance/s_mounts are protected
-by vfsmount_lock.  What else is needed?
-
-Thanks,
-Miklos
-
+-- 
+~Vinod
 
