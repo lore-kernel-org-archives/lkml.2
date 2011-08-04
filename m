@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751422Ab1HDFzT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 01:55:19 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:41549 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750773Ab1HDFzQ (ORCPT
+	id S1751903Ab1HDFzf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 01:55:35 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44747 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750891Ab1HDFzS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 01:55:16 -0400
-Message-ID: <4E3A342E.5080503@st.com>
-Date: Thu, 4 Aug 2011 11:24:54 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	Thu, 4 Aug 2011 01:55:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,315,1309762800"; 
+   d="scan'208";a="35251341"
+From: "Zhang, Yanmin" <yanmin.zhang@intel.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+CC: "Nguyen, Tom L" <tom.l.nguyen@intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>
+Date: Thu, 4 Aug 2011 13:54:19 +0800
+Subject: RE: [rfc] suppress excessive AER output
+Thread-Topic: [rfc] suppress excessive AER output
+Thread-Index: AcxSLXixeN47dUE9Rvq0X5g1AfiqHAAPWeeg
+Message-ID: <33AB447FBD802F4E932063B962385B3512D9615780@shsmsx501.ccr.corp.intel.com>
+References: <20110803223407.GA20646@redhat.com>
+In-Reply-To: <20110803223407.GA20646@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Koul, Vinod" <vinod.koul@intel.com>
-Cc: viresh kumar <viresh.linux@gmail.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        Pratyush ANAND <pratyush.anand@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vipin KUMAR <vipin.kumar@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 09/18] dmaengine/amba-pl08x: Schedule tasklet in case
- of error interrupt
-References: <cover.1311936523.git.viresh.kumar@st.com>	 <9c81beb9cd84f84b58abbd24ebfae85dfe8d8ee1.1311936524.git.viresh.kumar@st.com>	 <1311941799.1536.532.camel@vkoul-udesk3>	 <CAOh2x==_g+JQzTizgVTdH8Dyg_5+KpyYm+G_Ddu5mO15N6n-tw@mail.gmail.com> <1312431918.1536.559.camel@vkoul-udesk3>
-In-Reply-To: <1312431918.1536.559.camel@vkoul-udesk3>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2011 09:55 AM, Koul, Vinod wrote:
-> Yes that's the whole point, today callback mechanism doesn't tell the
-> _status_ of the transfer (which if we need change can be discussed as
-> well), but to counter argue I have never been able to generate the error
-> interrupt, are you able to do on your controller?
+Dave,
 
-Yes, if we supply unaligned address, with access width as word, then it gives
-error interrupt.
+How about adding a new module parameter aer_printk_limit, so user space could reset it any time?
 
-Regarding your point of updating callback for reporting errors,
-I think it is required and should be a common issue.
+Yanmin
 
-> 
-> One more point wrt this patch, what do we gain here from calling
-> tasklet, are you cleaning up your queue for the error descriptor or
-> something, I think not. so just calling to print doesn't make sense to
-> me, comments?
+-----Original Message-----
+From: Dave Jones [mailto:davej@redhat.com] 
+Sent: Thursday, August 04, 2011 6:34 AM
+To: Linux Kernel
+Cc: Nguyen, Tom L; Zhang, Yanmin
+Subject: [rfc] suppress excessive AER output
 
-Tasklet does following:
-- If any other transfer request is queued up, then it is started
-- else, it releases physical channel, by clearing it completely.
+I have a machine that has developed some kind of problem with
+its onboard ethernet.  It still boots, but spewed almost 1.5G of text
+(2381585 instances of the warning below) before we realised what
+was going on, and blacklisted the igb driver.
 
-Finally it unmap buffers, frees txd, and call callback.
+Is it worth logging every single error when we're flooding like this ?
+It seems unlikely that we'll find useful information in amongst that much data
+that wasn't already in the first 100 instances.
 
-This probably is enough to end transfer for which user was waiting.
-If user hasn't used any timeout mechanisms then he will never come
-to know that an error occurred. So its better to call its callback,
-to tell him, transfer has completed, successfully or unsuccessfully.
+I picked 100 in the (untested) example patch below arbitarily, but the exact
+value could be smaller, or slightly bigger..
 
--- 
-viresh
+could we do something like this maybe ?
+
+	Dave
+
+diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
+index 3ea5173..4ec88c6 100644
+--- a/drivers/pci/pcie/aer/aerdrv_errprint.c
++++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
+@@ -153,6 +153,17 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
+ {
+ 	int id = ((dev->bus->number << 8) | dev->devfn);
+ 	char prefix[44];
++	static unsigned long aer_printk_limit = 0;
++
++	aer_printk_limit++;
++
++	if (aer_printk_limit > 100)
++		return;
++
++	if (aer_printk_limit == 100) {
++		printk(KERN_ERR "Reached limit of 100 AER errors. Further AER output suppressed.\n");
++		return;
++	}
+ 
+ 	snprintf(prefix, sizeof(prefix), "%s%s %s: ",
+ 		 (info->severity == AER_CORRECTABLE) ? KERN_WARNING : KERN_ERR,
