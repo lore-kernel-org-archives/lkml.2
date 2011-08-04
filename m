@@ -1,92 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab1HDPOY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 11:14:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43194 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753337Ab1HDPOX convert rfc822-to-8bit (ORCPT
+	id S1754618Ab1HDPRa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 11:17:30 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:55419 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751312Ab1HDPR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 11:14:23 -0400
-Subject: Re: select_task_rq_fair: WARNING: at kernel/lockdep.c
- match_held_lock
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-In-Reply-To: <1312470358.16729.25.camel@twins>
-References: <20110804141306.GA3536@swordfish.minsk.epam.com>
-	 <1312470358.16729.25.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 04 Aug 2011 17:13:40 +0200
-Message-ID: <1312470820.16729.31.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 4 Aug 2011 11:17:28 -0400
+Date: Thu, 4 Aug 2011 11:17:25 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Huang Ying <ying.huang@intel.com>, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [listll] Fix fetching of head->first in lockless lists.
+Message-ID: <20110804151725.GA21597@Krystal>
+References: <alpine.DEB.2.00.1108040942360.24277@router.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1108040942360.24277@router.home>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 11:15:12 up 253 days, 20:18,  3 users,  load average: 0.07, 0.02,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-04 at 17:05 +0200, Peter Zijlstra wrote:
-> On Thu, 2011-08-04 at 17:13 +0300, Sergey Senozhatsky wrote:
-> > Hello,
-> > Got the following trace on 3.0-git19 (07865-g1280ea8):
-> > 
-> > [  132.794685] WARNING: at kernel/lockdep.c:3117 match_held_lock+0xf6/0x12e()
-> > [  132.794687] Hardware name: Aspire 5741G    
-> > [  132.794689] Modules linked in: kvm_intel kvm tun ipv6 microcode snd_hda_codec_hdmi snd_hda_codec_realtek broadcom snd_hda_intel snd_hda_codec tg3 snd_pcm snd_timer snd soundcore acer_wmi evdev libphy sparse_keymap psmouse snd_page_alloc
-> > pcspkr battery ac wmi button ehci_hcd sr_mod cdrom usbcore sd_mod ahci
-> > [  132.794731] Pid: 4029, comm: qemu-system-x86 Not tainted 3.1.0-dbg-07865-g1280ea8-dirty #668
-> > [  132.794733] Call Trace:
-> > [  132.794736]  <IRQ>  [<ffffffff8103e4e0>] warn_slowpath_common+0x7e/0x96
-> > [  132.794744]  [<ffffffff8103e50d>] warn_slowpath_null+0x15/0x17
-> > [  132.794748]  [<ffffffff8106dcee>] match_held_lock+0xf6/0x12e
-> > [  132.794751]  [<ffffffff8106dd88>] lock_is_held+0x62/0xa6
-> > [  132.794757]  [<ffffffff81086471>] cgroup_lock_is_held+0x10/0x12
-> > [  132.794762]  [<ffffffff810368a2>] set_task_cpu+0x1ac/0x3e3
-> > [  132.794766]  [<ffffffff8103856a>] ? select_task_rq_fair+0x5c0/0x9ca
-> > [  132.794769]  [<ffffffff8103748d>] ? try_to_wake_up+0x29/0x28b
-> > [  132.794773]  [<ffffffff8103748d>] ? try_to_wake_up+0x29/0x28b
-> > [  132.794779]  [<ffffffff812552a5>] ? do_raw_spin_lock+0x6b/0x122
-> > [  132.794783]  [<ffffffff81037603>] try_to_wake_up+0x19f/0x28b
-> > [  132.794787]  [<ffffffff810603ed>] ? update_rmtp+0x65/0x65
-> > [  132.794790]  [<ffffffff8103770e>] wake_up_process+0x10/0x12
-> > [  132.794794]  [<ffffffff8106040a>] hrtimer_wakeup+0x1d/0x21
-> > [  132.794797]  [<ffffffff81060816>] __run_hrtimer+0x1b1/0x372
-> > [  132.794800]  [<ffffffff810613a2>] hrtimer_interrupt+0xe6/0x1b0
-> > [  132.794805]  [<ffffffff810185d5>] smp_apic_timer_interrupt+0x80/0x93
-> > [  132.794810]  [<ffffffff81493af3>] apic_timer_interrupt+0x73/0x80
-> > [  132.794812]  <EOI>  [<ffffffff810fb998>] ? do_mmu_notifier_register+0x66/0x125
-> > [  132.794822]  [<ffffffff810ec132>] ? mm_take_all_locks+0x10b/0x165
-> > [  132.794826]  [<ffffffff810ec160>] ? mm_take_all_locks+0x139/0x165
-> > [  132.794829]  [<ffffffff810ec132>] ? mm_take_all_locks+0x10b/0x165
-> > [  132.794832]  [<ffffffff810fb9a0>] do_mmu_notifier_register+0x6e/0x125
-> > [  132.794836]  [<ffffffff810fba72>] mmu_notifier_register+0xe/0x10
-> > [  132.794852]  [<ffffffffa01fcc0d>] kvm_dev_ioctl+0x297/0x400 [kvm]
-> > [  132.794857]  [<ffffffff81119022>] do_vfs_ioctl+0x46c/0x4ad
-> > [  132.794862]  [<ffffffff8110a68d>] ? fget_light+0xed/0x2a7
-> > [  132.794867]  [<ffffffff81492fca>] ? sysret_check+0x2e/0x69
-> > [  132.794871]  [<ffffffff811190b4>] sys_ioctl+0x51/0x75
-> > [  132.794875]  [<ffffffff81492f92>] system_call_fastpath+0x16/0x1b
-> > [  132.794877] ---[ end trace 298584c4014cd2b8 ]---
+* Christoph Lameter (cl@linux.com) wrote:
 > 
-> Curious, how easy is that to reproduce? That really shouldn't happen and
-> its not immediately obvious how it could happen.
+> The fetching of head->first must occur in the cmpxchg loop.
+> 
+> With the current code head->first may change after the content were assigned to
+> the "entry" variable. Entry then not be change anymore in the loop and be
+> used as old_entry for the cmpxchg. The cmpxchg will then therefore
+> compare "entry" to list->head. This will always fail if list->head has
+> changed. The restarting of the loop will not fetch head->first again. So
+> we could have a hang there.
+> 
+> I guess this only works now because the compiler optimizations pull
+> the fetching of head->first into the loop.
 
-In particular, mm_take_all_locks() which is called from
-do_mmu_notifier_register() uses mutex_lock_nest_lock() in both
-vm_lock_anon_vma() and vm_lock_mapping(), both times using mm->mmap_sem
-as the nest lock.
+Hi Christoph,
 
-As per __lock_acquire() any lock that passes in a nest_lock will set
-hlock->references and also assign this nest_lock to hlock->nest_lock,
-and as per lock_acquire() all that is done with IRQs disabled, so the
-interrupt in question should not be able to observe the state where
-->references is set, but ->nest_lock is not.
+The cmpxchg re-fetch the head->first (this is its return value). The:
 
-So I'm at a loss explaining how match_held_lock() observes exactly that,
-a lock for which ->references is set, but no ->nest_lock, that should be
-impossible.
+  } while ((entry = cmpxchg(&head->first, old_entry, new)) != old_entry);
 
+Takes care of the re-read and populating "entry" with an updated value.
 
+So the patch you propose here is useless.
+
+Thanks,
+
+Mathieu
+
+> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> ---
+>  lib/llist.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> Index: linux-2.6/lib/llist.c
+> ===================================================================
+> --- linux-2.6.orig/lib/llist.c	2011-08-04 09:34:30.000000000 -0500
+> +++ linux-2.6/lib/llist.c	2011-08-04 09:35:08.000000000 -0500
+> @@ -42,8 +42,8 @@ void llist_add(struct llist_node *new, s
+>  	BUG_ON(in_nmi());
+>  #endif
+> 
+> -	entry = head->first;
+>  	do {
+> +		entry = head->first;
+>  		old_entry = entry;
+>  		new->next = entry;
+>  		cpu_relax();
+> @@ -66,8 +66,8 @@ void llist_add_batch(struct llist_node *
+>  	BUG_ON(in_nmi());
+>  #endif
+> 
+> -	entry = head->first;
+>  	do {
+> +		entry = head->first;
+>  		old_entry = entry;
+>  		new_last->next = entry;
+>  		cpu_relax();
+> @@ -97,8 +97,8 @@ struct llist_node *llist_del_first(struc
+>  	BUG_ON(in_nmi());
+>  #endif
+> 
+> -	entry = head->first;
+>  	do {
+> +		entry = head->first;
+>  		if (entry == NULL)
+>  			return NULL;
+>  		old_entry = entry;
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
