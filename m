@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab1HDUEr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 16:04:47 -0400
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:58030 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753621Ab1HDUEl (ORCPT
+	id S1754230Ab1HDUPN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 16:15:13 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50257 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751869Ab1HDUPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 16:04:41 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAEL5Ok5R8j0b/2dsb2JhbABDp2l4gUABAQQBOhweBRAIA0YUJQMhh38CwWQOhjQEo2E
-Date: Thu, 4 Aug 2011 22:04:39 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Mika Westerberg <mika.westerberg@iki.fi>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "mika.westerberg@linux.intel.com" <mika.westerberg@linux.intel.com>
-Subject: Re: [RFC PATCH v2] watchdog: ep93xx: Use the WatchDog Timer Driver
-	Core.
-Message-ID: <20110804200439.GU4227@infomag.iguana.be>
-References: <201108031021.26620.hartleys@visionengravers.com> <20110804181244.GA2445@mwesterb-mobl.ger.corp.intel.com> <ADE657CA350FB648AAC2C43247A983F001F3882B8C44@AUSP01VMBX24.collaborationhost.net>
+	Thu, 4 Aug 2011 16:15:09 -0400
+Date: Thu, 4 Aug 2011 22:15:00 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [ANNOUNCE] 3.0-rt6
+Message-ID: <20110804201500.GL31521@pengutronix.de>
+References: <alpine.LFD.2.02.1107282213000.31246@ionos>
+ <4E3A3D7C.6050403@localhost>
+ <1312450965.16729.7.camel@twins>
+ <4E3AED68.5060506@ccrma.stanford.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F3882B8C44@AUSP01VMBX24.collaborationhost.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4E3AED68.5060506@ccrma.stanford.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+On Thu, Aug 04, 2011 at 12:05:12PM -0700, Fernando Lopez-Lezcano wrote:
+> Was going to try this but it appears it is in rt7, trying to build
+> rt7 fails with:
+> 
+> ERROR: "of_find_property" [drivers/tty/serial/of_serial.ko] undefined!
+> ERROR: "of_find_property" [drivers/hwmon/ltc4245.ko] undefined!
+This is known but unfixed, see
+http://mid.gmane.org/20110722065711.GD16561@pengutronix.de
 
-> > BTW, now that the driver uses watchdog core should we also select
-> > WATCHDOG_CORE in the Kconfig? If it is not enabled we get:
-> >
-> > drivers/built-in.o: In function `ep93xx_wdt_init':
-> > clkdev.c:(.init.text+0x2bd8): undefined reference to
-> > `watchdog_register_device'
-> > make: *** [.tmp_vmlinux1] Error 1
-> 
-> Of course.
-> 
-> I wasn't sure how Wim wanted to handle this.  I see two ways of doing it
-> in the Kconfig.
-> 
-> 1) Each driver config option has a select WATCHDOG_CORE if it is required.
-> 
->    Pro: all the watchdog drivers (that are available) are displayed
->    Con: each driver needs to add the select if needed
->    Side-effect: the WATCHDOG_CORE option could (should) be a hidden option
-> 
-> 2) Separate the watchdog drivers into groups that need the WATCHDOG_CORE
->    and those that don't then put a if WATCHDOG_CORE/endif around the ones
->    that need it.
-> 
->    Pro: keeps the Kconfig clean
->    Con: the drivers that use WATCHDOG_CORE are not displayed unless the
->         option is selected
->    Con: defconfigs probably will need to be updated to select WATCHDOG_CORE
-> 
-> Wim, do you have any opinion on this?
+You should be able to workaround that by jugling with the .config. I.e.
+disable OF or something like that.
 
-I allready discussed this with Wolfram a few weeks ago. Since we don't want
-defconfigs to change, the best option is to:
-1) use 'select WATCHDOG_CORE' during conversion of the drivers.
-2) remove CONFIG_WATCHDOG_CORE and replace it by CONFIG_WATCHDOG in a later
-   stage so that the core API becomes the user-space layer for all watchdog
-   device drivers.This so that we can support multiple watchdogs in the
-   future and to make sure that we keep having a consistent user-space
-   interface.
+Best regards
+Uwe
 
-Kind regards,
-Wim.
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
