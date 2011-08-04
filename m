@@ -1,122 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab1HDOEu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 10:04:50 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:44105 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751765Ab1HDOEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 10:04:48 -0400
-Date: Thu, 4 Aug 2011 07:04:38 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
-Message-ID: <20110804140438.GT13065@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110801154636.GA2096@zod.bos.redhat.com>
- <CA+5PVA5EZWHv_tuzA22twGQ7rZZ2zhqi1zs6OiFbpORiiYbzMg@mail.gmail.com>
+	id S1754395Ab1HDOFg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 10:05:36 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59753 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab1HDOFe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 10:05:34 -0400
+Date: Thu, 4 Aug 2011 16:05:29 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 7/8] cgroups: Add a task counter subsystem
+Message-ID: <20110804140525.GF5768@somewhere.redhat.com>
+References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com>
+ <1311956010-32076-8-git-send-email-fweisbec@gmail.com>
+ <20110801161347.5f4aeeeb.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+5PVA5EZWHv_tuzA22twGQ7rZZ2zhqi1zs6OiFbpORiiYbzMg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110801161347.5f4aeeeb.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 07:46:03AM -0400, Josh Boyer wrote:
-> On Mon, Aug 1, 2011 at 11:46 AM, Josh Boyer <jwboyer@redhat.com> wrote:
-> > We're seeing a scheduling while atomic backtrace in rawhide from pidmap_init
-> > (https://bugzilla.redhat.com/show_bug.cgi?id=726877).  While this seems
-> > mostly harmless given that there isn't anything else to schedule to at
-> > this point, I do wonder why things are marked as needing rescheduled so
-> > early.
+On Mon, Aug 01, 2011 at 04:13:47PM -0700, Andrew Morton wrote:
+> On Fri, 29 Jul 2011 18:13:29 +0200
+> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
+> > Add a new subsystem to limit the number of running tasks,
+> > similar to the NR_PROC rlimit but in the scope of a cgroup.
+> > 
+> > This is a step to be able to isolate a bit more a cgroup against
+> > the rest of the system and limit the global impact of a fork bomb
+> > inside a given cgroup.
+> > 
+> > ...
 > >
-> > We get to might_sleep through the might_sleep_if call in
-> > slab_pre_alloc_hook because both kzalloc and KMEM_CACHE are called with
-> > GFP_KERNEL.  That eventually has a call chain like:
-> >
-> > might_resched->_cond_resched->should_resched
-> >
-> > which apparently returns true.  Why the initial thread says it should
-> > reschedule at this point, I'm not sure.
-> >
-> > I tried cheating by making the kzalloc call in pidmap_init use GFP_IOFS
-> > instead of GFP_KERNEL to avoid the might_sleep_if call, and that worked
-> > but I can't do the same for the kmalloc calls in kmem_cache_create, so
-> > getting to the bottom of why should_resched is returning true seems to
-> > be a better approach.
+> > +config CGROUP_TASK_COUNTER
+> > +        bool "Control number of tasks in a cgroup"
+> > +	depends on RESOURCE_COUNTERS
+> > +	help
+> > +	  This option let the user to set up an upper bound allowed number
+> > +	  of tasks inside a cgroup.
 > 
-> A bit more info on this.
-> 
-> What seems to be happening is that late_time_init is called, which
-> gets around to calling hpet_time_init, which enables the HPET, and
-> then calls setup_default_timer_irq.  setup_default_timer_irq in
-> arch/x86/kernel/time.c calls setup_irq with the timer_interrupt
-> handler.
-> 
-> At this point the timer interrupt hits, and then tick_handle_periodic is called
-> 
-> timer int
-> tick_handle_periodic -> tick_periodic -> update_process_times ->
-> rcu_check_callbacks -> rcu_pending ->
-> __rcp_pending -> set_need_resched (this is called around line 1685 in
-> kernel/rcutree.c)
-> 
-> So what's happening is that once the timer interrupt starts, RCU is
-> coming in and marking current as needing reschedule, and that in turn
-> makes the slab_pre_alloc_hook -> might_sleep_if -> might_sleep ->
-> might_resched -> _cond_resched to trigger when pidmap_init calls
-> kzalloc later on and produce the oops below later on in the init
-> sequence.  I believe we see this because of all the debugging options
-> we have enabled in the kernel configs.
-> 
-> This might be normal for all I know, but the oops is rather annoying.
-> It seems RCU isn't in a quiescent state, we aren't preemptible yet,
-> and it _really_ wants to reschedule things to make itself happy.
-> Anyone have any thoughts on how to either keep RCU from marking
-> current as needing reschdule so early, or otherwise working around the
-> bug?
+> whitespace went weird.
 
-The deal is that RCU realizes that RCU needs a quiescent state from
-this CPU.  The set_need_resched() is intended to cause one.  But there
-is not much point this early in boot, because the scheduler isn't going
-to do anything anyway.  I can prevent this with the following patch,
-but isn't this same thing possible later at runtime?
-
-You really do need to be able to handle set_need_resched() at random
-times, and at first glance it appears to me that the warning could be
-triggered at runtime as well.  If so, the real fix is elsewhere, right?
-Especially given that the patch imposes extra cost at runtime...
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-rcu: Prevent early boot set_need_resched() from __rcu_pending()
-
-There isn't a whole lot of point in poking the scheduler before there
-are other tasks to switch to.  This commit therefore adds a check
-for rcu_scheduler_fully_active in __rcu_pending() to suppress any
-pre-scheduler calls to set_need_resched().  The downside of this approach
-is additional runtime overhead in a reasonably hot code path.
-
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index d22dccb..9ccd19e 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1724,7 +1724,8 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
- 	check_cpu_stall(rsp, rdp);
+Yep, will fix.
  
- 	/* Is the RCU core waiting for a quiescent state from this CPU? */
--	if (rdp->qs_pending && !rdp->passed_quiesce) {
-+	if (rcu_scheduler_fully_active &&
-+	    rdp->qs_pending && !rdp->passed_quiesce) {
- 
- 		/*
- 		 * If force_quiescent_state() coming soon and this CPU
+> > 
+> > ...
+> >
+>  +
+> > +static void task_counter_post_clone(struct cgroup_subsys *ss, struct cgroup *cgrp)
+> > +{
+> > +	res_counter_inherit(cgroup_task_counter_res(cgrp), RES_LIMIT);
+> 
+> cgroup_task_counter_res() has code in it to carefully return NULL in
+> one situation, but if it does this, res_counter_inherit() will then
+> cheerily oops.  This makes no sense.
+
+Right but the only cgroup for which it returns NULL is the root cgroup.
+But we don't post clone the root cgroup itself since it has no parent.
+
+So this can't happen, but I can still add a warn_on condition that escapes.
+
+> > +}
+> > +
+> > 
+> > ...
+> >
+> > +/* Protected amongst can_attach_task/attach_task/cancel_attach_task by cgroup mutex */
+> > +static struct res_counter *common_ancestor;
+> > +
+> > +static int task_counter_can_attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
+> > +					struct task_struct *tsk)
+> > +{
+> > +	struct res_counter *res = cgroup_task_counter_res(cgrp);
+> > +	struct res_counter *old_res = cgroup_task_counter_res(old_cgrp);
+> > +	struct res_counter *limit_fail_at;
+> > +
+> > +	common_ancestor = res_counter_common_ancestor(res, old_res);
+> 
+> This might oops too?
+
+Nope, if either res or old_res is NULL, then the common ancestor returned
+is NULL. Afterward the charge_until() below will simply charge res over
+all the hierarchy if old_res is NULL, or it will do nothing is res itself
+is NULL.
+
+I should probably comment on that behaviour.
+
+> 
+> > +	return res_counter_charge_until(res, common_ancestor, 1, &limit_fail_at);
+> > +}
+> > +
+> > 
+> > ...
+> >
+> > +int cgroup_task_counter_fork(struct task_struct *child)
+> > +{
+> > +	struct cgroup_subsys_state *css = child->cgroups->subsys[tasks_subsys_id];
+> > +	struct cgroup *cgrp = css->cgroup;
+> > +	struct res_counter *limit_fail_at;
+> > +
+> > +	/* Optimize for the root cgroup case, which doesn't have a limit */
+> > +	if (!cgrp->parent)
+> > +		return 0;
+> > +
+> > +	return res_counter_charge(cgroup_task_counter_res(cgrp), 1, &limit_fail_at);
+> > +}
+> 
+> It took a while for me to work out the meaning of the return value from
+> this function.  Some documentation would be nice?
+
+Yes and moreover I'm not at all sure about the default return value in
+case of failure. -ENOMEM probably matches the need for memory limit
+subsystem but for that task counter subsystem.
+
+Probably the res_counter API should return -1 in case of limit reached
+and let the caller subsystem deal with the error to return. -ENOMEM
+is already too partial.
+
+I guess we should return -EINVAL in case of task counter limit reached?
+
+Once we agree on this I'll document it.
+
+> 
