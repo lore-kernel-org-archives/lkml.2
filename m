@@ -1,74 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946Ab1HDP6i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 11:58:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39275 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068Ab1HDP6f convert rfc822-to-8bit (ORCPT
+	id S1755021Ab1HDP7h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 11:59:37 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36437 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754987Ab1HDP7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 11:58:35 -0400
-Subject: Re: select_task_rq_fair: WARNING: at kernel/lockdep.c
- match_held_lock
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-In-Reply-To: <20110804155347.GB3562@swordfish.minsk.epam.com>
-References: <20110804141306.GA3536@swordfish.minsk.epam.com>
-	 <1312470358.16729.25.camel@twins>
-	 <20110804153752.GA3562@swordfish.minsk.epam.com>
-	 <1312472867.16729.38.camel@twins>
-	 <20110804155347.GB3562@swordfish.minsk.epam.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 04 Aug 2011 17:57:53 +0200
-Message-ID: <1312473473.16729.44.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 4 Aug 2011 11:59:34 -0400
+From: Abhilash K V <abhilash.kv@ti.com>
+To: <linux-omap@vger.kernel.org>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <b-cousson@ti.com>,
+        <paul@pwsan.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Abhilash K V <abhilash.kv@ti.com>
+Subject: [PATCH 1/2] AM35x: Using OMAP3 generic hwmods
+Date: Thu, 4 Aug 2011 21:29:20 +0530
+Message-ID: <1312473560-1182-1-git-send-email-abhilash.kv@ti.com>
+X-Mailer: git-send-email 1.6.2.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-04 at 18:53 +0300, Sergey Senozhatsky wrote:
-> On (08/04/11 17:47), Peter Zijlstra wrote:
-> > On Thu, 2011-08-04 at 18:37 +0300, Sergey Senozhatsky wrote:
-> > > > > [  132.794685] WARNING: at kernel/lockdep.c:3117 match_held_lock+0xf6/0x12e()
-> > 
-> > Just to double check, that line is:
-> > 
-> >                 if (DEBUG_LOCKS_WARN_ON(!hlock->nest_lock))
-> > 
-> > in your kernel source?
-> > 
-> 
-> Nope, that's `if (DEBUG_LOCKS_WARN_ON(!class))'
-> 
-> 3106 static int match_held_lock(struct held_lock *hlock, struct lockdep_map *lock)
-> 3107 {                                                                                                                                                                                                                             
-> 3108     if (hlock->instance == lock)
-> 3109         return 1;
-> 3110 
-> 3111     if (hlock->references) {
-> 3112         struct lock_class *class = lock->class_cache[0];
-> 3113 
-> 3114         if (!class)
-> 3115             class = look_up_lock_class(lock, 0);
-> 3116 
-> 3117         if (DEBUG_LOCKS_WARN_ON(!class))
-> 3118             return 0;
-> 3119 
-> 3120         if (DEBUG_LOCKS_WARN_ON(!hlock->nest_lock))
-> 3121             return 0;
-> 3122 
-> 3123         if (hlock->class_idx == class - lock_classes + 1)
-> 3124             return 1;
-> 3125     }
-> 3126 
-> 3127     return 0;
-> 3128 }
-> 3129 
+This patch enables AM35x SoCs to use generic OMAP3 hwmods
+(i,e. omap3xxx_hwmods) by allowing board-am3517evm.c to
+disable the modules which are not present in AM3517.
 
-Ah, in that case my previous analysis was pointless and I shall need to
-scratch my head some more. 
+Reviewed-by: Sanjeev Premi <premi@ti.com>
+Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
+---
+ arch/arm/mach-omap2/board-am3517evm.c        |   11 +++++++++++
+ arch/arm/mach-omap2/omap_hwmod.c             |    3 ++-
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c   |   18 ++++++++++++++++++
+ arch/arm/plat-omap/include/plat/omap_hwmod.h |    3 +++
+ 4 files changed, 34 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
+index f3006c3..8a5f232 100644
+--- a/arch/arm/mach-omap2/board-am3517evm.c
++++ b/arch/arm/mach-omap2/board-am3517evm.c
+@@ -34,6 +34,7 @@
+ #include <plat/board.h>
+ #include <plat/common.h>
+ #include <plat/usb.h>
++#include <plat/omap_hwmod.h>
+ #include <video/omapdss.h>
+ #include <video/omap-panel-generic-dpi.h>
+ 
+@@ -359,11 +360,21 @@ static struct omap_dss_board_info am3517_evm_dss_data = {
+ 	.default_device	= &am3517_evm_lcd_device,
+ };
+ 
++static char *am3517_unused_hwmods[] = {
++	"iva",
++	"sr1_hwmod",
++	"sr2_hwmod",
++	"mailbox",
++	"usb_otg_hs",
++	NULL,
++};
++
+ /*
+  * Board initialization
+  */
+ static void __init am3517_evm_init_early(void)
+ {
++	omap2_disable_unused_hwmods(am3517_unused_hwmods);
+ 	omap2_init_common_infrastructure();
+ 	omap2_init_common_devices(NULL, NULL);
+ }
+diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+index 84cc0bd..bb765b5 100644
+--- a/arch/arm/mach-omap2/omap_hwmod.c
++++ b/arch/arm/mach-omap2/omap_hwmod.c
+@@ -1954,7 +1954,8 @@ int __init omap_hwmod_register(struct omap_hwmod **ohs)
+ 
+ 	i = 0;
+ 	do {
+-		if (!omap_chip_is(ohs[i]->omap_chip))
++		if (!omap_chip_is(ohs[i]->omap_chip)
++			|| (ohs[i]->flags & HWMOD_UNUSED))
+ 			continue;
+ 
+ 		r = _register(ohs[i]);
+diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+index 25bf43b..5c282bb 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+@@ -3281,6 +3281,24 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
+ 	NULL,
+ };
+ 
++void __init omap2_disable_unused_hwmods(char *unused_hwmods[])
++{
++	int index;
++
++	for (index = 0; omap3xxx_hwmods[index]; index++) {
++		char **hwmods = unused_hwmods;
++		while (*hwmods) {
++			if (strcmp(omap3xxx_hwmods[index]->name,
++					*hwmods) == 0) {
++				omap3xxx_hwmods[index]->flags
++							= HWMOD_UNUSED;
++				break;
++			}
++			hwmods++;
++		}
++	}
++}
++
+ int __init omap3xxx_hwmod_init(void)
+ {
+ 	return omap_hwmod_register(omap3xxx_hwmods);
+diff --git a/arch/arm/plat-omap/include/plat/omap_hwmod.h b/arch/arm/plat-omap/include/plat/omap_hwmod.h
+index 0e329ca..490a95a 100644
+--- a/arch/arm/plat-omap/include/plat/omap_hwmod.h
++++ b/arch/arm/plat-omap/include/plat/omap_hwmod.h
+@@ -398,6 +398,7 @@ struct omap_hwmod_omap4_prcm {
+  *     in order to complete the reset. Optional clocks will be disabled
+  *     again after the reset.
+  * HWMOD_16BIT_REG: Module has 16bit registers
++ * HWMOD_UNUSED: The IP for this module is unused or disabled on current SoC
+  */
+ #define HWMOD_SWSUP_SIDLE			(1 << 0)
+ #define HWMOD_SWSUP_MSTANDBY			(1 << 1)
+@@ -408,6 +409,7 @@ struct omap_hwmod_omap4_prcm {
+ #define HWMOD_NO_IDLEST				(1 << 6)
+ #define HWMOD_CONTROL_OPT_CLKS_IN_RESET		(1 << 7)
+ #define HWMOD_16BIT_REG				(1 << 8)
++#define HWMOD_UNUSED				(1 << 9)
+ 
+ /*
+  * omap_hwmod._int_flags definitions
+@@ -615,5 +617,6 @@ extern int omap2420_hwmod_init(void);
+ extern int omap2430_hwmod_init(void);
+ extern int omap3xxx_hwmod_init(void);
+ extern int omap44xx_hwmod_init(void);
++extern void omap2_disable_unused_hwmods(char *unused_hwmods[]);
+ 
+ #endif
+-- 
+1.7.1
+
