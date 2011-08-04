@@ -1,112 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab1HDTtA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 15:49:00 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:33725 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752768Ab1HDTsy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 15:48:54 -0400
-Date: Thu, 4 Aug 2011 15:48:38 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Joe Jin <joe.jin@oracle.com>
-Cc: Daniel Stodden <daniel.stodden@citrix.com>,
-        Jens Axboe <jaxboe@fusionio.com>, Annie Li <annie.li@oracle.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Kurt C Hackel <KURT.HACKEL@oracle.com>,
-        Greg Marsden <greg.marsden@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v3 2/3] xen-blkback: repleace check
- kthread_should_stop() to remove_requested in xen_blkif_schedule() loop.
-Message-ID: <20110804194838.GA12459@dumpdata.com>
-References: <4E3A486D.7060506@oracle.com>
- <4E3A493C.2070103@oracle.com>
+	id S1753772Ab1HDTwA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 15:52:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59454 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752748Ab1HDTv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 15:51:56 -0400
+Date: Thu, 4 Aug 2011 15:51:50 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        "michal@harddata.com" <michal@harddata.com>
+Subject: Re: Mysterious CFQ crash and RCU
+Message-ID: <20110804195150.GC429@redhat.com>
+References: <20110523152141.GB4019@redhat.com>
+ <20110523153848.GC2310@linux.vnet.ibm.com>
+ <1306401337.27271.3.camel@t41.thuisdomein>
+ <20110603050724.GB2304@linux.vnet.ibm.com>
+ <1307191830.23387.24.camel@t41.thuisdomein>
+ <20110604160326.GA6093@linux.vnet.ibm.com>
+ <1307227686.28359.23.camel@t41.thuisdomein>
+ <20110604230633.GD6093@linux.vnet.ibm.com>
+ <20110804150504.GB429@redhat.com>
+ <4E3AF65F.3080103@fusionio.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E3A493C.2070103@oracle.com>
+In-Reply-To: <4E3AF65F.3080103@fusionio.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A02020A.4E3AF79F.0144,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 03:24:44PM +0800, Joe Jin wrote:
+On Thu, Aug 04, 2011 at 09:43:27PM +0200, Jens Axboe wrote:
+> On 2011-08-04 17:05, Vivek Goyal wrote:
+> > On Sat, Jun 04, 2011 at 04:06:33PM -0700, Paul E. McKenney wrote:
+> >> On Sun, Jun 05, 2011 at 12:48:05AM +0200, Paul Bolle wrote:
+> >>> On Sat, 2011-06-04 at 09:03 -0700, Paul E. McKenney wrote:
+> >>>> More like "based on these diagnostics, I see no evidence of the RCU
+> >>>> implementation misbehaving."  Which is of course different than "I can
+> >>>> prove that the RCU implementation is not misbehaving".  That said, the
+> >>>> fact that you are running on a single CPU makes it hard for me to see
+> >>>> any latitude for RCU-implementation misbehavior.
+> >>>>
+> >>>> Clearly something is wrong somewhere.
+> >>>
+> >>> Yes.
+> >>>
+> >>>> Given the fact that on a single-CPU
+> >>>> system, synchronize_rcu() is a no-op, and given that you weren't able
+> >>>> to reproduce with CONFIG_TREE_PREEMPT_RCU=y, my guess is that there is
+> >>>> a synchronize_rcu() that occasionally (illegally) gets executed within
+> >>>> an RCU read-side critical section.
+> >>>
+> >>> I think I finally found it!
+> >>
+> >> Very cool!!!
+> >>
+> >>> The culprit seems to be io_context.ioc_data (not the most clear of
+> >>> names!). It seems to be a single entry "last-hit cache" of an hlist
+> >>> called cic_list. (There are three, subtly different, cic_lists in the
+> >>> CFQ code!) It is not entirely clear, but that last-hit cache can get out
+> >>> of sync with the hlist it is supposed to cache. My guess it that every
+> >>> now and then a member of the hlist gets deleted while it's still in that
+> >>> (single entry) cache. If it then gets retrieved from that cache it
+> >>> already points to poisoned memory. For some strange reason this only
+> >>> results in an Oops if one or more debugging options are set (as are set
+> >>> in the Fedora Rawhide non-stable kernels that I ran into this). I have
+> >>> no clue whatsoever, why that is ...
+> >>
+> >> Oooh...  If I understand you correctly, this is exactly analogous to my
+> >> first-ever RCU bug way back in the early 90s.  This was a hashed version
+> >> of a BSD-style routing table, where each hash bucket maintained a pointer
+> >> to the last routing entry used.  When I deleted a routing entry, I forgot
+> >> to check the last-entry pointer.
+> >>
+> >> The amazing thing is that the guy who found and fixed this bug generated
+> >> a correct fix despite having absolutely no idea what RCU was or how it
+> >> worked.  All he knew was that if he waited for the sun to reach Oregon,
+> >> his users were going to be way beyond upset.  ;-)
+> >>
+> >>> Anyhow, after ripping out ioc_data this bug seems to have disappeared!
+> >>> Jens, Vivek, could you please have a look at this? In the mean time I
+> >>> hope to pinpoint this issue and draft a small patch to really solve it
+> >>> (ie, not by simply ripping out ioc_data).
+> >>
+> >> Again, very cool!!!
+> > 
+> > Hi Paul,
+> > 
+> > Remember this CFQ issue where we suspected that we are freeing up an
+> > object before rcu period is over. We thought we fixed it. Guess what,
+> > it seems be to be back.
+> > 
+> > **************************************************************************
+> > [21265.163144] BUG: unable to handle kernel paging request at 6b6b6b43
+> > [21265.164022] IP: [<f7d55fe0>] cic_free_func+0x10/0x6c [cfq_iosched]
+> > [21265.164022] *pde = 00000000 
+> > [21265.164022] Oops: 0000 [#1] SMP 
+> > [21265.164022] Modules linked in: cfq_iosched tcp_lp fuse arc4 ppdev
+> > snd_intel8x0m snd_intel8x0 snd_ac97_codec ac97_bus snd_seq snd_seq_device
+> > microcode
+> >  snd_pcm joydev snd_timer ath5k pcspkr snd_page_alloc thinkpad_acpi
+> > i2c_i801
+> > ath mac80211 snd soundcore cfg80211 rfkill parport_pc parport e1000
+> > iTCO_wd
+> > t iTCO_vendor_support binfmt_misc uinput yenta_socket video radeon ttm
+> > drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: scsi_wait_scan]
+> > [21265.164022] 
+> > [21265.164022] Pid: 18514, comm: mandb Not tainted
+> > 3.0.0-1.local2.fc17.i686 #1
+> > IBM        /       
+> > [21265.164022] EIP: 0060:[<f7d55fe0>] EFLAGS: 00010286 CPU: 0
+> > [21265.164022] EIP is at cic_free_func+0x10/0x6c [cfq_iosched]
+> > [21265.164022] EAX: f242e400 EBX: 6b6b6b43 ECX: 00000246 EDX: 6b6b6b43
+> > [21265.164022] ESI: f242e400 EDI: f7d55fd0 EBP: df92df04 ESP: df92def0
+> > [21265.164022]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+> > [21265.164022] Process mandb (pid: 18514, ti=df92c000 task=ed1554c0
+> > task.ti=df92c000)
+> > [21265.164022] Stack:
+> > [21265.164022]  c0468df7 c0af0cb0 6b6b6b6b f242e400 f7d55fd0 df92df18
+> > f7d54510
+> > f242e400
+> > [21265.164022]  ed1554c0 ed155898 df92df20 f7d54530 df92df2c c05cc8ba
+> > f242e400
+> > df92df40
+> > [21265.164022]  c05cc94a ed1554c0 00000012 df92df74 df92df8c c04423e2
+> > eedf2b5c
+> > eedf2b00
+> > [21265.164022] Call Trace:
+> > [21265.164022]  [<c0468df7>] ? lock_is_held+0x73/0x7b
+> > [21265.164022]  [<f7d55fd0>] ? cfqq_process_refs+0x18/0x18 [cfq_iosched]
+> > [21265.164022]  [<f7d54510>] call_for_each_cic+0x3e/0x4c [cfq_iosched]
+> > [21265.164022]  [<f7d54530>] cfq_free_io_context+0x12/0x14 [cfq_iosched]
+> > [21265.164022]  [<c05cc8ba>] put_io_context+0x34/0x5c
+> > [21265.164022]  [<c05cc94a>] exit_io_context+0x68/0x6d
+> > [21265.164022]  [<c04423e2>] do_exit+0x62f/0x66a
+> > [21265.164022]  [<c0442634>] do_group_exit+0x63/0x86
+> > [21265.164022]  [<c044266f>] sys_exit_group+0x18/0x18
+> > [21265.164022]  [<c083b0df>] sysenter_do_call+0x12/0x38
+> > [21265.164022] Code: 5f 5d c3 55 89 e5 3e 8d 74 26 00 8b 50 3c 03 50 40 8b
+> > 00
+> > 29 d0 79 02 0f 0b 5d c3 55 89 e5 57 56 53 83 ec 08 3e 8d 74 26 00 89 d3 <8
+> > b> 12 89 c6 f6 c2 01 75 02 0f 0b 8d 78 08 89 f8 89 55 ec e8 c8 
+> > [21265.164022] EIP: [<f7d55fe0>] cic_free_func+0x10/0x6c [cfq_iosched]
+> > SS:ESP
+> > 0068:df92def0
+> > [21265.164022] CR2: 000000006b6b6b43
+> > [21265.363749] ---[ end trace a779435da6d0a152 ]---
+> > 
+> > **************************************************************************
+> > Again details have been added to old bz.
+> > 
+> > https://bugzilla.redhat.com/show_bug.cgi?id=577968
+> > 
+> > Now two users have run into this issue. PaulB, again can reliably
+> > reproduce this issue even with 3.0 kernels.  He  just needs to run
+> > "mandb -c" on this machine.
+> > 
+> > He has again run the CFQ debug V2 patch which seems to be telling that
+> > cfq_io_context object was freed while in rcu read section.
+> > 
+> > **************************************************************************
+> > [  562.598881] debug: Will exit io context cic=0xf0469230, Next pointer is  
+> > (null)
+> > [  562.598881] debug: cic=0xf0469230 exit io context done. Next pointer is  
+> > (null)
+> > [  562.598881] debug: Will decouple-free cic cic=0xf0469230, Next pointer
+> > is  (null)
+> > [  562.633403] debug: cic=0xf0469230 decouple-free cic done. Next pointer
+> > is  (null)
+> > [  562.644949] debug: freeing up cic=f0469230
+> > [  562.652971] cic=f0469230 freed while in RCU read lock
+> > 
+> > *****************************************************************************
+> > 
+> > I am hoping that I have written the debug patch right. As usual i am
+> > running out of ideas on how to debug it further. Anything debug
+> > information you would like to have a look at?
 > 
-> When backend state change to XenbusStateClosed, remove_requested will be set,
-> so repleace check kthread_should_stop() to remove_requested in 
-> xen_blkif_schedule() loop.
-> 
-> Signed-off-by: Joe Jin <joe.jin@oracle.com>
-> Cc: Daniel Stodden <daniel.stodden@citrix.com>
-> Cc: Jens Axboe <jaxboe@fusionio.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: Annie Li <annie.li@oracle.com>
-> Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>
-> --
->  drivers/block/xen-blkback/blkback.c |   10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-> index 2330a9a..3d64b52 100644
-> --- a/drivers/block/xen-blkback/blkback.c
-> +++ b/drivers/block/xen-blkback/blkback.c
-> @@ -274,7 +274,7 @@ int xen_blkif_schedule(void *arg)
->  
->  	xen_blkif_get(blkif);
->  
-> -	while (!kthread_should_stop()) {
-> +	while (!blkif->remove_requested) {
->  		if (try_to_freeze())
->  			continue;
->  		if (unlikely(vbd->size != vbd_sz(vbd)))
-> @@ -282,11 +282,11 @@ int xen_blkif_schedule(void *arg)
->  
->  		wait_event_interruptible(
->  			blkif->wq,
-> -			blkif->waiting_reqs || kthread_should_stop());
-> +			blkif->waiting_reqs || blkif->remove_requested);
->  		wait_event_interruptible(
->  			blkbk->pending_free_wq,
->  			!list_empty(&blkbk->pending_free) ||
-> -			kthread_should_stop());
-> +			blkif->remove_requested);
->  
->  		blkif->waiting_reqs = 0;
->  		smp_mb(); /* clear flag *before* checking for work */
-> @@ -301,8 +301,8 @@ int xen_blkif_schedule(void *arg)
->  	if (log_stats)
->  		print_stats(blkif);
->  
-> -	blkif->xenblkd = NULL;
->  	xen_blkif_put(blkif);
-> +	xen_blkback_close(blkif);
+> Darn! Vivek, can you re-send the debug patch for inspection?
 
-<sigh> I can't believe I didn't catch this earlier, but this a
-big NO NO. Each patch _MUST_ be compile on its own. If I commit
-patch 1 and this patch, the compile (actually linker) process
-stops b/c xen_blkback_close is not defined:
+Sure Jens. Here it is.
 
-drivers/built-in.o: In function `xen_blkif_schedule':
-/home/konrad/ssd/linux/drivers/block/xen-blkback/blkback.c:305: undefined reference to `xen_blkback_close'
-make[2]: *** [.tmp_vmlinux1] Error 1
+Thanks
+Vivek
 
-You can move the xen_blkback_close() to the third patch
-instead of having it here.
 
-I will be nice and do it for you.
+---
+ block/cfq-iosched.c |   43 ++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 40 insertions(+), 3 deletions(-)
 
->  
->  	return 0;
->  }
-> @@ -476,7 +476,7 @@ __do_block_io_op(struct xen_blkif *blkif)
->  		if (RING_REQUEST_CONS_OVERFLOW(&blk_rings->common, rc))
->  			break;
->  
-> -		if (kthread_should_stop()) {
-> +		if (blkif->remove_requested) {
->  			more_to_do = 1;
->  			break;
->  		}
+Index: linux-2.6/block/cfq-iosched.c
+===================================================================
+--- linux-2.6.orig/block/cfq-iosched.c	2011-05-18 18:06:11.499007946 -0400
++++ linux-2.6/block/cfq-iosched.c	2011-05-18 18:54:12.896660278 -0400
+@@ -2581,6 +2581,17 @@ static void cfq_put_queue(struct cfq_que
+ 	cfq_put_cfqg(cfqg);
+ }
+ 
++static void cfq_free_io_context(struct io_context *ioc);
++static void cfq_exit_io_context(struct io_context *ioc);
++static void cfq_ioc_set_ioprio(struct io_context *ioc);
++static void cfq_ioc_set_cgroup(struct io_context *ioc);
++
++static void cic_free_func(struct io_context *ioc, struct cfq_io_context *cic);
++static void cfq_exit_single_io_context(struct io_context *ioc,
++				       struct cfq_io_context *cic);
++static void changed_ioprio(struct io_context *ioc, struct cfq_io_context *cic);
++static void changed_cgroup(struct io_context *ioc, struct cfq_io_context *cic);
++
+ /*
+  * Call func for each cic attached to this ioc.
+  */
+@@ -2589,13 +2600,37 @@ call_for_each_cic(struct io_context *ioc
+ 		  void (*func)(struct io_context *, struct cfq_io_context *))
+ {
+ 	struct cfq_io_context *cic;
+-	struct hlist_node *n;
++	struct hlist_node *n, *next;
++
++	char *action;
++
++
++	if ((void *) func == (void *) cic_free_func)
++		action = "decouple-free cic";
++	else if((void *) func == (void *) cfq_exit_single_io_context)
++		action = "exit io context";
++	else if((void *) func == (void *) changed_ioprio)
++		action = "change ioprio";
++	else if((void *)func == (void *)changed_cgroup)
++		action = "change cgroup";
++	else
++		action = "unknown";
+ 
+ 	rcu_read_lock();
+ 
+-	hlist_for_each_entry_rcu(cic, n, &ioc->cic_list, cic_list)
++	hlist_for_each_entry_rcu(cic, n, &ioc->cic_list, cic_list) {
++		printk("debug: Will %s cic=0x%p, Next pointer is %p\n",
++			action, cic, cic->cic_list.next);
+ 		func(ioc, cic);
+-
++		printk("debug: cic=0x%p %s done. Next pointer is %p\n", cic,
++			action, cic->cic_list.next);
++		next = rcu_dereference_raw(hlist_next_rcu(&cic->cic_list));
++
++		if (next == (void *) 0x6b6b6b6b) {
++			printk("cic=%p freed while in RCU read lock\n", cic);
++			BUG();
++		}
++	}
+ 	rcu_read_unlock();
+ }
+ 
+@@ -2605,6 +2640,7 @@ static void cfq_cic_free_rcu(struct rcu_
+ 
+ 	cic = container_of(head, struct cfq_io_context, rcu_head);
+ 
++	printk("debug: freeing up cic=%p\n", cic);
+ 	kmem_cache_free(cfq_ioc_pool, cic);
+ 	elv_ioc_count_dec(cfq_ioc_count);
+ 
+@@ -3019,6 +3055,7 @@ cfq_drop_dead_cic(struct cfq_data *cfqd,
+ 	hlist_del_rcu(&cic->cic_list);
+ 	spin_unlock_irqrestore(&ioc->lock, flags);
+ 
++	printk("debug: Dropping dead cic=%p\n", cic);
+ 	cfq_cic_free(cic);
+ }
+ 
