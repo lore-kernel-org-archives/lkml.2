@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753648Ab1HDKQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 06:16:49 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:60299 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab1HDKQl (ORCPT
+	id S1753547Ab1HDKUt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 06:20:49 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54192 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368Ab1HDKUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 06:16:41 -0400
-Date: Thu, 04 Aug 2011 03:13:56 -0700 (PDT)
-Message-Id: <20110804.031356.626082809394107925.davem@davemloft.net>
-To: tj@kernel.org
-Cc: benh@kernel.crashing.org, yinghai@kernel.org, hpa@zytor.com,
-        tony.luck@intel.com, ralf@linux-mips.org, schwidefsky@de.ibm.com,
-        liqin.chen@sunplusct.com, lethal@linux-sh.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        mingo@redhat.com, sparclinux@vger.kernel.org
-Subject: Re: [PATCH 16/23] sparc: Use HAVE_MEMBLOCK_NODE_MAP
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110804095218.GB2731@htj.dyndns.org>
-References: <1311694534-5161-1-git-send-email-tj@kernel.org>
-	<1311694534-5161-17-git-send-email-tj@kernel.org>
-	<20110804095218.GB2731@htj.dyndns.org>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 04 Aug 2011 03:13:59 -0700 (PDT)
+	Thu, 4 Aug 2011 06:20:44 -0400
+Date: Thu, 4 Aug 2011 12:20:39 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Shaohua Li <shli@kernel.org>, linux-kernel@vger.kernel.org,
+        Jens Axboe <jaxboe@fusionio.com>, msnitzer@redhat.com
+Subject: Re: [patch] blk-flush: fix flush policy calculation
+Message-ID: <20110804102039.GD2731@htj.dyndns.org>
+References: <x49d3go98ku.fsf@segfault.boston.devel.redhat.com>
+ <CANejiEXK7NSJo-0vshyX6RSqmRbHmyxAw8_wFQEwvTXrEQF3fg@mail.gmail.com>
+ <x4939hju2zh.fsf@segfault.boston.devel.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x4939hju2zh.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
-Date: Thu, 4 Aug 2011 11:52:18 +0200
+Hello,
 
-> On Tue, Jul 26, 2011 at 05:35:27PM +0200, Tejun Heo wrote:
->> sparc doesn't access early_node_map[] directly and enabling
->> HAVE_MEMBLOCK_NODE_MAP is trivial - replacing add_active_range() calls
->> with memblock_set_node() and selecting HAVE_MEMBLOCK_NODE_MAP is
->> enough.
->> 
->> Signed-off-by: Tejun Heo <tj@kernel.org>
->> Cc: "David S. Miller" <davem@davemloft.net>
->> Cc: sparclinux@vger.kernel.org
+On Tue, Aug 02, 2011 at 01:39:46PM -0400, Jeff Moyer wrote:
+> OK, sorry for top-posting here, but I chased the problem down further.
 > 
-> David just confirmed this worked fine on sparc and was okay with this
-> going through tip.
+> Commit ae1b1539622fb46e51b4d13b3f9e5f4c713f86ae, block: reimplement
+> FLUSH/FUA to support merge, introduced a regression when running any
+> sort of fsyncing workload using dm-multipath and certain storage (in our
+> case, an HP EVA).  It turns out that dm-multipath always advertised
+> flush+fua support, and passed commands on down the stack, where they
+> used to get stripped off.  The above commit, unfortunately, changed that
+> behavior:
+...
+> So, the flush machinery was bypassed in such cases (q->flush_flags == 0
+> && rq->cmd_flags & (REQ_FLUSH|REQ_FUA)).
+> 
+> Now, however, we don't get into the flush machinery at all (which is why
+> my initial patch didn't help this situation).  Instead,
+> __elv_next_request just hands a request with flush and fua bits set to
+> the scsi_request_fn, even though the underlying request_queue does not
+> support flush or fua.
+> 
+> So, where do we fix this?  We could just accept Mike's patch to not send
+> such requests down from dm-mpath, but that seems short-sighted.  We
+> could reinstate some checks in __elv_next_request.  Or, we could put the
+> checks into blk_insert_cloned_request.
 
-Yep:
+Ah, okay, what changed there was where a request is passed into flush
+machinery.  Before, it was while the request was being dispatched from
+elevator to device.  After, it's de-composed when the request enters
+elevator.  The bug is that there are paths which insert new requests
+to elevator but didn't check for REQ_FLUSH|FUA.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+I think it would be cleaner to add a wrapper around
+__elv_add_request() which checks for REQ_FLUSH|FUA and enforce
+REQ_INSERT_FLUSH if the request needs it.  Note that this should only
+happen when a request enters the queue for the first time but not on
+requeues - that was the reason why the decision wasn't made inside
+__elv_add_request().
+
+Thank you.
+
+-- 
+tejun
