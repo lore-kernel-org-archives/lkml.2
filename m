@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756496Ab1HDBCI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 21:02:08 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49578 "EHLO
+	id S1756501Ab1HDBFC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 21:05:02 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60068 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756361Ab1HDBB7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 21:01:59 -0400
+	by vger.kernel.org with ESMTP id S1756120Ab1HDBE4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 21:04:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110803175016.fb80b7f3.akpm@linux-foundation.org>
-References: <20110801180151.GA26686@albatros> <20110801112021.25ec9041.akpm@linux-foundation.org>
- <20110801190341.GA6898@albatros> <CA+55aFw2kHWY1N=ox1er7c-3WL4OA8x0M=Keu7hvAncKUZd1tQ@mail.gmail.com>
- <20110802124530.GA2543@albatros> <20110802135512.b49c9de1.akpm@linux-foundation.org>
- <d844457bba74be419d2434c533fdb4e1@localhost> <CA+55aFx+JOeDoNzs+1wfdK3kpNPyS9wpU1OT=VAwvWPXfMVuDQ@mail.gmail.com>
- <20110803113033.1c3c6960@taxman.wild-wind.fr.eu.org> <CA+55aFzw-K6XvDzTwHRyqQWdkDO8Zqz8Ak1qgNTzf6a3L9=80A@mail.gmail.com>
- <20110803175016.fb80b7f3.akpm@linux-foundation.org>
+In-Reply-To: <049cae3c2e2923ea7efbd205257e9e22b3df5e1a.1312388919.git.dmitry.kasatkin@intel.com>
+References: <049cae3c2e2923ea7efbd205257e9e22b3df5e1a.1312388919.git.dmitry.kasatkin@intel.com>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 3 Aug 2011 15:01:05 -1000
-Message-ID: <CA+55aFzG+s9KvSOJHvsUczG_d66f+QbBWiWfqLC21mHswnfm-A@mail.gmail.com>
-Subject: Re: [PATCH] shm: fix a race between shm_exit() and shm_init()
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Marc Zyngier <marc.zyngier@arm.com>, Vasiliy Kulikov <segoon@openwall.com>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>, Ingo Molnar <mingo@elte.hu>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Date: Wed, 3 Aug 2011 15:04:34 -1000
+Message-ID: <CA+55aFzdMiyXiPrBfwW6Ra0P6qtJXf4MYRLB7NvkQdkerSzrUA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] xen: asm/io.h should not include xen.h if XEN is disabled
+To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=00504502d30a959ad304a9a3916a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 3, 2011 at 2:50 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+--00504502d30a959ad304a9a3916a
+Content-Type: text/plain; charset=ISO-8859-1
+
+On Wed, Aug 3, 2011 at 6:33 AM, Dmitry Kasatkin
+<dmitry.kasatkin@intel.com> wrote:
 >
-> Well, it's still a workaround.  We'll still have driver_init() trying
-> to run userspace helpers at an inappropriate time, and failing to do
-> so.  Either something will break or it should not be attempting
-> attempting to do this at all.
+> XEN related content is behind the CONFIG_XEN flag in the io.h.
+> And <xen/xen.h> should be also behind CONFIG_XEN flag.
 
-Well, it has never worked before either, so I wouldn't call it a
-"workaround", more of a "insane subsystems do user-mode helpers for
-crazy small things, and at crazy times. Stop them from wasting our
-time and effort at those crazy times when we know they would fail
-anyway".
+Wouldn't it be much nicer to just move the '#include <xen/xen.h>' line down?
 
-> Perhaps Kay and Greg can suggest how we can fix all this up?
+Does the attached patch work for you?
 
-I think just not calling user-mode when user-mode isn't ready is a real fix.
+              Linus
 
-The fact that the device models send an absolutely *insane* amount of
-events for everything, and don't track "this is the bootup device
-scan" on their own is kind of sad, but it's how they roll. This fixes
-it at a core level, so that the device layer doesn't have to track the
-"am I booting, or is this a dynamic event?" at all.
+--00504502d30a959ad304a9a3916a
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gqx0w2l50
 
-               Linus
+IGFyY2gveDg2L2luY2x1ZGUvYXNtL2lvLmggfCAgICAzICstLQogMSBmaWxlcyBjaGFuZ2VkLCAx
+IGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvYXJjaC94ODYvaW5j
+bHVkZS9hc20vaW8uaCBiL2FyY2gveDg2L2luY2x1ZGUvYXNtL2lvLmgKaW5kZXggZDAyODA0ZDY1
+MGM0Li5kOGU4ZWVmYmUyNGMgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2luY2x1ZGUvYXNtL2lvLmgK
+KysrIGIvYXJjaC94ODYvaW5jbHVkZS9hc20vaW8uaApAQCAtNDAsOCArNDAsNiBAQAogI2luY2x1
+ZGUgPGxpbnV4L2NvbXBpbGVyLmg+CiAjaW5jbHVkZSA8YXNtL3BhZ2UuaD4KIAotI2luY2x1ZGUg
+PHhlbi94ZW4uaD4KLQogI2RlZmluZSBidWlsZF9tbWlvX3JlYWQobmFtZSwgc2l6ZSwgdHlwZSwg
+cmVnLCBiYXJyaWVyKSBcCiBzdGF0aWMgaW5saW5lIHR5cGUgbmFtZShjb25zdCB2b2xhdGlsZSB2
+b2lkIF9faW9tZW0gKmFkZHIpIFwKIHsgdHlwZSByZXQ7IGFzbSB2b2xhdGlsZSgibW92IiBzaXpl
+ICIgJTEsJTAiOnJlZyAocmV0KSBcCkBAIC0zMzQsNiArMzMyLDcgQEAgZXh0ZXJuIHZvaWQgZml4
+dXBfZWFybHlfaW9yZW1hcCh2b2lkKTsKIGV4dGVybiBib29sIGlzX2Vhcmx5X2lvcmVtYXBfcHRl
+cChwdGVfdCAqcHRlcCk7CiAKICNpZmRlZiBDT05GSUdfWEVOCisjaW5jbHVkZSA8eGVuL3hlbi5o
+Pgogc3RydWN0IGJpb192ZWM7CiAKIGV4dGVybiBib29sIHhlbl9iaW92ZWNfcGh5c19tZXJnZWFi
+bGUoY29uc3Qgc3RydWN0IGJpb192ZWMgKnZlYzEsCg==
+--00504502d30a959ad304a9a3916a--
