@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab1HDNKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 09:10:21 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:3235 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753579Ab1HDNKT (ORCPT
+	id S1754433Ab1HDNMb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 09:12:31 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51898 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753916Ab1HDNM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 09:10:19 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6427"; a="107874927"
-Date: Thu, 4 Aug 2011 06:10:15 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Kumar Gala <galak@kernel.crashing.org>
-Cc: David Brown <davidb@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
-Subject: Re: [PATCH v2] of/address: Add of_iomap_nocache
-Message-ID: <20110804131015.GA6596@huya.qualcomm.com>
-References: <1312454196-31028-1-git-send-email-davidb@codeaurora.org>
- <B148344E-9580-4C9B-A8FD-942A9713291C@kernel.crashing.org>
+	Thu, 4 Aug 2011 09:12:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <B148344E-9580-4C9B-A8FD-942A9713291C@kernel.crashing.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 4 Aug 2011 14:12:05 +0100
+X-Google-Sender-Auth: 3IG_0FT9yK6B3z2DY3Xn_ds9KnM
+Message-ID: <CACxGe6sK9n1GOJiVFg2EDJxMs2cDn4Ot1+k68eE2dU=PB0c=gg@mail.gmail.com>
+Subject: [GIT PULL] Back out DT breakage that affects sparc
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>, David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 07:44:07AM -0500, Kumar Gala wrote:
-> 
-> On Aug 4, 2011, at 5:36 AM, David Brown wrote:
-> 
-> > Add uncached mappings from devicetree nodes similar to regular io
-> > mappings.
-> > 
-> > SPARC is coherent, so there this call is the same as regular of_iomap.
-> > 
-> > +extern void __iomem *of_iomap_nocache(struct device_node *device, int index);
-> 
-> What about adding an of_iomap_prot() to match ioremap_prot().
+Hi Linus,
 
-It can be done, but I actually have a use for nocache.  We can
-probably add the prot version when first needed.
+After discussing the design with David M., this tree reverts the
+of_alias code that I send you yesterday and removes the user of it.
+There are enough things that he was concerned about that it is
+probably the best solution for right now.
 
-David
+g.
+
+The following changes since commit a9e4e6e14c322e08d1c615afc8f504fb415f9613:
+
+  Merge branch 'for-next' of
+git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending
+(2011-08-03 15:12:09 -1000)
+
+are available in the git repository at:
+
+  git://git.secretlab.ca/git/linux-2.6 devicetree/merge
+
+Grant Likely (2):
+      dt: remove of_alias_get_id() reference
+      Revert "dt: add of_alias_scan and of_alias_get_id"
+
+ drivers/of/base.c        |  130 ----------------------------------------------
+ drivers/of/fdt.c         |    4 +-
+ drivers/tty/serial/imx.c |   13 ++---
+ include/linux/of.h       |    8 ---
+ include/linux/of_fdt.h   |    1 +
+ 5 files changed, 6 insertions(+), 150 deletions(-)
+
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
