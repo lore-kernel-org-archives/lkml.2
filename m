@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab1HDMyR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 08:54:17 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52278 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287Ab1HDMyC (ORCPT
+	id S1754540Ab1HDMy3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 08:54:29 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:38011 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754460Ab1HDMyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 08:54:02 -0400
+	Thu, 4 Aug 2011 08:54:17 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com, dhowells@redhat.com,
         hpj@urpla.net, sedat.dilek@googlemail.com, penberg@kernel.org,
         mszeredi@suse.cz
-Subject: [PATCH 2/8] vfs: export do_splice_direct() to modules
-Date: Thu,  4 Aug 2011 14:53:31 +0200
-Message-Id: <1312462417-8826-3-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 8/8] fs: limit filesystem stacking depth
+Date: Thu,  4 Aug 2011 14:53:37 +0200
+Message-Id: <1312462417-8826-9-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1312462417-8826-1-git-send-email-miklos@szeredi.hu>
 References: <1312462417-8826-1-git-send-email-miklos@szeredi.hu>
@@ -27,25 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Export do_splice_direct() to modules.  Needed by overlay filesystem.
+Add a simple read-only counter to super_block that indicates deep this
+is in the stack of filesystems.  Previously ecryptfs was the only
+stackable filesystem and it explicitly disallowed multiple layers of
+itself.
+
+Overlayfs, however, can be stacked recursively and also may be stacked
+on top of ecryptfs or vice versa.
+
+To limit the kernel stack usage we must limit the depth of the
+filesystem stack.  Initially the limit is set to 2.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/splice.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ fs/ecryptfs/main.c   |    7 +++++++
+ fs/overlayfs/super.c |   10 ++++++++++
+ include/linux/fs.h   |   11 +++++++++++
+ 3 files changed, 28 insertions(+), 0 deletions(-)
 
-diff --git a/fs/splice.c b/fs/splice.c
-index fa2defa..263dc3a 100644
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -1300,6 +1300,7 @@ long do_splice_direct(struct file *in, loff_t *ppos, struct file *out,
+diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
+index 9f1bb74..26faa17 100644
+--- a/fs/ecryptfs/main.c
++++ b/fs/ecryptfs/main.c
+@@ -525,6 +525,13 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
+ 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
+ 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
+ 	s->s_magic = ECRYPTFS_SUPER_MAGIC;
++	s->s_stack_depth = path.dentry->d_sb->s_stack_depth + 1;
++
++	rc = -EINVAL;
++	if (s->s_stack_depth > FILESYSTEM_MAX_STACK_DEPTH) {
++		printk(KERN_ERR "eCryptfs: maximum fs stacking depth exceeded\n");
++		goto out_free;
++	}
  
- 	return ret;
- }
-+EXPORT_SYMBOL(do_splice_direct);
+ 	inode = ecryptfs_get_inode(path.dentry->d_inode, s);
+ 	rc = PTR_ERR(inode);
+diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
+index c0c6bd9..508cf19 100644
+--- a/fs/overlayfs/super.c
++++ b/fs/overlayfs/super.c
+@@ -545,6 +545,16 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
+ 	    !S_ISDIR(lowerpath.dentry->d_inode->i_mode))
+ 		goto out_put_lowerpath;
  
- static int splice_pipe_to_pipe(struct pipe_inode_info *ipipe,
- 			       struct pipe_inode_info *opipe,
++	sb->s_stack_depth = max(upperpath.mnt->mnt_sb->s_stack_depth,
++				lowerpath.mnt->mnt_sb->s_stack_depth) + 1;
++
++	err = -EINVAL;
++	if (sb->s_stack_depth > FILESYSTEM_MAX_STACK_DEPTH) {
++		printk(KERN_ERR "overlayfs: maximum fs stacking depth exceeded\n");
++		goto out_put_lowerpath;
++	}
++
++
+ 	ufs->upper_mnt = clone_private_mount(&upperpath);
+ 	err = PTR_ERR(ufs->upper_mnt);
+ 	if (IS_ERR(ufs->upper_mnt)) {
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 933e59c..18ab2f2 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -483,6 +483,12 @@ struct iattr {
+  */
+ #include <linux/quota.h>
+ 
++/*
++ * Maximum number of layers of fs stack.  Needs to be limited to
++ * prevent kernel stack overflow
++ */
++#define FILESYSTEM_MAX_STACK_DEPTH 2
++
+ /** 
+  * enum positive_aop_returns - aop return codes with specific semantics
+  *
+@@ -1448,6 +1454,11 @@ struct super_block {
+ 	int cleancache_poolid;
+ 
+ 	struct shrinker s_shrink;	/* per-sb shrinker handle */
++
++	/*
++	 * Indicates how deep in a filesystem stack this SB is
++	 */
++	int s_stack_depth;
+ };
+ 
+ /* superblock cache pruning functions */
 -- 
 1.7.3.4
 
