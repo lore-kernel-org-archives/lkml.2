@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab1HDJnb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 05:43:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57408 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab1HDJnY convert rfc822-to-8bit (ORCPT
+	id S1752891Ab1HDJo3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 05:44:29 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48509 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675Ab1HDJoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 05:43:24 -0400
-Subject: Re: [ANNOUNCE] 3.0-rt6
-From: Peter Zijlstra <peterz@infradead.org>
-To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <4E3A3D7C.6050403@localhost>
-References: <alpine.LFD.2.02.1107282213000.31246@ionos>
-	 <4E3A3D7C.6050403@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 04 Aug 2011 11:42:45 +0200
-Message-ID: <1312450965.16729.7.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 4 Aug 2011 05:44:24 -0400
+Date: Thu, 4 Aug 2011 11:44:19 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: linux-ide@vger.kernel.org, Valdis.Kletnieks@vt.edu,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jeff Garzik <jgarzik@pobox.com>,
+        Michael Leun <lkml20100708@newton.leun.net>,
+        linux-kernel@vger.kernel.org, Jian Peng <jipeng2005@gmail.com>,
+        Kevin Cernekee <cernekee@gmail.com>
+Subject: Re: ahci_start_engine compliance with AHCI spec
+Message-ID: <20110804094419.GA2731@htj.dyndns.org>
+References: <CAN8TOE9CCSiS2koyx=UsZj=9KwaWZW5yDjUUqgJf2=qZU70k1w@mail.gmail.com>
+ <20110713131407.GN2872@htj.dyndns.org>
+ <CAN8TOE9Rjujf9aLQGONDULNasFiQmVkiUPWUDX=Vf0Nx2pka7w@mail.gmail.com>
+ <20110721084917.GE3455@htj.dyndns.org>
+ <CAN8TOE_dCg6Wi_trE97hXjBPnZi4jpLyoeUEVrbMpgDH-BwKWA@mail.gmail.com>
+ <20110722090317.GH2622@htj.dyndns.org>
+ <CAN8TOE8ZoE0xRvLPhDZtKZSwXg1mQLGtp8f2C75S+XuCrFM1YA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN8TOE8ZoE0xRvLPhDZtKZSwXg1mQLGtp8f2C75S+XuCrFM1YA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-03 at 23:34 -0700, Fernando Lopez-Lezcano wrote:
-> [  117.026009]  [<ffffffff814ef322>] _raw_spin_lock+0x45/0x79
-> [  117.026009]  [<ffffffff8107b6f1>] ? __run_posix_cpu_timers+0x8f/0x353
-> [  117.026009]  [<ffffffff8107b6f1>] __run_posix_cpu_timers+0x8f/0x353 
+Hello,
 
-I think its this one, could you confirm?
+On Tue, Aug 02, 2011 at 05:06:13PM -0700, Brian Norris wrote:
+> Can DRQ be set from 0->1 without a software-initiated action? I didn't
+> think it was directly tied to PHY events, and so we can fairly well
+> predict that it will remain 0.
 
----
-Index: linux-2.6/kernel/posix-cpu-timers.c
-===================================================================
---- linux-2.6.orig/kernel/posix-cpu-timers.c
-+++ linux-2.6/kernel/posix-cpu-timers.c
-@@ -1288,10 +1288,11 @@ static inline int fastpath_timer_check(s
- 	sig = tsk->signal;
- 	if (sig->cputimer.running) {
- 		struct task_cputime group_sample;
-+		unsigned long flags;
- 
--		raw_spin_lock(&sig->cputimer.lock);
-+		raw_spin_lock_irqsave(&sig->cputimer.lock, flags);
- 		group_sample = sig->cputimer.cputime;
--		raw_spin_unlock(&sig->cputimer.lock);
-+		raw_spin_unlock_irqrestore(&sig->cputimer.lock, flags);
- 
- 		if (task_cputime_expired(&group_sample, &sig->cputime_expires))
- 			return 1;
+Sure it can.  It's updated by Register D2H FISes sent by the device.
+It can change after a PHY event; otherwise, I don't think it would get
+set during init without any command in flight, right?
 
+> Yes, I believe the hardware designers know how buggy this is...but
+> it's still worth some effort to fix the software as well as possible
+> for current hardware behavior.
+
+Yeap, sure, let's get it working for majority of cases.  I just wanted
+to point out that the hardware eventually needs to be fixed.
+
+Thanks.
+
+-- 
+tejun
