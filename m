@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756027Ab1HDDz3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 23:55:29 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:57046 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754658Ab1HDDzY (ORCPT
+	id S1750915Ab1HDE0K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 00:26:10 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:55350 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722Ab1HDE0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 23:55:24 -0400
-X-Nat-Received: from [202.181.97.72]:49213 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1312430111.6800
-Message-Id: <201108040355.p743tBkv092694@www262.sakura.ne.jp>
-Subject: Re: [3.0-git16] Oops at driver_uevent_store().
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: lacombar@gmail.com
-Cc: greg@kroah.com, akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Thu, 04 Aug 2011 12:55:11 +0900
-References: <201108040221.p742Lk3R069631@www262.sakura.ne.jp> <CACqU3MWQsh2cS8ck=c1-bOy-W649j0FjtNeOQbPaijAaCQ9wgA@mail.gmail.com>
-In-Reply-To: <CACqU3MWQsh2cS8ck=c1-bOy-W649j0FjtNeOQbPaijAaCQ9wgA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 04082011 #5783366, status: clean
+	Thu, 4 Aug 2011 00:26:03 -0400
+Date: Thu, 04 Aug 2011 00:25:55 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [GIT PATCH] APEI patches for Linux 3.1
+In-reply-to: <CA+55aFxE6b=idv+fF5h1U3EnDqHSCK2b6+36sResmhJKvAZQ3A@mail.gmail.com>
+Message-id: <alpine.LFD.2.02.1108032351430.29492@x980>
+References: <alpine.LFD.2.02.1108031137590.22067@x980>
+ <CA+55aFxST2J+LDMB=1ctnw2WGxV+a-cm3FE-1AjwnXMNDkt32g@mail.gmail.com>
+ <alpine.LFD.2.02.1108031523080.22067@x980>
+ <CA+55aFxE6b=idv+fF5h1U3EnDqHSCK2b6+36sResmhJKvAZQ3A@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaud Lacombe wrote:
-> Looking more closely, I'd say I have been too eager in the marking.
-> The warning concern `pci_eisa_driver', not `pci_eisa_pci_tbl' which is
-> also referenced by MODULE_DEVICE_TABLE().
-> 
-> Does removing the annotation from `pci_eisa_pci_tbl' fix the BUG ?
-No.
+On Wed, 3 Aug 2011, Linus Torvalds wrote:
 
--static struct pci_device_id __initdata pci_eisa_pci_tbl[] = {
-+static struct pci_device_id pci_eisa_pci_tbl[] = {
+> ...I'm not seeing any
+> reason to pull this thing. The merge window is not for development,
+> and you're simply not making me get the warm and fuzzies about this
+> late pull request.
 
-did not help.
+I appologize for the the multiple late pull requests.
+I was off the grid for a vacation and returned too late to be early.
 
-Printing dmesg in verbose showed below three lines.
+I split APEI onto its own branch and I doubly botched it --
+both in the .git/remotes file and in the script pointing to the repo...
+I guess the good news is the next time I run the script it will be 
+correct:-)
 
-[    0.262828] EISA bus registered
-[    6.291117] EISA: Probing bus 0 at eisa.0
-[    6.295445] EISA: Cannot allocate resource for mainboard
+Please judge apei-release on its own merits rather than
+the sloppily-addressed envelope I sent it in on Wednesday.
+I know it isn't a capability that you use, but for the enterprise
+folks that need it, this batch is an improvement over Linux 3.0.
 
-Manual printk() tracing showed below callchain.
+The code hasn't changed much in months -- most of it
+was ready for the 3.0 merge window.  There were a couple of
+build fixes recently based-on linux-next feedback,
+and I also re-based to add more "Acked-by" notations.
+Finally, I merged it up to your tree so you'd not be irritated
+with trivial but annoying text merge conflicts on your
+vacation.  (typical case of multiple people appending
+to shared lists in Kconfig files, if you're interested)
 
-virtual_eisa_root_init() calls eisa_root_register().
-  eisa_root_register() calls eisa_probe().
-    eisa_probe() returns -EBUSY since root->force_probe == 0.
-  eisa_root_register() calls release_resource() and returns -EBUSY.
-virtual_eisa_root_init() calls platform_device_unregister() and returns -1.
+FWIW, I've built 200 x86_64 kernels and 393 i386 kernels
+and booted on both architectures on multiple machines.
+Though I don't have the capability to verify correctness
+of the the APEI features, and must rely on Ying for that.
 
-Also, eisa_root_register() in pci_eisa_init() is not called.
+please pull from:
 
-So, it seems that something is wrong with cleanup.
-pci_unregister_driver() is missing?
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git apei-release
+
+thanks,
+-Len
+
