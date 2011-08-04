@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751395Ab1HDGFI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 02:05:08 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:7924 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab1HDGFF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 02:05:05 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:subject:in-reply-to:
-	message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=dKZ09ZINmfes4oqSnLVuzWf0B4SH6F4Vwh5Wl6tZ6WPrge6qtGhmxPh481upd+lK6
-	Yiuvsr960C5I3eEoI1vcw==
-Date: Wed, 3 Aug 2011 23:04:55 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Borislav Petkov <bp@alien8.de>, Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch] oom: change warning for deprecated oom_adj to avoid
- WARN_ONCE()
-In-Reply-To: <20110803061016.GC16170@liondog.tnic>
-Message-ID: <alpine.DEB.2.00.1108032258200.23444@chino.kir.corp.google.com>
-References: <20110802005206.GA3832@tassilo.jf.intel.com> <alpine.DEB.2.00.1108011928530.15596@chino.kir.corp.google.com> <m2pqko1h38.fsf@firstfloor.org> <alpine.DEB.2.00.1108020236140.18935@chino.kir.corp.google.com> <20110803061016.GC16170@liondog.tnic>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1751801Ab1HDGQr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 02:16:47 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41985 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750837Ab1HDGQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 02:16:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,315,1309762800"; 
+   d="scan'208";a="35648586"
+Subject: Re: [PATCH 09/18] dmaengine/amba-pl08x: Schedule tasklet in case
+ of error interrupt
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: viresh kumar <viresh.kumar@st.com>, Dan <dan.j.williams@intel.com>
+Cc: viresh kumar <viresh.linux@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vipin KUMAR <vipin.kumar@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <4E3A342E.5080503@st.com>
+References: <cover.1311936523.git.viresh.kumar@st.com>
+	 <9c81beb9cd84f84b58abbd24ebfae85dfe8d8ee1.1311936524.git.viresh.kumar@st.com>
+	 <1311941799.1536.532.camel@vkoul-udesk3>
+	 <CAOh2x==_g+JQzTizgVTdH8Dyg_5+KpyYm+G_Ddu5mO15N6n-tw@mail.gmail.com>
+	 <1312431918.1536.559.camel@vkoul-udesk3>  <4E3A342E.5080503@st.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 04 Aug 2011 11:02:42 +0530
+Message-ID: <1312435962.1536.566.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Aug 2011, Borislav Petkov wrote:
-
-> > oom: change warning for deprecated oom_adj to avoid WARN_ONCE()
-> > 
-> > WARN_ONCE() emits a stack trace to the kernel log which leads userspace 
-> > parsers to interpret it as being a serious error or malfunction within the 
-> > kernel.  Change the warning to appear more like a lockdep warning while 
-> > still trying to preserve the intention of be8f684d73d8 (oom: make 
-> > deprecated use of oom_adj more verbose) to attract more attention to the 
-> > use of a deprecated interface.
-> > 
-> > Reported-by: Andi Kleen <andi@firstfloor.org>
-> > Signed-off-by: David Rientjes <rientjes@google.com>
-> > ---
-> >  fs/proc/base.c |   13 ++++++++++---
-> >  1 files changed, 10 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/fs/proc/base.c b/fs/proc/base.c
-> > --- a/fs/proc/base.c
-> > +++ b/fs/proc/base.c
-> > @@ -1066,6 +1066,7 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
-> >  	char buffer[PROC_NUMBUF];
-> >  	int oom_adjust;
-> >  	unsigned long flags;
-> > +	static bool warning_printed;
-> >  	int err;
-> >  
-> >  	memset(buffer, 0, sizeof(buffer));
-> > @@ -1118,9 +1119,15 @@ static ssize_t oom_adjust_write(struct file *file, const char __user *buf,
-> >  	 * Warn that /proc/pid/oom_adj is deprecated, see
-> >  	 * Documentation/feature-removal-schedule.txt.
-> >  	 */
-> > -	WARN_ONCE(1, "%s (%d): /proc/%d/oom_adj is deprecated, please use /proc/%d/oom_score_adj instead.\n",
-> > -		  current->comm, task_pid_nr(current), task_pid_nr(task),
-> > -		  task_pid_nr(task));
-> > +	if (!warning_printed) {
-> > +		warning_printed = true;
-> > +		printk("\n===============================================================================\n");
-> > +		printk("%s (%d): /proc/%d/oom_adj is deprecated, please use /proc/%d/oom_score_adj instead.\n",
-> > +			current->comm, task_pid_nr(current), task_pid_nr(task),
-> > +			task_pid_nr(task));
-> > +		printk("===============================================================================\n\n");
+On Thu, 2011-08-04 at 11:24 +0530, viresh kumar wrote:
+> On 08/04/2011 09:55 AM, Koul, Vinod wrote:
+> > Yes that's the whole point, today callback mechanism doesn't tell the
+> > _status_ of the transfer (which if we need change can be discussed as
+> > well), but to counter argue I have never been able to generate the error
+> > interrupt, are you able to do on your controller?
 > 
-> You're missing the KERN_WARNING level.
-
-It's intentional because (i) I'm using a multi-line notification with 
-newlines and (ii) I don't want to be considered as a kernel warning.  It's 
-just for consumption by userspace and doesn't indicate a kernel issue.
-
-> Why don't you use pr_warn_once +
-> pr_cont_once? No need for the warning_printed too, it gets defined in
-> another scope by the pr_warn_once macro automatically.
+> Yes, if we supply unaligned address, with access width as word, then it gives
+> error interrupt.
 > 
+> Regarding your point of updating callback for reporting errors,
+> I think it is required and should be a common issue.
+Okay till now no one has asked for it. We can add to callback arguments
+either a bool to indicate what is the transfer status or usual error
+code to also indicate what type of failure.
+I would prefer latter, if there is consensus on this, we can go thru
+with this approach, Dan your comments?
 
-Because using pr_warn_once + pr_cont_once for a multi-line notification is 
-racy and I don't want three separated static variables?  pr_cont_once() 
-shouldn't be used unless synchronized.
+-- 
+~Vinod
+
