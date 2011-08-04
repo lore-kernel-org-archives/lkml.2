@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501Ab1HDGgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 02:36:45 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43741 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750818Ab1HDGgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 02:36:39 -0400
-Date: Thu, 4 Aug 2011 16:36:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the final tree
- (devicetree tree related)
-Message-Id: <20110804163629.e866b8f3052b7ac34dc83912@canb.auug.org.au>
-In-Reply-To: <20110804142858.f7f2f128e5a038beb20aa87b@canb.auug.org.au>
-References: <20110804142858.f7f2f128e5a038beb20aa87b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__4_Aug_2011_16_36_29_+1000_oh2qPObbvnIYv2TP"
+	id S1751470Ab1HDGo4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 02:44:56 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:53436 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab1HDGot (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 02:44:49 -0400
+Date: Thu, 4 Aug 2011 14:44:36 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        Maxim Locktyukhin <maxim.locktyukhin@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] crypto, x86: SSSE3 based SHA1 implementation
+	for x86-64
+Message-ID: <20110804064436.GA16247@gondor.apana.org.au>
+References: <1311529994-7924-1-git-send-email-minipli@googlemail.com> <1311529994-7924-3-git-send-email-minipli@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1311529994-7924-3-git-send-email-minipli@googlemail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__4_Aug_2011_16_36_29_+1000_oh2qPObbvnIYv2TP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi All,
-
-On Thu, 4 Aug 2011 14:28:58 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
+On Sun, Jul 24, 2011 at 07:53:14PM +0200, Mathias Krause wrote:
 >
-> After merging the final tree, today's linux-next build (sparc64 defconfig)
-> failed like this:
->=20
-> drivers/built-in.o: In function `of_alias_scan':
-> (.init.text+0x6074): undefined reference to `early_init_dt_alloc_memory_a=
-rch'
->=20
-> Caused by commit 750f463a749e ("dt: add of_alias_scan and of_alias_get_id=
-").
->=20
-> I have reverted that patch for today.
+> With this algorithm I was able to increase the throughput of a single
+> IPsec link from 344 Mbit/s to 464 Mbit/s on a Core 2 Quad CPU using
+> the SSSE3 variant -- a speedup of +34.8%.
 
-And that commit has now gone into Linus' tree :-(
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Were you testing this on the transmit side or the receive side?
 
---Signature=_Thu__4_Aug_2011_16_36_29_+1000_oh2qPObbvnIYv2TP
-Content-Type: application/pgp-signature
+As the IPsec receive code path usually runs in a softirq context,
+does this code have any effect there at all?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+This is pretty similar to the situation with the Intel AES code.
+Over there they solved it by using the asynchronous interface and
+deferring the processing to a work queue.
 
-iQEcBAEBAgAGBQJOOj3tAAoJEDMEi1NhKgbsHHoIAIOwTWE6JmxfetCTY5cXTq7b
-TCBEt8ofp6rEX+ASx4YfICQiVkWn2lmD72xX2sHhgqcDdoTBoaFG6EJdR7hBdwQ9
-FvnWnWHhz88AU8JcGB5Rrk7StYV4WT4GrCAQZQvlnz63PrvGOG1pC37+HiDePx9k
-2sEaaPylIH4Sot0utOeAOOKBLWF1DJo2xmFvqusR//jTw/FTXhnuB3tgh2yyHzRQ
-XSYm9M6SbidlWZft0O/F93dcmZlmO0dzYyuMy/FWI4s8SZgYMJeK3FNThRlkn7QW
-1QRGaaWuKgW76uWfWpf4vb6iY7UgBwYQkJGf32ZnCOZd0EUihx0em15yXus1vv0=
-=xyZ9
------END PGP SIGNATURE-----
+This also avoids the situation where you have an FPU/SSE using
+process that also tries to transmit over IPsec thrashing the
+FPU state.
 
---Signature=_Thu__4_Aug_2011_16_36_29_+1000_oh2qPObbvnIYv2TP--
+Now I'm still happy to take this because hashing is very different
+from ciphers in that some users tend to hash small amounts of data
+all the time.  Those users will typically use the shash interface
+that you provide here.
+
+So I'm interested to know how much of an improvement this is for
+those users (< 64 bytes).  If you run the tcrypt speed tests that
+should provide some useful info.
+
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
