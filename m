@@ -1,46 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab1HDUoH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 16:44:07 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59698 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234Ab1HDUn7 (ORCPT
+	id S1754336Ab1HDUqS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 16:46:18 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33754 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753234Ab1HDUqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 16:43:59 -0400
-From: Bojan Prtvar <prtvar.b@gmail.com>
-To: jkosina@suse.cz
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Bojan Prtvar <prtvar.b@gmail.com>
-Subject: [PATCH 2/2] HID: kfree() NULL pointer cleanup
-Date: Thu,  4 Aug 2011 22:43:46 +0200
-Message-Id: <1312490626-14838-1-git-send-email-prtvar.b@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Thu, 4 Aug 2011 16:46:12 -0400
+Date: Thu, 4 Aug 2011 22:46:06 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Chris Wright <chrisw@redhat.com>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Anthony Foiani <anthony.foiani@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] uio/gen-pci: don't enable interrupts in ISR
+Message-ID: <20110804204606.GA19724@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checking for NULL pointers before kfree() is redundant.
+As reported by Anthony in a short way:
 
-Signed-off-by: Bojan Prtvar <prtvar.b@gmail.com>
+|irq 17 handler uio_interrupt+0x0/0x68 enabled interrupts
+|NIP [c0069d84] handle_irq_event_percpu+0x260/0x26c
+
+The problem here is that spin_unlock_irq() enables the interrupts which
+is a no-no in interrupt context because they always run with interrupts
+disabled. This is the case even if IRQF_DISABLED has not been specified
+since v2.6.35. Therefore this patch uses simple spin_locks().
+
+Looking at it further here is only one spot where the lock is hold. So
+giving the fact that an ISR is not reentrant and is not executed on two
+cpus at the same time why do we need a lock here?
+The driver lacks of ->irqcontrol function so I guess the interrupt is
+enabled via direct PCI-access in userland. So there is _no_ protection
+against read-modify-write of user vs kernel so even that
+pci_block_user_cfg_access() is kinda pointless.
+pci_block_user_cfg_access() in open() + ->irqcontrol() should fix this.
+Since changes the API of this driver I leave it up to the relevant users
+what to do.
+
+Cc: <stable@kernel.org> # .35 and later
+Reported-and-Tested-by: Anthony Foiani <anthony.foiani@gmail.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/hid/hid-zydacron.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ drivers/uio/uio_pci_generic.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hid/hid-zydacron.c b/drivers/hid/hid-zydacron.c
-index e903715..1ad85f2 100644
---- a/drivers/hid/hid-zydacron.c
-+++ b/drivers/hid/hid-zydacron.c
-@@ -201,9 +201,7 @@ static void zc_remove(struct hid_device *hdev)
- 	struct zc_device *zc = hid_get_drvdata(hdev);
+diff --git a/drivers/uio/uio_pci_generic.c b/drivers/uio/uio_pci_generic.c
+index fc22e1e..5c82681 100644
+--- a/drivers/uio/uio_pci_generic.c
++++ b/drivers/uio/uio_pci_generic.c
+@@ -57,7 +57,7 @@ static irqreturn_t irqhandler(int irq, struct uio_info *info)
+ 	BUILD_BUG_ON(PCI_COMMAND % 4);
+ 	BUILD_BUG_ON(PCI_COMMAND + 2 != PCI_STATUS);
  
- 	hid_hw_stop(hdev);
--
--	if (NULL != zc)
--		kfree(zc);
-+	kfree(zc);
+-	spin_lock_irq(&gdev->lock);
++	spin_lock(&gdev->lock);
+ 	pci_block_user_cfg_access(pdev);
+ 
+ 	/* Read both command and status registers in a single 32-bit operation.
+@@ -83,7 +83,7 @@ static irqreturn_t irqhandler(int irq, struct uio_info *info)
+ done:
+ 
+ 	pci_unblock_user_cfg_access(pdev);
+-	spin_unlock_irq(&gdev->lock);
++	spin_unlock(&gdev->lock);
+ 	return ret;
  }
  
- static const struct hid_device_id zc_devices[] = {
 -- 
-1.7.1
+1.7.4.4
 
