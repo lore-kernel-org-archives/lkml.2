@@ -1,113 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab1HDPGL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 11:06:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4816 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754008Ab1HDPGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 11:06:10 -0400
-Date: Thu, 4 Aug 2011 11:06:03 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
-Message-ID: <20110804150603.GL2096@zod.bos.redhat.com>
-References: <20110801154636.GA2096@zod.bos.redhat.com>
- <CA+5PVA5EZWHv_tuzA22twGQ7rZZ2zhqi1zs6OiFbpORiiYbzMg@mail.gmail.com>
- <20110804140438.GT13065@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110804140438.GT13065@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754765Ab1HDPGq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 11:06:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54945 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab1HDPGo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 11:06:44 -0400
+Subject: Re: select_task_rq_fair: WARNING: at kernel/lockdep.c
+ match_held_lock
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+In-Reply-To: <20110804141306.GA3536@swordfish.minsk.epam.com>
+References: <20110804141306.GA3536@swordfish.minsk.epam.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 04 Aug 2011 17:05:58 +0200
+Message-ID: <1312470358.16729.25.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 07:04:38AM -0700, Paul E. McKenney wrote:
-> On Thu, Aug 04, 2011 at 07:46:03AM -0400, Josh Boyer wrote:
-> > On Mon, Aug 1, 2011 at 11:46 AM, Josh Boyer <jwboyer@redhat.com> wrote:
-> > > We're seeing a scheduling while atomic backtrace in rawhide from pidmap_init
-> > > (https://bugzilla.redhat.com/show_bug.cgi?id=726877).  While this seems
-> > > mostly harmless given that there isn't anything else to schedule to at
-> > > this point, I do wonder why things are marked as needing rescheduled so
-> > > early.
-> > >
-> > > We get to might_sleep through the might_sleep_if call in
-> > > slab_pre_alloc_hook because both kzalloc and KMEM_CACHE are called with
-> > > GFP_KERNEL.  That eventually has a call chain like:
-> > >
-> > > might_resched->_cond_resched->should_resched
-> > >
-> > > which apparently returns true.  Why the initial thread says it should
-> > > reschedule at this point, I'm not sure.
-> > >
-> > > I tried cheating by making the kzalloc call in pidmap_init use GFP_IOFS
-> > > instead of GFP_KERNEL to avoid the might_sleep_if call, and that worked
-> > > but I can't do the same for the kmalloc calls in kmem_cache_create, so
-> > > getting to the bottom of why should_resched is returning true seems to
-> > > be a better approach.
-> > 
-> > A bit more info on this.
-> > 
-> > What seems to be happening is that late_time_init is called, which
-> > gets around to calling hpet_time_init, which enables the HPET, and
-> > then calls setup_default_timer_irq.  setup_default_timer_irq in
-> > arch/x86/kernel/time.c calls setup_irq with the timer_interrupt
-> > handler.
-> > 
-> > At this point the timer interrupt hits, and then tick_handle_periodic is called
-> > 
-> > timer int
-> > tick_handle_periodic -> tick_periodic -> update_process_times ->
-> > rcu_check_callbacks -> rcu_pending ->
-> > __rcp_pending -> set_need_resched (this is called around line 1685 in
-> > kernel/rcutree.c)
-> > 
-> > So what's happening is that once the timer interrupt starts, RCU is
-> > coming in and marking current as needing reschedule, and that in turn
-> > makes the slab_pre_alloc_hook -> might_sleep_if -> might_sleep ->
-> > might_resched -> _cond_resched to trigger when pidmap_init calls
-> > kzalloc later on and produce the oops below later on in the init
-> > sequence.  I believe we see this because of all the debugging options
-> > we have enabled in the kernel configs.
-> > 
-> > This might be normal for all I know, but the oops is rather annoying.
-> > It seems RCU isn't in a quiescent state, we aren't preemptible yet,
-> > and it _really_ wants to reschedule things to make itself happy.
-> > Anyone have any thoughts on how to either keep RCU from marking
-> > current as needing reschdule so early, or otherwise working around the
-> > bug?
+On Thu, 2011-08-04 at 17:13 +0300, Sergey Senozhatsky wrote:
+> Hello,
+> Got the following trace on 3.0-git19 (07865-g1280ea8):
 > 
-> The deal is that RCU realizes that RCU needs a quiescent state from
-> this CPU.  The set_need_resched() is intended to cause one.  But there
-> is not much point this early in boot, because the scheduler isn't going
-> to do anything anyway.  I can prevent this with the following patch,
-> but isn't this same thing possible later at runtime?
+> [  132.794685] WARNING: at kernel/lockdep.c:3117 match_held_lock+0xf6/0x12e()
+> [  132.794687] Hardware name: Aspire 5741G    
+> [  132.794689] Modules linked in: kvm_intel kvm tun ipv6 microcode snd_hda_codec_hdmi snd_hda_codec_realtek broadcom snd_hda_intel snd_hda_codec tg3 snd_pcm snd_timer snd soundcore acer_wmi evdev libphy sparse_keymap psmouse snd_page_alloc
+> pcspkr battery ac wmi button ehci_hcd sr_mod cdrom usbcore sd_mod ahci
+> [  132.794731] Pid: 4029, comm: qemu-system-x86 Not tainted 3.1.0-dbg-07865-g1280ea8-dirty #668
+> [  132.794733] Call Trace:
+> [  132.794736]  <IRQ>  [<ffffffff8103e4e0>] warn_slowpath_common+0x7e/0x96
+> [  132.794744]  [<ffffffff8103e50d>] warn_slowpath_null+0x15/0x17
+> [  132.794748]  [<ffffffff8106dcee>] match_held_lock+0xf6/0x12e
+> [  132.794751]  [<ffffffff8106dd88>] lock_is_held+0x62/0xa6
+> [  132.794757]  [<ffffffff81086471>] cgroup_lock_is_held+0x10/0x12
+> [  132.794762]  [<ffffffff810368a2>] set_task_cpu+0x1ac/0x3e3
+> [  132.794766]  [<ffffffff8103856a>] ? select_task_rq_fair+0x5c0/0x9ca
+> [  132.794769]  [<ffffffff8103748d>] ? try_to_wake_up+0x29/0x28b
+> [  132.794773]  [<ffffffff8103748d>] ? try_to_wake_up+0x29/0x28b
+> [  132.794779]  [<ffffffff812552a5>] ? do_raw_spin_lock+0x6b/0x122
+> [  132.794783]  [<ffffffff81037603>] try_to_wake_up+0x19f/0x28b
+> [  132.794787]  [<ffffffff810603ed>] ? update_rmtp+0x65/0x65
+> [  132.794790]  [<ffffffff8103770e>] wake_up_process+0x10/0x12
+> [  132.794794]  [<ffffffff8106040a>] hrtimer_wakeup+0x1d/0x21
+> [  132.794797]  [<ffffffff81060816>] __run_hrtimer+0x1b1/0x372
+> [  132.794800]  [<ffffffff810613a2>] hrtimer_interrupt+0xe6/0x1b0
+> [  132.794805]  [<ffffffff810185d5>] smp_apic_timer_interrupt+0x80/0x93
+> [  132.794810]  [<ffffffff81493af3>] apic_timer_interrupt+0x73/0x80
+> [  132.794812]  <EOI>  [<ffffffff810fb998>] ? do_mmu_notifier_register+0x66/0x125
+> [  132.794822]  [<ffffffff810ec132>] ? mm_take_all_locks+0x10b/0x165
+> [  132.794826]  [<ffffffff810ec160>] ? mm_take_all_locks+0x139/0x165
+> [  132.794829]  [<ffffffff810ec132>] ? mm_take_all_locks+0x10b/0x165
+> [  132.794832]  [<ffffffff810fb9a0>] do_mmu_notifier_register+0x6e/0x125
+> [  132.794836]  [<ffffffff810fba72>] mmu_notifier_register+0xe/0x10
+> [  132.794852]  [<ffffffffa01fcc0d>] kvm_dev_ioctl+0x297/0x400 [kvm]
+> [  132.794857]  [<ffffffff81119022>] do_vfs_ioctl+0x46c/0x4ad
+> [  132.794862]  [<ffffffff8110a68d>] ? fget_light+0xed/0x2a7
+> [  132.794867]  [<ffffffff81492fca>] ? sysret_check+0x2e/0x69
+> [  132.794871]  [<ffffffff811190b4>] sys_ioctl+0x51/0x75
+> [  132.794875]  [<ffffffff81492f92>] system_call_fastpath+0x16/0x1b
+> [  132.794877] ---[ end trace 298584c4014cd2b8 ]---
 
-Possibly, but I'm not sure at the moment.  The patch avoids the oops and
-I haven't seen another once in some brief runtime testing.  (Trivial
-fixing to make it apply to current linus.)
-
-> You really do need to be able to handle set_need_resched() at random
-> times, and at first glance it appears to me that the warning could be
-> triggered at runtime as well.  If so, the real fix is elsewhere, right?
-> Especially given that the patch imposes extra cost at runtime...
-
-In staring at it for a while it seems to be a combination of being in
-atomic context according to the scheduler but things in early boot using
-GFP_KERNEL.  At the point we're at in the boot, that is perfectly legal
-as it's not being called from an interrupt handler and the mm subsystem
-should be all setup, but we're still really early in boot and preempt is
-disabled.  As I mentioned before, KMEM_CACHE calls kmalloc with
-GFP_KERNEL and I don't think we want to change that.
-
-Once we're past early boot, I would expect that things running in true
-atomic context won't be calling KMEM_CACHE or using GFP_KERNEL.  Or
-maybe I hope?
-
-I understand the desire to avoid another conditional, but I certainly
-don't have any other suggestions at the moment.
-
-josh
+Curious, how easy is that to reproduce? That really shouldn't happen and
+its not immediately obvious how it could happen.
