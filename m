@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab1HDW4X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 18:56:23 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:55883 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753556Ab1HDW4Q (ORCPT
+	id S1755460Ab1HDW5R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 18:57:17 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:50393 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753556Ab1HDW5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 18:56:16 -0400
-X-Sasl-enc: mjmm/hyDFtR00Md6+nfStimWNTOpJ+R7tenQusTuj0eC 1312498575
-Date: Thu, 4 Aug 2011 15:56:03 -0700
-From: Greg KH <greg@kroah.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        libusb-devel@lists.sourceforge.net, Alexander Graf <agraf@suse.de>,
-        Gerd Hoffmann <kraxel@redhat.com>, hector@marcansoft.com,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Theodore Kilgore <kilgota@banach.math.auburn.edu>,
-        Adam Baker <linux@baker-net.org.uk>
-Subject: Re: USB mini-summit at LinuxCon Vancouver
-Message-ID: <20110804225603.GA2557@kroah.com>
-References: <20110610002103.GA7169@xanatos>
- <4E3B1B7B.2040501@infradead.org>
+	Thu, 4 Aug 2011 18:57:11 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] [GIT PULL] idle patches for Linux 3.1
+Organization: Texas Instruments, Inc.
+References: <alpine.LFD.2.02.1108031627060.19398@x980>
+	<CA+55aFxikiro4cEwGEOMCGUswyPsaAwyspP1cFUviJ5OUKOZJw@mail.gmail.com>
+	<alpine.LFD.2.02.1108040030550.29492@x980>
+Date: Thu, 04 Aug 2011 15:57:07 -0700
+In-Reply-To: <alpine.LFD.2.02.1108040030550.29492@x980> (Len Brown's message
+	of "Thu, 04 Aug 2011 01:03:40 -0400 (EDT)")
+Message-ID: <87bow423b0.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E3B1B7B.2040501@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 07:21:47PM -0300, Mauro Carvalho Chehab wrote:
-> I know that this problem were somewhat solved for 3G modems, with the usage
-> of the userspace problem usb_modeswitch, and with some quirks for the USB
-> storage driver, but I'm not sure if such tricks will scale forever, as more
-> functions are seen on some USB devices.
+Len Brown <lenb@kernel.org> writes:
 
-Well, no matter how it "scales" it needs to be done in userspace, like
-usb_modeswitch does.  We made that decision a while ago, and it is
-working out very well.  I see no reason why you can't do it in userspace
-as well as that is the easiest place to control this type of thing.
+> and I'm here to support them if anything goes wrong.
 
-I thought we had a long discussion about this topic a while ago and came
-to this very conclusion.  Or am I mistaken?
+Here's your first opportuntity for support. :)
 
-thanks,
+I see Linus has already pulled this, but it doesn't compile on ARM or
+SH as I just found out, and Trinabh poined out in reply to patch 5/5.
 
-greg k-h
+Here's a fix.
+
+Kevin
+
+>From f8c825215f824b01a3f33416198def2fd685c7cf Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@ti.com>
+Date: Thu, 4 Aug 2011 15:49:51 -0700
+Subject: [PATCH] cpuidle: ARM/SH: fix use of cpuidle_idle_call()
+
+commit a0bfa1373859e9d11dc92561a8667588803e42d8 (cpuidle: stop
+depending on pm_idle) introduced a call to cpuidle_call_idle() in the
+ARM and SH idle paths, but this function doesn't exist.  Use
+cpuidle_idle_call()
+
+Reported-by: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
+Cc: Len Brown <len.brown@intel.com>
+Signed-off-by: Kevin Hilman <khilman@ti.com>
+---
+ arch/arm/kernel/process.c |    2 +-
+ arch/sh/kernel/idle.c     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index d7ee0d4..1a347f4 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -197,7 +197,7 @@ void cpu_idle(void)
+ 				cpu_relax();
+ 			} else {
+ 				stop_critical_timings();
+-				if (cpuidle_call_idle())
++				if (cpuidle_idle_call())
+ 					pm_idle();
+ 				start_critical_timings();
+ 				/*
+diff --git a/arch/sh/kernel/idle.c b/arch/sh/kernel/idle.c
+index 3c45de1..32114e0 100644
+--- a/arch/sh/kernel/idle.c
++++ b/arch/sh/kernel/idle.c
+@@ -101,7 +101,7 @@ void cpu_idle(void)
+ 			local_irq_disable();
+ 			/* Don't trace irqs off for idle */
+ 			stop_critical_timings();
+-			if (cpuidle_call_idle())
++			if (cpuidle_idle_call())
+ 				pm_idle();
+ 			/*
+ 			 * Sanity check to ensure that pm_idle() returns
+-- 
+1.7.6
