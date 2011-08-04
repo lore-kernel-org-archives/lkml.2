@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab1HDANx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 20:13:53 -0400
-Received: from plexity.net ([206.123.115.38]:52537 "EHLO plexity.net"
+	id S932076Ab1HDAX5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 20:23:57 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:55287 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756043Ab1HDANq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 20:13:46 -0400
-Date: Wed, 3 Aug 2011 17:13:46 -0700
-From: Deepak Saxena <dsaxena@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>, rmk@arm.linux.org.uk,
-        John Stultz <johnstul@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] Replace LATCH with PIT_LATCH in i8253 clocksource driver
-Message-ID: <20110804001346.GG23503@plexity.net>
-Reply-To: dsaxena@plexity.net
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756122Ab1HDAXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 20:23:47 -0400
+Date: Thu, 4 Aug 2011 10:23:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: akpm@linux-foundation.org, linux-media@vger.kernel.org,
+        mchehab@infradead.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: [PATCH -mmotm] media: video/adp1653.c needs module.h
+Message-Id: <20110804102337.7a91f4d91d887ccd0168e4f8@canb.auug.org.au>
+In-Reply-To: <20110803101226.0d17b23e.rdunlap@xenotime.net>
+References: <201108022357.p72NvsZM022462@imap1.linux-foundation.org>
+	<20110803101226.0d17b23e.rdunlap@xenotime.net>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__4_Aug_2011_10_23_37_+1000_.lv._/j8Qp6KHUCM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i8253 clockevent & clocksource driver uses PIT_LATCH
-except for two cases where it uses LATCH:
+--Signature=_Thu__4_Aug_2011_10_23_37_+1000_.lv._/j8Qp6KHUCM
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-1)
-	/* VIA686a test code... reset the latch if count > max + 1 */
-	if (count > LATCH) {
+Hi Randy,
 
-LATCH is based on CLOCK_TICK_RATE which is defined as 
-PIT_TICK_RATE on x86 so this should just be the later.
+On Wed, 3 Aug 2011 10:12:26 -0700 Randy Dunlap <rdunlap@xenotime.net> wrote:
+>
+> From: Randy Dunlap <rdunlap@xenotime.net>
+>=20
+> adp1653.c uses interfaces that are provided by <linux/module.h>
+> and needs to include that header file to fix build errors.
+>=20
+> drivers/media/video/adp1653.c:453: warning: data definition has no type o=
+r storage class
+> drivers/media/video/adp1653.c:453: warning: parameter names (without type=
+s) in function declaration
+> drivers/media/video/adp1653.c:474: error: 'THIS_MODULE' undeclared (first=
+ use in this function)
+> and more.
+>=20
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 
-2)
-	...
-	switch (mode) {
-	case CLOCK_EVT_MODE_PERIODIC:
-		/* binary, mode 2, LSB/MSB, ch 0 */
-		outb_p(0x34, PIT_MODE);
-		outb_p(LATCH & 0xff , PIT_CH0);	/* LSB */
-		outb_p(LATCH >> 8 , PIT_CH0);		/* MSB */
-	...
+That is a bug that is now in Linus' tree and this fix is pending in the
+moduleh tree in linux-next.  So this patch should go to Linus.
 
-MIPS and ARM are the only other arches that use this driver. In
-the MIPS case CLOCK_TICK_RATE is defined as the same value as
-PIT_TICK_RATE. For ARM, the only machine that uses it is
-Footbridge which has a totally bogus CLOCK_TICK_RATE according
-to the comments. Furthermore, the clockevent_i8253_init()
-initializes the clockevent with PIT_TIC_RATE, so there's
-no reason to use the generic LATCH.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-This is part of work to remove and depecrate the global
-CLOCK_TICK_RATE symbol.
+--Signature=_Thu__4_Aug_2011_10_23_37_+1000_.lv._/j8Qp6KHUCM
+Content-Type: application/pgp-signature
 
-Signed-off-by: Deepak Saxena <dsaxena@linaro.org>
----
- drivers/clocksource/i8253.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-diff --git a/drivers/clocksource/i8253.c b/drivers/clocksource/i8253.c
-index 27c49e6..e7cab2d 100644
---- a/drivers/clocksource/i8253.c
-+++ b/drivers/clocksource/i8253.c
-@@ -53,7 +53,7 @@ static cycle_t i8253_read(struct clocksource *cs)
- 	count |= inb_p(PIT_CH0) << 8;
- 
- 	/* VIA686a test code... reset the latch if count > max + 1 */
--	if (count > LATCH) {
-+	if (count > PIT_LATCH) {
- 		outb_p(0x34, PIT_MODE);
- 		outb_p(PIT_LATCH & 0xff, PIT_CH0);
- 		outb_p(PIT_LATCH >> 8, PIT_CH0);
-@@ -114,8 +114,8 @@ static void init_pit_timer(enum clock_event_mode mode,
- 	case CLOCK_EVT_MODE_PERIODIC:
- 		/* binary, mode 2, LSB/MSB, ch 0 */
- 		outb_p(0x34, PIT_MODE);
--		outb_p(LATCH & 0xff , PIT_CH0);	/* LSB */
--		outb_p(LATCH >> 8 , PIT_CH0);		/* MSB */
-+		outb_p(PIT_LATCH & 0xff , PIT_CH0);	/* LSB */
-+		outb_p(PIT_LATCH >> 8 , PIT_CH0);		/* MSB */
- 		break;
- 
- 	case CLOCK_EVT_MODE_SHUTDOWN:
--- 
-1.7.4.1
+iQEcBAEBAgAGBQJOOeaJAAoJEDMEi1NhKgbs87UH/30egYvPcRfZQ3gF+enSutHA
+sqn+pfBMKC9inTWgoQG+Fexryg2KHU9XDEMox7sXFtlj16nHdZB6yQ/wNoGusbLc
+FSjUIjIIYdE99Xr2WfXXVSa8qjV77OWvq4/FHxgTtoIE1ZHJxcyHrG31M7sxj1K0
+LPJQrRSM+XDrVnfl5L0Q/Yza3Z5t6Rv+YvpVzAiLL2VI/iXxDfgUc0XX0mfAzRT/
+FDpC68KIoMVKEeSQonKI+bbnLY721kE0A28Fdw4QrTLXq1byXzhmlyA6d33WwiS+
+wmxjeFf/HZoBbNAgGlohRRVwBzXJrXXFs/af0BuCcNbL+b4qkAXsA7gNzHypSYs=
+=PorZ
+-----END PGP SIGNATURE-----
 
+--Signature=_Thu__4_Aug_2011_10_23_37_+1000_.lv._/j8Qp6KHUCM--
