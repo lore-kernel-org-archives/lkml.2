@@ -1,115 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019Ab1HDWYF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 18:24:05 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48540 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755547Ab1HDWX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 18:23:58 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [RFC][PATCH] PM / Freezer: Freeze filesystems along with freezing processes (was: Re: PM / hibernate xfs lock up / xfs_reclaim_inodes_ag)
-Date: Fri, 5 Aug 2011 00:25:09 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0+; KDE/4.6.0; x86_64; ; )
-Cc: Nigel Cunningham <nigel@tuxonice.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>, Christoph <cr2005@u-club.de>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
-References: <4E1C70AD.1010101@u-club.de> <20110803172922.GA2126@ucw.cz> <201108041127.30944.rjw@sisk.pl>
-In-Reply-To: <201108041127.30944.rjw@sisk.pl>
+	id S1755987Ab1HDWbT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 18:31:19 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:22865 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190Ab1HDWbM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 18:31:12 -0400
+Date: Thu, 4 Aug 2011 18:30:18 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, xen-devel@lists.xensource.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        virtualization@lists.linux-foundation.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-next@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Xen-devel] Re: linux-next: Tree for July 25 (xen)
+Message-ID: <20110804223018.GA4370@dumpdata.com>
+References: <20110725162542.39ea8d8cbd51604523635c1a@canb.auug.org.au>
+ <20110725144629.b752bf14.rdunlap@xenotime.net>
+ <20110804193534.GB12729@elte.hu>
+ <20110804195539.GA11198@dumpdata.com>
+ <20110804131516.c4da6595.rdunlap@xenotime.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108050025.09792.rjw@sisk.pl>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110804131516.c4da6595.rdunlap@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A020207.4E3B1D83.0061:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, August 04, 2011, Rafael J. Wysocki wrote:
-> On Wednesday, August 03, 2011, Pavel Machek wrote:
-> > Hi!
+> > >  arch/x86/xen/trace.c:44:2: error: array index in initializer not of integer type
+> > >  arch/x86/xen/trace.c:44:2: error: (near initialization for ‘xen_hypercall_names’)
+> > >  arch/x86/xen/trace.c:45:1: error: ‘__HYPERVISOR_arch_4’ undeclared here (not in a function)
+> > >  arch/x86/xen/trace.c:45:2: error: array index in initializer not of integer type
+> > >  arch/x86/xen/trace.c:45:2: error: (near initialization for ‘xen_hypercall_names’)
 > > 
-> > > Freeze all filesystems during the freezing of tasks by calling
-> > > freeze_bdev() for each of them and thaw them during the thawing
-> > > of tasks with the help of thaw_bdev().
+> > Oh, that I haven't seen. Can you send me the .config for that please.
+> 
+> You can't be trying very hard then.  I see lots of these (but no,
+
+Hm, It is not obvious to me what is causing that compile failure. Any ideas?
+
+> I haven't reported them.  One can grow weary of reporting xen bugs.)
+> 
+> 
+> > > even after:
 > > > 
-> > > This is needed by hibernation, because some filesystems (e.g. XFS)
-> > > deadlock with the preallocation of memory used by it if the memory
-> > > pressure caused by it is too heavy.
+> > >  b3c4b9825075: xen/tracing: fix compile errors when tracing is disabled.
 > > > 
-> > > The additional benefit of this change is that, if something goes
-> > > wrong after filesystems have been frozen, they will stay in a
-> > > consistent state and journal replays won't be necessary (e.g. after
-> > > a failing suspend or resume).  In particular, this should help to
-> > > solve a long-standing issue that in some cases during resume from
-> > > hibernation the boot loader causes the journal to be replied for the
-> > > filesystem containing the kernel image and initrd causing it to
-> > > become inconsistent with the information stored in the hibernation
-> > > image.
+> > > Btw., that the heck is going on with the commit that introduced the 
+> > > build failure:
+> > > 
+> > >  commit bd9ddc875b6659f9f74dcfd285c472bc58041abd
+> > >  Author:     Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> > >  AuthorDate: Mon Jun 20 17:52:13 2011 -0700
+> > >  Commit:     Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> > >  CommitDate: Mon Jul 18 15:43:46 2011 -0700
+> > > 
+> > > It was apparently rebased shortly before the merge window and sent to 
 > > 
-> > > +/**
-> > > + * freeze_filesystems - Force all filesystems into a consistent state.
-> > > + */
-> > > +void freeze_filesystems(void)
-> > > +{
-> > > +	struct super_block *sb;
-> > > +
-> > > +	lockdep_off();
+> > Well, the rebase I get - it was done on top of the merge that introduced
+> > the new functionality.
 > > 
-> > Ouch. So... why do we need to silence this?
+> > > Linus 3 days later, with little to no linux-next testing ...
+> > 
+> > <Hmm> It did fix the compile problem.. albeit it created another one.
+> > > 
+> > > I'm absolutely unhappy about how the Xen tree is being run. It's 
+> > > using a sloppy, crappy workflow and it is producing crap.
+> > 
+> > Do you have a manual of how you guys run your workflow?
 > 
-> So that it doesn't complain? :-)
-> 
-> I'll need some time to get the exact details here.
+> I just run 30-50 randconfigs per night (cron job).
 
-So, this is because ext3_freeze() that doesn't call
-journal_unlock_updates() on success, which quite frankly looks like
-a bug in ext3 to me.  At least that's different from what ext4 does
-in exactly the same situation (which looks correct).
-
-If ext3_freeze() called journal_unlock_updates() on success too and
-the call to journal_unlock_updates() is removed from ext3_unfreeze(),
-we wouldn't need that lockdep_off()/lockdep_on() around the loop.
-
-I need someone with ext3/ext4 knowledge to comment here, though.
-
-Moreover, I'm not sure if other filesystems don't do such things.
-
-Anyway, this is just a false-positive, even with the ext3 code as is.
-
-> > > +	/*
-> > > +	 * Freeze in reverse order so filesystems dependant upon others are
-> > > +	 * frozen in the right order (eg. loopback on ext3).
-> > > +	 */
-> > > +	list_for_each_entry_reverse(sb, &super_blocks, s_list) {
-> > > +		if (!sb->s_root || !sb->s_bdev ||
-> > > +		    (sb->s_frozen == SB_FREEZE_TRANS) ||
-> > > +		    (sb->s_flags & MS_RDONLY) ||
-> > > +		    (sb->s_flags & MS_FROZEN))
-> > > +			continue;
-> > 
-> > Should we stop NFS from modifying remote server, too?
-> 
-> What do you mean exactly?
-> 
-> > Plus... ext3 writes to read-only filesystems on mount; not sure if it
-> > does it later. But RDONLY means 'user cant write to it' not 'bdev will
-> > not be modified'. Should we freeze all?
-> > 
-> > How can 'already frozen' happen?
-> > 
-> > > +	list_for_each_entry(sb, &super_blocks, s_list)
-> > > +		if (sb->s_flags & MS_FROZEN) {
-> > > +			sb->s_flags &= ~MS_FROZEN;
-> > > +			thaw_bdev(sb->s_bdev, sb);
-> > > +		}
-> > 
-> > ...because we'll unfreeze it even if we did not freeze it...
-> 
-> So we need not check MS_FROZEN in freeze_filesystems().  OK
-
-Thanks,
-Rafael
+Ok, do you have an mailing list where you send the output too?
