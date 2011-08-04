@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab1HDQfS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 12:35:18 -0400
-Received: from waldorf.bytemark.co.uk ([212.110.162.22]:42049 "EHLO
-	waldorf.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084Ab1HDQfP (ORCPT
+	id S1752883Ab1HDQhz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 12:37:55 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43105 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab1HDQht convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 12:35:15 -0400
-Date: Thu, 4 Aug 2011 12:34:51 -0400
-From: "Emilio G. Cota" <cota@braap.org>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: Manohar Vanga <manohar.vanga@cern.ch>, gregkh@suse.de,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] staging: vme: add functions for bridge module
- refcounting
-Message-ID: <20110804163451.GA18422@flamenco.cs.columbia.edu>
-References: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch>
- <1312194053-32310-6-git-send-email-manohar.vanga@cern.ch>
- <4E39555C.30507@ge.com>
- <20110803140630.GA29460@becoht-mvanga>
- <20110803152317.GA21903@flamenco.cs.columbia.edu>
- <4E3A4904.3040007@ge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E3A4904.3040007@ge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 4 Aug 2011 12:37:49 -0400
+Subject: Re: [ANNOUNCE] 3.0-rt6 : BUG at kernel/trmutex.c:724!
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tim Sander <tim.sander@hbm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <201108041834.20575.tim.sander@hbm.com>
+References: <alpine.LFD.2.02.1107282213000.31246@ionos>
+	 <201108041834.20575.tim.sander@hbm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 04 Aug 2011 18:37:09 +0200
+Message-ID: <1312475829.16729.45.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 08:23:48 +0100, Martyn Welch wrote:
-> On 03/08/11 16:23, Emilio G. Cota wrote:
-> > On Wed, Aug 03, 2011 at 16:06:30 +0200, Manohar Vanga wrote:
-> >>> Can we not do this inside vme_master_request, vme_slave_request, etc?
-> >>> I.e. Add reference count when resources are given out.
-> >>> This would then be done in the vme_*_free routines.
-> >>
-> >> I agree this would be much better. I will change this and resend :)
-> > 
-> > To me it seems better to keep this as is, to be
-> > used by .probe and .release methods, in the same way
-> > usb_get_dev() and usb_put_dev() are used by usb drivers.
+On Thu, 2011-08-04 at 18:34 +0200, Tim Sander wrote:
+> I was really happy to find 6 preempt rt releases for the 3.0 kernel after holliday :-).
 > 
-> The description of the functions in usb.c suggests, to me at least, that these
-> functions are the equivalent to the vme_*_request functions in the vme code.
-> Being called when a function binds to an interface and when it is finished
-> with it.
+> So i went for a testdrive and found an error: The error occurs in a non released non 
+> mainline kernel and is available from me upon request. It has been working on 
+> (2.6.39,3.0) but is not working on 3.0-rt6. It fails in an interrupt which calls: 
+> 
+> wake_up_interruptible(&hbm_device.wait);
+> 
+> The waitque has been initialized with:
+> init_waitqueue_head(&hbm_device.wait);
+> before interrupts where enabled. So i don't think its a race. 
 
-Which functions? usb_get_dev and usb_put_dev? These _only_
-in/de-crement the refcounts. They're called by .probe and
-.release methods of usb drivers. The "resources" or "services"
-the callers acquire from the usb bridge is orthogonal.
-
-The point is to separate incrementing the refcounts from other
-functionality. We have currently five "request" functions:
-vme_{master,slave,dma,irq,lm}_request. The average driver
-would call two or three of these for each device. This would
-result in a fairly large refcount for the bridge, that would
-tell us nothing about how many users (devices) are hanging in
-there--"yeah, we have lots" is not good enough.
-
-So no, usb_get_dev and usb_put_dev are not equivalent to our
-vme_*_request functions. The get/put functions only operate
-on the refcounts, to mark the dependency of a struct device
-on another device (the bridge) so that the parent cannot
-be removed. This is the way things are done in other much
-more mature subsystems, I don't see why we should do it
-differently.
-
-		Emilio
+looks like it tries to use waitqueues from hardirq context, that's a
+no-no for -rt. That interrupt should be a threaded interrupt.
