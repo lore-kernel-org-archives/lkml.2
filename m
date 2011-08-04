@@ -1,73 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731Ab1HDKJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 06:09:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11081 "EHLO mx1.redhat.com"
+	id S1753823Ab1HDKJm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 06:09:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10107 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753416Ab1HDKIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 06:08:41 -0400
+	id S1753468Ab1HDKIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 06:08:47 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 06/10] tracing/filter: Change count_leafs function to use walk_pred_tree
-Date: Thu,  4 Aug 2011 12:08:22 +0200
-Message-Id: <1312452506-5100-7-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 09/10] tracing/filter: Change filter_match_preds function to use walk_pred_tree
+Date: Thu,  4 Aug 2011 12:08:25 +0200
+Message-Id: <1312452506-5100-10-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1312452506-5100-1-git-send-email-jolsa@redhat.com>
 References: <1312452506-5100-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changing count_leafs function to use unified predicates tree
+Changing filter_match_preds function to use unified predicates tree
 processing.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- kernel/trace/trace_events_filter.c |   45 +++++++++--------------------------
- 1 files changed, 12 insertions(+), 33 deletions(-)
+ kernel/trace/trace_events_filter.c |  119 +++++++++++++++++-------------------
+ 1 files changed, 55 insertions(+), 64 deletions(-)
 
 diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 5b889d4..14a9dad 100644
+index d4e0c09..55b13b9 100644
 --- a/kernel/trace/trace_events_filter.c
 +++ b/kernel/trace/trace_events_filter.c
-@@ -1418,43 +1418,22 @@ static int check_pred_tree(struct event_filter *filter,
- 			      check_pred_tree_cb, &data);
+@@ -467,6 +467,7 @@ static int process_ops(struct filter_pred *preds,
+ 
+ 	for (i = 0; i < op->val; i++) {
+ 		pred = &preds[op->ops[i]];
++		BUG_ON(!pred->fn);
+ 		match = pred->fn(pred, rec);
+ 		if (!!match == type)
+ 			return match;
+@@ -474,92 +475,82 @@ static int process_ops(struct filter_pred *preds,
+ 	return match;
  }
  
--static int count_leafs(struct filter_pred *preds, struct filter_pred *root)
-+static int count_leafs_cb(enum move_type move, struct filter_pred *pred,
-+			  int *err, void *data)
++struct filter_match_preds_data {
++	struct filter_pred *preds;
++	int match;
++	void *rec;
++};
++
++static int filter_match_preds_cb(enum move_type move, struct filter_pred *pred,
++				 int *err, void *data)
++{
++	struct filter_match_preds_data *d = data;
++
++	*err = 0;
++	switch (move) {
++	case MOVE_DOWN:
++		/* only AND and OR have children */
++		if (pred->left != FILTER_PRED_INVALID) {
++			/* If ops is set, then it was folded. */
++			if (!pred->ops)
++				return WALK_PRED_DEFAULT;
++			/* We can treat folded ops as a leaf node */
++			d->match = process_ops(d->preds, pred, d->rec);
++		} else {
++			BUG_ON(!pred->fn);
++			d->match = pred->fn(pred, d->rec);
++		}
++
++		return WALK_PRED_PARENT;
++	case MOVE_UP_FROM_LEFT:
++		/*
++		 * Check for short circuits.
++		 *
++		 * Optimization: !!match == (pred->op == OP_OR)
++		 *   is the same as:
++		 * if ((match && pred->op == OP_OR) ||
++		 *     (!match && pred->op == OP_AND))
++		 */
++		if (!!d->match == (pred->op == OP_OR))
++			return WALK_PRED_PARENT;
++		break;
++	case MOVE_UP_FROM_RIGHT:
++		break;
++	}
++
++	return WALK_PRED_DEFAULT;
++}
++
+ /* return 1 if event matches, 0 otherwise (discard) */
+ int filter_match_preds(struct event_filter *filter, void *rec)
  {
--	struct filter_pred *pred;
+-	int match = -1;
 -	enum move_type move = MOVE_DOWN;
--	int count = 0;
+ 	struct filter_pred *preds;
+-	struct filter_pred *pred;
+ 	struct filter_pred *root;
++	struct filter_match_preds_data data = {
++		/* match is currently meaningless */
++		.match = -1,
++		.rec   = rec,
++	};
+ 	int n_preds;
 -	int done = 0;
-+	int *count = data;
+ 
+ 	/* no filter is considered a match */
+ 	if (!filter)
+ 		return 1;
+ 
+ 	n_preds = filter->n_preds;
+-
+ 	if (!n_preds)
+ 		return 1;
+ 
+ 	/*
+ 	 * n_preds, root and filter->preds are protect with preemption disabled.
+ 	 */
+-	preds = rcu_dereference_sched(filter->preds);
+ 	root = rcu_dereference_sched(filter->root);
+ 	if (!root)
+ 		return 1;
  
 -	pred = root;
-+	if ((move == MOVE_DOWN) &&
-+	    (pred->left == FILTER_PRED_INVALID))
-+		(*count)++;
- 
+-
+-	/* match is currently meaningless */
+-	match = -1;
+-
 -	do {
 -		switch (move) {
 -		case MOVE_DOWN:
+-			/* only AND and OR have children */
 -			if (pred->left != FILTER_PRED_INVALID) {
--				pred = &preds[pred->left];
--				continue;
--			}
--			/* A leaf at the root is just a leaf in the tree */
+-				/* If ops is set, then it was folded. */
+-				if (!pred->ops) {
+-					/* keep going to down the left side */
+-					pred = &preds[pred->left];
+-					continue;
+-				}
+-				/* We can treat folded ops as a leaf node */
+-				match = process_ops(preds, pred, rec);
+-			} else
+-				match = pred->fn(pred, rec);
+-			/* If this pred is the only pred */
 -			if (pred == root)
--				return 1;
--			count++;
+-				break;
 -			pred = get_pred_parent(pred, preds,
 -					       pred->parent, &move);
 -			continue;
 -		case MOVE_UP_FROM_LEFT:
+-			/*
+-			 * Check for short circuits.
+-			 *
+-			 * Optimization: !!match == (pred->op == OP_OR)
+-			 *   is the same as:
+-			 * if ((match && pred->op == OP_OR) ||
+-			 *     (!match && pred->op == OP_AND))
+-			 */
+-			if (!!match == (pred->op == OP_OR)) {
+-				if (pred == root)
+-					break;
+-				pred = get_pred_parent(pred, preds,
+-						       pred->parent, &move);
+-				continue;
+-			}
+-			/* now go down the right side of the tree. */
 -			pred = &preds[pred->right];
 -			move = MOVE_DOWN;
 -			continue;
 -		case MOVE_UP_FROM_RIGHT:
+-			/* We finished this equation. */
 -			if (pred == root)
 -				break;
 -			pred = get_pred_parent(pred, preds,
@@ -76,15 +177,13 @@ index 5b889d4..14a9dad 100644
 -		}
 -		done = 1;
 -	} while (!done);
-+	return WALK_PRED_DEFAULT;
-+}
- 
-+static int count_leafs(struct filter_pred *preds, struct filter_pred *root)
-+{
-+	int count = 0;
-+	WARN_ON(walk_pred_tree(preds, root, count_leafs_cb, &count));
- 	return count;
+-
+-	return match;
++	data.preds = preds = rcu_dereference_sched(filter->preds);
++	WARN_ON(walk_pred_tree(preds, root, filter_match_preds_cb, &data));
++	return data.match;
  }
+ EXPORT_SYMBOL_GPL(filter_match_preds);
  
 -- 
 1.7.1
