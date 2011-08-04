@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab1HDSSl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 14:18:41 -0400
-Received: from topcat.ims.uaf.edu ([137.229.40.240]:56118 "EHLO
-	topcat.ims.uaf.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816Ab1HDSSe (ORCPT
+	id S1755449Ab1HDSTZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 14:19:25 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:57045 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755407Ab1HDSTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 14:18:34 -0400
-X-Greylist: delayed 2980 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Aug 2011 14:18:34 EDT
-Message-ID: <63238.199.255.209.74.1312476660.squirrel@ssl.sfos.uaf.edu>
-Date: Thu, 4 Aug 2011 08:51:00 -0800 (AKDT)
-Subject: 
-From: "Mr.Vincent Cheng Hoi" <info@yahoo.com>
-Reply-To: choi_chu1010@yahoo.co.jp
-User-Agent: SquirrelMail/1.4.13
+	Thu, 4 Aug 2011 14:19:21 -0400
+Message-ID: <4E3AE2A5.2010100@lwfinger.net>
+Date: Thu, 04 Aug 2011 13:19:17 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+To: Takashi Iwai <tiwai@suse.de>
+CC: Jaroslav Kysela <perex@perex.cz>, LKML <linux-kernel@vger.kernel.org>,
+        alsa-devel@alsa-project.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Regression in 3.0-git after commit c82693db52beced0419cecf09a3c81adfe95a544
+ - sound does not work
+References: <4E39C074.10007@lwfinger.net>	<s5h7h6trc0x.wl%tiwai@suse.de>	<4E3AC3B1.9030400@lwfinger.net> <s5hliv9oydh.wl%tiwai@suse.de>
+In-Reply-To: <s5hliv9oydh.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good day,
+On 08/04/2011 12:55 PM, Takashi Iwai wrote:
+>
+> Thanks.  Through a quick glance at these information, the problem
+> looks like that both newly appearing "Headphone" and "Speaker" volumes
+> are set to zero.  Usually alsactl invoked by udev will set appropriate
+> values for new elements, but in your case, it didn't work by some
+> reason.
+>
+> Try to adjust them.  (Note that you don't have to rebuild the kernel
+> just for this test; pass model=auto option to snd-hda-intel module,
+> then it'll switch to that mode.)
 
-I am Mr.Vincent Cheng Hoi Chuen, GBS, JP Chairman of the Hong Kong and
-Shanghai Banking Corporation Limited. I have a business proposal of Twenty
-Two million Five Hundred Thousand United State Dollars only for you to 
-transact with me from my bank to your country.
+By adding that option to /etc/modprobe.d/99-local.conf, and removing my patch, I 
+got new controls with the mixer. After fiddling with them a bit, I got working 
+sound. The issue is fixed.
 
-All confirmable documents to back up the claims will be made available to
-you prior to your acceptance and as soon as I receive your return mail Via
-my email address:choi_chu1010@yahoo.co.jp and I will let you know what is
-required of you.
+Thanks,
 
-Your earliest response to this letter will be appreciated.
-
-Best Regards,
-Mr.Vincent Cheng Hoi.
-
-
-
+Larry
