@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904Ab1HDV4a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 17:56:30 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:50804 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755616Ab1HDV4Y (ORCPT
+	id S1755638Ab1HDVzw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 17:55:52 -0400
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:48237 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755753Ab1HDVzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 17:56:24 -0400
-Date: Thu, 4 Aug 2011 22:56:19 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Len Brown <lenb@kernel.org>
-Cc: Andrew Lutomirski <luto@mit.edu>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86: Enable monitor/mwait on Intel if BIOS hasn't
- already
-Message-ID: <20110804215619.GA7101@srcf.ucam.org>
-References: <cover.1312386029.git.luto@mit.edu>
- <5bec80947da3fb72f2f18fbe6d924a69f83fbed9.1312386029.git.luto@mit.edu>
- <alpine.LFD.2.02.1108031214470.22067@x980>
- <CAObL_7GuAmzyjo5AmYxbTeiAqFtVk1N+opzWEzwJu8Mgrvts7g@mail.gmail.com>
- <CAObL_7FNa20Hsd0v-hs1vz=ejnkdaT+Yr=wwM681GbZJiuLkMQ@mail.gmail.com>
- <alpine.LFD.2.02.1108031514550.22067@x980>
- <20110804194117.GA5265@srcf.ucam.org>
- <alpine.LFD.2.02.1108041751360.24626@x980>
+	Thu, 4 Aug 2011 17:55:39 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: Abhilash K V <abhilash.kv@ti.com>
+Cc: <linux-omap@vger.kernel.org>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <b-cousson@ti.com>, <paul@pwsan.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Vaibhav Hiremath <hvaibhav@ti.com>
+Subject: Re: [PATCH 2/2] omap_twl: Prevent SR to enable for am3517/am3505 devices
+Organization: Texas Instruments, Inc.
+References: <1312473569-1212-1-git-send-email-abhilash.kv@ti.com>
+Date: Thu, 04 Aug 2011 14:55:35 -0700
+In-Reply-To: <1312473569-1212-1-git-send-email-abhilash.kv@ti.com> (Abhilash
+	K. V.'s message of "Thu, 4 Aug 2011 21:29:29 +0530")
+Message-ID: <87hb5w3kq0.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1108041751360.24626@x980>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 05:54:04PM -0400, Len Brown wrote:
-> > We can't trust BIOS authors to get things right. Where we can reliably 
-> > fix up things that are broken, we should do so.
-> 
-> How about if we can get a BIOS fix for this brand new system,
-> then we shall not clutter the kernel with a workaround,
-> otherwise we shall.
+Abhilash K V <abhilash.kv@ti.com> writes:
 
-It's a pretty good rule of thumb that if a BIOS bug is present in one 
-BIOS it's present in others, but the users will just never notice.
+> From: Vaibhav Hiremath <hvaibhav@ti.com>
+>
+> In case of AM3517 & AM3505, Smart Reflex is not applicable so
+> we must not enable it. So add check for am3517/05 cpu revision
+> in omap3_twl_init() and return -ENODEV if true, else continue.
+>
+> Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
+> ---
+>  arch/arm/mach-omap2/omap_twl.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/omap_twl.c b/arch/arm/mach-omap2/omap_twl.c
+> index 07d6140..92fadcb 100644
+> --- a/arch/arm/mach-omap2/omap_twl.c
+> +++ b/arch/arm/mach-omap2/omap_twl.c
+> @@ -269,6 +269,14 @@ int __init omap3_twl_init(void)
+>  	if (!cpu_is_omap34xx())
+>  		return -ENODEV;
+>  
+> +	/*
+> +	 * In case of AM3517/AM3505 we should not be going down
+> +	 * further, since SR is not applicable there.
+> +	 */
+> +	if (cpu_is_omap3505() || cpu_is_omap3517()) {
+> +		return -ENODEV;
+> +	}
+> +
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Rather than using cpu_is_*, you should add a new "feature" flag for
+SmartReflex.  We already have this for things like SGX, IVA, NEON, etc.
+See <plat/feature.h>
+
+Kevin
+
+
+>  	if (cpu_is_omap3630()) {
+>  		omap3_mpu_volt_info.vp_vddmin = OMAP3630_VP1_VLIMITTO_VDDMIN;
+>  		omap3_mpu_volt_info.vp_vddmax = OMAP3630_VP1_VLIMITTO_VDDMAX;
