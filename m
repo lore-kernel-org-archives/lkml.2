@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab1HDXAn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 19:00:43 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38293 "EHLO
+	id S1755583Ab1HDXAs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 19:00:48 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35145 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192Ab1HDXAb (ORCPT
+	with ESMTP id S1754991Ab1HDXAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 19:00:31 -0400
+	Thu, 4 Aug 2011 19:00:36 -0400
 From: Stephen Warren <swarren@nvidia.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
@@ -15,9 +15,9 @@ To: Thomas Gleixner <tglx@linutronix.de>,
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         alsa-devel@alsa-project.org, linux-mmc@vger.kernel.org,
         linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 1/3] irq: If an IRQ is a GPIO, request and configure it
-Date: Thu,  4 Aug 2011 17:00:18 -0600
-Message-Id: <1312498820-2275-2-git-send-email-swarren@nvidia.com>
+Subject: [PATCH 3/3] ASoC: jack_add_gpios: Don't gpio_request GPIOs used as IRQs.
+Date: Thu,  4 Aug 2011 17:00:20 -0600
+Message-Id: <1312498820-2275-4-git-send-email-swarren@nvidia.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1312498820-2275-1-git-send-email-swarren@nvidia.com>
 References: <1312498820-2275-1-git-send-email-swarren@nvidia.com>
@@ -25,87 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many IRQs are associated with GPIO pins. When the pin is used as an IRQ,
-it can't be used as anything else; it should be requested. Enhance the
-core interrupt code to call gpio_request() and gpio_direction_input() for
-any IRQ that is also a GPIO. This prevents duplication of these calls in
-each driver that uses an IRQ.
+request_any_context_irq now performs this internally. Remove the exra
+calls from the driver so that request_any_context_irq succeeds.
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
- kernel/irq/manage.c |   23 +++++++++++++++++++++--
- 1 files changed, 21 insertions(+), 2 deletions(-)
+ sound/soc/soc-jack.c |   13 +------------
+ 1 files changed, 1 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 0a7840a..6e2db72 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -7,6 +7,7 @@
-  * This file contains driver APIs to the irq subsystem.
-  */
+diff --git a/sound/soc/soc-jack.c b/sound/soc/soc-jack.c
+index 7c17b98..306d521 100644
+--- a/sound/soc/soc-jack.c
++++ b/sound/soc/soc-jack.c
+@@ -310,14 +310,6 @@ int snd_soc_jack_add_gpios(struct snd_soc_jack *jack, int count,
+ 			goto undo;
+ 		}
  
-+#include <linux/gpio.h>
- #include <linux/irq.h>
- #include <linux/kthread.h>
- #include <linux/module.h>
-@@ -875,7 +876,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 	struct irqaction *old, **old_ptr;
- 	const char *old_name = NULL;
- 	unsigned long flags, thread_mask = 0;
--	int ret, nested, shared = 0;
-+	int ret, nested, shared = 0, gpio = -1;
- 	cpumask_var_t mask;
+-		ret = gpio_request(gpios[i].gpio, gpios[i].name);
+-		if (ret)
+-			goto undo;
+-
+-		ret = gpio_direction_input(gpios[i].gpio);
+-		if (ret)
+-			goto err;
+-
+ 		INIT_DELAYED_WORK(&gpios[i].work, gpio_work);
+ 		gpios[i].jack = jack;
  
- 	if (!desc)
-@@ -978,6 +979,16 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 			old = *old_ptr;
- 		} while (old);
- 		shared = 1;
-+	} else {
-+		gpio = irq_to_gpio(irq);
-+		if (gpio_is_valid(gpio)) {
-+			ret = gpio_request(gpio, new->name);
-+			if (ret < 0)
-+				goto out_mask;
-+			ret = gpio_direction_input(gpio);
-+			if (ret < 0)
-+				goto out_mask;
-+		}
- 	}
+@@ -328,7 +320,7 @@ int snd_soc_jack_add_gpios(struct snd_soc_jack *jack, int count,
+ 					      gpios[i].name,
+ 					      &gpios[i]);
+ 		if (ret)
+-			goto err;
++			goto undo;
  
- 	/*
-@@ -1083,6 +1094,8 @@ mismatch:
- 	ret = -EBUSY;
+ 		if (gpios[i].wake) {
+ 			ret = irq_set_irq_wake(gpio_to_irq(gpios[i].gpio), 1);
+@@ -349,8 +341,6 @@ int snd_soc_jack_add_gpios(struct snd_soc_jack *jack, int count,
  
- out_mask:
-+	if (gpio_is_valid(gpio))
-+		gpio_free(gpio);
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
- 	free_cpumask_var(mask);
+ 	return 0;
  
-@@ -1127,6 +1140,7 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
- 	struct irq_desc *desc = irq_to_desc(irq);
- 	struct irqaction *action, **action_ptr;
- 	unsigned long flags;
-+	int gpio;
+-err:
+-	gpio_free(gpios[i].gpio);
+ undo:
+ 	snd_soc_jack_free_gpios(jack, i, gpios);
  
- 	WARN(in_interrupt(), "Trying to free IRQ %d from IRQ context!\n", irq);
- 
-@@ -1165,8 +1179,13 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
+@@ -378,7 +368,6 @@ void snd_soc_jack_free_gpios(struct snd_soc_jack *jack, int count,
  #endif
- 
- 	/* If this was the last handler, shut down the IRQ line: */
--	if (!desc->action)
-+	if (!desc->action) {
- 		irq_shutdown(desc);
-+		/* If the IRQ line is a GPIO, it's no longer in use */
-+		gpio = irq_to_gpio(irq);
-+		if (gpio_is_valid(gpio))
-+			gpio_free(gpio);
-+	}
- 
- #ifdef CONFIG_SMP
- 	/* make sure affinity_hint is cleaned up */
+ 		free_irq(gpio_to_irq(gpios[i].gpio), &gpios[i]);
+ 		cancel_delayed_work_sync(&gpios[i].work);
+-		gpio_free(gpios[i].gpio);
+ 		gpios[i].jack = NULL;
+ 	}
+ }
 -- 
 1.7.0.4
 
