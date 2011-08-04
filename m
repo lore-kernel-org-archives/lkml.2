@@ -1,317 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab1HDO7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 10:59:17 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55754 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665Ab1HDO6o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 10:58:44 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>, Andre Przywara <Andre.Przywara@amd.com>,
-        Martin Pohlack <Martin.Pohlack@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH -v3 1/3] x86, AMD: Correct F15h IC aliasing issue
-Date: Thu,  4 Aug 2011 16:58:36 +0200
-Message-Id: <1312469918-6641-2-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
-In-Reply-To: <1312469918-6641-1-git-send-email-bp@amd64.org>
-References: <1312469918-6641-1-git-send-email-bp@amd64.org>
+	id S1754655Ab1HDPFM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 11:05:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29403 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751312Ab1HDPFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 11:05:10 -0400
+Date: Thu, 4 Aug 2011 11:05:04 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Jens Axboe <jaxboe@fusionio.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        michal@harddata.com
+Subject: Re: Mysterious CFQ crash and RCU
+Message-ID: <20110804150504.GB429@redhat.com>
+References: <20110519222404.GG12600@redhat.com>
+ <20110521210013.GJ2271@linux.vnet.ibm.com>
+ <20110523152141.GB4019@redhat.com>
+ <20110523153848.GC2310@linux.vnet.ibm.com>
+ <1306401337.27271.3.camel@t41.thuisdomein>
+ <20110603050724.GB2304@linux.vnet.ibm.com>
+ <1307191830.23387.24.camel@t41.thuisdomein>
+ <20110604160326.GA6093@linux.vnet.ibm.com>
+ <1307227686.28359.23.camel@t41.thuisdomein>
+ <20110604230633.GD6093@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110604230633.GD6093@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On Sat, Jun 04, 2011 at 04:06:33PM -0700, Paul E. McKenney wrote:
+> On Sun, Jun 05, 2011 at 12:48:05AM +0200, Paul Bolle wrote:
+> > On Sat, 2011-06-04 at 09:03 -0700, Paul E. McKenney wrote:
+> > > More like "based on these diagnostics, I see no evidence of the RCU
+> > > implementation misbehaving."  Which is of course different than "I can
+> > > prove that the RCU implementation is not misbehaving".  That said, the
+> > > fact that you are running on a single CPU makes it hard for me to see
+> > > any latitude for RCU-implementation misbehavior.
+> > > 
+> > > Clearly something is wrong somewhere.
+> > 
+> > Yes.
+> > 
+> > > Given the fact that on a single-CPU
+> > > system, synchronize_rcu() is a no-op, and given that you weren't able
+> > > to reproduce with CONFIG_TREE_PREEMPT_RCU=y, my guess is that there is
+> > > a synchronize_rcu() that occasionally (illegally) gets executed within
+> > > an RCU read-side critical section.
+> > 
+> > I think I finally found it!
+> 
+> Very cool!!!
+> 
+> > The culprit seems to be io_context.ioc_data (not the most clear of
+> > names!). It seems to be a single entry "last-hit cache" of an hlist
+> > called cic_list. (There are three, subtly different, cic_lists in the
+> > CFQ code!) It is not entirely clear, but that last-hit cache can get out
+> > of sync with the hlist it is supposed to cache. My guess it that every
+> > now and then a member of the hlist gets deleted while it's still in that
+> > (single entry) cache. If it then gets retrieved from that cache it
+> > already points to poisoned memory. For some strange reason this only
+> > results in an Oops if one or more debugging options are set (as are set
+> > in the Fedora Rawhide non-stable kernels that I ran into this). I have
+> > no clue whatsoever, why that is ...
+> 
+> Oooh...  If I understand you correctly, this is exactly analogous to my
+> first-ever RCU bug way back in the early 90s.  This was a hashed version
+> of a BSD-style routing table, where each hash bucket maintained a pointer
+> to the last routing entry used.  When I deleted a routing entry, I forgot
+> to check the last-entry pointer.
+> 
+> The amazing thing is that the guy who found and fixed this bug generated
+> a correct fix despite having absolutely no idea what RCU was or how it
+> worked.  All he knew was that if he waited for the sun to reach Oregon,
+> his users were going to be way beyond upset.  ;-)
+> 
+> > Anyhow, after ripping out ioc_data this bug seems to have disappeared!
+> > Jens, Vivek, could you please have a look at this? In the mean time I
+> > hope to pinpoint this issue and draft a small patch to really solve it
+> > (ie, not by simply ripping out ioc_data).
+> 
+> Again, very cool!!!
 
-This patch provides performance tuning for the "Bulldozer" CPU. With its
-shared instruction cache there is a chance of generating an excessive
-number of cache cross-invalidates when running specific workloads on the
-cores of a compute module.
+Hi Paul,
 
-This excessive amount of cross-invalidations can be observed if cache
-lines backed by shared physical memory alias in bits [14:12] of their
-virtual addresses, as those bits are used for the index generation.
+Remember this CFQ issue where we suspected that we are freeing up an
+object before rcu period is over. We thought we fixed it. Guess what,
+it seems be to be back.
 
-This patch addresses the issue by setting all the bits in the [14:12]
-slice of the file mapping's virtual address at generation time, thus
-forcing those bits the same for all mappings of a single shared library
-across processes and, in doing so, avoids instruction cache aliases.
+**************************************************************************
+[21265.163144] BUG: unable to handle kernel paging request at 6b6b6b43
+[21265.164022] IP: [<f7d55fe0>] cic_free_func+0x10/0x6c [cfq_iosched]
+[21265.164022] *pde = 00000000 
+[21265.164022] Oops: 0000 [#1] SMP 
+[21265.164022] Modules linked in: cfq_iosched tcp_lp fuse arc4 ppdev
+snd_intel8x0m snd_intel8x0 snd_ac97_codec ac97_bus snd_seq snd_seq_device
+microcode
+ snd_pcm joydev snd_timer ath5k pcspkr snd_page_alloc thinkpad_acpi
+i2c_i801
+ath mac80211 snd soundcore cfg80211 rfkill parport_pc parport e1000
+iTCO_wd
+t iTCO_vendor_support binfmt_misc uinput yenta_socket video radeon ttm
+drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: scsi_wait_scan]
+[21265.164022] 
+[21265.164022] Pid: 18514, comm: mandb Not tainted
+3.0.0-1.local2.fc17.i686 #1
+IBM        /       
+[21265.164022] EIP: 0060:[<f7d55fe0>] EFLAGS: 00010286 CPU: 0
+[21265.164022] EIP is at cic_free_func+0x10/0x6c [cfq_iosched]
+[21265.164022] EAX: f242e400 EBX: 6b6b6b43 ECX: 00000246 EDX: 6b6b6b43
+[21265.164022] ESI: f242e400 EDI: f7d55fd0 EBP: df92df04 ESP: df92def0
+[21265.164022]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[21265.164022] Process mandb (pid: 18514, ti=df92c000 task=ed1554c0
+task.ti=df92c000)
+[21265.164022] Stack:
+[21265.164022]  c0468df7 c0af0cb0 6b6b6b6b f242e400 f7d55fd0 df92df18
+f7d54510
+f242e400
+[21265.164022]  ed1554c0 ed155898 df92df20 f7d54530 df92df2c c05cc8ba
+f242e400
+df92df40
+[21265.164022]  c05cc94a ed1554c0 00000012 df92df74 df92df8c c04423e2
+eedf2b5c
+eedf2b00
+[21265.164022] Call Trace:
+[21265.164022]  [<c0468df7>] ? lock_is_held+0x73/0x7b
+[21265.164022]  [<f7d55fd0>] ? cfqq_process_refs+0x18/0x18 [cfq_iosched]
+[21265.164022]  [<f7d54510>] call_for_each_cic+0x3e/0x4c [cfq_iosched]
+[21265.164022]  [<f7d54530>] cfq_free_io_context+0x12/0x14 [cfq_iosched]
+[21265.164022]  [<c05cc8ba>] put_io_context+0x34/0x5c
+[21265.164022]  [<c05cc94a>] exit_io_context+0x68/0x6d
+[21265.164022]  [<c04423e2>] do_exit+0x62f/0x66a
+[21265.164022]  [<c0442634>] do_group_exit+0x63/0x86
+[21265.164022]  [<c044266f>] sys_exit_group+0x18/0x18
+[21265.164022]  [<c083b0df>] sysenter_do_call+0x12/0x38
+[21265.164022] Code: 5f 5d c3 55 89 e5 3e 8d 74 26 00 8b 50 3c 03 50 40 8b
+00
+29 d0 79 02 0f 0b 5d c3 55 89 e5 57 56 53 83 ec 08 3e 8d 74 26 00 89 d3 <8
+b> 12 89 c6 f6 c2 01 75 02 0f 0b 8d 78 08 89 f8 89 55 ec e8 c8 
+[21265.164022] EIP: [<f7d55fe0>] cic_free_func+0x10/0x6c [cfq_iosched]
+SS:ESP
+0068:df92def0
+[21265.164022] CR2: 000000006b6b6b43
+[21265.363749] ---[ end trace a779435da6d0a152 ]---
 
-It also adds the command line option "align_va_addr=(32|64|on|off)" with
-which virtual address alignment can be enabled for 32-bit or 64-bit x86
-individually, or both, or be completely disabled.
+**************************************************************************
+Again details have been added to old bz.
 
-This change leaves virtual region address allocation on other families
-and/or vendors unaffected.
+https://bugzilla.redhat.com/show_bug.cgi?id=577968
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- Documentation/kernel-parameters.txt |   13 ++++++
- arch/x86/include/asm/elf.h          |   27 ++++++++++++
- arch/x86/kernel/cpu/amd.c           |   10 ++++
- arch/x86/kernel/sys_x86_64.c        |   79 +++++++++++++++++++++++++++++++++-
- arch/x86/mm/mmap.c                  |   15 -------
- arch/x86/vdso/vma.c                 |    9 ++++
- 6 files changed, 135 insertions(+), 18 deletions(-)
+Now two users have run into this issue. PaulB, again can reliably
+reproduce this issue even with 3.0 kernels.  He  just needs to run
+"mandb -c" on this machine.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index aa47be7..af73c03 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -299,6 +299,19 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			behaviour to be specified.  Bit 0 enables warnings,
- 			bit 1 enables fixups, and bit 2 sends a segfault.
- 
-+	align_va_addr=	[X86-64]
-+			Align virtual addresses by clearing slice [14:12] when
-+			allocating a VMA at process creation time. This option
-+			gives you up to 3% performance improvement on AMD F15h
-+			machines (where it is enabled by default) for a
-+			CPU-intensive style benchmark, and it can vary highly in
-+			a microbenchmark depending on workload and compiler.
-+
-+			1: only for 32-bit processes
-+			2: only for 64-bit processes
-+			on: enable for both 32- and 64-bit processes
-+			off: disable for both 32- and 64-bit processes
-+
- 	amd_iommu=	[HW,X86-84]
- 			Pass parameters to the AMD IOMMU driver in the system.
- 			Possible values are:
-diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
-index f2ad216..50e9070 100644
---- a/arch/x86/include/asm/elf.h
-+++ b/arch/x86/include/asm/elf.h
-@@ -4,6 +4,7 @@
- /*
-  * ELF register definitions..
-  */
-+#include <linux/thread_info.h>
- 
- #include <asm/ptrace.h>
- #include <asm/user.h>
-@@ -320,4 +321,30 @@ extern int syscall32_setup_pages(struct linux_binprm *, int exstack);
- extern unsigned long arch_randomize_brk(struct mm_struct *mm);
- #define arch_randomize_brk arch_randomize_brk
- 
-+/*
-+ * True on X86_32 or when emulating IA32 on X86_64
-+ */
-+static inline int mmap_is_ia32(void)
-+{
-+#ifdef CONFIG_X86_32
-+	return 1;
-+#endif
-+#ifdef CONFIG_IA32_EMULATION
-+	if (test_thread_flag(TIF_IA32))
-+		return 1;
-+#endif
-+	return 0;
-+}
-+
-+/* The first two values are special, do not change. See align_addr() */
-+enum align_flags {
-+	ALIGN_VA_32	= BIT(0),
-+	ALIGN_VA_64	= BIT(1),
-+	ALIGN_VDSO	= BIT(2),
-+	ALIGN_TOPDOWN	= BIT(3),
-+};
-+
-+extern int align_va_addr;
-+extern unsigned long align_upperbit;
-+extern unsigned long align_addr(unsigned long, struct file *, enum align_flags);
- #endif /* _ASM_X86_ELF_H */
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index b13ed39..5a48cac 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -458,6 +458,16 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
- 					"with P0 frequency!\n");
- 		}
- 	}
-+
-+	if (c->x86 == 0x15) {
-+		u32 cpuid, assoc;
-+
-+		cpuid = cpuid_edx(0x80000005);
-+		assoc = cpuid >> 16 & 0xff;
-+
-+		align_upperbit = ((cpuid >> 24) << 10) / assoc;
-+		align_va_addr  = ALIGN_VA_32 | ALIGN_VA_64;
-+	}
- }
- 
- static void __cpuinit init_amd(struct cpuinfo_x86 *c)
-diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
-index ff14a50..b9e45f2 100644
---- a/arch/x86/kernel/sys_x86_64.c
-+++ b/arch/x86/kernel/sys_x86_64.c
-@@ -18,6 +18,70 @@
- #include <asm/ia32.h>
- #include <asm/syscalls.h>
- 
-+/* see Documentation/kernel-parameters.txt */
-+int __read_mostly align_va_addr = -1;
-+unsigned long align_upperbit;
-+
-+/*
-+ * Align a virtual address to avoid aliasing in the I$ on AMD F15h.
-+ *
-+ * @flags denotes the allocation direction - bottomup or topdown -
-+ * or vDSO; see call sites below.
-+ */
-+unsigned long align_addr(unsigned long addr, struct file *filp,
-+			 enum align_flags flags)
-+{
-+	unsigned long tmp_addr;
-+
-+	/* handle 32- and 64-bit case with a single conditional */
-+	if (align_va_addr < 0 || !(align_va_addr & (2 - mmap_is_ia32())))
-+		return addr;
-+
-+	if (!(current->flags & PF_RANDOMIZE))
-+		return addr;
-+
-+	if (!((flags & ALIGN_VDSO) || filp))
-+		return addr;
-+
-+	tmp_addr = addr | ((align_upperbit - 1) & PAGE_MASK);
-+
-+	/*
-+	 * We need an address which is <= than the original
-+	 * one when in topdown direction.
-+	 */
-+	if ((tmp_addr > addr) && (flags & ALIGN_TOPDOWN))
-+		tmp_addr -= align_upperbit;
-+
-+	return tmp_addr;
-+}
-+
-+static int __init control_va_addr_alignment(char *str)
-+{
-+	/* guard against enabling this on other CPU families */
-+	if (align_va_addr < 0)
-+		return 1;
-+
-+	if (*str == 0)
-+		return 1;
-+
-+	if (*str == '=')
-+		str++;
-+
-+	if (!strcmp(str, "32"))
-+		align_va_addr = ALIGN_VA_32;
-+	else if (!strcmp(str, "64"))
-+		align_va_addr = ALIGN_VA_64;
-+	else if (!strcmp(str, "off"))
-+		align_va_addr = 0;
-+	else if (!strcmp(str, "on"))
-+		align_va_addr = ALIGN_VA_32 | ALIGN_VA_64;
-+	else
-+		return 0;
-+
-+	return 1;
-+}
-+__setup("align_va_addr", control_va_addr_alignment);
-+
- SYSCALL_DEFINE6(mmap, unsigned long, addr, unsigned long, len,
- 		unsigned long, prot, unsigned long, flags,
- 		unsigned long, fd, unsigned long, off)
-@@ -92,6 +156,9 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
- 	start_addr = addr;
- 
- full_search:
-+
-+	addr = align_addr(addr, filp, 0);
-+
- 	for (vma = find_vma(mm, addr); ; vma = vma->vm_next) {
- 		/* At this point:  (!vma || addr < vma->vm_end). */
- 		if (end - len < addr) {
-@@ -117,6 +184,7 @@ full_search:
- 			mm->cached_hole_size = vma->vm_start - addr;
- 
- 		addr = vma->vm_end;
-+		addr = align_addr(addr, filp, 0);
- 	}
- }
- 
-@@ -161,10 +229,13 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
- 
- 	/* make sure it can fit in the remaining address space */
- 	if (addr > len) {
--		vma = find_vma(mm, addr-len);
--		if (!vma || addr <= vma->vm_start)
-+		unsigned long tmp_addr = align_addr(addr - len, filp,
-+						    ALIGN_TOPDOWN);
-+
-+		vma = find_vma(mm, tmp_addr);
-+		if (!vma || tmp_addr + len <= vma->vm_start)
- 			/* remember the address as a hint for next time */
--			return mm->free_area_cache = addr-len;
-+			return mm->free_area_cache = tmp_addr;
- 	}
- 
- 	if (mm->mmap_base < len)
-@@ -173,6 +244,8 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
- 	addr = mm->mmap_base-len;
- 
- 	do {
-+		addr = align_addr(addr, filp, ALIGN_TOPDOWN);
-+
- 		/*
- 		 * Lookup failure means no vma is above this address,
- 		 * else if new region fits below vma->vm_start,
-diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-index 1dab519..d4c0736 100644
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -51,21 +51,6 @@ static unsigned int stack_maxrandom_size(void)
- #define MIN_GAP (128*1024*1024UL + stack_maxrandom_size())
- #define MAX_GAP (TASK_SIZE/6*5)
- 
--/*
-- * True on X86_32 or when emulating IA32 on X86_64
-- */
--static int mmap_is_ia32(void)
--{
--#ifdef CONFIG_X86_32
--	return 1;
--#endif
--#ifdef CONFIG_IA32_EMULATION
--	if (test_thread_flag(TIF_IA32))
--		return 1;
--#endif
--	return 0;
--}
--
- static int mmap_is_legacy(void)
- {
- 	if (current->personality & ADDR_COMPAT_LAYOUT)
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 7abd2be..caa42ce 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -69,6 +69,15 @@ static unsigned long vdso_addr(unsigned long start, unsigned len)
- 	addr = start + (offset << PAGE_SHIFT);
- 	if (addr >= end)
- 		addr = end;
-+
-+	/*
-+	 * page-align it here so that get_unmapped_area doesn't
-+	 * align it wrongfully again to the next page. addr can come in 4K
-+	 * unaligned here as a result of stack start randomization.
-+	 */
-+	addr = PAGE_ALIGN(addr);
-+	addr = align_addr(addr, NULL, ALIGN_VDSO);
-+
- 	return addr;
- }
- 
--- 
-1.7.4.rc2
+He has again run the CFQ debug V2 patch which seems to be telling that
+cfq_io_context object was freed while in rcu read section.
 
+**************************************************************************
+[  562.598881] debug: Will exit io context cic=0xf0469230, Next pointer is  
+(null)
+[  562.598881] debug: cic=0xf0469230 exit io context done. Next pointer is  
+(null)
+[  562.598881] debug: Will decouple-free cic cic=0xf0469230, Next pointer
+is  (null)
+[  562.633403] debug: cic=0xf0469230 decouple-free cic done. Next pointer
+is  (null)
+[  562.644949] debug: freeing up cic=f0469230
+[  562.652971] cic=f0469230 freed while in RCU read lock
+
+*****************************************************************************
+
+I am hoping that I have written the debug patch right. As usual i am
+running out of ideas on how to debug it further. Anything debug
+information you would like to have a look at?
+
+Thanks
+Vivek
