@@ -1,79 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab1HDWBB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 18:01:01 -0400
-Received: from liberdade2.minaslivre.org ([74.50.53.203]:52147 "EHLO
-	liberdade.minaslivre.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755746Ab1HDWAw (ORCPT
+	id S1755935Ab1HDWB3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 18:01:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37473 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755833Ab1HDWBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 18:00:52 -0400
-From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-To: linux-next@vger.kernel.org
-Cc: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>, Greg KH <greg@kroah.com>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] zcache: Use div_u64 for 64-bit division
-Date: Thu,  4 Aug 2011 19:00:33 -0300
-Message-Id: <1312495234-20961-1-git-send-email-cascardo@holoscopio.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <20110804145145.4af47989.rdunlap@xenotime.net>
-References: <20110804145145.4af47989.rdunlap@xenotime.net>
+	Thu, 4 Aug 2011 18:01:24 -0400
+Date: Thu, 4 Aug 2011 17:01:15 -0500
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, dhowells@redhat.com,
+        netdev@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/14] allow root in container to copy namespaces (v3)
+Message-ID: <20110804220115.GA28300@sergelap>
+References: <1311706717-7398-1-git-send-email-serge@hallyn.com>
+ <1311706717-7398-3-git-send-email-serge@hallyn.com>
+ <m1hb67fh9l.fsf@fess.ebiederm.org>
+ <20110729172748.GB18935@hallyn.com>
+ <m1ei146a6t.fsf@fess.ebiederm.org>
+ <20110802140832.GA26646@sergelap>
+ <m1oc074gkb.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1oc074gkb.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xv_get_total_size_bytes returns a u64 value and it's used in a division.
-This causes build failures in 32-bit architectures, as reported by Randy
-Dunlap.
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> "Serge E. Hallyn" <serge.hallyn@canonical.com> writes:
+> 
+> > Quoting Eric W. Biederman (ebiederm@xmission.com):
+> >> The dangers of changing the namespace of a process remain the same,
+> >> confused suid programs.  I don't believe there are any unique new
+> >> dangers. 
+> >> 
+> >> Not allowing joining namespaces you already have a copy of is just
+> >> a matter of making it hard to get things wrong.
+> >> 
+> >> I would feel more a bit more comfortable if the way we did this was
+> >> to move all of the capable calls into the per namespace methods
+> >> and then changed them one namespace at a time.  I don't think
+> >
+> > The patch belows moves them into the per namespace methods, for
+> > what it's worth.  If you like I can change them, for now, to
+> > 'capable(CAP_SYS_ADMIN)' targeted at init_user_ns, but if we're
+> > targetting at the userns owning the destination namespace, it
+> > seems this must be sufficient...
+> 
+> I like the was this was done.  I was mostly thinking of the non
+> setns case when I was talking about moving the calls.
 
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg KH <greg@kroah.com>
-Cc: driverdevel <devel@driverdev.osuosl.org>
-Cc: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
+Oh, you mean unshare and copy namespaces?
+
+(The flow on those paths is scary to touch :)
+
+> >> there are any fundmanetal dangers of allowing unshare without
+> >> the global CAP_SYS_ADMIN, but it would be good to be able to audit
+> >
+> > If you have suspicions that there may in fact be dangers, then
+> > perhaps this whole patch should be delayed, and copy_namespaces()
+> > and unshare_nsproxy_namespaces() should continue to check global
+> > CAP_SYS_ADMIN?  The only part which would remain would be the
+> > moving of the setns capable check into the per-ns ->install
+> > method, but it would check the global CAP_SYS_ADMIN?
+> 
+> Yes.  I am in favor of delaying this and making the changes one
+> namespace at a time.  I don't think there are real dangers but I do
+> think we should try and think through the possible dangers.
+
+Ok, so for now here is a patch to fold into the previous one
+which I think sets us at a reasonable point.
+
+>From 78e1a4efa464086e8df95fc3ffd35c385e363957 Mon Sep 17 00:00:00 2001
+From: Serge Hallyn <serge.hallyn@canonical.com>
+Date: Thu, 4 Aug 2011 22:10:12 +0100
+Subject: [PATCH 1/2] fold up - dont yet target the capable checks for
+ namespace manipulation
+
+Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
 ---
- drivers/staging/zcache/zcache-main.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ ipc/namespace.c          |    4 ++++
+ kernel/fork.c            |    5 +++++
+ kernel/nsproxy.c         |    8 ++++++++
+ kernel/utsname.c         |    4 ++++
+ net/core/net_namespace.c |    4 ++++
+ 5 files changed, 25 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 66469ac..2c41c44 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -28,6 +28,7 @@
- #include <linux/spinlock.h>
- #include <linux/types.h>
- #include <linux/atomic.h>
-+#include <linux/math64.h>
- #include "tmem.h"
+diff --git a/ipc/namespace.c b/ipc/namespace.c
+index f527e49..a0a7609 100644
+--- a/ipc/namespace.c
++++ b/ipc/namespace.c
+@@ -163,8 +163,12 @@ static void ipcns_put(void *ns)
  
- #include "../zram/xvmalloc.h" /* if built in drivers/staging */
-@@ -1162,6 +1163,7 @@ static void *zcache_pampd_create(char *data, size_t size, bool raw, int eph,
- 	uint16_t client_id = get_client_id_from_client(cli);
- 	unsigned long zv_mean_zsize;
- 	unsigned long curr_pers_pampd_count;
-+	u64 total_zsize;
+ static int ipcns_install(struct nsproxy *nsproxy, void *ns)
+ {
++#if 0
+ 	struct ipc_namespace *newns = ns;
+ 	if (!ns_capable(newns->user_ns, CAP_SYS_ADMIN))
++#else
++	if (!capable(CAP_SYS_ADMIN))
++#endif
+ 		return -1;
+ 	/* Ditch state from the old ipc namespace */
+ 	exit_sem(current);
+diff --git a/kernel/fork.c b/kernel/fork.c
+index f9fac70..a25343c 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1488,8 +1488,13 @@ long do_fork(unsigned long clone_flags,
+ 		/* hopefully this check will go away when userns support is
+ 		 * complete
+ 		 */
++#if 0
+ 		if (!nsown_capable(CAP_SYS_ADMIN) || !nsown_capable(CAP_SETUID) ||
+ 				!nsown_capable(CAP_SETGID))
++#else
++		if (!capable(CAP_SYS_ADMIN) || !capable(CAP_SETUID) ||
++				!capable(CAP_SETGID))
++#endif
+ 			return -EPERM;
+ 	}
  
- 	if (eph) {
- 		ret = zcache_compress(page, &cdata, &clen);
-@@ -1194,8 +1196,9 @@ static void *zcache_pampd_create(char *data, size_t size, bool raw, int eph,
- 		}
- 		/* reject if mean compression is too poor */
- 		if ((clen > zv_max_mean_zsize) && (curr_pers_pampd_count > 0)) {
--			zv_mean_zsize = xv_get_total_size_bytes(cli->xvpool) /
--						curr_pers_pampd_count;
-+			total_zsize = xv_get_total_size_bytes(cli->xvpool);
-+			zv_mean_zsize = div_u64(total_zsize,
-+						curr_pers_pampd_count);
- 			if (zv_mean_zsize > zv_max_mean_zsize) {
- 				zcache_mean_compress_poor++;
- 				goto out;
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index 62a995d..752b477 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -136,7 +136,11 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
+ 				CLONE_NEWPID | CLONE_NEWNET)))
+ 		return 0;
+ 
++#if 0
+ 	if (!nsown_capable(CAP_SYS_ADMIN)) {
++#else
++	if (!capable(CAP_SYS_ADMIN)) {
++#endif
+ 		err = -EPERM;
+ 		goto out;
+ 	}
+@@ -193,7 +197,11 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
+ 			       CLONE_NEWNET)))
+ 		return 0;
+ 
++#if 0
+ 	if (!nsown_capable(CAP_SYS_ADMIN))
++#else
++	if (!capable(CAP_SYS_ADMIN))
++#endif
+ 		return -EPERM;
+ 
+ 	*new_nsp = create_new_namespaces(unshare_flags, current,
+diff --git a/kernel/utsname.c b/kernel/utsname.c
+index 8f648cc..4638a54 100644
+--- a/kernel/utsname.c
++++ b/kernel/utsname.c
+@@ -104,8 +104,12 @@ static void utsns_put(void *ns)
+ 
+ static int utsns_install(struct nsproxy *nsproxy, void *ns)
+ {
++#if 0
+ 	struct uts_namespace *newns = ns;
+ 	if (!ns_capable(newns->user_ns, CAP_SYS_ADMIN))
++#else
++	if (!capable(CAP_SYS_ADMIN))
++#endif
+ 		return -1;
+ 	get_uts_ns(ns);
+ 	put_uts_ns(nsproxy->uts_ns);
+diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+index 8778a0a..5ca95cc 100644
+--- a/net/core/net_namespace.c
++++ b/net/core/net_namespace.c
+@@ -623,8 +623,12 @@ static void netns_put(void *ns)
+ 
+ static int netns_install(struct nsproxy *nsproxy, void *ns)
+ {
++#if 0
+ 	struct net *net = ns;
+ 	if (!ns_capable(net->user_ns, CAP_SYS_ADMIN))
++#else
++	if (capable(CAP_SYS_ADMIN))
++#endif
+ 		return -1;
+ 	put_net(nsproxy->net_ns);
+ 	nsproxy->net_ns = get_net(ns);
 -- 
 1.7.5.4
 
