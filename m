@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab1HDTXl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 15:23:41 -0400
-Received: from topcat.ims.uaf.edu ([137.229.40.240]:36329 "EHLO
+	id S1754850Ab1HDTXr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 15:23:47 -0400
+Received: from topcat.ims.uaf.edu ([137.229.40.240]:36334 "EHLO
 	topcat.ims.uaf.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab1HDTXc (ORCPT
+	with ESMTP id S1750915Ab1HDTXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Aug 2011 15:23:32 -0400
-Message-ID: <1665.82.128.4.91.1312478759.squirrel@ssl.sfos.uaf.edu>
-Date: Thu, 4 Aug 2011 09:25:59 -0800 (AKDT)
+Message-ID: <1667.82.128.4.91.1312478779.squirrel@ssl.sfos.uaf.edu>
+Date: Thu, 4 Aug 2011 09:26:19 -0800 (AKDT)
 Subject: 
 From: "Mr. Vincent Cheng" <info@yahoo.com>
 Reply-To: choi_chu14@yahoo.co.jp
