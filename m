@@ -1,38 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756481Ab1HDA5r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 20:57:47 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:55513 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756269Ab1HDA5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 20:57:42 -0400
-Date: Wed, 03 Aug 2011 20:57:40 -0400
-Message-Id: <E1QomFo-0004xQ-1C@tytso-glaptop>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ext4 bugfix before 3.1-rc1
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1756496Ab1HDBCI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 21:02:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49578 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756361Ab1HDBB7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 21:01:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110803175016.fb80b7f3.akpm@linux-foundation.org>
+References: <20110801180151.GA26686@albatros> <20110801112021.25ec9041.akpm@linux-foundation.org>
+ <20110801190341.GA6898@albatros> <CA+55aFw2kHWY1N=ox1er7c-3WL4OA8x0M=Keu7hvAncKUZd1tQ@mail.gmail.com>
+ <20110802124530.GA2543@albatros> <20110802135512.b49c9de1.akpm@linux-foundation.org>
+ <d844457bba74be419d2434c533fdb4e1@localhost> <CA+55aFx+JOeDoNzs+1wfdK3kpNPyS9wpU1OT=VAwvWPXfMVuDQ@mail.gmail.com>
+ <20110803113033.1c3c6960@taxman.wild-wind.fr.eu.org> <CA+55aFzw-K6XvDzTwHRyqQWdkDO8Zqz8Ak1qgNTzf6a3L9=80A@mail.gmail.com>
+ <20110803175016.fb80b7f3.akpm@linux-foundation.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 3 Aug 2011 15:01:05 -1000
+Message-ID: <CA+55aFzG+s9KvSOJHvsUczG_d66f+QbBWiWfqLC21mHswnfm-A@mail.gmail.com>
+Subject: Re: [PATCH] shm: fix a race between shm_exit() and shm_init()
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Marc Zyngier <marc.zyngier@arm.com>, Vasiliy Kulikov <segoon@openwall.com>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>, Ingo Molnar <mingo@elte.hu>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, Greg KH <greg@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Aug 3, 2011 at 2:50 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+>
+> Well, it's still a workaround.  We'll still have driver_init() trying
+> to run userspace helpers at an inappropriate time, and failing to do
+> so.  Either something will break or it should not be attempting
+> attempting to do this at all.
 
-This was an oopsie that I'd like to fix up before rc1 if possible.  Mea
-culpa.
+Well, it has never worked before either, so I wouldn't call it a
+"workaround", more of a "insane subsystems do user-mode helpers for
+crazy small things, and at crazy times. Stop them from wasting our
+time and effort at those crazy times when we know they would fail
+anyway".
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
+> Perhaps Kay and Greg can suggest how we can fix all this up?
 
-Please pull, thanks!!
+I think just not calling user-mode when user-mode isn't ready is a real fix.
 
-					- Ted
+The fact that the device models send an absolutely *insane* amount of
+events for everything, and don't track "this is the bootup device
+scan" on their own is kind of sad, but it's how they roll. This fixes
+it at a core level, so that the device layer doesn't have to track the
+"am I booting, or is this a dynamic event?" at all.
 
-Mathias Krause (1):
-      ext4: use kzalloc in ext4_kzalloc()
-
- fs/ext4/super.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+               Linus
