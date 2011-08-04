@@ -1,132 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab1HDOFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 10:05:36 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59753 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab1HDOFe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 10:05:34 -0400
-Date: Thu, 4 Aug 2011 16:05:29 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 7/8] cgroups: Add a task counter subsystem
-Message-ID: <20110804140525.GF5768@somewhere.redhat.com>
-References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com>
- <1311956010-32076-8-git-send-email-fweisbec@gmail.com>
- <20110801161347.5f4aeeeb.akpm@linux-foundation.org>
+	id S1753508Ab1HDOMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 10:12:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751312Ab1HDOMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 10:12:16 -0400
+Date: Thu, 4 Aug 2011 10:12:10 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Shaohua Li <shli@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: fio posixaio performance problem
+Message-ID: <20110804141210.GA429@redhat.com>
+References: <CANejiEViuKky1A7Xh0MQKBVNMj_fgzwayWyON7hFGfP3wa62SQ@mail.gmail.com>
+ <4E3902C7.9050907@cn.fujitsu.com>
+ <CANejiEVqFt4j1-qTVnxEAe75z0y010s=ST2XtCDDTqDEQT=EcQ@mail.gmail.com>
+ <4E391986.90108@cn.fujitsu.com>
+ <20110803154533.GB32385@redhat.com>
+ <20110803175101.GC32385@redhat.com>
+ <CANejiEXAtzExExqmTXA=hmpGh8DVVo9ncbRMdkB+avq+G3LuqQ@mail.gmail.com>
+ <4E39FD41.4090103@cn.fujitsu.com>
+ <CANejiEVh4hvi5S18H7XHihxZt+JcRU7W5MGpQwQc_ZtiFCa2jw@mail.gmail.com>
+ <4E3A4DF7.3020605@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110801161347.5f4aeeeb.akpm@linux-foundation.org>
+In-Reply-To: <4E3A4DF7.3020605@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 04:13:47PM -0700, Andrew Morton wrote:
-> On Fri, 29 Jul 2011 18:13:29 +0200
-> Frederic Weisbecker <fweisbec@gmail.com> wrote:
+On Thu, Aug 04, 2011 at 03:44:55PM +0800, Gui Jianfeng wrote:
+
+[..]
+> > oh, not related per your blktrace. so we have two problems here:
+> > 1. fio doesn't dispatch request in 8ms.
+> > 2. no close request preempt.
 > 
-> > Add a new subsystem to limit the number of running tasks,
-> > similar to the NR_PROC rlimit but in the scope of a cgroup.
-> > 
-> > This is a step to be able to isolate a bit more a cgroup against
-> > the rest of the system and limit the global impact of a fork bomb
-> > inside a given cgroup.
-> > 
-> > ...
-> >
-> > +config CGROUP_TASK_COUNTER
-> > +        bool "Control number of tasks in a cgroup"
-> > +	depends on RESOURCE_COUNTERS
-> > +	help
-> > +	  This option let the user to set up an upper bound allowed number
-> > +	  of tasks inside a cgroup.
+> Yes, these're actual factors why performance is so bad.
 > 
-> whitespace went weird.
-
-Yep, will fix.
- 
-> > 
-> > ...
-> >
->  +
-> > +static void task_counter_post_clone(struct cgroup_subsys *ss, struct cgroup *cgrp)
-> > +{
-> > +	res_counter_inherit(cgroup_task_counter_res(cgrp), RES_LIMIT);
+> > both looks quite wield. can you post a longer blktrace output, like
+> > for one second? the piece is too short.
 > 
-> cgroup_task_counter_res() has code in it to carefully return NULL in
-> one situation, but if it does this, res_counter_inherit() will then
-> cheerily oops.  This makes no sense.
+> Attached.
 
-Right but the only cgroup for which it returns NULL is the root cgroup.
-But we don't post clone the root cgroup itself since it has no parent.
+Gui, few observations from you log file.
 
-So this can't happen, but I can still add a warn_on condition that escapes.
+- preemption happened 1631 times and did not happen 527 times and idle
+  timer fired.
 
-> > +}
-> > +
-> > 
-> > ...
-> >
-> > +/* Protected amongst can_attach_task/attach_task/cancel_attach_task by cgroup mutex */
-> > +static struct res_counter *common_ancestor;
-> > +
-> > +static int task_counter_can_attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
-> > +					struct task_struct *tsk)
-> > +{
-> > +	struct res_counter *res = cgroup_task_counter_res(cgrp);
-> > +	struct res_counter *old_res = cgroup_task_counter_res(old_cgrp);
-> > +	struct res_counter *limit_fail_at;
-> > +
-> > +	common_ancestor = res_counter_common_ancestor(res, old_res);
-> 
-> This might oops too?
+- In some cases where preemption did not happen, next request seems to
+  be too far away (more than CFQQ_CLOSE_THR=8K sectors).
 
-Nope, if either res or old_res is NULL, then the common ancestor returned
-is NULL. Afterward the charge_until() below will simply charge res over
-all the hierarchy if old_res is NULL, or it will do nothing is res itself
-is NULL.
+- I noticed couple of cases where next request was with-in 8K distanace
+  still preemption did not happen. This makes me curious. Can you please
+  put some trace messages in should_preempt() and rq_close() call and see
+  what's going on?
 
-I should probably comment on that behaviour.
+For example, following trace shows that next request is 5176 sector behind
+the previous one completed. I am wondering why did preemption not take
+place.
 
-> 
-> > +	return res_counter_charge_until(res, common_ancestor, 1, &limit_fail_at);
-> > +}
-> > +
-> > 
-> > ...
-> >
-> > +int cgroup_task_counter_fork(struct task_struct *child)
-> > +{
-> > +	struct cgroup_subsys_state *css = child->cgroups->subsys[tasks_subsys_id];
-> > +	struct cgroup *cgrp = css->cgroup;
-> > +	struct res_counter *limit_fail_at;
-> > +
-> > +	/* Optimize for the root cgroup case, which doesn't have a limit */
-> > +	if (!cgrp->parent)
-> > +		return 0;
-> > +
-> > +	return res_counter_charge(cgroup_task_counter_res(cgrp), 1, &limit_fail_at);
-> > +}
-> 
-> It took a while for me to work out the meaning of the return value from
-> this function.  Some documentation would be nice?
+  8,0    0      606     2.751892651 16420  D   W 512146800 + 8 [fio]
+  8,0    2      579     2.752127950     0  C   W 512146800 + 8 [0]
 
-Yes and moreover I'm not at all sure about the default return value in
-case of failure. -ENOMEM probably matches the need for memory limit
-subsystem but for that task counter subsystem.
+  8,0    0      609     2.752235995 16421  Q  WS 512141624 + 8 [fio]
+  8,0    0      610     2.752238859 16421  G  WS 512141624 + 8 [fio]
+  8,0    0      612     2.752243818 16421  I   W 512141624 + 8 [fio]
+  8,0    0        0     2.752246262     0  m   N cfq16421S / insert_request
+  8,0    0        0     2.752247729     0  m   N cfq16421S / add_to_rr
+  8,0    2        0     2.759710295     0  m   N cfq idle timer fired
 
-Probably the res_counter API should return -1 in case of limit reached
-and let the caller subsystem deal with the error to return. -ENOMEM
-is already too partial.
+Putting some extra trace messages in CFQ might help here. BTW, which 
+kernel version are you using? 3.0?
 
-I guess we should return -EINVAL in case of task counter limit reached?
-
-Once we agree on this I'll document it.
-
-> 
+Thanks
+Vivek
