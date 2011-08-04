@@ -1,94 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab1HDWX6 (ORCPT <rfc822;w@1wt.eu>);
+	id S1756019Ab1HDWYF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 18:24:05 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48540 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755547Ab1HDWX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Aug 2011 18:23:58 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:33454 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754245Ab1HDWXy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 18:23:54 -0400
-Date: Thu, 4 Aug 2011 15:17:07 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-Cc: linux-next@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>, Greg KH <greg@kroah.com>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] zcache: Use div_u64 for 64-bit division
-Message-Id: <20110804151707.ccb67e28.rdunlap@xenotime.net>
-In-Reply-To: <1312495234-20961-1-git-send-email-cascardo@holoscopio.com>
-References: <20110804145145.4af47989.rdunlap@xenotime.net>
-	<1312495234-20961-1-git-send-email-cascardo@holoscopio.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: [RFC][PATCH] PM / Freezer: Freeze filesystems along with freezing processes (was: Re: PM / hibernate xfs lock up / xfs_reclaim_inodes_ag)
+Date: Fri, 5 Aug 2011 00:25:09 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0+; KDE/4.6.0; x86_64; ; )
+Cc: Nigel Cunningham <nigel@tuxonice.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Christoph <cr2005@u-club.de>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
+References: <4E1C70AD.1010101@u-club.de> <20110803172922.GA2126@ucw.cz> <201108041127.30944.rjw@sisk.pl>
+In-Reply-To: <201108041127.30944.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Message-Id: <201108050025.09792.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  4 Aug 2011 19:00:33 -0300 Thadeu Lima de Souza Cascardo wrote:
-
-> xv_get_total_size_bytes returns a u64 value and it's used in a division.
-> This causes build failures in 32-bit architectures, as reported by Randy
-> Dunlap.
+On Thursday, August 04, 2011, Rafael J. Wysocki wrote:
+> On Wednesday, August 03, 2011, Pavel Machek wrote:
+> > Hi!
+> > 
+> > > Freeze all filesystems during the freezing of tasks by calling
+> > > freeze_bdev() for each of them and thaw them during the thawing
+> > > of tasks with the help of thaw_bdev().
+> > > 
+> > > This is needed by hibernation, because some filesystems (e.g. XFS)
+> > > deadlock with the preallocation of memory used by it if the memory
+> > > pressure caused by it is too heavy.
+> > > 
+> > > The additional benefit of this change is that, if something goes
+> > > wrong after filesystems have been frozen, they will stay in a
+> > > consistent state and journal replays won't be necessary (e.g. after
+> > > a failing suspend or resume).  In particular, this should help to
+> > > solve a long-standing issue that in some cases during resume from
+> > > hibernation the boot loader causes the journal to be replied for the
+> > > filesystem containing the kernel image and initrd causing it to
+> > > become inconsistent with the information stored in the hibernation
+> > > image.
+> > 
+> > > +/**
+> > > + * freeze_filesystems - Force all filesystems into a consistent state.
+> > > + */
+> > > +void freeze_filesystems(void)
+> > > +{
+> > > +	struct super_block *sb;
+> > > +
+> > > +	lockdep_off();
+> > 
+> > Ouch. So... why do we need to silence this?
 > 
-> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Cc: Nitin Gupta <ngupta@vflare.org>
-> Cc: Greg KH <greg@kroah.com>
-> Cc: driverdevel <devel@driverdev.osuosl.org>
-> Cc: linux-next@vger.kernel.org
-> Cc: LKML <linux-kernel@vger.kernel.org>
-
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-
-Thanks.
-
-> ---
->  drivers/staging/zcache/zcache-main.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
+> So that it doesn't complain? :-)
 > 
-> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-> index 66469ac..2c41c44 100644
-> --- a/drivers/staging/zcache/zcache-main.c
-> +++ b/drivers/staging/zcache/zcache-main.c
-> @@ -28,6 +28,7 @@
->  #include <linux/spinlock.h>
->  #include <linux/types.h>
->  #include <linux/atomic.h>
-> +#include <linux/math64.h>
->  #include "tmem.h"
->  
->  #include "../zram/xvmalloc.h" /* if built in drivers/staging */
-> @@ -1162,6 +1163,7 @@ static void *zcache_pampd_create(char *data, size_t size, bool raw, int eph,
->  	uint16_t client_id = get_client_id_from_client(cli);
->  	unsigned long zv_mean_zsize;
->  	unsigned long curr_pers_pampd_count;
-> +	u64 total_zsize;
->  
->  	if (eph) {
->  		ret = zcache_compress(page, &cdata, &clen);
-> @@ -1194,8 +1196,9 @@ static void *zcache_pampd_create(char *data, size_t size, bool raw, int eph,
->  		}
->  		/* reject if mean compression is too poor */
->  		if ((clen > zv_max_mean_zsize) && (curr_pers_pampd_count > 0)) {
-> -			zv_mean_zsize = xv_get_total_size_bytes(cli->xvpool) /
-> -						curr_pers_pampd_count;
-> +			total_zsize = xv_get_total_size_bytes(cli->xvpool);
-> +			zv_mean_zsize = div_u64(total_zsize,
-> +						curr_pers_pampd_count);
->  			if (zv_mean_zsize > zv_max_mean_zsize) {
->  				zcache_mean_compress_poor++;
->  				goto out;
-> -- 
+> I'll need some time to get the exact details here.
 
+So, this is because ext3_freeze() that doesn't call
+journal_unlock_updates() on success, which quite frankly looks like
+a bug in ext3 to me.  At least that's different from what ext4 does
+in exactly the same situation (which looks correct).
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+If ext3_freeze() called journal_unlock_updates() on success too and
+the call to journal_unlock_updates() is removed from ext3_unfreeze(),
+we wouldn't need that lockdep_off()/lockdep_on() around the loop.
+
+I need someone with ext3/ext4 knowledge to comment here, though.
+
+Moreover, I'm not sure if other filesystems don't do such things.
+
+Anyway, this is just a false-positive, even with the ext3 code as is.
+
+> > > +	/*
+> > > +	 * Freeze in reverse order so filesystems dependant upon others are
+> > > +	 * frozen in the right order (eg. loopback on ext3).
+> > > +	 */
+> > > +	list_for_each_entry_reverse(sb, &super_blocks, s_list) {
+> > > +		if (!sb->s_root || !sb->s_bdev ||
+> > > +		    (sb->s_frozen == SB_FREEZE_TRANS) ||
+> > > +		    (sb->s_flags & MS_RDONLY) ||
+> > > +		    (sb->s_flags & MS_FROZEN))
+> > > +			continue;
+> > 
+> > Should we stop NFS from modifying remote server, too?
+> 
+> What do you mean exactly?
+> 
+> > Plus... ext3 writes to read-only filesystems on mount; not sure if it
+> > does it later. But RDONLY means 'user cant write to it' not 'bdev will
+> > not be modified'. Should we freeze all?
+> > 
+> > How can 'already frozen' happen?
+> > 
+> > > +	list_for_each_entry(sb, &super_blocks, s_list)
+> > > +		if (sb->s_flags & MS_FROZEN) {
+> > > +			sb->s_flags &= ~MS_FROZEN;
+> > > +			thaw_bdev(sb->s_bdev, sb);
+> > > +		}
+> > 
+> > ...because we'll unfreeze it even if we did not freeze it...
+> 
+> So we need not check MS_FROZEN in freeze_filesystems().  OK
+
+Thanks,
+Rafael
