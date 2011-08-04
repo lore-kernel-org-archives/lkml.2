@@ -1,148 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab1HDWWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 18:22:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50217 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754959Ab1HDWWH (ORCPT
+	id S1755607Ab1HDWX6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 18:23:58 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:33454 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754245Ab1HDWXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 18:22:07 -0400
-Message-ID: <4E3B1B7B.2040501@infradead.org>
-Date: Thu, 04 Aug 2011 19:21:47 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
-        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
-        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Greg KH <greg@kroah.com>,
-        Felipe Balbi <balbi@ti.com>, Clemens Ladisch <clemens@ladisch.de>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Theodore Kilgore <kilgota@banach.math.auburn.edu>,
-        Adam Baker <linux@baker-net.org.uk>
-Subject: Re: USB mini-summit at LinuxCon Vancouver
-References: <20110610002103.GA7169@xanatos>
-In-Reply-To: <20110610002103.GA7169@xanatos>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 4 Aug 2011 18:23:54 -0400
+Date: Thu, 4 Aug 2011 15:17:07 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+Cc: linux-next@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>, Greg KH <greg@kroah.com>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] zcache: Use div_u64 for 64-bit division
+Message-Id: <20110804151707.ccb67e28.rdunlap@xenotime.net>
+In-Reply-To: <1312495234-20961-1-git-send-email-cascardo@holoscopio.com>
+References: <20110804145145.4af47989.rdunlap@xenotime.net>
+	<1312495234-20961-1-git-send-email-cascardo@holoscopio.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sarah/Greg,
+On Thu,  4 Aug 2011 19:00:33 -0300 Thadeu Lima de Souza Cascardo wrote:
 
-Em 09-06-2011 21:21, Sarah Sharp escreveu:
-> I'm pleased to announce a USB mini-summit at LinuxCon Vancouver.
+> xv_get_total_size_bytes returns a u64 value and it's used in a division.
+> This causes build failures in 32-bit architectures, as reported by Randy
+> Dunlap.
 > 
-> What:	USB mini-summit
-> When:	Tuesday, August 16th, all day
-> Where:	At the conference venue, room TBD pending confirmation from
-> 	Angela Brown.
-> 
-> Proposed topics include USB virtualization, and improved bandwidth APIs
-> between the USB core and drivers (especially webcam drivers).  See the
-> detailed topic list below.  Anyone is also welcome to propose or show up
-> with a USB related topic.  MUSB?  USB 3.0 gadget drivers?  USB-IP?
-> 
-> The USB mini-summit does overlap with the virtualization mini-summit by
-> a day, but I'm hoping we can schedule talks so some of the
-> virtualization folks can make it to the USB mini-summit.  The other
-> option was on Friday during the conference which was not ideal.
-> 
-> Proposed topics:
-> 
-> Topic 1
-> -------
-> 
-> The KVM folks suggested that it would be good to get USB and
-> virtualization developers together to talk about how to virtualize the
-> xHCI host controller.  The xHCI spec architect worked closely with
-> VMWare to get some extra goodies in the spec to help virtualization, and
-> I'd like to see the other virtualization developers take advantage of
-> that.  I'd also like us to hash out any issues they have been finding in
-> the USB core or xHCI driver during the virtualization effort.
-> 
-> 
-> Topic 2
-> -------
-> 
-> I'd also like to get the V4L and audio developers who work with USB
-> devices together with the core USB folks to talk about bandwidth
-> management under xHCI.
-> 
-> One of the issues is that since the xHCI hardware does bandwidth
-> management, not the xHCI driver, a schedule that will take too much
-> bandwidth will get rejected much sooner than any USB driver currently
-> expects (during a call to usb_set_interface).  This poses issues, since
-> most USB video drivers negotiate the video size and frame rate after
-> they call usb_set_interface, so they don't know whether they can fall
-> back to a less bandwidth-intensive setting.  Currently, they just submit
-> URBs with less and less bandwidth until one interval setting gets
-> accepted that won't work under xHCI.
-> 
-> A second issue is that that some drivers need less bandwidth than the
-> device advertises, and the xHCI driver currently uses whatever periodic
-> interval the device advertises in its descriptors.  This is not what the
-> video/audio driver wants, especially in the case of buggy high speed
-> devices that advertise the interval in frames, not microframes.  There
-> needs to be some way for the drivers to communicate their bandwidth
-> needs to the USB core.  We've known about this issue for a while, and I
-> think it's time to get everyone in the same room and hash out an API.
-> 
-> (I will send out an API proposal later this month.)
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Cc: Nitin Gupta <ngupta@vflare.org>
+> Cc: Greg KH <greg@kroah.com>
+> Cc: driverdevel <devel@driverdev.osuosl.org>
+> Cc: linux-next@vger.kernel.org
+> Cc: LKML <linux-kernel@vger.kernel.org>
 
-While discussing the topics for the media workshop that will happen together
-with this year's KS/2011, one issue related to the USB stack came on our
-discussions: it is related to multi-function USB devices, as you can
-see on this thread:
-	http://www.spinics.net/lists/linux-media/msg36195.html
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-We have several cases of multi-function devices at the media subsystem.
-For example, most TV grabber devices provides Remote Controller, Video,
-audio and MPEG streaming capabilities, either implementing the standard
-USB API's, or the vendor class API's. There are even some devices that
-support USB storage, 3G modem and Digital TV.
+Thanks.
 
-Some of those devices have some resources that are mutually exclusive.
+> ---
+>  drivers/staging/zcache/zcache-main.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+> index 66469ac..2c41c44 100644
+> --- a/drivers/staging/zcache/zcache-main.c
+> +++ b/drivers/staging/zcache/zcache-main.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/spinlock.h>
+>  #include <linux/types.h>
+>  #include <linux/atomic.h>
+> +#include <linux/math64.h>
+>  #include "tmem.h"
+>  
+>  #include "../zram/xvmalloc.h" /* if built in drivers/staging */
+> @@ -1162,6 +1163,7 @@ static void *zcache_pampd_create(char *data, size_t size, bool raw, int eph,
+>  	uint16_t client_id = get_client_id_from_client(cli);
+>  	unsigned long zv_mean_zsize;
+>  	unsigned long curr_pers_pampd_count;
+> +	u64 total_zsize;
+>  
+>  	if (eph) {
+>  		ret = zcache_compress(page, &cdata, &clen);
+> @@ -1194,8 +1196,9 @@ static void *zcache_pampd_create(char *data, size_t size, bool raw, int eph,
+>  		}
+>  		/* reject if mean compression is too poor */
+>  		if ((clen > zv_max_mean_zsize) && (curr_pers_pampd_count > 0)) {
+> -			zv_mean_zsize = xv_get_total_size_bytes(cli->xvpool) /
+> -						curr_pers_pampd_count;
+> +			total_zsize = xv_get_total_size_bytes(cli->xvpool);
+> +			zv_mean_zsize = div_u64(total_zsize,
+> +						curr_pers_pampd_count);
+>  			if (zv_mean_zsize > zv_max_mean_zsize) {
+>  				zcache_mean_compress_poor++;
+>  				goto out;
+> -- 
 
-For example, some Digital Cameras can provide either access to the stored
-images, or can be used as webcams. Using them as webcams automatically
-deletes all stored images from it. So, a properly implemented driver
-should be returning -EBUSY (or -EPERM?) if someone tries to stream for
-such devices if is there any pictures stored on it. Symmetrically,
-accessing the stored pictures there should return -EBUSY if the device
-is streaming.
 
-Currently, the data access for Digital Cameras is implemented via libusb,
-libgphoto and gvfs, while the streaming interface is implemented via
-a gspca Kernel driver.
-
-I know that this problem were somewhat solved for 3G modems, with the usage
-of the userspace problem usb_modeswitch, and with some quirks for the USB
-storage driver, but I'm not sure if such tricks will scale forever, as more
-functions are seen on some USB devices.
-
-So, if we have some time, maybe we could start some discussions about that
-during the USB mini-summit.
-
-It should be noticed that the media subsystem has currently similar problems 
-on devices that provide both analog and digital TV, as some resources, like 
-the tuner can't be used simultaneously by the two API's. This happens even
-with PCI devices. So, maybe, in the end, we'll be writing some kernel library
-for resource locking, but it would be good if we can have preliminary
-discussions there, and let the final discussions to happen during KS/2011. 
-
-What do you think?
-
-Thanks!
-Mauro
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
