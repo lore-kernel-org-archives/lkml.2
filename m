@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab1HDW5R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 18:57:17 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:50393 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753556Ab1HDW5L (ORCPT
+	id S1755319Ab1HDXAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 19:00:37 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53712 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab1HDXAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 18:57:11 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [linux-pm] [GIT PULL] idle patches for Linux 3.1
-Organization: Texas Instruments, Inc.
-References: <alpine.LFD.2.02.1108031627060.19398@x980>
-	<CA+55aFxikiro4cEwGEOMCGUswyPsaAwyspP1cFUviJ5OUKOZJw@mail.gmail.com>
-	<alpine.LFD.2.02.1108040030550.29492@x980>
-Date: Thu, 04 Aug 2011 15:57:07 -0700
-In-Reply-To: <alpine.LFD.2.02.1108040030550.29492@x980> (Len Brown's message
-	of "Thu, 04 Aug 2011 01:03:40 -0400 (EDT)")
-Message-ID: <87bow423b0.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 4 Aug 2011 19:00:30 -0400
+From: Stephen Warren <swarren@nvidia.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>,
+        ccross@android.com, olof@lixom.net
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        alsa-devel@alsa-project.org, linux-mmc@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [RFC PATCH 0/3] If an IRQ is a GPIO, request and configure it
+Date: Thu,  4 Aug 2011 17:00:17 -0600
+Message-Id: <1312498820-2275-1-git-send-email-swarren@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Len Brown <lenb@kernel.org> writes:
+In http://www.spinics.net/lists/linux-tegra/msg01731.html, Mark Brown
+pointed out that it was a little silly forcing every board or driver
+to gpio_request() a GPIO that is later converted to an IRQ, and passed
+to request_irq. The first patch in this series instead makes the core
+IRQ code perform these calls when appropriate, to avoid duplicating it
+everywhere.
 
-> and I'm here to support them if anything goes wrong.
+However, this change has the potential for significant regressions; at
+least some drivers are already calling gpio_request for GPIOs that are
+also used as IRQs. This then causes the gpio_request inside the core IRQ
+code to fail, which causes functional regressions. I'm not sure how wide-
+spread this issue is, but in testing on NVIDIA Tegra, I found two
+instances that needed to be fixed. Perhaps  a failure of gpio_request
+in the core IRQ code should trigger a WARN rather than returning an
+error, to give a grace period for conversion of other code?
 
-Here's your first opportuntity for support. :)
+Stephen Warren (3):
+  irq: If an IRQ is a GPIO, request and configure it
+  mmc: tegra: Don't gpio_request GPIOs used as IRQs.
+  ASoC: jack_add_gpios: Don't gpio_request GPIOs used as IRQs.
 
-I see Linus has already pulled this, but it doesn't compile on ARM or
-SH as I just found out, and Trinabh poined out in reply to patch 5/5.
+ drivers/mmc/host/sdhci-tegra.c |    8 --------
+ kernel/irq/manage.c            |   25 +++++++++++++++++++++++--
+ sound/soc/soc-jack.c           |   13 +------------
+ 3 files changed, 24 insertions(+), 22 deletions(-)
 
-Here's a fix.
-
-Kevin
-
->From f8c825215f824b01a3f33416198def2fd685c7cf Mon Sep 17 00:00:00 2001
-From: Kevin Hilman <khilman@ti.com>
-Date: Thu, 4 Aug 2011 15:49:51 -0700
-Subject: [PATCH] cpuidle: ARM/SH: fix use of cpuidle_idle_call()
-
-commit a0bfa1373859e9d11dc92561a8667588803e42d8 (cpuidle: stop
-depending on pm_idle) introduced a call to cpuidle_call_idle() in the
-ARM and SH idle paths, but this function doesn't exist.  Use
-cpuidle_idle_call()
-
-Reported-by: Trinabh Gupta <trinabh@linux.vnet.ibm.com>
-Cc: Len Brown <len.brown@intel.com>
-Signed-off-by: Kevin Hilman <khilman@ti.com>
----
- arch/arm/kernel/process.c |    2 +-
- arch/sh/kernel/idle.c     |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index d7ee0d4..1a347f4 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -197,7 +197,7 @@ void cpu_idle(void)
- 				cpu_relax();
- 			} else {
- 				stop_critical_timings();
--				if (cpuidle_call_idle())
-+				if (cpuidle_idle_call())
- 					pm_idle();
- 				start_critical_timings();
- 				/*
-diff --git a/arch/sh/kernel/idle.c b/arch/sh/kernel/idle.c
-index 3c45de1..32114e0 100644
---- a/arch/sh/kernel/idle.c
-+++ b/arch/sh/kernel/idle.c
-@@ -101,7 +101,7 @@ void cpu_idle(void)
- 			local_irq_disable();
- 			/* Don't trace irqs off for idle */
- 			stop_critical_timings();
--			if (cpuidle_call_idle())
-+			if (cpuidle_idle_call())
- 				pm_idle();
- 			/*
- 			 * Sanity check to ensure that pm_idle() returns
--- 
-1.7.6
