@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab1HDTFU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 15:05:20 -0400
-Received: from smtp4.Stanford.EDU ([171.67.219.84]:58054 "EHLO
-	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754540Ab1HDTFP (ORCPT
+	id S1755021Ab1HDTJq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 15:09:46 -0400
+Received: from mx1.netlogicmicro.com ([12.203.210.36]:1830 "EHLO
+	orion5.netlogicmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751856Ab1HDTJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 15:05:15 -0400
-Message-ID: <4E3AED68.5060506@ccrma.stanford.edu>
-Date: Thu, 04 Aug 2011 12:05:12 -0700
-From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.11
+	Thu, 4 Aug 2011 15:09:42 -0400
+X-Greylist: delayed 1213 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Aug 2011 15:09:42 EDT
+X-TM-IMSS-Message-ID: <fc2a2e9f0003646f@netlogicmicro.com>
+Date: Fri, 5 Aug 2011 00:21:41 +0530
+From: "Jayachandran C." <jayachandranc@netlogicmicro.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mips@linux-mips.org
+Subject: Re: [RFC patch] MIPS/netlogic: dont setup boot CPU twice
+Message-ID: <20110804185139.GA11724@jayachandranc.netlogicmicro.com>
+References: <CAJd=RBDv1wsdVYmwdtr2BGOCuya1eKg4PeWeggPbz5u_5545ig@mail.gmail.com>
+ <CA+7sy7B7-zTr4MojT+7C+AD4+ap4aiiJKX4u+fOPzR52yEJGJA@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-Subject: Re: [ANNOUNCE] 3.0-rt6
-References: <alpine.LFD.2.02.1107282213000.31246@ionos>	 <4E3A3D7C.6050403@localhost> <1312450965.16729.7.camel@twins>
-In-Reply-To: <1312450965.16729.7.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+7sy7B7-zTr4MojT+7C+AD4+ap4aiiJKX4u+fOPzR52yEJGJA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 04 Aug 2011 18:50:35.0451 (UTC) FILETIME=[651960B0:01CC52D7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Was going to try this but it appears it is in rt7, trying to build rt7 
-fails with:
-
-ERROR: "of_find_property" [drivers/tty/serial/of_serial.ko] undefined!
-ERROR: "of_find_property" [drivers/hwmon/ltc4245.ko] undefined!
-
--- Fernando
-
-On 08/04/2011 02:42 AM, Peter Zijlstra wrote:
-> On Wed, 2011-08-03 at 23:34 -0700, Fernando Lopez-Lezcano wrote:
->> [  117.026009]  [<ffffffff814ef322>] _raw_spin_lock+0x45/0x79
->> [  117.026009]  [<ffffffff8107b6f1>] ? __run_posix_cpu_timers+0x8f/0x353
->> [  117.026009]  [<ffffffff8107b6f1>] __run_posix_cpu_timers+0x8f/0x353
->
-> I think its this one, could you confirm?
->
+> 
+> When do smp setup, check for boot CPU is added, then it is impossible to be
+> initialized twice.
+> 
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
 > ---
-> Index: linux-2.6/kernel/posix-cpu-timers.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/posix-cpu-timers.c
-> +++ linux-2.6/kernel/posix-cpu-timers.c
-> @@ -1288,10 +1288,11 @@ static inline int fastpath_timer_check(s
->   	sig = tsk->signal;
->   	if (sig->cputimer.running) {
->   		struct task_cputime group_sample;
-> +		unsigned long flags;
->
-> -		raw_spin_lock(&sig->cputimer.lock);
-> +		raw_spin_lock_irqsave(&sig->cputimer.lock, flags);
->   		group_sample = sig->cputimer.cputime;
-> -		raw_spin_unlock(&sig->cputimer.lock);
-> +		raw_spin_unlock_irqrestore(&sig->cputimer.lock, flags);
->
->   		if (task_cputime_expired(&group_sample,&sig->cputime_expires))
->   			return 1;
->
+>  arch/mips/netlogic/xlr/smp.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/mips/netlogic/xlr/smp.c b/arch/mips/netlogic/xlr/smp.c
+> index b495a7f..e6f8c62 100644
+> --- a/arch/mips/netlogic/xlr/smp.c
+> +++ b/arch/mips/netlogic/xlr/smp.c
+> @@ -167,6 +167,8 @@ void __init nlm_smp_setup(void)
+> 
+>        num_cpus = 1;
+>        for (i = 0; i < NR_CPUS; i++) {
+> +               if (i == boot_cpu)
+> +                       continue;
+>                if (nlm_cpu_ready[i]) {
+>                        cpu_set(i, phys_cpu_present_map);
+>                        __cpu_number_map[i] = num_cpus;
+
+The nlm_cpu_ready[] entry is not set for the boot_cpu, it is set for only 
+the secondary cpus in smpboot.S.  The code works as it is, but your patch
+makes it more explicit.
+
+My only commnet is that it might look better if you combine both the if checks.
+
+JC.
