@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501Ab1HDHVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 03:21:52 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:27008 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751769Ab1HDHVr (ORCPT
+	id S1752475Ab1HDHX7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 03:23:59 -0400
+Received: from exprod5og115.obsmtp.com ([64.18.0.246]:34312 "EHLO
+	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab1HDHXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 03:21:47 -0400
-Message-ID: <4E3A486D.7060506@oracle.com>
-Date: Thu, 04 Aug 2011 15:21:17 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	Thu, 4 Aug 2011 03:23:52 -0400
+Message-ID: <4E3A4904.3040007@ge.com>
+Date: Thu, 04 Aug 2011 08:23:48 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Daniel Stodden <daniel.stodden@citrix.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Annie Li <annie.li@oracle.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Kurt C Hackel <KURT.HACKEL@oracle.com>
-CC: Greg Marsden <greg.marsden@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Joe Jin <joe.jin@oracle.com>
-Subject: [PATCH -v3 0/3] xen-blkback: refactor vbd remove/disconnect.
+To: "Emilio G. Cota" <cota@braap.org>
+CC: Manohar Vanga <manohar.vanga@cern.ch>, gregkh@suse.de,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/8] staging: vme: add functions for bridge module refcounting
+References: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch> <1312194053-32310-6-git-send-email-manohar.vanga@cern.ch> <4E39555C.30507@ge.com> <20110803140630.GA29460@becoht-mvanga> <20110803152317.GA21903@flamenco.cs.columbia.edu>
+In-Reply-To: <20110803152317.GA21903@flamenco.cs.columbia.edu>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090202.4E3A4885.0088,ss=1,re=0.000,fgs=0
+X-OriginalArrivalTime: 04 Aug 2011 07:20:39.0514 (UTC) FILETIME=[0332ABA0:01CC5277]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/08/11 16:23, Emilio G. Cota wrote:
+> On Wed, Aug 03, 2011 at 16:06:30 +0200, Manohar Vanga wrote:
+>> Hey Martyn,
+>>
+>>> Can we not do this inside vme_master_request, vme_slave_request, etc?
+>>>
+>>> I.e. Add reference count when resources are given out.
+>>>
+>>> This would then be done in the vme_*_free routines.
+>>
+>> I agree this would be much better. I will change this and resend :)
+> 
+> To me it seems better to keep this as is, to be
+> used by .probe and .release methods, in the same way
+> usb_get_dev() and usb_put_dev() are used by usb drivers.
+> 
 
-This patchset is a backport and original patch author is Daniel Stodden:
-http://xenbits.xen.org/hg/XCP/linux-2.6.32.pq.hg/file/tip/CA-7672-blkback-shutdown.patch
+The description of the functions in usb.c suggests, to me at least, that these
+functions are the equivalent to the vme_*_request functions in the vme code.
+Being called when a function binds to an interface and when it is finished
+with it.
 
-Initial issue:
-  When we do block device attach/detach test with below steps, umount hang
-  in guest and the guest unable to shutdown:
-  
-  1. start guest with the latest kernel.
-  2. attach new block device by xm block-attach in Dom0
-  3. mount new disk in guest
-  4. execute xm block-detach to detach the block device in dom0 until timeout
-  5. try to unmount the disk in guest, umount hung. at here, any IOs to the 
-     device will hang.
-  
-Root cause:
-  This caused by 'xm block-detach' in Dom0 set backend device's state to
-  'XenbusStateClosing', frontend received the notification and 
-  blkfront_closing() be called, at the moment, the disk still using by guest,
-  so frontend refused to close. In the blkfront_closing(), frontend send a
-  notification to backend said that the its state switched to 'Closing', when
-  backend got the event, it will disconnect from real device, at here any IO
-  request will be stuck, even tried to release the disk by umount.
+Martyn
 
-  So this may fix either frontend or backend, I have send a fix for frontend:
-  https://lkml.org/lkml/2011/7/8/159
-  Ian think we should fix it from backend and he pointed out Daniel Stodden have
-  submitted a patch(see above link) for xen-blkback, I tried it and it works 
-  well.
-
-Changes:
-  v3:
-    - Unregister the device when backend state switch to XenbusStateClosed.
-
-  v2:
-    - Reformat code style.
-    - Per Knoard suggestions, change some int defines to bool.
-
- drivers/block/xen-blkback/blkback.c |   10 +--
- drivers/block/xen-blkback/common.h  |    5 +
- drivers/block/xen-blkback/xenbus.c  |  206 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-------
- 3 files changed, 195 insertions(+), 26 deletions(-)
+-- 
+Martyn Welch (Principal Software Engineer) | Registered in England and
+GE Intelligent Platforms                   | Wales (3828642) at 100
+T +44(0)127322748                          | Barbirolli Square, Manchester,
+E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
