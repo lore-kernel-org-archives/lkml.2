@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245Ab1HDQWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 12:22:14 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:18154 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755148Ab1HDQWE (ORCPT
+	id S1755201Ab1HDQYs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 12:24:48 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:7690 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766Ab1HDQYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 12:22:04 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/ll2c7pEOUO
-X-RZG-CLASS-ID: mo00
-Message-Id: <20110804162053.723541930@aepfle.de>
-User-Agent: quilt/0.48-16.4
-Date: Thu, 04 Aug 2011 18:20:53 +0200
-From: Olaf Hering <olaf@aepfle.de>
-To: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xensource.com
-Subject: [PATCH 0/3] [v4] kexec and kdump for Xen PVonHVM guests
+	Thu, 4 Aug 2011 12:24:44 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6427"; a="107928357"
+From: David Brown <davidb@codeaurora.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-sh@vger.kernel.org, Kevin Hilman <khilman@deeprootsystems.com>,
+        Paul Mundt <lethal@linux-sh.org>, x86@kernel.org,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH] cpuidle: Consistent spelling of cpuidle_idle_call()
+Date: Thu,  4 Aug 2011 09:24:31 -0700
+Message-Id: <1312475071-22973-1-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit a0bfa1373859e9d11dc92561a8667588803e42d8 mispells
+cpuidle_idle_call() on ARM and SH code.  Fix this to be consistent.
 
+Cc: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: x86@kernel.org
+Cc: Len Brown <len.brown@intel.com>
+Signed-off-by: David Brown <davidb@codeaurora.org>
+---
+The referenced commit breaks compilation on ARM, and appears it would
+do so on SH as well.
 
-The following series implements kexec and kdump in a Xen PVonHVM guest.
+David
 
-It is (should be) available via git:
+ arch/arm/kernel/process.c |    2 +-
+ arch/sh/kernel/idle.c     |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
- git://github.com/olafhering/linux.git xen-kexec-3.0
-
-The kexec or kdump kernel has to take care of already allocated virqs,
-PV devices in Closed or Connected state, and of registered watches in
-the old kernel. With the three patches these conditions are checked
-during boot of the new kernel rather than in the reboot/crash path.
-
-A fixed kexec-tools-2.0.2 package is required:
-http://lists.infradead.org/pipermail/kexec/2011-May/005026.html
-http://lists.infradead.org/pipermail/kexec/2011-August/005339.html
-
-Another fix is for xenstored, it has to accept the XS_INTRODUCE from a guest:
-http://lists.xensource.com/archives/html/xen-devel/2011-08/msg00007.html
-
-One open issue is the balloon driver. It removes pages from the guest
-and gives them back to the hypervisor. The kexec kernel is not aware of
-the fact that some pages are unavailable, and hangs or crashes.
-The workaround for the time being is:
-
-if test -f /sys/devices/system/xen_memory/xen_memory0/target -a \
-        -f /sys/devices/system/xen_memory/xen_memory0/target_kb
-then
-    cat /sys/devices/system/xen_memory/xen_memory0/target > \
-        /sys/devices/system/xen_memory/xen_memory0/target_kb
-fi
-kexec -e
-
-This has to be resolved with another series of changes.
-
-Olaf
-
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index d7ee0d4..1a347f4 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -197,7 +197,7 @@ void cpu_idle(void)
+ 				cpu_relax();
+ 			} else {
+ 				stop_critical_timings();
+-				if (cpuidle_call_idle())
++				if (cpuidle_idle_call())
+ 					pm_idle();
+ 				start_critical_timings();
+ 				/*
+diff --git a/arch/sh/kernel/idle.c b/arch/sh/kernel/idle.c
+index 3c45de1..32114e0 100644
+--- a/arch/sh/kernel/idle.c
++++ b/arch/sh/kernel/idle.c
+@@ -101,7 +101,7 @@ void cpu_idle(void)
+ 			local_irq_disable();
+ 			/* Don't trace irqs off for idle */
+ 			stop_critical_timings();
+-			if (cpuidle_call_idle())
++			if (cpuidle_idle_call())
+ 				pm_idle();
+ 			/*
+ 			 * Sanity check to ensure that pm_idle() returns
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
