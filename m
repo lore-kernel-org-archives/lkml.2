@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197Ab1HDAaw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 20:30:52 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:19140 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755913Ab1HDAas (ORCPT
+	id S1756250Ab1HDAgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 20:36:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56700 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756176Ab1HDAgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 20:30:48 -0400
-Message-ID: <06E5A35FD5B340D6A7022BD0298B1A83@hacdom.okisemi.com>
-From: "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
-To: "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>,
-        <grant.likely@secretlab.ca>, <spi-devel-general@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-Cc: <qi.wang@intel.com>, <yong.y.wang@intel.com>, <joel.clark@intel.com>,
-        <kok.howg.ewe@intel.com>, <tomoya-linux@dsn.okisemi.com>
-References: <1311141414-12867-1-git-send-email-toshiharu-linux@dsn.okisemi.com>
-Subject: Re: [PATCH] spi_topcliff_pch: supports a spi mode setup and bit order setup by IO control
-Date: Thu, 4 Aug 2011 09:20:10 +0900
+	Wed, 3 Aug 2011 20:36:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-2022-jp"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5931
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6109
+In-Reply-To: <20110803113033.1c3c6960@taxman.wild-wind.fr.eu.org>
+References: <20110801180151.GA26686@albatros> <20110801112021.25ec9041.akpm@linux-foundation.org>
+ <20110801190341.GA6898@albatros> <CA+55aFw2kHWY1N=ox1er7c-3WL4OA8x0M=Keu7hvAncKUZd1tQ@mail.gmail.com>
+ <20110802124530.GA2543@albatros> <20110802135512.b49c9de1.akpm@linux-foundation.org>
+ <d844457bba74be419d2434c533fdb4e1@localhost> <CA+55aFx+JOeDoNzs+1wfdK3kpNPyS9wpU1OT=VAwvWPXfMVuDQ@mail.gmail.com>
+ <20110803113033.1c3c6960@taxman.wild-wind.fr.eu.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 3 Aug 2011 14:35:09 -1000
+Message-ID: <CA+55aFzw-K6XvDzTwHRyqQWdkDO8Zqz8Ak1qgNTzf6a3L9=80A@mail.gmail.com>
+Subject: Re: [PATCH] shm: fix a race between shm_exit() and shm_init()
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>, Ingo Molnar <mingo@elte.hu>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Content-Type: multipart/mixed; boundary=0016363ba58e618a9904a9a3282a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+--0016363ba58e618a9904a9a3282a
+Content-Type: text/plain; charset=ISO-8859-1
 
-Could you review this patch?
-Thanks in advance.
+On Wed, Aug 3, 2011 at 12:30 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>
+> driver_init() is called from do_basic_setup(), before any initcall...
 
-Best Regards
-Toshiharu Okada
------ Original Message ----- 
-Sent: Wednesday, July 20, 2011 2:56 PM
-Subject: [PATCH] spi_topcliff_pch: supports a spi mode setup and bit order 
-setup by IO control
+Ok, thanks everybody. I think the proper fix is the attached patch.
+It's crazy to have usermode helpers enabled early during boot when
+init etc haven't even been set up.
 
+So does this finally fix the problem (I realize that there are other
+patches floating around that *also* fix it, so please test this
+without those other patches).
 
-This patch supports a spi mode setup and bit order setup by IO control.
-    spi mode:     mode 0 to mode 3
-    bit order:    LSB first, MSB first
+I'm planning on also applying the patch that optimizes the case of no
+shm attaches, which would also hide the oops, but I think this
+attached patch is the RightThing(tm).
 
-Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
----
- drivers/spi/spi_topcliff_pch.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+                   Linus
 
-diff --git a/drivers/spi/spi_topcliff_pch.c b/drivers/spi/spi_topcliff_pch.c
-index 79e48d4..dec83c9 100644
---- a/drivers/spi/spi_topcliff_pch.c
-+++ b/drivers/spi/spi_topcliff_pch.c
-@@ -1038,6 +1038,7 @@ static int pch_spi_probe(struct pci_dev *pdev, const 
-struct pci_device_id *id)
-  master->num_chipselect = PCH_MAX_CS;
-  master->setup = pch_spi_setup;
-  master->transfer = pch_spi_transfer;
-+ master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_LSB_FIRST;
-  dev_dbg(&pdev->dev,
-  "%s transfer member of SPI master initialized\n", __func__);
+--0016363ba58e618a9904a9a3282a
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gqwzt7ba0
 
--- 
-1.7.4.4
-
+IGluaXQvbWFpbi5jICAgfCAgICA1ICsrKystCiBrZXJuZWwva21vZC5jIHwgICAgMiArLQogMiBm
+aWxlcyBjaGFuZ2VkLCA1IGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0
+IGEvaW5pdC9tYWluLmMgYi9pbml0L21haW4uYwppbmRleCAxOTUyZDM3ZTRlY2IuLjljNTFlZTdh
+ZGYzZCAxMDA2NDQKLS0tIGEvaW5pdC9tYWluLmMKKysrIGIvaW5pdC9tYWluLmMKQEAgLTM2OSw5
+ICszNjksMTIgQEAgc3RhdGljIG5vaW5saW5lIHZvaWQgX19pbml0X3JlZm9rIHJlc3RfaW5pdCh2
+b2lkKQogCWluaXRfaWRsZV9ib290dXBfdGFzayhjdXJyZW50KTsKIAlwcmVlbXB0X2VuYWJsZV9u
+b19yZXNjaGVkKCk7CiAJc2NoZWR1bGUoKTsKLQlwcmVlbXB0X2Rpc2FibGUoKTsKKworCS8qIEF0
+IHRoaXMgcG9pbnQsIHdlIGNhbiBlbmFibGUgdXNlciBtb2RlIGhlbHBlciBmdW5jdGlvbmFsaXR5
+ICovCisJdXNlcm1vZGVoZWxwZXJfZW5hYmxlKCk7CiAKIAkvKiBDYWxsIGludG8gY3B1X2lkbGUg
+d2l0aCBwcmVlbXB0IGRpc2FibGVkICovCisJcHJlZW1wdF9kaXNhYmxlKCk7CiAJY3B1X2lkbGUo
+KTsKIH0KIApkaWZmIC0tZ2l0IGEva2VybmVsL2ttb2QuYyBiL2tlcm5lbC9rbW9kLmMKaW5kZXgg
+NDc2MTNkZmI3YjI4Li5kZGM3NjQ0YzEzMDUgMTAwNjQ0Ci0tLSBhL2tlcm5lbC9rbW9kLmMKKysr
+IGIva2VybmVsL2ttb2QuYwpAQCAtMjc0LDcgKzI3NCw3IEBAIHN0YXRpYyB2b2lkIF9fY2FsbF91
+c2VybW9kZWhlbHBlcihzdHJ1Y3Qgd29ya19zdHJ1Y3QgKndvcmspCiAgKiAodXNlZCBmb3IgcHJl
+dmVudGluZyB1c2VyIGxhbmQgcHJvY2Vzc2VzIGZyb20gYmVpbmcgY3JlYXRlZCBhZnRlciB0aGUg
+dXNlcgogICogbGFuZCBoYXMgYmVlbiBmcm96ZW4gZHVyaW5nIGEgc3lzdGVtLXdpZGUgaGliZXJu
+YXRpb24gb3Igc3VzcGVuZCBvcGVyYXRpb24pLgogICovCi1zdGF0aWMgaW50IHVzZXJtb2RlaGVs
+cGVyX2Rpc2FibGVkOworc3RhdGljIGludCB1c2VybW9kZWhlbHBlcl9kaXNhYmxlZCA9IDE7CiAK
+IC8qIE51bWJlciBvZiBoZWxwZXJzIHJ1bm5pbmcgKi8KIHN0YXRpYyBhdG9taWNfdCBydW5uaW5n
+X2hlbHBlcnMgPSBBVE9NSUNfSU5JVCgwKTsK
+--0016363ba58e618a9904a9a3282a--
