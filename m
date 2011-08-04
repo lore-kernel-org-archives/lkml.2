@@ -1,53 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab1HDUcJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 16:32:09 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:39219 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab1HDUb7 convert rfc822-to-8bit (ORCPT
+	id S1753571Ab1HDUcf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 16:32:35 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:38271 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab1HDUc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 16:31:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110803090223.GM4587@distanz.ch>
-References: <1312301372.2629.10.camel@localhost.localdomain>
-	<20110803090223.GM4587@distanz.ch>
-Date: Thu, 4 Aug 2011 21:31:58 +0100
-Message-ID: <CAAVPGOPbspuvS_745bPwAPuWY6_N5VQX-mUhxo=RZhZDNSn0QA@mail.gmail.com>
-Subject: Re: [PATCH] net/usb: Use kzalloc
-From: Julie Sullivan <kernelmail.jms@gmail.com>
-To: Tobias Klauser <tklauser@distanz.ch>
-Cc: Thomas Meyer <thomas@m3y3r.de>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 4 Aug 2011 16:32:29 -0400
+X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=ddWPId-p5DMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=EKdFGQPU1zHt2kv6tVQA:9 a=fgSWiJEXVfDhKF4HnooA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: [PATCH] cpupri: Fix memory barriers for vec updates to always be
+ in order
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <mgalbraith@suse.de>,
+        "Luis Claudio R." =?ISO-8859-1?Q?Gon=E7alves?= 
+	<lgoncalv@redhat.com>,
+        Matthew Hank Sabins <msabins@linux.vnet.ibm.com>,
+        Gregory Haskins <gregory.haskins@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1312317372.18583.101.camel@gandalf.stny.rr.com>
+References: <1312317372.18583.101.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 04 Aug 2011 16:32:23 -0400
+Message-ID: <1312489943.18583.190.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 2011-08-02 at 18:09:28 +0200, Thomas Meyer <thomas@m3y3r.de> wrote:
->> --- a/drivers/net/usb/cdc_ncm.c 2011-07-26 00:46:08.126846923 +0200
->> +++ b/drivers/net/usb/cdc_ncm.c 2011-08-01 20:20:43.396390040 +0200
->> @@ -479,12 +479,10 @@ static int cdc_ncm_bind(struct usbnet *d
->>       int temp;
->>       u8 iface_no;
->>
->> -     ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
->> +     ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
->>       if (ctx == NULL)
->>               return -ENODEV;
->>
->> -     memset(ctx, 0, sizeof(*ctx));
->> -
->>       init_timer(&ctx->tx_timer);
->>       spin_lock_init(&ctx->mtx);
->>       ctx->netdev = dev->net;
->>
->>
->> --
+Re-examining the cpupri patch, I see there's a possible race because the
+update of the two priorities vec->counts are not protected by a memory
+barrier.
 
-I think we could do with a log message before the SOB too (like you
-did in your 'Use resource_size()' patch? :-)
-The subject line is rather terse on its own.
+When a RT runqueue is overloaded and wants to push an RT task to another
+runqueue, it scans the RT priority vectors in a loop from lowest
+priority to highest.
 
-Cheers
-Julie
+When we queue or dequeue an RT task that changes a runqueue's highest
+priority task, we update the vectors to show that a runqueue is rated at
+a different priority. To do this, we first set the new priority mask,
+and increment the vec->count, and then set the old priority mask by
+decrementing the vec->count.
+
+If we are lowering the runqueue's RT priority rating, it will trigger a
+RT pull, and we do not care if we miss pushing to this runqueue or not. 
+
+But if we raise the priority, but the priority is still lower than an RT
+task that is looking to be pushed, we must make sure that this runqueue
+is still seen by the push algorithm (the loop).
+
+Because the loop reads from lowest to highest, and the new priority is
+set before the old one is cleared, we will either see the new or old
+priority set and the vector will be checked.
+
+But! Since there's no memory barrier between the updates of the two, the
+old count may be decremented first before the new count is incremented.
+This means the loop may see the old count of zero and skip it, and also
+the new count of zero before it was updated. A possible runqueue that
+the RT task could move to could be missed.
+
+A conditional memory barrier is placed between the vec->count updates
+and is only called when both updates are done.
+
+The smp_wmb() has also been changed to smp_mb__before_atomic_inc/dec(),
+as they are not needed by archs that already synchronize
+atomic_inc/dec().
+
+The smp_rmb() has been moved to be called at every iteration of the loop
+so that the race between seeing the two updates is visible by each
+iteration of the loop, as an arch is free to optimize the reading of
+memory of the counters in the loop.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/sched_cpupri.c b/kernel/sched_cpupri.c
+index 7761a26..7113243 100644
+--- a/kernel/sched_cpupri.c
++++ b/kernel/sched_cpupri.c
+@@ -73,9 +73,10 @@ int cpupri_find(struct cpupri *cp, struct task_struct *p,
+ 
+ 	for (idx = 0; idx < task_pri; idx++) {
+ 		struct cpupri_vec *vec  = &cp->pri_to_cpu[idx];
++		int skip = 0;
+ 
+ 		if (!atomic_read(&(vec)->count))
+-			continue;
++			skip = 1;
+ 		/*
+ 		 * When looking at the vector, we need to read the counter,
+ 		 * do a memory barrier, then read the mask.
+@@ -96,6 +97,10 @@ int cpupri_find(struct cpupri *cp, struct task_struct *p,
+ 		 */
+ 		smp_rmb();
+ 
++		/* Need to do the rmb for every iteration */
++		if (skip)
++			continue;
++
+ 		if (cpumask_any_and(&p->cpus_allowed, vec->mask) >= nr_cpu_ids)
+ 			continue;
+ 
+@@ -134,6 +139,7 @@ void cpupri_set(struct cpupri *cp, int cpu, int newpri)
+ {
+ 	int                 *currpri = &cp->cpu_to_pri[cpu];
+ 	int                  oldpri  = *currpri;
++	int                  do_mb = 0;
+ 
+ 	newpri = convert_prio(newpri);
+ 
+@@ -158,18 +164,34 @@ void cpupri_set(struct cpupri *cp, int cpu, int newpri)
+ 		 * do a write memory barrier, and then update the count, to
+ 		 * make sure the vector is visible when count is set.
+ 		 */
+-		smp_wmb();
++		smp_mb__before_atomic_inc();
+ 		atomic_inc(&(vec)->count);
++		do_mb = 1
+ 	}
+ 	if (likely(oldpri != CPUPRI_INVALID)) {
+ 		struct cpupri_vec *vec  = &cp->pri_to_cpu[oldpri];
+ 
+ 		/*
++		 * Because the order of modification of the vec->count
++		 * is important, we must make sure that the update
++		 * of the new prio is seen before we decrement the
++		 * old prio. This makes sure that the loop sees
++		 * one or the other when we raise the priority of
++		 * the run queue. We don't care about when we lower the
++		 * priority, as that will trigger an rt pull anyway.
++		 *
++		 * We only need to do a memory barrier if we updated
++		 * the new priority vec.
++		 */
++		if (do_mb)
++			smp_mb__after_atomic_inc();
++
++		/*
+ 		 * When removing from the vector, we decrement the counter first
+ 		 * do a memory barrier and then clear the mask.
+ 		 */
+ 		atomic_dec(&(vec)->count);
+-		smp_wmb();
++		smp_mb__after_atomic_inc();
+ 		cpumask_clear_cpu(cpu, vec->mask);
+ 	}
+ 
+
+
