@@ -1,63 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407Ab1HDHQG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 03:16:06 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:33069 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160Ab1HDHP5 (ORCPT
+	id S1752177Ab1HDHRn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 03:17:43 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:58837 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab1HDHRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 03:15:57 -0400
-Date: Thu, 04 Aug 2011 00:13:14 -0700 (PDT)
-Message-Id: <20110804.001314.1812549734453730417.davem@davemloft.net>
-To: grant.likely@secretlab.ca
-Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shawn.guo@linaro.org,
-        torvalds@linux-foundation.org
-Subject: Re: linux-next: build failure after merge of the final tree
- (devicetree tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CACxGe6ss62FFwQOk49dHqEN_35iVTSz0bFg4eH1T_iSeipiJaw@mail.gmail.com>
-References: <20110804142858.f7f2f128e5a038beb20aa87b@canb.auug.org.au>
-	<20110804163629.e866b8f3052b7ac34dc83912@canb.auug.org.au>
-	<CACxGe6ss62FFwQOk49dHqEN_35iVTSz0bFg4eH1T_iSeipiJaw@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 4 Aug 2011 03:17:39 -0400
+X-Nat-Received: from [202.181.97.72]:55355 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1312442149.28962
+Message-Id: <201108040715.p747FnXa042677@www262.sakura.ne.jp>
+Subject: Re: [3.0-git16] Oops at driver_uevent_store().
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: lacombar@gmail.com, bunk@stusta.de
+Cc: greg@kroah.com, akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 04 Aug 2011 00:13:15 -0700 (PDT)
+Date: Thu, 04 Aug 2011 16:15:49 +0900
+References: <201108040221.p742Lk3R069631@www262.sakura.ne.jp> <CACqU3MWQsh2cS8ck=c1-bOy-W649j0FjtNeOQbPaijAaCQ9wgA@mail.gmail.com> <201108040355.p743tBkv092694@www262.sakura.ne.jp> <CACqU3MVbHPuOjg9cY_GWdBGz3HPw3u7R3S14OOObN8-CFXGVaw@mail.gmail.com>
+In-Reply-To: <CACqU3MVbHPuOjg9cY_GWdBGz3HPw3u7R3S14OOObN8-CFXGVaw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 04082011 #5784654, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 4 Aug 2011 07:59:56 +0100
+Arnaud Lacombe wrote:
+> Marking `pci_eisa_driver' as __refdata fix the warning and leave the
+> struct untouched:
+> 
+> diff --git a/drivers/eisa/pci_eisa.c b/drivers/eisa/pci_eisa.c
+> index 30da70d..cdae207 100644
+> --- a/drivers/eisa/pci_eisa.c
+> +++ b/drivers/eisa/pci_eisa.c
 
-> Pull my tree now; there is a fix in there.  I'm just emailing it now.
-
-Ugh, Grant :-/
-
-So now you have APIs for finding information in the in-kernel copy
-of the device tree which are only available for flat DT platforms?
-
-Don't do that, please.
-
-It makes more sense instead to have this alias munger unconditionally
-work on the in-kernel copy after the device tree has been imported,
-and for all ways in which the tree can be imported.
-
-Anything else leads to fragmented interfaces for device driver
-writers.
-
-The bug is that this of_alias_scan() thing doesn't get a pointer to an
-allocator function.  It needs one just like the
-__unflatten_device_tree() function does.
-
-In fact this points out that of_alias_scan() was only placed into one
-of the two FT unflattening sites, it needs to go into both as well as
-places that build the device tree from real OpenFirmware calls.  And
-that makes an even stronger argument for adding an allocator function
-pointer arg to this thing.
-
-I think this change was stillborn when you committed it and you should
-have reviewed it more thoroughly and pushed back.
-
+This patch solved the oops. Thank you.
