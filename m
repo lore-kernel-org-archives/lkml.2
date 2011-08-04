@@ -1,64 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926Ab1HDLfA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 07:35:00 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:57825 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089Ab1HDLeO (ORCPT
+	id S1753494Ab1HDLgG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 07:36:06 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17827 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753089Ab1HDLgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 07:34:14 -0400
-From: Marcus Folkesson <marcus.folkesson@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org,
-        Marcus Folkesson <marcus.folkesson@gmail.com>
-Subject: [PATCH 1/4] regulator: tps65023: Fixes i2c configuration issues
-Date: Thu,  4 Aug 2011 13:33:49 +0200
-Message-Id: <1312457632-27075-2-git-send-email-marcus.folkesson@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1312457632-27075-1-git-send-email-marcus.folkesson@gmail.com>
-References: <marcus.folkesson@gmail.com>
- <1312457632-27075-1-git-send-email-marcus.folkesson@gmail.com>
+	Thu, 4 Aug 2011 07:36:05 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 04 Aug 2011 04:36:04 -0700
+From: dahuang@nvidia.com
+To: lrg@ti.com, broonie@opensource.wolfsonmicro.com, mike@compulab.co.il,
+        sameo@linux.intel.com, xxie@nvidia.com, gking@nvidia.com
+Cc: linux-kernel@vger.kernel.org, Danny Huang <dahuang@nvidia.com>
+Subject: [PATCH] regulator: tps6586x: add SMx slew rate setting
+Date: Thu,  4 Aug 2011 19:34:22 +0800
+Message-Id: <1312457662-4490-1-git-send-email-dahuang@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow i2c core voltage adjustments by clearing CORE ADJ Allowed bit in CTRL2
+From: Danny Huang <dahuang@nvidia.com>
 
-Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
+Add output vlotage slew rate setting for SM0/SM1
+
+From: Xin Xie <xxie@nvidia.com>
+
+Signed-off-by: Xin Xie <xxie@nvidia.com>
+Signed-off-by: Danny Huang <dahuang@nvidia.com>
 ---
- drivers/regulator/tps65023-regulator.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ drivers/regulator/tps6586x-regulator.c |   27 ++++++++++++++++++++++++++-
+ include/linux/mfd/tps6586x.h           |   15 +++++++++++++++
+ 2 files changed, 41 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
-index 701a590..a81abd4 100644
---- a/drivers/regulator/tps65023-regulator.c
-+++ b/drivers/regulator/tps65023-regulator.c
-@@ -63,6 +63,13 @@
- #define TPS65023_REG_CTRL_LDO2_EN	BIT(2)
- #define TPS65023_REG_CTRL_LDO1_EN	BIT(1)
+diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
+index bb04a75..9e5b459 100644
+--- a/drivers/regulator/tps6586x-regulator.c
++++ b/drivers/regulator/tps6586x-regulator.c
+@@ -332,6 +332,31 @@ static inline int tps6586x_regulator_preinit(struct device *parent,
+ 				 1 << ri->enable_bit[1]);
+ }
  
-+/* REG_CTRL2 bitfields */
-+#define TPS65023_REG_CTRL2_GO		BIT(7)
-+#define TPS65023_REG_CTRL2_CORE_ADJ	BIT(6)
-+#define TPS65023_REG_CTRL2_DCDC2	BIT(2)
-+#define TPS65023_REG_CTRL2_DCDC1	BIT(2)
-+#define TPS65023_REG_CTRL2_DCDC3	BIT(0)
++static int tps6586x_regulator_set_slew_rate(struct platform_device *pdev)
++{
++	struct device *parent = pdev->dev.parent;
++	struct regulator_init_data *p = pdev->dev.platform_data;
++	struct tps6586x_settings *setting = p->driver_data;
++	uint8_t reg;
 +
- /* LDO_CTRL bitfields */
- #define TPS65023_LDO_CTRL_LDOx_SHIFT(ldo_id)	((ldo_id)*4)
- #define TPS65023_LDO_CTRL_LDOx_MASK(ldo_id)	(0xF0 >> ((ldo_id)*4))
-@@ -475,6 +482,10 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
- 
- 	i2c_set_clientdata(client, tps);
- 
-+	/* Enable setting output voltage by I2C */
-+	tps_65023_clear_bits(tps, TPS65023_REG_CON_CTRL2,
-+						TPS65023_REG_CTRL2_CORE_ADJ);
++	if (setting == NULL)
++		return 0;
 +
- 	return 0;
++	/* only SM0 and SM1 can have the slew rate settings */
++	switch (pdev->id) {
++	case TPS6586X_ID_SM_0:
++		reg = TPS6586X_SM0SL;
++		break;
++	case TPS6586X_ID_SM_1:
++		reg = TPS6586X_SM1SL;
++		break;
++	default:
++		dev_err(&pdev->dev, "invalid regulator ID\n");
++		return -EINVAL;
++	}
++	return tps6586x_write(parent, reg, setting->slew_rate);
++}
++
+ static inline struct tps6586x_regulator *find_regulator_info(int id)
+ {
+ 	struct tps6586x_regulator *ri;
+@@ -374,7 +399,7 @@ static int __devinit tps6586x_regulator_probe(struct platform_device *pdev)
  
-  fail:
+ 	platform_set_drvdata(pdev, rdev);
+ 
+-	return 0;
++	return tps6586x_regulator_set_slew_rate(pdev);
+ }
+ 
+ static int __devexit tps6586x_regulator_remove(struct platform_device *pdev)
+diff --git a/include/linux/mfd/tps6586x.h b/include/linux/mfd/tps6586x.h
+index b6bab1b..9dfb2bb 100644
+--- a/include/linux/mfd/tps6586x.h
++++ b/include/linux/mfd/tps6586x.h
+@@ -48,6 +48,21 @@ enum {
+ 	TPS6586X_INT_RTC_ALM2,
+ };
+ 
++enum {
++	TPS6586x_SLEW_RATE_INSTANTLY,
++	TPS6586x_SLEW_RATE_110UV,
++	TPS6586x_SLEW_RATE_220UV,
++	TPS6586x_SLEW_RATE_440UV,
++	TPS6586x_SLEW_RATE_880UV,
++	TPS6586x_SLEW_RATE_1760UV,
++	TPS6586x_SLEW_RATE_3520UV,
++	TPS6586x_SLEW_RATE_7040UV,
++};
++
++struct tps6586x_settings {
++	int slew_rate;
++};
++
+ struct tps6586x_subdev_info {
+ 	int		id;
+ 	const char	*name;
 -- 
-1.7.4.1
+1.7.0.4
 
