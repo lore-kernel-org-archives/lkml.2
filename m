@@ -1,35 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab1HDSqR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 14:46:17 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42581 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754817Ab1HDSqL (ORCPT
+	id S1755481Ab1HDSqx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 14:46:53 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:39984 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754922Ab1HDSqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 14:46:11 -0400
-Date: Thu, 4 Aug 2011 19:45:20 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Kumar Gala <galak@kernel.crashing.org>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] 8250: Fix compiler warning
-Message-ID: <20110804194520.5a3dbd38@pyx>
-In-Reply-To: <1312445581-16283-1-git-send-email-galak@kernel.crashing.org>
-References: <1312445581-16283-1-git-send-email-galak@kernel.crashing.org>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; i386-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 4 Aug 2011 14:46:47 -0400
+Message-ID: <4E3AE912.7050402@us.ibm.com>
+Date: Thu, 04 Aug 2011 13:46:42 -0500
+From: Anthony Liguori <aliguori@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: dlaor@redhat.com
+CC: Eric B Munson <emunson@mgebm.net>, kvm@vger.kernel.org,
+        kvm-ia64@vger.kernel.org, kvm-ppc@vger.kernel.org, avi@redhat.com,
+        riel@redhat.com, glommer@redhat.com, linux-kernel@vger.kernel.org,
+        Ryan A Harper <raharper@us.ibm.com>, Glauber Costa <glommer@gmail.com>
+Subject: Re: [RFC PATCH 0/3] Avoid soft lockup message when KVM is stopped
+ by host
+References: <1312381501-27746-1-git-send-email-emunson@mgebm.net> <4E3A5A38.9080406@redhat.com>
+In-Reply-To: <4E3A5A38.9080406@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  4 Aug 2011 03:13:01 -0500
-Kumar Gala <galak@kernel.crashing.org> wrote:
+On 08/04/2011 03:37 AM, Dor Laor wrote:
+> On 08/03/2011 05:24 PM, Eric B Munson wrote:
+>> This set is just a rough first pass at avoiding soft lockup warnings
+>> when a host
+>> pauses the execution of a guest. A flag is set by the host in the
+>> shared page
+>> used for the pvclock when the host goes to stop the guest. When the guest
+>> resumes and detects a soft lockup, this flag is checked and cleared
+>> and the soft
+>> lockup message is skipped.
+>
+> While this will cover the case were the host stops a guest, there will
+> be other plain cases where the host is just over committed and will
+> cause a softlockup false positive on the guest.
+>
+> Softlockup should use stolen time that makes use of the guest running
+> info would cover both cases
 
-> drivers/tty/serial/8250.c: In function 'serial8250_shutdown':
-> drivers/tty/serial/8250.c:1775:19: warning: 'i' may be used uninitialized in this function
+At least in the current steal time implementation, there are numerous 
+cases where steal time is not accounted but you'd hit a soft lockup.
 
-NAK, as with all the previous nacks of this.
+Pausing an idle guest via (qemu) stop is an example.  Likewise, a guest 
+that is descheduled while idle but then not scheduled for prolonged 
+periods of time would also not be accounted as steal time.
 
-Use a newer gcc - modern gcc gets it right.
+Regards,
+
+Anthony Liguori
