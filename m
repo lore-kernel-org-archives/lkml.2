@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab1HDWGN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 18:06:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35185 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755795Ab1HDWGI (ORCPT
+	id S1755961Ab1HDWGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 18:06:36 -0400
+Received: from www17.your-server.de ([213.133.104.17]:45246 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755629Ab1HDWGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 18:06:08 -0400
-Date: Thu, 4 Aug 2011 17:06:02 -0500
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: Serge Hallyn <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com, ebiederm@xmission.com,
-        containers@lists.linux-foundation.org, netdev@vger.kernel.org,
-        akpm@osdl.org
-Subject: Re: [PATCH 10/14] net/core/scm.c: target capable() calls to user_ns
- owning the net_ns
-Message-ID: <20110804220602.GA32347@sergelap>
-References: <1311706717-7398-1-git-send-email-serge@hallyn.com>
- <1311706717-7398-11-git-send-email-serge@hallyn.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311706717-7398-11-git-send-email-serge@hallyn.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 4 Aug 2011 18:06:30 -0400
+Subject: [PATCH] GFP_KERNEL malloc with lock held in net/wireless/mwifiex
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kernel-janitors@vger.kernel.org
+Date: Fri, 05 Aug 2011 00:05:58 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1312495562.2629.53.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Serge Hallyn (serge@hallyn.com):
-> From: Serge E. Hallyn <serge.hallyn@canonical.com>
-> 
-> The uid/gid comparisons don't have to be pulled out.  This just seemed
-> more easily proved correct.
+From: Thomas Meyer <thomas@m3y3r.de>
 
-The following needs to be folded into this patch:
+ Find functions that refer to GFP_KERNEL but are called with locks held.
+ The proposed change of converting the GFP_KERNEL is not necessarily the
+ correct one.  It may be desired to unlock the lock, or to not call the
+ function under the lock in the first place.
 
-From: Serge Hallyn <serge.hallyn@canonical.com>
-Date: Thu, 4 Aug 2011 21:48:13 +0000
-Subject: [PATCH 2/2] fold up - net/core/scm.c: cred is const
+ The semantic patch that makes this output is available
+ in scripts/coccinelle/locks/call_kern.cocci.
 
-Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
+ More information about semantic patching is available at
+ http://coccinelle.lip6.fr/
+
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
- net/core/scm.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+the function mwifiex_save_curr_bcn() is guarded by:
 
-diff --git a/net/core/scm.c b/net/core/scm.c
-index 21b5d0b..528fa36 100644
---- a/net/core/scm.c
-+++ b/net/core/scm.c
-@@ -43,7 +43,7 @@
-  *	setu(g)id.
-  */
+ spin_lock_irqsave(&priv->curr_bcn_buf_lock, flags);
+ mwifiex_save_curr_bcn(priv);
+ spin_unlock_irqrestore(&priv->curr_bcn_buf_lock, flags);
+
+Is it okay to allocate memory with a spin lock held and interrupts
+disabled in this case?
+
+diff -u -p a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
+--- a/drivers/net/wireless/mwifiex/scan.c 2011-07-26 00:46:08.483511656 +0200
++++ b/drivers/net/wireless/mwifiex/scan.c 2011-08-02 09:36:50.174808818 +0200
+@@ -2998,7 +2998,7 @@ mwifiex_save_curr_bcn(struct mwifiex_pri
  
--static __inline__ bool uidequiv(struct cred *src, struct ucred *tgt,
-+static __inline__ bool uidequiv(const struct cred *src, struct ucred *tgt,
- 			       struct user_namespace *ns)
- {
- 	if (src->user_ns != ns)
-@@ -57,7 +57,7 @@ check_capable:
- 	return false;
- }
- 
--static __inline__ bool gidequiv(struct cred *src, struct ucred *tgt,
-+static __inline__ bool gidequiv(const struct cred *src, struct ucred *tgt,
- 			       struct user_namespace *ns)
- {
- 	if (src->user_ns != ns)
--- 
-1.7.5.4
+ 		kfree(priv->curr_bcn_buf);
+ 		priv->curr_bcn_buf = kzalloc(curr_bss->beacon_buf_size,
+-						GFP_KERNEL);
++						GFP_ATOMIC);
+ 		if (!priv->curr_bcn_buf) {
+ 			dev_err(priv->adapter->dev,
+ 					"failed to alloc curr_bcn_buf\n");
+
 
