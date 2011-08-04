@@ -1,213 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab1HDWNn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 18:13:43 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:48212 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755925Ab1HDWNb (ORCPT
+	id S1756024Ab1HDWW1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 18:22:27 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:46955 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756003Ab1HDWWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 18:13:31 -0400
-From: Alex Neronskiy <zakmagnus@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Alex Neronskiy <zakmagnus@chromium.org>
-Subject: [PATCH v4 2/2] Output stall traces in /proc
-Date: Thu,  4 Aug 2011 15:13:11 -0700
-Message-Id: <1312495991-28377-2-git-send-email-zakmagnus@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1312495991-28377-1-git-send-email-zakmagnus@chromium.org>
-References: <1312495991-28377-1-git-send-email-zakmagnus@chromium.org>
+	Thu, 4 Aug 2011 18:22:14 -0400
+Date: Thu, 4 Aug 2011 15:22:11 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Amerigo Wang <amwang@redhat.com>,
+        gregkh@suse.de
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, akpm <akpm@linux-foundation.org>
+Subject: [PATCH -next] drivers/base/inode.c: let vmstat_text be optional
+Message-Id: <20110804152211.ea10e3e7.rdunlap@xenotime.net>
+In-Reply-To: <20110804145834.3b1d92a9eeb8357deb84bf83@canb.auug.org.au>
+References: <20110804145834.3b1d92a9eeb8357deb84bf83@canb.auug.org.au>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of using the log, use files in /proc for trace output.
-Printing to the log can result in watchdog touches, distorting the
-very events being measured. Additionally, the information will not
-distract from lockups when users view the log.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Signed-off-by: Alex Neronskiy <zakmagnus@chromium.org>
+vmstat_text is only available when PROC_FS or SYSFS is enabled.
+This causes build errors in drivers/base/node.c when they are
+both disabled:
+
+drivers/built-in.o: In function `node_read_vmstat':
+node.c:(.text+0x10e28f): undefined reference to `vmstat_text'
+
+Rather than litter drivers/base/node.c with #ifdef/#endif around
+the affected lines of code, add macros for optional sysdev
+attributes so that those lines of code will be ignored, without
+using #ifdef/#endif in the .c file(s).  I.e., the ifdeffery
+is done only in a header file with sysdev_create_file_optional()
+and sysdev_remove_file_optional().
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 ---
- kernel/watchdog.c |  107 ++++++++++++++++++++++++++++++++++++++++++----------
- 1 files changed, 86 insertions(+), 21 deletions(-)
+ drivers/base/node.c    |    6 ++++--
+ include/linux/sysdev.h |   14 ++++++++++++++
+ include/linux/vmstat.h |    2 ++
+ 3 files changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 8dd9ed4..9cdc6bb 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -23,13 +23,24 @@
- #include <linux/notifier.h>
- #include <linux/module.h>
- #include <linux/sysctl.h>
-+#include <linux/stacktrace.h>
-+#include <linux/seq_file.h>
-+#include <linux/proc_fs.h>
+--- linux-next-20110804.orig/include/linux/vmstat.h
++++ linux-next-20110804/include/linux/vmstat.h
+@@ -258,6 +258,8 @@ static inline void refresh_zone_stat_thr
  
- #include <asm/irq_regs.h>
- #include <linux/perf_event.h>
+ #endif		/* CONFIG_SMP */
  
-+#define STALL_MAX_TRACE_DEPTH 50
- int watchdog_enabled = 1;
- int __read_mostly watchdog_thresh = 10;
- unsigned long worst_softstall;
-+static unsigned long softstall_trace_entries[STALL_MAX_TRACE_DEPTH];
-+static struct stack_trace softstall_trace = {
-+	.nr_entries = 0,
-+	.max_entries = STALL_MAX_TRACE_DEPTH,
-+	.entries = softstall_trace_entries,
-+	.skip = 0
-+};
- static DEFINE_SPINLOCK(softstall_lock);
++#if defined(CONFIG_PROC_FS) || defined(CONFIG_SYSFS)
+ extern const char * const vmstat_text[];
++#endif
  
- static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
-@@ -46,6 +57,13 @@ static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_missed);
- static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
- 
- unsigned long worst_hardstall;
-+static unsigned long hardstall_trace_entries[STALL_MAX_TRACE_DEPTH];
-+static struct stack_trace hardstall_trace = {
-+	.nr_entries = 0,
-+	.max_entries = STALL_MAX_TRACE_DEPTH,
-+	.entries = hardstall_trace_entries,
-+	.skip = 0
-+};
- static DEFINE_SPINLOCK(hardstall_lock);
- 
- /* The number of consecutive hard check failures before it's a lockup */
-@@ -210,23 +228,16 @@ void touch_softlockup_watchdog_sync(void)
- /* watchdog detector functions */
- static void update_hardstall(unsigned long stall, int this_cpu)
- {
--	int update_stall = 0;
--
- 	if (stall > hardstall_thresh && stall > worst_hardstall) {
- 		unsigned long flags;
- 		spin_lock_irqsave(&hardstall_lock, flags);
--		update_stall = stall > worst_hardstall;
--		if (update_stall)
-+		if (stall > worst_hardstall) {
- 			worst_hardstall = stall;
-+			hardstall_trace.nr_entries = 0;
-+			save_stack_trace(&hardstall_trace);
-+		}
- 		spin_unlock_irqrestore(&hardstall_lock, flags);
- 	}
--
--	if (update_stall) {
--		printk(KERN_WARNING "LOCKUP may be in progress!"
--			"Worst hard stall seen on CPU#%d: %lu interrupts missed\n",
--			this_cpu, stall);
--		dump_stack();
--	}
+ #endif /* _LINUX_VMSTAT_H */
+--- linux-next-20110804.orig/drivers/base/node.c
++++ linux-next-20110804/drivers/base/node.c
+@@ -176,6 +176,7 @@ static ssize_t node_read_numastat(struct
  }
+ static SYSDEV_ATTR(numastat, S_IRUGO, node_read_numastat, NULL);
  
- static int is_hardlockup(int this_cpu)
-@@ -252,23 +263,17 @@ static int is_hardlockup(int this_cpu)
- 
- static void update_softstall(unsigned long stall, int this_cpu)
++#if defined(CONFIG_PROC_FS) || defined(CONFIG_SYSFS)
+ static ssize_t node_read_vmstat(struct sys_device *dev,
+ 				struct sysdev_attribute *attr, char *buf)
  {
--	int update_stall = 0;
- 	if (stall > get_softstall_thresh() &&
- 			stall > worst_softstall + softstall_diff_thresh) {
- 		unsigned long flags;
- 		spin_lock_irqsave(&softstall_lock, flags);
--		update_stall = stall > worst_softstall + softstall_diff_thresh;
--		if (update_stall)
-+		if (stall > worst_softstall + softstall_diff_thresh) {
- 			worst_softstall = stall;
-+			softstall_trace.nr_entries = 0;
-+			save_stack_trace(&softstall_trace);
-+		}
- 		spin_unlock_irqrestore(&softstall_lock, flags);
- 	}
--
--	if (update_stall) {
--		printk(KERN_WARNING "LOCKUP may be in progress!"
--				"Worst soft stall seen on CPU#%d: %lums\n",
--				this_cpu, stall);
--		dump_stack();
--	}
+@@ -190,6 +191,7 @@ static ssize_t node_read_vmstat(struct s
+ 	return n;
  }
+ static SYSDEV_ATTR(vmstat, S_IRUGO, node_read_vmstat, NULL);
++#endif
  
- static int is_softlockup(unsigned long touch_ts, int this_cpu)
-@@ -667,10 +672,63 @@ static struct notifier_block __cpuinitdata cpu_nfb = {
- 	.notifier_call = cpu_callback
- };
+ static ssize_t node_read_distance(struct sys_device * dev,
+ 			struct sysdev_attribute *attr, char * buf)
+@@ -274,7 +276,7 @@ int register_node(struct node *node, int
+ 		sysdev_create_file(&node->sysdev, &attr_meminfo);
+ 		sysdev_create_file(&node->sysdev, &attr_numastat);
+ 		sysdev_create_file(&node->sysdev, &attr_distance);
+-		sysdev_create_file(&node->sysdev, &attr_vmstat);
++		sysdev_create_file_optional(&node->sysdev, &attr_vmstat);
  
-+static int show_stall_trace(struct seq_file *f, void *v)
-+{
-+	int i, end;
-+	struct stack_trace *trace = f->private;
-+	spinlock_t *lock;
-+	unsigned long flags;
-+
-+	if (trace == &softstall_trace)
-+		lock = &softstall_lock;
-+	else
-+		lock = &hardstall_lock;
-+
-+	end = trace->nr_entries;
-+	/* don't bother printing the trailing value */
-+	if (end < trace->max_entries)
-+		end--;
-+
-+	spin_lock_irqsave(lock, flags);
-+	for (i = 0; i < end; i++) {
-+		seq_printf(f, "[<%pK>] %pS\n", (void *)trace->entries[i],
-+				(void *)trace->entries[i]);
-+	}
-+	spin_unlock_irqrestore(lock, flags);
-+
-+	return 0;
-+}
-+
-+static int softstall_trace_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, show_stall_trace, &softstall_trace);
-+}
-+
-+static int hardstall_trace_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, show_stall_trace, &hardstall_trace);
-+}
-+
-+static struct file_operations softstall_trace_ops = {
-+	.open = softstall_trace_open,
-+	.read = seq_read,
-+	.write = seq_write,
-+	.llseek = seq_lseek,
-+	.release = seq_release
-+};
-+static struct file_operations hardstall_trace_ops = {
-+	.open = hardstall_trace_open,
-+	.read = seq_read,
-+	.write = seq_write,
-+	.llseek = seq_lseek,
-+	.release = seq_release
-+};
-+
- void __init lockup_detector_init(void)
- {
- 	void *cpu = (void *)(long)smp_processor_id();
- 	int err;
-+	struct proc_dir_entry *entry;
+ 		scan_unevictable_register_node(node);
  
- 	err = cpu_callback(&cpu_nfb, CPU_UP_PREPARE, cpu);
- 	WARN_ON(notifier_to_errno(err));
-@@ -678,5 +736,12 @@ void __init lockup_detector_init(void)
- 	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
- 	register_cpu_notifier(&cpu_nfb);
+@@ -299,7 +301,7 @@ void unregister_node(struct node *node)
+ 	sysdev_remove_file(&node->sysdev, &attr_meminfo);
+ 	sysdev_remove_file(&node->sysdev, &attr_numastat);
+ 	sysdev_remove_file(&node->sysdev, &attr_distance);
+-	sysdev_remove_file(&node->sysdev, &attr_vmstat);
++	sysdev_remove_file_optional(&node->sysdev, &attr_vmstat);
  
-+	entry = create_proc_entry("softstall_trace", 0444, NULL);
-+	if (entry)
-+		entry->proc_fops = &softstall_trace_ops;
-+	entry = create_proc_entry("hardstall_trace", 0444, NULL);
-+	if (entry)
-+		entry->proc_fops = &hardstall_trace_ops;
+ 	scan_unevictable_unregister_node(node);
+ 	hugetlb_unregister_node(node);		/* no-op, if memoryless node */
+--- linux-next-20110804.orig/include/linux/sysdev.h
++++ linux-next-20110804/include/linux/sysdev.h
+@@ -114,6 +114,20 @@ struct sysdev_attribute { 
+ extern int sysdev_create_file(struct sys_device *, struct sysdev_attribute *);
+ extern void sysdev_remove_file(struct sys_device *, struct sysdev_attribute *);
+ 
++#if defined(CONFIG_PROC_FS) || defined(CONFIG_SYSFS)
++#define sysdev_create_file_optional(sysdev, sysdevattr)	\
++	return sysdev_create_file(sysdev, sysdevattr);
 +
- 	return;
- }
--- 
-1.7.3.1
-
++#define sysdev_remove_file_optional(sysdev, sysdevattr)	\
++		sysdev_remove_file(sysdev, sysdevattr);
++#else
++#define sysdev_create_file_optional(sysdev, sysdevattr)	\
++		(0)
++
++#define sysdev_remove_file_optional(sysdev, sysdevattr)	\
++		do {} while (0)
++#endif
++
+ /* Create/remove NULL terminated attribute list */
+ static inline int
+ sysdev_create_files(struct sys_device *d, struct sysdev_attribute **a)
