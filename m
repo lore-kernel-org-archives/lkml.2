@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751250Ab1HDFD6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 01:03:58 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:34026 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770Ab1HDFDv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 01:03:51 -0400
-Date: Thu, 04 Aug 2011 01:03:40 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Subject: Re: [GIT PULL] idle patches for Linux 3.1
-In-reply-to: <CA+55aFxikiro4cEwGEOMCGUswyPsaAwyspP1cFUviJ5OUKOZJw@mail.gmail.com>
-Message-id: <alpine.LFD.2.02.1108040030550.29492@x980>
-References: <alpine.LFD.2.02.1108031627060.19398@x980>
- <CA+55aFxikiro4cEwGEOMCGUswyPsaAwyspP1cFUviJ5OUKOZJw@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1751325Ab1HDFJU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 01:09:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59022 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750770Ab1HDFJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 01:09:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,315,1309762800"; 
+   d="scan'208";a="35633592"
+Subject: Re: [PATCH 09/18] dmaengine/amba-pl08x: Schedule tasklet in case
+ of error interrupt
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: viresh kumar <viresh.linux@gmail.com>
+Cc: Viresh Kumar <viresh.kumar@st.com>, linus.walleij@linaro.org,
+        pratyush.anand@st.com, rajeev-dlh.kumar@st.com, linux@arm.linux.org.uk,
+        bhupesh.sharma@st.com, shiraz.hashim@st.com,
+        linux-kernel@vger.kernel.org, vipin.kumar@st.com,
+        armando.visconti@st.com, amit.virdi@st.com, vipulkumar.samar@st.com,
+        deepak.sikri@st.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <CAOh2x==_g+JQzTizgVTdH8Dyg_5+KpyYm+G_Ddu5mO15N6n-tw@mail.gmail.com>
+References: <cover.1311936523.git.viresh.kumar@st.com>
+	 <9c81beb9cd84f84b58abbd24ebfae85dfe8d8ee1.1311936524.git.viresh.kumar@st.com>
+	 <1311941799.1536.532.camel@vkoul-udesk3>
+	 <CAOh2x==_g+JQzTizgVTdH8Dyg_5+KpyYm+G_Ddu5mO15N6n-tw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 04 Aug 2011 09:55:18 +0530
+Message-ID: <1312431918.1536.559.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Aug 3, 2011 at 10:54 AM, Len Brown <lenb@kernel.org> wrote:
-> >
-> > please pull from:
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6.git idle-release
+On Fri, 2011-07-29 at 08:30 -0700, viresh kumar wrote:
+> On 7/29/11, Koul, Vinod <vinod.koul@intel.com> wrote:
+> > On Fri, 2011-07-29 at 16:19 +0530, Viresh Kumar wrote:
+> >> +		dev_err(&pl08x->adev->dev, "%s error interrupt, register value"
+> >> +				"0x%08x\n", __func__, err);
+> > again this looks convoluted, and the stuff is quotes can be in single
+> > line :)
 > 
-> As with the APEI tree, the commits are all recent and cannot have been
-> in -next.  It's the last day before the merge window closes, please
-> tell me why I should take this in this cycle at all?
+> Will take care of this in all patches.
+> 
+> > but in tasklet you will call the client callback, so how does the client
+> > know if this was success or error? Did I miss anything?
+> 
+> No you didn't. I couldn't find a way in framework to report back to
+> client success or failure.
+> Is there any way? For now i have only kept error prints.
+Sorry for not responding earlier.
 
-I re-based this branch immediately before pushing
-in order to add "Acked-by" annotations.
+Yes that's the whole point, today callback mechanism doesn't tell the
+_status_ of the transfer (which if we need change can be discussed as
+well), but to counter argue I have never been able to generate the error
+interrupt, are you able to do on your controller?
 
-The cpuidle patches were in linux-next back in April.
-But they were on a branch with other patches that got
-deferred till 2012 b/c some folks were uneasy with
-me deleting so much code so suddenly.  I cherry-picked
-some simple ones here b/c IBM asked me to in order to
-make their upcoming p-series cpuidle patches cleaner.
+One more point wrt this patch, what do we gain here from calling
+tasklet, are you cleaning up your queue for the error descriptor or
+something, I think not. so just calling to print doesn't make sense to
+me, comments?
 
-The mrst pmu.c driver is new.  MRST doesn't work without it.
-Of course, if you don't have CONFIG_X86_MRST=y, you don't care.
 
-Yes, this pull request is late, and if you skip it,
-life will still go on.  You'll simply see the same
-patches wating for you in 10 weeks.  On the other hand,
-some developers will have a happier summer if these get upstream now,
-and I'm here to support them if anything goes wrong.
-
-thanks,
--Len
+-- 
+~Vinod
 
