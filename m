@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab1HDB7n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 21:59:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6589 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756618Ab1HDB7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 21:59:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,313,1309762800"; 
-   d="scan'208";a="37680458"
-From: Andi Kleen <andi@firstfloor.org>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/mempolicy.c: make sys_mbind & sys_set_mempolicy aware of task_struct->mems_allowed
-References: <20110803123721.GA2892@x61.redhat.com>
-Date: Wed, 03 Aug 2011 18:59:33 -0700
-In-Reply-To: <20110803123721.GA2892@x61.redhat.com> (Rafael Aquini's message
-	of "Wed, 3 Aug 2011 09:37:27 -0300")
-Message-ID: <m2d3gm0we2.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932144Ab1HDCAF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 22:00:05 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:56678 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932189Ab1HDB76 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Aug 2011 21:59:58 -0400
+X-Greylist: delayed 461 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Aug 2011 21:59:57 EDT
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Arnaud Lacombe <lacombar@gmail.com>
+Subject: [PATCH 1/2] kconfig/nconf: nuke unreferenced `nohelp_text'
+Date: Wed,  3 Aug 2011 21:52:06 -0400
+Message-Id: <1312422727-9740-1-git-send-email-lacombar@gmail.com>
+X-Mailer: git-send-email 1.7.6.153.g78432
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael Aquini <aquini@redhat.com> writes:
+After commit 5416857867c9cc94aba641898c567d9707de30f1, 1nohelp_text' is no
+longer referenced, nuke it.
 
-> Among several other features enabled when CONFIG_CPUSETS is defined,
-> task_struct is enhanced with the nodemask_t mems_allowed element that
-> serves to register/report on which memory nodes the task may obtain
-> memory. Also, two new lines that reflect the value registered at
-> task_struct->mems_allowed are added to the '/proc/[pid]/status' file:
+Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
+---
+ scripts/kconfig/nconf.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-As Christoph said this was intentionally designed this way. Originally
-there was some consideration of "relative policies", but that is not
-implemented and had various issues. 
-
-They're orthogonal mechanisms.
-
--Andi
-
+diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
+index 39ca1f1..b113c50 100644
+--- a/scripts/kconfig/nconf.c
++++ b/scripts/kconfig/nconf.c
+@@ -182,8 +182,6 @@ setmod_text[] = N_(
+ "This feature depends on another which\n"
+ "has been configured as a module.\n"
+ "As a result, this feature will be built as a module."),
+-nohelp_text[] = N_(
+-"There is no help available for this option.\n"),
+ load_config_text[] = N_(
+ "Enter the name of the configuration file you wish to load.\n"
+ "Accept the name shown to restore the configuration you\n"
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.6.153.g78432
+
