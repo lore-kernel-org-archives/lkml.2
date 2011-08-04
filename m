@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab1HDMyg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 08:54:36 -0400
+	id S1754501Ab1HDMyZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 08:54:25 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:53564 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754438Ab1HDMyP (ORCPT
+	with ESMTP id S1754335Ab1HDMyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 08:54:15 -0400
+	Thu, 4 Aug 2011 08:54:05 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com, dhowells@redhat.com,
         hpj@urpla.net, sedat.dilek@googlemail.com, penberg@kernel.org,
         mszeredi@suse.cz
-Subject: [PATCH 7/8] overlay: overlay filesystem documentation
-Date: Thu,  4 Aug 2011 14:53:36 +0200
-Message-Id: <1312462417-8826-8-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 3/8] vfs: introduce clone_private_mount()
+Date: Thu,  4 Aug 2011 14:53:32 +0200
+Message-Id: <1312462417-8826-4-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1312462417-8826-1-git-send-email-miklos@szeredi.hu>
 References: <1312462417-8826-1-git-send-email-miklos@szeredi.hu>
@@ -25,240 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Neil Brown <neilb@suse.de>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Document the overlay filesystem.
+Overlayfs needs a private clone of the mount, so create a function for
+this and export to modules.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- Documentation/filesystems/overlayfs.txt |  199 +++++++++++++++++++++++++++++++
- MAINTAINERS                             |    7 +
- 2 files changed, 206 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/filesystems/overlayfs.txt
+ fs/namespace.c        |   17 +++++++++++++++++
+ include/linux/mount.h |    3 +++
+ 2 files changed, 20 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/filesystems/overlayfs.txt b/Documentation/filesystems/overlayfs.txt
-new file mode 100644
-index 0000000..7161dc3
---- /dev/null
-+++ b/Documentation/filesystems/overlayfs.txt
-@@ -0,0 +1,199 @@
-+Written by: Neil Brown <neilb@suse.de>
-+
-+Overlay Filesystem
-+==================
-+
-+This document describes a prototype for a new approach to providing
-+overlay-filesystem functionality in Linux (sometimes referred to as
-+union-filesystems).  An overlay-filesystem tries to present a
-+filesystem which is the result over overlaying one filesystem on top
-+of the other.
-+
-+The result will inevitably fail to look exactly like a normal
-+filesystem for various technical reasons.  The expectation is that
-+many use cases will be able to ignore these differences.
-+
-+This approach is 'hybrid' because the objects that appear in the
-+filesystem do not all appear to belong to that filesystem.  In many
-+cases an object accessed in the union will be indistinguishable
-+from accessing the corresponding object from the original filesystem.
-+This is most obvious from the 'st_dev' field returned by stat(2).
-+
-+While directories will report an st_dev from the overlay-filesystem,
-+all non-directory objects will report an st_dev from the lower or
-+upper filesystem that is providing the object.  Similarly st_ino will
-+only be unique when combined with st_dev, and both of these can change
-+over the lifetime of a non-directory object.  Many applications and
-+tools ignore these values and will not be affected.
-+
-+Upper and Lower
-+---------------
-+
-+An overlay filesystem combines two filesystems - an 'upper' filesystem
-+and a 'lower' filesystem.  When a name exists in both filesystems, the
-+object in the 'upper' filesystem is visible while the object in the
-+'lower' filesystem is either hidden or, in the case of directories,
-+merged with the 'upper' object.
-+
-+It would be more correct to refer to an upper and lower 'directory
-+tree' rather than 'filesystem' as it is quite possible for both
-+directory trees to be in the same filesystem and there is no
-+requirement that the root of a filesystem be given for either upper or
-+lower.
-+
-+The lower filesystem can be any filesystem supported by Linux and does
-+not need to be writable.  The lower filesystem can even be another
-+overlayfs.  The upper filesystem will normally be writable and if it
-+is it must support the creation of trusted.* extended attributes, and
-+must provide valid d_type in readdir responses, at least for symbolic
-+links - so NFS is not suitable.
-+
-+A read-only overlay of two read-only filesystems may use any
-+filesystem type.
-+
-+Directories
-+-----------
-+
-+Overlaying mainly involved directories.  If a given name appears in both
-+upper and lower filesystems and refers to a non-directory in either,
-+then the lower object is hidden - the name refers only to the upper
-+object.
-+
-+Where both upper and lower objects are directories, a merged directory
-+is formed.
-+
-+At mount time, the two directories given as mount options are combined
-+into a merged directory:
-+
-+  mount -t overlayfs overlayfs -olowerdir=/lower,upperdir=/upper /overlay
-+
-+Then whenever a lookup is requested in such a merged directory, the
-+lookup is performed in each actual directory and the combined result
-+is cached in the dentry belonging to the overlay filesystem.  If both
-+actual lookups find directories, both are stored and a merged
-+directory is created, otherwise only one is stored: the upper if it
-+exists, else the lower.
-+
-+Only the lists of names from directories are merged.  Other content
-+such as metadata and extended attributes are reported for the upper
-+directory only.  These attributes of the lower directory are hidden.
-+
-+whiteouts and opaque directories
-+--------------------------------
-+
-+In order to support rm and rmdir without changing the lower
-+filesystem, an overlay filesystem needs to record in the upper filesystem
-+that files have been removed.  This is done using whiteouts and opaque
-+directories (non-directories are always opaque).
-+
-+The overlay filesystem uses extended attributes with a
-+"trusted.overlay."  prefix to record these details.
-+
-+A whiteout is created as a symbolic link with target
-+"(overlay-whiteout)" and with xattr "trusted.overlay.whiteout" set to "y".
-+When a whiteout is found in the upper level of a merged directory, any
-+matching name in the lower level is ignored, and the whiteout itself
-+is also hidden.
-+
-+A directory is made opaque by setting the xattr "trusted.overlay.opaque"
-+to "y".  Where the upper filesystem contains an opaque directory, any
-+directory in the lower filesystem with the same name is ignored.
-+
-+readdir
-+-------
-+
-+When a 'readdir' request is made on a merged directory, the upper and
-+lower directories are each read and the name lists merged in the
-+obvious way (upper is read first, then lower - entries that already
-+exist are not re-added).  This merged name list is cached in the
-+'struct file' and so remains as long as the file is kept open.  If the
-+directory is opened and read by two processes at the same time, they
-+will each have separate caches.  A seekdir to the start of the
-+directory (offset 0) followed by a readdir will cause the cache to be
-+discarded and rebuilt.
-+
-+This means that changes to the merged directory do not appear while a
-+directory is being read.  This is unlikely to be noticed by many
-+programs.
-+
-+seek offsets are assigned sequentially when the directories are read.
-+Thus if
-+  - read part of a directory
-+  - remember an offset, and close the directory
-+  - re-open the directory some time later
-+  - seek to the remembered offset
-+
-+there may be little correlation between the old and new locations in
-+the list of filenames, particularly if anything has changed in the
-+directory.
-+
-+Readdir on directories that are not merged is simply handled by the
-+underlying directory (upper or lower).
-+
-+
-+Non-directories
-+---------------
-+
-+Objects that are not directories (files, symlinks, device-special
-+files etc.) are presented either from the upper or lower filesystem as
-+appropriate.  When a file in the lower filesystem is accessed in a way
-+the requires write-access, such as opening for write access, changing
-+some metadata etc., the file is first copied from the lower filesystem
-+to the upper filesystem (copy_up).  Note that creating a hard-link
-+also requires copy_up, though of course creation of a symlink does
-+not.
-+
-+The copy_up may turn out to be unnecessary, for example if the file is
-+opened for read-write but the data is not modified.
-+
-+The copy_up process first makes sure that the containing directory
-+exists in the upper filesystem - creating it and any parents as
-+necessary.  It then creates the object with the same metadata (owner,
-+mode, mtime, symlink-target etc.) and then if the object is a file, the
-+data is copied from the lower to the upper filesystem.  Finally any
-+extended attributes are copied up.
-+
-+Once the copy_up is complete, the overlay filesystem simply
-+provides direct access to the newly created file in the upper
-+filesystem - future operations on the file are barely noticed by the
-+overlay filesystem (though an operation on the name of the file such as
-+rename or unlink will of course be noticed and handled).
-+
-+
-+Non-standard behavior
-+---------------------
-+
-+The copy_up operation essentially creates a new, identical file and
-+moves it over to the old name.  The new file may be on a different
-+filesystem, so both st_dev and st_ino of the file may change.
-+
-+Any open files referring to this inode will access the old data and
-+metadata.  Similarly any file locks obtained before copy_up will not
-+apply to the copied up file.
-+
-+On a file is opened with O_RDONLY fchmod(2), fchown(2), futimesat(2)
-+and fsetxattr(2) will fail with EROFS.
-+
-+If a file with multiple hard links is copied up, then this will
-+"break" the link.  Changes will not be propagated to other names
-+referring to the same inode.
-+
-+Symlinks in /proc/PID/ and /proc/PID/fd which point to a non-directory
-+object in overlayfs will not contain vaid absolute paths, only
-+relative paths leading up to the filesystem's root.  This will be
-+fixed in the future.
-+
-+Some operations are not atomic, for example a crash during copy_up or
-+rename will leave the filesystem in an inconsitent state.  This will
-+be addressed in the future.
-+
-+Changes to underlying filesystems
-+---------------------------------
-+
-+Offline changes, when the overlay is not mounted, are allowed to either
-+the upper or the lower trees.
-+
-+Changes to the underlying filesystems while part of a mounted overlay
-+filesystem are not allowed.  If the underlying filesystem is changed,
-+the behavior of the overlay is undefined, though it will not result in
-+a crash or deadlock.
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 07cfd8d..d91346c 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4785,6 +4785,13 @@ F:	drivers/scsi/osd/
- F:	include/scsi/osd_*
- F:	fs/exofs/
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 22bfe82..1a95f0e 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1494,6 +1494,23 @@ void drop_collected_mounts(struct vfsmount *mnt)
+ 	release_mounts(&umount_list);
+ }
  
-+OVERLAYFS FILESYSTEM
-+M:	Miklos Szeredi <miklos@szeredi.hu>
-+L:	linux-fsdevel@vger.kernel.org
-+S:	Supported
-+F:	fs/overlayfs/*
-+F:	Documentation/filesystems/overlayfs.txt
++struct vfsmount *clone_private_mount(struct path *path)
++{
++	struct vfsmount *mnt;
 +
- P54 WIRELESS DRIVER
- M:	Christian Lamparter <chunkeey@googlemail.com>
- L:	linux-wireless@vger.kernel.org
++	if (IS_MNT_UNBINDABLE(path->mnt))
++		return ERR_PTR(-EINVAL);
++
++	down_read(&namespace_sem);
++	mnt = clone_mnt(path->mnt, path->dentry, CL_PRIVATE);
++	up_read(&namespace_sem);
++	if (!mnt)
++		return ERR_PTR(-ENOMEM);
++
++	return mnt;
++}
++EXPORT_SYMBOL_GPL(clone_private_mount);
++
+ int iterate_mounts(int (*f)(struct vfsmount *, void *), void *arg,
+ 		   struct vfsmount *root)
+ {
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 33fe53d..30cd21e 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -100,6 +100,9 @@ extern void mnt_pin(struct vfsmount *mnt);
+ extern void mnt_unpin(struct vfsmount *mnt);
+ extern int __mnt_is_readonly(struct vfsmount *mnt);
+ 
++struct path;
++extern struct vfsmount *clone_private_mount(struct path *path);
++
+ extern struct vfsmount *do_kern_mount(const char *fstype, int flags,
+ 				      const char *name, void *data);
+ 
 -- 
 1.7.3.4
 
