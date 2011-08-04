@@ -1,38 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab1HDP0u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 11:26:50 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:47418 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751856Ab1HDP0s (ORCPT
+	id S1754355Ab1HDPi5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 11:38:57 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63650 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab1HDPi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 11:26:48 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: sKN1UrcVM1kvNQqV8h61LAEmSRLF5y6uYv4aBt0Nao2HVVL
- wfFYla79WLxrhOT5u4cm0Zb6qXpHFtMkmz980VuYteiXChdZbn27cVnjPRIS
- fX_YavXq.dxFuhdXWKUZQYPCIccbnTqmjxToLS33UIHPhAOv2NbYOo7a7SR1
- g.BGjQgLNwtnW8aDccAXqYqQi8IfP8u1xoDLC26dHyt7e1KEz.M.Zf_5.Wza
- W1axIh7qo1Tm4v.kg_j0pnqD4aF9PCJjVxj31JboVkGgd4qigCT_8SynzWyx
- U9GZ33u0vr8hqxeAMBQkIr.mx0u..BpoJrqkRPS7VGR3HSmRgAgY6AQu59Va
- RFcs0lHFqWYh6H_N0acj9Xk8T60E_ZNwdVes-
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 4 Aug 2011 10:26:45 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-cc: Huang Ying <ying.huang@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [listll] Fix fetching of head->first in lockless lists.
-In-Reply-To: <alpine.DEB.2.00.1108041021250.24277@router.home>
-Message-ID: <alpine.DEB.2.00.1108041026180.24277@router.home>
-References: <alpine.DEB.2.00.1108040942360.24277@router.home> <20110804151725.GA21597@Krystal> <alpine.DEB.2.00.1108041021250.24277@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 4 Aug 2011 11:38:56 -0400
+Date: Thu, 4 Aug 2011 18:37:52 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: select_task_rq_fair: WARNING: at kernel/lockdep.c match_held_lock
+Message-ID: <20110804153752.GA3562@swordfish.minsk.epam.com>
+References: <20110804141306.GA3536@swordfish.minsk.epam.com>
+ <1312470358.16729.25.camel@twins>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312470358.16729.25.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On (08/04/11 17:05), Peter Zijlstra wrote:
+> On Thu, 2011-08-04 at 17:13 +0300, Sergey Senozhatsky wrote:
+> > Hello,
+> > Got the following trace on 3.0-git19 (07865-g1280ea8):
+> > 
+> > [  132.794685] WARNING: at kernel/lockdep.c:3117 match_held_lock+0xf6/0x12e()
+> > [  132.794687] Hardware name: Aspire 5741G    
+> > [  132.794689] Modules linked in: kvm_intel kvm tun ipv6 microcode snd_hda_codec_hdmi snd_hda_codec_realtek broadcom snd_hda_intel snd_hda_codec tg3 snd_pcm snd_timer snd soundcore acer_wmi evdev libphy sparse_keymap psmouse snd_page_alloc
+> > pcspkr battery ac wmi button ehci_hcd sr_mod cdrom usbcore sd_mod ahci
+> > [  132.794731] Pid: 4029, comm: qemu-system-x86 Not tainted 3.1.0-dbg-07865-g1280ea8-dirty #668
+> > [  132.794733] Call Trace:
+> > [  132.794736]  <IRQ>  [<ffffffff8103e4e0>] warn_slowpath_common+0x7e/0x96
+> > [  132.794744]  [<ffffffff8103e50d>] warn_slowpath_null+0x15/0x17
+> > [  132.794748]  [<ffffffff8106dcee>] match_held_lock+0xf6/0x12e
+> > [  132.794751]  [<ffffffff8106dd88>] lock_is_held+0x62/0xa6
+> > [  132.794757]  [<ffffffff81086471>] cgroup_lock_is_held+0x10/0x12
+> > [  132.794762]  [<ffffffff810368a2>] set_task_cpu+0x1ac/0x3e3
+> > [  132.794766]  [<ffffffff8103856a>] ? select_task_rq_fair+0x5c0/0x9ca
+> > [  132.794769]  [<ffffffff8103748d>] ? try_to_wake_up+0x29/0x28b
+> > [  132.794773]  [<ffffffff8103748d>] ? try_to_wake_up+0x29/0x28b
+> > [  132.794779]  [<ffffffff812552a5>] ? do_raw_spin_lock+0x6b/0x122
+> > [  132.794783]  [<ffffffff81037603>] try_to_wake_up+0x19f/0x28b
+> > [  132.794787]  [<ffffffff810603ed>] ? update_rmtp+0x65/0x65
+> > [  132.794790]  [<ffffffff8103770e>] wake_up_process+0x10/0x12
+> > [  132.794794]  [<ffffffff8106040a>] hrtimer_wakeup+0x1d/0x21
+> > [  132.794797]  [<ffffffff81060816>] __run_hrtimer+0x1b1/0x372
+> > [  132.794800]  [<ffffffff810613a2>] hrtimer_interrupt+0xe6/0x1b0
+> > [  132.794805]  [<ffffffff810185d5>] smp_apic_timer_interrupt+0x80/0x93
+> > [  132.794810]  [<ffffffff81493af3>] apic_timer_interrupt+0x73/0x80
+> > [  132.794812]  <EOI>  [<ffffffff810fb998>] ? do_mmu_notifier_register+0x66/0x125
+> > [  132.794822]  [<ffffffff810ec132>] ? mm_take_all_locks+0x10b/0x165
+> > [  132.794826]  [<ffffffff810ec160>] ? mm_take_all_locks+0x139/0x165
+> > [  132.794829]  [<ffffffff810ec132>] ? mm_take_all_locks+0x10b/0x165
+> > [  132.794832]  [<ffffffff810fb9a0>] do_mmu_notifier_register+0x6e/0x125
+> > [  132.794836]  [<ffffffff810fba72>] mmu_notifier_register+0xe/0x10
+> > [  132.794852]  [<ffffffffa01fcc0d>] kvm_dev_ioctl+0x297/0x400 [kvm]
+> > [  132.794857]  [<ffffffff81119022>] do_vfs_ioctl+0x46c/0x4ad
+> > [  132.794862]  [<ffffffff8110a68d>] ? fget_light+0xed/0x2a7
+> > [  132.794867]  [<ffffffff81492fca>] ? sysret_check+0x2e/0x69
+> > [  132.794871]  [<ffffffff811190b4>] sys_ioctl+0x51/0x75
+> > [  132.794875]  [<ffffffff81492f92>] system_call_fastpath+0x16/0x1b
+> > [  132.794877] ---[ end trace 298584c4014cd2b8 ]---
+> 
+> Curious, how easy is that to reproduce? That really shouldn't happen and
+> its not immediately obvious how it could happen.
+> 
 
-Argh. I see it now. Missed the assignment in the while condition.
+Hello Peter,
+Frankly, not very easy. I'm using qemu quite heavy last days and got only
+one trace so far.
 
+
+	Sergey
