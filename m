@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab1HDWyK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 18:54:10 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:54735 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288Ab1HDWyD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 18:54:03 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH] mtd/physmap: Fix set_vpp signature in physmap_configure
-Date: Thu,  4 Aug 2011 23:53:53 +0100
-Message-Id: <1312498433-17950-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754958Ab1HDWya (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 18:54:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50426 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753288Ab1HDWyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 18:54:24 -0400
+Date: Thu, 4 Aug 2011 15:54:18 -0700
+From: Greg KH <gregkh@suse.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] devtmpfs: Fix section mismatch on devtmpfsd()
+Message-ID: <20110804225418.GA2505@suse.de>
+References: <1312497371-25685-1-git-send-email-grant.likely@secretlab.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312497371-25685-1-git-send-email-grant.likely@secretlab.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-physmap_configure() has the wrong signature for the set_vpp callback.
-struct physmap_flash_data expects it to accpet a platform_device
-pointer.
+On Thu, Aug 04, 2011 at 11:36:11PM +0100, Grant Likely wrote:
+> devtmpfsd_init() references setup_done which is __initdata, but
+> devtmpfsd() is not an __init function.  The code is fine, because it
+> is never referenced after discarding __init sections, but it leaves
+> some additional code that can be discarded with the rest of __init and
+> it causes gcc to complain with a section mismatch warning.
 
-However, I can't find any users of physmap_configure(), so maybe the
-hook should simply be removed.
+I have a simpler patch here that just removes the __initdata function,
+which is simpler.
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
- drivers/mtd/maps/physmap.c  |    2 +-
- include/linux/mtd/physmap.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+I hate the initdata stuff, it's almost always pointless...
 
-diff --git a/drivers/mtd/maps/physmap.c b/drivers/mtd/maps/physmap.c
-index f64cee4..f2b9f5e 100644
---- a/drivers/mtd/maps/physmap.c
-+++ b/drivers/mtd/maps/physmap.c
-@@ -247,7 +247,7 @@ static struct platform_device physmap_flash = {
- };
- 
- void physmap_configure(unsigned long addr, unsigned long size,
--		int bankwidth, void (*set_vpp)(struct map_info *, int))
-+		int bankwidth, void (*set_vpp)(struct platform_device *, int))
- {
- 	physmap_flash_resource.start = addr;
- 	physmap_flash_resource.end = addr + size - 1;
-diff --git a/include/linux/mtd/physmap.h b/include/linux/mtd/physmap.h
-index e5f21d2..25ef3ed 100644
---- a/include/linux/mtd/physmap.h
-+++ b/include/linux/mtd/physmap.h
-@@ -36,7 +36,7 @@ struct physmap_flash_data {
-  * Board needs to specify the exact mapping during their setup time.
-  */
- void physmap_configure(unsigned long addr, unsigned long size,
--		int bankwidth, void (*set_vpp)(struct map_info *, int) );
-+		int bankwidth, void (*set_vpp)(struct platform_device *, int) );
- 
- /*
-  * Machines that wish to do flash partition may want to call this function in
--- 
-1.7.4.1
+Would that solve the problem for you as well?
 
+thanks,
+
+greg k-h
