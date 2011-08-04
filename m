@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab1HDOMS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 10:12:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52243 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312Ab1HDOMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 10:12:16 -0400
-Date: Thu, 4 Aug 2011 10:12:10 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Shaohua Li <shli@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: fio posixaio performance problem
-Message-ID: <20110804141210.GA429@redhat.com>
-References: <CANejiEViuKky1A7Xh0MQKBVNMj_fgzwayWyON7hFGfP3wa62SQ@mail.gmail.com>
- <4E3902C7.9050907@cn.fujitsu.com>
- <CANejiEVqFt4j1-qTVnxEAe75z0y010s=ST2XtCDDTqDEQT=EcQ@mail.gmail.com>
- <4E391986.90108@cn.fujitsu.com>
- <20110803154533.GB32385@redhat.com>
- <20110803175101.GC32385@redhat.com>
- <CANejiEXAtzExExqmTXA=hmpGh8DVVo9ncbRMdkB+avq+G3LuqQ@mail.gmail.com>
- <4E39FD41.4090103@cn.fujitsu.com>
- <CANejiEVh4hvi5S18H7XHihxZt+JcRU7W5MGpQwQc_ZtiFCa2jw@mail.gmail.com>
- <4E3A4DF7.3020605@cn.fujitsu.com>
+	id S1753639Ab1HDOOL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 10:14:11 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:61942 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312Ab1HDOOJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 10:14:09 -0400
+Date: Thu, 4 Aug 2011 17:13:07 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: select_task_rq_fair: WARNING: at kernel/lockdep.c match_held_lock
+Message-ID: <20110804141306.GA3536@swordfish.minsk.epam.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E3A4DF7.3020605@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 03:44:55PM +0800, Gui Jianfeng wrote:
+Hello,
+Got the following trace on 3.0-git19 (07865-g1280ea8):
 
-[..]
-> > oh, not related per your blktrace. so we have two problems here:
-> > 1. fio doesn't dispatch request in 8ms.
-> > 2. no close request preempt.
-> 
-> Yes, these're actual factors why performance is so bad.
-> 
-> > both looks quite wield. can you post a longer blktrace output, like
-> > for one second? the piece is too short.
-> 
-> Attached.
+[  132.794685] WARNING: at kernel/lockdep.c:3117 match_held_lock+0xf6/0x12e()
+[  132.794687] Hardware name: Aspire 5741G    
+[  132.794689] Modules linked in: kvm_intel kvm tun ipv6 microcode snd_hda_codec_hdmi snd_hda_codec_realtek broadcom snd_hda_intel snd_hda_codec tg3 snd_pcm snd_timer snd soundcore acer_wmi evdev libphy sparse_keymap psmouse snd_page_alloc
+pcspkr battery ac wmi button ehci_hcd sr_mod cdrom usbcore sd_mod ahci
+[  132.794731] Pid: 4029, comm: qemu-system-x86 Not tainted 3.1.0-dbg-07865-g1280ea8-dirty #668
+[  132.794733] Call Trace:
+[  132.794736]  <IRQ>  [<ffffffff8103e4e0>] warn_slowpath_common+0x7e/0x96
+[  132.794744]  [<ffffffff8103e50d>] warn_slowpath_null+0x15/0x17
+[  132.794748]  [<ffffffff8106dcee>] match_held_lock+0xf6/0x12e
+[  132.794751]  [<ffffffff8106dd88>] lock_is_held+0x62/0xa6
+[  132.794757]  [<ffffffff81086471>] cgroup_lock_is_held+0x10/0x12
+[  132.794762]  [<ffffffff810368a2>] set_task_cpu+0x1ac/0x3e3
+[  132.794766]  [<ffffffff8103856a>] ? select_task_rq_fair+0x5c0/0x9ca
+[  132.794769]  [<ffffffff8103748d>] ? try_to_wake_up+0x29/0x28b
+[  132.794773]  [<ffffffff8103748d>] ? try_to_wake_up+0x29/0x28b
+[  132.794779]  [<ffffffff812552a5>] ? do_raw_spin_lock+0x6b/0x122
+[  132.794783]  [<ffffffff81037603>] try_to_wake_up+0x19f/0x28b
+[  132.794787]  [<ffffffff810603ed>] ? update_rmtp+0x65/0x65
+[  132.794790]  [<ffffffff8103770e>] wake_up_process+0x10/0x12
+[  132.794794]  [<ffffffff8106040a>] hrtimer_wakeup+0x1d/0x21
+[  132.794797]  [<ffffffff81060816>] __run_hrtimer+0x1b1/0x372
+[  132.794800]  [<ffffffff810613a2>] hrtimer_interrupt+0xe6/0x1b0
+[  132.794805]  [<ffffffff810185d5>] smp_apic_timer_interrupt+0x80/0x93
+[  132.794810]  [<ffffffff81493af3>] apic_timer_interrupt+0x73/0x80
+[  132.794812]  <EOI>  [<ffffffff810fb998>] ? do_mmu_notifier_register+0x66/0x125
+[  132.794822]  [<ffffffff810ec132>] ? mm_take_all_locks+0x10b/0x165
+[  132.794826]  [<ffffffff810ec160>] ? mm_take_all_locks+0x139/0x165
+[  132.794829]  [<ffffffff810ec132>] ? mm_take_all_locks+0x10b/0x165
+[  132.794832]  [<ffffffff810fb9a0>] do_mmu_notifier_register+0x6e/0x125
+[  132.794836]  [<ffffffff810fba72>] mmu_notifier_register+0xe/0x10
+[  132.794852]  [<ffffffffa01fcc0d>] kvm_dev_ioctl+0x297/0x400 [kvm]
+[  132.794857]  [<ffffffff81119022>] do_vfs_ioctl+0x46c/0x4ad
+[  132.794862]  [<ffffffff8110a68d>] ? fget_light+0xed/0x2a7
+[  132.794867]  [<ffffffff81492fca>] ? sysret_check+0x2e/0x69
+[  132.794871]  [<ffffffff811190b4>] sys_ioctl+0x51/0x75
+[  132.794875]  [<ffffffff81492f92>] system_call_fastpath+0x16/0x1b
+[  132.794877] ---[ end trace 298584c4014cd2b8 ]---
 
-Gui, few observations from you log file.
 
-- preemption happened 1631 times and did not happen 527 times and idle
-  timer fired.
-
-- In some cases where preemption did not happen, next request seems to
-  be too far away (more than CFQQ_CLOSE_THR=8K sectors).
-
-- I noticed couple of cases where next request was with-in 8K distanace
-  still preemption did not happen. This makes me curious. Can you please
-  put some trace messages in should_preempt() and rq_close() call and see
-  what's going on?
-
-For example, following trace shows that next request is 5176 sector behind
-the previous one completed. I am wondering why did preemption not take
-place.
-
-  8,0    0      606     2.751892651 16420  D   W 512146800 + 8 [fio]
-  8,0    2      579     2.752127950     0  C   W 512146800 + 8 [0]
-
-  8,0    0      609     2.752235995 16421  Q  WS 512141624 + 8 [fio]
-  8,0    0      610     2.752238859 16421  G  WS 512141624 + 8 [fio]
-  8,0    0      612     2.752243818 16421  I   W 512141624 + 8 [fio]
-  8,0    0        0     2.752246262     0  m   N cfq16421S / insert_request
-  8,0    0        0     2.752247729     0  m   N cfq16421S / add_to_rr
-  8,0    2        0     2.759710295     0  m   N cfq idle timer fired
-
-Putting some extra trace messages in CFQ might help here. BTW, which 
-kernel version are you using? 3.0?
-
-Thanks
-Vivek
+	Sergey
