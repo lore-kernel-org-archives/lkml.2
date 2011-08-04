@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab1HDXnu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 19:43:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51778 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753471Ab1HDXnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 19:43:49 -0400
-Date: Thu, 4 Aug 2011 16:42:55 -0700
-From: Greg KH <gregkh@suse.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] devtmpfs: Fix section mismatch on devtmpfsd()
-Message-ID: <20110804234255.GA19764@suse.de>
-References: <1312497371-25685-1-git-send-email-grant.likely@secretlab.ca>
- <20110804225418.GA2505@suse.de>
- <CACxGe6sQ2hQr4XTZ72mU-jMv1G4xO_NHp54L_c04L08pscaG9g@mail.gmail.com>
+	id S1755385Ab1HDXsK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 19:48:10 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40558 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753536Ab1HDXsH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 19:48:07 -0400
+Date: Fri, 5 Aug 2011 08:47:57 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-sh@vger.kernel.org, Kevin Hilman <khilman@deeprootsystems.com>,
+        Paul Mundt <lethal@linux-sh.org>, x86@kernel.org,
+        Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH] cpuidle: Consistent spelling of cpuidle_idle_call()
+Message-ID: <20110804234755.GA13321@opensource.wolfsonmicro.com>
+References: <1312475071-22973-1-git-send-email-davidb@codeaurora.org>
+ <4E3AD5E7.6040105@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACxGe6sQ2hQr4XTZ72mU-jMv1G4xO_NHp54L_c04L08pscaG9g@mail.gmail.com>
+In-Reply-To: <4E3AD5E7.6040105@codeaurora.org>
+X-Cookie: You now have Asian Flu.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 05, 2011 at 12:32:15AM +0100, Grant Likely wrote:
-> On Thu, Aug 4, 2011 at 11:54 PM, Greg KH <gregkh@suse.de> wrote:
-> > On Thu, Aug 04, 2011 at 11:36:11PM +0100, Grant Likely wrote:
-> >> devtmpfsd_init() references setup_done which is __initdata, but
-> >> devtmpfsd() is not an __init function.  The code is fine, because it
-> >> is never referenced after discarding __init sections, but it leaves
-> >> some additional code that can be discarded with the rest of __init and
-> >> it causes gcc to complain with a section mismatch warning.
-> >
-> > I have a simpler patch here that just removes the __initdata function,
-> > which is simpler.
-> >
-> > I hate the initdata stuff, it's almost always pointless...
-> 
-> initdata I don't mind.  Discarding stuff that is no longer necessary
-> isn't a bad thing and I don't find it that onerous.  __devinit* seems
-> less useful since I've never worked on a system that can actually
-> discard it.
+On Thu, Aug 04, 2011 at 10:24:55AM -0700, Stephen Boyd wrote:
+> On 08/04/2011 09:24 AM, David Brown wrote:
+> > Commit a0bfa1373859e9d11dc92561a8667588803e42d8 mispells
+> > cpuidle_idle_call() on ARM and SH code.  Fix this to be consistent.
 
-Yes, that's the one I really want to get rid of.  One of these days on a
-long flight I'll work up a series of patches to drop it...
+> > The referenced commit breaks compilation on ARM, and appears it would
+> > do so on SH as well.
 
-thanks,
+> Mark Brown sent this patch[1] months ago when this build breakage was
+> noticed in linux-next. What happened to that patch? It looks like the
+> patch that introduced the breakage was pulled from linux-next shortly
+> after and then reintroduced today.
 
-greg k-h
+Yeah, as far as I remember Stephen applied my patch to -next as Len
+didn't respond to it.
