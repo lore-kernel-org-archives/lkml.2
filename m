@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab1HDLhc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 07:37:32 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:51662 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089Ab1HDLh3 (ORCPT
+	id S1753644Ab1HDLnH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 07:43:07 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47326 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764Ab1HDLnD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 07:37:29 -0400
-Date: Thu, 4 Aug 2011 12:36:56 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt.fleming@linux.intel.com>,
-        Jan Beulich <JBeulich@novell.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [PATCH] x86, efi: Don't recursively acquire rtc_lock
-Message-ID: <20110804113655.GA30077@srcf.ucam.org>
-References: <1312405454-29386-1-git-send-email-matt@console-pimps.org>
- <CANcMJZDqYJHTTPifrxr7cDVA_S+PRwy6AzjO-54ucvpnyoRADA@mail.gmail.com>
+	Thu, 4 Aug 2011 07:43:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANcMJZDqYJHTTPifrxr7cDVA_S+PRwy6AzjO-54ucvpnyoRADA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20110804103336.GE17540@legolas.emea.dhcp.ti.com>
+References: <20110804102950.10845.67898.stgit@ponder> <20110804103336.GE17540@legolas.emea.dhcp.ti.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 4 Aug 2011 12:42:41 +0100
+X-Google-Sender-Auth: lzO3FBXdMAg5GbAgGVp52P0QTQk
+Message-ID: <CACxGe6vnspztEnUH5odGnK4x_K9Ej3Nt7BxikVQwOr9Uh_ED7g@mail.gmail.com>
+Subject: Re: [PATCH] dt: remove of_alias_get_id() reference
+To: balbi@ti.com
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 03:22:24AM -0700, john stultz wrote:
+On Thu, Aug 4, 2011 at 11:33 AM, Felipe Balbi <balbi@ti.com> wrote:
+> On Thu, Aug 04, 2011 at 11:30:27AM +0100, Grant Likely wrote:
+>> of_alias_get_id() is broken and being reverted.  Remove the reference
+>> to it and replace with a single incrementing id number.
+>>
+>> There is no risk of regression here on the imx driver since the imx
+>> change to use of_alias_get_id() is commit 22698aa2, "serial/imx: add
+>> device tree probe support" which is new for v3.1, and it won't get
+>> used unless CONFIG_OF is enabled and the board is booted using a
+>> device tree.  A single incrementing integer is sufficient for now.
+>>
+>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>> Acked-by: Shawn Guo <shawn.guo@linaro.org>
+>> ---
+>>
+>> I'm about to ask Linus to pull this patch through the devicetree/merge
+>> branch along with the of_alias revert.
+>>
+>>  drivers/tty/serial/imx.c |   13 ++++---------
+>>  1 files changed, 4 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+>> index 827db76..7e91b3d 100644
+>> --- a/drivers/tty/serial/imx.c
+>> +++ b/drivers/tty/serial/imx.c
+>> @@ -1286,22 +1286,17 @@ static int serial_imx_resume(struct platform_device *dev)
+>>  static int serial_imx_probe_dt(struct imx_port *sport,
+>>               struct platform_device *pdev)
+>>  {
+>> +     static int portnum = 0;
+>
+> would it be better to use an IDR here ?
 
-> Sorry if this should be obvious, but is there a reason your not using
-> your own internal lock for serializing the efi bits rather then using
-> the rtc_lock?
+Hmmm, I've not looked at idr before.  Yes, it would probably be the
+right thing to do.  This patch is needed to fix a build failure, but
+when it is reworked for v3.2 I think idr should be considered.
+Thanks!
 
-On x86 systems the EFI clock is almost certainly the AT RTC, so it's 
-necessary to serialise accesses between EFI and the traditional clock 
-interface.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+g.
