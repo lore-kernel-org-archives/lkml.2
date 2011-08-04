@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab1HDPJR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 11:09:17 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:45592 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751835Ab1HDPJQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 11:09:16 -0400
-Date: Thu, 4 Aug 2011 08:09:08 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Nick Piggin <npiggin@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] readlinkat() error code change for empty pathname
-Message-Id: <20110804080908.29a87f6f.rdunlap@xenotime.net>
-In-Reply-To: <1312455634-16253-1-git-send-email-apw@canonical.com>
-References: <1312455634-16253-1-git-send-email-apw@canonical.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1754907Ab1HDPJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 11:09:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32138 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754865Ab1HDPJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 11:09:26 -0400
+Date: Thu, 4 Aug 2011 17:09:31 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Piszcz <ap@solarrain.com>
+Subject: Re: Linux Wireless USB-Stick Question
+Message-ID: <20110804150930.GA4202@redhat.com>
+References: <alpine.DEB.2.02.1108031550100.4278@p34.internal.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1108031550100.4278@p34.internal.lan>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  4 Aug 2011 12:00:33 +0100 Andy Whitcroft wrote:
+On Wed, Aug 03, 2011 at 03:53:51PM -0400, Justin Piszcz wrote:
+> Under Windows, you can achieve 10-15MiB/s..
+> 
+> Under Linux, even with 150mbps USB wireless adapters, the max never
+> appears to go above > 3-4MiB/s, to work around this, order more
+> USB-wifi ticks and run them in parallel far away from each other
+> with USB
+> extenders:
+> 
+> box1:
+> -------------
+> wlan0     IEEE 802.11bg  ESSID:"hidden"
+>           Bit Rate=54 Mb/s   Tx-Power=20 dBm
+> wlan1     IEEE 802.11bgn  ESSID:"hidden"
+>           Bit Rate=58.5 Mb/s   Tx-Power=20 dBm
+> wlan2     IEEE 802.11bgn  ESSID:"hidden"
+>           Bit Rate=39 Mb/s   Tx-Power=20 dBm
+> 
+> box2:
+> -------------
+> wlan0     IEEE 802.11bgn  ESSID:"hidden"
+>           Bit Rate=58.5 Mb/s   Tx-Power=20 dBm
+> wlan1     IEEE 802.11bgn  ESSID:"hidden"
+>           Bit Rate=52 Mb/s   Tx-Power=20 dBm
+> wlan2     IEEE 802.11bgn  ESSID:"hidden"
+>           Bit Rate=52 Mb/s   Tx-Power=20 dBm
+> 
+> But I was curious if anyone had achieved > 10 MiB/s with any
+> wireless adapter with Linux?
 
-> In the 3.0 kernel we seem to have a semantic change in the error
+Well, if your AP which you are connected from Windows host
+has linux based firmware (what is most probable), then linux
+is capable to transfer also at 10-15 MiB/s :-)
 
-Meta-comment:  Please drop the use of patch 0/1 for only one patch.
-Just use the canonical patch format as described in Documentation/SubmittingPatches:
+But yes, I never achieved more than 10MB/s on linux station.
+Best results I have is about 7.5MB/s on 2.4 GHz networks and
+10MB/s on 5GHz .
 
+Stanislaw
 
-<quote>
-
-15) The canonical patch format
-
-The canonical patch subject line is:
-
-    Subject: [PATCH 001/123] subsystem: summary phrase
-
-The canonical patch message body contains the following:
-
-  - A "from" line specifying the patch author.
-
-  - An empty line.
-
-  - The body of the explanation, which will be copied to the
-    permanent changelog to describe this patch.
-
-  - The "Signed-off-by:" lines, described above, which will
-    also go in the changelog.
-
-  - A marker line containing simply "---".
-
-  - Any additional comments not suitable for the changelog.
-
-  - The actual patch (diff output).
-
-[...]
-
-The "---" marker line serves the essential purpose of marking for patch
-handling tools where the changelog message ends.
-
-One good use for the additional comments after the "---" marker is for
-a diffstat, to show what files have changed, and the number of
-inserted and deleted lines per file.  A diffstat is especially useful
-on bigger patches.  Other comments relevant only to the moment or the
-maintainer, not suitable for the permanent changelog, should also go
-here.  A good example of such comments might be "patch changelogs"
-which describe what has changed between the v1 and v2 version of the
-patch.
-
-If you are going to include a diffstat after the "---" marker, please
-use diffstat options "-p 1 -w 70" so that filenames are listed from
-the top of the kernel source tree and don't use too much horizontal
-space (easily fit in 80 columns, maybe with some indentation).
-
-</quote>
-
-
-Thanks.
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
