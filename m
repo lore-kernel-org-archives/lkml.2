@@ -1,134 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab1HDIZJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 04:25:09 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:44086 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751874Ab1HDIZG convert rfc822-to-8bit (ORCPT
+	id S1752770Ab1HDI0n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 04:26:43 -0400
+Received: from service87.mimecast.com ([94.185.240.25]:57607 "HELO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751874Ab1HDI0i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 04:25:06 -0400
+	Thu, 4 Aug 2011 04:26:38 -0400
+Message-ID: <4E3A57BA.2040907@arm.com>
+Date: Thu, 04 Aug 2011 09:26:34 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <4E3A4DF7.3020605@cn.fujitsu.com>
-References: <4E38C314.8070305@cn.fujitsu.com>
-	<CANejiEViuKky1A7Xh0MQKBVNMj_fgzwayWyON7hFGfP3wa62SQ@mail.gmail.com>
-	<4E3902C7.9050907@cn.fujitsu.com>
-	<CANejiEVqFt4j1-qTVnxEAe75z0y010s=ST2XtCDDTqDEQT=EcQ@mail.gmail.com>
-	<4E391986.90108@cn.fujitsu.com>
-	<20110803154533.GB32385@redhat.com>
-	<20110803175101.GC32385@redhat.com>
-	<CANejiEXAtzExExqmTXA=hmpGh8DVVo9ncbRMdkB+avq+G3LuqQ@mail.gmail.com>
-	<4E39FD41.4090103@cn.fujitsu.com>
-	<CANejiEVh4hvi5S18H7XHihxZt+JcRU7W5MGpQwQc_ZtiFCa2jw@mail.gmail.com>
-	<4E3A4DF7.3020605@cn.fujitsu.com>
-Date: Thu, 4 Aug 2011 16:25:05 +0800
-X-Google-Sender-Auth: rGHn8CJN9cNwepg99JU4zUw8BTg
-Message-ID: <CANejiEXkv75kVxTS2w-v2GHZZRdmOR8HXUY16-eas9M45ZKqKg@mail.gmail.com>
-Subject: Re: fio posixaio performance problem
-From: Shaohua Li <shli@kernel.org>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=GB2312
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>, Ingo Molnar <mingo@elte.hu>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH] shm: fix a race between shm_exit() and shm_init()
+References: <20110801180151.GA26686@albatros> <20110801112021.25ec9041.akpm@linux-foundation.org> <20110801190341.GA6898@albatros> <CA+55aFw2kHWY1N=ox1er7c-3WL4OA8x0M=Keu7hvAncKUZd1tQ@mail.gmail.com> <20110802124530.GA2543@albatros> <20110802135512.b49c9de1.akpm@linux-foundation.org> <d844457bba74be419d2434c533fdb4e1@localhost> <CA+55aFx+JOeDoNzs+1wfdK3kpNPyS9wpU1OT=VAwvWPXfMVuDQ@mail.gmail.com> <20110803113033.1c3c6960@taxman.wild-wind.fr.eu.org> <CA+55aFzw-K6XvDzTwHRyqQWdkDO8Zqz8Ak1qgNTzf6a3L9=80A@mail.gmail.com>
+In-Reply-To: <CA+55aFzw-K6XvDzTwHRyqQWdkDO8Zqz8Ak1qgNTzf6a3L9=80A@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+X-OriginalArrivalTime: 04 Aug 2011 08:26:29.0302 (UTC) FILETIME=[35747D60:01CC5280]
+X-MC-Unique: 111080409263306401
+Content-Type: text/plain; charset=WINDOWS-1252
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2011年8月4日 下午3:44，Gui Jianfeng <guijianfeng@cn.fujitsu.com> 写道：
-> On 2011-8-4 11:14, Shaohua Li wrote:
->> 在 2011年8月4日 上午10:00，Gui Jianfeng <guijianfeng@cn.fujitsu.com> 写道：
->>> On 2011-8-4 8:53, Shaohua Li wrote:
->>>> 2011/8/4 Vivek Goyal <vgoyal@redhat.com>:
->>>>> On Wed, Aug 03, 2011 at 11:45:33AM -0400, Vivek Goyal wrote:
->>>>>> On Wed, Aug 03, 2011 at 05:48:54PM +0800, Gui Jianfeng wrote:
->>>>>>> On 2011-8-3 16:22, Shaohua Li wrote:
->>>>>>>> 2011/8/3 Gui Jianfeng <guijianfeng@cn.fujitsu.com>:
->>>>>>>>> On 2011-8-3 15:38, Shaohua Li wrote:
->>>>>>>>>> 2011/8/3 Gui Jianfeng <guijianfeng@cn.fujitsu.com>:
->>>>>>>>>>> Hi,
->>>>>>>>>>>
->>>>>>>>>>> I ran a fio test to simulate qemu-kvm io behaviour.
->>>>>>>>>>> When job number is greater than 2, IO performance is
->>>>>>>>>>> really bad.
->>>>>>>>>>>
->>>>>>>>>>> 1 thread: aggrb=15,129KB/s
->>>>>>>>>>> 4 thread: aggrb=1,049KB/s
->>>>>>>>>>>
->>>>>>>>>>> Kernel: lastest upstream
->>>>>>>>>>>
->>>>>>>>>>> Any idea?
->>>>>>>>>>>
->>>>>>>>>>> ---
->>>>>>>>>>> [global]
->>>>>>>>>>> runtime=30
->>>>>>>>>>> time_based=1
->>>>>>>>>>> size=1G
->>>>>>>>>>> group_reporting=1
->>>>>>>>>>> ioengine=posixaio
->>>>>>>>>>> exec_prerun='echo 3 > /proc/sys/vm/drop_caches'
->>>>>>>>>>> thread=1
->>>>>>>>>>>
->>>>>>>>>>> [kvmio-1]
->>>>>>>>>>> description=kvmio-1
->>>>>>>>>>> numjobs=4
->>>>>>>>>>> rw=write
->>>>>>>>>>> bs=4k
->>>>>>>>>>> direct=1
->>>>>>>>>>> filename=/mnt/sda4/1G.img
->>>>>>>>>> Hmm, the test runs always about 15M/s at my side regardless how many threads.
->>>>>>>>>
->>>>>>>>> CFQ？
->>>>>>>> yes.
->>>>>>>>
->>>>>>>>> what's the slice_idle value?
->>>>>>>> default value. I didn't change it.
->>>>>>>
->>>>>>> Hmm, I use a sata disk, and can reproduce this bug every time...
->>>>>>
->>>>>> Do you have blktrace of run with 4 jobs?
->>>>>
->>>>> I can't reproduce it too. On my sata disk single thread is getting around
->>>>> 23-24MB/s and 4 threads get around 19-20MB/sec. Some of the throughput
->>>>> is gone into seeking so that is expected.
->>>>>
->>>>> I think what you are trying to point out is idling issue. In your workload
->>>>> every thread is doing sync-idle IO. So idling is enabled on each thread.
->>>>> On my system I see that next thread preempts the current idle thread
->>>>> because they all are doing IO in nearby area of file and rq_close() is
->>>>> true hence preemption is allowed.
->>>>>
->>>>> On your system, I think somehow rq_close() is not true hence preemption
->>>>> does not take place and we continue to idle on that thread. That also
->>>>> is not necessarily too bad but it might be happening that we are waiting
->>>>> for completion of IO from some other thread before this thread (we are
->>>>> idling on) can do more writes due to some filesystem rescrition and
->>>>> that can lead to sudden throughput drop. blktrace will give some idea.
->>>> with idle, the workload fallbacks like the one thread case, I don't
->>>> expect so big reduction.
->>>> I saw some back seek in the workload because we have rq_close() preempt here.
->>>> is it possible back seek penality in the disk is big?
->>>
->>> Shaohua,
->>>
->>> what do you mean "back seek penality" here. AFAIK, back seek penality only happens
->>> when choosing next request to serve. Is there anything to do with preemption logic?
->> oh, not related per your blktrace. so we have two problems here:
->> 1. fio doesn't dispatch request in 8ms.
->> 2. no close request preempt.
->
-> Yes, these're actual factors why performance is so bad.
->
->> both looks quite wield. can you post a longer blktrace output, like
->> for one second? the piece is too short.
->
-> Attached.
->
->> and do you have anything others running?
->
-> No.
-looks the system does a write in every 8ms. This is quite wrong. does
-the posixaio
-engine have something wrong? can you use a new fio or try libaio please.
+On 04/08/11 01:35, Linus Torvalds wrote:
+> On Wed, Aug 3, 2011 at 12:30 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>>
+>> driver_init() is called from do_basic_setup(), before any initcall...
+> 
+> Ok, thanks everybody. I think the proper fix is the attached patch.
+> It's crazy to have usermode helpers enabled early during boot when
+> init etc haven't even been set up.
+> 
+> So does this finally fix the problem (I realize that there are other
+> patches floating around that *also* fix it, so please test this
+> without those other patches).
 
-Thanks,
-Shaohua
+This patch alone doesn't cure the problem... However, if combined with
+the pure_initcall patch, it boots correctly.
+
+I'll try to gather some traces later today.
+
+	M.
+-- 
+Jazz is not dead. It just smells funny...
+
