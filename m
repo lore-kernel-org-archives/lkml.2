@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab1HDXc1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 19:32:27 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:46542 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754685Ab1HDXc1 convert rfc822-to-8bit (ORCPT
+	id S1755591Ab1HDXci (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 19:32:38 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:63246 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755454Ab1HDXcg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 19:32:27 -0400
+	Thu, 4 Aug 2011 19:32:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110804162551.2b92b2cf@debxo>
-References: <20110804162551.2b92b2cf@debxo>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Fri, 5 Aug 2011 00:32:06 +0100
-Message-ID: <CAMPhdO_gC1vQEA6aMhS=4RaM2dNo9WYPPia1+juRH7q1T=E0Og@mail.gmail.com>
-Subject: Re: [PATCH RFC v1] ARM: olpc: Add support for calling into the
- XO-1.75's OpenFirmware (OFW)
-To: Andres Salomon <dilinger@queued.net>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Russell King <linux@arm.linux.org.uk>, Mitch Bradley <wmb@laptop.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, dsd@laptop.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110804225418.GA2505@suse.de>
+References: <1312497371-25685-1-git-send-email-grant.likely@secretlab.ca> <20110804225418.GA2505@suse.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 5 Aug 2011 00:32:15 +0100
+X-Google-Sender-Auth: mDaZ5VYe9wSeoCuiW0SOYYjOLhU
+Message-ID: <CACxGe6sQ2hQr4XTZ72mU-jMv1G4xO_NHp54L_c04L08pscaG9g@mail.gmail.com>
+Subject: Re: [PATCH] devtmpfs: Fix section mismatch on devtmpfsd()
+To: Greg KH <gregkh@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 5, 2011 at 12:25 AM, Andres Salomon <dilinger@queued.net> wrote:
-> Add support for saving OFW's cif, and later calling into it to run OFW
-> commands from the kernel.  OFW remains resident in memory after boot,
-> and the physical/virtual addresses are passed in a boot tag.  We parse
-> that, and map the addresses.
+On Thu, Aug 4, 2011 at 11:54 PM, Greg KH <gregkh@suse.de> wrote:
+> On Thu, Aug 04, 2011 at 11:36:11PM +0100, Grant Likely wrote:
+>> devtmpfsd_init() references setup_done which is __initdata, but
+>> devtmpfsd() is not an __init function. �The code is fine, because it
+>> is never referenced after discarding __init sections, but it leaves
+>> some additional code that can be discarded with the rest of __init and
+>> it causes gcc to complain with a section mismatch warning.
 >
-> This is currently only used by the OLPC XO-1.75, so it's named olpc_ofw().
+> I have a simpler patch here that just removes the __initdata function,
+> which is simpler.
 >
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
-> ---
->  Documentation/arm/Setup                  |    2 +
->  arch/arm/Kconfig                         |    8 ++
->  arch/arm/include/asm/olpc_ofw.h          |   23 ++++++
->  arch/arm/include/asm/setup.h             |   24 ++++++
->  arch/arm/mach-mmp/Makefile               |    1 +
->  arch/arm/mach-mmp/include/mach/vmalloc.h |    2 +-
->  arch/arm/mach-mmp/olpc-xo-1-75.c         |    7 ++
->  arch/arm/mach-mmp/olpc_ofw.c             |  118 ++++++++++++++++++++++++++++++
->  8 files changed, 184 insertions(+), 1 deletions(-)
->  create mode 100644 arch/arm/include/asm/olpc_ofw.h
->  create mode 100644 arch/arm/mach-mmp/olpc_ofw.c
->
->
-> I'm looking for input on our mechanism for calling into OLPC's openfirmware
-> on arm.  Some of the x86 folks are cc'd
-> as they had lots of comment when we did this for x86 OLPC machines.
->
-> There's a device tree patch on top of this that can be seen here:
-> http://dev.laptop.org/git/olpc-3.0/patch/?id=12377851f9a64a9e2098adf09f858bed7d3eae7c
->
-> Unlike the XO-1, I'd like to get this OFW communication mechanism ACKed prior to
-> OLPC's mass production of these units.
+> I hate the initdata stuff, it's almost always pointless...
 
-Not really sure if it's the standard way of calling back into GFW, Grant?
+initdata I don't mind.  Discarding stuff that is no longer necessary
+isn't a bad thing and I don't find it that onerous.  __devinit* seems
+less useful since I've never worked on a system that can actually
+discard it.
+
+> Would that solve the problem for you as well?
+
+Sure.  I was just doing random sparc builds and fixing up the bugs I
+ran into.  I'm happy with that solution too.
+
+g.
+
+g.
