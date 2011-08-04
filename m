@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab1HDJyA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 05:54:00 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:26849 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab1HDJxz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 05:53:55 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6427"; a="108040625"
-From: David Brown <davidb@codeaurora.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH] of/address: Add of_iomap_nocache
-Date: Thu,  4 Aug 2011 02:53:49 -0700
-Message-Id: <1312451629-28036-1-git-send-email-davidb@codeaurora.org>
-X-Mailer: git-send-email 1.7.5.4
+	id S1752905Ab1HDJ7F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 05:59:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60830 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751871Ab1HDJ66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 05:58:58 -0400
+Subject: Re: [PATCH 2/4] vfs: keep list of mounts for each superblock
+From: Miklos Szeredi <mszeredi@suse.cz>
+To: Jan Kara <jack@suse.cz>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Miklos Szeredi <miklos@szeredi.hu>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, akpm@linux-foundation.org,
+        toshi.okajima@jp.fujitsu.com
+In-Reply-To: <20110804094616.GC17196@quack.suse.cz>
+References: <1312368521-7911-1-git-send-email-miklos@szeredi.hu>
+	 <1312368521-7911-3-git-send-email-miklos@szeredi.hu>
+	 <20110803221707.GM2203@ZenIV.linux.org.uk>
+	 <1312449054.6032.22.camel@tucsk.pomaz.szeredi.hu>
+	 <20110804094616.GC17196@quack.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 04 Aug 2011 11:58:56 +0200
+Message-ID: <1312451936.6032.32.camel@tucsk.pomaz.szeredi.hu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add uncached mappings from devicetree nodes similar to regular io
-mappings.
+On Thu, 2011-08-04 at 11:46 +0200, Jan Kara wrote:
+> On Thu 04-08-11 11:10:54, Miklos Szeredi wrote:
+> > On Wed, 2011-08-03 at 23:17 +0100, Al Viro wrote:
+> > > On Wed, Aug 03, 2011 at 12:48:39PM +0200, Miklos Szeredi wrote:
+> > > > @@ -696,6 +696,11 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void
+> > > >  	mnt->mnt_sb = root->d_sb;
+> > > >  	mnt->mnt_mountpoint = mnt->mnt_root;
+> > > >  	mnt->mnt_parent = mnt;
+> > > > +
+> > > > +	br_write_lock(vfsmount_lock);
+> > > > +	list_add_tail(&mnt->mnt_instance, &mnt->mnt_sb->s_mounts);
+> > > > +	br_write_unlock(vfsmount_lock);
+> > > 
+> > > Racy.
+> > > 
+> > > > @@ -745,6 +750,10 @@ static struct vfsmount *clone_mnt(struct vfsmount *old, struct dentry *root,
+> > > >  			if (!list_empty(&old->mnt_expire))
+> > > >  				list_add(&mnt->mnt_expire, &old->mnt_expire);
+> > > >  		}
+> > > > +
+> > > > +		br_write_lock(vfsmount_lock);
+> > > > +		list_add_tail(&mnt->mnt_instance, &mnt->mnt_sb->s_mounts);
+> > > > +		br_write_unlock(vfsmount_lock);
+> > > 
+> > > Ditto.  If you expect to be able to find *all* vfsmounts over given sb,
+> > > this locking is simply wrong.
+> > 
+> > I don't understand.  All accesses to mnt_instance/s_mounts are protected
+> > by vfsmount_lock.  What else is needed?
 
-Signed-off-by: David Brown <davidb@codeaurora.org>
----
- drivers/of/address.c       |   19 +++++++++++++++++++
- include/linux/of_address.h |    1 +
- 2 files changed, 20 insertions(+), 0 deletions(-)
+>   I guess Al meant that sb_prepare_remount_readonly() from the next patch
+> could race with new mountpoint being added to the list and the check is
+> thus still unreliable?
 
-diff --git a/drivers/of/address.c b/drivers/of/address.c
-index 72c33fb..9bee7f8 100644
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -613,3 +613,22 @@ void __iomem *of_iomap(struct device_node *np, int index)
- 	return ioremap(res.start, resource_size(&res));
- }
- EXPORT_SYMBOL(of_iomap);
-+
-+/**
-+ * of_iomap_nocache - Maps the memory mapped IO for a given
-+ *                    device_node, using ioremap_nocache.
-+ * @device:	the device whose io range will be mapped
-+ * @index:	index of the io range
-+ *
-+ * Returns a pointer to the mapped memory
-+ */
-+void __iomem *of_iomap_nocache(struct device_node *np, int index)
-+{
-+	struct resource res;
-+
-+	if (of_address_to_resource(np, index, &res))
-+		return NULL;
-+
-+	return ioremap_nocache(res.start, 1 + res.end - res.start);
-+}
-+EXPORT_SYMBOL(of_iomap_nocache);
-diff --git a/include/linux/of_address.h b/include/linux/of_address.h
-index 3118623..3ce1277 100644
---- a/include/linux/of_address.h
-+++ b/include/linux/of_address.h
-@@ -12,6 +12,7 @@ extern struct device_node *of_find_matching_node_by_address(
- 					const struct of_device_id *matches,
- 					u64 base_address);
- extern void __iomem *of_iomap(struct device_node *device, int index);
-+extern void __iomem *of_iomap_nocache(struct device_node *device, int index);
- 
- /* Extract an address from a device, returns the region size and
-  * the address space flags too. The PCI version uses a BAR number
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+If sb_prepare_remount_readonly() is successfull, it sets
+->s_readonly_remount, indicating that remounting is in progress, which
+will cause mnt_want_write() to return -EROFS for any mount regardless
+whether they were added before or after sb_prepare_remount_readonly().
+
+So it doesn't matter if the clone or new mount races with remount.
+
+The drawback of this approach is that transient EROFS errors may be
+returned even if the filesystem remount fails for some reason and so the
+filesystem will not become read-only.  But this, I think, is an
+acceptable compromise.
+
+>  Quickly checking the locking seems to confirm that
+> since e.g. clone_mnt() does not hold s_umount semaphore (only
+> namespace_sem?) and do_remount_sb() has it the other way around...
+
+Yeah, and I think I came to the conclusion that that kind of exclusion
+is not realistically doable.
+
+Thanks,
+Miklos
 
