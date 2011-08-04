@@ -1,82 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973Ab1HDBQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 21:16:19 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:55240 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169Ab1HDBQM convert rfc822-to-8bit (ORCPT
+	id S1756532Ab1HDBSL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 21:18:11 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57992 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753169Ab1HDBSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 21:16:12 -0400
+	Wed, 3 Aug 2011 21:18:01 -0400
+Date: Thu, 4 Aug 2011 10:17:55 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, Liam Girdwood <lrg@ti.com>,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH] regulator: fix regulator/consumer.h kernel-doc warning
+Message-ID: <20110804011753.GA10871@opensource.wolfsonmicro.com>
+References: <20110803180902.4d31d143.rdunlap@xenotime.net>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzG+s9KvSOJHvsUczG_d66f+QbBWiWfqLC21mHswnfm-A@mail.gmail.com>
-References: <20110801180151.GA26686@albatros> <20110801112021.25ec9041.akpm@linux-foundation.org>
- <20110801190341.GA6898@albatros> <CA+55aFw2kHWY1N=ox1er7c-3WL4OA8x0M=Keu7hvAncKUZd1tQ@mail.gmail.com>
- <20110802124530.GA2543@albatros> <20110802135512.b49c9de1.akpm@linux-foundation.org>
- <d844457bba74be419d2434c533fdb4e1@localhost> <CA+55aFx+JOeDoNzs+1wfdK3kpNPyS9wpU1OT=VAwvWPXfMVuDQ@mail.gmail.com>
- <20110803113033.1c3c6960@taxman.wild-wind.fr.eu.org> <CA+55aFzw-K6XvDzTwHRyqQWdkDO8Zqz8Ak1qgNTzf6a3L9=80A@mail.gmail.com>
- <20110803175016.fb80b7f3.akpm@linux-foundation.org> <CA+55aFzG+s9KvSOJHvsUczG_d66f+QbBWiWfqLC21mHswnfm-A@mail.gmail.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Thu, 4 Aug 2011 03:15:51 +0200
-Message-ID: <CAPXgP1258BjQ8vsdpicq0oxS0Onva9DYu5se6dmQKsT+-He-UQ@mail.gmail.com>
-Subject: Re: [PATCH] shm: fix a race between shm_exit() and shm_init()
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>, Ingo Molnar <mingo@elte.hu>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110803180902.4d31d143.rdunlap@xenotime.net>
+X-Cookie: Are you a turtle?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 4, 2011 at 03:01, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Aug 3, 2011 at 2:50 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
->>
->> Well, it's still a workaround.  We'll still have driver_init() trying
->> to run userspace helpers at an inappropriate time, and failing to do
->> so.  Either something will break or it should not be attempting
->> attempting to do this at all.
->
-> Well, it has never worked before either, so I wouldn't call it a
-> "workaround", more of a "insane subsystems do user-mode helpers for
-> crazy small things, and at crazy times. Stop them from wasting our
-> time and effort at those crazy times when we know they would fail
-> anyway".
->
->> Perhaps Kay and Greg can suggest how we can fix all this up?
->
-> I think just not calling user-mode when user-mode isn't ready is a real fix.
+On Wed, Aug 03, 2011 at 06:09:02PM -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
+> 
+> Fix kernel-doc warning about internal/private data by marking it
+> as "private:" so that kernel-doc will ignore it.
 
-Yes, we should default to off, and probably only enable it just right
-before we start /sbin/init from the mounted root or in initramfs.
-There should be no useful use of /sbin/hotplug before we mounted root,
-or unpacked initramfs.
-
-> The fact that the device models send an absolutely *insane* amount of
-> events for everything, and don't track "this is the bootup device
-> scan" on their own is kind of sad, but it's how they roll. This fixes
-> it at a core level, so that the device layer doesn't have to track the
-> "am I booting, or is this a dynamic event?" at all.
-
-It is insane, and the entire uevent hookup with /sbin/hotplug should
-just be removed. We send from 1000 to many 1000s of events at bootup,
-and forking a binary here makes not much sense these days.
-
-All distros default to CONFIG_UEVENT_HELPER_PATH="" because nothing
-else really works anymore, some boxes don't even boot up.
-/sbin/hotplug worked fine when we all had one USB mouse connected and
-needed to load like 5 drivers for the system, but not today.
-
-It's a broken concept today, at least in the way we plug it into the
-driver core makes no sense today, it is just a heritage from the old
-days.
-
-Kay
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
