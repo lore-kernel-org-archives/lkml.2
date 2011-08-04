@@ -1,141 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab1HDIfk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 04:35:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51603 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752596Ab1HDIfh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 04:35:37 -0400
-Message-ID: <4E3A59DD.6010907@cn.fujitsu.com>
-Date: Thu, 04 Aug 2011 16:35:41 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1752577Ab1HDIf5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 04:35:57 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48618 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752944Ab1HDIfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 04:35:48 -0400
+Date: Thu, 4 Aug 2011 08:35:15 GMT
+From: tip-bot for Peter Zijlstra <peterz@infradead.org>
+Message-ID: <tip-83835b3d9aec8e9f666d8223d8a386814f756266@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, penberg@kernel.org, peterz@infradead.org,
+        tglx@linutronix.de, sebastian@breakpoint.cc, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, penberg@kernel.org,
+        tglx@linutronix.de, sebastian@breakpoint.cc, mingo@elte.hu
+In-Reply-To: <1311341165.27400.58.camel@twins>
+References: <1311341165.27400.58.camel@twins>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/urgent] slab, lockdep: Annotate slab -> rcu -> debug_object -> slab
+Git-Commit-ID: 83835b3d9aec8e9f666d8223d8a386814f756266
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Shaohua Li <shli@kernel.org>
-CC: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: fio posixaio performance problem
-References: <4E38C314.8070305@cn.fujitsu.com> <CANejiEViuKky1A7Xh0MQKBVNMj_fgzwayWyON7hFGfP3wa62SQ@mail.gmail.com> <4E3902C7.9050907@cn.fujitsu.com> <CANejiEVqFt4j1-qTVnxEAe75z0y010s=ST2XtCDDTqDEQT=EcQ@mail.gmail.com> <4E391986.90108@cn.fujitsu.com> <20110803154533.GB32385@redhat.com> <20110803175101.GC32385@redhat.com> <CANejiEXAtzExExqmTXA=hmpGh8DVVo9ncbRMdkB+avq+G3LuqQ@mail.gmail.com> <4E39FD41.4090103@cn.fujitsu.com> <CANejiEVh4hvi5S18H7XHihxZt+JcRU7W5MGpQwQc_ZtiFCa2jw@mail.gmail.com> <4E3A4DF7.3020605@cn.fujitsu.com> <CANejiEXkv75kVxTS2w-v2GHZZRdmOR8HXUY16-eas9M45ZKqKg@mail.gmail.com>
-In-Reply-To: <CANejiEXkv75kVxTS2w-v2GHZZRdmOR8HXUY16-eas9M45ZKqKg@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-04 16:34:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-08-04 16:34:25
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 04 Aug 2011 08:35:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-8-4 16:25, Shaohua Li wrote:
-> 在 2011年8月4日 下午3:44，Gui Jianfeng <guijianfeng@cn.fujitsu.com> 写道：
->> On 2011-8-4 11:14, Shaohua Li wrote:
->>> 在 2011年8月4日 上午10:00，Gui Jianfeng <guijianfeng@cn.fujitsu.com> 写道：
->>>> On 2011-8-4 8:53, Shaohua Li wrote:
->>>>> 2011/8/4 Vivek Goyal <vgoyal@redhat.com>:
->>>>>> On Wed, Aug 03, 2011 at 11:45:33AM -0400, Vivek Goyal wrote:
->>>>>>> On Wed, Aug 03, 2011 at 05:48:54PM +0800, Gui Jianfeng wrote:
->>>>>>>> On 2011-8-3 16:22, Shaohua Li wrote:
->>>>>>>>> 2011/8/3 Gui Jianfeng <guijianfeng@cn.fujitsu.com>:
->>>>>>>>>> On 2011-8-3 15:38, Shaohua Li wrote:
->>>>>>>>>>> 2011/8/3 Gui Jianfeng <guijianfeng@cn.fujitsu.com>:
->>>>>>>>>>>> Hi,
->>>>>>>>>>>>
->>>>>>>>>>>> I ran a fio test to simulate qemu-kvm io behaviour.
->>>>>>>>>>>> When job number is greater than 2, IO performance is
->>>>>>>>>>>> really bad.
->>>>>>>>>>>>
->>>>>>>>>>>> 1 thread: aggrb=15,129KB/s
->>>>>>>>>>>> 4 thread: aggrb=1,049KB/s
->>>>>>>>>>>>
->>>>>>>>>>>> Kernel: lastest upstream
->>>>>>>>>>>>
->>>>>>>>>>>> Any idea?
->>>>>>>>>>>>
->>>>>>>>>>>> ---
->>>>>>>>>>>> [global]
->>>>>>>>>>>> runtime=30
->>>>>>>>>>>> time_based=1
->>>>>>>>>>>> size=1G
->>>>>>>>>>>> group_reporting=1
->>>>>>>>>>>> ioengine=posixaio
->>>>>>>>>>>> exec_prerun='echo 3 > /proc/sys/vm/drop_caches'
->>>>>>>>>>>> thread=1
->>>>>>>>>>>>
->>>>>>>>>>>> [kvmio-1]
->>>>>>>>>>>> description=kvmio-1
->>>>>>>>>>>> numjobs=4
->>>>>>>>>>>> rw=write
->>>>>>>>>>>> bs=4k
->>>>>>>>>>>> direct=1
->>>>>>>>>>>> filename=/mnt/sda4/1G.img
->>>>>>>>>>> Hmm, the test runs always about 15M/s at my side regardless how many threads.
->>>>>>>>>>
->>>>>>>>>> CFQ？
->>>>>>>>> yes.
->>>>>>>>>
->>>>>>>>>> what's the slice_idle value?
->>>>>>>>> default value. I didn't change it.
->>>>>>>>
->>>>>>>> Hmm, I use a sata disk, and can reproduce this bug every time...
->>>>>>>
->>>>>>> Do you have blktrace of run with 4 jobs?
->>>>>>
->>>>>> I can't reproduce it too. On my sata disk single thread is getting around
->>>>>> 23-24MB/s and 4 threads get around 19-20MB/sec. Some of the throughput
->>>>>> is gone into seeking so that is expected.
->>>>>>
->>>>>> I think what you are trying to point out is idling issue. In your workload
->>>>>> every thread is doing sync-idle IO. So idling is enabled on each thread.
->>>>>> On my system I see that next thread preempts the current idle thread
->>>>>> because they all are doing IO in nearby area of file and rq_close() is
->>>>>> true hence preemption is allowed.
->>>>>>
->>>>>> On your system, I think somehow rq_close() is not true hence preemption
->>>>>> does not take place and we continue to idle on that thread. That also
->>>>>> is not necessarily too bad but it might be happening that we are waiting
->>>>>> for completion of IO from some other thread before this thread (we are
->>>>>> idling on) can do more writes due to some filesystem rescrition and
->>>>>> that can lead to sudden throughput drop. blktrace will give some idea.
->>>>> with idle, the workload fallbacks like the one thread case, I don't
->>>>> expect so big reduction.
->>>>> I saw some back seek in the workload because we have rq_close() preempt here.
->>>>> is it possible back seek penality in the disk is big?
->>>>
->>>> Shaohua,
->>>>
->>>> what do you mean "back seek penality" here. AFAIK, back seek penality only happens
->>>> when choosing next request to serve. Is there anything to do with preemption logic?
->>> oh, not related per your blktrace. so we have two problems here:
->>> 1. fio doesn't dispatch request in 8ms.
->>> 2. no close request preempt.
->>
->> Yes, these're actual factors why performance is so bad.
->>
->>> both looks quite wield. can you post a longer blktrace output, like
->>> for one second? the piece is too short.
->>
->> Attached.
->>
->>> and do you have anything others running?
->>
->> No.
-> looks the system does a write in every 8ms. This is quite wrong. does
-> the posixaio
-> engine have something wrong? can you use a new fio or try libaio please.
+Commit-ID:  83835b3d9aec8e9f666d8223d8a386814f756266
+Gitweb:     http://git.kernel.org/tip/83835b3d9aec8e9f666d8223d8a386814f756266
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Fri, 22 Jul 2011 15:26:05 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 4 Aug 2011 10:17:54 +0200
 
-Yes, I also highly suspect that fio's posixaio engine works bad.
-On the other hand, I'm not sure why preempting in cfqs doesn't happen.
-It seems requests from different threads is close enough...
+slab, lockdep: Annotate slab -> rcu -> debug_object -> slab
 
-Thanks,
-Gui
+Lockdep thinks there's lock recursion through:
 
-> 
-> Thanks,
-> Shaohua
-> 
-> 
+	kmem_cache_free()
+	  cache_flusharray()
+	    spin_lock(&l3->list_lock)  <----------------.
+	    free_block()                                |
+	      slab_destroy()                            |
+		call_rcu()                              |
+		  debug_object_activate()               |
+		    debug_object_init()                 |
+		      __debug_object_init()             |
+			kmem_cache_alloc()              |
+			  cache_alloc_refill()          |
+			    spin_lock(&l3->list_lock) --'
 
+Now debug objects doesn't use SLAB_DESTROY_BY_RCU and hence there is no
+actual possibility of recursing. Luckily debug objects marks it slab
+with SLAB_DEBUG_OBJECTS so we can identify the thing.
 
+Mark all SLAB_DEBUG_OBJECTS (all one!) slab caches with a special
+lockdep key so that lockdep sees its a different cachep.
+
+Also add a WARN on trying to create a SLAB_DESTROY_BY_RCU |
+SLAB_DEBUG_OBJECTS cache, to avoid possible future trouble.
+
+Reported-and-tested-by: Sebastian Siewior <sebastian@breakpoint.cc>
+[ fixes to the initial patch ]
+Reported-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1311341165.27400.58.camel@twins
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ mm/slab.c |   86 ++++++++++++++++++++++++++++++++++++++++++++++++-------------
+ 1 files changed, 68 insertions(+), 18 deletions(-)
+
+diff --git a/mm/slab.c b/mm/slab.c
+index 9594740..0703578 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -622,6 +622,51 @@ int slab_is_available(void)
+ static struct lock_class_key on_slab_l3_key;
+ static struct lock_class_key on_slab_alc_key;
+ 
++static struct lock_class_key debugobj_l3_key;
++static struct lock_class_key debugobj_alc_key;
++
++static void slab_set_lock_classes(struct kmem_cache *cachep,
++		struct lock_class_key *l3_key, struct lock_class_key *alc_key,
++		int q)
++{
++	struct array_cache **alc;
++	struct kmem_list3 *l3;
++	int r;
++
++	l3 = cachep->nodelists[q];
++	if (!l3)
++		return;
++
++	lockdep_set_class(&l3->list_lock, l3_key);
++	alc = l3->alien;
++	/*
++	 * FIXME: This check for BAD_ALIEN_MAGIC
++	 * should go away when common slab code is taught to
++	 * work even without alien caches.
++	 * Currently, non NUMA code returns BAD_ALIEN_MAGIC
++	 * for alloc_alien_cache,
++	 */
++	if (!alc || (unsigned long)alc == BAD_ALIEN_MAGIC)
++		return;
++	for_each_node(r) {
++		if (alc[r])
++			lockdep_set_class(&alc[r]->lock, alc_key);
++	}
++}
++
++static void slab_set_debugobj_lock_classes_node(struct kmem_cache *cachep, int node)
++{
++	slab_set_lock_classes(cachep, &debugobj_l3_key, &debugobj_alc_key, node);
++}
++
++static void slab_set_debugobj_lock_classes(struct kmem_cache *cachep)
++{
++	int node;
++
++	for_each_online_node(node)
++		slab_set_debugobj_lock_classes_node(cachep, node);
++}
++
+ static void init_node_lock_keys(int q)
+ {
+ 	struct cache_sizes *s = malloc_sizes;
+@@ -630,29 +675,14 @@ static void init_node_lock_keys(int q)
+ 		return;
+ 
+ 	for (s = malloc_sizes; s->cs_size != ULONG_MAX; s++) {
+-		struct array_cache **alc;
+ 		struct kmem_list3 *l3;
+-		int r;
+ 
+ 		l3 = s->cs_cachep->nodelists[q];
+ 		if (!l3 || OFF_SLAB(s->cs_cachep))
+ 			continue;
+-		lockdep_set_class(&l3->list_lock, &on_slab_l3_key);
+-		alc = l3->alien;
+-		/*
+-		 * FIXME: This check for BAD_ALIEN_MAGIC
+-		 * should go away when common slab code is taught to
+-		 * work even without alien caches.
+-		 * Currently, non NUMA code returns BAD_ALIEN_MAGIC
+-		 * for alloc_alien_cache,
+-		 */
+-		if (!alc || (unsigned long)alc == BAD_ALIEN_MAGIC)
+-			continue;
+-		for_each_node(r) {
+-			if (alc[r])
+-				lockdep_set_class(&alc[r]->lock,
+-					&on_slab_alc_key);
+-		}
++
++		slab_set_lock_classes(s->cs_cachep, &on_slab_l3_key,
++				&on_slab_alc_key, q);
+ 	}
+ }
+ 
+@@ -671,6 +701,14 @@ static void init_node_lock_keys(int q)
+ static inline void init_lock_keys(void)
+ {
+ }
++
++static void slab_set_debugobj_lock_classes_node(struct kmem_cache *cachep, int node)
++{
++}
++
++static void slab_set_debugobj_lock_classes(struct kmem_cache *cachep)
++{
++}
+ #endif
+ 
+ /*
+@@ -1264,6 +1302,8 @@ static int __cpuinit cpuup_prepare(long cpu)
+ 		spin_unlock_irq(&l3->list_lock);
+ 		kfree(shared);
+ 		free_alien_cache(alien);
++		if (cachep->flags & SLAB_DEBUG_OBJECTS)
++			slab_set_debugobj_lock_classes_node(cachep, node);
+ 	}
+ 	init_node_lock_keys(node);
+ 
+@@ -2426,6 +2466,16 @@ kmem_cache_create (const char *name, size_t size, size_t align,
+ 		goto oops;
+ 	}
+ 
++	if (flags & SLAB_DEBUG_OBJECTS) {
++		/*
++		 * Would deadlock through slab_destroy()->call_rcu()->
++		 * debug_object_activate()->kmem_cache_alloc().
++		 */
++		WARN_ON_ONCE(flags & SLAB_DESTROY_BY_RCU);
++
++		slab_set_debugobj_lock_classes(cachep);
++	}
++
+ 	/* cache setup completed, link it into the list */
+ 	list_add(&cachep->next, &cache_chain);
+ oops:
