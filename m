@@ -1,69 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036Ab1HDWk4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 18:40:56 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:18166 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755397Ab1HDWku convert rfc822-to-8bit (ORCPT
+	id S1756051Ab1HDWoI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 18:44:08 -0400
+Received: from [66.192.166.38] ([66.192.166.38]:43469 "EHLO
+	hancock.steeleye.com" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754816Ab1HDWoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 18:40:50 -0400
-Date: Thu, 4 Aug 2011 18:40:20 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, xen-devel@lists.xensource.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        virtualization@lists.linux-foundation.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        linux-next@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [Xen-devel] Re: linux-next: Tree for July 25 (xen)
-Message-ID: <20110804224020.GA21492@dumpdata.com>
-References: <20110725162542.39ea8d8cbd51604523635c1a@canb.auug.org.au>
- <20110725144629.b752bf14.rdunlap@xenotime.net>
- <20110804193534.GB12729@elte.hu>
- <20110804195539.GA11198@dumpdata.com>
- <20110804131516.c4da6595.rdunlap@xenotime.net>
- <20110804223259.GB4370@dumpdata.com>
+	Thu, 4 Aug 2011 18:44:03 -0400
+X-Greylist: delayed 1954 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Aug 2011 18:44:03 EDT
+Date: Thu, 04 Aug 2011 18:11:27 -0400
+From: paul.clements@steeleye.com
+To: greg@kroah.com
+Subject: [PATCH v2] nbd: nbd sysfs framework
+Message-ID: <4e3b190f.NjLPBhXLsVSgFxi+%paul.clements@steeleye.com>
+User-Agent: nail 11.25 7/29/05
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110804223259.GB4370@dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4E3B1FDD.0014:SCFMA922111,ss=1,re=-4.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 06:32:59PM -0400, Konrad Rzeszutek Wilk wrote:
-> > > > These build failures are still triggering upstream:
-> > > > 
-> > > >  arch/x86/xen/trace.c:44:2: error: array index in initializer not of integer type
-> > > >  arch/x86/xen/trace.c:44:2: error: (near initialization for ‘xen_hypercall_names’)
-> > > >  arch/x86/xen/trace.c:45:1: error: ‘__HYPERVISOR_arch_4’ undeclared here (not in a function)
-> > > >  arch/x86/xen/trace.c:45:2: error: array index in initializer not of integer type
-> > > >  arch/x86/xen/trace.c:45:2: error: (near initialization for ‘xen_hypercall_names’)
-> > > 
-> > > Oh, that I haven't seen. Can you send me the .config for that please.
-> > 
-> > You can't be trying very hard then.  I see lots of these (but no,
-> 
-> Ah, I am getting it now. Thanks for reporting it.
+Description: This patch adds a small framework that will simplify adding
+sysfs entries for nbd (coming later). All the locking and structure walking
+are in the main nbd_attr_ handlers and the individual entries' show and store
+handlers will be much simpler. The patch moves the one existing sysfs entry
+(pid) to use the framework. ABI docs included.
 
-This should do the trick:
+Thanks,
+Paul
 
-diff --git a/arch/x86/xen/trace.c b/arch/x86/xen/trace.c
-index 734beba..520022d 100644
---- a/arch/x86/xen/trace.c
-+++ b/arch/x86/xen/trace.c
-@@ -1,4 +1,5 @@
- #include <linux/ftrace.h>
-+#include <xen/interface/xen.h>
+From: Paul Clements <paul.clements@steeleye.com>
+Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+---
+
+ Documentation/ABI/testing/sysfs-block-nbd |    8 ++
+ drivers/block/nbd.c                       |   98 ++++++++++++++++++++++--------
+ 2 files changed, 80 insertions(+), 26 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-block-nbd b/Documentation/ABI/testing/sysfs-block-nbd
+new file mode 100644
+index 0000000..3728d9f
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-block-nbd
+@@ -0,0 +1,8 @@
++What:		/sys/block/nbd<id>/nbd/pid
++Date:		August 2011
++Contact:	Paul Clements <paul.clements@steeleye.com>
++Description:
++		The pid file is read-only and specifies the pid of the
++		caller of NBD_DO_IT ioctl (normally this is the nbd-client).
++		The pid will be zero if the nbd connection is not
++		currently established.
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index e6fc716..1dbca97 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -383,39 +383,17 @@ harderror:
+ 	return NULL;
+ }
  
- #define N(x)	[__HYPERVISOR_##x] = "("#x")"
- static const char *xen_hypercall_names[] = {
+-static ssize_t pid_show(struct device *dev,
+-			struct device_attribute *attr, char *buf)
+-{
+-	struct gendisk *disk = dev_to_disk(dev);
+-
+-	return sprintf(buf, "%ld\n",
+-		(long) ((struct nbd_device *)disk->private_data)->pid);
+-}
+-
+-static struct device_attribute pid_attr = {
+-	.attr = { .name = "pid", .mode = S_IRUGO},
+-	.show = pid_show,
+-};
+-
+ static int nbd_do_it(struct nbd_device *lo)
+ {
+ 	struct request *req;
+-	int ret;
+ 
+ 	BUG_ON(lo->magic != LO_MAGIC);
+ 
+ 	lo->pid = current->pid;
+-	ret = sysfs_create_file(&disk_to_dev(lo->disk)->kobj, &pid_attr.attr);
+-	if (ret) {
+-		printk(KERN_ERR "nbd: sysfs_create_file failed!");
+-		lo->pid = 0;
+-		return ret;
+-	}
+ 
+ 	while ((req = nbd_read_stat(lo)) != NULL)
+ 		nbd_end_request(req);
+ 
+-	sysfs_remove_file(&disk_to_dev(lo->disk)->kobj, &pid_attr.attr);
+ 	lo->pid = 0;
+ 	return 0;
+ }
+@@ -730,10 +708,73 @@ static const struct block_device_operations nbd_fops =
+ 	.ioctl =	nbd_ioctl,
+ };
+ 
+-/*
+- * And here should be modules and kernel interface 
+- *  (Just smiley confuses emacs :-)
+- */
++// this structure holds the "real" show and store handlers so that the
++// main nbd attr handlers can find them
++struct nbd_sysfs_entry {
++	struct device_attribute dev_attr;
++	ssize_t (*show)(struct nbd_device *, char *);
++	ssize_t (*store)(struct nbd_device *, const char *, size_t);
++};
++
++#define NBD_ATTR(_name, _perm, _show, _store) \
++	static struct nbd_sysfs_entry nbd_sysfs_##_name = { \
++	.dev_attr = __ATTR(_name, _perm, nbd_attr_show, nbd_attr_store), \
++	.show = _show, \
++	.store = _store \
++}
++
++static ssize_t
++nbd_attr_show(struct device *dev, struct device_attribute *attr, char *page)
++{
++	struct nbd_sysfs_entry *entry = container_of(attr,
++			struct nbd_sysfs_entry, dev_attr);
++	struct nbd_device *lo = (struct nbd_device *)
++				dev_to_disk(dev)->private_data;
++	ssize_t rv;
++
++	if (!entry->show || !lo)
++		return -EIO;
++	rv = entry->show(lo, page);
++	return rv;
++}
++
++static ssize_t
++nbd_attr_store(struct device *dev, struct device_attribute *attr,
++	      const char *page, size_t length)
++{
++	struct nbd_sysfs_entry *entry = container_of(attr,
++			struct nbd_sysfs_entry, dev_attr);
++	struct nbd_device *lo = (struct nbd_device *)
++				dev_to_disk(dev)->private_data;
++	ssize_t rv;
++
++	if (!entry->store || !lo)
++		return -EIO;
++	if (!capable(CAP_SYS_ADMIN))
++		return -EACCES;
++	mutex_lock(&lo->tx_lock);
++	rv = entry->store(lo, page, length);
++	mutex_unlock(&lo->tx_lock);
++
++	return rv;
++}
++
++static ssize_t pid_show(struct nbd_device *lo, char *page)
++{
++	return sprintf(page, "%ld\n", (long)lo->pid);
++}
++
++NBD_ATTR(pid, S_IRUGO, pid_show, NULL);
++
++static struct attribute *nbd_attrs[] = {
++	&nbd_sysfs_pid.dev_attr.attr,
++	NULL,
++};
++
++static struct attribute_group nbd_attr_group = {
++	.name = "nbd",
++	.attrs = nbd_attrs,
++};
+ 
+ static int __init nbd_init(void)
+ {
+@@ -786,6 +827,7 @@ static int __init nbd_init(void)
+ 	dprintk(DBG_INIT, "nbd: debugflags=0x%x\n", debugflags);
+ 
+ 	for (i = 0; i < nbds_max; i++) {
++		int error;
+ 		struct gendisk *disk = nbd_dev[i].disk;
+ 		nbd_dev[i].file = NULL;
+ 		nbd_dev[i].magic = LO_MAGIC;
+@@ -805,6 +847,8 @@ static int __init nbd_init(void)
+ 		sprintf(disk->disk_name, "nbd%d", i);
+ 		set_capacity(disk, 0);
+ 		add_disk(disk);
++		error = sysfs_create_group(&disk_to_dev(disk)->kobj,
++				&nbd_attr_group);
+ 	}
+ 
+ 	return 0;
+@@ -824,6 +868,8 @@ static void __exit nbd_cleanup(void)
+ 		struct gendisk *disk = nbd_dev[i].disk;
+ 		nbd_dev[i].magic = 0;
+ 		if (disk) {
++			sysfs_remove_group(&disk_to_dev(disk)->kobj,
++					&nbd_attr_group);
+ 			del_gendisk(disk);
+ 			blk_cleanup_queue(disk->queue);
+ 			put_disk(disk);
