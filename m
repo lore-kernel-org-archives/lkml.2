@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750915Ab1HDE0K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 00:26:10 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:55350 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722Ab1HDE0D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 00:26:03 -0400
-Date: Thu, 04 Aug 2011 00:25:55 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [GIT PATCH] APEI patches for Linux 3.1
-In-reply-to: <CA+55aFxE6b=idv+fF5h1U3EnDqHSCK2b6+36sResmhJKvAZQ3A@mail.gmail.com>
-Message-id: <alpine.LFD.2.02.1108032351430.29492@x980>
-References: <alpine.LFD.2.02.1108031137590.22067@x980>
- <CA+55aFxST2J+LDMB=1ctnw2WGxV+a-cm3FE-1AjwnXMNDkt32g@mail.gmail.com>
- <alpine.LFD.2.02.1108031523080.22067@x980>
- <CA+55aFxE6b=idv+fF5h1U3EnDqHSCK2b6+36sResmhJKvAZQ3A@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1751134Ab1HDE0y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 00:26:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42767 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750722Ab1HDE0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 00:26:49 -0400
+Date: Thu, 4 Aug 2011 14:26:39 +1000
+From: NeilBrown <neilb@suse.de>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] md: use REQ_NOIDLE flag in md_super_write()
+Message-ID: <20110804142639.6484de94@notabene.brown>
+In-Reply-To: <1312387077-26617-1-git-send-email-namhyung@gmail.com>
+References: <1312387077-26617-1-git-send-email-namhyung@gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Aug 2011, Linus Torvalds wrote:
+On Thu,  4 Aug 2011 00:57:57 +0900 Namhyung Kim <namhyung@gmail.com> wrote:
 
-> ...I'm not seeing any
-> reason to pull this thing. The merge window is not for development,
-> and you're simply not making me get the warm and fuzzies about this
-> late pull request.
+> Queue idling is used for the anticipation of immediate
+> sequencial I/O's but md_super_write() is a kind of one-
+> shot operation, coupled with md_super_wait(), so the
+> idling in this case will be just a waste of time.
+> 
+> Specifying REQ_NOIDLE prevents it. Instead of adding
+> the flag to submit_bio() directly, use pre-defined
+> macro WRITE_FLUSH_FUA.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+>  drivers/md/md.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/md/md.c b/drivers/md/md.c
+> index d97a62534798..8650e9a0ce7c 100644
+> --- a/drivers/md/md.c
+> +++ b/drivers/md/md.c
+> @@ -848,7 +848,7 @@ void md_super_write(mddev_t *mddev, mdk_rdev_t *rdev,
+>  	bio->bi_end_io = super_written;
+>  
+>  	atomic_inc(&mddev->pending_writes);
+> -	submit_bio(REQ_WRITE | REQ_SYNC | REQ_FLUSH | REQ_FUA, bio);
+> +	submit_bio(WRITE_FLUSH_FUA, bio);
+>  }
+>  
+>  void md_super_wait(mddev_t *mddev)
 
-I appologize for the the multiple late pull requests.
-I was off the grid for a vacation and returned too late to be early.
+Applied, thanks.
 
-I split APEI onto its own branch and I doubly botched it --
-both in the .git/remotes file and in the script pointing to the repo...
-I guess the good news is the next time I run the script it will be 
-correct:-)
+NeilBrown
 
-Please judge apei-release on its own merits rather than
-the sloppily-addressed envelope I sent it in on Wednesday.
-I know it isn't a capability that you use, but for the enterprise
-folks that need it, this batch is an improvement over Linux 3.0.
-
-The code hasn't changed much in months -- most of it
-was ready for the 3.0 merge window.  There were a couple of
-build fixes recently based-on linux-next feedback,
-and I also re-based to add more "Acked-by" notations.
-Finally, I merged it up to your tree so you'd not be irritated
-with trivial but annoying text merge conflicts on your
-vacation.  (typical case of multiple people appending
-to shared lists in Kconfig files, if you're interested)
-
-FWIW, I've built 200 x86_64 kernels and 393 i386 kernels
-and booted on both architectures on multiple machines.
-Though I don't have the capability to verify correctness
-of the the APEI features, and must rely on Ying for that.
-
-please pull from:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git apei-release
-
-thanks,
--Len
 
