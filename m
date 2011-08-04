@@ -1,48 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057Ab1HDLQW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 07:16:22 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39422 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672Ab1HDLQT (ORCPT
+	id S1753337Ab1HDLR5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 07:17:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47388 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752305Ab1HDLRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 07:16:19 -0400
-Date: Thu, 4 Aug 2011 15:16:13 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-Cc: Marc Zyngier <marc.zyngier@arm.com>, Richard Weinberger <richard@nod.at>,
-        serge.hallyn@canonical.com, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: shm updates broke UML
-Message-ID: <20110804111613.GA2375@albatros>
-References: <201108011541.59640.richard@nod.at>
- <08cf4697685ecd9bcb7e4eefe516f2ee@localhost>
- <20110801172452.GA26190@albatros>
- <201108041304.41135.toralf.foerster@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201108041304.41135.toralf.foerster@gmx.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 4 Aug 2011 07:17:53 -0400
+X-Greylist: delayed 1035 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Aug 2011 07:17:53 EDT
+From: Andy Whitcroft <apw@canonical.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>, Nick Piggin <npiggin@kernel.dk>,
+        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
+Subject: [PATCH 1/1] readlinkat: ensure we return ENOENT for the empty pathname for normal lookups
+Date: Thu,  4 Aug 2011 12:00:34 +0100
+Message-Id: <1312455634-16253-2-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1312455634-16253-1-git-send-email-apw@canonical.com>
+References: <1312455634-16253-1-git-send-email-apw@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 13:04 +0200, Toralf Förster wrote:
-> issue solved for the UML, tested linux-v3.0-7347-g288d5ab whcih works fine.
-> 
-> BTW is there a special commit id dealing with this bug or was it solved as a 
-> side effect of another commit ?
+Since the commit below which added O_PATH support to the *at() calls,
+the error return for readlink/readlinkat for the empty pathname has
+switched from ENOENT to EINVAL:
 
-The oops is fixed by 298507d4d2cff2248e84afcf646b697301294442 (shm:
-optimize exit_shm()), but the dependency problem (tasks spawned by the
-kernel are started with uninitialized namespaces) is not solved yet,
-AFAICS.
+  commit 65cfc6722361570bfe255698d9cd4dccaf47570d
+  Author: Al Viro <viro@zeniv.linux.org.uk>
+  Date:   Sun Mar 13 15:56:26 2011 -0400
 
-Thanks,
+    readlinkat(), fchownat() and fstatat() with empty relative pathnames
 
+This is both unexpected for userspace and makes readlink/readlinkat
+inconsistant with all other interfaces; and inconsistant with our stated
+return for these pathnames.
+
+As the readlinkat call does not have a flags parameter we cannot use
+the AT_EMPTY_PATH approach used in the other calls.  Therefore expose
+whether the original path is infact entry via a new user_path_at_empty()
+path lookup function.  Use this to determine whether to default to EINVAL
+or ENOENT for failures.
+
+BugLink: http://bugs.launchpad.net/bugs/817187
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ fs/namei.c            |   24 +++++++++++++++++++-----
+ fs/stat.c             |    5 +++--
+ include/linux/namei.h |    1 +
+ 3 files changed, 23 insertions(+), 7 deletions(-)
+
+diff --git a/fs/namei.c b/fs/namei.c
+index 445fd5d..9e013b8 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -137,7 +137,8 @@ static int do_getname(const char __user *filename, char *page)
+ 	return retval;
+ }
+ 
+-static char *getname_flags(const char __user * filename, int flags)
++static char *getname_flags_empty(const char __user * filename,
++							int flags, int *empty)
+ {
+ 	char *tmp, *result;
+ 
+@@ -148,6 +149,8 @@ static char *getname_flags(const char __user * filename, int flags)
+ 
+ 		result = tmp;
+ 		if (retval < 0) {
++			if (retval == -ENOENT && empty)
++				*empty = 1;
+ 			if (retval != -ENOENT || !(flags & LOOKUP_EMPTY)) {
+ 				__putname(tmp);
+ 				result = ERR_PTR(retval);
+@@ -158,9 +161,14 @@ static char *getname_flags(const char __user * filename, int flags)
+ 	return result;
+ }
+ 
++static char *getname_flags(const char __user * filename, int flags)
++{
++	return getname_flags_empty(filename, flags, 0);
++}
++
+ char *getname(const char __user * filename)
+ {
+-	return getname_flags(filename, 0);
++	return getname_flags_empty(filename, 0, 0);
+ }
+ 
+ #ifdef CONFIG_AUDITSYSCALL
+@@ -1756,11 +1764,11 @@ struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
+ 	return __lookup_hash(&this, base, NULL);
+ }
+ 
+-int user_path_at(int dfd, const char __user *name, unsigned flags,
+-		 struct path *path)
++int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
++		 struct path *path, int *empty)
+ {
+ 	struct nameidata nd;
+-	char *tmp = getname_flags(name, flags);
++	char *tmp = getname_flags_empty(name, flags, empty);
+ 	int err = PTR_ERR(tmp);
+ 	if (!IS_ERR(tmp)) {
+ 
+@@ -1774,6 +1782,12 @@ int user_path_at(int dfd, const char __user *name, unsigned flags,
+ 	return err;
+ }
+ 
++int user_path_at(int dfd, const char __user *name, unsigned flags,
++		 struct path *path)
++{
++	return user_path_at_empty(dfd, name, flags, path, 0);
++}
++
+ static int user_path_parent(int dfd, const char __user *path,
+ 			struct nameidata *nd, char **name)
+ {
+diff --git a/fs/stat.c b/fs/stat.c
+index 9610391..4c814bb 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -296,15 +296,16 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+ {
+ 	struct path path;
+ 	int error;
++	int empty = 0;
+ 
+ 	if (bufsiz <= 0)
+ 		return -EINVAL;
+ 
+-	error = user_path_at(dfd, pathname, LOOKUP_EMPTY, &path);
++	error = user_path_at_empty(dfd, pathname, LOOKUP_EMPTY, &path, &empty);
+ 	if (!error) {
+ 		struct inode *inode = path.dentry->d_inode;
+ 
+-		error = -EINVAL;
++		error = (empty) ? -ENOENT : -EINVAL;
+ 		if (inode->i_op->readlink) {
+ 			error = security_inode_readlink(path.dentry);
+ 			if (!error) {
+diff --git a/include/linux/namei.h b/include/linux/namei.h
+index 76fe2c6..c300127 100644
+--- a/include/linux/namei.h
++++ b/include/linux/namei.h
+@@ -66,6 +66,7 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
+ #define LOOKUP_EMPTY		0x4000
+ 
+ extern int user_path_at(int, const char __user *, unsigned, struct path *);
++extern int user_path_at_empty(int, const char __user *, unsigned, struct path *, int *empty);
+ 
+ #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
+ #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+1.7.4.1
+
