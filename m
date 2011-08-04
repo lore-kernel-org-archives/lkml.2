@@ -1,98 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab1HDJ1P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 05:27:15 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47061 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752690Ab1HDJ1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 05:27:04 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [RFC][PATCH] PM / Freezer: Freeze filesystems along with freezing processes (was: Re: PM / hibernate xfs lock up / xfs_reclaim_inodes_ag)
-Date: Thu, 4 Aug 2011 11:27:30 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0+; KDE/4.6.0; x86_64; ; )
-Cc: Nigel Cunningham <nigel@tuxonice.net>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>, Christoph <cr2005@u-club.de>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>
-References: <4E1C70AD.1010101@u-club.de> <201108032315.06012.rjw@sisk.pl> <20110803172922.GA2126@ucw.cz>
-In-Reply-To: <20110803172922.GA2126@ucw.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1753218Ab1HDJdp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 05:33:45 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:50215 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751675Ab1HDJdj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 05:33:39 -0400
+Subject: Re: [PATCH] x86, efi: Don't recursively acquire rtc_lock
+From: Matt Fleming <matt@console-pimps.org>
+To: Jan Beulich <jbeulich@novell.com>
+Cc: linux-kernel@vger.kernel.org, fenghua.yu@intel.com, tony.luck@intel.com,
+        hpa@linux.intel.com, mjg@redhat.com, a.zummo@towertech.it
+In-Reply-To: <4E3A17BD0200007800073FC5@nat28.tlf.novell.com>
+References: <4E3A17BD0200007800073FC5@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 04 Aug 2011 10:33:36 +0100
+Message-ID: <1312450416.10579.70.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108041127.30944.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, August 03, 2011, Pavel Machek wrote:
-> Hi!
+On Thu, 2011-08-04 at 03:53 +0100, Jan Beulich wrote:
 > 
-> > Freeze all filesystems during the freezing of tasks by calling
-> > freeze_bdev() for each of them and thaw them during the thawing
-> > of tasks with the help of thaw_bdev().
-> > 
-> > This is needed by hibernation, because some filesystems (e.g. XFS)
-> > deadlock with the preallocation of memory used by it if the memory
-> > pressure caused by it is too heavy.
-> > 
-> > The additional benefit of this change is that, if something goes
-> > wrong after filesystems have been frozen, they will stay in a
-> > consistent state and journal replays won't be necessary (e.g. after
-> > a failing suspend or resume).  In particular, this should help to
-> > solve a long-standing issue that in some cases during resume from
-> > hibernation the boot loader causes the journal to be replied for the
-> > filesystem containing the kernel image and initrd causing it to
-> > become inconsistent with the information stored in the hibernation
-> > image.
-> 
-> > +/**
-> > + * freeze_filesystems - Force all filesystems into a consistent state.
-> > + */
-> > +void freeze_filesystems(void)
-> > +{
-> > +	struct super_block *sb;
-> > +
-> > +	lockdep_off();
-> 
-> Ouch. So... why do we need to silence this?
+> Seems the wrong approach to me: The call happening with the lock held
+> is the wrong part imo, and hence the fix ought to be to drop the lock
+> there.
 
-So that it doesn't complain? :-)
+But what about other platforms that provide a get_wallclock()
+implementation such as the kvm or xen code? If we called get_wallclock()
+without rtc_lock held we'd be requiring everyone to lock it in their
+clock code, which is unnecessary work and increases the amount of code
+that touches rtc_lock (not to mention spreading it across several
+files).
 
-I'll need some time to get the exact details here.
+I think it's much better to do the locking as high up the callstack as
+possible and preferably in as few places as possible.
 
-> > +	/*
-> > +	 * Freeze in reverse order so filesystems dependant upon others are
-> > +	 * frozen in the right order (eg. loopback on ext3).
-> > +	 */
-> > +	list_for_each_entry_reverse(sb, &super_blocks, s_list) {
-> > +		if (!sb->s_root || !sb->s_bdev ||
-> > +		    (sb->s_frozen == SB_FREEZE_TRANS) ||
-> > +		    (sb->s_flags & MS_RDONLY) ||
-> > +		    (sb->s_flags & MS_FROZEN))
-> > +			continue;
-> 
-> Should we stop NFS from modifying remote server, too?
+-- 
+Matt Fleming, Intel Open Source Technology Center
 
-What do you mean exactly?
-
-> Plus... ext3 writes to read-only filesystems on mount; not sure if it
-> does it later. But RDONLY means 'user cant write to it' not 'bdev will
-> not be modified'. Should we freeze all?
-> 
-> How can 'already frozen' happen?
-> 
-> > +	list_for_each_entry(sb, &super_blocks, s_list)
-> > +		if (sb->s_flags & MS_FROZEN) {
-> > +			sb->s_flags &= ~MS_FROZEN;
-> > +			thaw_bdev(sb->s_bdev, sb);
-> > +		}
-> 
-> ...because we'll unfreeze it even if we did not freeze it...
-
-So we need not check MS_FROZEN in freeze_filesystems().  OK
-
-Thanks,
-Rafael
