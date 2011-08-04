@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab1HDP7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 11:59:46 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43662 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755033Ab1HDP7m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 11:59:42 -0400
-From: Abhilash K V <abhilash.kv@ti.com>
-To: <linux-omap@vger.kernel.org>
-CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <b-cousson@ti.com>,
-        <paul@pwsan.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Vaibhav Hiremath <hvaibhav@ti.com>,
-        Abhilash K V <abhilash.kv@ti.com>
-Subject: [PATCH 2/2] omap_twl: Prevent SR to enable for am3517/am3505 devices
-Date: Thu, 4 Aug 2011 21:29:29 +0530
-Message-ID: <1312473569-1212-1-git-send-email-abhilash.kv@ti.com>
-X-Mailer: git-send-email 1.6.2.4
+	id S1755005Ab1HDQA7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 12:00:59 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44093 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754618Ab1HDQA5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 12:00:57 -0400
+Message-ID: <4E3AC235.1060104@lwfinger.net>
+Date: Thu, 04 Aug 2011 11:00:53 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Regression in 3.0-git - bisected to commit dd4e5d3ac4a76b868daf30e35bd572def96c30ed
+References: <4E3AB5E0.5080506@lwfinger.net> <1312471150.16729.37.camel@twins>
+In-Reply-To: <1312471150.16729.37.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vaibhav Hiremath <hvaibhav@ti.com>
+On 08/04/2011 10:19 AM, Peter Zijlstra wrote:
+> On Thu, 2011-08-04 at 10:08 -0500, Larry Finger wrote:
+>> The logs for a recent git pull from Linus's tree show the warning below. The
+>> problem has been bisected to commit dd4e5d3ac4a7 with the commit message of
+>>
+>> ===============
+>> lockdep: Fix trace_[soft,hard]irqs_[on,off]() recursion
+>
+> Thanks, but yes that's known, and a patch has been queued for merger
+> that should solve this:
+>
+> https://lkml.org/lkml/2011/8/4/60
 
-In case of AM3517 & AM3505, Smart Reflex is not applicable so
-we must not enable it. So add check for am3517/05 cpu revision
-in omap3_twl_init() and return -ENODEV if true, else continue.
+Sorry for the noise. I expected that this was a known problem and searched for 
+it. I probably used the wrong number of digits in the hash.
 
-Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
----
- arch/arm/mach-omap2/omap_twl.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+Your patch does fix the issue for me.
 
-diff --git a/arch/arm/mach-omap2/omap_twl.c b/arch/arm/mach-omap2/omap_twl.c
-index 07d6140..92fadcb 100644
---- a/arch/arm/mach-omap2/omap_twl.c
-+++ b/arch/arm/mach-omap2/omap_twl.c
-@@ -269,6 +269,14 @@ int __init omap3_twl_init(void)
- 	if (!cpu_is_omap34xx())
- 		return -ENODEV;
- 
-+	/*
-+	 * In case of AM3517/AM3505 we should not be going down
-+	 * further, since SR is not applicable there.
-+	 */
-+	if (cpu_is_omap3505() || cpu_is_omap3517()) {
-+		return -ENODEV;
-+	}
-+
- 	if (cpu_is_omap3630()) {
- 		omap3_mpu_volt_info.vp_vddmin = OMAP3630_VP1_VLIMITTO_VDDMIN;
- 		omap3_mpu_volt_info.vp_vddmax = OMAP3630_VP1_VLIMITTO_VDDMAX;
--- 
-1.7.1
+Thanks,
 
+Larry
