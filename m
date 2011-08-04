@@ -1,70 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab1HDOOL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 10:14:11 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:61942 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab1HDOOJ (ORCPT
+	id S1753895Ab1HDOgi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 10:36:38 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:46161 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510Ab1HDOgg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 10:14:09 -0400
-Date: Thu, 4 Aug 2011 17:13:07 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: select_task_rq_fair: WARNING: at kernel/lockdep.c match_held_lock
-Message-ID: <20110804141306.GA3536@swordfish.minsk.epam.com>
+	Thu, 4 Aug 2011 10:36:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110804084015.GG29013@localhost.pp.htv.fi>
+References: <201108040221.p742Lk3R069631@www262.sakura.ne.jp>
+	<CACqU3MWQsh2cS8ck=c1-bOy-W649j0FjtNeOQbPaijAaCQ9wgA@mail.gmail.com>
+	<201108040355.p743tBkv092694@www262.sakura.ne.jp>
+	<CACqU3MVbHPuOjg9cY_GWdBGz3HPw3u7R3S14OOObN8-CFXGVaw@mail.gmail.com>
+	<20110804084015.GG29013@localhost.pp.htv.fi>
+Date: Thu, 4 Aug 2011 10:36:35 -0400
+Message-ID: <CACqU3MXnhjZNwCX=6RvoXrDYZBhuSCminEJeTub5+upjwBKFZA@mail.gmail.com>
+Subject: Re: [3.0-git16] Oops at driver_uevent_store().
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Adrian Bunk <bunk@kernel.org>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>, greg@kroah.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-Got the following trace on 3.0-git19 (07865-g1280ea8):
+Hi,
 
-[  132.794685] WARNING: at kernel/lockdep.c:3117 match_held_lock+0xf6/0x12e()
-[  132.794687] Hardware name: Aspire 5741G    
-[  132.794689] Modules linked in: kvm_intel kvm tun ipv6 microcode snd_hda_codec_hdmi snd_hda_codec_realtek broadcom snd_hda_intel snd_hda_codec tg3 snd_pcm snd_timer snd soundcore acer_wmi evdev libphy sparse_keymap psmouse snd_page_alloc
-pcspkr battery ac wmi button ehci_hcd sr_mod cdrom usbcore sd_mod ahci
-[  132.794731] Pid: 4029, comm: qemu-system-x86 Not tainted 3.1.0-dbg-07865-g1280ea8-dirty #668
-[  132.794733] Call Trace:
-[  132.794736]  <IRQ>  [<ffffffff8103e4e0>] warn_slowpath_common+0x7e/0x96
-[  132.794744]  [<ffffffff8103e50d>] warn_slowpath_null+0x15/0x17
-[  132.794748]  [<ffffffff8106dcee>] match_held_lock+0xf6/0x12e
-[  132.794751]  [<ffffffff8106dd88>] lock_is_held+0x62/0xa6
-[  132.794757]  [<ffffffff81086471>] cgroup_lock_is_held+0x10/0x12
-[  132.794762]  [<ffffffff810368a2>] set_task_cpu+0x1ac/0x3e3
-[  132.794766]  [<ffffffff8103856a>] ? select_task_rq_fair+0x5c0/0x9ca
-[  132.794769]  [<ffffffff8103748d>] ? try_to_wake_up+0x29/0x28b
-[  132.794773]  [<ffffffff8103748d>] ? try_to_wake_up+0x29/0x28b
-[  132.794779]  [<ffffffff812552a5>] ? do_raw_spin_lock+0x6b/0x122
-[  132.794783]  [<ffffffff81037603>] try_to_wake_up+0x19f/0x28b
-[  132.794787]  [<ffffffff810603ed>] ? update_rmtp+0x65/0x65
-[  132.794790]  [<ffffffff8103770e>] wake_up_process+0x10/0x12
-[  132.794794]  [<ffffffff8106040a>] hrtimer_wakeup+0x1d/0x21
-[  132.794797]  [<ffffffff81060816>] __run_hrtimer+0x1b1/0x372
-[  132.794800]  [<ffffffff810613a2>] hrtimer_interrupt+0xe6/0x1b0
-[  132.794805]  [<ffffffff810185d5>] smp_apic_timer_interrupt+0x80/0x93
-[  132.794810]  [<ffffffff81493af3>] apic_timer_interrupt+0x73/0x80
-[  132.794812]  <EOI>  [<ffffffff810fb998>] ? do_mmu_notifier_register+0x66/0x125
-[  132.794822]  [<ffffffff810ec132>] ? mm_take_all_locks+0x10b/0x165
-[  132.794826]  [<ffffffff810ec160>] ? mm_take_all_locks+0x139/0x165
-[  132.794829]  [<ffffffff810ec132>] ? mm_take_all_locks+0x10b/0x165
-[  132.794832]  [<ffffffff810fb9a0>] do_mmu_notifier_register+0x6e/0x125
-[  132.794836]  [<ffffffff810fba72>] mmu_notifier_register+0xe/0x10
-[  132.794852]  [<ffffffffa01fcc0d>] kvm_dev_ioctl+0x297/0x400 [kvm]
-[  132.794857]  [<ffffffff81119022>] do_vfs_ioctl+0x46c/0x4ad
-[  132.794862]  [<ffffffff8110a68d>] ? fget_light+0xed/0x2a7
-[  132.794867]  [<ffffffff81492fca>] ? sysret_check+0x2e/0x69
-[  132.794871]  [<ffffffff811190b4>] sys_ioctl+0x51/0x75
-[  132.794875]  [<ffffffff81492f92>] system_call_fastpath+0x16/0x1b
-[  132.794877] ---[ end trace 298584c4014cd2b8 ]---
+On Thu, Aug 4, 2011 at 4:40 AM, Adrian Bunk <bunk@kernel.org> wrote:
+> On Thu, Aug 04, 2011 at 01:47:11AM -0400, Arnaud Lacombe wrote:
+>> Hi,
+>>
+>> [Added Adrian Bunk to the Cc: list]
+>
+> Thanks.
+>
+>> 2011/8/3 Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>:
+>>...
+>> commit 74b9a297866d0416edd0be5014cb0810de049c6a
+>> Author: Adrian Bunk <bunk@stusta.de>
+>> Date:   Mon Mar 26 21:32:27 2007 -0800
+>>
+>>     [PATCH] drivers/eisa/pci_eisa.c:pci_eisa_init() should be init
+>>
+>>       WARNING: drivers/built-in.o - Section mismatch: reference to
+>> .init.text:eisa_root_register from .text between 'pci_eisa_init' (at
+>> offset 0xabf670) and 'virtual_eisa_release'
+>>
+>>     AFAIK a PCI to EISA bridge isn't anything hotpluggable, so
+>>     pci_eisa_init() can become __init.
+>>
+>>     Signed-off-by: Adrian Bunk <bunk@stusta.de>
+>>     Cc: Greg KH <greg@kroah.com>
+>>     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>>     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+>>
+>>
+>> To gain a few bytes, 'pci_eisa_init' is freed, but its reference is
+>> kept in `pci_eisa_driver' which triggers the warning. The commit log
+>> points out that PCI to EISA should not be hotpluggable, so it is not
+>> expected to be ever executed again (which would trigger a crash).
+>
+> This was not for gaining a few bytes, and I'm not exactly seeing why I'm
+> to blame here, since my patch is invariant to what your patch does:
+>
+> Calling pci_eisa_init outside of __init:
+> - might have crashed before my patch and
+> - after my patch and
+> - after your patch
+> since eisa_root_register() is __init.
+>
+>> Marking `pci_eisa_driver' as __refdata fix the warning and leave the
+>> struct untouched:
+>>
+>> diff --git a/drivers/eisa/pci_eisa.c b/drivers/eisa/pci_eisa.c
+>> index 30da70d..cdae207 100644
+>> --- a/drivers/eisa/pci_eisa.c
+>> +++ b/drivers/eisa/pci_eisa.c
+>> @@ -45,13 +45,13 @@ static int __init pci_eisa_init(struct pci_dev *pdev,
+>>         return 0;
+>>  }
+>>
+>> -static struct pci_device_id __initdata pci_eisa_pci_tbl[] = {
+>> +static struct pci_device_id pci_eisa_pci_tbl[] = {
+>>         { PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+>>           PCI_CLASS_BRIDGE_EISA << 8, 0xffff00, 0 },
+>>         { 0, }
+>>  };
+>>
+>> -static struct pci_driver __initdata pci_eisa_driver = {
+>> +static struct pci_driver __refdata pci_eisa_driver = {
+>>         .name           = "pci_eisa",
+>>         .id_table       = pci_eisa_pci_tbl,
+>>         .probe          = pci_eisa_init,
+>
+> So the commit that broke it was not mine, but
+>
+> commit 005bdad7b80ac017ca21d795639d4214b9844a84
+> Author: Arnaud Lacombe <lacombar@gmail.com>
+> Date:   Mon Jul 25 17:13:04 2011 -0700
+>
+>    eisa/pci_eisa.c: fix section mismatch
+>
+>    Fixes
+>
+>      WARNING: vmlinux.o(.data+0x15d3ac): Section mismatch in reference from the
+>      The variable pci_eisa_driver references the function __init pci_eisa_init(
+>      If the reference is valid then annotate the variable with __init* or __ref
+>      *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+>
+>    Signed-off-by: Arnaud Lacombe <lacombar@gmail.com>
+>    Cc: Greg KH <greg@kroah.com>
+>    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+>
+>
+>
+> Please don't blame me for bugs you introduced.
+>
+I was merely pointing out the modpost warning, but yes, I broke the stuff.
 
+ - Arnaud
 
-	Sergey
+>
+>>  - Arnaud
+>
+> cu
+> Adrian
+>
+> --
+>
+>       "Is there not promise of rain?" Ling Tan asked suddenly out
+>        of the darkness. There had been need of rain for many days.
+>       "Only a promise," Lao Er said.
+>                                       Pearl S. Buck - Dragon Seed
+>
+>
