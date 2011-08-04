@@ -1,87 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab1HDOpg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 10:45:36 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:28774 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753507Ab1HDOpf (ORCPT
+	id S1754560Ab1HDOqq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 10:46:46 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63977 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753639Ab1HDOqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 10:45:35 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: IwdQGgwVM1m5ebo9K3fQQBHIAwmvOwDMd3UNPzIO6Nfugq5
- Mv7IKBMQexWHMYYmG4H4VOZT8lQVNTqs3.uteggvePrZaNGEATCwtZYNgp.z
- _KApX9aL667UbtY1XdKwAfVD9Xh2f1DvrIl8kjFgjlwq_AL.GAA24xqfDHeV
- XSK0G4djAKtPavdorF35oYx4pM66FVoQwEBhcihZP6ZcFQTWG7PZwLyOeY85
- TNZtnkhF2dD0R21I90m4bpva4pKGQaGNdxH13okhpwkBPxbQEwD113kFSclo
- Mn5QrWShw4FfM.iC7NRfpwtEvGM.sE53HWzRNc00RujAavSC2M8eLwAu1uqv
- NHV6O8z5B4F5UksEIhtaJgs7AVP.BPmnHeCNaLzINPbXxZw--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 4 Aug 2011 09:45:32 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Huang Ying <ying.huang@intel.com>
-cc: Andi Kleen <ak@linux.intel.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org
-Subject: [listll] Fix fetching of head->first in lockless lists.
-Message-ID: <alpine.DEB.2.00.1108040942360.24277@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 4 Aug 2011 10:46:44 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Thu, 4 Aug 2011 22:46:41 +0800
+Message-ID: <CAJd=RBBxoWxAG5+v=6XPBfx9eQ3e3mEisXS+gWEvRE9x56tPsA@mail.gmail.com>
+Subject: [RFC patch] MIPS: deduplicate comment for i8259
+From: Hillf Danton <dhillf@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The comment for the slave PIC is changed from 8259A-1 to 8259A-2.
 
-The fetching of head->first must occur in the cmpxchg loop.
-
-With the current code head->first may change after the content were assigned to
-the "entry" variable. Entry then not be change anymore in the loop and be
-used as old_entry for the cmpxchg. The cmpxchg will then therefore
-compare "entry" to list->head. This will always fail if list->head has
-changed. The restarting of the loop will not fetch head->first again. So
-we could have a hang there.
-
-I guess this only works now because the compiler optimizations pull
-the fetching of head->first into the loop.
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
 ---
- lib/llist.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/mips/kernel/i8259.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Index: linux-2.6/lib/llist.c
-===================================================================
---- linux-2.6.orig/lib/llist.c	2011-08-04 09:34:30.000000000 -0500
-+++ linux-2.6/lib/llist.c	2011-08-04 09:35:08.000000000 -0500
-@@ -42,8 +42,8 @@ void llist_add(struct llist_node *new, s
- 	BUG_ON(in_nmi());
- #endif
-
--	entry = head->first;
- 	do {
-+		entry = head->first;
- 		old_entry = entry;
- 		new->next = entry;
- 		cpu_relax();
-@@ -66,8 +66,8 @@ void llist_add_batch(struct llist_node *
- 	BUG_ON(in_nmi());
- #endif
-
--	entry = head->first;
- 	do {
-+		entry = head->first;
- 		old_entry = entry;
- 		new_last->next = entry;
- 		cpu_relax();
-@@ -97,8 +97,8 @@ struct llist_node *llist_del_first(struc
- 	BUG_ON(in_nmi());
- #endif
-
--	entry = head->first;
- 	do {
-+		entry = head->first;
- 		if (entry == NULL)
- 			return NULL;
- 		old_entry = entry;
+diff --git a/arch/mips/kernel/i8259.c b/arch/mips/kernel/i8259.c
+index c018696..55d2624 100644
+--- a/arch/mips/kernel/i8259.c
++++ b/arch/mips/kernel/i8259.c
+@@ -230,7 +230,7 @@ static int i8259A_shutdown(struct sys_device *dev)
+ 	 */
+ 	if (i8259A_auto_eoi >= 0) {
+ 		outb(0xff, PIC_MASTER_IMR);	/* mask all of 8259A-1 */
+-		outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-1 */
++		outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-2 */
+ 	}
+ 	return 0;
+ }
