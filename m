@@ -1,96 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab1HDEjB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 00:39:01 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:41127 "EHLO
-	mail" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751264Ab1HDEiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 00:38:55 -0400
-Date: Thu, 4 Aug 2011 04:39:05 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Gergely Nagy <algernon@balabit.hu>, david@lang.hm,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Marc Koschewski <marc@osknowledge.org>,
-        lkml <linux-kernel@vger.kernel.org>, James Morris <jmorris@namei.org>,
-        Nick Bowler <nbowler@elliptictech.com>
-Subject: Re: [PATCH/RFC] cap_syslog: make CAP_SYS_ADMIN deprecation notice
- less alarming
-Message-ID: <20110804043905.GA29042@hallyn.com>
-References: <20110210144057.GA7193@mail.hallyn.com>
- <AANLkTin-2uDkjPuSPmUE_HZdpxk9zd=Qop=nf==jsyLA@mail.gmail.com>
- <20110803164837.GA2669@elie>
+	id S1752266Ab1HDExA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 00:53:00 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63753 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab1HDEwx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 00:52:53 -0400
+Message-ID: <4E3A25A1.2000502@gmail.com>
+Date: Wed, 03 Aug 2011 21:52:49 -0700
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110803164837.GA2669@elie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: dirk.brandewie@gmail.com
+CC: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 00/13]  V4 Split i2c-designware.c to support PCI drivers.
+References: <1307647310-24332-1-git-send-email-dirk.brandewie@gmail.com>
+In-Reply-To: <1307647310-24332-1-git-send-email-dirk.brandewie@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Jonathan Nieder (jrnieder@gmail.com):
-> syslog-ng versions in active use assume that CAP_SYS_ADMIN is
-> sufficent to access syslog.  As a result, ever since CAP_SYSLOG was
-> introduce in v2.6.38-rc1~429^2~18 (security: Define CAP_SYSLOG,
-> 2010-11-25), they have triggered a warning, complete with kernel
-> backtrace.
-> 
-> v2.6.38-rc5~46 (cap_syslog: accept CAP_SYS_ADMIN for now, 2011-02-10)
-> made things a little better by removing the regression in behavior,
-> just keeping the WARN_ONCE.  But still, this is a warning that adds
-> many lines to syslog, sets a taint flag, and alarms sysadmins when
+Ping is the patch set going to make the merge window?
 
-Sets the taint flag?  That's a bit over the top, so:
+--Dirk
+On 06/09/2011 12:21 PM, dirk.brandewie@gmail.com wrote:
+> From: Dirk Brandewie<dirk.brandewie@gmail.com>
+>
+> This patch set reworks i2c-designware.c to enable supporting multiple
+> instances of the driver in the system and adds support for Designware
+> I2C IP cores behind PCI devices.
+>
+> Previous discussion thread:
+>     https://lkml.org/lkml/2011/3/12/70
+>
+> Changes since V3:
+>     commits 330d1c^..5c7d3e from linux-next rebased onto v3.0-rc2
+>
+> Changes since V2:
+>     Fixed bug that kept PCI driver from compiling :-(
+>
+>     PCI Runtime power mangement code changed to remove warning at probe
+>     time and remove device.
+>
+>     Fix checking of component version on big endian machine to work
+>     correctly.
+>
+> Changes since V1 of the patch set:
+>
+>     Patches 1-3 are now Jean-Hugues Deschenes patches unmodified from
+>     http://www.spinics.net/lists/linux-i2c/msg02421.html
+>
+>     Patch 4 moves the version checking introduced in Jean's code to the
+>     core init function.
+>
+>     Patch 5 splits i2c-designware.c into IP core and bus specific files.
+>
+>     Patch 6-9 rework i2c-designware-core.c and i2c-designware-platdrv.c to
+>     add the ability to support multiple instances of the driver.
+>
+>     Patch 10 Finishes moving all register access and associated offset and
+>     bit definitions into the core.
+>
+>     Patch 11 Adds support for designware I2C IP cores behind PCI
+>     devices on the Moorestown and Medfield platforms. removed change to
+>     authors name.
+>
+>     Patch 12 Adds runtime power management to the PCI driver.
+>
+> Dirk Brandewie (10):
+>    i2c-designware: Move checking of IP core version to i2c_dw_init()
+>    i2c-designware: split of i2c-designware.c into core and bus specific
+>      parts
+>    i2c-designware: Move retriveving the clock speed out of core code.
+>    i2c-designware: move i2c functionality bit field to be adapter
+>      specific
+>    i2c-designware: move controller config to bus specific portion of
+>      driver
+>    i2c-designware: Support multiple cores using same ISR
+>    i2c-designware: Push all register reads/writes into the core code.
+>    i2c-designware: Add support for Designware core behind PCI devices.
+>    i2c-designware: Add runtime power management support
+>    i2c-intel-mid.c: Remove i2c-intel-mid.c
+>
+> Jean-Hugues Deschenes (3):
+>    i2c-designware: Use local version of readl&  writel
+>    i2c-designware: Check component type register
+>    i2c-designware: Allow mixed endianness accesses
+>
+>   drivers/i2c/busses/Kconfig                  |   26 +-
+>   drivers/i2c/busses/Makefile                 |    6 +-
+>   drivers/i2c/busses/i2c-designware-core.c    |  705 +++++++++++++++++
+>   drivers/i2c/busses/i2c-designware-core.h    |  106 +++
+>   drivers/i2c/busses/i2c-designware-pcidrv.c  |  405 ++++++++++
+>   drivers/i2c/busses/i2c-designware-platdrv.c |  215 +++++
+>   drivers/i2c/busses/i2c-designware.c         |  847 --------------------
+>   drivers/i2c/busses/i2c-intel-mid.c          | 1140 ---------------------------
+>   8 files changed, 1448 insertions(+), 2002 deletions(-)
+>   create mode 100644 drivers/i2c/busses/i2c-designware-core.c
+>   create mode 100644 drivers/i2c/busses/i2c-designware-core.h
+>   create mode 100644 drivers/i2c/busses/i2c-designware-pcidrv.c
+>   create mode 100644 drivers/i2c/busses/i2c-designware-platdrv.c
+>   delete mode 100644 drivers/i2c/busses/i2c-designware.c
+>   delete mode 100644 drivers/i2c/busses/i2c-intel-mid.c
+>
 
-> nothing worse has happened than use of an old userspace with a recent
-> kernel.
-> 
-> Convert the WARN_ONCE to a printk_once to avoid this while continuing
-> to give userspace developers a hint that this is an unwanted
-> backward-compatibility feature and won't be around forever.
-> 
-> Reported-by: Ralf Hildebrandt <ralf.hildebrandt@charite.de>
-> Reported-by: Niels <zorglub_olsen@hotmail.com>
-> Reported-by: Paweł Sikora <pluto@agmk.net>
-> Liked-by: Gergely Nagy <algernon@madhouse-project.org>
-> Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
-
-Acked-by: Serge Hallyn <serge@hallyn.com>
-
-thanks,
--serge
-
-> ---
-> Hi,
-> 
-> Nothing urgent about this, but it seems to be a frequently[1] reported[2]
-> source of unnecessary worry.  Thoughts?
-> 
-> [1] http://thread.gmane.org/gmane.linux.kernel/1145040
-> [2] http://thread.gmane.org/gmane.linux.kernel/1153808
-> 
-> Context: http://bugs.debian.org/cgi-bin/bugreport.cgi?msg=32;bug=636501
-> 
->  kernel/printk.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index 37dff342..db64c951 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -318,7 +318,8 @@ static int check_syslog_permissions(int type, bool from_file)
->  			return 0;
->  		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
->  		if (capable(CAP_SYS_ADMIN)) {
-> -			WARN_ONCE(1, "Attempt to access syslog with CAP_SYS_ADMIN "
-> +			printk_once(KERN_WARNING
-> +				 "Attempt to access syslog with CAP_SYS_ADMIN "
->  				 "but no CAP_SYSLOG (deprecated).\n");
->  			return 0;
->  		}
-> -- 
-> 1.7.6
-> 
