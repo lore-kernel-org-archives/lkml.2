@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab1HDINW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 04:13:22 -0400
-Received: from gate.crashing.org ([63.228.1.57]:41894 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752568Ab1HDINO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 04:13:14 -0400
-From: Kumar Gala <galak@kernel.crashing.org>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/serial/ucc_uart.c: Fix compiler warning
-Date: Thu,  4 Aug 2011 03:13:10 -0500
-Message-Id: <1312445590-2559-1-git-send-email-galak@kernel.crashing.org>
-X-Mailer: git-send-email 1.5.6.5
+	id S1752621Ab1HDIS0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 04:18:26 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:61364 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874Ab1HDISV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 04:18:21 -0400
+Subject: [PATCH] regulator: 88pm8607: Fix off-by-one value range checking
+ in the case of no id is matched
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 04 Aug 2011 16:18:11 +0800
+Message-ID: <1312445891.5448.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/tty/serial/ucc_uart.c: In function 'qe2cpu_addr':
-drivers/tty/serial/ucc_uart.c:238:2: warning: format '%x' expects type 'unsigned int', but argument 3 has type 'dma_addr_t'
+In the case of no id is matched, the variable i is equal to
+ARRAY_SIZE(pm8607_regulator_info).
 
-Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/tty/serial/ucc_uart.c |    2 +-
+I think compare variable i with ARRAY_SIZE(pm8607_regulator_info) here is slightly
+better in readability than compare with PM8607_ID_RG_MAX.
+Axel
+
+ drivers/regulator/88pm8607.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/tty/serial/ucc_uart.c b/drivers/tty/serial/ucc_uart.c
-index c327218..9af9f08 100644
---- a/drivers/tty/serial/ucc_uart.c
-+++ b/drivers/tty/serial/ucc_uart.c
-@@ -235,7 +235,7 @@ static inline void *qe2cpu_addr(dma_addr_t addr, struct uart_qe_port *qe_port)
- 		return qe_port->bd_virt + (addr - qe_port->bd_dma_addr);
- 
- 	/* something nasty happened */
--	printk(KERN_ERR "%s: addr=%x\n", __func__, addr);
-+	printk(KERN_ERR "%s: addr=%llx\n", __func__, (u64)addr);
- 	BUG();
- 	return NULL;
- }
+diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
+index 5dcdb0f..ca0d608 100644
+--- a/drivers/regulator/88pm8607.c
++++ b/drivers/regulator/88pm8607.c
+@@ -413,7 +413,7 @@ static int __devinit pm8607_regulator_probe(struct platform_device *pdev)
+ 		if (info->desc.id == res->start)
+ 			break;
+ 	}
+-	if ((i < 0) || (i > PM8607_ID_RG_MAX)) {
++	if (i == ARRAY_SIZE(pm8607_regulator_info)) {
+ 		dev_err(&pdev->dev, "Failed to find regulator %llu\n",
+ 			(unsigned long long)res->start);
+ 		return -EINVAL;
 -- 
-1.5.6.5
+1.7.4.1
+
+
 
