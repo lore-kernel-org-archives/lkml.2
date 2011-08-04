@@ -1,49 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756612Ab1HDCM2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Aug 2011 22:12:28 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:62409 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071Ab1HDCMX (ORCPT
+	id S1756625Ab1HDCRL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Aug 2011 22:17:11 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:63445 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753626Ab1HDCRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Aug 2011 22:12:23 -0400
-Date: Thu, 04 Aug 2011 02:13:35 +0000
-From: Ayan George <ayan@ayan.net>
-To: psusi@cfl.rr.com, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: loop device auto release patch
-Message-ID: <4e3a004f.w3IoBoSiMXE/VS4Z%ayan@ayan.net>
-References: <4E1F3BE0.8040506@ayan.net> <4E209132.7000704@cfl.rr.com>
- <20110715121903.dc543613.akpm@linux-foundation.org>
- <4E39FCC0.4000800@cfl.rr.com>
-In-Reply-To: <4E39FCC0.4000800@cfl.rr.com>
-User-Agent: Heirloom mailx 12.4 7/29/08
+	Wed, 3 Aug 2011 22:17:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110803233426.GA18216@kroah.com>
+References: <CAECXXi5kZJk+86-2SJRWqMUCj31cL4tb1qTbaueMxeEg2VFcDw@mail.gmail.com>
+	<20110803233426.GA18216@kroah.com>
+Date: Wed, 3 Aug 2011 22:17:04 -0400
+Message-ID: <CAECXXi5pkRAY_dVSwSUrj5RQzsJ2YVx6xXovzpuRDOEOq92s9g@mail.gmail.com>
+Subject: Re: [PATCH] nbd: nbd sysfs framework
+From: Paul Clements <paul.clements@us.sios.com>
+To: Greg KH <greg@kroah.com>
+Cc: andrew morton <akpm@linux-foundation.org>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        nbd-general@lists.sourceforge.net
+Content-Type: multipart/mixed; boundary=001636c92489b7998a04a9a4932e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Phillip Susi <psusi@cfl.rr.com> wrote:
-> On 07/15/2011 03:19 PM, Andrew Morton wrote:
-> > The patch appears to do two unrelated things.  That's generally frowned
-> > upon, but doesn't bother me much if the patch is small.
-> > 
-> > Still, splitting it into two patches (in which the bugfix is staged
-> > first) would be advantageous for people who might wish to backport the
-> > fix into earlier kernels.
+--001636c92489b7998a04a9a4932e
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Aug 3, 2011 at 7:34 PM, Greg KH <greg@kroah.com> wrote:
+> On Wed, Aug 03, 2011 at 07:15:51PM -0400, Paul Clements wrote:
+>> Description: The patch creates a new sysfs entry framework for nbd.
 >
-> It looks like this got stalled and someone emailed me asking what
-> happened to it.  I'm not sure that splitting the patch in two makes
-> sense.  I don't see how it does two unrelated things. 
+> Why? =A0What does this buy us except an increase in code size for no adde=
+d
+> benifit? =A0You seem to be stripping out the driver layer here and using
+> "raw" kobjects, why?
 
-I agree -- I can't think of a meaningful way to split it up. I am
-stalled in testing it however.
+Not sure what I was thinking...just in a hurry, I think.
 
-I watched the values of lo->lo_device and bdev using systemtap and
-noticed cases where they could be out of sync which *might* make
-this patch invalid.  I'd like a little more time to investigate.
+Is the following a little better?
 
--ayan
+Thanks for your feedback.
 
+--
+Paul
+
+--001636c92489b7998a04a9a4932e
+Content-Type: text/x-patch; charset=US-ASCII; name="tmp.diff"
+Content-Disposition: attachment; filename="tmp.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gqx3cfxv0
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvYmxvY2svbmJkLmMgYi9kcml2ZXJzL2Jsb2NrL25iZC5jCmlu
+ZGV4IGU2ZmM3MTYuLmExZTc2MTUgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvYmxvY2svbmJkLmMKKysr
+IGIvZHJpdmVycy9ibG9jay9uYmQuYwpAQCAtMzgzLDM5ICszODMsMTcgQEAgaGFyZGVycm9yOgog
+CXJldHVybiBOVUxMOwogfQogCi1zdGF0aWMgc3NpemVfdCBwaWRfc2hvdyhzdHJ1Y3QgZGV2aWNl
+ICpkZXYsCi0JCQlzdHJ1Y3QgZGV2aWNlX2F0dHJpYnV0ZSAqYXR0ciwgY2hhciAqYnVmKQotewot
+CXN0cnVjdCBnZW5kaXNrICpkaXNrID0gZGV2X3RvX2Rpc2soZGV2KTsKLQotCXJldHVybiBzcHJp
+bnRmKGJ1ZiwgIiVsZFxuIiwKLQkJKGxvbmcpICgoc3RydWN0IG5iZF9kZXZpY2UgKilkaXNrLT5w
+cml2YXRlX2RhdGEpLT5waWQpOwotfQotCi1zdGF0aWMgc3RydWN0IGRldmljZV9hdHRyaWJ1dGUg
+cGlkX2F0dHIgPSB7Ci0JLmF0dHIgPSB7IC5uYW1lID0gInBpZCIsIC5tb2RlID0gU19JUlVHT30s
+Ci0JLnNob3cgPSBwaWRfc2hvdywKLX07Ci0KIHN0YXRpYyBpbnQgbmJkX2RvX2l0KHN0cnVjdCBu
+YmRfZGV2aWNlICpsbykKIHsKIAlzdHJ1Y3QgcmVxdWVzdCAqcmVxOwotCWludCByZXQ7CiAKIAlC
+VUdfT04obG8tPm1hZ2ljICE9IExPX01BR0lDKTsKIAogCWxvLT5waWQgPSBjdXJyZW50LT5waWQ7
+Ci0JcmV0ID0gc3lzZnNfY3JlYXRlX2ZpbGUoJmRpc2tfdG9fZGV2KGxvLT5kaXNrKS0+a29iaiwg
+JnBpZF9hdHRyLmF0dHIpOwotCWlmIChyZXQpIHsKLQkJcHJpbnRrKEtFUk5fRVJSICJuYmQ6IHN5
+c2ZzX2NyZWF0ZV9maWxlIGZhaWxlZCEiKTsKLQkJbG8tPnBpZCA9IDA7Ci0JCXJldHVybiByZXQ7
+Ci0JfQogCiAJd2hpbGUgKChyZXEgPSBuYmRfcmVhZF9zdGF0KGxvKSkgIT0gTlVMTCkKIAkJbmJk
+X2VuZF9yZXF1ZXN0KHJlcSk7CiAKLQlzeXNmc19yZW1vdmVfZmlsZSgmZGlza190b19kZXYobG8t
+PmRpc2spLT5rb2JqLCAmcGlkX2F0dHIuYXR0cik7CiAJbG8tPnBpZCA9IDA7CiAJcmV0dXJuIDA7
+CiB9CkBAIC03MzUsNiArNzEzLDc1IEBAIHN0YXRpYyBjb25zdCBzdHJ1Y3QgYmxvY2tfZGV2aWNl
+X29wZXJhdGlvbnMgbmJkX2ZvcHMgPQogICogIChKdXN0IHNtaWxleSBjb25mdXNlcyBlbWFjcyA6
+LSkKICAqLwogCitzdHJ1Y3QgbmJkX3N5c2ZzX2VudHJ5IHsKKwlzdHJ1Y3QgZGV2aWNlX2F0dHJp
+YnV0ZSBkZXZfYXR0cjsKKwlzc2l6ZV90ICgqc2hvdykoc3RydWN0IG5iZF9kZXZpY2UgKiwgY2hh
+ciAqKTsKKwlzc2l6ZV90ICgqc3RvcmUpKHN0cnVjdCBuYmRfZGV2aWNlICosIGNvbnN0IGNoYXIg
+Kiwgc2l6ZV90KTsKK307CisKK3N0YXRpYyBzc2l6ZV90IHBpZF9zaG93KHN0cnVjdCBuYmRfZGV2
+aWNlICpsbywgY2hhciAqcGFnZSkKK3sKKwlyZXR1cm4gc3ByaW50ZihwYWdlLCAiJWxkXG4iLCAo
+bG9uZylsby0+cGlkKTsKK30KKworI2RlZmluZSBOQkRfQVRUUihfdmFyLCBfbmFtZSwgX3Blcm0s
+IF9zaG93LCBfc3RvcmUpIFwKKwlzdGF0aWMgc3RydWN0IG5iZF9zeXNmc19lbnRyeSBfdmFyID0g
+eyBcCisJLmRldl9hdHRyID0gX19BVFRSKF9uYW1lLCBfcGVybSwgbmJkX2F0dHJfc2hvdywgbmJk
+X2F0dHJfc3RvcmUpLCBcCisJLnNob3cgPSBfc2hvdywgXAorCS5zdG9yZSA9IF9zdG9yZSBcCit9
+CisKKy8vIHN0YXRpYyBzdHJ1Y3QgbmJkX3N5c2ZzX2VudHJ5IG5iZF9waWQgPQorLy8gX19BVFRS
+KHBpZCwgU19JUlVHTywgcGlkX3Nob3csIE5VTEwpOworCitzdGF0aWMgc3NpemVfdAorbmJkX2F0
+dHJfc2hvdyhzdHJ1Y3QgZGV2aWNlICpkZXYsIHN0cnVjdCBkZXZpY2VfYXR0cmlidXRlICphdHRy
+LCBjaGFyICpwYWdlKQoreworCXN0cnVjdCBuYmRfc3lzZnNfZW50cnkgKmVudHJ5ID0gY29udGFp
+bmVyX29mKGF0dHIsCisJCQlzdHJ1Y3QgbmJkX3N5c2ZzX2VudHJ5LCBkZXZfYXR0cik7CisJc3Ry
+dWN0IG5iZF9kZXZpY2UgKmxvID0KKwkJCShzdHJ1Y3QgbmJkX2RldmljZSAqKWRldl90b19kaXNr
+KGRldiktPnByaXZhdGVfZGF0YTsKKwlzc2l6ZV90IHJ2OworCisJaWYgKCFlbnRyeS0+c2hvdyB8
+fCAhbG8pCisJCXJldHVybiAtRUlPOworCXJ2ID0gZW50cnktPnNob3cobG8sIHBhZ2UpOworCXJl
+dHVybiBydjsKK30KKworc3RhdGljIHNzaXplX3QKK25iZF9hdHRyX3N0b3JlKHN0cnVjdCBkZXZp
+Y2UgKmRldiwgc3RydWN0IGRldmljZV9hdHRyaWJ1dGUgKmF0dHIsCisJICAgICAgY29uc3QgY2hh
+ciAqcGFnZSwgc2l6ZV90IGxlbmd0aCkKK3sKKwlzdHJ1Y3QgbmJkX3N5c2ZzX2VudHJ5ICplbnRy
+eSA9IGNvbnRhaW5lcl9vZihhdHRyLAorCQkJc3RydWN0IG5iZF9zeXNmc19lbnRyeSwgZGV2X2F0
+dHIpOworCXN0cnVjdCBuYmRfZGV2aWNlICpsbyA9CisJCQkoc3RydWN0IG5iZF9kZXZpY2UgKilk
+ZXZfdG9fZGlzayhkZXYpLT5wcml2YXRlX2RhdGE7CisJc3NpemVfdCBydjsKKworCWlmICghZW50
+cnktPnN0b3JlKQorCQlyZXR1cm4gLUVJTzsKKwlpZiAoIWNhcGFibGUoQ0FQX1NZU19BRE1JTikp
+CisJCXJldHVybiAtRUFDQ0VTOworCW11dGV4X2xvY2soJmxvLT50eF9sb2NrKTsKKwlydiA9IGVu
+dHJ5LT5zdG9yZShsbywgcGFnZSwgbGVuZ3RoKTsKKwltdXRleF91bmxvY2soJmxvLT50eF9sb2Nr
+KTsKKworCXJldHVybiBydjsKK30KKworTkJEX0FUVFIobmJkX3BpZCwgcGlkLCBTX0lSVUdPLCBw
+aWRfc2hvdywgTlVMTCk7CisKK3N0YXRpYyBzdHJ1Y3QgYXR0cmlidXRlICpuYmRfYXR0cnNbXSA9
+IHsKKwkmbmJkX3BpZC5kZXZfYXR0ci5hdHRyLAorCU5VTEwsCit9OworCitzdGF0aWMgc3RydWN0
+IGF0dHJpYnV0ZV9ncm91cCBuYmRfYXR0cl9ncm91cCA9IHsKKwkubmFtZSA9ICJuYmQiLAorCS5h
+dHRycyA9IG5iZF9hdHRycywKK307CisKIHN0YXRpYyBpbnQgX19pbml0IG5iZF9pbml0KHZvaWQp
+CiB7CiAJaW50IGVyciA9IC1FTk9NRU07CkBAIC03ODYsNiArODMzLDcgQEAgc3RhdGljIGludCBf
+X2luaXQgbmJkX2luaXQodm9pZCkKIAlkcHJpbnRrKERCR19JTklULCAibmJkOiBkZWJ1Z2ZsYWdz
+PTB4JXhcbiIsIGRlYnVnZmxhZ3MpOwogCiAJZm9yIChpID0gMDsgaSA8IG5iZHNfbWF4OyBpKysp
+IHsKKwkJaW50IGVycm9yOwogCQlzdHJ1Y3QgZ2VuZGlzayAqZGlzayA9IG5iZF9kZXZbaV0uZGlz
+azsKIAkJbmJkX2RldltpXS5maWxlID0gTlVMTDsKIAkJbmJkX2RldltpXS5tYWdpYyA9IExPX01B
+R0lDOwpAQCAtODA1LDYgKzg1Myw4IEBAIHN0YXRpYyBpbnQgX19pbml0IG5iZF9pbml0KHZvaWQp
+CiAJCXNwcmludGYoZGlzay0+ZGlza19uYW1lLCAibmJkJWQiLCBpKTsKIAkJc2V0X2NhcGFjaXR5
+KGRpc2ssIDApOwogCQlhZGRfZGlzayhkaXNrKTsKKwkJZXJyb3IgPSBzeXNmc19jcmVhdGVfZ3Jv
+dXAoJmRpc2tfdG9fZGV2KGRpc2spLT5rb2JqLAorCQkJCSZuYmRfYXR0cl9ncm91cCk7CiAJfQog
+CiAJcmV0dXJuIDA7CkBAIC04MjQsNiArODc0LDggQEAgc3RhdGljIHZvaWQgX19leGl0IG5iZF9j
+bGVhbnVwKHZvaWQpCiAJCXN0cnVjdCBnZW5kaXNrICpkaXNrID0gbmJkX2RldltpXS5kaXNrOwog
+CQluYmRfZGV2W2ldLm1hZ2ljID0gMDsKIAkJaWYgKGRpc2spIHsKKwkJCXN5c2ZzX3JlbW92ZV9n
+cm91cCgmZGlza190b19kZXYoZGlzayktPmtvYmosCisJCQkJCSZuYmRfYXR0cl9ncm91cCk7CiAJ
+CQlkZWxfZ2VuZGlzayhkaXNrKTsKIAkJCWJsa19jbGVhbnVwX3F1ZXVlKGRpc2stPnF1ZXVlKTsK
+IAkJCXB1dF9kaXNrKGRpc2spOwo=
+--001636c92489b7998a04a9a4932e--
