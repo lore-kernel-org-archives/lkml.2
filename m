@@ -1,182 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655Ab1HDPFM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 11:05:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29403 "EHLO mx1.redhat.com"
+	id S1754761Ab1HDPGL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 11:06:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4816 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312Ab1HDPFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 11:05:10 -0400
-Date: Thu, 4 Aug 2011 11:05:04 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
+	id S1754008Ab1HDPGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 11:06:10 -0400
+Date: Thu, 4 Aug 2011 11:06:03 -0400
+From: Josh Boyer <jwboyer@redhat.com>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Jens Axboe <jaxboe@fusionio.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        michal@harddata.com
-Subject: Re: Mysterious CFQ crash and RCU
-Message-ID: <20110804150504.GB429@redhat.com>
-References: <20110519222404.GG12600@redhat.com>
- <20110521210013.GJ2271@linux.vnet.ibm.com>
- <20110523152141.GB4019@redhat.com>
- <20110523153848.GC2310@linux.vnet.ibm.com>
- <1306401337.27271.3.camel@t41.thuisdomein>
- <20110603050724.GB2304@linux.vnet.ibm.com>
- <1307191830.23387.24.camel@t41.thuisdomein>
- <20110604160326.GA6093@linux.vnet.ibm.com>
- <1307227686.28359.23.camel@t41.thuisdomein>
- <20110604230633.GD6093@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
+Message-ID: <20110804150603.GL2096@zod.bos.redhat.com>
+References: <20110801154636.GA2096@zod.bos.redhat.com>
+ <CA+5PVA5EZWHv_tuzA22twGQ7rZZ2zhqi1zs6OiFbpORiiYbzMg@mail.gmail.com>
+ <20110804140438.GT13065@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110604230633.GD6093@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110804140438.GT13065@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 04, 2011 at 04:06:33PM -0700, Paul E. McKenney wrote:
-> On Sun, Jun 05, 2011 at 12:48:05AM +0200, Paul Bolle wrote:
-> > On Sat, 2011-06-04 at 09:03 -0700, Paul E. McKenney wrote:
-> > > More like "based on these diagnostics, I see no evidence of the RCU
-> > > implementation misbehaving."  Which is of course different than "I can
-> > > prove that the RCU implementation is not misbehaving".  That said, the
-> > > fact that you are running on a single CPU makes it hard for me to see
-> > > any latitude for RCU-implementation misbehavior.
-> > > 
-> > > Clearly something is wrong somewhere.
+On Thu, Aug 04, 2011 at 07:04:38AM -0700, Paul E. McKenney wrote:
+> On Thu, Aug 04, 2011 at 07:46:03AM -0400, Josh Boyer wrote:
+> > On Mon, Aug 1, 2011 at 11:46 AM, Josh Boyer <jwboyer@redhat.com> wrote:
+> > > We're seeing a scheduling while atomic backtrace in rawhide from pidmap_init
+> > > (https://bugzilla.redhat.com/show_bug.cgi?id=726877).  While this seems
+> > > mostly harmless given that there isn't anything else to schedule to at
+> > > this point, I do wonder why things are marked as needing rescheduled so
+> > > early.
+> > >
+> > > We get to might_sleep through the might_sleep_if call in
+> > > slab_pre_alloc_hook because both kzalloc and KMEM_CACHE are called with
+> > > GFP_KERNEL.  That eventually has a call chain like:
+> > >
+> > > might_resched->_cond_resched->should_resched
+> > >
+> > > which apparently returns true.  Why the initial thread says it should
+> > > reschedule at this point, I'm not sure.
+> > >
+> > > I tried cheating by making the kzalloc call in pidmap_init use GFP_IOFS
+> > > instead of GFP_KERNEL to avoid the might_sleep_if call, and that worked
+> > > but I can't do the same for the kmalloc calls in kmem_cache_create, so
+> > > getting to the bottom of why should_resched is returning true seems to
+> > > be a better approach.
 > > 
-> > Yes.
+> > A bit more info on this.
 > > 
-> > > Given the fact that on a single-CPU
-> > > system, synchronize_rcu() is a no-op, and given that you weren't able
-> > > to reproduce with CONFIG_TREE_PREEMPT_RCU=y, my guess is that there is
-> > > a synchronize_rcu() that occasionally (illegally) gets executed within
-> > > an RCU read-side critical section.
+> > What seems to be happening is that late_time_init is called, which
+> > gets around to calling hpet_time_init, which enables the HPET, and
+> > then calls setup_default_timer_irq.  setup_default_timer_irq in
+> > arch/x86/kernel/time.c calls setup_irq with the timer_interrupt
+> > handler.
 > > 
-> > I think I finally found it!
+> > At this point the timer interrupt hits, and then tick_handle_periodic is called
+> > 
+> > timer int
+> > tick_handle_periodic -> tick_periodic -> update_process_times ->
+> > rcu_check_callbacks -> rcu_pending ->
+> > __rcp_pending -> set_need_resched (this is called around line 1685 in
+> > kernel/rcutree.c)
+> > 
+> > So what's happening is that once the timer interrupt starts, RCU is
+> > coming in and marking current as needing reschedule, and that in turn
+> > makes the slab_pre_alloc_hook -> might_sleep_if -> might_sleep ->
+> > might_resched -> _cond_resched to trigger when pidmap_init calls
+> > kzalloc later on and produce the oops below later on in the init
+> > sequence.  I believe we see this because of all the debugging options
+> > we have enabled in the kernel configs.
+> > 
+> > This might be normal for all I know, but the oops is rather annoying.
+> > It seems RCU isn't in a quiescent state, we aren't preemptible yet,
+> > and it _really_ wants to reschedule things to make itself happy.
+> > Anyone have any thoughts on how to either keep RCU from marking
+> > current as needing reschdule so early, or otherwise working around the
+> > bug?
 > 
-> Very cool!!!
-> 
-> > The culprit seems to be io_context.ioc_data (not the most clear of
-> > names!). It seems to be a single entry "last-hit cache" of an hlist
-> > called cic_list. (There are three, subtly different, cic_lists in the
-> > CFQ code!) It is not entirely clear, but that last-hit cache can get out
-> > of sync with the hlist it is supposed to cache. My guess it that every
-> > now and then a member of the hlist gets deleted while it's still in that
-> > (single entry) cache. If it then gets retrieved from that cache it
-> > already points to poisoned memory. For some strange reason this only
-> > results in an Oops if one or more debugging options are set (as are set
-> > in the Fedora Rawhide non-stable kernels that I ran into this). I have
-> > no clue whatsoever, why that is ...
-> 
-> Oooh...  If I understand you correctly, this is exactly analogous to my
-> first-ever RCU bug way back in the early 90s.  This was a hashed version
-> of a BSD-style routing table, where each hash bucket maintained a pointer
-> to the last routing entry used.  When I deleted a routing entry, I forgot
-> to check the last-entry pointer.
-> 
-> The amazing thing is that the guy who found and fixed this bug generated
-> a correct fix despite having absolutely no idea what RCU was or how it
-> worked.  All he knew was that if he waited for the sun to reach Oregon,
-> his users were going to be way beyond upset.  ;-)
-> 
-> > Anyhow, after ripping out ioc_data this bug seems to have disappeared!
-> > Jens, Vivek, could you please have a look at this? In the mean time I
-> > hope to pinpoint this issue and draft a small patch to really solve it
-> > (ie, not by simply ripping out ioc_data).
-> 
-> Again, very cool!!!
+> The deal is that RCU realizes that RCU needs a quiescent state from
+> this CPU.  The set_need_resched() is intended to cause one.  But there
+> is not much point this early in boot, because the scheduler isn't going
+> to do anything anyway.  I can prevent this with the following patch,
+> but isn't this same thing possible later at runtime?
 
-Hi Paul,
+Possibly, but I'm not sure at the moment.  The patch avoids the oops and
+I haven't seen another once in some brief runtime testing.  (Trivial
+fixing to make it apply to current linus.)
 
-Remember this CFQ issue where we suspected that we are freeing up an
-object before rcu period is over. We thought we fixed it. Guess what,
-it seems be to be back.
+> You really do need to be able to handle set_need_resched() at random
+> times, and at first glance it appears to me that the warning could be
+> triggered at runtime as well.  If so, the real fix is elsewhere, right?
+> Especially given that the patch imposes extra cost at runtime...
 
-**************************************************************************
-[21265.163144] BUG: unable to handle kernel paging request at 6b6b6b43
-[21265.164022] IP: [<f7d55fe0>] cic_free_func+0x10/0x6c [cfq_iosched]
-[21265.164022] *pde = 00000000 
-[21265.164022] Oops: 0000 [#1] SMP 
-[21265.164022] Modules linked in: cfq_iosched tcp_lp fuse arc4 ppdev
-snd_intel8x0m snd_intel8x0 snd_ac97_codec ac97_bus snd_seq snd_seq_device
-microcode
- snd_pcm joydev snd_timer ath5k pcspkr snd_page_alloc thinkpad_acpi
-i2c_i801
-ath mac80211 snd soundcore cfg80211 rfkill parport_pc parport e1000
-iTCO_wd
-t iTCO_vendor_support binfmt_misc uinput yenta_socket video radeon ttm
-drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded: scsi_wait_scan]
-[21265.164022] 
-[21265.164022] Pid: 18514, comm: mandb Not tainted
-3.0.0-1.local2.fc17.i686 #1
-IBM        /       
-[21265.164022] EIP: 0060:[<f7d55fe0>] EFLAGS: 00010286 CPU: 0
-[21265.164022] EIP is at cic_free_func+0x10/0x6c [cfq_iosched]
-[21265.164022] EAX: f242e400 EBX: 6b6b6b43 ECX: 00000246 EDX: 6b6b6b43
-[21265.164022] ESI: f242e400 EDI: f7d55fd0 EBP: df92df04 ESP: df92def0
-[21265.164022]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[21265.164022] Process mandb (pid: 18514, ti=df92c000 task=ed1554c0
-task.ti=df92c000)
-[21265.164022] Stack:
-[21265.164022]  c0468df7 c0af0cb0 6b6b6b6b f242e400 f7d55fd0 df92df18
-f7d54510
-f242e400
-[21265.164022]  ed1554c0 ed155898 df92df20 f7d54530 df92df2c c05cc8ba
-f242e400
-df92df40
-[21265.164022]  c05cc94a ed1554c0 00000012 df92df74 df92df8c c04423e2
-eedf2b5c
-eedf2b00
-[21265.164022] Call Trace:
-[21265.164022]  [<c0468df7>] ? lock_is_held+0x73/0x7b
-[21265.164022]  [<f7d55fd0>] ? cfqq_process_refs+0x18/0x18 [cfq_iosched]
-[21265.164022]  [<f7d54510>] call_for_each_cic+0x3e/0x4c [cfq_iosched]
-[21265.164022]  [<f7d54530>] cfq_free_io_context+0x12/0x14 [cfq_iosched]
-[21265.164022]  [<c05cc8ba>] put_io_context+0x34/0x5c
-[21265.164022]  [<c05cc94a>] exit_io_context+0x68/0x6d
-[21265.164022]  [<c04423e2>] do_exit+0x62f/0x66a
-[21265.164022]  [<c0442634>] do_group_exit+0x63/0x86
-[21265.164022]  [<c044266f>] sys_exit_group+0x18/0x18
-[21265.164022]  [<c083b0df>] sysenter_do_call+0x12/0x38
-[21265.164022] Code: 5f 5d c3 55 89 e5 3e 8d 74 26 00 8b 50 3c 03 50 40 8b
-00
-29 d0 79 02 0f 0b 5d c3 55 89 e5 57 56 53 83 ec 08 3e 8d 74 26 00 89 d3 <8
-b> 12 89 c6 f6 c2 01 75 02 0f 0b 8d 78 08 89 f8 89 55 ec e8 c8 
-[21265.164022] EIP: [<f7d55fe0>] cic_free_func+0x10/0x6c [cfq_iosched]
-SS:ESP
-0068:df92def0
-[21265.164022] CR2: 000000006b6b6b43
-[21265.363749] ---[ end trace a779435da6d0a152 ]---
+In staring at it for a while it seems to be a combination of being in
+atomic context according to the scheduler but things in early boot using
+GFP_KERNEL.  At the point we're at in the boot, that is perfectly legal
+as it's not being called from an interrupt handler and the mm subsystem
+should be all setup, but we're still really early in boot and preempt is
+disabled.  As I mentioned before, KMEM_CACHE calls kmalloc with
+GFP_KERNEL and I don't think we want to change that.
 
-**************************************************************************
-Again details have been added to old bz.
+Once we're past early boot, I would expect that things running in true
+atomic context won't be calling KMEM_CACHE or using GFP_KERNEL.  Or
+maybe I hope?
 
-https://bugzilla.redhat.com/show_bug.cgi?id=577968
+I understand the desire to avoid another conditional, but I certainly
+don't have any other suggestions at the moment.
 
-Now two users have run into this issue. PaulB, again can reliably
-reproduce this issue even with 3.0 kernels.  He  just needs to run
-"mandb -c" on this machine.
-
-He has again run the CFQ debug V2 patch which seems to be telling that
-cfq_io_context object was freed while in rcu read section.
-
-**************************************************************************
-[  562.598881] debug: Will exit io context cic=0xf0469230, Next pointer is  
-(null)
-[  562.598881] debug: cic=0xf0469230 exit io context done. Next pointer is  
-(null)
-[  562.598881] debug: Will decouple-free cic cic=0xf0469230, Next pointer
-is  (null)
-[  562.633403] debug: cic=0xf0469230 decouple-free cic done. Next pointer
-is  (null)
-[  562.644949] debug: freeing up cic=f0469230
-[  562.652971] cic=f0469230 freed while in RCU read lock
-
-*****************************************************************************
-
-I am hoping that I have written the debug patch right. As usual i am
-running out of ideas on how to debug it further. Anything debug
-information you would like to have a look at?
-
-Thanks
-Vivek
+josh
