@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab1HDM7A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 08:59:00 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:44545 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab1HDM6w convert rfc822-to-8bit (ORCPT
+	id S1754238Ab1HDNKV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 09:10:21 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:3235 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753579Ab1HDNKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 08:58:52 -0400
+	Thu, 4 Aug 2011 09:10:19 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6427"; a="107874927"
+Date: Thu, 4 Aug 2011 06:10:15 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Kumar Gala <galak@kernel.crashing.org>
+Cc: David Brown <davidb@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
+Subject: Re: [PATCH v2] of/address: Add of_iomap_nocache
+Message-ID: <20110804131015.GA6596@huya.qualcomm.com>
+References: <1312454196-31028-1-git-send-email-davidb@codeaurora.org>
+ <B148344E-9580-4C9B-A8FD-942A9713291C@kernel.crashing.org>
 MIME-Version: 1.0
-In-Reply-To: <1312462417-8826-1-git-send-email-miklos@szeredi.hu>
-References: <1312462417-8826-1-git-send-email-miklos@szeredi.hu>
-Date: Thu, 4 Aug 2011 15:58:52 +0300
-X-Google-Sender-Auth: kUA_BP6Swv2AhAv2noXmSd5IVbs
-Message-ID: <CAOJsxLHGw_33KzXnRdi-YbR8R2Weeg=9vb+8KucajkZgW2Y8NA@mail.gmail.com>
-Subject: Re: [PATCH 0/8] overlay filesystem: request for inclusion
-From: Pekka Enberg <penberg@kernel.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, torvalds@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, apw@canonical.com, nbd@openwrt.org,
-        neilb@suse.de, hramrach@centrum.cz, jordipujolp@gmail.com,
-        ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com, dhowells@redhat.com,
-        hpj@urpla.net, sedat.dilek@googlemail.com, mszeredi@suse.cz,
-        Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <B148344E-9580-4C9B-A8FD-942A9713291C@kernel.crashing.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Miklos,
+On Thu, Aug 04, 2011 at 07:44:07AM -0500, Kumar Gala wrote:
+> 
+> On Aug 4, 2011, at 5:36 AM, David Brown wrote:
+> 
+> > Add uncached mappings from devicetree nodes similar to regular io
+> > mappings.
+> > 
+> > SPARC is coherent, so there this call is the same as regular of_iomap.
+> > 
+> > +extern void __iomem *of_iomap_nocache(struct device_node *device, int index);
+> 
+> What about adding an of_iomap_prot() to match ioremap_prot().
 
-On Thu, Aug 4, 2011 at 3:53 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> Al, Linus and all interested parties,
->
-> Here's the latest version of overlayfs.
->
->  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.v11
->
-> I think it's been merge-ready for some time and has gotten a fair
-> amount of attention and testing from various parties.  Yet,
-> apparently, it isn't getting closer to being merged.
+It can be done, but I actually have a use for nocache.  We can
+probably add the prot version when first needed.
 
-I'm not commenting on the code but as I've mentioned privately, we're
-really interested in seeing this merged for tools/kvm. We've been able
-to use overlayfs to turn host filesystem into copy-on-write guest
-image that's booted through 9p. So if overlayfs is merged, we'll
-definitely use it.
+David
 
-                        Pekka
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
