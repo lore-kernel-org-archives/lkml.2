@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842Ab1HDUg0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 16:36:26 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7140 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580Ab1HDUgV convert rfc822-to-8bit (ORCPT
+	id S1754167Ab1HDUnf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 16:43:35 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:42194 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752876Ab1HDUn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 16:36:21 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 04 Aug 2011 13:36:12 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Len Brown <len.brown@intel.com>, Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "Mark Brown (broonie@opensource.wolfsonmicro.com)" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 4 Aug 2011 13:35:59 -0700
-Subject: next-200110804 ARM build break (cpuidle_call_idle)
-Thread-Topic: next-200110804 ARM build break (cpuidle_call_idle)
-Thread-Index: AcxS5PUpLnLFsJwSRC+9GUNkJGBpuA==
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049EEAB704@HQMAIL01.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 4 Aug 2011 16:43:28 -0400
+From: Bojan Prtvar <prtvar.b@gmail.com>
+To: jkosina@suse.cz
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Bojan Prtvar <prtvar.b@gmail.com>
+Subject: [PATCH 1/2] HID: kfree() NULL pointer cleanup
+Date: Thu,  4 Aug 2011 22:42:54 +0200
+Message-Id: <1312490574-14804-1-git-send-email-prtvar.b@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With next-20110804, I'm seeing the following on ARM:
+Checking for NULL pointers before kfree() is redundant.
 
-arch/arm/kernel/process.c: In function 'cpu_idle':
-arch/arm/kernel/process.c:200: error: implicit declaration of function 'cpuidle_call_idle'
+Signed-off-by: Bojan Prtvar <prtvar.b@gmail.com>
+---
+ drivers/hid/hid-prodikeys.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-This was previously fixed with:
-
-https://lkml.org/lkml/2011/4/4/109
-
-Commit 5f8cf82 (cpuidle: stop using pm_idle) converted arches to use
-cpuidle_idle_call() but contained typos on ARM and SH transposing the
-function name into cpuidle_call_idle().
-
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-(which I think was included directly in linux-next according to that
-email thread)
-
-However, commit 5f8cf82 isn't in linux-next any more, but instead,
-a0bfa13 "cpuidle: stop depending on pm_idle" has replaced it, and has
-the same issue.
-
-Applying Mark's previous fix solves the build problem.
-
-Related, I see that linux-next merges
-git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git idle-test
-yet that branch doesn't seem to exist anymore.
-
+diff --git a/drivers/hid/hid-prodikeys.c b/drivers/hid/hid-prodikeys.c
+index 158b389..62f95d4 100644
+--- a/drivers/hid/hid-prodikeys.c
++++ b/drivers/hid/hid-prodikeys.c
+@@ -849,9 +849,7 @@ static int pk_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ err_stop:
+ 	hid_hw_stop(hdev);
+ err_free:
+-	if (pm != NULL)
+-		kfree(pm);
+-
++	kfree(pm);
+ 	kfree(pk);
+ 	return ret;
+ }
 -- 
-nvpublic
+1.7.1
 
