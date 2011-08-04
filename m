@@ -1,399 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab1HDH0l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 03:26:41 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:32768 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab1HDH0f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 03:26:35 -0400
-Message-ID: <4E3A4978.2000903@oracle.com>
-Date: Thu, 04 Aug 2011 15:25:44 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1752621Ab1HDH1z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 03:27:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49102 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751830Ab1HDH1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 03:27:51 -0400
+Date: Thu, 4 Aug 2011 09:27:45 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [patch 4/5] mm: writeback: throttle __GFP_WRITE on per-zone
+ dirty limits
+Message-ID: <20110804072745.GA31039@tiehlicka.suse.cz>
+References: <1311625159-13771-1-git-send-email-jweiner@redhat.com>
+ <1311625159-13771-5-git-send-email-jweiner@redhat.com>
+ <20110727142405.GG4024@tiehlicka.suse.cz>
+ <20110803202500.GA8286@redhat.com>
 MIME-Version: 1.0
-To: Joe Jin <joe.jin@oracle.com>
-CC: Daniel Stodden <daniel.stodden@citrix.com>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Annie Li <annie.li@oracle.com>,
-        Ian Campbell <Ian.Campbell@eu.citrix.com>,
-        Kurt C Hackel <KURT.HACKEL@oracle.com>,
-        Greg Marsden <greg.marsden@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH -v3 3/3] xen-blkback: refactor vbd remove/disconnect.
-References: <4E3A486D.7060506@oracle.com>
-In-Reply-To: <4E3A486D.7060506@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090209.4E3A49A5.00B4,ss=1,re=-2.300,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110803202500.GA8286@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed 03-08-11 22:25:00, Johannes Weiner wrote:
+> On Wed, Jul 27, 2011 at 04:24:05PM +0200, Michal Hocko wrote:
+> > On Mon 25-07-11 22:19:18, Johannes Weiner wrote:
+> > [...]
+> > > diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> > > index 41dc871..ce673ec 100644
+> > > --- a/mm/page-writeback.c
+> > > +++ b/mm/page-writeback.c
+> > > @@ -378,6 +390,24 @@ int bdi_set_max_ratio(struct backing_dev_info *bdi, unsigned max_ratio)
+> > >  }
+> > >  EXPORT_SYMBOL(bdi_set_max_ratio);
+> > >  
+> > > +static void sanitize_dirty_limits(unsigned long *pbackground,
+> > > +				  unsigned long *pdirty)
+> > > +{
+> > > +	unsigned long background = *pbackground;
+> > > +	unsigned long dirty = *pdirty;
+> > > +	struct task_struct *tsk;
+> > > +
+> > > +	if (background >= dirty)
+> > > +		background = dirty / 2;
+> > > +	tsk = current;
+> > > +	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
+> > > +		background += background / 4;
+> > > +		dirty += dirty / 4;
+> > > +	}
+> > > +	*pbackground = background;
+> > > +	*pdirty = dirty;
+> > > +}
+> > > +
+> > >  /*
+> > >   * global_dirty_limits - background-writeback and dirty-throttling thresholds
+> > >   *
+> > > @@ -389,33 +419,52 @@ EXPORT_SYMBOL(bdi_set_max_ratio);
+> > >   */
+> > >  void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+> > >  {
+> > > -	unsigned long background;
+> > > -	unsigned long dirty;
+> > >  	unsigned long uninitialized_var(available_memory);
+> > > -	struct task_struct *tsk;
+> > >  
+> > >  	if (!vm_dirty_bytes || !dirty_background_bytes)
+> > >  		available_memory = determine_dirtyable_memory();
+> > >  
+> > >  	if (vm_dirty_bytes)
+> > > -		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
+> > > +		*pdirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
+> > >  	else
+> > > -		dirty = (vm_dirty_ratio * available_memory) / 100;
+> > > +		*pdirty = vm_dirty_ratio * available_memory / 100;
+> > >  
+> > >  	if (dirty_background_bytes)
+> > > -		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
+> > > +		*pbackground = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
+> > >  	else
+> > > -		background = (dirty_background_ratio * available_memory) / 100;
+> > > +		*pbackground = dirty_background_ratio * available_memory / 100;
+> > >  
+> > > -	if (background >= dirty)
+> > > -		background = dirty / 2;
+> > > -	tsk = current;
+> > > -	if (tsk->flags & PF_LESS_THROTTLE || rt_task(tsk)) {
+> > > -		background += background / 4;
+> > > -		dirty += dirty / 4;
+> > > -	}
+> > > -	*pbackground = background;
+> > > -	*pdirty = dirty;
+> > > +	sanitize_dirty_limits(pbackground, pdirty);
+> > > +}
+> > 
+> > Hmm, wouldn't be the patch little bit easier to read if this was
+> > outside in a separate (cleanup) one?
+> 
+> I didn't find it hard to read.  But I wrote it, so... :)
+> 
+> Will split it out in the next round.  Thanks, Michal.
 
-This patch refactor vbd remove/disconnect.
-1. Add blkback shutdown watch for the remove/disconnect.
-2. Don't disconnect backend when frontend state is XenbusStateClosing
-   until frontend state changed to XenbusStateClosed.
+Thanks
 
-Signed-off-by: Joe Jin <joe.jin@oracle.com>
-Cc: Daniel Stodden <daniel.stodden@citrix.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Annie Li <annie.li@oracle.com>
-Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>
----
- drivers/block/xen-blkback/xenbus.c |  206 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 185 insertions(+), 21 deletions(-)
-
-diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
-index 3f129b4..1990d1c 100644
---- a/drivers/block/xen-blkback/xenbus.c
-+++ b/drivers/block/xen-blkback/xenbus.c
-@@ -25,16 +25,25 @@ struct backend_info {
- 	struct xenbus_device	*dev;
- 	struct xen_blkif	*blkif;
- 	struct xenbus_watch	backend_watch;
-+	struct xenbus_watch	shutdown_watch;
- 	unsigned		major;
- 	unsigned		minor;
- 	char			*mode;
-+	bool			group_added;
-+	char			*nodename;
-+	atomic_t		refcnt;
-+	pid_t			kthread_pid;
-+	bool			shutdown_signalled;
- };
- 
-+DEFINE_SEMAPHORE(blkback_dev_sem);
-+
- static struct kmem_cache *xen_blkif_cachep;
- static void connect(struct backend_info *);
- static int connect_ring(struct backend_info *);
- static void backend_changed(struct xenbus_watch *, const char **,
- 			    unsigned int);
-+static void xen_vbd_free(struct xen_vbd *vbd);
- 
- struct xenbus_device *xen_blkbk_xenbus(struct backend_info *be)
- {
-@@ -99,6 +108,16 @@ static void xen_update_blkif_status(struct xen_blkif *blkif)
- 		blkif->xenblkd = NULL;
- 		xenbus_dev_error(blkif->be->dev, err, "start xenblkd");
- 	}
-+
-+	blkif->be->kthread_pid = blkif->xenblkd->pid;
-+	atomic_inc(&blkif->be->refcnt);
-+
-+	err = xenbus_printf(XBT_NIL, blkif->be->dev->nodename, "kthread-pid",
-+			    "%d", blkif->xenblkd->pid);
-+	if (err) {
-+		xenbus_dev_error(blkif->be->dev, err, "write kthread-pid");
-+		return;
-+	}
- }
- 
- static struct xen_blkif *xen_blkif_alloc(domid_t domid)
-@@ -213,11 +232,6 @@ static int xen_blkif_map(struct xen_blkif *blkif, unsigned long shared_page,
- 
- static void xen_blkif_disconnect(struct xen_blkif *blkif)
- {
--	if (blkif->xenblkd) {
--		kthread_stop(blkif->xenblkd);
--		blkif->xenblkd = NULL;
--	}
--
- 	atomic_dec(&blkif->refcnt);
- 	wait_event(blkif->waiting_to_free, atomic_read(&blkif->refcnt) == 0);
- 	atomic_inc(&blkif->refcnt);
-@@ -296,6 +310,7 @@ VBD_SHOW(mode, "%s\n", be->mode);
- int xenvbd_sysfs_addif(struct xenbus_device *dev)
- {
- 	int error;
-+	struct backend_info *be = dev_get_drvdata(&dev->dev);
- 
- 	error = device_create_file(&dev->dev, &dev_attr_physical_device);
- 	if (error)
-@@ -309,6 +324,8 @@ int xenvbd_sysfs_addif(struct xenbus_device *dev)
- 	if (error)
- 		goto fail3;
- 
-+	be->group_added = true;
-+
- 	return 0;
- 
- fail3:	sysfs_remove_group(&dev->dev.kobj, &xen_vbdstat_group);
-@@ -319,11 +336,73 @@ fail1:	device_remove_file(&dev->dev, &dev_attr_physical_device);
- 
- void xenvbd_sysfs_delif(struct xenbus_device *dev)
- {
-+	struct backend_info *be = dev_get_drvdata(&dev->dev);
-+	if (!be->group_added)
-+		return;
- 	sysfs_remove_group(&dev->dev.kobj, &xen_vbdstat_group);
- 	device_remove_file(&dev->dev, &dev_attr_mode);
- 	device_remove_file(&dev->dev, &dev_attr_physical_device);
-+	be->group_added = false;
-+}
-+
-+static int xenvbd_kthread_remove(struct backend_info *be)
-+{
-+	struct xen_blkif *blkif = be->blkif;
-+
-+	if (!blkif || !blkif->xenblkd)
-+		return 0;
-+
-+	blkif->remove_requested = true;
-+	wake_up_process(blkif->xenblkd);
-+
-+	return -EBUSY;
- }
- 
-+static void xenvbd_signal_shutdown(struct backend_info *be)
-+{
-+	int err;
-+
-+	down(&blkback_dev_sem);
-+
-+	if (be->shutdown_signalled)
-+		goto out;
-+
-+	err = xenbus_write(XBT_NIL, be->nodename, "shutdown-done", "");
-+	if (err)
-+		WPRINTK("Error writing shutdown-done for %s: %d\n",
-+			be->nodename, err);
-+
-+	if (be->dev)
-+		xenbus_switch_state(be->dev, XenbusStateClosed);
-+
-+	be->shutdown_signalled = true;
-+
-+ out:
-+	up(&blkback_dev_sem);
-+}
-+
-+static void backend_release(struct backend_info *be)
-+{
-+	struct xen_blkif *blkif = be->blkif;
-+
-+	if (current->pid == be->kthread_pid)
-+		xenvbd_signal_shutdown(be);
-+
-+	if (!atomic_dec_and_test(&be->refcnt))
-+		return;
-+
-+	xenvbd_signal_shutdown(be);
-+
-+	if (blkif) {
-+		xen_blkif_disconnect(blkif);
-+		xen_vbd_free(&blkif->vbd);
-+		xen_blkif_free(blkif);
-+		be->blkif = NULL;
-+	}
-+
-+	kfree(be->nodename);
-+	kfree(be);
-+}
- 
- static void xen_vbd_free(struct xen_vbd *vbd)
- {
-@@ -332,6 +411,12 @@ static void xen_vbd_free(struct xen_vbd *vbd)
- 	vbd->bdev = NULL;
- }
- 
-+void xen_vbd_sync(struct xen_vbd *vbd)
-+{
-+	if (vbd->bdev)
-+		fsync_bdev(vbd->bdev);
-+}
-+
- static int xen_vbd_create(struct xen_blkif *blkif, blkif_vdev_t handle,
- 			  unsigned major, unsigned minor, int readonly,
- 			  int cdrom)
-@@ -384,8 +469,9 @@ static int xen_blkbk_remove(struct xenbus_device *dev)
- 
- 	DPRINTK("");
- 
--	if (be->major || be->minor)
--		xenvbd_sysfs_delif(dev);
-+	down(&blkback_dev_sem);
-+	be->dev = NULL;
-+	up(&blkback_dev_sem);
- 
- 	if (be->backend_watch.node) {
- 		unregister_xenbus_watch(&be->backend_watch);
-@@ -393,18 +479,76 @@ static int xen_blkbk_remove(struct xenbus_device *dev)
- 		be->backend_watch.node = NULL;
- 	}
- 
--	if (be->blkif) {
--		xen_blkif_disconnect(be->blkif);
--		xen_vbd_free(&be->blkif->vbd);
--		xen_blkif_free(be->blkif);
--		be->blkif = NULL;
-+	if (be->shutdown_watch.node) {
-+		unregister_xenbus_watch(&be->shutdown_watch);
-+		kfree(be->shutdown_watch.node);
-+		be->shutdown_watch.node = NULL;
- 	}
- 
--	kfree(be);
-+	if (xenvbd_kthread_remove(be))
-+		WPRINTK("BAD REMOVE REQUEST for %s\n", be->nodename);
-+
-+	xenvbd_sysfs_delif(dev);
-+	backend_release(be);
-+
- 	dev_set_drvdata(&dev->dev, NULL);
-+
- 	return 0;
- }
- 
-+/*
-+ * called by kthread when closing
-+ */
-+void xen_blkback_close(struct xen_blkif *blkif)
-+{
-+	struct xenbus_device *dev = blkif->be->dev;
-+
-+	xen_blkif_disconnect(blkif);
-+	xen_vbd_sync(&blkif->vbd);
-+	blkif->remove_requested = false;
-+
-+	down(&blkback_dev_sem);
-+	if (blkif->be->dev)
-+		xenvbd_sysfs_delif(blkif->be->dev);
-+	up(&blkback_dev_sem);
-+
-+	backend_release(blkif->be);
-+	blkif->xenblkd = NULL;
-+	device_unregister(&dev->dev);
-+}
-+
-+static void xenvbd_start_shutdown(struct xenbus_watch *watch,
-+			   const char **vec, unsigned int length)
-+{
-+	int err;
-+	char *type;
-+	unsigned int len;
-+	struct backend_info *be
-+		= container_of(watch, struct backend_info, shutdown_watch);
-+	struct xenbus_device *dev = be->dev;
-+
-+	if (be->shutdown_signalled)
-+		return;
-+
-+	type = xenbus_read(XBT_NIL, dev->nodename, "shutdown-request", &len);
-+	err  = (IS_ERR(type) ? PTR_ERR(type) : 0);
-+
-+	if (XENBUS_EXIST_ERR(err))
-+		return;
-+
-+	if (err) {
-+		xenbus_dev_fatal(dev, err, "reading shutdown-request");
-+		return;
-+	}
-+
-+	xenbus_switch_state(dev, XenbusStateClosing);
-+
-+	if (len == sizeof("force") - 1 && !memcmp(type, "force", len))
-+		if (!xenvbd_kthread_remove(be))
-+			xenvbd_signal_shutdown(be); /* shutdown immediately */
-+
-+	kfree(type);
-+}
- int xen_blkbk_flush_diskcache(struct xenbus_transaction xbt,
- 			      struct backend_info *be, int state)
- {
-@@ -437,6 +581,15 @@ static int xen_blkbk_probe(struct xenbus_device *dev,
- 	}
- 	be->dev = dev;
- 	dev_set_drvdata(&dev->dev, be);
-+	atomic_set(&be->refcnt, 1);
-+
-+	be->nodename = kasprintf(GFP_KERNEL, "%s", dev->nodename);
-+	if (!be->nodename) {
-+		xenbus_dev_fatal(dev, -ENOMEM,
-+				 "allocating backend structure");
-+		kfree(be);
-+		return -ENOMEM;
-+	}
- 
- 	be->blkif = xen_blkif_alloc(dev->otherend_id);
- 	if (IS_ERR(be->blkif)) {
-@@ -454,6 +607,12 @@ static int xen_blkbk_probe(struct xenbus_device *dev,
- 	if (err)
- 		goto fail;
- 
-+	err = xenbus_watch_pathfmt(dev, &be->shutdown_watch,
-+				   xenvbd_start_shutdown, "%s/%s",
-+				   dev->nodename, "shutdown-request");
-+	if (err)
-+		goto fail;
-+
- 	err = xenbus_switch_state(dev, XenbusStateInitWait);
- 	if (err)
- 		goto fail;
-@@ -567,13 +726,17 @@ static void frontend_changed(struct xenbus_device *dev,
- 	struct backend_info *be = dev_get_drvdata(&dev->dev);
- 	int err;
- 
--	DPRINTK("%s", xenbus_strstate(frontend_state));
-+	DPRINTK("%s: %s", dev->nodename, xenbus_strstate(frontend_state));
- 
- 	switch (frontend_state) {
- 	case XenbusStateInitialising:
- 		if (dev->state == XenbusStateClosed) {
- 			pr_info(DRV_PFX "%s: prepare for reconnect\n",
- 				dev->nodename);
-+
-+			xenbus_rm(XBT_NIL, dev->nodename, "shutdown-done");
-+			be->shutdown_signalled = false;
-+
- 			xenbus_switch_state(dev, XenbusStateInitWait);
- 		}
- 		break;
-@@ -590,7 +753,7 @@ static void frontend_changed(struct xenbus_device *dev,
- 
- 		/*
- 		 * Enforce precondition before potential leak point.
--		 * blkif_disconnect() is idempotent.
-+		 * xen_blkif_disconnect() is idempotent.
- 		 */
- 		xen_blkif_disconnect(be->blkif);
- 
-@@ -601,17 +764,16 @@ static void frontend_changed(struct xenbus_device *dev,
- 		break;
- 
- 	case XenbusStateClosing:
--		xen_blkif_disconnect(be->blkif);
- 		xenbus_switch_state(dev, XenbusStateClosing);
- 		break;
- 
- 	case XenbusStateClosed:
--		xenbus_switch_state(dev, XenbusStateClosed);
--		if (xenbus_dev_is_online(dev))
--			break;
--		/* fall through if not online */
-+		if (!xenvbd_kthread_remove(be))
-+			xenvbd_signal_shutdown(be);
-+		break;
-+
- 	case XenbusStateUnknown:
--		/* implies blkif_disconnect() via blkback_remove() */
-+		/* implies xen_blkif_disconnect() via blkback_remove() */
- 		device_unregister(&dev->dev);
- 		break;
- 
-@@ -620,6 +782,8 @@ static void frontend_changed(struct xenbus_device *dev,
- 				 frontend_state);
- 		break;
- 	}
-+
-+	DPRINTK("%s: %s", dev->nodename, xenbus_strstate(dev->state));
- }
- 
- 
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
