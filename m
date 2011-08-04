@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab1HDKha (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 06:37:30 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:42271 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753640Ab1HDKhX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 06:37:23 -0400
-Subject: Re: [PATCH] x86, efi: Don't recursively acquire rtc_lock
-From: Matt Fleming <matt@console-pimps.org>
-To: john stultz <johnstul@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Jan Beulich <JBeulich@novell.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Alessandro Zummo <a.zummo@towertech.it>
-In-Reply-To: <CANcMJZDqYJHTTPifrxr7cDVA_S+PRwy6AzjO-54ucvpnyoRADA@mail.gmail.com>
-References: <1312405454-29386-1-git-send-email-matt@console-pimps.org>
-	 <CANcMJZDqYJHTTPifrxr7cDVA_S+PRwy6AzjO-54ucvpnyoRADA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 04 Aug 2011 11:36:59 +0100
-Message-ID: <1312454219.10579.80.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1753596Ab1HDKkD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 06:40:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34515 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752403Ab1HDKj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 06:39:56 -0400
+Date: Thu, 4 Aug 2011 12:39:54 +0200
+From: Jan Kara <jack@suse.cz>
+To: Julia Lawall <julia@diku.dk>
+Cc: Jan Kara <jack@suse.cz>, kernel-janitors@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] fs/ext2/balloc.c: delete useless initialization
+Message-ID: <20110804103954.GG17196@quack.suse.cz>
+References: <1312453774-23333-1-git-send-email-julia@diku.dk>
+ <1312453774-23333-3-git-send-email-julia@diku.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312453774-23333-3-git-send-email-julia@diku.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-04 at 03:22 -0700, john stultz wrote:
-> On Wed, Aug 3, 2011 at 2:04 PM, Matt Fleming <matt@console-pimps.org> wrote:
-> > From: Matt Fleming <matt.fleming@linux.intel.com>
-> >
-> > A deadlock was introduced on x86 in commit ef68c8f87ed1 ("x86:
-> > Serialize EFI time accesses on rtc_lock") because efi_get_time() and
-> > friends can be called with rtc_lock already held by
-> > read_persistent_time(), e.g.
-> >
-> > timekeeping_init()
-> >    read_persistent_clock()     <-- acquire rtc_lock
-> >        efi_get_time()
-> >            phys_efi_get_time() <-- acquire rtc_lock <DEADLOCK>
-> >
-> > Move the locking up into the caller of efi.get_time() and provide some
-> > wrappers for use in other parts of the kernel instead of calling
-> > efi.get_time(), etc directly. This way we can hide the rtc_lock dance
-> > inside of arch/x86.
+On Thu 04-08-11 12:29:32, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> Sorry if this should be obvious, but is there a reason your not using
-> your own internal lock for serializing the efi bits rather then using
-> the rtc_lock?
+> Delete nontrivial initialization that is immediately overwritten by the
+> result of an allocation function.
+  Thanks. Merged.
 
-Jan wrote the original code that started using the rtc_lock inside the
-EFI bits here, ef68c8f87ed1 ("x86: Serialize EFI time accesses on
-rtc_lock").
-
-Jan?
- 
+								Honza
+> 
+> The semantic match that makes this change is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> type T;
+> identifier i;
+> expression e;
+> @@
+> 
+> (
+> T i = \(0\|NULL\|ERR_PTR(...)\);
+> |
+> -T i = e;
+> +T i;
+> )
+> ... when != i
+> i = \(kzalloc\|kcalloc\|kmalloc\)(...);
+> 
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+>  fs/ext2/balloc.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff -u -p a/fs/ext2/balloc.c b/fs/ext2/balloc.c
+> --- a/fs/ext2/balloc.c
+> +++ b/fs/ext2/balloc.c
+> @@ -421,7 +421,7 @@ static inline int rsv_is_empty(struct ex
+>  void ext2_init_block_alloc_info(struct inode *inode)
+>  {
+>  	struct ext2_inode_info *ei = EXT2_I(inode);
+> -	struct ext2_block_alloc_info *block_i = ei->i_block_alloc_info;
+> +	struct ext2_block_alloc_info *block_i;
+>  	struct super_block *sb = inode->i_sb;
+>  
+>  	block_i = kmalloc(sizeof(*block_i), GFP_NOFS);
+> 
 -- 
-Matt Fleming, Intel Open Source Technology Center
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
