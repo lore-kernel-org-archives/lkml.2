@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab1HDI7H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 04:59:07 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:4570 "EHLO sjogate2.atmel.com"
+	id S1753127Ab1HDJBY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 05:01:24 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:56581 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752116Ab1HDI7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 04:59:00 -0400
-Message-ID: <4E3A5F45.9020609@atmel.com>
-Date: Thu, 04 Aug 2011 09:58:45 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	id S1751796Ab1HDJBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 05:01:19 -0400
+X-ASG-Debug-ID: 1312448478-03d6a510a9248860001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E3A5FDD.2010004@fusionio.com>
+Date: Thu, 4 Aug 2011 11:01:17 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Tord Andersson <tord.andersson@endian.se>, netdev@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] macb: restore wrap bit when performing underrun cleanup
-References: <> <1312445507-31382-1-git-send-email-tord.andersson@endian.se>
-In-Reply-To: <1312445507-31382-1-git-send-email-tord.andersson@endian.se>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+CC: Shaohua Li <shli@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: fio posixaio performance problem
+References: <4E38C314.8070305@cn.fujitsu.com> <CANejiEViuKky1A7Xh0MQKBVNMj_fgzwayWyON7hFGfP3wa62SQ@mail.gmail.com> <4E3902C7.9050907@cn.fujitsu.com> <CANejiEVqFt4j1-qTVnxEAe75z0y010s=ST2XtCDDTqDEQT=EcQ@mail.gmail.com> <4E391986.90108@cn.fujitsu.com> <20110803154533.GB32385@redhat.com> <20110803175101.GC32385@redhat.com> <CANejiEXAtzExExqmTXA=hmpGh8DVVo9ncbRMdkB+avq+G3LuqQ@mail.gmail.com> <4E39FD41.4090103@cn.fujitsu.com> <CANejiEVh4hvi5S18H7XHihxZt+JcRU7W5MGpQwQc_ZtiFCa2jw@mail.gmail.com> <4E3A4DF7.3020605@cn.fujitsu.com> <CANejiEXkv75kVxTS2w-v2GHZZRdmOR8HXUY16-eas9M45ZKqKg@mail.gmail.com> <4E3A59DD.6010907@cn.fujitsu.com>
+X-ASG-Orig-Subj: Re: fio posixaio performance problem
+In-Reply-To: <4E3A59DD.6010907@cn.fujitsu.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1312448478
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.70866
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2011 09:11 AM, Tord Andersson wrote:
-> When TX underrun occurs, a cleanup is performed that marks all buffers as used. As a side effect it also clears the wrap bit in the last buffer. This patch will restore the wrap bit.
->
-> Signed-off-by: Tord Andersson<tord.andersson@endian.se>
+On 2011-08-04 10:35, Gui Jianfeng wrote:
+>> looks the system does a write in every 8ms. This is quite wrong. does
+>> the posixaio
+>> engine have something wrong? can you use a new fio or try libaio please.
+> 
+> Yes, I also highly suspect that fio's posixaio engine works bad.
+> On the other hand, I'm not sure why preempting in cfqs doesn't happen.
+> It seems requests from different threads is close enough...
 
-Thanks for fixing this.
+Can't be ruled out that there's a bug in the posixaio engine. It's
+perhaps 100 lines of interesting code in there, so should be easy enough
+to audit. Unless it's an interaction with the fio core of course.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-> ---
->   drivers/net/macb.c |    3 +++
->   1 files changed, 3 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/net/macb.c b/drivers/net/macb.c
-> index 0fcdc25..dc4e305 100644
-> --- a/drivers/net/macb.c
-> +++ b/drivers/net/macb.c
-> @@ -322,6 +322,9 @@ static void macb_tx(struct macb *bp)
->   		for (i = 0; i<  TX_RING_SIZE; i++)
->   			bp->tx_ring[i].ctrl = MACB_BIT(TX_USED);
->
-> +		/* Add wrap bit */
-> +		bp->tx_ring[TX_RING_SIZE - 1].ctrl |= MACB_BIT(TX_WRAP);
-> +
->   		/* free transmit buffer in upper layer*/
->   		for (tail = bp->tx_tail; tail != head; tail = NEXT_TX(tail)) {
->   			struct ring_info *rp =&bp->tx_skb[tail];
-
+Since you're using a queue depth of 1, every getevents call would end up
+in aio_suspend() waiting for the previously submitted one. That should
+interleave just fine with the other threads, though.
 
 -- 
-Nicolas Ferre
+Jens Axboe
+
