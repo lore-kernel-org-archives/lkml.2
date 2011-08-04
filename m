@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab1HDWrb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 18:47:31 -0400
-Received: from lunge.queued.net ([173.255.254.236]:37106 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816Ab1HDWrZ (ORCPT
+	id S1754460Ab1HDWyK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 18:54:10 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54735 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753288Ab1HDWyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 18:47:25 -0400
-Date: Thu, 4 Aug 2011 15:47:22 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: dsd@laptop.org, cjb@laptop.org, linux-kernel@vger.kernel.org,
-        dcbw@redhat.com, libertas-dev@lists.infradead.org
-Subject: [GIT PULL linux-firmware.git v3] OLPC libertas firmware blobs
-Message-ID: <20110804154722.55ab153b@debxo>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Aug 2011 18:54:03 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH] mtd/physmap: Fix set_vpp signature in physmap_configure
+Date: Thu,  4 Aug 2011 23:53:53 +0100
+Message-Id: <1312498433-17950-1-git-send-email-grant.likely@secretlab.ca>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 13f5008494268031d569f830d0955479bd5b9dfc:
+physmap_configure() has the wrong signature for the set_vpp callback.
+struct physmap_flash_data expects it to accpet a platform_device
+pointer.
 
-  Merge git://anongit.freedesktop.org/~dcbw/linux-firmware (2011-07-31 00:15:37 +0100)
+However, I can't find any users of physmap_configure(), so maybe the
+hook should simply be removed.
 
-are available in the git repository at:
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+---
+ drivers/mtd/maps/physmap.c  |    2 +-
+ include/linux/mtd/physmap.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-  git://lunge.queued.net/git/linux-firmware master
+diff --git a/drivers/mtd/maps/physmap.c b/drivers/mtd/maps/physmap.c
+index f64cee4..f2b9f5e 100644
+--- a/drivers/mtd/maps/physmap.c
++++ b/drivers/mtd/maps/physmap.c
+@@ -247,7 +247,7 @@ static struct platform_device physmap_flash = {
+ };
+ 
+ void physmap_configure(unsigned long addr, unsigned long size,
+-		int bankwidth, void (*set_vpp)(struct map_info *, int))
++		int bankwidth, void (*set_vpp)(struct platform_device *, int))
+ {
+ 	physmap_flash_resource.start = addr;
+ 	physmap_flash_resource.end = addr + size - 1;
+diff --git a/include/linux/mtd/physmap.h b/include/linux/mtd/physmap.h
+index e5f21d2..25ef3ed 100644
+--- a/include/linux/mtd/physmap.h
++++ b/include/linux/mtd/physmap.h
+@@ -36,7 +36,7 @@ struct physmap_flash_data {
+  * Board needs to specify the exact mapping during their setup time.
+  */
+ void physmap_configure(unsigned long addr, unsigned long size,
+-		int bankwidth, void (*set_vpp)(struct map_info *, int) );
++		int bankwidth, void (*set_vpp)(struct platform_device *, int) );
+ 
+ /*
+  * Machines that wish to do flash partition may want to call this function in
+-- 
+1.7.4.1
 
-Andres Salomon (1):
-      libertas: add OLPC libertas blobs
-
- LICENCE.OLPC              |   33 +++++++++++++++++++++++++++++++++
- WHENCE                    |   17 +++++++++++++++++
- libertas/lbtf_sdio.bin    |  Bin 0 -> 120924 bytes
- libertas/lbtf_usb.bin     |  Bin 0 -> 118888 bytes
- libertas/usb8388_olpc.bin |  Bin 0 -> 127824 bytes
- 5 files changed, 50 insertions(+), 0 deletions(-)
- create mode 100644 LICENCE.OLPC
- create mode 100644 libertas/lbtf_sdio.bin
- create mode 100644 libertas/lbtf_usb.bin
- create mode 100644 libertas/usb8388_olpc.bin
