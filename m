@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab1HDVvx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 17:51:53 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:48326 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755408Ab1HDVvr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 17:51:47 -0400
-Date: Thu, 4 Aug 2011 14:51:45 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: linux-next: Tree for Aug 4 (zcache)
-Message-Id: <20110804145145.4af47989.rdunlap@xenotime.net>
-In-Reply-To: <20110804214441.GA697@kroah.com>
-References: <20110804145834.3b1d92a9eeb8357deb84bf83@canb.auug.org.au>
-	<20110804142437.34e3a1ae.rdunlap@xenotime.net>
-	<20110804214441.GA697@kroah.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1755661Ab1HDVw3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 17:52:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47877 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755543Ab1HDVwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 17:52:24 -0400
+Date: Thu, 4 Aug 2011 23:52:23 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Bojan Prtvar <prtvar.b@gmail.com>
+Cc: julia@diku.dk, linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 1/2 v2] HID: kfree() NULL pointer cleanup
+In-Reply-To: <1312494408-15500-1-git-send-email-prtvar.b@gmail.com>
+Message-ID: <alpine.LNX.2.00.1108042352100.32288@pobox.suse.cz>
+References: <1312494408-15500-1-git-send-email-prtvar.b@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Aug 2011 14:44:41 -0700 Greg KH wrote:
+On Thu, 4 Aug 2011, Bojan Prtvar wrote:
 
-> On Thu, Aug 04, 2011 at 02:24:37PM -0700, Randy Dunlap wrote:
-> > On Thu, 4 Aug 2011 14:58:34 +1000 Stephen Rothwell wrote:
-> > 
-> > > Hi all,
-> > > 
-> > > Just in case anyone needs reminding:  Please do not add anything destined
-> > > for v3.2 into linux-next included trees until after v3.1-rc1.
-> > 
-> > 
-> > on i386:
-> > 
-> > drivers/built-in.o: In function `zcache_pampd_create':
-> > zcache-main.c:(.text+0x159b8f): undefined reference to `__udivdi3'
+> Checking for NULL pointers before kfree() is redundant.
+> v2:
+> No need for freeing pm in case when it's not allocated.
 > 
-> Very wierd, what would cause that?
+> Reported-by: Julia Lawall <julia@diku.dk>
+> Signed-off-by: Bojan Prtvar <prtvar.b@gmail.com>
+> ---
+>  drivers/hid/hid-prodikeys.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-prodikeys.c b/drivers/hid/hid-prodikeys.c
+> index 158b389..f779009 100644
+> --- a/drivers/hid/hid-prodikeys.c
+> +++ b/drivers/hid/hid-prodikeys.c
+> @@ -816,7 +816,7 @@ static int pk_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  	if (pm == NULL) {
+>  		hid_err(hdev, "can't alloc descriptor\n");
+>  		ret = -ENOMEM;
+> -		goto err_free;
+> +		goto err_free_pk;
+>  	}
+>  
+>  	pm->pk = pk;
+> @@ -849,10 +849,10 @@ static int pk_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  err_stop:
+>  	hid_hw_stop(hdev);
+>  err_free:
+> -	if (pm != NULL)
+> -		kfree(pm);
+> -
+> +	kfree(pm);
+> +err_free_pk:
+>  	kfree(pk);
+> +
+>  	return ret;
+>  }
+>  
 
-I don't see what's weird about it.
+Applied, thanks to both.
 
-Probably one of these divisions:
-
-		if (curr_pers_pampd_count >
-		    (zv_page_count_policy_percent * totalram_pages) / 100)
-			goto out;
-
-or
-
-			zv_mean_zsize = xv_get_total_size_bytes(cli->xvpool) /
-						curr_pers_pampd_count;
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+Jiri Kosina
+SUSE Labs
