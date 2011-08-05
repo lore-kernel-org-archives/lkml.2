@@ -1,173 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232Ab1HEKI1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 06:08:27 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:56306 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752805Ab1HEKDw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 06:03:52 -0400
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <linus.walleij@linaro.org>, <vinod.koul@intel.com>,
-        <dan.j.williams@intel.com>
-Cc: <linux-arm-kernel@lists.infradead.org>, <armando.visconti@st.com>,
-        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
-        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
-        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
-        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
-        <viresh.linux@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <alim.akhtar@gmail.com>
-Subject: [PATCH V3 17/20] dmaengine/amba-pl08x: Pass flow controller information with slave channel data
-Date: Fri, 5 Aug 2011 15:32:42 +0530
-Message-ID: <8bb13ae232a9fe572d9f3362eb33a74f7a8c9df0.1312538034.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <cover.1312538034.git.viresh.kumar@st.com>
-References: <cover.1312538034.git.viresh.kumar@st.com>
+	id S1756365Ab1HEKIs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 06:08:48 -0400
+Received: from hera.kernel.org ([140.211.167.34]:32967 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755265Ab1HEKI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 06:08:26 -0400
+Date: Fri, 5 Aug 2011 10:07:24 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-qn893qsstcg366tkucu649qj@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
+        efault@gmx.de, bp@amd64.org, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, bp@amd64.org, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf evlist: Introduce 'disable' method
+Git-Commit-ID: 4152ab377b55e9d3e5700de00ef799519ead698d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 05 Aug 2011 10:07:29 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At least, on SPEAr platforms there is one peripheral, JPEG, which can be flow
-controller for DMA transfer. Currently DMA controller driver didn't support
-peripheral flow controller configurations.
+Commit-ID:  4152ab377b55e9d3e5700de00ef799519ead698d
+Gitweb:     http://git.kernel.org/tip/4152ab377b55e9d3e5700de00ef799519ead698d
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Mon, 25 Jul 2011 11:06:19 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 25 Jul 2011 11:06:19 -0300
 
-This patch adds device_fc field in struct pl08x_channel_data, which will be used
-only for slave transfers and is not used in case of mem2mem transfers.
+perf evlist: Introduce 'disable' method
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+To remove the last case of access to the FD() macro outside the library.
+
+Inspired by a patch by Borislav that moved the FD() macro to util.h, for
+namespace concerns I rather preferred to constrain it to ev{sel,list}.c.
+
+Cc: Borislav Petkov <bp@amd64.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-qn893qsstcg366tkucu649qj@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/dma/amba-pl08x.c   |   61 ++++++++++++++++++++++++++++++++++++++------
- include/linux/amba/pl08x.h |    4 +++
- 2 files changed, 57 insertions(+), 8 deletions(-)
+ tools/perf/builtin-record.c |   19 ++-----------------
+ tools/perf/util/evlist.c    |   13 +++++++++++++
+ tools/perf/util/evlist.h    |    2 ++
+ 3 files changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index f70aa57..a59c3c4 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -66,11 +66,6 @@
-  *    after the final transfer signalled by LBREQ or LSREQ.  The DMAC
-  *    will then move to the next LLI entry.
-  *
-- * Only the former works sanely with scatter lists, so we only implement
-- * the DMAC flow control method.  However, peripherals which use the LBREQ
-- * and LSREQ signals (eg, MMCI) are unable to use this mode, which through
-- * these hardware restrictions prevents them from using scatter DMA.
-- *
-  * Global TODO:
-  * - Break out common code from arch/arm/mach-s3c64xx and share
-  */
-@@ -618,6 +613,49 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
- 		 sbus == &bd.srcbus ? "src" : "dst");
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 80dc5b7..f6426b4 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -30,8 +30,6 @@
+ #include <sched.h>
+ #include <sys/mman.h>
  
- 	/*
-+	 * Zero length is only allowed if all these requirements are met:
-+	 * - flow controller is peripheral.
-+	 * - src.addr is aligned to src.width
-+	 * - dst.addr is aligned to dst.width
-+	 *
-+	 * sg_len == 1 should be true, as there can be two cases here:
-+	 * - Memory addresses are contiguous and are not scattered. Here, Only
-+	 * one sg will be passed by user driver, with memory address and zero
-+	 * length. We pass this to controller and after the transfer it will
-+	 * receive the last burst request from peripheral and so transfer
-+	 * finishes.
-+	 *
-+	 * - Memory addresses are scattered and are not contiguous. Here,
-+	 * Obviously as DMA controller doesn't know when a lli's transfer gets
-+	 * over, it can't load next lli. So in this case, there has to be an
-+	 * assumption that only one lli is supported. Thus, we can't have
-+	 * scattered addresses.
-+	 */
-+	if (!bd.remainder) {
-+		u32 fc = (txd->ccfg & PL080_CONFIG_FLOW_CONTROL_MASK) >>
-+			PL080_CONFIG_FLOW_CONTROL_SHIFT;
-+		if (!((fc >= PL080_FLOW_SRC2DST_DST) &&
-+					(fc <= PL080_FLOW_SRC2DST_SRC))) {
-+			dev_err(&pl08x->adev->dev, "%s sg len can't be zero",
-+				__func__);
-+			return 0;
-+		}
-+
-+		if ((bd.srcbus.addr % bd.srcbus.buswidth) ||
-+				(bd.srcbus.addr % bd.srcbus.buswidth)) {
-+			dev_err(&pl08x->adev->dev,
-+				"%s src & dst address must be aligned to src"
-+				" & dst width if peripheral is flow controller",
-+				__func__);
-+			return 0;
-+		}
-+
-+		cctl = pl08x_cctl_bits(cctl, bd.srcbus.buswidth,
-+				bd.dstbus.buswidth, 0);
-+		pl08x_fill_lli_for_desc(&bd, num_llis++, 0, cctl);
-+	}
-+
-+	/*
- 	 * Send byte by byte for following cases
- 	 * - Less than a bus width available
- 	 * - until master bus is aligned
-@@ -1250,7 +1288,7 @@ static struct dma_async_tx_descriptor *pl08x_prep_slave_sg(
- 	struct pl08x_dma_chan *plchan = to_pl08x_chan(chan);
- 	struct pl08x_driver_data *pl08x = plchan->host;
- 	struct pl08x_txd *txd;
--	int ret;
-+	int ret, tmp;
+-#define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+-
+ enum write_mode_t {
+ 	WRITE_FORCE,
+ 	WRITE_APPEND
+@@ -438,7 +436,6 @@ static void mmap_read_all(void)
  
- 	/*
- 	 * Current implementation ASSUMES only one sg
-@@ -1284,12 +1322,10 @@ static struct dma_async_tx_descriptor *pl08x_prep_slave_sg(
- 	txd->len = sgl->length;
+ static int __cmd_record(int argc, const char **argv)
+ {
+-	int i;
+ 	struct stat st;
+ 	int flags;
+ 	int err;
+@@ -682,7 +679,6 @@ static int __cmd_record(int argc, const char **argv)
  
- 	if (direction == DMA_TO_DEVICE) {
--		txd->ccfg |= PL080_FLOW_MEM2PER << PL080_CONFIG_FLOW_CONTROL_SHIFT;
- 		txd->cctl = plchan->dst_cctl;
- 		txd->src_addr = sgl->dma_address;
- 		txd->dst_addr = plchan->dst_addr;
- 	} else if (direction == DMA_FROM_DEVICE) {
--		txd->ccfg |= PL080_FLOW_PER2MEM << PL080_CONFIG_FLOW_CONTROL_SHIFT;
- 		txd->cctl = plchan->src_cctl;
- 		txd->src_addr = plchan->src_addr;
- 		txd->dst_addr = sgl->dma_address;
-@@ -1299,6 +1335,15 @@ static struct dma_async_tx_descriptor *pl08x_prep_slave_sg(
- 		return NULL;
+ 	for (;;) {
+ 		int hits = samples;
+-		int thread;
+ 
+ 		mmap_read_all();
+ 
+@@ -693,19 +689,8 @@ static int __cmd_record(int argc, const char **argv)
+ 			waking++;
+ 		}
+ 
+-		if (done) {
+-			for (i = 0; i < evsel_list->cpus->nr; i++) {
+-				struct perf_evsel *pos;
+-
+-				list_for_each_entry(pos, &evsel_list->entries, node) {
+-					for (thread = 0;
+-						thread < evsel_list->threads->nr;
+-						thread++)
+-						ioctl(FD(pos, i, thread),
+-							PERF_EVENT_IOC_DISABLE);
+-				}
+-			}
+-		}
++		if (done)
++			perf_evlist__disable(evsel_list);
  	}
  
-+	if (plchan->cd->device_fc)
-+		tmp = (direction == DMA_TO_DEVICE) ? PL080_FLOW_MEM2PER_PER :
-+			PL080_FLOW_PER2MEM_PER;
-+	else
-+		tmp = (direction == DMA_TO_DEVICE) ? PL080_FLOW_MEM2PER :
-+			PL080_FLOW_PER2MEM;
+ 	if (quiet || signr == SIGUSR1)
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index b021ea9..e03e7bc 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -91,6 +91,19 @@ int perf_evlist__add_default(struct perf_evlist *evlist)
+ 	return 0;
+ }
+ 
++void perf_evlist__disable(struct perf_evlist *evlist)
++{
++	int cpu, thread;
++	struct perf_evsel *pos;
 +
-+	txd->ccfg |= tmp << PL080_CONFIG_FLOW_CONTROL_SHIFT;
++	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
++		list_for_each_entry(pos, &evlist->entries, node) {
++			for (thread = 0; thread < evlist->threads->nr; thread++)
++				ioctl(FD(pos, cpu, thread), PERF_EVENT_IOC_DISABLE);
++		}
++	}
++}
 +
- 	ret = pl08x_prep_channel_resources(plchan, txd);
- 	if (ret)
- 		return NULL;
-diff --git a/include/linux/amba/pl08x.h b/include/linux/amba/pl08x.h
-index ecd17f5..a22662c 100644
---- a/include/linux/amba/pl08x.h
-+++ b/include/linux/amba/pl08x.h
-@@ -47,6 +47,9 @@ enum {
-  * @muxval: a number usually used to poke into some mux regiser to
-  * mux in the signal to this channel
-  * @cctl_opt: default options for the channel control register
-+ * @device_fc: Flow Controller Settings for ccfg register. Only valid for slave
-+ * channels. Fill with 'true' if peripheral should be flow controller. Direction
-+ * will be selected at Runtime.
-  * @addr: source/target address in physical memory for this DMA channel,
-  * can be the address of a FIFO register for burst requests for example.
-  * This can be left undefined if the PrimeCell API is used for configuring
-@@ -65,6 +68,7 @@ struct pl08x_channel_data {
- 	int max_signal;
- 	u32 muxval;
- 	u32 cctl;
-+	bool device_fc;
- 	dma_addr_t addr;
- 	bool circular_buffer;
- 	bool single;
--- 
-1.7.2.2
-
+ int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
+ {
+ 	int nfds = evlist->cpus->nr * evlist->threads->nr * evlist->nr_entries;
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index b2b8623..ce85ae9 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -53,6 +53,8 @@ int perf_evlist__alloc_mmap(struct perf_evlist *evlist);
+ int perf_evlist__mmap(struct perf_evlist *evlist, int pages, bool overwrite);
+ void perf_evlist__munmap(struct perf_evlist *evlist);
+ 
++void perf_evlist__disable(struct perf_evlist *evlist);
++
+ static inline void perf_evlist__set_maps(struct perf_evlist *evlist,
+ 					 struct cpu_map *cpus,
+ 					 struct thread_map *threads)
