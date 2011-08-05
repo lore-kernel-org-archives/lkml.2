@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904Ab1HEUZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 16:25:58 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55040 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab1HEUZ4 convert rfc822-to-8bit (ORCPT
+	id S1752112Ab1HEU1C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 16:27:02 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:57486 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405Ab1HEU1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 16:25:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110805103045.GG28651@trinity.fluff.org>
-References: <1312498820-2275-1-git-send-email-swarren@nvidia.com>
-	<20110805094017.GC20575@n2100.arm.linux.org.uk>
-	<20110805103045.GG28651@trinity.fluff.org>
-Date: Fri, 5 Aug 2011 22:25:55 +0200
-Message-ID: <CACRpkdai55JSN+dkaYu96FTDDVSa8bHZFkBS6M1u3gPUDmpE_g@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] If an IRQ is a GPIO, request and configure it
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@nvidia.com>, alsa-devel@alsa-project.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, ccross@android.com, olof@lixom.net,
-        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
-        Liam Girdwood <lrg@ti.com>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 5 Aug 2011 16:27:00 -0400
+Date: Fri, 5 Aug 2011 22:26:56 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>, luto@mit.edu, x86@kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        lueckintel@yahoo.com, kimwooyoung@gmail.com
+Subject: Re: New vsyscall emulation breaks JITs
+Message-ID: <20110805202656.GI5782@one.firstfloor.org>
+References: <20110805200945.GA14014@tassilo.jf.intel.com> <4E3C5154.2050307@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E3C5154.2050307@zytor.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 5, 2011 at 12:30 PM, Ben Dooks <ben-linux@fluff.org> wrote:
-> On Fri, Aug 05, 2011 at 10:40:17AM +0100, Russell King - ARM Linux wrote:
->> Trying to go from IRQ to GPIO is not a good idea - most of the
->> IRQ <-> GPIO macros we have today are just plain broken.  Many of them
->> just add or subtract a constant, which means non-GPIO IRQs have an
->> apparant GPIO number too.  Couple this with the fact that all positive
->> GPIO numbers are valid, and this is a recipe for wrong GPIOs getting
->> used and GPIOs being requested for non-GPIO IRQs.
->
-> Yes, and there's a pile without these defined/
+> I have to say I believe that trying to JIT the vdso or vsyscall pages is
+> extremely dubious at best.  They are fundamentally different from normal
+> user space in that the kernel can muck with them any time, without
+> notifying userspace about it.  The other aspect of this is that this is
+> about the legacy vsyscall page, which we're trying to get rid of, partly
+> because of security problems.
 
-And I'm piling a few patches *deleting* irq_to_gpio() from platforms that
-define but actually don't use it, like U300 and SA1100.
+There's clear evidence now you can't: it's used even by new binaries.
 
-Linus Walleij
+-Andi
+
