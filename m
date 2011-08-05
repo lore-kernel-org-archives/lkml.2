@@ -1,127 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab1HESEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 14:04:15 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42434 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab1HESEN (ORCPT
+	id S1755775Ab1HESO4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 14:14:56 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:25522 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754193Ab1HESOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 14:04:13 -0400
-Date: Fri, 5 Aug 2011 20:04:09 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+	Fri, 5 Aug 2011 14:14:55 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: eHAO9j4VM1lUmC_dqcgCFNXEgaPRGNypdIcy0FUjX37fWDx
+ VpCuVfeihOTgO41BNKp6BKCiG4hvy8CLpj8YsyQzRv_N48enn.qD4nqS4xRB
+ hOt8AFJPbK0887v_3RSB4bGYSsc3dxD6ymNL09qFiTPEEd2kyBQcBFv7apX9
+ 43o5egr0LPs.BRI7Y6.eKU.ZePh_N6W2nKI45BaOjftDjGhODV1rNejXxALz
+ lNDz2Otv1WND34iW1XsYfZbsISbdzxALYtcfkGAHu7Zj9T3lYJ3nB2NfR6GO
+ U7q6yggMr8a4SrzxmbMF5hCGyPxL1UosQS0CCeNpEh9qlYBpxL_brDxkUCWE
+ uArVoGDkrX4IAxsAh1WfBVi8xOukNeVOeoUYA4kDnRv9S.JSQiqda_ModG4p
+ jn7srsVXOMEc2KWKkRsH3yg--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 5 Aug 2011 13:14:50 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Dave Jones <davej@redhat.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -v3.2 3/3] x86, AMD: Move BSP code to cpu_dev helper
-Message-ID: <20110805180409.GC26217@aftab>
-References: <1312550110-24160-1-git-send-email-bp@amd64.org>
- <4E3C2405.8090309@zytor.com>
- <20110805175522.GA26217@aftab>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: list corruption in the last few days. (block ? crypto ?)
+In-Reply-To: <20110805171607.GA11703@redhat.com>
+Message-ID: <alpine.DEB.2.00.1108051312090.28580@router.home>
+References: <20110805010038.GA18148@redhat.com> <20110805084614.GA1588@x4.trippels.de> <CAOJsxLEMf8SbSmJv5u6GZtq_OYH3fpmomT-ioWXQGp83veK7wQ@mail.gmail.com> <alpine.DEB.2.00.1108051131440.28580@router.home> <20110805163948.GA11113@redhat.com>
+ <alpine.DEB.2.00.1108051146180.28580@router.home> <20110805165119.GA11593@redhat.com> <alpine.DEB.2.00.1108051158400.28580@router.home> <20110805171607.GA11703@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110805175522.GA26217@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move code which is run once on the BSP during boot into the cpu_dev
-helper.
+On Fri, 5 Aug 2011, Dave Jones wrote:
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/cpu/amd.c |   59 ++++++++++++++++++++++-----------------------
- 1 files changed, 29 insertions(+), 30 deletions(-)
+>  > Argh another debugging code issue. Anyone who sees this please verify that
+>  > it also occurs with debugging off. I ran this code for 9 months in
+>  > various configs but only sporadically with debugging support since that
+>  > switches the lockless stuff.
+>
+> This started turning up immediately as soon as it got merged to mainline.
+> Which leads me to believe no-one is running -next with debugging on either.
+> Perhaps we should force debugging on for a week once per release cycle.
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index b0234bc..53d96f5 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -410,6 +410,34 @@ static void __cpuinit early_init_amd_mc(struct cpuinfo_x86 *c)
- #endif
- }
- 
-+static void __cpuinit bsp_init_amd(struct cpuinfo_x86 *c)
-+{
-+	if (static_cpu_has(X86_FEATURE_CONSTANT_TSC)) {
-+
-+		if (c->x86 > 0x10 ||
-+		    (c->x86 == 0x10 && c->x86_model >= 0x2)) {
-+			u64 val;
-+
-+			rdmsrl(MSR_K7_HWCR, val);
-+			if (!(val & BIT(24)))
-+				printk(KERN_WARNING FW_BUG "TSC doesn't count "
-+					"with P0 frequency!\n");
-+		}
-+	}
-+
-+	if (c->x86 == 0x15) {
-+		unsigned long upperbit;
-+		u32 cpuid, assoc;
-+
-+		cpuid	 = cpuid_edx(0x80000005);
-+		assoc	 = cpuid >> 16 & 0xff;
-+		upperbit = ((cpuid >> 24) << 10) / assoc;
-+
-+		va_align.mask	  = (upperbit - 1) & PAGE_MASK;
-+		va_align.flags    = ALIGN_VA_32 | ALIGN_VA_64;
-+	}
-+}
-+
- static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
- {
- 	early_init_amd_mc(c);
-@@ -441,36 +469,6 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
- 			set_cpu_cap(c, X86_FEATURE_EXTD_APICID);
- 	}
- #endif
--
--	/* We need to do the following only once */
--	if (c != &boot_cpu_data)
--		return;
--
--	if (cpu_has(c, X86_FEATURE_CONSTANT_TSC)) {
--
--		if (c->x86 > 0x10 ||
--		    (c->x86 == 0x10 && c->x86_model >= 0x2)) {
--			u64 val;
--
--			rdmsrl(MSR_K7_HWCR, val);
--			if (!(val & BIT(24)))
--				printk(KERN_WARNING FW_BUG "TSC doesn't count "
--					"with P0 frequency!\n");
--		}
--	}
--
--	if (c->x86 == 0x15) {
--		unsigned long upperbit;
--		u32 cpuid, assoc;
--
--		cpuid	 = cpuid_edx(0x80000005);
--		assoc	 = cpuid >> 16 & 0xff;
--		upperbit = ((cpuid >> 24) << 10) / assoc;
--
--		va_align.mask	  = (upperbit - 1) & PAGE_MASK;
--		va_align.flags    = ALIGN_VA_32 | ALIGN_VA_64;
--
--	}
- }
- 
- static void __cpuinit init_amd(struct cpuinfo_x86 *c)
-@@ -692,6 +690,7 @@ static const struct cpu_dev __cpuinitconst amd_cpu_dev = {
- 	.c_size_cache	= amd_size_cache,
- #endif
- 	.c_early_init   = early_init_amd,
-+	.c_bsp_init	= bsp_init_amd,
- 	.c_init		= init_amd,
- 	.c_x86_vendor	= X86_VENDOR_AMD,
- };
--- 
-1.7.4.rc2
+I have run some tests over the last hours with kvm and
+CONFIG_SLUB_DEBUG_ON as well as CONFIG_DEBUG_LIST set but (aside from
+other unrelated backtraces in other subsystems) did not see this issue.
+
+Can I get a .config? Maybe that will help.
+
 
