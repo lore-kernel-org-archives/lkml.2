@@ -1,138 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962Ab1HEXMY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 19:12:24 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52912 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004Ab1HEXMX (ORCPT
+	id S1756982Ab1HEXPP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 19:15:15 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47971 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756543Ab1HEXPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 19:12:23 -0400
-Date: Sat, 6 Aug 2011 01:12:18 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
-Message-ID: <20110805231216.GE22164@somewhere>
-References: <CA+5PVA5EZWHv_tuzA22twGQ7rZZ2zhqi1zs6OiFbpORiiYbzMg@mail.gmail.com>
- <20110804140438.GT13065@linux.vnet.ibm.com>
- <20110804150603.GL2096@zod.bos.redhat.com>
- <20110804162658.GZ13065@linux.vnet.ibm.com>
- <20110804173145.GM2096@zod.bos.redhat.com>
- <CA+5PVA7R+H4MfU=war6G3ZRYEi6nZ=vVZ3B8g-Ag6pOdA4cTBw@mail.gmail.com>
- <20110805065646.GC13065@linux.vnet.ibm.com>
- <20110805142245.GP2096@zod.bos.redhat.com>
- <20110805170805.GB22164@somewhere>
- <20110805222641.GB2245@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110805222641.GB2245@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 5 Aug 2011 19:15:10 -0400
+From: Stephen Warren <swarren@nvidia.com>
+To: Ben Dooks <ben-linux@fluff.org>
+Cc: Dilan Lee <dilee@nvidia.com>, linux-i2c@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] i2c/tegra: I2C driver uses the suspend_noirq/resume_noirq
+Date: Fri,  5 Aug 2011 17:15:02 -0600
+Message-Id: <1312586102-27907-1-git-send-email-swarren@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 05, 2011 at 03:26:41PM -0700, Paul E. McKenney wrote:
-> On Fri, Aug 05, 2011 at 07:08:08PM +0200, Frederic Weisbecker wrote:
-> > On Fri, Aug 05, 2011 at 10:22:45AM -0400, Josh Boyer wrote:
-> > > On Thu, Aug 04, 2011 at 11:56:46PM -0700, Paul E. McKenney wrote:
-> > > > > > I could be missing something obvious, but I don't see a way to avoid
-> > > > > > using GFP_KERNEL without a lot of rip-up in the rest of the init path.
-> > > > > 
-> > > > > As an aside, I bisected this back to:
-> > > > > 
-> > > > > e8f7c70f44f sched: Make sleeping inside spinlock detection working in
-> > > > > !CONFIG_PREEMPT
-> > > > 
-> > > > OK, added Frederic on CC.
-> > > > 
-> > > > > However, that doesn't seem all that helpful.  The
-> > > > > CONFIG_DEBUG_SPINLOCK_SLEEP option later got renamed to
-> > > > > DEBUG_ATOMIC_SLEEP, and all it's doing is selecting PREEMPT_COUNT.  At
-> > > > > first glance, it seems this commit just allowed an issue that's been
-> > > > > around for a while (benign or otherwise) to finally show up.
-> > > > > 
-> > > > > (The Fedora kernel configs have CONFIG_PREEMPT_VOLUNTARY set, but not
-> > > > > CONFIG_PREEMPT so PREEMPT_COUNT wasn't getting selected until this
-> > > > > option did so.)
-> > > > 
-> > > > Understood.  So my question is "what is the real way to fix this?"
-> > > > Within RCU, I would probably wrapper the calls to set_need_resched()
-> > > > so that it checks for the scheduler being fully alive.  Except for the
-> > > > call from rcu_enter_nohz(), of course -- if that one is called before
-> > > > the scheduler is ready, then that is a bug that needs to be fixed.
-> > > 
-> > > By scheduler being fully alive, do you mean when rcu_scheduler_starting
-> > > is called?  Or do you mean the actual scheduler, because sched_init is
-> > > called well before any of this happens.
-> > > 
-> > > > Nevertheless, I am wondering if all of this isn't really papering over
-> > > > some real problem somewhere.  The way we get to this place is from people
-> > > > registering RCU callbacks during early boot, which is OK in and of itself,
-> > > > at least in moderation.  But if someone is expecting those callbacks to be
-> > > > invoked before the scheduler is fully set up and running multiple tasks,
-> > > > they are going to be disappointed.
-> > > 
-> > > Is there a way to dump what callbacks have been registered?  As far as I
-> > > can see, we call rcu_check_callbacks unconditionally when a timer
-> > > interrupt is taken and that calls rcu_pending unconditionally as well.
-> > > Before that, rcu_init is called which eventually sets up the per-cpu
-> > > data via rcu_init_percpu_data and that sets rdp->qs_pending = 1.
-> > > Until a quiescent state is reached __rcu_pending is going to try and
-> > > force it, which is where the set_need_resched is called.
-> > > 
-> > > Basically, I took what you said about wrapping set_need_resched and came
-> > > up with the patch below.  It gets rid of the oops from pidmap_init, but
-> > > I need to test it a bit more.  Would be happy to have feedback.
-> > > 
-> > > josh
-> > > 
-> > > ---
-> > > 
-> > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > index ba06207..8c6cb6e 100644
-> > > --- a/kernel/rcutree.c
-> > > +++ b/kernel/rcutree.c
-> > > @@ -1681,8 +1681,14 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
-> > >  		rdp->n_rp_qs_pending++;
-> > >  		if (!rdp->preemptible &&
-> > >  		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
-> > > -				 jiffies))
-> > > -			set_need_resched();
-> > > +				 jiffies)) {
-> > > +			/* Make sure we're ready to mark the task as needing
-> > > + 			 * rescheduling otherwise we can trigger oopes early
-> > > + 			 * in the init path
-> > > + 			 */
-> > > +			if (rcu_scheduler_active)
-> > > +				set_need_resched();
-> > 
-> > What about we avoid setting rdp->qs_pending = 1 for the CPU
-> > that handles the boot?
-> 
-> That sounds promising -- only checked at the beginning of a grace period,
-> so not too much overhead.  In contrast, __rcu_pending() is called
-> multiple times per transition to dyntick-idle state.
-> 
-> I will take a look at this.
-> 
-> 							Thanx, Paul
+From: Dilan Lee <dilee@nvidia.com>
 
-I actually thought it could be done from rcu_init_percpu_data(). This
-is where we initialize the qs_pending to 1, which I believe is responsible
-for that set_need_resched() from rcu soon after on boot.
+We found the register settings of wm8903(an audio codec) can't be modified
+in snd_soc_suspend since I2C bus has been suspended before snd_soc_suspend.
 
-It's possible we also have secondary offenders in places that enqueue
-rcu callbacks in the boot. But if not, then we are fine with tweaking
-that qs_pending on cpu boot.
+Pop noise will occur when system resume from LP0 if the register settings of wm8903
+haven't be modified correctly in snd_soc_suspend.
 
-Because the initial qs_pending = 1 in rcu_init_percpu_data()
-is useful only if a grace period has started, but by the time
-rcu_init() is called I guess it can't be the case.
+So, we use the suspend_noirq/resume_noirq callbacks to make sure I2C bus still
+operates while running snd_soc_suspend.
 
-> 
-> > > +		}
-> > >  	} else if (rdp->qs_pending && rdp->passed_quiesc) {
-> > >  		rdp->n_rp_report_qs++;
-> > >  		return 1;
+Signed-off-by: Dilan Lee <dilee@nvidia.com>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+When applying this, you'll get a trivial merge conflict with the other
+i2c-tegra.c patch I just reposted titled "i2c: Tegra: Add of_match_table".
+Just add the two lines to tegra_i2c_driver.driver in whichever order you
+prefer:-).
+
+ drivers/i2c/busses/i2c-tegra.c |   19 +++++++++++++------
+ 1 files changed, 13 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+index 0c6e840..3d2bf19 100644
+--- a/drivers/i2c/busses/i2c-tegra.c
++++ b/drivers/i2c/busses/i2c-tegra.c
+@@ -687,8 +687,9 @@ static int tegra_i2c_remove(struct platform_device *pdev)
+ }
+ 
+ #ifdef CONFIG_PM
+-static int tegra_i2c_suspend(struct platform_device *pdev, pm_message_t state)
++static int tegra_i2c_suspend_noirq(struct device *dev)
+ {
++	struct platform_device *pdev = to_platform_device(dev);
+ 	struct tegra_i2c_dev *i2c_dev = platform_get_drvdata(pdev);
+ 
+ 	i2c_lock_adapter(&i2c_dev->adapter);
+@@ -698,8 +699,9 @@ static int tegra_i2c_suspend(struct platform_device *pdev, pm_message_t state)
+ 	return 0;
+ }
+ 
+-static int tegra_i2c_resume(struct platform_device *pdev)
++static int tegra_i2c_resume_noirq(struct device *dev)
+ {
++	struct platform_device *pdev = to_platform_device(dev);
+ 	struct tegra_i2c_dev *i2c_dev = platform_get_drvdata(pdev);
+ 	int ret;
+ 
+@@ -718,18 +720,23 @@ static int tegra_i2c_resume(struct platform_device *pdev)
+ 
+ 	return 0;
+ }
++
++static const struct dev_pm_ops tegra_i2c_dev_pm_ops = {
++	.suspend_noirq = tegra_i2c_suspend_noirq,
++	.resume_noirq = tegra_i2c_resume_noirq,
++};
++#define TEGRA_I2C_DEV_PM_OPS (&tegra_i2c_dev_pm_ops)
++#else
++#define TEGRA_I2C_DEV_PM_OPS NULL
+ #endif
+ 
+ static struct platform_driver tegra_i2c_driver = {
+ 	.probe   = tegra_i2c_probe,
+ 	.remove  = tegra_i2c_remove,
+-#ifdef CONFIG_PM
+-	.suspend = tegra_i2c_suspend,
+-	.resume  = tegra_i2c_resume,
+-#endif
+ 	.driver  = {
+ 		.name  = "tegra-i2c",
+ 		.owner = THIS_MODULE,
++		.pm    = TEGRA_I2C_DEV_PM_OPS,
+ 	},
+ };
+ 
+-- 
+1.7.0.4
+
