@@ -1,113 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab1HEAeb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 20:34:31 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44719 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754268Ab1HEAe2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 20:34:28 -0400
-Date: Fri, 5 Aug 2011 03:33:22 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Battery: sysfs_remove_battery(): possible circular locking
-Message-ID: <20110805003322.GA8311@swordfish>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756067Ab1HEAgc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 20:36:32 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:30229 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753772Ab1HEAg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 20:36:27 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        David Chinner <david@fromorbit.com>,
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v2 1/4] factor out single-shrinker code
+Date: Fri,  5 Aug 2011 04:35:41 +0400
+Message-Id: <1312504544-1108-2-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1312504544-1108-1-git-send-email-glommer@parallels.com>
+References: <1312504544-1108-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 9c921c22a7f33397a6774d7fa076db9b6a0fd669
-Author: Lan Tianyu <tianyu.lan@intel.com>
+While shrinking our caches, vmscan.c passes through all
+registered shrinkers, trying to free objects as it goes.
 
-    ACPI / Battery: Resolve the race condition in the sysfs_remove_battery()
+We would like to do that individually for some caches,
+like the dcache, when certain conditions apply (for
+example, when we reach a soon-to-exist maximum allowed size)
 
-introduced battery locking to sysfs_remove_battery(). That lead to a possible 
-deadlock warning:
+To avoid re-writing the same logic at more than one place,
+this patch factors out the shrink logic at shrink_one_shrinker(),
+that we can call from other places of the kernel.
 
-[14818.477170] =======================================================
-[14818.477200] [ INFO: possible circular locking dependency detected ]
-[14818.477221] 3.1.0-dbg-07865-g1280ea8-dirty #668
-[14818.477236] -------------------------------------------------------
-[14818.477257] s2ram/1599 is trying to acquire lock:
-[14818.477276]  (s_active#8){++++.+}, at: [<ffffffff81169147>] sysfs_addrm_finish+0x31/0x5a
-[14818.477323] 
-[14818.477325] but task is already holding lock:
-[14818.477350]  (&battery->lock){+.+.+.}, at: [<ffffffffa0047278>] sysfs_remove_battery+0x10/0x4b [battery]
-[14818.477395] 
-[14818.477397] which lock already depends on the new lock.
-[...]
-[14818.479121] stack backtrace:
-[14818.479148] Pid: 1599, comm: s2ram Not tainted 3.1.0-dbg-07865-g1280ea8-dirty #668
-[14818.479175] Call Trace:
-[14818.479198]  [<ffffffff814828c3>] print_circular_bug+0x293/0x2a4
-[14818.479228]  [<ffffffff81070cb5>] __lock_acquire+0xfe4/0x164b
-[14818.479260]  [<ffffffff81169147>] ? sysfs_addrm_finish+0x31/0x5a
-[14818.479288]  [<ffffffff810718d2>] lock_acquire+0x138/0x1ac
-[14818.479316]  [<ffffffff81169147>] ? sysfs_addrm_finish+0x31/0x5a
-[14818.479345]  [<ffffffff81168a79>] sysfs_deactivate+0x9b/0xec
-[14818.479373]  [<ffffffff81169147>] ? sysfs_addrm_finish+0x31/0x5a
-[14818.479405]  [<ffffffff81169147>] sysfs_addrm_finish+0x31/0x5a
-[14818.479433]  [<ffffffff81167bc5>] sysfs_hash_and_remove+0x54/0x77
-[14818.479461]  [<ffffffff811681b9>] sysfs_remove_file+0x12/0x14
-[14818.479488]  [<ffffffff81385bf8>] device_remove_file+0x12/0x14
-[14818.479516]  [<ffffffff81386504>] device_del+0x119/0x17c
-[14818.479542]  [<ffffffff81386575>] device_unregister+0xe/0x1a
-[14818.479570]  [<ffffffff813c6ef9>] power_supply_unregister+0x23/0x27
-[14818.479601]  [<ffffffffa004729c>] sysfs_remove_battery+0x34/0x4b [battery]
-[14818.479632]  [<ffffffffa004778f>] battery_notify+0x2c/0x3a [battery]
-[14818.479662]  [<ffffffff8148fe82>] notifier_call_chain+0x74/0xa1
-[14818.479692]  [<ffffffff810624b4>] __blocking_notifier_call_chain+0x6c/0x89
-[14818.479722]  [<ffffffff810624e0>] blocking_notifier_call_chain+0xf/0x11
-[14818.479751]  [<ffffffff8107e40e>] pm_notifier_call_chain+0x15/0x27
-[14818.479770]  [<ffffffff8107ee1a>] enter_state+0xa7/0xd5
-[14818.479782]  [<ffffffff8107e341>] state_store+0xaa/0xc0
-[14818.479795]  [<ffffffff8107e297>] ? pm_async_store+0x45/0x45
-[14818.479807]  [<ffffffff81248837>] kobj_attr_store+0x17/0x19
-[14818.479820]  [<ffffffff81167e27>] sysfs_write_file+0x103/0x13f
-[14818.479834]  [<ffffffff81109037>] vfs_write+0xad/0x13d
-[14818.479847]  [<ffffffff811092b2>] sys_write+0x45/0x6c
-[14818.479860]  [<ffffffff81492f92>] system_call_fastpath+0x16/0x1b
-
-
-I've changed `the marker' from `battery->bat.dev' to `battery->bat.name', so 
-the basic idea should remain the same, now we just can release battery->lock 
-more quicker, before device_remove_file() call.
-
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Dave Chinner <david@fromorbit.com>
 ---
+ include/linux/shrinker.h |    6 ++
+ mm/vmscan.c              |  185 ++++++++++++++++++++++++----------------------
+ 2 files changed, 104 insertions(+), 87 deletions(-)
 
- drivers/acpi/battery.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index 87c0a8d..398cbfb 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -574,15 +574,17 @@ static int sysfs_add_battery(struct acpi_battery *battery)
- static void sysfs_remove_battery(struct acpi_battery *battery)
- {
- 	mutex_lock(&battery->lock);
--	if (!battery->bat.dev) {
-+	if (!battery->bat.name) {
- 		mutex_unlock(&battery->lock);
- 		return;
- 	}
- 
-+	battery->bat.name = NULL;
-+	mutex_unlock(&battery->lock);
+diff --git a/include/linux/shrinker.h b/include/linux/shrinker.h
+index 790651b..c5db650 100644
+--- a/include/linux/shrinker.h
++++ b/include/linux/shrinker.h
+@@ -39,4 +39,10 @@ struct shrinker {
+ #define DEFAULT_SEEKS 2 /* A good number if you don't know better. */
+ extern void register_shrinker(struct shrinker *);
+ extern void unregister_shrinker(struct shrinker *);
 +
- 	device_remove_file(battery->bat.dev, &alarm_attr);
- 	power_supply_unregister(&battery->bat);
- 	battery->bat.dev = NULL;
--	mutex_unlock(&battery->lock);
++unsigned long shrink_one_shrinker(struct shrinker *shrinker,
++				  struct shrink_control *shrink,
++				  unsigned long nr_pages_scanned,                      
++				  unsigned long lru_pages);
++
+ #endif
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 7ef6912..50dfc61 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -211,6 +211,102 @@ static inline int do_shrinker_shrink(struct shrinker *shrinker,
  }
  
+ #define SHRINK_BATCH 128
++unsigned long shrink_one_shrinker(struct shrinker *shrinker,
++				  struct shrink_control *shrink,
++				  unsigned long nr_pages_scanned,
++				  unsigned long lru_pages)
++{
++	unsigned long ret = 0;
++	unsigned long long delta;
++	unsigned long total_scan;
++	unsigned long max_pass;
++	int shrink_ret = 0;
++	long nr;
++	long new_nr;
++	long batch_size = shrinker->batch ? shrinker->batch
++					  : SHRINK_BATCH;
++
++	/*
++	 * copy the current shrinker scan count into a local variable
++	 * and zero it so that other concurrent shrinker invocations
++	 * don't also do this scanning work.
++	 */
++	do {
++		nr = shrinker->nr;
++	} while (cmpxchg(&shrinker->nr, nr, 0) != nr);
++
++	total_scan = nr;
++	max_pass = do_shrinker_shrink(shrinker, shrink, 0);
++	delta = (4 * nr_pages_scanned) / shrinker->seeks;
++	delta *= max_pass;
++	do_div(delta, lru_pages + 1);
++	total_scan += delta;
++	if (total_scan < 0) {
++		printk(KERN_ERR "shrink_slab: %pF negative objects to "
++		       "delete nr=%ld\n",
++		       shrinker->shrink, total_scan);
++		total_scan = max_pass;
++	}
++
++	/*
++	 * We need to avoid excessive windup on filesystem shrinkers
++	 * due to large numbers of GFP_NOFS allocations causing the
++	 * shrinkers to return -1 all the time. This results in a large
++	 * nr being built up so when a shrink that can do some work
++	 * comes along it empties the entire cache due to nr >>>
++	 * max_pass.  This is bad for sustaining a working set in
++	 * memory.
++	 *
++	 * Hence only allow the shrinker to scan the entire cache when
++	 * a large delta change is calculated directly.
++	 */
++	if (delta < max_pass / 4)
++		total_scan = min(total_scan, max_pass / 2);
++
++	/*
++	 * Avoid risking looping forever due to too large nr value:
++	 * never try to free more than twice the estimate number of
++	 * freeable entries.
++	 */
++	if (total_scan > max_pass * 2)
++		total_scan = max_pass * 2;
++
++	trace_mm_shrink_slab_start(shrinker, shrink, nr,
++				nr_pages_scanned, lru_pages,
++				max_pass, delta, total_scan);
++
++	while (total_scan >= batch_size) {
++		int nr_before;
++
++		nr_before = do_shrinker_shrink(shrinker, shrink, 0);
++		shrink_ret = do_shrinker_shrink(shrinker, shrink,
++						batch_size);
++		if (shrink_ret == -1)
++			break;
++		if (shrink_ret < nr_before)
++			ret += nr_before - shrink_ret;
++		count_vm_events(SLABS_SCANNED, batch_size);
++		total_scan -= batch_size;
++
++		cond_resched();
++	}
++
++	/*
++	 * move the unused scan count back into the shrinker in a
++	 * manner that handles concurrent updates. If we exhausted the
++	 * scan, there is no need to do an update.
++	 */
++	do {
++		nr = shrinker->nr;
++		new_nr = total_scan + nr;
++		if (total_scan <= 0)
++			break;
++	} while (cmpxchg(&shrinker->nr, nr, new_nr) != nr);
++
++	trace_mm_shrink_slab_end(shrinker, shrink_ret, nr, new_nr);
++	return ret;
++}
++
  /*
+  * Call the shrink functions to age shrinkable caches
+  *
+@@ -247,93 +343,8 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+ 	}
+ 
+ 	list_for_each_entry(shrinker, &shrinker_list, list) {
+-		unsigned long long delta;
+-		unsigned long total_scan;
+-		unsigned long max_pass;
+-		int shrink_ret = 0;
+-		long nr;
+-		long new_nr;
+-		long batch_size = shrinker->batch ? shrinker->batch
+-						  : SHRINK_BATCH;
+-
+-		/*
+-		 * copy the current shrinker scan count into a local variable
+-		 * and zero it so that other concurrent shrinker invocations
+-		 * don't also do this scanning work.
+-		 */
+-		do {
+-			nr = shrinker->nr;
+-		} while (cmpxchg(&shrinker->nr, nr, 0) != nr);
+-
+-		total_scan = nr;
+-		max_pass = do_shrinker_shrink(shrinker, shrink, 0);
+-		delta = (4 * nr_pages_scanned) / shrinker->seeks;
+-		delta *= max_pass;
+-		do_div(delta, lru_pages + 1);
+-		total_scan += delta;
+-		if (total_scan < 0) {
+-			printk(KERN_ERR "shrink_slab: %pF negative objects to "
+-			       "delete nr=%ld\n",
+-			       shrinker->shrink, total_scan);
+-			total_scan = max_pass;
+-		}
+-
+-		/*
+-		 * We need to avoid excessive windup on filesystem shrinkers
+-		 * due to large numbers of GFP_NOFS allocations causing the
+-		 * shrinkers to return -1 all the time. This results in a large
+-		 * nr being built up so when a shrink that can do some work
+-		 * comes along it empties the entire cache due to nr >>>
+-		 * max_pass.  This is bad for sustaining a working set in
+-		 * memory.
+-		 *
+-		 * Hence only allow the shrinker to scan the entire cache when
+-		 * a large delta change is calculated directly.
+-		 */
+-		if (delta < max_pass / 4)
+-			total_scan = min(total_scan, max_pass / 2);
+-
+-		/*
+-		 * Avoid risking looping forever due to too large nr value:
+-		 * never try to free more than twice the estimate number of
+-		 * freeable entries.
+-		 */
+-		if (total_scan > max_pass * 2)
+-			total_scan = max_pass * 2;
+-
+-		trace_mm_shrink_slab_start(shrinker, shrink, nr,
+-					nr_pages_scanned, lru_pages,
+-					max_pass, delta, total_scan);
+-
+-		while (total_scan >= batch_size) {
+-			int nr_before;
+-
+-			nr_before = do_shrinker_shrink(shrinker, shrink, 0);
+-			shrink_ret = do_shrinker_shrink(shrinker, shrink,
+-							batch_size);
+-			if (shrink_ret == -1)
+-				break;
+-			if (shrink_ret < nr_before)
+-				ret += nr_before - shrink_ret;
+-			count_vm_events(SLABS_SCANNED, batch_size);
+-			total_scan -= batch_size;
+-
+-			cond_resched();
+-		}
+-
+-		/*
+-		 * move the unused scan count back into the shrinker in a
+-		 * manner that handles concurrent updates. If we exhausted the
+-		 * scan, there is no need to do an update.
+-		 */
+-		do {
+-			nr = shrinker->nr;
+-			new_nr = total_scan + nr;
+-			if (total_scan <= 0)
+-				break;
+-		} while (cmpxchg(&shrinker->nr, nr, new_nr) != nr);
+-
+-		trace_mm_shrink_slab_end(shrinker, shrink_ret, nr, new_nr);
++		ret += shrink_one_shrinker(shrinker, shrink,
++					   nr_pages_scanned, lru_pages);
+ 	}
+ 	up_read(&shrinker_rwsem);
+ out:
+-- 
+1.7.6
 
