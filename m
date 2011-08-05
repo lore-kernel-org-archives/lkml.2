@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab1HEQPY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 12:15:24 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49065 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753623Ab1HEQPW (ORCPT
+	id S1756884Ab1HEQS2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 12:18:28 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:40486 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754549Ab1HEQS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 12:15:22 -0400
-Date: Sat, 6 Aug 2011 01:15:13 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Liam Girdwood <lrg@ti.com>,
-        Chris Ball <cjb@laptop.org>, "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 1/3] irq: If an IRQ is a GPIO, request and configure it
-Message-ID: <20110805161511.GB3438@opensource.wolfsonmicro.com>
-References: <1312498820-2275-1-git-send-email-swarren@nvidia.com>
- <1312498820-2275-2-git-send-email-swarren@nvidia.com>
- <20110805000148.GB13321@opensource.wolfsonmicro.com>
- <74CDBE0F657A3D45AFBB94109FB122FF049F171EC1@HQMAIL01.nvidia.com>
- <20110805053510.GA16956@opensource.wolfsonmicro.com>
- <74CDBE0F657A3D45AFBB94109FB122FF049F171EF4@HQMAIL01.nvidia.com>
+	Fri, 5 Aug 2011 12:18:27 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: HIKGUo4VM1ljkSPD_68kmqNH.J8UuXXXcwpEfv4W0YDP83x
+ eGDx0i6NswMlzVU.vSavZy.b9g0FbZdyAV5xAFaryEc0.tF_BoRR2DTmW1y7
+ bgJDWpdICONxsx3sWTxiQaxMp2i1s8k8Vd0W0F6IRMxivq4xAnIqWBy9fU3q
+ yc_hpwD4OOK25xbKX69IILZTYNXFXK.wsilrAHMqBU0mFPIZJqUu9sRLqIUo
+ vw9bFpKXkidL9.ivai.VbxwFA_UW6maDu41wg0Q919L7a4yvcOs8KNK2iYlY
+ nxUmeoya4gldw9pzSqKldzIwwTOdDLmG55gs.U9bq4WzAe2z3k7thWTDC27v
+ zHHKFqIqRqz.YCd92xqYTBjuj_5rTsZ0CWU3ZgKGg.dowpDuap04eqRCZxhG
+ qCDJ_CVVbZLXpEJMIaOordA--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 5 Aug 2011 11:18:24 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Ingo Molnar <mingo@elte.hu>
+cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [x86] Fix prefetch instruction
+Message-ID: <alpine.DEB.2.00.1108051116520.28580@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF049F171EF4@HQMAIL01.nvidia.com>
-X-Cookie: Q:	How do you keep a moron in suspense?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 05, 2011 at 08:29:38AM -0700, Stephen Warren wrote:
-> Mark Brown wrote at Thursday, August 04, 2011 11:35 PM:
+The prefetchnta instruction used for prefetching on x86 is a special instruction
+used for streaming that is usually used to avoid polluting the l2 and l3 caches.
+The cacheline will be evicted rapidly.
 
-> > But it's not a bug to use a GPIO as an IRQ source, otherwise we wouldn't
-> > have gpio_to_irq() in the first place.
+What we need is a prefetch that puts the cacheline in all levels of the cache hierachy instead.
+Change the instruction to do that.
 
-> 2) Two pieces of unrelated code somehow accidentally get a GPIO and IRQ
-> number that map to the same resource, e.g. due to incorrect board files or
-> Device Tree content. This is probably a bug, but ends up looking exactly
-> the same as far as the IRQ code's gpio_request call failing in the patch I
-> posted.
+Acked-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Right, but this doesn't mean we can break the legitimate users to catch
-the buggy ones.
+
+---
+ arch/x86/include/asm/processor.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6/arch/x86/include/asm/processor.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/processor.h	2011-08-04 13:12:39.000000000 -0500
++++ linux-2.6/arch/x86/include/asm/processor.h	2011-08-04 13:16:31.000000000 -0500
+@@ -829,7 +829,7 @@ extern char			ignore_fpu_irq;
+ static inline void prefetch(const void *x)
+ {
+ 	alternative_input(BASE_PREFETCH,
+-			  "prefetchnta (%1)",
++			  "prefetcht0 (%1)",
+ 			  X86_FEATURE_XMM,
+ 			  "r" (x));
+ }
