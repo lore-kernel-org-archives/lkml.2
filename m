@@ -1,110 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099Ab1HELZg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 07:25:36 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:48528 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753914Ab1HELZf (ORCPT
+	id S1756190Ab1HEL0C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 07:26:02 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57415 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753914Ab1HEL0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 07:25:35 -0400
-Date: Fri, 05 Aug 2011 04:25:32 -0700 (PDT)
-Message-Id: <20110805.042532.69526399598685175.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 05 Aug 2011 04:25:33 -0700 (PDT)
+	Fri, 5 Aug 2011 07:26:00 -0400
+From: Hrishikesh Bhandiwad <hrishikesh.b@ti.com>
+To: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>
+CC: Hrishikesh Bhandiwad <hrishikesh.b@ti.com>
+Subject: [PATCH] AM3517: NAND: Adding NAND support and specifying NAND partitions.
+Date: Fri, 5 Aug 2011 16:55:49 +0530
+Message-ID: <1312543549-31869-1-git-send-email-hrishikesh.b@ti.com>
+X-Mailer: git-send-email 1.6.2.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds the NAND support on AM3517 platform and creates the partitions.
+Referred to file: arch/arm/mach-omap2/board-omap3beagle.c
 
-Just a few more Niagara T3 refinements as well as several
-bug fixes, including:
+Signed-off-by: Hrishikesh Bhandiwad <hrishikesh.b@ti.com>
+---
+ arch/arm/mach-omap2/board-am3517evm.c |   38 +++++++++++++++++++++++++++++++++
+ 1 files changed, 38 insertions(+), 0 deletions(-)
 
-1) On sun4v we need to access the TSB using physical addresses otherwise
-   we can read/write different data than what the hypervisor and/or
-   the hardware TSB walker does.
+diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
+index 63af417..dceb996 100644
+--- a/arch/arm/mach-omap2/board-am3517evm.c
++++ b/arch/arm/mach-omap2/board-am3517evm.c
+@@ -24,6 +24,8 @@
+ #include <linux/i2c/pca953x.h>
+ #include <linux/can/platform/ti_hecc.h>
+ #include <linux/davinci_emac.h>
++#include <linux/mtd/partitions.h>
++#include <linux/mtd/nand.h>
+ 
+ #include <mach/hardware.h>
+ #include <mach/am35xx.h>
+@@ -39,6 +41,7 @@
+ 
+ #include "mux.h"
+ #include "control.h"
++#include "common-board-devices.h"
+ 
+ #define AM35XX_EVM_MDIO_FREQUENCY	(1000000)
+ 
+@@ -460,6 +463,37 @@ static void am3517_evm_hecc_init(struct ti_hecc_platform_data *pdata)
+ static struct omap_board_config_kernel am3517_evm_config[] __initdata = {
+ };
+ 
++static struct mtd_partition am3517_nand_partitions[] = {
++	/* All the partition sizes are listed in terms of NAND block size */
++	{
++		.name		= "X-Loader",
++		.offset		= 0,
++		.size		= 4 * NAND_BLOCK_SIZE,
++		.mask_flags	= MTD_WRITEABLE,	/* force read-only */
++	},
++	{
++		.name		= "U-Boot",
++		.offset		= MTDPART_OFS_APPEND,	/* Offset = 0x80000 */
++		.size		= 15 * NAND_BLOCK_SIZE,
++		.mask_flags	= MTD_WRITEABLE,        /* force read-only */
++	},
++	{
++		.name		= "U-Boot Env",
++		.offset		= MTDPART_OFS_APPEND,	/* Offset = 0x260000 */
++		.size		= 1 * NAND_BLOCK_SIZE,
++	},
++	{
++		.name		= "Kernel",
++		.offset		= MTDPART_OFS_APPEND,	/* Offset = 0x280000 */
++		.size		= 32 * NAND_BLOCK_SIZE,
++	},
++	{
++		.name		= "File System",
++		.offset		= MTDPART_OFS_APPEND,	/* Offset = 0x680000 */
++		.size		= MTDPART_SIZ_FULL,
++	},
++};
++
+ static void __init am3517_evm_init(void)
+ {
+ 	omap_board_config = am3517_evm_config;
+@@ -473,6 +507,10 @@ static void __init am3517_evm_init(void)
+ 	/* Configure GPIO for EHCI port */
+ 	omap_mux_init_gpio(57, OMAP_PIN_OUTPUT);
+ 	usbhs_init(&usbhs_bdata);
++	/*NAND*/
++	omap_nand_flash_init(NAND_BUSWIDTH_16, am3517_nand_partitions,
++				ARRAY_SIZE(am3517_nand_partitions));
++
+ 	am3517_evm_hecc_init(&am3517_evm_hecc_pdata);
+ 	/* DSS */
+ 	am3517_evm_display_init();
+-- 
+1.6.2.4
+This patch has dependency on following patchset :
+http://marc.info/?l=linux-omap&m=131247357813228&w=2
 
-2) sparc32 __atomic_add_unless return value needs correction, from
-   Josip Rodin.
-
-3) Sun4v cpu mondo queue sizes could be way too large, and we'd fail
-   to allocate them because the page allocation order would exceed
-   MAX_ORDER.  Set a sane cap to fix the problem.
-
-4) Sam Ravnborg's patch to use kbuild-generic.
-
-5) Use the hypervisor interface to set the 'reboot-cmd' variable so
-   that rebooting into the correct image works even if the service
-   processor is dead or in degraded mode.
-
-Please pull, thanks a lot!
-
-The following changes since commit 140d0b2108faebc77c6523296e211e509cb9f5f9:
-
-  Do 'shm_init_ns()' in an early pure_initcall (2011-08-04 19:35:59 -1000)
-
-are available in the git repository at:
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc.git master
-
-David S. Miller (9):
-      sparc: Sanitize cpu feature detection and reporting.
-      sparc: Minor tweaks to Niagara page copy/clear.
-      sparc: Use popc if possible for hweight routines.
-      sparc: Use hweight64() in popc emulation.
-      sparc: Add some missing hypervisor API groups.
-      sparc: Set reboot-cmd using reboot data hypervisor call if available.
-      sparc: Use popc when possible for ffs/__ffs/ffz.
-      sparc: Access kernel TSB using physical addressing when possible.
-      sparc: Size mondo queues more sanely.
-
-Josip Rodin (1):
-      sparc: Fix __atomic_add_unless() return value.
-
-Sam Ravnborg (1):
-      sparc: use kbuild-generic support for true asm-generic header files
-
- arch/sparc/include/asm/Kbuild       |    5 +
- arch/sparc/include/asm/bitops_64.h  |   49 ++--------
- arch/sparc/include/asm/div64.h      |    1 -
- arch/sparc/include/asm/elf_64.h     |   65 ++++++-------
- arch/sparc/include/asm/hypervisor.h |   13 +++
- arch/sparc/include/asm/irq_regs.h   |    1 -
- arch/sparc/include/asm/local.h      |    6 -
- arch/sparc/include/asm/local64.h    |    1 -
- arch/sparc/include/asm/tsb.h        |   51 +++++-----
- arch/sparc/kernel/cpu.c             |    1 +
- arch/sparc/kernel/ds.c              |   30 +++++-
- arch/sparc/kernel/entry.h           |   14 +++
- arch/sparc/kernel/head_64.S         |    2 +-
- arch/sparc/kernel/hvapi.c           |    6 +
- arch/sparc/kernel/hvcalls.S         |    7 ++
- arch/sparc/kernel/kernel.h          |   15 +++
- arch/sparc/kernel/ktlb.S            |   24 +++---
- arch/sparc/kernel/mdesc.c           |   30 +++++--
- arch/sparc/kernel/setup_64.c        |  186 +++++++++++++++++++++++++++++++++++
- arch/sparc/kernel/sparc_ksyms_64.c  |   11 ++
- arch/sparc/kernel/sstate.c          |    9 +--
- arch/sparc/kernel/unaligned_64.c    |   15 +--
- arch/sparc/kernel/vmlinux.lds.S     |   21 ++++-
- arch/sparc/lib/Makefile             |    4 +-
- arch/sparc/lib/NG2page.S            |   61 ------------
- arch/sparc/lib/NGpage.S             |  114 ++++++++++++++-------
- arch/sparc/lib/atomic32.c           |    2 +-
- arch/sparc/lib/ffs.S                |   84 ++++++++++++++++
- arch/sparc/lib/hweight.S            |   51 ++++++++++
- arch/sparc/mm/init_64.c             |   40 +++++++-
- 30 files changed, 661 insertions(+), 258 deletions(-)
- delete mode 100644 arch/sparc/include/asm/div64.h
- delete mode 100644 arch/sparc/include/asm/irq_regs.h
- delete mode 100644 arch/sparc/include/asm/local.h
- delete mode 100644 arch/sparc/include/asm/local64.h
- delete mode 100644 arch/sparc/lib/NG2page.S
- create mode 100644 arch/sparc/lib/ffs.S
- create mode 100644 arch/sparc/lib/hweight.S
