@@ -1,54 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab1HEPvI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 11:51:08 -0400
-Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.32]:34264 "EHLO
-	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753552Ab1HEPvD (ORCPT
+	id S1756804Ab1HEPvr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 11:51:47 -0400
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:20906 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753552Ab1HEPvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 11:51:03 -0400
-Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
-X-Authority-Analysis: v=1.1 cv=QcSFu2tMqX8VyBnwf4xZriMeG3TVj1s8v1Rcea0EwGI= c=1 sm=0 a=I7fHHdvOj7QA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:17 a=E3JUflbP-Z-PLmnorkwA:9 a=_y-yNVsX3OwVeKDXip8A:7 a=CjuIK1q_8ugA:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.79.195.91
-From: "Bob Pearson" <rpearson@systemfabricworks.com>
-To: "'Joakim Tjernlund'" <joakim.tjernlund@transmode.se>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'frank zago'" <fzago@systemfabricworks.com>,
-        <linux-kernel@vger.kernel.org>
-References: <OF4AE0115F.3AA5397E-ONC12578DF.002EC6DF-C12578DF.003348E5@transmode.se> <01dc01cc5159$317879a0$94696ce0$@systemfabricworks.com> <OF83CC7C9C.07EC5D4A-ONC12578E2.0024F5AE-C12578E2.004163C1@transmode.se> <019501cc52d7$c8688100$59398300$@systemfabricworks.com> <OF14136E0E.3F2388EF-ONC12578E3.00301969-C12578E3.00338524@transmode.se>
-In-Reply-To: <OF14136E0E.3F2388EF-ONC12578E3.00301969-C12578E3.00338524@transmode.se>
-Subject: RE: [PATCH] add slice by 8 algorithm to crc32.c
-Date: Fri, 5 Aug 2011 10:51:00 -0500
-Message-ID: <023b01cc5387$79b09dd0$6d11d970$@systemfabricworks.com>
+	Fri, 5 Aug 2011 11:51:46 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: abwcqo0VM1mygPWhJbkn4GIXryaJYmbMTdmDAUNO53NJG9I
+ 21m0sGBh6CfQ1kdLy21UU9UkqcjG31dBPV0v8tiq.bxVL2QnAOmhhI5tgKXs
+ dwoVeqJYdZ9wZYJ9AbyQi9drluyNFDTmrwxQOmDCD4808GRvWDZdIZ9ohkGU
+ BNpJ2FMDSxNRBASww3evi.gLq4qwDR2ZE19bGfFUmWcxvJ0qhLo1t5iorseN
+ 7A2HvxX390owXNBQmFv3TyDpVj4GpVgGPtzM.J_y9Kvmb6tT2rg8d19YWkPz
+ 9e4FBKDYskWZHxLfW0E5DMHE08Uhd2mTxGm4qRSkwNKnqNXVCr8Q98NKhBTO
+ 3.kc7kIcQpM.mX7w2dAYxWxBTCHSOMW6CeadzxBs2w63SRg--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 5 Aug 2011 10:51:42 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mgorman@suse.de>
+cc: Xiaotian Feng <xtfeng@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: kernel BUG at mm/vmscan.c:1114
+In-Reply-To: <20110805125542.GW19099@suse.de>
+Message-ID: <alpine.DEB.2.00.1108051041580.27518@router.home>
+References: <CAJn8CcE20-co4xNOD8c+0jMeABrc1mjmGzju3xT34QwHHHFsUA@mail.gmail.com> <CAJn8CcG-pNbg88+HLB=tRr26_R+A0RxZEWsJQg4iGe4eY2noXA@mail.gmail.com> <20110802002226.3ff0b342.akpm@linux-foundation.org> <CAJn8CcGTwhAaqghqWOYN9mGvRZDzyd9UJbYARz7NGA-7NvFg9Q@mail.gmail.com>
+ <20110803085437.GB19099@suse.de> <CAJn8CcGGsdPdaJ7t_RcBmFOGgVLVjAP8Mr40Cv=FknLTNgBUsg@mail.gmail.com> <CAJn8CcE2BRhHO6qiu2JigdYsjc-igedaA_wu8w70YBbisQTgcQ@mail.gmail.com> <20110805091957.GV19099@suse.de> <CAJn8CcH35xhhAwaAouc15H7bYvOe2dYc4LmL+ymX-riaX8p_xg@mail.gmail.com>
+ <CAJn8CcEM6sa+s06ouL_eadtWpnsieKBupDeUM5R9gCbad3D6eQ@mail.gmail.com> <20110805125542.GW19099@suse.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-thread-index: AQDVh4pDc04B6RwbKPhJsZYe9rqqGgID1lG1AfPbjtABsy4QAgGPPXDLlsIrZTA=
-Content-Language: en-us
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811839-353538231-1312559503=:27518"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > version. While I haven't done the experiment you suggest there is
-> something
-> > to the point that the second q computation in the new version can be
-> moved
-> > ahead of the table lookups from the first q computation . My guess is
-that
-> > the unrolled version will be significantly slower.
-> 
-> Ah, didn't see that. Don't understand how this works though.
-> Why do you do two 32 bit loads instead of one 64 bit load?
-> 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+---1463811839-353538231-1312559503=:27518
+Content-Type: TEXT/PLAIN; charset=iso-8859-15
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+
+On Fri, 5 Aug 2011, Mel Gorman wrote:
+
+> > > This is interesting, I just change as following:
+> > >
+> > > diff --git a/mm/slub.c b/mm/slub.c
+> > > index eb5a8f9..616b78e 100644
+> > > --- a/mm/slub.c
+> > > +++ b/mm/slub.c
+> > > @@ -2104,8 +2104,9 @@ static void *__slab_alloc(struct kmem_cache *s,
+> > > gfp_t gfpflags, int node,
+> > > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0"__slab_alloc"));
+> > >
+> > > =A0 =A0 =A0 =A0if (unlikely(!object)) {
+> > > - =A0 =A0 =A0 =A0 =A0 =A0 =A0 c->page =3D NULL;
+> > > + =A0 =A0 =A0 =A0 =A0 =A0 =A0 //c->page =3D NULL;
+> > > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0stat(s, DEACTIVATE_BYPASS);
+> > > + =A0 =A0 =A0 =A0 =A0 =A0 =A0 deactivate_slab(s, c);
+> > > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0goto new_slab;
+> > > =A0 =A0 =A0 =A0}
+> > >
+> > > Then my system doesn't print any list corruption warnings and my buil=
+d
+> > > success then. So this means revert of 03e404af2 could cure this.
+> > > I'll do more test next week to see if the list corruption still exist=
+, thanks.
+> > >
 > >
+> > Sorry, please ignore it... My system corrupted before I went to leave .=
+=2E..
+> >
+>
+> Please continue the bisection in that case and establish for sure if the
+> problem is in that series or not. Thanks.
 
-The two expression trees can be computed in parallel and combined with the
-final xor. If the compiler/instruction scheduler are smart enough and can
-process enough instructions per cycle they overlap well and you get some
-speedup. I did try a 64 bit load on Nehalem but got about 2 cycles per byte
-which is a little worse than doing two loads and better than the 32 bit
-version. I'm not really sure why.
+The above fix should not affect anything since a per cpu slab
+is not on any partial lists. And since there are no objects remaining in
+the slab there is then also no point of putting it back. It wont be on
+any lists before and after the action so no list processing is needed.
 
+Hmmm.... There maybe a race with slab_free from a remote processor. I
+dont see any problem here since we convert the page from frozen to
+nonfrozen in __slab_alloc and __slab_free will ignore the partial list
+management if it sees it to be frozen.
+
+Maybe we need some memory barriers here. Right now we are relying on the
+cmpxchg_double for sync of the state in the page struct but we also need
+the c->page variable to be consistent with that state. But we disable
+interrupts in __slab_alloc so there are no races possible with slab_free
+only with remote __slab_free invocations which will not touch c->page.
+
+
+
+
+---1463811839-353538231-1312559503=:27518--
