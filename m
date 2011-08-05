@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab1HEFfR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 01:35:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59095 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754708Ab1HEFfN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 01:35:13 -0400
-Date: Fri, 5 Aug 2011 06:35:11 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Liam Girdwood <lrg@ti.com>,
-        Chris Ball <cjb@laptop.org>, "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 1/3] irq: If an IRQ is a GPIO, request and configure it
-Message-ID: <20110805053510.GA16956@opensource.wolfsonmicro.com>
-References: <1312498820-2275-1-git-send-email-swarren@nvidia.com> <1312498820-2275-2-git-send-email-swarren@nvidia.com> <20110805000148.GB13321@opensource.wolfsonmicro.com> <74CDBE0F657A3D45AFBB94109FB122FF049F171EC1@HQMAIL01.nvidia.com>
+	id S1756294Ab1HEFhZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 01:37:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45353 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751405Ab1HEFhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 01:37:23 -0400
+Date: Fri, 5 Aug 2011 05:37:12 GMT
+From: tip-bot for Andy Lutomirski <luto@mit.edu>
+Message-ID: <tip-1bdfac19b3ecfca545281c15c7aea7ebc2eaef31@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        luto@mit.edu, tglx@linutronix.de, hpa@linux.intel.com, luto@mit.edu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        luto@mit.edu, tglx@linutronix.de, hpa@linux.intel.com, luto@mit.edu
+In-Reply-To: <a63380a3c58a0506a2f5a18ba1b12dbde1f25e58.1312378163.git.luto@mit.edu>
+References: <a63380a3c58a0506a2f5a18ba1b12dbde1f25e58.1312378163.git.luto@mit.edu>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86-64: Pad vDSO to a page boundary
+Git-Commit-ID: 1bdfac19b3ecfca545281c15c7aea7ebc2eaef31
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF049F171EC1@HQMAIL01.nvidia.com>
-X-Cookie: Your aim is high and to the right.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 05 Aug 2011 05:37:13 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 08:53:34PM -0700, Stephen Warren wrote:
+Commit-ID:  1bdfac19b3ecfca545281c15c7aea7ebc2eaef31
+Gitweb:     http://git.kernel.org/tip/1bdfac19b3ecfca545281c15c7aea7ebc2eaef31
+Author:     Andy Lutomirski <luto@MIT.EDU>
+AuthorDate: Wed, 3 Aug 2011 09:31:49 -0400
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 4 Aug 2011 16:13:34 -0700
 
-> Well, things break. This is essentially the problem I was describing in
-> the PATCH 0 email, just with a slightly different motivation.
+x86-64: Pad vDSO to a page boundary
 
-There's a bunch of existing code using that idiom.
+This avoids an information leak to userspace.
 
-> I suppose that an alternative here would be to simply ignore any errors
-> from gpio_request. This might have the benefit of removing the need for
-> the other two patches I posted in the series. However, it seems a little
-> dirty; one benefit of the IRQ code calling gpio_request and honoring
-> errors would be to detect when some completely unrelated code had a bug
-> and had called gpio_request on the GPIO before. Such detection would be
-> non-existent if we don't error out on gpio_request. Perhaps some mechanism
-> is needed to indicate that the driver has explicitly already called
-> gpio_request for a legitimate shared purpose, and only then ignore
-> errors?
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
+Link: http://lkml.kernel.org/r/a63380a3c58a0506a2f5a18ba1b12dbde1f25e58.1312378163.git.luto@mit.edu
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/vdso/vdso.S |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-But it's not a bug to use a GPIO as an IRQ source, otherwise we wouldn't
-have gpio_to_irq() in the first place.  Feels like we need a backchannel
-between gpiolib and the IRQ code to do this.  Or perhaps the drivers
-that implement this should be taking care of setting up the GPIO mode?
+diff --git a/arch/x86/vdso/vdso.S b/arch/x86/vdso/vdso.S
+index 1b979c1..01f5e3b 100644
+--- a/arch/x86/vdso/vdso.S
++++ b/arch/x86/vdso/vdso.S
+@@ -9,6 +9,7 @@ __PAGE_ALIGNED_DATA
+ vdso_start:
+ 	.incbin "arch/x86/vdso/vdso.so"
+ vdso_end:
++	.align PAGE_SIZE /* extra data here leaks to userspace. */
+ 
+ .previous
+ 
