@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755283Ab1HEVBJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 17:01:09 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:64541 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab1HEVBF convert rfc822-to-8bit (ORCPT
+	id S1755891Ab1HEVBU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 17:01:20 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:53334 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab1HEVBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 17:01:05 -0400
+	Fri, 5 Aug 2011 17:01:07 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6429"; a="108261127"
+Message-ID: <3f4665f1a191945db7c1711ecd154509.squirrel@www.codeaurora.org>
+Date: Fri, 5 Aug 2011 14:01:03 -0700 (PDT)
+Subject: kdump: Trouble reading /dev/oldmem from capture kernel
+From: "Seemanta Dutta" <seemanta@codeaurora.org>
+To: linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-In-Reply-To: <20110805205222.GK5782@one.firstfloor.org>
-References: <20110805200945.GA14014@tassilo.jf.intel.com> <4E3C5154.2050307@zytor.com>
- <CAObL_7E3yOHtx9N3qd2UXVn+h6tACoNjekRhiMcHrzb=Mu4q8A@mail.gmail.com>
- <4E3C571C.1070903@zytor.com> <20110805205222.GK5782@one.firstfloor.org>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Fri, 5 Aug 2011 17:00:44 -0400
-X-Google-Sender-Auth: fmTgL-znIUIeqd-kVSHjGv5VHEQ
-Message-ID: <CAObL_7G2TqBVXvfuh2GPNteYBNoc8_s398KS+jPOPQYAhPHz0Q@mail.gmail.com>
-Subject: Re: New vsyscall emulation breaks JITs
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        lueckintel@yahoo.com, kimwooyoung@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 5, 2011 at 4:52 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> On Fri, Aug 05, 2011 at 01:48:28PM -0700, H. Peter Anvin wrote:
->> On 08/05/2011 01:45 PM, Andrew Lutomirski wrote:
->> >
->> > hpa: time is supported (as of 3.0) by the vdso, and very new glibc
->> > uses the vdso version.  We could add a native time implementation back
->> > to the vsyscall page without too much pain as a short-term fix, but
->> > that would be less than ideal.
->> >
->>
->> How new does glibc have to be?
->
-> Mine from May 17 doesn't support it.
+Greetings kernel hackers,
 
-c738465a4c13370f58b797a82cdf1c67e1121867 from May 28.
+I am trying to dump the raw memory from the /dev/oldmem device from within
+a kexec()'ed capture kernel. But it seems to be that I can only read 4k of
+data from /dev/oldmem. I am following the kdump documentation given in:
+http://www.mjmwired.net/kernel/Documentation/kdump/. And according to the
+documentation in the above link, /dev/oldmem *should* present the raw view
+of memory.
 
->
->> How much of a pain would it be to make the legacy vs emulated vsyscall
->> page a config option?
->
-> CONFIG_DONT_BREAK_MY_BINARIES?
->
+Some details about my scenario:
+1. Production kernel panics, and I boot into the dump capture kernel
+without any issues.
 
-If gettimeofday could be a pure syscall fallback, then it wouldn't be
-so bad.  With the vread_tsc changes, the vsyscall page can't directly
-call ->vread anymore, and making *that* conditional would be rather
-ugly.
+2. Dump capture kernel provides two interfaces to access 'old' kernel
+memory (as per kdump dpcumentation): /dev/oldmem and /proc/vmcore. The
+latter works perfectly. But I am more interested in the raw memory, rather
+than the core file.
 
-> If anything runtime, but really for me it looks like the vsyscall
-> changes should be only in one of those limited compability paranoia
-> patchkits.
+My expectation in this scenario was that I would be able to access entire
+physical RAM using the /dev/oldmem device. But turns out, I can't.
 
-Switching it in runtime would be a giant mess because user code might
-be executing from the vsyscall page while we try to switch it.
-Switching at boot time might not be so bad.  We'd just compile the
-emulation code in unconditionally but have a fallback page that we
-could map if needed.
+I would be grateful if anyone pointed out if I was doing something wrong
+or missing something.
 
-I also filed this issue:
-https://code.google.com/p/dynamorio/issues/detail?id=530
+This is happening over ARM. Could that have to do something with this ?
+Not sure if the ARM integration of KDUMP/KEXEC has something to do with
+it.
 
---Andy
+Your help would be greatly appreciated!
+
+regards,
+Seemanta
+
+--
+
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+
+
