@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704Ab1HEHzn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 03:55:43 -0400
-Received: from trinity.fluff.org ([89.16.178.74]:53810 "EHLO trinity.fluff.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750862Ab1HEHzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 03:55:41 -0400
-Date: Fri, 5 Aug 2011 08:55:00 +0100
-From: Ben Dooks <ben@trinity.fluff.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>,
-        ccross@android.com, olof@lixom.net, alsa-devel@alsa-project.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 0/3] If an IRQ is a GPIO, request and configure it
-Message-ID: <20110805075500.GC28651@trinity.fluff.org>
-References: <1312498820-2275-1-git-send-email-swarren@nvidia.com>
+	id S1754092Ab1HEH4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 03:56:12 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:45050 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298Ab1HEH4K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 03:56:10 -0400
+From: Oliver Neukum <oliver@neukum.org>
+To: Hans de Goede <hdegoede@redhat.com>
+Subject: Re: USB mini-summit at LinuxCon Vancouveroliver
+Date: Fri, 5 Aug 2011 09:59:00 +0200
+User-Agent: KMail/1.13.5 (Linux/3.0.0-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Greg KH <greg@kroah.com>, Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        libusb-devel@lists.sourceforge.net, Alexander Graf <agraf@suse.de>,
+        Gerd Hoffmann <kraxel@redhat.com>, hector@marcansoft.com,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
+        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Theodore Kilgore <kilgota@banach.math.auburn.edu>,
+        Adam Baker <linux@baker-net.org.uk>
+References: <20110610002103.GA7169@xanatos> <20110804225603.GA2557@kroah.com> <4E3B9FB4.30709@redhat.com>
+In-Reply-To: <4E3B9FB4.30709@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312498820-2275-1-git-send-email-swarren@nvidia.com>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@trinity.fluff.org
-X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108050959.00873.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 05:00:17PM -0600, Stephen Warren wrote:
-> In http://www.spinics.net/lists/linux-tegra/msg01731.html, Mark Brown
-> pointed out that it was a little silly forcing every board or driver
-> to gpio_request() a GPIO that is later converted to an IRQ, and passed
-> to request_irq. The first patch in this series instead makes the core
-> IRQ code perform these calls when appropriate, to avoid duplicating it
-> everywhere.
+Am Freitag, 5. August 2011, 09:45:56 schrieb Hans de Goede:
+> This is the issue on which I feel a bit stonewalled. Simple putting your
+> fingers in your ears and singing la la la do it in userspace is not going
+> to cut it here. There is no way to do this race free in userspace, unless
+> all possible callers of mount get modified. Moreover 99% of the necessary
+> accounting for this is already done in the kernel. We already have the notion
+> of a block device being in use. We simply need to add some code to pass
+> this notion to the usb mass storage driver, and add a new try_disconnect
+> callback for usb drivers. I'm not saying this is going to be completely
+> straight forward, but it ain't rocket science either. And it so very
+> obviously is the right thing to do, that I'm getting very tired of
+> the do it in userspace song I keep hearing.
 
-Interesting, as this is not the case across all the ARM systems, as
-I believe that many of the s3c24xx do not bother to request the GPIOs
-before using them as interrupts.
- 
-> However, this change has the potential for significant regressions; at
-> least some drivers are already calling gpio_request for GPIOs that are
-> also used as IRQs. This then causes the gpio_request inside the core IRQ
-> code to fail, which causes functional regressions. I'm not sure how wide-
-> spread this issue is, but in testing on NVIDIA Tegra, I found two
-> instances that needed to be fixed. Perhaps  a failure of gpio_request
-> in the core IRQ code should trigger a WARN rather than returning an
-> error, to give a grace period for conversion of other code?
+Doing a try_disconnect() would also solve the dual camera issue.
+But it doesn't really interfere with the user space vs. kernel space
+issue. You simply have to expand the ioctl interface to have
+an ioctl that triggers this API call in the kernel.
 
-Do we really need to request the GPIO? I suppose it is useful to stop
-someone else trying to play with it...
+A V4L2 device would return an error if its device node is opened,
+otherwise disconnect.
 
-Another interesting problem is to do with using an GPIO that has been
-assigned to an interrupt as a readable resource in the driver, since
-the 
+	Regards
+		Oliver
 
-I would also consider that the implementor of the IRQs set_type configure
-the specific GPIO to the correct mode for operating as an interrupt when
-it is called... this would reduce any problems of passing GPIOs to drivers
-(especially if device tree is being used) to avoid having to do any
-arch-specific mode calls.
- 
-> Stephen Warren (3):
->   irq: If an IRQ is a GPIO, request and configure it
->   mmc: tegra: Don't gpio_request GPIOs used as IRQs.
->   ASoC: jack_add_gpios: Don't gpio_request GPIOs used as IRQs.
-> 
->  drivers/mmc/host/sdhci-tegra.c |    8 --------
->  kernel/irq/manage.c            |   25 +++++++++++++++++++++++--
->  sound/soc/soc-jack.c           |   13 +------------
->  3 files changed, 24 insertions(+), 22 deletions(-)
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
--- 
-Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
-
-Large Hadron Colada: A large Pina Colada that makes the universe disappear.
-
+		
