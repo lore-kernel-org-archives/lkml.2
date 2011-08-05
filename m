@@ -1,72 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab1HEW5I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 18:57:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44269 "EHLO mail.zytor.com"
+	id S1756902Ab1HEW6n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 18:58:43 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56366 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756868Ab1HEW5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 18:57:05 -0400
-Message-ID: <4E3C7520.1060808@zytor.com>
-Date: Fri, 05 Aug 2011 15:56:32 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1752191Ab1HEW6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 18:58:38 -0400
+Date: Fri, 5 Aug 2011 22:58:29 GMT
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+Message-ID: <tip-dfb09f9b7ab03fd367740e541a5caf830ed56726@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, hpa@linux.intel.com, borislav.petkov@amd.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com, borislav.petkov@amd.com
+In-Reply-To: <1312550110-24160-2-git-send-email-bp@amd64.org>
+References: <1312550110-24160-2-git-send-email-bp@amd64.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpu] x86, amd: Avoid cache aliasing penalties on AMD family 15h
+Git-Commit-ID: dfb09f9b7ab03fd367740e541a5caf830ed56726
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v3.2 3/3] x86, AMD: Move BSP code to cpu_dev helper
-References: <1312550110-24160-1-git-send-email-bp@amd64.org> <4E3C2405.8090309@zytor.com> <20110805175522.GA26217@aftab> <20110805180409.GC26217@aftab> <4E3C4D8C.1010709@zytor.com> <20110805225207.GA27866@aftab>
-In-Reply-To: <20110805225207.GA27866@aftab>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 05 Aug 2011 22:58:30 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2011 03:52 PM, Borislav Petkov wrote:
-> On Fri, Aug 05, 2011 at 04:07:40PM -0400, H. Peter Anvin wrote:
->> On 08/05/2011 11:04 AM, Borislav Petkov wrote:
->>> Move code which is run once on the BSP during boot into the cpu_dev
->>> helper.
->>> +static void __cpuinit bsp_init_amd(struct cpuinfo_x86 *c)
->>> +{
->>> +	if (static_cpu_has(X86_FEATURE_CONSTANT_TSC)) {
->>> +
->>
->> You can't use static_cpu_has() here, since this code runs before
->> alternatives -- it will always be false.  Furthermore, for code that
->> only runs once, it is never a win to do patching.
-> 
-> Oh crap, this is a leftover from when run_on_bsp was struct
-> x86_cpuinit_ops member with no args. And I f*cked it up even then
-> although I went and got myself a pointer to boot_cpu_data:
-> 
+Commit-ID:  dfb09f9b7ab03fd367740e541a5caf830ed56726
+Gitweb:     http://git.kernel.org/tip/dfb09f9b7ab03fd367740e541a5caf830ed56726
+Author:     Borislav Petkov <borislav.petkov@amd.com>
+AuthorDate: Fri, 5 Aug 2011 15:15:08 +0200
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 5 Aug 2011 12:26:44 -0700
 
-I fixed it up directly.
+x86, amd: Avoid cache aliasing penalties on AMD family 15h
 
-> 
->> Arguably bsp_init should be __init and not __cpuinit, but I don't know
->> how to make that work with the machinery, and is something that can be
->> fixed anyway.
-> 
-> Yeah, how do we do that? struct cpu_dev is __cpuinitconst,
-> x86_cpuinit_ops is __cpuinitdata.
-> 
-> We could add it to identify_boot_cpu() - there's already some per-vendor
-> stuff like init_amd_e400_c1e_mask() which wouldn't hurt to be behind a
-> vendor check. early_identify_cpu() does already the vendor check with
-> get_cpu_vendor() so later, in identify_cpu() we could add a run_on_bsp()
-> which is __init and switch/case on the ->x86_vendor inside.
-> 
-> Then we can collect all the run-once-on-the-BSP code in there.
-> 
-> Hmmm..
-> 
+This patch provides performance tuning for the "Bulldozer" CPU. With its
+shared instruction cache there is a chance of generating an excessive
+number of cache cross-invalidates when running specific workloads on the
+cores of a compute module.
 
-As I said, we can fix this up incrementally.
+This excessive amount of cross-invalidations can be observed if cache
+lines backed by shared physical memory alias in bits [14:12] of their
+virtual addresses, as those bits are used for the index generation.
 
-	-hpa
+This patch addresses the issue by clearing all the bits in the [14:12]
+slice of the file mapping's virtual address at generation time, thus
+forcing those bits the same for all mappings of a single shared library
+across processes and, in doing so, avoids instruction cache aliases.
+
+It also adds the command line option "align_va_addr=(32|64|on|off)" with
+which virtual address alignment can be enabled for 32-bit or 64-bit x86
+individually, or both, or be completely disabled.
+
+This change leaves virtual region address allocation on other families
+and/or vendors unaffected.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Link: http://lkml.kernel.org/r/1312550110-24160-2-git-send-email-bp@amd64.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ Documentation/kernel-parameters.txt |   13 ++++++
+ arch/x86/include/asm/elf.h          |   31 +++++++++++++
+ arch/x86/kernel/cpu/amd.c           |   13 ++++++
+ arch/x86/kernel/sys_x86_64.c        |   81 +++++++++++++++++++++++++++++++++-
+ arch/x86/mm/mmap.c                  |   15 ------
+ arch/x86/vdso/vma.c                 |    9 ++++
+ 6 files changed, 144 insertions(+), 18 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index aa47be7..af73c03 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -299,6 +299,19 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			behaviour to be specified.  Bit 0 enables warnings,
+ 			bit 1 enables fixups, and bit 2 sends a segfault.
+ 
++	align_va_addr=	[X86-64]
++			Align virtual addresses by clearing slice [14:12] when
++			allocating a VMA at process creation time. This option
++			gives you up to 3% performance improvement on AMD F15h
++			machines (where it is enabled by default) for a
++			CPU-intensive style benchmark, and it can vary highly in
++			a microbenchmark depending on workload and compiler.
++
++			1: only for 32-bit processes
++			2: only for 64-bit processes
++			on: enable for both 32- and 64-bit processes
++			off: disable for both 32- and 64-bit processes
++
+ 	amd_iommu=	[HW,X86-84]
+ 			Pass parameters to the AMD IOMMU driver in the system.
+ 			Possible values are:
+diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
+index f2ad216..5f962df 100644
+--- a/arch/x86/include/asm/elf.h
++++ b/arch/x86/include/asm/elf.h
+@@ -4,6 +4,7 @@
+ /*
+  * ELF register definitions..
+  */
++#include <linux/thread_info.h>
+ 
+ #include <asm/ptrace.h>
+ #include <asm/user.h>
+@@ -320,4 +321,34 @@ extern int syscall32_setup_pages(struct linux_binprm *, int exstack);
+ extern unsigned long arch_randomize_brk(struct mm_struct *mm);
+ #define arch_randomize_brk arch_randomize_brk
+ 
++/*
++ * True on X86_32 or when emulating IA32 on X86_64
++ */
++static inline int mmap_is_ia32(void)
++{
++#ifdef CONFIG_X86_32
++	return 1;
++#endif
++#ifdef CONFIG_IA32_EMULATION
++	if (test_thread_flag(TIF_IA32))
++		return 1;
++#endif
++	return 0;
++}
++
++/* The first two values are special, do not change. See align_addr() */
++enum align_flags {
++	ALIGN_VA_32	= BIT(0),
++	ALIGN_VA_64	= BIT(1),
++	ALIGN_VDSO	= BIT(2),
++	ALIGN_TOPDOWN	= BIT(3),
++};
++
++struct va_alignment {
++	int flags;
++	unsigned long mask;
++} ____cacheline_aligned;
++
++extern struct va_alignment va_align;
++extern unsigned long align_addr(unsigned long, struct file *, enum align_flags);
+ #endif /* _ASM_X86_ELF_H */
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index b13ed39..b0234bc 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -458,6 +458,19 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
+ 					"with P0 frequency!\n");
+ 		}
+ 	}
++
++	if (c->x86 == 0x15) {
++		unsigned long upperbit;
++		u32 cpuid, assoc;
++
++		cpuid	 = cpuid_edx(0x80000005);
++		assoc	 = cpuid >> 16 & 0xff;
++		upperbit = ((cpuid >> 24) << 10) / assoc;
++
++		va_align.mask	  = (upperbit - 1) & PAGE_MASK;
++		va_align.flags    = ALIGN_VA_32 | ALIGN_VA_64;
++
++	}
+ }
+ 
+ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
+index ff14a50..aaa8d09 100644
+--- a/arch/x86/kernel/sys_x86_64.c
++++ b/arch/x86/kernel/sys_x86_64.c
+@@ -18,6 +18,72 @@
+ #include <asm/ia32.h>
+ #include <asm/syscalls.h>
+ 
++struct __read_mostly va_alignment va_align = {
++	.flags = -1,
++};
++
++/*
++ * Align a virtual address to avoid aliasing in the I$ on AMD F15h.
++ *
++ * @flags denotes the allocation direction - bottomup or topdown -
++ * or vDSO; see call sites below.
++ */
++unsigned long align_addr(unsigned long addr, struct file *filp,
++			 enum align_flags flags)
++{
++	unsigned long tmp_addr;
++
++	/* handle 32- and 64-bit case with a single conditional */
++	if (va_align.flags < 0 || !(va_align.flags & (2 - mmap_is_ia32())))
++		return addr;
++
++	if (!(current->flags & PF_RANDOMIZE))
++		return addr;
++
++	if (!((flags & ALIGN_VDSO) || filp))
++		return addr;
++
++	tmp_addr = addr;
++
++	/*
++	 * We need an address which is <= than the original
++	 * one only when in topdown direction.
++	 */
++	if (!(flags & ALIGN_TOPDOWN))
++		tmp_addr += va_align.mask;
++
++	tmp_addr &= ~va_align.mask;
++
++	return tmp_addr;
++}
++
++static int __init control_va_addr_alignment(char *str)
++{
++	/* guard against enabling this on other CPU families */
++	if (va_align.flags < 0)
++		return 1;
++
++	if (*str == 0)
++		return 1;
++
++	if (*str == '=')
++		str++;
++
++	if (!strcmp(str, "32"))
++		va_align.flags = ALIGN_VA_32;
++	else if (!strcmp(str, "64"))
++		va_align.flags = ALIGN_VA_64;
++	else if (!strcmp(str, "off"))
++		va_align.flags = 0;
++	else if (!strcmp(str, "on"))
++		va_align.flags = ALIGN_VA_32 | ALIGN_VA_64;
++	else
++		return 0;
++
++	return 1;
++}
++__setup("align_va_addr", control_va_addr_alignment);
++
+ SYSCALL_DEFINE6(mmap, unsigned long, addr, unsigned long, len,
+ 		unsigned long, prot, unsigned long, flags,
+ 		unsigned long, fd, unsigned long, off)
+@@ -92,6 +158,9 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+ 	start_addr = addr;
+ 
+ full_search:
++
++	addr = align_addr(addr, filp, 0);
++
+ 	for (vma = find_vma(mm, addr); ; vma = vma->vm_next) {
+ 		/* At this point:  (!vma || addr < vma->vm_end). */
+ 		if (end - len < addr) {
+@@ -117,6 +186,7 @@ full_search:
+ 			mm->cached_hole_size = vma->vm_start - addr;
+ 
+ 		addr = vma->vm_end;
++		addr = align_addr(addr, filp, 0);
+ 	}
+ }
+ 
+@@ -161,10 +231,13 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+ 
+ 	/* make sure it can fit in the remaining address space */
+ 	if (addr > len) {
+-		vma = find_vma(mm, addr-len);
+-		if (!vma || addr <= vma->vm_start)
++		unsigned long tmp_addr = align_addr(addr - len, filp,
++						    ALIGN_TOPDOWN);
++
++		vma = find_vma(mm, tmp_addr);
++		if (!vma || tmp_addr + len <= vma->vm_start)
+ 			/* remember the address as a hint for next time */
+-			return mm->free_area_cache = addr-len;
++			return mm->free_area_cache = tmp_addr;
+ 	}
+ 
+ 	if (mm->mmap_base < len)
+@@ -173,6 +246,8 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+ 	addr = mm->mmap_base-len;
+ 
+ 	do {
++		addr = align_addr(addr, filp, ALIGN_TOPDOWN);
++
+ 		/*
+ 		 * Lookup failure means no vma is above this address,
+ 		 * else if new region fits below vma->vm_start,
+diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+index 1dab519..d4c0736 100644
+--- a/arch/x86/mm/mmap.c
++++ b/arch/x86/mm/mmap.c
+@@ -51,21 +51,6 @@ static unsigned int stack_maxrandom_size(void)
+ #define MIN_GAP (128*1024*1024UL + stack_maxrandom_size())
+ #define MAX_GAP (TASK_SIZE/6*5)
+ 
+-/*
+- * True on X86_32 or when emulating IA32 on X86_64
+- */
+-static int mmap_is_ia32(void)
+-{
+-#ifdef CONFIG_X86_32
+-	return 1;
+-#endif
+-#ifdef CONFIG_IA32_EMULATION
+-	if (test_thread_flag(TIF_IA32))
+-		return 1;
+-#endif
+-	return 0;
+-}
+-
+ static int mmap_is_legacy(void)
+ {
+ 	if (current->personality & ADDR_COMPAT_LAYOUT)
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index 7abd2be..caa42ce 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -69,6 +69,15 @@ static unsigned long vdso_addr(unsigned long start, unsigned len)
+ 	addr = start + (offset << PAGE_SHIFT);
+ 	if (addr >= end)
+ 		addr = end;
++
++	/*
++	 * page-align it here so that get_unmapped_area doesn't
++	 * align it wrongfully again to the next page. addr can come in 4K
++	 * unaligned here as a result of stack start randomization.
++	 */
++	addr = PAGE_ALIGN(addr);
++	addr = align_addr(addr, NULL, ALIGN_VDSO);
++
+ 	return addr;
+ }
+ 
