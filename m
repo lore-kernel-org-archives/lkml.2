@@ -1,101 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab1HEUp0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 16:45:26 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:45097 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065Ab1HEUpX convert rfc822-to-8bit (ORCPT
+	id S1753874Ab1HEUro (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 16:47:44 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:34148 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab1HEUrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 16:45:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E3C5154.2050307@zytor.com>
-References: <20110805200945.GA14014@tassilo.jf.intel.com> <4E3C5154.2050307@zytor.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Fri, 5 Aug 2011 16:45:02 -0400
-X-Google-Sender-Auth: eGcidA792d60CW5OvQM_dN_tJ4U
-Message-ID: <CAObL_7E3yOHtx9N3qd2UXVn+h6tACoNjekRhiMcHrzb=Mu4q8A@mail.gmail.com>
-Subject: Re: New vsyscall emulation breaks JITs
+	Fri, 5 Aug 2011 16:47:41 -0400
+Date: Fri, 5 Aug 2011 22:47:40 +0200
+From: Andi Kleen <andi@firstfloor.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+Cc: Andi Kleen <andi@firstfloor.org>, luto@mit.edu, x86@kernel.org,
         linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         lueckintel@yahoo.com, kimwooyoung@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: New vsyscall emulation breaks JITs
+Message-ID: <20110805204740.GJ5782@one.firstfloor.org>
+References: <20110805200945.GA14014@tassilo.jf.intel.com> <4E3C5154.2050307@zytor.com> <20110805202656.GI5782@one.firstfloor.org> <4E3C5460.90505@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E3C5460.90505@zytor.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 5, 2011 at 4:23 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 08/05/2011 01:09 PM, Andi Kleen wrote:
->>
->> Andy,
->>
->> We found that your new vsyscall emulation in
->>
->> commit 5cec93c216db77c45f7ce970d46283bcb1933884
->> Author: Andy Lutomirski <luto@MIT.EDU>
->> Date:   Sun Jun 5 13:50:24 2011 -0400
->>
->>     x86-64: Emulate legacy vsyscalls
->>
->> breaks JITs that execute x86 code and use the legacy vsyscalls.
->>
->> The problem is that the JIT translates the vsyscall page into
->> its code buffer and executes the "int 0xcc" there. Then
->> when the kernel gets the interrupt it doesn't see the vsyscall
->> page as the source and crashes the program.
->>
->> For some reason several modern executables also seem
->> to still use the old vsyscall page, so this problem can be hit
->> quickly.
->>
->> This happened with pin (http://www.pintool.org/), however
->> I expect it will affect all user space x86 JITs (valgrind,
->> dynamo, qemu-user, etc.)
->>
->> What to do? Right now this broke existing setups.
->>
->
-> I have to say I believe that trying to JIT the vdso or vsyscall pages is
-> extremely dubious at best.  They are fundamentally different from normal
-> user space in that the kernel can muck with them any time, without
-> notifying userspace about it.  The other aspect of this is that this is
-> about the legacy vsyscall page, which we're trying to get rid of, partly
-> because of security problems.
+On Fri, Aug 05, 2011 at 01:36:48PM -0700, H. Peter Anvin wrote:
+> On 08/05/2011 01:26 PM, Andi Kleen wrote:
+> >> I have to say I believe that trying to JIT the vdso or vsyscall pages is
+> >> extremely dubious at best.  They are fundamentally different from normal
+> >> user space in that the kernel can muck with them any time, without
+> >> notifying userspace about it.  The other aspect of this is that this is
+> >> about the legacy vsyscall page, which we're trying to get rid of, partly
+> >> because of security problems.
+> > 
+> > There's clear evidence now you can't: it's used even by new binaries.
+> 
+> time() is not supported by vdso; this is a problem.  Getting rid of it
+> is a long-term thing.
 
-Valgrind in particular is already smart enough not to JIT
-gettimeofday().  It crashes on the getcpu vsyscall with or without the
-vsyscall emulation patch, so we get off easy there.  (I haven't tried
-to debug it.)
+Yes you're right the problem is time. I set a breakpoint on the vsyscalls
+and I get:
 
-I suspect that qemu-user won't have this problem either because I
-doubt it looks into the vsyscall page in the first place.  Presumably
-it just maps the original program.  In any case, it's a full emulator,
-and I don't see why the host kernel should matter.
+(gdb) bt
+#0  0xffffffffff600400 in ?? ()
+#1  0x00007fffe4f703fd in time () at ../sysdeps/unix/sysv/linux/x86_64/time.S:36
+...
 
-I'm a bit disinclined to play with Pin, because the license tells me
-that I shouldn't reverse-engineer anything, and that would be the
-whole point.  It claims to be pre-release code.
+This is with a very new glibc, in fact a recent git version.
 
-If by dynamo you mean DynamoRIO, I can't get it to build.
+So clearly it's all broken and even outside JITs everyone using time()
+will be slow and if they use JITs don't work at all.
 
+-Andi
 
-An older version of the vsyscall emulation code used a fancier
-sequence that would survive relocation, although it involved a 'ret'
-instruction and it would be nice not to put 'ret' into the vsyscall
-page.
-
-
-hpa: time is supported (as of 3.0) by the vdso, and very new glibc
-uses the vdso version.  We could add a native time implementation back
-to the vsyscall page without too much pain as a short-term fix, but
-that would be less than ideal.
-
->
-> As such, it's not entirely obvious what the right thing to do here is.
-> On one hand, it "break user space" but on the other hand that is
-> userspace doing something fundamentally broken in the first place.
->
->        -hpa
->
->
+-- 
+ak@linux.intel.com -- Speaking for myself only.
