@@ -1,108 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab1HEBTd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 21:19:33 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53788 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709Ab1HEBTc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 21:19:32 -0400
+	id S1755243Ab1HEBaq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 21:30:46 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64998 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753001Ab1HEBap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 21:30:45 -0400
+Message-ID: <4E3B47D6.6070707@cn.fujitsu.com>
+Date: Fri, 05 Aug 2011 09:31:02 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Reply-To: jwboyer@redhat.com
-In-Reply-To: <20110804173145.GM2096@zod.bos.redhat.com>
-References: <20110801154636.GA2096@zod.bos.redhat.com>
-	<CA+5PVA5EZWHv_tuzA22twGQ7rZZ2zhqi1zs6OiFbpORiiYbzMg@mail.gmail.com>
-	<20110804140438.GT13065@linux.vnet.ibm.com>
-	<20110804150603.GL2096@zod.bos.redhat.com>
-	<20110804162658.GZ13065@linux.vnet.ibm.com>
-	<20110804173145.GM2096@zod.bos.redhat.com>
-Date: Thu, 4 Aug 2011 21:19:31 -0400
-X-Google-Sender-Auth: oQmYn_S8cYUYqpHlKAl3NbsAmlI
-Message-ID: <CA+5PVA7R+H4MfU=war6G3ZRYEi6nZ=vVZ3B8g-Ag6pOdA4cTBw@mail.gmail.com>
-Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
-From: Josh Boyer <jwboyer@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Shaohua Li <shli@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: fio posixaio performance problem
+References: <CANejiEViuKky1A7Xh0MQKBVNMj_fgzwayWyON7hFGfP3wa62SQ@mail.gmail.com> <4E3902C7.9050907@cn.fujitsu.com> <CANejiEVqFt4j1-qTVnxEAe75z0y010s=ST2XtCDDTqDEQT=EcQ@mail.gmail.com> <4E391986.90108@cn.fujitsu.com> <20110803154533.GB32385@redhat.com> <20110803175101.GC32385@redhat.com> <CANejiEXAtzExExqmTXA=hmpGh8DVVo9ncbRMdkB+avq+G3LuqQ@mail.gmail.com> <4E39FD41.4090103@cn.fujitsu.com> <CANejiEVh4hvi5S18H7XHihxZt+JcRU7W5MGpQwQc_ZtiFCa2jw@mail.gmail.com> <4E3A4DF7.3020605@cn.fujitsu.com> <20110804141210.GA429@redhat.com> <4E3B3FB5.6050607@cn.fujitsu.com>
+In-Reply-To: <4E3B3FB5.6050607@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-05 09:29:42,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-08-05 09:29:43,
+	Serialize complete at 2011-08-05 09:29:43
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 4, 2011 at 1:31 PM, Josh Boyer <jwboyer@redhat.com> wrote:
-> On Thu, Aug 04, 2011 at 09:26:58AM -0700, Paul E. McKenney wrote:
->> > > You really do need to be able to handle set_need_resched() at random
->> > > times, and at first glance it appears to me that the warning could be
->> > > triggered at runtime as well.  If so, the real fix is elsewhere, right?
->> > > Especially given that the patch imposes extra cost at runtime...
->> >
->> > In staring at it for a while it seems to be a combination of being in
->> > atomic context according to the scheduler but things in early boot using
->> > GFP_KERNEL.  At the point we're at in the boot, that is perfectly legal
->> > as it's not being called from an interrupt handler and the mm subsystem
->> > should be all setup, but we're still really early in boot and preempt is
->> > disabled.
+On 2011-8-5 8:56, Gui Jianfeng wrote:
+> On 2011-8-4 22:12, Vivek Goyal wrote:
+>> On Thu, Aug 04, 2011 at 03:44:55PM +0800, Gui Jianfeng wrote:
 >>
->> Isn't preemption disabled at that point in boot?  And isn't GFP_KERNEL
->> illegal within preemption-disabled regions?
->
-> Yes, it's disabled.  I'm not sure if it's illegal or not.  pidmap_init
-> is called from start_kernel on line 598 of main.c.  local_irq_enable is
-> called on line 553, followed immediately by this comment:
->
->        /* Interrupts are enabled now so all GFP allocations are safe. */
->        gfp_allowed_mask = __GFP_BITS_MASK;
->
->        kmem_cache_init_late();
->
-> So the comments there lead me to think I have no clue :).  That's mostly
-> why I'm asking for feedback here.  I don't have a huge amount of
-> experience in what is and isn't allowed in the early bootup path.
->
->> >            As I mentioned before, KMEM_CACHE calls kmalloc with
->> > GFP_KERNEL and I don't think we want to change that.
->> >
->> > Once we're past early boot, I would expect that things running in true
->> > atomic context won't be calling KMEM_CACHE or using GFP_KERNEL.  Or
->> > maybe I hope?
->> >
->> > I understand the desire to avoid another conditional, but I certainly
->> > don't have any other suggestions at the moment.
+>> [..]
+>>>> oh, not related per your blktrace. so we have two problems here:
+>>>> 1. fio doesn't dispatch request in 8ms.
+>>>> 2. no close request preempt.
+>>>
+>>> Yes, these're actual factors why performance is so bad.
+>>>
+>>>> both looks quite wield. can you post a longer blktrace output, like
+>>>> for one second? the piece is too short.
+>>>
+>>> Attached.
 >>
->> How about doing GFP_ATOMIC on allocations done during that portion
->> of the boot patch for which preemption is disabled?
->
-> Well, in the pidmap_init case there are two spots relevant to this.  The
-> first is the kzalloc call on line 562 of kernel/pid.c.  I could change
-> that to use GFP_IOFS even, and it avoids the backtrace from there. (And
-> I did that originally.)
->
-> However, the call on line 567 to KMEM_CACHE calls into
-> kmem_cache_create.  There is a flags variable, but it's for slab flags,
-> and kmem_cache_create calls kmalloc internally with GFP_KERNEL.  I don't
-> see kmem_cache_create_atomic or otherwise that would avoid this.  None
-> of that code is new either, most if it dating back to 2008.
->
-> The same issue exists in some of the next functions called in
-> start_kernel, like anon_vma_init, cred_init, fork_init, etc.  They all
-> call kmem_cache_create.
->
-> I could be missing something obvious, but I don't see a way to avoid
-> using GFP_KERNEL without a lot of rip-up in the rest of the init path.
+>> Gui, few observations from you log file.
+>>
+>> - preemption happened 1631 times and did not happen 527 times and idle
+>>   timer fired.
+>>
+>> - In some cases where preemption did not happen, next request seems to
+>>   be too far away (more than CFQQ_CLOSE_THR=8K sectors).
+>>
+>> - I noticed couple of cases where next request was with-in 8K distanace
+>>   still preemption did not happen. This makes me curious. Can you please
+> 
+> Yes, I also noticed such case...
+> 
+>>   put some trace messages in should_preempt() and rq_close() call and see
+>>   what's going on?
+> 
+> Will dig into it.
+> 
+>>
+>> For example, following trace shows that next request is 5176 sector behind
+>> the previous one completed. I am wondering why did preemption not take
+>> place.
+>>
+>>   8,0    0      606     2.751892651 16420  D   W 512146800 + 8 [fio]
+>>   8,0    2      579     2.752127950     0  C   W 512146800 + 8 [0]
+>>
+>>   8,0    0      609     2.752235995 16421  Q  WS 512141624 + 8 [fio]
+>>   8,0    0      610     2.752238859 16421  G  WS 512141624 + 8 [fio]
+>>   8,0    0      612     2.752243818 16421  I   W 512141624 + 8 [fio]
+>>   8,0    0        0     2.752246262     0  m   N cfq16421S / insert_request
+>>   8,0    0        0     2.752247729     0  m   N cfq16421S / add_to_rr
+>>   8,0    2        0     2.759710295     0  m   N cfq idle timer fired
+>>
+>> Putting some extra trace messages in CFQ might help here. BTW, which 
+>> kernel version are you using? 3.0?
+> 
+> Yes, latest upstream kernel.
 
-As an aside, I bisected this back to:
+Vivek,
 
-e8f7c70f44f sched: Make sleeping inside spinlock detection working in
-!CONFIG_PREEMPT
+BTW, do you have any idea why fio doesn't issue any io in 8ms?
 
-However, that doesn't seem all that helpful.  The
-CONFIG_DEBUG_SPINLOCK_SLEEP option later got renamed to
-DEBUG_ATOMIC_SLEEP, and all it's doing is selecting PREEMPT_COUNT.  At
-first glance, it seems this commit just allowed an issue that's been
-around for a while (benign or otherwise) to finally show up.
+Thanks,
+Gui
 
-(The Fedora kernel configs have CONFIG_PREEMPT_VOLUNTARY set, but not
-CONFIG_PREEMPT so PREEMPT_COUNT wasn't getting selected until this
-option did so.)
+> 
+> Thanks,
+> Gui
+> 
+>>
+>> Thanks
+>> Vivek
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
-josh
+
