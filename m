@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372Ab1HEJMD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 05:12:03 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51889 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755414Ab1HEJL7 (ORCPT
+	id S1756466Ab1HEJMk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 05:12:40 -0400
+Received: from fmmailgate03.web.de ([217.72.192.234]:55118 "EHLO
+	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756436Ab1HEJMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 05:11:59 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        apw@canonical.com, nbd@openwrt.org, neilb@suse.de, hramrach@centrum.cz,
-        jordipujolp@gmail.com, ezk@fsl.cs.sunysb.edu, ricwheeler@gmail.com,
-        dhowells@redhat.com, hpj@urpla.net, sedat.dilek@googlemail.com,
-        penberg@kernel.org
-Subject: Re: [PATCH 0/8] overlay filesystem: request for inclusion
-References: <1312462417-8826-1-git-send-email-miklos@szeredi.hu>
-	<20110804231134.GO2203@ZenIV.linux.org.uk>
-Date: Fri, 05 Aug 2011 11:11:42 +0200
-In-Reply-To: <20110804231134.GO2203@ZenIV.linux.org.uk> (Al Viro's message of
-	"Fri, 5 Aug 2011 00:11:34 +0100")
-Message-ID: <87liv8nrxt.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 5 Aug 2011 05:12:38 -0400
+Subject: Re: [ANNOUNCE] 3.0-rt7
+From: hermann <brummer-@web.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+In-Reply-To: <1312465990.16729.22.camel@twins>
+References: <1312465990.16729.22.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 05 Aug 2011 11:12:22 +0200
+Message-ID: <1312535543.2653.5.camel@box>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V01U2FsdGVkX1+5L44MDXkRRFZFNwaChLYMnchHnq0RFuao187y
+	6W+ksJiIsQDVOor7kbdd167A1LrVJUd0gCV8e2A8O2kIDeKvlk
+	pkXqP6o9k=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro <viro@ZenIV.linux.org.uk> writes:
+Am Donnerstag, den 04.08.2011, 15:53 +0200 schrieb Peter Zijlstra:
+> Hi,
+> 
+> With Thomas enjoying his well earned holidays, I hereby present you with
+> 3.0-rt7.
+> 
+> Goodies included since last time:
+> 
+>  - some raw_spinlock patch from Uwe.
+>  - cpupri rework from Rostedt, something which should greatly benefit
+>    everybody with smp hardware, the more cpus the more benefit.
+>  - a possible fix for some posix timer splat reported by Fernando.
+>  - i386-highmem support because I'd already written the code anyway
+>    so I thought I might as well make it work.
+> 
+> I'll take patches implementing similar highmem muck on other arches, if
+> there's any code to be shared between the arches, do so.
 
-> Simple: please, *please* hold back until we have atomic_open mess
-> sorted out.  I'm fucking sick and tired of playing whack-a-mole in
-> that area - for nearly three years by now; we fortunately are very
-> close to getting this shit done right - the main remaining obstacle is
-> ->d_revalidate() abuse by NFS and I seriously hope to get it over and
-> done with in a week or so.
+Hi
 
-Sure, that's a totally reasonable thing to ask.
+Many thanks for enable i386-highmem support, the missing highmem was the
+biggest issue I've with the latest 3.0-rt patch. Indeed I run into swap
+and therewith receive Xruns from jack. 
+I've just switch back to 2.6.39 some hours before you announce -rt7, now
+I'm back on 3.0-rt
+lucky I'm 
 
-What I ask in return is that you please make your development a bit more
-open.
+regards
+hermann
+  
 
-You know it's really annoying when you say something like the above and
-then you say it year after year and apparently nothing changes.  If you
-could share your work at least we could see what's going on and maybe
-even help sort out some of the pieces.  If you are doing it in private,
-it looks to be whack-a-mole for years to come.
-
-And I've been asking for this many times, and never got a response.  At
-least you could explain why it always has to be a large piece of work
-(of excellent quality, btw) suddenly dropped into mainline without
-anybody ever seeing any of it previously.
-
-Thanks,
-Miklos
