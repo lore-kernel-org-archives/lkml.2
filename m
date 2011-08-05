@@ -1,115 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab1HERIP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 13:08:15 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:42900 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479Ab1HERIN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 13:08:13 -0400
-Date: Fri, 5 Aug 2011 19:08:08 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
-Message-ID: <20110805170805.GB22164@somewhere>
-References: <20110801154636.GA2096@zod.bos.redhat.com>
- <CA+5PVA5EZWHv_tuzA22twGQ7rZZ2zhqi1zs6OiFbpORiiYbzMg@mail.gmail.com>
- <20110804140438.GT13065@linux.vnet.ibm.com>
- <20110804150603.GL2096@zod.bos.redhat.com>
- <20110804162658.GZ13065@linux.vnet.ibm.com>
- <20110804173145.GM2096@zod.bos.redhat.com>
- <CA+5PVA7R+H4MfU=war6G3ZRYEi6nZ=vVZ3B8g-Ag6pOdA4cTBw@mail.gmail.com>
- <20110805065646.GC13065@linux.vnet.ibm.com>
- <20110805142245.GP2096@zod.bos.redhat.com>
+	id S1754655Ab1HERLJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 13:11:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33021 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751428Ab1HERLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 13:11:06 -0400
+Message-ID: <4E3C2405.8090309@zytor.com>
+Date: Fri, 05 Aug 2011 10:10:29 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110805142245.GP2096@zod.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@amd64.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Andre Przywara <Andre.Przywara@amd.com>,
+        Martin Pohlack <Martin.Pohlack@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH -v3.1 0/3] x86, AMD: Correct F15h IC aliasing issue
+References: <1312550110-24160-1-git-send-email-bp@amd64.org>
+In-Reply-To: <1312550110-24160-1-git-send-email-bp@amd64.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 05, 2011 at 10:22:45AM -0400, Josh Boyer wrote:
-> On Thu, Aug 04, 2011 at 11:56:46PM -0700, Paul E. McKenney wrote:
-> > > > I could be missing something obvious, but I don't see a way to avoid
-> > > > using GFP_KERNEL without a lot of rip-up in the rest of the init path.
-> > > 
-> > > As an aside, I bisected this back to:
-> > > 
-> > > e8f7c70f44f sched: Make sleeping inside spinlock detection working in
-> > > !CONFIG_PREEMPT
-> > 
-> > OK, added Frederic on CC.
-> > 
-> > > However, that doesn't seem all that helpful.  The
-> > > CONFIG_DEBUG_SPINLOCK_SLEEP option later got renamed to
-> > > DEBUG_ATOMIC_SLEEP, and all it's doing is selecting PREEMPT_COUNT.  At
-> > > first glance, it seems this commit just allowed an issue that's been
-> > > around for a while (benign or otherwise) to finally show up.
-> > > 
-> > > (The Fedora kernel configs have CONFIG_PREEMPT_VOLUNTARY set, but not
-> > > CONFIG_PREEMPT so PREEMPT_COUNT wasn't getting selected until this
-> > > option did so.)
-> > 
-> > Understood.  So my question is "what is the real way to fix this?"
-> > Within RCU, I would probably wrapper the calls to set_need_resched()
-> > so that it checks for the scheduler being fully alive.  Except for the
-> > call from rcu_enter_nohz(), of course -- if that one is called before
-> > the scheduler is ready, then that is a bug that needs to be fixed.
+On 08/05/2011 06:15 AM, Borislav Petkov wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
 > 
-> By scheduler being fully alive, do you mean when rcu_scheduler_starting
-> is called?  Or do you mean the actual scheduler, because sched_init is
-> called well before any of this happens.
+> Hi,
 > 
-> > Nevertheless, I am wondering if all of this isn't really papering over
-> > some real problem somewhere.  The way we get to this place is from people
-> > registering RCU callbacks during early boot, which is OK in and of itself,
-> > at least in moderation.  But if someone is expecting those callbacks to be
-> > invoked before the scheduler is fully set up and running multiple tasks,
-> > they are going to be disappointed.
+> a small refinement of the patchset from yesterday per hpa's comments:
 > 
-> Is there a way to dump what callbacks have been registered?  As far as I
-> can see, we call rcu_check_callbacks unconditionally when a timer
-> interrupt is taken and that calls rcu_pending unconditionally as well.
-> Before that, rcu_init is called which eventually sets up the per-cpu
-> data via rcu_init_percpu_data and that sets rdp->qs_pending = 1.
-> Until a quiescent state is reached __rcu_pending is going to try and
-> force it, which is where the set_need_resched is called.
+> * put mask and flags into a single cacheline and make it __read_mostly
 > 
-> Basically, I took what you said about wrapping set_need_resched and came
-> up with the patch below.  It gets rid of the oops from pidmap_init, but
-> I need to test it a bit more.  Would be happy to have feedback.
+> * change alignment computation back to clearing bits [14:12] so that a
+> mask of 0x0 can have no effect on the address.
 > 
-> josh
+> Please take a look and apply, if no objections.
 > 
-> ---
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index ba06207..8c6cb6e 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -1681,8 +1681,14 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
->  		rdp->n_rp_qs_pending++;
->  		if (!rdp->preemptible &&
->  		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
-> -				 jiffies))
-> -			set_need_resched();
-> +				 jiffies)) {
-> +			/* Make sure we're ready to mark the task as needing
-> + 			 * rescheduling otherwise we can trigger oopes early
-> + 			 * in the init path
-> + 			 */
-> +			if (rcu_scheduler_active)
-> +				set_need_resched();
 
-What about we avoid setting rdp->qs_pending = 1 for the CPU
-that handles the boot?
+Patch 1 looks good now.
 
-> +		}
->  	} else if (rdp->qs_pending && rdp->passed_quiesc) {
->  		rdp->n_rp_report_qs++;
->  		return 1;
+Patch 2 I'm going to object to because it puts your run_on_bsp method
+into a different structure where all the existing methods for this
+already are in a way that looks totally gratuitous to me.  Why not just
+have a c_bsp_init on struct cpu_dev like all the other methods?
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
