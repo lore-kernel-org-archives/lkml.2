@@ -1,65 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab1HEH4M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 03:56:12 -0400
-Received: from smtp-out003.kontent.com ([81.88.40.217]:45050 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752298Ab1HEH4K (ORCPT
+	id S1754320Ab1HEH4x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 03:56:53 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:56665 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402Ab1HEH4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 03:56:10 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: Hans de Goede <hdegoede@redhat.com>
-Subject: Re: USB mini-summit at LinuxCon Vancouveroliver
-Date: Fri, 5 Aug 2011 09:59:00 +0200
-User-Agent: KMail/1.13.5 (Linux/3.0.0-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Greg KH <greg@kroah.com>, Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        libusb-devel@lists.sourceforge.net, Alexander Graf <agraf@suse.de>,
-        Gerd Hoffmann <kraxel@redhat.com>, hector@marcansoft.com,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Theodore Kilgore <kilgota@banach.math.auburn.edu>,
-        Adam Baker <linux@baker-net.org.uk>
-References: <20110610002103.GA7169@xanatos> <20110804225603.GA2557@kroah.com> <4E3B9FB4.30709@redhat.com>
-In-Reply-To: <4E3B9FB4.30709@redhat.com>
+	Fri, 5 Aug 2011 03:56:50 -0400
+Message-ID: <4E3BA239.6040904@gmail.com>
+Date: Fri, 05 Aug 2011 15:56:41 +0800
+From: Liu Yuan <namei.unix@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Badari Pulavarty <pbadari@us.ibm.com>
+CC: Stefan Hajnoczi <stefanha@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Khoa Huynh <khoa@us.ibm.com>
+Subject: Re: [RFC PATCH]vhost-blk: In-kernel accelerator for virtio block
+ device
+References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com>	 <CAJSP0QUKz7LFuARF_n2LcBi_uuSzfmkjrWsHAWrXXkEaQJKkEA@mail.gmail.com>	 <4E325F98.5090308@gmail.com> <4E32F7F2.4080607@us.ibm.com>	 <4E363DB9.70801@gmail.com> <1312495132.9603.4.camel@badari-desktop>
+In-Reply-To: <1312495132.9603.4.camel@badari-desktop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108050959.00873.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 5. August 2011, 09:45:56 schrieb Hans de Goede:
-> This is the issue on which I feel a bit stonewalled. Simple putting your
-> fingers in your ears and singing la la la do it in userspace is not going
-> to cut it here. There is no way to do this race free in userspace, unless
-> all possible callers of mount get modified. Moreover 99% of the necessary
-> accounting for this is already done in the kernel. We already have the notion
-> of a block device being in use. We simply need to add some code to pass
-> this notion to the usb mass storage driver, and add a new try_disconnect
-> callback for usb drivers. I'm not saying this is going to be completely
-> straight forward, but it ain't rocket science either. And it so very
-> obviously is the right thing to do, that I'm getting very tired of
-> the do it in userspace song I keep hearing.
+On 08/05/2011 05:58 AM, Badari Pulavarty wrote:
+> Hi Liu Yuan,
+>
+> I started testing your patches. I applied your kernel patch to 3.0
+> and applied QEMU to latest git.
+>
+> I passed 6 blockdevices from the host to guest (4 vcpu, 4GB RAM).
+> I ran simple "dd" read tests from the guest on all block devices
+> (with various blocksizes, iflag=direct).
+>
+> Unfortunately, system doesn't stay up. I immediately get into
+> panic on the host. I didn't get time to debug the problem. Wondering
+> if you have seen this issue before and/or you have new patchset
+> to try ?
+>
+> Let me know.
+>
 
-Doing a try_disconnect() would also solve the dual camera issue.
-But it doesn't really interfere with the user space vs. kernel space
-issue. You simply have to expand the ioctl interface to have
-an ioctl that triggers this API call in the kernel.
+This patch set doesn't support multiple devices currently, since 
+vhost-blk code for the qemu just
+passes *one* backend to the vhost_blk module in the kernel.
 
-A V4L2 device would return an error if its device node is opened,
-otherwise disconnect.
+If you really need to test it with multiple blockdevices, you have to 
+tweak vhost-blk part for qemu.
 
-	Regards
-		Oliver
+I'll take a look at this issue, but not a promise with a patch as soon 
+as possible.
 
-		
+Yuan
+
+> Thanks,
+> Badari
+>
+> ------------[ cut here ]------------
+> kernel BUG at mm/slab.c:3059!
+> invalid opcode: 0000 [#1] SMP
+> CPU 7
+> Modules linked in: vhost_blk ebtable_nat ebtables xt_CHECKSUM bridge stp llc autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf cachefiles fscache ipt_REJECT ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_mirror dm_region_hash dm_log dm_round_robin scsi_dh_rdac dm_multipath vhost_net macvtap macvlan tun kvm_intel kvm cdc_ether usbnet mii microcode serio_raw pcspkr i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma dca i7core_edac edac_core bnx2 sg ext4 mbcache jbd2 sd_mod crc_t10dif qla2xxx scsi_transport_fc scsi_tgt mptsas mptscsih mptbase scsi_transport_sas dm_mod [last unloaded: nf_defrag_ipv4]
+>
+> Pid: 2744, comm: vhost-2698 Not tainted 3.0.0 #2 IBM  -[7870AC1]-/46M0761
+> RIP: 0010:[<ffffffff8114932c>]  [<ffffffff8114932c>] cache_alloc_refill+0x22c/0x250
+> RSP: 0018:ffff880258c87d00  EFLAGS: 00010046
+> RAX: 0000000000000002 RBX: ffff88027f800040 RCX: dead000000200200
+> RDX: ffff880271128000 RSI: 0000000000000070 RDI: ffff88026eb6c000
+> RBP: ffff880258c87d50 R08: ffff880271128000 R09: 0000000000000003
+> R10: 000000021fffffff R11: ffff88026b5790c0 R12: ffff880272cd8c00
+> R13: ffff88027f822440 R14: 0000000000000002 R15: ffff88026eb6c000
+> FS:  0000000000000000(0000) GS:ffff88027fce0000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 0000000000ecb100 CR3: 0000000270bfe000 CR4: 00000000000026e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process vhost-2698 (pid: 2744, threadinfo ffff880258c86000, task ffff8802703154c0)
+> Stack:
+>   ffff880200000002 000492d000000000 ffff88027f822460 ffff88027f822450
+>   ffff880258c87d60 ffff88027f800040 0000000000000000 00000000000080d0
+>   00000000000080d0 0000000000000246 ffff880258c87da0 ffffffff81149c82
+> Call Trace:
+>   [<ffffffff81149c82>] kmem_cache_alloc_trace+0x182/0x190
+>   [<ffffffffa0252f52>] handle_guest_kick+0x162/0x799 [vhost_blk]
+>   [<ffffffffa02514ab>] vhost_worker+0xcb/0x150 [vhost_blk]
+>   [<ffffffffa02513e0>] ? vhost_dev_set_owner+0x190/0x190 [vhost_blk]
+>   [<ffffffffa02513e0>] ? vhost_dev_set_owner+0x190/0x190 [vhost_blk]
+>   [<ffffffff81084c66>] kthread+0x96/0xa0
+>   [<ffffffff814d2f84>] kernel_thread_helper+0x4/0x10
+>   [<ffffffff81084bd0>] ? kthread_worker_fn+0x1a0/0x1a0
+>   [<ffffffff814d2f80>] ? gs_change+0x13/0x13
+> Code: 48 89 df e8 07 fb ff ff 65 8b 14 25 58 dc 00 00 85 c0 48 63 d2 4c 8b 24 d3 74 16 41 83 3c 24 00 0f 84 fc fd ff ff e9 75 ff ff ff<0f>  0b 66 90 eb fc 31 c0 41 83 3c 24 00 0f 85 62 ff ff ff 90 e9
+> RIP  [<ffffffff8114932c>] cache_alloc_refill+0x22c/0x250
+>   RSP<ffff880258c87d00>
+> ---[ end trace e286566e512cba7b ]---
+>
+>
+>
+>
+>
+>
+>
+
