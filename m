@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab1HEMax (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 08:30:53 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57308 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754363Ab1HEMat (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 08:30:49 -0400
-X-Authority-Analysis: v=1.1 cv=Pm0sEXe2MdIPK/rOEC7hwDW84D/yDsPO3JtCzsVYOFU= c=1 sm=0 a=WrFlywIw7b8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=zIQgd9ccXfPXfojc1yQA:9 a=MtRyChid-5wAUCn-9r4A:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH][GIT PULL] sched/cpupri: Remove the vec->lock
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <mgalbraith@suse.de>,
-        "Luis Claudio R." =?UTF-8?Q?Gon=EF=BF=BDalves?= 
-	<lgoncalv@redhat.com>,
-        Matthew Hank Sabins <msabins@linux.vnet.ibm.com>,
-        Gregory Haskins <gregory.haskins@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110805082008.GA6628@zhy>
-References: <1312317372.18583.101.camel@gandalf.stny.rr.com>
-	 <20110805082008.GA6628@zhy>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 05 Aug 2011 08:30:47 -0400
-Message-ID: <1312547447.18583.195.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1756563Ab1HEMbx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 08:31:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1029 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755799Ab1HEMbv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 08:31:51 -0400
+Date: Fri, 5 Aug 2011 14:31:37 +0200
+From: Jiri Pirko <jpirko@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [forcedeth bug] Re: [GIT] Networking
+Message-ID: <20110805123136.GF1928@minipsycho.orion>
+References: <20110722.073339.1236244143490935644.davem@davemloft.net>
+ <20110801151308.GA31256@elte.hu>
+ <20110804215354.GA7056@elte.hu>
+ <20110805102239.GB1928@minipsycho.orion>
+ <20110805102903.GF2420@elte.hu>
+ <20110805112557.GD1928@minipsycho.orion>
+ <20110805121855.GC13055@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110805121855.GC13055@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-05 at 16:20 +0800, Yong Zhang wrote:
-> On Tue, Aug 02, 2011 at 04:36:12PM -0400, Steven Rostedt wrote:
-> > diff --git a/kernel/sched_cpupri.h b/kernel/sched_cpupri.h
-> > index 9fc7d38..6b4cd17 100644
-> > --- a/kernel/sched_cpupri.h
-> > +++ b/kernel/sched_cpupri.h
-> > @@ -12,9 +12,8 @@
-> >  /* values 2-101 are RT priorities 0-99 */
-> >  
-> >  struct cpupri_vec {
-> > -	raw_spinlock_t lock;
-> > -	int        count;
-> > -	cpumask_var_t mask;
-> > +	atomic_t	count;
-> > +	cpumask_var_t	mask;
-> >  };
-> >  
-> >  struct cpupri {
-> 
-> So cpupri->pri_active and macro CPUPRI_NR_PRI_WORDS is not needed any more?
+Fri, Aug 05, 2011 at 02:18:55PM CEST, mingo@elte.hu wrote:
+>
+>* Jiri Pirko <jpirko@redhat.com> wrote:
+>
+>> >> Is DEV_HAS_VLAN set in id->driver_data (L5344) ?
+>> >
+>> >How do i tell that without hacking the driver?
+>> 
+>> look in dmesg for line like:
+>> "forcedeth 0000:00:08.0: highdma csum vlan pwrctl mgmt gbit lnktim msi
+>> desc-v3"
+>> 
+>> if "vlan" is there, DEV_HAS_VLAN is set
+>
+>[    3.534489] forcedeth 0000:00:0a.0: highdma csum gbit lnktim desc-v3
+>
+>Note, this is a pretty old system with an old nvidia chipset and 
+>on-board ethernet:
+>
+>00:0a.0 Bridge: nVidia Corporation CK804 Ethernet Controller (rev a3)
+>        Subsystem: ASUSTeK Computer Inc. K8N4-E Mainboard
+>        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B-
+>        Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR-
+>        Latency: 0 (250ns min, 5000ns max)
+>        Interrupt: pin A routed to IRQ 11
+>        Region 0: Memory at da100000 (32-bit, non-prefetchable) [size=4K]
+>        Region 1: I/O ports at d000 [size=8]
+>        Capabilities: [44] Power Management version 2
+>                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0+,D1+,D2+,D3hot+,D3cold+)
+>                Status: D0 PME-Enable+ DSel=0 DScale=0 PME-
 
-It doesn't appear so. Looks like they can be removed too.
+Please do lspci -nn
 
-Want to send a patch?
+There are two CK804 chips:
+0x10DE, 0x0056
+0x10DE, 0x0057
 
-Thanks!
+I have only the second one handy - Getting the machine as we speak.
 
--- Steve
+Jirka
 
-
+>
+>Thanks,
+>
+>	Ingo
