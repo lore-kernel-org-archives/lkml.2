@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab1HEKEJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 06:04:09 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:54586 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753942Ab1HEKD4 (ORCPT
+	id S1754959Ab1HEKEF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 06:04:05 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:42995 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753196Ab1HEKDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 06:03:56 -0400
+	Fri, 5 Aug 2011 06:03:54 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <linus.walleij@linaro.org>, <vinod.koul@intel.com>,
         <dan.j.williams@intel.com>
@@ -17,9 +17,9 @@ Cc: <linux-arm-kernel@lists.infradead.org>, <armando.visconti@st.com>,
         <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
         <viresh.linux@gmail.com>, <linux-kernel@vger.kernel.org>,
         <linux@arm.linux.org.uk>, <alim.akhtar@gmail.com>
-Subject: [PATCH V3 15/20] dmaengine/amba-pl08x: Align lli_len to max(src.width, dst.width)
-Date: Fri, 5 Aug 2011 15:32:40 +0530
-Message-ID: <8967f2741aae7a7a76afb0c5b3658b91b9259f4f.1312538034.git.viresh.kumar@st.com>
+Subject: [PATCH V3 14/20] dmaengine/amba-pl08x: Add prep_single_byte_llis() routine
+Date: Fri, 5 Aug 2011 15:32:39 +0530
+Message-ID: <f132e7863fc1354637099e3b710577d3d4eafcd5.1312538034.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1312538034.git.viresh.kumar@st.com>
 References: <cover.1312538034.git.viresh.kumar@st.com>
@@ -29,82 +29,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently lli_len is aligned to min of two widths, which looks to be incorrect.
-Instead it should be aligned to max of both widths.
+Code for creating single byte llis is present at several places. Create a
+routine to avoid code redundancy.
 
-Lets say, total_size = 441 bytes
-
-MIN: lets check if min() suits or not:
-
-CASE 1: srcwidth = 1, dstwidth = 4
-min(src, dst) = 1
-
-i.e. We program transfer size in control reg to 441.
-Now, till 440 bytes everything is fine, but on the last byte DMAC can't transfer
-1 byte to dst, as its width is 4.
-
-CASE 2: srcwidth = 4, dstwidth = 1
-min(src, dst) = 1
-
-i.e. we program transfer size in control reg to 110 (data transferred = 110 * srcwidth).
-So, here too 1 byte is left, but on the source side.
-
-MAX: Lets check if max() suits or not:
-
-CASE 3: srcwidth = 1, dstwidth = 4
-max(src, dst) = 4
-
-Aligned size is 440
-
-i.e. We program transfer size in control reg to 440.
-Now, all 440 bytes will be transferred without any issues.
-
-CASE 4: srcwidth = 4, dstwidth = 1
-max(src, dst) = 4
-
-Aligned size is 440
-
-i.e. We program transfer size in control reg to 110 (data transferred = 110 * srcwidth).
-Now, also all 440 bytes will be transferred without any issues.
+Also, we don't need one lli per single byte transfer, we can have single lli to
+do all single byte transfer.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/dma/amba-pl08x.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+ drivers/dma/amba-pl08x.c |   61 +++++++++++++++++++++++++---------------------
+ 1 files changed, 33 insertions(+), 28 deletions(-)
 
 diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index 45d8a5d..4bcf603 100644
+index e5930d5..45d8a5d 100644
 --- a/drivers/dma/amba-pl08x.c
 +++ b/drivers/dma/amba-pl08x.c
-@@ -669,20 +669,22 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
- 		 * width left
- 		 */
- 		while (bd.remainder > (mbus->buswidth - 1)) {
--			size_t lli_len, tsize;
-+			size_t lli_len, tsize, width;
+@@ -559,6 +559,14 @@ static void pl08x_fill_lli_for_desc(struct pl08x_lli_build_data *bd,
+ 	bd->remainder -= len;
+ }
  
- 			/*
- 			 * If enough left try to send max possible,
- 			 * otherwise try to send the remainder
- 			 */
- 			lli_len = min(bd.remainder, max_bytes_per_lli);
++static inline void prep_byte_width_lli(struct pl08x_lli_build_data *bd,
++		u32 *cctl, u32 len, int num_llis, size_t *total_bytes)
++{
++	*cctl = pl08x_cctl_bits(*cctl, 1, 1, len);
++	pl08x_fill_lli_for_desc(bd, num_llis, len, *cctl);
++	(*total_bytes) += len;
++}
 +
- 			/*
--			 * Check against minimum bus alignment: Calculate actual
-+			 * Check against maximum bus alignment: Calculate actual
- 			 * transfer size in relation to bus width and get a
--			 * maximum remainder of the smallest bus width - 1
-+			 * maximum remainder of the highest bus width - 1
- 			 */
--			tsize = lli_len / min(mbus->buswidth, sbus->buswidth);
--			lli_len	= tsize * min(mbus->buswidth, sbus->buswidth);
-+			width = max(mbus->buswidth, sbus->buswidth);
-+			lli_len = (lli_len / width) * width;
-+			tsize = lli_len / bd.srcbus.buswidth;
+ /*
+  * This fills in the table of LLIs for the transfer descriptor
+  * Note that we assume we never have to change the burst sizes
+@@ -570,7 +578,7 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
+ 	struct pl08x_bus_data *mbus, *sbus;
+ 	struct pl08x_lli_build_data bd;
+ 	int num_llis = 0;
+-	u32 cctl;
++	u32 cctl, early_bytes = 0;
+ 	size_t max_bytes_per_lli, total_bytes = 0;
+ 	struct pl08x_lli *llis_va;
  
+@@ -619,29 +627,27 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
+ 		 mbus == &bd.srcbus ? "src" : "dst",
+ 		 sbus == &bd.srcbus ? "src" : "dst");
+ 
+-	if (txd->len < mbus->buswidth) {
+-		/* Less than a bus width available - send as single bytes */
+-		while (bd.remainder) {
+-			dev_vdbg(&pl08x->adev->dev,
+-				 "%s single byte LLIs for a transfer of "
+-				 "less than a bus width (remain 0x%08x)\n",
+-				 __func__, bd.remainder);
+-			cctl = pl08x_cctl_bits(cctl, 1, 1, 1);
+-			pl08x_fill_lli_for_desc(&bd, num_llis++, 1, cctl);
+-			total_bytes++;
+-		}
+-	} else {
+-		/* Make one byte LLIs until master bus is aligned */
+-		while ((mbus->addr) % (mbus->buswidth)) {
+-			dev_vdbg(&pl08x->adev->dev,
+-				"%s adjustment lli for less than bus width "
+-				 "(remain 0x%08x)\n",
+-				 __func__, bd.remainder);
+-			cctl = pl08x_cctl_bits(cctl, 1, 1, 1);
+-			pl08x_fill_lli_for_desc(&bd, num_llis++, 1, cctl);
+-			total_bytes++;
+-		}
++	/*
++	 * Send byte by byte for following cases
++	 * - Less than a bus width available
++	 * - until master bus is aligned
++	 */
++	if (bd.remainder < mbus->buswidth)
++		early_bytes = bd.remainder;
++	else if ((mbus->addr) % (mbus->buswidth)) {
++		early_bytes = mbus->buswidth - (mbus->addr) % (mbus->buswidth);
++		if ((bd.remainder - early_bytes) < mbus->buswidth)
++			early_bytes = bd.remainder;
++	}
++
++	if (early_bytes) {
++		dev_vdbg(&pl08x->adev->dev, "%s byte width LLIs "
++				"(remain 0x%08x)\n", __func__, bd.remainder);
++		prep_byte_width_lli(&bd, &cctl, early_bytes, num_llis++,
++				&total_bytes);
++	}
+ 
++	if (bd.remainder) {
+ 		/*
+ 		 * Master now aligned
+ 		 * - if slave is not then we must set its width down
+@@ -692,13 +698,12 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
+ 		/*
+ 		 * Send any odd bytes
+ 		 */
+-		while (bd.remainder) {
+-			cctl = pl08x_cctl_bits(cctl, 1, 1, 1);
++		if (bd.remainder) {
  			dev_vdbg(&pl08x->adev->dev,
- 				"%s fill lli with single lli chunk of "
+-				"%s align with boundary, single odd byte (remain %zu)\n",
++				"%s align with boundary, send odd bytes (remain %zu)\n",
+ 				__func__, bd.remainder);
+-			pl08x_fill_lli_for_desc(&bd, num_llis++, 1, cctl);
+-			total_bytes++;
++			prep_byte_width_lli(&bd, &cctl, bd.remainder,
++					num_llis++, &total_bytes);
+ 		}
+ 	}
+ 
 -- 
 1.7.2.2
 
