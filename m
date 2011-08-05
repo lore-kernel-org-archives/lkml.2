@@ -1,131 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662Ab1HENe2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 09:34:28 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:56444 "EHLO gw1.transmode.se"
+	id S1756580Ab1HENkv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 09:40:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36009 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751891Ab1HENe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 09:34:27 -0400
-In-Reply-To: <OF14136E0E.3F2388EF-ONC12578E3.00301969-C12578E3.00338524@LocalDomain>
-References: <OF4AE0115F.3AA5397E-ONC12578DF.002EC6DF-C12578DF.003348E5@transmode.se> <01dc01cc5159$317879a0$94696ce0$@systemfabricworks.com> <OF83CC7C9C.07EC5D4A-ONC12578E2.0024F5AE-C12578E2.004163C1@transmode.se> <019501cc52d7$c8688100$59398300$@systemfabricworks.com> <OF14136E0E.3F2388EF-ONC12578E3.00301969-C12578E3.00338524@LocalDomain>
-Subject: RE: [PATCH] add slice by 8 algorithm to crc32.c
-X-KeepSent: 747F0842:77172E9E-C12578E3:004987D0;
- type=4; name=$KeepSent
-Cc: "Bob Pearson" <rpearson@systemfabricworks.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'frank zago'" <fzago@systemfabricworks.com>,
-        linux-kernel@vger.kernel.org
-X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
-Message-ID: <OF747F0842.77172E9E-ONC12578E3.004987D0-C12578E3.004A8FCA@transmode.se>
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Date: Fri, 5 Aug 2011 15:34:24 +0200
-X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
- 08/05/2011 15:34:24
+	id S1755254Ab1HENkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 09:40:49 -0400
+Date: Fri, 5 Aug 2011 09:40:42 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Alex Neronskiy <zakmagnus@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH v4 2/2] Output stall traces in /proc
+Message-ID: <20110805134042.GJ1972@redhat.com>
+References: <1312495991-28377-1-git-send-email-zakmagnus@chromium.org>
+ <1312495991-28377-2-git-send-email-zakmagnus@chromium.org>
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312495991-28377-2-git-send-email-zakmagnus@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joakim Tjernlund/Transmode wrote on 2011/08/05 11:22:44:
->
-> "Bob Pearson" <rpearson@systemfabricworks.com> wrote on 2011/08/04 20:53:20:
-> >
-> > Sure... See below.
-> >
-> > > -----Original Message-----
-> > > From: Joakim Tjernlund [mailto:joakim.tjernlund@transmode.se]
-> > > Sent: Thursday, August 04, 2011 6:54 AM
-> > > To: Bob Pearson
-> > > Cc: 'Andrew Morton'; 'frank zago'; linux-kernel@vger.kernel.org
-> > > Subject: RE: [PATCH] add slice by 8 algorithm to crc32.c
-> > >
-> > > "Bob Pearson" <rpearson@systemfabricworks.com> wrote on 2011/08/02
-> > > 23:14:39:
-> > > >
-> > > > Hi Joakim,
-> > > >
-> > > > Sorry to take so long to respond.
-> > >
-> > > No problem but please insert you answers in correct context(like I did).
-> > This
-> > > makes it much easier to read and comment on.
-> > >
-> > > >
-> > > > Here are some performance data collected from the original and modified
-> > > > crc32 algorithms.
-> > > > The following is a simple test loop that computes the time to compute
-> > 1000
-> > > > crc's over 4096 bytes of data aligned on an 8 byte boundary after
-> > warming
-> > > > the cache. You could make other measurements but this is sort of a best
-> > > > case.
-> > > >
-> > > > These measurements were made on a dual socket Nehalem 2.267 GHz
-> > > system.
-> > >
-> > > Measurements on your SPARC would be good too.
-> >
-> > Will do. But it is decrepit and quite slow. My main motivation is to run a
-> > 10G protocol so I am mostly motivated to get x86_64 going as fast as
-> > possible.
->
-> 64 bits may be faster on x86_64 but not on ppc32. Your latest patch gives:
->  crc32: CRC_LE_BITS = 64, CRC_BE BITS = 64
->  crc32: self tests passed, processed 225944 bytes in 3987640 nsec
->  crc32: CRC_LE_BITS = 32, CRC_BE BITS = 32
->  crc32: self tests passed, processed 225944 bytes in 2003630 nsec
-> Almost a factor 2 slower.
-> So in any case I don't think 64 bits should be default for all archs.
-> Probably only for 64 bit archs.
+On Thu, Aug 04, 2011 at 03:13:11PM -0700, Alex Neronskiy wrote:
+> Instead of using the log, use files in /proc for trace output.
+> Printing to the log can result in watchdog touches, distorting the
+> very events being measured. Additionally, the information will not
+> distract from lockups when users view the log.
 
-I checked the asm on ppc for 32 bits crc32 and compared yours vs. mine. PPC suffers
-from your version. The startup cost is much higher. I did notice one win with your
-version though. The inner loop was reduced with 3 insns if one use separate arrays.
-However, loading 4 separate arrays are 16 insns on PPC so I did the best thing for
-ppc:
+Interesting.  I didn't realize how easy it was to save those traces.  I
+think this is a better approach because it hides this stuff in a proc
+file.
 
-diff --git a/lib/crc32.c b/lib/crc32.c
-index 4855995..e3e391f 100644
---- a/lib/crc32.c
-+++ b/lib/crc32.c
-@@ -51,20 +51,21 @@ static inline u32
- crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
- {
- # ifdef __LITTLE_ENDIAN
--#  define DO_CRC(x) crc = tab[0][(crc ^ (x)) & 255] ^ (crc >> 8)
--#  define DO_CRC4 crc = tab[3][(crc) & 255] ^ \
--		tab[2][(crc >> 8) & 255] ^ \
--		tab[1][(crc >> 16) & 255] ^ \
--		tab[0][(crc >> 24) & 255]
-+#  define DO_CRC(x) crc = t0[(crc ^ (x)) & 255] ^ (crc >> 8)
-+#  define DO_CRC4 crc = t3[(crc) & 255] ^ \
-+		t2[(crc >> 8) & 255] ^ \
-+		t1[(crc >> 16) & 255] ^ \
-+		t0[(crc >> 24) & 255]
- # else
--#  define DO_CRC(x) crc = tab[0][((crc >> 24) ^ (x)) & 255] ^ (crc << 8)
--#  define DO_CRC4 crc = tab[0][(crc) & 255] ^ \
--		tab[1][(crc >> 8) & 255] ^ \
--		tab[2][(crc >> 16) & 255] ^ \
--		tab[3][(crc >> 24) & 255]
-+#  define DO_CRC(x) crc = t0[((crc >> 24) ^ (x)) & 255] ^ (crc << 8)
-+#  define DO_CRC4 crc = t0[(crc) & 255] ^ \
-+		t1[(crc >> 8) & 255] ^ \
-+		t2[(crc >> 16) & 255] ^ \
-+		t3[(crc >> 24) & 255]
- # endif
- 	const u32 *b;
- 	size_t    rem_len;
-+	const u32 *t0=tab[0], *t1=t0 + 256, *t2=t1 + 256, *t3=t2 + 256;
+I'll have to play with a little bit, but I was wondering what happens when
+you have multiple stack traces coming in.  Before when it was printing to
+the console, it was probably a bit of professional courtesy to keep the
+warnings to a minimum.  But if you are going to use the proc fs, we can
+probably be a little noisier.  So I had two questions
 
- 	/* Align it */
- 	if (unlikely((long)buf & 3 && len)) {
+If you don't get to the proc fs fast enough, are you overwriting the
+shorter stall stack trace with a slightly longer stall stack trace.  It
+seems the 
 
-This reduces the inner loop with 3 insns while adding only 5 insns startup cost.
-I hope this brings my crc32(32 bits) in line with yours, even on x86_64.
-Please test.
+> +			hardstall_trace.nr_entries = 0;
 
- Jocke
+would reset things and you would lose the original worst_stall.
 
+Do we want to increment the worst stall time now?  Shouldn't we just stay
+at the current threshold and continue to print the same stack trace?  To
+me that is the definition of 'worst stall'.  This might contradict
+something I said earlier, I don't know (if it does I apologize).  Instead
+if someone wants to 'skip' that 'worst stall' they can possibly just
+increment the threshold?
+
+Or another idea I just had (it adds work to this), perhaps create a sample
+frequency for the lockup timers.  What I mean by that is, currently the
+timer fires 5 times (or 2.5 for hardlockups) before the NMI triggers.  We
+could create a knob that allows us to sample at 10 or 20 or whatever.
+Then next time the hrtimer goes off it would just reload the new
+frequency.
+
+This would allow better resolution on the worst stall I believe, but it
+invovles more knobs now. So the knobs would look like
+
+watchdog_thresh - length of time before NMI fires (currently 10)
+watchdog_sample_freq - number of times hrtimer fires before NMI fires
+			(currently 5, well 2.5)
+watchdog_worst_stall_hard - number of sample_freq before printing warning
+				(currently 2 I think)
+
+
+Because you converted to ms resolution, it is easier to divide the
+frequency up.  Of course if you increase the sample frequency, you would
+probably have to increase the worst stall number too.
+
+The downside is the power management folks would whine that it drains
+laptop batteries.  But Matthew Garret sits a few cubes down from me, so I
+can probably have him help me hook into the idle thread to quiesce the
+timers.
+
+Thoughts?
+
+code comments below
+> 
+> Signed-off-by: Alex Neronskiy <zakmagnus@chromium.org>
+> ---
+>  kernel/watchdog.c |  107 ++++++++++++++++++++++++++++++++++++++++++----------
+>  1 files changed, 86 insertions(+), 21 deletions(-)
+> 
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index 8dd9ed4..9cdc6bb 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -23,13 +23,24 @@
+>  #include <linux/notifier.h>
+>  #include <linux/module.h>
+>  #include <linux/sysctl.h>
+> +#include <linux/stacktrace.h>
+> +#include <linux/seq_file.h>
+> +#include <linux/proc_fs.h>
+>  
+>  #include <asm/irq_regs.h>
+>  #include <linux/perf_event.h>
+>  
+> +#define STALL_MAX_TRACE_DEPTH 50
+>  int watchdog_enabled = 1;
+>  int __read_mostly watchdog_thresh = 10;
+>  unsigned long worst_softstall;
+> +static unsigned long softstall_trace_entries[STALL_MAX_TRACE_DEPTH];
+> +static struct stack_trace softstall_trace = {
+> +	.nr_entries = 0,
+> +	.max_entries = STALL_MAX_TRACE_DEPTH,
+> +	.entries = softstall_trace_entries,
+> +	.skip = 0
+> +};
+>  static DEFINE_SPINLOCK(softstall_lock);
+>  
+>  static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
+> @@ -46,6 +57,13 @@ static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_missed);
+>  static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
+>  
+>  unsigned long worst_hardstall;
+> +static unsigned long hardstall_trace_entries[STALL_MAX_TRACE_DEPTH];
+> +static struct stack_trace hardstall_trace = {
+> +	.nr_entries = 0,
+> +	.max_entries = STALL_MAX_TRACE_DEPTH,
+> +	.entries = hardstall_trace_entries,
+> +	.skip = 0
+> +};
+>  static DEFINE_SPINLOCK(hardstall_lock);
+>  
+>  /* The number of consecutive hard check failures before it's a lockup */
+> @@ -210,23 +228,16 @@ void touch_softlockup_watchdog_sync(void)
+>  /* watchdog detector functions */
+>  static void update_hardstall(unsigned long stall, int this_cpu)
+>  {
+> -	int update_stall = 0;
+> -
+>  	if (stall > hardstall_thresh && stall > worst_hardstall) {
+>  		unsigned long flags;
+>  		spin_lock_irqsave(&hardstall_lock, flags);
+> -		update_stall = stall > worst_hardstall;
+> -		if (update_stall)
+> +		if (stall > worst_hardstall) {
+>  			worst_hardstall = stall;
+> +			hardstall_trace.nr_entries = 0;
+> +			save_stack_trace(&hardstall_trace);
+> +		}
+>  		spin_unlock_irqrestore(&hardstall_lock, flags);
+>  	}
+> -
+> -	if (update_stall) {
+> -		printk(KERN_WARNING "LOCKUP may be in progress!"
+> -			"Worst hard stall seen on CPU#%d: %lu interrupts missed\n",
+> -			this_cpu, stall);
+> -		dump_stack();
+> -	}
+>  }
+>  
+>  static int is_hardlockup(int this_cpu)
+> @@ -252,23 +263,17 @@ static int is_hardlockup(int this_cpu)
+>  
+>  static void update_softstall(unsigned long stall, int this_cpu)
+>  {
+> -	int update_stall = 0;
+>  	if (stall > get_softstall_thresh() &&
+>  			stall > worst_softstall + softstall_diff_thresh) {
+>  		unsigned long flags;
+>  		spin_lock_irqsave(&softstall_lock, flags);
+> -		update_stall = stall > worst_softstall + softstall_diff_thresh;
+> -		if (update_stall)
+> +		if (stall > worst_softstall + softstall_diff_thresh) {
+>  			worst_softstall = stall;
+> +			softstall_trace.nr_entries = 0;
+> +			save_stack_trace(&softstall_trace);
+> +		}
+>  		spin_unlock_irqrestore(&softstall_lock, flags);
+>  	}
+> -
+> -	if (update_stall) {
+> -		printk(KERN_WARNING "LOCKUP may be in progress!"
+> -				"Worst soft stall seen on CPU#%d: %lums\n",
+> -				this_cpu, stall);
+> -		dump_stack();
+> -	}
+>  }
+>  
+>  static int is_softlockup(unsigned long touch_ts, int this_cpu)
+> @@ -667,10 +672,63 @@ static struct notifier_block __cpuinitdata cpu_nfb = {
+>  	.notifier_call = cpu_callback
+>  };
+>  
+> +static int show_stall_trace(struct seq_file *f, void *v)
+> +{
+> +	int i, end;
+> +	struct stack_trace *trace = f->private;
+> +	spinlock_t *lock;
+
+This lock is defined locally, I don't think that is what you want.  Locks
+need to be a shared variable.  You might want to use a mutex here so it
+can sleep in case the stack trace is long.  It is only called from the
+user context I believe so it should be fine.
+
+> +	unsigned long flags;
+> +
+> +	if (trace == &softstall_trace)
+> +		lock = &softstall_lock;
+> +	else
+> +		lock = &hardstall_lock;
+> +
+> +	end = trace->nr_entries;
+> +	/* don't bother printing the trailing value */
+> +	if (end < trace->max_entries)
+> +		end--;
+> +
+> +	spin_lock_irqsave(lock, flags);
+> +	for (i = 0; i < end; i++) {
+> +		seq_printf(f, "[<%pK>] %pS\n", (void *)trace->entries[i],
+> +				(void *)trace->entries[i]);
+> +	}
+> +	spin_unlock_irqrestore(lock, flags);
+> +
+> +	return 0;
+> +}
+> +
+> +static int softstall_trace_open(struct inode *inode, struct file *file)
+> +{
+> +	return single_open(file, show_stall_trace, &softstall_trace);
+> +}
+> +
+> +static int hardstall_trace_open(struct inode *inode, struct file *file)
+> +{
+> +	return single_open(file, show_stall_trace, &hardstall_trace);
+> +}
+> +
+> +static struct file_operations softstall_trace_ops = {
+> +	.open = softstall_trace_open,
+> +	.read = seq_read,
+> +	.write = seq_write,
+> +	.llseek = seq_lseek,
+> +	.release = seq_release
+> +};
+> +static struct file_operations hardstall_trace_ops = {
+> +	.open = hardstall_trace_open,
+> +	.read = seq_read,
+> +	.write = seq_write,
+> +	.llseek = seq_lseek,
+> +	.release = seq_release
+> +};
+> +
+>  void __init lockup_detector_init(void)
+>  {
+>  	void *cpu = (void *)(long)smp_processor_id();
+>  	int err;
+> +	struct proc_dir_entry *entry;
+>  
+>  	err = cpu_callback(&cpu_nfb, CPU_UP_PREPARE, cpu);
+>  	WARN_ON(notifier_to_errno(err));
+> @@ -678,5 +736,12 @@ void __init lockup_detector_init(void)
+>  	cpu_callback(&cpu_nfb, CPU_ONLINE, cpu);
+>  	register_cpu_notifier(&cpu_nfb);
+>  
+> +	entry = create_proc_entry("softstall_trace", 0444, NULL);
+> +	if (entry)
+> +		entry->proc_fops = &softstall_trace_ops;
+> +	entry = create_proc_entry("hardstall_trace", 0444, NULL);
+> +	if (entry)
+> +		entry->proc_fops = &hardstall_trace_ops;
+
+Where do these get created?  Under /proc?  I don't think that will be
+allowed.  I would think this is a debug feature and we should create
+something under /sys/kernel/debug like lockup_detector and stick these files in
+there.
+
+Cheers,
+Don
