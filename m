@@ -1,87 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756872Ab1HEP3A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 11:29:00 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56123 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753643Ab1HEP27 (ORCPT
+	id S1756879Ab1HEPaC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 11:30:02 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19152 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753643Ab1HEP37 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 11:28:59 -0400
-Date: Fri, 5 Aug 2011 18:27:55 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: select_task_rq_fair: WARNING: at kernel/lockdep.c match_held_lock
-Message-ID: <20110805152755.GA4148@swordfish.minsk.epam.com>
-References: <20110804141306.GA3536@swordfish.minsk.epam.com>
- <1312470358.16729.25.camel@twins>
- <20110804153752.GA3562@swordfish.minsk.epam.com>
- <1312472867.16729.38.camel@twins>
- <20110804155347.GB3562@swordfish.minsk.epam.com>
- <1312547780.28695.1.camel@twins>
+	Fri, 5 Aug 2011 11:29:59 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 05 Aug 2011 08:29:39 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Liam Girdwood <lrg@ti.com>,
+        Chris Ball <cjb@laptop.org>, "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Fri, 5 Aug 2011 08:29:38 -0700
+Subject: RE: [PATCH 1/3] irq: If an IRQ is a GPIO, request and configure it
+Thread-Topic: [PATCH 1/3] irq: If an IRQ is a GPIO, request and configure it
+Thread-Index: AcxTMXR1XXCeYTGoT52Q1ob/Xae7iwAUpNbw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049F171EF4@HQMAIL01.nvidia.com>
+References: <1312498820-2275-1-git-send-email-swarren@nvidia.com>
+ <1312498820-2275-2-git-send-email-swarren@nvidia.com>
+ <20110805000148.GB13321@opensource.wolfsonmicro.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF049F171EC1@HQMAIL01.nvidia.com>
+ <20110805053510.GA16956@opensource.wolfsonmicro.com>
+In-Reply-To: <20110805053510.GA16956@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312547780.28695.1.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (08/05/11 14:36), Peter Zijlstra wrote:
-> The below is what I've come up with.
->
+Mark Brown wrote at Thursday, August 04, 2011 11:35 PM:
+> On Thu, Aug 04, 2011 at 08:53:34PM -0700, Stephen Warren wrote:
+> 
+> > Well, things break. This is essentially the problem I was describing in
+> > the PATCH 0 email, just with a slightly different motivation.
+> 
+> There's a bunch of existing code using that idiom.
 
-Hello,
-I think that should work. Will test, anyway.
+Certainly.
 
-Thanks,
-	Sergey
- 
-> ---
-> Subject: lockdep: Fix wrong assumption in match_held_lock
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date: Fri Aug 05 14:26:17 CEST 2011
+> > I suppose that an alternative here would be to simply ignore any errors
+> > from gpio_request. This might have the benefit of removing the need for
+> > the other two patches I posted in the series. However, it seems a little
+> > dirty; one benefit of the IRQ code calling gpio_request and honoring
+> > errors would be to detect when some completely unrelated code had a bug
+> > and had called gpio_request on the GPIO before. Such detection would be
+> > non-existent if we don't error out on gpio_request. Perhaps some mechanism
+> > is needed to indicate that the driver has explicitly already called
+> > gpio_request for a legitimate shared purpose, and only then ignore
+> > errors?
 > 
-> match_held_lock() was assuming it was being called on a lock class
-> that had already seen usage. 
-> 
-> This condition was true for bug-free code using lockdep_assert_held(),
-> since you're in fact holding the lock when calling it. However the
-> assumption fails the moment you assume the assertion can fail, which
-> is the whole point of having the assertion in the first place.
-> 
-> Anyway, now that there's more lockdep_is_held() users, notably
-> __rcu_dereference_check(), its much easier to trigger this since we
-> test for a number of locks and we only need to hold any one of them to
-> be good.
-> 
-> Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  kernel/lockdep.c |    8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
-> 
-> Index: linux-2.6/kernel/lockdep.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/lockdep.c
-> +++ linux-2.6/kernel/lockdep.c
-> @@ -3111,7 +3111,13 @@ static int match_held_lock(struct held_l
->  		if (!class)
->  			class = look_up_lock_class(lock, 0);
->  
-> -		if (DEBUG_LOCKS_WARN_ON(!class))
-> +		/*
-> +		 * If look_up_lock_class() failed to find a class, we're trying
-> +		 * to test if we hold a lock that has never yet been acquired.
-> +		 * Clearly if the lock hasn't been acquired _ever_, we're not
-> +		 * holding it either, so report failure.
-> +		 */
-> +		if (!class)
->  			return 0;
->  
->  		if (DEBUG_LOCKS_WARN_ON(!hlock->nest_lock))
-> 
+> But it's not a bug to use a GPIO as an IRQ source, otherwise we wouldn't
+> have gpio_to_irq() in the first place.
+
+True, but I think there are two cases:
+
+1) Some code legitimately uses a pin as both a GPIO and IRQ, and is fully
+cognizant of the fact, just like in your example -> no bug.
+
+2) Two pieces of unrelated code somehow accidentally get a GPIO and IRQ
+number that map to the same resource, e.g. due to incorrect board files or
+Device Tree content. This is probably a bug, but ends up looking exactly
+the same as far as the IRQ code's gpio_request call failing in the patch I
+posted.
+
+> Feels like we need a backchannel
+> between gpiolib and the IRQ code to do this.  Or perhaps the drivers
+> that implement this should be taking care of setting up the GPIO mode?
+
+-- 
+nvpublic
+
