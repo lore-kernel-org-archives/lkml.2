@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707Ab1HEVWP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 17:22:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49866 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751346Ab1HEVWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 17:22:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,325,1309762800"; 
-   d="scan'208";a="35854162"
-Message-ID: <4E3C5F03.8090100@linux.intel.com>
-Date: Fri, 05 Aug 2011 14:22:11 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-Organization: Intel Open Source Technology Center
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [x86] Fix prefetch instruction
-References: <alpine.DEB.2.00.1108051116520.28580@router.home> <4E3C4EF1.3040709@zytor.com> <alpine.DEB.2.00.1108051608110.4821@router.home>
-In-Reply-To: <alpine.DEB.2.00.1108051608110.4821@router.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755449Ab1HEVYh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 17:24:37 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55591 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191Ab1HEVYg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 17:24:36 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH 0/3] Move OF i2c functions into i2c core
+Date: Fri,  5 Aug 2011 16:24:25 -0500
+Message-Id: <1312579468-19365-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2011 02:10 PM, Christoph Lameter wrote:
->>
->> Have you done any performance analysis on this versus the null case?  I
->> know there are some workloads where it helps, but if it hurts as many as
->> it helps...
-> 
-> No I have not. prefetch IMHO means that the cacheline is fetched early so
-> that the cacheline is fully available like any other to the code.
-> prefetchnta does fetch the cacheline too but its not treated like the other cacheline but
-> preferably thrown out again. Its a "streamfetch" designed for apps that
-> scan over large amounts of memory and want to avoid cache pollution.
-> 
-> This is surprising to the end user as far as I can tell.
-> 
+From: Rob Herring <rob.herring@calxeda.com>
 
-Right.  However, Linus has brought up the hypothesis that prefetch might
-actually be a net loss on x86, because current x86 processors are
-generally doing a good job with prefetching in hardware.  Directed
-prefetches can thus be a net minus.
+As suggested by Grant, this series moves OF i2c functions in of_i2c.c into
+i2c-core.c. This simplifies OF i2c drivers slightly. Combining the
+functions is necessary to avoid a module circular dependency between
+i2c-core.ko and of_i2c.ko.
 
-	-hpa
+Compile tested on ARM (DT/non-DT VExpress) and PowerPC (8xxx and 44x).
+
+Rob
+
+Rob Herring (3):
+  i2c: move of_i2c_register_devices call into core
+  i2c: move OF i2c related functions into i2c core
+  i2c-designware: add OF binding support
+
+ Documentation/devicetree/bindings/i2c/dw-i2c.txt |   23 +++++
+ arch/powerpc/platforms/44x/warp.c                |    1 -
+ drivers/i2c/busses/i2c-cpm.c                     |    6 --
+ drivers/i2c/busses/i2c-designware.c              |    8 ++
+ drivers/i2c/busses/i2c-ibm_iic.c                 |    4 -
+ drivers/i2c/busses/i2c-mpc.c                     |    2 -
+ drivers/i2c/busses/i2c-pxa.c                     |    2 -
+ drivers/i2c/busses/i2c-tegra.c                   |    3 -
+ drivers/i2c/i2c-core.c                           |   87 +++++++++++++++++++-
+ drivers/of/Makefile                              |    1 -
+ drivers/of/of_i2c.c                              |   97 ----------------------
+ include/linux/i2c.h                              |    4 +
+ include/linux/of_i2c.h                           |   30 -------
+ 13 files changed, 121 insertions(+), 147 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/i2c/dw-i2c.txt
+ delete mode 100644 drivers/of/of_i2c.c
+ delete mode 100644 include/linux/of_i2c.h
+
+-- 
+1.7.4.1
+
