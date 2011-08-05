@@ -1,93 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756530Ab1HETeH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 15:34:07 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12098 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756375Ab1HETeE convert rfc822-to-8bit (ORCPT
+	id S1756389Ab1HETef (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 15:34:35 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:43590 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752974Ab1HETeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 15:34:04 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 05 Aug 2011 12:33:32 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 5 Aug 2011 12:33:31 -0700
-Subject: RE: [RFC PATCH 0/3] If an IRQ is a GPIO, request and configure it
-Thread-Topic: [RFC PATCH 0/3] If an IRQ is a GPIO, request and configure it
-Thread-Index: AcxTpAmIAkEbJij2SsyU0opIjtXeegAAkq1w
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049F171FD3@HQMAIL01.nvidia.com>
-References: <1312498820-2275-1-git-send-email-swarren@nvidia.com>
- <20110805094017.GC20575@n2100.arm.linux.org.uk>
- <74CDBE0F657A3D45AFBB94109FB122FF049F171EFC@HQMAIL01.nvidia.com>
- <20110805191504.GB28958@n2100.arm.linux.org.uk>
-In-Reply-To: <20110805191504.GB28958@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 5 Aug 2011 15:34:31 -0400
+Date: Fri, 5 Aug 2011 20:34:27 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: torvalds@linux-foundation.org
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] x86 platform driver updates
+Message-ID: <20110805193427.GA24146@srcf.ucam.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux wrote at Friday, August 05, 2011 1:15 PM:
-> On Fri, Aug 05, 2011 at 08:43:20AM -0700, Stephen Warren wrote:
-> > Russell King - ARM Linux wrote at Friday, August 05, 2011 3:40 AM:
-> > > On Thu, Aug 04, 2011 at 05:00:17PM -0600, Stephen Warren wrote:
-> > > > In http://www.spinics.net/lists/linux-tegra/msg01731.html, Mark Brown
-> > > > pointed out that it was a little silly forcing every board or driver
-> > > > to gpio_request() a GPIO that is later converted to an IRQ, and passed
-> > > > to request_irq. The first patch in this series instead makes the core
-> > > > IRQ code perform these calls when appropriate, to avoid duplicating it
-> > > > everywhere.
-> > >
-> > > Trying to go from IRQ to GPIO is not a good idea - most of the
-> > > IRQ <-> GPIO macros we have today are just plain broken.  Many of them
-> > > just add or subtract a constant, which means non-GPIO IRQs have an
-> > > apparant GPIO number too.  Couple this with the fact that all positive
-> > > GPIO numbers are valid, and this is a recipe for wrong GPIOs getting
-> > > used and GPIOs being requested for non-GPIO IRQs.
-> > >
-> > > I think this was also discussed in the past, and the conclusion was that
-> > > IRQs should be kept separate from GPIOs.  Maybe views have changed since
-> > > then...
-> > >
-> > > However, if we do want to do this, then it would be much better to provide
-> > > a new API for requesting GPIO IRQs, eg:
-> > >
-> > > gpio_request_irq()
-> > >
-> > > which would wrap around request_threaded_irq(), takes a GPIO number,
-> > > does the GPIO->IRQ conversion internally, and whatever GPIO setup is
-> > > required.  Something like this:
-> >
-> > With that approach, drivers need to explicitly know whether they're
-> > passed a GPIO or an IRQ, and do something different, or they need to
-> > choose to only accept a GPIO or IRQ.
-> 
-> You completely missed the biggest reason why your approach is broken.
+Hi Linus,
 
-No, I didn't.
+Various cleanups from Axel, a pile of patches for the asus and acer 
+drivers and a few odds and ends. Most of this has been baking in next 
+for a while, and the newer stuff is Obviously Correct(tm).
 
-I was discussing whether an alternative API for IRQ registration
-would work, and I was pointing out some problems with it.
+The following changes since commit de96355c111679dd6e2c5c73e25e814c72510c58:
 
-That has nothing to do with whether my original proposal is workable.
+  Merge branch 'drm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6 (2011-08-05 06:44:38 -1000)
+
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.git for_linus
+
+Andy Lutomirski (1):
+      Add KEY_MICMUTE and enable it on Lenovo X220
+
+Anton V. Boyarshinov (1):
+      acerhdf.c: spaces in aliased changed to *
+
+Axel Lin (8):
+      platform-drivers-x86: dell-laptop: Remove unneeded mutex_init() for buffer_mutex
+      platform-drivers-x86: msi-wmi: add missing sparse_keymap_free in msi_wmi_init error path
+      platform-drivers-x86: intel_mid_thermal: fix memory leak
+      platform-drivers-x86: intel_menlow: add missing return AE_OK for intel_menlow_register_sensor()
+      platform-drivers-x86: intel_rar_register: convert to DEFINE_PCI_DEVICE_TABLE
+      platform-drivers-x86: intel_scu_ipc: convert to DEFINE_PCI_DEVICE_TABLE
+      platform-drivers-x86: samsung-q10: make dmi_check_callback return 1
+      platform-drivers-x86: ideapad-laptop: add missing ideapad_input_exit in ideapad_acpi_add error path
+
+Corentin Chary (12):
+      asus-wmi: fix hwmon/pwm1
+      asus-wmi: second part of the version starts at 16 not 8
+      asus-wmi: add keyboard backlight support
+      asus-wmi: fix section mismatch
+      asus-wmi: fix keyboard backlight detection
+      asus-wmi: add some device ids
+      asus-wmi: add thermal sensor
+      asus-wmi: check for temp1 presence
+      asus-wmi: return proper value in store_cpufv()
+      asus-wmi: add CWAP support and clarify the meaning of WAPF bits
+      asus-wmi: add gps rfkill support
+      asus-wmi: add uwb rfkill support
+
+Frederick van der Wyck (1):
+      Platform: Samsung Q10 backlight driver
+
+Ike Panhc (3):
+      ideapad: define cfg bits and create sysfs node for cfg
+      ideapad: let camera_power node invisiable if no camera
+      ideapad: add backlight driver
+
+J Witteveen (1):
+      Samsung Laptop platform driver: support N510
+
+Jesse Barnes (1):
+      x86 driver: fix typo in TDP override enabling
+
+Julien Valroff (1):
+      acerhdf: add support for Aspire 1810TZ BIOS v1.3314
+
+Lee, Chun-Yi (3):
+      acer-wmi: schedule threeg and interface sysfs for feature removal
+      msi-laptop: add MSI U270 netbook to module alias and scm list
+      acer-wmi: support Lenovo ideapad S205 wifi switch
+
+Seth Forshee (5):
+      acer-wmi: Add support for Aspire 1830 wlan hotkey
+      asus-wmi: Add callback for hotkey filtering
+      eeepc-wmi: Add support for T101MT Home/Express Gate key
+      asus-wmi: Enable autorepeat for hotkey input device
+      dell-wmi: Add keys for Dell XPS L502X
+
+Thomas Courbon (1):
+      Platform: fix samsung-laptop DMI identification for N150/N210/220/N230
+
+ .../ABI/testing/sysfs-platform-ideapad-laptop      |   17 ++
+ Documentation/feature-removal-schedule.txt         |   11 +
+ drivers/platform/x86/Kconfig                       |    8 +
+ drivers/platform/x86/Makefile                      |    1 +
+ drivers/platform/x86/acer-wmi.c                    |   40 +++-
+ drivers/platform/x86/acerhdf.c                     |   13 +-
+ drivers/platform/x86/asus-laptop.c                 |    9 +-
+ drivers/platform/x86/asus-nb-wmi.c                 |   27 ++-
+ drivers/platform/x86/asus-wmi.c                    |  239 +++++++++++++++++---
+ drivers/platform/x86/asus-wmi.h                    |    7 +
+ drivers/platform/x86/dell-laptop.c                 |    1 -
+ drivers/platform/x86/dell-wmi.c                    |   10 +
+ drivers/platform/x86/eeepc-wmi.c                   |   27 +++
+ drivers/platform/x86/ideapad-laptop.c              |  195 ++++++++++++++--
+ drivers/platform/x86/intel_ips.c                   |    4 +-
+ drivers/platform/x86/intel_menlow.c                |    2 +
+ drivers/platform/x86/intel_mid_thermal.c           |   26 ++-
+ drivers/platform/x86/intel_rar_register.c          |    4 +-
+ drivers/platform/x86/intel_scu_ipc.c               |    2 +-
+ drivers/platform/x86/msi-laptop.c                  |   10 +
+ drivers/platform/x86/msi-wmi.c                     |    1 +
+ drivers/platform/x86/samsung-laptop.c              |   20 ++
+ drivers/platform/x86/samsung-q10.c                 |  196 ++++++++++++++++
+ drivers/platform/x86/thinkpad_acpi.c               |   11 +-
+ include/linux/input.h                              |    2 +
+ 25 files changed, 799 insertions(+), 84 deletions(-)
+ create mode 100644 drivers/platform/x86/samsung-q10.c
 
 -- 
-nvpublic
-
+Matthew Garrett | mjg59@srcf.ucam.org
