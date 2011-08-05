@@ -1,193 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756732Ab1HEOf5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 10:35:57 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:53802 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753687Ab1HEOfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 10:35:53 -0400
-Date: Fri, 5 Aug 2011 07:34:47 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Dmitry Artamonow <mad_soft@inbox.ru>
-CC: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Ian Dobson <i.dobson@planet-ian.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hwmon: add caseopen detection to w83627ehf driver
-Message-ID: <20110805143447.GA2538@ericsson.com>
-References: <1312549243-7503-1-git-send-email-mad_soft@inbox.ru>
+	id S1756766Ab1HEOgM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 10:36:12 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:60837 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756752Ab1HEOgI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 10:36:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1312549243-7503-1-git-send-email-mad_soft@inbox.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E3BEABC.3030909@landley.net>
+References: <4E3BEABC.3030909@landley.net>
+Date: Fri, 5 Aug 2011 10:36:07 -0400
+Message-ID: <CACqU3MUExSQEFAz415p8byAo=CLtfbmVVy98iCbMx_wGC3ppuA@mail.gmail.com>
+Subject: Re: Where did Linus' git tree go?
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Rob Landley <rob@landley.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 05, 2011 at 09:00:43AM -0400, Dmitry Artamonow wrote:
-> Export caseopen alarm status into userspace for
-> Winbond w83627* chips and also implement alarm clear knob.
-> 
-> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
-> ---
->  drivers/hwmon/w83627ehf.c |   66 +++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 66 insertions(+), 0 deletions(-)
-> 
-> Tested on board with W83627DHG-P chip and also checked against datasheets
-> for other W83627 chips. NCT6775F / NCT6776F are currently excluded as I
-> haven't found datasheets for them online and can't check if they have the
-> same registers for caseopen detection. If anyone having access to these
-> datasheets can check that caseopen detection is read from 4th bit of
-> register 42h (Bank 0), and cleared by writing 1 and then 0 into bit 7 of
-> register 46h (Bank 0), then I'll throw away those 'if'-s and resend updated
-> patch.
-> 
-Hi Dmitry,
+On Fri, Aug 5, 2011 at 9:06 AM, Rob Landley <rob@landley.net> wrote:
+> I did a pull and it said the remote hung up unexpectedly.  About the
+> fifth time I went to git.kernel.org and searched for "torvalds" and
+> there's no 2.6 tree...  Checked the list but I don't see a post from
+> Linus about it...
+>
+> Tree moved?  Transient glitch?  Nothing on lwn.net about it...
+>
+you missed a message. He pointed out on a "Note on Linux 3.0 and the
+3.1 merge window" that the tree had moved from
 
-NCT6775F / NCT6776F support the same bits. NCT6776F has a second set of bits.
-42/4 and 46/7 is CASEOPEN0, 42/6 and 46/6 is CASEOPEN1. Register 46/7 (and 46/6
-for NCT6776F) is self-clearing, meaning it is not necessary to write 0,
-but that should not matter.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=summary
 
-Couple of additional comments below.
+to
 
-> diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
-> index f2b377c..696e5d6 100644
-> --- a/drivers/hwmon/w83627ehf.c
-> +++ b/drivers/hwmon/w83627ehf.c
-> @@ -197,6 +197,9 @@ static const u16 W83627EHF_REG_TEMP_CONFIG[] = { 0, 0x152, 0x252, 0 };
->  #define W83627EHF_REG_ALARM2		0x45A
->  #define W83627EHF_REG_ALARM3		0x45B
->  
-> +#define W83627EHF_REG_CASEOPEN_DET	0x42 /* SMI STATUS #2, bit 4 */
-> +#define W83627EHF_REG_CASEOPEN_CLR	0x46 /* SMI MASK #3, bit 7 */
-> +
->  /* SmartFan registers */
->  #define W83627EHF_REG_FAN_STEPUP_TIME 0x0f
->  #define W83627EHF_REG_FAN_STEPDOWN_TIME 0x0e
-> @@ -468,6 +471,7 @@ struct w83627ehf_data {
->  	s16 temp_max[9];
->  	s16 temp_max_hyst[9];
->  	u32 alarms;
-> +	u8 caseopen;
->  
->  	u8 pwm_mode[4]; /* 0->DC variable voltage, 1->PWM variable duty cycle */
->  	u8 pwm_enable[4]; /* 1->manual
-> @@ -873,6 +877,9 @@ static struct w83627ehf_data *w83627ehf_update_device(struct device *dev)
->  			       (w83627ehf_read_value(data,
->  					W83627EHF_REG_ALARM3) << 16);
->  
-> +		data->caseopen = !!(w83627ehf_read_value(data,
-> +					W83627EHF_REG_CASEOPEN_DET) & 0x10);
-> +
-If you use !!, you should define caseopen as bool for consistency.
-And then you don't need !!  since the conversion to 0/1 will be done automatically.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=summary
 
-Even better would be to just save the register value and enable support 
-for the second set of caseopen bits for NCT6776F (ie do the !!() in
-the show function).
+but that the first one would be kept to maintain existing remote working.
 
->  		data->last_updated = jiffies;
->  		data->valid = 1;
->  	}
-> @@ -1654,6 +1661,47 @@ show_vid(struct device *dev, struct device_attribute *attr, char *buf)
->  }
->  static DEVICE_ATTR(cpu0_vid, S_IRUGO, show_vid, NULL);
->  
-> +
-> +/* Case open detection */
-> +
-> +static ssize_t
-> +show_caseopen(struct device *dev, struct device_attribute *attr, char *buf)
-> +{
-> +	struct w83627ehf_data *data = w83627ehf_update_device(dev);
-> +	unsigned int reg;
-> +	mutex_lock(&data->update_lock);
-> +	reg = w83627ehf_read_value(data, 0x42);
-> +	mutex_unlock(&data->update_lock);
-> +	return sprintf(buf, "%d\n", data->caseopen);
-> +}
-> +
-> +static ssize_t
-> +store_caseopen_clear(struct device *dev, struct device_attribute *attr,
-> +			const char *buf, size_t count)
-> +{
-> +	struct w83627ehf_data *data = dev_get_drvdata(dev);
-> +	unsigned long val;
-> +	unsigned int reg;
-> +
-> +	if (strict_strtoul(buf, 10, &val) || val != 0)
-> +		return -EINVAL;
-> +
-> +	mutex_lock(&data->update_lock);
-> +	reg = w83627ehf_read_value(data, W83627EHF_REG_CASEOPEN_CLR);
-> +	w83627ehf_write_value(data, W83627EHF_REG_CASEOPEN_CLR, reg | 0x80);
-> +	reg = w83627ehf_read_value(data, W83627EHF_REG_CASEOPEN_CLR);
-> +	w83627ehf_write_value(data, W83627EHF_REG_CASEOPEN_CLR, reg & ~0x80);
-> +	reg = w83627ehf_read_value(data, W83627EHF_REG_CASEOPEN_CLR);
+Search for
 
-I am a bit lost here. What are those additional two reads for ?
-Seems to be unnecessary.
+Message-ID: <CA+55aFxKbAXXv2x0ykezsXbSeZZQ0DwPRzYPY_QZ0NdFKes_NQ@mail.gmail.com>
 
-> +	data->valid = 0;	/* Force cache refresh */
-> +	mutex_unlock(&data->update_lock);
-> +
-> +	return count;
-> +}
-> +
-> +static struct sensor_device_attribute sda_caseopen =
-> +	SENSOR_ATTR(intrusion0_alarm, S_IWUSR | S_IRUGO, show_caseopen,
-> +			store_caseopen_clear , 12);
-> +
-Formatting: s/ , /, /
+to get the message original.
 
->  /*
->   * Driver and device management
->   */
-> @@ -1663,6 +1711,7 @@ static void w83627ehf_device_remove_files(struct device *dev)
->  	/* some entries in the following arrays may not have been used in
->  	 * device_create_file(), but device_remove_file() will ignore them */
->  	int i;
-> +	struct w83627ehf_sio_data *sio_data = dev->platform_data;
->  	struct w83627ehf_data *data = dev_get_drvdata(dev);
->  
->  	for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays); i++)
-> @@ -1710,6 +1759,13 @@ static void w83627ehf_device_remove_files(struct device *dev)
->  		device_remove_file(dev, &sda_temp_type[i].dev_attr);
->  	}
->  
-> +	/*
-> +	 * FIXME: if NCT chips have same caseopen registers as w83627 ones
-> +	 * this check can be removed
-> +	 */
-> +	if (!(sio_data->kind == nct6775 || sio_data->kind == nct6776))
-> +		device_remove_file(dev, &sda_caseopen.dev_attr);
-> +
-Please remove the check.
+Now you or kernel.org may have had connectivity issues :)
 
->  	device_remove_file(dev, &dev_attr_name);
->  	device_remove_file(dev, &dev_attr_cpu0_vid);
->  }
-> @@ -2261,6 +2317,16 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
->  			goto exit_remove;
->  	}
->  
-> +	/*
-> +	 * FIXME: if NCT chips have same caseopen registers as w83627 ones
-> +	 * this check can be removed
-> +	 */
-> +	if (!(sio_data->kind == nct6775 || sio_data->kind == nct6776)) {
-> +		err = device_create_file(dev, &sda_caseopen.dev_attr);
-> +		if (err)
-> +			goto exit_remove;
-> +	}
-> +
-Please remove the check.
+ - Arnaud
 
->  	err = device_create_file(dev, &dev_attr_name);
->  	if (err)
->  		goto exit_remove;
-> -- 
-> 1.7.5.1.300.gc565c
-> 
+> Rob
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
