@@ -1,108 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756732Ab1HEWe2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 18:34:28 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2881 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756070Ab1HEWe0 convert rfc822-to-8bit (ORCPT
+	id S1756806Ab1HEWfU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 18:35:20 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:53941 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752230Ab1HEWfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 18:34:26 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 05 Aug 2011 15:34:11 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Ben Dooks <ben-i2c@fluff.org>, Axel Lin <axel.lin@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Colin Cross <ccross@android.com>, John Bonesio <bones@secretlab.ca>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Fri, 5 Aug 2011 15:33:53 -0700
-Subject: RE: [PATCH] i2c: tegra: Add CONFIG_OF guards for device tree bits
-Thread-Topic: [PATCH] i2c: tegra: Add CONFIG_OF guards for device tree bits
-Thread-Index: AcxTR8BFt1T01+x1RQyVF/gYA+nTxgAd78UQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049F172098@HQMAIL01.nvidia.com>
-References: <1312527921.21955.2.camel@phoenix>
- <20110805081444.GC19115@trinity.fluff.org>
-In-Reply-To: <20110805081444.GC19115@trinity.fluff.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 5 Aug 2011 18:35:18 -0400
+Date: Sat, 6 Aug 2011 01:34:08 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "Lan, Tianyu" <tianyu.lan@intel.com>
+Cc: Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Battery: sysfs_remove_battery(): possible circular locking
+Message-ID: <20110805223408.GA3363@swordfish.minsk.epam.com>
+References: <20110805003322.GA8311@swordfish>
+ <1312521008.2096.173.camel@lantianyu-ws>
+ <20110805163944.GA3132@swordfish.minsk.epam.com>
+ <625BA99ED14B2D499DC4E29D8138F15062C4514167@shsmsx502.ccr.corp.intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <625BA99ED14B2D499DC4E29D8138F15062C4514167@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Dooks wrote at Friday, August 05, 2011 2:15 AM:
-> On Fri, Aug 05, 2011 at 03:05:21PM +0800, Axel Lin wrote:
-> > The device tree bits need to be protected by CONFIG_OF guards.
-> > This patch fixes below build error with "make tegra_defconfig;make".
-> >
-> >   CC      drivers/i2c/busses/i2c-tegra.o
-> > drivers/i2c/busses/i2c-tegra.c: In function 'tegra_i2c_probe':
-> > drivers/i2c/busses/i2c-tegra.c:615: error: implicit declaration of function 'of_get_property'
-> > drivers/i2c/busses/i2c-tegra.c:616: warning: assignment makes pointer from integer without a cast
-> 
-> It might be worth asking Grant if providing stubs for the of_ calls are
-> as good idea, I'd like to avoid having #ifdef CONFIG_OF splattered around
-> the place (it leads to errors).
+Commit 9c921c22a7f33397a6774d7fa076db9b6a0fd669
+Author: Lan Tianyu <tianyu.lan@intel.com>
 
-When I first proposed the patch below, Grant said:
+    ACPI / Battery: Resolve the race condition in the sysfs_remove_battery()
 
-> ... I've been avoiding creating a
-> dummy inline of of_get_property(), but not for any particularly strong
-> reason other than to avoid bloating linux/of.h.  I probably would
-> accept a patch that added it.
+fixed BUG https://bugzilla.kernel.org/show_bug.cgi?id=35642 , but as a side
+effect made lockdep unhappy with sysfs_remove_battery():
 
-So, I'll go ahead and whip up a patch to do that instead, since Ben
-would prefer not to have the ifdefs in the I2C driver.
+[14818.477168] 
+[14818.477170] =======================================================
+[14818.477200] [ INFO: possible circular locking dependency detected ]
+[14818.477221] 3.1.0-dbg-07865-g1280ea8-dirty #668
+[14818.477236] -------------------------------------------------------
+[14818.477257] s2ram/1599 is trying to acquire lock:
+[14818.477276]  (s_active#8){++++.+}, at: [<ffffffff81169147>] sysfs_addrm_finish+0x31/0x5a
+[14818.477323] 
+[14818.477325] but task is already holding lock:
+[14818.477350]  (&battery->lock){+.+.+.}, at: [<ffffffffa0047278>] sysfs_remove_battery+0x10/0x4b [battery]
+[14818.477395] 
+[14818.477397] which lock already depends on the new lock.
+[14818.477399] 
+[..]
+[14818.479121] stack backtrace:
+[14818.479148] Pid: 1599, comm: s2ram Not tainted 3.1.0-dbg-07865-g1280ea8-dirty #668
+[14818.479175] Call Trace:
+[14818.479198]  [<ffffffff814828c3>] print_circular_bug+0x293/0x2a4
+[14818.479228]  [<ffffffff81070cb5>] __lock_acquire+0xfe4/0x164b
+[14818.479260]  [<ffffffff81169147>] ? sysfs_addrm_finish+0x31/0x5a
+[14818.479288]  [<ffffffff810718d2>] lock_acquire+0x138/0x1ac
+[14818.479316]  [<ffffffff81169147>] ? sysfs_addrm_finish+0x31/0x5a
+[14818.479345]  [<ffffffff81168a79>] sysfs_deactivate+0x9b/0xec
+[14818.479373]  [<ffffffff81169147>] ? sysfs_addrm_finish+0x31/0x5a
+[14818.479405]  [<ffffffff81169147>] sysfs_addrm_finish+0x31/0x5a
+[14818.479433]  [<ffffffff81167bc5>] sysfs_hash_and_remove+0x54/0x77
+[14818.479461]  [<ffffffff811681b9>] sysfs_remove_file+0x12/0x14
+[14818.479488]  [<ffffffff81385bf8>] device_remove_file+0x12/0x14
+[14818.479516]  [<ffffffff81386504>] device_del+0x119/0x17c
+[14818.479542]  [<ffffffff81386575>] device_unregister+0xe/0x1a
+[14818.479570]  [<ffffffff813c6ef9>] power_supply_unregister+0x23/0x27
+[14818.479601]  [<ffffffffa004729c>] sysfs_remove_battery+0x34/0x4b [battery]
+[14818.479632]  [<ffffffffa004778f>] battery_notify+0x2c/0x3a [battery]
+[14818.479662]  [<ffffffff8148fe82>] notifier_call_chain+0x74/0xa1
+[14818.479692]  [<ffffffff810624b4>] __blocking_notifier_call_chain+0x6c/0x89
+[14818.479722]  [<ffffffff810624e0>] blocking_notifier_call_chain+0xf/0x11
+[14818.479751]  [<ffffffff8107e40e>] pm_notifier_call_chain+0x15/0x27
+[14818.479770]  [<ffffffff8107ee1a>] enter_state+0xa7/0xd5
+[14818.479782]  [<ffffffff8107e341>] state_store+0xaa/0xc0
+[14818.479795]  [<ffffffff8107e297>] ? pm_async_store+0x45/0x45
+[14818.479807]  [<ffffffff81248837>] kobj_attr_store+0x17/0x19
+[14818.479820]  [<ffffffff81167e27>] sysfs_write_file+0x103/0x13f
+[14818.479834]  [<ffffffff81109037>] vfs_write+0xad/0x13d
+[14818.479847]  [<ffffffff811092b2>] sys_write+0x45/0x6c
+[14818.479860]  [<ffffffff81492f92>] system_call_fastpath+0x16/0x1b
 
-> > make[3]: *** [drivers/i2c/busses/i2c-tegra.o] Error 1
-> > make[2]: *** [drivers/i2c/busses] Error 2
-> > make[1]: *** [drivers/i2c] Error 2
-> > make: *** [drivers] Error 2
-> >
-> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> > ---
-> >  drivers/i2c/busses/i2c-tegra.c |    5 ++++-
-> >  1 files changed, 4 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-> > index 0c6e840..1bfe85e 100644
-> > --- a/drivers/i2c/busses/i2c-tegra.c
-> > +++ b/drivers/i2c/busses/i2c-tegra.c
-> > @@ -548,7 +548,6 @@ static int tegra_i2c_probe(struct platform_device *pdev)
-> >  	struct resource *iomem;
-> >  	struct clk *clk;
-> >  	struct clk *i2c_clk;
-> > -	const unsigned int *prop;
-> >  	void *base;
-> >  	int irq;
-> >  	int ret = 0;
-> > @@ -611,11 +610,15 @@ static int tegra_i2c_probe(struct platform_device *pdev)
-> >  	if (pdata) {
-> >  		i2c_dev->bus_clk_rate = pdata->bus_clk_rate;
-> >
-> > +#ifdef CONFIG_OF
-> >  	} else if (i2c_dev->dev->of_node) {    /* if there is a device tree node ... */
-> > +		const unsigned int *prop;
-> > +
-> >  		prop = of_get_property(i2c_dev->dev->of_node,
-> >  				"clock-frequency", NULL);
-> >  		if (prop)
-> >  			i2c_dev->bus_clk_rate = be32_to_cpup(prop);
-> > +#endif
-> >  	}
-> >
-> >  	if (pdev->id == 3)
-> > --
-> > 1.7.4.1
+This patch introduces separate lock to struct acpi_battery to 
+grab in sysfs_remove_battery() instead of battery->lock.
+So fix by Lan Tianyu is still there, we just grab independent lock.
 
--- 
-nvpublic
+
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
+---
+
+ drivers/acpi/battery.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+index 87c0a8d..7711d94 100644
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -99,6 +99,7 @@ enum {
+ 
+ struct acpi_battery {
+ 	struct mutex lock;
++	struct mutex sysfs_lock;
+ 	struct power_supply bat;
+ 	struct acpi_device *device;
+ 	struct notifier_block pm_nb;
+@@ -573,16 +574,16 @@ static int sysfs_add_battery(struct acpi_battery *battery)
+ 
+ static void sysfs_remove_battery(struct acpi_battery *battery)
+ {
+-	mutex_lock(&battery->lock);
++	mutex_lock(&battery->sysfs_lock);
+ 	if (!battery->bat.dev) {
+-		mutex_unlock(&battery->lock);
++		mutex_unlock(&battery->sysfs_lock);
+ 		return;
+ 	}
+ 
+ 	device_remove_file(battery->bat.dev, &alarm_attr);
+ 	power_supply_unregister(&battery->bat);
+ 	battery->bat.dev = NULL;
+-	mutex_unlock(&battery->lock);
++	mutex_unlock(&battery->sysfs_lock);
+ }
+ 
+ /*
+@@ -982,6 +983,7 @@ static int acpi_battery_add(struct acpi_device *device)
+ 	strcpy(acpi_device_class(device), ACPI_BATTERY_CLASS);
+ 	device->driver_data = battery;
+ 	mutex_init(&battery->lock);
++	mutex_init(&battery->sysfs_lock);
+ 	if (ACPI_SUCCESS(acpi_get_handle(battery->device->handle,
+ 			"_BIX", &handle)))
+ 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+@@ -1010,6 +1012,7 @@ static int acpi_battery_add(struct acpi_device *device)
+ fail:
+ 	sysfs_remove_battery(battery);
+ 	mutex_destroy(&battery->lock);
++	mutex_destroy(&battery->sysfs_lock);
+ 	kfree(battery);
+ 	return result;
+ }
+@@ -1027,6 +1030,7 @@ static int acpi_battery_remove(struct acpi_device *device, int type)
+ #endif
+ 	sysfs_remove_battery(battery);
+ 	mutex_destroy(&battery->lock);
++	mutex_destroy(&battery->sysfs_lock);
+ 	kfree(battery);
+ 	return 0;
+ }
 
