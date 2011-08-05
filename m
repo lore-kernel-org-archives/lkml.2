@@ -1,97 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756815Ab1HEP0r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 11:26:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:62383 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566Ab1HEP0q (ORCPT
+	id S1756855Ab1HEP23 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 11:28:29 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:41005 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab1HEP22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 11:26:46 -0400
-X-Authority-Analysis: v=1.1 cv=Pm0sEXe2MdIPK/rOEC7hwDW84D/yDsPO3JtCzsVYOFU= c=1 sm=0 a=vn9O8SEpdqYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=pGLkceISAAAA:8 a=XgS40gwUCIYEoqc6sL8A:9 a=zpbxpyy5fl8F2DrueAEA:7 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] sched/cpupri: Remove cpupri->pri_active
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <mgalbraith@suse.de>,
-        "Luis Claudio R." =?UTF-8?Q?Gon=EF=BF=BDalves?= 
-	<lgoncalv@redhat.com>,
-        Matthew Hank Sabins <msabins@linux.vnet.ibm.com>,
-        Gregory Haskins <gregory.haskins@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110805143822.GA3199@zhy>
-References: <1312317372.18583.101.camel@gandalf.stny.rr.com>
-	 <20110805082008.GA6628@zhy>
-	 <1312547447.18583.195.camel@gandalf.stny.rr.com>
-	 <20110805143822.GA3199@zhy>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 05 Aug 2011 11:26:40 -0400
-Message-ID: <1312558000.18583.201.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 5 Aug 2011 11:28:28 -0400
+Date: Fri, 5 Aug 2011 10:26:40 -0500
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Roberto Sassu <roberto.sassu@polito.it>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kirkland@canonical.com, ecryptfs-devel@lists.launchpad.net,
+        hilld@binarystorm.net
+Subject: Re: [PATCH v2] eCryptfs: fix compile error
+Message-ID: <20110805152639.GA2607@boyd.l.tihix.com>
+References: <1312198421-29989-1-git-send-email-roberto.sassu@polito.it>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312198421-29989-1-git-send-email-roberto.sassu@polito.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-08-05 at 22:38 +0800, Yong Zhang wrote:
-
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> ---
->  kernel/sched_cpupri.c |    3 ---
->  kernel/sched_cpupri.h |    2 --
->  2 files changed, 0 insertions(+), 5 deletions(-)
+On Mon Aug 01, 2011 at 01:33:38PM +0200, Roberto Sassu <roberto.sassu@polito.it> wrote:
+> This patch fixes the compile error reported at the address:
 > 
-> diff --git a/kernel/sched_cpupri.c b/kernel/sched_cpupri.c
-> index 90faffd..5839559 100644
-> --- a/kernel/sched_cpupri.c
-> +++ b/kernel/sched_cpupri.c
-> @@ -151,9 +151,6 @@ void cpupri_set(struct cpupri *cp, int cpu, int newpri)
->  	/*
->  	 * If the cpu was currently mapped to a different value, we
->  	 * need to map it to the new value then remove the old value.
-> -	 * Note, we must add the new value first, otherwise we risk the
-> -	 * cpu being cleared from pri_active, and this cpu could be
-> -	 * missed for a push or pull.
+> https://bugzilla.kernel.org/show_bug.cgi?id=40292
+> 
+> The problem arises when compiling eCryptfs as built-in and the 'encrypted'
+> key type as a module. The patch prevents this combination from being set in
+> the kernel configuration, by fixing the eCryptfs dependencies.
 
-Actually, the above still holds true, just not for pri_active. Probably
-should be changed to:
+This patch does trick. Thanks, Roberto.
 
-	* Note, we must add the new value first, otherwise we risk the
-	* cpu being missed by the priority loop in cpupri_find.
+I'll get this applied and in a pull request soon.
 
-or something as such.
+Tyler
 
->  	 */
->  	if (likely(newpri != CPUPRI_INVALID)) {
->  		struct cpupri_vec *vec = &cp->pri_to_cpu[newpri];
-> diff --git a/kernel/sched_cpupri.h b/kernel/sched_cpupri.h
-> index 6b4cd17..f6d7561 100644
-> --- a/kernel/sched_cpupri.h
-> +++ b/kernel/sched_cpupri.h
-> @@ -4,7 +4,6 @@
->  #include <linux/sched.h>
->  
->  #define CPUPRI_NR_PRIORITIES	(MAX_RT_PRIO + 2)
-> -#define CPUPRI_NR_PRI_WORDS	BITS_TO_LONGS(CPUPRI_NR_PRIORITIES)
->  
->  #define CPUPRI_INVALID -1
->  #define CPUPRI_IDLE     0
-> @@ -18,7 +17,6 @@ struct cpupri_vec {
->  
->  struct cpupri {
->  	struct cpupri_vec pri_to_cpu[CPUPRI_NR_PRIORITIES];
-> -	long              pri_active[CPUPRI_NR_PRI_WORDS];
->  	int               cpu_to_pri[NR_CPUS];
->  };
->  
-
-
-Otherwise looks good.
-
--- Steve
+> 
+> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+> Reported-by: David Hill <hilld@binarystorm.net>
+> ---
+>  fs/ecryptfs/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/ecryptfs/Kconfig b/fs/ecryptfs/Kconfig
+> index 1cd6d9d..cc16562 100644
+> --- a/fs/ecryptfs/Kconfig
+> +++ b/fs/ecryptfs/Kconfig
+> @@ -1,6 +1,6 @@
+>  config ECRYPT_FS
+>  	tristate "eCrypt filesystem layer support (EXPERIMENTAL)"
+> -	depends on EXPERIMENTAL && KEYS && CRYPTO
+> +	depends on EXPERIMENTAL && KEYS && CRYPTO && (ENCRYPTED_KEYS || ENCRYPTED_KEYS=n)
+>  	select CRYPTO_ECB
+>  	select CRYPTO_CBC
+>  	select CRYPTO_MD5
+> -- 
+> 1.7.6
+> 
 
 
