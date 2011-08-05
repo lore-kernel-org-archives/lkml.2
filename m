@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab1HEKUp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 06:20:45 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:63984 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753967Ab1HEKUn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 06:20:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <1312515303-17169-1-git-send-email-tgih.jun@samsung.com>
-References: <1312515303-17169-1-git-send-email-tgih.jun@samsung.com>
-Date: Fri, 5 Aug 2011 11:20:42 +0100
-Message-ID: <CAFbHwiT3p3pSC1q4xQRYkLzSG7tPuGLXB4KKwC-8HWMmtF+fhA@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Fix DDR mode support.
-From: Will Newton <will.newton@gmail.com>
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: linux-mmc@vger.kernel.org, cjb@laptop.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756547Ab1HEKVU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 06:21:20 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:33950 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753393Ab1HEKVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 06:21:19 -0400
+Subject: Re: [PATCH] Remove CLOCK_TICK_RATE from ACTHZ definition
+From: john stultz <johnstul@us.ibm.com>
+To: dsaxena@plexity.net
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>, patches@linaro.org
+In-Reply-To: <20110804000046.GA23503@plexity.net>
+References: <20110804000046.GA23503@plexity.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 05 Aug 2011 03:21:12 -0700
+Message-ID: <1312539672.2764.41.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 5, 2011 at 4:35 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
-> Host driver can't get a hint of DDR mode through ios->ddr flag anymore.
-> ios->timing is currently used to inform DDR mode as a substitute.
-> And capability of MMC_CAP_MMC_HIGHSPEED is added for DDR support.
->
-> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+On Wed, 2011-08-03 at 17:00 -0700, Deepak Saxena wrote:
+> As per https://lkml.org/lkml/2011/2/21/323, we remove
+> CLOCK_TICK_RATE from the definition of ACTHZ as the
+> majority of CLOCK_TICK_RATE values are no longer valid
+> or needed for proper operation of the time code.
+> 
+> Signed-off-by: Deepak Saxena <dsaxena@linaro.org>
 > ---
->  drivers/mmc/host/dw_mmc.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index d65511e..b412a1d 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -699,7 +699,7 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
->        }
->
->        /* DDR mode set */
-> -       if (ios->ddr) {
-> +       if (ios->timing == MMC_TIMING_UHS_DDR50) {
->                regs = mci_readl(slot->host, UHS_REG);
->                regs |= (0x1 << slot->id) << 16;
->                mci_writel(slot->host, UHS_REG, regs);
-> @@ -1646,7 +1646,7 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
->                        mmc->caps |= MMC_CAP_4_BIT_DATA;
->
->        if (host->pdata->quirks & DW_MCI_QUIRK_HIGHSPEED)
-> -               mmc->caps |= MMC_CAP_SD_HIGHSPEED;
-> +               mmc->caps |= MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
->
->  #ifdef CONFIG_MMC_DW_IDMAC
->        mmc->max_segs = host->ring_size;
-> --
-> 1.7.0.4
+>  include/linux/jiffies.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+> index f97672a..d232f00 100644
+> --- a/include/linux/jiffies.h
+> +++ b/include/linux/jiffies.h
+> @@ -55,7 +55,7 @@
+>                               + ((((NOM) % (DEN)) << (LSH)) + (DEN) / 2) / (DEN))
+> 
+>  /* HZ is the requested value. ACTHZ is actual HZ ("<< 8" is for accuracy) */
+> -#define ACTHZ (SH_DIV (CLOCK_TICK_RATE, LATCH, 8))
+> +#define ACTHZ (HZ << 8)
+> 
+>  /* TICK_NSEC is the time between ticks in nsec assuming real ACTHZ */
+>  #define TICK_NSEC (SH_DIV (1000000UL * 1000, ACTHZ, 8))
 
-Acked-by: Will Newton <will.newton@imgtec.com>
+So I'm hesitant about this patch, since the whole point of ACTHZ is to
+provide a higher precision value for the actual irq frequency (as
+hardware won't be able to do exactly 100/250/300/1000HZ).
+
+One could argue that with highres timers, jiffies is usually updated by
+the timekeeping code, which for the most part isn't affected by irq freq
+error. So we could reasonably forgo this minor error correction, only
+hurting systems that use the jiffies clocksource, or require
+ARCH_USES_GETTIMEOFFSET.
+
+However, we would probably want to kill off all the ACTHZ usage as well
+since we're at that point gaining nothing from the extra complexity.
+
+thanks
+-john
+
+
+
+
