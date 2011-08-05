@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755767Ab1HECJR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 22:09:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52640 "EHLO mx1.redhat.com"
+	id S1755813Ab1HECOG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 22:14:06 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46954 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752958Ab1HECJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 22:09:16 -0400
-Date: Thu, 4 Aug 2011 22:09:13 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Zhang, Yanmin" <yanmin.zhang@intel.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Nguyen, Tom L" <tom.l.nguyen@intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>
-Subject: Re: [rfc] suppress excessive AER output
-Message-ID: <20110805020913.GC19434@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Zhang, Yanmin" <yanmin.zhang@intel.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	"Nguyen, Tom L" <tom.l.nguyen@intel.com>,
-	"Huang, Ying" <ying.huang@intel.com>
-References: <20110803223407.GA20646@redhat.com>
- <33AB447FBD802F4E932063B962385B3512D9615780@shsmsx501.ccr.corp.intel.com>
- <20110805015008.GA19434@redhat.com>
- <33AB447FBD802F4E932063B962385B3512D9615B4D@shsmsx501.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <33AB447FBD802F4E932063B962385B3512D9615B4D@shsmsx501.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754287Ab1HECOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 22:14:04 -0400
+Date: Fri, 5 Aug 2011 12:13:56 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the devicetree tree with Linus' tree
+Message-Id: <20110805121356.7dc43da10b3a47f3e49bd53a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__5_Aug_2011_12_13_56_+1000_RGg_zQz0XEaB_Nzg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 05, 2011 at 09:59:39AM +0800, Zhang, Yanmin wrote:
- > Dave,
- > 
- > My idea is application has opportunity to reset it. Consider the critical mission environment, admin could hot-unplug any failed devices without rebooting system. Then, admin doesn't want to lose AER monitoring.
- > 
- > With the module parameter, admin could change it under /sys/module/aer_drv/parameters.
- 
-ah, I see. Yes, that sounds sensible.
+--Signature=_Fri__5_Aug_2011_12_13_56_+1000_RGg_zQz0XEaB_Nzg
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	Dave.
- 
+Hi Grant,
+
+Today's linux-next merge of the devicetree tree got a conflict in
+drivers/of/base.c between commit fe55c1844a1c ("Revert "dt: add
+of_alias_scan and of_alias_get_id"") from Linus' tree and commit
+79787f21b37b ("drivers/of: Fix sparc build failure caused by
+of_alias_scan") from the devicetree tree.
+
+Given the discussion on other threads, I used Linus' version.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__5_Aug_2011_12_13_56_+1000_RGg_zQz0XEaB_Nzg
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOO1HkAAoJEDMEi1NhKgbscZAH/1+eyhsQXPwj9VJsiPHyNTWb
+etLGePlG3f07J6YDxoxKz8G/IeAWkgu5DI1sJF1oeBQHp3MFE3F/xy7L0lG9HIiN
+6CsDCfR3/1cCzkpw+ZnAl7N90KpBOhrQh799DkJKQmsWEf9weC/HqLavgQRUlkTR
+4ZkjpjX9alx8HWHS/Kh21A1q63a6t8WrAi/BIUWGJy50xLjpDdhEEPxveBQ9Uckk
+XP+nqTBImsZ/tLuvXrPgTOIatnQqpg9muqKXx2tO9z4LQuygTZ3Y30nVIaKYuebD
+la2rZCsZDBaPznEfS8012DGoK2Q/SG8GIUeuLMLO8DXYDVyqfZSq9iMdz1UhGTI=
+=zUg+
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__5_Aug_2011_12_13_56_+1000_RGg_zQz0XEaB_Nzg--
