@@ -1,106 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab1HEPpv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 11:45:51 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2017 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754892Ab1HEPpr convert rfc822-to-8bit (ORCPT
+	id S1756395Ab1HEPvI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 11:51:08 -0400
+Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.32]:34264 "EHLO
+	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753552Ab1HEPvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 11:45:47 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 05 Aug 2011 08:43:22 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 5 Aug 2011 08:43:20 -0700
-Subject: RE: [RFC PATCH 0/3] If an IRQ is a GPIO, request and configure it
-Thread-Topic: [RFC PATCH 0/3] If an IRQ is a GPIO, request and configure it
-Thread-Index: AcxTU7kZTJWJ/R7oSDW3pBB/bX5AAAAMT1JQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049F171EFC@HQMAIL01.nvidia.com>
-References: <1312498820-2275-1-git-send-email-swarren@nvidia.com>
- <20110805094017.GC20575@n2100.arm.linux.org.uk>
-In-Reply-To: <20110805094017.GC20575@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 5 Aug 2011 11:51:03 -0400
+Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
+X-Authority-Analysis: v=1.1 cv=QcSFu2tMqX8VyBnwf4xZriMeG3TVj1s8v1Rcea0EwGI= c=1 sm=0 a=I7fHHdvOj7QA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:17 a=E3JUflbP-Z-PLmnorkwA:9 a=_y-yNVsX3OwVeKDXip8A:7 a=CjuIK1q_8ugA:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.79.195.91
+From: "Bob Pearson" <rpearson@systemfabricworks.com>
+To: "'Joakim Tjernlund'" <joakim.tjernlund@transmode.se>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'frank zago'" <fzago@systemfabricworks.com>,
+        <linux-kernel@vger.kernel.org>
+References: <OF4AE0115F.3AA5397E-ONC12578DF.002EC6DF-C12578DF.003348E5@transmode.se> <01dc01cc5159$317879a0$94696ce0$@systemfabricworks.com> <OF83CC7C9C.07EC5D4A-ONC12578E2.0024F5AE-C12578E2.004163C1@transmode.se> <019501cc52d7$c8688100$59398300$@systemfabricworks.com> <OF14136E0E.3F2388EF-ONC12578E3.00301969-C12578E3.00338524@transmode.se>
+In-Reply-To: <OF14136E0E.3F2388EF-ONC12578E3.00301969-C12578E3.00338524@transmode.se>
+Subject: RE: [PATCH] add slice by 8 algorithm to crc32.c
+Date: Fri, 5 Aug 2011 10:51:00 -0500
+Message-ID: <023b01cc5387$79b09dd0$6d11d970$@systemfabricworks.com>
 MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+thread-index: AQDVh4pDc04B6RwbKPhJsZYe9rqqGgID1lG1AfPbjtABsy4QAgGPPXDLlsIrZTA=
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux wrote at Friday, August 05, 2011 3:40 AM:
-> On Thu, Aug 04, 2011 at 05:00:17PM -0600, Stephen Warren wrote:
-> > In http://www.spinics.net/lists/linux-tegra/msg01731.html, Mark Brown
-> > pointed out that it was a little silly forcing every board or driver
-> > to gpio_request() a GPIO that is later converted to an IRQ, and passed
-> > to request_irq. The first patch in this series instead makes the core
-> > IRQ code perform these calls when appropriate, to avoid duplicating it
-> > everywhere.
+> > version. While I haven't done the experiment you suggest there is
+> something
+> > to the point that the second q computation in the new version can be
+> moved
+> > ahead of the table lookups from the first q computation . My guess is
+that
+> > the unrolled version will be significantly slower.
 > 
-> Trying to go from IRQ to GPIO is not a good idea - most of the
-> IRQ <-> GPIO macros we have today are just plain broken.  Many of them
-> just add or subtract a constant, which means non-GPIO IRQs have an
-> apparant GPIO number too.  Couple this with the fact that all positive
-> GPIO numbers are valid, and this is a recipe for wrong GPIOs getting
-> used and GPIOs being requested for non-GPIO IRQs.
+> Ah, didn't see that. Don't understand how this works though.
+> Why do you do two 32 bit loads instead of one 64 bit load?
 > 
-> I think this was also discussed in the past, and the conclusion was that
-> IRQs should be kept separate from GPIOs.  Maybe views have changed since
-> then...
-> 
-> However, if we do want to do this, then it would be much better to provide
-> a new API for requesting GPIO IRQs, eg:
-> 
-> gpio_request_irq()
-> 
-> which would wrap around request_threaded_irq(), takes a GPIO number,
-> does the GPIO->IRQ conversion internally, and whatever GPIO setup is
-> required.  Something like this:
+> >
 
-With that approach, drivers need to explicitly know whether they're
-passed a GPIO or an IRQ, and do something different, or they need to
-choose to only accept a GPIO or IRQ.
-
-Take the case of the WM8903 audio codec, which is the case I was primarily
-motivated by.
-
-The struct i2c_board_info for the WM8903 contains a .irq field, which is
-already an IRQ number. This IRQ might be a plain IRQ (i.e. a dedicated
-interrupt pin on the SoC's package), or a pin that's a GPIO with interrupt
-capabilities.
-
-It'd be best if the WM8903 driver could handle either case, and be
-Completely unaware of which case was used in practice; it simply wants to
-request the interrupt, and have that work appropriately.
-
-Having a separate API for this means pushing this GPIO-vs-IRQ knowledge
-into all drivers, which doesn't seem like a good thing.
-
-So it seems like, as was mentioned elsewhere in this thread, the upshot of
-this conversation is that interrupt chip drivers should do this internally,
-both to avoid requiring a general irq_to_gpio function, and because calling
-gpio_direction_input for GPIOs-used-as-IRQs isn't appropriate for all
-hardware.
-
-> int gpio_request_threaded_irq(int gpio, irq_handler_t handler,
-> 	irq_handler_t thread_fn, unsigned long flags, const char *name,
-> 	void *dev)
-...
-
--- 
-nvpublic
+The two expression trees can be computed in parallel and combined with the
+final xor. If the compiler/instruction scheduler are smart enough and can
+process enough instructions per cycle they overlap well and you get some
+speedup. I did try a 64 bit load on Nehalem but got about 2 cycles per byte
+which is a little worse than doing two loads and better than the 32 bit
+version. I'm not really sure why.
 
