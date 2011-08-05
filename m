@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab1HEPLg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 11:11:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63821 "EHLO mx1.redhat.com"
+	id S1756833Ab1HEPMK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 11:12:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38250 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753817Ab1HEPLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 11:11:35 -0400
-Message-ID: <4E3C0813.5050303@redhat.com>
-Date: Fri, 05 Aug 2011 08:11:15 -0700
-From: Richard Henderson <rth@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1756748Ab1HEPMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 11:12:06 -0400
+Date: Fri, 5 Aug 2011 08:00:44 -0700
+From: Greg KH <gregkh@suse.de>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
+Subject: Re: Linux 3.0.1
+Message-ID: <20110805150044.GA17896@suse.de>
+References: <20110805062136.GA2472@kroah.com>
+ <4E3BAAC0.8080209@gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Jason Baron <jbaron@redhat.com>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Subject: Re: [RFT][patch 17/18] sched: use jump labels to reduce overhead
- when bandwidth control is inactive
-References: <20110722003211.GA2807@redhat.com>  <CAPM31R+UWijCCna5zYfn875h+KPmS4H0Lk8jW6+8JP-oDb72DA@mail.gmail.com>  <20110722011747.GB2807@redhat.com>  <CAPM31RKW+do-U8G8uL-y53BVWvr4oQbSf456A9u-SUV06tSfeg@mail.gmail.com>  <20110727215816.GA2515@redhat.com> <1312533036.10852.34.camel@twins>
-In-Reply-To: <1312533036.10852.34.camel@twins>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E3BAAC0.8080209@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2011 01:30 AM, Peter Zijlstra wrote:
-> OK, so _WHY_ does that make a difference and will a next version of
-> gnu-binutils not mess that up?
+On Fri, Aug 05, 2011 at 10:33:04AM +0200, Jiri Slaby wrote:
+> On 08/05/2011 08:21 AM, Greg KH wrote:
+> > I'm announcing the release of the 3.0.1 kernel.
+> > 
+> > All users of the 3.0 kernel series must upgrade.
+> > 
+> > The updated 3.0.y git tree can be found at:
+> >         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-3.0.y.git
+> > and can be browsed at the normal kernel.org git web browser:
+> >         http://git.kernel.org/?p=linux/kernel/git/stable/linux-3.0.y.git;a=summary
+> 
+> It looks like you forgot to push :). Or some mirroring or alike problem?
 
-The Why is micro-architectual, and I can't answer that.
+My release process _requires_ me to push, in order to generate the
+diffstat and patch that I send out, so yes, it's really there.
 
-But ld will never re-order the files as given on the command-line.
-There are too many functions and tables that are constructed 
-piece-wise from input sections; re-ordering them would change
-the semantics of the program.
+I think kernel.org is being a bit slow on the mirroring side right now,
+so give it a bit of time.  I see it there now, perhaps it just needed a
+little bit of sleep to catch up on things :)
 
+thanks,
 
-r~
+greg k-h
