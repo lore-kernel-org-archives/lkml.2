@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab1HEMgh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 08:36:37 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47925 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756555Ab1HEMgg convert rfc822-to-8bit (ORCPT
+	id S1756499Ab1HEMsO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 08:48:14 -0400
+Received: from DMZ-MAILSEC-SCANNER-4.MIT.EDU ([18.9.25.15]:51512 "EHLO
+	dmz-mailsec-scanner-4.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751979Ab1HEMsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 08:36:36 -0400
-Subject: Re: select_task_rq_fair: WARNING: at kernel/lockdep.c
- match_held_lock
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org
-Date: Fri, 05 Aug 2011 14:36:20 +0200
-In-Reply-To: <20110804155347.GB3562@swordfish.minsk.epam.com>
-References: <20110804141306.GA3536@swordfish.minsk.epam.com>
-	 <1312470358.16729.25.camel@twins>
-	 <20110804153752.GA3562@swordfish.minsk.epam.com>
-	 <1312472867.16729.38.camel@twins>
-	 <20110804155347.GB3562@swordfish.minsk.epam.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1312547780.28695.1.camel@twins>
-Mime-Version: 1.0
+	Fri, 5 Aug 2011 08:48:11 -0400
+X-AuditID: 1209190f-b7b44ae000000a24-76-4e3be5f3d45a
+Message-ID: <4E3BE686.7070501@mit.edu>
+Date: Fri, 05 Aug 2011 08:48:06 -0400
+From: Andy Lutomirski <luto@MIT.EDU>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+MIME-Version: 1.0
+To: "Yung, Winson W" <winson.w.yung@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Is there a way to offload everything from cpu0 to other cpus?
+References: <CAC4B8726E86A142B27A9E9A2F2F124701922F2855@rrsmsx505.amr.corp.intel.com>
+In-Reply-To: <CAC4B8726E86A142B27A9E9A2F2F124701922F2855@rrsmsx505.amr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42IR4hTV1v381NrPYPshMYvLu+awWbQc3sPi
+	wOSxeM9LJo/Pm+QCmKK4bFJSczLLUov07RK4MibPmc1YMIO5onfSRMYGxiNMXYwcHBICJhKb
+	N2p1MXICmWISF+6tZ+ti5OIQEtjHKHF4/xcoZz2jxNLHq1ghnDdMEm+nN7CCtPAKqEks/rOa
+	CcRmEVCVuDp1OjuIzSagItGx9AFYXFQgSOL+7wYWiHpBiZMzn4DZIgJ6EleOPmIDsZkFHCVu
+	730LVi8s4CWxYMY+sOuEBEIlbn9UBwlzCoRJtLWeYwcJMwtYS3zbXQTRKS+x/e0c5gmMgrOQ
+	LJiFUDULSdUCRuZVjLIpuVW6uYmZOcWpybrFyYl5ealFuiZ6uZkleqkppZsYwYEryb+D8dtB
+	pUOMAhyMSjy8P3dZ+QmxJpYVV+YeYpTkYFIS5T31xNpPiC8pP6UyI7E4I76oNCe1+BCjBAez
+	kgiv5B2gHG9KYmVValE+TEqag0VJnLfc+7+vkEB6YklqdmpqQWoRTFadg0Pg49uTIlIsefl5
+	qUoSvKHAuBUSLEpNT61Iy8wpQahk4uAE2cMDtMcdpIa3uCAxtzgzHSJ/ilGXY/Xfj0cZhcAG
+	SYnzyoIUCYAUZZTmwc2BpaFXjOJAHwpDrOMBpjC4Sa+AljABLfn/3gJkSUkiQkqqgVF8pv9N
+	WfY1rtscFni+FDzQanyRi09oR8lUY8vNv1y+7Fzm1nOL2cz3f47SX21ft4VR6jv0Wzq1nBZd
+	NOax+PpneerN8jTjdzf4ZM5lGbY160rfFWaw9m0/+Fv50vzlj9W+ez/kmpz264B72OydFydN
+	Ep64+P/uB1/WPCpOdvy3vr3/3H6Fa2xKLMUZiYZazEXFiQBihu9lHgMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-04 at 18:53 +0300, Sergey Senozhatsky wrote:
-> 
-> Nope, that's `if (DEBUG_LOCKS_WARN_ON(!class))'
-> 
-The below is what I've come up with.
+On 08/04/2011 10:53 PM, Yung, Winson W wrote:
+> Hi, I would like to know whether it is possible to offload everything (kernel threads/user apps) to cpu1...x so that I can force cpu0 go into idle?
+>
+> I can affinity all the interrupt to a different cpu by playing with the /proc/irq/irqx/smp_affinity, how about everything else?
+>
 
----
-Subject: lockdep: Fix wrong assumption in match_held_lock
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Fri Aug 05 14:26:17 CEST 2011
+You probably want the isolcpus boot option.
 
-match_held_lock() was assuming it was being called on a lock class
-that had already seen usage. 
+--Andy
 
-This condition was true for bug-free code using lockdep_assert_held(),
-since you're in fact holding the lock when calling it. However the
-assumption fails the moment you assume the assertion can fail, which
-is the whole point of having the assertion in the first place.
-
-Anyway, now that there's more lockdep_is_held() users, notably
-__rcu_dereference_check(), its much easier to trigger this since we
-test for a number of locks and we only need to hold any one of them to
-be good.
-
-Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/lockdep.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/kernel/lockdep.c
-===================================================================
---- linux-2.6.orig/kernel/lockdep.c
-+++ linux-2.6/kernel/lockdep.c
-@@ -3111,7 +3111,13 @@ static int match_held_lock(struct held_l
- 		if (!class)
- 			class = look_up_lock_class(lock, 0);
- 
--		if (DEBUG_LOCKS_WARN_ON(!class))
-+		/*
-+		 * If look_up_lock_class() failed to find a class, we're trying
-+		 * to test if we hold a lock that has never yet been acquired.
-+		 * Clearly if the lock hasn't been acquired _ever_, we're not
-+		 * holding it either, so report failure.
-+		 */
-+		if (!class)
- 			return 0;
- 
- 		if (DEBUG_LOCKS_WARN_ON(!hlock->nest_lock))
+> /Winson.
 
