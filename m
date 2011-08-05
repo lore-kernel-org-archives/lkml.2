@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048Ab1HECZJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 22:25:09 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:28627
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754411Ab1HECZG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 22:25:06 -0400
-X-SpamScore: -12
-X-BigFish: VS-12(zz936eK1432N98dKzz1202hzzz2dh87h2a8h668h839h8e2h8e3h944h)
-X-Forefront-Antispam-Report: CIP:160.36.179.135;KIP:(null);UIP:(null);IPVD:NLI;H:kedge3.utk.tennessee.edu;RD:kedge3.utk.tennessee.edu;EFVD:NLI
-X-FB-SS: 13,
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 4 Aug 2011 22:24:58 -0400
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>
-Subject: Re: [perf] enable raw OFFCORE_EVENTS for non-perf userspace
-In-Reply-To: <1312473330.16729.42.camel@twins>
-Message-ID: <alpine.DEB.2.00.1108042221450.3022@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1108031200390.703@cl320.eecs.utk.edu> <1312473330.16729.42.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755900Ab1HECdO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 22:33:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46364 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754411Ab1HECdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 22:33:13 -0400
+Date: Thu, 4 Aug 2011 22:33:09 -0400
+From: Dave Jones <davej@redhat.com>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, tom.l.nguyen@intel.com,
+        yanmin.zhang@intel.com
+Subject: Re: [rfc] suppress excessive AER output
+Message-ID: <20110805023309.GA20447@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Arnaud Lacombe <lacombar@gmail.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, tom.l.nguyen@intel.com,
+	yanmin.zhang@intel.com
+References: <20110803223407.GA20646@redhat.com>
+ <CACqU3MXaHJ+AnUpkeBWg=aHp3iJBR=uXgr22pinAdu-wgeoCuQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-OriginatorOrg: utk.edu
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACqU3MXaHJ+AnUpkeBWg=aHp3iJBR=uXgr22pinAdu-wgeoCuQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Aug 2011, Peter Zijlstra wrote:
+On Thu, Aug 04, 2011 at 10:24:07PM -0400, Arnaud Lacombe wrote:
+ > Hi,
+ > 
+ > On Wed, Aug 3, 2011 at 6:34 PM, Dave Jones <davej@redhat.com> wrote:
+ > > I have a machine that has developed some kind of problem with
+ > > its onboard ethernet.  It still boots, but spewed almost 1.5G of text
+ > > (2381585 instances of the warning below) before we realised what
+ > > was going on, and blacklisted the igb driver.
+ > >
+ > > Is it worth logging every single error when we're flooding like this ?
+ > > It seems unlikely that we'll find useful information in amongst that much data
+ > > that wasn't already in the first 100 instances.
+ > >
+ > > I picked 100 in the (untested) example patch below arbitarily, but the exact
+ > > value could be smaller, or slightly bigger..
+ > >
+ > > could we do something like this maybe ?
+ > >
+ > Please do not reinvent the wheel and use printk_ratelimited().
 
-> On Wed, 2011-08-03 at 12:05 -0400, Vince Weaver wrote:
-> 
-> > diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> > index 4ee3abf..28f9ca9 100644
-> > --- a/arch/x86/kernel/cpu/perf_event.c
-> > +++ b/arch/x86/kernel/cpu/perf_event.c
-> > @@ -604,12 +604,8 @@ static int x86_setup_perfctr(struct perf_event *event)
-> >  			return -EOPNOTSUPP;
-> >  	}
-> >  
-> > -	/*
-> > -	 * Do not allow config1 (extended registers) to propagate,
-> > -	 * there's no sane user-space generalization yet:
-> > -	 */
-> >  	if (attr->type == PERF_TYPE_RAW)
-> > -		return 0;
-> > +		return x86_pmu_extra_regs(event->attr.config, event);
-> >  
-> >  	if (attr->type == PERF_TYPE_HW_CACHE)
-> >  		return set_ext_hw_attr(hwc, event);
-> 
-> 
-> I'm inclined to merge this, aside from snb, the offcore stuff is
-> actually quite usable now. Ingo can we somehow persuade you?
+It's a different wheel.
 
-This would make me happy.  The patch is more or less a revert of the patch 
-that disabled support in the first place, but if you need my signed-off-by 
-(I forgot it before) here it is
+printk_ratelimit slows down the output, but would still cause a lot of messages.
 
-Signed-off-by: Vince Weaver <vweaver1@eecs.utk.edu>
+my diff turns it off completely after a threshold (apart from at the ulong wrap,
+which I overlooked).
 
-> Anybody who knows how to program the snb offcore please tell. I mean we
-> have all the code to poke at the right registers, and the SDM lists all
-> the various bits that go where and a few constraints on how to combine
-> said bits, but I've really no idea what any of it means.
-
-I've added Stephane as I think he did some work on SandyBridge offcore.
-
-Vince
+	Dave
 
