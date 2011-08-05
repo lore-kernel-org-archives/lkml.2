@@ -1,100 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab1HEKIx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 06:08:53 -0400
-Received: from hera.kernel.org ([140.211.167.34]:32981 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756053Ab1HEKIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 06:08:50 -0400
-Date: Fri, 5 Aug 2011 10:08:20 GMT
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-ag9fz2wd17mbbfjsbznq1wms@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
-        efault@gmx.de, phyomh@gmail.com, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de, asharma@fb.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, phyomh@gmail.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, asharma@fb.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf report: Use ui__warning in some more places
-Git-Commit-ID: 00894ce9b85887caa0c16e18757004b9cc9f64cf
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1756193Ab1HEKIZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 06:08:25 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:43552 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753006Ab1HEKDw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 06:03:52 -0400
+From: Viresh Kumar <viresh.kumar@st.com>
+To: <linus.walleij@linaro.org>, <vinod.koul@intel.com>,
+        <dan.j.williams@intel.com>
+Cc: <linux-arm-kernel@lists.infradead.org>, <armando.visconti@st.com>,
+        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
+        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
+        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
+        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
+        <viresh.linux@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, <alim.akhtar@gmail.com>
+Subject: [PATCH V3 08/20] dmaengine/amba-pl08x: support runtime PM
+Date: Fri, 5 Aug 2011 15:32:33 +0530
+Message-ID: <7280d025e19b6b9eba91b5988c6c1f498c6ffbda.1312538034.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <cover.1312538034.git.viresh.kumar@st.com>
+References: <cover.1312538034.git.viresh.kumar@st.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 05 Aug 2011 10:08:25 +0000 (UTC)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  00894ce9b85887caa0c16e18757004b9cc9f64cf
-Gitweb:     http://git.kernel.org/tip/00894ce9b85887caa0c16e18757004b9cc9f64cf
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 3 Aug 2011 12:33:24 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 3 Aug 2011 12:33:24 -0300
+Insert notifiers for the runtime PM API. With this the runtime PM layer kicks in
+to action where used.
 
-perf report: Use ui__warning in some more places
-
-So that we get a proper warning in the TUI in cases like:
-
- $ perf report --stdio -g fractal,0.5,caller --sort pid
- Selected -g but no callchain data. Did you call 'perf record' without -g?
- $
-
-The --stdio case is ok because it uses fprintf, ui__warning is needed to
-figure out if --stdio or --tui is being used.
-
-Cc: Arun Sharma <asharma@fb.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Sam Liao <phyomh@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ag9fz2wd17mbbfjsbznq1wms@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- tools/perf/builtin-report.c |   15 +++++++--------
- 1 files changed, 7 insertions(+), 8 deletions(-)
+ drivers/dma/amba-pl08x.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index f854efd..d7ff277 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -162,23 +162,22 @@ static int perf_session__setup_sample_type(struct perf_session *self)
- {
- 	if (!(self->sample_type & PERF_SAMPLE_CALLCHAIN)) {
- 		if (sort__has_parent) {
--			fprintf(stderr, "selected --sort parent, but no"
--					" callchain data. Did you call"
--					" perf record without -g?\n");
-+			ui__warning("Selected --sort parent, but no "
-+				    "callchain data. Did you call "
-+				    "'perf record' without -g?\n");
- 			return -EINVAL;
- 		}
- 		if (symbol_conf.use_callchain) {
--			fprintf(stderr, "selected -g but no callchain data."
--					" Did you call perf record without"
--					" -g?\n");
-+			ui__warning("Selected -g but no callchain data. Did "
-+				    "you call 'perf record' without -g?\n");
- 			return -1;
- 		}
- 	} else if (!dont_use_callchains && callchain_param.mode != CHAIN_NONE &&
- 		   !symbol_conf.use_callchain) {
- 			symbol_conf.use_callchain = true;
- 			if (callchain_register_param(&callchain_param) < 0) {
--				fprintf(stderr, "Can't register callchain"
--						" params\n");
-+				ui__warning("Can't register callchain "
-+					    "params.\n");
- 				return -EINVAL;
- 			}
+diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
+index ead88c9..5dd97f4 100644
+--- a/drivers/dma/amba-pl08x.c
++++ b/drivers/dma/amba-pl08x.c
+@@ -84,6 +84,7 @@
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
++#include <linux/pm_runtime.h>
+ #include <linux/seq_file.h>
+ #include <linux/slab.h>
+ #include <asm/hardware/pl080.h>
+@@ -405,6 +406,7 @@ pl08x_get_phy_channel(struct pl08x_driver_data *pl08x,
+ 		return NULL;
  	}
+ 
++	pm_runtime_get_sync(&pl08x->adev->dev);
+ 	return ch;
+ }
+ 
+@@ -418,6 +420,8 @@ static inline void pl08x_put_phy_channel(struct pl08x_driver_data *pl08x,
+ 	/* Stop the channel and clear its interrupts */
+ 	pl08x_terminate_phy_chan(pl08x, ch);
+ 
++	pm_runtime_put(&pl08x->adev->dev);
++
+ 	/* Mark it as free */
+ 	ch->serving = NULL;
+ 	spin_unlock_irqrestore(&ch->lock, flags);
+@@ -1855,6 +1859,9 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
+ 		goto out_no_pl08x;
+ 	}
+ 
++	pm_runtime_set_active(&adev->dev);
++	pm_runtime_enable(&adev->dev);
++
+ 	/* Initialize memcpy engine */
+ 	dma_cap_set(DMA_MEMCPY, pl08x->memcpy.cap_mask);
+ 	pl08x->memcpy.dev = &adev->dev;
+@@ -1992,6 +1999,8 @@ static int pl08x_probe(struct amba_device *adev, const struct amba_id *id)
+ 	dev_info(&pl08x->adev->dev, "DMA: PL%03x rev%u at 0x%08llx irq %d\n",
+ 		 amba_part(adev), amba_rev(adev),
+ 		 (unsigned long long)adev->res.start, adev->irq[0]);
++
++	pm_runtime_put(&adev->dev);
+ 	return 0;
+ 
+ out_no_slave_reg:
+@@ -2010,6 +2019,9 @@ out_no_ioremap:
+ 	dma_pool_destroy(pl08x->pool);
+ out_no_lli_pool:
+ out_no_platdata:
++	pm_runtime_put(&adev->dev);
++	pm_runtime_disable(&adev->dev);
++
+ 	kfree(pl08x);
+ out_no_pl08x:
+ 	amba_release_regions(adev);
+-- 
+1.7.2.2
+
