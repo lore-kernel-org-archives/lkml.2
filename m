@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab1HEKzb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 06:55:31 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:59389 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab1HEKza (ORCPT
+	id S1755914Ab1HEK6d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 06:58:33 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63216 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752839Ab1HEK6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 06:55:30 -0400
+	Fri, 5 Aug 2011 06:58:31 -0400
+Message-ID: <4E3BCCB4.7060208@ru.mvista.com>
+Date: Fri, 05 Aug 2011 14:57:56 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-In-Reply-To: <20110805104356.GA13055@elte.hu>
-References: <20110726154226.93A9F9D401C@zog.reactivated.net>
-	<20110805104356.GA13055@elte.hu>
-Date: Fri, 5 Aug 2011 11:55:29 +0100
-X-Google-Sender-Auth: HzZfpr5vF3uQIXpVRD3ZGFxkNiw
-Message-ID: <CAMLZHHQCcWwG6mg1LNHrZ5E4q0M=OHjhsQgPWgPqzC63u57yEw@mail.gmail.com>
-Subject: Re: [PATCH] x86, olpc: Wait for last byte of EC command to be accepted
-From: Daniel Drake <dsd@laptop.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-        dilinger@queued.net, pgf@laptop.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Brown <davidb@codeaurora.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Len Brown <len.brown@intel.com>,
+        linux-sh@vger.kernel.org, Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-arm-msm@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] cpuidle: Consistent spelling of cpuidle_idle_call()
+References: <1312475071-22973-1-git-send-email-davidb@codeaurora.org>
+In-Reply-To: <1312475071-22973-1-git-send-email-davidb@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 5, 2011 at 11:43 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> What did that result in - a resume hang? (i.e. how urgent is this fix
-> - v3.1 material or v3.2 material?)
+Hello.
 
-Sorry - the explanation is indeed lacking in that area!
+On 04-08-2011 20:24, David Brown wrote:
 
-It means that sometimes, on XO-1.5 (but not XO-1), the devices that
-were marked as wakeup sources can't wake up the system. e.g. you ask
-for wifi wakeups, suspend, but then incoming wifi frames don't wake up
-the system as they should.
+> Commit a0bfa1373859e9d11dc92561a8667588803e42d8 mispells
 
-In my opinion, as a simple bugfix (verified by 2 of our EC firmware
-developers) it is 3.1 material.
+    Please also specify that commit's summary in parens.
 
-Thanks,
-Daniel
+> cpuidle_idle_call() on ARM and SH code.  Fix this to be consistent.
+
+> Cc: Kevin Hilman <khilman@deeprootsystems.com>
+> Cc: Paul Mundt <lethal@linux-sh.org>
+> Cc: x86@kernel.org
+> Cc: Len Brown <len.brown@intel.com>
+> Signed-off-by: David Brown<davidb@codeaurora.org>
+
+WBR, Sergei
