@@ -1,104 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614Ab1HEKbJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 06:31:09 -0400
-Received: from trinity.fluff.org ([89.16.178.74]:35727 "EHLO trinity.fluff.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755254Ab1HEKbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 06:31:07 -0400
-Date: Fri, 5 Aug 2011 11:30:46 +0100
-From: Ben Dooks <ben-linux@fluff.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Stephen Warren <swarren@nvidia.com>, alsa-devel@alsa-project.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, ccross@android.com, olof@lixom.net,
-        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
-        Liam Girdwood <lrg@ti.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 0/3] If an IRQ is a GPIO, request and configure it
-Message-ID: <20110805103045.GG28651@trinity.fluff.org>
-References: <1312498820-2275-1-git-send-email-swarren@nvidia.com> <20110805094017.GC20575@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110805094017.GC20575@n2100.arm.linux.org.uk>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@trinity.fluff.org
-X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
+	id S1756628Ab1HEKcs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 06:32:48 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:43001 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756095Ab1HEKcr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 06:32:47 -0400
+Subject: Re: [PATCH] Remove CLOCK_TICK_RATE from acpi_pm clocksource driver
+From: John Stultz <john.stultz@linaro.org>
+To: dsaxena@plexity.net
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>, patches@linaro.org
+In-Reply-To: <20110804000830.GD23503@plexity.net>
+References: <20110804000830.GD23503@plexity.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 05 Aug 2011 03:32:37 -0700
+Message-ID: <1312540357.2764.49.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 05, 2011 at 10:40:17AM +0100, Russell King - ARM Linux wrote:
-> On Thu, Aug 04, 2011 at 05:00:17PM -0600, Stephen Warren wrote:
-> > In http://www.spinics.net/lists/linux-tegra/msg01731.html, Mark Brown
-> > pointed out that it was a little silly forcing every board or driver
-> > to gpio_request() a GPIO that is later converted to an IRQ, and passed
-> > to request_irq. The first patch in this series instead makes the core
-> > IRQ code perform these calls when appropriate, to avoid duplicating it
-> > everywhere.
+On Wed, 2011-08-03 at 17:08 -0700, Deepak Saxena wrote:
+> The acpi_pm clocksource driver uses CLOCK_TICK_RATE which is
+> defined as PIT_TICK_RATE on x86. This patch cleans it up to
+> just use the later so that CLOCK_TICK_RATE can be depecrated.
 > 
-> Trying to go from IRQ to GPIO is not a good idea - most of the
-> IRQ <-> GPIO macros we have today are just plain broken.  Many of them
-> just add or subtract a constant, which means non-GPIO IRQs have an
-> apparant GPIO number too.  Couple this with the fact that all positive
-> GPIO numbers are valid, and this is a recipe for wrong GPIOs getting
-> used and GPIOs being requested for non-GPIO IRQs.
+> Signed-off-by: Deepak Saxena <dsaxena@linaro.org>
+> ---
+>  drivers/clocksource/acpi_pm.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/clocksource/acpi_pm.c b/drivers/clocksource/acpi_pm.c
+> index effe797..6b5cf02 100644
+> --- a/drivers/clocksource/acpi_pm.c
+> +++ b/drivers/clocksource/acpi_pm.c
+> @@ -143,7 +143,7 @@ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_SERVERWORKS, PCI_DEVICE_ID_SERVERWORKS_LE,
+>  #ifndef CONFIG_X86_64
+>  #include <asm/mach_timer.h>
+>  #define PMTMR_EXPECTED_RATE \
+> -  ((CALIBRATE_LATCH * (PMTMR_TICKS_PER_SEC >> 10)) / (CLOCK_TICK_RATE>>10))
+> +  ((CALIBRATE_LATCH * (PMTMR_TICKS_PER_SEC >> 10)) / (PIT_TICK_RATE>>10))
+>  /*
+>   * Some boards have the PMTMR running way too fast. We check
+>   * the PMTMR rate against PIT channel 2 to catch these cases.
 
-Yes, and there's a pile without these defined/
- 
-> I think this was also discussed in the past, and the conclusion was that
-> IRQs should be kept separate from GPIOs.  Maybe views have changed since
-> then...
-> 
-> However, if we do want to do this, then it would be much better to provide
-> a new API for requesting GPIO IRQs, eg:
-> 
-> gpio_request_irq()
-> 
-> which would wrap around request_threaded_irq(), takes a GPIO number,
-> does the GPIO->IRQ conversion internally, and whatever GPIO setup is
-> required.  Something like this:
-> 
-> int gpio_request_threaded_irq(int gpio, irq_handler_t handler,
-> 	irq_handler_t thread_fn, unsigned long flags, const char *name,
-> 	void *dev)
-> {
-> 	int ret;
-> 
-> 	if (!gpio_valid(gpio))
-> 		return -EINVAL;
-> 
-> 	ret = gpio_request_one(gpio, GPIOF_IN, name);
-> 	if (ret)
-> 		return ret;
-> 
-> 	ret = request_threaded_irq(gpio_to_irq(gpio), handler, thread_fn,
-> 				flags, name, dev);
-> 	if (ret)
-> 		gpio_free(gpio);
-> 
-> 	return ret;
-> }
-> 
-> This then limits the exposure of the GPIO<->IRQ conversion macros to just
-> GPIOs, where the buggy nature of the existing conversions won't impact on
-> non-GPIO IRQs.
+I suspect the PMTMR_EXPECTED_RATE is not so sensitive that it actually
+needs to use CLOCK_TICK_RATE or PIT_TICK_RATE here. 
 
-What about the case where we need to turn GPIO numbers into interrupts
-to pass to other drivers? In the case where we have a gpio chip that is
-providing interrupt services to other drivers (such as serial chip).
+Instead we probably should rework mach_countup() to return how long it
+ran for (in nsecs), since the acpi_pm code really shouldn't need to know
+PIT_TICK_RATE details at all.
 
-Having looked at a couple of IIO drivers, it seems that the need to use
-irq_to_gpio() seems to be to check if the device needs to be service. It
-would be useful to see if this is due to a problem with the threadder IRQ
-handler (and if so, may need fixing for the general case).
+That said, mach_countup is pretty old and crusty code that is important
+to TSC and loop-per-jiffy calibration. So I'm not sure if there's much
+gain to digging in and mucking with things there. 
 
--- 
-Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
+So for now, the PIT_TICK_RATE change seems like a fair change.
 
-Large Hadron Colada: A large Pina Colada that makes the universe disappear.
+Acked-by: John Stultz <john.stultz@linaro.org>
 
