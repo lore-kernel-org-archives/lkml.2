@@ -1,33 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755787Ab1HEKot (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 06:44:49 -0400
-Received: from wobosm02.netvigator.com ([219.76.94.18]:39034 "EHLO
-	wobosm02.netvigator.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753928Ab1HEKos (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 06:44:48 -0400
-Date: Fri, 5 Aug 2011 18:40:37 +0800 (HKT)
-From: PRIVATE POST <tasco@netvigator.com>
-Reply-To: PRIVATE POST <privatepost104@hotmail.com>
-Message-ID: <1035291919.136889.1312540837975.JavaMail.root@wzbmbs03>
-In-Reply-To: <614317759.136863.1312540782913.JavaMail.root@wzbmbs03>
-Subject: 
+	id S1756431Ab1HEKpH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 06:45:07 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39313 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756291Ab1HEKpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 06:45:04 -0400
+Date: Fri, 5 Aug 2011 12:43:57 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Daniel Drake <dsd@laptop.org>
+Cc: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+        dilinger@queued.net, pgf@laptop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, olpc: Wait for last byte of EC command to be
+ accepted
+Message-ID: <20110805104356.GA13055@elte.hu>
+References: <20110726154226.93A9F9D401C@zog.reactivated.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.12.74]
-X-Mailer: Zimbra 6.0.8_GA_2661 (ZimbraWebClient - FF3.0 (Win)/6.0.8_GA_2661)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110726154226.93A9F9D401C@zog.reactivated.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -1.8
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.8 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.2 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
 
-This is a personal email directed to you for your consideration alone, I request that it remain and be treated as such only. Please bear with me for now and do not ask my name. I am a banker with HSBC in MALTA. I have an interesting business proposal for you that will be of immense benefit to both of us. Although this may be hard for you to believe, we stand to gain 7.2 million USD between us in a matter of days. Please grant me the benefit of doubt and hear me out. I need you to signify your interest by replying to this email.
+* Daniel Drake <dsd@laptop.org> wrote:
 
-Most importantly, I will need you to promise to keep whatever you learn from me between us even if you decide not to go along with me. I will make more details available to you on receipt of a positive response from you. Do contact me only at my private email address: privatepost104@hotmail.com
+> From: Paul Fox <pgf@laptop.org>
+> 
+> When executing EC commands, only waiting when there are still more bytes to
+> write is usually fine. However, if the system suspends very quickly after
+> a call to olpc_ec_cmd(), the last data byte may not yet be transferred to
+> the EC, and the command will not complete.
+> 
+> This solves a bug where the SCI wakeup mask was not correctly written
+> when going into suspend.
 
+What did that result in - a resume hang? (i.e. how urgent is this fix 
+- v3.1 material or v3.2 material?)
 
+Thanks,
 
+	Ingo
