@@ -1,177 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058Ab1HEMar (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 08:30:47 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:49017 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752805Ab1HEMap convert rfc822-to-8bit (ORCPT
+	id S1756538Ab1HEMax (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 08:30:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57308 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754363Ab1HEMat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 08:30:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAJn8CcH35xhhAwaAouc15H7bYvOe2dYc4LmL+ymX-riaX8p_xg@mail.gmail.com>
-References: <CAJn8CcE20-co4xNOD8c+0jMeABrc1mjmGzju3xT34QwHHHFsUA@mail.gmail.com>
-	<CAJn8CcG-pNbg88+HLB=tRr26_R+A0RxZEWsJQg4iGe4eY2noXA@mail.gmail.com>
-	<20110802002226.3ff0b342.akpm@linux-foundation.org>
-	<CAJn8CcGTwhAaqghqWOYN9mGvRZDzyd9UJbYARz7NGA-7NvFg9Q@mail.gmail.com>
-	<20110803085437.GB19099@suse.de>
-	<CAJn8CcGGsdPdaJ7t_RcBmFOGgVLVjAP8Mr40Cv=FknLTNgBUsg@mail.gmail.com>
-	<CAJn8CcE2BRhHO6qiu2JigdYsjc-igedaA_wu8w70YBbisQTgcQ@mail.gmail.com>
-	<20110805091957.GV19099@suse.de>
-	<CAJn8CcH35xhhAwaAouc15H7bYvOe2dYc4LmL+ymX-riaX8p_xg@mail.gmail.com>
-Date: Fri, 5 Aug 2011 20:30:44 +0800
-Message-ID: <CAJn8CcEM6sa+s06ouL_eadtWpnsieKBupDeUM5R9gCbad3D6eQ@mail.gmail.com>
-Subject: Re: kernel BUG at mm/vmscan.c:1114
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 5 Aug 2011 08:30:49 -0400
+X-Authority-Analysis: v=1.1 cv=Pm0sEXe2MdIPK/rOEC7hwDW84D/yDsPO3JtCzsVYOFU= c=1 sm=0 a=WrFlywIw7b8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=zIQgd9ccXfPXfojc1yQA:9 a=MtRyChid-5wAUCn-9r4A:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH][GIT PULL] sched/cpupri: Remove the vec->lock
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <mgalbraith@suse.de>,
+        "Luis Claudio R." =?UTF-8?Q?Gon=EF=BF=BDalves?= 
+	<lgoncalv@redhat.com>,
+        Matthew Hank Sabins <msabins@linux.vnet.ibm.com>,
+        Gregory Haskins <gregory.haskins@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110805082008.GA6628@zhy>
+References: <1312317372.18583.101.camel@gandalf.stny.rr.com>
+	 <20110805082008.GA6628@zhy>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 05 Aug 2011 08:30:47 -0400
+Message-ID: <1312547447.18583.195.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 5, 2011 at 8:09 PM, Xiaotian Feng <xtfeng@gmail.com> wrote:
-> On Fri, Aug 5, 2011 at 5:19 PM, Mel Gorman <mgorman@suse.de> wrote:
->> (Adding patch author to cc)
->>
->> On Fri, Aug 05, 2011 at 04:42:43PM +0800, Xiaotian Feng wrote:
->>> On Thu, Aug 4, 2011 at 11:54 AM, Xiaotian Feng <xtfeng@gmail.com> wrote:
->>> > On Wed, Aug 3, 2011 at 4:54 PM, Mel Gorman <mgorman@suse.de> wrote:
->>> >> On Wed, Aug 03, 2011 at 02:44:20PM +0800, Xiaotian Feng wrote:
->>> >>> On Tue, Aug 2, 2011 at 3:22 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
->>> >>> > On Tue, 2 Aug 2011 15:09:57 +0800 Xiaotian Feng <xtfeng@gmail.com> wrote:
->>> >>> >
->>> >>> >> __ __I'm hitting the kernel BUG at mm/vmscan.c:1114 twice, each time I
->>> >>> >> was trying to build my kernel. The photo of crash screen and my config
->>> >>> >> is attached.
->>> >>> >
->>> >>> > hm, now why has that started happening?
->>> >>> >
->>> >>> > Perhaps you could apply this debug patch, see if we can narrow it down?
->>> >>> >
->>> >>>
->>> >>> I will try it then, but it isn't very reproducible :(
->>> >>> But my system hung after some list corruption warnings... I hit the
->>> >>> corruption 4 times...
->>> >>>
->>> >>
->>> >> That is very unexpected but if lists are being corrupted, it could
->>> >> explain the previously reported bug as that bug looked like an active
->>> >> page on an inactive list.
->>> >>
->>> >> What was the last working kernel? Can you bisect?
->>> >>
->>> >>>  [ 1220.468089] ------------[ cut here ]------------
->>> >>>  [ 1220.468099] WARNING: at lib/list_debug.c:56 __list_del_entry+0x82/0xd0()
->>> >>>  [ 1220.468102] Hardware name: 42424XC
->>> >>>  [ 1220.468104] list_del corruption. next->prev should be
->>> >>> ffffea0000e069a0, but was ffff880100216c78
->>> >>>  [ 1220.468106] Modules linked in: ip6table_filter ip6_tables
->>> >>> ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4
->>> >>> xt_state nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp
->>> >>> iptable_filter ip_tables x_tables binfmt_misc bridge stp parport_pc
->>> >>> ppdev snd_hda_codec_conexant snd_hda_intel snd_hda_codec thinkpad_acpi
->>> >>> snd_hwdep snd_pcm i915 snd_seq_midi snd_rawmidi arc4 cryptd
->>> >>> snd_seq_midi_event aes_x86_64 snd_seq drm_kms_helper iwlagn snd_timer
->>> >>> aes_generic drm snd_seq_device mac80211 psmouse uvcvideo videodev snd
->>> >>> v4l2_compat_ioctl32 soundcore snd_page_alloc serio_raw i2c_algo_bit
->>> >>> btusb tpm_tis tpm tpm_bios video cfg80211 bluetooth nvram lp joydev
->>> >>> parport usbhid hid ahci libahci firewire_ohci firewire_core e1000e
->>> >>> sdhci_pci sdhci crc_itu_t
->>> >>>  [ 1220.468185] Pid: 1168, comm: Xorg Tainted: G        W   3.0.0+ #23
->>> >>>  [ 1220.468188] Call Trace:
->>> >>>  [ 1220.468190]  <IRQ>  [<ffffffff8106db3f>] warn_slowpath_common+0x7f/0xc0
->>> >>>  [ 1220.468201]  [<ffffffff8106dc36>] warn_slowpath_fmt+0x46/0x50
->>> >>>  [ 1220.468206]  [<ffffffff81332a52>] __list_del_entry+0x82/0xd0
->>> >>>  [ 1220.468210]  [<ffffffff81332ab1>] list_del+0x11/0x40
->>> >>>  [ 1220.468216]  [<ffffffff8117a212>] __slab_free+0x362/0x3d0
->>> >>>  [ 1220.468222]  [<ffffffff811c6606>] ? bvec_free_bs+0x26/0x40
->>> >>>  [ 1220.468226]  [<ffffffff8117b767>] ? kmem_cache_free+0x97/0x220
->>> >>>  [ 1220.468230]  [<ffffffff811c6606>] ? bvec_free_bs+0x26/0x40
->>> >>>  [ 1220.468234]  [<ffffffff811c6606>] ? bvec_free_bs+0x26/0x40
->>> >>>  [ 1220.468239]  [<ffffffff8117b8df>] kmem_cache_free+0x20f/0x220
->>> >>>  [ 1220.468243]  [<ffffffff811c6606>] bvec_free_bs+0x26/0x40
->>> >>>  [ 1220.468247]  [<ffffffff811c6654>] bio_free+0x34/0x70
->>> >>>  [ 1220.468250]  [<ffffffff811c66a5>] bio_fs_de
->>> >>>
->>> >>
->>> >
->>> > I'm hitting this again today, when I'm trying to rebuild my kernel....
->>> > Looking it a bit
->>> >
->>> >  list_del corruption. next->prev should be ffffea0000e069a0, but was
->>> > ffff880100216c78
->>> >
->>> > I find something interesting from my syslog:
->>> >
->>> >  PERCPU: Embedded 28 pages/cpu @ffff880100200000 s83456 r8192 d23040 u262144
->>> >
->>> >> This warning and the page reclaim warning are on paths that are
->>> >> commonly used and I would expect to see multiple reports. I wonder
->>> >> what is happening on your machine that is so unusual.
->>> >>
->>> >> Have you run memtest on this machine for a few hours and badblocks
->>> >> on the disk to ensure this is not hardware trouble?
->>> >>
->>> >>> So is it possible that my previous BUG is triggered by slab list corruption?
->>> >>
->>> >> Not directly, but clearly there is something very wrong.
->>> >>
->>> >> If slub corruption reports are very common and kernel 3.0 is fine, my
->>> >> strongest candidate for the corruption would be the SLUB lockless
->>> >> patches. Try
->>> >>
->>> >> git diff e4a46182e1bcc2ddacff5a35f6b52398b51f1b11..9e577e8b46ab0c38970c0f0cd7eae62e6dffddee | patch -p1 -R
->>> >>
->>> >
->>>
->>> Here's a update for the results:
->>>
->>> 3.0.0-rc7: running for hours without a crash
->>> upstream kernel: list corruption happened while building kernel within
->>> 10 mins (I'm running some app chrome/firefox/thunderbird/... as well)
->>> upstream kernel with above revert: running for hours without a crash
->>>
->>> Trying to bisect but rebuild is slow ....
->>>
->>
->> If you have not done so already, I strongly suggest your bisection
->> starts within that range of patches to isolate which one is at fault.
->> It'll cut down on the number of builds you need to do. Thanks for
->> testing.
->>
->
-> This is interesting, I just change as following:
->
-> diff --git a/mm/slub.c b/mm/slub.c
-> index eb5a8f9..616b78e 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -2104,8 +2104,9 @@ static void *__slab_alloc(struct kmem_cache *s,
-> gfp_t gfpflags, int node,
->                        "__slab_alloc"));
->
->        if (unlikely(!object)) {
-> -               c->page = NULL;
-> +               //c->page = NULL;
->                stat(s, DEACTIVATE_BYPASS);
-> +               deactivate_slab(s, c);
->                goto new_slab;
->        }
->
-> Then my system doesn't print any list corruption warnings and my build
-> success then. So this means revert of 03e404af2 could cure this.
-> I'll do more test next week to see if the list corruption still exist, thanks.
->
+On Fri, 2011-08-05 at 16:20 +0800, Yong Zhang wrote:
+> On Tue, Aug 02, 2011 at 04:36:12PM -0400, Steven Rostedt wrote:
+> > diff --git a/kernel/sched_cpupri.h b/kernel/sched_cpupri.h
+> > index 9fc7d38..6b4cd17 100644
+> > --- a/kernel/sched_cpupri.h
+> > +++ b/kernel/sched_cpupri.h
+> > @@ -12,9 +12,8 @@
+> >  /* values 2-101 are RT priorities 0-99 */
+> >  
+> >  struct cpupri_vec {
+> > -	raw_spinlock_t lock;
+> > -	int        count;
+> > -	cpumask_var_t mask;
+> > +	atomic_t	count;
+> > +	cpumask_var_t	mask;
+> >  };
+> >  
+> >  struct cpupri {
+> 
+> So cpupri->pri_active and macro CPUPRI_NR_PRI_WORDS is not needed any more?
 
-Sorry, please ignore it... My system corrupted before I went to leave ....
+It doesn't appear so. Looks like they can be removed too.
 
->
->
->> --
->> Mel Gorman
->> SUSE Labs
->>
->
+Want to send a patch?
+
+Thanks!
+
+-- Steve
+
+
