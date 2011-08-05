@@ -1,99 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633Ab1HEJut (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 05:50:49 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52096 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149Ab1HEJus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 05:50:48 -0400
-Date: Fri, 5 Aug 2011 11:49:42 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Vince Weaver <vweaver1@eecs.utk.edu>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [perf] enable raw OFFCORE_EVENTS for non-perf userspace
-Message-ID: <20110805094942.GB2420@elte.hu>
-References: <alpine.DEB.2.00.1108031200390.703@cl320.eecs.utk.edu>
- <1312473330.16729.42.camel@twins>
+	id S1753879Ab1HEJvn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 05:51:43 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:35518 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753129Ab1HEJvm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 05:51:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312473330.16729.42.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+In-Reply-To: <CAPM=9tykT0Y6ehRJ-=oOj-SGbS8TyrXQzS2iTDZ1Ukf4-LES1Q@mail.gmail.com>
+References: <alpine.DEB.2.00.1108051019200.14655@skynet.skynet.ie>
+	<CAOJsxLHAQGNWN8-jnAFh=bOXqEZbXQsBucqETOSwoCXbuL9wBw@mail.gmail.com>
+	<CAPM=9tykT0Y6ehRJ-=oOj-SGbS8TyrXQzS2iTDZ1Ukf4-LES1Q@mail.gmail.com>
+Date: Fri, 5 Aug 2011 12:51:42 +0300
+X-Google-Sender-Auth: iBLTqMP9xJP27arJQFlEZcEtnRk
+Message-ID: <CAOJsxLF+QposjZjPcPMQMfQ9Z0Fj_uZMU2c9miF_HDqYdejhzQ@mail.gmail.com>
+Subject: Re: [git pull drm fixes
+From: Pekka Enberg <penberg@kernel.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Francesco Allertsen <fallertsen@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 5, 2011 at 12:48 PM, Dave Airlie <airlied@gmail.com> wrote:
+>> Isn't "drm/i915: Try enabling RC6 by default (again)" still broken for
+>> some people? Keith, Francesco? If Linus pulls now, we end up with
+>> broken i915 in -rc1 once again, no?
+>
+> I think we are trying again with RC6, if it doesn't work this time,
+> it'll get reverted before release. Its really a useful feature and the
+> more testing of it the Intel guys can get the quicker they seem to be
+> able to make it more likely to be the default.
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+Please don't do that! The RC6 patch is known to be broken for at least
+one configuration:
 
-> On Wed, 2011-08-03 at 12:05 -0400, Vince Weaver wrote:
-> > Hello
-> > 
-> > I propose we just enable raw OFFCORE_EVENT support and get it over with.
-> > 
-> > There is a lot of demand for this from PAPI users, and so we encourage 
-> > them to apply the below patch.  PAPI supports this out of the box.
-> > 
-> > The current "block" against using this feature *DOES NOT WORK*.
-> > It silently fails if you try to use the config1 field to set it.
-> > 
-> > Even worse, if some previous user has set the OFFCORE_RSP_0 msr
-> > (say by running "perf stat -e LLC-load-misses") then
-> > the msr *stays set* and if you try to set the config1 field on your own
-> > it looks like it worked, but instead it is using whatever value the
-> > kernel last used.
-> > 
-> > So there's a lot of userspace confusion about this, and you can't even 
-> > reliably tell if the feature is turned off or not because it fails 
-> > silently in unpredictable ways.
-> 
-> 
-> > diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> > index 4ee3abf..28f9ca9 100644
-> > --- a/arch/x86/kernel/cpu/perf_event.c
-> > +++ b/arch/x86/kernel/cpu/perf_event.c
-> > @@ -604,12 +604,8 @@ static int x86_setup_perfctr(struct perf_event *event)
-> >  			return -EOPNOTSUPP;
-> >  	}
-> >  
-> > -	/*
-> > -	 * Do not allow config1 (extended registers) to propagate,
-> > -	 * there's no sane user-space generalization yet:
-> > -	 */
-> >  	if (attr->type == PERF_TYPE_RAW)
-> > -		return 0;
-> > +		return x86_pmu_extra_regs(event->attr.config, event);
-> >  
-> >  	if (attr->type == PERF_TYPE_HW_CACHE)
-> >  		return set_ext_hw_attr(hwc, event);
-> 
-> 
-> I'm inclined to merge this, aside from snb, the offcore stuff is 
-> actually quite usable now. Ingo can we somehow persuade you?
+https://patchwork.kernel.org/patch/1033782/
 
-Sure, i think we are almost there, the only missing bit i see is to 
-add the now generalized NUMA node bits to tools/perf/ so that it can 
-be tested easily and then we can enable the raw bits as well.
+See the last email from Francesco. I don't know why you insist pushing
+patches that are known to be fragile in the past without getting broad
+Tested-by tags from people who have been affected in the past.
 
-It was supposed to be added alongside of:
-
-  89d6c0b: perf, arch: Add generic NODE cache events
-
-what happened to that? If someone wants to accelerate the raw events 
-enabling then that should be an easy thing to fix.
-
-Thanks,
-
-	Ingo
+                       Pekka
