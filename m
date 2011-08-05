@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab1HEKGK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 06:06:10 -0400
-Received: from eu1sys200aog119.obsmtp.com ([207.126.144.147]:51881 "EHLO
-	eu1sys200aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754105Ab1HEKD6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754268Ab1HEKD6 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 5 Aug 2011 06:03:58 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:40641 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753237Ab1HEKDx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 06:03:53 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <linus.walleij@linaro.org>, <vinod.koul@intel.com>,
         <dan.j.williams@intel.com>
@@ -17,9 +17,9 @@ Cc: <linux-arm-kernel@lists.infradead.org>, <armando.visconti@st.com>,
         <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
         <viresh.linux@gmail.com>, <linux-kernel@vger.kernel.org>,
         <linux@arm.linux.org.uk>, <alim.akhtar@gmail.com>
-Subject: [PATCH V3 13/20] dmaengine/amba-pl08x: max_bytes_per_lli is TRANSFER_SIZE * src_width (not MIN(width))
-Date: Fri, 5 Aug 2011 15:32:38 +0530
-Message-ID: <825c3c3dce9dbb46097f66988c3b8517dc6d8407.1312538034.git.viresh.kumar@st.com>
+Subject: [PATCH V3 11/20] dmaengine/amba-pl08x: Schedule tasklet in case of error interrupt
+Date: Fri, 5 Aug 2011 15:32:36 +0530
+Message-ID: <671c46fe3869e9339070b0a64a01eca3dd5c79b2.1312538034.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1312538034.git.viresh.kumar@st.com>
 References: <cover.1312538034.git.viresh.kumar@st.com>
@@ -29,88 +29,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-max_bytes_per_lli = bd.srcbus.buswidth * PL080_CONTROL_TRANSFER_SIZE_MASK;
-This is confirmed by ARM support guys.
+Currently, if error interrupt occurs, nothing is done in interrupt handler (just
+clearing the interrupts). We must somehow indicate this to the user that DMA is
+over, due to ERR interrupt or TC interrupt.
 
-Below is summary of mail exchange with them:
-
-[Viresh] What is the total data to be transferred in case source and destination
-bus widths are different. Suppose, source bus width is 2 bytes and destination
-is 4 bytes. Now in order to transfer 80 bytes, what should be value of
-TransferSize field in control reg: 40? or 20?.
-
-[David from ARM] The value that is programmed into the TransferSize field should
-be the number of <SourceWidth> transfers needed to achieve the required data
-transfer.
-
-So, to transfer 80 bytes, with a Source Width of 2, the TransferSize field =
-should be programmed with:
-
-        Total transfer size
-        ------------------- = 40
-          <source width>
-
-[Viresh] Will this change if source is 4 bytes and dest is 2?
-
-[David] Yes - the calculation then becomes:
-
-        Total transfer size
-        ------------------- =20
-          <source width>
-
-Also, max_bytes_per_lli must be calculated after fixing src and dest widths not
-before that. So move this code to the correct place.
-
-This patch also removes max_bytes_per_lli from earlier print message, as till
-that point max_bytes_per_lli is unknown.
+So, this patch just schedules existing tasklet, with a print showing error
+interrupt has occurred on which channels.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/dma/amba-pl08x.c |   14 ++++++--------
- 1 files changed, 6 insertions(+), 8 deletions(-)
+ drivers/dma/amba-pl08x.c |   44 +++++++++++++++++++++++---------------------
+ 1 files changed, 23 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index be9a1c7..e5930d5 100644
+index 3653961..6bba32e 100644
 --- a/drivers/dma/amba-pl08x.c
 +++ b/drivers/dma/amba-pl08x.c
-@@ -604,23 +604,17 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
- 	bd.srcbus.buswidth = bd.srcbus.maxwidth;
- 	bd.dstbus.buswidth = bd.dstbus.maxwidth;
- 
--	/*
--	 * Bytes transferred == tsize * MIN(buswidths), not max(buswidths)
--	 */
--	max_bytes_per_lli = min(bd.srcbus.buswidth, bd.dstbus.buswidth) *
--		PL080_CONTROL_TRANSFER_SIZE_MASK;
+@@ -1619,38 +1619,40 @@ static void pl08x_tasklet(unsigned long data)
+ static irqreturn_t pl08x_irq(int irq, void *dev)
+ {
+ 	struct pl08x_driver_data *pl08x = dev;
+-	u32 mask = 0;
+-	u32 val;
+-	int i;
 -
- 	/* We need to count this down to zero */
- 	bd.remainder = txd->len;
- 
- 	pl08x_choose_master_bus(&bd, &mbus, &sbus, cctl);
- 
--	dev_vdbg(&pl08x->adev->dev, "src=0x%08x%s/%u dst=0x%08x%s/%u len=%zu llimax=%zu\n",
-+	dev_vdbg(&pl08x->adev->dev, "src=0x%08x%s/%u dst=0x%08x%s/%u len=%zu\n",
- 		 bd.srcbus.addr, cctl & PL080_CONTROL_SRC_INCR ? "+" : "",
- 		 bd.srcbus.buswidth,
- 		 bd.dstbus.addr, cctl & PL080_CONTROL_DST_INCR ? "+" : "",
- 		 bd.dstbus.buswidth,
--		 bd.remainder, max_bytes_per_lli);
-+		 bd.remainder);
- 	dev_vdbg(&pl08x->adev->dev, "mbus=%s sbus=%s\n",
- 		 mbus == &bd.srcbus ? "src" : "dst",
- 		 sbus == &bd.srcbus ? "src" : "dst");
-@@ -660,6 +654,10 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
- 			sbus->buswidth = 1;
- 		}
- 
-+		/* Bytes transferred = tsize * src width, not MIN(buswidths) */
-+		max_bytes_per_lli = bd.srcbus.buswidth *
-+			PL080_CONTROL_TRANSFER_SIZE_MASK;
+-	val = readl(pl08x->base + PL080_ERR_STATUS);
+-	if (val) {
+-		/* An error interrupt (on one or more channels) */
+-		dev_err(&pl08x->adev->dev,
+-			"%s error interrupt, register value 0x%08x\n",
+-				__func__, val);
+-		/*
+-		 * Simply clear ALL PL08X error interrupts,
+-		 * regardless of channel and cause
+-		 * FIXME: should be 0x00000003 on PL081 really.
+-		 */
+-		writel(0x000000FF, pl08x->base + PL080_ERR_CLEAR);
++	u32 mask = 0, err, tc, i;
 +
- 		/*
- 		 * Make largest possible LLIs until less than one bus
- 		 * width left
++	/* check & clear - ERR & TC interrupts */
++	err = readl(pl08x->base + PL080_ERR_STATUS);
++	if (err) {
++		dev_err(&pl08x->adev->dev, "%s error interrupt, register value 0x%08x\n",
++			__func__, err);
++		writel(err, pl08x->base + PL080_ERR_CLEAR);
+ 	}
+-	val = readl(pl08x->base + PL080_INT_STATUS);
++	tc = readl(pl08x->base + PL080_INT_STATUS);
++	if (tc)
++		writel(tc, pl08x->base + PL080_TC_CLEAR);
++
++	if (!err && !tc)
++		return IRQ_NONE;
++
+ 	for (i = 0; i < pl08x->vd->channels; i++) {
+-		if ((1 << i) & val) {
++		if (((1 << i) & err) || ((1 << i) & tc)) {
+ 			/* Locate physical channel */
+ 			struct pl08x_phy_chan *phychan = &pl08x->phy_chans[i];
+ 			struct pl08x_dma_chan *plchan = phychan->serving;
+ 
++			if (!plchan) {
++				dev_err(&pl08x->adev->dev,
++					"%s Error TC interrupt on unused channel: 0x%08x\n",
++					__func__, i);
++				continue;
++			}
++
+ 			/* Schedule tasklet on this channel */
+ 			tasklet_schedule(&plchan->tasklet);
+-
+ 			mask |= (1 << i);
+ 		}
+ 	}
+-	/* Clear only the terminal interrupts on channels we processed */
+-	writel(mask, pl08x->base + PL080_TC_CLEAR);
+ 
+ 	return mask ? IRQ_HANDLED : IRQ_NONE;
+ }
 -- 
 1.7.2.2
 
