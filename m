@@ -1,155 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab1HELdZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 07:33:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52769 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752609Ab1HELdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 07:33:23 -0400
-Date: Fri, 5 Aug 2011 13:33:17 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-        =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>,
-        device-drivers-devel@blackfin.uclinux.org,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] Documentation/ABI/: update version number references
- from 2.6.x to 3.x
-In-Reply-To: <alpine.LNX.2.00.1108020050190.31999@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1108051333080.32288@pobox.suse.cz>
-References: <alpine.LNX.2.00.1108020050190.31999@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+	id S1753915Ab1HELoE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 07:44:04 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:30034 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395Ab1HELoC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 07:44:02 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: vinod.koul@intel.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] dmaengine: at_hdmac: fix way to specify cyclic capability
+Date: Fri,  5 Aug 2011 12:43:44 +0100
+Message-Id: <1312544624-8793-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Aug 2011, Jesper Juhl wrote:
+In this driver, we can trigger cyclic transfer on peripherals-DMA interfaces.
+It is dependent on driver implementation but cannot depend on a platform
+property: we remove the dma_has_cap(DMA_CYCLIC, ) test which has no meaning.
 
-> Update the version number references from 2.6.x to 3.x
-> Also correct spelling of "May" (was spelled "Mai").
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/dma/at_hdmac.c |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
 
-Applied, thanks.
-
-> ---
->  Documentation/ABI/removed/o2cb                     |    2 +-
->  Documentation/ABI/testing/sysfs-bus-bcma           |    8 ++++----
->  .../testing/sysfs-class-backlight-driver-adp8870   |   16 ++++++++--------
->  3 files changed, 13 insertions(+), 13 deletions(-)
-> 
-> diff --git a/Documentation/ABI/removed/o2cb b/Documentation/ABI/removed/o2cb
-> index 7f5daa4..20c91ad 100644
-> --- a/Documentation/ABI/removed/o2cb
-> +++ b/Documentation/ABI/removed/o2cb
-> @@ -1,6 +1,6 @@
->  What:		/sys/o2cb symlink
->  Date:		May 2011
-> -KernelVersion:	2.6.40
-> +KernelVersion:	3.0
->  Contact:	ocfs2-devel@oss.oracle.com
->  Description:	This is a symlink: /sys/o2cb to /sys/fs/o2cb. The symlink is
->  		removed when new versions of ocfs2-tools which know to look
-> diff --git a/Documentation/ABI/testing/sysfs-bus-bcma b/Documentation/ABI/testing/sysfs-bus-bcma
-> index 06b62ba..721b4ae 100644
-> --- a/Documentation/ABI/testing/sysfs-bus-bcma
-> +++ b/Documentation/ABI/testing/sysfs-bus-bcma
-> @@ -1,6 +1,6 @@
->  What:		/sys/bus/bcma/devices/.../manuf
->  Date:		May 2011
-> -KernelVersion:	2.6.40
-> +KernelVersion:	3.0
->  Contact:	Rafa³ Mi³ecki <zajec5@gmail.com>
->  Description:
->  		Each BCMA core has it's manufacturer id. See
-> @@ -8,7 +8,7 @@ Description:
->  
->  What:		/sys/bus/bcma/devices/.../id
->  Date:		May 2011
-> -KernelVersion:	2.6.40
-> +KernelVersion:	3.0
->  Contact:	Rafa³ Mi³ecki <zajec5@gmail.com>
->  Description:
->  		There are a few types of BCMA cores, they can be identified by
-> @@ -16,7 +16,7 @@ Description:
->  
->  What:		/sys/bus/bcma/devices/.../rev
->  Date:		May 2011
-> -KernelVersion:	2.6.40
-> +KernelVersion:	3.0
->  Contact:	Rafa³ Mi³ecki <zajec5@gmail.com>
->  Description:
->  		BCMA cores of the same type can still slightly differ depending
-> @@ -24,7 +24,7 @@ Description:
->  
->  What:		/sys/bus/bcma/devices/.../class
->  Date:		May 2011
-> -KernelVersion:	2.6.40
-> +KernelVersion:	3.0
->  Contact:	Rafa³ Mi³ecki <zajec5@gmail.com>
->  Description:
->  		Each BCMA core is identified by few fields, including class it
-> diff --git a/Documentation/ABI/testing/sysfs-class-backlight-driver-adp8870 b/Documentation/ABI/testing/sysfs-class-backlight-driver-adp8870
-> index aa11dbd..4a9c545 100644
-> --- a/Documentation/ABI/testing/sysfs-class-backlight-driver-adp8870
-> +++ b/Documentation/ABI/testing/sysfs-class-backlight-driver-adp8870
-> @@ -4,8 +4,8 @@ What:		/sys/class/backlight/<backlight>/l2_bright_max
->  What:		/sys/class/backlight/<backlight>/l3_office_max
->  What:		/sys/class/backlight/<backlight>/l4_indoor_max
->  What:		/sys/class/backlight/<backlight>/l5_dark_max
-> -Date:		Mai 2011
-> -KernelVersion:	2.6.40
-> +Date:		May 2011
-> +KernelVersion:	3.0
->  Contact:	device-drivers-devel@blackfin.uclinux.org
->  Description:
->  		Control the maximum brightness for <ambient light zone>
-> @@ -18,8 +18,8 @@ What:		/sys/class/backlight/<backlight>/l2_bright_dim
->  What:		/sys/class/backlight/<backlight>/l3_office_dim
->  What:		/sys/class/backlight/<backlight>/l4_indoor_dim
->  What:		/sys/class/backlight/<backlight>/l5_dark_dim
-> -Date:		Mai 2011
-> -KernelVersion:	2.6.40
-> +Date:		May 2011
-> +KernelVersion:	3.0
->  Contact:	device-drivers-devel@blackfin.uclinux.org
->  Description:
->  		Control the dim brightness for <ambient light zone>
-> @@ -29,8 +29,8 @@ Description:
->  		this <ambient light zone>.
->  
->  What:		/sys/class/backlight/<backlight>/ambient_light_level
-> -Date:		Mai 2011
-> -KernelVersion:	2.6.40
-> +Date:		May 2011
-> +KernelVersion:	3.0
->  Contact:	device-drivers-devel@blackfin.uclinux.org
->  Description:
->  		Get conversion value of the light sensor.
-> @@ -39,8 +39,8 @@ Description:
->  		8000 (max ambient brightness)
->  
->  What:		/sys/class/backlight/<backlight>/ambient_light_zone
-> -Date:		Mai 2011
-> -KernelVersion:	2.6.40
-> +Date:		May 2011
-> +KernelVersion:	3.0
->  Contact:	device-drivers-devel@blackfin.uclinux.org
->  Description:
->  		Get/Set current ambient light zone. Reading returns
-> -- 
-> 1.7.6
-> 
-> 
-> -- 
-> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-> Plain text mails only, please.
-> 
-
+diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+index 6a483ea..e2a5f3e 100644
+--- a/drivers/dma/at_hdmac.c
++++ b/drivers/dma/at_hdmac.c
+@@ -1293,15 +1293,13 @@ static int __init at_dma_probe(struct platform_device *pdev)
+ 	if (dma_has_cap(DMA_MEMCPY, atdma->dma_common.cap_mask))
+ 		atdma->dma_common.device_prep_dma_memcpy = atc_prep_dma_memcpy;
+ 
+-	if (dma_has_cap(DMA_SLAVE, atdma->dma_common.cap_mask))
++	if (dma_has_cap(DMA_SLAVE, atdma->dma_common.cap_mask)) {
+ 		atdma->dma_common.device_prep_slave_sg = atc_prep_slave_sg;
+-
+-	if (dma_has_cap(DMA_CYCLIC, atdma->dma_common.cap_mask))
++		/* controller can do slave DMA: can trigger cyclic transfers */
++		dma_cap_set(DMA_CYCLIC, atdma->dma_common.cap_mask);
+ 		atdma->dma_common.device_prep_dma_cyclic = atc_prep_dma_cyclic;
+-
+-	if (dma_has_cap(DMA_SLAVE, atdma->dma_common.cap_mask) ||
+-	    dma_has_cap(DMA_CYCLIC, atdma->dma_common.cap_mask))
+ 		atdma->dma_common.device_control = atc_control;
++	}
+ 
+ 	dma_writel(atdma, EN, AT_DMA_ENABLE);
+ 
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.4.1
+
