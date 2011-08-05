@@ -1,266 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756159Ab1HEBBS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 21:01:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7117 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754627Ab1HEBBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 21:01:16 -0400
-Date: Thu, 4 Aug 2011 21:00:38 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: list corruption in the last few days. (block ? crypto ?)
-Message-ID: <20110805010038.GA18148@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>
+	id S1756172Ab1HEBTd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 21:19:33 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53788 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709Ab1HEBTc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 21:19:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: jwboyer@redhat.com
+In-Reply-To: <20110804173145.GM2096@zod.bos.redhat.com>
+References: <20110801154636.GA2096@zod.bos.redhat.com>
+	<CA+5PVA5EZWHv_tuzA22twGQ7rZZ2zhqi1zs6OiFbpORiiYbzMg@mail.gmail.com>
+	<20110804140438.GT13065@linux.vnet.ibm.com>
+	<20110804150603.GL2096@zod.bos.redhat.com>
+	<20110804162658.GZ13065@linux.vnet.ibm.com>
+	<20110804173145.GM2096@zod.bos.redhat.com>
+Date: Thu, 4 Aug 2011 21:19:31 -0400
+X-Google-Sender-Auth: oQmYn_S8cYUYqpHlKAl3NbsAmlI
+Message-ID: <CA+5PVA7R+H4MfU=war6G3ZRYEi6nZ=vVZ3B8g-Ag6pOdA4cTBw@mail.gmail.com>
+Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
+From: Josh Boyer <jwboyer@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometime in the last week, something was merged which causes my laptop
-to lock up occasionally.  I can trigger it most of the time just by
-doing a kernel build. When it gets to the final linking stage, it locks up hard.
+On Thu, Aug 4, 2011 at 1:31 PM, Josh Boyer <jwboyer@redhat.com> wrote:
+> On Thu, Aug 04, 2011 at 09:26:58AM -0700, Paul E. McKenney wrote:
+>> > > You really do need to be able to handle set_need_resched() at random
+>> > > times, and at first glance it appears to me that the warning could be
+>> > > triggered at runtime as well.  If so, the real fix is elsewhere, right?
+>> > > Especially given that the patch imposes extra cost at runtime...
+>> >
+>> > In staring at it for a while it seems to be a combination of being in
+>> > atomic context according to the scheduler but things in early boot using
+>> > GFP_KERNEL.  At the point we're at in the boot, that is perfectly legal
+>> > as it's not being called from an interrupt handler and the mm subsystem
+>> > should be all setup, but we're still really early in boot and preempt is
+>> > disabled.
+>>
+>> Isn't preemption disabled at that point in boot?  And isn't GFP_KERNEL
+>> illegal within preemption-disabled regions?
+>
+> Yes, it's disabled.  I'm not sure if it's illegal or not.  pidmap_init
+> is called from start_kernel on line 598 of main.c.  local_irq_enable is
+> called on line 553, followed immediately by this comment:
+>
+>        /* Interrupts are enabled now so all GFP allocations are safe. */
+>        gfp_allowed_mask = __GFP_BITS_MASK;
+>
+>        kmem_cache_init_late();
+>
+> So the comments there lead me to think I have no clue :).  That's mostly
+> why I'm asking for feedback here.  I don't have a huge amount of
+> experience in what is and isn't allowed in the early bootup path.
+>
+>> >            As I mentioned before, KMEM_CACHE calls kmalloc with
+>> > GFP_KERNEL and I don't think we want to change that.
+>> >
+>> > Once we're past early boot, I would expect that things running in true
+>> > atomic context won't be calling KMEM_CACHE or using GFP_KERNEL.  Or
+>> > maybe I hope?
+>> >
+>> > I understand the desire to avoid another conditional, but I certainly
+>> > don't have any other suggestions at the moment.
+>>
+>> How about doing GFP_ATOMIC on allocations done during that portion
+>> of the boot patch for which preemption is disabled?
+>
+> Well, in the pidmap_init case there are two spots relevant to this.  The
+> first is the kzalloc call on line 562 of kernel/pid.c.  I could change
+> that to use GFP_IOFS even, and it avoids the backtrace from there. (And
+> I did that originally.)
+>
+> However, the call on line 567 to KMEM_CACHE calls into
+> kmem_cache_create.  There is a flags variable, but it's for slab flags,
+> and kmem_cache_create calls kmalloc internally with GFP_KERNEL.  I don't
+> see kmem_cache_create_atomic or otherwise that would avoid this.  None
+> of that code is new either, most if it dating back to 2008.
+>
+> The same issue exists in some of the next functions called in
+> start_kernel, like anon_vma_init, cred_init, fork_init, etc.  They all
+> call kmem_cache_create.
+>
+> I could be missing something obvious, but I don't see a way to avoid
+> using GFP_KERNEL without a lot of rip-up in the rest of the init path.
 
-I finally managed to coax something out of usb console to get the traces below,
-which seem to implicate something in the block layer ?
+As an aside, I bisected this back to:
 
-my root device is an lvm volume on an dmcrypt'd block dev, which might be relevant,
-as I don't see this happening on other machines with simpler setups.
+e8f7c70f44f sched: Make sleeping inside spinlock detection working in
+!CONFIG_PREEMPT
 
-I'm going to try bisecting, but it might take me a few days, because it's
-such a pain in the ass to reproduce this reliably.
+However, that doesn't seem all that helpful.  The
+CONFIG_DEBUG_SPINLOCK_SLEEP option later got renamed to
+DEBUG_ATOMIC_SLEEP, and all it's doing is selecting PREEMPT_COUNT.  At
+first glance, it seems this commit just allowed an issue that's been
+around for a while (benign or otherwise) to finally show up.
 
-	Dave
+(The Fedora kernel configs have CONFIG_PREEMPT_VOLUNTARY set, but not
+CONFIG_PREEMPT so PREEMPT_COUNT wasn't getting selected until this
+option did so.)
 
-
-[ 5913.233035] ------------[ cut here ]------------
-[ 5913.233097] WARNING: at lib/list_debug.c:53 __list_del_entry+0x8d/0x98()
-[ 5913.233101] Hardware name: Adamo 13   
-[ 5913.233105] list_del corruption. prev->next should be ffffea000434fd20, but was ffffea0004199520
-[ 5913.233108] Modules linked in: nfs fscache fuse ebtable_nat ebtables ppdev parport_pc lp parport ipt_MASQUERADE iptable_nat nf_nat nfsd lockd nfs_acl auth_rpcgss xt_CHECKSUM sunrpc iptable_mangle bridge stp llc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables rfcomm bnep arc4 iwlagn snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel btusb mac80211 snd_hda_codec bluetooth snd_hwdep snd_seq snd_seq_device snd_pcm usb_debug dell_wmi sparse_keymap cdc_ether usbnet cdc_acm uvcvideo cdc_wdm mii cfg80211 snd_timer dell_laptop videodev dcdbas snd microcode v4l2_compat_ioctl32 soundcore joydev tg3 pcspkr snd_page_alloc iTCO_wdt i2c_i801 rfkill iTCO_vendor_support wmi virtio_net kvm_intel kvm ipv6 xts gf128mul dm_crypt i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
-[ 5913.233213] Pid: 0, comm: swapper Not tainted 3.0.0+ #127
-[ 5913.233213] Call Trace:
-[ 5913.233213]  <IRQ>  [<ffffffff8105df18>] warn_slowpath_common+0x83/0x9b
-[ 5913.233213]  [<ffffffff8105dfd3>] warn_slowpath_fmt+0x46/0x48
-[ 5913.233213]  [<ffffffff8127e7c1>] __list_del_entry+0x8d/0x98
-[ 5913.233213]  [<ffffffff8127e7da>] list_del+0xe/0x2d
-[ 5913.233213]  [<ffffffff814e0430>] __slab_free+0x1db/0x235
-[ 5913.233213]  [<ffffffff811706ab>] ? bvec_free_bs+0x35/0x37
-[ 5913.233213]  [<ffffffff811706ab>] ? bvec_free_bs+0x35/0x37
-[ 5913.233213]  [<ffffffff811706ab>] ? bvec_free_bs+0x35/0x37
-[ 5913.233213]  [<ffffffff81133085>] kmem_cache_free+0x88/0x102
-[ 5913.233213]  [<ffffffff811706ab>] bvec_free_bs+0x35/0x37
-[ 5913.233213]  [<ffffffff811706e1>] bio_free+0x34/0x64
-[ 5913.233213]  [<ffffffff813dc390>] dm_bio_destructor+0x12/0x14
-[ 5913.233213]  [<ffffffff8116fef6>] bio_put+0x2b/0x2d
-[ 5913.233213]  [<ffffffff813dccab>] clone_endio+0x9e/0xb4
-[ 5913.233213]  [<ffffffff8116f7dd>] bio_endio+0x2d/0x2f
-[ 5913.233213]  [<ffffffffa00148da>] crypt_dec_pending+0x5c/0x8b [dm_crypt]
-[ 5913.233213]  [<ffffffffa00150a9>] crypt_endio+0x78/0x81 [dm_crypt]
-[ 5913.233213]  [<ffffffff8116f7dd>] bio_endio+0x2d/0x2f
-[ 5913.233213]  [<ffffffff81257f60>] req_bio_endio+0x91/0x99
-[ 5913.233213]  [<ffffffff81259fc9>] blk_update_request+0x1f2/0x395
-[ 5913.233213]  [<ffffffff8125a18d>] blk_update_bidi_request+0x21/0x6d
-[ 5913.233213]  [<ffffffff8125a2e0>] blk_end_bidi_request+0x1f/0x5d
-[ 5913.233213]  [<ffffffff8125a358>] blk_end_request+0x10/0x12
-[ 5913.233213]  [<ffffffff8135126c>] scsi_io_completion+0x1dc/0x4d7
-[ 5913.233213]  [<ffffffff813491ac>] scsi_finish_command+0xe4/0xed
-[ 5913.233213]  [<ffffffff81350fd4>] scsi_softirq_done+0x109/0x112
-[ 5913.233213]  [<ffffffff8125f359>] blk_done_softirq+0x7f/0x93
-[ 5913.233213]  [<ffffffff810646e5>] __do_softirq+0x10f/0x257
-[ 5913.233213]  [<ffffffff810dc4e4>] ? time_hardirqs_off+0x1b/0x2f
-[ 5913.233213]  [<ffffffff814f075c>] call_softirq+0x1c/0x30
-[ 5913.233213]  [<ffffffff81011c7a>] do_softirq+0x4b/0xa1
-[ 5913.233213]  [<ffffffff81064ac8>] irq_exit+0x5d/0xcd
-[ 5913.233213]  [<ffffffff814f105d>] do_IRQ+0x8d/0xa4
-[ 5913.233213]  [<ffffffff814e86f3>] common_interrupt+0x73/0x73
-[ 5913.233213]  <EOI>  [<ffffffff81015f0c>] ? __cycles_2_ns+0xe/0x3a
-[ 5913.233213]  [<ffffffff812eb3ff>] ? arch_local_irq_enable+0x8/0xd
-[ 5913.233213]  [<ffffffff810918c2>] ? trace_hardirqs_on+0xd/0xf
-[ 5913.233213]  [<ffffffff812ec20f>] acpi_idle_enter_bm+0x235/0x26d
-[ 5913.233213]  [<ffffffff813ef81c>] cpuidle_idle_call+0x11c/0x1fe
-[ 5913.233213]  [<ffffffff8100f31d>] cpu_idle+0xe2/0x14c
-[ 5913.233213]  [<ffffffff81d48bad>] ? start_kernel+0x3ec/0x3f7
-[ 5913.233213]  [<ffffffff814c4316>] rest_init+0xda/0xe1
-[ 5913.233213]  [<ffffffff814c423c>] ? csum_partial_copy_generic+0x16c/0x16c
-[ 5913.233213]  [<ffffffff81d48bad>] start_kernel+0x3ec/0x3f7
-[ 5913.233213]  [<ffffffff81d482c4>] x86_64_start_reservations+0xaf/0[ 5913.239397] ------------[ cut here ]------------
-[ 5913.239397] WARNING: at lib/list_debug.c:53 __list_del_entry+0x8d/0x98()
-[ 5913.239397] Hardware name: Adamo 13   
-[ 5913.239397] list_del corruption. prev->next should be ffffea00041a82a0, but was ffffea0004677e60
-[ 5913.239397] Modules linked in: nfs fscache fuse ebtable_nat ebtables ppdev parport_pc lp parport ipt_MASQUERADE iptable_nat nf_nat nfsd lockd nfs_acl auth_rpcgss xt_CHECKSUM sunrpc iptable_mangle bridge stp llc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ cdc_eth[ 5913.317698] ------------[ cut here ]------------
-[ 5913.317761] WARNING: at lib/list_debug.c:53 __list_del_entry+0x8d/0x98()
-[ 5913.317766] Hardware name: Adamo 13   
-[ 5913.317769] list_del corruption. prev->next should be ffffea0004145720, but was ffffea000415ee20
-[ 5913.317773] Modules linked in: nfs fscache fuse ebtable_nat ebtables ppdev parport_pc lp parport ipt_MASQUERADE iptable_nat nf_nat nfsd lockd nfs_acl auth_rpcgss xt_CHECKSUM sunrpc iptable_mangle bridge stp llc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables rfcomm bnep arc4 iwlagn snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel btusb mac80211 snd_hda_codec bluetooth snd_hwdep snd_seq snd_seq_device snd_pcm usb_debug dell_wmi sparse_keymap cdc_ether usbnet cdc_acm uvcvideo cdc_wdm mii cfg80211 snd_timer dell_laptop videodev dcdbas snd microcode v4l2_compat_ioctl32 soundcore joydev tg3 pcspkr snd_page_alloc iTCO_wdt i2c_i801 rfkill iTCO_vendor_support wmi virtio_net kvm_intel kvm ipv6 xts gf128mul dm_crypt i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
-[ 5913.317926] Pid: 0, comm: kworker/0:0 Tainted: G        W   3.0.0+ #127
-[ 5913.317930] Call Trace:
-[ 5913.317933]  <IRQ>  [<ffffffff8105df18>] warn_slowpath_common+0x83/0x9b
-[ 5913.317944]  [<ffffffff8105dfd3>] warn_slowpath_fmt+0x46/0x48
-[ 5913.317950]  [<ffffffff8127e7c1>] __list_del_entry+0x8d/0x98
-[ 5913.317955]  [<ffffffff8127e7da>] list_del+0xe/0x2d
-[ 5913.317961]  [<ffffffff814e0430>] __slab_free+0x1db/0x235
-[ 5913.317968]  [<ffffffff811706ab>] ? bvec_free_bs+0x35/0x37
-[ 5913.317973]  [<ffffffff811706ab>] ? bvec_free_bs+0x35/0x37
-[ 5913.317978]  [<ffffffff811706ab>] ? bvec_free_bs+0x35/0x37
-[ 5913.317985]  [<ffffffff81133085>] kmem_cache_free+0x88/0x102
-[ 5913.317990]  [<ffffffff811706ab>] bvec_free_bs+0x35/0x37
-[ 5913.317995]  [<ffffffff811706e1>] bio_free+0x34/0x64
-[ 5913.318002]  [<ffffffff813dc390>] dm_bio_destructor+0x12/0x14
-[ 5913.318007]  [<ffffffff8116fef6>] bio_put+0x2b/0x2d
-[ 5913.318012]  [<ffffffff813dccab>] clone_endio+0x9e/0xb4
-[ 5913.318017]  [<ffffffff8116f7dd>] bio_endio+0x2d/0x2f
-[ 5913.318030]  [<ffffffffa00148da>] crypt_dec_pending+0x5c/0x8b [dm_crypt]
-[ 5913.318041]  [<ffffffffa00150a9>] crypt_endio+0x78/0x81 [dm_crypt]
-[ 5913.318047]  [<ffffffff8116f7dd>] bio_endio+0x2d/0x2f
-[ 5913.318053]  [<ffffffff81257f60>] req_bio_endio+0x91/0x99
-[ 5913.318059]  [<ffffffff81259fc9>] blk_update_request+0x1f2/0x395
-[ 5913.318064]  [<ffffffff8125a18d>] blk_update_bidi_request+0x21/0x6d
-[ 5913.318070]  [<ffffffff8125a2e0>] blk_end_bidi_request+0x1f/0x5d
-[ 5913.318075]  [<ffffffff8125a358>] blk_end_request+0x10/0x12
-[ 5913.318081]  [<ffffffff8135126c>] scsi_io_completion+0x1dc/0x4d7
-[ 5913.318087]  [<ffffffff813491ac>] scsi_finish_command+0xe4/0xed
-[ 5913.318092]  [<ffffffff81350fd4>] scsi_softirq_done+0x109/0x112
-[ 5913.318098]  [<ffffffff8125f359>] blk_done_softirq+0x7f/0x93
-[ 5913.318104]  [<ffffffff810646e5>] __do_softirq+0x10f/0x257
-[ 5913.318110]  [<ffffffff810dc4e4>] ? time_hardirqs_off+0x1b/0x2f
-[ 5913.318116]  [<ffffffff814f075c>] call_softirq+0x1c/0x30
-[ 5913.318123]  [<ffffffff81011c7a>] do_softirq+0x4b/0xa1
-[ 5913.318127]  [<ffffffff81064ac8>] irq_exit+0x5d/0xcd
-[ 5913.318133]  [<ffffffff814f105d>] do_IRQ+0x8d/0xa4
-[ 5913.318138]  [<ffffffff814e86f3>] common_interrupt+0x73/0x73
-[ 5913.318142]  <EOI>  [<ffffffff81015f0c>] ? __cycles_2_ns+0xe/0x3a
-[ 5913.318152]  [<ffffffff812eb3ff>] ? arch_local_irq_enable+0x8/0xd
-[ 5913.318158]  [<ffffffff810918c2>] ? trace_hardirqs_on+0xd/0xf
-[ 5913.318164]  [<ffffffff812ec325>] acpi_idle_enter_simple+0xde/0x114
-[ 5913.318170]  [<ffffffff813ef81c>] cpuidle_idle_call+0x11c/0x1fe
-[ 5913.318176]  [<ffffffff8100f31d>] cpu_idle+0xe2/0x14c
-[ 5913.318181]  [<ffffffff814d451d>] start_secondary+0x20d/0x218
-[ 5913.318186] ---[ end trace ff2d5fa66f3f892e ]---
-[ 5913.422416] ------------[ cut here ]------------
-[ 5913.422501] WARNING: at lib/list_debug.c:53 __list_del_entry+0x8d/0x98()
-[ 5913.422505] Hardware name: Adamo 13   
-[ 5913.422509] list_del corruption. prev->next should be ffffea00045acda0, but was dead000000100100
-[ 5913.422513] Modules linked in: nfs fscache fuse ebtable_nat ebtables ppdev parport_pc lp parport ipt_MASQUERADE iptable_nat nf_nat nfsd lockd nfs_acl auth_rpcgss xt_CHECKSUM sunrpc iptable_mangle bridge stp llc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables rfcomm bnep arc4 iwlagn snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel btusb mac80211 snd_hda_codec bluetooth snd_hwdep snd_seq snd_seq_device snd_pcm usb_debug dell_wmi sparse_keymap cdc_ether usbnet cdc_acm uvcvideo cdc_wdm mii cfg80211 snd_timer dell_laptop videodev dcdbas snd microcode v4l2_compat_ioctl32 soundcore joydev tg3 pcspkr snd_page_alloc iTCO_wdt i2c_i801 rfkill iTCO_vendor_support wmi virtio_net kvm_intel kvm ipv6 xts gf128mul dm_crypt i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
-[ 5913.422667] Pid: 17555, comm: kworker/1:3 Tainted: G        W   3.0.0+ #127
-[ 5913.422670] Call Trace:
-[ 5913.422674]  <IRQ>  [<ffffffff8105df18>] warn_slowpath_common+0x83/0x9b
-[ 5913.422685]  [<ffffffff8105dfd3>] warn_slowpath_fmt+0x46/0x48
-[ 5913.422691]  [<ffffffff8127e7c1>] __list_del_entry+0x8d/0x98
-[ 5913.422696]  [<ffffffff8127e7da>] list_del+0xe/0x2d
-[ 5913.422702]  [<ffffffff814e0430>] __slab_free+0x1db/0x235
-[ 5913.422709]  [<ffffffff811706ab>] ? bvec_free_bs+0x35/0x37
-[ 5913.422715]  [<ffffffff811706ab>] ? bvec_free_bs+0x35/0x37
-[ 5913.422720]  [<ffffffff811706ab>] ? bvec_free_bs+0x35/0x37
-[ 5913.422726]  [<ffffffff81133085>] kmem_cache_free+0x88/0x102
-[ 5913.422732]  [<ffffffff811706ab>] bvec_free_bs+0x35/0x37
-[ 5913.422737]  [<ffffffff811706e1>] bio_free+0x34/0x64
-[ 5913.422743]  [<ffffffff813dc390>] dm_bio_destructor+0x12/0x14
-[ 5913.422749]  [<ffffffff8116fef6>] bio_put+0x2b/0x2d
-[ 5913.422754]  [<ffffffff813dccab>] clone_endio+0x9e/0xb4
-[ 5913.422759]  [<ffffffff8116f7dd>] bio_endio+0x2d/0x2f
-[ 5913.422773]  [<ffffffffa00148da>] crypt_dec_pending+0x5c/0x8b [dm_crypt]
-[ 5913.422786]  [<ffffffffa00150a9>] crypt_endio+0x78/0x81 [dm_crypt]
-[ 5913.422791]  [<ffffffff8116f7dd>] bio_endio+0x2d/0x2f
-[ 5913.422797]  [<ffffffff81257f60>] req_bio_endio+0x91/0x99
-[ 5913.422803]  [<ffffffff81259fc9>] blk_update_request+0x1f2/0x395
-[ 5913.422808]  [<ffffffff8125a18d>] blk_update_bidi_request+0x21/0x6d
-[ 5913.422814]  [<ffffffff8125a2e0>] blk_end_bidi_request+0x1f/0x5d
-[ 5913.422819]  [<ffffffff8125a358>] blk_end_request+0x10/0x12
-[ 5913.422825]  [<ffffffff8135126c>] scsi_io_completion+0x1dc/0x4d7
-[ 5913.422831]  [<ffffffff813491ac>] scsi_finish_command+0xe4/0xed
-[ 5913.422836]  [<ffffffff81350fd4>] scsi_softirq_done+0x109/0x112
-[ 5913.422842]  [<ffffffff8125f359>] blk_done_softirq+0x7f/0x93
-[ 5913.422848]  [<ffffffff810646e5>] __do_softirq+0x10f/0x257
-[ 5913.422854]  [<ffffffff810dc4e4>] ? time_hardirqs_off+0x1b/0x2f
-[ 5913.422867]  [<ffffffffa00156fa>] ? crypt_convert+0x2b7/0x2b7 [dm_crypt]
-[ 5913.422873]  [<ffffffff814f075c>] call_softirq+0x1c/0x30
-[ 5913.422879]  [<ffffffff81011c7a>] do_softirq+0x4b/0xa1
-[ 5913.422884]  [<ffffffff81064ac8>] irq_exit+0x5d/0xcd
-[ 5913.422889]  [<ffffffff814f105d>] do_IRQ+0x8d/0xa4
-[ 5913.422895]  [<ffffffff814e86f3>] common_interrupt+0x73/0x73
-[ 5913.422898]  <EOI>  [<ffffffff8108d090>] ? debug_mutex_init+0x3e/0x3e
-[ 5913.422909]  [<ffffffff8108d0b3>] ? arch_local_irq_save+0x9/0x18
-[ 5913.422915]  [<ffffffff8108e10b>] lock_is_held+0x2c/0x95
-[ 5913.422930]  [<ffffffff81099aea>] rcu_read_lock_held+0x25/0x27
-[ 5913.422935]  [<ffffffff81099b4d>] __module_address+0x61/0xa0
-[ 5913.422949]  [<ffffffff8109d41a>] is_module_address+0x20/0x59
-[ 5913.422960]  [<ffffffff8108dbd9>] static_obj+0x3c/0x54
-[ 5913.422970]  [<ffffffff8108e5a2>] lockdep_init_map+0xa0/0x115
-[ 5913.422982]  [<ffffffff8107c41b>] __init_waitqueue_head+0x3a/0x4b
-[ [ 5913.555121] ------------[ cut here ]------------
-[ 5913.555121] WARNING: at lib/list_debug.c:53 __list_del_entry+0x8d/0x98()
-[ 5913.555121] Hardware name: Adamo 13   
-[ 5913.555121] list_del corruption. prev->next should be ffffea000451a320, but was ffffea000480eda0
-[ 5913.555121] Modules linked in: nfs fscache fuse ebtable_nat ebtables ppdev parport_pc lp parport ipt_MASQUERADE iptable_nat nf_nat nfsd lockd nfs_acl auth_rpcgss xt_CHECKSUM sunrpc iptable_mangle bridge stp llc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables rfcomm bnep arc4 iwlagn snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel btusb mac80211 snd_hda_codec bluetooth snd_hwdep snd_seq snd_seq_device snd_pcm usb_debug dell_wmi sparse_keymap cdc_ether usbnet cdc_acm uvcvideo cdc_wdm mii cfg80211 snd_timer dell_laptop videodev dcdbas snd microcode v4l2_compat_ioctl32 soundcore joydev tg3 pcspkr snd_page_alloc iTCO_wdt i2c_i801 rfkill iTCO_vendor_support wmi virtio_net kvm_intel kvm ipv6 xts gf128mul dm_crypt i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
-[ 5913.555121] Pid: 0, comm: swapper Tainted: G        W   3.0.0+ #127
-[ 5913.555121] Call Trace:
-[ 5913.555121]  <IRQ>  [<ffffffff8105df18>] warn_slowpath_common+0x83/0x9b
-[ 5913.555121]  [<ffffffff8105dfd3>] warn_slowpath_fmt+0x46/0x48
-[ 5913.555121]  [<ffffffff8127e7c1>] __list_del_entry+0x8d/0x98
-[ 5913.555121]  [<ffffffff8127e7da>] list_del+0xe/0x2d
-[ 5913.555121]  [<ffffffff814e0430>] __slab_free+0x1db/0x235
-[ 5913.555121]  [<ffffffff811706ab>] ? bvec_free_bs+0x35/0x37
-[ 5913.555121]  [<ffffffff811706ab>] ? bvec_free_bs+0x35/0x37
-[ 5913.555121]  [<ffffffff811706ab>] ? bvec_free_bs+0x35/0x37
-[ 5913.555121]  [<ffffffff81133085>] kmem_cache_free+0x88/0x102
-[ 5913.555121]  [<ffffffff811706ab>] bvec_free_bs+0x35/0x37
-[ 5913.555121]  [<ffffffff811706e1>] bio_free+0x34/0x64
-[ 5913.555121]  [<ffffffff813dc390>] dm_bio_destructor+0x12/0x14
-[ 5913.555121]  [<ffffffff8116fef6>] bio_put+0x2b/0x2d
-[ 5913.555121]  [<ffffffff813dccab>] clone_endio+0x9e/0xb4
-[ 5913.555121]  [<ffffffff8116f7dd>] bio_endio+0x2d/0x2f
-[ 5913.555121]  [<ffffffffa00148da>] crypt_dec_pending+0x5c/0x8b [dm_crypt]
-[ 5913.555121]  [<ffffffffa00150a9>] crypt_endio+0x78/0x81 [dm_crypt]
-[ 5913.555121]  [<ffffffff8116f7dd>] bio_endio+0x2d/0x2f
-[ 5913.555121]  [<ffffffff81257f60>] req_bio_endio+0x91/0x99
-[ 5913.555121]  [<ffffffff81259fc9>] blk_update_request+0x1f2/0x395
-[ 5913.555121]  [<ffffffff8125a18d>] blk_update_bidi_request+0x21/0x6d
-[ 5913.555121]  [<ffffffff8125a2e0>] blk_end_bidi_request+0x1f/0x5d
-[ 5913.555121]  [<ffffffff8125a358>] blk_end_request+0x10/0x12
-[ 5913.555121]  [<ffffffff8135126c>] scsi_io_completion+0x1dc/0x4d7
-[ 5913.555121]  [<ffffffff813491ac>] scsi_finish_command+0xe4/0xed
-[ 5913.555121]  [<ffffffff81350fd4>] scsi_softirq_done+0x109/0x112
-[ 5913.555121]  [<ffffffff8125f359>] blk_done_softirq+0x7f/0x93
-[ 5913.555121]  [<ffffffff810646e5>] __do_softirq+0x10f/0x257
-[ 5913.555121]  [<ffffffff810dc4e4>] ? time_hardirqs_off+0x1b/0x2f
-[ 5913.555121]  [<ffffffff814f075c>] call_softirq+0x1c/0x30
-[ 5913.555121]  [<ffffffff81011c7a>] do_softirq+0x4b/0xa1
-[ 5913.555121]  [<ffffffff81064ac8>] irq_exit+0x5d/0xcd
-[ 5913.555121]  [<ffffffff814f105d>] do_IRQ+0x8d/0xa4
-[ 5913.555121]  [<ffffffff814e86f3>] common_interrupt+0x73/0x73
-[ 5913.555121]  <EOI>  [<ffffffff81015f0c>] ? __cycles_2_ns+0xe/0x3a
-[ 5913.555121]  [<ffffffff812eb3ff>] ? arch_local_irq_enable+0x8/0xd
-[ 5913.555121]  [<ffffffff810918c2>] ? trace_hardirqs_on+0xd/0xf
-[ 5913.555121]  [<ffffffff812ec325>] acpi_idle_enter_simple+0xde/0x114
-[ 5913.555121]  [<ffffffff813ef81c>] cpuidle_idle_call+0x11c/0x1fe
-[ 5913.555121]  [<ffffffff8100f31d>] cpu_idle+0xe2/0x14c
-[ 5913.555121]  [<ffffffff81d48bad>] ? start_kernel+0x3ec/0x3f7
-[ 5913.555121]  [<ffffffff814c4316>] rest_init+0xda/0xe1
-[ 5913.555121]  [<ffffffff814c423c>] ? csum_partial_copy_generic+0x16c/0x16c
-[ 5913.555121]  [<ffffffff81d48bad>] start_kernel+0x3ec/0x3f7
-[ 5913.555121]  [ 5913.555121] ------------[ cut here ]------------
-[ 5913.555121] WARNING: at lib/list_debug.c:53 __list_del_entry+0x8d/0x98()
-[ 5913.555121] Hardware name: Adamo 13   
-[ 5913.555121] list_del corruption. prev->next should be ffffea00046e6c20, but was ffffea00043ae720
-[ 5913.555121] Modules linked in: nfs fscache fuse ebtable_nat ebtables ppdev parport_pc lp parport ipt_MASQUERADE iptable_nat nf_nat nfsd lockd nfs_acl auth_rpcgss xt_CHECKSUM sunrpc iptable_mangle bridge stp llc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables rfcomm bnep arc4 iwlagn snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel btusb mac80211 snd_hda_codec bluetooth wmi vir[ 5913.5[ 5913.5[ 5913.5[ 5913.593105] ------------[ cut here ]------------
-[ 5913.593114] WARNING: at lib/list_debug.c:26 __list_add+0x3d/0x7f()
-[ 5913.593118] Hardware name: Adamo 13   
-[ 5913.593122] list_add corruption. next->prev should be prev (ffff88013825fe70), but was ffffea000439a120. (next=ffffea00045873e0).
-[ 5913.593127] Modules linked in: nfs fscache fuse ebtable_nat ebtables ppdev parport_pc lp parport ipt_MASQUERADE iptable_nat nf_nat nfsd lockd nfs_acl auth_rpcgss xt_CHECKSUM sunrpc iptable_mangle bridge stp llc cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables rfcomm bnep arc4 iwlagn snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel btusb mac80211 snd_hda_codec bluetooth snd_hwdep snd_seq snd_seq_device snd_pcm usb_debug dell_wmi sparse_keymap cdc_ether usbnet cdc_acm uvcvideo cdc_wdm mii cfg80211 snd_timer dell_laptop videodev dcdbas snd microcode v4l2_compat_ioctl32 soundcore joydev tg3 pcspkr snd_page_alloc iTCO_wdt i2c_i801 rfkill iTCO_vendor_support wmi virtio_net kvm_intel kvm ipv6 xts gf128mul dm_crypt i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
-[ 5913.593285] Pid: 900, comm: flush-253:3 Tainted: G        W   3.0.0+ #127
-[ 5913.593289] Call Trace:
-[ 5913.593295]  [<ffffffff8105df18>] warn_slowpath_common+0x83/0x9b
-[ 5913.593301]  [<ffffffff8105dfd3>] warn_slowpath_fmt+0x46/0x48
-[ 5913.593307]  [<ffffffff811335e1>] ? deactivate_slab+0x1b4/0x2b9
-[ 5913.593313]  [<ffffffff8127e836>] __list_add+0x3d/0x7f
-[ 5913.593318]  [<ffffffff8113367c>] deactivate_slab+0x24f/0x2b9
-[ 5913.593325]  [<ffffffff811707d6>] ? bvec_[ 5914.004821] -
+josh
