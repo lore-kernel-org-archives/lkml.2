@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab1HEQNo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 12:13:44 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47697 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754857Ab1HEQNm convert rfc822-to-8bit (ORCPT
+	id S1756876Ab1HEQPY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 12:15:24 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49065 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753623Ab1HEQPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 12:13:42 -0400
+	Fri, 5 Aug 2011 12:15:22 -0400
+Date: Sat, 6 Aug 2011 01:15:13 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Liam Girdwood <lrg@ti.com>,
+        Chris Ball <cjb@laptop.org>, "ccross@android.com" <ccross@android.com>,
+        "olof@lixom.net" <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 1/3] irq: If an IRQ is a GPIO, request and configure it
+Message-ID: <20110805161511.GB3438@opensource.wolfsonmicro.com>
+References: <1312498820-2275-1-git-send-email-swarren@nvidia.com>
+ <1312498820-2275-2-git-send-email-swarren@nvidia.com>
+ <20110805000148.GB13321@opensource.wolfsonmicro.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF049F171EC1@HQMAIL01.nvidia.com>
+ <20110805053510.GA16956@opensource.wolfsonmicro.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF049F171EF4@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1108040400570.4278@p34.internal.lan>
-References: <20110730113009.GA2847@redhat.com>
-	<20110730113255.GB2847@redhat.com>
-	<alpine.DEB.2.02.1107300736010.4925@p34.internal.lan>
-	<alpine.DEB.2.02.1107301015340.4925@p34.internal.lan>
-	<alpine.DEB.2.02.1107301031560.4925@p34.internal.lan>
-	<4E341DC4.9010107@01019freenet.de>
-	<alpine.DEB.2.02.1107301305590.4925@p34.internal.lan>
-	<20110803160050.GA18882@redhat.com>
-	<alpine.DEB.2.02.1108031328030.9421@p34.internal.lan>
-	<alpine.DEB.2.02.1108031339280.9421@p34.internal.lan>
-	<20110803183349.GA5956@redhat.com>
-	<alpine.DEB.2.02.1108040400570.4278@p34.internal.lan>
-Date: Fri, 5 Aug 2011 09:13:41 -0700
-X-Google-Sender-Auth: VUIMO_I6OXZ07gMcsVDGxJ-xIFw
-Message-ID: <CAJu5p2cP7T3_kcCOM9+h3Xf_V4S0qg0tUztD_7JzkGz0ek2STQ@mail.gmail.com>
-Subject: Re: [rt2x00-users] [PATCH] rt2x00: rt2800: fix zeroing skb structure
-From: Aleksandar Milivojevic <alex@milivojevic.org>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Andreas Hartmann <andihartmann@01019freenet.de>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "users@rt2x00.serialmonkey.com" <users@rt2x00.serialmonkey.com>,
-        Alan Piszcz <ap@solarrain.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF049F171EF4@HQMAIL01.nvidia.com>
+X-Cookie: Q:	How do you keep a moron in suspense?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 4, 2011 at 1:03 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
-> Aug  3 22:47:12 atom kernel: [26120.279774] wlan0: deauthenticated from
-> hidden (Reason: 2)
+On Fri, Aug 05, 2011 at 08:29:38AM -0700, Stephen Warren wrote:
+> Mark Brown wrote at Thursday, August 04, 2011 11:35 PM:
 
-Thinking about it, I'm also seeing similar "deauthenticated" message
-in kernel logs on my system infrequently (with Linksys WUSB600N, hw
-rev 1, rt2870 chip).  About few times a day, if I leave my system on
-24/7.  In my case, the reason code listed is "3".  Most times it
-re-authenticates with AP automatically, though sometimes it gives up
-and I need to tell it manually to try to re-connect to AP (using
-NetworkManager).
+> > But it's not a bug to use a GPIO as an IRQ source, otherwise we wouldn't
+> > have gpio_to_irq() in the first place.
 
-Haven't gave it much thought before, as I usually have this system
-powered on for only few hours at a time, not long enough for problem
-to occur.  Unless I forget to power it off and it stays on overnight
-(and then by the morning, it's bound to have at least few
-"deauthenticated" messages logged).
+> 2) Two pieces of unrelated code somehow accidentally get a GPIO and IRQ
+> number that map to the same resource, e.g. due to incorrect board files or
+> Device Tree content. This is probably a bug, but ends up looking exactly
+> the same as far as the IRQ code's gpio_request call failing in the patch I
+> posted.
+
+Right, but this doesn't mean we can break the legitimate users to catch
+the buggy ones.
