@@ -1,109 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab1HEH4x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 03:56:53 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:56665 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402Ab1HEH4u (ORCPT
+	id S1754522Ab1HEH5Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 03:57:24 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:60835 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132Ab1HEH5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 03:56:50 -0400
-Message-ID: <4E3BA239.6040904@gmail.com>
-Date: Fri, 05 Aug 2011 15:56:41 +0800
-From: Liu Yuan <namei.unix@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Fri, 5 Aug 2011 03:57:21 -0400
+Date: Fri, 5 Aug 2011 09:57:17 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>, Ingo Molnar <mingo@elte.hu>
+Cc: Tony Luck <tony.luck@intel.com>, EDAC devel <linux-edac@vger.kernel.org>,
+        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] x86, MCE: Use MCE decoder notifier chain
+Message-ID: <20110805075717.GA21162@aftab>
+References: <1310999086-30870-1-git-send-email-bp@amd64.org>
+ <20110802115853.GC15897@aftab>
+ <4E3B3FDA.1050706@redhat.com>
 MIME-Version: 1.0
-To: Badari Pulavarty <pbadari@us.ibm.com>
-CC: Stefan Hajnoczi <stefanha@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Khoa Huynh <khoa@us.ibm.com>
-Subject: Re: [RFC PATCH]vhost-blk: In-kernel accelerator for virtio block
- device
-References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com>	 <CAJSP0QUKz7LFuARF_n2LcBi_uuSzfmkjrWsHAWrXXkEaQJKkEA@mail.gmail.com>	 <4E325F98.5090308@gmail.com> <4E32F7F2.4080607@us.ibm.com>	 <4E363DB9.70801@gmail.com> <1312495132.9603.4.camel@badari-desktop>
-In-Reply-To: <1312495132.9603.4.camel@badari-desktop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E3B3FDA.1050706@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2011 05:58 AM, Badari Pulavarty wrote:
-> Hi Liu Yuan,
->
-> I started testing your patches. I applied your kernel patch to 3.0
-> and applied QEMU to latest git.
->
-> I passed 6 blockdevices from the host to guest (4 vcpu, 4GB RAM).
-> I ran simple "dd" read tests from the guest on all block devices
-> (with various blocksizes, iflag=direct).
->
-> Unfortunately, system doesn't stay up. I immediately get into
-> panic on the host. I didn't get time to debug the problem. Wondering
-> if you have seen this issue before and/or you have new patchset
-> to try ?
->
-> Let me know.
->
+On Thu, Aug 04, 2011 at 08:56:58PM -0400, Mauro Carvalho Chehab wrote:
+> Boris,
+> 
+> Em 02-08-2011 08:58, Borislav Petkov escreveu:
+> > Ping?
+> > 
+> > Mauro, any progress on those below?
+> 
+> Sorry for taking a long time on that. I'm testing it right now, together with
+> a few other patches for i7core.
+> 
+> I've added it (with a few conflict fixes) at:
+> 	ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/edac.git  linux_next
+> 
+> If everything works as before, I'll send it to Linus tomorrow, assuming that
+> linux-next will catch them.
 
-This patch set doesn't support multiple devices currently, since 
-vhost-blk code for the qemu just
-passes *one* backend to the vhost_blk module in the kernel.
+Ok, thanks.
 
-If you really need to test it with multiple blockdevices, you have to 
-tweak vhost-blk part for qemu.
+Please bear in mind that the second patch depends on the first and
+they both touch arch/x86 so you'd at least need Acked-by's from x86
+maintainers. Ingo?
 
-I'll take a look at this issue, but not a promise with a patch as soon 
-as possible.
+-- 
+Regards/Gruss,
+Boris.
 
-Yuan
-
-> Thanks,
-> Badari
->
-> ------------[ cut here ]------------
-> kernel BUG at mm/slab.c:3059!
-> invalid opcode: 0000 [#1] SMP
-> CPU 7
-> Modules linked in: vhost_blk ebtable_nat ebtables xt_CHECKSUM bridge stp llc autofs4 sunrpc cpufreq_ondemand acpi_cpufreq freq_table mperf cachefiles fscache ipt_REJECT ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables ipv6 dm_mirror dm_region_hash dm_log dm_round_robin scsi_dh_rdac dm_multipath vhost_net macvtap macvlan tun kvm_intel kvm cdc_ether usbnet mii microcode serio_raw pcspkr i2c_i801 i2c_core iTCO_wdt iTCO_vendor_support shpchp ioatdma dca i7core_edac edac_core bnx2 sg ext4 mbcache jbd2 sd_mod crc_t10dif qla2xxx scsi_transport_fc scsi_tgt mptsas mptscsih mptbase scsi_transport_sas dm_mod [last unloaded: nf_defrag_ipv4]
->
-> Pid: 2744, comm: vhost-2698 Not tainted 3.0.0 #2 IBM  -[7870AC1]-/46M0761
-> RIP: 0010:[<ffffffff8114932c>]  [<ffffffff8114932c>] cache_alloc_refill+0x22c/0x250
-> RSP: 0018:ffff880258c87d00  EFLAGS: 00010046
-> RAX: 0000000000000002 RBX: ffff88027f800040 RCX: dead000000200200
-> RDX: ffff880271128000 RSI: 0000000000000070 RDI: ffff88026eb6c000
-> RBP: ffff880258c87d50 R08: ffff880271128000 R09: 0000000000000003
-> R10: 000000021fffffff R11: ffff88026b5790c0 R12: ffff880272cd8c00
-> R13: ffff88027f822440 R14: 0000000000000002 R15: ffff88026eb6c000
-> FS:  0000000000000000(0000) GS:ffff88027fce0000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 0000000000ecb100 CR3: 0000000270bfe000 CR4: 00000000000026e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process vhost-2698 (pid: 2744, threadinfo ffff880258c86000, task ffff8802703154c0)
-> Stack:
->   ffff880200000002 000492d000000000 ffff88027f822460 ffff88027f822450
->   ffff880258c87d60 ffff88027f800040 0000000000000000 00000000000080d0
->   00000000000080d0 0000000000000246 ffff880258c87da0 ffffffff81149c82
-> Call Trace:
->   [<ffffffff81149c82>] kmem_cache_alloc_trace+0x182/0x190
->   [<ffffffffa0252f52>] handle_guest_kick+0x162/0x799 [vhost_blk]
->   [<ffffffffa02514ab>] vhost_worker+0xcb/0x150 [vhost_blk]
->   [<ffffffffa02513e0>] ? vhost_dev_set_owner+0x190/0x190 [vhost_blk]
->   [<ffffffffa02513e0>] ? vhost_dev_set_owner+0x190/0x190 [vhost_blk]
->   [<ffffffff81084c66>] kthread+0x96/0xa0
->   [<ffffffff814d2f84>] kernel_thread_helper+0x4/0x10
->   [<ffffffff81084bd0>] ? kthread_worker_fn+0x1a0/0x1a0
->   [<ffffffff814d2f80>] ? gs_change+0x13/0x13
-> Code: 48 89 df e8 07 fb ff ff 65 8b 14 25 58 dc 00 00 85 c0 48 63 d2 4c 8b 24 d3 74 16 41 83 3c 24 00 0f 84 fc fd ff ff e9 75 ff ff ff<0f>  0b 66 90 eb fc 31 c0 41 83 3c 24 00 0f 85 62 ff ff ff 90 e9
-> RIP  [<ffffffff8114932c>] cache_alloc_refill+0x22c/0x250
->   RSP<ffff880258c87d00>
-> ---[ end trace e286566e512cba7b ]---
->
->
->
->
->
->
->
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
