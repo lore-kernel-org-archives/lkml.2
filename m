@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab1HEHFv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 03:05:51 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:49106 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab1HEHFt (ORCPT
+	id S1754556Ab1HEHVn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 03:21:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58238 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753603Ab1HEHVl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 03:05:49 -0400
-Subject: [PATCH] i2c: tegra: Add CONFIG_OF guards for device tree bits
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Colin Cross <ccross@android.com>, John Bonesio <bones@secretlab.ca>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-i2c@vger.kernel.org
+	Fri, 5 Aug 2011 03:21:41 -0400
+Subject: Re: [RFT][patch 17/18] sched: use jump labels to reduce overhead
+ when bandwidth control is inactive
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        rth@redhat.com
+Date: Fri, 05 Aug 2011 09:21:21 +0200
+In-Reply-To: <CAPM31RKxBghZxcRyPLRv81Et0kxrYdBjzPohOONqHczr6EpDPA@mail.gmail.com>
+References: <20110722003211.GA2807@redhat.com>
+	 <CAPM31R+UWijCCna5zYfn875h+KPmS4H0Lk8jW6+8JP-oDb72DA@mail.gmail.com>
+	 <20110722011747.GB2807@redhat.com>
+	 <CAPM31RKW+do-U8G8uL-y53BVWvr4oQbSf456A9u-SUV06tSfeg@mail.gmail.com>
+	 <20110727215816.GA2515@redhat.com>
+	 <CAPM31RKxBghZxcRyPLRv81Et0kxrYdBjzPohOONqHczr6EpDPA@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 05 Aug 2011 15:05:21 +0800
-Message-ID: <1312527921.21955.2.camel@phoenix>
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1312528881.10852.1.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device tree bits need to be protected by CONFIG_OF guards.
-This patch fixes below build error with "make tegra_defconfig;make".
+On Thu, 2011-08-04 at 20:53 -0700, Paul Turner wrote:
+> 
+> I will re-post v7.3 with:
+> - rebase to minor changes in tip
+> - removing RFT from adding jump_labels to CFS
+> - additional hierarchical period constraint 
 
-  CC      drivers/i2c/busses/i2c-tegra.o
-drivers/i2c/busses/i2c-tegra.c: In function 'tegra_i2c_probe':
-drivers/i2c/busses/i2c-tegra.c:615: error: implicit declaration of function 'of_get_property'
-drivers/i2c/busses/i2c-tegra.c:616: warning: assignment makes pointer from integer without a cast
-make[3]: *** [drivers/i2c/busses/i2c-tegra.o] Error 1
-make[2]: *** [drivers/i2c/busses] Error 2
-make[1]: *** [drivers/i2c] Error 2
-make: *** [drivers] Error 2
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/i2c/busses/i2c-tegra.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index 0c6e840..1bfe85e 100644
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -548,7 +548,6 @@ static int tegra_i2c_probe(struct platform_device *pdev)
- 	struct resource *iomem;
- 	struct clk *clk;
- 	struct clk *i2c_clk;
--	const unsigned int *prop;
- 	void *base;
- 	int irq;
- 	int ret = 0;
-@@ -611,11 +610,15 @@ static int tegra_i2c_probe(struct platform_device *pdev)
- 	if (pdata) {
- 		i2c_dev->bus_clk_rate = pdata->bus_clk_rate;
- 
-+#ifdef CONFIG_OF
- 	} else if (i2c_dev->dev->of_node) {    /* if there is a device tree node ... */
-+		const unsigned int *prop;
-+
- 		prop = of_get_property(i2c_dev->dev->of_node,
- 				"clock-frequency", NULL);
- 		if (prop)
- 			i2c_dev->bus_clk_rate = be32_to_cpup(prop);
-+#endif
- 	}
- 
- 	if (pdev->id == 3)
--- 
-1.7.4.1
-
-
-
+Could you rebase to -tip + my patches, most of your previous set is
+already queued there. The reason its not in -tip is is because the merge
+window fallout still has -tip in a somewhat shaky state.
