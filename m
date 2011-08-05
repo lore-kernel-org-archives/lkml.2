@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab1HESBU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 14:01:20 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:35589 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171Ab1HESBU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 14:01:20 -0400
-Date: Fri, 5 Aug 2011 20:01:16 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        "Przywara, Andre" <Andre.Przywara@amd.com>,
-        "Pohlack, Martin" <Martin.Pohlack@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -v3.2 2/3] x86: Add a BSP cpu_dev helper
-Message-ID: <20110805180116.GB26217@aftab>
-References: <1312550110-24160-1-git-send-email-bp@amd64.org>
- <4E3C2405.8090309@zytor.com>
- <20110805175522.GA26217@aftab>
+	id S1754788Ab1HESCj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 14:02:39 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:37061 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751171Ab1HESCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 14:02:38 -0400
+Message-ID: <4E3C302A.3040500@us.ibm.com>
+Date: Fri, 05 Aug 2011 11:02:18 -0700
+From: Badari Pulavarty <pbadari@us.ibm.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.16) Gecko/20101125 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110805175522.GA26217@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Liu Yuan <namei.unix@gmail.com>
+CC: Stefan Hajnoczi <stefanha@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Khoa Huynh <khoa@us.ibm.com>
+Subject: Re: [RFC PATCH]vhost-blk: In-kernel accelerator for virtio block
+ device
+References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com> <CAJSP0QUKz7LFuARF_n2LcBi_uuSzfmkjrWsHAWrXXkEaQJKkEA@mail.gmail.com> <4E325F98.5090308@gmail.com> <4E32F7F2.4080607@us.ibm.com> <4E363DB9.70801@gmail.com> <1312495132.9603.4.camel@badari-desktop> <4E3BCE4D.7090809@gmail.com>
+In-Reply-To: <4E3BCE4D.7090809@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a function ptr to struct cpu_dev which is destined to be run only
-once on the BSP during boot.
+On 8/5/2011 4:04 AM, Liu Yuan wrote:
+> On 08/05/2011 05:58 AM, Badari Pulavarty wrote:
+>> Hi Liu Yuan,
+>>
+>> I started testing your patches. I applied your kernel patch to 3.0
+>> and applied QEMU to latest git.
+>>
+>> I passed 6 blockdevices from the host to guest (4 vcpu, 4GB RAM).
+>> I ran simple "dd" read tests from the guest on all block devices
+>> (with various blocksizes, iflag=direct).
+>>
+>> Unfortunately, system doesn't stay up. I immediately get into
+>> panic on the host. I didn't get time to debug the problem. Wondering
+>> if you have seen this issue before and/or you have new patchset
+>> to try ?
+>>
+>> Let me know.
+>>
+>> Thanks,
+>> Badari
+>>
+>
+> Okay, it is actually a bug pointed out by MST on the other thread, 
+> that it needs a mutex for completion thread.
+>
+> Now would you please this attachment?This patch only applies to kernel 
+> part, on top of v1 kernel patch.
+>
+> This patch mainly moves completion thread into vhost thread as a 
+> function. As a result, both requests submitting and completion 
+> signalling is in the same thread.
+>
+> Yuan
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/cpu/common.c |    3 +++
- arch/x86/kernel/cpu/cpu.h    |    1 +
- 2 files changed, 4 insertions(+), 0 deletions(-)
+Unfortunately, "dd" tests (4 out of 6) in the guest hung. I see 
+following messages
 
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 22a073d..8ed394a 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -681,6 +681,9 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
- 	filter_cpuid_features(c, false);
- 
- 	setup_smep(c);
-+
-+	if (this_cpu->c_bsp_init)
-+		this_cpu->c_bsp_init(c);
- }
- 
- void __init early_cpu_init(void)
-diff --git a/arch/x86/kernel/cpu/cpu.h b/arch/x86/kernel/cpu/cpu.h
-index e765633..1b22dcc 100644
---- a/arch/x86/kernel/cpu/cpu.h
-+++ b/arch/x86/kernel/cpu/cpu.h
-@@ -18,6 +18,7 @@ struct cpu_dev {
- 	struct		cpu_model_info c_models[4];
- 
- 	void            (*c_early_init)(struct cpuinfo_x86 *);
-+	void		(*c_bsp_init)(struct cpuinfo_x86 *);
- 	void		(*c_init)(struct cpuinfo_x86 *);
- 	void		(*c_identify)(struct cpuinfo_x86 *);
- 	unsigned int	(*c_size_cache)(struct cpuinfo_x86 *, unsigned int);
--- 
-1.7.4.rc2
+virtio_blk virtio2: requests: id 0 is not a head !
+virtio_blk virtio3: requests: id 1 is not a head !
+virtio_blk virtio5: requests: id 1 is not a head !
+virtio_blk virtio1: requests: id 1 is not a head !
+
+I still see host panics. I will collect the host panic and see if its 
+still same or not.
+
+Thanks,
+Badari
+
+
