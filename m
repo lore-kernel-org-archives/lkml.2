@@ -1,102 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756602Ab1HEKaE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 06:30:04 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55757 "EHLO mx2.mail.elte.hu"
+	id S1756614Ab1HEKbJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 06:31:09 -0400
+Received: from trinity.fluff.org ([89.16.178.74]:35727 "EHLO trinity.fluff.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754426Ab1HEKaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 06:30:01 -0400
-Date: Fri, 5 Aug 2011 12:29:03 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jiri Pirko <jpirko@redhat.com>
-Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [forcedeth bug] Re: [GIT] Networking
-Message-ID: <20110805102903.GF2420@elte.hu>
-References: <20110722.073339.1236244143490935644.davem@davemloft.net>
- <20110801151308.GA31256@elte.hu>
- <20110804215354.GA7056@elte.hu>
- <20110805102239.GB1928@minipsycho.orion>
+	id S1755254Ab1HEKbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 06:31:07 -0400
+Date: Fri, 5 Aug 2011 11:30:46 +0100
+From: Ben Dooks <ben-linux@fluff.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Stephen Warren <swarren@nvidia.com>, alsa-devel@alsa-project.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, ccross@android.com, olof@lixom.net,
+        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
+        Liam Girdwood <lrg@ti.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 0/3] If an IRQ is a GPIO, request and configure it
+Message-ID: <20110805103045.GG28651@trinity.fluff.org>
+References: <1312498820-2275-1-git-send-email-swarren@nvidia.com> <20110805094017.GC20575@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110805102239.GB1928@minipsycho.orion>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110805094017.GC20575@n2100.arm.linux.org.uk>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@trinity.fluff.org
+X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Jiri Pirko <jpirko@redhat.com> wrote:
-
-> Thu, Aug 04, 2011 at 11:53:54PM CEST, mingo@elte.hu wrote:
-> >
-> >* Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> >>  0891b0e08937: forcedeth: fix vlans
-> >
-> >Hm, forcedeth is still giving me trouble even on latest -git that has 
-> >the above fix included.
-> >
-> >The symptom is a stuck interface, no packets in. There's a frame 
-> >error RX packet:
-> >
-> > [root@mercury ~]# ifconfig eth0
-> > eth0      Link encap:Ethernet  HWaddr 00:13:D4:DC:41:12  
-> >           inet addr:10.0.1.13  Bcast:10.0.1.255  Mask:255.255.255.0
-> >           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-> >           RX packets:0 errors:1 dropped:0 overruns:0 frame:1
-> >           TX packets:531 errors:0 dropped:0 overruns:0 carrier:0
-> >           collisions:0 txqueuelen:1000 
-> >           RX bytes:0 (0.0 b)  TX bytes:34112 (33.3 KiB)
-> >           Interrupt:35 
-> >
-> >Weirdly enough a defconfig x86 bootup works just fine - it's certain 
-> >.config combinations that trigger the bug. I've attached such a 
-> >config.
-> >
-> >Note that at least once i've observed a seemingly good kernel going 
-> >'bad' after a couple of minutes uptime. I've also observed 
-> >intermittent behavior - apparent lost packets and a laggy network.
-> >
-> >I have done 3 failed attempts to bisect it any further - i got to the 
-> >commit that got fixed by:
-> >
-> >  0891b0e08937: forcedeth: fix vlans
-> >
-> >... but that's something we already knew.
-> >
-> >Let me know if there's any data i can provide to help debug this 
-> >problem.
-> >
-> >Thanks,
-> >
-> >	Ingo
+On Fri, Aug 05, 2011 at 10:40:17AM +0100, Russell King - ARM Linux wrote:
+> On Thu, Aug 04, 2011 at 05:00:17PM -0600, Stephen Warren wrote:
+> > In http://www.spinics.net/lists/linux-tegra/msg01731.html, Mark Brown
+> > pointed out that it was a little silly forcing every board or driver
+> > to gpio_request() a GPIO that is later converted to an IRQ, and passed
+> > to request_irq. The first patch in this series instead makes the core
+> > IRQ code perform these calls when appropriate, to avoid duplicating it
+> > everywhere.
 > 
-> Interesting.
+> Trying to go from IRQ to GPIO is not a good idea - most of the
+> IRQ <-> GPIO macros we have today are just plain broken.  Many of them
+> just add or subtract a constant, which means non-GPIO IRQs have an
+> apparant GPIO number too.  Couple this with the fact that all positive
+> GPIO numbers are valid, and this is a recipe for wrong GPIOs getting
+> used and GPIOs being requested for non-GPIO IRQs.
+
+Yes, and there's a pile without these defined/
+ 
+> I think this was also discussed in the past, and the conclusion was that
+> IRQs should be kept separate from GPIOs.  Maybe views have changed since
+> then...
 > 
-> Is DEV_HAS_VLAN set in id->driver_data (L5344) ?
+> However, if we do want to do this, then it would be much better to provide
+> a new API for requesting GPIO IRQs, eg:
+> 
+> gpio_request_irq()
+> 
+> which would wrap around request_threaded_irq(), takes a GPIO number,
+> does the GPIO->IRQ conversion internally, and whatever GPIO setup is
+> required.  Something like this:
+> 
+> int gpio_request_threaded_irq(int gpio, irq_handler_t handler,
+> 	irq_handler_t thread_fn, unsigned long flags, const char *name,
+> 	void *dev)
+> {
+> 	int ret;
+> 
+> 	if (!gpio_valid(gpio))
+> 		return -EINVAL;
+> 
+> 	ret = gpio_request_one(gpio, GPIOF_IN, name);
+> 	if (ret)
+> 		return ret;
+> 
+> 	ret = request_threaded_irq(gpio_to_irq(gpio), handler, thread_fn,
+> 				flags, name, dev);
+> 	if (ret)
+> 		gpio_free(gpio);
+> 
+> 	return ret;
+> }
+> 
+> This then limits the exposure of the GPIO<->IRQ conversion macros to just
+> GPIOs, where the buggy nature of the existing conversions won't impact on
+> non-GPIO IRQs.
 
-How do i tell that without hacking the driver?
+What about the case where we need to turn GPIO numbers into interrupts
+to pass to other drivers? In the case where we have a gpio chip that is
+providing interrupt services to other drivers (such as serial chip).
 
-> If so, would you try to disable both rx an tx vlan accel using 
-> ethtool and see if it helps?
+Having looked at a couple of IIO drivers, it seems that the need to use
+irq_to_gpio() seems to be to check if the device needs to be service. It
+would be useful to see if this is due to a problem with the threadder IRQ
+handler (and if so, may need fixing for the general case).
 
-Should i do that when the device is in a stuck state and see whether 
-it recovers?
+-- 
+Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
 
-Also, please provide the exact ethtool command sequences i should 
-try, this makes it easier for me to test exactly what you want me to 
-test.
+Large Hadron Colada: A large Pina Colada that makes the universe disappear.
 
-Thanks,
-
-	Ingo
