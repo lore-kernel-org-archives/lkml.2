@@ -1,194 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab1HELEz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 07:04:55 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:43922 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707Ab1HELEx (ORCPT
+	id S1755422Ab1HELMz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 07:12:55 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:53163 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753196Ab1HELMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 07:04:53 -0400
-Message-ID: <4E3BCE4D.7090809@gmail.com>
-Date: Fri, 05 Aug 2011 19:04:45 +0800
-From: Liu Yuan <namei.unix@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Fri, 5 Aug 2011 07:12:54 -0400
+Date: Fri, 5 Aug 2011 07:12:31 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Jiri Pirko <jpirko@redhat.com>, David Miller <davem@davemloft.net>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [forcedeth bug] Re: [GIT] Networking
+Message-ID: <20110805111231.GA29466@hmsreliant.think-freely.org>
+References: <20110722.073339.1236244143490935644.davem@davemloft.net>
+ <20110801151308.GA31256@elte.hu>
+ <20110804215354.GA7056@elte.hu>
+ <20110805102239.GB1928@minipsycho.orion>
+ <20110805102903.GF2420@elte.hu>
 MIME-Version: 1.0
-To: Badari Pulavarty <pbadari@us.ibm.com>
-CC: Stefan Hajnoczi <stefanha@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Khoa Huynh <khoa@us.ibm.com>
-Subject: Re: [RFC PATCH]vhost-blk: In-kernel accelerator for virtio block
- device
-References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com>	 <CAJSP0QUKz7LFuARF_n2LcBi_uuSzfmkjrWsHAWrXXkEaQJKkEA@mail.gmail.com>	 <4E325F98.5090308@gmail.com> <4E32F7F2.4080607@us.ibm.com>	 <4E363DB9.70801@gmail.com> <1312495132.9603.4.camel@badari-desktop>
-In-Reply-To: <1312495132.9603.4.camel@badari-desktop>
-Content-Type: multipart/mixed;
- boundary="------------000900080900090904050305"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110805102903.GF2420@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -0.0 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000900080900090904050305
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Fri, Aug 05, 2011 at 12:29:03PM +0200, Ingo Molnar wrote:
+> 
+> * Jiri Pirko <jpirko@redhat.com> wrote:
+> 
+> > Thu, Aug 04, 2011 at 11:53:54PM CEST, mingo@elte.hu wrote:
+> > >
+> > >* Ingo Molnar <mingo@elte.hu> wrote:
+> > >
+> > >>  0891b0e08937: forcedeth: fix vlans
+> > >
+> > >Hm, forcedeth is still giving me trouble even on latest -git that has 
+> > >the above fix included.
+> > >
+> > >The symptom is a stuck interface, no packets in. There's a frame 
+> > >error RX packet:
+> > >
+> > > [root@mercury ~]# ifconfig eth0
+> > > eth0      Link encap:Ethernet  HWaddr 00:13:D4:DC:41:12  
+> > >           inet addr:10.0.1.13  Bcast:10.0.1.255  Mask:255.255.255.0
+> > >           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+> > >           RX packets:0 errors:1 dropped:0 overruns:0 frame:1
+> > >           TX packets:531 errors:0 dropped:0 overruns:0 carrier:0
+> > >           collisions:0 txqueuelen:1000 
+> > >           RX bytes:0 (0.0 b)  TX bytes:34112 (33.3 KiB)
+> > >           Interrupt:35 
+> > >
+> > >Weirdly enough a defconfig x86 bootup works just fine - it's certain 
+> > >.config combinations that trigger the bug. I've attached such a 
+> > >config.
+> > >
+> > >Note that at least once i've observed a seemingly good kernel going 
+> > >'bad' after a couple of minutes uptime. I've also observed 
+> > >intermittent behavior - apparent lost packets and a laggy network.
+> > >
+> > >I have done 3 failed attempts to bisect it any further - i got to the 
+> > >commit that got fixed by:
+> > >
+> > >  0891b0e08937: forcedeth: fix vlans
+> > >
+> > >... but that's something we already knew.
+> > >
+> > >Let me know if there's any data i can provide to help debug this 
+> > >problem.
+> > >
+> > >Thanks,
+> > >
+> > >	Ingo
+> > 
+> > Interesting.
+> > 
+> > Is DEV_HAS_VLAN set in id->driver_data (L5344) ?
+> 
+Looks like you can match it to pci id.  Device ids 0x0372 and 0x0373 look to
+have the flag set
 
-On 08/05/2011 05:58 AM, Badari Pulavarty wrote:
-> Hi Liu Yuan,
->
-> I started testing your patches. I applied your kernel patch to 3.0
-> and applied QEMU to latest git.
->
-> I passed 6 blockdevices from the host to guest (4 vcpu, 4GB RAM).
-> I ran simple "dd" read tests from the guest on all block devices
-> (with various blocksizes, iflag=direct).
->
-> Unfortunately, system doesn't stay up. I immediately get into
-> panic on the host. I didn't get time to debug the problem. Wondering
-> if you have seen this issue before and/or you have new patchset
-> to try ?
->
-> Let me know.
->
+> How do i tell that without hacking the driver?
+> 
+> > If so, would you try to disable both rx an tx vlan accel using 
+> > ethtool and see if it helps?
+> 
+> Should i do that when the device is in a stuck state and see whether 
+> it recovers?
+> 
+> Also, please provide the exact ethtool command sequences i should 
+> try, this makes it easier for me to test exactly what you want me to 
+> test.
+> 
+should be:
+ethtool -K ethX rxvlan off txvlan off
+
+I'm just poking about, but If I had to guess it looks like the card you have
+ingo is an older forcedeth and uses the older format ring descriptor (I base
+this on the fact that the rx error count noted above only gets incremented ni
+nv_rx_process, but not nv_rx_process_optimized.  Both paths should support hw
+vlan acceleration though and Jiris fixes for vlan hw rx acceleration were only
+applied to the optimized path.
+
+Neil
+
 > Thanks,
-> Badari
->
-
-Okay, it is actually a bug pointed out by MST on the other thread, that 
-it needs a mutex for completion thread.
-
-Now would you please this attachment?This patch only applies to kernel 
-part, on top of v1 kernel patch.
-
-This patch mainly moves completion thread into vhost thread as a 
-function. As a result, both requests submitting and completion 
-signalling is in the same thread.
-
-Yuan
-
---------------000900080900090904050305
-Content-Type: text/x-patch;
- name="vblk-for-kernel-2.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="vblk-for-kernel-2.patch"
-
-diff --git a/drivers/vhost/blk.c b/drivers/vhost/blk.c
-index ecaf6fe..5cba543 100644
---- a/drivers/vhost/blk.c
-+++ b/drivers/vhost/blk.c
-@@ -47,6 +47,7 @@ struct vhost_blk {
- 	struct eventfd_ctx *ectx;
- 	struct file *efile;
- 	struct task_struct *worker;
-+	struct vhost_poll poll;
- };
- 
- struct used_info {
-@@ -62,6 +63,7 @@ static struct kmem_cache *used_info_cachep;
- static void blk_flush(struct vhost_blk *blk)
- {
-        vhost_poll_flush(&blk->vq.poll);
-+       vhost_poll_flush(&blk->poll);
- }
- 
- static long blk_set_features(struct vhost_blk *blk, u64 features)
-@@ -146,11 +148,11 @@ static long blk_reset_owner(struct vhost_blk *b)
-         blk_stop(b);
-         blk_flush(b);
-         ret = vhost_dev_reset_owner(&b->dev);
--	if (b->worker) {
--		b->should_stop = 1;
--		smp_mb();
--		eventfd_signal(b->ectx, 1);
--	}
-+//	if (b->worker) {
-+//		b->should_stop = 1;
-+//		smp_mb();
-+//		eventfd_signal(b->ectx, 1);
-+//	}
- err:
-         mutex_unlock(&b->dev.mutex);
-         return ret;
-@@ -323,6 +325,7 @@ static void completion_thread_destory(struct vhost_blk *blk)
- 
- static long blk_set_owner(struct vhost_blk *blk)
- {
-+	eventfd_signal(blk->ectx, 1);
- 	return completion_thread_setup(blk);
- }
- 
-@@ -361,8 +364,8 @@ static long vhost_blk_ioctl(struct file *f, unsigned int ioctl,
- 		default:
- 			mutex_lock(&blk->dev.mutex);
- 			ret = vhost_dev_ioctl(&blk->dev, ioctl, arg);
--			if (!ret && ioctl == VHOST_SET_OWNER)
--				ret = blk_set_owner(blk);
-+//			if (!ret && ioctl == VHOST_SET_OWNER)
-+//				ret = blk_set_owner(blk);
- 			blk_flush(blk);
- 			mutex_unlock(&blk->dev.mutex);
- 			break;
-@@ -480,10 +483,51 @@ static void handle_guest_kick(struct vhost_work *work)
- 	handle_kick(blk);
- }
- 
-+static void handle_completetion(struct vhost_work* work)
-+{
-+	struct vhost_blk *blk = container_of(work, struct vhost_blk, poll.work);
-+	struct timespec ts = { 0 };
-+	int ret, i, nr;
-+	u64 count;
-+
-+	do {
-+		ret = eventfd_ctx_read(blk->ectx, 1, &count);
-+	} while (unlikely(ret == -ERESTARTSYS));
-+
-+	do {
-+		nr = kernel_read_events(blk->ioctx, count, MAX_EVENTS, events, &ts);
-+	} while (unlikely(nr == -EINTR));
-+	dprintk("%s, count %llu, nr %d\n", __func__, count, nr);
-+
-+	if (unlikely(nr <= 0))
-+		return;
-+
-+	for (i = 0; i < nr; i++) {
-+		struct used_info *u = (struct used_info *)events[i].obj;
-+		int len, status;
-+
-+		dprintk("%s, head %d complete in %d\n", __func__, u->head, i);
-+		len = io_event_ret(&events[i]);
-+		//status = u->len == len ? VIRTIO_BLK_S_OK : VIRTIO_BLK_S_IOERR;
-+		status = len > 0 ? VIRTIO_BLK_S_OK : VIRTIO_BLK_S_IOERR;
-+		if (copy_to_user(u->status, &status, sizeof status)) {
-+			vq_err(&blk->vq, "%s failed to write status\n", __func__);
-+			BUG(); /* FIXME: maybe a bit radical? */
-+		}
-+		vhost_add_used(&blk->vq, u->head, u->len);
-+		kfree(u);
-+	}
-+
-+	vhost_signal(&blk->dev, &blk->vq);
-+}
-+
- static void eventfd_setup(struct vhost_blk *blk)
- {
-+	//struct vhost_virtqueue *vq = &blk->vq;
- 	blk->efile = eventfd_file_create(0, 0);
- 	blk->ectx = eventfd_ctx_fileget(blk->efile);
-+	vhost_poll_init(&blk->poll, handle_completetion, POLLIN, &blk->dev);
-+	vhost_poll_start(&blk->poll, blk->efile);
- }
- 
- static int vhost_blk_open(struct inode *inode, struct file *f)
-@@ -528,7 +572,7 @@ static int vhost_blk_release(struct inode *inode, struct file *f)
- 	vhost_dev_cleanup(&blk->dev);
- 	/* Yet another flush? See comments in vhost_net_release() */
- 	blk_flush(blk);
--	completion_thread_destory(blk);
-+//	completion_thread_destory(blk);
- 	eventfd_destroy(blk);
- 	kfree(blk);
- 
-
---------------000900080900090904050305--
+> 
+> 	Ingo
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
