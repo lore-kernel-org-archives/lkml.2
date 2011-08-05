@@ -1,72 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab1HEOU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 10:20:59 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:53893 "EHLO e8.ny.us.ibm.com"
+	id S1756739Ab1HEOWx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 10:22:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43279 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752883Ab1HEOU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 10:20:57 -0400
-Message-ID: <4E3BFC26.8060904@linux.vnet.ibm.com>
-Date: Fri, 05 Aug 2011 10:20:22 -0400
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.11
+	id S1751891Ab1HEOWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 10:22:51 -0400
+Date: Fri, 5 Aug 2011 10:22:45 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        fweisbec@gmail.com
+Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
+Message-ID: <20110805142245.GP2096@zod.bos.redhat.com>
+References: <20110801154636.GA2096@zod.bos.redhat.com>
+ <CA+5PVA5EZWHv_tuzA22twGQ7rZZ2zhqi1zs6OiFbpORiiYbzMg@mail.gmail.com>
+ <20110804140438.GT13065@linux.vnet.ibm.com>
+ <20110804150603.GL2096@zod.bos.redhat.com>
+ <20110804162658.GZ13065@linux.vnet.ibm.com>
+ <20110804173145.GM2096@zod.bos.redhat.com>
+ <CA+5PVA7R+H4MfU=war6G3ZRYEi6nZ=vVZ3B8g-Ag6pOdA4cTBw@mail.gmail.com>
+ <20110805065646.GC13065@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel@vger.kernel.org, Debora Velarde <debora@linux.vnet.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>,
-        tpmdd-devel@lists.sourceforge.net
-Subject: Re: [PATCH] tpm: tpm_nsc: Fix a double free of pdev in cleanup_nsc
-References: <1312415887.2604.1.camel@phoenix>
-In-Reply-To: <1312415887.2604.1.camel@phoenix>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110805065646.GC13065@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2011 07:58 PM, Axel Lin wrote:
-> platform_device_unregister() will release all resources
-> and remove it from the subsystem, then drop reference count by
-> calling platform_device_put().
-I also changed code into that direction in the recent patch to the 
-tpm_nsc driver. I didn't know whether that memory had to be freed or 
-not. Looking at several other drivers I found that none was freeing it 
-but calling platform_device_put() (which is also called by 
-platform_device_unregiser()) with the memory previously allocated via 
-platform_device_alloc(). Though platform_device_put() calls put_device()
+On Thu, Aug 04, 2011 at 11:56:46PM -0700, Paul E. McKenney wrote:
+> > > I could be missing something obvious, but I don't see a way to avoid
+> > > using GFP_KERNEL without a lot of rip-up in the rest of the init path.
+> > 
+> > As an aside, I bisected this back to:
+> > 
+> > e8f7c70f44f sched: Make sleeping inside spinlock detection working in
+> > !CONFIG_PREEMPT
+> 
+> OK, added Frederic on CC.
+> 
+> > However, that doesn't seem all that helpful.  The
+> > CONFIG_DEBUG_SPINLOCK_SLEEP option later got renamed to
+> > DEBUG_ATOMIC_SLEEP, and all it's doing is selecting PREEMPT_COUNT.  At
+> > first glance, it seems this commit just allowed an issue that's been
+> > around for a while (benign or otherwise) to finally show up.
+> > 
+> > (The Fedora kernel configs have CONFIG_PREEMPT_VOLUNTARY set, but not
+> > CONFIG_PREEMPT so PREEMPT_COUNT wasn't getting selected until this
+> > option did so.)
+> 
+> Understood.  So my question is "what is the real way to fix this?"
+> Within RCU, I would probably wrapper the calls to set_need_resched()
+> so that it checks for the scheduler being fully alive.  Except for the
+> call from rcu_enter_nohz(), of course -- if that one is called before
+> the scheduler is ready, then that is a bug that needs to be fixed.
 
-http://lxr.linux.no/#linux+v3.0/drivers/base/platform.c#L138
+By scheduler being fully alive, do you mean when rcu_scheduler_starting
+is called?  Or do you mean the actual scheduler, because sched_init is
+called well before any of this happens.
 
-which in turn calls kobject_put().
+> Nevertheless, I am wondering if all of this isn't really papering over
+> some real problem somewhere.  The way we get to this place is from people
+> registering RCU callbacks during early boot, which is OK in and of itself,
+> at least in moderation.  But if someone is expecting those callbacks to be
+> invoked before the scheduler is fully set up and running multiple tasks,
+> they are going to be disappointed.
 
-http://lxr.linux.no/#linux+v3.0/drivers/base/core.c#L1066
+Is there a way to dump what callbacks have been registered?  As far as I
+can see, we call rcu_check_callbacks unconditionally when a timer
+interrupt is taken and that calls rcu_pending unconditionally as well.
+Before that, rcu_init is called which eventually sets up the per-cpu
+data via rcu_init_percpu_data and that sets rdp->qs_pending = 1.
+Until a quiescent state is reached __rcu_pending is going to try and
+force it, which is where the set_need_resched is called.
 
-It was not clear to me whether the pdev memory would actually get freed 
-by kobject_put() -- but since other drivers were not freeing it 
-explicitly I wasn't sure. So either many drivers have a memory leak or 
-tpm_nsc was previously right about freeing it...
+Basically, I took what you said about wrapping set_need_resched and came
+up with the patch below.  It gets rid of the oops from pidmap_init, but
+I need to test it a bit more.  Would be happy to have feedback.
 
-    Stefan
+josh
 
-> We should not call kfree(pdev) after platform_device_unregister(pdev).
->
-> Signed-off-by: Axel Lin<axel.lin@gmail.com>
-> ---
->   drivers/char/tpm/tpm_nsc.c |    2 --
->   1 files changed, 0 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/char/tpm/tpm_nsc.c b/drivers/char/tpm/tpm_nsc.c
-> index 82facc9..4d24648 100644
-> --- a/drivers/char/tpm/tpm_nsc.c
-> +++ b/drivers/char/tpm/tpm_nsc.c
-> @@ -396,8 +396,6 @@ static void __exit cleanup_nsc(void)
->   	if (pdev) {
->   		tpm_nsc_remove(&pdev->dev);
->   		platform_device_unregister(pdev);
-> -		kfree(pdev);
-> -		pdev = NULL;
->   	}
->
->   	platform_driver_unregister(&nsc_drv);
+---
 
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index ba06207..8c6cb6e 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1681,8 +1681,14 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+ 		rdp->n_rp_qs_pending++;
+ 		if (!rdp->preemptible &&
+ 		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
+-				 jiffies))
+-			set_need_resched();
++				 jiffies)) {
++			/* Make sure we're ready to mark the task as needing
++ 			 * rescheduling otherwise we can trigger oopes early
++ 			 * in the init path
++ 			 */
++			if (rcu_scheduler_active)
++				set_need_resched();
++		}
+ 	} else if (rdp->qs_pending && rdp->passed_quiesc) {
+ 		rdp->n_rp_report_qs++;
+ 		return 1;
