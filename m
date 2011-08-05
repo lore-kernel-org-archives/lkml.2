@@ -1,106 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab1HEL0C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 07:26:02 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:57415 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753914Ab1HEL0A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 07:26:00 -0400
-From: Hrishikesh Bhandiwad <hrishikesh.b@ti.com>
-To: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>
-CC: Hrishikesh Bhandiwad <hrishikesh.b@ti.com>
-Subject: [PATCH] AM3517: NAND: Adding NAND support and specifying NAND partitions.
-Date: Fri, 5 Aug 2011 16:55:49 +0530
-Message-ID: <1312543549-31869-1-git-send-email-hrishikesh.b@ti.com>
-X-Mailer: git-send-email 1.6.2.4
+	id S1756358Ab1HEL0Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 07:26:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28873 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754653Ab1HEL0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 07:26:13 -0400
+Date: Fri, 5 Aug 2011 13:25:58 +0200
+From: Jiri Pirko <jpirko@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [forcedeth bug] Re: [GIT] Networking
+Message-ID: <20110805112557.GD1928@minipsycho.orion>
+References: <20110722.073339.1236244143490935644.davem@davemloft.net>
+ <20110801151308.GA31256@elte.hu>
+ <20110804215354.GA7056@elte.hu>
+ <20110805102239.GB1928@minipsycho.orion>
+ <20110805102903.GF2420@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110805102903.GF2420@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the NAND support on AM3517 platform and creates the partitions.
-Referred to file: arch/arm/mach-omap2/board-omap3beagle.c
+Fri, Aug 05, 2011 at 12:29:03PM CEST, mingo@elte.hu wrote:
+>
+>* Jiri Pirko <jpirko@redhat.com> wrote:
+>
+>> Thu, Aug 04, 2011 at 11:53:54PM CEST, mingo@elte.hu wrote:
+>> >
+>> >* Ingo Molnar <mingo@elte.hu> wrote:
+>> >
+>> >>  0891b0e08937: forcedeth: fix vlans
+>> >
+>> >Hm, forcedeth is still giving me trouble even on latest -git that has 
+>> >the above fix included.
+>> >
+>> >The symptom is a stuck interface, no packets in. There's a frame 
+>> >error RX packet:
+>> >
+>> > [root@mercury ~]# ifconfig eth0
+>> > eth0      Link encap:Ethernet  HWaddr 00:13:D4:DC:41:12  
+>> >           inet addr:10.0.1.13  Bcast:10.0.1.255  Mask:255.255.255.0
+>> >           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+>> >           RX packets:0 errors:1 dropped:0 overruns:0 frame:1
+>> >           TX packets:531 errors:0 dropped:0 overruns:0 carrier:0
+>> >           collisions:0 txqueuelen:1000 
+>> >           RX bytes:0 (0.0 b)  TX bytes:34112 (33.3 KiB)
+>> >           Interrupt:35 
+>> >
+>> >Weirdly enough a defconfig x86 bootup works just fine - it's certain 
+>> >.config combinations that trigger the bug. I've attached such a 
+>> >config.
+>> >
+>> >Note that at least once i've observed a seemingly good kernel going 
+>> >'bad' after a couple of minutes uptime. I've also observed 
+>> >intermittent behavior - apparent lost packets and a laggy network.
+>> >
+>> >I have done 3 failed attempts to bisect it any further - i got to the 
+>> >commit that got fixed by:
+>> >
+>> >  0891b0e08937: forcedeth: fix vlans
+>> >
+>> >... but that's something we already knew.
+>> >
+>> >Let me know if there's any data i can provide to help debug this 
+>> >problem.
+>> >
+>> >Thanks,
+>> >
+>> >	Ingo
+>> 
+>> Interesting.
+>> 
+>> Is DEV_HAS_VLAN set in id->driver_data (L5344) ?
+>
+>How do i tell that without hacking the driver?
 
-Signed-off-by: Hrishikesh Bhandiwad <hrishikesh.b@ti.com>
----
- arch/arm/mach-omap2/board-am3517evm.c |   38 +++++++++++++++++++++++++++++++++
- 1 files changed, 38 insertions(+), 0 deletions(-)
+look in dmesg for line like:
+"forcedeth 0000:00:08.0: highdma csum vlan pwrctl mgmt gbit lnktim msi
+desc-v3"
 
-diff --git a/arch/arm/mach-omap2/board-am3517evm.c b/arch/arm/mach-omap2/board-am3517evm.c
-index 63af417..dceb996 100644
---- a/arch/arm/mach-omap2/board-am3517evm.c
-+++ b/arch/arm/mach-omap2/board-am3517evm.c
-@@ -24,6 +24,8 @@
- #include <linux/i2c/pca953x.h>
- #include <linux/can/platform/ti_hecc.h>
- #include <linux/davinci_emac.h>
-+#include <linux/mtd/partitions.h>
-+#include <linux/mtd/nand.h>
- 
- #include <mach/hardware.h>
- #include <mach/am35xx.h>
-@@ -39,6 +41,7 @@
- 
- #include "mux.h"
- #include "control.h"
-+#include "common-board-devices.h"
- 
- #define AM35XX_EVM_MDIO_FREQUENCY	(1000000)
- 
-@@ -460,6 +463,37 @@ static void am3517_evm_hecc_init(struct ti_hecc_platform_data *pdata)
- static struct omap_board_config_kernel am3517_evm_config[] __initdata = {
- };
- 
-+static struct mtd_partition am3517_nand_partitions[] = {
-+	/* All the partition sizes are listed in terms of NAND block size */
-+	{
-+		.name		= "X-Loader",
-+		.offset		= 0,
-+		.size		= 4 * NAND_BLOCK_SIZE,
-+		.mask_flags	= MTD_WRITEABLE,	/* force read-only */
-+	},
-+	{
-+		.name		= "U-Boot",
-+		.offset		= MTDPART_OFS_APPEND,	/* Offset = 0x80000 */
-+		.size		= 15 * NAND_BLOCK_SIZE,
-+		.mask_flags	= MTD_WRITEABLE,        /* force read-only */
-+	},
-+	{
-+		.name		= "U-Boot Env",
-+		.offset		= MTDPART_OFS_APPEND,	/* Offset = 0x260000 */
-+		.size		= 1 * NAND_BLOCK_SIZE,
-+	},
-+	{
-+		.name		= "Kernel",
-+		.offset		= MTDPART_OFS_APPEND,	/* Offset = 0x280000 */
-+		.size		= 32 * NAND_BLOCK_SIZE,
-+	},
-+	{
-+		.name		= "File System",
-+		.offset		= MTDPART_OFS_APPEND,	/* Offset = 0x680000 */
-+		.size		= MTDPART_SIZ_FULL,
-+	},
-+};
-+
- static void __init am3517_evm_init(void)
- {
- 	omap_board_config = am3517_evm_config;
-@@ -473,6 +507,10 @@ static void __init am3517_evm_init(void)
- 	/* Configure GPIO for EHCI port */
- 	omap_mux_init_gpio(57, OMAP_PIN_OUTPUT);
- 	usbhs_init(&usbhs_bdata);
-+	/*NAND*/
-+	omap_nand_flash_init(NAND_BUSWIDTH_16, am3517_nand_partitions,
-+				ARRAY_SIZE(am3517_nand_partitions));
-+
- 	am3517_evm_hecc_init(&am3517_evm_hecc_pdata);
- 	/* DSS */
- 	am3517_evm_display_init();
--- 
-1.6.2.4
-This patch has dependency on following patchset :
-http://marc.info/?l=linux-omap&m=131247357813228&w=2
+if "vlan" is there, DEV_HAS_VLAN is set
 
+>
+>> If so, would you try to disable both rx an tx vlan accel using 
+>> ethtool and see if it helps?
+>
+>Should i do that when the device is in a stuck state and see whether 
+>it recovers?
+
+Yes.
+
+>
+>Also, please provide the exact ethtool command sequences i should 
+>try, this makes it easier for me to test exactly what you want me to 
+>test.
+
+ethtool -K eth0 txvlan off rxvlan off
+
+
+>
+>Thanks,
+>
+>	Ingo
