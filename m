@@ -1,139 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab1HES3C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 14:29:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22035 "EHLO mx1.redhat.com"
+	id S1754522Ab1HESbY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 14:31:24 -0400
+Received: from smtp18.mail.ru ([94.100.176.155]:45205 "EHLO smtp18.mail.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751190Ab1HES27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 14:28:59 -0400
-Date: Fri, 5 Aug 2011 14:28:35 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        rth@redhat.com, rostedt@goodmis.org
-Subject: Re: [RFT][patch 17/18] sched: use jump labels to reduce overhead
- when bandwidth control is inactive
-Message-ID: <20110805182835.GE2522@redhat.com>
-References: <20110722003211.GA2807@redhat.com>
- <CAPM31R+UWijCCna5zYfn875h+KPmS4H0Lk8jW6+8JP-oDb72DA@mail.gmail.com>
- <20110722011747.GB2807@redhat.com>
- <CAPM31RKW+do-U8G8uL-y53BVWvr4oQbSf456A9u-SUV06tSfeg@mail.gmail.com>
- <20110727215816.GA2515@redhat.com>
- <CAPM31RKQyKukoNXLeiLkQ0fdOiDizZRtviR=J+93PhJD9r-SkQ@mail.gmail.com>
+	id S1752061Ab1HESbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 14:31:23 -0400
+Date: Fri, 5 Aug 2011 22:31:19 +0400
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Ian Dobson <i.dobson@planet-ian.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: add caseopen detection to w83627ehf driver
+Message-ID: <20110805183119.GB18823@rainbow>
+References: <1312549243-7503-1-git-send-email-mad_soft@inbox.ru>
+ <20110805143447.GA2538@ericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPM31RKQyKukoNXLeiLkQ0fdOiDizZRtviR=J+93PhJD9r-SkQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20110805143447.GA2538@ericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 04, 2011 at 08:55:08PM -0700, Paul Turner wrote:
-> > --- a/kernel/Makefile
-> > +++ b/kernel/Makefile
-> > @@ -10,7 +10,7 @@ obj-y     = sched.o fork.o exec_domain.o panic.o printk.o \
-> >            kthread.o wait.o kfifo.o sys_ni.o posix-cpu-timers.o mutex.o \
-> >            hrtimer.o rwsem.o nsproxy.o srcu.o semaphore.o \
-> >            notifier.o ksysfs.o pm_qos_params.o sched_clock.o cred.o \
-> > -           async.o range.o jump_label.o
-> > +           async.o range.o
-> >  obj-y += groups.o
-> >
-> >  ifdef CONFIG_FUNCTION_TRACER
-> > @@ -107,6 +107,7 @@ obj-$(CONFIG_PERF_EVENTS) += events/
-> >  obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
-> >  obj-$(CONFIG_PADATA) += padata.o
-> >  obj-$(CONFIG_CRASH_DUMP) += crash_dump.o
-> > +obj-$(CONFIG_JUMP_LABEL) += jump_label.o
-> >
-> >  ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
-> >  # According to Alan Modra <alan@linuxcare.com.au>, the -fno-omit-frame-pointer is
-> >
+Hi, Guenter!
+
+On 07:34 Fri 05 Aug     , Guenter Roeck wrote:
+> On Fri, Aug 05, 2011 at 09:00:43AM -0400, Dmitry Artamonow wrote:
+> > Export caseopen alarm status into userspace for
+> > Winbond w83627* chips and also implement alarm clear knob.
+> > 
+> > Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+> > ---
+> >  drivers/hwmon/w83627ehf.c |   66 +++++++++++++++++++++++++++++++++++++++++++++
+> >  1 files changed, 66 insertions(+), 0 deletions(-)
+> > 
+> > Tested on board with W83627DHG-P chip and also checked against datasheets
+> > for other W83627 chips. NCT6775F / NCT6776F are currently excluded as I
+> > haven't found datasheets for them online and can't check if they have the
+> > same registers for caseopen detection. If anyone having access to these
+> > datasheets can check that caseopen detection is read from 4th bit of
+> > register 42h (Bank 0), and cleared by writing 1 and then 0 into bit 7 of
+> > register 46h (Bank 0), then I'll throw away those 'if'-s and resend updated
+> > patch.
+> > 
+> Hi Dmitry,
 > 
-> Tested-by: Paul Turner <pjt@google.com>
+> NCT6775F / NCT6776F support the same bits. NCT6776F has a second set of bits.
+> 42/4 and 46/7 is CASEOPEN0, 42/6 and 46/6 is CASEOPEN1. Register 46/7 (and 46/6
+> for NCT6776F) is self-clearing, meaning it is not necessary to write 0,
+> but that should not matter.
+
+Oh, that's nice to hear that NCTs are compatible! I'll see that can I do
+about additional caseopen on NCT6776F.
+
+[...]
+
+> >  
+> > +		data->caseopen = !!(w83627ehf_read_value(data,
+> > +					W83627EHF_REG_CASEOPEN_DET) & 0x10);
+> > +
+> If you use !!, you should define caseopen as bool for consistency.
+> And then you don't need !!  since the conversion to 0/1 will be done automatically.
 > 
-> Let me know if you need any result tables for the actual commit msg.
+> Even better would be to just save the register value and enable support 
+> for the second set of caseopen bits for NCT6776F (ie do the !!() in
+> the show function).
 
-Hi Paul,
+Considering second caseopen on NCT6776F that sounds sensible.
 
-Thanks for taking the time test this :) I'll post the patch shortly
-with my own testing results. Hopefully, it can still be considered for
-3.1 b/c of the non-invasive nature of the patch...
-
-> Same goes for making CONFIG_JUMP_LABEL equivalent to default in
-> CC_HAS_ASM_GOTO case (at least on x86 anyway).
+> > +static ssize_t
+> > +store_caseopen_clear(struct device *dev, struct device_attribute *attr,
+> > +			const char *buf, size_t count)
+> > +{
+> > +	struct w83627ehf_data *data = dev_get_drvdata(dev);
+> > +	unsigned long val;
+> > +	unsigned int reg;
+> > +
+> > +	if (strict_strtoul(buf, 10, &val) || val != 0)
+> > +		return -EINVAL;
+> > +
+> > +	mutex_lock(&data->update_lock);
+> > +	reg = w83627ehf_read_value(data, W83627EHF_REG_CASEOPEN_CLR);
+> > +	w83627ehf_write_value(data, W83627EHF_REG_CASEOPEN_CLR, reg | 0x80);
+> > +	reg = w83627ehf_read_value(data, W83627EHF_REG_CASEOPEN_CLR);
+> > +	w83627ehf_write_value(data, W83627EHF_REG_CASEOPEN_CLR, reg & ~0x80);
+> > +	reg = w83627ehf_read_value(data, W83627EHF_REG_CASEOPEN_CLR);
 > 
-
-I originally had CONFIG_JUMP_LABEL implicitly turned on, but we ran into
-a 32-bit compiler issue that was causing random, nasty crashes. That
-issue has since been resolved in gcc, but we might need to update the
-have CC_HAS_ASM_GOTO check to deal with that case better. Currently,
-we're using the '-maccumulate-outgoing-args' gcc option to work around
-the issue for 32 bit x86 (see: arch/x86/Makefile_32.cpu).
-
-With the jump label interface somewhat stabilizing (I say somewhat, b/c Peter
-brought up a good use case in the scheduler that it currently doesn't address,
-but which we should be able to support without too much churn) and these testing
-results, I think it might make sense to consider turning it on by default for
-3.2. thoughts?
-
-Thanks,
-
--Jason
-
-
+> I am a bit lost here. What are those additional two reads for ?
+> Seems to be unnecessary.
 > 
-> >
-> > I've tested the patch using a single 'static_branch()' in the getppid() path,
-> > and basically running tight loops of calls to getppid(). Before, the
-> > patch, I was seeing results similar to what you reported, after the
-> > patch, things improved for all metrics. Here are my results for the
-> > branch disabled case:
-> >
-> > With jump labels turned on (CONFIG_JUMP_LABEL), branch disabled:
-> >
-> >  Performance counter stats for 'bash -c /tmp/timing;true' (50 runs):
-> >
-> >     3,969,510,217 instructions             #      0.864 IPC     ( +-0.000% )
-> >     4,592,334,954 cycles                     ( +-   0.046% )
-> >       751,634,470 branches                   ( +-   0.000% )
-> >
-> >        1.722635797  seconds time elapsed   ( +-   0.046% )
-> >
-> > Jump labels turned off (CONFIG_JUMP_LABEL not set), branch disabled:
-> >
-> >  Performance counter stats for 'bash -c /tmp/timing;true' (50 runs):
-> >
-> >     4,009,611,846 instructions             #      0.867 IPC     ( +-0.000% )
-> >     4,622,210,580 cycles                     ( +-   0.012% )
-> >       771,662,904 branches                   ( +-   0.000% )
-> >
-> >        1.734341454  seconds time elapsed   ( +-   0.022% )
-> >
-> >
-> > So all of the measured metrics improved in the jump labels case b/w
-> > 0.5% - 2.5%.
-> >
-> > I'm curious to see what you find with this patch.
-> >
-> > Thanks,
-> >
-> > -Jason
-> >
-> >
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Ugh. These are remnants from my debugging printouts - I removed
+printouts, but forgot to drop register readings as well. They are surely
+not needed.
+
+> > +static struct sensor_device_attribute sda_caseopen =
+> > +	SENSOR_ATTR(intrusion0_alarm, S_IWUSR | S_IRUGO, show_caseopen,
+> > +			store_caseopen_clear , 12);
+> > +
+> Formatting: s/ , /, /
+> 
+Yes. And this "12" shouldn't be here as well (though it doesn't really
+matter, as it's not used by show_caseopen/store_caseopen_clear) - it was
+the number of caseopen bit in alarm registers, when I was trying to use
+show_alarm() for reading caseopen status. Sadly that never worked for
+me, as in spite that datasheets told, this bit contained realtime state
+of caseopen pin without any latch! - i.e. it was 0 when caseopen was
+triggered and 1, when it wasn't. And once "case was closed" it again
+became 1.
+
+Thanks for review! I'll try to send updated patch shortly.
+
+-- 
+Best regards,
+Dmitry "MAD" Artamonow
+
