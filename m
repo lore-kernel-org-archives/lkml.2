@@ -1,187 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756437Ab1HEVYm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 17:24:42 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:65111 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191Ab1HEVYi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 17:24:38 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jochen Friedrich <jochen@scram.de>, Jean Delvare <khali@linux-fr.org>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH 1/3] i2c: move of_i2c_register_devices call into core
-Date: Fri,  5 Aug 2011 16:24:26 -0500
-Message-Id: <1312579468-19365-2-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1312579468-19365-1-git-send-email-robherring2@gmail.com>
-References: <1312579468-19365-1-git-send-email-robherring2@gmail.com>
+	id S1756637Ab1HEVZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 17:25:28 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:57254 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756619Ab1HEVZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 17:25:24 -0400
+Date: Fri, 5 Aug 2011 23:24:09 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [RFC][PATCH 0/8] Having perf use libparsevent.a
+Message-ID: <20110805212409.GA21114@elte.hu>
+References: <20110805205921.909038487@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110805205921.909038487@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -1.9
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.9 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.1 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
 
-All callers of of_i2c_register_devices are immediately preceded by a call
-to i2c_add_adapter or i2c_add_numbered_adapter. Add call to
-of_i2c_register_devices and remove all other callers.
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-This causes a module dependency loop that is resolved by the next commit.
+> By keeping the code separate from perf, made the transition from 
+> trace-cmd to tools much easier. I've wasted too many days trying to 
+> get other ways working, and I don't want to rewrite perf to do so.
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Jochen Friedrich <jochen@scram.de>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: Stephen Warren <swarren@nvidia.com>
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-i2c@vger.kernel.org
----
- drivers/i2c/busses/i2c-cpm.c     |    6 ------
- drivers/i2c/busses/i2c-ibm_iic.c |    4 ----
- drivers/i2c/busses/i2c-mpc.c     |    2 --
- drivers/i2c/busses/i2c-pxa.c     |    2 --
- drivers/i2c/busses/i2c-tegra.c   |    3 ---
- drivers/i2c/i2c-core.c           |    4 ++++
- 6 files changed, 4 insertions(+), 17 deletions(-)
+But we want to move tools together, not further apart. Every code 
+activity i see from you is trying to tear apart instrumentation 
+tooling - while previously you agreed that it should be unified. So 
+why not do tools/perf/lib/ as you agreed before?
 
-diff --git a/drivers/i2c/busses/i2c-cpm.c b/drivers/i2c/busses/i2c-cpm.c
-index b1d9cd2..7cbc82a 100644
---- a/drivers/i2c/busses/i2c-cpm.c
-+++ b/drivers/i2c/busses/i2c-cpm.c
-@@ -42,7 +42,6 @@
- #include <linux/dma-mapping.h>
- #include <linux/of_device.h>
- #include <linux/of_platform.h>
--#include <linux/of_i2c.h>
- #include <sysdev/fsl_soc.h>
- #include <asm/cpm.h>
- 
-@@ -673,11 +672,6 @@ static int __devinit cpm_i2c_probe(struct platform_device *ofdev)
- 	dev_dbg(&ofdev->dev, "hw routines for %s registered.\n",
- 		cpm->adap.name);
- 
--	/*
--	 * register OF I2C devices
--	 */
--	of_i2c_register_devices(&cpm->adap);
--
- 	return 0;
- out_shut:
- 	cpm_i2c_shutdown(cpm);
-diff --git a/drivers/i2c/busses/i2c-ibm_iic.c b/drivers/i2c/busses/i2c-ibm_iic.c
-index 3c110fb..5ba15ba 100644
---- a/drivers/i2c/busses/i2c-ibm_iic.c
-+++ b/drivers/i2c/busses/i2c-ibm_iic.c
-@@ -42,7 +42,6 @@
- #include <linux/io.h>
- #include <linux/i2c.h>
- #include <linux/of_platform.h>
--#include <linux/of_i2c.h>
- 
- #include "i2c-ibm_iic.h"
- 
-@@ -759,9 +758,6 @@ static int __devinit iic_probe(struct platform_device *ofdev)
- 	dev_info(&ofdev->dev, "using %s mode\n",
- 		 dev->fast_mode ? "fast (400 kHz)" : "standard (100 kHz)");
- 
--	/* Now register all the child nodes */
--	of_i2c_register_devices(adap);
--
- 	return 0;
- 
- error_cleanup:
-diff --git a/drivers/i2c/busses/i2c-mpc.c b/drivers/i2c/busses/i2c-mpc.c
-index 107397a..a433f59 100644
---- a/drivers/i2c/busses/i2c-mpc.c
-+++ b/drivers/i2c/busses/i2c-mpc.c
-@@ -18,7 +18,6 @@
- #include <linux/sched.h>
- #include <linux/init.h>
- #include <linux/of_platform.h>
--#include <linux/of_i2c.h>
- #include <linux/slab.h>
- 
- #include <linux/io.h>
-@@ -637,7 +636,6 @@ static int __devinit fsl_i2c_probe(struct platform_device *op)
- 		dev_err(i2c->dev, "failed to add adapter\n");
- 		goto fail_add;
- 	}
--	of_i2c_register_devices(&i2c->adap);
- 
- 	return result;
- 
-diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
-index d603646..c1c2885 100644
---- a/drivers/i2c/busses/i2c-pxa.c
-+++ b/drivers/i2c/busses/i2c-pxa.c
-@@ -29,7 +29,6 @@
- #include <linux/errno.h>
- #include <linux/interrupt.h>
- #include <linux/i2c-pxa.h>
--#include <linux/of_i2c.h>
- #include <linux/platform_device.h>
- #include <linux/err.h>
- #include <linux/clk.h>
-@@ -1147,7 +1146,6 @@ static int i2c_pxa_probe(struct platform_device *dev)
- 		printk(KERN_INFO "I2C: Failed to add bus\n");
- 		goto eadapt;
- 	}
--	of_i2c_register_devices(&i2c->adap);
- 
- 	platform_set_drvdata(dev, i2c);
- 
-diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index 2440b74..9ec0a58 100644
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -26,7 +26,6 @@
- #include <linux/delay.h>
- #include <linux/slab.h>
- #include <linux/i2c-tegra.h>
--#include <linux/of_i2c.h>
- 
- #include <asm/unaligned.h>
- 
-@@ -653,8 +652,6 @@ static int tegra_i2c_probe(struct platform_device *pdev)
- 		goto err_free_irq;
- 	}
- 
--	of_i2c_register_devices(&i2c_dev->adapter);
--
- 	return 0;
- err_free_irq:
- 	free_irq(i2c_dev->irq, i2c_dev);
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 131079a..011e195 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -32,6 +32,7 @@
- #include <linux/init.h>
- #include <linux/idr.h>
- #include <linux/mutex.h>
-+#include <linux/of_i2c.h>
- #include <linux/of_device.h>
- #include <linux/completion.h>
- #include <linux/hardirq.h>
-@@ -863,6 +864,9 @@ static int i2c_register_adapter(struct i2c_adapter *adap)
- 	if (adap->nr < __i2c_first_dynamic_bus_num)
- 		i2c_scan_static_board_info(adap);
- 
-+	/* Register devices from the device tree */
-+	of_i2c_register_devices(adap);
-+
- 	/* Notify drivers */
- 	mutex_lock(&core_lock);
- 	bus_for_each_drv(&i2c_bus_type, NULL, adap, __process_new_adapter);
--- 
-1.7.4.1
+I'm really not interested in seeing the libdrm/libdri mess repeated. 
+Libraries have their uses when there's some very important external 
+interface, but here it's actively harmful as it complicates and 
+hardcodes APIs into ABIs that are clearly not finished yet.
 
+Really, lets not be stupid here.
+
+Thanks,
+
+	Ingo
