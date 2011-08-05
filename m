@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab1HEKEF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 06:04:05 -0400
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:42995 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753196Ab1HEKDy (ORCPT
+	id S1755121Ab1HEKEH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 06:04:07 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:37612 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753941Ab1HEKD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 06:03:54 -0400
+	Fri, 5 Aug 2011 06:03:56 -0400
 From: Viresh Kumar <viresh.kumar@st.com>
 To: <linus.walleij@linaro.org>, <vinod.koul@intel.com>,
         <dan.j.williams@intel.com>
@@ -17,9 +17,9 @@ Cc: <linux-arm-kernel@lists.infradead.org>, <armando.visconti@st.com>,
         <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
         <viresh.linux@gmail.com>, <linux-kernel@vger.kernel.org>,
         <linux@arm.linux.org.uk>, <alim.akhtar@gmail.com>
-Subject: [PATCH V3 14/20] dmaengine/amba-pl08x: Add prep_single_byte_llis() routine
-Date: Fri, 5 Aug 2011 15:32:39 +0530
-Message-ID: <f132e7863fc1354637099e3b710577d3d4eafcd5.1312538034.git.viresh.kumar@st.com>
+Subject: [PATCH V3 09/20] dmaengine/amba-pl08x: Simplify pl08x_ensure_on()
+Date: Fri, 5 Aug 2011 15:32:34 +0530
+Message-ID: <ec14b777562eaa2a1825e10546d1c737e7f20f20.1312538034.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1312538034.git.viresh.kumar@st.com>
 References: <cover.1312538034.git.viresh.kumar@st.com>
@@ -29,113 +29,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Code for creating single byte llis is present at several places. Create a
-routine to avoid code redundancy.
+Simply writing 1 on bit 0 is sufficient instead of reading and clearing bits.
+Also as per manual, for bit 3-31 of DMACConfiguration register:
+"read undefined, write as 0"
 
-Also, we don't need one lli per single byte transfer, we can have single lli to
-do all single byte transfer.
+So, we must not rely on values read from this registers bit 3-31.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/dma/amba-pl08x.c |   61 +++++++++++++++++++++++++---------------------
- 1 files changed, 33 insertions(+), 28 deletions(-)
+ drivers/dma/amba-pl08x.c |    8 +-------
+ 1 files changed, 1 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index e5930d5..45d8a5d 100644
+index 5dd97f4..d79688d 100644
 --- a/drivers/dma/amba-pl08x.c
 +++ b/drivers/dma/amba-pl08x.c
-@@ -559,6 +559,14 @@ static void pl08x_fill_lli_for_desc(struct pl08x_lli_build_data *bd,
- 	bd->remainder -= len;
+@@ -1502,13 +1502,7 @@ bool pl08x_filter_id(struct dma_chan *chan, void *chan_id)
+  */
+ static void pl08x_ensure_on(struct pl08x_driver_data *pl08x)
+ {
+-	u32 val;
+-
+-	val = readl(pl08x->base + PL080_CONFIG);
+-	val &= ~(PL080_CONFIG_M2_BE | PL080_CONFIG_M1_BE | PL080_CONFIG_ENABLE);
+-	/* We implicitly clear bit 1 and that means little-endian mode */
+-	val |= PL080_CONFIG_ENABLE;
+-	writel(val, pl08x->base + PL080_CONFIG);
++	writel(PL080_CONFIG_ENABLE, pl08x->base + PL080_CONFIG);
  }
  
-+static inline void prep_byte_width_lli(struct pl08x_lli_build_data *bd,
-+		u32 *cctl, u32 len, int num_llis, size_t *total_bytes)
-+{
-+	*cctl = pl08x_cctl_bits(*cctl, 1, 1, len);
-+	pl08x_fill_lli_for_desc(bd, num_llis, len, *cctl);
-+	(*total_bytes) += len;
-+}
-+
- /*
-  * This fills in the table of LLIs for the transfer descriptor
-  * Note that we assume we never have to change the burst sizes
-@@ -570,7 +578,7 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
- 	struct pl08x_bus_data *mbus, *sbus;
- 	struct pl08x_lli_build_data bd;
- 	int num_llis = 0;
--	u32 cctl;
-+	u32 cctl, early_bytes = 0;
- 	size_t max_bytes_per_lli, total_bytes = 0;
- 	struct pl08x_lli *llis_va;
- 
-@@ -619,29 +627,27 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
- 		 mbus == &bd.srcbus ? "src" : "dst",
- 		 sbus == &bd.srcbus ? "src" : "dst");
- 
--	if (txd->len < mbus->buswidth) {
--		/* Less than a bus width available - send as single bytes */
--		while (bd.remainder) {
--			dev_vdbg(&pl08x->adev->dev,
--				 "%s single byte LLIs for a transfer of "
--				 "less than a bus width (remain 0x%08x)\n",
--				 __func__, bd.remainder);
--			cctl = pl08x_cctl_bits(cctl, 1, 1, 1);
--			pl08x_fill_lli_for_desc(&bd, num_llis++, 1, cctl);
--			total_bytes++;
--		}
--	} else {
--		/* Make one byte LLIs until master bus is aligned */
--		while ((mbus->addr) % (mbus->buswidth)) {
--			dev_vdbg(&pl08x->adev->dev,
--				"%s adjustment lli for less than bus width "
--				 "(remain 0x%08x)\n",
--				 __func__, bd.remainder);
--			cctl = pl08x_cctl_bits(cctl, 1, 1, 1);
--			pl08x_fill_lli_for_desc(&bd, num_llis++, 1, cctl);
--			total_bytes++;
--		}
-+	/*
-+	 * Send byte by byte for following cases
-+	 * - Less than a bus width available
-+	 * - until master bus is aligned
-+	 */
-+	if (bd.remainder < mbus->buswidth)
-+		early_bytes = bd.remainder;
-+	else if ((mbus->addr) % (mbus->buswidth)) {
-+		early_bytes = mbus->buswidth - (mbus->addr) % (mbus->buswidth);
-+		if ((bd.remainder - early_bytes) < mbus->buswidth)
-+			early_bytes = bd.remainder;
-+	}
-+
-+	if (early_bytes) {
-+		dev_vdbg(&pl08x->adev->dev, "%s byte width LLIs "
-+				"(remain 0x%08x)\n", __func__, bd.remainder);
-+		prep_byte_width_lli(&bd, &cctl, early_bytes, num_llis++,
-+				&total_bytes);
-+	}
- 
-+	if (bd.remainder) {
- 		/*
- 		 * Master now aligned
- 		 * - if slave is not then we must set its width down
-@@ -692,13 +698,12 @@ static int pl08x_fill_llis_for_desc(struct pl08x_driver_data *pl08x,
- 		/*
- 		 * Send any odd bytes
- 		 */
--		while (bd.remainder) {
--			cctl = pl08x_cctl_bits(cctl, 1, 1, 1);
-+		if (bd.remainder) {
- 			dev_vdbg(&pl08x->adev->dev,
--				"%s align with boundary, single odd byte (remain %zu)\n",
-+				"%s align with boundary, send odd bytes (remain %zu)\n",
- 				__func__, bd.remainder);
--			pl08x_fill_lli_for_desc(&bd, num_llis++, 1, cctl);
--			total_bytes++;
-+			prep_byte_width_lli(&bd, &cctl, bd.remainder,
-+					num_llis++, &total_bytes);
- 		}
- 	}
- 
+ static void pl08x_unmap_buffers(struct pl08x_txd *txd)
 -- 
 1.7.2.2
 
