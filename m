@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab1HEMF1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 08:05:27 -0400
-Received: from smtp2.infineon.com ([217.10.60.23]:2385 "EHLO
-	smtp2.infineon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395Ab1HEMFZ convert rfc822-to-8bit (ORCPT
+	id S1755150Ab1HEMJG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 08:09:06 -0400
+Received: from rrzmta5.uni-regensburg.de ([194.94.155.56]:40787 "EHLO
+	rrzmta5.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab1HEMJF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 08:05:25 -0400
-X-SBRS: None
-From: <Huewe.external@infineon.com>
-To: <bfreed@chromium.org>, <linux-kernel@vger.kernel.org>
-CC: <tpmdd-devel@lists.sourceforge.net>, <m.selhorst@sirrix.com>,
-        <srajiv@linux.vnet.ibm.com>, <debora@linux.vnet.ibm.com>,
-        <Huewe.external@infineon.com>
-Subject: RE: [PATCH] CHROMIUM: tpm: tpm_tis_i2c: Lock the I2C adapter for a
- sequence of requests.
-Thread-Topic: [PATCH] CHROMIUM: tpm: tpm_tis_i2c: Lock the I2C adapter for a
- sequence of requests.
-Thread-Index: AQHMU0G70g5YLl7U2UKF9vlb2nQYCJUOKPow
-Date: Fri, 5 Aug 2011 12:05:22 +0000
-Message-ID: <74A44E99E3274B4CB570415926B37D44056438@MUCSE501.eu.infineon.com>
-References: <1312405730-22741-1-git-send-email-bfreed@chromium.org>
-In-Reply-To: <1312405730-22741-1-git-send-email-bfreed@chromium.org>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.8.248]
-Content-Type: text/plain; charset="us-ascii"
+	Fri, 5 Aug 2011 08:09:05 -0400
+X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Aug 2011 08:09:05 EDT
+Message-Id: <4E3BF809020000A100006CDF@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Fri, 05 Aug 2011 14:02:49 +0200
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: <linux-kernel@vger.kernel.org>
+Subject: Q: cat /proc/mdstat blocking?
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Subject: [PATCH] CHROMIUM: tpm: tpm_tis_i2c: Lock the I2C adapter for a
-> sequence of requests.
-> 
-> This is derived from Peter Huewe's recommended fix:
-> 
-> On some ChromeOS systems, a TPM sharing the I2C bus with another device
-> gets confused when it sees I2C requests to that other device.
-> This change locks the I2C adapter for the duration of the full sequence
-> of I2C requests the TPM needs to complete.
-> 
-> smbus_xfer is not supported, but SMBUS is not supported by the original
-> driver, either.
-> 
-> Signed-off-by: Bryan Freed <bfreed@chromium.org>
+Hi,
 
-Looks good to me :)
+I thought that /proc/mdstat just displays the current state of the MD RAIDs, not querying them, thus never blocking. Unfortunately I could observer a "cat /proc/mdstat" hanging for several seconds when one of the RAID1 legs was unavailable and multipathd was queueing requests to the leg.
 
-Signed-off-by: Peter Huewe <huewe.external@infineon.com>
+Practically this makes monitoring of the other RAIDs difficult when one bad device is enough to block /proc/mdstat.
 
-Thanks,
-Peter
+Now my question: Does it work as designed (i.e. as intended), or is this not as intended?
+
+As I'm not subcribed to the kernel list, maybe CC: your replies.
+
+Effect was observed in SLES11 SP1 x86_64 with multipathed FC SAN disks (2.6.32.36) on a machine with several CPUs.
+
+Regards,
+Ulrich Windl
+
+
