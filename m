@@ -1,107 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225Ab1HEDfb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 23:35:31 -0400
-Received: from banach.math.auburn.edu ([131.204.45.3]:58976 "EHLO
-	banach.math.auburn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756205Ab1HEDfM (ORCPT
+	id S1756205Ab1HEDqk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 23:46:40 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:47313 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755967Ab1HEDqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 23:35:12 -0400
-X-Greylist: delayed 2562 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Aug 2011 23:35:12 EDT
-Date: Thu, 4 Aug 2011 21:56:27 -0500 (CDT)
-From: Theodore Kilgore <kilgota@banach.math.auburn.edu>
-To: Greg KH <greg@kroah.com>
-cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        libusb-devel@lists.sourceforge.net, Alexander Graf <agraf@suse.de>,
-        Gerd Hoffmann <kraxel@redhat.com>, hector@marcansoft.com,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Adam Baker <linux@baker-net.org.uk>
-Subject: Re: USB mini-summit at LinuxCon Vancouver
-In-Reply-To: <20110804225603.GA2557@kroah.com>
-Message-ID: <alpine.LNX.2.00.1108042108210.18033@banach.math.auburn.edu>
-References: <20110610002103.GA7169@xanatos> <4E3B1B7B.2040501@infradead.org> <20110804225603.GA2557@kroah.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 4 Aug 2011 23:46:38 -0400
+X-Greylist: delayed 339 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Aug 2011 23:46:38 EDT
+Message-ID: <4E3B660E.3020108@gentoo.org>
+Date: Thu, 04 Aug 2011 23:39:58 -0400
+From: Joshua Kinard <kumba@gentoo.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; WOW64; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Willy Tarreau <w@1wt.eu>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ben Greear <greearb@candelatech.com>, Ingo Molnar <mingo@elte.hu>,
+        John Stultz <john.stultz@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, stable@kernel.org
+Subject: Re: [stable] [patch 3/3] rtc: Limit frequency
+References: <20110722091011.717194327@linutronix.de> <20110722091045.537404938@linutronix.de> <20110722150550.1878f069.akpm@linux-foundation.org> <20110722223915.GA22405@1wt.eu>
+In-Reply-To: <20110722223915.GA22405@1wt.eu>
+X-Enigmail-Version: 1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 4 Aug 2011, Greg KH wrote:
-
-> On Thu, Aug 04, 2011 at 07:21:47PM -0300, Mauro Carvalho Chehab wrote:
-> > I know that this problem were somewhat solved for 3G modems, with the usage
-> > of the userspace problem usb_modeswitch, and with some quirks for the USB
-> > storage driver, but I'm not sure if such tricks will scale forever, as more
-> > functions are seen on some USB devices.
+On 07/22/2011 18:39, Willy Tarreau wrote:
+> On Fri, Jul 22, 2011 at 03:05:50PM -0700, Andrew Morton wrote:
+>> On Fri, 22 Jul 2011 09:12:51 -0000
+>> Thomas Gleixner <tglx@linutronix.de> wrote:
+>>
+>>> The RTC hrtimer is self rearming. We really need to limit the
+>>> frequency to something sensible.
+>>
+>>> Cc: stable@kernel.org
+>>
+>> Why?  What failures does the current code cause?  What effect do these
+>> failures have upon users?
 > 
-> Well, no matter how it "scales" it needs to be done in userspace, like
-> usb_modeswitch does.  We made that decision a while ago, and it is
-> working out very well.  I see no reason why you can't do it in userspace
-> as well as that is the easiest place to control this type of thing.
+> I would add that if we go that route, we should at least accept values
+> that were documented as possible till now. Man rtc says 2 Hz to 8192 Hz,
+> but Thomas' proposed patch limits it to 5000 Hz, so some breakage is to
+> be expected.
 > 
-> I thought we had a long discussion about this topic a while ago and came
-> to this very conclusion.  Or am I mistaken?
-> 
-> thanks,
-> 
-> greg k-h
-> 
+> Regards,
+> Willy
 
-Greg,
+To me, it would make sense to lock it at 8192Hz.  I re-wrote a driver for the DS1685 family of Dallas chips that I need
+to cleanup and re-submit, but in researching that specific RTC, I really could not find an RTC out there that went above
+8192.
 
-A little bit more of precision would help me a lot, here. Precisely what 
-is one supposed to do in userspace? I would naturally assume that the user 
-will control the device by announcing what the user wants to do with the 
-device. Such control would therefore have to start in userspace. But this 
-is such an obvious truism that you must mean something else. What, then?
+Arguably, 32768Hz might also work.  The DS1685 runs at this mode normally, but it disables PIE when it does.
 
-To say to do things "like usb_modeswitch" is rather vague. For one thing, 
-usb_modeswitch, being something out there in userspace, does _not_ affect 
-what is in the kernel. However, what is (or is not) in the kernel might 
-make it possible (or, in the alternative, impossible) to facilitate the 
-action of some kind of userspace function-switching program similar to 
-usb_modeswitch, not so? 
+My vote is 8192Hz.
 
-As to the "long discussion about this topic a while ago" that may have 
-been a discussion in which I was also involved. For, I do remember a 
-discussion about this topic a few months ago. In one respect my memory 
-differs from yours, however: It was not my impression that any definite 
-conclusions were reached, certainly not a consensus. BTW, I did try to lay 
-out what I remembered as three alternatives that came up, along with 
-arguments for and against each of them, in my message which kicked off 
-this thread today. 
+Also, can we get a wrapper of some kind in the RTC core to allow an RTC driver to override the hrtimer /PIE emulation if
+needed?  I have in the DS1685 driver full support for its PIE mode and really do not want to gut it as part of the
+cleanup.  Some kind of override API would be nice in case anyone ever runs into this chip (or its family members).
 
-It is of course a real possibility that you have seen the perfect solution 
-in your mind to these problems, which have vexed a lot of people for 
-years, and others have not. If that is the way it is, then perhaps you 
-just wish that we would all shut up, implement what is obvious, and we 
-could all be happy. This could certainly be the case. You have written a 
-lot more code than I have, and you obviously must have started doing that 
-when you were at least 30 years younger, perhaps even 40 years younger, 
-than I was when I started. So I would be the first to say that you are 
-much better at it than I am. But there are others here, too, who seem 
-actively to have been sucked into this discussion, and they are similarly 
-younger and more clever than I am, too. 
+-- 
+Joshua Kinard
+Gentoo/MIPS
+kumba@gentoo.org
 
-Giving due consideration to this, it would probably get the job done a lot 
-faster if you just take the time to describe what grand vision you 
-yourself have in mind for the solution of the problem, with a sufficient 
-accounting of the details that people can all see what it is and exactly 
-how and why it would work absolutely perfectly, and then we can just get 
-busy and do it.
+"The past tempts us, the present confuses us, the future frightens us.  And our lives slip away, moment by moment, lost
+in that vast, terrible in-between."
 
-Theodore Kilgore
+--Emperor Turhan, Centauri Republic
