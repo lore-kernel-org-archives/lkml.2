@@ -1,136 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab1HEAg3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 20:36:29 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:8095 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753552Ab1HEAg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 20:36:26 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Nick Piggin <npiggin@kernel.dk>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        David Chinner <david@fromorbit.com>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v2 2/4] Keep nr_dentry per super block
-Date: Fri,  5 Aug 2011 04:35:42 +0400
-Message-Id: <1312504544-1108-3-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1312504544-1108-1-git-send-email-glommer@parallels.com>
-References: <1312504544-1108-1-git-send-email-glommer@parallels.com>
+	id S1756133Ab1HEAlF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 20:41:05 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56669 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755938Ab1HEAlD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 20:41:03 -0400
+Date: Fri, 5 Aug 2011 01:41:00 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] more vfs stuff
+Message-ID: <20110805004100.GP2203@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have per-sb shrinkers, it makes sense to have nr_dentries
-stored per sb as well. We turn them into per-cpu counters so we can
-keep acessing them without locking.
+	Rafael's fix + RCU freeing of posix_acl.  Please, pull from
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Dave Chinner <david@fromorbit.com>
----
- fs/dcache.c        |   12 +++++++++++-
- fs/super.c         |   15 ++++++++++++++-
- include/linux/fs.h |    2 ++
- 3 files changed, 27 insertions(+), 2 deletions(-)
+Shortlog:
+Al Viro (2):
+      get rid of boilerplate switches in posix_acl.h
+      RCUify freeing acls, let check_acl() go ahead in RCU mode if acl is cached
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index b05aac3..ac19d24 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -151,7 +151,13 @@ static void __d_free(struct rcu_head *head)
- static void d_free(struct dentry *dentry)
- {
- 	BUG_ON(dentry->d_count);
-+	/*
-+	 * It is cheaper to keep a global counter separate
-+	 * then to scan through all superblocks when needed
-+	 */
- 	this_cpu_dec(nr_dentry);
-+	this_cpu_dec(*dentry->d_sb->s_nr_dentry);
-+
- 	if (dentry->d_op && dentry->d_op->d_release)
- 		dentry->d_op->d_release(dentry);
- 
-@@ -1224,7 +1230,11 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
- 	INIT_LIST_HEAD(&dentry->d_alias);
- 	INIT_LIST_HEAD(&dentry->d_u.d_child);
- 	d_set_d_op(dentry, dentry->d_sb->s_d_op);
--
-+	/*
-+	 * It is cheaper to keep a global counter separate
-+	 * then to scan through all superblocks when needed
-+	 */
-+	this_cpu_inc(*dentry->d_sb->s_nr_dentry);
- 	this_cpu_inc(nr_dentry);
- 
- 	return dentry;
-diff --git a/fs/super.c b/fs/super.c
-index 3f56a26..9345385 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -112,6 +112,7 @@ static struct super_block *alloc_super(struct file_system_type *type)
- {
- 	struct super_block *s = kzalloc(sizeof(struct super_block),  GFP_USER);
- 	static const struct super_operations default_op;
-+	int i;
- 
- 	if (s) {
- 		if (security_sb_alloc(s)) {
-@@ -119,15 +120,26 @@ static struct super_block *alloc_super(struct file_system_type *type)
- 			s = NULL;
- 			goto out;
- 		}
-+
-+		s->s_nr_dentry = alloc_percpu(int);
-+		if (!s->s_nr_dentry) {
-+			security_sb_free(s);
-+			kfree(s);
-+			s = NULL;
-+			goto out;
-+		}
-+		for_each_possible_cpu(i)
-+			*per_cpu_ptr(s->s_nr_dentry, i) = 0;
-+
- #ifdef CONFIG_SMP
- 		s->s_files = alloc_percpu(struct list_head);
- 		if (!s->s_files) {
-+			free_percpu(s->s_nr_dentry);
- 			security_sb_free(s);
- 			kfree(s);
- 			s = NULL;
- 			goto out;
- 		} else {
--			int i;
- 
- 			for_each_possible_cpu(i)
- 				INIT_LIST_HEAD(per_cpu_ptr(s->s_files, i));
-@@ -198,6 +210,7 @@ static inline void destroy_super(struct super_block *s)
- {
- #ifdef CONFIG_SMP
- 	free_percpu(s->s_files);
-+	free_percpu(s->s_nr_dentry);
- #endif
- 	security_sb_free(s);
- 	kfree(s->s_subtype);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index f23bcb7..35113fd 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1399,6 +1399,8 @@ struct super_block {
- 	struct list_head	s_dentry_lru;	/* unused dentry lru */
- 	int			s_nr_dentry_unused;	/* # of dentry on lru */
- 
-+	int __percpu 		*s_nr_dentry;		/* # of dentry on this sb */
-+
- 	/* s_inode_lru_lock protects s_inode_lru and s_nr_inodes_unused */
- 	spinlock_t		s_inode_lru_lock ____cacheline_aligned_in_smp;
- 	struct list_head	s_inode_lru;		/* unused inode lru */
--- 
-1.7.6
+Rafael J. Wysocki (1):
+      fix block device fallout from ->fsync() changes
 
+Diffstat:
+ fs/block_dev.c            |    4 ++
+ fs/namei.c                |   17 ++++-------
+ include/linux/posix_acl.h |   74 ++++++++++++++++-----------------------------
+ 3 files changed, 36 insertions(+), 59 deletions(-)
