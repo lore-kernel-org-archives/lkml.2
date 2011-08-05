@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab1HEAgy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 20:36:54 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:38277 "EHLO relay.sw.ru"
+	id S1756041Ab1HEAgb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 20:36:31 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:28690 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753772Ab1HEAgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 20:36:50 -0400
+	id S1754268Ab1HEAg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 20:36:26 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, containers@lists.linux-foundation.org,
@@ -17,222 +17,43 @@ Cc: linux-fsdevel@vger.kernel.org, containers@lists.linux-foundation.org,
         James Bottomley <JBottomley@parallels.com>,
         David Chinner <david@fromorbit.com>,
         Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v2 4/4] parse options in the vfs level
-Date: Fri,  5 Aug 2011 04:35:44 +0400
-Message-Id: <1312504544-1108-5-git-send-email-glommer@parallels.com>
+Subject: [PATCH v2 0/4] Per-container dcache size limitation
+Date: Fri,  5 Aug 2011 04:35:40 +0400
+Message-Id: <1312504544-1108-1-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.6
-In-Reply-To: <1312504544-1108-1-git-send-email-glommer@parallels.com>
-References: <1312504544-1108-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a simple generic vfs option parser.
-Right now, the only option we have is to limit the size of the dcache.
+Hi,
 
-So any user that wants to have a dcache entries limit, can specify:
+Since v1, there is not too much new here.
+I'm incorporating David's suggestion of calling the sb
+shrinker, which will, in effect, prune the icache and
+other sb related objects as well.
 
-  mount -o whatever_options,vfs_dcache_size=XXX <dev> <mntpoint>
+I am also keeping the mount based interface, since I
+still believe it is the way to go. But I'm obviously
+still open for suggestions. Some small corrections
+were also made to it since v1. Specifically, bind
+mounts are not allowed to alter the original sb dcache
+size.
 
-It is supposed to work well with remounts, allowing it to change
-multiple over the course of the filesystem's lifecycle.
+Glauber Costa (4):
+  factor out single-shrinker code
+  Keep nr_dentry per super block
+  limit nr_dentries per superblock
+  parse options in the vfs level
 
-I find mount a natural interface for handling filesystem options,
-so that's what I've choosen. Feel free to yell at it at will if
-you disagree.
+ fs/dcache.c              |   44 +++++++++++-
+ fs/namespace.c           |  105 ++++++++++++++++++++++++++
+ fs/super.c               |   16 ++++-
+ include/linux/dcache.h   |    4 +
+ include/linux/fs.h       |    3 +
+ include/linux/shrinker.h |    6 ++
+ mm/vmscan.c              |  185 ++++++++++++++++++++++++----------------------
+ 7 files changed, 274 insertions(+), 89 deletions(-)
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Dave Chinner <david@fromorbit.com>
----
- fs/dcache.c            |    7 +++
- fs/namespace.c         |  105 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/dcache.h |    4 ++
- 3 files changed, 116 insertions(+), 0 deletions(-)
-
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 52a0faf..ace5670 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1202,6 +1202,13 @@ static int dcache_mem_check(struct super_block *sb)
- 	return -ENOMEM;
- }
- 
-+int vfs_set_dcache_size(struct super_block *sb, int size)
-+{
-+	sb->s_nr_dentry_max = size;
-+
-+	return dcache_mem_check(sb);
-+}
-+
- /**
-  * __d_alloc	-	allocate a dcache entry
-  * @sb: filesystem it will belong to
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 22bfe82..43b2cdb 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -31,6 +31,7 @@
- #include <linux/idr.h>
- #include <linux/fs_struct.h>
- #include <linux/fsnotify.h>
-+#include <linux/parser.h>
- #include <asm/uaccess.h>
- #include <asm/unistd.h>
- #include "pnode.h"
-@@ -958,6 +959,9 @@ static int show_sb_opts(struct seq_file *m, struct super_block *sb)
- 	};
- 	const struct proc_fs_info *fs_infop;
- 
-+	if (sb->s_nr_dentry_max != INT_MAX)
-+		seq_printf(m, ",vfs_dcache_size=%d",sb->s_nr_dentry_max);
-+
- 	for (fs_infop = fs_info; fs_infop->flag; fs_infop++) {
- 		if (sb->s_flags & fs_infop->flag)
- 			seq_puts(m, fs_infop->str);
-@@ -2271,6 +2275,94 @@ int copy_mount_string(const void __user *data, char **where)
- 	return 0;
- }
- 
-+static const match_table_t tokens = {
-+	{1, "vfs_dcache_size=%u"},
-+};
-+
-+struct vfs_options {
-+	unsigned long vfs_dcache_size;
-+};
-+
-+/**
-+ * Generic option parsing for the VFS.
-+ *
-+ * Since most of the filesystems already do their own option parsing, and with
-+ * very few code shared between them, this function strips out any options that
-+ * we succeed in parsing ourselves. Passing them forward would just give the
-+ * underlying fs an option it does not expect, leading it to fail.
-+ *
-+ * We don't yet have a pointer to the super block as well, since this is
-+ * pre-mount. We accumulate in struct vfs_options whatever data we collected,
-+ * and act on it later.
-+ */
-+static int vfs_parse_options(char *options, struct vfs_options *ops)
-+{
-+	substring_t args[MAX_OPT_ARGS];
-+	int option;
-+	char *p;
-+	char *opt;
-+	char *start = NULL;
-+	int ret;
-+	
-+	if (!options)
-+		return 0;
-+
-+	opt = kstrdup(options, GFP_KERNEL);
-+	if (!opt)
-+		return 1;
-+	
-+	ret = 1;
-+
-+	start = opt;
-+	while ((p = strsep(&opt, ",")) != NULL) {
-+		int token;
-+		if (!*p)
-+			continue;
-+
-+		/*
-+		 * Initialize args struct so we know whether arg was
-+		 * found; some options take optional arguments.
-+		 */
-+		args[0].to = args[0].from = 0;
-+		token = match_token(p, tokens, args);
-+		switch (token) {
-+		case 1:
-+			if (!args[0].from)
-+				break;
-+
-+			if (match_int(&args[0], &option))
-+				break;
-+
-+			if (option < DCACHE_MIN_SIZE) {
-+				printk(KERN_INFO "dcache size %d smaller than "
-+				       "minimum (%d)\n", option, DCACHE_MIN_SIZE);
-+				option = DCACHE_MIN_SIZE;
-+			}
-+
-+			ops->vfs_dcache_size = option;
-+
-+			/*
-+			 * The actual filesystems don't expect any option
-+			 * they don't understand to be received in the option
-+			 * string. So we strip off anything we processed, and
-+			 * give them a clean options string.
-+			 */
-+			ret = 0;
-+			if (!opt) /* it is the last option listed */
-+				*(options + (p - start)) = '\0';
-+			else
-+				strcpy(options + (p - start), opt);
-+			break;
-+		default:
-+			ret = 0;
-+			break;
-+		}
-+	}
-+
-+	kfree(start);
-+	return ret;
-+}
-+
- /*
-  * Flags is a 32-bit value that allows up to 31 non-fs dependent flags to
-  * be given to the mount() call (ie: read-only, no-dev, no-suid etc).
-@@ -2291,6 +2383,7 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
- 	struct path path;
- 	int retval = 0;
- 	int mnt_flags = 0;
-+	struct vfs_options vfs_options;
- 
- 	/* Discard magic */
- 	if ((flags & MS_MGC_MSK) == MS_MGC_VAL)
-@@ -2318,6 +2411,12 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
- 	if (!(flags & MS_NOATIME))
- 		mnt_flags |= MNT_RELATIME;
- 
-+
-+	vfs_options.vfs_dcache_size = INT_MAX;
-+	retval = vfs_parse_options(data_page, &vfs_options);
-+	if (retval)
-+		goto dput_out;
-+
- 	/* Separate the per-mountpoint flags */
- 	if (flags & MS_NOSUID)
- 		mnt_flags |= MNT_NOSUID;
-@@ -2350,6 +2449,12 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
- 	else
- 		retval = do_new_mount(&path, type_page, flags, mnt_flags,
- 				      dev_name, data_page);
-+
-+	/* bind mounts get to respect their parents decision */
-+	if (!retval && !(flags & MS_BIND))
-+		vfs_set_dcache_size(path.mnt->mnt_sb,
-+				    vfs_options.vfs_dcache_size);
-+			
- dput_out:
- 	path_put(&path);
- 	return retval;
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index d37d2a7..1a309f3 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -251,6 +251,10 @@ extern int d_invalidate(struct dentry *);
- 
- /* only used at mount-time */
- extern struct dentry * d_alloc_root(struct inode *);
-+extern int vfs_set_dcache_size(struct super_block *sb, int size);
-+
-+#define DCACHE_MIN_SIZE 1024
-+extern int vfs_set_dcache_size(struct super_block *sb, int size);
- 
- /* <clickety>-<click> the ramfs-type tree */
- extern void d_genocide(struct dentry *);
 -- 
 1.7.6
 
