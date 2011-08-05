@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab1HEQ6w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 12:58:52 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:33085 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab1HEQ6s (ORCPT
+	id S1756058Ab1HERBp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 13:01:45 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:32309 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751190Ab1HERBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 12:58:48 -0400
-Date: Fri, 5 Aug 2011 18:58:38 +0200
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        632923@bugs.debian.org, Christian Ohm <chr.ohm@gmx.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] perf: do not look at ./config for configuration
-Message-ID: <20110805165838.GA7237@elie.gateway.2wire.net>
-References: <20110707024506.GA32088@moongate.localnet>
- <1310010913.4280.36.camel@localhost>
+	Fri, 5 Aug 2011 13:01:42 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: nYEaQ3IVM1k_wI0FdObhYzbBNCJx8ixWi9mPgTbYJ9wO0FO
+ WqxEtuJqfQFLWD0PM53n00wxWUSPV.TYS8sLtY.xjRtHMHd9aMvrUlJT_Xgl
+ a6jTUtM977MZBxdTHmdnOHuLbdcD4aAHisQza_baGgcQZllz3yHP14oyIRtl
+ ewo0w0yjJLqtpqVjpkm5miSl743mYzzBPm75ppgfwAJeb.bvuUjUEHTakWTD
+ 6luwgnv5wHyf9sPJwVZjJJ4VpevoXg0x8BrkePtqfe_y.GK3mphHx.y.J05I
+ HrrK0Eelz_vsVdOObihQ1Lx2QxOmH.z3Fur9Ss1MqPaXcf7d9UjAMvYtSFJB
+ NjRrrt6222UGa_q38LC_cZC4xCLn9zZX5JapT..9gP5oGH0ceLjGj5UVOqee
+ k2tMu7wnKPd7h.U42c0tTmg--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 5 Aug 2011 12:01:38 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Dave Jones <davej@redhat.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: list corruption in the last few days. (block ? crypto ?)
+In-Reply-To: <20110805165119.GA11593@redhat.com>
+Message-ID: <alpine.DEB.2.00.1108051158400.28580@router.home>
+References: <20110805010038.GA18148@redhat.com> <20110805084614.GA1588@x4.trippels.de> <CAOJsxLEMf8SbSmJv5u6GZtq_OYH3fpmomT-ioWXQGp83veK7wQ@mail.gmail.com> <alpine.DEB.2.00.1108051131440.28580@router.home> <20110805163948.GA11113@redhat.com>
+ <alpine.DEB.2.00.1108051146180.28580@router.home> <20110805165119.GA11593@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310010913.4280.36.camel@localhost>
-User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In addition to /etc/perfconfig and $HOME/.perfconfig, perf looks for
-configuration in the file ./config, imitating git which looks at
-$GIT_DIR/config.  If ./config is not a perf configuration file, it
-fails, or worse, treats it as a configuration file and changes
-behavior in some unexpected way.
+On Fri, 5 Aug 2011, Dave Jones wrote:
 
-"config" is not an unusual name for a file to be lying around and perf
-does not have a private directory dedicated for its own use, so let's
-just stop looking for configuration in the cwd.  Callers needing
-context-sensitive configuration can use the PERF_CONFIG environment
-variable.
+> On Fri, Aug 05, 2011 at 11:47:56AM -0500, Christoph Lameter wrote:
+>  > On Fri, 5 Aug 2011, Dave Jones wrote:
+>  >
+>  > > Not sure if you were addressing my original report (quoted above), or the networking
+>  > > related report in this part of the thread. But anyway, I had it turned on (as well as just about
+>  > > every other debugging option).  I didn't see anything output from it though,
+>  > > just the LIST_DEBUG warnings.
+>  >
+>  > But CONFIG_SLUB_DEBUG_ON was off? If slab debugging was on then this could
+>  > be an issue with full slab list management instead of partial lists.
+>
+> $ grep SLUB_DEBUG_ON .config
+> CONFIG_SLUB_DEBUG_ON=y
 
-Requested-by: Christian Ohm <chr.ohm@gmx.net>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
----
-Thoughts?
+Argh another debugging code issue. Anyone who sees this please verify that
+it also occurs with debugging off. I ran this code for 9 months in
+various configs but only sporadically with debugging support since that
+switches the lockless stuff. With the lockless ops on we cannot
+establish a stable state of the object as needed for regular inspection
+and verification of operations.
 
- tools/perf/util/config.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
-
-diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
-index e02d78ca..6c86eca8 100644
---- a/tools/perf/util/config.c
-+++ b/tools/perf/util/config.c
-@@ -399,7 +399,6 @@ static int perf_config_global(void)
- int perf_config(config_fn_t fn, void *data)
- {
- 	int ret = 0, found = 0;
--	char *repo_config = NULL;
- 	const char *home = NULL;
- 
- 	/* Setting $PERF_CONFIG makes perf read _only_ the given config file. */
-@@ -421,12 +420,6 @@ int perf_config(config_fn_t fn, void *data)
- 		free(user_config);
- 	}
- 
--	repo_config = perf_pathdup("config");
--	if (!access(repo_config, R_OK)) {
--		ret += perf_config_from_file(fn, repo_config, data);
--		found += 1;
--	}
--	free(repo_config);
- 	if (found == 0)
- 		return -1;
- 	return ret;
--- 
-1.7.6
 
