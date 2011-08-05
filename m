@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006Ab1HEEF4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 00:05:56 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16506 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751Ab1HEEFZ convert rfc822-to-8bit (ORCPT
+	id S1751315Ab1HEE3y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 00:29:54 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:51407 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751014Ab1HEE3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 00:05:25 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 04 Aug 2011 21:05:04 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 4 Aug 2011 21:05:01 -0700
-Subject: RE: [PATCH 1/3] irq: If an IRQ is a GPIO, request and configure it
-Thread-Topic: [PATCH 1/3] irq: If an IRQ is a GPIO, request and configure it
-Thread-Index: AcxTErH7HPFMaqSZQT+jIGPrwaKXJAAEVLnA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049F171EC4@HQMAIL01.nvidia.com>
-References: <1312498820-2275-1-git-send-email-swarren@nvidia.com>
- <1312498820-2275-2-git-send-email-swarren@nvidia.com>
- <4E3B4D73.9030505@gmail.com>
-In-Reply-To: <4E3B4D73.9030505@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 5 Aug 2011 00:29:53 -0400
+X-Sasl-enc: g5jUUeF1/dwiNUb9TEdW+4xzzmuiMf4N6Dx6R6kRq5/e 1312518592
+Date: Thu, 4 Aug 2011 21:27:30 -0700
+From: Greg KH <greg@kroah.com>
+To: Wouter Verhelst <w@uter.be>
+Cc: paul.clements@steeleye.com, linux-kernel@vger.kernel.org
+Subject: Re: [Nbd] [PATCH v2] nbd: nbd sysfs framework
+Message-ID: <20110805042730.GA25389@kroah.com>
+References: <4e3b190f.NjLPBhXLsVSgFxi+%paul.clements@steeleye.com>
+ <20110805014752.GJ4109@grep.be>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110805014752.GJ4109@grep.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob Herring wrote at Thursday, August 04, 2011 7:55 PM:
-> On 08/04/2011 06:00 PM, Stephen Warren wrote:
-> > Many IRQs are associated with GPIO pins. When the pin is used as an IRQ,
-> > it can't be used as anything else; it should be requested. Enhance the
-> > core interrupt code to call gpio_request() and gpio_direction_input() for
-> > any IRQ that is also a GPIO. This prevents duplication of these calls in
-> > each driver that uses an IRQ.
-...
-> > diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-...
-> > @@ -978,6 +979,16 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
-> >  			old = *old_ptr;
-> >  		} while (old);
-> >  		shared = 1;
-> > +	} else {
-> > +		gpio = irq_to_gpio(irq);
+On Fri, Aug 05, 2011 at 03:47:52AM +0200, Wouter Verhelst wrote:
+> On Thu, Aug 04, 2011 at 06:11:27PM -0400, paul.clements@steeleye.com wrote:
+> > diff --git a/Documentation/ABI/testing/sysfs-block-nbd b/Documentation/ABI/testing/sysfs-block-nbd
+> > new file mode 100644
+> > index 0000000..3728d9f
+> > --- /dev/null
+> > +++ b/Documentation/ABI/testing/sysfs-block-nbd
+> > @@ -0,0 +1,8 @@
+> > +What:		/sys/block/nbd<id>/nbd/pid
+> > +Date:		August 2011
+> > +Contact:	Paul Clements <paul.clements@steeleye.com>
+> > +Description:
+> > +		The pid file is read-only and specifies the pid of the
+> > +		caller of NBD_DO_IT ioctl (normally this is the nbd-client).
+> > +		The pid will be zero if the nbd connection is not
+> > +		currently established.
 > 
-> If you read the documentation for gpio, it is not recommended to use
-> irq_to_gpio. There's only a handful of users. Part of the problem is it
-> is platform specific and the gpio core cannot convert irq to gpio
-> number
+> That's different from current behaviour: in the current implementation,
+> the absense of a connection is signalled by the absense of the PID file,
+> rather than the contents being zero. Dunno whether that change is
+> intentional, but I thought I'd check before changing nbd-client code...
 
-It seems like that's a soluble problem though?
-
-I was thinking about adding a to_gpio function to struct irq_chip, as
-the inverse of struct gpio_chip's to_irq. Then, presumably any platform
-would be able to convert back from IRQ to GPIO, provided the platform
-called a new __irq_to_gpio from the platform-specific gpio_to_irq, just
-like most gpio_to_irq implementations defer to __gpio_to_irq.
-
-I ended up not doing that in this patchset, since Tegra's gpio_to_irq
-function already works for the IRQs/GPIOs that were relevant for my
-testing, and I wanted to post a simple patch first to driver discussion.
-
-> Here is the relevant section:
-> 
-> Non-error values returned from irq_to_gpio() would most commonly be used
-> with gpio_get_value(), for example to initialize or update driver state
-> when the IRQ is edge-triggered.  Note that some platforms don't support
-> this reverse mapping, so you should avoid using it.
-
--- 
-nvpublic
-
+The current behavior should not change, so that would be a bug and yet
+another reason to reject this patch :)
