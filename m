@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab1HEUen (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 16:34:43 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:50403 "EHLO ogre.sisk.pl"
+	id S1753235Ab1HEUhE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 16:37:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45681 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751134Ab1HEUem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 16:34:42 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [linux-pm] Crash when suspending Lenovo T510 laptop (2.6.39.3)
-Date: Fri, 5 Aug 2011 22:36:12 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0+; KDE/4.6.0; x86_64; ; )
-Cc: Jesper Juhl <jj@chaosbits.net>, Len Brown <len.brown@intel.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-References: <Pine.LNX.4.44L0.1108051617430.2055-100000@iolanthe.rowland.org> <201108052230.48862.rjw@sisk.pl>
-In-Reply-To: <201108052230.48862.rjw@sisk.pl>
+	id S1752563Ab1HEUhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 16:37:02 -0400
+Message-ID: <4E3C5460.90505@zytor.com>
+Date: Fri, 05 Aug 2011 13:36:48 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Andi Kleen <andi@firstfloor.org>
+CC: luto@mit.edu, x86@kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, lueckintel@yahoo.com,
+        kimwooyoung@gmail.com
+Subject: Re: New vsyscall emulation breaks JITs
+References: <20110805200945.GA14014@tassilo.jf.intel.com> <4E3C5154.2050307@zytor.com> <20110805202656.GI5782@one.firstfloor.org>
+In-Reply-To: <20110805202656.GI5782@one.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108052236.12404.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 05, 2011, Rafael J. Wysocki wrote:
-> On Friday, August 05, 2011, Alan Stern wrote:
-> > On Fri, 5 Aug 2011, Rafael J. Wysocki wrote:
-> > 
-> > > > > I don't know how to fix it yet, but I think I know what the problem is.
-> > > > > Namely, a runtime suspend of the Ethernet adapter as occured in parallel with
-> > > > > the system-wide suspend and they clashed.  The runtime suspend has probably
-> > > > > been provoked by detaching the Ethernet cable from the box.
-> > > > 
-> > > > For them to clash in that way would mean that the PM workqueue didn't
-> > > > get frozen.
-> > > 
-> > > Not necessarily, I think.  It's sufficient that system suspend is started
-> > > while the runtime PM operation is in progress.
-> > 
-> > How so?  The system suspend doesn't call down to the subsystems or 
-> > drivers until after all the threads are frozen.  In this case the stack 
-> > dump shows that the runtime PM operation was asynchronous, running in a 
-> > workqueue thread (pm_runtime_work is one of the routines near the end 
-> > of the stack dump).  The thread wouldn't have frozen until the runtime 
-> > PM operation was complete.
+On 08/05/2011 01:26 PM, Andi Kleen wrote:
+>> I have to say I believe that trying to JIT the vdso or vsyscall pages is
+>> extremely dubious at best.  They are fundamentally different from normal
+>> user space in that the kernel can muck with them any time, without
+>> notifying userspace about it.  The other aspect of this is that this is
+>> about the legacy vsyscall page, which we're trying to get rid of, partly
+>> because of security problems.
 > 
-> You're right, sorry.  System suspend was not involved, so the problem
-> was triggerend by runtime suspend alone, resulting from unplugging the
-> Ethernet cable.
-> 
-> It looks like the crash started in pci_disable_msi().
+> There's clear evidence now you can't: it's used even by new binaries.
 
-OTOH, I'm not sure how pci_legacy_suspend_late() was called.
-In theory it is only called by the system suspend code and it surely
-is not called for e1000e.
+time() is not supported by vdso; this is a problem.  Getting rid of it
+is a long-term thing.
 
-Thanks,
-Rafael
+	-hpa
+
