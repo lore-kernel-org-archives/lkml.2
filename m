@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311Ab1HEFqX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 01:46:23 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:38248 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754841Ab1HEFqW (ORCPT
+	id S1756363Ab1HEGEP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 02:04:15 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19423 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755667Ab1HEGEM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 01:46:22 -0400
-From: xiyou.wangcong@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, WANG Cong <xiyou.wangcong@gmail.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
-Subject: [Patch] cris: add arch/cris/include/asm/serial.h
-Date: Fri,  5 Aug 2011 13:46:00 +0800
-Message-Id: <1312523160-30345-1-git-send-email-xiyou.wangcong@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Fri, 5 Aug 2011 02:04:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 04 Aug 2011 23:03:50 -0700
+Message-ID: <4E3B87C2.3020304@nvidia.com>
+Date: Fri, 5 Aug 2011 15:03:46 +0900
+From: Jinyoung Park <jinyoungp@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20110624 Thunderbird/5.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: aat2870 causes build failure in current upstream
+References: <4E385B53.3040108@zytor.com> <20110804171725.GA12729@elte.hu>
+In-Reply-To: <20110804171725.GA12729@elte.hu>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following build errors:
+Hi,
 
-src/drivers/tty/serial/8250_early.c:160: error: 'BASE_BAUD' undeclared (first use in this function): 1 errors in 1 logs
-        v3.0/cris/cris-allyesconfig
-src/drivers/tty/serial/8250_early.c:160: error: (Each undeclared identifier is reported only once: 1 errors in 1 logs
-        v3.0/cris/cris-allyesconfig
-src/drivers/tty/serial/8250_early.c:160: error: for each function it appears in.): 1 errors in 1 logs
-        v3.0/cris/cris-allyesconfig
-src/drivers/tty/serial/8250_early.c:37:24: error: asm/serial.h: No such file or directory: 1 errors in 1 logs
-        v3.0/cris/cris-allyesconfig
+I try to check allmodconfig error issue for aat2870 backlight driver.
+But I could not observing error message what you attached, building is 
+successed.
+Please let me know how to reproduce allmodconfig problem for aat2870 
+backlight driver.
 
-I am not sure if (1843200 / 16) is suitable for cris, but
-most of other arch's define it as this value.
+This is my repro step.
+$ git clone 
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+$ cd linux-next
+$ make allmodconfig
+$ make
 
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+Thanks,
+Jin.
 
----
-diff --git a/arch/cris/include/asm/serial.h b/arch/cris/include/asm/serial.h
-new file mode 100644
-index 0000000..7380876
---- /dev/null
-+++ b/arch/cris/include/asm/serial.h
-@@ -0,0 +1,10 @@
-+#ifndef _ASM_SERIAL_H
-+#define _ASM_SERIAL_H
-+
-+/*
-+ * This assumes you have a 1.8432 MHz clock for your UART.
-+ */
-+#define BASE_BAUD (1843200 / 16)
-+
-+#endif /* _ASM_SERIAL_H */
-+
+2011-08-05 오전 2:17, Ingo Molnar 쓴 글:
+>
+> * H. Peter Anvin<hpa@zytor.com>  wrote:
+>
+>> Doing an "allmodconfig" on i386:
+>>
+>> drivers/built-in.o: In function `aat2870_bl_remove':
+>> /home/hpa/kernel/git.test/drivers/video/backlight/aat2870_bl.c:217:
+>> undefined reference to `backlight_device_unregister'
+>> drivers/built-in.o: In function `aat2870_bl_probe':
+>> /home/hpa/kernel/git.test/drivers/video/backlight/aat2870_bl.c:159:
+>> undefined reference to `backlight_device_register'
+>> /home/hpa/kernel/git.test/drivers/video/backlight/aat2870_bl.c:201:
+>> undefined reference to `backlight_device_unregister'
+>> make[2]: *** [.tmp_vmlinux1] Error 1
+>> make[1]: *** [sub-make] Error 2
+>> make[1]: Leaving directory `/home/hpa/kernel/git.test'
+>
+> The allmodconfig build is still broken upstream.
+>
+> Thanks,
+>
+> 	Ingo
