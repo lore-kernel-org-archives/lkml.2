@@ -1,36 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab1HECx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 22:53:29 -0400
-Received: from mga01.intel.com ([192.55.52.88]:43497 "EHLO mga01.intel.com"
+	id S1756201Ab1HEDfI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Aug 2011 23:35:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60686 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755924Ab1HECx2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 22:53:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,320,1309762800"; 
-   d="scan'208";a="38077252"
-From: "Yung, Winson W" <winson.w.yung@intel.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 4 Aug 2011 20:53:17 -0600
-Subject: Is there a way to offload everything from cpu0 to other cpus?
-Thread-Topic: Is there a way to offload everything from cpu0 to other cpus?
-Thread-Index: AcxTGtPEWzDRU2jwSE2juxtwg7sKlQ==
-Message-ID: <CAC4B8726E86A142B27A9E9A2F2F124701922F2855@rrsmsx505.amr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755943Ab1HEDfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Aug 2011 23:35:06 -0400
+Date: Fri, 5 Aug 2011 13:34:56 +1000
+From: NeilBrown <neilb@suse.de>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Josef Bacik <josef@redhat.com>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Subject: [PATCH] Restore 'fsync' functionality on block devices.
+Message-ID: <20110805133456.5aa0c568@notabene.brown>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, I would like to know whether it is possible to offload everything (kernel threads/user apps) to cpu1...x so that I can force cpu0 go into idle?
 
-I can affinity all the interrupt to a different cpu by playing with the /proc/irq/irqx/smp_affinity, how about everything else? 
+Commit 02c24a82187d5a628c68edfe71ae60dc135cd178:
 
-/Winson.
+  fs: push i_mutex and filemap_write_and_wait down into ->fsync() handlers
+
+broke fsync on block devices as it did not push the
+"filemap_write_and_wait" call down into blkdev_fsync.
+
+(it didn't push it down into ps3flash_flush either, but maybe there is
+a reason for that).
+
+So call filemap_write_and_wait from blkdev_fsync following the pattern
+that was originally in vfs_fsync_range.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Josef Bacik <josef@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index f286805..532fefe 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -386,8 +386,10 @@ int blkdev_fsync(struct file *filp, loff_t start, loff_t
+end, int datasync) {
+ 	struct inode *bd_inode = filp->f_mapping->host;
+ 	struct block_device *bdev = I_BDEV(bd_inode);
+-	int error;
++	int error, ret;
++
+ 
++	ret = filemap_write_and_wait_range(filp->f_mapping, start, end);
+ 	/*
+ 	 * There is no need to serialise calls to blkdev_issue_flush with
+ 	 * i_mutex and doing so causes performance issues with concurrent
+@@ -396,6 +398,8 @@ int blkdev_fsync(struct file *filp, loff_t start, loff_t
+end, int datasync) error = blkdev_issue_flush(bdev, GFP_KERNEL, NULL);
+ 	if (error == -EOPNOTSUPP)
+ 		error = 0;
++	if (ret)
++		return ret;
+ 
+ 	return error;
+ }
