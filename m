@@ -1,41 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab1HEUhE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 16:37:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45681 "EHLO mail.zytor.com"
+	id S1754072Ab1HEUlC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 16:41:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56353 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752563Ab1HEUhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 16:37:02 -0400
-Message-ID: <4E3C5460.90505@zytor.com>
-Date: Fri, 05 Aug 2011 13:36:48 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1753578Ab1HEUk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 16:40:59 -0400
+Date: Fri, 5 Aug 2011 16:40:40 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: a.p.zijlstra@chello.nl, rostedt@goodmis.org
+Cc: pjt@google.com, mingo@elte.hu, rth@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] jump label: Reduce the cycle count by changing the link order
+Message-ID: <20110805204040.GG2522@redhat.com>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: luto@mit.edu, x86@kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, lueckintel@yahoo.com,
-        kimwooyoung@gmail.com
-Subject: Re: New vsyscall emulation breaks JITs
-References: <20110805200945.GA14014@tassilo.jf.intel.com> <4E3C5154.2050307@zytor.com> <20110805202656.GI5782@one.firstfloor.org>
-In-Reply-To: <20110805202656.GI5782@one.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2011 01:26 PM, Andi Kleen wrote:
->> I have to say I believe that trying to JIT the vdso or vsyscall pages is
->> extremely dubious at best.  They are fundamentally different from normal
->> user space in that the kernel can muck with them any time, without
->> notifying userspace about it.  The other aspect of this is that this is
->> about the legacy vsyscall page, which we're trying to get rid of, partly
->> because of security problems.
-> 
-> There's clear evidence now you can't: it's used even by new binaries.
+In the course of testing jump labels for use with the CFS bandwidth controller,
+Paul Turner, discovered that using jump labels reduced the branch count and the
+instruction count, but did not reduce the cycle count or wall time.
 
-time() is not supported by vdso; this is a problem.  Getting rid of it
-is a long-term thing.
+I noticed that having the jump_label.o included in the kernel but not used in
+any way still caused this increase in cycle count and wall time. Thus, I moved
+jump_label.o in the kernel/Makefile, thus changing the link order, and
+presumably moving it out of hot icache areas. This brought down the cycle
+count/time as expected.
 
-	-hpa
+In addition to Paul's testing,  I've tested the patch using a single
+'static_branch()' in the getppid() path, and basically running tight loops of
+calls to getppid(). Here are my results for the branch disabled case:
+
+With jump labels turned on (CONFIG_JUMP_LABEL), branch disabled:
+
+ Performance counter stats for 'bash -c /tmp/getppid;true' (50 runs):
+
+     3,969,510,217 instructions             #	   0.864 IPC     ( +-0.000% )
+     4,592,334,954 cycles                     ( +-   0.046% )
+       751,634,470 branches                   ( +-   0.000% )
+
+        1.722635797  seconds time elapsed   ( +-   0.046% )
+
+Jump labels turned off (CONFIG_JUMP_LABEL not set), branch disabled:
+
+ Performance counter stats for 'bash -c /tmp/getppid;true' (50 runs):
+
+     4,009,611,846 instructions             #	   0.867 IPC     ( +-0.000% )
+     4,622,210,580 cycles                     ( +-   0.012% )
+       771,662,904 branches                   ( +-   0.000% )
+
+        1.734341454  seconds time elapsed   ( +-   0.022% )
+
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+Tested-by: Paul Turner <pjt@google.com>
+---
+ kernel/Makefile |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 2d64cfc..329dfcc 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -10,7 +10,7 @@ obj-y     = sched.o fork.o exec_domain.o panic.o printk.o \
+ 	    kthread.o wait.o kfifo.o sys_ni.o posix-cpu-timers.o mutex.o \
+ 	    hrtimer.o rwsem.o nsproxy.o srcu.o semaphore.o \
+ 	    notifier.o ksysfs.o pm_qos_params.o sched_clock.o cred.o \
+-	    async.o range.o jump_label.o
++	    async.o range.o
+ obj-y += groups.o
+ 
+ ifdef CONFIG_FUNCTION_TRACER
+@@ -107,6 +107,7 @@ obj-$(CONFIG_PERF_EVENTS) += events/
+ obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
+ obj-$(CONFIG_PADATA) += padata.o
+ obj-$(CONFIG_CRASH_DUMP) += crash_dump.o
++obj-$(CONFIG_JUMP_LABEL) += jump_label.o
+ 
+ ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
+ # According to Alan Modra <alan@linuxcare.com.au>, the -fno-omit-frame-pointer is
+-- 
+1.7.5.4
 
