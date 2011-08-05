@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756530Ab1HEWHP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 18:07:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46274 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752230Ab1HEWHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 18:07:11 -0400
-Message-ID: <4E3C6982.5050901@zytor.com>
-Date: Fri, 05 Aug 2011 15:06:58 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Andrew Lutomirski <luto@mit.edu>
-CC: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        lueckintel@yahoo.com, kimwooyoung@gmail.com
-Subject: Re: New vsyscall emulation breaks JITs
-References: <20110805200945.GA14014@tassilo.jf.intel.com> <4E3C5154.2050307@zytor.com> <CAObL_7E3yOHtx9N3qd2UXVn+h6tACoNjekRhiMcHrzb=Mu4q8A@mail.gmail.com> <4E3C571C.1070903@zytor.com> <20110805205222.GK5782@one.firstfloor.org> <CAObL_7G2TqBVXvfuh2GPNteYBNoc8_s398KS+jPOPQYAhPHz0Q@mail.gmail.com> <20110805212153.GL5782@one.firstfloor.org> <CAObL_7GuauANLqM9DnbYnhRuOsnqE+fTEoM10qCfjc40eFHaUA@mail.gmail.com>
-In-Reply-To: <CAObL_7GuauANLqM9DnbYnhRuOsnqE+fTEoM10qCfjc40eFHaUA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756633Ab1HEWKm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 18:10:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38941 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab1HEWKm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 18:10:42 -0400
+Subject: Re: [PATCH] jump label: Reduce the cycle count by changing the link
+ order
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jason Baron <jbaron@redhat.com>
+Cc: rostedt@goodmis.org, pjt@google.com, mingo@elte.hu, rth@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Sat, 06 Aug 2011 00:10:09 +0200
+In-Reply-To: <20110805204040.GG2522@redhat.com>
+References: <20110805204040.GG2522@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1312582209.28695.51.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2011 02:26 PM, Andrew Lutomirski wrote:
+On Fri, 2011-08-05 at 16:40 -0400, Jason Baron wrote:
+> In the course of testing jump labels for use with the CFS bandwidth controller,
+> Paul Turner, discovered that using jump labels reduced the branch count and the
+> instruction count, but did not reduce the cycle count or wall time.
 > 
-> For a boot time switch, it might be nicer to just switch between the
-> current int 0xcc sequence and the older
+> I noticed that having the jump_label.o included in the kernel but not used in
+> any way still caused this increase in cycle count and wall time. Thus, I moved
+> jump_label.o in the kernel/Makefile, thus changing the link order, and
+> presumably moving it out of hot icache areas. This brought down the cycle
+> count/time as expected.
 > 
-> mov cx, 0x<magic>
-> int 0xcc
-> ret
-> 
-> sequence.
-> 
-> That way there's a ret in the vsyscall page but no syscall instruction.
-> 
+> In addition to Paul's testing,  I've tested the patch using a single
+> 'static_branch()' in the getppid() path, and basically running tight loops of
+> calls to getppid(). Here are my results for the branch disabled case:
 
-Refresh my memory... we have what... six legacy vsyscall entry points?
-We could, hypothetically, burn six interrupt vectors with them.  If we
-get them from the 0x40-0x4f range, then they are harmless standalone REX
-prefixes (and INC/DEC instructions in 32-bit mode.)
+Those numbers don't seem to be pre/post patch, but merely
+CONFIG_JUMP_LABEL=y/n so they don't tell us what the patch does.
 
-The issue with pin as far as I understand is that it's executing an
-instruction at a different address and expecting it to have identical
-semantics, which is an incorrect assumption for trapping instructions
-(consider doing that for something like SYSENTER!).
+Anyway, should we put a comment in the Makefile telling us we should
+keep jump_label.o last?
 
-Now, as far as RET is concerned I don't see how it does anything that
-the INT instruction doesn't do already; ANY of the emulated instructions
-have to return to the address on the stack in order to work at all, OR
-they can return to the next address and do RET.
-
-	-hpa
+Also, pjt mentioned on IRC that mucking about with link order is
+something google is not unfamiliar with.. could we use some sort of
+runtime feedback to generate linker layout maps or so? That seems like a
+more scalable version than randomly mucking about with Makefiles :-)
