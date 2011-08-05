@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428Ab1HEEje (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 00:39:34 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:39914 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750751Ab1HEEjc (ORCPT
+	id S1753200Ab1HEEty (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 00:49:54 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:33313 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132Ab1HEEts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 00:39:32 -0400
-From: Tao Ma <tm@tao.ma>
-To: linux-kernel@vger.kernel.org
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Roland Dreier <roland@purestorage.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: [PATCH] block: Make rq_affinity = 1 work as expected.
-Date: Fri,  5 Aug 2011 12:39:10 +0800
-Message-Id: <1312519150-3261-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.4.1
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 114.251.86.0 authed with tm@tao.ma}
+	Fri, 5 Aug 2011 00:49:48 -0400
+Date: Fri, 5 Aug 2011 05:49:45 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: NeilBrown <neilb@suse.de>
+Cc: Josef Bacik <josef@redhat.com>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Subject: [PATCH] Restore 'fsync' functionality on block devices.
+Message-ID: <20110805044945.GR2203@ZenIV.linux.org.uk>
+References: <20110805133456.5aa0c568@notabene.brown>
+ <20110805034859.GQ2203@ZenIV.linux.org.uk>
+ <20110805143509.33769ce3@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110805143509.33769ce3@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tao Ma <boyu.mt@taobao.com>
+On Fri, Aug 05, 2011 at 02:35:09PM +1000, NeilBrown wrote:
 
-Commit 5757a6d76c introduced a new rq_affinity = 2 so as to make
-the request completed in the __make_request cpu. But it makes the
-old rq_affinity = 1 not work any more. The root cause is that
-if the 'cpu' and 'req->cpu' is in the same group and cpu != req->cpu,
-ccpu will be the same as group_cpu, so the completion will be
-excuted in the 'cpu' not 'group_cpu'.
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=da5aa861bea09197e6ae4d7c46618616064891e4
+> 
+> gives me 
+>   
+> 404 - Unknown commit object 
+> 
+> (as does a 'git show').
+> 
+> But I'll take your word for it that it is on it's way.
 
-This patch fix problem by simpling removing group_cpu and the codes
-are more explicit now. If ccpu == cpu, we complete in cpu, otherwise
-we raise_blk_irq to ccpu.
+Charming... the diff between what's on hera and what's on git.kernel.org
+is not small -
+ arch/arm/kernel/process.c |    2 +-
+ arch/ia64/kernel/efi.c    |    2 +-
+ arch/sh/kernel/idle.c     |    2 +-
+ drivers/dma/dmaengine.c   |    4 +-
+ drivers/dma/ioat/dma_v3.c |    8 ++--
+ drivers/dma/ioat/pci.c    |   11 +++++
+ fs/block_dev.c            |    4 ++
+ fs/namei.c                |   17 +++-----
+ include/linux/pci_ids.h   |   10 +++++
+ include/linux/posix_acl.h |   74 +++++++++++++-----------------------
+ kernel/futex.c            |   54 ++++++++++++++++++++------
+ kernel/lockdep.c          |   37 +++++++++---------
+ mm/slab.c                 |   92 ++++++++++++++++++++++++++++++++++----------
+ 13 files changed, 196 insertions(+), 121 deletions(-)
 
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Roland Dreier <roland@purestorage.com>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- block/blk-softirq.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+and the latest is actually commit 24f0eed2668b059e847ff145848ddacb75419acc
+Merge: 8b6b462 3567866
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Thu Aug 4 16:44:40 2011 -1000
 
-diff --git a/block/blk-softirq.c b/block/blk-softirq.c
-index 475fab8..487addc 100644
---- a/block/blk-softirq.c
-+++ b/block/blk-softirq.c
-@@ -103,7 +103,7 @@ static struct notifier_block __cpuinitdata blk_cpu_notifier = {
- 
- void __blk_complete_request(struct request *req)
- {
--	int ccpu, cpu, group_cpu = NR_CPUS;
-+	int ccpu, cpu;
- 	struct request_queue *q = req->q;
- 	unsigned long flags;
- 
-@@ -117,14 +117,12 @@ void __blk_complete_request(struct request *req)
- 	 */
- 	if (test_bit(QUEUE_FLAG_SAME_COMP, &q->queue_flags) && req->cpu != -1) {
- 		ccpu = req->cpu;
--		if (!test_bit(QUEUE_FLAG_SAME_FORCE, &q->queue_flags)) {
-+		if (!test_bit(QUEUE_FLAG_SAME_FORCE, &q->queue_flags))
- 			ccpu = blk_cpu_to_group(ccpu);
--			group_cpu = blk_cpu_to_group(cpu);
--		}
- 	} else
- 		ccpu = cpu;
- 
--	if (ccpu == cpu || ccpu == group_cpu) {
-+	if (ccpu == cpu) {
- 		struct list_head *list;
- do_local:
- 		list = &__get_cpu_var(blk_cpu_done);
--- 
-1.6.3.3.334.g916e1.dirty
-
+(with several more merges between git.kernel.org tip and this one)
