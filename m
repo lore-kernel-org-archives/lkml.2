@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab1HEVrG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 17:47:06 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:53554 "HELO
+	id S1756781Ab1HEVrX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 17:47:23 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:53864 "HELO
 	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752177Ab1HEVrD (ORCPT
+	with SMTP id S1752177Ab1HEVrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 17:47:03 -0400
+	Fri, 5 Aug 2011 17:47:21 -0400
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/ETeACeN7EDdtUnph68EgZ22xgzGvS7zfT5pu8Yf
-	C1Xq2Gz2YB7ZWn
+X-Provags-ID: V01U2FsdGVkX1+cCv4BMiOcFj6/ew8Qn0V+mdA2lNCshnBH+HMY7c
+	4HTCYjh9wKT5qo
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 To: linux-fbdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 5/6] viafb: simplify viafb_fill_crtc_timing
-Date: Fri,  5 Aug 2011 22:05:42 +0000
-Message-Id: <1312581943-4235-1-git-send-email-FlorianSchandinat@gmx.de>
+Subject: [PATCH 6/6] viafb: remove 640x480-60 CRT special case
+Date: Fri,  5 Aug 2011 22:05:58 +0000
+Message-Id: <1312581958-4273-1-git-send-email-FlorianSchandinat@gmx.de>
 X-Mailer: git-send-email 1.6.3.2
 In-Reply-To: <cover.1312578946.git.FlorianSchandinat@gmx.de>
 References: <cover.1312578946.git.FlorianSchandinat@gmx.de>
@@ -25,82 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the first argument is just part of the structure passed as the
-second argument there is no need for it at all.
+The timing for 640x480-60 was handled different than all others.
+This patch changes this by changing the blanking start and end.
+The reason for this is that I can't find any reason for the old
+behaviour and it was not consistent anyway as the special case for
+LCD did not always trigger as the LCD code does not use this
+function and it did trigger regardless of whether the display set is
+CRT or LCD but only based whether any DVI/LCD device exists.
+There are no negative effects observed for CRT or DVI devices.
 
 Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 ---
- drivers/video/via/dvi.c |    6 ++----
- drivers/video/via/hw.c  |   12 ++++++------
- drivers/video/via/hw.h  |    4 ++--
- 3 files changed, 10 insertions(+), 12 deletions(-)
+ drivers/video/via/hw.c      |   14 --------------
+ drivers/video/via/viamode.c |    2 +-
+ 2 files changed, 1 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/video/via/dvi.c b/drivers/video/via/dvi.c
-index b1f3647..c7ff5c0 100644
---- a/drivers/video/via/dvi.c
-+++ b/drivers/video/via/dvi.c
-@@ -190,12 +190,10 @@ void viafb_dvi_set_mode(struct VideoModeTable *mode, int mode_bpp,
- 	if ((maxPixelClock != 0) && (desirePixelClock > maxPixelClock)) {
- 		rb_mode = viafb_get_rb_mode(mode->crtc[0].crtc.hor_addr,
- 			mode->crtc[0].crtc.ver_addr);
--		if (rb_mode) {
-+		if (rb_mode)
- 			mode = rb_mode;
--			pDviTiming = rb_mode->crtc;
--		}
- 	}
--	viafb_fill_crtc_timing(pDviTiming, mode, mode_bpp / 8, set_iga);
-+	viafb_fill_crtc_timing(mode, mode_bpp / 8, set_iga);
- }
- 
- /* Sense DVI Connector */
 diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
-index 8b4bdf5..2050fb8 100644
+index 2050fb8..c5e7833 100644
 --- a/drivers/video/via/hw.c
 +++ b/drivers/video/via/hw.c
-@@ -1467,9 +1467,10 @@ void viafb_set_vclock(u32 clk, int set_iga)
- 	via_write_misc_reg_mask(0x0C, 0x0C); /* select external clock */
- }
+@@ -1488,20 +1488,6 @@ void viafb_fill_crtc_timing(struct VideoModeTable *video_mode, int bpp_byte,
+ 	}
  
--void viafb_fill_crtc_timing(struct crt_mode_table *crt_table,
--	struct VideoModeTable *video_mode, int bpp_byte, int set_iga)
-+void viafb_fill_crtc_timing(struct VideoModeTable *video_mode, int bpp_byte,
-+	int set_iga)
- {
-+	struct crt_mode_table *crt_table = video_mode->crtc;
- 	struct display_timing crt_reg;
- 	int i;
- 	int index = 0;
-@@ -1911,11 +1912,10 @@ int viafb_setmode(struct VideoModeTable *vmode_tbl, int video_bpp,
- 	if (viafb_CRT_ON) {
- 		if (viafb_SAMM_ON &&
- 			viaparinfo->shared->iga2_devices & VIA_CRT) {
--			viafb_fill_crtc_timing(crt_timing1, vmode_tbl1,
--				video_bpp1 / 8, IGA2);
-+			viafb_fill_crtc_timing(vmode_tbl1, video_bpp1 / 8,
-+				IGA2);
- 		} else {
--			viafb_fill_crtc_timing(crt_timing, vmode_tbl,
--				video_bpp / 8,
-+			viafb_fill_crtc_timing(vmode_tbl, video_bpp / 8,
- 				(viaparinfo->shared->iga1_devices & VIA_CRT)
- 				? IGA1 : IGA2);
- 		}
-diff --git a/drivers/video/via/hw.h b/drivers/video/via/hw.h
-index 267c669..1fd8d98 100644
---- a/drivers/video/via/hw.h
-+++ b/drivers/video/via/hw.h
-@@ -637,8 +637,8 @@ extern int viafb_LCD_ON;
- extern int viafb_DVI_ON;
- extern int viafb_hotplug;
- 
--void viafb_fill_crtc_timing(struct crt_mode_table *crt_table,
--	struct VideoModeTable *video_mode, int bpp_byte, int set_iga);
-+void viafb_fill_crtc_timing(struct VideoModeTable *video_mode, int bpp_byte,
-+	int set_iga);
- 
- void viafb_set_vclock(u32 CLK, int set_iga);
- void viafb_load_reg(int timing_value, int viafb_load_reg_num,
+ 	crt_reg = crt_table[index].crtc;
+-
+-	/* Mode 640x480 has border, but LCD/DFP didn't have border. */
+-	/* So we would delete border. */
+-	if ((viafb_LCD_ON | viafb_DVI_ON)
+-	    && video_mode->crtc[0].crtc.hor_addr == 640
+-	    && video_mode->crtc[0].crtc.ver_addr == 480
+-	    && refresh == 60) {
+-		/* The border is 8 pixels. */
+-		crt_reg.hor_blank_start = crt_reg.hor_blank_start - 8;
+-
+-		/* Blanking time should add left and right borders. */
+-		crt_reg.hor_blank_end = crt_reg.hor_blank_end + 16;
+-	}
+-
+ 	crt_reg.hor_blank_end += crt_reg.hor_blank_start;
+ 	crt_reg.hor_sync_end += crt_reg.hor_sync_start;
+ 	crt_reg.ver_blank_end += crt_reg.ver_blank_start;
+diff --git a/drivers/video/via/viamode.c b/drivers/video/via/viamode.c
+index 58df74e..8a9f4fc 100644
+--- a/drivers/video/via/viamode.c
++++ b/drivers/video/via/viamode.c
+@@ -281,7 +281,7 @@ static struct crt_mode_table CRTM640x480[] = {
+ 	/*r_rate,hsp,vsp */
+ 	/*HT,  HA,  HBS, HBE, HSS, HSE, VT,  VA,  VBS, VBE, VSS, VSE */
+ 	{REFRESH_60, M640X480_R60_HSP, M640X480_R60_VSP,
+-	 {800, 640, 648, 144, 656, 96, 525, 480, 480, 45, 490, 2} },
++	 {800, 640, 640, 160, 656, 96, 525, 480, 480, 45, 490, 2} },
+ 	{REFRESH_75, M640X480_R75_HSP, M640X480_R75_VSP,
+ 	 {840, 640, 640, 200, 656, 64, 500, 480, 480, 20, 481, 3} },
+ 	{REFRESH_85, M640X480_R85_HSP, M640X480_R85_VSP,
 -- 
 1.6.3.2
 
