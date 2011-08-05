@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428Ab1HEVNG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 17:13:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:54065 "EHLO
+	id S1756437Ab1HEVN6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 17:13:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:45326 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab1HEVND (ORCPT
+	with ESMTP id S1755624Ab1HEVNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 17:13:03 -0400
-X-Authority-Analysis: v=1.1 cv=sbbt6Wn8j+VvNVI1Ftt/uHhinWyuFt+R57MN9Ty2Tys= c=1 sm=0 a=vhdKIqpQuCYA:10 a=YWPKDhu-NCoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=FntdOQR-RHBcUzVSkPAA:9 a=rjX_AomzS2HLdhQJOXIA:7 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Fri, 5 Aug 2011 17:13:11 -0400
+X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=vhdKIqpQuCYA:10 a=tUHetEmO2DkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=YimlknLUPSSqWrFjD8sA:9 a=35JZ6TLa5EGcTK3IpucA:7 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20110805205921.909038487@goodmis.org>
+Message-Id: <20110805211302.119690302@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Fri, 05 Aug 2011 16:59:21 -0400
+Date: Fri, 05 Aug 2011 16:59:27 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
@@ -20,92 +20,123 @@ Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>
-Subject: [RFC][PATCH 0/8] Having perf use libparsevent.a
+Subject: [RFC][PATCH 6/8] perf/events: Add flag to produce nsec output
+References: <20110805205921.909038487@goodmis.org>
+Content-Disposition: inline; filename=0006-perf-events-Add-flag-to-produce-nsec-output.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+From: Steven Rostedt <srostedt@redhat.com>
 
-I've spent the week working on getting libparsevent.a working with
-perf. After several rewrites, hacking in both perf and the trace-cmd
-code, and breaking both beyond repair, I finally got to a point that
-it just works.
+libparsevent library prints out in usecs but perf wants to print out
+in nsecs. Add a flag that lets the user decide to print out in usec
+or nsec times.
 
-The library was originally going to be called libperf.so, but after
-talking with Arnaldo, he wants the functionality of the libraries
-separated more, not combined all in one binary. As this code deals
-only with the parsing the event formats and creating a way to read
-the binary data from it, we both agreed that it is best to keep its
-original name that was in trace-cmd and call it libparsevent.so.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/lib/events/event-parse.c      |   15 ++++++++++++---
+ tools/lib/events/event-parse.h      |   12 ++++++++++++
+ tools/perf/util/trace-event-parse.c |    1 +
+ 3 files changed, 25 insertions(+), 3 deletions(-)
 
-Note, because perf installs in the user's ~/bin and I did not want to
-make it a requirement to add ~/bin to LD_LIBRARY_PATH, I kept the
-library as a .a that is linked directly into perf.
+diff --git a/tools/lib/events/event-parse.c b/tools/lib/events/event-parse.c
+index 3b4fac3..dff66ad 100644
+--- a/tools/lib/events/event-parse.c
++++ b/tools/lib/events/event-parse.c
+@@ -3935,15 +3935,16 @@ void pevent_print_event(struct pevent *pevent, struct trace_seq *s,
+ 	struct event_format *event;
+ 	unsigned long secs;
+ 	unsigned long usecs;
++	unsigned long nsecs;
+ 	const char *comm;
+ 	void *data = record->data;
+ 	int type;
+ 	int pid;
+ 	int len;
++	int p;
+ 
+ 	secs = record->ts / NSECS_PER_SEC;
+-	usecs = record->ts - secs * NSECS_PER_SEC;
+-	usecs = (usecs + 500) / NSECS_PER_USEC;
++	nsecs = record->ts - secs * NSECS_PER_SEC;
+ 
+ 	if (record->size < 0) {
+ 		do_warning("ug! negative record size %d", record->size);
+@@ -3968,7 +3969,15 @@ void pevent_print_event(struct pevent *pevent, struct trace_seq *s,
+ 	} else
+ 		trace_seq_printf(s, "%16s-%-5d [%03d]", comm, pid, record->cpu);
+ 
+-	trace_seq_printf(s, " %5lu.%06lu: %s: ", secs, usecs, event->name);
++	if (pevent->flags & PEVENT_NSEC_OUTPUT) {
++		usecs = nsecs;
++		p = 9;
++	} else {
++		usecs = (nsecs + 500) / NSECS_PER_USEC;
++		p = 6;
++	}
++
++	trace_seq_printf(s, " %5lu.%0*lu: %s: ", secs, p, usecs, event->name);
+ 
+ 	/* Space out the event names evenly. */
+ 	len = strlen(event->name);
+diff --git a/tools/lib/events/event-parse.h b/tools/lib/events/event-parse.h
+index 2e0222d..8852827 100644
+--- a/tools/lib/events/event-parse.h
++++ b/tools/lib/events/event-parse.h
+@@ -334,6 +334,10 @@ enum pevent_func_arg_type {
+ 	PEVENT_FUNC_ARG_MAX_TYPES
+ };
+ 
++enum pevent_flag {
++	PEVENT_NSEC_OUTPUT		= 1,	/* output in NSECS */
++};
++
+ struct cmdline;
+ struct cmdline_list;
+ struct func_map;
+@@ -373,6 +377,7 @@ struct pevent {
+ 	struct printk_list *printklist;
+ 	unsigned int printk_count;
+ 
++
+ 	struct event_format **events;
+ 	int nr_events;
+ 	struct event_format **sort_events;
+@@ -397,6 +402,8 @@ struct pevent {
+ 
+ 	int test_filters;
+ 
++	int flags;
++
+ 	struct format_field *bprint_ip_field;
+ 	struct format_field *bprint_fmt_field;
+ 	struct format_field *bprint_buf_field;
+@@ -408,6 +415,11 @@ struct pevent {
+ 	struct event_format *last_event;
+ };
+ 
++static inline void pevent_set_flag(struct pevent *pevent, int flag)
++{
++	pevent->flags |= flag;
++}
++
+ static inline unsigned short
+ __data2host2(struct pevent *pevent, unsigned short data)
+ {
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index ca3e5cd..f9604f1 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -47,6 +47,7 @@ int read_trace_init(int file_bigendian, int host_bigendian)
+ 	perf_pevent = pevent_alloc();
+ 	pevent = perf_pevent;
+ 
++	pevent_set_flag(pevent, PEVENT_NSEC_OUTPUT);
+ 	pevent_set_file_bigendian(pevent, file_bigendian);
+ 	pevent_set_host_bigendian(pevent, host_bigendian);
+ 
+-- 
+1.7.5.4
 
-In the beginning, I tried to work with the library code within the
-tools/perf directory, and because of the CFLAGS of perf, it made
-compiling the library code very nasty (namely the -Wswitch-enum).
-I also talked with Arnaldo and Frederic about the placement of this
-code, and we all agreed that tools/lib/events is a good place to
-put it.
 
-By keeping the code separate from perf, made the transition from
-trace-cmd to tools much easier. I've wasted too many days trying to
-get other ways working, and I don't want to rewrite perf to do so.
-
-Thus, this is what I ended up with.
-
-This patch set just gets the libparsevent.a/so working with perf.
-New code would be required to get it packaged for distributions to
-ship as a library itself. Once it gets there, I'll work on getting
-this code to work with code like latencytrace.
-
-Anyway, this is still in the RFC phase. Lets hear what people have to
-say.
-
-(some of the patches are quite large as they either insert full
-files or remove them, and probably will not make LKML due to the
-size constraint.)
-
-This patches can be viewed from:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-tip/perf/parse-events
-
-Head SHA1: 781d261ff8241243173cf996ceb068cb19bd5874
-
-
-Julia Lawall (1):
-      perf/events: Correct size given to memset
-
-Steven Rostedt (6):
-      perf: Separate out trace-cmd parse-events from perf files
-      tools/events: Add files to create libparsevent.a
-      perf: Build libparsevent.a
-      events: Update tools/lib/events to work with perf
-      perf: Have perf use the new libparsevent.a library
-      perf/events: Add flag to produce nsec output
-
-Tom Zanussi (1):
-      perf/events: Add flag/symbol format_flags
-
-----
- tools/lib/events/Makefile                          |  303 ++
- tools/lib/events/event-parse.c                     | 4991 ++++++++++++++++++++
- tools/lib/events/event-parse.h                     |  804 ++++
- tools/lib/events/event-utils.h                     |   80 +
- tools/lib/events/parse-filter.c                    | 2262 +++++++++
- tools/lib/events/parse-utils.c                     |  110 +
- tools/lib/events/trace-seq.c                       |  200 +
- tools/perf/Makefile                                |   17 +-
- tools/perf/builtin-kmem.c                          |    6 +-
- tools/perf/builtin-lock.c                          |   26 +-
- tools/perf/builtin-sched.c                         |   42 +-
- tools/perf/builtin-script.c                        |    2 +-
- .../util/scripting-engines/trace-event-python.c    |   16 +-
- tools/perf/util/trace-event-info.c                 |    4 +-
- tools/perf/util/trace-event-parse.c                | 3188 +------------
- tools/perf/util/trace-event-read.c                 |   34 +-
- tools/perf/util/trace-event.h                      |  268 +-
- 17 files changed, 9070 insertions(+), 3283 deletions(-)
