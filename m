@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab1HEIGq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 04:06:46 -0400
-Received: from trinity.fluff.org ([89.16.178.74]:53366 "EHLO trinity.fluff.org"
+	id S1755047Ab1HEIHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 04:07:22 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54786 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751132Ab1HEIGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 04:06:43 -0400
-Date: Fri, 5 Aug 2011 09:06:20 +0100
-From: Ben Dooks <ben-linux@fluff.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Chris Ball <cjb@laptop.org>,
-        Liam Girdwood <lrg@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/3] irq: If an IRQ is a GPIO, request and configure it
-Message-ID: <20110805080620.GE28651@trinity.fluff.org>
-References: <1312498820-2275-1-git-send-email-swarren@nvidia.com> <1312498820-2275-2-git-send-email-swarren@nvidia.com> <20110805000148.GB13321@opensource.wolfsonmicro.com> <74CDBE0F657A3D45AFBB94109FB122FF049F171EC1@HQMAIL01.nvidia.com> <20110805053510.GA16956@opensource.wolfsonmicro.com>
+	id S1754895Ab1HEIHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 04:07:19 -0400
+Date: Fri, 5 Aug 2011 10:05:31 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, xen-devel@lists.xensource.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        virtualization@lists.linux-foundation.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        linux-next@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Xen-devel] Re: linux-next: Tree for July 25 (xen)
+Message-ID: <20110805080531.GA8052@elte.hu>
+References: <20110725162542.39ea8d8cbd51604523635c1a@canb.auug.org.au>
+ <20110725144629.b752bf14.rdunlap@xenotime.net>
+ <20110804193534.GB12729@elte.hu>
+ <20110804195539.GA11198@dumpdata.com>
+ <20110804131516.c4da6595.rdunlap@xenotime.net>
+ <20110804223259.GB4370@dumpdata.com>
+ <20110804224020.GA21492@dumpdata.com>
+ <4E3B3117.5050308@xenotime.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110805053510.GA16956@opensource.wolfsonmicro.com>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@trinity.fluff.org
-X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4E3B3117.5050308@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -1.9
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.9 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.1 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Randy Dunlap <rdunlap@xenotime.net> wrote:
 
-On Fri, Aug 05, 2011 at 06:35:11AM +0100, Mark Brown wrote:
-> On Thu, Aug 04, 2011 at 08:53:34PM -0700, Stephen Warren wrote:
+> On 08/04/11 15:40, Konrad Rzeszutek Wilk wrote:
+> > On Thu, Aug 04, 2011 at 06:32:59PM -0400, Konrad Rzeszutek Wilk wrote:
+> >>>>> These build failures are still triggering upstream:
+> >>>>>
+> >>>>>  arch/x86/xen/trace.c:44:2: error: array index in initializer not of integer type
+> >>>>>  arch/x86/xen/trace.c:44:2: error: (near initialization for ‘xen_hypercall_names’)
+> >>>>>  arch/x86/xen/trace.c:45:1: error: ‘__HYPERVISOR_arch_4’ undeclared here (not in a function)
+> >>>>>  arch/x86/xen/trace.c:45:2: error: array index in initializer not of integer type
+> >>>>>  arch/x86/xen/trace.c:45:2: error: (near initialization for ‘xen_hypercall_names’)
+> >>>>
+> >>>> Oh, that I haven't seen. Can you send me the .config for that please.
+> >>>
+> >>> You can't be trying very hard then.  I see lots of these (but no,
+> >>
+> >> Ah, I am getting it now. Thanks for reporting it.
+> > 
+> > This should do the trick:
 > 
-> > Well, things break. This is essentially the problem I was describing in
-> > the PATCH 0 email, just with a slightly different motivation.
-> 
-> There's a bunch of existing code using that idiom.
-> 
-> > I suppose that an alternative here would be to simply ignore any errors
-> > from gpio_request. This might have the benefit of removing the need for
-> > the other two patches I posted in the series. However, it seems a little
-> > dirty; one benefit of the IRQ code calling gpio_request and honoring
-> > errors would be to detect when some completely unrelated code had a bug
-> > and had called gpio_request on the GPIO before. Such detection would be
-> > non-existent if we don't error out on gpio_request. Perhaps some mechanism
-> > is needed to indicate that the driver has explicitly already called
-> > gpio_request for a legitimate shared purpose, and only then ignore
-> > errors?
-> 
-> But it's not a bug to use a GPIO as an IRQ source, otherwise we wouldn't
-> have gpio_to_irq() in the first place.  Feels like we need a backchannel
-> between gpiolib and the IRQ code to do this.  Or perhaps the drivers
-> that implement this should be taking care of setting up the GPIO mode?
+> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-Converting GPIOs to IRQs is really useful. The reverse mapping is not as
-easy, as when go NR->CHIP->to_irq() method, but the reverse is not being
-tracked at the moment, which makes life difficult.
+That patch did the trick here too:
 
-I would say that setting the interrupt should deal with all the necessary
-configuration to get that interrupt working. In the case of pretty much all
-of the SoCs I have been involved with have always set the GPIO's function
-to allow the interrupt to pass through.
+Acked-by: Ingo Molnar <mingo@elte.hu>
 
-Whilst there's a case for having this being done either in the core IRQ
-code (may break for everyone else) we could quite easily do this in the
-GPIO driver.
+Thanks,
 
-As a note, we are actuallly trying to remove the irq_to_gpio() calls, as
-they are not widely used across the kernel, very sparsely and badly
-implemented across ARM and are very rarely used (the IIO system is the
-only system currently doing this, for some fairly nasty reasons)
-
--- 
-Ben Dooks, ben@fluff.org, http://www.fluff.org/ben/
-
-Large Hadron Colada: A large Pina Colada that makes the universe disappear.
-
+	Ingo
