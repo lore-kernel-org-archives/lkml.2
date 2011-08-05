@@ -1,73 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab1HEWPp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 18:15:45 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37603 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004Ab1HEWPn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 18:15:43 -0400
-From: Stephen Warren <swarren@nvidia.com>
-To: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 1/2] gpio/tegra: Remove use of irq_to_gpio
-Date: Fri,  5 Aug 2011 16:15:33 -0600
-Message-Id: <1312582534-10871-1-git-send-email-swarren@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1756437Ab1HEW0q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 18:26:46 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:34370 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755449Ab1HEW0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 18:26:44 -0400
+Date: Fri, 5 Aug 2011 15:26:41 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
+Message-ID: <20110805222641.GB2245@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110801154636.GA2096@zod.bos.redhat.com>
+ <CA+5PVA5EZWHv_tuzA22twGQ7rZZ2zhqi1zs6OiFbpORiiYbzMg@mail.gmail.com>
+ <20110804140438.GT13065@linux.vnet.ibm.com>
+ <20110804150603.GL2096@zod.bos.redhat.com>
+ <20110804162658.GZ13065@linux.vnet.ibm.com>
+ <20110804173145.GM2096@zod.bos.redhat.com>
+ <CA+5PVA7R+H4MfU=war6G3ZRYEi6nZ=vVZ3B8g-Ag6pOdA4cTBw@mail.gmail.com>
+ <20110805065646.GC13065@linux.vnet.ibm.com>
+ <20110805142245.GP2096@zod.bos.redhat.com>
+ <20110805170805.GB22164@somewhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110805170805.GB22164@somewhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq_to_gpio is being removed. Replace the only use of that API by
-the ARM Tegra sub-architecture.
+On Fri, Aug 05, 2011 at 07:08:08PM +0200, Frederic Weisbecker wrote:
+> On Fri, Aug 05, 2011 at 10:22:45AM -0400, Josh Boyer wrote:
+> > On Thu, Aug 04, 2011 at 11:56:46PM -0700, Paul E. McKenney wrote:
+> > > > > I could be missing something obvious, but I don't see a way to avoid
+> > > > > using GFP_KERNEL without a lot of rip-up in the rest of the init path.
+> > > > 
+> > > > As an aside, I bisected this back to:
+> > > > 
+> > > > e8f7c70f44f sched: Make sleeping inside spinlock detection working in
+> > > > !CONFIG_PREEMPT
+> > > 
+> > > OK, added Frederic on CC.
+> > > 
+> > > > However, that doesn't seem all that helpful.  The
+> > > > CONFIG_DEBUG_SPINLOCK_SLEEP option later got renamed to
+> > > > DEBUG_ATOMIC_SLEEP, and all it's doing is selecting PREEMPT_COUNT.  At
+> > > > first glance, it seems this commit just allowed an issue that's been
+> > > > around for a while (benign or otherwise) to finally show up.
+> > > > 
+> > > > (The Fedora kernel configs have CONFIG_PREEMPT_VOLUNTARY set, but not
+> > > > CONFIG_PREEMPT so PREEMPT_COUNT wasn't getting selected until this
+> > > > option did so.)
+> > > 
+> > > Understood.  So my question is "what is the real way to fix this?"
+> > > Within RCU, I would probably wrapper the calls to set_need_resched()
+> > > so that it checks for the scheduler being fully alive.  Except for the
+> > > call from rcu_enter_nohz(), of course -- if that one is called before
+> > > the scheduler is ready, then that is a bug that needs to be fixed.
+> > 
+> > By scheduler being fully alive, do you mean when rcu_scheduler_starting
+> > is called?  Or do you mean the actual scheduler, because sched_init is
+> > called well before any of this happens.
+> > 
+> > > Nevertheless, I am wondering if all of this isn't really papering over
+> > > some real problem somewhere.  The way we get to this place is from people
+> > > registering RCU callbacks during early boot, which is OK in and of itself,
+> > > at least in moderation.  But if someone is expecting those callbacks to be
+> > > invoked before the scheduler is fully set up and running multiple tasks,
+> > > they are going to be disappointed.
+> > 
+> > Is there a way to dump what callbacks have been registered?  As far as I
+> > can see, we call rcu_check_callbacks unconditionally when a timer
+> > interrupt is taken and that calls rcu_pending unconditionally as well.
+> > Before that, rcu_init is called which eventually sets up the per-cpu
+> > data via rcu_init_percpu_data and that sets rdp->qs_pending = 1.
+> > Until a quiescent state is reached __rcu_pending is going to try and
+> > force it, which is where the set_need_resched is called.
+> > 
+> > Basically, I took what you said about wrapping set_need_resched and came
+> > up with the patch below.  It gets rid of the oops from pidmap_init, but
+> > I need to test it a bit more.  Would be happy to have feedback.
+> > 
+> > josh
+> > 
+> > ---
+> > 
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index ba06207..8c6cb6e 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -1681,8 +1681,14 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+> >  		rdp->n_rp_qs_pending++;
+> >  		if (!rdp->preemptible &&
+> >  		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
+> > -				 jiffies))
+> > -			set_need_resched();
+> > +				 jiffies)) {
+> > +			/* Make sure we're ready to mark the task as needing
+> > + 			 * rescheduling otherwise we can trigger oopes early
+> > + 			 * in the init path
+> > + 			 */
+> > +			if (rcu_scheduler_active)
+> > +				set_need_resched();
+> 
+> What about we avoid setting rdp->qs_pending = 1 for the CPU
+> that handles the boot?
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-This patch depends on changes in Grant's gpio/next tree: at least the
-move from arch/arm/mach-tegra/gpio.c to drivers/gpio/gpio-tegra.c.
+That sounds promising -- only checked at the beginning of a grace period,
+so not too much overhead.  In contrast, __rcu_pending() is called
+multiple times per transition to dyntick-idle state.
 
- drivers/gpio/gpio-tegra.c |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
+I will take a look at this.
 
-diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
-index 747eb40..7b9663b 100644
---- a/drivers/gpio/gpio-tegra.c
-+++ b/drivers/gpio/gpio-tegra.c
-@@ -331,6 +331,7 @@ static struct lock_class_key gpio_lock_class;
- static int __init tegra_gpio_init(void)
- {
- 	struct tegra_gpio_bank *bank;
-+	int gpio;
- 	int i;
- 	int j;
- 
-@@ -352,14 +353,17 @@ static int __init tegra_gpio_init(void)
- 
- 	gpiochip_add(&tegra_gpio_chip);
- 
--	for (i = INT_GPIO_BASE; i < (INT_GPIO_BASE + TEGRA_NR_GPIOS); i++) {
--		bank = &tegra_gpio_banks[GPIO_BANK(irq_to_gpio(i))];
-+	for (gpio = 0; gpio < TEGRA_NR_GPIOS; gpio++) {
-+		int irq = gpio_to_irq(gpio);
-+		/* No validity check; all Tegra GPIOs are valid IRQs */
- 
--		irq_set_lockdep_class(i, &gpio_lock_class);
--		irq_set_chip_data(i, bank);
--		irq_set_chip_and_handler(i, &tegra_gpio_irq_chip,
-+		bank = &tegra_gpio_banks[GPIO_BANK(gpio)];
-+
-+		irq_set_lockdep_class(irq, &gpio_lock_class);
-+		irq_set_chip_data(irq, bank);
-+		irq_set_chip_and_handler(irq, &tegra_gpio_irq_chip,
- 					 handle_simple_irq);
--		set_irq_flags(i, IRQF_VALID);
-+		set_irq_flags(irq, IRQF_VALID);
- 	}
- 
- 	for (i = 0; i < ARRAY_SIZE(tegra_gpio_banks); i++) {
--- 
-1.7.0.4
+							Thanx, Paul
 
+> > +		}
+> >  	} else if (rdp->qs_pending && rdp->passed_quiesc) {
+> >  		rdp->n_rp_report_qs++;
+> >  		return 1;
