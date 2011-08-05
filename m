@@ -1,154 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab1HEOZK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 10:25:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44580 "EHLO mx1.redhat.com"
+	id S1756732Ab1HEOf5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 10:35:57 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:53802 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753237Ab1HEOZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 10:25:06 -0400
-Message-ID: <4E3BFD3D.9070207@redhat.com>
-Date: Fri, 05 Aug 2011 11:25:01 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1753687Ab1HEOfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 10:35:53 -0400
+Date: Fri, 5 Aug 2011 07:34:47 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Dmitry Artamonow <mad_soft@inbox.ru>
+CC: "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Ian Dobson <i.dobson@planet-ian.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: add caseopen detection to w83627ehf driver
+Message-ID: <20110805143447.GA2538@ericsson.com>
+References: <1312549243-7503-1-git-send-email-mad_soft@inbox.ru>
 MIME-Version: 1.0
-To: Nils Carlson <nils.carlson@ericsson.com>
-CC: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Samuel Gabrielsson <samuel.gabrielsson@gmail.com>
-Subject: Re: [PATCH] i7core_edac: Add scrubbing support v2
-References: <1312531750-14933-1-git-send-email-nils.carlson@ericsson.com>
-In-Reply-To: <1312531750-14933-1-git-send-email-nils.carlson@ericsson.com>
-X-Enigmail-Version: 1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1312549243-7503-1-git-send-email-mad_soft@inbox.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 05-08-2011 05:09, Nils Carlson escreveu:
-> From: Samuel Gabrielsson <samuel.gabrielsson@gmail.com>
+On Fri, Aug 05, 2011 at 09:00:43AM -0400, Dmitry Artamonow wrote:
+> Export caseopen alarm status into userspace for
+> Winbond w83627* chips and also implement alarm clear knob.
 > 
-> Changes since v1:
-> Get the DCLK value from DMI, use the datasheet 800Mhz as
-> a default if a good value can't be found.
-> Make sure computations can't overflow.
+> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+> ---
+>  drivers/hwmon/w83627ehf.c |   66 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 66 insertions(+), 0 deletions(-)
 > 
-> Add scrubbing support for i7core Xeon's.
+> Tested on board with W83627DHG-P chip and also checked against datasheets
+> for other W83627 chips. NCT6775F / NCT6776F are currently excluded as I
+> haven't found datasheets for them online and can't check if they have the
+> same registers for caseopen detection. If anyone having access to these
+> datasheets can check that caseopen detection is read from 4th bit of
+> register 42h (Bank 0), and cleared by writing 1 and then 0 into bit 7 of
+> register 46h (Bank 0), then I'll throw away those 'if'-s and resend updated
+> patch.
+> 
+Hi Dmitry,
 
-I've already applied your version 1 patch on my tree:
-	http://git.kernel.org/?p=linux/kernel/git/mchehab/edac.git;a=summary
+NCT6775F / NCT6776F support the same bits. NCT6776F has a second set of bits.
+42/4 and 46/7 is CASEOPEN0, 42/6 and 46/6 is CASEOPEN1. Register 46/7 (and 46/6
+for NCT6776F) is self-clearing, meaning it is not necessary to write 0,
+but that should not matter.
 
-Could you please rebase your patch over the top of my tree?
+Couple of additional comments below.
 
-It had a trouble on it, as it assumes that all Nehalem types of processor are capable of
-doing memory scrubbing. However, according with Intel public datasheets, only Xeon55xx,
-Xeon 56xx and i7-900 support the Scrubber registers. So, I had to apply the enclosed
-patch to the series.
+> diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
+> index f2b377c..696e5d6 100644
+> --- a/drivers/hwmon/w83627ehf.c
+> +++ b/drivers/hwmon/w83627ehf.c
+> @@ -197,6 +197,9 @@ static const u16 W83627EHF_REG_TEMP_CONFIG[] = { 0, 0x152, 0x252, 0 };
+>  #define W83627EHF_REG_ALARM2		0x45A
+>  #define W83627EHF_REG_ALARM3		0x45B
+>  
+> +#define W83627EHF_REG_CASEOPEN_DET	0x42 /* SMI STATUS #2, bit 4 */
+> +#define W83627EHF_REG_CASEOPEN_CLR	0x46 /* SMI MASK #3, bit 7 */
+> +
+>  /* SmartFan registers */
+>  #define W83627EHF_REG_FAN_STEPUP_TIME 0x0f
+>  #define W83627EHF_REG_FAN_STEPDOWN_TIME 0x0e
+> @@ -468,6 +471,7 @@ struct w83627ehf_data {
+>  	s16 temp_max[9];
+>  	s16 temp_max_hyst[9];
+>  	u32 alarms;
+> +	u8 caseopen;
+>  
+>  	u8 pwm_mode[4]; /* 0->DC variable voltage, 1->PWM variable duty cycle */
+>  	u8 pwm_enable[4]; /* 1->manual
+> @@ -873,6 +877,9 @@ static struct w83627ehf_data *w83627ehf_update_device(struct device *dev)
+>  			       (w83627ehf_read_value(data,
+>  					W83627EHF_REG_ALARM3) << 16);
+>  
+> +		data->caseopen = !!(w83627ehf_read_value(data,
+> +					W83627EHF_REG_CASEOPEN_DET) & 0x10);
+> +
+If you use !!, you should define caseopen as bool for consistency.
+And then you don't need !!  since the conversion to 0/1 will be done automatically.
 
-PS.: kernel.org mirrors are a taking some time to sync the trees those days.
-So, maybe you're not able to see the last changes on my tree yet.
+Even better would be to just save the register value and enable support 
+for the second set of caseopen bits for NCT6776F (ie do the !!() in
+the show function).
 
--
+>  		data->last_updated = jiffies;
+>  		data->valid = 1;
+>  	}
+> @@ -1654,6 +1661,47 @@ show_vid(struct device *dev, struct device_attribute *attr, char *buf)
+>  }
+>  static DEVICE_ATTR(cpu0_vid, S_IRUGO, show_vid, NULL);
+>  
+> +
+> +/* Case open detection */
+> +
+> +static ssize_t
+> +show_caseopen(struct device *dev, struct device_attribute *attr, char *buf)
+> +{
+> +	struct w83627ehf_data *data = w83627ehf_update_device(dev);
+> +	unsigned int reg;
+> +	mutex_lock(&data->update_lock);
+> +	reg = w83627ehf_read_value(data, 0x42);
+> +	mutex_unlock(&data->update_lock);
+> +	return sprintf(buf, "%d\n", data->caseopen);
+> +}
+> +
+> +static ssize_t
+> +store_caseopen_clear(struct device *dev, struct device_attribute *attr,
+> +			const char *buf, size_t count)
+> +{
+> +	struct w83627ehf_data *data = dev_get_drvdata(dev);
+> +	unsigned long val;
+> +	unsigned int reg;
+> +
+> +	if (strict_strtoul(buf, 10, &val) || val != 0)
+> +		return -EINVAL;
+> +
+> +	mutex_lock(&data->update_lock);
+> +	reg = w83627ehf_read_value(data, W83627EHF_REG_CASEOPEN_CLR);
+> +	w83627ehf_write_value(data, W83627EHF_REG_CASEOPEN_CLR, reg | 0x80);
+> +	reg = w83627ehf_read_value(data, W83627EHF_REG_CASEOPEN_CLR);
+> +	w83627ehf_write_value(data, W83627EHF_REG_CASEOPEN_CLR, reg & ~0x80);
+> +	reg = w83627ehf_read_value(data, W83627EHF_REG_CASEOPEN_CLR);
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Date: Thu, 4 Aug 2011 21:35:27 -0300
-[PATCH] i7core_edac: Don't enable memory scrubbing for Xeon 35xx
+I am a bit lost here. What are those additional two reads for ?
+Seems to be unnecessary.
 
-Xeon 35xx doesn't mention memory scrub. It seems that only Xeon 55xx
-and above supports it.
+> +	data->valid = 0;	/* Force cache refresh */
+> +	mutex_unlock(&data->update_lock);
+> +
+> +	return count;
+> +}
+> +
+> +static struct sensor_device_attribute sda_caseopen =
+> +	SENSOR_ATTR(intrusion0_alarm, S_IWUSR | S_IRUGO, show_caseopen,
+> +			store_caseopen_clear , 12);
+> +
+Formatting: s/ , /, /
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+>  /*
+>   * Driver and device management
+>   */
+> @@ -1663,6 +1711,7 @@ static void w83627ehf_device_remove_files(struct device *dev)
+>  	/* some entries in the following arrays may not have been used in
+>  	 * device_create_file(), but device_remove_file() will ignore them */
+>  	int i;
+> +	struct w83627ehf_sio_data *sio_data = dev->platform_data;
+>  	struct w83627ehf_data *data = dev_get_drvdata(dev);
+>  
+>  	for (i = 0; i < ARRAY_SIZE(sda_sf3_arrays); i++)
+> @@ -1710,6 +1759,13 @@ static void w83627ehf_device_remove_files(struct device *dev)
+>  		device_remove_file(dev, &sda_temp_type[i].dev_attr);
+>  	}
+>  
+> +	/*
+> +	 * FIXME: if NCT chips have same caseopen registers as w83627 ones
+> +	 * this check can be removed
+> +	 */
+> +	if (!(sio_data->kind == nct6775 || sio_data->kind == nct6776))
+> +		device_remove_file(dev, &sda_caseopen.dev_attr);
+> +
+Please remove the check.
 
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index 0c02486..aeb01f4 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -263,7 +263,7 @@ struct i7core_pvt {
- 	unsigned long	rdimm_ce_count[NUM_CHANS][MAX_DIMMS];
- 	int		rdimm_last_ce_count[NUM_CHANS][MAX_DIMMS];
- 
--	unsigned int	is_registered;
-+	bool		is_registered, enable_scrub;
- 
- 	/* mcelog glue */
- 	struct edac_mce		edac_mce;
-@@ -1487,8 +1487,10 @@ static int mci_bind_devs(struct mem_ctl_info *mci,
- 	struct i7core_pvt *pvt = mci->pvt_info;
- 	struct pci_dev *pdev;
- 	int i, func, slot;
-+	char *family;
- 
--	pvt->is_registered = 0;
-+	pvt->is_registered = false;
-+	pvt->enable_scrub  = false;
- 	for (i = 0; i < i7core_dev->n_devs; i++) {
- 		pdev = i7core_dev->pdev[i];
- 		if (!pdev)
-@@ -1504,9 +1506,37 @@ static int mci_bind_devs(struct mem_ctl_info *mci,
- 			if (unlikely(func > MAX_CHAN_FUNC))
- 				goto error;
- 			pvt->pci_ch[slot - 4][func] = pdev;
--		} else if (!slot && !func)
-+		} else if (!slot && !func) {
- 			pvt->pci_noncore = pdev;
--		else
-+
-+			/* Detect the processor family */
-+			switch (pdev->device) {
-+			case PCI_DEVICE_ID_INTEL_I7_NONCORE:
-+				family = "Xeon 35xx/ i7core";
-+				pvt->enable_scrub = false;
-+				break;
-+			case PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE_ALT:
-+				family = "i7-800/i5-700";
-+				pvt->enable_scrub = false;
-+				break;
-+			case PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE:
-+				family = "Xeon 34xx";
-+				pvt->enable_scrub = false;
-+				break;
-+			case PCI_DEVICE_ID_INTEL_I7_NONCORE_ALT:
-+				family = "Xeon 55xx";
-+				pvt->enable_scrub = true;
-+				break;
-+			case PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE_REV2:
-+				family = "Xeon 56xx / i7-900";
-+				pvt->enable_scrub = true;
-+				break;
-+			default:
-+				family = "unknown";
-+				pvt->enable_scrub = false;
-+			}
-+			debugf0("Detected a processor type %s\n", family);
-+		} else
- 			goto error;
- 
- 		debugf0("Associated fn %d.%d, dev = %p, socket %d\n",
-@@ -1515,7 +1545,7 @@ static int mci_bind_devs(struct mem_ctl_info *mci,
- 
- 		if (PCI_SLOT(pdev->devfn) == 3 &&
- 			PCI_FUNC(pdev->devfn) == 2)
--			pvt->is_registered = 1;
-+			pvt->is_registered = true;
- 	}
- 
- 	return 0;
-@@ -2060,7 +2090,8 @@ static void i7core_unregister_mci(struct i7core_dev *i7core_dev)
- 		__func__, mci, &i7core_dev->pdev[0]->dev);
- 
- 	/* Disable scrubrate setting */
--	disable_sdram_scrub_setting(mci);
-+	if (pvt->enable_scrub)
-+		disable_sdram_scrub_setting(mci);
- 
- 	/* Disable MCE NMI handler */
- 	edac_mce_unregister(&pvt->edac_mce);
-@@ -2136,7 +2167,8 @@ static int i7core_register_mci(struct i7core_dev *i7core_dev)
- 	mci->edac_check = i7core_check_error;
- 
- 	/* Enable scrubrate setting */
--	enable_sdram_scrub_setting(mci);
-+	if (pvt->enable_scrub)
-+		enable_sdram_scrub_setting(mci);
- 
- 	/* add this new MC control structure to EDAC's list of MCs */
- 	if (unlikely(edac_mc_add_mc(mci))) {
+>  	device_remove_file(dev, &dev_attr_name);
+>  	device_remove_file(dev, &dev_attr_cpu0_vid);
+>  }
+> @@ -2261,6 +2317,16 @@ static int __devinit w83627ehf_probe(struct platform_device *pdev)
+>  			goto exit_remove;
+>  	}
+>  
+> +	/*
+> +	 * FIXME: if NCT chips have same caseopen registers as w83627 ones
+> +	 * this check can be removed
+> +	 */
+> +	if (!(sio_data->kind == nct6775 || sio_data->kind == nct6776)) {
+> +		err = device_create_file(dev, &sda_caseopen.dev_attr);
+> +		if (err)
+> +			goto exit_remove;
+> +	}
+> +
+Please remove the check.
+
+>  	err = device_create_file(dev, &dev_attr_name);
+>  	if (err)
+>  		goto exit_remove;
+> -- 
+> 1.7.5.1.300.gc565c
+> 
