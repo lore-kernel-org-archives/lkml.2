@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab1HEFn3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 01:43:29 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:36614 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754708Ab1HEFn2 (ORCPT
+	id S1756311Ab1HEFqX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 01:46:23 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:38248 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754841Ab1HEFqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 01:43:28 -0400
-Message-ID: <4E3B82FD.1040500@xenotime.net>
-Date: Thu, 04 Aug 2011 22:43:25 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Cong Wang <amwang@redhat.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH -next] drivers/base/inode.c: let vmstat_text be optional
-References: <20110804145834.3b1d92a9eeb8357deb84bf83@canb.auug.org.au> <20110804152211.ea10e3e7.rdunlap@xenotime.net> <4E3B57C3.80203@redhat.com>
-In-Reply-To: <4E3B57C3.80203@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Fri, 5 Aug 2011 01:46:22 -0400
+From: xiyou.wangcong@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, WANG Cong <xiyou.wangcong@gmail.com>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
+Subject: [Patch] cris: add arch/cris/include/asm/serial.h
+Date: Fri,  5 Aug 2011 13:46:00 +0800
+Message-Id: <1312523160-30345-1-git-send-email-xiyou.wangcong@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/11 19:38, Cong Wang wrote:
-> 于 2011年08月05日 06:22, Randy Dunlap 写道:
->> From: Randy Dunlap<rdunlap@xenotime.net>
->>
->> vmstat_text is only available when PROC_FS or SYSFS is enabled.
->> This causes build errors in drivers/base/node.c when they are
->> both disabled:
->>
->> drivers/built-in.o: In function `node_read_vmstat':
->> node.c:(.text+0x10e28f): undefined reference to `vmstat_text'
->>
->> Rather than litter drivers/base/node.c with #ifdef/#endif around
->> the affected lines of code, add macros for optional sysdev
->> attributes so that those lines of code will be ignored, without
->> using #ifdef/#endif in the .c file(s).  I.e., the ifdeffery
->> is done only in a header file with sysdev_create_file_optional()
->> and sysdev_remove_file_optional().
->>
-> 
-> This looks ugly for me, because other sysfs files here are not optional
-> only due to that they don't rely on vmstat_text.
-> 
-> I still think my approach to fix this is better, that is, introducing
-> a new Kconfig for drivers/base/node.c which depends on CONFIG_SYSFS.
+This fixes the following build errors:
 
-Did you post a patch for that?  I must have missed it.
+src/drivers/tty/serial/8250_early.c:160: error: 'BASE_BAUD' undeclared (first use in this function): 1 errors in 1 logs
+        v3.0/cris/cris-allyesconfig
+src/drivers/tty/serial/8250_early.c:160: error: (Each undeclared identifier is reported only once: 1 errors in 1 logs
+        v3.0/cris/cris-allyesconfig
+src/drivers/tty/serial/8250_early.c:160: error: for each function it appears in.): 1 errors in 1 logs
+        v3.0/cris/cris-allyesconfig
+src/drivers/tty/serial/8250_early.c:37:24: error: asm/serial.h: No such file or directory: 1 errors in 1 logs
+        v3.0/cris/cris-allyesconfig
 
-thanks,
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+I am not sure if (1843200 / 16) is suitable for cris, but
+most of other arch's define it as this value.
+
+Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+
+---
+diff --git a/arch/cris/include/asm/serial.h b/arch/cris/include/asm/serial.h
+new file mode 100644
+index 0000000..7380876
+--- /dev/null
++++ b/arch/cris/include/asm/serial.h
+@@ -0,0 +1,10 @@
++#ifndef _ASM_SERIAL_H
++#define _ASM_SERIAL_H
++
++/*
++ * This assumes you have a 1.8432 MHz clock for your UART.
++ */
++#define BASE_BAUD (1843200 / 16)
++
++#endif /* _ASM_SERIAL_H */
++
