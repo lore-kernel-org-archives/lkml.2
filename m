@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485Ab1HEKUP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 06:20:15 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:54583 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab1HEKUO (ORCPT
+	id S1756534Ab1HEKUp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 06:20:45 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:63984 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753967Ab1HEKUn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 06:20:14 -0400
-Date: Fri, 05 Aug 2011 03:19:53 -0700 (PDT)
-Message-Id: <20110805.031953.239005825626336696.davem@davemloft.net>
-To: mingo@elte.hu
-Cc: jpirko@redhat.com, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, REVERT] Re: [forcedeth bug] Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110805101625.GA11502@elte.hu>
-References: <20110801151308.GA31256@elte.hu>
-	<20110804215354.GA7056@elte.hu>
-	<20110805101625.GA11502@elte.hu>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 05 Aug 2011 03:19:54 -0700 (PDT)
+	Fri, 5 Aug 2011 06:20:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <1312515303-17169-1-git-send-email-tgih.jun@samsung.com>
+References: <1312515303-17169-1-git-send-email-tgih.jun@samsung.com>
+Date: Fri, 5 Aug 2011 11:20:42 +0100
+Message-ID: <CAFbHwiT3p3pSC1q4xQRYkLzSG7tPuGLXB4KKwC-8HWMmtF+fhA@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: Fix DDR mode support.
+From: Will Newton <will.newton@gmail.com>
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: linux-mmc@vger.kernel.org, cjb@laptop.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@elte.hu>
-Date: Fri, 5 Aug 2011 12:16:25 +0200
+On Fri, Aug 5, 2011 at 4:35 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+> Host driver can't get a hint of DDR mode through ios->ddr flag anymore.
+> ios->timing is currently used to inform DDR mode as a substitute.
+> And capability of MMC_CAP_MMC_HIGHSPEED is added for DDR support.
+>
+> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+> ---
+>  drivers/mmc/host/dw_mmc.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index d65511e..b412a1d 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -699,7 +699,7 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+>        }
+>
+>        /* DDR mode set */
+> -       if (ios->ddr) {
+> +       if (ios->timing == MMC_TIMING_UHS_DDR50) {
+>                regs = mci_readl(slot->host, UHS_REG);
+>                regs |= (0x1 << slot->id) << 16;
+>                mci_writel(slot->host, UHS_REG, regs);
+> @@ -1646,7 +1646,7 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>                        mmc->caps |= MMC_CAP_4_BIT_DATA;
+>
+>        if (host->pdata->quirks & DW_MCI_QUIRK_HIGHSPEED)
+> -               mmc->caps |= MMC_CAP_SD_HIGHSPEED;
+> +               mmc->caps |= MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
+>
+>  #ifdef CONFIG_MMC_DW_IDMAC
+>        mmc->max_segs = host->ring_size;
+> --
+> 1.7.0.4
 
-> I have reverted the two forcedeth commits:
-> 
->   0891b0e08937: forcedeth: fix vlans
->   3326c784c9f4: forcedeth: do vlan cleanup
-> 
-> and also reverted two vlan commits that the pre-cleanup driver 
-> depended on:
-> 
->   ffcf9b767293: vlan: kill vlan_gro_frags and vlan_gro_receive
->   7890a5b9cbfd: vlan: kill ndo_vlan_rx_register
-> 
-> and this finally gave me a working forcedeth driver. I've attached 
-> the working revert below.
-
-Jiri please diagnose this immediately otherwise I will have to apply
-Ingo's reverts.
-
-Ingo has been reporting this regression for days and you haven't said
-anything.  That's not acceptable.
+Acked-by: Will Newton <will.newton@imgtec.com>
