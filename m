@@ -1,51 +1,551 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751315Ab1HEE3y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 00:29:54 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:51407 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751014Ab1HEE3x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 00:29:53 -0400
-X-Sasl-enc: g5jUUeF1/dwiNUb9TEdW+4xzzmuiMf4N6Dx6R6kRq5/e 1312518592
-Date: Thu, 4 Aug 2011 21:27:30 -0700
-From: Greg KH <greg@kroah.com>
-To: Wouter Verhelst <w@uter.be>
-Cc: paul.clements@steeleye.com, linux-kernel@vger.kernel.org
-Subject: Re: [Nbd] [PATCH v2] nbd: nbd sysfs framework
-Message-ID: <20110805042730.GA25389@kroah.com>
-References: <4e3b190f.NjLPBhXLsVSgFxi+%paul.clements@steeleye.com>
- <20110805014752.GJ4109@grep.be>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110805014752.GJ4109@grep.be>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752061Ab1HEEbP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 00:31:15 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43986 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750766Ab1HEEbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 00:31:12 -0400
+Date: Fri, 5 Aug 2011 14:31:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for Aug 5
+Message-Id: <20110805143103.f9388ca143560d73caac60c1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__5_Aug_2011_14_31_03_+1000_CIXacsmcyx72sGmk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 05, 2011 at 03:47:52AM +0200, Wouter Verhelst wrote:
-> On Thu, Aug 04, 2011 at 06:11:27PM -0400, paul.clements@steeleye.com wrote:
-> > diff --git a/Documentation/ABI/testing/sysfs-block-nbd b/Documentation/ABI/testing/sysfs-block-nbd
-> > new file mode 100644
-> > index 0000000..3728d9f
-> > --- /dev/null
-> > +++ b/Documentation/ABI/testing/sysfs-block-nbd
-> > @@ -0,0 +1,8 @@
-> > +What:		/sys/block/nbd<id>/nbd/pid
-> > +Date:		August 2011
-> > +Contact:	Paul Clements <paul.clements@steeleye.com>
-> > +Description:
-> > +		The pid file is read-only and specifies the pid of the
-> > +		caller of NBD_DO_IT ioctl (normally this is the nbd-client).
-> > +		The pid will be zero if the nbd connection is not
-> > +		currently established.
-> 
-> That's different from current behaviour: in the current implementation,
-> the absense of a connection is signalled by the absense of the PID file,
-> rather than the contents being zero. Dunno whether that change is
-> intentional, but I thought I'd check before changing nbd-client code...
+--Signature=_Fri__5_Aug_2011_14_31_03_+1000_CIXacsmcyx72sGmk
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The current behavior should not change, so that would be a bug and yet
-another reason to reject this patch :)
+Hi all,
+
+[The kernel.org mirroring is running slowly today]
+
+Just in case anyone needs reminding:  Please do not add anything destined
+for v3.2 into linux-next included trees until after v3.1-rc1.
+
+The powerpc allyesconfig build (at least) fails today.
+
+Changes since 20110803:
+
+Linus tree gained a build failure (on arm and sh) for which I reverted a
+commit (the revert was in my fixes tree).
+
+The watchdog tree lost its conflict.
+
+The devicetree tree lost its build failure but gained a conflict against
+Linus' tree.
+
+The akpm tree lost its build fix.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 200 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging arm-lpae/for-next
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgalloc.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/proc-fns.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/tlb.h
+CONFLICT (content): Merge conflict in arch/arm/mm/context.c
+CONFLICT (content): Merge conflict in arch/arm/mm/proc-v7.S
+Merging arm-soc/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-exynos4/pm.c
+CONFLICT (content): Merge conflict in arch/arm/mach-imx/mm-imx25.c
+CONFLICT (content): Merge conflict in arch/arm/mach-imx/mm-imx31.c
+CONFLICT (content): Merge conflict in arch/arm/mach-imx/mm-imx35.c
+CONFLICT (content): Merge conflict in arch/arm/mach-mx5/mm.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/cm-regbits-44xx.h
+Merging at91/at91-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-msm/io.c
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-exynos4/Kconfig
+CONFLICT (content): Merge conflict in arch/arm/mach-exynos4/mach-smdkc210.c
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging openrisc/for-upstream
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+Merging ceph/for-next
+CONFLICT (content): Merge conflict in fs/ceph/export.c
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/dev
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging of-pci/of-pci
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging docs/docs-move
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging powertools/tools-test
+Merging cpupowerutils/master
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging iscsi-target/for-next
+Merging slave-dma/next
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging l2-mtd/master
+CONFLICT (content): Merge conflict in drivers/mtd/maps/lantiq-flash.c
+CONFLICT (content): Merge conflict in drivers/mtd/maps/pxa2xx-flash.c
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+CONFLICT (content): Merge conflict in drivers/mmc/host/sdhci-esdhc-imx.c
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging suspend/linux-next
+Merging apm/for-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+CONFLICT (content): Merge conflict in drivers/of/base.c
+Merging spi/spi/next
+Merging gpio/gpio/next
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging kvm/linux-next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen/upstream/xen
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging namespace/master
+Merging regmap/for-next
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+Merging staging/staging-next
+Merging bkl-config/config
+Merging tmem/linux-next
+Merging writeback/next
+Merging arm-dt/devicetree/arm-next
+Merging scsi-post-merge/merge-base:master
+Merging moduleh/module.h-split
+CONFLICT (content): Merge conflict in drivers/dma/ste_dma40.c
+CONFLICT (content): Merge conflict in drivers/staging/dt3155v4l/dt3155v4l.c
+Applying: dm: use export.h instead of module.h where possible
+Applying: block: bsg-lib.c needs export.h not module.h
+Applying: power: max8998_charger.c needs module.h
+Applying: regulator: aat2870 needs module.h
+Applying: power_supply: max8997_charger.c need to include module.h
+$ git checkout akpm
+Applying: init_fault_attr_dentries() is used to export fault_attr via debug=
+fs.  But
+CONFLICT (content): Merge conflict in include/linux/fault-inject.h
+Applying: As the comment explains, the intention of the code is to clear the
+Applying: 1. 26c4caea "don't allow duplicate entries in listener mode"
+CONFLICT (content): Merge conflict in kernel/taskstats.c
+Applying: When send_cpu_listeners() finds the orphaned listener it marks it=
+ as
+Applying: The current hyper-optimized functions are overkill if you simply =
+want to
+Applying: Fix new kernel-doc warning in fs/dcache.c:
+Applying: Expand root=3DPARTUUID=3DUUID syntax to support selecting a root =
+partition by
+Applying: This patch makes two changes:
+Applying: Update kernel-parameters.txt to point users to the authoritative =
+comment
+Applying: Update the module parameters when platform data is used.  This me=
+ans that
+Applying: __GFP_OTHER_NODE is used for NUMA allocations on behalf of other =
+nodes.
+Applying: On thread exit shm_exit_ns() is called, it uses shm_ids(ns).rw_mu=
+tex.  It
+Applying: Because of x86-implement-strict-user-copy-checks-for-x86_64.patch
+Applying: When no floppy is found the module code can be released while a t=
+imer
+Applying: kernel/fork.c:267: error: implicit declaration of function
+Applying: arch/cris/arch-v10/drivers/sync_serial.c:628: error: 'ret' undecl=
+ared (first use in this function)
+Applying: arch/cris/arch-v10/drivers/sync_serial.c:961: error: conflicting =
+types for 'sync_serial_ioctl'
+Applying: arch/cris/arch-v10/kernel/irq.c:239: error: implicit declaration =
+of function 'kgdb_init'
+Applying: lockdep_init_map() only initializes parts of lockdep_map and trig=
+gers
+Applying: The parameter's origin type is long.  On an i386 architecture, it=
+ can
+Applying: Add support for Aspire 1410 BIOS v1.3314.  Fixes the following er=
+ror:
+Applying: This makes the iris driver use the platform API, so it is properl=
+y exposed
+Applying: On x86_32 casting the unsigned int result of get_random_int() to =
+long may
+Applying: This new driver replaces the old PCEngines Alix 2/3 LED driver wi=
+th a new
+Applying: Cc: Ed Wildgoose <git@wildgooses.com>
+Applying: Replace the bubble sort in sanitize_e820_map() with a call to the=
+ generic
+Applying: The x86 timer interrupt handler is the only handler not traced in=
+ the
+Applying: The current interrupt traces from irq_handler_entry and irq_handl=
+er_exit
+Applying: Don't allow everybody to use a modem.
+Applying: The address limit is already set in flush_old_exec() so this
+Applying: A call to va_copy() should always be followed by a call to va_end=
+() in the
+Applying: Don't dereference em if it's NULL or an error pointer.
+Applying: When doing a single register write we use work_buf for both the r=
+egister
+Applying: Some messing with error codes to return 0 on out id's and match
+Applying: fb_set_suspend() must be called with the console semaphore held, =
+which
+Applying: hwmon was using an idr with a NULL pointer, so convert to an
+Applying: A straightforward looking use of idr for a device id.
+Applying: Unless I'm very much missing something these tests are intended t=
+o check
+Applying: The address limit is already set in flush_old_exec() so this
+Applying: The address limit is already set in flush_old_exec() so this
+Applying: backlight_device_register() returns ERR_PTR() on error.
+Applying: 1. current implementation tests wrong value for setting aat2870_b=
+l->max_current.
+Applying: i386 allmodconfig:
+Applying: Add new check (assert_init) to make sure objects are initialized =
+and
+Applying: del_timer_sync() calls debug_object_assert_init() to assert that =
+a timer
+Applying: ext4_{set,clear}_bit() is defined as __test_and_{set,clear}_bit_l=
+e() for
+Applying: The dqc_bitmap field of struct ocfs2_local_disk_chunk is 32-bit a=
+ligned,
+Applying: The address limit is already set in flush_old_exec() so those cal=
+ls to
+Applying: When do pci remove/rescan on system that have more iommus, got
+Applying: The current implementation of dmi_name_in_vendors() is an invitat=
+ion to
+Applying: For headers that get exported to userland and make use of u32 sty=
+le
+Applying: Fix sparse warnings of right shift bigger than source value size:
+Applying: We leak in drivers/scsi/aacraid/commctrl.c::aac_send_raw_srb() :
+Applying: Some mangling of errors was necessary to maintain current interfa=
+ce.
+Applying: This does involve additional use of the spin lock in idr.c.  Is t=
+his an
+Applying: Instead of open coding this function use kstrtoul_from_user() dir=
+ectly.
+Applying: brd_make_request() always returns 0, which doesn't make much sens=
+e.
+Applying: The address limit is already set in flush_old_exec() so this assi=
+gnment of
+Applying: The basic idea behind cross memory attach is to allow MPI program=
+s doing
+Applying: - Add x86_64 specific wire up
+Applying: acct_isolated of compaction uses page_lru_base_type which returns=
+ only
+Applying: Change ISOLATE_XXX macro with bitwise isolate_mode_t type.  Norma=
+lly,
+Applying: In async mode, compaction doesn't migrate dirty or writeback page=
+s.  So,
+Applying: In __zone_reclaim case, we don't want to shrink mapped page.  Non=
+etheless,
+Applying: unmap_and_move() is one a big messy function.  Clean it up.
+Applying: radix_tree_tag_get()'s BUG (when it sees a tag after saw_unset_ta=
+g) was
+Applying: per-task block plug can reduce block queue lock contention and in=
+crease
+Applying: The tracing ring-buffer used this function briefly, but not anymo=
+re.
+Applying: After selecting a task to kill, the oom killer iterates all proce=
+sses and
+Applying: A patchset to extend tmpfs to MAX_LFS_FILESIZE by abandoning its =
+peculiar
+Applying: If swap entries are to be stored along with struct page pointers =
+in a
+CONFLICT (content): Merge conflict in mm/filemap.c
+Applying: The maximum size of a shmem/tmpfs file has been limited by the ma=
+ximum
+CONFLICT (content): Merge conflict in include/linux/shmem_fs.h
+CONFLICT (content): Merge conflict in mm/shmem.c
+Applying: While it's at its least, make a number of boring nitpicky cleanup=
+s to
+CONFLICT (content): Merge conflict in mm/shmem.c
+Applying: Bring truncate.c's code for truncate_inode_pages_range() inline i=
+nto
+CONFLICT (content): Merge conflict in mm/shmem.c
+Applying: Disable the toy swapping implementation in shmem_writepage() - it=
+'s hard
+CONFLICT (content): Merge conflict in mm/shmem.c
+Applying: Convert shmem_unuse_inode() to use a lockless gang lookup of the =
+radix
+CONFLICT (content): Merge conflict in mm/shmem.c
+Applying: Convert shmem_getpage_gfp(), the engine-room of shmem, to expect =
+page or
+CONFLICT (content): Merge conflict in mm/shmem.c
+Applying: Remove mem_cgroup_shmem_charge_fallback(): it was only required w=
+hen we
+Applying: Convert shmem_writepage() to use shmem_delete_from_page_cache() t=
+o use
+Applying: But we've not yet removed the old swp_entry_t i_direct[16] from
+Applying: Remove PageSwapBacked (!page_is_file_cache) cases from
+Applying: Fix NULL dereference I introduced in mincore_page().
+CONFLICT (content): Merge conflict in mm/mincore.c
+Applying: We have already acknowledged that swapoff of a tmpfs file is slow=
+er than
+Applying: Make the radix_tree exceptional cases, mostly in filemap.c, clear=
+er.
+Applying: Expand the fs/Kconfig "help" info to clarify why it's a bad idea =
+to
+CONFLICT (content): Merge conflict in fs/Kconfig
+Applying: Expand the fs/Kconfig "help" info to clarify why you might need t=
+o select
+Applying: Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Applying: The current implementation of the /dev/hpet driver couples openin=
+g the
+Applying: smp_call_function() only lets all other CPUs execute a specific f=
+unction,
+Applying: auto_demotion_disable is called only for online CPUs.  For hotplu=
+gged
+Applying: Enabling DEBUG_STRICT_USER_COPY_CHECKS causes the following warni=
+ng:
+Applying: Strict user copy checks are only really supported on x86_32 even =
+though
+Applying: The help text for this config is duplicated across the x86, paris=
+c, and
+Applying: s/lib-/obj-/ for usercopy.o
+Applying: After an "unexpected" reboot, I found this Oops in my logs:
+Applying: In the move of the lis3 driver, the hp_accel.c file got dropped f=
+rom the
+Applying: Add axis correction for HP EliteBook 2730p.
+Applying: Add axis correction for HP EliteBook 8540w.
+Applying: Add axis correction for HP ProBook 6555b.
+Applying: Adapt the help text for CONFIG_HP_ACCEL to the move of
+Applying: Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
+Applying: Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
+Applying: Change exported functions to use the device given as parameter
+Applying: Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
+Applying: Add V2 of the LED driver for a single timer channel for the TPU h=
+ardware
+Applying: Add support for slice by 8 to existing crc32 algorithm.  Also mod=
+ify
+Applying: don't include asm/msr.h
+Applying: This is the one use of an ida that doesn't retry on receiving -EA=
+GAIN.
+Applying: One can get this information from minix/inode.c, but adding the
+Applying: Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+Applying: Force this on for -next/mm testing purposes.
+Applying: Add a proc_dointvec_bool() sysctl handler for cases where the inp=
+ut value
+Applying: Use the new proc_do_intvec_bool() handler for various boolean inp=
+uts.
+Applying: Add a proc_dointvec_unsigned() sysctl handler for positive value =
+cases.
+Applying: Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Applying: Use the new proc_do_intvec_unsigned() handler for various unsigne=
+d inputs.
+Applying: A default echo function has been provided so it is no longer an e=
+rror when
+Applying: This client driver allows you to use a GPIO pin as a source for P=
+PS
+Applying: remove unneeded cast of void*
+Applying: Straightforward.  As an aside, the ida_init calls are not needed =
+as far as
+Merging akpm
+
+--Signature=_Fri__5_Aug_2011_14_31_03_+1000_CIXacsmcyx72sGmk
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOO3IHAAoJEDMEi1NhKgbs13AH/2g1cDWqLnty3E/NbVUJkIXr
+fg9d9rvNlMwb4eq0HqZMNB1hANKbwz477DwK8lpZDGXGHzGCAv+X5ka/9fnmoOAO
+ay0IBle4HcnHlm3OwF284GShGkA2FFVK4HlygKJSHLvi9VtFLU9nwxAj8/p9vsmN
+lN4n4ZpS/dcCmUW82uw7vnut9hV/d0ZT9jiZLAfoQ8R/N3WbVRL3WB5NrrVNt5tf
+gFO5VHV24Cxz+kYDJUH1RpSQUrUmNUlmSUYacvSu++EpO1o1pdmxdiEHvD1H40EY
+/8HP2lDPxAjxM9cYRzCdS31J0kA2o6Nv5+qmmTK+2qp2NRxWmMNal1EEX1fdBZs=
+=z4Y0
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__5_Aug_2011_14_31_03_+1000_CIXacsmcyx72sGmk--
