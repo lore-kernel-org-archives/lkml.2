@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab1HEHYq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 03:24:46 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:57435 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752724Ab1HEHYm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 03:24:42 -0400
-Date: Fri, 5 Aug 2011 09:24:40 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>,
-        John Bonesio <bones@secretlab.ca>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH] i2c: tegra: Add CONFIG_OF guards for device tree bits
-Message-ID: <20110805072440.GA15063@merkur.ravnborg.org>
-References: <1312527921.21955.2.camel@phoenix>
+	id S1755266Ab1HEHdK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 03:33:10 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:51887 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752724Ab1HEHdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 03:33:06 -0400
+X-ASG-Debug-ID: 1312529582-01de280c1e1238f0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E3B9CAC.7020802@fusionio.com>
+Date: Fri, 5 Aug 2011 09:33:00 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312527921.21955.2.camel@phoenix>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Tao Ma <tm@tao.ma>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Roland Dreier <roland@purestorage.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH] block: Make rq_affinity = 1 work as expected.
+References: <1312519150-3261-1-git-send-email-tm@tao.ma>
+X-ASG-Orig-Subj: Re: [PATCH] block: Make rq_affinity = 1 work as expected.
+In-Reply-To: <1312519150-3261-1-git-send-email-tm@tao.ma>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1312529582
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.70956
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 05, 2011 at 03:05:21PM +0800, Axel Lin wrote:
-> The device tree bits need to be protected by CONFIG_OF guards.
-> This patch fixes below build error with "make tegra_defconfig;make".
+On 2011-08-05 06:39, Tao Ma wrote:
+> From: Tao Ma <boyu.mt@taobao.com>
 > 
->   CC      drivers/i2c/busses/i2c-tegra.o
-> drivers/i2c/busses/i2c-tegra.c: In function 'tegra_i2c_probe':
-> drivers/i2c/busses/i2c-tegra.c:615: error: implicit declaration of function 'of_get_property'
-> drivers/i2c/busses/i2c-tegra.c:616: warning: assignment makes pointer from integer without a cast
-> make[3]: *** [drivers/i2c/busses/i2c-tegra.o] Error 1
-> make[2]: *** [drivers/i2c/busses] Error 2
-> make[1]: *** [drivers/i2c] Error 2
-> make: *** [drivers] Error 2
+> Commit 5757a6d76c introduced a new rq_affinity = 2 so as to make
+> the request completed in the __make_request cpu. But it makes the
+> old rq_affinity = 1 not work any more. The root cause is that
+> if the 'cpu' and 'req->cpu' is in the same group and cpu != req->cpu,
+> ccpu will be the same as group_cpu, so the completion will be
+> excuted in the 'cpu' not 'group_cpu'.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/i2c/busses/i2c-tegra.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-> index 0c6e840..1bfe85e 100644
-> --- a/drivers/i2c/busses/i2c-tegra.c
-> +++ b/drivers/i2c/busses/i2c-tegra.c
-> @@ -548,7 +548,6 @@ static int tegra_i2c_probe(struct platform_device *pdev)
->  	struct resource *iomem;
->  	struct clk *clk;
->  	struct clk *i2c_clk;
-> -	const unsigned int *prop;
->  	void *base;
->  	int irq;
->  	int ret = 0;
-> @@ -611,11 +610,15 @@ static int tegra_i2c_probe(struct platform_device *pdev)
->  	if (pdata) {
->  		i2c_dev->bus_clk_rate = pdata->bus_clk_rate;
->  
-> +#ifdef CONFIG_OF
->  	} else if (i2c_dev->dev->of_node) {    /* if there is a device tree node ... */
-> +		const unsigned int *prop;
-> +
->  		prop = of_get_property(i2c_dev->dev->of_node,
->  				"clock-frequency", NULL);
->  		if (prop)
->  			i2c_dev->bus_clk_rate = be32_to_cpup(prop);
-> +#endif
->  	}
->  
->  	if (pdev->id == 3)
+> This patch fix problem by simpling removing group_cpu and the codes
+> are more explicit now. If ccpu == cpu, we complete in cpu, otherwise
+> we raise_blk_irq to ccpu.
 
-It would be better to add a dummy implementation of of_get_property() in of.h.
-Thus we do not need the ifdeffery and all users benefits from this.
+Thanks Tao Ma, much more readable too.
 
-	Sam
+-- 
+Jens Axboe
+
