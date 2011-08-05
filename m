@@ -1,85 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154Ab1HEJEc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 05:04:32 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:45886 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab1HEJEa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 05:04:30 -0400
-Subject: Re: [stable] [patch 3/3] rtc: Limit frequency
-From: John Stultz <john.stultz@linaro.org>
-To: Joshua Kinard <kumba@gentoo.org>
-Cc: Willy Tarreau <w@1wt.eu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ben Greear <greearb@candelatech.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>, stable@kernel.org
-In-Reply-To: <4E3B660E.3020108@gentoo.org>
-References: <20110722091011.717194327@linutronix.de>
-	 <20110722091045.537404938@linutronix.de>
-	 <20110722150550.1878f069.akpm@linux-foundation.org>
-	 <20110722223915.GA22405@1wt.eu>  <4E3B660E.3020108@gentoo.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 05 Aug 2011 02:04:19 -0700
-Message-ID: <1312535060.2764.12.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1756250Ab1HEJFU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 05:05:20 -0400
+Received: from symlink.to.noone.org ([85.10.207.172]:51621 "EHLO sym.noone.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751402Ab1HEJFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 05:05:15 -0400
+Date: Fri, 5 Aug 2011 11:05:14 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>,
+        John Bonesio <bones@secretlab.ca>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-i2c@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, "Sam Ravnborg sam"@ravnborg.org
+Subject: Re: [RFC][PATCH] of: add a dummy implementation of
+	of_get_property() in of.h
+Message-ID: <20110805090514.GA17391@distanz.ch>
+References: <1312534574.18064.2.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312534574.18064.2.camel@phoenix>
+X-Editor: Vi IMproved 7.1
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-08-04 at 23:39 -0400, Joshua Kinard wrote:
-> On 07/22/2011 18:39, Willy Tarreau wrote:
-> > On Fri, Jul 22, 2011 at 03:05:50PM -0700, Andrew Morton wrote:
-> >> On Fri, 22 Jul 2011 09:12:51 -0000
-> >> Thomas Gleixner <tglx@linutronix.de> wrote:
-> >>
-> >>> The RTC hrtimer is self rearming. We really need to limit the
-> >>> frequency to something sensible.
-> >>
-> >>> Cc: stable@kernel.org
-> >>
-> >> Why?  What failures does the current code cause?  What effect do these
-> >> failures have upon users?
-> > 
-> > I would add that if we go that route, we should at least accept values
-> > that were documented as possible till now. Man rtc says 2 Hz to 8192 Hz,
-> > but Thomas' proposed patch limits it to 5000 Hz, so some breakage is to
-> > be expected.
-> > 
-> > Regards,
-> > Willy
-> 
-> To me, it would make sense to lock it at 8192Hz.  I re-wrote a driver for the DS1685 family of Dallas chips that I need
-> to cleanup and re-submit, but in researching that specific RTC, I really could not find an RTC out there that went above
-> 8192.
-> 
-> Arguably, 32768Hz might also work.  The DS1685 runs at this mode normally, but it disables PIE when it does.
-> 
-> My vote is 8192Hz.
+On 2011-08-05 at 10:56:14 +0200, Axel Lin <axel.lin@gmail.com> wrote:
+> Then we can avoid having #ifdef CONFIG_OF splattered around the place
+> calling of_get_property(), it leads to errors.
 
-Yea, I submitted a slightly different version of Thomas' patch which set
-it to 8192Hz via the tip tree, but the original one went upstream first.
-I'm away from home right now, so I'll be re-submitting just that change
-probably next week.
+You shouldn't redefine of_get_property in the driver. Rather add a
+wrapper function to the driver which will extract the device tree
+information in CONFIG_OF is enabled and which will just return -ENODEV
+if CONFIG_OF is not set.
 
-> Also, can we get a wrapper of some kind in the RTC core to allow an
-> RTC driver to override the hrtimer /PIE emulation if
-> needed?  I have in the DS1685 driver full support for its PIE mode and
-> really do not want to gut it as part of the
-> cleanup.  Some kind of override API would be nice in case anyone ever
-> runs into this chip (or its family members).
-
-I'm torn here. It would be good to have the functionality listed in some
-way so it is documented. However as we abstract the RTC to be more of an
-internal tool for the kernel, rather then hardware directly addressed
-from userland, the PIE mode is really not as useful (and quite messier
-to multiplex).  I'd much rather try to extend the alarm interfaces to
-allow for higher resolution, so it could be used as a alarmed highres
-oneshot timer if the hardware supports it.
-
-thanks
--john
-
-
+Cheers
+Tobias
