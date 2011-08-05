@@ -1,57 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753915Ab1HELoE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 07:44:04 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:30034 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395Ab1HELoC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 07:44:02 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: vinod.koul@intel.com, dan.j.williams@intel.com,
-        linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] dmaengine: at_hdmac: fix way to specify cyclic capability
-Date: Fri,  5 Aug 2011 12:43:44 +0100
-Message-Id: <1312544624-8793-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755115Ab1HELob (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 07:44:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30258 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752768Ab1HELoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 07:44:30 -0400
+Date: Fri, 5 Aug 2011 13:44:12 +0200
+From: Jiri Pirko <jpirko@redhat.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [forcedeth bug] Re: [GIT] Networking
+Message-ID: <20110805114411.GE1928@minipsycho.orion>
+References: <20110722.073339.1236244143490935644.davem@davemloft.net>
+ <20110801151308.GA31256@elte.hu>
+ <20110804215354.GA7056@elte.hu>
+ <20110805102239.GB1928@minipsycho.orion>
+ <20110805102903.GF2420@elte.hu>
+ <20110805111231.GA29466@hmsreliant.think-freely.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110805111231.GA29466@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this driver, we can trigger cyclic transfer on peripherals-DMA interfaces.
-It is dependent on driver implementation but cannot depend on a platform
-property: we remove the dma_has_cap(DMA_CYCLIC, ) test which has no meaning.
+Fri, Aug 05, 2011 at 01:12:31PM CEST, nhorman@tuxdriver.com wrote:
+>On Fri, Aug 05, 2011 at 12:29:03PM +0200, Ingo Molnar wrote:
+>> 
+>> * Jiri Pirko <jpirko@redhat.com> wrote:
+>> 
+>> > Thu, Aug 04, 2011 at 11:53:54PM CEST, mingo@elte.hu wrote:
+>> > >
+>> > >* Ingo Molnar <mingo@elte.hu> wrote:
+>> > >
+>> > >>  0891b0e08937: forcedeth: fix vlans
+>> > >
+>> > >Hm, forcedeth is still giving me trouble even on latest -git that has 
+>> > >the above fix included.
+>> > >
+>> > >The symptom is a stuck interface, no packets in. There's a frame 
+>> > >error RX packet:
+>> > >
+>> > > [root@mercury ~]# ifconfig eth0
+>> > > eth0      Link encap:Ethernet  HWaddr 00:13:D4:DC:41:12  
+>> > >           inet addr:10.0.1.13  Bcast:10.0.1.255  Mask:255.255.255.0
+>> > >           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+>> > >           RX packets:0 errors:1 dropped:0 overruns:0 frame:1
+>> > >           TX packets:531 errors:0 dropped:0 overruns:0 carrier:0
+>> > >           collisions:0 txqueuelen:1000 
+>> > >           RX bytes:0 (0.0 b)  TX bytes:34112 (33.3 KiB)
+>> > >           Interrupt:35 
+>> > >
+>> > >Weirdly enough a defconfig x86 bootup works just fine - it's certain 
+>> > >.config combinations that trigger the bug. I've attached such a 
+>> > >config.
+>> > >
+>> > >Note that at least once i've observed a seemingly good kernel going 
+>> > >'bad' after a couple of minutes uptime. I've also observed 
+>> > >intermittent behavior - apparent lost packets and a laggy network.
+>> > >
+>> > >I have done 3 failed attempts to bisect it any further - i got to the 
+>> > >commit that got fixed by:
+>> > >
+>> > >  0891b0e08937: forcedeth: fix vlans
+>> > >
+>> > >... but that's something we already knew.
+>> > >
+>> > >Let me know if there's any data i can provide to help debug this 
+>> > >problem.
+>> > >
+>> > >Thanks,
+>> > >
+>> > >	Ingo
+>> > 
+>> > Interesting.
+>> > 
+>> > Is DEV_HAS_VLAN set in id->driver_data (L5344) ?
+>> 
+>Looks like you can match it to pci id.  Device ids 0x0372 and 0x0373 look to
+>have the flag set
+>
+>> How do i tell that without hacking the driver?
+>> 
+>> > If so, would you try to disable both rx an tx vlan accel using 
+>> > ethtool and see if it helps?
+>> 
+>> Should i do that when the device is in a stuck state and see whether 
+>> it recovers?
+>> 
+>> Also, please provide the exact ethtool command sequences i should 
+>> try, this makes it easier for me to test exactly what you want me to 
+>> test.
+>> 
+>should be:
+>ethtool -K ethX rxvlan off txvlan off
+>
+>I'm just poking about, but If I had to guess it looks like the card you have
+>ingo is an older forcedeth and uses the older format ring descriptor (I base
+>this on the fact that the rx error count noted above only gets incremented ni
+>nv_rx_process, but not nv_rx_process_optimized.  Both paths should support hw
+>vlan acceleration though and Jiris fixes for vlan hw rx acceleration were only
+>applied to the optimized path.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/dma/at_hdmac.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+Well hw accel was not implemented in nv_rx_process before so I did not
+see any reason to do so during vlan conversion. Anyway, since this path
+was touched, I do not see reason why regression might happen there. Only
+change is that now hw accel is enabled by default (before, it got
+enabled only when vid was added). So if turning off hw accel fixes the
+problem for Ingo, I would tend fix this by simply disabling vlan hw
+accel for non-optimized path, by patch like this:
 
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index 6a483ea..e2a5f3e 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -1293,15 +1293,13 @@ static int __init at_dma_probe(struct platform_device *pdev)
- 	if (dma_has_cap(DMA_MEMCPY, atdma->dma_common.cap_mask))
- 		atdma->dma_common.device_prep_dma_memcpy = atc_prep_dma_memcpy;
+diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
+index e55df30..3f1b24b 100644
+--- a/drivers/net/forcedeth.c
++++ b/drivers/net/forcedeth.c
+@@ -5341,7 +5341,7 @@ static int __devinit nv_probe(struct pci_dev *pci_dev, const struct pci_device_i
+ 	}
  
--	if (dma_has_cap(DMA_SLAVE, atdma->dma_common.cap_mask))
-+	if (dma_has_cap(DMA_SLAVE, atdma->dma_common.cap_mask)) {
- 		atdma->dma_common.device_prep_slave_sg = atc_prep_slave_sg;
--
--	if (dma_has_cap(DMA_CYCLIC, atdma->dma_common.cap_mask))
-+		/* controller can do slave DMA: can trigger cyclic transfers */
-+		dma_cap_set(DMA_CYCLIC, atdma->dma_common.cap_mask);
- 		atdma->dma_common.device_prep_dma_cyclic = atc_prep_dma_cyclic;
--
--	if (dma_has_cap(DMA_SLAVE, atdma->dma_common.cap_mask) ||
--	    dma_has_cap(DMA_CYCLIC, atdma->dma_common.cap_mask))
- 		atdma->dma_common.device_control = atc_control;
-+	}
- 
- 	dma_writel(atdma, EN, AT_DMA_ENABLE);
- 
--- 
-1.7.4.1
+ 	np->vlanctl_bits = 0;
+-	if (id->driver_data & DEV_HAS_VLAN) {
++	if (id->driver_data & DEV_HAS_VLAN && nv_optimized(np)) {
+ 		np->vlanctl_bits = NVREG_VLANCONTROL_ENABLE;
+ 		dev->hw_features |= NETIF_F_HW_VLAN_RX | NETIF_F_HW_VLAN_TX;
+ 	}
 
+Strange kind of hw this is ....
+
+>
+>Neil
+>
+>> Thanks,
+>> 
+>> 	Ingo
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> 
