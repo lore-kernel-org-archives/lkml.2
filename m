@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab1HEV0h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 17:26:37 -0400
-Received: from mga12.intel.com ([143.182.124.36]:28066 "EHLO
-	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754194Ab1HEV0e (ORCPT
+	id S1756705Ab1HEV0l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 17:26:41 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:46803 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754194Ab1HEV0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 17:26:34 -0400
+	Fri, 5 Aug 2011 17:26:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <CANejiEWx1xGiQ=wxX2-w+-9FThUm9z-opN-Aqvvizv588XYsmw@mail.gmail.com>
-References: <1312519150-3261-1-git-send-email-tm@tao.ma>
-	<CANejiEWx1xGiQ=wxX2-w+-9FThUm9z-opN-Aqvvizv588XYsmw@mail.gmail.com>
-Date: Fri, 5 Aug 2011 14:26:33 -0700
-Message-ID: <CABE8wwuoAHii0VgOdpN0UuemmACWG3VMvZO59gSMP5CYjFjbPQ@mail.gmail.com>
-Subject: Re: [PATCH] block: Make rq_affinity = 1 work as expected.
-From: "Williams, Dan J" <dan.j.williams@intel.com>
-To: Shaohua Li <shli@kernel.org>
-Cc: Tao Ma <tm@tao.ma>, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Roland Dreier <roland@purestorage.com>,
-        Jens Axboe <jaxboe@fusionio.com>
+In-Reply-To: <20110805212153.GL5782@one.firstfloor.org>
+References: <20110805200945.GA14014@tassilo.jf.intel.com> <4E3C5154.2050307@zytor.com>
+ <CAObL_7E3yOHtx9N3qd2UXVn+h6tACoNjekRhiMcHrzb=Mu4q8A@mail.gmail.com>
+ <4E3C571C.1070903@zytor.com> <20110805205222.GK5782@one.firstfloor.org>
+ <CAObL_7G2TqBVXvfuh2GPNteYBNoc8_s398KS+jPOPQYAhPHz0Q@mail.gmail.com> <20110805212153.GL5782@one.firstfloor.org>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Fri, 5 Aug 2011 17:26:18 -0400
+X-Google-Sender-Auth: b987xvV0VwiLuNx0kmxxu4M6nNY
+Message-ID: <CAObL_7GuauANLqM9DnbYnhRuOsnqE+fTEoM10qCfjc40eFHaUA@mail.gmail.com>
+Subject: Re: New vsyscall emulation breaks JITs
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        lueckintel@yahoo.com, kimwooyoung@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 4, 2011 at 10:12 PM, Shaohua Li <shli@kernel.org> wrote:
-> 2011/8/5 Tao Ma <tm@tao.ma>:
->> From: Tao Ma <boyu.mt@taobao.com>
+On Fri, Aug 5, 2011 at 5:21 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> On Fri, Aug 05, 2011 at 05:00:44PM -0400, Andrew Lutomirski wrote:
+>> > If anything runtime, but really for me it looks like the vsyscall
+>> > changes should be only in one of those limited compability paranoia
+>> > patchkits.
 >>
->> Commit 5757a6d76c introduced a new rq_affinity = 2 so as to make
->> the request completed in the __make_request cpu. But it makes the
->> old rq_affinity = 1 not work any more. The root cause is that
->> if the 'cpu' and 'req->cpu' is in the same group and cpu != req->cpu,
->> ccpu will be the same as group_cpu, so the completion will be
->> excuted in the 'cpu' not 'group_cpu'.
->>
->> This patch fix problem by simpling removing group_cpu and the codes
->> are more explicit now. If ccpu == cpu, we complete in cpu, otherwise
->> we raise_blk_irq to ccpu.
-> good catch. This changed old behavior and can cause more lock contention.
-> and if user doesn't care about lock contention, he can use rq_affinity = 2
+>> Switching it in runtime would be a giant mess because user code might
 >
+> You can always switch at boot time.
 
-Indeed it does change behavior of rq_affinity=1, apologies.
+For a boot time switch, it might be nicer to just switch between the
+current int 0xcc sequence and the older
 
-Reviewed-by: Dan Williams <dan.j.williams@intel.com>
+mov cx, 0x<magic>
+int 0xcc
+ret
+
+sequence.
+
+That way there's a ret in the vsyscall page but no syscall instruction.
+
+--Andy
