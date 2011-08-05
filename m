@@ -1,110 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269Ab1HEDzn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Aug 2011 23:55:43 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:51442 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754409Ab1HEDzl convert rfc822-to-8bit (ORCPT
+	id S1751235Ab1HEEFa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 00:05:30 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:26047 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750712Ab1HEEFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Aug 2011 23:55:41 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=HD6SO8KprJF4lbhkZLIOFKvAwHitdZykA91MGLmxr/PzmObIwOphE77DIg+8TgZ5I
-	GMwyvJXKP9FoowouSh0sA==
-MIME-Version: 1.0
-In-Reply-To: <20110727215816.GA2515@redhat.com>
-References: <20110722003211.GA2807@redhat.com> <CAPM31R+UWijCCna5zYfn875h+KPmS4H0Lk8jW6+8JP-oDb72DA@mail.gmail.com>
- <20110722011747.GB2807@redhat.com> <CAPM31RKW+do-U8G8uL-y53BVWvr4oQbSf456A9u-SUV06tSfeg@mail.gmail.com>
- <20110727215816.GA2515@redhat.com>
-From: Paul Turner <pjt@google.com>
-Date: Thu, 4 Aug 2011 20:55:08 -0700
-Message-ID: <CAPM31RKQyKukoNXLeiLkQ0fdOiDizZRtviR=J+93PhJD9r-SkQ@mail.gmail.com>
-Subject: Re: [RFT][patch 17/18] sched: use jump labels to reduce overhead when
- bandwidth control is inactive
-To: Jason Baron <jbaron@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        rth@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 5 Aug 2011 00:05:04 -0400
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+To: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        alexander.stein@systec-electronic.com
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
+        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: [PATCH 3/3] gpio-ml-ioh: Fix suspend/resume issue
+Date: Fri,  5 Aug 2011 13:04:22 +0900
+Message-Id: <1312517062-5582-3-git-send-email-tomoya-linux@dsn.okisemi.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1312517062-5582-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+References: <1312517062-5582-1-git-send-email-tomoya-linux@dsn.okisemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> --- a/kernel/Makefile
-> +++ b/kernel/Makefile
-> @@ -10,7 +10,7 @@ obj-y     = sched.o fork.o exec_domain.o panic.o printk.o \
->            kthread.o wait.o kfifo.o sys_ni.o posix-cpu-timers.o mutex.o \
->            hrtimer.o rwsem.o nsproxy.o srcu.o semaphore.o \
->            notifier.o ksysfs.o pm_qos_params.o sched_clock.o cred.o \
-> -           async.o range.o jump_label.o
-> +           async.o range.o
->  obj-y += groups.o
->
->  ifdef CONFIG_FUNCTION_TRACER
-> @@ -107,6 +107,7 @@ obj-$(CONFIG_PERF_EVENTS) += events/
->  obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
->  obj-$(CONFIG_PADATA) += padata.o
->  obj-$(CONFIG_CRASH_DUMP) += crash_dump.o
-> +obj-$(CONFIG_JUMP_LABEL) += jump_label.o
->
->  ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
->  # According to Alan Modra <alan@linuxcare.com.au>, the -fno-omit-frame-pointer is
->
+Currently, some registers are not saved in case changing to suspend state.
+This patch fixes the issue.
 
-Tested-by: Paul Turner <pjt@google.com>
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+---
+ drivers/gpio/gpio-ml-ioh.c |   60 +++++++++++++++++++++++++++++++++++---------
+ 1 files changed, 48 insertions(+), 12 deletions(-)
 
-Let me know if you need any result tables for the actual commit msg.
-Same goes for making CONFIG_JUMP_LABEL equivalent to default in
-CC_HAS_ASM_GOTO case (at least on x86 anyway).
+diff --git a/drivers/gpio/gpio-ml-ioh.c b/drivers/gpio/gpio-ml-ioh.c
+index 4fab37b..274fd4d 100644
+--- a/drivers/gpio/gpio-ml-ioh.c
++++ b/drivers/gpio/gpio-ml-ioh.c
+@@ -63,6 +63,7 @@ struct ioh_regs {
+  * @pm_reg:	To store contents of PM register.
+  * @im0_reg:	To store contents of interrupt mode regist0
+  * @im1_reg:	To store contents of interrupt mode regist1
++ * @use_sel_reg: To store contents of GPIO_USE_SEL0~3
+  */
+ struct ioh_gpio_reg_data {
+ 	u32 ien_reg;
+@@ -71,6 +72,7 @@ struct ioh_gpio_reg_data {
+ 	u32 pm_reg;
+ 	u32 im0_reg;
+ 	u32 im1_reg;
++	u32 use_sel_reg;
+ };
+ 
+ /**
+@@ -81,6 +83,7 @@ struct ioh_gpio_reg_data {
+  * @gpio:			Data for GPIO infrastructure.
+  * @ioh_gpio_reg:		Memory mapped Register data is saved here
+  *				when suspend.
++ * @gpio_use_sel:		Save GPIO_USE_SEL1~4 register for PM
+  * @ch:				Indicate GPIO channel
+  * @irq_base:		Save base of IRQ number for interrupt
+  * @spinlock:		Used for register access protection in
+@@ -92,6 +95,7 @@ struct ioh_gpio {
+ 	struct device *dev;
+ 	struct gpio_chip gpio;
+ 	struct ioh_gpio_reg_data ioh_gpio_reg;
++	u32 gpio_use_sel;
+ 	struct mutex lock;
+ 	int ch;
+ 	int irq_base;
+@@ -169,12 +173,25 @@ static int ioh_gpio_direction_input(struct gpio_chip *gpio, unsigned nr)
+  */
+ static void ioh_gpio_save_reg_conf(struct ioh_gpio *chip)
+ {
+-	chip->ioh_gpio_reg.po_reg = ioread32(&chip->reg->regs[chip->ch].po);
+-	chip->ioh_gpio_reg.pm_reg = ioread32(&chip->reg->regs[chip->ch].pm);
+-	chip->ioh_gpio_reg.ien_reg = ioread32(&chip->reg->regs[chip->ch].ien);
+-	chip->ioh_gpio_reg.imask_reg = ioread32(&chip->reg->regs[chip->ch].imask);
+-	chip->ioh_gpio_reg.im0_reg = ioread32(&chip->reg->regs[chip->ch].im_0);
+-	chip->ioh_gpio_reg.im1_reg = ioread32(&chip->reg->regs[chip->ch].im_1);
++	int i;
++
++	for (i = 0; i < 8; i ++, chip++) {
++		chip->ioh_gpio_reg.po_reg =
++					ioread32(&chip->reg->regs[chip->ch].po);
++		chip->ioh_gpio_reg.pm_reg =
++					ioread32(&chip->reg->regs[chip->ch].pm);
++		chip->ioh_gpio_reg.ien_reg =
++				       ioread32(&chip->reg->regs[chip->ch].ien);
++		chip->ioh_gpio_reg.imask_reg =
++				     ioread32(&chip->reg->regs[chip->ch].imask);
++		chip->ioh_gpio_reg.im0_reg =
++				      ioread32(&chip->reg->regs[chip->ch].im_0);
++		chip->ioh_gpio_reg.im1_reg =
++				      ioread32(&chip->reg->regs[chip->ch].im_1);
++		if (i < 4)
++			chip->ioh_gpio_reg.use_sel_reg =
++					   ioread32(&chip->reg->ioh_sel_reg[i]);
++	}
+ }
+ 
+ /*
+@@ -182,12 +199,25 @@ static void ioh_gpio_save_reg_conf(struct ioh_gpio *chip)
+  */
+ static void ioh_gpio_restore_reg_conf(struct ioh_gpio *chip)
+ {
+-	iowrite32(chip->ioh_gpio_reg.po_reg, &chip->reg->regs[chip->ch].po);
+-	iowrite32(chip->ioh_gpio_reg.pm_reg, &chip->reg->regs[chip->ch].pm);
+-	iowrite32(chip->ioh_gpio_reg.ien_reg, &chip->reg->regs[chip->ch].ien);
+-	iowrite32(chip->ioh_gpio_reg.imask_reg, &chip->reg->regs[chip->ch].imask);
+-	iowrite32(chip->ioh_gpio_reg.im0_reg, &chip->reg->regs[chip->ch].im_0);
+-	iowrite32(chip->ioh_gpio_reg.im1_reg, &chip->reg->regs[chip->ch].im_1);
++	int i;
++
++	for (i = 0; i < 8; i ++, chip++) {
++		iowrite32(chip->ioh_gpio_reg.po_reg,
++			  &chip->reg->regs[chip->ch].po);
++		iowrite32(chip->ioh_gpio_reg.pm_reg,
++			  &chip->reg->regs[chip->ch].pm);
++		iowrite32(chip->ioh_gpio_reg.ien_reg,
++			  &chip->reg->regs[chip->ch].ien);
++		iowrite32(chip->ioh_gpio_reg.imask_reg,
++			  &chip->reg->regs[chip->ch].imask);
++		iowrite32(chip->ioh_gpio_reg.im0_reg,
++			  &chip->reg->regs[chip->ch].im_0);
++		iowrite32(chip->ioh_gpio_reg.im1_reg,
++			  &chip->reg->regs[chip->ch].im_1);
++		if (i < 4)
++			iowrite32(chip->ioh_gpio_reg.use_sel_reg,
++				  &chip->reg->ioh_sel_reg[i]);
++	}
+ }
+ #endif
+ 
+@@ -485,8 +515,11 @@ static int ioh_gpio_suspend(struct pci_dev *pdev, pm_message_t state)
+ {
+ 	s32 ret;
+ 	struct ioh_gpio *chip = pci_get_drvdata(pdev);
++	unsigned long flags;
+ 
++	spin_lock_irqsave(&chip->spinlock, flags);
+ 	ioh_gpio_save_reg_conf(chip);
++	spin_unlock_irqrestore(&chip->spinlock, flags);
+ 
+ 	ret = pci_save_state(pdev);
+ 	if (ret) {
+@@ -506,6 +539,7 @@ static int ioh_gpio_resume(struct pci_dev *pdev)
+ {
+ 	s32 ret;
+ 	struct ioh_gpio *chip = pci_get_drvdata(pdev);
++	unsigned long flags;
+ 
+ 	ret = pci_enable_wake(pdev, PCI_D0, 0);
+ 
+@@ -517,9 +551,11 @@ static int ioh_gpio_resume(struct pci_dev *pdev)
+ 	}
+ 	pci_restore_state(pdev);
+ 
++	spin_lock_irqsave(&chip->spinlock, flags);
+ 	iowrite32(0x01, &chip->reg->srst);
+ 	iowrite32(0x00, &chip->reg->srst);
+ 	ioh_gpio_restore_reg_conf(chip);
++	spin_unlock_irqrestore(&chip->spinlock, flags);
+ 
+ 	return 0;
+ }
+-- 
+1.7.4.4
 
-
->
-> I've tested the patch using a single 'static_branch()' in the getppid() path,
-> and basically running tight loops of calls to getppid(). Before, the
-> patch, I was seeing results similar to what you reported, after the
-> patch, things improved for all metrics. Here are my results for the
-> branch disabled case:
->
-> With jump labels turned on (CONFIG_JUMP_LABEL), branch disabled:
->
->  Performance counter stats for 'bash -c /tmp/timing;true' (50 runs):
->
->     3,969,510,217 instructions             #      0.864 IPC     ( +-0.000% )
->     4,592,334,954 cycles                     ( +-   0.046% )
->       751,634,470 branches                   ( +-   0.000% )
->
->        1.722635797  seconds time elapsed   ( +-   0.046% )
->
-> Jump labels turned off (CONFIG_JUMP_LABEL not set), branch disabled:
->
->  Performance counter stats for 'bash -c /tmp/timing;true' (50 runs):
->
->     4,009,611,846 instructions             #      0.867 IPC     ( +-0.000% )
->     4,622,210,580 cycles                     ( +-   0.012% )
->       771,662,904 branches                   ( +-   0.000% )
->
->        1.734341454  seconds time elapsed   ( +-   0.022% )
->
->
-> So all of the measured metrics improved in the jump labels case b/w
-> 0.5% - 2.5%.
->
-> I'm curious to see what you find with this patch.
->
-> Thanks,
->
-> -Jason
->
->
->
