@@ -1,109 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756375Ab1HEFjp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 01:39:45 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45456 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756221Ab1HEFjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 01:39:42 -0400
-Date: Fri, 5 Aug 2011 05:39:36 GMT
-From: tip-bot for Andy Lutomirski <luto@mit.edu>
-Message-ID: <tip-c149a665ac488e0dac22a42287f45ad1bda06ff1@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        luto@mit.edu, tglx@linutronix.de, hpa@linux.intel.com, luto@mit.edu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        luto@mit.edu, tglx@linutronix.de, hpa@linux.intel.com, luto@mit.edu
-In-Reply-To: <cdaad7da946a80b200df16647c1700db3e1171e9.1312378163.git.luto@mit.edu>
-References: <cdaad7da946a80b200df16647c1700db3e1171e9.1312378163.git.luto@mit.edu>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86-64: Add vsyscall:emulate_vsyscall trace event
-Git-Commit-ID: c149a665ac488e0dac22a42287f45ad1bda06ff1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1756239Ab1HEFn3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 01:43:29 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:36614 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754708Ab1HEFn2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 01:43:28 -0400
+Message-ID: <4E3B82FD.1040500@xenotime.net>
+Date: Thu, 04 Aug 2011 22:43:25 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
+To: Cong Wang <amwang@redhat.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH -next] drivers/base/inode.c: let vmstat_text be optional
+References: <20110804145834.3b1d92a9eeb8357deb84bf83@canb.auug.org.au> <20110804152211.ea10e3e7.rdunlap@xenotime.net> <4E3B57C3.80203@redhat.com>
+In-Reply-To: <4E3B57C3.80203@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 05 Aug 2011 05:39:37 +0000 (UTC)
+Content-Transfer-Encoding: 8bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c149a665ac488e0dac22a42287f45ad1bda06ff1
-Gitweb:     http://git.kernel.org/tip/c149a665ac488e0dac22a42287f45ad1bda06ff1
-Author:     Andy Lutomirski <luto@MIT.EDU>
-AuthorDate: Wed, 3 Aug 2011 09:31:54 -0400
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 4 Aug 2011 16:13:53 -0700
+On 08/04/11 19:38, Cong Wang wrote:
+> 于 2011年08月05日 06:22, Randy Dunlap 写道:
+>> From: Randy Dunlap<rdunlap@xenotime.net>
+>>
+>> vmstat_text is only available when PROC_FS or SYSFS is enabled.
+>> This causes build errors in drivers/base/node.c when they are
+>> both disabled:
+>>
+>> drivers/built-in.o: In function `node_read_vmstat':
+>> node.c:(.text+0x10e28f): undefined reference to `vmstat_text'
+>>
+>> Rather than litter drivers/base/node.c with #ifdef/#endif around
+>> the affected lines of code, add macros for optional sysdev
+>> attributes so that those lines of code will be ignored, without
+>> using #ifdef/#endif in the .c file(s).  I.e., the ifdeffery
+>> is done only in a header file with sysdev_create_file_optional()
+>> and sysdev_remove_file_optional().
+>>
+> 
+> This looks ugly for me, because other sysfs files here are not optional
+> only due to that they don't rely on vmstat_text.
+> 
+> I still think my approach to fix this is better, that is, introducing
+> a new Kconfig for drivers/base/node.c which depends on CONFIG_SYSFS.
 
-x86-64: Add vsyscall:emulate_vsyscall trace event
+Did you post a patch for that?  I must have missed it.
 
-Vsyscall emulation is slow, so make it easy to track down.
-
-Signed-off-by: Andy Lutomirski <luto@mit.edu>
-Link: http://lkml.kernel.org/r/cdaad7da946a80b200df16647c1700db3e1171e9.1312378163.git.luto@mit.edu
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/vsyscall_64.c    |    6 ++++++
- arch/x86/kernel/vsyscall_trace.h |   29 +++++++++++++++++++++++++++++
- 2 files changed, 35 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 1725930..93a0d46 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -50,6 +50,9 @@
- #include <asm/vgtod.h>
- #include <asm/traps.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include "vsyscall_trace.h"
-+
- DEFINE_VVAR(int, vgetcpu_mode);
- DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
- {
-@@ -146,6 +149,9 @@ void dotraplinkage do_emulate_vsyscall(struct pt_regs *regs, long error_code)
- 	 * and int 0xcc is two bytes long.
- 	 */
- 	vsyscall_nr = addr_to_vsyscall_nr(regs->ip - 2);
-+
-+	trace_emulate_vsyscall(vsyscall_nr);
-+
- 	if (vsyscall_nr < 0) {
- 		warn_bad_vsyscall(KERN_WARNING, regs,
- 				  "illegal int 0xcc (exploit attempt?)");
-diff --git a/arch/x86/kernel/vsyscall_trace.h b/arch/x86/kernel/vsyscall_trace.h
-new file mode 100644
-index 0000000..a8b2ede
---- /dev/null
-+++ b/arch/x86/kernel/vsyscall_trace.h
-@@ -0,0 +1,29 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM vsyscall
-+
-+#if !defined(__VSYSCALL_TRACE_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define __VSYSCALL_TRACE_H
-+
-+#include <linux/tracepoint.h>
-+
-+TRACE_EVENT(emulate_vsyscall,
-+
-+	    TP_PROTO(int nr),
-+
-+	    TP_ARGS(nr),
-+
-+	    TP_STRUCT__entry(__field(int, nr)),
-+
-+	    TP_fast_assign(
-+			   __entry->nr = nr;
-+			   ),
-+
-+	    TP_printk("nr = %d", __entry->nr)
-+);
-+
-+#endif
-+
-+#undef TRACE_INCLUDE_PATH
-+#define TRACE_INCLUDE_PATH ../../arch/x86/kernel
-+#define TRACE_INCLUDE_FILE vsyscall_trace
-+#include <trace/define_trace.h>
+thanks,
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
