@@ -1,61 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab1HEOgM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 10:36:12 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:60837 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756752Ab1HEOgI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 10:36:08 -0400
+	id S1756761Ab1HEOiS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 10:38:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29782 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753216Ab1HEOiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 10:38:13 -0400
+Date: Fri, 5 Aug 2011 16:37:33 +0200
+From: Jiri Pirko <jpirko@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [forcedeth bug] Re: [GIT] Networking
+Message-ID: <20110805143732.GH1928@minipsycho.orion>
+References: <20110722.073339.1236244143490935644.davem@davemloft.net>
+ <20110801151308.GA31256@elte.hu>
+ <20110804215354.GA7056@elte.hu>
+ <20110805102239.GB1928@minipsycho.orion>
+ <20110805102903.GF2420@elte.hu>
+ <20110805112557.GD1928@minipsycho.orion>
+ <20110805121855.GC13055@elte.hu>
+ <20110805123136.GF1928@minipsycho.orion>
 MIME-Version: 1.0
-In-Reply-To: <4E3BEABC.3030909@landley.net>
-References: <4E3BEABC.3030909@landley.net>
-Date: Fri, 5 Aug 2011 10:36:07 -0400
-Message-ID: <CACqU3MUExSQEFAz415p8byAo=CLtfbmVVy98iCbMx_wGC3ppuA@mail.gmail.com>
-Subject: Re: Where did Linus' git tree go?
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Rob Landley <rob@landley.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110805123136.GF1928@minipsycho.orion>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 5, 2011 at 9:06 AM, Rob Landley <rob@landley.net> wrote:
-> I did a pull and it said the remote hung up unexpectedly.  About the
-> fifth time I went to git.kernel.org and searched for "torvalds" and
-> there's no 2.6 tree...  Checked the list but I don't see a post from
-> Linus about it...
+Fri, Aug 05, 2011 at 02:31:37PM CEST, jpirko@redhat.com wrote:
+>Fri, Aug 05, 2011 at 02:18:55PM CEST, mingo@elte.hu wrote:
+>>
+>>* Jiri Pirko <jpirko@redhat.com> wrote:
+>>
+>>> >> Is DEV_HAS_VLAN set in id->driver_data (L5344) ?
+>>> >
+>>> >How do i tell that without hacking the driver?
+>>> 
+>>> look in dmesg for line like:
+>>> "forcedeth 0000:00:08.0: highdma csum vlan pwrctl mgmt gbit lnktim msi
+>>> desc-v3"
+>>> 
+>>> if "vlan" is there, DEV_HAS_VLAN is set
+>>
+>>[    3.534489] forcedeth 0000:00:0a.0: highdma csum gbit lnktim desc-v3
+>>
+>>Note, this is a pretty old system with an old nvidia chipset and 
+>>on-board ethernet:
+>>
+>>00:0a.0 Bridge: nVidia Corporation CK804 Ethernet Controller (rev a3)
+>>        Subsystem: ASUSTeK Computer Inc. K8N4-E Mainboard
+>>        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B-
+>>        Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR-
+>>        Latency: 0 (250ns min, 5000ns max)
+>>        Interrupt: pin A routed to IRQ 11
+>>        Region 0: Memory at da100000 (32-bit, non-prefetchable) [size=4K]
+>>        Region 1: I/O ports at d000 [size=8]
+>>        Capabilities: [44] Power Management version 2
+>>                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0+,D1+,D2+,D3hot+,D3cold+)
+>>                Status: D0 PME-Enable+ DSel=0 DScale=0 PME-
 >
-> Tree moved?  Transient glitch?  Nothing on lwn.net about it...
+>Please do lspci -nn
 >
-you missed a message. He pointed out on a "Note on Linux 3.0 and the
-3.1 merge window" that the tree had moved from
-
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=summary
-
-to
-
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=summary
-
-but that the first one would be kept to maintain existing remote working.
-
-Search for
-
-Message-ID: <CA+55aFxKbAXXv2x0ykezsXbSeZZQ0DwPRzYPY_QZ0NdFKes_NQ@mail.gmail.com>
-
-to get the message original.
-
-Now you or kernel.org may have had connectivity issues :)
-
- - Arnaud
-
-> Rob
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>There are two CK804 chips:
+>0x10DE, 0x0056
+>0x10DE, 0x0057
 >
+>I have only the second one handy - Getting the machine as we speak.
+
+I'm unable to see problems you are referring to on my machine.
+
+Would you please try following patch if it fixes your issue? It's
+in fact returning everything back to the original state (for your card).
+
+diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
+index e55df30..d7d43d4 100644
+--- a/drivers/net/forcedeth.c
++++ b/drivers/net/forcedeth.c
+@@ -2763,18 +2763,18 @@ static int nv_rx_process_optimized(struct net_device *dev, int limit)
+ 			skb->protocol = eth_type_trans(skb, dev);
+ 			prefetch(skb->data);
+ 
+-			vlanflags = le32_to_cpu(np->get_rx.ex->buflow);
+-
+ 			/*
+ 			 * There's need to check for NETIF_F_HW_VLAN_RX here.
+ 			 * Even if vlan rx accel is disabled,
+ 			 * NV_RX3_VLAN_TAG_PRESENT is pseudo randomly set.
+ 			 */
+-			if (dev->features & NETIF_F_HW_VLAN_RX &&
+-			    vlanflags & NV_RX3_VLAN_TAG_PRESENT) {
+-				u16 vid = vlanflags & NV_RX3_VLAN_TAG_MASK;
++			if (dev->features & NETIF_F_HW_VLAN_RX) {
++				vlanflags = le32_to_cpu(np->get_rx.ex->buflow);
++				if (vlanflags & NV_RX3_VLAN_TAG_PRESENT) {
++					u16 vid = vlanflags & NV_RX3_VLAN_TAG_MASK;
+ 
+-				__vlan_hwaccel_put_tag(skb, vid);
++					__vlan_hwaccel_put_tag(skb, vid);
++				}
+ 			}
+ 			napi_gro_receive(&np->napi, skb);
+ 
+@@ -5615,7 +5615,7 @@ static int __devinit nv_probe(struct pci_dev *pci_dev, const struct pci_device_i
+ 		goto out_error;
+ 	}
+ 
+-	nv_vlan_mode(dev, dev->features);
++	//nv_vlan_mode(dev, dev->features);
+ 
+ 	netif_carrier_off(dev);
+ 
