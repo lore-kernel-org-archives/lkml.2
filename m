@@ -1,112 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633Ab1HEQkw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 12:40:52 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:48513 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab1HEQkt (ORCPT
+	id S1754174Ab1HEQsD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 12:48:03 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:20750 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750855Ab1HEQsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 12:40:49 -0400
-Date: Fri, 5 Aug 2011 19:39:44 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: "lan,Tianyu" <tianyu.lan@intel.com>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Battery: sysfs_remove_battery(): possible circular
- locking
-Message-ID: <20110805163944.GA3132@swordfish.minsk.epam.com>
-References: <20110805003322.GA8311@swordfish>
- <1312521008.2096.173.camel@lantianyu-ws>
+	Fri, 5 Aug 2011 12:48:00 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: fWZ0rO8VM1mKCh2DxaRBBM7..ZxjYzkFAtBgLSALLuvS0WN
+ Sf_66IdIR9bhtHW9qn0NAZ9gcJB281knHKtERvj15n1Uv8z6uZPly2pKp_z4
+ Trdg6VfyAJjjj4ewp6uKCX1qVuyYrgcQM53H37WtwFTl_Mxgq7lJecl1CpK5
+ C8e_EtMv62NE4IfoZLtz0YV.V_.dnkWaLqu3nNr1N74Im5ZkbMRsnCsJtl6e
+ LUDb3W0b4CXt4Upknx81Qrg9__iSiq5bYTUjsivLRt14rKPjvekIf.4YAx7C
+ strJ9NpSyRQFikIHG_IdGQjra5raI7BqmqfqK69Emo6NH0gt9tDWh12GeO1T
+ 9pMaR9NgCBdWNQ.KJK6TkBvSyedRxRC1GaO.Emj2O81XJdVFq9_tVA9WmIrl
+ 4WejxK5VLD1Y9WTVGmws88Q--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 5 Aug 2011 11:47:56 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Dave Jones <davej@redhat.com>
+cc: Pekka Enberg <penberg@kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: list corruption in the last few days. (block ? crypto ?)
+In-Reply-To: <20110805163948.GA11113@redhat.com>
+Message-ID: <alpine.DEB.2.00.1108051146180.28580@router.home>
+References: <20110805010038.GA18148@redhat.com> <20110805084614.GA1588@x4.trippels.de> <CAOJsxLEMf8SbSmJv5u6GZtq_OYH3fpmomT-ioWXQGp83veK7wQ@mail.gmail.com> <alpine.DEB.2.00.1108051131440.28580@router.home> <20110805163948.GA11113@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312521008.2096.173.camel@lantianyu-ws>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (08/05/11 13:10), lan,Tianyu wrote:
-> I think changing  'the marker' to 'battery->bat.name' will introduce
-> problem.
-> In the sysfs_add_battery(), when the 'battery->bat.name' is assigned,
-> the power_supply_register() and device_create_file() have not been
-> invoked. In this time, maybe sysfs_remove_battery() will be invoked and
-> cause device_remove_file() and power_supply_unregister() invoked without
-> device file created and power supply registered.
-> 
-> sysfs_remove_battery()  will be invoked in the battery_notify(),
-> acpi_battery_refresh() and sysfs_remove_battery() which causes the
-> situation. This is also the cause  of bug 35642.
-> 
+On Fri, 5 Aug 2011, Dave Jones wrote:
 
-Well, how about using separate (independent lock) for sysfs_remove_battery()
-case? Since we can't safely drop battery->lock in sysfs_remove_battery() before 
-power_supply_unregister() call.
+> Not sure if you were addressing my original report (quoted above), or the networking
+> related report in this part of the thread. But anyway, I had it turned on (as well as just about
+> every other debugging option).  I didn't see anything output from it though,
+> just the LIST_DEBUG warnings.
 
-Not sure if it should be within struct acpi_battery, perhaps we could
-have it as a 'global' battery lock. Anyway, here it is:
-
----
-
- drivers/acpi/battery.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index 87c0a8d..7711d94 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -99,6 +99,7 @@ enum {
- 
- struct acpi_battery {
- 	struct mutex lock;
-+	struct mutex sysfs_lock;
- 	struct power_supply bat;
- 	struct acpi_device *device;
- 	struct notifier_block pm_nb;
-@@ -573,16 +574,16 @@ static int sysfs_add_battery(struct acpi_battery *battery)
- 
- static void sysfs_remove_battery(struct acpi_battery *battery)
- {
--	mutex_lock(&battery->lock);
-+	mutex_lock(&battery->sysfs_lock);
- 	if (!battery->bat.dev) {
--		mutex_unlock(&battery->lock);
-+		mutex_unlock(&battery->sysfs_lock);
- 		return;
- 	}
- 
- 	device_remove_file(battery->bat.dev, &alarm_attr);
- 	power_supply_unregister(&battery->bat);
- 	battery->bat.dev = NULL;
--	mutex_unlock(&battery->lock);
-+	mutex_unlock(&battery->sysfs_lock);
- }
- 
- /*
-@@ -982,6 +983,7 @@ static int acpi_battery_add(struct acpi_device *device)
- 	strcpy(acpi_device_class(device), ACPI_BATTERY_CLASS);
- 	device->driver_data = battery;
- 	mutex_init(&battery->lock);
-+	mutex_init(&battery->sysfs_lock);
- 	if (ACPI_SUCCESS(acpi_get_handle(battery->device->handle,
- 			"_BIX", &handle)))
- 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
-@@ -1010,6 +1012,7 @@ static int acpi_battery_add(struct acpi_device *device)
- fail:
- 	sysfs_remove_battery(battery);
- 	mutex_destroy(&battery->lock);
-+	mutex_destroy(&battery->sysfs_lock);
- 	kfree(battery);
- 	return result;
- }
-@@ -1027,6 +1030,7 @@ static int acpi_battery_remove(struct acpi_device *device, int type)
- #endif
- 	sysfs_remove_battery(battery);
- 	mutex_destroy(&battery->lock);
-+	mutex_destroy(&battery->sysfs_lock);
- 	kfree(battery);
- 	return 0;
- }
+But CONFIG_SLUB_DEBUG_ON was off? If slab debugging was on then this could
+be an issue with full slab list management instead of partial lists.
 
