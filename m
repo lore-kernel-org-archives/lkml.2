@@ -1,133 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab1HERH7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 13:07:59 -0400
-Received: from mga14.intel.com ([143.182.124.37]:3653 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976Ab1HERH6 convert rfc822-to-8bit (ORCPT
+	id S1755574Ab1HERIP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 13:08:15 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:42900 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753479Ab1HERIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 13:07:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,324,1309762800"; 
-   d="scan'208";a="35568741"
-From: "Lan, Tianyu" <tianyu.lan@intel.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-CC: Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sat, 6 Aug 2011 01:07:52 +0800
-Subject: RE: [PATCH] Battery: sysfs_remove_battery(): possible circular
- locking
-Thread-Topic: [PATCH] Battery: sysfs_remove_battery(): possible circular
- locking
-Thread-Index: AcxTjnBgl8MD3pZETXihPxVUoIg30QAA4KUg
-Message-ID: <625BA99ED14B2D499DC4E29D8138F15062C4514167@shsmsx502.ccr.corp.intel.com>
-References: <20110805003322.GA8311@swordfish>
- <1312521008.2096.173.camel@lantianyu-ws>
- <20110805163944.GA3132@swordfish.minsk.epam.com>
-In-Reply-To: <20110805163944.GA3132@swordfish.minsk.epam.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 5 Aug 2011 13:08:13 -0400
+Date: Fri, 5 Aug 2011 19:08:08 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
+Message-ID: <20110805170805.GB22164@somewhere>
+References: <20110801154636.GA2096@zod.bos.redhat.com>
+ <CA+5PVA5EZWHv_tuzA22twGQ7rZZ2zhqi1zs6OiFbpORiiYbzMg@mail.gmail.com>
+ <20110804140438.GT13065@linux.vnet.ibm.com>
+ <20110804150603.GL2096@zod.bos.redhat.com>
+ <20110804162658.GZ13065@linux.vnet.ibm.com>
+ <20110804173145.GM2096@zod.bos.redhat.com>
+ <CA+5PVA7R+H4MfU=war6G3ZRYEi6nZ=vVZ3B8g-Ag6pOdA4cTBw@mail.gmail.com>
+ <20110805065646.GC13065@linux.vnet.ibm.com>
+ <20110805142245.GP2096@zod.bos.redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110805142245.GP2096@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yeah. I also have tried this way on my laptop. It's ok.
-
-
------Original Message-----
-From: Sergey Senozhatsky [mailto:sergey.senozhatsky@gmail.com] 
-Sent: Saturday, August 06, 2011 12:40 AM
-To: Lan, Tianyu
-Cc: Len Brown; linux-acpi@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Battery: sysfs_remove_battery(): possible circular locking
-
-On (08/05/11 13:10), lan,Tianyu wrote:
-> I think changing  'the marker' to 'battery->bat.name' will introduce
-> problem.
-> In the sysfs_add_battery(), when the 'battery->bat.name' is assigned,
-> the power_supply_register() and device_create_file() have not been
-> invoked. In this time, maybe sysfs_remove_battery() will be invoked and
-> cause device_remove_file() and power_supply_unregister() invoked without
-> device file created and power supply registered.
+On Fri, Aug 05, 2011 at 10:22:45AM -0400, Josh Boyer wrote:
+> On Thu, Aug 04, 2011 at 11:56:46PM -0700, Paul E. McKenney wrote:
+> > > > I could be missing something obvious, but I don't see a way to avoid
+> > > > using GFP_KERNEL without a lot of rip-up in the rest of the init path.
+> > > 
+> > > As an aside, I bisected this back to:
+> > > 
+> > > e8f7c70f44f sched: Make sleeping inside spinlock detection working in
+> > > !CONFIG_PREEMPT
+> > 
+> > OK, added Frederic on CC.
+> > 
+> > > However, that doesn't seem all that helpful.  The
+> > > CONFIG_DEBUG_SPINLOCK_SLEEP option later got renamed to
+> > > DEBUG_ATOMIC_SLEEP, and all it's doing is selecting PREEMPT_COUNT.  At
+> > > first glance, it seems this commit just allowed an issue that's been
+> > > around for a while (benign or otherwise) to finally show up.
+> > > 
+> > > (The Fedora kernel configs have CONFIG_PREEMPT_VOLUNTARY set, but not
+> > > CONFIG_PREEMPT so PREEMPT_COUNT wasn't getting selected until this
+> > > option did so.)
+> > 
+> > Understood.  So my question is "what is the real way to fix this?"
+> > Within RCU, I would probably wrapper the calls to set_need_resched()
+> > so that it checks for the scheduler being fully alive.  Except for the
+> > call from rcu_enter_nohz(), of course -- if that one is called before
+> > the scheduler is ready, then that is a bug that needs to be fixed.
 > 
-> sysfs_remove_battery()  will be invoked in the battery_notify(),
-> acpi_battery_refresh() and sysfs_remove_battery() which causes the
-> situation. This is also the cause  of bug 35642.
+> By scheduler being fully alive, do you mean when rcu_scheduler_starting
+> is called?  Or do you mean the actual scheduler, because sched_init is
+> called well before any of this happens.
 > 
+> > Nevertheless, I am wondering if all of this isn't really papering over
+> > some real problem somewhere.  The way we get to this place is from people
+> > registering RCU callbacks during early boot, which is OK in and of itself,
+> > at least in moderation.  But if someone is expecting those callbacks to be
+> > invoked before the scheduler is fully set up and running multiple tasks,
+> > they are going to be disappointed.
+> 
+> Is there a way to dump what callbacks have been registered?  As far as I
+> can see, we call rcu_check_callbacks unconditionally when a timer
+> interrupt is taken and that calls rcu_pending unconditionally as well.
+> Before that, rcu_init is called which eventually sets up the per-cpu
+> data via rcu_init_percpu_data and that sets rdp->qs_pending = 1.
+> Until a quiescent state is reached __rcu_pending is going to try and
+> force it, which is where the set_need_resched is called.
+> 
+> Basically, I took what you said about wrapping set_need_resched and came
+> up with the patch below.  It gets rid of the oops from pidmap_init, but
+> I need to test it a bit more.  Would be happy to have feedback.
+> 
+> josh
+> 
+> ---
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index ba06207..8c6cb6e 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1681,8 +1681,14 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+>  		rdp->n_rp_qs_pending++;
+>  		if (!rdp->preemptible &&
+>  		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
+> -				 jiffies))
+> -			set_need_resched();
+> +				 jiffies)) {
+> +			/* Make sure we're ready to mark the task as needing
+> + 			 * rescheduling otherwise we can trigger oopes early
+> + 			 * in the init path
+> + 			 */
+> +			if (rcu_scheduler_active)
+> +				set_need_resched();
 
-Well, how about using separate (independent lock) for sysfs_remove_battery()
-case? Since we can't safely drop battery->lock in sysfs_remove_battery() before 
-power_supply_unregister() call.
+What about we avoid setting rdp->qs_pending = 1 for the CPU
+that handles the boot?
 
-Not sure if it should be within struct acpi_battery, perhaps we could
-have it as a 'global' battery lock. Anyway, here it is:
-
----
-
- drivers/acpi/battery.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index 87c0a8d..7711d94 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -99,6 +99,7 @@ enum {
- 
- struct acpi_battery {
- 	struct mutex lock;
-+	struct mutex sysfs_lock;
- 	struct power_supply bat;
- 	struct acpi_device *device;
- 	struct notifier_block pm_nb;
-@@ -573,16 +574,16 @@ static int sysfs_add_battery(struct acpi_battery *battery)
- 
- static void sysfs_remove_battery(struct acpi_battery *battery)
- {
--	mutex_lock(&battery->lock);
-+	mutex_lock(&battery->sysfs_lock);
- 	if (!battery->bat.dev) {
--		mutex_unlock(&battery->lock);
-+		mutex_unlock(&battery->sysfs_lock);
- 		return;
- 	}
- 
- 	device_remove_file(battery->bat.dev, &alarm_attr);
- 	power_supply_unregister(&battery->bat);
- 	battery->bat.dev = NULL;
--	mutex_unlock(&battery->lock);
-+	mutex_unlock(&battery->sysfs_lock);
- }
- 
- /*
-@@ -982,6 +983,7 @@ static int acpi_battery_add(struct acpi_device *device)
- 	strcpy(acpi_device_class(device), ACPI_BATTERY_CLASS);
- 	device->driver_data = battery;
- 	mutex_init(&battery->lock);
-+	mutex_init(&battery->sysfs_lock);
- 	if (ACPI_SUCCESS(acpi_get_handle(battery->device->handle,
- 			"_BIX", &handle)))
- 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
-@@ -1010,6 +1012,7 @@ static int acpi_battery_add(struct acpi_device *device)
- fail:
- 	sysfs_remove_battery(battery);
- 	mutex_destroy(&battery->lock);
-+	mutex_destroy(&battery->sysfs_lock);
- 	kfree(battery);
- 	return result;
- }
-@@ -1027,6 +1030,7 @@ static int acpi_battery_remove(struct acpi_device *device, int type)
- #endif
- 	sysfs_remove_battery(battery);
- 	mutex_destroy(&battery->lock);
-+	mutex_destroy(&battery->sysfs_lock);
- 	kfree(battery);
- 	return 0;
- }
-
+> +		}
+>  	} else if (rdp->qs_pending && rdp->passed_quiesc) {
+>  		rdp->n_rp_report_qs++;
+>  		return 1;
