@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab1HEWhz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 18:37:55 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54783 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab1HEWhy (ORCPT
+	id S1756650Ab1HEWuz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 18:50:55 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42216 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752102Ab1HEWuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 18:37:54 -0400
-Date: Sat, 6 Aug 2011 00:37:40 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Julia Lawall <julia@diku.dk>
-Cc: Riku Voipio <riku.voipio@iki.fi>, kernel-janitors@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] drivers/leds/leds-pca9532.c: delete useless
- initialization
-Message-ID: <20110805223740.GA31186@pengutronix.de>
-References: <1312453774-23333-1-git-send-email-julia@diku.dk>
- <1312453774-23333-5-git-send-email-julia@diku.dk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="envbJBWh7q8WU6mo"
-Content-Disposition: inline
-In-Reply-To: <1312453774-23333-5-git-send-email-julia@diku.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 5 Aug 2011 18:50:54 -0400
+From: Stephen Warren <swarren@nvidia.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss@lists.ozlabs.org, Ben Dooks <ben-i2c@fluff.org>,
+        Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>, John Bonesio <bones@secretlab.ca>,
+        Colin Cross <ccross@android.com>, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] dt: add empty of_get_property for non-dt
+Date: Fri,  5 Aug 2011 16:50:30 -0600
+Message-Id: <1312584630-23371-1-git-send-email-swarren@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The patch adds empty function of_get_property for non-dt build, so that
+drivers migrating to dt can save some '#ifdef CONFIG_OF'.
 
---envbJBWh7q8WU6mo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This also fixes the current Tegra compile problem in linux-next.
 
-On Thu, Aug 04, 2011 at 12:29:34PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
->=20
-> Delete nontrivial initialization that is immediately overwritten by the
-> result of an allocation function.
->=20
-> The semantic match that makes this change is as follows:
-> (http://coccinelle.lip6.fr/)
->=20
-> // <smpl>
-> @@
-> type T;
-> identifier i;
-> expression e;
-> @@
->=20
-> (
-> T i =3D \(0\|NULL\|ERR_PTR(...)\);
-> |
-> -T i =3D e;
-> +T i;
-> )
-> ... when !=3D i
-> i =3D \(kzalloc\|kcalloc\|kmalloc\)(...);
->=20
-> // </smpl>
->=20
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ include/linux/of.h |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 0085bb0..9180dc5 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -256,6 +256,13 @@ static inline int of_property_read_string(struct device_node *np,
+ 	return -ENOSYS;
+ }
+ 
++static inline const void *of_get_property(const struct device_node *node,
++				const char *name,
++				int *lenp)
++{
++	return NULL;
++}
++
+ #endif /* CONFIG_OF */
+ 
+ static inline int of_property_read_u32(const struct device_node *np,
+-- 
+1.7.0.4
 
-BTW LED patches seem to go via akpm these days...
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---envbJBWh7q8WU6mo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk48cLQACgkQD27XaX1/VRvo0QCgr9txxteL7yxbL+aVvNVQ/XJv
-GZ8AniX4IXkwQyKyB08Q3qzCZGpPJQEu
-=zTrG
------END PGP SIGNATURE-----
-
---envbJBWh7q8WU6mo--
