@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719Ab1HFJjB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 05:39:01 -0400
-Received: from mail.lang.hm ([64.81.33.126]:39094 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752385Ab1HFJi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 05:38:57 -0400
-Date: Sat, 6 Aug 2011 02:38:44 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: "Mr. James W. Laferriere" <babydr@baby-dragons.com>
-cc: Greg KH <greg@kroah.com>,
-        Linux Kernel Maillist <linux-kernel@vger.kernel.org>
-Subject: Re: will someone make 2.6.39.* a longterm ?
-In-Reply-To: <alpine.LNX.2.01.1108031648510.21707@filesrv1.baby-dragons.com>
-Message-ID: <alpine.DEB.2.02.1108060233560.32324@asgard.lang.hm>
-References: <alpine.LNX.2.01.1108031203500.16528@filesrv1.baby-dragons.com> <20110803232617.GA17426@kroah.com> <alpine.LNX.2.01.1108031648510.21707@filesrv1.baby-dragons.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1753662Ab1HFKPA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 06:15:00 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:38121 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127Ab1HFKO6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Aug 2011 06:14:58 -0400
+Date: Sat, 6 Aug 2011 11:14:30 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2o: use kstrdup()
+Message-ID: <20110806111430.5ae2ca0d@pyx>
+In-Reply-To: <1312623053.5589.67.camel@localhost.localdomain>
+References: <1312623053.5589.67.camel@localhost.localdomain>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; i386-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Aug 2011, Mr. James W. Laferriere wrote:
+On Sat, 06 Aug 2011 11:30:50 +0200
+Thomas Meyer <thomas@m3y3r.de> wrote:
 
-> On Wed, 3 Aug 2011, Greg KH wrote:
->> On Wed, Aug 03, 2011 at 12:05:58PM -0800, Mr. James W. Laferriere wrote:
->>> 	Hello All ,  Is anyone looking at making 2.6.39.* into a longterm
->>> stable ?
->> 
->> No, why would they?
->> 
->> Or, to turn it the other way, why do you feel .39 would be a viable
->> longer kernel to maintain?  What are you using it for that requires it
->> to be handled in this manner?
->> thanks,
->> greg k-h
-> 	Probably no reason at all ,  But ...  It is the final 2.6 kernel 
-> version .
->
-> 	With 3.0 being released there will only be Yours & the others 
-> maintaining the 2.6.<39 otherwise .
+> From: Thomas Meyer <thomas@m3y3r.de>
+> 
+>  Use kstrdup rather than duplicating its implementation
+> 
+>  The semantic patch that makes this output is available
+>  in scripts/coccinelle/api/kstrdup.cocci.
+> 
+>  More information about semantic patching is available at
+>  http://coccinelle.lip6.fr/
+> 
+> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 
-but 3.0 has the same changes that would have been in 2.6.40, would you be 
-looking for a long-term release of 2.6.39 if it had been called 2.6.40 
-instead of 3.0.0? if not, why would you with a different number on the 
-same content?
-
-David Lang
-
+Acked-by: Alan Cox <alan@linux.intel.com>
