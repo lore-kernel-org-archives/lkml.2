@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab1HFJUr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 05:20:47 -0400
-Received: from www17.your-server.de ([213.133.104.17]:33289 "EHLO
+	id S1754092Ab1HFJX1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 05:23:27 -0400
+Received: from www17.your-server.de ([213.133.104.17]:34196 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab1HFJUp (ORCPT
+	with ESMTP id S1752127Ab1HFJXZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 05:20:45 -0400
-Subject: [PATCH] ipmi: use kstrdup()
+	Sat, 6 Aug 2011 05:23:25 -0400
+Subject: [PATCH] [SCSI] aic7xxx: use kstrdup()
 From: Thomas Meyer <thomas@m3y3r.de>
-To: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Date: Sat, 06 Aug 2011 11:20:13 +0200
+To: hare@suse.de, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Date: Sat, 06 Aug 2011 11:22:53 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
 Content-Transfer-Encoding: 7bit
-Message-ID: <1312622416.5589.61.camel@localhost.localdomain>
+Message-ID: <1312622577.5589.63.camel@localhost.localdomain>
 Mime-Version: 1.0
 X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,22 +34,20 @@ From: Thomas Meyer <thomas@m3y3r.de>
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/char/ipmi/ipmi_msghandler.c b/drivers/char/ipmi/ipmi_msghandler.c
---- a/drivers/char/ipmi/ipmi_msghandler.c 2011-05-27 19:17:04.559520123 +0200
-+++ b/drivers/char/ipmi/ipmi_msghandler.c 2011-08-01 21:10:43.970134537 +0200
-@@ -2030,12 +2030,11 @@ int ipmi_smi_add_proc_entry(ipmi_smi_t s
- 	entry = kmalloc(sizeof(*entry), GFP_KERNEL);
- 	if (!entry)
- 		return -ENOMEM;
--	entry->name = kmalloc(strlen(name)+1, GFP_KERNEL);
-+	entry->name = kstrdup(name, GFP_KERNEL);
- 	if (!entry->name) {
- 		kfree(entry);
- 		return -ENOMEM;
- 	}
--	strcpy(entry->name, name);
- 
- 	file = proc_create_data(name, 0, smi->proc_dir, proc_ops, data);
- 	if (!file) {
+diff -u -p a/drivers/scsi/aic7xxx/aic79xx_osm_pci.c b/drivers/scsi/aic7xxx/aic79xx_osm_pci.c
+--- a/drivers/scsi/aic7xxx/aic79xx_osm_pci.c 2010-09-13 07:01:17.520528007 +0200
++++ b/drivers/scsi/aic7xxx/aic79xx_osm_pci.c 2011-08-01 21:15:58.925094946 +0200
+@@ -178,10 +178,9 @@ ahd_linux_pci_dev_probe(struct pci_dev *
+ 		ahd_get_pci_bus(pci),
+ 		ahd_get_pci_slot(pci),
+ 		ahd_get_pci_function(pci));
+-	name = kmalloc(strlen(buf) + 1, GFP_ATOMIC);
++	name = kstrdup(buf, GFP_ATOMIC);
+ 	if (name == NULL)
+ 		return (-ENOMEM);
+-	strcpy(name, buf);
+ 	ahd = ahd_alloc(NULL, name);
+ 	if (ahd == NULL)
+ 		return (-ENOMEM);
 
 
