@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357Ab1HFALd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:11:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39564 "EHLO mx2.suse.de"
+	id S1757354Ab1HFAKx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:10:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39425 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932213Ab1HFALa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:11:30 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:14 2011
-Message-Id: <20110806000414.423668525@clark.kroah.org>
+	id S932207Ab1HFAKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:10:39 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:13 2011
+Message-Id: <20110806000412.938703714@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:46 -0700
+Date: Fri, 05 Aug 2011 17:03:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [28/50] [SCSI] pmcraid: reject negative request size
+        Jon Povey <jon.povey@racelogic.co.uk>,
+        Manjunath Hadli <manjunath.hadli@ti.com>, Sekhar Nori <nsekhar@ti.com>
+Subject: [14/50] davinci: DM365 EVM: fix video input mux bits
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Jon Povey <jon.povey@racelogic.co.uk>
 
-commit b5b515445f4f5a905c5dd27e6e682868ccd6c09d upstream.
+commit 9daedd833a38edd90cf7baa1b1fcf61c3a0721e3 upstream.
 
-There's a code path in pmcraid that can be reached via device ioctl that
-causes all sorts of ugliness, including heap corruption or triggering the
-OOM killer due to consecutive allocation of large numbers of pages.
+Video input mux settings for tvp7002 and imager inputs were swapped.
+Comment was correct.
 
-First, the user can call pmcraid_chr_ioctl(), with a type
-PMCRAID_PASSTHROUGH_IOCTL.  This calls through to
-pmcraid_ioctl_passthrough().  Next, a pmcraid_passthrough_ioctl_buffer
-is copied in, and the request_size variable is set to
-buffer->ioarcb.data_transfer_length, which is an arbitrary 32-bit
-signed value provided by the user.  If a negative value is provided
-here, bad things can happen.  For example,
-pmcraid_build_passthrough_ioadls() is called with this request_size,
-which immediately calls pmcraid_alloc_sglist() with a negative size.
-The resulting math on allocating a scatter list can result in an
-overflow in the kzalloc() call (if num_elem is 0, the sglist will be
-smaller than expected), or if num_elem is unexpectedly large the
-subsequent loop will call alloc_pages() repeatedly, a high number of
-pages will be allocated and the OOM killer might be invoked.
+Tested on EVM with tvp7002 input.
 
-It looks like preventing this value from being negative in
-pmcraid_ioctl_passthrough() would be sufficient.
-
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Jon Povey <jon.povey@racelogic.co.uk>
+Acked-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/pmcraid.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/arm/mach-davinci/board-dm365-evm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/pmcraid.c
-+++ b/drivers/scsi/pmcraid.c
-@@ -3576,6 +3576,9 @@ static long pmcraid_ioctl_passthrough(
- 			pmcraid_err("couldn't build passthrough ioadls\n");
- 			goto out_free_buffer;
- 		}
-+	} else if (request_size < 0) {
-+		rc = -EINVAL;
-+		goto out_free_buffer;
- 	}
+--- a/arch/arm/mach-davinci/board-dm365-evm.c
++++ b/arch/arm/mach-davinci/board-dm365-evm.c
+@@ -453,7 +453,7 @@ fail:
+ 	 */
+ 	if (have_imager()) {
+ 		label = "HD imager";
+-		mux |= 1;
++		mux |= 2;
  
- 	/* If data is being written into the device, copy the data from user
+ 		/* externally mux MMC1/ENET/AIC33 to imager */
+ 		mux |= BIT(6) | BIT(5) | BIT(3);
+@@ -474,7 +474,7 @@ fail:
+ 		resets &= ~BIT(1);
+ 
+ 		if (have_tvp7002()) {
+-			mux |= 2;
++			mux |= 1;
+ 			resets &= ~BIT(2);
+ 			label = "tvp7002 HD";
+ 		} else {
 
 
