@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757311Ab1HFAKA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:10:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39302 "EHLO mx2.suse.de"
+	id S932353Ab1HFAYT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:24:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39313 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752263Ab1HFAJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:09:55 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:54 2011
-Message-Id: <20110806000254.395145921@clark.kroah.org>
+	id S1757239Ab1HFAJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:09:58 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:51 2011
+Message-Id: <20110806000251.786972588@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:02:25 -0700
+Date: Fri, 05 Aug 2011 17:01:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chas Williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
-        "David S. Miller" <davem@davemloft.net>,
-        Pascal Hambourg <pascal@plouf.fr.eu.org>
-Subject: [55/55] atm: [br2684] allow routed mode operation again
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [29/55] [SCSI] pmcraid: reject negative request size
 In-Reply-To: <20110806000257.GA25498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,51 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 2e302ebfeac04beb5a5d6af1ac583c6a1fb76d1a upstream.
+commit b5b515445f4f5a905c5dd27e6e682868ccd6c09d upstream.
 
-in routed mode, we don't have a hardware address so netdev_ops doesnt
-need to validate our hardware address via .ndo_validate_addr
+There's a code path in pmcraid that can be reached via device ioctl that
+causes all sorts of ugliness, including heap corruption or triggering the
+OOM killer due to consecutive allocation of large numbers of pages.
 
-Reported-by: Manuel Fuentes <mfuentes@agenciaefe.com>
-Signed-off-by: Chas Williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Pascal Hambourg <pascal@plouf.fr.eu.org>
+First, the user can call pmcraid_chr_ioctl(), with a type
+PMCRAID_PASSTHROUGH_IOCTL.  This calls through to
+pmcraid_ioctl_passthrough().  Next, a pmcraid_passthrough_ioctl_buffer
+is copied in, and the request_size variable is set to
+buffer->ioarcb.data_transfer_length, which is an arbitrary 32-bit
+signed value provided by the user.  If a negative value is provided
+here, bad things can happen.  For example,
+pmcraid_build_passthrough_ioadls() is called with this request_size,
+which immediately calls pmcraid_alloc_sglist() with a negative size.
+The resulting math on allocating a scatter list can result in an
+overflow in the kzalloc() call (if num_elem is 0, the sglist will be
+smaller than expected), or if num_elem is unexpectedly large the
+subsequent loop will call alloc_pages() repeatedly, a high number of
+pages will be allocated and the OOM killer might be invoked.
+
+It looks like preventing this value from being negative in
+pmcraid_ioctl_passthrough() would be sufficient.
+
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/atm/br2684.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/scsi/pmcraid.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/atm/br2684.c
-+++ b/net/atm/br2684.c
-@@ -554,6 +554,12 @@ static const struct net_device_ops br268
- 	.ndo_validate_addr	= eth_validate_addr,
- };
+--- a/drivers/scsi/pmcraid.c
++++ b/drivers/scsi/pmcraid.c
+@@ -3557,6 +3557,9 @@ static long pmcraid_ioctl_passthrough(
+ 			pmcraid_err("couldn't build passthrough ioadls\n");
+ 			goto out_free_buffer;
+ 		}
++	} else if (request_size < 0) {
++		rc = -EINVAL;
++		goto out_free_buffer;
+ 	}
  
-+static const struct net_device_ops br2684_netdev_ops_routed = {
-+	.ndo_start_xmit 	= br2684_start_xmit,
-+	.ndo_set_mac_address	= br2684_mac_addr,
-+	.ndo_change_mtu		= eth_change_mtu
-+};
-+
- static void br2684_setup(struct net_device *netdev)
- {
- 	struct br2684_dev *brdev = BRPRIV(netdev);
-@@ -569,11 +575,10 @@ static void br2684_setup(struct net_devi
- static void br2684_setup_routed(struct net_device *netdev)
- {
- 	struct br2684_dev *brdev = BRPRIV(netdev);
--	brdev->net_dev = netdev;
- 
-+	brdev->net_dev = netdev;
- 	netdev->hard_header_len = 0;
--
--	netdev->netdev_ops = &br2684_netdev_ops;
-+	netdev->netdev_ops = &br2684_netdev_ops_routed;
- 	netdev->addr_len = 0;
- 	netdev->mtu = 1500;
- 	netdev->type = ARPHRD_PPP;
+ 	/* If data is being written into the device, copy the data from user
 
 
