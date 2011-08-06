@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab1HFANM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:13:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39868 "EHLO mx2.suse.de"
+	id S932514Ab1HFANI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:13:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39860 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932464Ab1HFANC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:13:02 -0400
+	id S932501Ab1HFAM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:12:59 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:15 2011
-Message-Id: <20110806000415.426322371@clark.kroah.org>
+Message-Id: <20110806000415.334841169@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:56 -0700
+Date: Fri, 05 Aug 2011 17:03:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
         Alan Stern <stern@rowland.harvard.edu>
-Subject: [38/50] EHCI: fix direction handling for interrupt data toggles
+Subject: [37/50] EHCI: only power off port if over-current is active
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,72 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
-commit e04f5f7e423018bcec84c11af2058cdce87816f3 upstream.
+commit 81463c1d707186adbbe534016cd1249edeab0dac upstream.
 
-This patch (as1480) fixes a rather obscure bug in ehci-hcd.  The
-qh_update() routine needs to know the number and direction of the
-endpoint corresponding to its QH argument.  The number can be taken
-directly from the QH data structure, but the direction isn't stored
-there.  The direction is taken instead from the first qTD linked to
-the QH.
+MAX4967 USB power supply chip we use on our boards signals over-current when
+power is not enabled; once it's enabled, over-current signal returns to normal.
+That unfortunately caused the endless stream of "over-current change on port"
+messages. The EHCI root hub code reacts on every over-current signal change
+with powering off the port -- such change event is generated the moment the
+port power is enabled, so once enabled the power is immediately cut off.
+I think we should only cut off power when we're seeing the active over-current
+signal, so I'm adding such check to that code. I also think that the fact that
+we've cut off the port power should be reflected in the result of GetPortStatus
+request immediately, hence I'm adding a PORTSCn register readback after write...
 
-However, it turns out that for interrupt transfers, qh_update() gets
-called before the qTDs are linked to the QH.  As a result, qh_update()
-computes a bogus direction value, which messes up the endpoint toggle
-handling.  Under the right combination of circumstances this causes
-usb_reset_endpoint() not to work correctly, which causes packets to be
-dropped and communications to fail.
-
-Now, it's silly for the QH structure not to have direct access to all
-the descriptor information for the corresponding endpoint.  Ultimately
-it may get a pointer to the usb_host_endpoint structure; for now,
-adding a copy of the direction flag solves the immediate problem.
-
-This allows the Spyder2 color-calibration system (a low-speed USB
-device that sends all its interrupt data packets with the toggle set
-to 0 and hance requires constant use of usb_reset_endpoint) to work
-when connected through a high-speed hub.  Thanks to Graeme Gill for
-supplying the hardware that allowed me to track down this bug.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Graeme Gill <graeme@argyllcms.com>
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-q.c |    3 ++-
- drivers/usb/host/ehci.h   |    1 +
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/host/ehci-hub.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-q.c
-+++ b/drivers/usb/host/ehci-q.c
-@@ -103,7 +103,7 @@ qh_update (struct ehci_hcd *ehci, struct
- 	if (!(hw->hw_info1 & cpu_to_hc32(ehci, 1 << 14))) {
- 		unsigned	is_out, epnum;
- 
--		is_out = !(qtd->hw_token & cpu_to_hc32(ehci, 1 << 8));
-+		is_out = qh->is_out;
- 		epnum = (hc32_to_cpup(ehci, &hw->hw_info1) >> 8) & 0x0f;
- 		if (unlikely (!usb_gettoggle (qh->dev, epnum, is_out))) {
- 			hw->hw_token &= ~cpu_to_hc32(ehci, QTD_TOGGLE);
-@@ -945,6 +945,7 @@ done:
- 	hw = qh->hw;
- 	hw->hw_info1 = cpu_to_hc32(ehci, info1);
- 	hw->hw_info2 = cpu_to_hc32(ehci, info2);
-+	qh->is_out = !is_input;
- 	usb_settoggle (urb->dev, usb_pipeendpoint (urb->pipe), !is_input, 1);
- 	qh_refresh (ehci, qh);
- 	return qh;
---- a/drivers/usb/host/ehci.h
-+++ b/drivers/usb/host/ehci.h
-@@ -365,6 +365,7 @@ struct ehci_qh {
- #define NO_FRAME ((unsigned short)~0)			/* pick new start */
- 
- 	struct usb_device	*dev;		/* access to TT */
-+	unsigned		is_out:1;	/* bulk or intr OUT */
- 	unsigned		clearing_tt:1;	/* Clear-TT-Buf in progress */
- };
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -760,10 +760,11 @@ static int ehci_hub_control (
+ 			 * power switching; they're allowed to just limit the
+ 			 * current.  khubd will turn the power back on.
+ 			 */
+-			if (HCS_PPC (ehci->hcs_params)){
++			if ((temp & PORT_OC) && HCS_PPC(ehci->hcs_params)) {
+ 				ehci_writel(ehci,
+ 					temp & ~(PORT_RWC_BITS | PORT_POWER),
+ 					status_reg);
++				temp = ehci_readl(ehci, status_reg);
+ 			}
+ 		}
  
 
 
