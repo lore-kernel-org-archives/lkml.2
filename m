@@ -1,77 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab1HFS70 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 14:59:26 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:28048 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756191Ab1HFS70 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 14:59:26 -0400
-Date: Sat, 6 Aug 2011 20:59:23 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] memblock: add memblock_start_of_DRAM()
-Message-ID: <20110806185923.GA8494@merkur.ravnborg.org>
+	id S1756687Ab1HFTGH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 15:06:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46679 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756191Ab1HFTGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Aug 2011 15:06:06 -0400
+Date: Sat, 6 Aug 2011 12:04:58 -0700
+From: Greg KH <gregkh@suse.de>
+To: stufever@gmail.com
+Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com,
+        Wang Shaoyan <wangshaoyan.pt@taobao.com>
+Subject: Re: [PATCH] gma500: fix build error in
+ drivers/staging/gma500/gem_glue.c
+Message-ID: <20110806190458.GA3257@suse.de>
+References: <1312656727-4603-1-git-send-email-wangshaoyan.pt@taobao.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1312656727-4603-1-git-send-email-wangshaoyan.pt@taobao.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SPARC32 require access to the start address.
-Add a new helper memblock_start_of_DRAM() to give
-access to the address of the first memblock - which
-contains the lowest address.
+On Sun, Aug 07, 2011 at 02:52:07AM +0800, stufever@gmail.com wrote:
+> From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+> 
+>   LD      drivers/built-in.o
+>   drivers/staging/built-in.o: In function 'drm_gem_private_object_init':
+>   /home/stufever/linux-2.6/drivers/staging/gma500/gem_glue.c:30: multiple definition of 'drm_gem_private_object_init'
+>   drivers/gpu/built-in.o:/home/stufever/linux-2.6/drivers/gpu/drm/drm_gem.c:160: first defined here
+>   make[1]: *** [drivers/built-in.o] Error 1
+>   make: *** [drivers] Error 2
+> 
+> The function drm_gem_private_object_init had been EXPORT_SYMBOL at drivers/gpu/drm/drm_gem.c, so delete repeated code.
+> 
+> Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
 
-The ackward name was chosen to match the already present
-memblock_end_of_DRAM().
+Thanks, but this is already in linux-next and will be sent to Linus
+after 3.2-rc1 is out.
 
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Yinghai Lu <yinghai@kernel.org>
----
-Hi Tejun.
+thanks,
 
-I have started to replace bootmem with memblock for sparc32.
-This is so far the only general functionality missing.
-
-But conversion is not finished yet - more may come.
-
-This is on top of the memblock branch of your misc tree
-
-	Sam
-
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 7c59804..a6bb102 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -157,6 +157,7 @@ phys_addr_t memblock_alloc_base(phys_addr_t size, phys_addr_t align,
- phys_addr_t __memblock_alloc_base(phys_addr_t size, phys_addr_t align,
- 				  phys_addr_t max_addr);
- phys_addr_t memblock_phys_mem_size(void);
-+phys_addr_t memblock_start_of_DRAM(void);
- phys_addr_t memblock_end_of_DRAM(void);
- void memblock_enforce_memory_limit(phys_addr_t memory_limit);
- int memblock_is_memory(phys_addr_t addr);
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 07cb3ae..2f55f19 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -782,6 +782,12 @@ phys_addr_t __init memblock_phys_mem_size(void)
- 	return memblock.memory.total_size;
- }
- 
-+/* lowest address */
-+phys_addr_t __init_memblock memblock_start_of_DRAM(void)
-+{
-+	return memblock.memory.regions[0].base;
-+}
-+
- phys_addr_t __init_memblock memblock_end_of_DRAM(void)
- {
- 	int idx = memblock.memory.cnt - 1;
+greg k-h
