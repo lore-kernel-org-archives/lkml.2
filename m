@@ -1,111 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661Ab1HFRyw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 13:54:52 -0400
-Received: from home.keithp.com ([63.227.221.253]:41194 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756570Ab1HFRyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 13:54:18 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Dave Airlie <airlied@redhat.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org, Keith Packard <keithp@keithp.com>
-Subject: [PATCH 2/4] drm/i915: Leave LVDS registers unlocked
-Date: Sat,  6 Aug 2011 10:54:06 -0700
-Message-Id: <1312653248-3487-3-git-send-email-keithp@keithp.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1312653248-3487-1-git-send-email-keithp@keithp.com>
-References: <1312653248-3487-1-git-send-email-keithp@keithp.com>
+	id S1756578Ab1HFR4D (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 13:56:03 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:58624 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756401Ab1HFR4B convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Aug 2011 13:56:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAHFgRy_5FPJn0a9Z6uNdCLUBd5SPac9F_Fhymdc66yeso9=Scw@mail.gmail.com>
+References: <CAHFgRy_5FPJn0a9Z6uNdCLUBd5SPac9F_Fhymdc66yeso9=Scw@mail.gmail.com>
+Date: Sat, 6 Aug 2011 19:56:00 +0200
+Message-ID: <CAKWSe6Az_tFvG+S31pKW4ciEh_Nax5WVS490B1UHyiZ1maSh1w@mail.gmail.com>
+Subject: =?windows-1252?Q?Re=3A_3=2E0=2E0=2Dgit21_=2D=2D_CC_fs=2Fbinfmt=5Fmisc=2Eo_=2E=2E=2E=2Fasm=2Fuacce?=
+	=?windows-1252?Q?ss=5F32=2Eh=3A211=3A26=3A_error=3A_call_to_=91copy=5Ffrom=5Fuser=5Foverflow=92?=
+	=?windows-1252?Q?_declared_with_attribute_error=3A_copy=5Ffrom=5Fuser=28=29_buffer_size?=
+	=?windows-1252?Q?_is_not_provably_correct?=
+From: Alessandro Suardi <alessandro.suardi@gmail.com>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's no reason to relock them; it just makes operations more
-complex. This fixes DPMS where the panel registers were locked making
-the disable not work.
+On Sat, Aug 6, 2011 at 7:49 PM, Miles Lane <miles.lane@gmail.com> wrote:
+> I am not finding any kernel configuration that enables me to avoid
+> this compile error.  Anyone know what I can do to successfully build
+> this kernel?
+>
+> On Fri, Aug 5, 2011 at 1:15 PM, Miles Lane <miles.lane@gmail.com> wrote:
+>> CC      fs/binfmt_misc.o
+>> In file included from /usr/src/linux-3.0/arch/x86/include/asm/uaccess.h:573:0,
+>>                 from include/linux/uaccess.h:5,
+>>                 from include/linux/highmem.h:7,
+>>                 from include/linux/pagemap.h:10,
+>>                 from fs/binfmt_misc.c:26:
+>> /usr/src/linux-3.0/arch/x86/include/asm/uaccess_32.h: In function
+>> ‘parse_command.part.1’:
+>> /usr/src/linux-3.0/arch/x86/include/asm/uaccess_32.h:211:26: error:
+>> call to ‘copy_from_user_overflow’ declared with attribute error:
+>> copy_from_user() buffer size is not provably correct
 
-Signed-off-by: Keith Packard <keithp@keithp.com>
----
- drivers/gpu/drm/i915/intel_lvds.c |   46 +++++++++++++++---------------------
- 1 files changed, 19 insertions(+), 27 deletions(-)
+Well, uaccess_32.h has this:
 
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index 6985e42..cc85618 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -414,46 +414,32 @@ static void intel_lvds_prepare(struct drm_encoder *encoder)
- 	/* We try to do the minimum that is necessary in order to unlock
- 	 * the registers for mode setting.
- 	 *
--	 * On Ironlake, this is quite simple as we just set the unlock key
--	 * and ignore all subtleties. (This may cause some issues...)
-+	 * On Ironlake, this is quite simple as we just set the unlock
-+	 * key in the driver init code and ignore all subtleties.
-+	 * (This may cause some issues...)
- 	 *
- 	 * Prior to Ironlake, we must disable the pipe if we want to adjust
- 	 * the panel fitter. However at all other times we can just reset
- 	 * the registers regardless.
- 	 */
- 
--	if (HAS_PCH_SPLIT(dev)) {
--		I915_WRITE(PCH_PP_CONTROL,
--			   I915_READ(PCH_PP_CONTROL) | PANEL_UNLOCK_REGS);
--	} else if (intel_lvds->pfit_dirty) {
--		I915_WRITE(PP_CONTROL,
--			   (I915_READ(PP_CONTROL) | PANEL_UNLOCK_REGS)
--			   & ~POWER_TARGET_ON);
--	} else {
--		I915_WRITE(PP_CONTROL,
--			   I915_READ(PP_CONTROL) | PANEL_UNLOCK_REGS);
-+	if (!HAS_PCH_SPLIT(dev)) {
-+		if (intel_lvds->pfit_dirty) {
-+			I915_WRITE(PP_CONTROL,
-+				   (I915_READ(PP_CONTROL) | PANEL_UNLOCK_REGS)
-+				   & ~POWER_TARGET_ON);
-+		} else {
-+			I915_WRITE(PP_CONTROL,
-+				   I915_READ(PP_CONTROL) | PANEL_UNLOCK_REGS);
-+		}
- 	}
-+	intel_lvds_disable(intel_lvds);
- }
- 
- static void intel_lvds_commit(struct drm_encoder *encoder)
- {
--	struct drm_device *dev = encoder->dev;
--	struct drm_i915_private *dev_priv = dev->dev_private;
- 	struct intel_lvds *intel_lvds = to_intel_lvds(encoder);
- 
--	/* Undo any unlocking done in prepare to prevent accidental
--	 * adjustment of the registers.
--	 */
--	if (HAS_PCH_SPLIT(dev)) {
--		u32 val = I915_READ(PCH_PP_CONTROL);
--		if ((val & PANEL_UNLOCK_REGS) == PANEL_UNLOCK_REGS)
--			I915_WRITE(PCH_PP_CONTROL, val & 0x3);
--	} else {
--		u32 val = I915_READ(PP_CONTROL);
--		if ((val & PANEL_UNLOCK_REGS) == PANEL_UNLOCK_REGS)
--			I915_WRITE(PP_CONTROL, val & 0x3);
--	}
--
- 	/* Always do a full power on as we do not know what state
- 	 * we were left in.
- 	 */
-@@ -1049,6 +1035,12 @@ out:
- 		pwm = I915_READ(BLC_PWM_PCH_CTL1);
- 		pwm |= PWM_PCH_ENABLE;
- 		I915_WRITE(BLC_PWM_PCH_CTL1, pwm);
-+		/*
-+		 * Unlock registers and just
-+		 * leave them unlocked
-+		 */
-+		I915_WRITE(PCH_PP_CONTROL,
-+			   I915_READ(PCH_PP_CONTROL) | PANEL_UNLOCK_REGS);
- 	}
- 	dev_priv->lid_notifier.notifier_call = intel_lid_notify;
- 	if (acpi_lid_notifier_register(&dev_priv->lid_notifier)) {
--- 
-1.7.5.4
+extern void copy_from_user_overflow(void)
+#ifdef CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
+    __compiletime_error("copy_from_user() buffer size is not provably correct")
+#else
+    __compiletime_warning("copy_from_user() buffer size is not provably correct"
+)
+#endif
 
+ and you have CONFIG_DEBUG_STRICT_USER_COPY_CHECKS=y.
+
+ciao,
+
+--alessandro
+
+ "There's always a siren singing you to shipwreck"
+
+   (Radiohead, "There There")
