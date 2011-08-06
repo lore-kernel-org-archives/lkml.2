@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab1HFHEe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 03:04:34 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52594 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750917Ab1HFHEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 03:04:33 -0400
-Date: Sat, 6 Aug 2011 17:04:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Randy Dunlap <rdunlap@xenotime.net>,
-        xen-devel@lists.xensource.com, LKML <linux-kernel@vger.kernel.org>,
-        virtualization@lists.linux-foundation.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        linux-next@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] Re: linux-next: Tree for July 25 (xen)
-Message-Id: <20110806170418.897cc0513af4189d89e6c03f@canb.auug.org.au>
-In-Reply-To: <20110806015815.GA26833@dumpdata.com>
-References: <20110725162542.39ea8d8cbd51604523635c1a@canb.auug.org.au>
-	<20110725144629.b752bf14.rdunlap@xenotime.net>
-	<20110804193534.GB12729@elte.hu>
-	<20110804195539.GA11198@dumpdata.com>
-	<20110804131516.c4da6595.rdunlap@xenotime.net>
-	<20110804223259.GB4370@dumpdata.com>
-	<20110804224020.GA21492@dumpdata.com>
-	<4E3B3117.5050308@xenotime.net>
-	<20110805080531.GA8052@elte.hu>
-	<20110805211423.GA9765@elte.hu>
-	<20110806015815.GA26833@dumpdata.com>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sat__6_Aug_2011_17_04_18_+1000_RF4fIp0aJrL+3PA3"
+	id S1752262Ab1HFHfQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 03:35:16 -0400
+Received: from qmta06.westchester.pa.mail.comcast.net ([76.96.62.56]:37718
+	"EHLO qmta06.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751024Ab1HFHfL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Aug 2011 03:35:11 -0400
+X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Aug 2011 03:35:11 EDT
+Message-ID: <4E3CED1A.2040200@gentoo.org>
+Date: Sat, 06 Aug 2011 03:28:26 -0400
+From: Joshua Kinard <kumba@gentoo.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; WOW64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+MIME-Version: 1.0
+To: John Stultz <john.stultz@linaro.org>
+CC: Willy Tarreau <w@1wt.eu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Ben Greear <greearb@candelatech.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>, stable@kernel.org
+Subject: Re: [stable] [patch 3/3] rtc: Limit frequency
+References: <20110722091011.717194327@linutronix.de>  <20110722091045.537404938@linutronix.de>  <20110722150550.1878f069.akpm@linux-foundation.org>  <20110722223915.GA22405@1wt.eu>  <4E3B660E.3020108@gentoo.org> <1312535060.2764.12.camel@work-vm>
+In-Reply-To: <1312535060.2764.12.camel@work-vm>
+X-Enigmail-Version: 1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__6_Aug_2011_17_04_18_+1000_RF4fIp0aJrL+3PA3
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 08/05/2011 05:04, John Stultz wrote:
+> Yea, I submitted a slightly different version of Thomas' patch which set
+> it to 8192Hz via the tip tree, but the original one went upstream first.
+> I'm away from home right now, so I'll be re-submitting just that change
+> probably next week.
 
-Hi Konrad,
+Awesome, I'll look out for it if I get free time to look at the RTC driver I have.  It's broken now due to a loss of
+__symbol_get(), as I was trying to find a way to make the driver determine if it was a module or not.
 
-On Fri, 5 Aug 2011 21:58:16 -0400 Konrad Rzeszutek Wilk <konrad.wilk@oracle=
-.com> wrote:
->
-> Much appreciate for the report. I believe this fix (which I think hit
-> linux-next yesterday?) should do that:
 
-Yes, it is in next-20110805.
+> I'm torn here. It would be good to have the functionality listed in some
+> way so it is documented. However as we abstract the RTC to be more of an
+> internal tool for the kernel, rather then hardware directly addressed
+> from userland, the PIE mode is really not as useful (and quite messier
+> to multiplex).  I'd much rather try to extend the alarm interfaces to
+> allow for higher resolution, so it could be used as a alarmed highres
+> oneshot timer if the hardware supports it.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+That's why I think a wrapper would be best.  By default, it would use the hrtimer code and so, none of the existing
+drivers would need to be modified.  Any driver that wants to, however, could override the base functions if they wanted
+to provide that functionality separately.  It should probably be a CONFIG_* option, though.  Right now, consumers of
+DS1685 are rare: old SGI O2 systems and some embedded board from 'electronic systems Gmbh', one of whose employees wrote
+the original driver about 2 years ago.  The driver I have now handles older versions (DS1689/1693) and the more common
+DS17x8y versions, and those I think are the most modern.  Not sure what systems use those, however.
 
---Signature=_Sat__6_Aug_2011_17_04_18_+1000_RF4fIp0aJrL+3PA3
-Content-Type: application/pgp-signature
+-- 
+Joshua Kinard
+Gentoo/MIPS
+kumba@gentoo.org
+4096R/D25D95E3 2011-03-28
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+"The past tempts us, the present confuses us, the future frightens us.  And our lives slip away, moment by moment, lost
+in that vast, terrible in-between."
 
-iQEcBAEBAgAGBQJOPOdyAAoJEDMEi1NhKgbsgDcH/3VkbWFgxXypVcd/sVzDiLRc
-YLvF4z73HyGbLLXBBsWgc+yYv3euTYdq07jz7Gb3oVFq4klpuFjt3ILYzAEyOz/x
-WfUgg8v+FaPwvum/sxeRMqlYrOINQj4iteDxImWPSGahxZgKBsCFDxUtePY6jAwj
-EW/gipFO/OPhZx7mrYOsDj/zeiZhatY486L69GDS9Dl/HmeX8/hP9nPoxvmQ0dhn
-+a99a9b2fnnTRt0SnW8p5kt5JyR3HBui8K0KwTqCG1YRA0tfFCJ4EvX0DYuePIep
-50ZNrJqpGcgeLO7bXnbgRyioPOmbDKw1Z3cIBGhz5gDxKRxYYyAcF3vos3W8TSw=
-=Zu6U
------END PGP SIGNATURE-----
-
---Signature=_Sat__6_Aug_2011_17_04_18_+1000_RF4fIp0aJrL+3PA3--
+--Emperor Turhan, Centauri Republic
