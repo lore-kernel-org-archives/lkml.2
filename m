@@ -1,95 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756872Ab1HFAHU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:07:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38913 "EHLO mx2.suse.de"
+	id S1756859Ab1HFAci (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:32:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45913 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751655Ab1HFAHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:07:12 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:50 2011
-Message-Id: <20110806000250.173457530@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:01:43 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Dave Howorth <dhoworth@mrc-lmb.cam.ac.uk>,
-        Jeff Garzik <jgarzik@pobox.com>
-Subject: [13/55] libata: fix unexpectedly frozen port after ata_eh_reset()
-In-Reply-To: <20110806000257.GA25498@kroah.com>
+	id S1754430Ab1HFAcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:32:36 -0400
+Message-ID: <4E3C8B8A.3080007@zytor.com>
+Date: Fri, 05 Aug 2011 17:32:10 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+MIME-Version: 1.0
+To: Andrew Lutomirski <luto@mit.edu>
+CC: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        lueckintel@yahoo.com, kimwooyoung@gmail.com,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: New vsyscall emulation breaks JITs
+References: <20110805200945.GA14014@tassilo.jf.intel.com> <4E3C5154.2050307@zytor.com> <CAObL_7E3yOHtx9N3qd2UXVn+h6tACoNjekRhiMcHrzb=Mu4q8A@mail.gmail.com> <4E3C571C.1070903@zytor.com> <20110805205222.GK5782@one.firstfloor.org> <CAObL_7G2TqBVXvfuh2GPNteYBNoc8_s398KS+jPOPQYAhPHz0Q@mail.gmail.com> <20110805212153.GL5782@one.firstfloor.org> <CAObL_7GuauANLqM9DnbYnhRuOsnqE+fTEoM10qCfjc40eFHaUA@mail.gmail.com> <4E3C6982.5050901@zytor.com> <CAObL_7GB_wpNhn=oKcmutWuB+RiQ9QXwtZ7v-duOy3wjyCLpNg@mail.gmail.com> <CAObL_7HPgqvoBm4pkTi9ZmF1K0SsyQWKev_idzjLJ9ST=RO=9A@mail.gmail.com>
+In-Reply-To: <CAObL_7HPgqvoBm4pkTi9ZmF1K0SsyQWKev_idzjLJ9ST=RO=9A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+On 08/05/2011 05:20 PM, Andrew Lutomirski wrote:
+> 
+> I was thinking of 0x20 - 0x39.  0x40, 0x41, and 0x42 should do the
+> trick.  I'll cook up a patch.
+> 
+> If you want to keep those vectors available for devices as well, we
+> could hook do_general_protection instead, but that's a little messy.
+> Are there x86 machines out there that are starved for interrupt
+> vectors?
+> 
 
-------------------
+Yes, but 3 aren't going to matter much.
 
-From: Tejun Heo <tj@kernel.org>
+However, on systems which have interrupt migration enabled we're not
+using 0x21-0x2f for anything (because we need a single interrupt with
+absolutely lowest priority).  Out of that range, there are a couple of
+values which should be safe to use because they would be harmless
+instructions of various forms:
 
-commit 8c56cacc724c7650b893d43068fa66044aa29a61 upstream.
+	0x24	- AND AL, imm8
+	0x25	- AND EAX, imm32
+	0x26	- ES:
+	0x2C	- SUB AL, imm8
+	0x2D	- SUB EAX, imm32
+	0x2E	- CS:
 
-To work around controllers which can't properly plug events while
-reset, ata_eh_reset() clears error states and ATA_PFLAG_EH_PENDING
-after reset but before RESET is marked done.  As reset is the final
-recovery action and full verification of devices including onlineness
-and classfication match is done afterwards, this shouldn't lead to
-lost devices or missed hotplug events.
+[Cc: Suresh who is the expert on the interrupt assignments]
 
-Unfortunately, it forgot to thaw the port when clearing EH_PENDING, so
-if the condition happens after resetting an empty port, the port could
-be left frozen and EH will end without thawing it, making the port
-unresponsive to further hotplug events.
-
-Thaw if the port is frozen after clearing EH_PENDING.  This problem is
-reported by Bruce Stenning in the following thread.
-
- http://thread.gmane.org/gmane.linux.kernel/1123265
-
-stable: I think we should weather this patch a bit longer in -rcX
-	before sending it to -stable.  Please wait at least a month
-	after this patch makes upstream.  Thanks.
-
--v2: Fixed spelling in the comment per Dave Howorth.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Bruce Stenning <b.stenning@indigovision.com>
-Cc: Dave Howorth <dhoworth@mrc-lmb.cam.ac.uk>
-Signed-off-by: Jeff Garzik <jgarzik@pobox.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/ata/libata-eh.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -2707,10 +2707,11 @@ int ata_eh_reset(struct ata_link *link,
- 	}
- 
- 	/*
--	 * Some controllers can't be frozen very well and may set
--	 * spuruious error conditions during reset.  Clear accumulated
--	 * error information.  As reset is the final recovery action,
--	 * nothing is lost by doing this.
-+	 * Some controllers can't be frozen very well and may set spurious
-+	 * error conditions during reset.  Clear accumulated error
-+	 * information and re-thaw the port if frozen.  As reset is the
-+	 * final recovery action and we cross check link onlineness against
-+	 * device classification later, no hotplug event is lost by this.
- 	 */
- 	spin_lock_irqsave(link->ap->lock, flags);
- 	memset(&link->eh_info, 0, sizeof(link->eh_info));
-@@ -2719,6 +2720,9 @@ int ata_eh_reset(struct ata_link *link,
- 	ap->pflags &= ~ATA_PFLAG_EH_PENDING;
- 	spin_unlock_irqrestore(link->ap->lock, flags);
- 
-+	if (ap->pflags & ATA_PFLAG_FROZEN)
-+		ata_eh_thaw_port(ap);
-+
- 	/*
- 	 * Make sure onlineness and classification result correspond.
- 	 * Hotplug could have happened during reset and some
-
-
+	-hpa
