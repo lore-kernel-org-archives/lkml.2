@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab1HFAWY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:22:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39394 "EHLO mx2.suse.de"
+	id S932237Ab1HFAWv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:22:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39385 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932162Ab1HFAKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:10:25 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:51 2011
-Message-Id: <20110806000251.569374671@clark.kroah.org>
+	id S932146Ab1HFAKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:10:22 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:52 2011
+Message-Id: <20110806000252.472319197@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:01:57 -0700
+Date: Fri, 05 Aug 2011 17:02:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [27/55] [SCSI] ses: requesting a fault indication
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, gnb@fmeh.org,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [36/55] svcrpc: fix list-corrupting race on nfsd shutdown
 In-Reply-To: <20110806000257.GA25498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Douglas Gilbert <dgilbert@interlog.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 2a350cab9daf9a46322d83b091bb05cf54ccf6ab upstream.
+commit ebc63e531cc6a457595dd110b07ac530eae788c3 upstream.
 
-Noticed that when the sysfs interface of the SCSI SES
-driver was used to request a fault indication the LED
-flashed but the buzzer didn't sound. So it was doing
-what REQUEST IDENT (locate) should do.
+After commit 3262c816a3d7fb1eaabce633caa317887ed549ae "[PATCH] knfsd:
+split svc_serv into pools", svc_delete_xprt (then svc_delete_socket) no
+longer removed its xpt_ready (then sk_ready) field from whatever list it
+was on, noting that there was no point since the whole list was about to
+be destroyed anyway.
 
-Changelog:
-   - fix the setting of REQUEST FAULT for the device slot
-     and array device slot elements in the enclosure control
-     diagnostic page
-   - note the potentially defective code that reads the
-     FAULT SENSED and FAULT REQUESTED bits from the enclosure
-     status diagnostic page
+That was mostly true, but forgot that a few svc_xprt_enqueue()'s might
+still be hanging around playing with the about-to-be-destroyed list, and
+could get themselves into trouble writing to freed memory if we left
+this xprt on the list after freeing it.
 
-The attached patch is against git/scsi-misc-2.6
+(This is actually functionally identical to a patch made first by Ben
+Greear, but with more comments.)
 
-Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Cc: gnb@fmeh.org
+Reported-by: Ben Greear <greearb@candelatech.com>
+Tested-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/ses.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ net/sunrpc/svc_xprt.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/scsi/ses.c
-+++ b/drivers/scsi/ses.c
-@@ -157,6 +157,10 @@ static unsigned char *ses_get_page2_desc
- 	return NULL;
- }
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -896,12 +896,13 @@ void svc_delete_xprt(struct svc_xprt *xp
+ 	if (!test_and_set_bit(XPT_DETACHED, &xprt->xpt_flags))
+ 		list_del_init(&xprt->xpt_list);
+ 	/*
+-	 * We used to delete the transport from whichever list
+-	 * it's sk_xprt.xpt_ready node was on, but we don't actually
+-	 * need to.  This is because the only time we're called
+-	 * while still attached to a queue, the queue itself
+-	 * is about to be destroyed (in svc_destroy).
++	 * The only time we're called while xpt_ready is still on a list
++	 * is while the list itself is about to be destroyed (in
++	 * svc_destroy).  BUT svc_xprt_enqueue could still be attempting
++	 * to add new entries to the sp_sockets list, so we can't leave
++	 * a freed xprt on it.
+ 	 */
++	list_del_init(&xprt->xpt_ready);
+ 	if (test_bit(XPT_TEMP, &xprt->xpt_flags))
+ 		serv->sv_tmpcnt--;
  
-+/* For device slot and array device slot elements, byte 3 bit 6
-+ * is "fault sensed" while byte 3 bit 5 is "fault reqstd". As this
-+ * code stands these bits are shifted 4 positions right so in
-+ * sysfs they will appear as bits 2 and 1 respectively. Strange. */
- static void ses_get_fault(struct enclosure_device *edev,
- 			  struct enclosure_component *ecomp)
- {
-@@ -178,7 +182,7 @@ static int ses_set_fault(struct enclosur
- 		/* zero is disabled */
- 		break;
- 	case ENCLOSURE_SETTING_ENABLED:
--		desc[2] = 0x02;
-+		desc[3] = 0x20;
- 		break;
- 	default:
- 		/* SES doesn't do the SGPIO blink settings */
 
 
