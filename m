@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262Ab1HFAJb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:09:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39210 "EHLO mx2.suse.de"
+	id S1757250Ab1HFAJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:09:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39201 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757239Ab1HFAJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:09:23 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:51 2011
-Message-Id: <20110806000251.682788533@clark.kroah.org>
+	id S1757234Ab1HFAJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:09:19 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:53 2011
+Message-Id: <20110806000253.483264506@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:01:58 -0700
+Date: Fri, 05 Aug 2011 17:02:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [28/55] [SCSI] fix crash in scsi_dispatch_cmd()
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [46/55] gre: fix netns vs proto registration ordering
 In-Reply-To: <20110806000257.GA25498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,71 +26,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
+From: Alexey Dobriyan <adobriyan@gmail.com>
 
-commit bfe159a51203c15d23cb3158fffdc25ec4b4dda1 upstream.
+commit c2892f02712e9516d72841d5c019ed6916329794 upstream.
 
-USB surprise removal of sr is triggering an oops in
-scsi_dispatch_command().  What seems to be happening is that USB is
-hanging on to a queue reference until the last close of the upper
-device, so the crash is caused by surprise remove of a mounted CD
-followed by attempted unmount.
+GRE protocol receive hook can be called right after protocol addition is done.
+If netns stuff is not yet initialized, we're going to oops in
+net_generic().
 
-The problem is that USB doesn't issue its final commands as part of
-the SCSI teardown path, but on last close when the block queue is long
-gone.  The long term fix is probably to make sr do the teardown in the
-same way as sd (so remove all the lower bits on ejection, but keep the
-upper disk alive until last close of user space).  However, the
-current oops can be simply fixed by not allowing any commands to be
-sent to a dead queue.
+This is remotely oopsable if ip_gre is compiled as module and packet
+comes at unfortunate moment of module loading.
 
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[dannf: backported to Debian's 2.6.32]
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/blk-core.c        |    3 +++
- block/blk-exec.c        |    7 +++++++
- drivers/scsi/scsi_lib.c |    2 ++
- 3 files changed, 12 insertions(+)
+ net/ipv4/ip_gre.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -865,6 +865,9 @@ struct request *blk_get_request(struct r
- {
- 	struct request *rq;
+--- a/net/ipv4/ip_gre.c
++++ b/net/ipv4/ip_gre.c
+@@ -1665,14 +1665,15 @@ static int __init ipgre_init(void)
  
-+	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
-+		return NULL;
+ 	printk(KERN_INFO "GRE over IPv4 tunneling driver\n");
+ 
+-	if (inet_add_protocol(&ipgre_protocol, IPPROTO_GRE) < 0) {
+-		printk(KERN_INFO "ipgre init: can't add protocol\n");
+-		return -EAGAIN;
+-	}
+-
+ 	err = register_pernet_gen_device(&ipgre_net_id, &ipgre_net_ops);
+ 	if (err < 0)
+-		goto gen_device_failed;
++		return err;
 +
- 	BUG_ON(rw != READ && rw != WRITE);
- 
- 	spin_lock_irq(q->queue_lock);
---- a/block/blk-exec.c
-+++ b/block/blk-exec.c
-@@ -50,6 +50,13 @@ void blk_execute_rq_nowait(struct reques
- {
- 	int where = at_head ? ELEVATOR_INSERT_FRONT : ELEVATOR_INSERT_BACK;
- 
-+	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))) {
-+		rq->errors = -ENXIO;
-+		if (rq->end_io)
-+			rq->end_io(rq, rq->errors);
-+		return;
++	err = inet_add_protocol(&ipgre_protocol, IPPROTO_GRE);
++	if (err < 0) {
++		printk(KERN_INFO "ipgre init: can't add protocol\n");
++		goto add_proto_failed;
 +	}
-+
- 	rq->rq_disk = bd_disk;
- 	rq->end_io = done;
- 	WARN_ON(irqs_disabled());
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -215,6 +215,8 @@ int scsi_execute(struct scsi_device *sde
- 	int ret = DRIVER_ERROR << 24;
  
- 	req = blk_get_request(sdev->request_queue, write, __GFP_WAIT);
-+	if (!req)
-+		return ret;
+ 	err = rtnl_link_register(&ipgre_link_ops);
+ 	if (err < 0)
+@@ -1688,9 +1689,9 @@ out:
+ tap_ops_failed:
+ 	rtnl_link_unregister(&ipgre_link_ops);
+ rtnl_link_failed:
+-	unregister_pernet_gen_device(ipgre_net_id, &ipgre_net_ops);
+-gen_device_failed:
+ 	inet_del_protocol(&ipgre_protocol, IPPROTO_GRE);
++add_proto_failed:
++	unregister_pernet_gen_device(ipgre_net_id, &ipgre_net_ops);
+ 	goto out;
+ }
  
- 	if (bufflen &&	blk_rq_map_kern(sdev->request_queue, req,
- 					buffer, bufflen, __GFP_WAIT))
+@@ -1698,9 +1699,9 @@ static void __exit ipgre_fini(void)
+ {
+ 	rtnl_link_unregister(&ipgre_tap_ops);
+ 	rtnl_link_unregister(&ipgre_link_ops);
+-	unregister_pernet_gen_device(ipgre_net_id, &ipgre_net_ops);
+ 	if (inet_del_protocol(&ipgre_protocol, IPPROTO_GRE) < 0)
+ 		printk(KERN_INFO "ipgre close: can't remove protocol\n");
++	unregister_pernet_gen_device(ipgre_net_id, &ipgre_net_ops);
+ }
+ 
+ module_init(ipgre_init);
 
 
