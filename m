@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914Ab1HFAHa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:07:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38925 "EHLO mx2.suse.de"
+	id S1757000Ab1HFAHn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:07:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38950 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756831Ab1HFAHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:07:17 -0400
+	id S1756915Ab1HFAHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:07:30 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:50 2011
-Message-Id: <20110806000250.376182593@clark.kroah.org>
+Message-Id: <20110806000250.799221410@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:01:45 -0700
+Date: Fri, 05 Aug 2011 17:01:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Manuel Jander <manuel.jander@gmail.com>
-Subject: [15/55] USB: pl2303: add AdLink ND-6530 USB IDs
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [19/55] USB: OHCI: fix another regression for NVIDIA controllers
 In-Reply-To: <20110806000257.GA25498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +25,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manuel Jander <manuel.jander@gmail.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 9a61d72602771906e11a5944e8571f8006387b39 upstream.
+commit 6ea12a04d295235ed67010a09fdea58c949e3eb0 upstream.
 
-I read a rumor that the AdLink ND6530 USB RS232, RS422 and RS485
-isolated adapter is actually a PL2303 based usb serial adapter. I
-tried it out, and as far as I can tell it works.
+The NVIDIA series of OHCI controllers continues to be troublesome.  A
+few people using the MCP67 chipset have reported that even with the
+most recent kernels, the OHCI controller fails to handle new
+connections and spams the system log with "unable to enumerate USB
+port" messages.  This is different from the other problems previously
+reported for NVIDIA OHCI controllers, although it is probably related.
 
-Signed-off-by: Manuel Jander <manuel.jander@gmail.com>
+It turns out that the MCP67 controller does not like to be kept in the
+RESET state very long.  After only a few seconds, it decides not to
+work any more.  This patch (as1479) changes the PCI initialization
+quirk code so that NVIDIA controllers are switched into the SUSPEND
+state after 50 ms of RESET.  With no interrupts enabled and all the
+downstream devices reset, and thus unable to send wakeup requests,
+this should be perfectly safe (even for non-NVIDIA hardware).
+
+The removal code in ohci-hcd hasn't been changed; it will still leave
+the controller in the RESET state.  As a result, if someone unloads
+ohci-hcd and then reloads it, the controller won't work again until
+the system is rebooted.  If anybody complains about this, the removal
+code can be updated similarly.
+
+This fixes Bugzilla #22052.
+
+Tested-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/pl2303.c |    1 +
- drivers/usb/serial/pl2303.h |    4 ++++
- 2 files changed, 5 insertions(+)
+ drivers/usb/host/pci-quirks.c |   28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -100,6 +100,7 @@ static struct usb_device_id id_table []
- 	{ USB_DEVICE(ZEAGLE_VENDOR_ID, ZEAGLE_N2ITION3_PRODUCT_ID) },
- 	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
- 	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
-+	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
- 	{ }					/* Terminating entry */
- };
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -34,6 +34,8 @@
+ #define OHCI_INTRSTATUS		0x0c
+ #define OHCI_INTRENABLE		0x10
+ #define OHCI_INTRDISABLE	0x14
++#define OHCI_FMINTERVAL		0x34
++#define OHCI_HCR		(1 << 0)	/* host controller reset */
+ #define OHCI_OCR		(1 << 3)	/* ownership change request */
+ #define OHCI_CTRL_RWC		(1 << 9)	/* remote wakeup connected */
+ #define OHCI_CTRL_IR		(1 << 8)	/* interrupt routing */
+@@ -204,6 +206,32 @@ static void __devinit quirk_usb_handoff_
  
---- a/drivers/usb/serial/pl2303.h
-+++ b/drivers/usb/serial/pl2303.h
-@@ -140,3 +140,7 @@
- /* Sanwa KB-USB2 multimeter cable (ID: 11ad:0001) */
- #define SANWA_VENDOR_ID		0x11ad
- #define SANWA_PRODUCT_ID	0x0001
+ 	/* reset controller, preserving RWC (and possibly IR) */
+ 	writel(control & OHCI_CTRL_MASK, base + OHCI_CONTROL);
++	readl(base + OHCI_CONTROL);
 +
-+/* ADLINK ND-6530 RS232,RS485 and RS422 adapter */
-+#define ADLINK_VENDOR_ID        0x0b63
-+#define ADLINK_ND6530_PRODUCT_ID       0x6530
++	/* Some NVIDIA controllers stop working if kept in RESET for too long */
++	if (pdev->vendor == PCI_VENDOR_ID_NVIDIA) {
++		u32 fminterval;
++		int cnt;
++
++		/* drive reset for at least 50 ms (7.1.7.5) */
++		msleep(50);
++
++		/* software reset of the controller, preserving HcFmInterval */
++		fminterval = readl(base + OHCI_FMINTERVAL);
++		writel(OHCI_HCR, base + OHCI_CMDSTATUS);
++
++		/* reset requires max 10 us delay */
++		for (cnt = 30; cnt > 0; --cnt) {	/* ... allow extra time */
++			if ((readl(base + OHCI_CMDSTATUS) & OHCI_HCR) == 0)
++				break;
++			udelay(1);
++		}
++		writel(fminterval, base + OHCI_FMINTERVAL);
++
++		/* Now we're in the SUSPEND state with all devices reset
++		 * and wakeups and interrupts disabled
++		 */
++	}
+ 
+ 	/*
+ 	 * disable interrupts
 
 
