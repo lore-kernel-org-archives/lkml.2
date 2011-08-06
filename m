@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932455Ab1HFARO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:17:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39667 "EHLO mx2.suse.de"
+	id S932396Ab1HFALv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:11:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39583 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932336Ab1HFAL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:11:57 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:12 2011
-Message-Id: <20110806000412.260659293@clark.kroah.org>
+	id S932366Ab1HFALg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:11:36 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:14 2011
+Message-Id: <20110806000414.629759175@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:25 -0700
+Date: Fri, 05 Aug 2011 17:03:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>,
-        Eduardo Valentin <edubezval@gmail.com>
-Subject: [07/50] si4713-i2c: avoid potential buffer overflow on si4713
+        Anton Blanchard <anton@samba.org>, Michael Neuling <mikey@neuling.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [30/50] powerpc/kdump: Fix timeout in crash_kexec_wait_realmode
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,45 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+From: Michael Neuling <mikey@neuling.org>
 
-commit dc6b845044ccb7e9e6f3b7e71bd179b3cf0223b6 upstream.
+commit 63f21a56f1cc0b800a4c00349c59448f82473d19 upstream.
 
-While compiling it with Fedora 15, I noticed this issue:
+The existing code it pretty ugly.  How about we clean it up even more
+like this?
 
-  inlined from ‘si4713_write_econtrol_string’ at drivers/media/radio/si4713-i2c.c:1065:24:
-  arch/x86/include/asm/uaccess_32.h:211:26: error: call to ‘copy_from_user_overflow’ declared with attribute error: copy_from_user() buffer size is not provably correct
+From: Anton Blanchard <anton@samba.org>
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Acked-by: Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
-Acked-by: Eduardo Valentin <edubezval@gmail.com>
-Reviewed-by: Eugene Teo <eugeneteo@kernel.sg>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+We check for timeout expiry in the outer loop, but we also need to
+check it in the inner loop or we can lock up forever waiting for a
+CPU to hit real mode.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/radio/si4713-i2c.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/crash.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/drivers/media/radio/si4713-i2c.c
-+++ b/drivers/media/radio/si4713-i2c.c
-@@ -1003,7 +1003,7 @@ static int si4713_write_econtrol_string(
- 		char ps_name[MAX_RDS_PS_NAME + 1];
+--- a/arch/powerpc/kernel/crash.c
++++ b/arch/powerpc/kernel/crash.c
+@@ -176,12 +176,8 @@ static void crash_kexec_wait_realmode(in
  
- 		len = control->size - 1;
--		if (len > MAX_RDS_PS_NAME) {
-+		if (len < 0 || len > MAX_RDS_PS_NAME) {
- 			rval = -ERANGE;
- 			goto exit;
- 		}
-@@ -1025,7 +1025,7 @@ static int si4713_write_econtrol_string(
- 		char radio_text[MAX_RDS_RADIO_TEXT + 1];
- 
- 		len = control->size - 1;
--		if (len > MAX_RDS_RADIO_TEXT) {
-+		if (len < 0 || len > MAX_RDS_RADIO_TEXT) {
- 			rval = -ERANGE;
- 			goto exit;
+ 		while (paca[i].kexec_state < KEXEC_STATE_REAL_MODE) {
+ 			barrier();
+-			if (!cpu_possible(i)) {
++			if (!cpu_possible(i) || !cpu_online(i) || (msecs <= 0))
+ 				break;
+-			}
+-			if (!cpu_online(i)) {
+-				break;
+-			}
+ 			msecs--;
+ 			mdelay(1);
  		}
 
 
