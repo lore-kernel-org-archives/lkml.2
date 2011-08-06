@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278Ab1HFAQR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:16:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39730 "EHLO mx2.suse.de"
+	id S932435Ab1HFAMQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:12:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39706 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932437Ab1HFAMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:12:17 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:16 2011
-Message-Id: <20110806000415.930570169@clark.kroah.org>
+	id S964777Ab1HFAML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:12:11 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:11 2011
+Message-Id: <20110806000411.628894019@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:04:01 -0700
+Date: Fri, 05 Aug 2011 17:03:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [43/50] gre: fix netns vs proto registration ordering
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [01/50] ASoC: Fix Blackfin I2S _pointer() implementation return in bounds values
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,71 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Dobriyan <adobriyan@gmail.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit c2892f02712e9516d72841d5c019ed6916329794 upstream.
+commit e999dc50404d401150a5429b6459473a691fd1a0 upstream.
 
-GRE protocol receive hook can be called right after protocol addition is done.
-If netns stuff is not yet initialized, we're going to oops in
-net_generic().
+The Blackfin DMA controller can report one frame beyond the end of the
+buffer in the wraparound case but ALSA requires that the pointer always
+be in the buffer. Do the wraparound to handle this. A similar bug is
+likely to apply to the other Blackfin PCM drivers but the code is less
+obvious to inspection and I don't have a user to test.
 
-This is remotely oopsable if ip_gre is compiled as module and packet
-comes at unfortunate moment of module loading.
-
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Kieran O'Leary <Kieran.O'Leary@wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@ti.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv4/ip_gre.c |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ sound/soc/blackfin/bf5xx-i2s-pcm.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/ip_gre.c
-+++ b/net/ipv4/ip_gre.c
-@@ -1667,14 +1667,15 @@ static int __init ipgre_init(void)
- 
- 	printk(KERN_INFO "GRE over IPv4 tunneling driver\n");
- 
--	if (inet_add_protocol(&ipgre_protocol, IPPROTO_GRE) < 0) {
--		printk(KERN_INFO "ipgre init: can't add protocol\n");
--		return -EAGAIN;
--	}
--
- 	err = register_pernet_device(&ipgre_net_ops);
- 	if (err < 0)
--		goto gen_device_failed;
-+		return err;
+--- a/sound/soc/blackfin/bf5xx-i2s-pcm.c
++++ b/sound/soc/blackfin/bf5xx-i2s-pcm.c
+@@ -139,11 +139,20 @@ static snd_pcm_uframes_t bf5xx_pcm_point
+ 	pr_debug("%s enter\n", __func__);
+ 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+ 		diff = sport_curr_offset_tx(sport);
+-		frames = bytes_to_frames(substream->runtime, diff);
+ 	} else {
+ 		diff = sport_curr_offset_rx(sport);
+-		frames = bytes_to_frames(substream->runtime, diff);
+ 	}
 +
-+	err = inet_add_protocol(&ipgre_protocol, IPPROTO_GRE);
-+	if (err < 0) {
-+		printk(KERN_INFO "ipgre init: can't add protocol\n");
-+		goto add_proto_failed;
-+	}
- 
- 	err = rtnl_link_register(&ipgre_link_ops);
- 	if (err < 0)
-@@ -1690,9 +1691,9 @@ out:
- tap_ops_failed:
- 	rtnl_link_unregister(&ipgre_link_ops);
- rtnl_link_failed:
--	unregister_pernet_device(&ipgre_net_ops);
--gen_device_failed:
- 	inet_del_protocol(&ipgre_protocol, IPPROTO_GRE);
-+add_proto_failed:
-+	unregister_pernet_device(&ipgre_net_ops);
- 	goto out;
++	/*
++	 * TX at least can report one frame beyond the end of the
++	 * buffer if we hit the wraparound case - clamp to within the
++	 * buffer as the ALSA APIs require.
++	 */
++	if (diff == snd_pcm_lib_buffer_bytes(substream))
++		diff = 0;
++
++	frames = bytes_to_frames(substream->runtime, diff);
++
+ 	return frames;
  }
  
-@@ -1700,9 +1701,9 @@ static void __exit ipgre_fini(void)
- {
- 	rtnl_link_unregister(&ipgre_tap_ops);
- 	rtnl_link_unregister(&ipgre_link_ops);
--	unregister_pernet_device(&ipgre_net_ops);
- 	if (inet_del_protocol(&ipgre_protocol, IPPROTO_GRE) < 0)
- 		printk(KERN_INFO "ipgre close: can't remove protocol\n");
-+	unregister_pernet_device(&ipgre_net_ops);
- }
- 
- module_init(ipgre_init);
 
 
