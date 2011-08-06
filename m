@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932382Ab1HFALp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:11:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39611 "EHLO mx2.suse.de"
+	id S932424Ab1HFAR5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:17:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39622 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932213Ab1HFALk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:11:40 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:11 2011
-Message-Id: <20110806000411.841655997@clark.kroah.org>
+	id S932374Ab1HFALn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:11:43 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:14 2011
+Message-Id: <20110806000414.736692274@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:21 -0700
+Date: Fri, 05 Aug 2011 17:03:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hans Verkuil <hans.verkuil@cisco.com>, Mike Isely <isely@pobox.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [03/50] [media] pvrusb2: fix g/s_tuner support
+        Don Dutile <ddutile@redhat.com>, Chris Wright <chrisw@sous-sol.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [31/50] PCI: ARI is a PCIe v2 feature
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+From: Chris Wright <chrisw@sous-sol.org>
 
-commit 50e9efd60b213ce43ad6979bfc18e25eec2d8413 upstream.
+commit 864d296cf948aef0fa32b81407541572583f7572 upstream.
 
-The tuner-core subdev requires that the type field of v4l2_tuner is
-filled in correctly. This is done in v4l2-ioctl.c, but pvrusb2 doesn't
-use that yet, so we have to do it manually based on whether the current
-input is radio or not.
+The function pci_enable_ari() may mistakenly set the downstream port
+of a v1 PCIe switch in ARI Forwarding mode.  This is a PCIe v2 feature,
+and with an SR-IOV device on that switch port believing the switch above
+is ARI capable it may attempt to use functions 8-255, translating into
+invalid (non-zero) device numbers for that bus.  This has been seen
+to cause Completion Timeouts and general misbehaviour including hangs
+and panics.
 
-Tested with my pvrusb2.
-
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Acked-by: Mike Isely <isely@pobox.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Acked-by: Don Dutile <ddutile@redhat.com>
+Tested-by: Don Dutile <ddutile@redhat.com>
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/pvrusb2/pvrusb2-hdw.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/pci/pci.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/media/video/pvrusb2/pvrusb2-hdw.c
-+++ b/drivers/media/video/pvrusb2/pvrusb2-hdw.c
-@@ -3015,6 +3015,8 @@ static void pvr2_subdev_update(struct pv
- 	if (hdw->input_dirty || hdw->audiomode_dirty || hdw->force_dirty) {
- 		struct v4l2_tuner vt;
- 		memset(&vt, 0, sizeof(vt));
-+		vt.type = (hdw->input_val == PVR2_CVAL_INPUT_RADIO) ?
-+			V4L2_TUNER_RADIO : V4L2_TUNER_ANALOG_TV;
- 		vt.audmode = hdw->audiomode_val;
- 		v4l2_device_call_all(&hdw->v4l2_dev, 0, tuner, s_tuner, &vt);
- 	}
-@@ -5101,6 +5103,8 @@ void pvr2_hdw_status_poll(struct pvr2_hd
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1528,7 +1528,7 @@ void pci_enable_ari(struct pci_dev *dev)
  {
- 	struct v4l2_tuner *vtp = &hdw->tuner_signal_info;
- 	memset(vtp, 0, sizeof(*vtp));
-+	vtp->type = (hdw->input_val == PVR2_CVAL_INPUT_RADIO) ?
-+		V4L2_TUNER_RADIO : V4L2_TUNER_ANALOG_TV;
- 	hdw->tuner_signal_stale = 0;
- 	/* Note: There apparently is no replacement for VIDIOC_CROPCAP
- 	   using v4l2-subdev - therefore we can't support that AT ALL right
+ 	int pos;
+ 	u32 cap;
+-	u16 ctrl;
++	u16 flags, ctrl;
+ 	struct pci_dev *bridge;
+ 
+ 	if (!pci_is_pcie(dev) || dev->devfn)
+@@ -1546,6 +1546,11 @@ void pci_enable_ari(struct pci_dev *dev)
+ 	if (!pos)
+ 		return;
+ 
++	/* ARI is a PCIe v2 feature */
++	pci_read_config_word(bridge, pos + PCI_EXP_FLAGS, &flags);
++	if ((flags & PCI_EXP_FLAGS_VERS) < 2)
++		return;
++
+ 	pci_read_config_dword(bridge, pos + PCI_EXP_DEVCAP2, &cap);
+ 	if (!(cap & PCI_EXP_DEVCAP2_ARI))
+ 		return;
 
 
