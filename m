@@ -1,57 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab1HFCFc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 22:05:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36974 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017Ab1HFCFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 22:05:31 -0400
-Message-ID: <4E3CA12D.1030408@zytor.com>
-Date: Fri, 05 Aug 2011 19:04:29 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Brian Gerst <brgerst@gmail.com>
-Subject: Re: [PATCH 0/4 v2] [GIT PULL][v3.2] x86: Consolidate 32 and 64 bit
- thread_info
-References: <20110806011102.721109343@goodmis.org>
-In-Reply-To: <20110806011102.721109343@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754654Ab1HFC2A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 22:28:00 -0400
+Received: from vms173001pub.verizon.net ([206.46.173.1]:59838 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754105Ab1HFC15 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 22:27:57 -0400
+Date: Fri, 05 Aug 2011 22:27:38 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: [GIT PATCH] additional ACPI patch for Linux-3.1-merge
+Message-id: <alpine.LFD.2.02.1108052224480.19295@x980>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2011 06:11 PM, Steven Rostedt wrote:
-> 
-> Thomas, Ingo, and Peter(s),
-> 
-> On IRC, Peter Zijlstra mentioned to me the difference between
-> 32bit and 64bit x86 on how thread_info is handled with interrupts.
-> I mentioned that they should be more the same, and Peter agreed.
-> 
-> I decided to do so, and ended up with the following patches.
-> I marked this for v3.2 as it should be tested a bit before going into
-> mainline. I've ran several configs on it, but more testing should be done.
-> 
-> Some of the patches are clean ups, but the main ones are patch 3 and 4
-> that do the work to convert 32bit of thread_info to be more like
-> the 64bit.
-> 
+Hi Linus,
 
-Hi Steven,
+please pull from: 
 
-I'd like to wait until the merge window is over with pulling in 3.2
-material ... nothing personal or technical, just to simplify management.
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git release
 
-	-hpa
+Fixes a 3.1 regression.
 
+thanks!
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Len Brown
+Intel Open Source Technology Center
 
+ps. the patch is also available on linux-acpi@vger.kernel.org
+
+ drivers/acpi/battery.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
+
+through these commits:
+
+Sergey Senozhatsky (1):
+      Battery: sysfs_remove_battery(): possible circular locking
+
+with this log:
+
+commit 69d94ec6d83d84044252d9ba03f6a8970816e350
+Author: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Date:   Sat Aug 6 01:34:08 2011 +0300
+
+    Battery: sysfs_remove_battery(): possible circular locking
+    
+    Commit 9c921c22a7f33397a6774d7fa076db9b6a0fd669
+    Author: Lan Tianyu <tianyu.lan@intel.com>
+    
+        ACPI / Battery: Resolve the race condition in the sysfs_remove_battery()
+    
+    fixed BUG https://bugzilla.kernel.org/show_bug.cgi?id=35642 , but as a side
+    effect made lockdep unhappy with sysfs_remove_battery():
+    
+    [14818.477168]
+    [14818.477170] =======================================================
+    [14818.477200] [ INFO: possible circular locking dependency detected ]
+    [14818.477221] 3.1.0-dbg-07865-g1280ea8-dirty #668
+    [14818.477236] -------------------------------------------------------
+    [14818.477257] s2ram/1599 is trying to acquire lock:
+    [14818.477276]  (s_active#8){++++.+}, at: [<ffffffff81169147>] sysfs_addrm_finish+0x31/0x5a
+    [14818.477323]
+    [14818.477325] but task is already holding lock:
+    [14818.477350]  (&battery->lock){+.+.+.}, at: [<ffffffffa0047278>] sysfs_remove_battery+0x10/0x4b [battery]
+    [14818.477395]
+    [14818.477397] which lock already depends on the new lock.
+    [14818.477399]
+    [..]
+    [14818.479121] stack backtrace:
+    [14818.479148] Pid: 1599, comm: s2ram Not tainted 3.1.0-dbg-07865-g1280ea8-dirty #668
+    [14818.479175] Call Trace:
+    [14818.479198]  [<ffffffff814828c3>] print_circular_bug+0x293/0x2a4
+    [14818.479228]  [<ffffffff81070cb5>] __lock_acquire+0xfe4/0x164b
+    [14818.479260]  [<ffffffff81169147>] ? sysfs_addrm_finish+0x31/0x5a
+    [14818.479288]  [<ffffffff810718d2>] lock_acquire+0x138/0x1ac
+    [14818.479316]  [<ffffffff81169147>] ? sysfs_addrm_finish+0x31/0x5a
+    [14818.479345]  [<ffffffff81168a79>] sysfs_deactivate+0x9b/0xec
+    [14818.479373]  [<ffffffff81169147>] ? sysfs_addrm_finish+0x31/0x5a
+    [14818.479405]  [<ffffffff81169147>] sysfs_addrm_finish+0x31/0x5a
+    [14818.479433]  [<ffffffff81167bc5>] sysfs_hash_and_remove+0x54/0x77
+    [14818.479461]  [<ffffffff811681b9>] sysfs_remove_file+0x12/0x14
+    [14818.479488]  [<ffffffff81385bf8>] device_remove_file+0x12/0x14
+    [14818.479516]  [<ffffffff81386504>] device_del+0x119/0x17c
+    [14818.479542]  [<ffffffff81386575>] device_unregister+0xe/0x1a
+    [14818.479570]  [<ffffffff813c6ef9>] power_supply_unregister+0x23/0x27
+    [14818.479601]  [<ffffffffa004729c>] sysfs_remove_battery+0x34/0x4b [battery]
+    [14818.479632]  [<ffffffffa004778f>] battery_notify+0x2c/0x3a [battery]
+    [14818.479662]  [<ffffffff8148fe82>] notifier_call_chain+0x74/0xa1
+    [14818.479692]  [<ffffffff810624b4>] __blocking_notifier_call_chain+0x6c/0x89
+    [14818.479722]  [<ffffffff810624e0>] blocking_notifier_call_chain+0xf/0x11
+    [14818.479751]  [<ffffffff8107e40e>] pm_notifier_call_chain+0x15/0x27
+    [14818.479770]  [<ffffffff8107ee1a>] enter_state+0xa7/0xd5
+    [14818.479782]  [<ffffffff8107e341>] state_store+0xaa/0xc0
+    [14818.479795]  [<ffffffff8107e297>] ? pm_async_store+0x45/0x45
+    [14818.479807]  [<ffffffff81248837>] kobj_attr_store+0x17/0x19
+    [14818.479820]  [<ffffffff81167e27>] sysfs_write_file+0x103/0x13f
+    [14818.479834]  [<ffffffff81109037>] vfs_write+0xad/0x13d
+    [14818.479847]  [<ffffffff811092b2>] sys_write+0x45/0x6c
+    [14818.479860]  [<ffffffff81492f92>] system_call_fastpath+0x16/0x1b
+    
+    This patch introduces separate lock to struct acpi_battery to
+    grab in sysfs_remove_battery() instead of battery->lock.
+    So fix by Lan Tianyu is still there, we just grab independent lock.
+    
+    Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+    Tested-by: Lan Tianyu <tianyu.lan@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
