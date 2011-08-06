@@ -1,115 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab1HFC2A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 22:28:00 -0400
-Received: from vms173001pub.verizon.net ([206.46.173.1]:59838 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754105Ab1HFC15 (ORCPT
+	id S1754430Ab1HFCiX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 22:38:23 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:58257 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752378Ab1HFCiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 22:27:57 -0400
-Date: Fri, 05 Aug 2011 22:27:38 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: [GIT PATCH] additional ACPI patch for Linux-3.1-merge
-Message-id: <alpine.LFD.2.02.1108052224480.19295@x980>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 5 Aug 2011 22:38:22 -0400
+From: Joe Perches <joe@perches.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] sata_sil24: Use const
+Date: Fri,  5 Aug 2011 19:38:17 -0700
+Message-Id: <a73ac1acade5eafb50c9768647fc51040719e8be.1312598278.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.405.gc1be0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Reduce data by using const.
 
-please pull from: 
+$ size drivers/ata/sata_sil24.o*
+   text	   data	    bss	    dec	    hex	filename
+  12764	    614	   2688	  16066	   3ec2	drivers/ata/sata_sil24.o.new
+  12320	   1058	   2688	  16066	   3ec2	drivers/ata/sata_sil24.o.old
 
-git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git release
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/ata/sata_sil24.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Fixes a 3.1 regression.
+diff --git a/drivers/ata/sata_sil24.c b/drivers/ata/sata_sil24.c
+index 55470f3..1e91406 100644
+--- a/drivers/ata/sata_sil24.c
++++ b/drivers/ata/sata_sil24.c
+@@ -268,7 +268,7 @@ union sil24_cmd_block {
+ 	struct sil24_atapi_block atapi;
+ };
+ 
+-static struct sil24_cerr_info {
++static const struct sil24_cerr_info {
+ 	unsigned int err_mask, action;
+ 	const char *desc;
+ } sil24_cerr_db[] = {
+@@ -1019,7 +1019,7 @@ static void sil24_error_intr(struct ata_port *ap)
+ 
+ 	/* deal with command error */
+ 	if (irq_stat & PORT_IRQ_ERROR) {
+-		struct sil24_cerr_info *ci = NULL;
++		const struct sil24_cerr_info *ci = NULL;
+ 		unsigned int err_mask = 0, action = 0;
+ 		u32 context, cerr;
+ 		int pmp;
+-- 
+1.7.6.405.gc1be0
 
-thanks!
-
-Len Brown
-Intel Open Source Technology Center
-
-ps. the patch is also available on linux-acpi@vger.kernel.org
-
- drivers/acpi/battery.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
-
-through these commits:
-
-Sergey Senozhatsky (1):
-      Battery: sysfs_remove_battery(): possible circular locking
-
-with this log:
-
-commit 69d94ec6d83d84044252d9ba03f6a8970816e350
-Author: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Date:   Sat Aug 6 01:34:08 2011 +0300
-
-    Battery: sysfs_remove_battery(): possible circular locking
-    
-    Commit 9c921c22a7f33397a6774d7fa076db9b6a0fd669
-    Author: Lan Tianyu <tianyu.lan@intel.com>
-    
-        ACPI / Battery: Resolve the race condition in the sysfs_remove_battery()
-    
-    fixed BUG https://bugzilla.kernel.org/show_bug.cgi?id=35642 , but as a side
-    effect made lockdep unhappy with sysfs_remove_battery():
-    
-    [14818.477168]
-    [14818.477170] =======================================================
-    [14818.477200] [ INFO: possible circular locking dependency detected ]
-    [14818.477221] 3.1.0-dbg-07865-g1280ea8-dirty #668
-    [14818.477236] -------------------------------------------------------
-    [14818.477257] s2ram/1599 is trying to acquire lock:
-    [14818.477276]  (s_active#8){++++.+}, at: [<ffffffff81169147>] sysfs_addrm_finish+0x31/0x5a
-    [14818.477323]
-    [14818.477325] but task is already holding lock:
-    [14818.477350]  (&battery->lock){+.+.+.}, at: [<ffffffffa0047278>] sysfs_remove_battery+0x10/0x4b [battery]
-    [14818.477395]
-    [14818.477397] which lock already depends on the new lock.
-    [14818.477399]
-    [..]
-    [14818.479121] stack backtrace:
-    [14818.479148] Pid: 1599, comm: s2ram Not tainted 3.1.0-dbg-07865-g1280ea8-dirty #668
-    [14818.479175] Call Trace:
-    [14818.479198]  [<ffffffff814828c3>] print_circular_bug+0x293/0x2a4
-    [14818.479228]  [<ffffffff81070cb5>] __lock_acquire+0xfe4/0x164b
-    [14818.479260]  [<ffffffff81169147>] ? sysfs_addrm_finish+0x31/0x5a
-    [14818.479288]  [<ffffffff810718d2>] lock_acquire+0x138/0x1ac
-    [14818.479316]  [<ffffffff81169147>] ? sysfs_addrm_finish+0x31/0x5a
-    [14818.479345]  [<ffffffff81168a79>] sysfs_deactivate+0x9b/0xec
-    [14818.479373]  [<ffffffff81169147>] ? sysfs_addrm_finish+0x31/0x5a
-    [14818.479405]  [<ffffffff81169147>] sysfs_addrm_finish+0x31/0x5a
-    [14818.479433]  [<ffffffff81167bc5>] sysfs_hash_and_remove+0x54/0x77
-    [14818.479461]  [<ffffffff811681b9>] sysfs_remove_file+0x12/0x14
-    [14818.479488]  [<ffffffff81385bf8>] device_remove_file+0x12/0x14
-    [14818.479516]  [<ffffffff81386504>] device_del+0x119/0x17c
-    [14818.479542]  [<ffffffff81386575>] device_unregister+0xe/0x1a
-    [14818.479570]  [<ffffffff813c6ef9>] power_supply_unregister+0x23/0x27
-    [14818.479601]  [<ffffffffa004729c>] sysfs_remove_battery+0x34/0x4b [battery]
-    [14818.479632]  [<ffffffffa004778f>] battery_notify+0x2c/0x3a [battery]
-    [14818.479662]  [<ffffffff8148fe82>] notifier_call_chain+0x74/0xa1
-    [14818.479692]  [<ffffffff810624b4>] __blocking_notifier_call_chain+0x6c/0x89
-    [14818.479722]  [<ffffffff810624e0>] blocking_notifier_call_chain+0xf/0x11
-    [14818.479751]  [<ffffffff8107e40e>] pm_notifier_call_chain+0x15/0x27
-    [14818.479770]  [<ffffffff8107ee1a>] enter_state+0xa7/0xd5
-    [14818.479782]  [<ffffffff8107e341>] state_store+0xaa/0xc0
-    [14818.479795]  [<ffffffff8107e297>] ? pm_async_store+0x45/0x45
-    [14818.479807]  [<ffffffff81248837>] kobj_attr_store+0x17/0x19
-    [14818.479820]  [<ffffffff81167e27>] sysfs_write_file+0x103/0x13f
-    [14818.479834]  [<ffffffff81109037>] vfs_write+0xad/0x13d
-    [14818.479847]  [<ffffffff811092b2>] sys_write+0x45/0x6c
-    [14818.479860]  [<ffffffff81492f92>] system_call_fastpath+0x16/0x1b
-    
-    This patch introduces separate lock to struct acpi_battery to
-    grab in sysfs_remove_battery() instead of battery->lock.
-    So fix by Lan Tianyu is still there, we just grab independent lock.
-    
-    Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-    Tested-by: Lan Tianyu <tianyu.lan@intel.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
