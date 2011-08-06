@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab1HFLmo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 07:42:44 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:65244 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753580Ab1HFLmm convert rfc822-to-8bit (ORCPT
+	id S1755945Ab1HFLmx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 07:42:53 -0400
+Received: from DMZ-MAILSEC-SCANNER-1.MIT.EDU ([18.9.25.12]:52132 "EHLO
+	dmz-mailsec-scanner-1.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755543Ab1HFLmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 07:42:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110805094319.GA2420@elte.hu>
-References: <cover.1312386029.git.luto@mit.edu> <5bec80947da3fb72f2f18fbe6d924a69f83fbed9.1312386029.git.luto@mit.edu>
- <alpine.LFD.2.02.1108031214470.22067@x980> <CAObL_7GuAmzyjo5AmYxbTeiAqFtVk1N+opzWEzwJu8Mgrvts7g@mail.gmail.com>
- <CAObL_7FNa20Hsd0v-hs1vz=ejnkdaT+Yr=wwM681GbZJiuLkMQ@mail.gmail.com>
- <alpine.LFD.2.02.1108031514550.22067@x980> <20110804194117.GA5265@srcf.ucam.org>
- <alpine.LFD.2.02.1108041751360.24626@x980> <20110804215619.GA7101@srcf.ucam.org>
- <20110805094319.GA2420@elte.hu>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Sat, 6 Aug 2011 07:42:22 -0400
-X-Google-Sender-Auth: H7TRmK8-jsYc_aUh_v8H2GApP40
-Message-ID: <CAObL_7FAcv2vo=+8jooh394BTp_5WYCvRQ+FyVr3mfVPRxZgkA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] x86: Enable monitor/mwait on Intel if BIOS hasn't already
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 6 Aug 2011 07:42:49 -0400
+X-AuditID: 1209190c-b7bdeae000000a26-2a-4e3d285f1068
+From: Andy Lutomirski <luto@MIT.EDU>
+To: x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: Fenghua Yu <fenghua.yu@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andy Lutomirski <luto@MIT.EDU>
+Subject: [PATCH v2 0/2] Forcibly enable some MISC_ENABLE features on Intel
+Date: Sat,  6 Aug 2011 07:42:34 -0400
+Message-Id: <cover.1312630712.git.luto@mit.edu>
+X-Mailer: git-send-email 1.7.6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsUixCmqrBuvYetn0L1Z2aLvylF2i7ZpjhY7
+	H75ls1i+r5/R4vKuOWwWWy41s1pcfTibxeLHhsesDhwet9r+MHvsnHWX3WPxnpdMHptWdbJ5
+	rLvxld3j8ya5ALYoLpuU1JzMstQifbsEroyrtxcyF3xlq9j3fBNLA+N+1i5GTg4JAROJt+9+
+	s0DYYhIX7q1n62Lk4hAS2Mco8eH3FShnPaPEmisvmSCcp0wSl+ddAGthE1CR6Fj6gAnEFhEw
+	kNiy8gUrSBGzwBVGiYvzbzCDJIQFvCS+Ny4G28cioCpxcd1WsDivgL7Ena8/GCF2y0kcufyc
+	aQIjzwJGhlWMsim5Vbq5iZk5xanJusXJiXl5qUW6hnq5mSV6qSmlmxjBQSbJs4PxzUGlQ4wC
+	HIxKPLwPZWz8hFgTy4orcw8xSnIwKYnysqrb+gnxJeWnVGYkFmfEF5XmpBYfYpTgYFYS4c3R
+	BSrnTUmsrEotyodJSXOwKInzlnv/9xUSSE8sSc1OTS1ILYLJynBwKEnwOgGjSUiwKDU9tSIt
+	M6cEIc3EwQkynAdouB3IYt7igsTc4sx0iPwpRkUpcV5JkGYBkERGaR5cLywJvGIUB3pFmNcQ
+	pIoHmEDgul8BDWYCGpz7BOTq4pJEhJRUA2ND2V4DhTjOnS+dWrgTnQz05S5NvSrdqG935FOU
+	44HsbM8kzcU+KgtO7ykM0hfvf1Fx1Jn7xvbfIRkNU7x/tyaX+cySsvzy5EXCrrVT6tqmCrgo
+	LPu7WkvNssrGbHLudcGfibr7Fcxj7s1MesCZrpO1wTri3LSFdpOOeDp3ZLRxqlhccrapUGIp
+	zkg01GIuKk4EAD6zyfLdAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 5, 2011 at 5:43 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->
->> On Thu, Aug 04, 2011 at 05:54:04PM -0400, Len Brown wrote:
->> > > We can't trust BIOS authors to get things right. Where we can reliably
->> > > fix up things that are broken, we should do so.
->> >
->> > How about if we can get a BIOS fix for this brand new system,
->> > then we shall not clutter the kernel with a workaround, otherwise
->> > we shall.
->>
->> It's a pretty good rule of thumb that if a BIOS bug is present in
->> one BIOS it's present in others, but the users will just never
->> notice.
->
-> Yes. There's no harm really from working around a BIOS bug and
-> warning about it - when the BIOS gets fixed the warning message will
-> go away.
->
-> Btw., few people risk upgrading their BIOSen on already purchased
-> hardware. I almost never do it, i only do it if it's impossible to
-> continue with a current BIOS.
+Intel allows BIOS or the OS to enable or disable some CPU fueatures via
+IA32_MISC_ENABLE.  I have machines that don't enable fast strings or
+monitor/mwait in BIOS, so do it on bootup instead.
 
-I do it, but I understand the sentiment.  I've destroyed laptops with
-BIOS upgrades, and the new Intel BIOS seems to insist on spewing
-garbage into my keyboard input when Linux (but not grub) starts.
+The Intel SDM volume 3, appendix B.1 says that the OS should not touch
+the monitor enable bit if SSE3 is not present, which presumably means
+that the OS may touch that bit if SSE3 is present.  In any case, these
+patches seem to work.
 
-Updates patches coming.
+Changes from v1:
+ - Display FW_WARN messages.
+ - Don't change the kmemcheck message.
+ - Improve the fast string comment.
+ - Improve the changelogs.
 
->
-> Thanks,
->
->        Ingo
->
+Andy Lutomirski (2):
+  x86: Enable fast strings on Intel if BIOS hasn't already
+  x86: Enable monitor/mwait on Intel if BIOS hasn't already
+
+ arch/x86/kernel/cpu/intel.c |   50 ++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 47 insertions(+), 3 deletions(-)
+
+-- 
+1.7.6
+
