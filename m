@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab1HFV1M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 17:27:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37763 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752324Ab1HFV1I (ORCPT
+	id S1756763Ab1HFVi0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 17:38:26 -0400
+Received: from sirokuusama.dnainternet.net ([83.102.40.133]:56701 "EHLO
+	sirokuusama.dnainternet.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755378Ab1HFViY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 17:27:08 -0400
+	Sat, 6 Aug 2011 17:38:24 -0400
+X-Greylist: delayed 393 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Aug 2011 17:38:24 EDT
+X-Spam-Flag: NO
+X-Spam-Score: -1
+Message-ID: <4E3DB2C2.7040104@iki.fi>
+Date: Sun, 07 Aug 2011 00:31:46 +0300
+From: Anssi Hannula <anssi.hannula@iki.fi>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110626 Mageia/3.1.11-2.mga2 (2) Thunderbird/3.1.11
 MIME-Version: 1.0
-Date: Sat, 6 Aug 2011 23:27:06 +0200
-X-Google-Sender-Auth: B9NvmCiW3aia6K-jXbUTtlFApIE
-Message-ID: <CANqCtQKpAydgXEzs6OzsDDBM_9yVBaGjT++DBq-NKOUH+ssLGA@mail.gmail.com>
-Subject: AT91SAM9261EK kit is broken, commit bd60299 has broken it
-From: Remy Bohmer <linux@bohmer.net>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arm-kernel@lists.infradead.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Input: ati_remote - extend keytable for medion remotes
+References: <20110418104108.GA4876@atlantis.wh2.tu-dresden.de.de> <20110418104547.GB4876@atlantis.wh2.tu-dresden.de.de> <20110525163204.GD22517@core.coreip.homeip.net>
+In-Reply-To: <20110525163204.GD22517@core.coreip.homeip.net>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean-Christophe,
+On 25.05.2011 19:32, Dmitry Torokhov wrote:
+> Hi Jan,
+> 
+> On Mon, Apr 18, 2011 at 12:45:47PM +0200, Jan Losinski wrote:
+>> This extends the ati_remote to support multiple keytables. The table
+>> will be selected with the productId of the device.
+>>
+>> It also provides a table for the medion rf remote control that enables
+>> all buttons on it.
+>>
+> 
+> I am not a big fan of static keymaps in kernel drivers and would much
+> more prefer driver supporting adjusting keymaps via EVIOCSKEYCODE
+> ioctls. Unfortunately ati_remote key handling code is kind of involved
+> and I am not sure what is the best way of wiring it up.
+> 
+> I believe Anssi Hannula (CCed) mentioned that he has a version of
+> ati_remove ported to rc-core infrastructure that supports such
+> remapping. Anssi, could you tell me what is the status of that driver?
+> Is it usable with rc-core?
 
-Currently the Atmel AT91SAM9261-EK kit is broken within Linux 3.0,
-3.01 and latest git.
+Sorry, it seems for some reason I didn't receive your message via CC and
+only now saw it while looking at linux-input@ messages.
 
-These are the symptoms:
-* Booting stops if LCD driver is enabled in the kernel. It stops
-within the probe of the LCD driver. (at a msleep(10))
-* schedule_timeout is broken.
-* The jiffies based sched_clock does not run properly and stalls
-during boot, before the LCD driver is being initialised. (You can see
-this with printk-timestamps enabled)
-* When LCD driver disabled, boards boots up to a prompt, but every
-tool (e.g. 'top') that does a nanosleep syscall stays blocked in the
-kernel.
+Indeed I have a patchset that makes it work with rc-core which I didn't
+get around to posting yet (sorry about that).
 
-After bisecting the tree searching for the offending commit, I came to
-the following patch, after reverting it in mainline, everything works
-again as normal. I do not see immediately what is wrong with this
-commit, do you have an idea? Otherwise I will dig deeper in this
-commit...
+I'll try to look over it now and do some more testing, and then post the
+set.
 
-bd60299594fb1d28ae66563c9e76a0b89b0412cf is the first bad commit
-commit bd60299594fb1d28ae66563c9e76a0b89b0412cf
-Author: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Date:   Wed Feb 2 07:27:07 2011 +0100
+Some notes about the patchset:
+- The mouse handling is left as-is, and it now appears as a separate
+  input device (that part of the keymap is the same for all remotes
+  with mouse). The mouse device is created regardless of receiver,
+  in case another type of remote is used with the receiver.
+- The driver sends rc_keyup immediately after every rc_keydown, as that
+  is what the driver has always done for input events as well. Doing
+  otherwise would cause a regression as ghost repeats would appear
+  with this driver while they didn't before.
 
-    at91: switch to CLKDEV_LOOKUP
-
-    we do not change the clock naming convention so does not need to switch
-    the AVR32 yet
-
-    Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-    Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-    Cc: Patrice Vilchez <patrice.vilchez@atmel.com>
-
-Kind regards,
-
-Remy
+-- 
+Anssi Hannula
