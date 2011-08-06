@@ -1,303 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089Ab1HFD7M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 23:59:12 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50518 "EHLO
+	id S1756023Ab1HFD7K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 23:59:10 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50516 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755371Ab1HFD7I (ORCPT
+	by vger.kernel.org with ESMTP id S1754774Ab1HFD7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 23:59:08 -0400
+	Fri, 5 Aug 2011 23:59:07 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 1/3] mfd: Convert WM831x to use regmap API
-Date: Sat,  6 Aug 2011 12:58:53 +0900
-Message-Id: <1312603135-21590-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 3/3] mfd: Convert WM8994 to use new register map API
+Date: Sat,  6 Aug 2011 12:58:55 +0900
+Message-Id: <1312603135-21590-3-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <20110806035806.GA21557@opensource.wolfsonmicro.com>
+In-Reply-To: <1312603135-21590-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <20110806035806.GA21557@opensource.wolfsonmicro.com>
+ <1312603135-21590-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Factor out the register read/write code to use the register map API.  We
-still need some wm831x specific code and locking in place to check that
-the user key is handled correctly but only on the write side, reads are
-not affected by the key.
-
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/Kconfig             |    2 +
- drivers/mfd/wm831x-core.c       |   89 ++++++++++++--------------------------
- drivers/mfd/wm831x-i2c.c        |   68 +++++------------------------
- drivers/mfd/wm831x-spi.c        |   60 +++++---------------------
- include/linux/mfd/wm831x/core.h |    9 ++--
- 5 files changed, 58 insertions(+), 170 deletions(-)
+ drivers/mfd/Kconfig             |    1 +
+ drivers/mfd/wm8994-core.c       |  178 +++++++-------------------------------
+ include/linux/mfd/wm8994/core.h |    9 +--
+ 3 files changed, 36 insertions(+), 152 deletions(-)
 
 diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 21574bd..cfae5c5 100644
+index cfae5c5..a67adcb 100644
 --- a/drivers/mfd/Kconfig
 +++ b/drivers/mfd/Kconfig
-@@ -404,6 +404,7 @@ config MFD_WM831X_I2C
- 	bool "Support Wolfson Microelectronics WM831x/2x PMICs with I2C"
+@@ -490,6 +490,7 @@ config MFD_WM8350_I2C
+ config MFD_WM8994
+ 	bool "Support Wolfson Microelectronics WM8994"
  	select MFD_CORE
- 	select MFD_WM831X
 +	select REGMAP_I2C
  	depends on I2C=y && GENERIC_HARDIRQS
  	help
- 	  Support for the Wolfson Microelecronics WM831x and WM832x PMICs
-@@ -415,6 +416,7 @@ config MFD_WM831X_SPI
- 	bool "Support Wolfson Microelectronics WM831x/2x PMICs with SPI"
- 	select MFD_CORE
- 	select MFD_WM831X
-+	select REGMAP_SPI
- 	depends on SPI_MASTER && GENERIC_HARDIRQS
- 	help
- 	  Support for the Wolfson Microelecronics WM831x and WM832x PMICs
-diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
-index 282e76a..578e0c2 100644
---- a/drivers/mfd/wm831x-core.c
-+++ b/drivers/mfd/wm831x-core.c
-@@ -18,6 +18,7 @@
+ 	  The WM8994 is a highly integrated hi-fi CODEC designed for
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index 96479c9..bfde4e8 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -16,9 +16,11 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/i2c.h>
++#include <linux/err.h>
  #include <linux/delay.h>
  #include <linux/mfd/core.h>
- #include <linux/slab.h>
-+#include <linux/err.h>
+ #include <linux/pm_runtime.h>
++#include <linux/regmap.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/regulator/machine.h>
  
- #include <linux/mfd/wm831x/core.h>
- #include <linux/mfd/wm831x/pdata.h>
-@@ -160,29 +161,6 @@ int wm831x_reg_unlock(struct wm831x *wm831x)
- }
- EXPORT_SYMBOL_GPL(wm831x_reg_unlock);
- 
--static int wm831x_read(struct wm831x *wm831x, unsigned short reg,
--		       int bytes, void *dest)
--{
+@@ -29,22 +31,7 @@
+ static int wm8994_read(struct wm8994 *wm8994, unsigned short reg,
+ 		       int bytes, void *dest)
+ {
 -	int ret, i;
 -	u16 *buf = dest;
 -
 -	BUG_ON(bytes % 2);
 -	BUG_ON(bytes <= 0);
 -
--	ret = wm831x->read_dev(wm831x, reg, bytes, dest);
+-	ret = wm8994->read_dev(wm8994, reg, bytes, dest);
 -	if (ret < 0)
 -		return ret;
 -
 -	for (i = 0; i < bytes / 2; i++) {
--		buf[i] = be16_to_cpu(buf[i]);
--
--		dev_vdbg(wm831x->dev, "Read %04x from R%d(0x%x)\n",
--			 buf[i], reg + i, reg + i);
+-		dev_vdbg(wm8994->dev, "Read %04x from R%d(0x%x)\n",
+-			 be16_to_cpu(buf[i]), reg + i, reg + i);
 -	}
 -
 -	return 0;
--}
--
++	return regmap_raw_read(wm8994->regmap, reg, dest, bytes);
+ }
+ 
  /**
-  * wm831x_reg_read: Read a single WM831x register.
-  *
-@@ -191,14 +169,10 @@ static int wm831x_read(struct wm831x *wm831x, unsigned short reg,
+@@ -55,19 +42,15 @@ static int wm8994_read(struct wm8994 *wm8994, unsigned short reg,
   */
- int wm831x_reg_read(struct wm831x *wm831x, unsigned short reg)
+ int wm8994_reg_read(struct wm8994 *wm8994, unsigned short reg)
  {
 -	unsigned short val;
 +	unsigned int val;
  	int ret;
  
--	mutex_lock(&wm831x->io_lock);
+-	mutex_lock(&wm8994->io_lock);
 -
--	ret = wm831x_read(wm831x, reg, 2, &val);
+-	ret = wm8994_read(wm8994, reg, 2, &val);
 -
--	mutex_unlock(&wm831x->io_lock);
-+	ret = regmap_read(wm831x->regmap, reg, &val);
+-	mutex_unlock(&wm8994->io_lock);
++	ret = regmap_read(wm8994->regmap, reg, &val);
  
  	if (ret < 0)
  		return ret;
-@@ -218,15 +192,7 @@ EXPORT_SYMBOL_GPL(wm831x_reg_read);
- int wm831x_bulk_read(struct wm831x *wm831x, unsigned short reg,
+ 	else
+-		return be16_to_cpu(val);
++		return val;
+ }
+ EXPORT_SYMBOL_GPL(wm8994_reg_read);
+ 
+@@ -82,33 +65,13 @@ EXPORT_SYMBOL_GPL(wm8994_reg_read);
+ int wm8994_bulk_read(struct wm8994 *wm8994, unsigned short reg,
  		     int count, u16 *buf)
  {
 -	int ret;
 -
--	mutex_lock(&wm831x->io_lock);
+-	mutex_lock(&wm8994->io_lock);
 -
--	ret = wm831x_read(wm831x, reg, count * 2, buf);
+-	ret = wm8994_read(wm8994, reg, count * 2, buf);
 -
--	mutex_unlock(&wm831x->io_lock);
+-	mutex_unlock(&wm8994->io_lock);
 -
 -	return ret;
-+	return regmap_bulk_read(wm831x->regmap, reg, buf, count);
++	return regmap_bulk_read(wm8994->regmap, reg, buf, count);
  }
- EXPORT_SYMBOL_GPL(wm831x_bulk_read);
+-EXPORT_SYMBOL_GPL(wm8994_bulk_read);
  
-@@ -234,7 +200,7 @@ static int wm831x_write(struct wm831x *wm831x, unsigned short reg,
- 			int bytes, void *src)
+ static int wm8994_write(struct wm8994 *wm8994, unsigned short reg,
+ 			int bytes, const void *src)
  {
- 	u16 *buf = src;
+-	const u16 *buf = src;
 -	int i;
-+	int i, ret;
- 
- 	BUG_ON(bytes % 2);
- 	BUG_ON(bytes <= 0);
-@@ -245,11 +211,10 @@ static int wm831x_write(struct wm831x *wm831x, unsigned short reg,
- 
- 		dev_vdbg(wm831x->dev, "Write %04x to R%d(0x%x)\n",
- 			 buf[i], reg + i, reg + i);
 -
--		buf[i] = cpu_to_be16(buf[i]);
-+		ret = regmap_write(wm831x->regmap, reg + i, buf[i]);
- 	}
- 
--	return wm831x->write_dev(wm831x, reg, bytes, src);
-+	return 0;
+-	BUG_ON(bytes % 2);
+-	BUG_ON(bytes <= 0);
+-
+-	for (i = 0; i < bytes / 2; i++) {
+-		dev_vdbg(wm8994->dev, "Write %04x to R%d(0x%x)\n",
+-			 be16_to_cpu(buf[i]), reg + i, reg + i);
+-	}
+-
+-	return wm8994->write_dev(wm8994, reg, bytes, src);
++	return regmap_raw_write(wm8994->regmap, reg, src, bytes);
  }
  
  /**
-@@ -286,20 +251,14 @@ int wm831x_set_bits(struct wm831x *wm831x, unsigned short reg,
+@@ -121,17 +84,7 @@ static int wm8994_write(struct wm8994 *wm8994, unsigned short reg,
+ int wm8994_reg_write(struct wm8994 *wm8994, unsigned short reg,
+ 		     unsigned short val)
+ {
+-	int ret;
+-
+-	val = cpu_to_be16(val);
+-
+-	mutex_lock(&wm8994->io_lock);
+-
+-	ret = wm8994_write(wm8994, reg, 2, &val);
+-
+-	mutex_unlock(&wm8994->io_lock);
+-
+-	return ret;
++	return regmap_write(wm8994->regmap, reg, val);
+ }
+ EXPORT_SYMBOL_GPL(wm8994_reg_write);
+ 
+@@ -146,15 +99,7 @@ EXPORT_SYMBOL_GPL(wm8994_reg_write);
+ int wm8994_bulk_write(struct wm8994 *wm8994, unsigned short reg,
+ 		      int count, const u16 *buf)
+ {
+-	int ret;
+-
+-	mutex_lock(&wm8994->io_lock);
+-
+-	ret = wm8994_write(wm8994, reg, count * 2, buf);
+-
+-	mutex_unlock(&wm8994->io_lock);
+-
+-	return ret;
++	return regmap_raw_write(wm8994->regmap, reg, buf, count * sizeof(u16));
+ }
+ EXPORT_SYMBOL_GPL(wm8994_bulk_write);
+ 
+@@ -169,28 +114,7 @@ EXPORT_SYMBOL_GPL(wm8994_bulk_write);
+ int wm8994_set_bits(struct wm8994 *wm8994, unsigned short reg,
  		    unsigned short mask, unsigned short val)
  {
- 	int ret;
+-	int ret;
 -	u16 r;
- 
- 	mutex_lock(&wm831x->io_lock);
- 
--	ret = wm831x_read(wm831x, reg, 2, &r);
+-
+-	mutex_lock(&wm8994->io_lock);
+-
+-	ret = wm8994_read(wm8994, reg, 2, &r);
 -	if (ret < 0)
 -		goto out;
 -
--	r &= ~mask;
--	r |= val & mask;
+-	r = be16_to_cpu(r);
 -
--	ret = wm831x_write(wm831x, reg, 2, &r);
-+	if (!wm831x_reg_locked(wm831x, reg))
-+		ret = regmap_update_bits(wm831x->regmap, reg, mask, val);
-+	else
-+		ret = -EPERM;
- 
+-	r &= ~mask;
+-	r |= val;
+-
+-	r = cpu_to_be16(r);
+-
+-	ret = wm8994_write(wm8994, reg, 2, &r);
+-
 -out:
- 	mutex_unlock(&wm831x->io_lock);
+-	mutex_unlock(&wm8994->io_lock);
+-
+-	return ret;
++	return regmap_update_bits(wm8994->regmap, reg, mask, val);
+ }
+ EXPORT_SYMBOL_GPL(wm8994_set_bits);
  
- 	return ret;
-@@ -1292,6 +1251,12 @@ static struct mfd_cell backlight_devs[] = {
- 	},
- };
+@@ -378,6 +302,11 @@ static int wm8994_ldo_in_use(struct wm8994_pdata *pdata, int ldo)
+ }
+ #endif
  
-+struct regmap_config wm831x_regmap_config = {
++static struct regmap_config wm8994_regmap_config = {
 +	.reg_bits = 16,
 +	.val_bits = 16,
 +};
-+EXPORT_SYMBOL_GPL(wm831x_regmap_config);
 +
  /*
   * Instantiate the generic non-control parts of the device.
   */
-@@ -1309,7 +1274,7 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 	ret = wm831x_reg_read(wm831x, WM831X_PARENT_ID);
- 	if (ret < 0) {
- 		dev_err(wm831x->dev, "Failed to read parent ID: %d\n", ret);
--		goto err;
-+		goto err_regmap;
- 	}
- 	switch (ret) {
- 	case 0x6204:
-@@ -1318,20 +1283,20 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 	default:
- 		dev_err(wm831x->dev, "Device is not a WM831x: ID %x\n", ret);
- 		ret = -EINVAL;
--		goto err;
-+		goto err_regmap;
- 	}
+@@ -387,7 +316,6 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 	const char *devname;
+ 	int ret, i;
  
- 	ret = wm831x_reg_read(wm831x, WM831X_REVISION);
- 	if (ret < 0) {
- 		dev_err(wm831x->dev, "Failed to read revision: %d\n", ret);
--		goto err;
-+		goto err_regmap;
- 	}
- 	rev = (ret & WM831X_PARENT_REV_MASK) >> WM831X_PARENT_REV_SHIFT;
+-	mutex_init(&wm8994->io_lock);
+ 	dev_set_drvdata(wm8994->dev, wm8994);
  
- 	ret = wm831x_reg_read(wm831x, WM831X_RESET_ID);
- 	if (ret < 0) {
- 		dev_err(wm831x->dev, "Failed to read device ID: %d\n", ret);
--		goto err;
-+		goto err_regmap;
- 	}
- 
- 	/* Some engineering samples do not have the ID set, rely on
-@@ -1406,7 +1371,7 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 	default:
- 		dev_err(wm831x->dev, "Unknown WM831x device %04x\n", ret);
- 		ret = -EINVAL;
--		goto err;
-+		goto err_regmap;
- 	}
- 
- 	/* This will need revisiting in future but is OK for all
-@@ -1420,7 +1385,7 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 	ret = wm831x_reg_read(wm831x, WM831X_SECURITY_KEY);
- 	if (ret < 0) {
- 		dev_err(wm831x->dev, "Failed to read security key: %d\n", ret);
--		goto err;
-+		goto err_regmap;
- 	}
+ 	/* Add the on-chip regulators first for bootstrapping */
+@@ -397,7 +325,7 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 			      NULL, 0);
  	if (ret != 0) {
- 		dev_warn(wm831x->dev, "Security key had non-zero value %x\n",
-@@ -1433,7 +1398,7 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 		ret = pdata->pre_init(wm831x);
- 		if (ret != 0) {
- 			dev_err(wm831x->dev, "pre_init() failed: %d\n", ret);
--			goto err;
-+			goto err_regmap;
- 		}
- 	}
- 
-@@ -1456,7 +1421,7 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- 
- 	ret = wm831x_irq_init(wm831x, irq);
- 	if (ret != 0)
+ 		dev_err(wm8994->dev, "Failed to add children: %d\n", ret);
 -		goto err;
 +		goto err_regmap;
+ 	}
  
- 	wm831x_auxadc_init(wm831x);
+ 	switch (wm8994->type) {
+@@ -409,7 +337,7 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 		break;
+ 	default:
+ 		BUG();
+-		goto err;
++		goto err_regmap;
+ 	}
  
-@@ -1552,8 +1517,9 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
+ 	wm8994->supplies = kzalloc(sizeof(struct regulator_bulk_data) *
+@@ -417,7 +345,7 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 				   GFP_KERNEL);
+ 	if (!wm8994->supplies) {
+ 		ret = -ENOMEM;
+-		goto err;
++		goto err_regmap;
+ 	}
  
- err_irq:
- 	wm831x_irq_exit(wm831x);
+ 	switch (wm8994->type) {
+@@ -431,7 +359,7 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 		break;
+ 	default:
+ 		BUG();
+-		goto err;
++		goto err_regmap;
+ 	}
+ 		
+ 	ret = regulator_bulk_get(wm8994->dev, wm8994->num_supplies,
+@@ -554,7 +482,8 @@ err_get:
+ 	regulator_bulk_free(wm8994->num_supplies, wm8994->supplies);
+ err_supplies:
+ 	kfree(wm8994->supplies);
 -err:
 +err_regmap:
- 	mfd_remove_devices(wm831x->dev);
-+	regmap_exit(wm831x->regmap);
- 	kfree(wm831x);
++	regmap_exit(wm8994->regmap);
+ 	mfd_remove_devices(wm8994->dev);
+ 	kfree(wm8994);
  	return ret;
+@@ -569,62 +498,15 @@ static void wm8994_device_exit(struct wm8994 *wm8994)
+ 			       wm8994->supplies);
+ 	regulator_bulk_free(wm8994->num_supplies, wm8994->supplies);
+ 	kfree(wm8994->supplies);
++	regmap_exit(wm8994->regmap);
+ 	kfree(wm8994);
  }
-@@ -1565,6 +1531,7 @@ void wm831x_device_exit(struct wm831x *wm831x)
- 	if (wm831x->irq_base)
- 		free_irq(wm831x->irq_base + WM831X_IRQ_AUXADC_DATA, wm831x);
- 	wm831x_irq_exit(wm831x);
-+	regmap_exit(wm831x->regmap);
- 	kfree(wm831x);
- }
  
-diff --git a/drivers/mfd/wm831x-i2c.c b/drivers/mfd/wm831x-i2c.c
-index a06cbc7..3ec6085 100644
---- a/drivers/mfd/wm831x-i2c.c
-+++ b/drivers/mfd/wm831x-i2c.c
-@@ -18,67 +18,17 @@
- #include <linux/delay.h>
- #include <linux/mfd/core.h>
- #include <linux/slab.h>
-+#include <linux/err.h>
-+#include <linux/regmap.h>
- 
- #include <linux/mfd/wm831x/core.h>
- #include <linux/mfd/wm831x/pdata.h>
- 
--static int wm831x_i2c_read_device(struct wm831x *wm831x, unsigned short reg,
+-static int wm8994_i2c_read_device(struct wm8994 *wm8994, unsigned short reg,
 -				  int bytes, void *dest)
 -{
--	struct i2c_client *i2c = wm831x->control_data;
+-	struct i2c_client *i2c = wm8994->control_data;
 -	int ret;
 -	u16 r = cpu_to_be16(reg);
 -
@@ -315,14 +301,10 @@ index a06cbc7..3ec6085 100644
 -	return 0;
 -}
 -
--/* Currently we allocate the write buffer on the stack; this is OK for
-- * small writes - if we need to do large writes this will need to be
-- * revised.
-- */
--static int wm831x_i2c_write_device(struct wm831x *wm831x, unsigned short reg,
--				   int bytes, void *src)
+-static int wm8994_i2c_write_device(struct wm8994 *wm8994, unsigned short reg,
+-				   int bytes, const void *src)
 -{
--	struct i2c_client *i2c = wm831x->control_data;
+-	struct i2c_client *i2c = wm8994->control_data;
 -	struct i2c_msg xfer[2];
 -	int ret;
 -
@@ -347,151 +329,68 @@ index a06cbc7..3ec6085 100644
 -	return 0;
 -}
 -
- static int wm831x_i2c_probe(struct i2c_client *i2c,
+ static int wm8994_i2c_probe(struct i2c_client *i2c,
  			    const struct i2c_device_id *id)
  {
- 	struct wm831x *wm831x;
+ 	struct wm8994 *wm8994;
 +	int ret;
  
- 	wm831x = kzalloc(sizeof(struct wm831x), GFP_KERNEL);
- 	if (wm831x == NULL)
-@@ -86,9 +36,15 @@ static int wm831x_i2c_probe(struct i2c_client *i2c,
+ 	wm8994 = kzalloc(sizeof(struct wm8994), GFP_KERNEL);
+ 	if (wm8994 == NULL)
+@@ -632,12 +514,18 @@ static int wm8994_i2c_probe(struct i2c_client *i2c,
  
- 	i2c_set_clientdata(i2c, wm831x);
- 	wm831x->dev = &i2c->dev;
--	wm831x->control_data = i2c;
--	wm831x->read_dev = wm831x_i2c_read_device;
--	wm831x->write_dev = wm831x_i2c_write_device;
-+
-+	wm831x->regmap = regmap_init_i2c(i2c, &wm831x_regmap_config);
-+	if (IS_ERR(wm831x->regmap)) {
-+		ret = PTR_ERR(wm831x->regmap);
-+		dev_err(wm831x->dev, "Failed to allocate register map: %d\n",
+ 	i2c_set_clientdata(i2c, wm8994);
+ 	wm8994->dev = &i2c->dev;
+-	wm8994->control_data = i2c;
+-	wm8994->read_dev = wm8994_i2c_read_device;
+-	wm8994->write_dev = wm8994_i2c_write_device;
+ 	wm8994->irq = i2c->irq;
+ 	wm8994->type = id->driver_data;
+ 
++	wm8994->regmap = regmap_init_i2c(i2c, &wm8994_regmap_config);
++	if (IS_ERR(wm8994->regmap)) {
++		ret = PTR_ERR(wm8994->regmap);
++		dev_err(wm8994->dev, "Failed to allocate register map: %d\n",
 +			ret);
-+		kfree(wm831x);
++		kfree(wm8994);
 +		return ret;
 +	}
- 
- 	return wm831x_device_init(wm831x, id->driver_data, i2c->irq);
- }
-diff --git a/drivers/mfd/wm831x-spi.c b/drivers/mfd/wm831x-spi.c
-index eed8e4f..dbe1147 100644
---- a/drivers/mfd/wm831x-spi.c
-+++ b/drivers/mfd/wm831x-spi.c
-@@ -16,58 +16,16 @@
- #include <linux/module.h>
- #include <linux/pm.h>
- #include <linux/spi/spi.h>
-+#include <linux/regmap.h>
-+#include <linux/err.h>
- 
- #include <linux/mfd/wm831x/core.h>
- 
--static int wm831x_spi_read_device(struct wm831x *wm831x, unsigned short reg,
--				  int bytes, void *dest)
--{
--	u16 tx_val;
--	u16 *d = dest;
--	int r, ret;
--
--	/* Go register at a time */
--	for (r = reg; r < reg + (bytes / 2); r++) {
--		tx_val = r | 0x8000;
--
--		ret = spi_write_then_read(wm831x->control_data,
--					  (u8 *)&tx_val, 2, (u8 *)d, 2);
--		if (ret != 0)
--			return ret;
--
--		*d = be16_to_cpu(*d);
--
--		d++;
--	}
--
--	return 0;
--}
--
--static int wm831x_spi_write_device(struct wm831x *wm831x, unsigned short reg,
--				   int bytes, void *src)
--{
--	struct spi_device *spi = wm831x->control_data;
--	u16 *s = src;
--	u16 data[2];
--	int ret, r;
--
--	/* Go register at a time */
--	for (r = reg; r < reg + (bytes / 2); r++) {
--		data[0] = r;
--		data[1] = *s++;
--
--		ret = spi_write(spi, (char *)&data, sizeof(data));
--		if (ret != 0)
--			return ret;
--	}
--
--	return 0;
--}
--
- static int __devinit wm831x_spi_probe(struct spi_device *spi)
- {
- 	struct wm831x *wm831x;
- 	enum wm831x_parent type;
-+	int ret;
- 
- 	/* Currently SPI support for ID tables is unmerged, we're faking it */
- 	if (strcmp(spi->modalias, "wm8310") == 0)
-@@ -98,9 +56,15 @@ static int __devinit wm831x_spi_probe(struct spi_device *spi)
- 
- 	dev_set_drvdata(&spi->dev, wm831x);
- 	wm831x->dev = &spi->dev;
--	wm831x->control_data = spi;
--	wm831x->read_dev = wm831x_spi_read_device;
--	wm831x->write_dev = wm831x_spi_write_device;
 +
-+	wm831x->regmap = regmap_init_spi(wm831x->dev, &wm831x_regmap_config);
-+	if (IS_ERR(wm831x->regmap)) {
-+		ret = PTR_ERR(wm831x->regmap);
-+		dev_err(wm831x->dev, "Failed to allocate register map: %d\n",
-+			ret);
-+		kfree(wm831x);
-+		return ret;
-+	}
- 
- 	return wm831x_device_init(wm831x, type, spi->irq);
+ 	return wm8994_device_init(wm8994, i2c->irq);
  }
-diff --git a/include/linux/mfd/wm831x/core.h b/include/linux/mfd/wm831x/core.h
-index 8dda8de..44acdb2 100644
---- a/include/linux/mfd/wm831x/core.h
-+++ b/include/linux/mfd/wm831x/core.h
-@@ -18,6 +18,7 @@
- #include <linux/completion.h>
- #include <linux/interrupt.h>
- #include <linux/list.h>
-+#include <linux/regmap.h>
  
- /*
-  * Register values.
-@@ -361,12 +362,8 @@ struct wm831x {
- 	struct mutex io_lock;
+diff --git a/include/linux/mfd/wm8994/core.h b/include/linux/mfd/wm8994/core.h
+index f0b69cd..45df450 100644
+--- a/include/linux/mfd/wm8994/core.h
++++ b/include/linux/mfd/wm8994/core.h
+@@ -24,6 +24,7 @@ enum wm8994_type {
+ 
+ struct regulator_dev;
+ struct regulator_bulk_data;
++struct regmap;
+ 
+ #define WM8994_NUM_GPIO_REGS 11
+ #define WM8994_NUM_LDO_REGS   2
+@@ -50,18 +51,12 @@ struct regulator_bulk_data;
+ #define WM8994_IRQ_GPIO(x) (x + WM8994_IRQ_TEMP_WARN)
+ 
+ struct wm8994 {
+-	struct mutex io_lock;
+ 	struct mutex irq_lock;
+ 
+ 	enum wm8994_type type;
  
  	struct device *dev;
--	int (*read_dev)(struct wm831x *wm831x, unsigned short reg,
+-	int (*read_dev)(struct wm8994 *wm8994, unsigned short reg,
 -			int bytes, void *dest);
--	int (*write_dev)(struct wm831x *wm831x, unsigned short reg,
--			 int bytes, void *src);
- 
+-	int (*write_dev)(struct wm8994 *wm8994, unsigned short reg,
+-			 int bytes, const void *src);
+-
 -	void *control_data;
 +	struct regmap *regmap;
  
- 	int irq;  /* Our chip IRQ */
- 	struct mutex irq_lock;
-@@ -416,4 +413,6 @@ int wm831x_irq_init(struct wm831x *wm831x, int irq);
- void wm831x_irq_exit(struct wm831x *wm831x);
- void wm831x_auxadc_init(struct wm831x *wm831x);
- 
-+extern struct regmap_config wm831x_regmap_config;
-+
- #endif
+ 	int gpio_base;
+ 	int irq_base;
 -- 
 1.7.5.4
 
