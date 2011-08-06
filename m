@@ -1,70 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824Ab1HEX4O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 19:56:14 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:51251 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752006Ab1HEX4N (ORCPT
+	id S1755064Ab1HFADI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:03:08 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:46917 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752006Ab1HFADD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 19:56:13 -0400
-Date: Fri, 5 Aug 2011 16:56:11 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-media@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Ondrej Zary <linux@rainbow-software.org>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: linux-next: Tree for Aug 5 (media/radio/radio-sf16fmr2)
-Message-Id: <20110805165611.d2feaf32.rdunlap@xenotime.net>
-In-Reply-To: <20110805143103.f9388ca143560d73caac60c1@canb.auug.org.au>
-References: <20110805143103.f9388ca143560d73caac60c1@canb.auug.org.au>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Fri, 5 Aug 2011 20:03:03 -0400
+X-Sasl-enc: aPF3kwciDhdvjSqsk1ydIuRGZ2uKHdNbvDWashESmaI6 1312588983
+Date: Fri, 5 Aug 2011 17:02:57 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/55] 2.6.32.44-longterm review
+Message-ID: <20110806000257.GA25498@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Aug 2011 14:31:03 +1000 Stephen Rothwell wrote:
+This is the start of the longterm review cycle for the 2.6.32.44 release.
+There are 55 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-> Hi all,
-> 
-> [The kernel.org mirroring is running slowly today]
+Responses should be made by Monday, August 8, 2011, 00:00:00 UTC.
+Anything received after that time might be too late.
 
-Is media/radio/radio-sf16fmr2 an ISA driver or a PCI driver?
-ugh.  Or is it an I2C driver?
-
-
-linux-next fails with (this is not a new failure):
-
-ERROR: "snd_tea575x_init" [drivers/media/radio/radio-sf16fmr2.ko] undefined!
-ERROR: "snd_tea575x_exit" [drivers/media/radio/radio-sf16fmr2.ko] undefined!
-
-The Kconfig entry for RADIO_SF16FMR2 is:
-
-config RADIO_SF16FMR2
-	tristate "SF16FMR2 Radio"
-	depends on ISA && VIDEO_V4L2 && SND
-
-and the Kconfig entry for SND_TEA575X is (not user visible):
-
-config SND_TEA575X
-	tristate
-	depends on SND_FM801_TEA575X_BOOL || SND_ES1968_RADIO || RADIO_SF16FMR2
-	default SND_FM801 || SND_ES1968 || RADIO_SF16FMR2
-
-This latter entry is in sound/pci/Kconfig and is under:
-if SND_PCI
-so it depends on PCI and SND_PCI.
-
-This build fails when CONFIG_PCI is not enabled.
-
-
-Suggestions?
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.44-rc1.gz
+and the diffstat can be found below.
 
 thanks,
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+greg k-h
+
+ Makefile                                   |    2 +-
+ arch/alpha/kernel/osf_sys.c                |   11 ++++--
+ arch/arm/mach-davinci/board-dm365-evm.c    |    4 +-
+ arch/arm/mach-pxa/cm-x300.c                |    8 ++--
+ arch/powerpc/kernel/crash.c                |    6 +---
+ arch/powerpc/platforms/pseries/hvconsole.c |    2 +-
+ arch/x86/kernel/hpet.c                     |   53 +++++++++++++++------------
+ arch/x86/kernel/reboot.c                   |    8 ++++
+ arch/x86/kernel/relocate_kernel_32.S       |    2 +
+ arch/x86/kernel/relocate_kernel_64.S       |    2 +
+ arch/xtensa/kernel/ptrace.c                |    3 ++
+ block/blk-core.c                           |    3 ++
+ block/blk-exec.c                           |    7 ++++
+ drivers/ata/libata-eh.c                    |   12 ++++--
+ drivers/block/cciss.h                      |    2 +-
+ drivers/hwmon/max1111.c                    |   11 ++++++
+ drivers/md/dm-mpath.c                      |    5 +++
+ drivers/md/dm.c                            |   10 ++++-
+ drivers/media/radio/si4713-i2c.c           |    4 +-
+ drivers/media/video/bt8xx/bttv-driver.c    |    2 +-
+ drivers/media/video/pvrusb2/pvrusb2-hdw.c  |    4 ++
+ drivers/media/video/v4l2-ioctl.c           |    6 +++
+ drivers/net/jme.c                          |   20 +++++++---
+ drivers/pci/pci.c                          |    7 +++-
+ drivers/scsi/libsas/sas_expander.c         |    3 ++
+ drivers/scsi/pmcraid.c                     |    3 ++
+ drivers/scsi/scsi_devinfo.c                |    2 +
+ drivers/scsi/scsi_lib.c                    |    2 +
+ drivers/scsi/ses.c                         |    6 +++-
+ drivers/staging/comedi/comedi_fops.c       |    4 +-
+ drivers/usb/gadget/dummy_hcd.c             |    1 +
+ drivers/usb/host/ehci-hub.c                |    3 +-
+ drivers/usb/host/ehci-q.c                  |    3 +-
+ drivers/usb/host/ehci.h                    |    1 +
+ drivers/usb/host/pci-quirks.c              |   28 +++++++++++++++
+ drivers/usb/musb/musb_core.c               |    1 +
+ drivers/usb/serial/pl2303.c                |    2 +
+ drivers/usb/serial/pl2303.h                |   10 +++++-
+ fs/block_dev.c                             |   27 +++++---------
+ fs/cifs/cifsglob.h                         |    2 +-
+ fs/cifs/connect.c                          |   28 ++++++++++----
+ fs/ext3/xattr.c                            |   12 +++++-
+ fs/nfs/nfs4xdr.c                           |    2 +-
+ fs/proc/base.c                             |    7 +++-
+ include/linux/netdevice.h                  |    5 ++-
+ kernel/perf_event.c                        |    8 +---
+ net/atm/br2684.c                           |   11 ++++--
+ net/bridge/br_private.h                    |    1 +
+ net/bridge/br_stp.c                        |    4 +-
+ net/ipv4/ip_gre.c                          |   19 +++++-----
+ net/ipv4/ipip.c                            |   13 +++----
+ net/ipv6/ip6_tunnel.c                      |   28 ++++++++-------
+ net/ipv6/sit.c                             |   13 +++----
+ net/ipv6/xfrm6_tunnel.c                    |   32 ++++++++++-------
+ net/mac80211/mlme.c                        |    3 ++
+ net/sunrpc/rpcb_clnt.c                     |    2 +-
+ net/sunrpc/sched.c                         |   27 ++++++--------
+ net/sunrpc/svc_xprt.c                      |   11 +++---
+ sound/core/pcm_compat.c                    |    2 +-
+ sound/soc/blackfin/bf5xx-i2s-pcm.c         |   13 ++++++-
+ 60 files changed, 351 insertions(+), 182 deletions(-)
