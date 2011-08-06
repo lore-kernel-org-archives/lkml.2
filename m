@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab1HFUKR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 16:10:17 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:41212 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab1HFUKP convert rfc822-to-8bit (ORCPT
+	id S1754151Ab1HFUSk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 16:18:40 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:32993 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124Ab1HFUSj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 16:10:15 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=NxNBvWR5LkeAGfUI0jpNdH+AkenaQUD35sWSP13O+Gw4qilci1aTDF78Zu5ClQg7b
-	+HaJz2Y/x4cV4GPrfGWnw==
+	Sat, 6 Aug 2011 16:18:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <1310740503-15608-7-git-send-email-ming.m.lin@intel.com>
-References: <1310740503-15608-1-git-send-email-ming.m.lin@intel.com>
-	<1310740503-15608-7-git-send-email-ming.m.lin@intel.com>
-Date: Sat, 6 Aug 2011 13:10:10 -0700
-Message-ID: <CABPqkBRTw5mcHn29gba8OyeUfMuGU3mQcKsrADug1401n6j0kw@mail.gmail.com>
-Subject: Re: [PATCH v2 6/6] perf tool: Parse general/raw events from sysfs
-From: Stephane Eranian <eranian@google.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20110531193602.GA26535@elte.hu>
+References: <cover.1306851090.git.luto@mit.edu>
+	<1660d1687db01852ec58bbf970e22868db367d53.1306851090.git.luto@mit.edu>
+	<20110531183448.GA27166@one.firstfloor.org>
+	<BANLkTinXSDJoT6Uege6zLZqSp87oURfh0w@mail.gmail.com>
+	<20110531192833.GA23458@elte.hu>
+	<20110531193602.GA26535@elte.hu>
+Date: Sat, 6 Aug 2011 16:18:38 -0400
+X-Google-Sender-Auth: CxrjIOozOX3aiMh4cBIry4MG0G8
+Message-ID: <CAObL_7HFht0rBHkeLqwVRBNR1yn2qJgWsM7Qr2p3w482t3WKpQ@mail.gmail.com>
+Subject: Re: [PATCH v3 10/10] x86-64: Add CONFIG_UNSAFE_VSYSCALLS to feature-removal-schedule
+From: Andrew Lutomirski <luto@mit.edu>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Lutomirski <luto@mit.edu>, Andi Kleen <andi@firstfloor.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jesper Juhl <jj@chaosbits.net>, Borislav Petkov <bp@alien8.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Jan Beulich <JBeulich@novell.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Mikael Pettersson <mikpe@it.uu.se>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Fri, Jul 15, 2011 at 7:35 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> PMU can export general events to sysfs, for example,
+On Tuesday, May 31, 2011, Ingo Molnar <mingo@elte.hu> wrote:
 >
-> /sys/bus/event_source/devices/uncore/events
-> â””â”€â”€ cycle
+> * Ingo Molnar <mingo@elte.hu> wrote:
 >
-> Then specify the event as <pmu>:<event>,
+>> [...] solution that filters the caller RIP at the generic syscall
+>> entry point and checks RCX against the 'expected' SYSCALL
+>> instruction address, which is the (per task) vdso-address +
+>> constant-offset.
 >
-> $ sudo perf stat -a -C 0 -e uncore:cycle
+> Note that this solution would allow the vsyscall page to be
+> 'filtered' to the 3 allowed system calls rather efficiently, via a
+> second level check.
+>
+> This second check does not affect the fastpath, and it could be put
+> behind a CONFIG_COMPAT_VSYSCALL deprecation define once glibc does
+> not put vsyscall references anywhere - but we could even keep it
+> around forever, as this way it's defanged permanently.
 
-I think this event syntax should be adjusted a bit.
+I'm confused.  Are you thinking about the 32-bit vDSO?  I think that
+64-bit code puts syscall instructions all over the place.
 
-How would the tool differentiate:
-       perf stat -e uncore:cycle
-form:
-      perf stat -e cycle:u
+--Andy
 
-It would have to scan sysfs for a 'cycle' PMU and conclude
-there is none,  then resolve the 'cycle' event name. And if
-you're unlucky and you have a event name that matches
-the PMU name, you get into troubles.
-
-I think, one could instead do:
-
-    perf stat -e uncore::cycle:k
-
-That way, by virtue of the '::' separator, the tool would know
-that it needs to first look into sysfs for an 'uncore' PMU, then
-it needs to look for the 'cycle' event.
-
-I also use the '::' notation in libpfm4 to separate the PMU model
-form the event+umask+modifiers.
-
-I also suspect that with this sysfs interface for PMU models, you
-would simply add a number to differentiate each instance of a PMU.
-So for GPU, you would do:
-    perf stat -e  gfx0::cycles
-
-Is that right?
+>
+> Thanks,
+>
+>         Ingo
+>
