@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932534Ab1HFANQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:13:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39894 "EHLO mx2.suse.de"
+	id S932525Ab1HFANM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:13:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39868 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932501Ab1HFANJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:13:09 -0400
+	id S932464Ab1HFANC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:13:02 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:15 2011
-Message-Id: <20110806000415.622727528@clark.kroah.org>
+Message-Id: <20110806000415.426322371@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:58 -0700
+Date: Fri, 05 Aug 2011 17:03:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Damien Wyart <damien.wyart@free.fr>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: [40/50] x86: Hpet: Avoid the comparator readback penalty
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [38/50] EHCI: fix direction handling for interrupt data toggles
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,117 +25,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Alan Stern <stern@rowland.harvard.edu>
 
-From: Thomas Gleixner <tglx@linutronix.de>
+commit e04f5f7e423018bcec84c11af2058cdce87816f3 upstream.
 
-(imported from commit v2.6.36-rc4-167-g995bd3b)
+This patch (as1480) fixes a rather obscure bug in ehci-hcd.  The
+qh_update() routine needs to know the number and direction of the
+endpoint corresponding to its QH argument.  The number can be taken
+directly from the QH data structure, but the direction isn't stored
+there.  The direction is taken instead from the first qTD linked to
+the QH.
 
-Due to the overly intelligent design of HPETs, we need to workaround
-the problem that the compare value which we write is already behind
-the actual counter value at the point where the value hits the real
-compare register. This happens for two reasons:
+However, it turns out that for interrupt transfers, qh_update() gets
+called before the qTDs are linked to the QH.  As a result, qh_update()
+computes a bogus direction value, which messes up the endpoint toggle
+handling.  Under the right combination of circumstances this causes
+usb_reset_endpoint() not to work correctly, which causes packets to be
+dropped and communications to fail.
 
-1) We read out the counter, add the delta and write the result to the
-   compare register. When a NMI or SMI hits between the read out and
-   the write then the counter can be ahead of the event already
+Now, it's silly for the QH structure not to have direct access to all
+the descriptor information for the corresponding endpoint.  Ultimately
+it may get a pointer to the usb_host_endpoint structure; for now,
+adding a copy of the direction flag solves the immediate problem.
 
-2) The write to the compare register is delayed by up to two HPET
-   cycles in certain chipsets.
+This allows the Spyder2 color-calibration system (a low-speed USB
+device that sends all its interrupt data packets with the toggle set
+to 0 and hance requires constant use of usb_reset_endpoint) to work
+when connected through a high-speed hub.  Thanks to Graeme Gill for
+supplying the hardware that allowed me to track down this bug.
 
-We worked around this by reading back the compare register to make
-sure that the written value has hit the hardware. For certain ICH9+
-chipsets this can require two readouts, as the first one can return
-the previous compare register value. That's bad performance wise for
-the normal case where the event is far enough in the future.
-
-As we already know that the write can be delayed by up to two cycles
-we can avoid the read back of the compare register completely if we
-make the decision whether the delta has elapsed already or not based
-on the following calculation:
-
-  cmp = event - actual_count;
-
-If cmp is less than 8 HPET clock cycles, then we decide that the event
-has happened already and return -ETIME. That covers the above #1 and
-#2 problems which would cause a wait for HPET wraparound (~306
-seconds).
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Tested-by: Nix <nix@esperi.org.uk>
-Tested-by: Artur Skawina <art.08.09@gmail.com>
-Cc: Damien Wyart <damien.wyart@free.fr>
-Tested-by: John Drescher <drescherjm@gmail.com>
-Cc: Venkatesh Pallipadi <venki@google.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
-Tested-by: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <alpine.LFD.2.00.1009151500060.2416@localhost6.localdomain6>
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Graeme Gill <graeme@argyllcms.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/x86/kernel/hpet.c |   43 +++++++++++++++++++++----------------------
- 1 file changed, 21 insertions(+), 22 deletions(-)
 
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -380,36 +380,35 @@ static int hpet_next_event(unsigned long
- 			   struct clock_event_device *evt, int timer)
- {
- 	u32 cnt;
-+	s32 res;
+---
+ drivers/usb/host/ehci-q.c |    3 ++-
+ drivers/usb/host/ehci.h   |    1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -103,7 +103,7 @@ qh_update (struct ehci_hcd *ehci, struct
+ 	if (!(hw->hw_info1 & cpu_to_hc32(ehci, 1 << 14))) {
+ 		unsigned	is_out, epnum;
  
- 	cnt = hpet_readl(HPET_COUNTER);
- 	cnt += (u32) delta;
- 	hpet_writel(cnt, HPET_Tn_CMP(timer));
+-		is_out = !(qtd->hw_token & cpu_to_hc32(ehci, 1 << 8));
++		is_out = qh->is_out;
+ 		epnum = (hc32_to_cpup(ehci, &hw->hw_info1) >> 8) & 0x0f;
+ 		if (unlikely (!usb_gettoggle (qh->dev, epnum, is_out))) {
+ 			hw->hw_token &= ~cpu_to_hc32(ehci, QTD_TOGGLE);
+@@ -945,6 +945,7 @@ done:
+ 	hw = qh->hw;
+ 	hw->hw_info1 = cpu_to_hc32(ehci, info1);
+ 	hw->hw_info2 = cpu_to_hc32(ehci, info2);
++	qh->is_out = !is_input;
+ 	usb_settoggle (urb->dev, usb_pipeendpoint (urb->pipe), !is_input, 1);
+ 	qh_refresh (ehci, qh);
+ 	return qh;
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -365,6 +365,7 @@ struct ehci_qh {
+ #define NO_FRAME ((unsigned short)~0)			/* pick new start */
  
- 	/*
--	 * We need to read back the CMP register on certain HPET
--	 * implementations (ATI chipsets) which seem to delay the
--	 * transfer of the compare register into the internal compare
--	 * logic. With small deltas this might actually be too late as
--	 * the counter could already be higher than the compare value
--	 * at that point and we would wait for the next hpet interrupt
--	 * forever. We found out that reading the CMP register back
--	 * forces the transfer so we can rely on the comparison with
--	 * the counter register below. If the read back from the
--	 * compare register does not match the value we programmed
--	 * then we might have a real hardware problem. We can not do
--	 * much about it here, but at least alert the user/admin with
--	 * a prominent warning.
--	 * An erratum on some chipsets (ICH9,..), results in comparator read
--	 * immediately following a write returning old value. Workaround
--	 * for this is to read this value second time, when first
--	 * read returns old value.
-+	 * HPETs are a complete disaster. The compare register is
-+	 * based on a equal comparison and neither provides a less
-+	 * than or equal functionality (which would require to take
-+	 * the wraparound into account) nor a simple count down event
-+	 * mode. Further the write to the comparator register is
-+	 * delayed internally up to two HPET clock cycles in certain
-+	 * chipsets (ATI, ICH9,10). We worked around that by reading
-+	 * back the compare register, but that required another
-+	 * workaround for ICH9,10 chips where the first readout after
-+	 * write can return the old stale value. We already have a
-+	 * minimum delta of 5us enforced, but a NMI or SMI hitting
-+	 * between the counter readout and the comparator write can
-+	 * move us behind that point easily. Now instead of reading
-+	 * the compare register back several times, we make the ETIME
-+	 * decision based on the following: Return ETIME if the
-+	 * counter value after the write is less than 8 HPET cycles
-+	 * away from the event or if the counter is already ahead of
-+	 * the event.
- 	 */
--	if (unlikely((u32)hpet_readl(HPET_Tn_CMP(timer)) != cnt)) {
--		WARN_ONCE(hpet_readl(HPET_Tn_CMP(timer)) != cnt,
--		  KERN_WARNING "hpet: compare register read back failed.\n");
--	}
-+	res = (s32)(cnt - hpet_readl(HPET_COUNTER));
+ 	struct usb_device	*dev;		/* access to TT */
++	unsigned		is_out:1;	/* bulk or intr OUT */
+ 	unsigned		clearing_tt:1;	/* Clear-TT-Buf in progress */
+ };
  
--	return (s32)(hpet_readl(HPET_COUNTER) - cnt) >= 0 ? -ETIME : 0;
-+	return res < 8 ? -ETIME : 0;
- }
- 
- static void hpet_legacy_set_mode(enum clock_event_mode mode,
 
 
