@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab1HFAKX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:10:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39377 "EHLO mx2.suse.de"
+	id S932369Ab1HFALh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:11:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39571 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757325Ab1HFAKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:10:18 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:52 2011
-Message-Id: <20110806000252.388605468@clark.kroah.org>
+	id S932213Ab1HFALd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:11:33 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:14 2011
+Message-Id: <20110806000414.526971529@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:02:05 -0700
+Date: Fri, 05 Aug 2011 17:03:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sage Weil <sage@newdream.net>, Jan Kara <jack@suse.cz>
-Subject: [35/55] ext3: Fix oops in ext3_try_to_allocate_with_rsv()
-In-Reply-To: <20110806000257.GA25498@kroah.com>
+        Huang Ying <ying.huang@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [29/50] kexec, x86: Fix incorrect jump back address if not
+In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
+ preserving context
 
-From: Jan Kara <jack@suse.cz>
+From: Huang Ying <ying.huang@intel.com>
 
-commit ad95c5e9bc8b5885f94dce720137cac8fa8da4c9 upstream.
+commit 050438ed5a05b25cdf287f5691e56a58c2606997 upstream.
 
-Block allocation is called from two places: ext3_get_blocks_handle() and
-ext3_xattr_block_set(). These two callers are not necessarily synchronized
-because xattr code holds only xattr_sem and i_mutex, and
-ext3_get_blocks_handle() may hold only truncate_mutex when called from
-writepage() path. Block reservation code does not expect two concurrent
-allocations to happen to the same inode and thus assertions can be triggered
-or reservation structure corruption can occur.
+In kexec jump support, jump back address passed to the kexeced
+kernel via function calling ABI, that is, the function call
+return address is the jump back entry.
 
-Fix the problem by taking truncate_mutex in xattr code to serialize
-allocations.
+Furthermore, jump back entry == 0 should be used to signal that
+the jump back or preserve context is not enabled in the original
+kernel.
 
-CC: Sage Weil <sage@newdream.net>
-Reported-by: Fyodor Ustinov <ufm@ufm.su>
-Signed-off-by: Jan Kara <jack@suse.cz>
+But in the current implementation the stack position used for
+function call return address is not cleared context
+preservation is disabled. The patch fixes this bug.
+
+Reported-and-tested-by: Yin Kangkai <kangkai.yin@intel.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Link: http://lkml.kernel.org/r/1310607277-25029-1-git-send-email-ying.huang@intel.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext3/xattr.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ arch/x86/kernel/relocate_kernel_32.S |    2 ++
+ arch/x86/kernel/relocate_kernel_64.S |    2 ++
+ 2 files changed, 4 insertions(+)
 
---- a/fs/ext3/xattr.c
-+++ b/fs/ext3/xattr.c
-@@ -800,8 +800,16 @@ inserted:
- 			/* We need to allocate a new block */
- 			ext3_fsblk_t goal = ext3_group_first_block_no(sb,
- 						EXT3_I(inode)->i_block_group);
--			ext3_fsblk_t block = ext3_new_block(handle, inode,
--							goal, &error);
-+			ext3_fsblk_t block;
-+
-+			/*
-+			 * Protect us agaist concurrent allocations to the
-+			 * same inode from ext3_..._writepage(). Reservation
-+			 * code does not expect racing allocations.
-+			 */
-+			mutex_lock(&EXT3_I(inode)->truncate_mutex);
-+			block = ext3_new_block(handle, inode, goal, &error);
-+			mutex_unlock(&EXT3_I(inode)->truncate_mutex);
- 			if (error)
- 				goto cleanup;
- 			ea_idebug(inode, "creating block %d", block);
+--- a/arch/x86/kernel/relocate_kernel_32.S
++++ b/arch/x86/kernel/relocate_kernel_32.S
+@@ -97,6 +97,8 @@ relocate_kernel:
+ 	ret
+ 
+ identity_mapped:
++	/* set return address to 0 if not preserving context */
++	pushl	$0
+ 	/* store the start address on the stack */
+ 	pushl   %edx
+ 
+--- a/arch/x86/kernel/relocate_kernel_64.S
++++ b/arch/x86/kernel/relocate_kernel_64.S
+@@ -100,6 +100,8 @@ relocate_kernel:
+ 	ret
+ 
+ identity_mapped:
++	/* set return address to 0 if not preserving context */
++	pushq	$0
+ 	/* store the start address on the stack */
+ 	pushq   %rdx
+ 
 
 
