@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311Ab1HFMUa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 08:20:30 -0400
-Received: from mga14.intel.com ([143.182.124.37]:16104 "EHLO mga14.intel.com"
+	id S1756523Ab1HFMVW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 08:21:22 -0400
+Received: from mga14.intel.com ([143.182.124.37]:24755 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755638Ab1HFMUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 08:20:03 -0400
+	id S1753961Ab1HFMUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Aug 2011 08:20:02 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,328,1309762800"; 
-   d="scan'208";a="35776847"
-Message-Id: <20110806094526.595920435@intel.com>
+   d="scan'208";a="35776837"
+Message-Id: <20110806094526.878435971@intel.com>
 User-Agent: quilt/0.48-1
-Date: Sat, 06 Aug 2011 16:44:48 +0800
+Date: Sat, 06 Aug 2011 16:44:50 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 to: <linux-fsdevel@vger.kernel.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Michael Rubin <mrubin@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+cc: Andrew Morton <akpm@linux-foundation.org>,
         Wu Fengguang <fengguang.wu@intel.com>
+CC: Jan Kara <jack@suse.cz>
 CC: Christoph Hellwig <hch@lst.de>
 CC: Dave Chinner <david@fromorbit.com>
 CC: Greg Thelen <gthelen@google.com>
@@ -26,63 +25,210 @@ CC: Vivek Goyal <vgoyal@redhat.com>
 CC: Andrea Righi <arighi@develer.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/5] writeback: account per-bdi accumulated dirtied pages
+Subject: [PATCH 3/5] writeback: dirty rate control
 References: <20110806084447.388624428@intel.com>
-Content-Disposition: inline; filename=writeback-bdi-dirtied.patch
+Content-Disposition: inline; filename=dirty-ratelimit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce the BDI_DIRTIED counter. It will be used for estimating the
-bdi's dirty bandwidth.
+It's all about bdi->dirty_ratelimit, which aims to be (write_bw / N)
+when there are N dd tasks.
 
-CC: Jan Kara <jack@suse.cz>
-CC: Michael Rubin <mrubin@google.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+On write() syscall, use bdi->dirty_ratelimit
+============================================
+
+    balance_dirty_pages(pages_dirtied)
+    {
+        pos_bw = bdi->dirty_ratelimit * bdi_position_ratio();
+        pause = pages_dirtied / pos_bw;
+        sleep(pause);
+    }
+
+On every 200ms, update bdi->dirty_ratelimit
+===========================================
+
+    bdi_update_dirty_ratelimit()
+    {
+        bw = bdi->dirty_ratelimit;
+        ref_bw = bw * bdi_position_ratio() * write_bw / dirty_bw;
+        if (dirty pages unbalanced)
+             bdi->dirty_ratelimit = (bw * 3 + ref_bw) / 4;
+    }
+
+Estimation of balanced bdi->dirty_ratelimit
+===========================================
+
+When started N dd, throttle each dd at
+
+         task_ratelimit = pos_bw (any non-zero initial value is OK)
+
+After 200ms, we got
+
+         dirty_bw = # of pages dirtied by app / 200ms
+         write_bw = # of pages written to disk / 200ms
+
+For aggressive dirtiers, the equality holds
+
+         dirty_bw == N * task_ratelimit
+                  == N * pos_bw                      	(1)
+
+The balanced throttle bandwidth can be estimated by
+
+         ref_bw = pos_bw * write_bw / dirty_bw       	(2)
+
+>From (1) and (2), we get equality
+
+         ref_bw == write_bw / N                      	(3)
+
+If the N dd's are all throttled at ref_bw, the dirty/writeback rates
+will match. So ref_bw is the balanced dirty rate.
+
+In practice, the ref_bw calculated by (2) may fluctuate and have
+estimation errors. So the bdi->dirty_ratelimit update policy is to
+follow it only when both pos_bw and ref_bw point to the same direction
+(indicating not only the dirty position has deviated from the global/bdi
+setpoints, but also it's still departing away).
+
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- include/linux/backing-dev.h |    1 +
- mm/backing-dev.c            |    2 ++
- mm/page-writeback.c         |    1 +
- 3 files changed, 4 insertions(+)
+ include/linux/backing-dev.h |    7 +++
+ mm/backing-dev.c            |    1 
+ mm/page-writeback.c         |   69 +++++++++++++++++++++++++++++++++-
+ 3 files changed, 75 insertions(+), 2 deletions(-)
 
---- linux-next.orig/include/linux/backing-dev.h	2011-06-12 20:58:31.000000000 +0800
-+++ linux-next/include/linux/backing-dev.h	2011-06-12 20:58:40.000000000 +0800
-@@ -40,6 +40,7 @@ typedef int (congested_fn)(void *, int);
- enum bdi_stat_item {
- 	BDI_RECLAIMABLE,
- 	BDI_WRITEBACK,
-+	BDI_DIRTIED,
- 	BDI_WRITTEN,
- 	NR_BDI_STAT_ITEMS
- };
---- linux-next.orig/mm/page-writeback.c	2011-06-12 20:58:31.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-06-12 20:58:40.000000000 +0800
-@@ -1530,6 +1530,7 @@ void account_page_dirtied(struct page *p
- 		__inc_zone_page_state(page, NR_FILE_DIRTY);
- 		__inc_zone_page_state(page, NR_DIRTIED);
- 		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
-+		__inc_bdi_stat(mapping->backing_dev_info, BDI_DIRTIED);
- 		task_dirty_inc(current);
- 		task_io_account_write(PAGE_CACHE_SIZE);
- 	}
---- linux-next.orig/mm/backing-dev.c	2011-06-12 20:58:31.000000000 +0800
-+++ linux-next/mm/backing-dev.c	2011-06-12 20:58:55.000000000 +0800
-@@ -97,6 +97,7 @@ static int bdi_debug_stats_show(struct s
- 		   "BdiDirtyThresh:     %10lu kB\n"
- 		   "DirtyThresh:        %10lu kB\n"
- 		   "BackgroundThresh:   %10lu kB\n"
-+		   "BdiDirtied:         %10lu kB\n"
- 		   "BdiWritten:         %10lu kB\n"
- 		   "BdiWriteBandwidth:  %10lu kBps\n"
- 		   "b_dirty:            %10lu\n"
-@@ -109,6 +110,7 @@ static int bdi_debug_stats_show(struct s
- 		   K(bdi_thresh),
- 		   K(dirty_thresh),
- 		   K(background_thresh),
-+		   (unsigned long) K(bdi_stat(bdi, BDI_DIRTIED)),
- 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
- 		   (unsigned long) K(bdi->write_bandwidth),
- 		   nr_dirty,
+--- linux-next.orig/include/linux/backing-dev.h	2011-08-05 18:05:36.000000000 +0800
++++ linux-next/include/linux/backing-dev.h	2011-08-05 18:05:36.000000000 +0800
+@@ -75,10 +75,17 @@ struct backing_dev_info {
+ 	struct percpu_counter bdi_stat[NR_BDI_STAT_ITEMS];
+ 
+ 	unsigned long bw_time_stamp;	/* last time write bw is updated */
++	unsigned long dirtied_stamp;
+ 	unsigned long written_stamp;	/* pages written at bw_time_stamp */
+ 	unsigned long write_bandwidth;	/* the estimated write bandwidth */
+ 	unsigned long avg_write_bandwidth; /* further smoothed write bw */
+ 
++	/*
++	 * The base throttle bandwidth, re-calculated on every 200ms.
++	 * All the bdi tasks' dirty rate will be curbed under it.
++	 */
++	unsigned long dirty_ratelimit;
++
+ 	struct prop_local_percpu completions;
+ 	int dirty_exceeded;
+ 
+--- linux-next.orig/mm/backing-dev.c	2011-08-05 18:05:36.000000000 +0800
++++ linux-next/mm/backing-dev.c	2011-08-05 18:05:36.000000000 +0800
+@@ -674,6 +674,7 @@ int bdi_init(struct backing_dev_info *bd
+ 	bdi->bw_time_stamp = jiffies;
+ 	bdi->written_stamp = 0;
+ 
++	bdi->dirty_ratelimit = INIT_BW;
+ 	bdi->write_bandwidth = INIT_BW;
+ 	bdi->avg_write_bandwidth = INIT_BW;
+ 
+--- linux-next.orig/mm/page-writeback.c	2011-08-05 18:05:36.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-08-06 09:08:35.000000000 +0800
+@@ -736,6 +736,66 @@ static void global_update_bandwidth(unsi
+ 	spin_unlock(&dirty_lock);
+ }
+ 
++/*
++ * Maintain bdi->dirty_ratelimit, the base throttle bandwidth.
++ *
++ * Normal bdi tasks will be curbed at or below it in long term.
++ * Obviously it should be around (write_bw / N) when there are N dd tasks.
++ */
++static void bdi_update_dirty_ratelimit(struct backing_dev_info *bdi,
++				       unsigned long thresh,
++				       unsigned long dirty,
++				       unsigned long bdi_thresh,
++				       unsigned long bdi_dirty,
++				       unsigned long dirtied,
++				       unsigned long elapsed)
++{
++	unsigned long bw = bdi->dirty_ratelimit;
++	unsigned long dirty_bw;
++	unsigned long pos_bw;
++	unsigned long ref_bw;
++	unsigned long long pos_ratio;
++
++	/*
++	 * The dirty rate will match the writeback rate in long term, except
++	 * when dirty pages are truncated by userspace or re-dirtied by FS.
++	 */
++	dirty_bw = (dirtied - bdi->dirtied_stamp) * HZ / elapsed;
++
++	pos_ratio = bdi_position_ratio(bdi, thresh, dirty,
++				       bdi_thresh, bdi_dirty);
++	/*
++	 * pos_bw reflects each dd's dirty rate enforced for the past 200ms.
++	 */
++	pos_bw = bw * pos_ratio >> BANDWIDTH_CALC_SHIFT;
++	pos_bw++;  /* this avoids bdi->dirty_ratelimit get stuck in 0 */
++
++	/*
++	 * ref_bw = pos_bw * write_bw / dirty_bw
++	 *
++	 * It's a linear estimation of the "balanced" throttle bandwidth.
++	 */
++	pos_ratio *= bdi->avg_write_bandwidth;
++	do_div(pos_ratio, dirty_bw | 1);
++	ref_bw = bw * pos_ratio >> BANDWIDTH_CALC_SHIFT;
++
++	/*
++	 * dirty_ratelimit will follow ref_bw/pos_bw conservatively iff they
++	 * are on the same side of dirty_ratelimit. Which not only makes it
++	 * more stable, but also is essential for preventing it being driven
++	 * away by possible systematic errors in ref_bw.
++	 */
++	if (pos_bw < bw) {
++		if (ref_bw < bw)
++			bw = max(ref_bw, pos_bw);
++	} else {
++		if (ref_bw > bw)
++			bw = min(ref_bw, pos_bw);
++	}
++
++	bdi->dirty_ratelimit = bw;
++}
++
+ void __bdi_update_bandwidth(struct backing_dev_info *bdi,
+ 			    unsigned long thresh,
+ 			    unsigned long dirty,
+@@ -745,6 +805,7 @@ void __bdi_update_bandwidth(struct backi
+ {
+ 	unsigned long now = jiffies;
+ 	unsigned long elapsed = now - bdi->bw_time_stamp;
++	unsigned long dirtied;
+ 	unsigned long written;
+ 
+ 	/*
+@@ -753,6 +814,7 @@ void __bdi_update_bandwidth(struct backi
+ 	if (elapsed < BANDWIDTH_INTERVAL)
+ 		return;
+ 
++	dirtied = percpu_counter_read(&bdi->bdi_stat[BDI_DIRTIED]);
+ 	written = percpu_counter_read(&bdi->bdi_stat[BDI_WRITTEN]);
+ 
+ 	/*
+@@ -762,12 +824,15 @@ void __bdi_update_bandwidth(struct backi
+ 	if (elapsed > HZ && time_before(bdi->bw_time_stamp, start_time))
+ 		goto snapshot;
+ 
+-	if (thresh)
++	if (thresh) {
+ 		global_update_bandwidth(thresh, dirty, now);
+-
++		bdi_update_dirty_ratelimit(bdi, thresh, dirty, bdi_thresh,
++					   bdi_dirty, dirtied, elapsed);
++	}
+ 	bdi_update_write_bandwidth(bdi, elapsed, written);
+ 
+ snapshot:
++	bdi->dirtied_stamp = dirtied;
+ 	bdi->written_stamp = written;
+ 	bdi->bw_time_stamp = now;
+ }
 
 
