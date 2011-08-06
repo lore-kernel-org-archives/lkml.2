@@ -1,78 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237Ab1HFAWv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:22:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39385 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932146Ab1HFAKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:10:22 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:52 2011
-Message-Id: <20110806000252.472319197@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:02:06 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, gnb@fmeh.org,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [36/55] svcrpc: fix list-corrupting race on nfsd shutdown
-In-Reply-To: <20110806000257.GA25498@kroah.com>
+	id S932305Ab1HFAXG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:23:06 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:45194 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757307Ab1HFAKT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:10:19 -0400
+Date: Sat, 6 Aug 2011 08:10:04 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <mgalbraith@suse.de>,
+        Luis Claudio =?utf-8?B?Ui4gR29u77+9YWx2ZXM=?= 
+	<lgoncalv@redhat.com>,
+        Matthew Hank Sabins <msabins@linux.vnet.ibm.com>,
+        Gregory Haskins <gregory.haskins@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH V2] sched/cpupri: Remove cpupri->pri_active
+Message-ID: <20110806001004.GA2207@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1312317372.18583.101.camel@gandalf.stny.rr.com>
+ <20110805082008.GA6628@zhy>
+ <1312547447.18583.195.camel@gandalf.stny.rr.com>
+ <20110805143822.GA3199@zhy>
+ <1312558000.18583.201.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1312558000.18583.201.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+On Fri, Aug 05, 2011 at 11:26:40AM -0400, Steven Rostedt wrote:
+> On Fri, 2011-08-05 at 22:38 +0800, Yong Zhang wrote:
+> 
+> > Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> > ---
+> >  kernel/sched_cpupri.c |    3 ---
+> >  kernel/sched_cpupri.h |    2 --
+> >  2 files changed, 0 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/kernel/sched_cpupri.c b/kernel/sched_cpupri.c
+> > index 90faffd..5839559 100644
+> > --- a/kernel/sched_cpupri.c
+> > +++ b/kernel/sched_cpupri.c
+> > @@ -151,9 +151,6 @@ void cpupri_set(struct cpupri *cp, int cpu, int newpri)
+> >  	/*
+> >  	 * If the cpu was currently mapped to a different value, we
+> >  	 * need to map it to the new value then remove the old value.
+> > -	 * Note, we must add the new value first, otherwise we risk the
+> > -	 * cpu being cleared from pri_active, and this cpu could be
+> > -	 * missed for a push or pull.
+> 
+> Actually, the above still holds true, just not for pri_active. Probably
+> should be changed to:
+> 
+> 	* Note, we must add the new value first, otherwise we risk the
+> 	* cpu being missed by the priority loop in cpupri_find.
+> 
+> or something as such.
 
-------------------
+Updated.
 
-From: "J. Bruce Fields" <bfields@redhat.com>
-
-commit ebc63e531cc6a457595dd110b07ac530eae788c3 upstream.
-
-After commit 3262c816a3d7fb1eaabce633caa317887ed549ae "[PATCH] knfsd:
-split svc_serv into pools", svc_delete_xprt (then svc_delete_socket) no
-longer removed its xpt_ready (then sk_ready) field from whatever list it
-was on, noting that there was no point since the whole list was about to
-be destroyed anyway.
-
-That was mostly true, but forgot that a few svc_xprt_enqueue()'s might
-still be hanging around playing with the about-to-be-destroyed list, and
-could get themselves into trouble writing to freed memory if we left
-this xprt on the list after freeing it.
-
-(This is actually functionally identical to a patch made first by Ben
-Greear, but with more comments.)
-
-Cc: gnb@fmeh.org
-Reported-by: Ben Greear <greearb@candelatech.com>
-Tested-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Thanks,
+Yong
 
 ---
- net/sunrpc/svc_xprt.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+From: Yong Zhang <yong.zhang0@gmail.com>
+Subject: [PATCH V2] sched/cpupri: Remove cpupri->pri_active
 
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -896,12 +896,13 @@ void svc_delete_xprt(struct svc_xprt *xp
- 	if (!test_and_set_bit(XPT_DETACHED, &xprt->xpt_flags))
- 		list_del_init(&xprt->xpt_list);
- 	/*
--	 * We used to delete the transport from whichever list
--	 * it's sk_xprt.xpt_ready node was on, but we don't actually
--	 * need to.  This is because the only time we're called
--	 * while still attached to a queue, the queue itself
--	 * is about to be destroyed (in svc_destroy).
-+	 * The only time we're called while xpt_ready is still on a list
-+	 * is while the list itself is about to be destroyed (in
-+	 * svc_destroy).  BUT svc_xprt_enqueue could still be attempting
-+	 * to add new entries to the sp_sockets list, so we can't leave
-+	 * a freed xprt on it.
+Since [sched/cpupri: Remove the vec->lock], member pri_active
+of struct cpupri is not needed any more, just remove it. Also
+clean stuff related to it.
+
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+---
+ kernel/sched_cpupri.c |    3 +--
+ kernel/sched_cpupri.h |    2 --
+ 2 files changed, 1 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/sched_cpupri.c b/kernel/sched_cpupri.c
+index 90faffd..a86cf9d 100644
+--- a/kernel/sched_cpupri.c
++++ b/kernel/sched_cpupri.c
+@@ -152,8 +152,7 @@ void cpupri_set(struct cpupri *cp, int cpu, int newpri)
+ 	 * If the cpu was currently mapped to a different value, we
+ 	 * need to map it to the new value then remove the old value.
+ 	 * Note, we must add the new value first, otherwise we risk the
+-	 * cpu being cleared from pri_active, and this cpu could be
+-	 * missed for a push or pull.
++	 * cpu being missed by the priority loop in cpupri_find.
  	 */
-+	list_del_init(&xprt->xpt_ready);
- 	if (test_bit(XPT_TEMP, &xprt->xpt_flags))
- 		serv->sv_tmpcnt--;
+ 	if (likely(newpri != CPUPRI_INVALID)) {
+ 		struct cpupri_vec *vec = &cp->pri_to_cpu[newpri];
+diff --git a/kernel/sched_cpupri.h b/kernel/sched_cpupri.h
+index 6b4cd17..f6d7561 100644
+--- a/kernel/sched_cpupri.h
++++ b/kernel/sched_cpupri.h
+@@ -4,7 +4,6 @@
+ #include <linux/sched.h>
  
-
+ #define CPUPRI_NR_PRIORITIES	(MAX_RT_PRIO + 2)
+-#define CPUPRI_NR_PRI_WORDS	BITS_TO_LONGS(CPUPRI_NR_PRIORITIES)
+ 
+ #define CPUPRI_INVALID -1
+ #define CPUPRI_IDLE     0
+@@ -18,7 +17,6 @@ struct cpupri_vec {
+ 
+ struct cpupri {
+ 	struct cpupri_vec pri_to_cpu[CPUPRI_NR_PRIORITIES];
+-	long              pri_active[CPUPRI_NR_PRI_WORDS];
+ 	int               cpu_to_pri[NR_CPUS];
+ };
+ 
+-- 
+1.7.1
 
