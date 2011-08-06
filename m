@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026Ab1HFPfD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 11:35:03 -0400
-Received: from www17.your-server.de ([213.133.104.17]:34065 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab1HFPfA (ORCPT
+	id S1754997Ab1HFPfQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 11:35:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:42956 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754368Ab1HFPfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 11:35:00 -0400
-Subject: [PATCH] xxx: use kstrdup()
-From: Thomas Meyer <thomas@m3y3r.de>
-To: hare@suse.de, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Date: Sat, 06 Aug 2011 17:34:27 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1312644871.5589.134.camel@localhost.localdomain>
+	Sat, 6 Aug 2011 11:35:12 -0400
+X-Authority-Analysis: v=1.1 cv=Pm0sEXe2MdIPK/rOEC7hwDW84D/yDsPO3JtCzsVYOFU= c=1 sm=0 a=JVmKiHRY1FkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=KRyvCDwr-uXSXOKY8GIA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 0/8] Having perf use libparsevent.a
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <CAKYOsXw+Q+h2D++LxAoCUJ3tFVEhczBgDWNjwXzuJ0mNDav_Rw@mail.gmail.com>
+References: <20110805205921.909038487@goodmis.org>
+	 <20110805212409.GA21114@elte.hu> <20110806004342.GG22164@somewhere>
+	 <20110806064847.GB13220@elte.hu> <20110806145655.GB29058@somewhere>
+	 <CAKYOsXw+Q+h2D++LxAoCUJ3tFVEhczBgDWNjwXzuJ0mNDav_Rw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Sat, 06 Aug 2011 11:35:09 -0400
+Message-ID: <1312644909.18583.220.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Meyer <thomas@m3y3r.de>
+On Sat, 2011-08-06 at 09:16 -0600, David Ahern wrote:
 
- Use kstrdup rather than duplicating its implementation
+> If the library is just for parsing trace events why not call it
+> libtraceparse or libtrace? This isn't perf specific functionality.
 
- The semantic patch that makes this output is available
- in scripts/coccinelle/api/kstrdup.cocci.
+Actually, I'm thinking libevents would probably be most appropriate. It
+has less to do with perf in general, and more about events. Even reading
+the events goes under this category.
 
- More information about semantic patching is available at
- http://coccinelle.lip6.fr/
+-- Steve
 
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
----
-
-diff -u -p a/drivers/scsi/aic7xxx/aic7770_osm.c b/drivers/scsi/aic7xxx/aic7770_osm.c
---- a/drivers/scsi/aic7xxx/aic7770_osm.c 2010-09-13 07:01:17.513861341 +0200
-+++ b/drivers/scsi/aic7xxx/aic7770_osm.c 2011-08-01 21:15:57.315103668 +0200
-@@ -85,10 +85,9 @@ aic7770_probe(struct device *dev)
- 	int	error;
- 
- 	sprintf(buf, "ahc_eisa:%d", eisaBase >> 12);
--	name = kmalloc(strlen(buf) + 1, GFP_ATOMIC);
-+	name = kstrdup(buf, GFP_ATOMIC);
- 	if (name == NULL)
- 		return (ENOMEM);
--	strcpy(name, buf);
- 	ahc = ahc_alloc(&aic7xxx_driver_template, name);
- 	if (ahc == NULL)
- 		return (ENOMEM);
-
+> 
 
 
