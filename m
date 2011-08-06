@@ -1,323 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757065Ab1HFBrl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 21:47:41 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:1546 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193Ab1HFBrj (ORCPT
+	id S1753733Ab1HFB7W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 21:59:22 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:52654 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346Ab1HFB7T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 21:47:39 -0400
-From: Mandeep Singh Baines <msb@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Ramsay Jones <ramsay@ramsay1.demon.co.uk>,
-        Nicolas Pitre <nico@cam.org>,
+	Fri, 5 Aug 2011 21:59:19 -0400
+Date: Fri, 5 Aug 2011 21:58:16 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, xen-devel@lists.xensource.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        virtualization@lists.linux-foundation.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        linux-next@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org
-Subject: [PATCH] lib/sha1: use the git implementation of SHA-1
-Date: Fri,  5 Aug 2011 18:46:27 -0700
-Message-Id: <1312595187-3265-1-git-send-email-msb@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Xen-devel] Re: linux-next: Tree for July 25 (xen)
+Message-ID: <20110806015815.GA26833@dumpdata.com>
+References: <20110725162542.39ea8d8cbd51604523635c1a@canb.auug.org.au>
+ <20110725144629.b752bf14.rdunlap@xenotime.net>
+ <20110804193534.GB12729@elte.hu>
+ <20110804195539.GA11198@dumpdata.com>
+ <20110804131516.c4da6595.rdunlap@xenotime.net>
+ <20110804223259.GB4370@dumpdata.com>
+ <20110804224020.GA21492@dumpdata.com>
+ <4E3B3117.5050308@xenotime.net>
+ <20110805080531.GA8052@elte.hu>
+ <20110805211423.GA9765@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110805211423.GA9765@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090202.4E3C9FC3.0025,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For ChromiumOS, we use SHA-1 to verify the integrity of the root
-filesystem. The speed of the kernel sha-1 implementation has a major
-impact on our boot performance.
+On Fri, Aug 05, 2011 at 11:14:23PM +0200, Ingo Molnar wrote:
+> 
+> * Ingo Molnar <mingo@elte.hu> wrote:
+> 
+> > * Randy Dunlap <rdunlap@xenotime.net> wrote:
+> > 
+> > > On 08/04/11 15:40, Konrad Rzeszutek Wilk wrote:
+> > > > On Thu, Aug 04, 2011 at 06:32:59PM -0400, Konrad Rzeszutek Wilk wrote:
+> > > >>>>> These build failures are still triggering upstream:
+> > > >>>>>
+> > > >>>>>  arch/x86/xen/trace.c:44:2: error: array index in initializer not of integer type
+> > > >>>>>  arch/x86/xen/trace.c:44:2: error: (near initialization for ‘xen_hypercall_names’)
+> > > >>>>>  arch/x86/xen/trace.c:45:1: error: ‘__HYPERVISOR_arch_4’ undeclared here (not in a function)
+> > > >>>>>  arch/x86/xen/trace.c:45:2: error: array index in initializer not of integer type
+> > > >>>>>  arch/x86/xen/trace.c:45:2: error: (near initialization for ‘xen_hypercall_names’)
+> > > >>>>
+> > > >>>> Oh, that I haven't seen. Can you send me the .config for that please.
+> > > >>>
+> > > >>> You can't be trying very hard then.  I see lots of these (but no,
+> > > >>
+> > > >> Ah, I am getting it now. Thanks for reporting it.
+> > > > 
+> > > > This should do the trick:
+> > > 
+> > > Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+> > 
+> > That patch did the trick here too:
+> > 
+> > Acked-by: Ingo Molnar <mingo@elte.hu>
+> 
+> Except that i'm still seeing the occasional build failure - see the 
+> error log below. Config attached.
 
-To improve boot performance, we investigated using the heavily
-optimized sha-1 implementation used in git. With the git
-sha-1 implementation, we see a 11.7% improvement in boot time.
+Much appreciate for the report. I believe this fix (which I think hit
+linux-next yesterday?) should do that:
 
-10 reboots, remove slowest/fastest.
+commit 1e9ea2656b656edd3c8de98675bbc0340211b5bd
+Author: Jeremy Fitzhardinge <jeremy@goop.org>
+Date:   Wed Aug 3 09:43:44 2011 -0700
 
-Before:
+     xen/tracing: it looks like we wanted CONFIG_FTRACE
+    
+    Apparently we wanted CONFIG_FTRACE rather the CONFIG_FUNCTION_TRACER.
+    
+    Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
+    Tested-by: Sander Eikelenboom <linux@eikelenboom.it>
+    Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Mean: 6.58 seconds Stdev: 0.14
-
-After (with git sha-1, this patch):
-
-Mean: 5.89 seconds Stdev: 0.07
-
-The other cool thing about the git SHA-1 implementation is that
-it only needs 64 bytes of stack for the workspace while the original
-kernel implementation needed 320 bytes.
-
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-CC: Ramsay Jones <ramsay@ramsay1.demon.co.uk>
-CC: Nicolas Pitre <nico@cam.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-CC: David S. Miller <davem@davemloft.net>
-CC: linux-crypto@vger.kernel.org
----
- include/linux/cryptohash.h |    2 +-
- lib/sha1.c                 |  212 ++++++++++++++++++++++++++++++++-----------
- 2 files changed, 159 insertions(+), 55 deletions(-)
-
-diff --git a/include/linux/cryptohash.h b/include/linux/cryptohash.h
-index ec78a4b..f945218 100644
---- a/include/linux/cryptohash.h
-+++ b/include/linux/cryptohash.h
-@@ -3,7 +3,7 @@
+diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
+index 45e94ac..3326204 100644
+--- a/arch/x86/xen/Makefile
++++ b/arch/x86/xen/Makefile
+@@ -15,7 +15,7 @@ obj-y		:= enlighten.o setup.o multicalls.o mmu.o irq.o \
+ 			grant-table.o suspend.o platform-pci-unplug.o \
+ 			p2m.o
  
- #define SHA_DIGEST_WORDS 5
- #define SHA_MESSAGE_BYTES (512 /*bits*/ / 8)
--#define SHA_WORKSPACE_WORDS 80
-+#define SHA_WORKSPACE_WORDS 16
+-obj-$(CONFIG_FUNCTION_TRACER) += trace.o
++obj-$(CONFIG_FTRACE) += trace.o
  
- void sha_init(__u32 *buf);
- void sha_transform(__u32 *digest, const char *data, __u32 *W);
-diff --git a/lib/sha1.c b/lib/sha1.c
-index 4c45fd5..f33271d 100644
---- a/lib/sha1.c
-+++ b/lib/sha1.c
-@@ -1,31 +1,72 @@
- /*
-- * SHA transform algorithm, originally taken from code written by
-- * Peter Gutmann, and placed in the public domain.
-+ * SHA1 routine optimized to do word accesses rather than byte accesses,
-+ * and to avoid unnecessary copies into the context array.
-+ *
-+ * This was based on the git SHA1 implementation.
-  */
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
--#include <linux/cryptohash.h>
-+#include <linux/bitops.h>
-+#include <asm/unaligned.h>
- 
--/* The SHA f()-functions.  */
-+/*
-+ * If you have 32 registers or more, the compiler can (and should)
-+ * try to change the array[] accesses into registers. However, on
-+ * machines with less than ~25 registers, that won't really work,
-+ * and at least gcc will make an unholy mess of it.
-+ *
-+ * So to avoid that mess which just slows things down, we force
-+ * the stores to memory to actually happen (we might be better off
-+ * with a 'W(t)=(val);asm("":"+m" (W(t))' there instead, as
-+ * suggested by Artur Skawina - that will also make gcc unable to
-+ * try to do the silly "optimize away loads" part because it won't
-+ * see what the value will be).
-+ *
-+ * Ben Herrenschmidt reports that on PPC, the C version comes close
-+ * to the optimized asm with this (ie on PPC you don't want that
-+ * 'volatile', since there are lots of registers).
-+ *
-+ * On ARM we get the best code generation by forcing a full memory barrier
-+ * between each SHA_ROUND, otherwise gcc happily get wild with spilling and
-+ * the stack frame size simply explode and performance goes down the drain.
-+ */
- 
--#define f1(x,y,z)   (z ^ (x & (y ^ z)))		/* x ? y : z */
--#define f2(x,y,z)   (x ^ y ^ z)			/* XOR */
--#define f3(x,y,z)   ((x & y) + (z & (x ^ y)))	/* majority */
-+#ifdef CONFIG_X86
-+  #define setW(x, val) (*(volatile __u32 *)&W(x) = (val))
-+#elif defined(CONFIG_ARM)
-+  #define setW(x, val) do { W(x) = (val); __asm__("":::"memory"); } while (0)
-+#else
-+  #define setW(x, val) (W(x) = (val))
-+#endif
- 
--/* The SHA Mysterious Constants */
-+/* This "rolls" over the 512-bit array */
-+#define W(x) (array[(x)&15])
- 
--#define K1  0x5A827999L			/* Rounds  0-19: sqrt(2) * 2^30 */
--#define K2  0x6ED9EBA1L			/* Rounds 20-39: sqrt(3) * 2^30 */
--#define K3  0x8F1BBCDCL			/* Rounds 40-59: sqrt(5) * 2^30 */
--#define K4  0xCA62C1D6L			/* Rounds 60-79: sqrt(10) * 2^30 */
-+/*
-+ * Where do we get the source from? The first 16 iterations get it from
-+ * the input data, the next mix it from the 512-bit array.
-+ */
-+#define SHA_SRC(t) get_unaligned_be32((__u32 *)data + t)
-+#define SHA_MIX(t) rol32(W(t+13) ^ W(t+8) ^ W(t+2) ^ W(t), 1)
-+
-+#define SHA_ROUND(t, input, fn, constant, A, B, C, D, E) do { \
-+	__u32 TEMP = input(t); setW(t, TEMP); \
-+	E += TEMP + rol32(A,5) + (fn) + (constant); \
-+	B = ror32(B, 2); } while (0)
-+
-+#define T_0_15(t, A, B, C, D, E)  SHA_ROUND(t, SHA_SRC, (((C^D)&B)^D) , 0x5a827999, A, B, C, D, E )
-+#define T_16_19(t, A, B, C, D, E) SHA_ROUND(t, SHA_MIX, (((C^D)&B)^D) , 0x5a827999, A, B, C, D, E )
-+#define T_20_39(t, A, B, C, D, E) SHA_ROUND(t, SHA_MIX, (B^C^D) , 0x6ed9eba1, A, B, C, D, E )
-+#define T_40_59(t, A, B, C, D, E) SHA_ROUND(t, SHA_MIX, ((B&C)+(D&(B^C))) , 0x8f1bbcdc, A, B, C, D, E )
-+#define T_60_79(t, A, B, C, D, E) SHA_ROUND(t, SHA_MIX, (B^C^D) ,  0xca62c1d6, A, B, C, D, E )
- 
- /**
-  * sha_transform - single block SHA1 transform
-  *
-  * @digest: 160 bit digest to update
-  * @data:   512 bits of data to hash
-- * @W:      80 words of workspace (see note)
-+ * @array:  16 words of workspace (see note)
-  *
-  * This function generates a SHA1 digest for a single 512-bit block.
-  * Be warned, it does not handle padding and message digest, do not
-@@ -36,47 +77,111 @@
-  * to clear the workspace. This is left to the caller to avoid
-  * unnecessary clears between chained hashing operations.
-  */
--void sha_transform(__u32 *digest, const char *in, __u32 *W)
-+void sha_transform(__u32 *digest, const char *data, __u32 *array)
- {
--	__u32 a, b, c, d, e, t, i;
--
--	for (i = 0; i < 16; i++)
--		W[i] = be32_to_cpu(((const __be32 *)in)[i]);
--
--	for (i = 0; i < 64; i++)
--		W[i+16] = rol32(W[i+13] ^ W[i+8] ^ W[i+2] ^ W[i], 1);
--
--	a = digest[0];
--	b = digest[1];
--	c = digest[2];
--	d = digest[3];
--	e = digest[4];
--
--	for (i = 0; i < 20; i++) {
--		t = f1(b, c, d) + K1 + rol32(a, 5) + e + W[i];
--		e = d; d = c; c = rol32(b, 30); b = a; a = t;
--	}
--
--	for (; i < 40; i ++) {
--		t = f2(b, c, d) + K2 + rol32(a, 5) + e + W[i];
--		e = d; d = c; c = rol32(b, 30); b = a; a = t;
--	}
--
--	for (; i < 60; i ++) {
--		t = f3(b, c, d) + K3 + rol32(a, 5) + e + W[i];
--		e = d; d = c; c = rol32(b, 30); b = a; a = t;
--	}
--
--	for (; i < 80; i ++) {
--		t = f2(b, c, d) + K4 + rol32(a, 5) + e + W[i];
--		e = d; d = c; c = rol32(b, 30); b = a; a = t;
--	}
--
--	digest[0] += a;
--	digest[1] += b;
--	digest[2] += c;
--	digest[3] += d;
--	digest[4] += e;
-+	__u32 A, B, C, D, E;
-+
-+	A = digest[0];
-+	B = digest[1];
-+	C = digest[2];
-+	D = digest[3];
-+	E = digest[4];
-+
-+	/* Round 1 - iterations 0-16 take their input from 'data' */
-+	T_0_15( 0, A, B, C, D, E);
-+	T_0_15( 1, E, A, B, C, D);
-+	T_0_15( 2, D, E, A, B, C);
-+	T_0_15( 3, C, D, E, A, B);
-+	T_0_15( 4, B, C, D, E, A);
-+	T_0_15( 5, A, B, C, D, E);
-+	T_0_15( 6, E, A, B, C, D);
-+	T_0_15( 7, D, E, A, B, C);
-+	T_0_15( 8, C, D, E, A, B);
-+	T_0_15( 9, B, C, D, E, A);
-+	T_0_15(10, A, B, C, D, E);
-+	T_0_15(11, E, A, B, C, D);
-+	T_0_15(12, D, E, A, B, C);
-+	T_0_15(13, C, D, E, A, B);
-+	T_0_15(14, B, C, D, E, A);
-+	T_0_15(15, A, B, C, D, E);
-+
-+	/* Round 1 - tail. Input from 512-bit mixing array */
-+	T_16_19(16, E, A, B, C, D);
-+	T_16_19(17, D, E, A, B, C);
-+	T_16_19(18, C, D, E, A, B);
-+	T_16_19(19, B, C, D, E, A);
-+
-+	/* Round 2 */
-+	T_20_39(20, A, B, C, D, E);
-+	T_20_39(21, E, A, B, C, D);
-+	T_20_39(22, D, E, A, B, C);
-+	T_20_39(23, C, D, E, A, B);
-+	T_20_39(24, B, C, D, E, A);
-+	T_20_39(25, A, B, C, D, E);
-+	T_20_39(26, E, A, B, C, D);
-+	T_20_39(27, D, E, A, B, C);
-+	T_20_39(28, C, D, E, A, B);
-+	T_20_39(29, B, C, D, E, A);
-+	T_20_39(30, A, B, C, D, E);
-+	T_20_39(31, E, A, B, C, D);
-+	T_20_39(32, D, E, A, B, C);
-+	T_20_39(33, C, D, E, A, B);
-+	T_20_39(34, B, C, D, E, A);
-+	T_20_39(35, A, B, C, D, E);
-+	T_20_39(36, E, A, B, C, D);
-+	T_20_39(37, D, E, A, B, C);
-+	T_20_39(38, C, D, E, A, B);
-+	T_20_39(39, B, C, D, E, A);
-+
-+	/* Round 3 */
-+	T_40_59(40, A, B, C, D, E);
-+	T_40_59(41, E, A, B, C, D);
-+	T_40_59(42, D, E, A, B, C);
-+	T_40_59(43, C, D, E, A, B);
-+	T_40_59(44, B, C, D, E, A);
-+	T_40_59(45, A, B, C, D, E);
-+	T_40_59(46, E, A, B, C, D);
-+	T_40_59(47, D, E, A, B, C);
-+	T_40_59(48, C, D, E, A, B);
-+	T_40_59(49, B, C, D, E, A);
-+	T_40_59(50, A, B, C, D, E);
-+	T_40_59(51, E, A, B, C, D);
-+	T_40_59(52, D, E, A, B, C);
-+	T_40_59(53, C, D, E, A, B);
-+	T_40_59(54, B, C, D, E, A);
-+	T_40_59(55, A, B, C, D, E);
-+	T_40_59(56, E, A, B, C, D);
-+	T_40_59(57, D, E, A, B, C);
-+	T_40_59(58, C, D, E, A, B);
-+	T_40_59(59, B, C, D, E, A);
-+
-+	/* Round 4 */
-+	T_60_79(60, A, B, C, D, E);
-+	T_60_79(61, E, A, B, C, D);
-+	T_60_79(62, D, E, A, B, C);
-+	T_60_79(63, C, D, E, A, B);
-+	T_60_79(64, B, C, D, E, A);
-+	T_60_79(65, A, B, C, D, E);
-+	T_60_79(66, E, A, B, C, D);
-+	T_60_79(67, D, E, A, B, C);
-+	T_60_79(68, C, D, E, A, B);
-+	T_60_79(69, B, C, D, E, A);
-+	T_60_79(70, A, B, C, D, E);
-+	T_60_79(71, E, A, B, C, D);
-+	T_60_79(72, D, E, A, B, C);
-+	T_60_79(73, C, D, E, A, B);
-+	T_60_79(74, B, C, D, E, A);
-+	T_60_79(75, A, B, C, D, E);
-+	T_60_79(76, E, A, B, C, D);
-+	T_60_79(77, D, E, A, B, C);
-+	T_60_79(78, C, D, E, A, B);
-+	T_60_79(79, B, C, D, E, A);
-+
-+	digest[0] += A;
-+	digest[1] += B;
-+	digest[2] += C;
-+	digest[3] += D;
-+	digest[4] += E;
- }
- EXPORT_SYMBOL(sha_transform);
- 
-@@ -92,4 +197,3 @@ void sha_init(__u32 *buf)
- 	buf[3] = 0x10325476;
- 	buf[4] = 0xc3d2e1f0;
- }
--
--- 
-1.7.3.1
+ obj-$(CONFIG_SMP)		+= smp.o
+ obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= spinlock.o
 
+
+Planning to send all of the bug-fixes in my branch to Linus tomorrow - just
+leaving it in linux-next for the full 24-hrs at least to make sure nothing
+else goes haywire.
