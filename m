@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab1HFALZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:11:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39536 "EHLO mx2.suse.de"
+	id S932387Ab1HFASg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:18:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39552 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932164Ab1HFALT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:11:19 -0400
+	id S932164Ab1HFAL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:11:26 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:14 2011
-Message-Id: <20110806000414.106740484@clark.kroah.org>
+Message-Id: <20110806000414.314929195@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:43 -0700
+Date: Fri, 05 Aug 2011 17:03:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Werner Fink <werner@novell.com>, Ankit Jain <jankit@suse.de>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [25/50] [SCSI] Blacklist Traxdata CDR4120 and IOMEGA Zip drive to avoid lock ups.
+Subject: [27/50] [SCSI] fix crash in scsi_dispatch_cmd()
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +25,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Werner Fink <werner@novell.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-commit 82103978189e9731658cd32da5eb85ab7b8542b8 upstream.
+commit bfe159a51203c15d23cb3158fffdc25ec4b4dda1 upstream.
 
-This patch resulted from the discussion at
-https://bugzilla.novell.com/show_bug.cgi?id=679277,
-https://bugzilla.novell.com/show_bug.cgi?id=681840 .
+USB surprise removal of sr is triggering an oops in
+scsi_dispatch_command().  What seems to be happening is that USB is
+hanging on to a queue reference until the last close of the upper
+device, so the crash is caused by surprise remove of a mounted CD
+followed by attempted unmount.
 
-Signed-off-by: Werner Fink <werner@novell.com>
-Signed-off-by: Ankit Jain <jankit@suse.de>
+The problem is that USB doesn't issue its final commands as part of
+the SCSI teardown path, but on last close when the block queue is long
+gone.  The long term fix is probably to make sr do the teardown in the
+same way as sd (so remove all the lower bits on ejection, but keep the
+upper disk alive until last close of user space).  However, the
+current oops can be simply fixed by not allowing any commands to be
+sent to a dead queue.
+
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/scsi_devinfo.c |    2 ++
- 1 file changed, 2 insertions(+)
+ block/blk-core.c        |    3 +++
+ block/blk-exec.c        |    7 +++++++
+ drivers/scsi/scsi_lib.c |    2 ++
+ 3 files changed, 12 insertions(+)
 
---- a/drivers/scsi/scsi_devinfo.c
-+++ b/drivers/scsi/scsi_devinfo.c
-@@ -196,6 +196,7 @@ static struct {
- 	{"IBM", "ProFibre 4000R", "*", BLIST_SPARSELUN | BLIST_LARGELUN},
- 	{"IBM", "2105", NULL, BLIST_RETRY_HWERROR},
- 	{"iomega", "jaz 1GB", "J.86", BLIST_NOTQ | BLIST_NOLUN},
-+	{"IOMEGA", "ZIP", NULL, BLIST_NOTQ | BLIST_NOLUN},
- 	{"IOMEGA", "Io20S         *F", NULL, BLIST_KEY},
- 	{"INSITE", "Floptical   F*8I", NULL, BLIST_KEY},
- 	{"INSITE", "I325VM", NULL, BLIST_KEY},
-@@ -242,6 +243,7 @@ static struct {
- 	{"Tornado-", "F4", "*", BLIST_NOREPORTLUN},
- 	{"TOSHIBA", "CDROM", NULL, BLIST_ISROM},
- 	{"TOSHIBA", "CD-ROM", NULL, BLIST_ISROM},
-+	{"Traxdata", "CDR4120", NULL, BLIST_NOLUN},	/* locks up */
- 	{"USB2.0", "SMARTMEDIA/XD", NULL, BLIST_FORCELUN | BLIST_INQUIRY_36},
- 	{"WangDAT", "Model 2600", "01.7", BLIST_SELECT_NO_ATN},
- 	{"WangDAT", "Model 3200", "02.2", BLIST_SELECT_NO_ATN},
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -865,6 +865,9 @@ struct request *blk_get_request(struct r
+ {
+ 	struct request *rq;
+ 
++	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
++		return NULL;
++
+ 	BUG_ON(rw != READ && rw != WRITE);
+ 
+ 	spin_lock_irq(q->queue_lock);
+--- a/block/blk-exec.c
++++ b/block/blk-exec.c
+@@ -50,6 +50,13 @@ void blk_execute_rq_nowait(struct reques
+ {
+ 	int where = at_head ? ELEVATOR_INSERT_FRONT : ELEVATOR_INSERT_BACK;
+ 
++	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))) {
++		rq->errors = -ENXIO;
++		if (rq->end_io)
++			rq->end_io(rq, rq->errors);
++		return;
++	}
++
+ 	rq->rq_disk = bd_disk;
+ 	rq->end_io = done;
+ 	WARN_ON(irqs_disabled());
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -215,6 +215,8 @@ int scsi_execute(struct scsi_device *sde
+ 	int ret = DRIVER_ERROR << 24;
+ 
+ 	req = blk_get_request(sdev->request_queue, write, __GFP_WAIT);
++	if (!req)
++		return ret;
+ 
+ 	if (bufflen &&	blk_rq_map_kern(sdev->request_queue, req,
+ 					buffer, bufflen, __GFP_WAIT))
 
 
