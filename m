@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab1HFALv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:11:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39583 "EHLO mx2.suse.de"
+	id S932405Ab1HFARj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:17:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39646 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932366Ab1HFALg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:11:36 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:14 2011
-Message-Id: <20110806000414.629759175@clark.kroah.org>
+	id S932393Ab1HFALu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:11:50 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:12 2011
+Message-Id: <20110806000412.038338686@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:48 -0700
+Date: Fri, 05 Aug 2011 17:03:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Blanchard <anton@samba.org>, Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [30/50] powerpc/kdump: Fix timeout in crash_kexec_wait_realmode
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [05/50] SUNRPC: Fix a race between work-queue and rpc_killall_tasks
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +25,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 63f21a56f1cc0b800a4c00349c59448f82473d19 upstream.
+commit b55c59892e1f3b6c7d4b9ccffb4263e1486fb990 upstream.
 
-The existing code it pretty ugly.  How about we clean it up even more
-like this?
+Since rpc_killall_tasks may modify the rpc_task's tk_action field
+without any locking, we need to be careful when dereferencing it.
 
-From: Anton Blanchard <anton@samba.org>
-
-We check for timeout expiry in the outer loop, but we also need to
-check it in the inner loop or we can lock up forever waiting for a
-CPU to hit real mode.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Ben Greear <greearb@candelatech.com>
+Tested-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/crash.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ net/sunrpc/sched.c |   27 +++++++++++----------------
+ 1 file changed, 11 insertions(+), 16 deletions(-)
 
---- a/arch/powerpc/kernel/crash.c
-+++ b/arch/powerpc/kernel/crash.c
-@@ -176,12 +176,8 @@ static void crash_kexec_wait_realmode(in
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -628,30 +628,25 @@ static void __rpc_execute(struct rpc_tas
+ 	BUG_ON(RPC_IS_QUEUED(task));
  
- 		while (paca[i].kexec_state < KEXEC_STATE_REAL_MODE) {
- 			barrier();
--			if (!cpu_possible(i)) {
-+			if (!cpu_possible(i) || !cpu_online(i) || (msecs <= 0))
+ 	for (;;) {
++		void (*do_action)(struct rpc_task *);
+ 
+ 		/*
+-		 * Execute any pending callback.
++		 * Execute any pending callback first.
+ 		 */
+-		if (task->tk_callback) {
+-			void (*save_callback)(struct rpc_task *);
+-
+-			/*
+-			 * We set tk_callback to NULL before calling it,
+-			 * in case it sets the tk_callback field itself:
+-			 */
+-			save_callback = task->tk_callback;
+-			task->tk_callback = NULL;
+-			save_callback(task);
+-		} else {
++		do_action = task->tk_callback;
++		task->tk_callback = NULL;
++		if (do_action == NULL) {
+ 			/*
+ 			 * Perform the next FSM step.
+-			 * tk_action may be NULL when the task has been killed
+-			 * by someone else.
++			 * tk_action may be NULL if the task has been killed.
++			 * In particular, note that rpc_killall_tasks may
++			 * do this at any time, so beware when dereferencing.
+ 			 */
+-			if (task->tk_action == NULL)
++			do_action = task->tk_action;
++			if (do_action == NULL)
  				break;
--			}
--			if (!cpu_online(i)) {
--				break;
--			}
- 			msecs--;
- 			mdelay(1);
+-			task->tk_action(task);
  		}
++		do_action(task);
+ 
+ 		/*
+ 		 * Lockless check for whether task is sleeping or not.
 
 
