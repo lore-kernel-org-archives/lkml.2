@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964818Ab1HFAOn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:14:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39811 "EHLO mx2.suse.de"
+	id S1757207Ab1HFAOl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:14:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39822 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932353Ab1HFAMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:12:46 -0400
+	id S932431Ab1HFAMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:12:48 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:15 2011
-Message-Id: <20110806000414.938486760@clark.kroah.org>
+Message-Id: <20110806000415.043483790@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:51 -0700
+Date: Fri, 05 Aug 2011 17:03:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Philip A. Prindeville" <philipp@redfish-solutions.com>,
-        "Alexandros C. Couloumbis" <alex@ozo.com>,
-        Andres Salomon <dilinger@queued.net>
-Subject: [33/50] geode: reflect mfgpt dependency on mfd
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Christian Zankel <chris@zankel.net>, Oleg Nesterov <oleg@redhat.com>
+Subject: [34/50] xtensa: prevent arbitrary read in ptrace
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,43 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Philip A. Prindeville" <philipp@redfish-solutions.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 703f03c896fdbd726b809066ae279df513992f0e upstream.
+commit 0d0138ebe24b94065580bd2601f8bb7eb6152f56 upstream.
 
-As stated in drivers/mfd/cs5535-mfd.c, the mfd driver exposes the BARs
-which then make the GPIO, MFGPT, ACPI, etc.  all visible to the system.
+Prevent an arbitrary kernel read.  Check the user pointer with access_ok()
+before copying data in.
 
-So the dependencies of the MFGPT stuff have changed, and most people
-expect Kconfig to bring in the necessary dependencies.  Without them, the
-module fails to load and most people don't understand why because the
-details of the rewrite aren't captured anywhere most people who know to
-look.
-
-This dependency needs to be reflected in Kconfig.
-
-Signed-off-by: Philip A. Prindeville <philipp@redfish-solutions.com>
-Acked-by: Alexandros C. Couloumbis <alex@ozo.com>
-Acked-by: Andres Salomon <dilinger@queued.net>
+[akpm@linux-foundation.org: s/EIO/EFAULT/]
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Christian Zankel <chris@zankel.net>
+Cc: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/misc/Kconfig |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/xtensa/kernel/ptrace.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -189,8 +189,7 @@ config SGI_XP
+--- a/arch/xtensa/kernel/ptrace.c
++++ b/arch/xtensa/kernel/ptrace.c
+@@ -136,6 +136,9 @@ int ptrace_setxregs(struct task_struct *
+ 	elf_xtregs_t *xtregs = uregs;
+ 	int ret = 0;
  
- config CS5535_MFGPT
- 	tristate "CS5535/CS5536 Geode Multi-Function General Purpose Timer (MFGPT) support"
--	depends on PCI
--	depends on X86
-+	depends on PCI && X86 && MFD_CS5535
- 	default n
- 	help
- 	  This driver provides access to MFGPT functionality for other
++	if (!access_ok(VERIFY_READ, uregs, sizeof(elf_xtregs_t)))
++		return -EFAULT;
++
+ #if XTENSA_HAVE_COPROCESSORS
+ 	/* Flush all coprocessors before we overwrite them. */
+ 	coprocessor_flush_all(ti);
 
 
