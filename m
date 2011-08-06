@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab1HFMbq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 08:31:46 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:48919 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691Ab1HFMbp (ORCPT
+	id S1756172Ab1HFMei (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 08:34:38 -0400
+Received: from smtp-out1.tiscali.nl ([195.241.79.176]:52968 "EHLO
+	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752691Ab1HFMeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 08:31:45 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>, Andre Przywara <Andre.Przywara@amd.com>,
-        Martin Pohlack <Martin.Pohlack@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH] x86, AMD: Fix 32-bit build after cache aliasing patch
-Date: Sat,  6 Aug 2011 14:31:38 +0200
-Message-Id: <1312633899-1131-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.4.rc2
-In-Reply-To: <4E3C8664.7050607@zytor.com>
-References: <4E3C8664.7050607@zytor.com>
+	Sat, 6 Aug 2011 08:34:36 -0400
+Subject: [PATCH] [TRIVIAL] Fix documentation and comment typo 'no_hz'
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>, Dave Jones <davej@redhat.com>
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 06 Aug 2011 14:33:43 +0200
+Message-ID: <1312634023.2021.7.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
-
-hpa reported that dfb09f9b7ab03fd367740e541a5caf830ed56726 breaks 32-bit
-builds with the following error message:
-
-/home/hpa/kernel/linux-tip.cpu/arch/x86/kernel/cpu/amd.c:437: undefined
-reference to `va_align'
-/home/hpa/kernel/linux-tip.cpu/arch/x86/kernel/cpu/amd.c:436: undefined
-reference to `va_align'
-
-This is due to the fact that va_align is a global in a 64-bit only
-compilation unit. Move it to mmap.c where it is visible to both
-subarches.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- arch/x86/kernel/sys_x86_64.c |    4 ----
- arch/x86/mm/mmap.c           |    5 ++++-
- 2 files changed, 4 insertions(+), 5 deletions(-)
+0) Untested (which I suppose is acceptable with trivialities like this
+as long as one is honest about it).
 
-diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
-index aaa8d09..fe7d2da 100644
---- a/arch/x86/kernel/sys_x86_64.c
-+++ b/arch/x86/kernel/sys_x86_64.c
-@@ -18,10 +18,6 @@
- #include <asm/ia32.h>
- #include <asm/syscalls.h>
- 
--struct __read_mostly va_alignment va_align = {
--	.flags = -1,
--};
--
- /*
-  * Align a virtual address to avoid aliasing in the I$ on AMD F15h.
-  *
-diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-index d4c0736..4b5ba85 100644
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -31,6 +31,10 @@
- #include <linux/sched.h>
- #include <asm/elf.h>
- 
-+struct __read_mostly va_alignment va_align = {
-+	.flags = -1,
-+};
-+
- static unsigned int stack_maxrandom_size(void)
- {
- 	unsigned int max = 0;
-@@ -42,7 +46,6 @@ static unsigned int stack_maxrandom_size(void)
- 	return max;
- }
- 
--
- /*
-  * Top of mmap area (just below the process stack).
-  *
+1) Also sent to Dave Jones and cpufreq@vger.kernel.org because it's hard
+to say (for me) what was meant by "no_hz" in that comment. But there
+were only two hits for "no_hz" in the kernel tree and lots of hits for
+"nohz" so I guessed "nohz" is the term to be used there too.
+
+ Documentation/cpu-freq/governors.txt |    2 +-
+ drivers/cpufreq/cpufreq_ondemand.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/cpu-freq/governors.txt b/Documentation/cpu-freq/governors.txt
+index e74d0a2..d221781 100644
+--- a/Documentation/cpu-freq/governors.txt
++++ b/Documentation/cpu-freq/governors.txt
+@@ -132,7 +132,7 @@ The sampling rate is limited by the HW transition latency:
+ transition_latency * 100
+ Or by kernel restrictions:
+ If CONFIG_NO_HZ is set, the limit is 10ms fixed.
+-If CONFIG_NO_HZ is not set or no_hz=off boot parameter is used, the
++If CONFIG_NO_HZ is not set or nohz=off boot parameter is used, the
+ limits depend on the CONFIG_HZ option:
+ HZ=1000: min=20000us  (20ms)
+ HZ=250:  min=80000us  (80ms)
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index 891360e..629b3ec 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -725,7 +725,7 @@ static int __init cpufreq_gov_dbs_init(void)
+ 		dbs_tuners_ins.down_differential =
+ 					MICRO_FREQUENCY_DOWN_DIFFERENTIAL;
+ 		/*
+-		 * In no_hz/micro accounting case we set the minimum frequency
++		 * In nohz/micro accounting case we set the minimum frequency
+ 		 * not depending on HZ, but fixed (very low). The deferred
+ 		 * timer might skip some samples if idle/sleeping as needed.
+ 		*/
 -- 
-1.7.4.rc2
+1.7.4.4
 
