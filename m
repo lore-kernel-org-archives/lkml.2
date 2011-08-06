@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932492Ab1HFAMz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:12:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39834 "EHLO mx2.suse.de"
+	id S964812Ab1HFAOL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:14:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39880 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932415Ab1HFAMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:12:52 -0400
+	id S932509Ab1HFANF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:13:05 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:15 2011
-Message-Id: <20110806000415.141488057@clark.kroah.org>
+Message-Id: <20110806000415.528984236@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:53 -0700
+Date: Fri, 05 Aug 2011 17:03:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sage Weil <sage@newdream.net>, Jan Kara <jack@suse.cz>
-Subject: [35/50] ext3: Fix oops in ext3_try_to_allocate_with_rsv()
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [39/50] powerpc/pseries/hvconsole: Fix dropped console output
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Anton Blanchard <anton@samba.org>
 
-commit ad95c5e9bc8b5885f94dce720137cac8fa8da4c9 upstream.
+commit 51d33021425e1f905beb4208823146f2fb6517da upstream.
 
-Block allocation is called from two places: ext3_get_blocks_handle() and
-ext3_xattr_block_set(). These two callers are not necessarily synchronized
-because xattr code holds only xattr_sem and i_mutex, and
-ext3_get_blocks_handle() may hold only truncate_mutex when called from
-writepage() path. Block reservation code does not expect two concurrent
-allocations to happen to the same inode and thus assertions can be triggered
-or reservation structure corruption can occur.
+Return -EAGAIN when we get H_BUSY back from the hypervisor. This
+makes the hvc console driver retry, avoiding dropped printks.
 
-Fix the problem by taking truncate_mutex in xattr code to serialize
-allocations.
-
-CC: Sage Weil <sage@newdream.net>
-Reported-by: Fyodor Ustinov <ufm@ufm.su>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext3/xattr.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ arch/powerpc/platforms/pseries/hvconsole.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext3/xattr.c
-+++ b/fs/ext3/xattr.c
-@@ -803,8 +803,16 @@ inserted:
- 			/* We need to allocate a new block */
- 			ext3_fsblk_t goal = ext3_group_first_block_no(sb,
- 						EXT3_I(inode)->i_block_group);
--			ext3_fsblk_t block = ext3_new_block(handle, inode,
--							goal, &error);
-+			ext3_fsblk_t block;
-+
-+			/*
-+			 * Protect us agaist concurrent allocations to the
-+			 * same inode from ext3_..._writepage(). Reservation
-+			 * code does not expect racing allocations.
-+			 */
-+			mutex_lock(&EXT3_I(inode)->truncate_mutex);
-+			block = ext3_new_block(handle, inode, goal, &error);
-+			mutex_unlock(&EXT3_I(inode)->truncate_mutex);
- 			if (error)
- 				goto cleanup;
- 			ea_idebug(inode, "creating block %d", block);
+--- a/arch/powerpc/platforms/pseries/hvconsole.c
++++ b/arch/powerpc/platforms/pseries/hvconsole.c
+@@ -73,7 +73,7 @@ int hvc_put_chars(uint32_t vtermno, cons
+ 	if (ret == H_SUCCESS)
+ 		return count;
+ 	if (ret == H_BUSY)
+-		return 0;
++		return -EAGAIN;
+ 	return -EIO;
+ }
+ 
 
 
