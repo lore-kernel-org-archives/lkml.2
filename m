@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab1HFVi0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 17:38:26 -0400
-Received: from sirokuusama.dnainternet.net ([83.102.40.133]:56701 "EHLO
-	sirokuusama.dnainternet.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755378Ab1HFViY (ORCPT
+	id S1756771Ab1HFVkV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 17:40:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44519 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755148Ab1HFVkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 17:38:24 -0400
-X-Greylist: delayed 393 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Aug 2011 17:38:24 EDT
-X-Spam-Flag: NO
-X-Spam-Score: -1
-Message-ID: <4E3DB2C2.7040104@iki.fi>
-Date: Sun, 07 Aug 2011 00:31:46 +0300
-From: Anssi Hannula <anssi.hannula@iki.fi>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110626 Mageia/3.1.11-2.mga2 (2) Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Input: ati_remote - extend keytable for medion remotes
-References: <20110418104108.GA4876@atlantis.wh2.tu-dresden.de.de> <20110418104547.GB4876@atlantis.wh2.tu-dresden.de.de> <20110525163204.GD22517@core.coreip.homeip.net>
-In-Reply-To: <20110525163204.GD22517@core.coreip.homeip.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 6 Aug 2011 17:40:19 -0400
+X-Authority-Analysis: v=1.1 cv=Pm0sEXe2MdIPK/rOEC7hwDW84D/yDsPO3JtCzsVYOFU= c=1 sm=0 a=JVmKiHRY1FkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=28TUnXNLkGfExS-8OngA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 0/8] Having perf use libparsevent.a
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Kyle Moffett <kyle@moffetthome.net>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>, Borislav Petkov <bp@alien8.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <CAGZ=bq+mJ-9pf0Y22b9LLey0Em2Y7SAA5FnQ5cPsde6GB_aqgw@mail.gmail.com>
+References: <CAGZ=bq+mJ-9pf0Y22b9LLey0Em2Y7SAA5FnQ5cPsde6GB_aqgw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Sat, 06 Aug 2011 17:40:15 -0400
+Message-ID: <1312666815.18583.221.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.05.2011 19:32, Dmitry Torokhov wrote:
-> Hi Jan,
+On Sat, 2011-08-06 at 14:47 -0400, Kyle Moffett wrote:
+> On Aug 6, 2011 11:35 AM, "Steven Rostedt" <rostedt@goodmis.org> wrote:
+> >
+> > On Sat, 2011-08-06 at 09:16 -0600, David Ahern wrote:
+> >
+> > > If the library is just for parsing trace events why not call it
+> > > libtraceparse or libtrace? This isn't perf specific functionality.
+> >
+> > Actually, I'm thinking libevents would probably be most appropriate.
+> It
+> > has less to do with perf in general, and more about events. Even
+> reading
+> > the events goes under this category.
 > 
-> On Mon, Apr 18, 2011 at 12:45:47PM +0200, Jan Losinski wrote:
->> This extends the ati_remote to support multiple keytables. The table
->> will be selected with the productId of the device.
->>
->> It also provides a table for the medion rf remote control that enables
->> all buttons on it.
->>
-> 
-> I am not a big fan of static keymaps in kernel drivers and would much
-> more prefer driver supporting adjusting keymaps via EVIOCSKEYCODE
-> ioctls. Unfortunately ati_remote key handling code is kind of involved
-> and I am not sure what is the best way of wiring it up.
-> 
-> I believe Anssi Hannula (CCed) mentioned that he has a version of
-> ati_remove ported to rc-core infrastructure that supports such
-> remapping. Anssi, could you tell me what is the status of that driver?
-> Is it usable with rc-core?
+> Ooh, please don't... "libevent" is already an epoll() event-based
+> application helper library and this would be overly confusing.
 
-Sorry, it seems for some reason I didn't receive your message via CC and
-only now saw it while looking at linux-input@ messages.
+OK, what about libkevent, as this has to do with kernel events.
 
-Indeed I have a patchset that makes it work with rc-core which I didn't
-get around to posting yet (sorry about that).
+-- Steve
 
-I'll try to look over it now and do some more testing, and then post the
-set.
 
-Some notes about the patchset:
-- The mouse handling is left as-is, and it now appears as a separate
-  input device (that part of the keymap is the same for all remotes
-  with mouse). The mouse device is created regardless of receiver,
-  in case another type of remote is used with the receiver.
-- The driver sends rc_keyup immediately after every rc_keydown, as that
-  is what the driver has always done for input events as well. Doing
-  otherwise would cause a regression as ghost repeats would appear
-  with this driver while they didn't before.
-
--- 
-Anssi Hannula
