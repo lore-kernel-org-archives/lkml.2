@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387Ab1HFASg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:18:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39552 "EHLO mx2.suse.de"
+	id S932313Ab1HFALW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:11:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39529 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932164Ab1HFAL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:11:26 -0400
+	id S932275Ab1HFALR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:11:17 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:14 2011
-Message-Id: <20110806000414.314929195@clark.kroah.org>
+Message-Id: <20110806000414.012653734@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:45 -0700
+Date: Fri, 05 Aug 2011 17:03:42 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [27/50] [SCSI] fix crash in scsi_dispatch_cmd()
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [24/50] mac80211: Restart STA timers only on associated state
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,71 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
+From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
 
-commit bfe159a51203c15d23cb3158fffdc25ec4b4dda1 upstream.
+commit 676b58c27475a9defccc025fea1cbd2b141ee539 upstream.
 
-USB surprise removal of sr is triggering an oops in
-scsi_dispatch_command().  What seems to be happening is that USB is
-hanging on to a queue reference until the last close of the upper
-device, so the crash is caused by surprise remove of a mounted CD
-followed by attempted unmount.
+A panic was observed when the device is failed to resume properly,
+and there are no running interfaces. ieee80211_reconfig tries
+to restart STA timers on unassociated state.
 
-The problem is that USB doesn't issue its final commands as part of
-the SCSI teardown path, but on last close when the block queue is long
-gone.  The long term fix is probably to make sr do the teardown in the
-same way as sd (so remove all the lower bits on ejection, but keep the
-upper disk alive until last close of user space).  However, the
-current oops can be simply fixed by not allowing any commands to be
-sent to a dead queue.
-
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/blk-core.c        |    3 +++
- block/blk-exec.c        |    7 +++++++
- drivers/scsi/scsi_lib.c |    2 ++
- 3 files changed, 12 insertions(+)
+ net/mac80211/mlme.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -865,6 +865,9 @@ struct request *blk_get_request(struct r
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -2318,6 +2318,9 @@ void ieee80211_sta_restart(struct ieee80
  {
- 	struct request *rq;
+ 	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
  
-+	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
-+		return NULL;
-+
- 	BUG_ON(rw != READ && rw != WRITE);
- 
- 	spin_lock_irq(q->queue_lock);
---- a/block/blk-exec.c
-+++ b/block/blk-exec.c
-@@ -50,6 +50,13 @@ void blk_execute_rq_nowait(struct reques
- {
- 	int where = at_head ? ELEVATOR_INSERT_FRONT : ELEVATOR_INSERT_BACK;
- 
-+	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))) {
-+		rq->errors = -ENXIO;
-+		if (rq->end_io)
-+			rq->end_io(rq, rq->errors);
++	if (!ifmgd->associated)
 +		return;
-+	}
 +
- 	rq->rq_disk = bd_disk;
- 	rq->end_io = done;
- 	WARN_ON(irqs_disabled());
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -215,6 +215,8 @@ int scsi_execute(struct scsi_device *sde
- 	int ret = DRIVER_ERROR << 24;
- 
- 	req = blk_get_request(sdev->request_queue, write, __GFP_WAIT);
-+	if (!req)
-+		return ret;
- 
- 	if (bufflen &&	blk_rq_map_kern(sdev->request_queue, req,
- 					buffer, bufflen, __GFP_WAIT))
+ 	if (test_and_clear_bit(TMR_RUNNING_TIMER, &ifmgd->timers_running))
+ 		add_timer(&ifmgd->timer);
+ 	if (test_and_clear_bit(TMR_RUNNING_CHANSW, &ifmgd->timers_running))
 
 
