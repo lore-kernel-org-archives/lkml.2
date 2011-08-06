@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932504Ab1HFAM7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:12:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39842 "EHLO mx2.suse.de"
+	id S932545Ab1HFANT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:13:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39912 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932490Ab1HFAMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:12:55 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:15 2011
-Message-Id: <20110806000415.231907014@clark.kroah.org>
+	id S932532Ab1HFANQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:13:16 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:14 2011
+Message-Id: <20110806000414.849749251@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:54 -0700
+Date: Fri, 05 Aug 2011 17:03:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, gnb@fmeh.org,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [36/50] svcrpc: fix list-corrupting race on nfsd shutdown
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: [32/50] cciss: do not attempt to read from a write-only register
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,54 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit ebc63e531cc6a457595dd110b07ac530eae788c3 upstream.
+commit 07d0c38e7d84f911c72058a124c7f17b3c779a65 upstream.
 
-After commit 3262c816a3d7fb1eaabce633caa317887ed549ae "[PATCH] knfsd:
-split svc_serv into pools", svc_delete_xprt (then svc_delete_socket) no
-longer removed its xpt_ready (then sk_ready) field from whatever list it
-was on, noting that there was no point since the whole list was about to
-be destroyed anyway.
+Most smartarrays will tolerate it, but some new ones don't.
 
-That was mostly true, but forgot that a few svc_xprt_enqueue()'s might
-still be hanging around playing with the about-to-be-destroyed list, and
-could get themselves into trouble writing to freed memory if we left
-this xprt on the list after freeing it.
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-(This is actually functionally identical to a patch made first by Ben
-Greear, but with more comments.)
-
-Cc: gnb@fmeh.org
-Reported-by: Ben Greear <greearb@candelatech.com>
-Tested-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Note: this is a regression caused by commit 1ddd5049
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/svc_xprt.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/block/cciss.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -884,12 +884,13 @@ void svc_delete_xprt(struct svc_xprt *xp
- 	if (!test_and_set_bit(XPT_DETACHED, &xprt->xpt_flags))
- 		list_del_init(&xprt->xpt_list);
- 	/*
--	 * We used to delete the transport from whichever list
--	 * it's sk_xprt.xpt_ready node was on, but we don't actually
--	 * need to.  This is because the only time we're called
--	 * while still attached to a queue, the queue itself
--	 * is about to be destroyed (in svc_destroy).
-+	 * The only time we're called while xpt_ready is still on a list
-+	 * is while the list itself is about to be destroyed (in
-+	 * svc_destroy).  BUT svc_xprt_enqueue could still be attempting
-+	 * to add new entries to the sp_sockets list, so we can't leave
-+	 * a freed xprt on it.
- 	 */
-+	list_del_init(&xprt->xpt_ready);
- 	if (test_bit(XPT_TEMP, &xprt->xpt_flags))
- 		serv->sv_tmpcnt--;
- 
+--- a/drivers/block/cciss.h
++++ b/drivers/block/cciss.h
+@@ -181,7 +181,7 @@ static void SA5_submit_command( ctlr_inf
+ 	 printk("Sending %x - down to controller\n", c->busaddr );
+ #endif /* CCISS_DEBUG */ 
+          writel(c->busaddr, h->vaddr + SA5_REQUEST_PORT_OFFSET);
+-	readl(h->vaddr + SA5_REQUEST_PORT_OFFSET);
++	readl(h->vaddr + SA5_SCRATCHPAD_OFFSET);
+ 	 h->commands_outstanding++;
+ 	 if ( h->commands_outstanding > h->max_outstanding)
+ 		h->max_outstanding = h->commands_outstanding;
 
 
