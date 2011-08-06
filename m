@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757000Ab1HFAHn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:07:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38950 "EHLO mx2.suse.de"
+	id S1757030Ab1HFAHu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:07:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38972 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756915Ab1HFAHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:07:30 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:50 2011
-Message-Id: <20110806000250.799221410@clark.kroah.org>
+	id S1756915Ab1HFAHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:07:44 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:51 2011
+Message-Id: <20110806000251.082061022@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:01:49 -0700
+Date: Fri, 05 Aug 2011 17:01:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [19/55] USB: OHCI: fix another regression for NVIDIA controllers
+        Igor Grinberg <grinberg@compulab.co.il>,
+        Eric Miao <eric.y.miao@gmail.com>
+Subject: [22/55] ARM: pxa/cm-x300: fix V3020 RTC functionality
 In-Reply-To: <20110806000257.GA25498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,84 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Igor Grinberg <grinberg@compulab.co.il>
 
-commit 6ea12a04d295235ed67010a09fdea58c949e3eb0 upstream.
+commit 6c7b3ea52e345ab614edb91d3f0e9f3bb3713871 upstream.
 
-The NVIDIA series of OHCI controllers continues to be troublesome.  A
-few people using the MCP67 chipset have reported that even with the
-most recent kernels, the OHCI controller fails to handle new
-connections and spams the system log with "unable to enumerate USB
-port" messages.  This is different from the other problems previously
-reported for NVIDIA OHCI controllers, although it is probably related.
+While in sleep mode the CS# and other V3020 RTC GPIOs must be driven
+high, otherwise V3020 RTC fails to keep the right time in sleep mode.
 
-It turns out that the MCP67 controller does not like to be kept in the
-RESET state very long.  After only a few seconds, it decides not to
-work any more.  This patch (as1479) changes the PCI initialization
-quirk code so that NVIDIA controllers are switched into the SUSPEND
-state after 50 ms of RESET.  With no interrupts enabled and all the
-downstream devices reset, and thus unable to send wakeup requests,
-this should be perfectly safe (even for non-NVIDIA hardware).
-
-The removal code in ohci-hcd hasn't been changed; it will still leave
-the controller in the RESET state.  As a result, if someone unloads
-ohci-hcd and then reloads it, the controller won't work again until
-the system is rebooted.  If anybody complains about this, the removal
-code can be updated similarly.
-
-This fixes Bugzilla #22052.
-
-Tested-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Igor Grinberg <grinberg@compulab.co.il>
+Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/pci-quirks.c |   28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ arch/arm/mach-pxa/cm-x300.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -34,6 +34,8 @@
- #define OHCI_INTRSTATUS		0x0c
- #define OHCI_INTRENABLE		0x10
- #define OHCI_INTRDISABLE	0x14
-+#define OHCI_FMINTERVAL		0x34
-+#define OHCI_HCR		(1 << 0)	/* host controller reset */
- #define OHCI_OCR		(1 << 3)	/* ownership change request */
- #define OHCI_CTRL_RWC		(1 << 9)	/* remote wakeup connected */
- #define OHCI_CTRL_IR		(1 << 8)	/* interrupt routing */
-@@ -204,6 +206,32 @@ static void __devinit quirk_usb_handoff_
+--- a/arch/arm/mach-pxa/cm-x300.c
++++ b/arch/arm/mach-pxa/cm-x300.c
+@@ -143,10 +143,10 @@ static mfp_cfg_t cm_x300_mfp_cfg[] __ini
+ 	GPIO99_GPIO,			/* Ethernet IRQ */
  
- 	/* reset controller, preserving RWC (and possibly IR) */
- 	writel(control & OHCI_CTRL_MASK, base + OHCI_CONTROL);
-+	readl(base + OHCI_CONTROL);
-+
-+	/* Some NVIDIA controllers stop working if kept in RESET for too long */
-+	if (pdev->vendor == PCI_VENDOR_ID_NVIDIA) {
-+		u32 fminterval;
-+		int cnt;
-+
-+		/* drive reset for at least 50 ms (7.1.7.5) */
-+		msleep(50);
-+
-+		/* software reset of the controller, preserving HcFmInterval */
-+		fminterval = readl(base + OHCI_FMINTERVAL);
-+		writel(OHCI_HCR, base + OHCI_CMDSTATUS);
-+
-+		/* reset requires max 10 us delay */
-+		for (cnt = 30; cnt > 0; --cnt) {	/* ... allow extra time */
-+			if ((readl(base + OHCI_CMDSTATUS) & OHCI_HCR) == 0)
-+				break;
-+			udelay(1);
-+		}
-+		writel(fminterval, base + OHCI_FMINTERVAL);
-+
-+		/* Now we're in the SUSPEND state with all devices reset
-+		 * and wakeups and interrupts disabled
-+		 */
-+	}
+ 	/* RTC GPIOs */
+-	GPIO95_GPIO,			/* RTC CS */
+-	GPIO96_GPIO,			/* RTC WR */
+-	GPIO97_GPIO,			/* RTC RD */
+-	GPIO98_GPIO,			/* RTC IO */
++	GPIO95_GPIO | MFP_LPM_DRIVE_HIGH,	/* RTC CS */
++	GPIO96_GPIO | MFP_LPM_DRIVE_HIGH,	/* RTC WR */
++	GPIO97_GPIO | MFP_LPM_DRIVE_HIGH,	/* RTC RD */
++	GPIO98_GPIO,				/* RTC IO */
  
- 	/*
- 	 * disable interrupts
+ 	/* Standard I2C */
+ 	GPIO21_I2C_SCL,
 
 
