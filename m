@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab1HFAK2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:10:28 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:55857 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932151Ab1HFAKX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:10:23 -0400
-Date: Sat, 6 Aug 2011 08:09:32 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Fenghua Yu <fenghua.yu@intel.com>, Matt Mackall <mpm@selenic.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jeff Garzik <jgarzik@pobox.com>,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH v3 0/3] Add support for architectural random number
-	generator
-Message-ID: <20110806000932.GA12778@gondor.apana.org.au>
-References: <CA+55aFy5iRjCigmK-eddkP8Wqy_qFDZRd6PV5d0XFE3p8ws1Bg@mail.gmail.com> <1312147616-29125-1-git-send-email-hpa@zytor.com> <20110805120033.GA3967@gondor.apana.org.au> <4E3C1A21.1070105@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E3C1A21.1070105@zytor.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932296Ab1HFALO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:11:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39510 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932275Ab1HFALJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:11:09 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:13 2011
+Message-Id: <20110806000413.795545259@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Fri, 05 Aug 2011 17:03:40 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Guo-Fu Tseng <cooldavid@cooldavid.org>,
+        Chris Wright <chrisw@sous-sol.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [22/50] jme: Fix unmap error (Causing system freeze)
+In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 05, 2011 at 09:28:17AM -0700, H. Peter Anvin wrote:
-> On 08/05/2011 05:00 AM, Herbert Xu wrote:
-> >>
-> >> Git tree also available:
-> >>
-> >> git://git.kernel.org/pub/scm/linux/kernel/git/hpa/linux-rdrand.git rdrand-3
-> >>
-> >> Again, for technical documentation see:
-> >>
-> >> http://software.intel.com/en-us/articles/download-the-latest-bull-mountain-software-implementation-guide/
-> > 
-> > FWIW these patches look good to me and I'm happy to take them
-> > if Linus doesn't merge them directly.
-> > 
-> 
-> Thanks.  I have put them in -tip as well:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-tip.git x86/rdrand
+2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
-That works for me.
+------------------
 
-Thanks!
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+From: Guo-Fu Tseng <cooldavid@cooldavid.org>
+
+commit 94c5b41b327e08de0ddf563237855f55080652a1 upstream.
+
+This patch add the missing dma_unmap().
+Which solved the critical issue of system freeze on heavy load.
+
+Michal Miroslaw's rejected patch:
+[PATCH v2 10/46] net: jme: convert to generic DMA API
+Pointed out the issue also, thank you Michal.
+But the fix was incorrect. It would unmap needed address
+when low memory.
+
+Got lots of feedback from End user and Gentoo Bugzilla.
+https://bugs.gentoo.org/show_bug.cgi?id=373109
+Thank you all. :)
+
+Signed-off-by: Guo-Fu Tseng <cooldavid@cooldavid.org>
+Acked-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/net/jme.c |   20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
+
+--- a/drivers/net/jme.c
++++ b/drivers/net/jme.c
+@@ -681,20 +681,28 @@ jme_make_new_rx_buf(struct jme_adapter *
+ 	struct jme_ring *rxring = &(jme->rxring[0]);
+ 	struct jme_buffer_info *rxbi = rxring->bufinf + i;
+ 	struct sk_buff *skb;
++	dma_addr_t mapping;
+ 
+ 	skb = netdev_alloc_skb(jme->dev,
+ 		jme->dev->mtu + RX_EXTRA_LEN);
+ 	if (unlikely(!skb))
+ 		return -ENOMEM;
+ 
++	mapping = pci_map_page(jme->pdev, virt_to_page(skb->data),
++			       offset_in_page(skb->data), skb_tailroom(skb),
++			       PCI_DMA_FROMDEVICE);
++	if (unlikely(pci_dma_mapping_error(jme->pdev, mapping))) {
++		dev_kfree_skb(skb);
++		return -ENOMEM;
++	}
++
++	if (likely(rxbi->mapping))
++		pci_unmap_page(jme->pdev, rxbi->mapping,
++			       rxbi->len, PCI_DMA_FROMDEVICE);
++
+ 	rxbi->skb = skb;
+ 	rxbi->len = skb_tailroom(skb);
+-	rxbi->mapping = pci_map_page(jme->pdev,
+-					virt_to_page(skb->data),
+-					offset_in_page(skb->data),
+-					rxbi->len,
+-					PCI_DMA_FROMDEVICE);
+-
++	rxbi->mapping = mapping;
+ 	return 0;
+ }
+ 
+
+
