@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450Ab1HFAMV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:12:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39718 "EHLO mx2.suse.de"
+	id S932278Ab1HFAQR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:16:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39730 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932353Ab1HFAMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:12:14 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:15 2011
-Message-Id: <20110806000415.821216533@clark.kroah.org>
+	id S932437Ab1HFAMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:12:17 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:16 2011
+Message-Id: <20110806000415.930570169@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:04:00 -0700
+Date: Fri, 05 Aug 2011 17:04:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, David Zeuthen <zeuthen@gmail.com>,
-        Martin Pitt <martin.pitt@ubuntu.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Jens Axboe <jaxboe@fusionio.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [42/50] Revert "block: rescan partitions on invalidated devices on -ENOMEDIA
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [43/50] gre: fix netns vs proto registration ordering
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,85 +25,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
- too"
 
-This reverts commit 6f31747bfeb8c74e6d0a10ecef0abe2a04c5a6cb (commit
-02e352287a40bd456eb78df705bf888bc3161d3f upstream)
+From: Alexey Dobriyan <adobriyan@gmail.com>
 
-This should have only been commited on .38 and newer, not older kernels
-like this one, sorry.
+commit c2892f02712e9516d72841d5c019ed6916329794 upstream.
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: David Zeuthen <zeuthen@gmail.com>
-Cc: Martin Pitt <martin.pitt@ubuntu.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Jens Axboe <jaxboe@fusionio.com>
-Cc: Andi Kleen <ak@linux.intel.com>
+GRE protocol receive hook can be called right after protocol addition is done.
+If netns stuff is not yet initialized, we're going to oops in
+net_generic().
+
+This is remotely oopsable if ip_gre is compiled as module and packet
+comes at unfortunate moment of module loading.
+
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- fs/block_dev.c |   27 +++++++++------------------
- 1 file changed, 9 insertions(+), 18 deletions(-)
 
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1211,7 +1211,6 @@ static int __blkdev_get(struct block_dev
- 			if (!bdev->bd_part)
- 				goto out_clear;
+---
+ net/ipv4/ip_gre.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
+
+--- a/net/ipv4/ip_gre.c
++++ b/net/ipv4/ip_gre.c
+@@ -1667,14 +1667,15 @@ static int __init ipgre_init(void)
  
--			ret = 0;
- 			if (disk->fops->open) {
- 				ret = disk->fops->open(bdev, mode);
- 				if (ret == -ERESTARTSYS) {
-@@ -1227,18 +1226,9 @@ static int __blkdev_get(struct block_dev
- 					mutex_unlock(&bdev->bd_mutex);
- 					goto restart;
- 				}
-+				if (ret)
-+					goto out_clear;
- 			}
--			/*
--			 * If the device is invalidated, rescan partition
--			 * if open succeeded or failed with -ENOMEDIUM.
--			 * The latter is necessary to prevent ghost
--			 * partitions on a removed medium.
--			 */
--			if (bdev->bd_invalidated && (!ret || ret == -ENOMEDIUM))
--				rescan_partitions(disk, bdev);
--			if (ret)
--				goto out_clear;
+ 	printk(KERN_INFO "GRE over IPv4 tunneling driver\n");
+ 
+-	if (inet_add_protocol(&ipgre_protocol, IPPROTO_GRE) < 0) {
+-		printk(KERN_INFO "ipgre init: can't add protocol\n");
+-		return -EAGAIN;
+-	}
 -
- 			if (!bdev->bd_openers) {
- 				bd_set_size(bdev,(loff_t)get_capacity(disk)<<9);
- 				bdi = blk_get_backing_dev_info(bdev);
-@@ -1246,6 +1236,8 @@ static int __blkdev_get(struct block_dev
- 					bdi = &default_backing_dev_info;
- 				bdev->bd_inode->i_data.backing_dev_info = bdi;
- 			}
-+			if (bdev->bd_invalidated)
-+				rescan_partitions(disk, bdev);
- 		} else {
- 			struct block_device *whole;
- 			whole = bdget_disk(disk, 0);
-@@ -1272,14 +1264,13 @@ static int __blkdev_get(struct block_dev
- 		put_disk(disk);
- 		disk = NULL;
- 		if (bdev->bd_contains == bdev) {
--			ret = 0;
--			if (bdev->bd_disk->fops->open)
-+			if (bdev->bd_disk->fops->open) {
- 				ret = bdev->bd_disk->fops->open(bdev, mode);
--			/* the same as first opener case, read comment there */
--			if (bdev->bd_invalidated && (!ret || ret == -ENOMEDIUM))
-+				if (ret)
-+					goto out_unlock_bdev;
-+			}
-+			if (bdev->bd_invalidated)
- 				rescan_partitions(bdev->bd_disk, bdev);
--			if (ret)
--				goto out_unlock_bdev;
- 		}
- 	}
- 	bdev->bd_openers++;
+ 	err = register_pernet_device(&ipgre_net_ops);
+ 	if (err < 0)
+-		goto gen_device_failed;
++		return err;
++
++	err = inet_add_protocol(&ipgre_protocol, IPPROTO_GRE);
++	if (err < 0) {
++		printk(KERN_INFO "ipgre init: can't add protocol\n");
++		goto add_proto_failed;
++	}
+ 
+ 	err = rtnl_link_register(&ipgre_link_ops);
+ 	if (err < 0)
+@@ -1690,9 +1691,9 @@ out:
+ tap_ops_failed:
+ 	rtnl_link_unregister(&ipgre_link_ops);
+ rtnl_link_failed:
+-	unregister_pernet_device(&ipgre_net_ops);
+-gen_device_failed:
+ 	inet_del_protocol(&ipgre_protocol, IPPROTO_GRE);
++add_proto_failed:
++	unregister_pernet_device(&ipgre_net_ops);
+ 	goto out;
+ }
+ 
+@@ -1700,9 +1701,9 @@ static void __exit ipgre_fini(void)
+ {
+ 	rtnl_link_unregister(&ipgre_tap_ops);
+ 	rtnl_link_unregister(&ipgre_link_ops);
+-	unregister_pernet_device(&ipgre_net_ops);
+ 	if (inet_del_protocol(&ipgre_protocol, IPPROTO_GRE) < 0)
+ 		printk(KERN_INFO "ipgre close: can't remove protocol\n");
++	unregister_pernet_device(&ipgre_net_ops);
+ }
+ 
+ module_init(ipgre_init);
 
 
