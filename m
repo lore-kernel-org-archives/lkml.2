@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932253Ab1HFAW1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:22:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39941 "EHLO mail.zytor.com"
+	id S932216Ab1HFAWY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:22:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39394 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932161Ab1HFAKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:10:24 -0400
-Message-ID: <4E3C8664.7050607@zytor.com>
-Date: Fri, 05 Aug 2011 17:10:12 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, borislav.petkov@amd.com
-CC: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/cpu] x86, amd: Avoid cache aliasing penalties on AMD
- family 15h
-References: <1312550110-24160-2-git-send-email-bp@amd64.org> <tip-dfb09f9b7ab03fd367740e541a5caf830ed56726@git.kernel.org>
-In-Reply-To: <tip-dfb09f9b7ab03fd367740e541a5caf830ed56726@git.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932162Ab1HFAKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:10:25 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:51 2011
+Message-Id: <20110806000251.569374671@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Fri, 05 Aug 2011 17:01:57 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [27/55] [SCSI] ses: requesting a fault indication
+In-Reply-To: <20110806000257.GA25498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2011 03:58 PM, tip-bot for Borislav Petkov wrote:
-> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-> index b13ed39..b0234bc 100644
-> --- a/arch/x86/kernel/cpu/amd.c
-> +++ b/arch/x86/kernel/cpu/amd.c
-> @@ -458,6 +458,19 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
->  					"with P0 frequency!\n");
->  		}
->  	}
-> +
-> +	if (c->x86 == 0x15) {
-> +		unsigned long upperbit;
-> +		u32 cpuid, assoc;
-> +
-> +		cpuid	 = cpuid_edx(0x80000005);
-> +		assoc	 = cpuid >> 16 & 0xff;
-> +		upperbit = ((cpuid >> 24) << 10) / assoc;
-> +
-> +		va_align.mask	  = (upperbit - 1) & PAGE_MASK;
-> +		va_align.flags    = ALIGN_VA_32 | ALIGN_VA_64;
-> +
-> +	}
->  }
->  
->  static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-Breaks all i386 builds:
+------------------
 
-/home/hpa/kernel/linux-tip.cpu/arch/x86/kernel/cpu/amd.c:437: undefined
-reference to `va_align'
-/home/hpa/kernel/linux-tip.cpu/arch/x86/kernel/cpu/amd.c:436: undefined
-reference to `va_align'
+From: Douglas Gilbert <dgilbert@interlog.com>
 
-[the line numbers refer to the entire patchset]
+commit 2a350cab9daf9a46322d83b091bb05cf54ccf6ab upstream.
 
-	-hpa
+Noticed that when the sysfs interface of the SCSI SES
+driver was used to request a fault indication the LED
+flashed but the buzzer didn't sound. So it was doing
+what REQUEST IDENT (locate) should do.
+
+Changelog:
+   - fix the setting of REQUEST FAULT for the device slot
+     and array device slot elements in the enclosure control
+     diagnostic page
+   - note the potentially defective code that reads the
+     FAULT SENSED and FAULT REQUESTED bits from the enclosure
+     status diagnostic page
+
+The attached patch is against git/scsi-misc-2.6
+
+Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/scsi/ses.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+--- a/drivers/scsi/ses.c
++++ b/drivers/scsi/ses.c
+@@ -157,6 +157,10 @@ static unsigned char *ses_get_page2_desc
+ 	return NULL;
+ }
+ 
++/* For device slot and array device slot elements, byte 3 bit 6
++ * is "fault sensed" while byte 3 bit 5 is "fault reqstd". As this
++ * code stands these bits are shifted 4 positions right so in
++ * sysfs they will appear as bits 2 and 1 respectively. Strange. */
+ static void ses_get_fault(struct enclosure_device *edev,
+ 			  struct enclosure_component *ecomp)
+ {
+@@ -178,7 +182,7 @@ static int ses_set_fault(struct enclosur
+ 		/* zero is disabled */
+ 		break;
+ 	case ENCLOSURE_SETTING_ENABLED:
+-		desc[2] = 0x02;
++		desc[3] = 0x20;
+ 		break;
+ 	default:
+ 		/* SES doesn't do the SGPIO blink settings */
+
+
