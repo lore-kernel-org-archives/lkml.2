@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab1HFAL3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:11:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39543 "EHLO mx2.suse.de"
+	id S932357Ab1HFALd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:11:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39564 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932275Ab1HFALX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:11:23 -0400
+	id S932213Ab1HFALa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:11:30 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:14 2011
-Message-Id: <20110806000414.211957036@clark.kroah.org>
+Message-Id: <20110806000414.423668525@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:44 -0700
+Date: Fri, 05 Aug 2011 17:03:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Douglas Gilbert <dgilbert@interlog.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [26/50] [SCSI] ses: requesting a fault indication
+Subject: [28/50] [SCSI] pmcraid: reject negative request size
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Douglas Gilbert <dgilbert@interlog.com>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit 2a350cab9daf9a46322d83b091bb05cf54ccf6ab upstream.
+commit b5b515445f4f5a905c5dd27e6e682868ccd6c09d upstream.
 
-Noticed that when the sysfs interface of the SCSI SES
-driver was used to request a fault indication the LED
-flashed but the buzzer didn't sound. So it was doing
-what REQUEST IDENT (locate) should do.
+There's a code path in pmcraid that can be reached via device ioctl that
+causes all sorts of ugliness, including heap corruption or triggering the
+OOM killer due to consecutive allocation of large numbers of pages.
 
-Changelog:
-   - fix the setting of REQUEST FAULT for the device slot
-     and array device slot elements in the enclosure control
-     diagnostic page
-   - note the potentially defective code that reads the
-     FAULT SENSED and FAULT REQUESTED bits from the enclosure
-     status diagnostic page
+First, the user can call pmcraid_chr_ioctl(), with a type
+PMCRAID_PASSTHROUGH_IOCTL.  This calls through to
+pmcraid_ioctl_passthrough().  Next, a pmcraid_passthrough_ioctl_buffer
+is copied in, and the request_size variable is set to
+buffer->ioarcb.data_transfer_length, which is an arbitrary 32-bit
+signed value provided by the user.  If a negative value is provided
+here, bad things can happen.  For example,
+pmcraid_build_passthrough_ioadls() is called with this request_size,
+which immediately calls pmcraid_alloc_sglist() with a negative size.
+The resulting math on allocating a scatter list can result in an
+overflow in the kzalloc() call (if num_elem is 0, the sglist will be
+smaller than expected), or if num_elem is unexpectedly large the
+subsequent loop will call alloc_pages() repeatedly, a high number of
+pages will be allocated and the OOM killer might be invoked.
 
-The attached patch is against git/scsi-misc-2.6
+It looks like preventing this value from being negative in
+pmcraid_ioctl_passthrough() would be sufficient.
 
-Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/ses.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/scsi/pmcraid.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/scsi/ses.c
-+++ b/drivers/scsi/ses.c
-@@ -157,6 +157,10 @@ static unsigned char *ses_get_page2_desc
- 	return NULL;
- }
+--- a/drivers/scsi/pmcraid.c
++++ b/drivers/scsi/pmcraid.c
+@@ -3576,6 +3576,9 @@ static long pmcraid_ioctl_passthrough(
+ 			pmcraid_err("couldn't build passthrough ioadls\n");
+ 			goto out_free_buffer;
+ 		}
++	} else if (request_size < 0) {
++		rc = -EINVAL;
++		goto out_free_buffer;
+ 	}
  
-+/* For device slot and array device slot elements, byte 3 bit 6
-+ * is "fault sensed" while byte 3 bit 5 is "fault reqstd". As this
-+ * code stands these bits are shifted 4 positions right so in
-+ * sysfs they will appear as bits 2 and 1 respectively. Strange. */
- static void ses_get_fault(struct enclosure_device *edev,
- 			  struct enclosure_component *ecomp)
- {
-@@ -178,7 +182,7 @@ static int ses_set_fault(struct enclosur
- 		/* zero is disabled */
- 		break;
- 	case ENCLOSURE_SETTING_ENABLED:
--		desc[2] = 0x02;
-+		desc[3] = 0x20;
- 		break;
- 	default:
- 		/* SES doesn't do the SGPIO blink settings */
+ 	/* If data is being written into the device, copy the data from user
 
 
