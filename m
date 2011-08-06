@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab1HFTLN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 15:11:13 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:51114 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756614Ab1HFTLN (ORCPT
+	id S1756694Ab1HFTcM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 15:32:12 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57250 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756191Ab1HFTcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 15:11:13 -0400
-Date: Sat, 6 Aug 2011 21:11:11 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH] memblock: add NO_BOOTMEM config symbol
-Message-ID: <20110806191111.GB8494@merkur.ravnborg.org>
+	Sat, 6 Aug 2011 15:32:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20110805182008.GA22314@redhat.com>
+References: <20110805010038.GA18148@redhat.com> <20110805084614.GA1588@x4.trippels.de>
+ <CAOJsxLEMf8SbSmJv5u6GZtq_OYH3fpmomT-ioWXQGp83veK7wQ@mail.gmail.com>
+ <alpine.DEB.2.00.1108051131440.28580@router.home> <20110805163948.GA11113@redhat.com>
+ <alpine.DEB.2.00.1108051146180.28580@router.home> <20110805165119.GA11593@redhat.com>
+ <alpine.DEB.2.00.1108051158400.28580@router.home> <20110805171607.GA11703@redhat.com>
+ <alpine.DEB.2.00.1108051312090.28580@router.home> <20110805182008.GA22314@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 6 Aug 2011 12:31:19 -0700
+Message-ID: <CA+55aFwGSJM6g+YXfy_Oyb0OpQP5kH=OxCR-pnBk7RUshL+mXg@mail.gmail.com>
+Subject: Re: list corruption in the last few days. (block ? crypto ?)
+To: Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the NO_BOOTMEM symbol added archistectures may now
-use the following syntax to tell that they do not need bootmem:
+Anybody has any ideas on this one? I'm back home, no more diving :(,
+ready to make -rc1, but I'd *prefer* to have a handle on this one.
 
-	select NO_BOOTMEM
+Of course, the fact that it apparently only happens with SLUB
+debugging on means that the impact is less, but on the other hand I
+really like all the people who enable debug features and help us test
+with those on. So..
 
-This is much more convinient than adding a new kconfig symbol
-which was otherwise required.
-
-Addign this symbol does not conflict with the architctures that
-already define their own symbol.
-
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
----
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 7c56971..af0047d 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -137,6 +137,9 @@ config HAVE_MEMBLOCK_NODE_MAP
- config ARCH_DISCARD_MEMBLOCK
- 	boolean
- 
-+config NO_BOOTMEM
-+	boolean
-+
- # eventually, we can have this option just 'select SPARSEMEM'
- config MEMORY_HOTPLUG
- 	bool "Allow for memory hot-add"
+                                      Linus
