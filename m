@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756650Ab1HFAjD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:39:03 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:40149 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751501Ab1HFAi7 (ORCPT
+	id S1756839Ab1HFAnu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:43:50 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43348 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501Ab1HFAnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:38:59 -0400
-Date: Fri, 5 Aug 2011 17:38:57 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jinyoung Park <jinyoungp@nvidia.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: aat2870 causes build failure in current upstream
-Message-Id: <20110805173857.b1a23e59.rdunlap@xenotime.net>
-In-Reply-To: <4E3C18D7.9070303@zytor.com>
-References: <4E385B53.3040108@zytor.com>
-	<20110804171725.GA12729@elte.hu>
-	<4E3B87C2.3020304@nvidia.com>
-	<4E3C18D7.9070303@zytor.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Fri, 5 Aug 2011 20:43:49 -0400
+Date: Sat, 6 Aug 2011 02:43:44 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [RFC][PATCH 0/8] Having perf use libparsevent.a
+Message-ID: <20110806004342.GG22164@somewhere>
+References: <20110805205921.909038487@goodmis.org>
+ <20110805212409.GA21114@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110805212409.GA21114@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 05 Aug 2011 09:22:47 -0700 H. Peter Anvin wrote:
-
-> On 08/04/2011 11:03 PM, Jinyoung Park wrote:
-> > Hi,
-> > 
-> > I try to check allmodconfig error issue for aat2870 backlight driver.
-> > But I could not observing error message what you attached, building is
-> > successed.
-> > Please let me know how to reproduce allmodconfig problem for aat2870
-> > backlight driver.
-> > 
-> > This is my repro step.
-> > $ git clone
-> > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-> > $ cd linux-next
-> > $ make allmodconfig
-> > $ make
-> > 
-> > Thanks,
-> > Jin.
-> > 
+On Fri, Aug 05, 2011 at 11:24:09PM +0200, Ingo Molnar wrote:
 > 
-> Get Linus' current tree, not linux-next.
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > By keeping the code separate from perf, made the transition from 
+> > trace-cmd to tools much easier. I've wasted too many days trying to 
+> > get other ways working, and I don't want to rewrite perf to do so.
+> 
+> But we want to move tools together, not further apart. Every code 
+> activity i see from you is trying to tear apart instrumentation 
+> tooling - while previously you agreed that it should be unified. So 
+> why not do tools/perf/lib/ as you agreed before?
+> 
+> I'm really not interested in seeing the libdrm/libdri mess repeated. 
+> Libraries have their uses when there's some very important external 
+> interface, but here it's actively harmful as it complicates and 
+> hardcodes APIs into ABIs that are clearly not finished yet.
+> 
+> Really, lets not be stupid here.
+> 
+> Thanks,
+> 
+> 	Ingo
 
-Now fixed?  current mainline i386 allmodconfig builds OK for me.
+The trace events format is a general interface that not only
+perf and trace-cmd use but also powertop and pytimechart, and
+may be others?
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+And given the breakage we had with powertop, for example, that broke
+because it was relying on an ad-hoc static layout of the trace event,
+or pytimechart that relies(ed?) on the event string output, I think that library
+is needed outside perf.
