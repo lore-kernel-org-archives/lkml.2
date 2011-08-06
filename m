@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab1HFAYA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:24:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39324 "EHLO mx2.suse.de"
+	id S1757311Ab1HFAKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:10:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39302 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757312Ab1HFAKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:10:02 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:51 2011
-Message-Id: <20110806000251.887946450@clark.kroah.org>
+	id S1752263Ab1HFAJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:09:55 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:54 2011
+Message-Id: <20110806000254.395145921@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:02:00 -0700
+Date: Fri, 05 Aug 2011 17:02:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Huang Ying <ying.huang@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [30/55] kexec, x86: Fix incorrect jump back address if not
+        Chas Williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
+        "David S. Miller" <davem@davemloft.net>,
+        Pascal Hambourg <pascal@plouf.fr.eu.org>
+Subject: [55/55] atm: [br2684] allow routed mode operation again
 In-Reply-To: <20110806000257.GA25498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,58 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
- preserving context
 
-From: Huang Ying <ying.huang@intel.com>
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
 
-commit 050438ed5a05b25cdf287f5691e56a58c2606997 upstream.
+commit 2e302ebfeac04beb5a5d6af1ac583c6a1fb76d1a upstream.
 
-In kexec jump support, jump back address passed to the kexeced
-kernel via function calling ABI, that is, the function call
-return address is the jump back entry.
+in routed mode, we don't have a hardware address so netdev_ops doesnt
+need to validate our hardware address via .ndo_validate_addr
 
-Furthermore, jump back entry == 0 should be used to signal that
-the jump back or preserve context is not enabled in the original
-kernel.
-
-But in the current implementation the stack position used for
-function call return address is not cleared context
-preservation is disabled. The patch fixes this bug.
-
-Reported-and-tested-by: Yin Kangkai <kangkai.yin@intel.com>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Link: http://lkml.kernel.org/r/1310607277-25029-1-git-send-email-ying.huang@intel.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Reported-by: Manuel Fuentes <mfuentes@agenciaefe.com>
+Signed-off-by: Chas Williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Pascal Hambourg <pascal@plouf.fr.eu.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/relocate_kernel_32.S |    2 ++
- arch/x86/kernel/relocate_kernel_64.S |    2 ++
- 2 files changed, 4 insertions(+)
+ net/atm/br2684.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/arch/x86/kernel/relocate_kernel_32.S
-+++ b/arch/x86/kernel/relocate_kernel_32.S
-@@ -97,6 +97,8 @@ relocate_kernel:
- 	ret
+--- a/net/atm/br2684.c
++++ b/net/atm/br2684.c
+@@ -554,6 +554,12 @@ static const struct net_device_ops br268
+ 	.ndo_validate_addr	= eth_validate_addr,
+ };
  
- identity_mapped:
-+	/* set return address to 0 if not preserving context */
-+	pushl	$0
- 	/* store the start address on the stack */
- 	pushl   %edx
++static const struct net_device_ops br2684_netdev_ops_routed = {
++	.ndo_start_xmit 	= br2684_start_xmit,
++	.ndo_set_mac_address	= br2684_mac_addr,
++	.ndo_change_mtu		= eth_change_mtu
++};
++
+ static void br2684_setup(struct net_device *netdev)
+ {
+ 	struct br2684_dev *brdev = BRPRIV(netdev);
+@@ -569,11 +575,10 @@ static void br2684_setup(struct net_devi
+ static void br2684_setup_routed(struct net_device *netdev)
+ {
+ 	struct br2684_dev *brdev = BRPRIV(netdev);
+-	brdev->net_dev = netdev;
  
---- a/arch/x86/kernel/relocate_kernel_64.S
-+++ b/arch/x86/kernel/relocate_kernel_64.S
-@@ -100,6 +100,8 @@ relocate_kernel:
- 	ret
- 
- identity_mapped:
-+	/* set return address to 0 if not preserving context */
-+	pushq	$0
- 	/* store the start address on the stack */
- 	pushq   %rdx
- 
++	brdev->net_dev = netdev;
+ 	netdev->hard_header_len = 0;
+-
+-	netdev->netdev_ops = &br2684_netdev_ops;
++	netdev->netdev_ops = &br2684_netdev_ops_routed;
+ 	netdev->addr_len = 0;
+ 	netdev->mtu = 1500;
+ 	netdev->type = ARPHRD_PPP;
 
 
