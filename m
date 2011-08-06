@@ -1,95 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757412Ab1HFAVd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:21:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39434 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932214Ab1HFAKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:10:42 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:13 2011
-Message-Id: <20110806000413.043326656@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:33 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Dave Howorth <dhoworth@mrc-lmb.cam.ac.uk>,
-        Jeff Garzik <jgarzik@pobox.com>
-Subject: [15/50] libata: fix unexpectedly frozen port after ata_eh_reset()
-In-Reply-To: <20110806000419.GA28392@kroah.com>
+	id S1757422Ab1HFAVo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:21:44 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58044 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757372Ab1HFAVk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:21:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110805131638.GA27779@sgi.com>
+References: <20110727135730.GA17717@sgi.com>
+	<20110727140523.GA24206@redhat.com>
+	<20110727141527.GA8453@sgi.com>
+	<20110727155200.GA25381@redhat.com>
+	<20110801184542.GA3939@sgi.com>
+	<20110805104635.GB13055@elte.hu>
+	<20110805131638.GA27779@sgi.com>
+Date: Fri, 5 Aug 2011 17:21:39 -0700
+Message-ID: <CAE9FiQWAmjTWGBLrqH9+_AH316Br-McW=PrSyiDWCtSYndL07w@mail.gmail.com>
+Subject: Re: [PATCH v2] x86: Reduce clock calibration time during slave cpu startup
+From: Yinghai Lu <yhlu.kernel@gmail.com>
+To: Jack Steiner <steiner@sgi.com>, Robin Holt <holt@sgi.com>
+Cc: Ingo Molnar <mingo@elte.hu>, tglx@linutronix.de, davej@redhat.com,
+        yinghan@google.com, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=20cf307f3b46a04e0c04a9cb322b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.33-longterm review patch.  If anyone has any objections, please let us know.
+--20cf307f3b46a04e0c04a9cb322b
+Content-Type: text/plain; charset=ISO-8859-1
 
-------------------
+On Fri, Aug 5, 2011 at 6:16 AM, Jack Steiner <steiner@sgi.com> wrote:
+> Aside from the bogus comment (I'll send a V3 with a fixed comment), does the patch
+> look ok.
 
-From: Tejun Heo <tj@kernel.org>
+Several months ago, Robin said that he will test updated version
 
-commit 8c56cacc724c7650b893d43068fa66044aa29a61 upstream.
+[PATCH] x86: Make calibrate_delay run in parallel.
 
-To work around controllers which can't properly plug events while
-reset, ata_eh_reset() clears error states and ATA_PFLAG_EH_PENDING
-after reset but before RESET is marked done.  As reset is the final
-recovery action and full verification of devices including onlineness
-and classfication match is done afterwards, this shouldn't lead to
-lost devices or missed hotplug events.
+so any reason that you sgi guyes stop that path?
 
-Unfortunately, it forgot to thaw the port when clearing EH_PENDING, so
-if the condition happens after resetting an empty port, the port could
-be left frozen and EH will end without thawing it, making the port
-unresponsive to further hotplug events.
+Please check attached patch for updated version to current tip.
 
-Thaw if the port is frozen after clearing EH_PENDING.  This problem is
-reported by Bruce Stenning in the following thread.
+Thanks
 
- http://thread.gmane.org/gmane.linux.kernel/1123265
+Yinghai Lu
 
-stable: I think we should weather this patch a bit longer in -rcX
-	before sending it to -stable.  Please wait at least a month
-	after this patch makes upstream.  Thanks.
+--20cf307f3b46a04e0c04a9cb322b
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="Make-x86-calibrate_delay-run-in-parallel_v4.patch"
+Content-Disposition: attachment; 
+	filename="Make-x86-calibrate_delay-run-in-parallel_v4.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gqzu39c20
 
--v2: Fixed spelling in the comment per Dave Howorth.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Bruce Stenning <b.stenning@indigovision.com>
-Cc: Dave Howorth <dhoworth@mrc-lmb.cam.ac.uk>
-Signed-off-by: Jeff Garzik <jgarzik@pobox.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/ata/libata-eh.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -2716,10 +2716,11 @@ int ata_eh_reset(struct ata_link *link,
- 	}
- 
- 	/*
--	 * Some controllers can't be frozen very well and may set
--	 * spuruious error conditions during reset.  Clear accumulated
--	 * error information.  As reset is the final recovery action,
--	 * nothing is lost by doing this.
-+	 * Some controllers can't be frozen very well and may set spurious
-+	 * error conditions during reset.  Clear accumulated error
-+	 * information and re-thaw the port if frozen.  As reset is the
-+	 * final recovery action and we cross check link onlineness against
-+	 * device classification later, no hotplug event is lost by this.
- 	 */
- 	spin_lock_irqsave(link->ap->lock, flags);
- 	memset(&link->eh_info, 0, sizeof(link->eh_info));
-@@ -2728,6 +2729,9 @@ int ata_eh_reset(struct ata_link *link,
- 	ap->pflags &= ~ATA_PFLAG_EH_PENDING;
- 	spin_unlock_irqrestore(link->ap->lock, flags);
- 
-+	if (ap->pflags & ATA_PFLAG_FROZEN)
-+		ata_eh_thaw_port(ap);
-+
- 	/*
- 	 * Make sure onlineness and classification result correspond.
- 	 * Hotplug could have happened during reset and some
-
-
+W1BBVENIIC12NF0geDg2OiBNYWtlIGNhbGlicmF0ZV9kZWxheSBydW4gaW4gcGFyYWxsZWwuCgpP
+biBhIDQwOTYgY3B1IG1hY2hpbmUsIHdlIG5vdGljZWQgdGhhdCAzMTggc2Vjb25kcyB3ZXJlIHRh
+a2VuIGZvciBicmluZ2luZwp1cCB0aGUgY3B1cy4gIEJ5IHNwZWNpZnlpbmcgbHBqPTx2YWx1ZT4s
+IHdlIHJlZHVjZWQgdGhhdCB0byA3NSBzZWNvbmRzLgpBbmRpIEtsZWVuIHN1Z2dlc3RlZCB3ZSBy
+ZXdvcmsgdGhlIGNhbGlicmF0ZV9kZWxheSBjYWxscyB0byBydW4gaW4KcGFyYWxsZWwuCgotdjI6
+IGZyb20gWWluZ2hhaQogICAgIHR3byBwYXRoOiBvbmUgZm9yIGluaXRpYWwgYm9vdCBjcHVzLiBh
+bmQgb25lIGZvciBob3RwbHVnIGNwdXMKCWluaXRpYWwgcGF0aDoKCSAgYWZ0ZXIgYWxsIGNwdSBi
+b290IHVwLCBlbnRlciBpZGxlLCB1c2Ugc21wX2NhbGxfZnVuY3Rpb25fbWFueQoJICBsZXQgZXZl
+cnkgYXAgY2FsbCBfX2NhbGlicmF0ZV9kZWxheS4KICAgICAgICAgIFdlIGNhbiBub3QgcHV0IHRo
+YXQgY2FsaWJyYXRlX2RlbGF5IGFmdGVyIGxvY2FsX2lycV9lbmFibGUKICAgICAgICAgIGluIHN0
+YXJ0X3NlY29uZGFyeSgpLCBhdCB0aGF0IHRpbWUgdGhhdCBjcHUgY291bGQgYmUgaW52b2xlZAoJ
+ICB3aXRoIHBlcmZfZXZlbnQgd2l0aCBubWlfd2F0Y2hkb2cgZW5hYmxpbmcuIHRoYXQgd2lsbCBj
+YXVzZQoJICBzdHJhbmdlIGNhbGlicmF0aW5nIHJlc3VsdC4KICAgICAgICBob3RwbHVnIHBhdGg6
+CgkgIG5lZWQgdG8gYWRkIGNwdSBub3RpZnkgYmxvY2suCiAgICAgYWRkIF9fY2FsaWJyYXRlX2Rl
+bGF5IGluc3RlYWQgb2YgY2hhbmdpbmcgY2FsaWJyYXRlX2RlbGF5IGFsbCBvdmVyLgogICAgIHVz
+ZSBjcHVfY2FsaWJyYXRlZF9kZWxheV9tYXNrIGluc3RlYWQuCiAgICAgdXNlIHByaW50X2xwaiB0
+byBtYWtlIHByaW50IGxpbmUgY29tcGxldGUuCgpTaWduZWQtb2ZmLWJ5OiBSb2JpbiBIb2x0IDxo
+b2x0QHNnaS5jb20+ClRvOiBBbmRpIEtsZWVuIDxhbmRpQGZpcnN0Zmxvb3Iub3JnPgpDYzogVGhv
+bWFzIEdsZWl4bmVyIDx0Z2x4QGxpbnV0cm9uaXguZGU+CkNjOiBJbmdvIE1vbG5hciA8bWluZ29A
+cmVkaGF0LmNvbT4KU2lnbmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3Jn
+PgoKLS0tCiBhcmNoL3g4Ni9pbmNsdWRlL2FzbS9jcHVtYXNrLmggfCAgICAxIAogYXJjaC94ODYv
+a2VybmVsL2NwdS9jb21tb24uYyAgIHwgICAgMyArKwogYXJjaC94ODYva2VybmVsL3NtcGJvb3Qu
+YyAgICAgIHwgICA1OCArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrLS0tLS0tLQog
+aW5jbHVkZS9saW51eC9kZWxheS5oICAgICAgICAgIHwgICAgMSAKIGluaXQvY2FsaWJyYXRlLmMg
+ICAgICAgICAgICAgICB8ICAgNTQgKysrKysrKysrKysrKysrKysrKy0tLS0tLS0tLS0tLS0tLS0t
+LS0KIDUgZmlsZXMgY2hhbmdlZCwgODEgaW5zZXJ0aW9ucygrKSwgMzYgZGVsZXRpb25zKC0pCgoK
+LS0KSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9jcHVtYXNrLmgKPT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvaW5jbHVkZS9hc20vY3B1bWFzay5oCisr
+KyBsaW51eC0yLjYvYXJjaC94ODYvaW5jbHVkZS9hc20vY3B1bWFzay5oCkBAIC02LDYgKzYsNyBA
+QAogZXh0ZXJuIGNwdW1hc2tfdmFyX3QgY3B1X2NhbGxpbl9tYXNrOwogZXh0ZXJuIGNwdW1hc2tf
+dmFyX3QgY3B1X2NhbGxvdXRfbWFzazsKIGV4dGVybiBjcHVtYXNrX3Zhcl90IGNwdV9pbml0aWFs
+aXplZF9tYXNrOworZXh0ZXJuIGNwdW1hc2tfdmFyX3QgY3B1X2NhbGlicmF0ZWRfZGVsYXlfbWFz
+azsKIGV4dGVybiBjcHVtYXNrX3Zhcl90IGNwdV9zaWJsaW5nX3NldHVwX21hc2s7CiAKIGV4dGVy
+biB2b2lkIHNldHVwX2NwdV9sb2NhbF9tYXNrcyh2b2lkKTsKSW5kZXg6IGxpbnV4LTIuNi9hcmNo
+L3g4Ni9rZXJuZWwvY3B1L2NvbW1vbi5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2Fy
+Y2gveDg2L2tlcm5lbC9jcHUvY29tbW9uLmMKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwv
+Y3B1L2NvbW1vbi5jCkBAIC00NSw2ICs0NSw3IEBACiBjcHVtYXNrX3Zhcl90IGNwdV9pbml0aWFs
+aXplZF9tYXNrOwogY3B1bWFza192YXJfdCBjcHVfY2FsbG91dF9tYXNrOwogY3B1bWFza192YXJf
+dCBjcHVfY2FsbGluX21hc2s7CitjcHVtYXNrX3Zhcl90IGNwdV9jYWxpYnJhdGVkX2RlbGF5X21h
+c2s7CiAKIC8qIHJlcHJlc2VudGluZyBjcHVzIGZvciB3aGljaCBzaWJsaW5nIG1hcHMgY2FuIGJl
+IGNvbXB1dGVkICovCiBjcHVtYXNrX3Zhcl90IGNwdV9zaWJsaW5nX3NldHVwX21hc2s7CkBAIC01
+OCw2ICs1OSw4IEBAIHZvaWQgX19pbml0IHNldHVwX2NwdV9sb2NhbF9tYXNrcyh2b2lkKQogCWFs
+bG9jX2Jvb3RtZW1fY3B1bWFza192YXIoJmNwdV9jYWxsaW5fbWFzayk7CiAJc2V0X2Jvb3RtZW1f
+bmFtZSgiY3B1X2NhbGxvdXRfbWFzayIpOwogCWFsbG9jX2Jvb3RtZW1fY3B1bWFza192YXIoJmNw
+dV9jYWxsb3V0X21hc2spOworCXNldF9ib290bWVtX25hbWUoImNwdV9jYWxpYnJhdGVkX2RlbGF5
+X21hc2siKTsKKwlhbGxvY19ib290bWVtX2NwdW1hc2tfdmFyKCZjcHVfY2FsaWJyYXRlZF9kZWxh
+eV9tYXNrKTsKIAlzZXRfYm9vdG1lbV9uYW1lKCJjcHVfc2libGluZ19zZXR1cF9tYXNrIik7CiAJ
+YWxsb2NfYm9vdG1lbV9jcHVtYXNrX3ZhcigmY3B1X3NpYmxpbmdfc2V0dXBfbWFzayk7CiB9Cklu
+ZGV4OiBsaW51eC0yLjYvYXJjaC94ODYva2VybmVsL3NtcGJvb3QuYwo9PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBs
+aW51eC0yLjYub3JpZy9hcmNoL3g4Ni9rZXJuZWwvc21wYm9vdC5jCisrKyBsaW51eC0yLjYvYXJj
+aC94ODYva2VybmVsL3NtcGJvb3QuYwpAQCAtNTIsNiArNTIsNyBAQAogI2luY2x1ZGUgPGxpbnV4
+L2dmcC5oPgogCiAjaW5jbHVkZSA8YXNtL2FjcGkuaD4KKyNpbmNsdWRlIDxhc20vY3B1bWFzay5o
+PgogI2luY2x1ZGUgPGFzbS9kZXNjLmg+CiAjaW5jbHVkZSA8YXNtL25taS5oPgogI2luY2x1ZGUg
+PGFzbS9pcnEuaD4KQEAgLTIxMCwxNSArMjExLDcgQEAgc3RhdGljIHZvaWQgX19jcHVpbml0IHNt
+cF9jYWxsaW4odm9pZCkKIAkgKiBOZWVkIHRvIHNldHVwIHZlY3RvciBtYXBwaW5ncyBiZWZvcmUg
+d2UgZW5hYmxlIGludGVycnVwdHMuCiAJICovCiAJc2V0dXBfdmVjdG9yX2lycShzbXBfcHJvY2Vz
+c29yX2lkKCkpOwotCS8qCi0JICogR2V0IG91ciBib2dvbWlwcy4KLQkgKgotCSAqIE5lZWQgdG8g
+ZW5hYmxlIElSUXMgYmVjYXVzZSBpdCBjYW4gdGFrZSBsb25nZXIgYW5kIHRoZW4KLQkgKiB0aGUg
+Tk1JIHdhdGNoZG9nIG1pZ2h0IGtpbGwgdXMuCi0JICovCi0JbG9jYWxfaXJxX2VuYWJsZSgpOwot
+CWNhbGlicmF0ZV9kZWxheSgpOwotCWxvY2FsX2lycV9kaXNhYmxlKCk7CisKIAlwcl9kZWJ1Zygi
+U3RhY2sgYXQgYWJvdXQgJXBcbiIsICZjcHVpZCk7CiAKIAkvKgpAQCAtMTAzOCw2ICsxMDMxLDgg
+QEAgdm9pZCBfX2luaXQgbmF0aXZlX3NtcF9wcmVwYXJlX2NwdXModW5zaQogCX0KIAlzZXRfY3B1
+X3NpYmxpbmdfbWFwKDApOwogCisJLyogYWxyZWFkeSBjYWxsZWQgZWFybGllciBmb3IgYm9vdCBj
+cHUgKi8KKwljcHVtYXNrX3NldF9jcHUoMCwgY3B1X2NhbGlicmF0ZWRfZGVsYXlfbWFzayk7CiAK
+IAlpZiAoc21wX3Nhbml0eV9jaGVjayhtYXhfY3B1cykgPCAwKSB7CiAJCXByaW50ayhLRVJOX0lO
+Rk8gIlNNUCBkaXNhYmxlZFxuIik7CkBAIC0xMTI2LDggKzExMjEsNTMgQEAgdm9pZCBfX2luaXQg
+bmF0aXZlX3NtcF9wcmVwYXJlX2Jvb3RfY3B1KAogCXBlcl9jcHUoY3B1X3N0YXRlLCBtZSkgPSBD
+UFVfT05MSU5FOwogfQogCitzdGF0aWMgdm9pZCBfX2NwdWluaXQgY2FsaWJyYXRlX2RlbGF5X2Zu
+KHZvaWQgKmluZm8pCit7CisJaW50IGNwdSA9IHNtcF9wcm9jZXNzb3JfaWQoKTsKKworCWNwdV9k
+YXRhKGNwdSkubG9vcHNfcGVyX2ppZmZ5ID0gX19jYWxpYnJhdGVfZGVsYXkoY3B1KTsKKwljcHVt
+YXNrX3NldF9jcHUoY3B1LCBjcHVfY2FsaWJyYXRlZF9kZWxheV9tYXNrKTsKK30KKworI2lmZGVm
+IENPTkZJR19IT1RQTFVHX0NQVQorc3RhdGljIGludCBfX2NwdWluaXQKK2NhbF9jcHVfY2FsbGJh
+Y2soc3RydWN0IG5vdGlmaWVyX2Jsb2NrICpuZmIsIHVuc2lnbmVkIGxvbmcgYWN0aW9uLCB2b2lk
+ICpoY3B1KQoreworCWludCBjcHUgPSAodW5zaWduZWQgbG9uZyloY3B1OworCisJc3dpdGNoIChh
+Y3Rpb24pIHsKKwljYXNlIENQVV9PTkxJTkU6CisJY2FzZSBDUFVfT05MSU5FX0ZST1pFTjoKKwkJ
+c21wX2NhbGxfZnVuY3Rpb25fc2luZ2xlKGNwdSwgY2FsaWJyYXRlX2RlbGF5X2ZuLCBOVUxMLCAx
+KTsKKwkJYnJlYWs7CisJfQorCisJcmV0dXJuIE5PVElGWV9PSzsKK30KKworc3RhdGljIF9fY3B1
+aW5pdGRhdGEgc3RydWN0IG5vdGlmaWVyX2Jsb2NrIF9fY3B1aW5pdGRhdGEgY2FsX2NwdV9uZmIg
+PSB7CisJLm5vdGlmaWVyX2NhbGwgPSBjYWxfY3B1X2NhbGxiYWNrCit9OworCitzdGF0aWMgdm9p
+ZCBfX2luaXQgcmVnaXN0ZXJfY2FsX2NwdV9uZmIodm9pZCkKK3sKKwlyZWdpc3Rlcl9jcHVfbm90
+aWZpZXIoJmNhbF9jcHVfbmZiKTsKK30KKyNlbHNlCitzdGF0aWMgdm9pZCBfX2luaXQgcmVnaXN0
+ZXJfY2FsX2NwdV9uZmIodm9pZCkKK3sKK30KKyNlbmRpZgorCiB2b2lkIF9faW5pdCBuYXRpdmVf
+c21wX2NwdXNfZG9uZSh1bnNpZ25lZCBpbnQgbWF4X2NwdXMpCiB7CisJc21wX2NhbGxfZnVuY3Rp
+b25fbWFueShjcHVfb25saW5lX21hc2ssIGNhbGlicmF0ZV9kZWxheV9mbiwgTlVMTCwgMCk7CisJ
+d2hpbGUgKGNwdW1hc2tfd2VpZ2h0KGNwdV9jYWxpYnJhdGVkX2RlbGF5X21hc2spICE9IG51bV9v
+bmxpbmVfY3B1cygpKSB7CisJCWNwdV9yZWxheCgpOworCQl0b3VjaF9ubWlfd2F0Y2hkb2coKTsK
+Kwl9CisJcmVnaXN0ZXJfY2FsX2NwdV9uZmIoKTsKKwogCXByX2RlYnVnKCJCb290IGRvbmUuXG4i
+KTsKIAogCWltcHJlc3NfZnJpZW5kcygpOwpJbmRleDogbGludXgtMi42L2luY2x1ZGUvbGludXgv
+ZGVsYXkuaAo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9pbmNsdWRlL2xpbnV4L2RlbGF5
+LmgKKysrIGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4L2RlbGF5LmgKQEAgLTQzLDYgKzQzLDcgQEAg
+c3RhdGljIGlubGluZSB2b2lkIG5kZWxheSh1bnNpZ25lZCBsb25nCiAKIGV4dGVybiB1bnNpZ25l
+ZCBsb25nIGxwal9maW5lOwogdm9pZCBjYWxpYnJhdGVfZGVsYXkodm9pZCk7Cit1bnNpZ25lZCBs
+b25nIF9fY2FsaWJyYXRlX2RlbGF5KGludCBjcHUpOwogdm9pZCBtc2xlZXAodW5zaWduZWQgaW50
+IG1zZWNzKTsKIHVuc2lnbmVkIGxvbmcgbXNsZWVwX2ludGVycnVwdGlibGUodW5zaWduZWQgaW50
+IG1zZWNzKTsKIHZvaWQgdXNsZWVwX3JhbmdlKHVuc2lnbmVkIGxvbmcgbWluLCB1bnNpZ25lZCBs
+b25nIG1heCk7CkluZGV4OiBsaW51eC0yLjYvaW5pdC9jYWxpYnJhdGUuYwo9PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0t
+LSBsaW51eC0yLjYub3JpZy9pbml0L2NhbGlicmF0ZS5jCisrKyBsaW51eC0yLjYvaW5pdC9jYWxp
+YnJhdGUuYwpAQCAtMzEsNyArMzEsNyBAQCBfX3NldHVwKCJscGo9IiwgbHBqX3NldHVwKTsKICNk
+ZWZpbmUgREVMQVlfQ0FMSUJSQVRJT05fVElDS1MJCQkoKEhaIDwgMTAwKSA/IDEgOiAoSFovMTAw
+KSkKICNkZWZpbmUgTUFYX0RJUkVDVF9DQUxJQlJBVElPTl9SRVRSSUVTCQk1CiAKLXN0YXRpYyB1
+bnNpZ25lZCBsb25nIF9fY3B1aW5pdCBjYWxpYnJhdGVfZGVsYXlfZGlyZWN0KHZvaWQpCitzdGF0
+aWMgdW5zaWduZWQgbG9uZyBfX2NwdWluaXQgY2FsaWJyYXRlX2RlbGF5X2RpcmVjdChpbnQgY3B1
+KQogewogCXVuc2lnbmVkIGxvbmcgcHJlX3N0YXJ0LCBzdGFydCwgcG9zdF9zdGFydDsKIAl1bnNp
+Z25lZCBsb25nIHByZV9lbmQsIGVuZCwgcG9zdF9lbmQ7CkBAIC0xMzQsMTUgKzEzNCw5IEBAIHN0
+YXRpYyB1bnNpZ25lZCBsb25nIF9fY3B1aW5pdCBjYWxpYnJhdGUKIAkJZ29vZF90aW1lcl9jb3Vu
+dCA9IDA7CiAJCWlmICgobWVhc3VyZWRfdGltZXNbbWF4XSAtIGVzdGltYXRlKSA8CiAJCQkJKGVz
+dGltYXRlIC0gbWVhc3VyZWRfdGltZXNbbWluXSkpIHsKLQkJCXByaW50ayhLRVJOX05PVElDRSAi
+Y2FsaWJyYXRlX2RlbGF5X2RpcmVjdCgpIGRyb3BwaW5nICIKLQkJCQkJIm1pbiBib2dvTWlwcyBl
+c3RpbWF0ZSAlZCA9ICVsdVxuIiwKLQkJCQltaW4sIG1lYXN1cmVkX3RpbWVzW21pbl0pOwogCQkJ
+bWVhc3VyZWRfdGltZXNbbWluXSA9IDA7CiAJCQltaW4gPSBtYXg7CiAJCX0gZWxzZSB7Ci0JCQlw
+cmludGsoS0VSTl9OT1RJQ0UgImNhbGlicmF0ZV9kZWxheV9kaXJlY3QoKSBkcm9wcGluZyAiCi0J
+CQkJCSJtYXggYm9nb01pcHMgZXN0aW1hdGUgJWQgPSAlbHVcbiIsCi0JCQkJbWF4LCBtZWFzdXJl
+ZF90aW1lc1ttYXhdKTsKIAkJCW1lYXN1cmVkX3RpbWVzW21heF0gPSAwOwogCQkJbWF4ID0gbWlu
+OwogCQl9CkBAIC0xNjAsOSArMTU0LDkgQEAgc3RhdGljIHVuc2lnbmVkIGxvbmcgX19jcHVpbml0
+IGNhbGlicmF0ZQogCiAJfQogCi0JcHJpbnRrKEtFUk5fTk9USUNFICJjYWxpYnJhdGVfZGVsYXlf
+ZGlyZWN0KCkgZmFpbGVkIHRvIGdldCBhIGdvb2QgIgorCXByaW50ayhLRVJOX05PVElDRSAiQ1BV
+JWQ6IGNhbGlicmF0ZV9kZWxheV9kaXJlY3QoKSBmYWlsZWQgdG8gZ2V0IGEgZ29vZCAiCiAJICAg
+ICAgICJlc3RpbWF0ZSBmb3IgbG9vcHNfcGVyX2ppZmZ5LlxuUHJvYmFibHkgZHVlIHRvIGxvbmcg
+cGxhdGZvcm0gIgotCQkiaW50ZXJydXB0cy4gQ29uc2lkZXIgdXNpbmcgXCJscGo9XCIgYm9vdCBv
+cHRpb24uXG4iKTsKKwkJImludGVycnVwdHMuIENvbnNpZGVyIHVzaW5nIFwibHBqPVwiIGJvb3Qg
+b3B0aW9uLlxuIiwgY3B1KTsKIAlyZXR1cm4gMDsKIH0KICNlbHNlCkBAIC0yNDYsMzIgKzI0MCwz
+OCBAQCByZWNhbGlicmF0ZToKIAogc3RhdGljIERFRklORV9QRVJfQ1BVKHVuc2lnbmVkIGxvbmcs
+IGNwdV9sb29wc19wZXJfamlmZnkpID0geyAwIH07CiAKLXZvaWQgX19jcHVpbml0IGNhbGlicmF0
+ZV9kZWxheSh2b2lkKQorc3RhdGljIHZvaWQgX19jcHVpbml0IHByaW50X2xwaihpbnQgY3B1LCBj
+aGFyICpzdHIsIHVuc2lnbmVkIGxvbmcgbHBqKQoreworICAgICAgIHByX2luZm8oIkNQVSVkOiBD
+YWxpYnJhdGluZyBkZWxheSVzIgorICAgICAgICAgICAgICAgIiVsdS4lMDJsdSBCb2dvTUlQUyAo
+bHBqPSVsdSlcbiIsIGNwdSwgc3RyLAorICAgICAgICAgICAgICAgbHBqLyg1MDAwMDAvSFopLCAo
+bHBqLyg1MDAwL0haKSkgJSAxMDAsIGxwaik7Cit9CisKK3Vuc2lnbmVkIGxvbmcgX19jcHVpbml0
+IF9fY2FsaWJyYXRlX2RlbGF5KGludCBjcHUpCiB7CiAJdW5zaWduZWQgbG9uZyBscGo7Ci0JaW50
+IHRoaXNfY3B1ID0gc21wX3Byb2Nlc3Nvcl9pZCgpOwogCi0JaWYgKHBlcl9jcHUoY3B1X2xvb3Bz
+X3Blcl9qaWZmeSwgdGhpc19jcHUpKSB7Ci0JCWxwaiA9IHBlcl9jcHUoY3B1X2xvb3BzX3Blcl9q
+aWZmeSwgdGhpc19jcHUpOwotCQlwcl9pbmZvKCJDYWxpYnJhdGluZyBkZWxheSBsb29wIChza2lw
+cGVkKSAiCi0JCQkJImFscmVhZHkgY2FsaWJyYXRlZCB0aGlzIENQVSIpOworCWlmIChwZXJfY3B1
+KGNwdV9sb29wc19wZXJfamlmZnksIGNwdSkpIHsKKwkJbHBqID0gcGVyX2NwdShjcHVfbG9vcHNf
+cGVyX2ppZmZ5LCBjcHUpOworCQlwcmludF9scGooY3B1LCAiIChza2lwcGVkKSBhbHJlYWR5IGNh
+bGlicmF0ZWQgdGhpcyBDUFUgIiwgbHBqKTsKIAl9IGVsc2UgaWYgKHByZXNldF9scGopIHsKIAkJ
+bHBqID0gcHJlc2V0X2xwajsKLQkJcHJfaW5mbygiQ2FsaWJyYXRpbmcgZGVsYXkgbG9vcCAoc2tp
+cHBlZCkgcHJlc2V0IHZhbHVlLi4gIik7Ci0JfSBlbHNlIGlmICgodGhpc19jcHUgPT0gMCkgJiYg
+bHBqX2ZpbmUpIHsKKwkJcHJpbnRfbHBqKGNwdSwgIiAoc2tpcHBlZCkgcHJlc2V0IHZhbHVlLi4g
+IiwgbHBqKTsKKwl9IGVsc2UgaWYgKChjcHUgPT0gMCkgJiYgbHBqX2ZpbmUpIHsKIAkJbHBqID0g
+bHBqX2ZpbmU7Ci0JCXByX2luZm8oIkNhbGlicmF0aW5nIGRlbGF5IGxvb3AgKHNraXBwZWQpLCAi
+Ci0JCQkidmFsdWUgY2FsY3VsYXRlZCB1c2luZyB0aW1lciBmcmVxdWVuY3kuLiAiKTsKLQl9IGVs
+c2UgaWYgKChscGogPSBjYWxpYnJhdGVfZGVsYXlfZGlyZWN0KCkpICE9IDApIHsKLQkJcHJfaW5m
+bygiQ2FsaWJyYXRpbmcgZGVsYXkgdXNpbmcgdGltZXIgc3BlY2lmaWMgcm91dGluZS4uICIpOwor
+CQlwcmludF9scGooY3B1LCAiIGxvb3AgKHNraXBwZWQpLCB2YWx1ZSBjYWxjdWxhdGVkIHVzaW5n
+IHRpbWVyIGZyZXF1ZW5jeS4uICIsIGxwaik7CisJfSBlbHNlIGlmICgobHBqID0gY2FsaWJyYXRl
+X2RlbGF5X2RpcmVjdChjcHUpKSAhPSAwKSB7CisJCXByaW50X2xwaihjcHUsICIgdXNpbmcgdGlt
+ZXIgc3BlY2lmaWMgcm91dGluZS4uICIsIGxwaik7CiAJfSBlbHNlIHsKLQkJcHJfaW5mbygiQ2Fs
+aWJyYXRpbmcgZGVsYXkgbG9vcC4uLiAiKTsKIAkJbHBqID0gY2FsaWJyYXRlX2RlbGF5X2NvbnZl
+cmdlKCk7CisJCXByaW50X2xwaihjcHUsICIgZGVsYXkgbG9vcC4uLiAiLCBscGopOwogCX0KLQlw
+ZXJfY3B1KGNwdV9sb29wc19wZXJfamlmZnksIHRoaXNfY3B1KSA9IGxwajsKLQlwcl9jb250KCIl
+bHUuJTAybHUgQm9nb01JUFMgKGxwaj0lbHUpXG4iLAotCQkJbHBqLyg1MDAwMDAvSFopLAotCQkJ
+KGxwai8oNTAwMC9IWikpICUgMTAwLCBscGopOworCXBlcl9jcHUoY3B1X2xvb3BzX3Blcl9qaWZm
+eSwgY3B1KSA9IGxwajsKIAotCWxvb3BzX3Blcl9qaWZmeSA9IGxwajsKKwlyZXR1cm4gbHBqOwor
+fQorCit2b2lkIF9fY3B1aW5pdCBjYWxpYnJhdGVfZGVsYXkodm9pZCkKK3sKKwlsb29wc19wZXJf
+amlmZnkgPSBfX2NhbGlicmF0ZV9kZWxheShzbXBfcHJvY2Vzc29yX2lkKCkpOwogfQo=
+--20cf307f3b46a04e0c04a9cb322b--
