@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932168Ab1HFAXm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:23:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39350 "EHLO mx2.suse.de"
+	id S932202Ab1HFAYA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:24:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39324 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757332Ab1HFAKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:10:08 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:52 2011
-Message-Id: <20110806000252.091336417@clark.kroah.org>
+	id S1757312Ab1HFAKC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:10:02 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:51 2011
+Message-Id: <20110806000251.887946450@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:02:02 -0700
+Date: Fri, 05 Aug 2011 17:02:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Don Dutile <ddutile@redhat.com>, Chris Wright <chrisw@sous-sol.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [32/55] PCI: ARI is a PCIe v2 feature
+        Huang Ying <ying.huang@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [30/55] kexec, x86: Fix incorrect jump back address if not
 In-Reply-To: <20110806000257.GA25498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,51 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
+ preserving context
 
-From: Chris Wright <chrisw@sous-sol.org>
+From: Huang Ying <ying.huang@intel.com>
 
-commit 864d296cf948aef0fa32b81407541572583f7572 upstream.
+commit 050438ed5a05b25cdf287f5691e56a58c2606997 upstream.
 
-The function pci_enable_ari() may mistakenly set the downstream port
-of a v1 PCIe switch in ARI Forwarding mode.  This is a PCIe v2 feature,
-and with an SR-IOV device on that switch port believing the switch above
-is ARI capable it may attempt to use functions 8-255, translating into
-invalid (non-zero) device numbers for that bus.  This has been seen
-to cause Completion Timeouts and general misbehaviour including hangs
-and panics.
+In kexec jump support, jump back address passed to the kexeced
+kernel via function calling ABI, that is, the function call
+return address is the jump back entry.
 
-Acked-by: Don Dutile <ddutile@redhat.com>
-Tested-by: Don Dutile <ddutile@redhat.com>
-Signed-off-by: Chris Wright <chrisw@sous-sol.org>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Furthermore, jump back entry == 0 should be used to signal that
+the jump back or preserve context is not enabled in the original
+kernel.
+
+But in the current implementation the stack position used for
+function call return address is not cleared context
+preservation is disabled. The patch fixes this bug.
+
+Reported-and-tested-by: Yin Kangkai <kangkai.yin@intel.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Link: http://lkml.kernel.org/r/1310607277-25029-1-git-send-email-ying.huang@intel.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/pci.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/x86/kernel/relocate_kernel_32.S |    2 ++
+ arch/x86/kernel/relocate_kernel_64.S |    2 ++
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1507,7 +1507,7 @@ void pci_enable_ari(struct pci_dev *dev)
- {
- 	int pos;
- 	u32 cap;
--	u16 ctrl;
-+	u16 flags, ctrl;
- 	struct pci_dev *bridge;
+--- a/arch/x86/kernel/relocate_kernel_32.S
++++ b/arch/x86/kernel/relocate_kernel_32.S
+@@ -97,6 +97,8 @@ relocate_kernel:
+ 	ret
  
- 	if (!dev->is_pcie || dev->devfn)
-@@ -1525,6 +1525,11 @@ void pci_enable_ari(struct pci_dev *dev)
- 	if (!pos)
- 		return;
+ identity_mapped:
++	/* set return address to 0 if not preserving context */
++	pushl	$0
+ 	/* store the start address on the stack */
+ 	pushl   %edx
  
-+	/* ARI is a PCIe v2 feature */
-+	pci_read_config_word(bridge, pos + PCI_EXP_FLAGS, &flags);
-+	if ((flags & PCI_EXP_FLAGS_VERS) < 2)
-+		return;
-+
- 	pci_read_config_dword(bridge, pos + PCI_EXP_DEVCAP2, &cap);
- 	if (!(cap & PCI_EXP_DEVCAP2_ARI))
- 		return;
+--- a/arch/x86/kernel/relocate_kernel_64.S
++++ b/arch/x86/kernel/relocate_kernel_64.S
+@@ -100,6 +100,8 @@ relocate_kernel:
+ 	ret
+ 
+ identity_mapped:
++	/* set return address to 0 if not preserving context */
++	pushq	$0
+ 	/* store the start address on the stack */
+ 	pushq   %rdx
+ 
 
 
