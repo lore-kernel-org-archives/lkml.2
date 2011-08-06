@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757236Ab1HFAJT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:09:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39194 "EHLO mx2.suse.de"
+	id S1757171Ab1HFAIu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:08:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39110 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757224Ab1HFAJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:09:16 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:53 2011
-Message-Id: <20110806000253.380101699@clark.kroah.org>
+	id S1757156Ab1HFAIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:08:45 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:52 2011
+Message-Id: <20110806000252.578521424@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:02:15 -0700
+Date: Fri, 05 Aug 2011 17:02:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [45/55] cifs: check for NULL session password
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [37/55] EHCI: only power off port if over-current is active
 In-Reply-To: <20110806000257.GA25498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,30 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
-commit 24e6cf92fde1f140d8eb0bf7cd24c2c78149b6b2 upstream.
+commit 81463c1d707186adbbe534016cd1249edeab0dac upstream.
 
-It's possible for a cifsSesInfo struct to have a NULL password, so we
-need to check for that prior to running strncmp on it.
+MAX4967 USB power supply chip we use on our boards signals over-current when
+power is not enabled; once it's enabled, over-current signal returns to normal.
+That unfortunately caused the endless stream of "over-current change on port"
+messages. The EHCI root hub code reacts on every over-current signal change
+with powering off the port -- such change event is generated the moment the
+port power is enabled, so once enabled the power is immediately cut off.
+I think we should only cut off power when we're seeing the active over-current
+signal, so I'm adding such check to that code. I also think that the fact that
+we've cut off the port power should be reflected in the result of GetPortStatus
+request immediately, hence I'm adding a PORTSCn register readback after write...
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/connect.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/host/ehci-hub.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -1605,6 +1605,7 @@ cifs_find_smb_ses(struct TCP_Server_Info
- 				    MAX_USERNAME_SIZE))
- 				continue;
- 			if (strlen(vol->username) != 0 &&
-+			    ses->password != NULL &&
- 			    strncmp(ses->password,
- 				    vol->password ? vol->password : "",
- 				    MAX_PASSWORD_SIZE))
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -758,10 +758,11 @@ static int ehci_hub_control (
+ 			 * power switching; they're allowed to just limit the
+ 			 * current.  khubd will turn the power back on.
+ 			 */
+-			if (HCS_PPC (ehci->hcs_params)){
++			if ((temp & PORT_OC) && HCS_PPC(ehci->hcs_params)) {
+ 				ehci_writel(ehci,
+ 					temp & ~(PORT_RWC_BITS | PORT_POWER),
+ 					status_reg);
++				temp = ehci_readl(ehci, status_reg);
+ 			}
+ 		}
+ 
 
 
