@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361Ab1HFATF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:19:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39522 "EHLO mx2.suse.de"
+	id S932280Ab1HFALK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:11:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39498 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932288Ab1HFALN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:11:13 -0400
+	id S932264Ab1HFALG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:11:06 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:13 2011
-Message-Id: <20110806000413.901050765@clark.kroah.org>
+Message-Id: <20110806000413.690071872@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:41 -0700
+Date: Fri, 05 Aug 2011 17:03:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Luben Tuikov <ltuikov@yahoo.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [23/50] [SCSI] libsas: remove expander from dev list on error
+        Igor Grinberg <grinberg@compulab.co.il>,
+        Eric Miao <eric.y.miao@gmail.com>
+Subject: [21/50] ARM: pxa/cm-x300: fix V3020 RTC functionality
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luben Tuikov <ltuikov@yahoo.com>
+From: Igor Grinberg <grinberg@compulab.co.il>
 
-commit 5911e963d3718e306bcac387b83e259aa4228896 upstream.
+commit 6c7b3ea52e345ab614edb91d3f0e9f3bb3713871 upstream.
 
-If expander discovery fails (sas_discover_expander()), remove the
-expander from the port device list (sas_ex_discover_expander()),
-before freeing it. Else the list is corrupted and, e.g., when we
-attempt to send SMP commands to other devices, the kernel oopses.
+While in sleep mode the CS# and other V3020 RTC GPIOs must be driven
+high, otherwise V3020 RTC fails to keep the right time in sleep mode.
 
-Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
-Reviewed-by: Jack Wang <jack_wang@usish.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Igor Grinberg <grinberg@compulab.co.il>
+Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/libsas/sas_expander.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/arm/mach-pxa/cm-x300.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/scsi/libsas/sas_expander.c
-+++ b/drivers/scsi/libsas/sas_expander.c
-@@ -840,6 +840,9 @@ static struct domain_device *sas_ex_disc
+--- a/arch/arm/mach-pxa/cm-x300.c
++++ b/arch/arm/mach-pxa/cm-x300.c
+@@ -154,10 +154,10 @@ static mfp_cfg_t cm_x3xx_mfp_cfg[] __ini
+ 	GPIO99_GPIO,			/* Ethernet IRQ */
  
- 	res = sas_discover_expander(child);
- 	if (res) {
-+		spin_lock_irq(&parent->port->dev_list_lock);
-+		list_del(&child->dev_list_node);
-+		spin_unlock_irq(&parent->port->dev_list_lock);
- 		kfree(child);
- 		return NULL;
- 	}
+ 	/* RTC GPIOs */
+-	GPIO95_GPIO,			/* RTC CS */
+-	GPIO96_GPIO,			/* RTC WR */
+-	GPIO97_GPIO,			/* RTC RD */
+-	GPIO98_GPIO,			/* RTC IO */
++	GPIO95_GPIO | MFP_LPM_DRIVE_HIGH,	/* RTC CS */
++	GPIO96_GPIO | MFP_LPM_DRIVE_HIGH,	/* RTC WR */
++	GPIO97_GPIO | MFP_LPM_DRIVE_HIGH,	/* RTC RD */
++	GPIO98_GPIO,				/* RTC IO */
+ 
+ 	/* Standard I2C */
+ 	GPIO21_I2C_SCL,
 
 
