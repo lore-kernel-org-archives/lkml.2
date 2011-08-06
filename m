@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932369Ab1HFALh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:11:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39571 "EHLO mx2.suse.de"
+	id S932245Ab1HFAK5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:10:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39443 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932213Ab1HFALd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:11:33 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:14 2011
-Message-Id: <20110806000414.526971529@clark.kroah.org>
+	id S932221Ab1HFAKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:10:45 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:13 2011
+Message-Id: <20110806000413.150733066@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:47 -0700
+Date: Fri, 05 Aug 2011 17:03:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Huang Ying <ying.huang@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [29/50] kexec, x86: Fix incorrect jump back address if not
+        Daniel J Blueman <daniel.blueman@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [16/50] x86: Make Dell Latitude E5420 use reboot=pci
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,58 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.33-longterm review patch.  If anyone has any objections, please let us know.
 
 ------------------
- preserving context
 
-From: Huang Ying <ying.huang@intel.com>
+From: Daniel J Blueman <daniel.blueman@gmail.com>
 
-commit 050438ed5a05b25cdf287f5691e56a58c2606997 upstream.
+commit b7798d28ec15d20fd34b70fa57eb13f0cf6d1ecd upstream.
 
-In kexec jump support, jump back address passed to the kexeced
-kernel via function calling ABI, that is, the function call
-return address is the jump back entry.
+Rebooting on the Dell E5420 often hangs with the keyboard or ACPI
+methods, but is reliable via the PCI method.
 
-Furthermore, jump back entry == 0 should be used to signal that
-the jump back or preserve context is not enabled in the original
-kernel.
+[ hpa: this was deferred because we believed for a long time that the
+  recent reshuffling of the boot priorities in commit
+  660e34cebf0a11d54f2d5dd8838607452355f321 fixed this platform.
+  Unfortunately that turned out to be incorrect. ]
 
-But in the current implementation the stack position used for
-function call return address is not cleared context
-preservation is disabled. The patch fixes this bug.
-
-Reported-and-tested-by: Yin Kangkai <kangkai.yin@intel.com>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Link: http://lkml.kernel.org/r/1310607277-25029-1-git-send-email-ying.huang@intel.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+Link: http://lkml.kernel.org/r/1305248699-2347-1-git-send-email-daniel.blueman@gmail.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/relocate_kernel_32.S |    2 ++
- arch/x86/kernel/relocate_kernel_64.S |    2 ++
- 2 files changed, 4 insertions(+)
+ arch/x86/kernel/reboot.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/arch/x86/kernel/relocate_kernel_32.S
-+++ b/arch/x86/kernel/relocate_kernel_32.S
-@@ -97,6 +97,8 @@ relocate_kernel:
- 	ret
- 
- identity_mapped:
-+	/* set return address to 0 if not preserving context */
-+	pushl	$0
- 	/* store the start address on the stack */
- 	pushl   %edx
- 
---- a/arch/x86/kernel/relocate_kernel_64.S
-+++ b/arch/x86/kernel/relocate_kernel_64.S
-@@ -100,6 +100,8 @@ relocate_kernel:
- 	ret
- 
- identity_mapped:
-+	/* set return address to 0 if not preserving context */
-+	pushq	$0
- 	/* store the start address on the stack */
- 	pushq   %rdx
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -469,6 +469,14 @@ static struct dmi_system_id __initdata p
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "iMac9,1"),
+ 		},
+ 	},
++	{	/* Handle problems with rebooting on the Latitude E5420. */
++		.callback = set_pci_reboot,
++		.ident = "Dell Latitude E5420",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E5420"),
++		},
++	},
+ 	{ }
+ };
  
 
 
