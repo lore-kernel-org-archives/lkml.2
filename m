@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353Ab1HFAYT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:24:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39313 "EHLO mx2.suse.de"
+	id S1757287Ab1HFAJn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:09:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39229 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757239Ab1HFAJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:09:58 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:51 2011
-Message-Id: <20110806000251.786972588@clark.kroah.org>
+	id S1757254Ab1HFAJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:09:30 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:53 2011
+Message-Id: <20110806000253.697217252@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:01:59 -0700
+Date: Fri, 05 Aug 2011 17:02:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [29/55] [SCSI] pmcraid: reject negative request size
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [48/55] tunnels: fix netns vs proto registration ordering
 In-Reply-To: <20110806000257.GA25498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +26,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Alexey Dobriyan <adobriyan@gmail.com>
 
-commit b5b515445f4f5a905c5dd27e6e682868ccd6c09d upstream.
+commit d5aa407f59f5b83d2c50ec88f5bf56d40f1f8978 upstream.
 
-There's a code path in pmcraid that can be reached via device ioctl that
-causes all sorts of ugliness, including heap corruption or triggering the
-OOM killer due to consecutive allocation of large numbers of pages.
+Same stuff as in ip_gre patch: receive hook can be called before netns
+setup is done, oopsing in net_generic().
 
-First, the user can call pmcraid_chr_ioctl(), with a type
-PMCRAID_PASSTHROUGH_IOCTL.  This calls through to
-pmcraid_ioctl_passthrough().  Next, a pmcraid_passthrough_ioctl_buffer
-is copied in, and the request_size variable is set to
-buffer->ioarcb.data_transfer_length, which is an arbitrary 32-bit
-signed value provided by the user.  If a negative value is provided
-here, bad things can happen.  For example,
-pmcraid_build_passthrough_ioadls() is called with this request_size,
-which immediately calls pmcraid_alloc_sglist() with a negative size.
-The resulting math on allocating a scatter list can result in an
-overflow in the kzalloc() call (if num_elem is 0, the sglist will be
-smaller than expected), or if num_elem is unexpectedly large the
-subsequent loop will call alloc_pages() repeatedly, a high number of
-pages will be allocated and the OOM killer might be invoked.
-
-It looks like preventing this value from being negative in
-pmcraid_ioctl_passthrough() would be sufficient.
-
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/pmcraid.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/ipv4/ipip.c         |   13 ++++++-------
+ net/ipv6/ip6_tunnel.c   |   28 +++++++++++++++-------------
+ net/ipv6/sit.c          |   13 ++++++-------
+ net/ipv6/xfrm6_tunnel.c |   22 +++++++++++-----------
+ 4 files changed, 38 insertions(+), 38 deletions(-)
 
---- a/drivers/scsi/pmcraid.c
-+++ b/drivers/scsi/pmcraid.c
-@@ -3557,6 +3557,9 @@ static long pmcraid_ioctl_passthrough(
- 			pmcraid_err("couldn't build passthrough ioadls\n");
- 			goto out_free_buffer;
- 		}
-+	} else if (request_size < 0) {
-+		rc = -EINVAL;
-+		goto out_free_buffer;
+--- a/net/ipv4/ipip.c
++++ b/net/ipv4/ipip.c
+@@ -830,15 +830,14 @@ static int __init ipip_init(void)
+ 
+ 	printk(banner);
+ 
+-	if (xfrm4_tunnel_register(&ipip_handler, AF_INET)) {
++	err = register_pernet_gen_device(&ipip_net_id, &ipip_net_ops);
++	if (err < 0)
++		return err;
++	err = xfrm4_tunnel_register(&ipip_handler, AF_INET);
++	if (err < 0) {
++		unregister_pernet_device(&ipip_net_ops);
+ 		printk(KERN_INFO "ipip init: can't register tunnel\n");
+-		return -EAGAIN;
+ 	}
+-
+-	err = register_pernet_gen_device(&ipip_net_id, &ipip_net_ops);
+-	if (err)
+-		xfrm4_tunnel_deregister(&ipip_handler, AF_INET);
+-
+ 	return err;
+ }
+ 
+--- a/net/ipv6/ip6_tunnel.c
++++ b/net/ipv6/ip6_tunnel.c
+@@ -1466,27 +1466,29 @@ static int __init ip6_tunnel_init(void)
+ {
+ 	int  err;
+ 
+-	if (xfrm6_tunnel_register(&ip4ip6_handler, AF_INET)) {
++	err = register_pernet_device(&ip6_tnl_net_ops);
++	if (err < 0)
++		goto out_pernet;
++
++	err = xfrm6_tunnel_register(&ip4ip6_handler, AF_INET);
++	if (err < 0) {
+ 		printk(KERN_ERR "ip6_tunnel init: can't register ip4ip6\n");
+-		err = -EAGAIN;
+-		goto out;
++		goto out_ip4ip6;
  	}
  
- 	/* If data is being written into the device, copy the data from user
+-	if (xfrm6_tunnel_register(&ip6ip6_handler, AF_INET6)) {
++	err = xfrm6_tunnel_register(&ip6ip6_handler, AF_INET6);
++	if (err < 0) {
+ 		printk(KERN_ERR "ip6_tunnel init: can't register ip6ip6\n");
+-		err = -EAGAIN;
+-		goto unreg_ip4ip6;
++		goto out_ip6ip6;
+ 	}
+ 
+-	err = register_pernet_gen_device(&ip6_tnl_net_id, &ip6_tnl_net_ops);
+-	if (err < 0)
+-		goto err_pernet;
+ 	return 0;
+-err_pernet:
+-	xfrm6_tunnel_deregister(&ip6ip6_handler, AF_INET6);
+-unreg_ip4ip6:
++
++out_ip6ip6:
+ 	xfrm6_tunnel_deregister(&ip4ip6_handler, AF_INET);
+-out:
++out_ip4ip6:
++	unregister_pernet_device(&ip6_tnl_net_ops);
++out_pernet:
+ 	return err;
+ }
+ 
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -1086,15 +1086,14 @@ static int __init sit_init(void)
+ 
+ 	printk(KERN_INFO "IPv6 over IPv4 tunneling driver\n");
+ 
+-	if (xfrm4_tunnel_register(&sit_handler, AF_INET6) < 0) {
+-		printk(KERN_INFO "sit init: Can't add protocol\n");
+-		return -EAGAIN;
+-	}
+-
+ 	err = register_pernet_gen_device(&sit_net_id, &sit_net_ops);
+ 	if (err < 0)
+-		xfrm4_tunnel_deregister(&sit_handler, AF_INET6);
+-
++		return err;
++	err = xfrm4_tunnel_register(&sit_handler, AF_INET6);
++	if (err < 0) {
++		unregister_pernet_device(&sit_net_ops);
++		printk(KERN_INFO "sit init: Can't add protocol\n");
++	}
+ 	return err;
+ }
+ 
+--- a/net/ipv6/xfrm6_tunnel.c
++++ b/net/ipv6/xfrm6_tunnel.c
+@@ -346,36 +346,36 @@ static int __init xfrm6_tunnel_init(void
+ {
+ 	int rv;
+ 
+-	rv = xfrm_register_type(&xfrm6_tunnel_type, AF_INET6);
++	rv = xfrm6_tunnel_spi_init();
+ 	if (rv < 0)
+ 		goto err;
++	rv = xfrm_register_type(&xfrm6_tunnel_type, AF_INET6);
++	if (rv < 0)
++		goto out_type;
+ 	rv = xfrm6_tunnel_register(&xfrm6_tunnel_handler, AF_INET6);
+ 	if (rv < 0)
+-		goto unreg;
++		goto out_xfrm6;
+ 	rv = xfrm6_tunnel_register(&xfrm46_tunnel_handler, AF_INET);
+ 	if (rv < 0)
+-		goto dereg6;
+-	rv = xfrm6_tunnel_spi_init();
+-	if (rv < 0)
+-		goto dereg46;
++		goto out_xfrm46;
+ 	return 0;
+ 
+-dereg46:
+-	xfrm6_tunnel_deregister(&xfrm46_tunnel_handler, AF_INET);
+-dereg6:
++out_xfrm46:
+ 	xfrm6_tunnel_deregister(&xfrm6_tunnel_handler, AF_INET6);
+-unreg:
++out_xfrm6:
+ 	xfrm_unregister_type(&xfrm6_tunnel_type, AF_INET6);
++out_type:
++	xfrm6_tunnel_spi_fini();
+ err:
+ 	return rv;
+ }
+ 
+ static void __exit xfrm6_tunnel_fini(void)
+ {
+-	xfrm6_tunnel_spi_fini();
+ 	xfrm6_tunnel_deregister(&xfrm46_tunnel_handler, AF_INET);
+ 	xfrm6_tunnel_deregister(&xfrm6_tunnel_handler, AF_INET6);
+ 	xfrm_unregister_type(&xfrm6_tunnel_type, AF_INET6);
++	xfrm6_tunnel_spi_fini();
+ }
+ 
+ module_init(xfrm6_tunnel_init);
 
 
