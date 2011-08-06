@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092Ab1HFJX1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 05:23:27 -0400
-Received: from www17.your-server.de ([213.133.104.17]:34196 "EHLO
+	id S1754383Ab1HFJ3o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 05:29:44 -0400
+Received: from www17.your-server.de ([213.133.104.17]:47314 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127Ab1HFJXZ (ORCPT
+	with ESMTP id S1752127Ab1HFJ3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 05:23:25 -0400
-Subject: [PATCH] [SCSI] aic7xxx: use kstrdup()
+	Sat, 6 Aug 2011 05:29:42 -0400
+Subject: [PATCH] arm: mach-omap2: mux: use kstrdup()
 From: Thomas Meyer <thomas@m3y3r.de>
-To: hare@suse.de, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Date: Sat, 06 Aug 2011 11:22:53 +0200
+To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sat, 06 Aug 2011 11:29:10 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
 Content-Transfer-Encoding: 7bit
-Message-ID: <1312622577.5589.63.camel@localhost.localdomain>
+Message-ID: <1312622953.5589.65.camel@localhost.localdomain>
 Mime-Version: 1.0
 X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,20 +34,49 @@ From: Thomas Meyer <thomas@m3y3r.de>
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/scsi/aic7xxx/aic79xx_osm_pci.c b/drivers/scsi/aic7xxx/aic79xx_osm_pci.c
---- a/drivers/scsi/aic7xxx/aic79xx_osm_pci.c 2010-09-13 07:01:17.520528007 +0200
-+++ b/drivers/scsi/aic7xxx/aic79xx_osm_pci.c 2011-08-01 21:15:58.925094946 +0200
-@@ -178,10 +178,9 @@ ahd_linux_pci_dev_probe(struct pci_dev *
- 		ahd_get_pci_bus(pci),
- 		ahd_get_pci_slot(pci),
- 		ahd_get_pci_function(pci));
--	name = kmalloc(strlen(buf) + 1, GFP_ATOMIC);
-+	name = kstrdup(buf, GFP_ATOMIC);
- 	if (name == NULL)
- 		return (-ENOMEM);
--	strcpy(name, buf);
- 	ahd = ahd_alloc(NULL, name);
- 	if (ahd == NULL)
- 		return (-ENOMEM);
+diff -u -p a/arch/arm/mach-omap2/mux.c b/arch/arm/mach-omap2/mux.c
+--- a/arch/arm/mach-omap2/mux.c 2011-06-10 21:39:11.837703903 +0200
++++ b/arch/arm/mach-omap2/mux.c 2011-08-01 21:25:41.888603428 +0200
+@@ -821,11 +821,10 @@ static void __init omap_mux_set_cmdline_
+ 	if (!omap_mux_options)
+ 		return;
+ 
+-	options = kmalloc(strlen(omap_mux_options) + 1, GFP_KERNEL);
++	options = kstrdup(omap_mux_options, GFP_KERNEL);
+ 	if (!options)
+ 		return;
+ 
+-	strcpy(options, omap_mux_options);
+ 	next_opt = options;
+ 
+ 	while ((token = strsep(&next_opt, ",")) != NULL) {
+@@ -855,24 +854,19 @@ static int __init omap_mux_copy_names(st
+ 
+ 	for (i = 0; i < OMAP_MUX_NR_MODES; i++) {
+ 		if (src->muxnames[i]) {
+-			dst->muxnames[i] =
+-				kmalloc(strlen(src->muxnames[i]) + 1,
+-					GFP_KERNEL);
++			dst->muxnames[i] = kstrdup(src->muxnames[i],
++						   GFP_KERNEL);
+ 			if (!dst->muxnames[i])
+ 				goto free;
+-			strcpy(dst->muxnames[i], src->muxnames[i]);
+ 		}
+ 	}
+ 
+ #ifdef CONFIG_DEBUG_FS
+ 	for (i = 0; i < OMAP_MUX_NR_SIDES; i++) {
+ 		if (src->balls[i]) {
+-			dst->balls[i] =
+-				kmalloc(strlen(src->balls[i]) + 1,
+-					GFP_KERNEL);
++			dst->balls[i] = kstrdup(src->balls[i], GFP_KERNEL);
+ 			if (!dst->balls[i])
+ 				goto free;
+-			strcpy(dst->balls[i], src->balls[i]);
+ 		}
+ 	}
+ #endif
 
 
