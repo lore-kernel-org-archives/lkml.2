@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab1HFALG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:11:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39481 "EHLO mx2.suse.de"
+	id S932349Ab1HFAT4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:19:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39491 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932221Ab1HFAK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:10:59 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:13 2011
-Message-Id: <20110806000413.577334468@clark.kroah.org>
+	id S932249Ab1HFALC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:11:02 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:11 2011
+Message-Id: <20110806000411.737803061@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:03:38 -0700
+Date: Fri, 05 Aug 2011 17:03:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [20/50] USB: dummy-hcd needs the has_tt flag
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [02/50] [media] v4l2-ioctl.c: prefill tuner type for g_frequency and g/s_tuner
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit c5c69f3f0dcf9b569c8f3ad67f3af92cfcedac43 upstream.
+commit 227690df75382e46a4f6ea1bbc5df855a674b47f upstream.
 
-Like with other host controllers capable of operating at both high
-speed and full speed, we need to indicate that the emulated controller
-presented by dummy-hcd has this ability.  Otherwise usbcore will not
-accept full-speed gadgets under dummy-hcd.  This patch (as1469) sets
-the appropriate has_tt flag.
+The subdevs are supposed to receive a valid tuner type for the g_frequency
+and g/s_tuner subdev ops. Some drivers do this, others don't. So prefill
+this in v4l2-ioctl.c based on whether the device node from which this is
+called is a radio node or not.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+The spec does not require applications to fill in the type, and if they
+leave it at 0 then the 'check_mode' call in tuner-core.c will return
+an error and the ioctl does nothing.
+
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/gadget/dummy_hcd.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/media/video/v4l2-ioctl.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/gadget/dummy_hcd.c
-+++ b/drivers/usb/gadget/dummy_hcd.c
-@@ -1886,6 +1886,7 @@ static int dummy_hcd_probe(struct platfo
- 	if (!hcd)
- 		return -ENOMEM;
- 	the_controller = hcd_to_dummy (hcd);
-+	hcd->has_tt = 1;
+--- a/drivers/media/video/v4l2-ioctl.c
++++ b/drivers/media/video/v4l2-ioctl.c
+@@ -1632,6 +1632,8 @@ static long __video_do_ioctl(struct file
+ 		if (!ops->vidioc_g_tuner)
+ 			break;
  
- 	retval = usb_add_hcd(hcd, 0, 0);
- 	if (retval != 0) {
++		p->type = (vfd->vfl_type == VFL_TYPE_RADIO) ?
++			V4L2_TUNER_RADIO : V4L2_TUNER_ANALOG_TV;
+ 		ret = ops->vidioc_g_tuner(file, fh, p);
+ 		if (!ret)
+ 			dbgarg(cmd, "index=%d, name=%s, type=%d, "
+@@ -1650,6 +1652,8 @@ static long __video_do_ioctl(struct file
+ 
+ 		if (!ops->vidioc_s_tuner)
+ 			break;
++		p->type = (vfd->vfl_type == VFL_TYPE_RADIO) ?
++			V4L2_TUNER_RADIO : V4L2_TUNER_ANALOG_TV;
+ 		dbgarg(cmd, "index=%d, name=%s, type=%d, "
+ 				"capability=0x%x, rangelow=%d, "
+ 				"rangehigh=%d, signal=%d, afc=%d, "
+@@ -1668,6 +1672,8 @@ static long __video_do_ioctl(struct file
+ 		if (!ops->vidioc_g_frequency)
+ 			break;
+ 
++		p->type = (vfd->vfl_type == VFL_TYPE_RADIO) ?
++			V4L2_TUNER_RADIO : V4L2_TUNER_ANALOG_TV;
+ 		ret = ops->vidioc_g_frequency(file, fh, p);
+ 		if (!ret)
+ 			dbgarg(cmd, "tuner=%d, type=%d, frequency=%d\n",
 
 
