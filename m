@@ -1,123 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305Ab1HFAXG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:23:06 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:45194 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757307Ab1HFAKT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:10:19 -0400
-Date: Sat, 6 Aug 2011 08:10:04 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <mgalbraith@suse.de>,
-        Luis Claudio =?utf-8?B?Ui4gR29u77+9YWx2ZXM=?= 
-	<lgoncalv@redhat.com>,
-        Matthew Hank Sabins <msabins@linux.vnet.ibm.com>,
-        Gregory Haskins <gregory.haskins@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH V2] sched/cpupri: Remove cpupri->pri_active
-Message-ID: <20110806001004.GA2207@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1312317372.18583.101.camel@gandalf.stny.rr.com>
- <20110805082008.GA6628@zhy>
- <1312547447.18583.195.camel@gandalf.stny.rr.com>
- <20110805143822.GA3199@zhy>
- <1312558000.18583.201.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1312558000.18583.201.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757384Ab1HFAXY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:23:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39370 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757339Ab1HFAKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:10:15 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:52 2011
+Message-Id: <20110806000252.282524103@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Fri, 05 Aug 2011 17:02:04 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Christian Zankel <chris@zankel.net>, Oleg Nesterov <oleg@redhat.com>
+Subject: [34/55] xtensa: prevent arbitrary read in ptrace
+In-Reply-To: <20110806000257.GA25498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 05, 2011 at 11:26:40AM -0400, Steven Rostedt wrote:
-> On Fri, 2011-08-05 at 22:38 +0800, Yong Zhang wrote:
-> 
-> > Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> > ---
-> >  kernel/sched_cpupri.c |    3 ---
-> >  kernel/sched_cpupri.h |    2 --
-> >  2 files changed, 0 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/kernel/sched_cpupri.c b/kernel/sched_cpupri.c
-> > index 90faffd..5839559 100644
-> > --- a/kernel/sched_cpupri.c
-> > +++ b/kernel/sched_cpupri.c
-> > @@ -151,9 +151,6 @@ void cpupri_set(struct cpupri *cp, int cpu, int newpri)
-> >  	/*
-> >  	 * If the cpu was currently mapped to a different value, we
-> >  	 * need to map it to the new value then remove the old value.
-> > -	 * Note, we must add the new value first, otherwise we risk the
-> > -	 * cpu being cleared from pri_active, and this cpu could be
-> > -	 * missed for a push or pull.
-> 
-> Actually, the above still holds true, just not for pri_active. Probably
-> should be changed to:
-> 
-> 	* Note, we must add the new value first, otherwise we risk the
-> 	* cpu being missed by the priority loop in cpupri_find.
-> 
-> or something as such.
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-Updated.
+------------------
 
-Thanks,
-Yong
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+
+commit 0d0138ebe24b94065580bd2601f8bb7eb6152f56 upstream.
+
+Prevent an arbitrary kernel read.  Check the user pointer with access_ok()
+before copying data in.
+
+[akpm@linux-foundation.org: s/EIO/EFAULT/]
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: Christian Zankel <chris@zankel.net>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
-From: Yong Zhang <yong.zhang0@gmail.com>
-Subject: [PATCH V2] sched/cpupri: Remove cpupri->pri_active
+ arch/xtensa/kernel/ptrace.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Since [sched/cpupri: Remove the vec->lock], member pri_active
-of struct cpupri is not needed any more, just remove it. Also
-clean stuff related to it.
+--- a/arch/xtensa/kernel/ptrace.c
++++ b/arch/xtensa/kernel/ptrace.c
+@@ -136,6 +136,9 @@ int ptrace_setxregs(struct task_struct *
+ 	elf_xtregs_t *xtregs = uregs;
+ 	int ret = 0;
+ 
++	if (!access_ok(VERIFY_READ, uregs, sizeof(elf_xtregs_t)))
++		return -EFAULT;
++
+ #if XTENSA_HAVE_COPROCESSORS
+ 	/* Flush all coprocessors before we overwrite them. */
+ 	coprocessor_flush_all(ti);
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
----
- kernel/sched_cpupri.c |    3 +--
- kernel/sched_cpupri.h |    2 --
- 2 files changed, 1 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/sched_cpupri.c b/kernel/sched_cpupri.c
-index 90faffd..a86cf9d 100644
---- a/kernel/sched_cpupri.c
-+++ b/kernel/sched_cpupri.c
-@@ -152,8 +152,7 @@ void cpupri_set(struct cpupri *cp, int cpu, int newpri)
- 	 * If the cpu was currently mapped to a different value, we
- 	 * need to map it to the new value then remove the old value.
- 	 * Note, we must add the new value first, otherwise we risk the
--	 * cpu being cleared from pri_active, and this cpu could be
--	 * missed for a push or pull.
-+	 * cpu being missed by the priority loop in cpupri_find.
- 	 */
- 	if (likely(newpri != CPUPRI_INVALID)) {
- 		struct cpupri_vec *vec = &cp->pri_to_cpu[newpri];
-diff --git a/kernel/sched_cpupri.h b/kernel/sched_cpupri.h
-index 6b4cd17..f6d7561 100644
---- a/kernel/sched_cpupri.h
-+++ b/kernel/sched_cpupri.h
-@@ -4,7 +4,6 @@
- #include <linux/sched.h>
- 
- #define CPUPRI_NR_PRIORITIES	(MAX_RT_PRIO + 2)
--#define CPUPRI_NR_PRI_WORDS	BITS_TO_LONGS(CPUPRI_NR_PRIORITIES)
- 
- #define CPUPRI_INVALID -1
- #define CPUPRI_IDLE     0
-@@ -18,7 +17,6 @@ struct cpupri_vec {
- 
- struct cpupri {
- 	struct cpupri_vec pri_to_cpu[CPUPRI_NR_PRIORITIES];
--	long              pri_active[CPUPRI_NR_PRI_WORDS];
- 	int               cpu_to_pri[NR_CPUS];
- };
- 
--- 
-1.7.1
 
