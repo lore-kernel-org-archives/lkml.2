@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757065Ab1HFAH7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:07:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38988 "EHLO mx2.suse.de"
+	id S1757124Ab1HFAIR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:08:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39026 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757047Ab1HFAH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:07:57 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:51 2011
-Message-Id: <20110806000251.278034749@clark.kroah.org>
+	id S1757105Ab1HFAIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:08:13 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:49 2011
+Message-Id: <20110806000249.261475812@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:01:54 -0700
+Date: Fri, 05 Aug 2011 17:01:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Luben Tuikov <ltuikov@yahoo.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [24/55] [SCSI] libsas: remove expander from dev list on error
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [04/55] [media] bttv: fix s_tuner for radio
 In-Reply-To: <20110806000257.GA25498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luben Tuikov <ltuikov@yahoo.com>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit 5911e963d3718e306bcac387b83e259aa4228896 upstream.
+commit a024c1a6b274e11596d124619e43c25560f64c01 upstream.
 
-If expander discovery fails (sas_discover_expander()), remove the
-expander from the port device list (sas_ex_discover_expander()),
-before freeing it. Else the list is corrupted and, e.g., when we
-attempt to send SMP commands to other devices, the kernel oopses.
+Fix typo: g_tuner should have been s_tuner.
 
-Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
-Reviewed-by: Jack Wang <jack_wang@usish.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Tested with a bttv card.
+
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/libsas/sas_expander.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/media/video/bt8xx/bttv-driver.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/libsas/sas_expander.c
-+++ b/drivers/scsi/libsas/sas_expander.c
-@@ -840,6 +840,9 @@ static struct domain_device *sas_ex_disc
+--- a/drivers/media/video/bt8xx/bttv-driver.c
++++ b/drivers/media/video/bt8xx/bttv-driver.c
+@@ -3532,7 +3532,7 @@ static int radio_s_tuner(struct file *fi
+ 	if (0 != t->index)
+ 		return -EINVAL;
  
- 	res = sas_discover_expander(child);
- 	if (res) {
-+		spin_lock_irq(&parent->port->dev_list_lock);
-+		list_del(&child->dev_list_node);
-+		spin_unlock_irq(&parent->port->dev_list_lock);
- 		kfree(child);
- 		return NULL;
- 	}
+-	bttv_call_all(btv, tuner, g_tuner, t);
++	bttv_call_all(btv, tuner, s_tuner, t);
+ 	return 0;
+ }
+ 
 
 
