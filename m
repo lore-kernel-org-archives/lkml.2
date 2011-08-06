@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757336Ab1HFAKJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:10:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39340 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757325Ab1HFAKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:10:05 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:52 2011
-Message-Id: <20110806000251.978851298@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:02:01 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anton Blanchard <anton@samba.org>, Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [31/55] powerpc/kdump: Fix timeout in crash_kexec_wait_realmode
-In-Reply-To: <20110806000257.GA25498@kroah.com>
+	id S932177Ab1HFAK2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:10:28 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:55857 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932151Ab1HFAKX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:10:23 -0400
+Date: Sat, 6 Aug 2011 08:09:32 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Fenghua Yu <fenghua.yu@intel.com>, Matt Mackall <mpm@selenic.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jeff Garzik <jgarzik@pobox.com>,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH v3 0/3] Add support for architectural random number
+	generator
+Message-ID: <20110806000932.GA12778@gondor.apana.org.au>
+References: <CA+55aFy5iRjCigmK-eddkP8Wqy_qFDZRd6PV5d0XFE3p8ws1Bg@mail.gmail.com> <1312147616-29125-1-git-send-email-hpa@zytor.com> <20110805120033.GA3967@gondor.apana.org.au> <4E3C1A21.1070105@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E3C1A21.1070105@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+On Fri, Aug 05, 2011 at 09:28:17AM -0700, H. Peter Anvin wrote:
+> On 08/05/2011 05:00 AM, Herbert Xu wrote:
+> >>
+> >> Git tree also available:
+> >>
+> >> git://git.kernel.org/pub/scm/linux/kernel/git/hpa/linux-rdrand.git rdrand-3
+> >>
+> >> Again, for technical documentation see:
+> >>
+> >> http://software.intel.com/en-us/articles/download-the-latest-bull-mountain-software-implementation-guide/
+> > 
+> > FWIW these patches look good to me and I'm happy to take them
+> > if Linus doesn't merge them directly.
+> > 
+> 
+> Thanks.  I have put them in -tip as well:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-tip.git x86/rdrand
 
-------------------
+That works for me.
 
-From: Michael Neuling <mikey@neuling.org>
-
-commit 63f21a56f1cc0b800a4c00349c59448f82473d19 upstream.
-
-The existing code it pretty ugly.  How about we clean it up even more
-like this?
-
-From: Anton Blanchard <anton@samba.org>
-
-We check for timeout expiry in the outer loop, but we also need to
-check it in the inner loop or we can lock up forever waiting for a
-CPU to hit real mode.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/powerpc/kernel/crash.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
-
---- a/arch/powerpc/kernel/crash.c
-+++ b/arch/powerpc/kernel/crash.c
-@@ -176,12 +176,8 @@ static void crash_kexec_wait_realmode(in
- 
- 		while (paca[i].kexec_state < KEXEC_STATE_REAL_MODE) {
- 			barrier();
--			if (!cpu_possible(i)) {
-+			if (!cpu_possible(i) || !cpu_online(i) || (msecs <= 0))
- 				break;
--			}
--			if (!cpu_online(i)) {
--				break;
--			}
- 			msecs--;
- 			mdelay(1);
- 		}
-
-
+Thanks!
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
