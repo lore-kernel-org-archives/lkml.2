@@ -1,98 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504Ab1HFXWQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 19:22:16 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41547 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753772Ab1HFXWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 19:22:13 -0400
-Date: Sat, 6 Aug 2011 23:22:03 GMT
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
-Message-ID: <tip-9387f774d61b01ab71bade85e6d0bfab0b3419bd@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, borislav.petkov@amd.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, borislav.petkov@amd.com
-In-Reply-To: <1312633899-1131-1-git-send-email-bp@amd64.org>
-References: <1312633899-1131-1-git-send-email-bp@amd64.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86-32, amd: Move va_align definition to unbreak 32-bit build
-Git-Commit-ID: 9387f774d61b01ab71bade85e6d0bfab0b3419bd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1756589Ab1HFXcJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 19:32:09 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64327 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753813Ab1HFXcD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Aug 2011 19:32:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 06 Aug 2011 23:22:04 +0000 (UTC)
+In-Reply-To: <493994B35A117E4F832F97C4719C4C040132C5FB69@orsmsx505.amr.corp.intel.com>
+References: <cover.1312630712.git.luto@mit.edu> <9a8f28ccbe44cd323a01e9a23b531cb869185a21.1312630712.git.luto@mit.edu>
+ <493994B35A117E4F832F97C4719C4C040132C5FB69@orsmsx505.amr.corp.intel.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Sat, 6 Aug 2011 19:31:39 -0400
+X-Google-Sender-Auth: DQ0Gqg_-ISDXI4vCGRJqac9Y1l4
+Message-ID: <CAObL_7F2+eXTPo7a631Lh7GD_UpDQXgW_GSDp9Km7pwhwmM6Cw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] x86: Enable fast strings on Intel if BIOS hasn't already
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+Cc: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9387f774d61b01ab71bade85e6d0bfab0b3419bd
-Gitweb:     http://git.kernel.org/tip/9387f774d61b01ab71bade85e6d0bfab0b3419bd
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Sat, 6 Aug 2011 14:31:38 +0200
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Sat, 6 Aug 2011 11:44:57 -0700
+On Sat, Aug 6, 2011 at 3:33 PM, Yu, Fenghua <fenghua.yu@intel.com> wrote:
+>> -----Original Message-----
+>> From: Andy Lutomirski [mailto:luto@MIT.EDU]
+>> Sent: Saturday, August 06, 2011 4:43 AM
+>> To: x86@kernel.org; linux-kernel@vger.kernel.org
+>> Cc: Yu, Fenghua; Matthew Garrett; Len Brown; linux-
+>> acpi@vger.kernel.org; Ingo Molnar; Andy Lutomirski
+>> Subject: [PATCH v2 1/2] x86: Enable fast strings on Intel if BIOS
+>> hasn't already
+>>
+>> Intel SDM volume 3A, 8.4.2 says:
+>>
+>>   Software can disable fast-string operation by clearing the
+>>   fast-string-enable bit (bit 0) of IA32_MISC_ENABLE MSR.
+>>   However, Intel recomments that system software always enable
+>>   fast-string operation.
+>>
+>> The Intel DQ67SW board (with latest BIOS) disables fast string
+>> operations if TXT is enabled.  A Lenovo X220 disables it regardless
+>> of TXT setting.  I doubt I'm the only person with a dumb BIOS like
+>> this.
+>>
+>> Signed-off-by: Andy Lutomirski <luto@mit.edu>
+>> ---
+>>  arch/x86/kernel/cpu/intel.c |   25 ++++++++++++++++++++++---
+>>  1 files changed, 22 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+>> index ed6086e..c80ab41 100644
+>> --- a/arch/x86/kernel/cpu/intel.c
+>> +++ b/arch/x86/kernel/cpu/intel.c
+>> @@ -30,6 +30,7 @@
+>>  static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+>>  {
+>>       u64 misc_enable;
+>> +     bool allow_fast_string = true;
+>>
+>>       /* Unmask CPUID levels if masked: */
+>>       if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
+>> @@ -118,8 +119,9 @@ static void __cpuinit early_init_intel(struct
+>> cpuinfo_x86 *c)
+>>        * (model 2) with the same problem.
+>>        */
+>>       if (c->x86 == 15) {
+>> -             rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+>> +             allow_fast_string = false;
+>>
+>> +             rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+>>               if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING) {
+>>                       printk(KERN_INFO "kmemcheck: Disabling fast string
+>> operations\n");
+>>
+>> @@ -130,11 +132,28 @@ static void __cpuinit early_init_intel(struct
+>> cpuinfo_x86 *c)
+>>  #endif
+>>
+>>       /*
+>> -      * If fast string is not enabled in IA32_MISC_ENABLE for any
+>> reason,
+>> -      * clear the fast string and enhanced fast string CPU
+>> capabilities.
+>> +      * If BIOS didn't enable fast string operation, try to enable
+>> +      * it ourselves.  If that fails, then clear the fast string
+>> +      * and enhanced fast string CPU capabilities.
+>>        */
+>>       if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
+>>               rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+>> +
+>> +             if (allow_fast_string &&
+>> +                 !(misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)) {
+>> +                     misc_enable |= MSR_IA32_MISC_ENABLE_FAST_STRING;
+>> +                     wrmsr_safe(MSR_IA32_MISC_ENABLE, (u32)misc_enable,
+>> +                                (u32)(misc_enable >> 32));
+>> +
+>> +                     /* Re-read to make sure it stuck. */
+>> +                     rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+>> +
+>> +                     if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)
+>> +                             printk(KERN_WARNING FW_WARN "CPU #%d: "
+>> +                                    "IA32_MISC_ENABLE.FAST_STRING_ENABLE "
+>> +                                    "was not set", c->cpu_index);
+> This printk is redundant because the same info is dumped in the below printk. Plus it's not firmware's issue if we can not set fast string bit 0 in MISC_ENABLE register. So I don't think FW_WARN is right.
 
-x86-32, amd: Move va_align definition to unbreak 32-bit build
+Huh?  This is the success path -- the patch prints the warning if
+flipping the bit worked...
 
-hpa reported that dfb09f9b7ab03fd367740e541a5caf830ed56726 breaks 32-bit
-builds with the following error message:
+>
+> I would suggest to remove this printk (and the if () statement) and change KERN_INFO to KERN_WARNING in the following printk.
+>
+>> +             }
+>> +
+>>               if (!(misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)) {
+>>                       printk(KERN_INFO "Disabled fast string
+>> operations\n");
+>>                       setup_clear_cpu_cap(X86_FEATURE_REP_GOOD);
 
-/home/hpa/kernel/linux-tip.cpu/arch/x86/kernel/cpu/amd.c:437: undefined
-reference to `va_align'
-/home/hpa/kernel/linux-tip.cpu/arch/x86/kernel/cpu/amd.c:436: undefined
-reference to `va_align'
+...and this (which could be more clear) is displayed if flipping the
+bit did not work, in which case the problem isn't BIOS's fault.
 
-This is due to the fact that va_align is a global in a 64-bit only
-compilation unit. Move it to mmap.c where it is visible to both
-subarches.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Link: http://lkml.kernel.org/r/1312633899-1131-1-git-send-email-bp@amd64.org
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/sys_x86_64.c |    4 ----
- arch/x86/mm/mmap.c           |    5 ++++-
- 2 files changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
-index aaa8d09..fe7d2da 100644
---- a/arch/x86/kernel/sys_x86_64.c
-+++ b/arch/x86/kernel/sys_x86_64.c
-@@ -18,10 +18,6 @@
- #include <asm/ia32.h>
- #include <asm/syscalls.h>
- 
--struct __read_mostly va_alignment va_align = {
--	.flags = -1,
--};
--
- /*
-  * Align a virtual address to avoid aliasing in the I$ on AMD F15h.
-  *
-diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-index d4c0736..4b5ba85 100644
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -31,6 +31,10 @@
- #include <linux/sched.h>
- #include <asm/elf.h>
- 
-+struct __read_mostly va_alignment va_align = {
-+	.flags = -1,
-+};
-+
- static unsigned int stack_maxrandom_size(void)
- {
- 	unsigned int max = 0;
-@@ -42,7 +46,6 @@ static unsigned int stack_maxrandom_size(void)
- 	return max;
- }
- 
--
- /*
-  * Top of mmap area (just below the process stack).
-  *
+--Andy
