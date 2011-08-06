@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab1HFAJC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:09:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39133 "EHLO mx2.suse.de"
+	id S1757209Ab1HFAJI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:09:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39150 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757156Ab1HFAI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:08:57 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:52 2011
-Message-Id: <20110806000252.887106427@clark.kroah.org>
+	id S1757197Ab1HFAJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:09:02 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:53 2011
+Message-Id: <20110806000252.991881842@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:02:10 -0700
+Date: Fri, 05 Aug 2011 17:02:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Damien Wyart <damien.wyart@free.fr>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Simon Kirby <sim@hostway.ca>,
+        Borislav Petkov <bp@alien8.de>,
+        Andreas Herrmann <Andreas.Herrmann3@amd.com>,
+        John Stultz <johnstul@us.ibm.com>,
         Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: [40/55] x86: Hpet: Avoid the comparator readback penalty
+Subject: [41/55] x86: HPET: Chose a paranoid safe value for the ETIME check
 In-Reply-To: <20110806000257.GA25498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,112 +32,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Gleixner <tglx@linutronix.de>
 
-(imported from commit v2.6.36-rc4-167-g995bd3b)
+(imported from commit v2.6.37-rc5-64-gf1c1807)
 
-Due to the overly intelligent design of HPETs, we need to workaround
-the problem that the compare value which we write is already behind
-the actual counter value at the point where the value hits the real
-compare register. This happens for two reasons:
+commit 995bd3bb5 (x86: Hpet: Avoid the comparator readback penalty)
+chose 8 HPET cycles as a safe value for the ETIME check, as we had the
+confirmation that the posted write to the comparator register is
+delayed by two HPET clock cycles on Intel chipsets which showed
+readback problems.
 
-1) We read out the counter, add the delta and write the result to the
-   compare register. When a NMI or SMI hits between the read out and
-   the write then the counter can be ahead of the event already
+After that patch hit mainline we got reports from machines with newer
+AMD chipsets which seem to have an even longer delay. See
+http://thread.gmane.org/gmane.linux.kernel/1054283 and
+http://thread.gmane.org/gmane.linux.kernel/1069458 for further
+information.
 
-2) The write to the compare register is delayed by up to two HPET
-   cycles in certain chipsets.
+Boris tried to come up with an ACPI based selection of the minimum
+HPET cycles, but this failed on a couple of test machines. And of
+course we did not get any useful information from the hardware folks.
 
-We worked around this by reading back the compare register to make
-sure that the written value has hit the hardware. For certain ICH9+
-chipsets this can require two readouts, as the first one can return
-the previous compare register value. That's bad performance wise for
-the normal case where the event is far enough in the future.
+For now our only option is to chose a paranoid high and safe value for
+the minimum HPET cycles used by the ETIME check. Adjust the minimum ns
+value for the HPET clockevent accordingly.
 
-As we already know that the write can be delayed by up to two cycles
-we can avoid the read back of the compare register completely if we
-make the decision whether the delta has elapsed already or not based
-on the following calculation:
-
-  cmp = event - actual_count;
-
-If cmp is less than 8 HPET clock cycles, then we decide that the event
-has happened already and return -ETIME. That covers the above #1 and
-#2 problems which would cause a wait for HPET wraparound (~306
-seconds).
-
+Reported-Bistected-and-Tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Tested-by: Nix <nix@esperi.org.uk>
-Tested-by: Artur Skawina <art.08.09@gmail.com>
-Cc: Damien Wyart <damien.wyart@free.fr>
-Tested-by: John Drescher <drescherjm@gmail.com>
-Cc: Venkatesh Pallipadi <venki@google.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
-Tested-by: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <alpine.LFD.2.00.1009151500060.2416@localhost6.localdomain6>
+LKML-Reference: <alpine.LFD.2.00.1012131222420.2653@localhost6.localdomain6>
+Cc: Simon Kirby <sim@hostway.ca>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Andreas Herrmann <Andreas.Herrmann3@amd.com>
+Cc: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/x86/kernel/hpet.c |   43 +++++++++++++++++++++----------------------
- 1 file changed, 21 insertions(+), 22 deletions(-)
+ arch/x86/kernel/hpet.c |   26 ++++++++++++++++----------
+ 1 file changed, 16 insertions(+), 10 deletions(-)
 
 --- a/arch/x86/kernel/hpet.c
 +++ b/arch/x86/kernel/hpet.c
-@@ -379,36 +379,35 @@ static int hpet_next_event(unsigned long
- 			   struct clock_event_device *evt, int timer)
- {
- 	u32 cnt;
-+	s32 res;
+@@ -27,6 +27,9 @@
+ #define HPET_DEV_FSB_CAP		0x1000
+ #define HPET_DEV_PERI_CAP		0x2000
  
- 	cnt = hpet_readl(HPET_COUNTER);
- 	cnt += (u32) delta;
- 	hpet_writel(cnt, HPET_Tn_CMP(timer));
++#define HPET_MIN_CYCLES			128
++#define HPET_MIN_PROG_DELTA		(HPET_MIN_CYCLES + (HPET_MIN_CYCLES >> 1))
++
+ #define EVT_TO_HPET_DEV(evt) container_of(evt, struct hpet_dev, evt)
+ 
+ /*
+@@ -298,8 +301,9 @@ static void hpet_legacy_clockevent_regis
+ 	/* Calculate the min / max delta */
+ 	hpet_clockevent.max_delta_ns = clockevent_delta2ns(0x7FFFFFFF,
+ 							   &hpet_clockevent);
+-	/* 5 usec minimum reprogramming delta. */
+-	hpet_clockevent.min_delta_ns = 5000;
++	/* Setup minimum reprogramming delta. */
++	hpet_clockevent.min_delta_ns = clockevent_delta2ns(HPET_MIN_PROG_DELTA,
++							   &hpet_clockevent);
  
  	/*
--	 * We need to read back the CMP register on certain HPET
--	 * implementations (ATI chipsets) which seem to delay the
--	 * transfer of the compare register into the internal compare
--	 * logic. With small deltas this might actually be too late as
--	 * the counter could already be higher than the compare value
--	 * at that point and we would wait for the next hpet interrupt
--	 * forever. We found out that reading the CMP register back
--	 * forces the transfer so we can rely on the comparison with
--	 * the counter register below. If the read back from the
--	 * compare register does not match the value we programmed
--	 * then we might have a real hardware problem. We can not do
--	 * much about it here, but at least alert the user/admin with
--	 * a prominent warning.
--	 * An erratum on some chipsets (ICH9,..), results in comparator read
--	 * immediately following a write returning old value. Workaround
--	 * for this is to read this value second time, when first
--	 * read returns old value.
-+	 * HPETs are a complete disaster. The compare register is
-+	 * based on a equal comparison and neither provides a less
-+	 * than or equal functionality (which would require to take
-+	 * the wraparound into account) nor a simple count down event
-+	 * mode. Further the write to the comparator register is
-+	 * delayed internally up to two HPET clock cycles in certain
-+	 * chipsets (ATI, ICH9,10). We worked around that by reading
-+	 * back the compare register, but that required another
-+	 * workaround for ICH9,10 chips where the first readout after
-+	 * write can return the old stale value. We already have a
-+	 * minimum delta of 5us enforced, but a NMI or SMI hitting
-+	 * between the counter readout and the comparator write can
-+	 * move us behind that point easily. Now instead of reading
-+	 * the compare register back several times, we make the ETIME
-+	 * decision based on the following: Return ETIME if the
-+	 * counter value after the write is less than 8 HPET cycles
-+	 * away from the event or if the counter is already ahead of
-+	 * the event.
+ 	 * Start hpet with the boot cpu mask and make it
+@@ -392,22 +396,24 @@ static int hpet_next_event(unsigned long
+ 	 * the wraparound into account) nor a simple count down event
+ 	 * mode. Further the write to the comparator register is
+ 	 * delayed internally up to two HPET clock cycles in certain
+-	 * chipsets (ATI, ICH9,10). We worked around that by reading
+-	 * back the compare register, but that required another
+-	 * workaround for ICH9,10 chips where the first readout after
+-	 * write can return the old stale value. We already have a
+-	 * minimum delta of 5us enforced, but a NMI or SMI hitting
++	 * chipsets (ATI, ICH9,10). Some newer AMD chipsets have even
++	 * longer delays. We worked around that by reading back the
++	 * compare register, but that required another workaround for
++	 * ICH9,10 chips where the first readout after write can
++	 * return the old stale value. We already had a minimum
++	 * programming delta of 5us enforced, but a NMI or SMI hitting
+ 	 * between the counter readout and the comparator write can
+ 	 * move us behind that point easily. Now instead of reading
+ 	 * the compare register back several times, we make the ETIME
+ 	 * decision based on the following: Return ETIME if the
+-	 * counter value after the write is less than 8 HPET cycles
++	 * counter value after the write is less than HPET_MIN_CYCLES
+ 	 * away from the event or if the counter is already ahead of
+-	 * the event.
++	 * the event. The minimum programming delta for the generic
++	 * clockevents code is set to 1.5 * HPET_MIN_CYCLES.
  	 */
--	if (unlikely((u32)hpet_readl(HPET_Tn_CMP(timer)) != cnt)) {
--		WARN_ONCE((u32)hpet_readl(HPET_Tn_CMP(timer)) != cnt,
--		  KERN_WARNING "hpet: compare register read back failed.\n");
--	}
-+	res = (s32)(cnt - (u32)hpet_readl(HPET_COUNTER));
+ 	res = (s32)(cnt - (u32)hpet_readl(HPET_COUNTER));
  
--	return (s32)((u32)hpet_readl(HPET_COUNTER) - cnt) >= 0 ? -ETIME : 0;
-+	return res < 8 ? -ETIME : 0;
+-	return res < 8 ? -ETIME : 0;
++	return res < HPET_MIN_CYCLES ? -ETIME : 0;
  }
  
  static void hpet_legacy_set_mode(enum clock_event_mode mode,
