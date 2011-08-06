@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757222Ab1HFAJQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:09:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39177 "EHLO mx2.suse.de"
+	id S1757262Ab1HFAJb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:09:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39210 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757197Ab1HFAJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:09:09 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:53 2011
-Message-Id: <20110806000253.187960170@clark.kroah.org>
+	id S1757239Ab1HFAJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:09:23 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:51 2011
+Message-Id: <20110806000251.682788533@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:02:13 -0700
+Date: Fri, 05 Aug 2011 17:01:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>,
-        Moritz Muehlenhoff <jmm@debian.org>
-Subject: [43/55] cifs: clean up cifs_find_smb_ses (try #2)
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [28/55] [SCSI] fix crash in scsi_dispatch_cmd()
 In-Reply-To: <20110806000257.GA25498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,93 +25,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-commit 4ff67b720c02c36e54d55b88c2931879b7db1cd2 upstream.
+commit bfe159a51203c15d23cb3158fffdc25ec4b4dda1 upstream.
 
-This patch replaces the earlier patch by the same name. The only
-difference is that MAX_PASSWORD_SIZE has been increased to attempt to
-match the limits that windows enforces.
+USB surprise removal of sr is triggering an oops in
+scsi_dispatch_command().  What seems to be happening is that USB is
+hanging on to a queue reference until the last close of the upper
+device, so the crash is caused by surprise remove of a mounted CD
+followed by attempted unmount.
 
-Do a better job of matching sessions by authtype. Matching by username
-for a Kerberos session is incorrect, and anonymous sessions need special
-handling.
+The problem is that USB doesn't issue its final commands as part of
+the SCSI teardown path, but on last close when the block queue is long
+gone.  The long term fix is probably to make sr do the teardown in the
+same way as sd (so remove all the lower bits on ejection, but keep the
+upper disk alive until last close of user space).  However, the
+current oops can be simply fixed by not allowing any commands to be
+sent to a dead queue.
 
-Also, in the case where we do match by username, we also need to match
-by password. That ensures that someone else doesn't "borrow" an existing
-session without needing to know the password.
-
-Finally, passwords can be longer than 16 bytes. Bump MAX_PASSWORD_SIZE
-to 512 to match the size that the userspace mount helper allows.
-
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
-[dannf: backported to Debian's 2.6.32]
-Cc: Moritz Muehlenhoff <jmm@debian.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- fs/cifs/cifsglob.h |    2 +-
- fs/cifs/connect.c  |   26 ++++++++++++++++++--------
- 2 files changed, 19 insertions(+), 9 deletions(-)
+ block/blk-core.c        |    3 +++
+ block/blk-exec.c        |    7 +++++++
+ drivers/scsi/scsi_lib.c |    2 ++
+ 3 files changed, 12 insertions(+)
 
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -33,7 +33,7 @@
- #define MAX_SHARE_SIZE  64	/* used to be 20, this should still be enough */
- #define MAX_USERNAME_SIZE 32	/* 32 is to allow for 15 char names + null
- 				   termination then *2 for unicode versions */
--#define MAX_PASSWORD_SIZE 16
-+#define MAX_PASSWORD_SIZE 512  /* max for windows seems to be 256 wide chars */
- 
- #define CIFS_MIN_RCV_POOL 4
- 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -1588,17 +1588,27 @@ out_err:
- }
- 
- static struct cifsSesInfo *
--cifs_find_smb_ses(struct TCP_Server_Info *server, char *username)
-+cifs_find_smb_ses(struct TCP_Server_Info *server, struct smb_vol *vol)
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -865,6 +865,9 @@ struct request *blk_get_request(struct r
  {
--	struct list_head *tmp;
- 	struct cifsSesInfo *ses;
+ 	struct request *rq;
  
- 	write_lock(&cifs_tcp_ses_lock);
--	list_for_each(tmp, &server->smb_ses_list) {
--		ses = list_entry(tmp, struct cifsSesInfo, smb_ses_list);
--		if (strncmp(ses->userName, username, MAX_USERNAME_SIZE))
--			continue;
--
-+	list_for_each_entry(ses, &server->smb_ses_list, smb_ses_list) {
-+		switch (server->secType) {
-+		case Kerberos:
-+			if (vol->linux_uid != ses->linux_uid)
-+				continue;
-+			break;
-+		default:
-+			/* anything else takes username/password */
-+			if (strncmp(ses->userName, vol->username,
-+				    MAX_USERNAME_SIZE))
-+				continue;
-+			if (strlen(vol->username) != 0 &&
-+			    strncmp(ses->password, vol->password,
-+				    MAX_PASSWORD_SIZE))
-+				continue;
-+		}
- 		++ses->ses_count;
- 		write_unlock(&cifs_tcp_ses_lock);
- 		return ses;
-@@ -2362,7 +2372,7 @@ try_mount_again:
- 		goto out;
- 	}
++	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
++		return NULL;
++
+ 	BUG_ON(rw != READ && rw != WRITE);
  
--	pSesInfo = cifs_find_smb_ses(srvTcp, volume_info->username);
-+	pSesInfo = cifs_find_smb_ses(srvTcp, volume_info);
- 	if (pSesInfo) {
- 		cFYI(1, ("Existing smb sess found (status=%d)",
- 			pSesInfo->status));
+ 	spin_lock_irq(q->queue_lock);
+--- a/block/blk-exec.c
++++ b/block/blk-exec.c
+@@ -50,6 +50,13 @@ void blk_execute_rq_nowait(struct reques
+ {
+ 	int where = at_head ? ELEVATOR_INSERT_FRONT : ELEVATOR_INSERT_BACK;
+ 
++	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags))) {
++		rq->errors = -ENXIO;
++		if (rq->end_io)
++			rq->end_io(rq, rq->errors);
++		return;
++	}
++
+ 	rq->rq_disk = bd_disk;
+ 	rq->end_io = done;
+ 	WARN_ON(irqs_disabled());
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -215,6 +215,8 @@ int scsi_execute(struct scsi_device *sde
+ 	int ret = DRIVER_ERROR << 24;
+ 
+ 	req = blk_get_request(sdev->request_queue, write, __GFP_WAIT);
++	if (!req)
++		return ret;
+ 
+ 	if (bufflen &&	blk_rq_map_kern(sdev->request_queue, req,
+ 					buffer, bufflen, __GFP_WAIT))
 
 
