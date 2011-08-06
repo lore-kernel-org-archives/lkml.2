@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964808Ab1HFAMl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:12:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39785 "EHLO mx2.suse.de"
+	id S932504Ab1HFAM7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:12:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39842 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932476Ab1HFAMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:12:34 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:16 2011
-Message-Id: <20110806000416.417654651@clark.kroah.org>
+	id S932490Ab1HFAMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:12:55 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:15 2011
+Message-Id: <20110806000415.231907014@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:04:06 -0700
+Date: Fri, 05 Aug 2011 17:03:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [48/50] dm mpath: fix potential NULL pointer in feature arg processing
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, gnb@fmeh.org,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [36/50] svcrpc: fix list-corrupting race on nfsd shutdown
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 286f367dad40beb3234a18c17391d03ba939a7f3 upstream.
+commit ebc63e531cc6a457595dd110b07ac530eae788c3 upstream.
 
-Avoid dereferencing a NULL pointer if the number of feature arguments
-supplied is fewer than indicated.
+After commit 3262c816a3d7fb1eaabce633caa317887ed549ae "[PATCH] knfsd:
+split svc_serv into pools", svc_delete_xprt (then svc_delete_socket) no
+longer removed its xpt_ready (then sk_ready) field from whatever list it
+was on, noting that there was no point since the whole list was about to
+be destroyed anyway.
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+That was mostly true, but forgot that a few svc_xprt_enqueue()'s might
+still be hanging around playing with the about-to-be-destroyed list, and
+could get themselves into trouble writing to freed memory if we left
+this xprt on the list after freeing it.
+
+(This is actually functionally identical to a patch made first by Ben
+Greear, but with more comments.)
+
+Cc: gnb@fmeh.org
+Reported-by: Ben Greear <greearb@candelatech.com>
+Tested-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/dm-mpath.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ net/sunrpc/svc_xprt.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/md/dm-mpath.c
-+++ b/drivers/md/dm-mpath.c
-@@ -782,6 +782,11 @@ static int parse_features(struct arg_set
- 	if (!argc)
- 		return 0;
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -884,12 +884,13 @@ void svc_delete_xprt(struct svc_xprt *xp
+ 	if (!test_and_set_bit(XPT_DETACHED, &xprt->xpt_flags))
+ 		list_del_init(&xprt->xpt_list);
+ 	/*
+-	 * We used to delete the transport from whichever list
+-	 * it's sk_xprt.xpt_ready node was on, but we don't actually
+-	 * need to.  This is because the only time we're called
+-	 * while still attached to a queue, the queue itself
+-	 * is about to be destroyed (in svc_destroy).
++	 * The only time we're called while xpt_ready is still on a list
++	 * is while the list itself is about to be destroyed (in
++	 * svc_destroy).  BUT svc_xprt_enqueue could still be attempting
++	 * to add new entries to the sp_sockets list, so we can't leave
++	 * a freed xprt on it.
+ 	 */
++	list_del_init(&xprt->xpt_ready);
+ 	if (test_bit(XPT_TEMP, &xprt->xpt_flags))
+ 		serv->sv_tmpcnt--;
  
-+	if (argc > as->argc) {
-+		ti->error = "not enough arguments for features";
-+		return -EINVAL;
-+	}
-+
- 	do {
- 		param_name = shift(as);
- 		argc--;
 
 
