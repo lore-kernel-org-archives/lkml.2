@@ -1,325 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755742Ab1HFOjP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 10:39:15 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:53607 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753381Ab1HFOjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 10:39:08 -0400
-Date: Sat, 6 Aug 2011 09:39:05 -0500
-From: Jack Steiner <steiner@sgi.com>
-To: Yinghai Lu <yhlu.kernel@gmail.com>
-Cc: Robin Holt <holt@sgi.com>, Ingo Molnar <mingo@elte.hu>, tglx@linutronix.de,
-        davej@redhat.com, yinghan@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] x86: Reduce clock calibration time during slave cpu
-	startup
-Message-ID: <20110806143904.GB31552@sgi.com>
-References: <20110727135730.GA17717@sgi.com> <20110727140523.GA24206@redhat.com> <20110727141527.GA8453@sgi.com> <20110727155200.GA25381@redhat.com> <20110801184542.GA3939@sgi.com> <20110805104635.GB13055@elte.hu> <20110805131638.GA27779@sgi.com> <CAE9FiQWAmjTWGBLrqH9+_AH316Br-McW=PrSyiDWCtSYndL07w@mail.gmail.com>
+	id S1756048Ab1HFOkN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 10:40:13 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:44292 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754846Ab1HFOkJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Aug 2011 10:40:09 -0400
+Date: Sat, 6 Aug 2011 10:39:51 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Joe Jin <joe.jin@oracle.com>
+Cc: Daniel Stodden <daniel.stodden@citrix.com>,
+        Jens Axboe <jaxboe@fusionio.com>, Annie Li <annie.li@oracle.com>,
+        Ian Campbell <Ian.Campbell@eu.citrix.com>,
+        Kurt C Hackel <KURT.HACKEL@oracle.com>,
+        Greg Marsden <greg.marsden@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v3 1/3] xen-blkback: add remove_requested to xen_blkif
+ and some declares
+Message-ID: <20110806143950.GA29514@dumpdata.com>
+References: <4E3A486D.7060506@oracle.com>
+ <4E3A48FD.8060807@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQWAmjTWGBLrqH9+_AH316Br-McW=PrSyiDWCtSYndL07w@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <4E3A48FD.8060807@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4E3D523E.004C:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 05, 2011 at 05:21:39PM -0700, Yinghai Lu wrote:
-> On Fri, Aug 5, 2011 at 6:16 AM, Jack Steiner <steiner@sgi.com> wrote:
-> > Aside from the bogus comment (I'll send a V3 with a fixed comment), does the patch
-> > look ok.
+On Thu, Aug 04, 2011 at 03:23:41PM +0800, Joe Jin wrote:
 > 
-> Several months ago, Robin said that he will test updated version
-> 
-> [PATCH] x86: Make calibrate_delay run in parallel.
-> 
-> so any reason that you sgi guyes stop that path?
+> Add remove_requested to xen_blkif and some declares.
 
-I can take another look at Robin's patch. However, I though the one
-I posted was simpler & less likely to cause unexpected behavior.
+By itself this patch is a bit strange. If you look in
+Documentation/SubmittingPatches:
+"2) Describe your changes.
 
-I'll look in more detail on Monday.....
+Describe the technical detail of the change(s) your patch includes.
+"
+
+There is no really technical details. As in, why is this patch neccessary.
+
+That document also states:
+"3) Separate your changes.
+
+Separate _logical changes_ into a single patch file.
+
+For example, if your changes include both bug fixes and performance
+enhancements for a single driver, separate those changes into two
+or more patches.  If your changes include an API update, and a new
+driver which uses that new API, separate those into two patches."
 
 
+This patch by itself has no logical purpose - as in it does not fix a bug,
+or add a new feature - it just plops a new element in a structure, provides
+two function decleration of non-existing functions and a maccro that is not
+used.
 
-> 
-> Please check attached patch for updated version to current tip.
-> 
-> Thanks
-> 
-> Yinghai Lu
+Soo.  Looking at the three patches I believe some reshuffling ought to be done.
+If you recall my comments:
 
-> [PATCH -v4] x86: Make calibrate_delay run in parallel.
+
+        >  	case XenbusStateUnknown:
+        > -		/* implies blkif_disconnect() via blkback_remove() */
+        > +		/* implies xen_blkif_disconnect() via blkback_remove() */
+
+        Ok, that is not part of this patch. You should create another commit which
+        does this type of cleanup and
+        >  		device_unregister(&dev->dev);
+        >  		break;
+        >  
+        > @@ -620,6 +778,8 @@ static void frontend_changed(struct xenbus_device *dev,
+        >  				 frontend_state);
+        >  		break;
+        >  	}
+        > +
+        > +	DPRINTK("%s: %s", dev->nodename, xenbus_strstate(dev->state));
+
+        .. also for this.
+        >  }
+        >  
+
+I am not sure if it is not clear, but what I meant that those two changes
+(the comment rename and adding the DPRINKT) should be as a seperate
+patch. So take those changes from patch #3 out and make a new patch.
+
+Read on..
 > 
-> On a 4096 cpu machine, we noticed that 318 seconds were taken for bringing
-> up the cpus.  By specifying lpj=<value>, we reduced that to 75 seconds.
-> Andi Kleen suggested we rework the calibrate_delay calls to run in
-> parallel.
-> 
-> -v2: from Yinghai
->      two path: one for initial boot cpus. and one for hotplug cpus
-> 	initial path:
-> 	  after all cpu boot up, enter idle, use smp_call_function_many
-> 	  let every ap call __calibrate_delay.
->           We can not put that calibrate_delay after local_irq_enable
->           in start_secondary(), at that time that cpu could be involed
-> 	  with perf_event with nmi_watchdog enabling. that will cause
-> 	  strange calibrating result.
->         hotplug path:
-> 	  need to add cpu notify block.
->      add __calibrate_delay instead of changing calibrate_delay all over.
->      use cpu_calibrated_delay_mask instead.
->      use print_lpj to make print line complete.
-> 
-> Signed-off-by: Robin Holt <holt@sgi.com>
-> To: Andi Kleen <andi@firstfloor.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
+> Signed-off-by: Joe Jin <joe.jin@oracle.com>
+> Cc: Daniel Stodden <daniel.stodden@citrix.com>
+> Cc: Jens Axboe <jaxboe@fusionio.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Annie Li <annie.li@oracle.com>
+> Cc: Ian Campbell <Ian.Campbell@eu.citrix.com>
 > ---
->  arch/x86/include/asm/cpumask.h |    1 
->  arch/x86/kernel/cpu/common.c   |    3 ++
->  arch/x86/kernel/smpboot.c      |   58 ++++++++++++++++++++++++++++++++++-------
->  include/linux/delay.h          |    1 
->  init/calibrate.c               |   54 +++++++++++++++++++-------------------
->  5 files changed, 81 insertions(+), 36 deletions(-)
+>  drivers/block/xen-blkback/common.h |    5 +++++
+>  1 file changed, 5 insertions(+)
 > 
-> 
-> --
-> Index: linux-2.6/arch/x86/include/asm/cpumask.h
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/include/asm/cpumask.h
-> +++ linux-2.6/arch/x86/include/asm/cpumask.h
-> @@ -6,6 +6,7 @@
->  extern cpumask_var_t cpu_callin_mask;
->  extern cpumask_var_t cpu_callout_mask;
->  extern cpumask_var_t cpu_initialized_mask;
-> +extern cpumask_var_t cpu_calibrated_delay_mask;
->  extern cpumask_var_t cpu_sibling_setup_mask;
+> diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
+> index 9e40b28..acda757 100644
+> --- a/drivers/block/xen-blkback/common.h
+> +++ b/drivers/block/xen-blkback/common.h
+> @@ -49,6 +49,7 @@
+>  	pr_debug(DRV_PFX "(%s:%d) " fmt ".\n",	\
+>  		 __func__, __LINE__, ##args)
 >  
->  extern void setup_cpu_local_masks(void);
-> Index: linux-2.6/arch/x86/kernel/cpu/common.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/cpu/common.c
-> +++ linux-2.6/arch/x86/kernel/cpu/common.c
-> @@ -45,6 +45,7 @@
->  cpumask_var_t cpu_initialized_mask;
->  cpumask_var_t cpu_callout_mask;
->  cpumask_var_t cpu_callin_mask;
-> +cpumask_var_t cpu_calibrated_delay_mask;
->  
->  /* representing cpus for which sibling maps can be computed */
->  cpumask_var_t cpu_sibling_setup_mask;
-> @@ -58,6 +59,8 @@ void __init setup_cpu_local_masks(void)
->  	alloc_bootmem_cpumask_var(&cpu_callin_mask);
->  	set_bootmem_name("cpu_callout_mask");
->  	alloc_bootmem_cpumask_var(&cpu_callout_mask);
-> +	set_bootmem_name("cpu_calibrated_delay_mask");
-> +	alloc_bootmem_cpumask_var(&cpu_calibrated_delay_mask);
->  	set_bootmem_name("cpu_sibling_setup_mask");
->  	alloc_bootmem_cpumask_var(&cpu_sibling_setup_mask);
->  }
-> Index: linux-2.6/arch/x86/kernel/smpboot.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/smpboot.c
-> +++ linux-2.6/arch/x86/kernel/smpboot.c
-> @@ -52,6 +52,7 @@
->  #include <linux/gfp.h>
->  
->  #include <asm/acpi.h>
-> +#include <asm/cpumask.h>
->  #include <asm/desc.h>
->  #include <asm/nmi.h>
->  #include <asm/irq.h>
-> @@ -210,15 +211,7 @@ static void __cpuinit smp_callin(void)
->  	 * Need to setup vector mappings before we enable interrupts.
->  	 */
->  	setup_vector_irq(smp_processor_id());
-> -	/*
-> -	 * Get our bogomips.
-> -	 *
-> -	 * Need to enable IRQs because it can take longer and then
-> -	 * the NMI watchdog might kill us.
-> -	 */
-> -	local_irq_enable();
-> -	calibrate_delay();
-> -	local_irq_disable();
-> +
->  	pr_debug("Stack at about %p\n", &cpuid);
->  
->  	/*
-> @@ -1038,6 +1031,8 @@ void __init native_smp_prepare_cpus(unsi
->  	}
->  	set_cpu_sibling_map(0);
->  
-> +	/* already called earlier for boot cpu */
-> +	cpumask_set_cpu(0, cpu_calibrated_delay_mask);
->  
->  	if (smp_sanity_check(max_cpus) < 0) {
->  		printk(KERN_INFO "SMP disabled\n");
-> @@ -1126,8 +1121,53 @@ void __init native_smp_prepare_boot_cpu(
->  	per_cpu(cpu_state, me) = CPU_ONLINE;
->  }
->  
-> +static void __cpuinit calibrate_delay_fn(void *info)
-> +{
-> +	int cpu = smp_processor_id();
-> +
-> +	cpu_data(cpu).loops_per_jiffy = __calibrate_delay(cpu);
-> +	cpumask_set_cpu(cpu, cpu_calibrated_delay_mask);
-> +}
-> +
-> +#ifdef CONFIG_HOTPLUG_CPU
-> +static int __cpuinit
-> +cal_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
-> +{
-> +	int cpu = (unsigned long)hcpu;
-> +
-> +	switch (action) {
-> +	case CPU_ONLINE:
-> +	case CPU_ONLINE_FROZEN:
-> +		smp_call_function_single(cpu, calibrate_delay_fn, NULL, 1);
-> +		break;
-> +	}
-> +
-> +	return NOTIFY_OK;
-> +}
-> +
-> +static __cpuinitdata struct notifier_block __cpuinitdata cal_cpu_nfb = {
-> +	.notifier_call = cal_cpu_callback
-> +};
-> +
-> +static void __init register_cal_cpu_nfb(void)
-> +{
-> +	register_cpu_notifier(&cal_cpu_nfb);
-> +}
-> +#else
-> +static void __init register_cal_cpu_nfb(void)
-> +{
-> +}
-> +#endif
-> +
->  void __init native_smp_cpus_done(unsigned int max_cpus)
->  {
-> +	smp_call_function_many(cpu_online_mask, calibrate_delay_fn, NULL, 0);
-> +	while (cpumask_weight(cpu_calibrated_delay_mask) != num_online_cpus()) {
-> +		cpu_relax();
-> +		touch_nmi_watchdog();
-> +	}
-> +	register_cal_cpu_nfb();
-> +
->  	pr_debug("Boot done.\n");
->  
->  	impress_friends();
-> Index: linux-2.6/include/linux/delay.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/delay.h
-> +++ linux-2.6/include/linux/delay.h
-> @@ -43,6 +43,7 @@ static inline void ndelay(unsigned long
->  
->  extern unsigned long lpj_fine;
->  void calibrate_delay(void);
-> +unsigned long __calibrate_delay(int cpu);
->  void msleep(unsigned int msecs);
->  unsigned long msleep_interruptible(unsigned int msecs);
->  void usleep_range(unsigned long min, unsigned long max);
-> Index: linux-2.6/init/calibrate.c
-> ===================================================================
-> --- linux-2.6.orig/init/calibrate.c
-> +++ linux-2.6/init/calibrate.c
-> @@ -31,7 +31,7 @@ __setup("lpj=", lpj_setup);
->  #define DELAY_CALIBRATION_TICKS			((HZ < 100) ? 1 : (HZ/100))
->  #define MAX_DIRECT_CALIBRATION_RETRIES		5
->  
-> -static unsigned long __cpuinit calibrate_delay_direct(void)
-> +static unsigned long __cpuinit calibrate_delay_direct(int cpu)
->  {
->  	unsigned long pre_start, start, post_start;
->  	unsigned long pre_end, end, post_end;
-> @@ -134,15 +134,9 @@ static unsigned long __cpuinit calibrate
->  		good_timer_count = 0;
->  		if ((measured_times[max] - estimate) <
->  				(estimate - measured_times[min])) {
-> -			printk(KERN_NOTICE "calibrate_delay_direct() dropping "
-> -					"min bogoMips estimate %d = %lu\n",
-> -				min, measured_times[min]);
->  			measured_times[min] = 0;
->  			min = max;
->  		} else {
-> -			printk(KERN_NOTICE "calibrate_delay_direct() dropping "
-> -					"max bogoMips estimate %d = %lu\n",
-> -				max, measured_times[max]);
->  			measured_times[max] = 0;
->  			max = min;
->  		}
-> @@ -160,9 +154,9 @@ static unsigned long __cpuinit calibrate
->  
->  	}
->  
-> -	printk(KERN_NOTICE "calibrate_delay_direct() failed to get a good "
-> +	printk(KERN_NOTICE "CPU%d: calibrate_delay_direct() failed to get a good "
->  	       "estimate for loops_per_jiffy.\nProbably due to long platform "
-> -		"interrupts. Consider using \"lpj=\" boot option.\n");
-> +		"interrupts. Consider using \"lpj=\" boot option.\n", cpu);
->  	return 0;
->  }
->  #else
-> @@ -246,32 +240,38 @@ recalibrate:
->  
->  static DEFINE_PER_CPU(unsigned long, cpu_loops_per_jiffy) = { 0 };
->  
-> -void __cpuinit calibrate_delay(void)
-> +static void __cpuinit print_lpj(int cpu, char *str, unsigned long lpj)
-> +{
-> +       pr_info("CPU%d: Calibrating delay%s"
-> +               "%lu.%02lu BogoMIPS (lpj=%lu)\n", cpu, str,
-> +               lpj/(500000/HZ), (lpj/(5000/HZ)) % 100, lpj);
-> +}
-> +
-> +unsigned long __cpuinit __calibrate_delay(int cpu)
->  {
->  	unsigned long lpj;
-> -	int this_cpu = smp_processor_id();
->  
-> -	if (per_cpu(cpu_loops_per_jiffy, this_cpu)) {
-> -		lpj = per_cpu(cpu_loops_per_jiffy, this_cpu);
-> -		pr_info("Calibrating delay loop (skipped) "
-> -				"already calibrated this CPU");
-> +	if (per_cpu(cpu_loops_per_jiffy, cpu)) {
-> +		lpj = per_cpu(cpu_loops_per_jiffy, cpu);
-> +		print_lpj(cpu, " (skipped) already calibrated this CPU ", lpj);
->  	} else if (preset_lpj) {
->  		lpj = preset_lpj;
-> -		pr_info("Calibrating delay loop (skipped) preset value.. ");
-> -	} else if ((this_cpu == 0) && lpj_fine) {
-> +		print_lpj(cpu, " (skipped) preset value.. ", lpj);
-> +	} else if ((cpu == 0) && lpj_fine) {
->  		lpj = lpj_fine;
-> -		pr_info("Calibrating delay loop (skipped), "
-> -			"value calculated using timer frequency.. ");
-> -	} else if ((lpj = calibrate_delay_direct()) != 0) {
-> -		pr_info("Calibrating delay using timer specific routine.. ");
-> +		print_lpj(cpu, " loop (skipped), value calculated using timer frequency.. ", lpj);
-> +	} else if ((lpj = calibrate_delay_direct(cpu)) != 0) {
-> +		print_lpj(cpu, " using timer specific routine.. ", lpj);
->  	} else {
-> -		pr_info("Calibrating delay loop... ");
->  		lpj = calibrate_delay_converge();
-> +		print_lpj(cpu, " delay loop... ", lpj);
->  	}
-> -	per_cpu(cpu_loops_per_jiffy, this_cpu) = lpj;
-> -	pr_cont("%lu.%02lu BogoMIPS (lpj=%lu)\n",
-> -			lpj/(500000/HZ),
-> -			(lpj/(5000/HZ)) % 100, lpj);
-> +	per_cpu(cpu_loops_per_jiffy, cpu) = lpj;
->  
-> -	loops_per_jiffy = lpj;
-> +	return lpj;
-> +}
-> +
-> +void __cpuinit calibrate_delay(void)
-> +{
-> +	loops_per_jiffy = __calibrate_delay(smp_processor_id());
->  }
+> +#define WPRINTK(fmt, args...) printk(KERN_WARNING "xen-blkback: " fmt, ##args)
 
+This is what I said in my review
+
+        "What is 'WPRITNK' ? Can you use the the same type of printks
+        as the rest? Also you have a space at the end. Make sure to
+        run checkpath.pl"
+
+which honeselty I should have been more specific. I meant that
+you could just convert all the "WPRINTK" to what they define.
+
+As in, sed/WPRINT/printk(KERN_WARNING/..
+
+In essence, what I would like you to do is:
+
+1). Read up on Documentation/SubmittingPatches
+2). Squash this patch (except the declerations of the functions that are
+    implemented in patch #3) into patch #2. The declerations of functions
+    should be squashed in patch #3.
+3). Replace in patch #3 all calls to WPRINTK with printk(KERN_WARNING.
+4). Create a new patch that deals with the addition of DPRINTK
+    and the update of the comment (see above).
+5). The total should be three patches:
+    a). This patch squashed with patch #2 (with the modification described in 2).
+    b). Patch #3 modified
+    c). A new patch with the debug/comments modifications.
+6). Make sure each patch compiles on its own.
+7). Resend - or if you want to double check with me in case I've further
+    comments - just send it to me privately.
+
+>  
+>  /* Not a real protocol.  Used to generate ring structs which contain
+>   * the elements common to all protocols only.  This way we get a
+> @@ -145,6 +146,7 @@ struct xen_blkif {
+>  	/* Back pointer to the backend_info. */
+>  	struct backend_info	*be;
+>  	/* Private fields. */
+> +	bool			remove_requested;
+>  	spinlock_t		blk_ring_lock;
+>  	atomic_t		refcnt;
+>  
+> @@ -198,6 +200,9 @@ int xen_blkbk_flush_diskcache(struct xenbus_transaction xbt,
+>  
+>  struct xenbus_device *xen_blkbk_xenbus(struct backend_info *be);
+>  
+> +void xen_vbd_sync(struct xen_vbd *vbd);
+> +void xen_blkback_close(struct xen_blkif *blkif);
+> +
+>  static inline void blkif_get_x86_32_req(struct blkif_request *dst,
+>  					struct blkif_x86_32_request *src)
+>  {
