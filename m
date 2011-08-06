@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932460Ab1HFAM0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:12:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39740 "EHLO mx2.suse.de"
+	id S964808Ab1HFAMl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:12:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39785 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932444Ab1HFAMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:12:21 -0400
+	id S932476Ab1HFAMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:12:34 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:04:16 2011
-Message-Id: <20110806000416.034830747@clark.kroah.org>
+Message-Id: <20110806000416.417654651@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Fri, 05 Aug 2011 17:04:02 -0700
+Date: Fri, 05 Aug 2011 17:04:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [44/50] netns xfrm: fixup xfrm6_tunnel error propagation
+        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: [48/50] dm mpath: fix potential NULL pointer in feature arg processing
 In-Reply-To: <20110806000419.GA28392@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Dobriyan <adobriyan@gmail.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit e924960dacdf85d118a98c7262edf2f99c3015cf upstream.
+commit 286f367dad40beb3234a18c17391d03ba939a7f3 upstream.
 
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Avoid dereferencing a NULL pointer if the number of feature arguments
+supplied is fewer than indicated.
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv6/xfrm6_tunnel.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ drivers/md/dm-mpath.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/net/ipv6/xfrm6_tunnel.c
-+++ b/net/ipv6/xfrm6_tunnel.c
-@@ -353,13 +353,19 @@ static struct xfrm6_tunnel xfrm46_tunnel
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -782,6 +782,11 @@ static int parse_features(struct arg_set
+ 	if (!argc)
+ 		return 0;
  
- static int __init xfrm6_tunnel_init(void)
- {
--	if (xfrm_register_type(&xfrm6_tunnel_type, AF_INET6) < 0)
-+	int rv;
++	if (argc > as->argc) {
++		ti->error = "not enough arguments for features";
++		return -EINVAL;
++	}
 +
-+	rv = xfrm_register_type(&xfrm6_tunnel_type, AF_INET6);
-+	if (rv < 0)
- 		goto err;
--	if (xfrm6_tunnel_register(&xfrm6_tunnel_handler, AF_INET6))
-+	rv = xfrm6_tunnel_register(&xfrm6_tunnel_handler, AF_INET6);
-+	if (rv < 0)
- 		goto unreg;
--	if (xfrm6_tunnel_register(&xfrm46_tunnel_handler, AF_INET))
-+	rv = xfrm6_tunnel_register(&xfrm46_tunnel_handler, AF_INET);
-+	if (rv < 0)
- 		goto dereg6;
--	if (xfrm6_tunnel_spi_init() < 0)
-+	rv = xfrm6_tunnel_spi_init();
-+	if (rv < 0)
- 		goto dereg46;
- 	return 0;
- 
-@@ -370,7 +376,7 @@ dereg6:
- unreg:
- 	xfrm_unregister_type(&xfrm6_tunnel_type, AF_INET6);
- err:
--	return -EAGAIN;
-+	return rv;
- }
- 
- static void __exit xfrm6_tunnel_fini(void)
+ 	do {
+ 		param_name = shift(as);
+ 		argc--;
 
 
