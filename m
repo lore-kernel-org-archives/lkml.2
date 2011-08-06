@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168Ab1HFITX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 04:19:23 -0400
-Received: from fresno.net.uniovi.es ([156.35.11.2]:61344 "EHLO
-	FRESNO.NET.UNIOVI.ES" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024Ab1HFITU (ORCPT
+	id S1752522Ab1HFI1E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 04:27:04 -0400
+Received: from www17.your-server.de ([213.133.104.17]:56445 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab1HFI06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 04:19:20 -0400
-X-Greylist: delayed 3028 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Aug 2011 04:19:19 EDT
-Date: Fri, 05 Aug 2011 20:28:46 -1100
-From: MONEY GRAM CENTRAL MALAYSIA <macampo@uniovi.es>
-Subject: MONEY GRAM CENTRAL MALAYSIA
-To: undisclosed-recipients:;
-Reply-to: moneygarm125@yahoo.com
-Message-id: <3a1712214e8acfb44aca91c659ab05fd@uniovi.es>
-Organization: MONEY GRAM CENTRAL MALAYSIA
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-Mail-Reply-To: <moneygarm125@yahoo.com>
-User-Agent: Uniovi Webmail/0.5
+	Sat, 6 Aug 2011 04:26:58 -0400
+Subject: [PATCH] n2_crypto: Fix a get/put_cpu() imbalance
+From: Thomas Meyer <thomas@m3y3r.de>
+To: davem@davemloft.net, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 06 Aug 2011 10:26:25 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1312619188.5589.27.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Thomas Meyer <thomas@m3y3r.de>
 
+Fix a get/put_cpu() imbalance in the error case when qp == NULL
 
--- 
- MONEY GRAM CENTRAL MALAYSIA,
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
 
- My associate has helped me to send your first payment
- of $7,500 USD to you as instructed by the Malaysian
- Government and Mr. David Cameron the United Kingdom
- prime minister after the last G20 meeting that was
- held in Malaysia, making you one of the beneficiaries through
- an email natural simple ballot selection.
- He told Allan Davis to keep on sending you $5,000 USD via Money Gram
- twice a week until the FULL payment of ($820,000.00 )
- is completed.
- MONEYGRAM TRANSFER REFERENCE:2116-3297
- SENDER'S NAME: Ziera E
- AMOUNT: US$5000
- To track your funds forward money gram
- Transfer agent Mr Allan Davis
- Your Name.____________
- Phone .______________
- Contact Allan Davis for the funds clearance
- certificate (FCC) neccessary for the realise of your funds
- E-mail:moneygram125@yahoo.com
- D/L: Tel:+601-69855075
- You cannot pickup the money until the certificate is
- obtained by you.
+diff --git a/drivers/crypto/n2_core.c b/drivers/crypto/n2_core.c
+index d0183ddb..6683b58 100644
+--- a/drivers/crypto/n2_core.c
++++ b/drivers/crypto/n2_core.c
+@@ -1006,9 +1006,8 @@ static int n2_do_ecb(struct ablkcipher_request *req, bool encrypt)
  
- Best Regards,
- Mr.Ziera E
+        spin_unlock_irqrestore(&qp->lock, flags);
+ 
+-       put_cpu();
+-
+ out:
++       put_cpu();
+        n2_chunk_complete(req, NULL);
+        return err;
+ }
+@@ -1096,9 +1095,8 @@ static int n2_do_chaining(struct ablkcipher_request *req, bool encrypt)
+ 
+        spin_unlock_irqrestore(&qp->lock, flags);
+ 
+-       put_cpu();
+-
+ out:
++       put_cpu();
+        n2_chunk_complete(req, err ? NULL : final_iv_addr);
+        return err;
+ }
+
+
+
+
+
+
+
