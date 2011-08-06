@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab1HFQeR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 12:34:17 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:51927 "EHLO
+	id S1755471Ab1HFQm0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 12:42:26 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:51960 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754682Ab1HFQeQ convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754383Ab1HFQmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 12:34:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <1312348621-20172-1-git-send-email-amwang@redhat.com>
-References: <1312348621-20172-1-git-send-email-amwang@redhat.com>
-Date: Sat, 6 Aug 2011 12:34:16 -0400
-Message-ID: <CACqU3MW2xaMYQ_PNo_nTTOKhiH6Sge5gBS_ju5ZXiDx_rhQxxA@mail.gmail.com>
-Subject: Re: [Patch] cpupower: avoid using symlinks
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Thomas Renninger <trenn@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 6 Aug 2011 12:42:24 -0400
+From: stufever@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@suse.de, mikew@google.com, Wang Shaoyan <wangshaoyan.pt@taobao.com>
+Subject: [PATCH] fimware: fix build warning
+Date: Sun,  7 Aug 2011 00:39:26 +0800
+Message-Id: <1312648766-19073-1-git-send-email-wangshaoyan.pt@taobao.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
 
-On Wed, Aug 3, 2011 at 1:17 AM, Amerigo Wang <amwang@redhat.com> wrote:
-> Reference the source directly, don't create symlinks.
->
-> Signed-off-by: WANG Cong <amwang@redhat.com>
->
-> ---
-> diff --git a/tools/power/cpupower/debug/x86_64/Makefile b/tools/power/cpupower/debug/x86_64/Makefile
-> index dbf1399..3326217 100644
-> --- a/tools/power/cpupower/debug/x86_64/Makefile
-> +++ b/tools/power/cpupower/debug/x86_64/Makefile
-> @@ -1,10 +1,10 @@
->  default: all
->
-> -centrino-decode: centrino-decode.c
-> -       $(CC) $(CFLAGS) -o centrino-decode centrino-decode.c
-> +centrino-decode: ../i386/centrino-decode.c
-> +       $(CC) $(CFLAGS) -o $@ $<
->
-> -powernow-k8-decode: powernow-k8-decode.c
-> -       $(CC) $(CFLAGS) -o powernow-k8-decode powernow-k8-decode.c
-> +powernow-k8-decode: ../i386/powernow-k8-decode.c
-> +       $(CC) $(CFLAGS) -o $@ $<
->
->  all: centrino-decode powernow-k8-decode
->
-Is there any reason for this stuff not to use kbuild ?
+  drivers/firmware/google/gsmi.c: In function 'gsmi_get_variable':
+  drivers/firmware/google/gsmi.c:347: warning: comparison of distinct pointer types lacks a cast
+  drivers/firmware/google/gsmi.c: At top level:
+  drivers/firmware/google/gsmi.c:473: warning: initialization from incompatible pointer type
 
-Thanks,
- - Arnaud
+Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+---
+ drivers/firmware/google/gsmi.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> diff --git a/tools/power/cpupower/debug/x86_64/centrino-decode.c b/tools/power/cpupower/debug/x86_64/centrino-decode.c
-> deleted file mode 120000
-> index 26fb3f1..0000000
-> --- a/tools/power/cpupower/debug/x86_64/centrino-decode.c
-> +++ /dev/null
-> @@ -1 +0,0 @@
-> -../i386/centrino-decode.c
-> \ No newline at end of file
-> diff --git a/tools/power/cpupower/debug/x86_64/powernow-k8-decode.c b/tools/power/cpupower/debug/x86_64/powernow-k8-decode.c
-> deleted file mode 120000
-> index eb30c79..0000000
-> --- a/tools/power/cpupower/debug/x86_64/powernow-k8-decode.c
-> +++ /dev/null
-> @@ -1 +0,0 @@
-> -../i386/powernow-k8-decode.c
-> \ No newline at end of file
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+diff --git a/drivers/firmware/google/gsmi.c b/drivers/firmware/google/gsmi.c
+index 68810fd..711753f 100644
+--- a/drivers/firmware/google/gsmi.c
++++ b/drivers/firmware/google/gsmi.c
+@@ -344,7 +344,7 @@ static efi_status_t gsmi_get_variable(efi_char16_t *name,
+ 		memcpy(&param, gsmi_dev.param_buf->start, sizeof(param));
+ 
+ 		/* The size reported is the min of all of our buffers */
+-		*data_size = min(*data_size, gsmi_dev.data_buf->length);
++		*data_size = min_t(unsigned long, *data_size, gsmi_dev.data_buf->length);
+ 		*data_size = min_t(unsigned long, *data_size, param.data_len);
+ 
+ 		/* Copy data back to return buffer. */
+@@ -420,7 +420,7 @@ static efi_status_t gsmi_get_next_variable(unsigned long *name_size,
+ 
+ static efi_status_t gsmi_set_variable(efi_char16_t *name,
+ 				      efi_guid_t *vendor,
+-				      unsigned long attr,
++				      u32 attr,
+ 				      unsigned long data_size,
+ 				      void *data)
+ {
+-- 
+1.7.0.4
+
