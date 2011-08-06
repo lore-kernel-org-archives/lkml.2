@@ -1,130 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab1HFXcJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 19:32:09 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64327 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753813Ab1HFXcD convert rfc822-to-8bit (ORCPT
+	id S1756604Ab1HFXg3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 19:36:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34959 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753813Ab1HFXg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 19:32:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <493994B35A117E4F832F97C4719C4C040132C5FB69@orsmsx505.amr.corp.intel.com>
-References: <cover.1312630712.git.luto@mit.edu> <9a8f28ccbe44cd323a01e9a23b531cb869185a21.1312630712.git.luto@mit.edu>
- <493994B35A117E4F832F97C4719C4C040132C5FB69@orsmsx505.amr.corp.intel.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Sat, 6 Aug 2011 19:31:39 -0400
-X-Google-Sender-Auth: DQ0Gqg_-ISDXI4vCGRJqac9Y1l4
-Message-ID: <CAObL_7F2+eXTPo7a631Lh7GD_UpDQXgW_GSDp9Km7pwhwmM6Cw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] x86: Enable fast strings on Intel if BIOS hasn't already
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 6 Aug 2011 19:36:27 -0400
+Date: Sat, 6 Aug 2011 16:38:37 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] stop_machine: build unconditionally if SMP
+Message-Id: <20110806163837.881d70af.akpm@linux-foundation.org>
+In-Reply-To: <20110806080323.GB23937@htj.dyndns.org>
+References: <1312614073-11516-1-git-send-email-rabin@rab.in>
+	<20110806080323.GB23937@htj.dyndns.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 6, 2011 at 3:33 PM, Yu, Fenghua <fenghua.yu@intel.com> wrote:
->> -----Original Message-----
->> From: Andy Lutomirski [mailto:luto@MIT.EDU]
->> Sent: Saturday, August 06, 2011 4:43 AM
->> To: x86@kernel.org; linux-kernel@vger.kernel.org
->> Cc: Yu, Fenghua; Matthew Garrett; Len Brown; linux-
->> acpi@vger.kernel.org; Ingo Molnar; Andy Lutomirski
->> Subject: [PATCH v2 1/2] x86: Enable fast strings on Intel if BIOS
->> hasn't already
->>
->> Intel SDM volume 3A, 8.4.2 says:
->>
->>   Software can disable fast-string operation by clearing the
->>   fast-string-enable bit (bit 0) of IA32_MISC_ENABLE MSR.
->>   However, Intel recomments that system software always enable
->>   fast-string operation.
->>
->> The Intel DQ67SW board (with latest BIOS) disables fast string
->> operations if TXT is enabled.  A Lenovo X220 disables it regardless
->> of TXT setting.  I doubt I'm the only person with a dumb BIOS like
->> this.
->>
->> Signed-off-by: Andy Lutomirski <luto@mit.edu>
->> ---
->>  arch/x86/kernel/cpu/intel.c |   25 ++++++++++++++++++++++---
->>  1 files changed, 22 insertions(+), 3 deletions(-)
->>
->> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
->> index ed6086e..c80ab41 100644
->> --- a/arch/x86/kernel/cpu/intel.c
->> +++ b/arch/x86/kernel/cpu/intel.c
->> @@ -30,6 +30,7 @@
->>  static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
->>  {
->>       u64 misc_enable;
->> +     bool allow_fast_string = true;
->>
->>       /* Unmask CPUID levels if masked: */
->>       if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
->> @@ -118,8 +119,9 @@ static void __cpuinit early_init_intel(struct
->> cpuinfo_x86 *c)
->>        * (model 2) with the same problem.
->>        */
->>       if (c->x86 == 15) {
->> -             rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
->> +             allow_fast_string = false;
->>
->> +             rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
->>               if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING) {
->>                       printk(KERN_INFO "kmemcheck: Disabling fast string
->> operations\n");
->>
->> @@ -130,11 +132,28 @@ static void __cpuinit early_init_intel(struct
->> cpuinfo_x86 *c)
->>  #endif
->>
->>       /*
->> -      * If fast string is not enabled in IA32_MISC_ENABLE for any
->> reason,
->> -      * clear the fast string and enhanced fast string CPU
->> capabilities.
->> +      * If BIOS didn't enable fast string operation, try to enable
->> +      * it ourselves.  If that fails, then clear the fast string
->> +      * and enhanced fast string CPU capabilities.
->>        */
->>       if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
->>               rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
->> +
->> +             if (allow_fast_string &&
->> +                 !(misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)) {
->> +                     misc_enable |= MSR_IA32_MISC_ENABLE_FAST_STRING;
->> +                     wrmsr_safe(MSR_IA32_MISC_ENABLE, (u32)misc_enable,
->> +                                (u32)(misc_enable >> 32));
->> +
->> +                     /* Re-read to make sure it stuck. */
->> +                     rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
->> +
->> +                     if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)
->> +                             printk(KERN_WARNING FW_WARN "CPU #%d: "
->> +                                    "IA32_MISC_ENABLE.FAST_STRING_ENABLE "
->> +                                    "was not set", c->cpu_index);
-> This printk is redundant because the same info is dumped in the below printk. Plus it's not firmware's issue if we can not set fast string bit 0 in MISC_ENABLE register. So I don't think FW_WARN is right.
+On Sat, 6 Aug 2011 10:03:23 +0200 Tejun Heo <tj@kernel.org> wrote:
 
-Huh?  This is the success path -- the patch prints the warning if
-flipping the bit worked...
+> Hello,
+> 
+> On Sat, Aug 06, 2011 at 12:31:13PM +0530, Rabin Vincent wrote:
+> > stop_machine() is built for "(SMP && MODULE_UNLOAD) || HOTPLUG_CPU", but
+> > is also used by the timekeeping code, the mm code, ftrace, and couple of
+> > things in arch/*.  Just build it if we're using SMP, like it's already
+> > the case on x86.
+> > 
+> > Cc: x86@kernel.org
+> > Cc: Tejun Heo <tj@kernel.org>
+> > Signed-off-by: Rabin Vincent <rabin@rab.in>
+> 
+> Yeah, looks good to me.
+> 
+> Acked-by: Tejun Heo <tj@kernel.org>
+> 
+> Andrew, can you please route this one?
+> 
 
->
-> I would suggest to remove this printk (and the if () statement) and change KERN_INFO to KERN_WARNING in the following printk.
->
->> +             }
->> +
->>               if (!(misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING)) {
->>                       printk(KERN_INFO "Disabled fast string
->> operations\n");
->>                       setup_clear_cpu_cap(X86_FEATURE_REP_GOOD);
+Sure.
 
-...and this (which could be more clear) is displayed if flipping the
-bit did not work, in which case the problem isn't BIOS's fault.
-
---Andy
+The priority is unclear.  It appears that the patch fixes a build error
+under sone circumstances in current mainline?
