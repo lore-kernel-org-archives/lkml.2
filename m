@@ -1,98 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab1HFAFV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Aug 2011 20:05:21 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:57314 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751655Ab1HFAFQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Aug 2011 20:05:16 -0400
-X-Sasl-enc: K/xnKEp7NfxV9ZLHZmPoQ5yWVArmHcS/KQyuPXjWbsfI 1312589115
-Date: Fri, 5 Aug 2011 17:04:19 -0700
+	id S1756754Ab1HFAHH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Aug 2011 20:07:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38900 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751655Ab1HFAHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Aug 2011 20:07:04 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Fri Aug  5 17:02:50 2011
+Message-Id: <20110806000249.974751624@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Fri, 05 Aug 2011 17:01:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/50] 2.6.33.17-longterm review
-Message-ID: <20110806000419.GA28392@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [11/55] bridge: send proper message_age in config BPDU
+In-Reply-To: <20110806000257.GA25498@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 2.6.33.17 release.
-There are 50 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-Responses should be made by Monday, August 8, 2011, 00:00:00 UTC.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.33.17-rc1.gz
-and the diffstat can be found below.
+From: stephen hemminger <shemminger@vyatta.com>
 
-thanks,
+commit 0c03150e7ea8f7fcd03cfef29385e0010b22ee92 upstream.
 
-greg k-h
+A bridge topology with three systems:
+
+      +------+  +------+
+      | A(2) |--| B(1) |
+      +------+  +------+
+           \    /
+          +------+
+          | C(3) |
+          +------+
+
+What is supposed to happen:
+ * bridge with the lowest ID is elected root (for example: B)
+ * C detects that A->C is higher cost path and puts in blocking state
+
+What happens. Bridge with lowest id (B) is elected correctly as
+root and things start out fine initially. But then config BPDU
+doesn't get transmitted from A -> C. Because of that
+the link from A-C is transistioned to the forwarding state.
+
+The root cause of this is that the configuration messages
+is generated with bogus message age, and dropped before
+sending.
+
+In the standardmessage_age is supposed to be:
+  the time since the generation of the Configuration BPDU by
+  the Root that instigated the generation of this Configuration BPDU.
+
+Reimplement this by recording the timestamp (age + jiffies) when
+recording config information. The old code incorrectly used the time
+elapsed on the ageing timer which was incorrect.
+
+See also:
+  https://bugzilla.vyatta.com/show_bug.cgi?id=7164
+
+Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ net/bridge/br_private.h |    1 +
+ net/bridge/br_stp.c     |    4 ++--
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -75,6 +75,7 @@ struct net_bridge_port
+ 	bridge_id			designated_bridge;
+ 	u32				path_cost;
+ 	u32				designated_cost;
++	unsigned long			designated_age;
+ 
+ 	struct timer_list		forward_delay_timer;
+ 	struct timer_list		hold_timer;
+--- a/net/bridge/br_stp.c
++++ b/net/bridge/br_stp.c
+@@ -165,8 +165,7 @@ void br_transmit_config(struct net_bridg
+ 	else {
+ 		struct net_bridge_port *root
+ 			= br_get_port(br, br->root_port);
+-		bpdu.message_age = br->max_age
+-			- (root->message_age_timer.expires - jiffies)
++		bpdu.message_age = (jiffies - root->designated_age)
+ 			+ MESSAGE_AGE_INCR;
+ 	}
+ 	bpdu.max_age = br->max_age;
+@@ -190,6 +189,7 @@ static inline void br_record_config_info
+ 	p->designated_cost = bpdu->root_path_cost;
+ 	p->designated_bridge = bpdu->bridge_id;
+ 	p->designated_port = bpdu->port_id;
++	p->designated_age = jiffies + bpdu->message_age;
+ 
+ 	mod_timer(&p->message_age_timer, jiffies
+ 		  + (p->br->max_age - bpdu->message_age));
 
 
- Makefile                                   |    2 +-
- arch/alpha/kernel/osf_sys.c                |   11 ++++--
- arch/arm/mach-davinci/board-dm365-evm.c    |    4 +-
- arch/arm/mach-pxa/cm-x300.c                |    8 ++--
- arch/powerpc/kernel/crash.c                |    6 +---
- arch/powerpc/platforms/pseries/hvconsole.c |    2 +-
- arch/x86/kernel/hpet.c                     |   53 +++++++++++++++------------
- arch/x86/kernel/reboot.c                   |    8 ++++
- arch/x86/kernel/relocate_kernel_32.S       |    2 +
- arch/x86/kernel/relocate_kernel_64.S       |    2 +
- arch/xtensa/kernel/ptrace.c                |    3 ++
- block/blk-core.c                           |    3 ++
- block/blk-exec.c                           |    7 ++++
- drivers/ata/libata-eh.c                    |   12 ++++--
- drivers/block/cciss.h                      |    2 +-
- drivers/hwmon/asus_atk0110.c               |    1 +
- drivers/hwmon/max1111.c                    |   11 ++++++
- drivers/md/dm-mpath.c                      |    5 +++
- drivers/md/dm.c                            |   10 ++++-
- drivers/media/radio/si4713-i2c.c           |    4 +-
- drivers/media/video/bt8xx/bttv-driver.c    |    2 +-
- drivers/media/video/pvrusb2/pvrusb2-hdw.c  |    4 ++
- drivers/media/video/v4l2-ioctl.c           |    6 +++
- drivers/misc/Kconfig                       |    3 +-
- drivers/net/jme.c                          |   20 +++++++---
- drivers/pci/pci.c                          |    7 +++-
- drivers/scsi/libsas/sas_expander.c         |    3 ++
- drivers/scsi/pmcraid.c                     |    3 ++
- drivers/scsi/scsi_devinfo.c                |    2 +
- drivers/scsi/scsi_lib.c                    |    2 +
- drivers/scsi/ses.c                         |    6 +++-
- drivers/staging/comedi/comedi_fops.c       |    4 +-
- drivers/usb/gadget/dummy_hcd.c             |    1 +
- drivers/usb/host/ehci-hub.c                |    3 +-
- drivers/usb/host/ehci-q.c                  |    3 +-
- drivers/usb/host/ehci.h                    |    1 +
- drivers/usb/musb/musb_core.c               |    1 +
- drivers/usb/serial/pl2303.c                |    2 +
- drivers/usb/serial/pl2303.h                |   10 +++++-
- fs/block_dev.c                             |   27 +++++---------
- fs/ext3/xattr.c                            |   12 +++++-
- fs/proc/base.c                             |    7 +++-
- include/drm/i915_drm.h                     |    2 +-
- include/linux/netdevice.h                  |    5 ++-
- net/bridge/br_private.h                    |    1 +
- net/bridge/br_stp.c                        |    4 +-
- net/ipv4/ip_gre.c                          |   19 +++++-----
- net/ipv6/xfrm6_tunnel.c                    |   16 ++++++---
- net/mac80211/mlme.c                        |    3 ++
- net/sunrpc/rpcb_clnt.c                     |    2 +-
- net/sunrpc/sched.c                         |   27 ++++++--------
- net/sunrpc/svc_xprt.c                      |   11 +++---
- sound/core/pcm_compat.c                    |    2 +-
- sound/soc/blackfin/bf5xx-i2s-pcm.c         |   13 ++++++-
- 54 files changed, 259 insertions(+), 131 deletions(-)
