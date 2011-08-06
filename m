@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab1HFJOs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 05:14:48 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47756 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750882Ab1HFJOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 05:14:45 -0400
-Date: Sat, 6 Aug 2011 11:14:38 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [RFC][PATCH 0/8] Having perf use libparsevent.a
-Message-ID: <20110806091438.GA29727@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-	linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Arnaldo Carvalho de Melo <acme@redhat.com>,
-	Arjan van de Ven <arjan@infradead.org>
-References: <20110805205921.909038487@goodmis.org>
- <20110805212409.GA21114@elte.hu>
- <1312592488.18583.215.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1312592488.18583.215.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753973Ab1HFJRx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 05:17:53 -0400
+Received: from www17.your-server.de ([213.133.104.17]:52669 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752262Ab1HFJRw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Aug 2011 05:17:52 -0400
+Subject: [PATCH] staging: brcm80211: use kstrdup()
+From: Thomas Meyer <thomas@m3y3r.de>
+To: gregkh@suse.de, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sat, 06 Aug 2011 11:17:20 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1312622244.5589.58.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 05, 2011 at 09:01:28PM -0400, Steven Rostedt wrote:
-> On Fri, 2011-08-05 at 23:24 +0200, Ingo Molnar wrote:
-> > * Steven Rostedt <rostedt@goodmis.org> wrote:
-> > 
-> > > By keeping the code separate from perf, made the transition from 
-> > > trace-cmd to tools much easier. I've wasted too many days trying to 
-> > > get other ways working, and I don't want to rewrite perf to do so.
-> > 
-> > But we want to move tools together, not further apart. Every code 
-> > activity i see from you is trying to tear apart instrumentation 
-> 
-> Ouch!
-> 
-> Ingo, I was trying to do as you said, but to do so would require a lot
-> of restructuring of the perf code base. I started talking with Arnaldo,
-> as he's doing a lot of the work in the tools/perf code, and he's the one
-> that suggested that I do it this way. It made things a lot easier.
-> 
-> Seriously, I wasted Mon-Wed trying to see how it would work in
-> tools/perf. I went through iteration after iteration, and each time I
-> either rewrote the tools/perf/Makefile, or hacked apart the libparsevent
-> code to be strictly perf specific, and not very useful for anything
-> else.
+From: Thomas Meyer <thomas@m3y3r.de>
 
-Now you feel exactly how I felt when preparing the RAS daemon stuff :-)
+ Use kstrdup rather than duplicating its implementation
 
-I think we should first agree on the design of libperf or whatever other
-libraries and then start working towards it. Then we'd all know where
-we're going so coding it up would be almost a routine task. And then,
-other people who've done it for a couple of times already (hint: me)
-could help so Steve won't have to do it alone.
+ The semantic patch that makes this output is available
+ in scripts/coccinelle/api/kstrdup.cocci.
 
-Thanks.
+ More information about semantic patching is available at
+ http://coccinelle.lip6.fr/
 
--- 
-Regards/Gruss,
-    Boris.
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
+
+diff -u -p a/drivers/staging/brcm80211/brcmfmac/dhd_common.c b/drivers/staging/brcm80211/brcmfmac/dhd_common.c
+--- a/drivers/staging/brcm80211/brcmfmac/dhd_common.c 2011-07-28 15:32:17.849920483 +0200
++++ b/drivers/staging/brcm80211/brcmfmac/dhd_common.c 2011-08-01 21:13:55.222431768 +0200
+@@ -944,7 +944,7 @@ void brcmf_c_pktfilter_offload_set(struc
+ 	int i = 0;
+ 	char *arg_save = 0, *arg_org = 0;
+ 
+-	arg_save = kmalloc(strlen(arg) + 1, GFP_ATOMIC);
++	arg_save = kstrdup(arg, GFP_ATOMIC);
+ 	if (!arg_save) {
+ 		BRCMF_ERROR(("%s: kmalloc failed\n", __func__));
+ 		goto fail;
+@@ -958,8 +958,6 @@ void brcmf_c_pktfilter_offload_set(struc
+ 		goto fail;
+ 	}
+ 
+-	strcpy(arg_save, arg);
+-
+ 	argv[i] = strsep(&arg_save, " ");
+ 	while (argv[i++])
+ 		argv[i] = strsep(&arg_save, " ");
+
+
