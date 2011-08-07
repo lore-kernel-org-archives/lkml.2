@@ -1,223 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab1HGXpW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 19:45:22 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48702 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656Ab1HGXpV (ORCPT
+	id S1753056Ab1HGXpf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Aug 2011 19:45:35 -0400
+Received: from mga01.intel.com ([192.55.52.88]:59094 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752714Ab1HGXpY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 19:45:21 -0400
-From: stufever@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-fbdev@vger.kernel.org, FlorianSchandinat@gmx.de, lethal@linux-sh.org,
-        Wang Shaoyan <wangshaoyan.pt@taobao.com>
-Subject: [PATCH V2] viafb: replace strict_strtoul to kstrto* and check return value
-Date: Mon,  8 Aug 2011 07:42:33 +0800
-Message-Id: <1312760553-2143-1-git-send-email-wangshaoyan.pt@taobao.com>
-X-Mailer: git-send-email 1.7.0.4
+	Sun, 7 Aug 2011 19:45:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,334,1309762800"; 
+   d="scan'208";a="38912853"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Andrew Lutomirski <luto@mit.edu>
+CC: "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Date: Sun, 7 Aug 2011 16:44:33 -0700
+Subject: RE: [PATCH v2 1/2] x86: Enable fast strings on Intel if BIOS hasn't
+ already
+Thread-Topic: [PATCH v2 1/2] x86: Enable fast strings on Intel if BIOS
+ hasn't already
+Thread-Index: AcxUkQmmSg/eeHU9T5a9K8QbwRFQGgAyZcFA
+Message-ID: <493994B35A117E4F832F97C4719C4C040132C5FBE0@orsmsx505.amr.corp.intel.com>
+References: <cover.1312630712.git.luto@mit.edu>
+ <9a8f28ccbe44cd323a01e9a23b531cb869185a21.1312630712.git.luto@mit.edu>
+ <493994B35A117E4F832F97C4719C4C040132C5FB69@orsmsx505.amr.corp.intel.com>
+ <CAObL_7F2+eXTPo7a631Lh7GD_UpDQXgW_GSDp9Km7pwhwmM6Cw@mail.gmail.com>
+In-Reply-To: <CAObL_7F2+eXTPo7a631Lh7GD_UpDQXgW_GSDp9Km7pwhwmM6Cw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+> -----Original Message-----
+> From: amluto@gmail.com [mailto:amluto@gmail.com] On Behalf Of Andrew
+> Lutomirski
+> Sent: Saturday, August 06, 2011 4:32 PM
+> To: Yu, Fenghua
+> Cc: x86@kernel.org; linux-kernel@vger.kernel.org; Matthew Garrett; Len
+> Brown; linux-acpi@vger.kernel.org; Ingo Molnar
+> Subject: Re: [PATCH v2 1/2] x86: Enable fast strings on Intel if BIOS
+> hasn't already
+> 
+> On Sat, Aug 6, 2011 at 3:33 PM, Yu, Fenghua <fenghua.yu@intel.com>
+> wrote:
+> >> -----Original Message-----
+> >> From: Andy Lutomirski [mailto:luto@MIT.EDU]
+> >> Sent: Saturday, August 06, 2011 4:43 AM
+> >> To: x86@kernel.org; linux-kernel@vger.kernel.org
+> >> Cc: Yu, Fenghua; Matthew Garrett; Len Brown; linux-
+> >> acpi@vger.kernel.org; Ingo Molnar; Andy Lutomirski
+> >> Subject: [PATCH v2 1/2] x86: Enable fast strings on Intel if BIOS
+> >> hasn't already
+> >>
+> >> Intel SDM volume 3A, 8.4.2 says:
+> >>
+> >>   Software can disable fast-string operation by clearing the
+> >>   fast-string-enable bit (bit 0) of IA32_MISC_ENABLE MSR.
+> >>   However, Intel recomments that system software always enable
+> >>   fast-string operation.
+> >>
+> >> The Intel DQ67SW board (with latest BIOS) disables fast string
+> >> operations if TXT is enabled.  A Lenovo X220 disables it regardless
+> >> of TXT setting.  I doubt I'm the only person with a dumb BIOS like
+> >> this.
+> >>
+> >> Signed-off-by: Andy Lutomirski <luto@mit.edu>
+> >> ---
+> >>  arch/x86/kernel/cpu/intel.c |   25 ++++++++++++++++++++++---
+> >>  1 files changed, 22 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/arch/x86/kernel/cpu/intel.c
+> b/arch/x86/kernel/cpu/intel.c
+> >> index ed6086e..c80ab41 100644
+> >> --- a/arch/x86/kernel/cpu/intel.c
+> >> +++ b/arch/x86/kernel/cpu/intel.c
+> >> @@ -30,6 +30,7 @@
+> >>  static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+> >>  {
+> >>       u64 misc_enable;
+> >> +     bool allow_fast_string = true;
+> >>
+> >>       /* Unmask CPUID levels if masked: */
+> >>       if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
+> >> @@ -118,8 +119,9 @@ static void __cpuinit early_init_intel(struct
+> >> cpuinfo_x86 *c)
+> >>        * (model 2) with the same problem.
+> >>        */
+> >>       if (c->x86 == 15) {
+> >> -             rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+> >> +             allow_fast_string = false;
+> >>
+> >> +             rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+> >>               if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING) {
+> >>                       printk(KERN_INFO "kmemcheck: Disabling fast
+> string
+> >> operations\n");
+> >>
+> >> @@ -130,11 +132,28 @@ static void __cpuinit early_init_intel(struct
+> >> cpuinfo_x86 *c)
+> >>  #endif
+> >>
+> >>       /*
+> >> -      * If fast string is not enabled in IA32_MISC_ENABLE for any
+> >> reason,
+> >> -      * clear the fast string and enhanced fast string CPU
+> >> capabilities.
+> >> +      * If BIOS didn't enable fast string operation, try to enable
+> >> +      * it ourselves.  If that fails, then clear the fast string
+> >> +      * and enhanced fast string CPU capabilities.
+> >>        */
+> >>       if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
+> >>               rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+> >> +
+> >> +             if (allow_fast_string &&
+> >> +                 !(misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING))
+> {
+> >> +                     misc_enable |=
+> MSR_IA32_MISC_ENABLE_FAST_STRING;
+> >> +                     wrmsr_safe(MSR_IA32_MISC_ENABLE,
+> (u32)misc_enable,
+> >> +                                (u32)(misc_enable >> 32));
+> >> +
+> >> +                     /* Re-read to make sure it stuck. */
+> >> +                     rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
+> >> +
+> >> +                     if (misc_enable &
+> MSR_IA32_MISC_ENABLE_FAST_STRING)
+> >> +                             printk(KERN_WARNING FW_WARN "CPU #%d:
+> "
+> >> +
+>  "IA32_MISC_ENABLE.FAST_STRING_ENABLE "
+> >> +                                    "was not set", c->cpu_index);
+> > This printk is redundant because the same info is dumped in the below
+> printk. Plus it's not firmware's issue if we can not set fast string
+> bit 0 in MISC_ENABLE register. So I don't think FW_WARN is right.
+> 
+> Huh?  This is the success path -- the patch prints the warning if
+> flipping the bit worked...
 
-This commit replace the function strict_strtoul(becasue commit 33ee3b2e), and check the return value to avoid such warning:
+Ok. I see.
 
-  drivers/video/via/viafbdev.c:1992: warning: ignoring return value of 'kstrtoul', declared with attribute warn_unused_result
+Still I would suggest to remove this printk. This info will be printed on every single CPU if BIOS doesn't enable fast string. This could flood the log buffer on big machines or many threads machines. And the info doesn't really provide useful message because we enable fast string in OS anyway. Reporting BIOS issue by this info probably will be viewed as low priority or ignored. 
 
-Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
----
- drivers/video/via/viafbdev.c |  126 ++++++++++++++++++++++-------------------
- 1 files changed, 68 insertions(+), 58 deletions(-)
+The following info is more important because it reports an abnormal behavior.
 
-Change since V1:
-  1.use kstrto*, not kstrtoul
-  2.replace &buf[0] to buf
+Thanks.
 
-diff --git drivers/video/via/viafbdev.c drivers/video/via/viafbdev.c
-index 53aa443..0186cd7 100644
---- drivers/video/via/viafbdev.c
-+++ drivers/video/via/viafbdev.c
-@@ -1158,7 +1158,8 @@ static ssize_t viafb_dvp0_proc_write(struct file *file,
- 	for (i = 0; i < 3; i++) {
- 		value = strsep(&pbuf, " ");
- 		if (value != NULL) {
--			strict_strtoul(value, 0, (unsigned long *)&reg_val);
-+			if (kstrtou8(value, 0, &reg_val) < 0)
-+				return -EINVAL;
- 			DEBUG_MSG(KERN_INFO "DVP0:reg_val[%l]=:%x\n", i,
- 				  reg_val);
- 			switch (i) {
-@@ -1228,7 +1229,8 @@ static ssize_t viafb_dvp1_proc_write(struct file *file,
- 	for (i = 0; i < 3; i++) {
- 		value = strsep(&pbuf, " ");
- 		if (value != NULL) {
--			strict_strtoul(value, 0, (unsigned long *)&reg_val);
-+			if (kstrtou8(value, 0, &reg_val) < 0)
-+				return -EINVAL;
- 			switch (i) {
- 			case 0:
- 				viafb_write_reg_mask(CR9B, VIACR,
-@@ -1286,7 +1288,8 @@ static ssize_t viafb_dfph_proc_write(struct file *file,
- 	if (copy_from_user(&buf[0], buffer, length))
- 		return -EFAULT;
- 	buf[length - 1] = '\0';	/*Ensure end string */
--	strict_strtoul(&buf[0], 0, (unsigned long *)&reg_val);
-+	if (kstrtou8(buf, 0, &reg_val) < 0)
-+		return -EINVAL;
- 	viafb_write_reg_mask(CR97, VIACR, reg_val, 0x0f);
- 	return count;
- }
-@@ -1325,7 +1328,8 @@ static ssize_t viafb_dfpl_proc_write(struct file *file,
- 	if (copy_from_user(&buf[0], buffer, length))
- 		return -EFAULT;
- 	buf[length - 1] = '\0';	/*Ensure end string */
--	strict_strtoul(&buf[0], 0, (unsigned long *)&reg_val);
-+	if (kstrtou8(buf, -1, &reg_val) < 0)
-+		return -EINVAL;
- 	viafb_write_reg_mask(CR99, VIACR, reg_val, 0x0f);
- 	return count;
- }
-@@ -1394,8 +1398,8 @@ static ssize_t viafb_vt1636_proc_write(struct file *file,
- 		for (i = 0; i < 2; i++) {
- 			value = strsep(&pbuf, " ");
- 			if (value != NULL) {
--				strict_strtoul(value, 0,
--					(unsigned long *)&reg_val.Data);
-+				if (kstrtou8(value, 0, &reg_val.Data) < 0)
-+					return -EINVAL;
- 				switch (i) {
- 				case 0:
- 					reg_val.Index = 0x08;
-@@ -1431,8 +1435,8 @@ static ssize_t viafb_vt1636_proc_write(struct file *file,
- 		for (i = 0; i < 2; i++) {
- 			value = strsep(&pbuf, " ");
- 			if (value != NULL) {
--				strict_strtoul(value, 0,
--					(unsigned long *)&reg_val.Data);
-+				if (kstrtou8(value, 0, &reg_val.Data) < 0)
-+					return -EINVAL;
- 				switch (i) {
- 				case 0:
- 					reg_val.Index = 0x08;
-@@ -1950,61 +1954,67 @@ static int __init viafb_setup(void)
- 		if (!*this_opt)
- 			continue;
- 
--		if (!strncmp(this_opt, "viafb_mode1=", 12))
-+		if (!strncmp(this_opt, "viafb_mode1=", 12)) {
- 			viafb_mode1 = kstrdup(this_opt + 12, GFP_KERNEL);
--		else if (!strncmp(this_opt, "viafb_mode=", 11))
-+		} else if (!strncmp(this_opt, "viafb_mode=", 11)) {
- 			viafb_mode = kstrdup(this_opt + 11, GFP_KERNEL);
--		else if (!strncmp(this_opt, "viafb_bpp1=", 11))
--			strict_strtoul(this_opt + 11, 0,
--				(unsigned long *)&viafb_bpp1);
--		else if (!strncmp(this_opt, "viafb_bpp=", 10))
--			strict_strtoul(this_opt + 10, 0,
--				(unsigned long *)&viafb_bpp);
--		else if (!strncmp(this_opt, "viafb_refresh1=", 15))
--			strict_strtoul(this_opt + 15, 0,
--				(unsigned long *)&viafb_refresh1);
--		else if (!strncmp(this_opt, "viafb_refresh=", 14))
--			strict_strtoul(this_opt + 14, 0,
--				(unsigned long *)&viafb_refresh);
--		else if (!strncmp(this_opt, "viafb_lcd_dsp_method=", 21))
--			strict_strtoul(this_opt + 21, 0,
--				(unsigned long *)&viafb_lcd_dsp_method);
--		else if (!strncmp(this_opt, "viafb_lcd_panel_id=", 19))
--			strict_strtoul(this_opt + 19, 0,
--				(unsigned long *)&viafb_lcd_panel_id);
--		else if (!strncmp(this_opt, "viafb_accel=", 12))
--			strict_strtoul(this_opt + 12, 0,
--				(unsigned long *)&viafb_accel);
--		else if (!strncmp(this_opt, "viafb_SAMM_ON=", 14))
--			strict_strtoul(this_opt + 14, 0,
--				(unsigned long *)&viafb_SAMM_ON);
--		else if (!strncmp(this_opt, "viafb_active_dev=", 17))
-+		} else if (!strncmp(this_opt, "viafb_bpp1=", 11)) {
-+			if (kstrtouint(this_opt + 11, 0, &viafb_bpp1) < 0)
-+				return -EINVAL;
-+		} else if (!strncmp(this_opt, "viafb_bpp=", 10)) {
-+			if (kstrtouint(this_opt + 10, 0, &viafb_bpp) < 0)
-+				return -EINVAL;
-+		} else if (!strncmp(this_opt, "viafb_refresh1=", 15)) {
-+			if (kstrtoint(this_opt + 15, 0, &viafb_refresh1) < 0)
-+				return -EINVAL;
-+		} else if (!strncmp(this_opt, "viafb_refresh=", 14)) {
-+			if (kstrtoint(this_opt + 14, 0, &viafb_refresh) < 0)
-+				return -EINVAL;
-+		} else if (!strncmp(this_opt, "viafb_lcd_dsp_method=", 21)) {
-+			if (kstrtoint(this_opt + 21, 0,
-+				      &viafb_lcd_dsp_method) < 0)
-+				return -EINVAL;
-+		} else if (!strncmp(this_opt, "viafb_lcd_panel_id=", 19)) {
-+			if (kstrtoint(this_opt + 19, 0,
-+				      &viafb_lcd_panel_id) < 0)
-+				return -EINVAL;
-+		} else if (!strncmp(this_opt, "viafb_accel=", 12)) {
-+			if (kstrtoint(this_opt + 12, 0, &viafb_accel) < 0)
-+				return -EINVAL;
-+		} else if (!strncmp(this_opt, "viafb_SAMM_ON=", 14)) {
-+			if (kstrtoint(this_opt + 14, 0, &viafb_SAMM_ON) < 0)
-+				return -EINVAL;
-+		} else if (!strncmp(this_opt, "viafb_active_dev=", 17)) {
- 			viafb_active_dev = kstrdup(this_opt + 17, GFP_KERNEL);
--		else if (!strncmp(this_opt,
--			"viafb_display_hardware_layout=", 30))
--			strict_strtoul(this_opt + 30, 0,
--			(unsigned long *)&viafb_display_hardware_layout);
--		else if (!strncmp(this_opt, "viafb_second_size=", 18))
--			strict_strtoul(this_opt + 18, 0,
--				(unsigned long *)&viafb_second_size);
--		else if (!strncmp(this_opt,
--			"viafb_platform_epia_dvi=", 24))
--			strict_strtoul(this_opt + 24, 0,
--				(unsigned long *)&viafb_platform_epia_dvi);
--		else if (!strncmp(this_opt,
--			"viafb_device_lcd_dualedge=", 26))
--			strict_strtoul(this_opt + 26, 0,
--				(unsigned long *)&viafb_device_lcd_dualedge);
--		else if (!strncmp(this_opt, "viafb_bus_width=", 16))
--			strict_strtoul(this_opt + 16, 0,
--				(unsigned long *)&viafb_bus_width);
--		else if (!strncmp(this_opt, "viafb_lcd_mode=", 15))
--			strict_strtoul(this_opt + 15, 0,
--				(unsigned long *)&viafb_lcd_mode);
--		else if (!strncmp(this_opt, "viafb_lcd_port=", 15))
-+		} else if (!strncmp(this_opt,
-+			"viafb_display_hardware_layout=", 30)) {
-+			if (kstrtoint(this_opt + 30, 0,
-+				      &viafb_display_hardware_layout) < 0)
-+				return -EINVAL;
-+		} else if (!strncmp(this_opt, "viafb_second_size=", 18)) {
-+			if (kstrtoint(this_opt + 18, 0, &viafb_second_size) < 0)
-+				return -EINVAL;
-+		} else if (!strncmp(this_opt,
-+			"viafb_platform_epia_dvi=", 24)) {
-+			if (kstrtoint(this_opt + 24, 0,
-+				      &viafb_platform_epia_dvi) < 0)
-+				return -EINVAL;
-+		} else if (!strncmp(this_opt,
-+			"viafb_device_lcd_dualedge=", 26)) {
-+			if (kstrtoint(this_opt + 26, 0,
-+				      &viafb_device_lcd_dualedge) < 0)
-+				return -EINVAL;
-+		} else if (!strncmp(this_opt, "viafb_bus_width=", 16)) {
-+			if (kstrtoint(this_opt + 16, 0, &viafb_bus_width) < 0)
-+				return -EINVAL;
-+		} else if (!strncmp(this_opt, "viafb_lcd_mode=", 15)) {
-+			if (kstrtoint(this_opt + 15, 0, &viafb_lcd_mode) < 0)
-+				return -EINVAL;
-+		} else if (!strncmp(this_opt, "viafb_lcd_port=", 15)) {
- 			viafb_lcd_port = kstrdup(this_opt + 15, GFP_KERNEL);
--		else if (!strncmp(this_opt, "viafb_dvi_port=", 15))
-+		} else if (!strncmp(this_opt, "viafb_dvi_port=", 15)) {
- 			viafb_dvi_port = kstrdup(this_opt + 15, GFP_KERNEL);
-+		}
- 	}
- 	return 0;
- }
--- 
-1.7.0.4
-
+-Fenghua
