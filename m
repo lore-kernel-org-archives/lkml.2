@@ -1,99 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533Ab1HGSEc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 14:04:32 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:40467 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754447Ab1HGSEb (ORCPT
+	id S1754562Ab1HGSIt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Aug 2011 14:08:49 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64205 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754421Ab1HGSIq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 14:04:31 -0400
-Date: Sun, 7 Aug 2011 11:04:29 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Amirali Shambayati <amirali.shambayati@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        kernelnewbies@kernelnewbies.org
-Subject: Re: Compile kernel for various times and problem of too long time
- consuming
-Message-Id: <20110807110429.57161269.rdunlap@xenotime.net>
-In-Reply-To: <CAC-yRPQS7r-MMh13Y1m0O+oLBu2OmQqmXS8iHFtCOS9YwrxrkA@mail.gmail.com>
-References: <CAC-yRPQS7r-MMh13Y1m0O+oLBu2OmQqmXS8iHFtCOS9YwrxrkA@mail.gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Sun, 7 Aug 2011 14:08:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFyECSVQT9Gi6KuiBrrMoC44CVJRZAb+s0Lt9j0UuKyfwQ@mail.gmail.com>
+References: <1312595187-3265-1-git-send-email-msb@chromium.org>
+	<CAGhQ9Vxb9F0jJ2o0ft-OOfOUMOArj_ci2gO__mxPkZJaNiA+4A@mail.gmail.com>
+	<CA+55aFxKES2bbcYWD29TFsGg19KXauPDwdkgYXXZbZ72kEXduw@mail.gmail.com>
+	<CAGhQ9VzBAXv1cW5hAmUmfHQBDcAprLg_8T2XxRyrWT2G85AV6A@mail.gmail.com>
+	<CA+55aFyECSVQT9Gi6KuiBrrMoC44CVJRZAb+s0Lt9j0UuKyfwQ@mail.gmail.com>
+Date: Sun, 7 Aug 2011 20:08:45 +0200
+Message-ID: <CAGhQ9Vx-MoFb7rEBQCwqi8zLjoWiED7FXvzcq2eDfTEg_P=2ug@mail.gmail.com>
+Subject: Re: [PATCH] lib/sha1: use the git implementation of SHA-1
+From: Joachim Eastwood <manabian@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
+        Ramsay Jones <ramsay@ramsay1.demon.co.uk>,
+        Nicolas Pitre <nico@cam.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        linux@arm.linux.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 7 Aug 2011 21:39:12 +0430 Amirali Shambayati wrote:
+On Sun, Aug 7, 2011 at 7:44 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sun, Aug 7, 2011 at 10:36 AM, Joachim  Eastwood <manabian@gmail.com> wrote:
+>>
+>> These printk's come from drivers/char/random.c
+>> So it doesn't seem like it hangs in any of the sha_* funtions.
+>
+> The only other change is to SHA_WORKSPACE_WORDS - I wonder if some
+> code depends on the old (much bigger) workspace for some reason?
+>
+> The git SHA1 routines are way smarter than the old SHA1, and will
+> re-use the workspace area, so they need only a fraction of the old
+> area.
+>
+> Try changing SHA_WORKSPACE_WORDS back to 80 (in
+> include/linux/cryptohash.h). The git sha1 only needs 16 words, but ..
 
-> Hi all,
-> Since I want to evaluate performance improvements by changing just one
-> file in kernel(noop-iosched) and compiling kernel is too much
-> time-consuming, I want to know that if I compile kernel for more than
-> one time, does it take similar time to first time?
-> 
-> I use following commands. If I don't use "make-kpkg clean" for next
-> times, does it just compile the files which have been modified or it
-> compile whole kernel package again?
-> 
-> make-kpkg clean
-> fakeroot make-kpkg --initrd --append-to-version=-some-string-here
-> kernel-image kernel-headers
+yup, setting it to 80 makes my kernel boot again :-)
 
-Since I never use make-kpkg, I can only tell you that when I modified
-block/noop-iosched.c and rebuilt the kernel, here is what was rebuilt:
+> If that fixes it for you, then it's almost certainly some buggy user
+> that uses the SHA1 workspace array for its own odd case, and
+> incorrectly "knows" that it's that old wasteful 320 bytes. There's a
+> few places in networking that uses SHA_WORKSPACE_WORDS.
 
-  GEN     /lnx/src/NEXT/linux-next-20110805/X32/Makefile
-  CHK     include/linux/version.h
-  Using /lnx/src/NEXT/linux-next-20110805 as source for kernel
-  CHK     include/generated/utsrelease.h
-  CALL    /lnx/src/NEXT/linux-next-20110805/scripts/checksyscalls.sh
-  CHK     include/generated/compile.h
-  CHK     kernel/config_data.h
-  CC      block/noop-iosched.o
-  LD      block/built-in.o
-  LD      vmlinux.o
-  MODPOST vmlinux.o
-  GEN     .version
-  CHK     include/generated/compile.h
-  UPD     include/generated/compile.h
-  CC      init/version.o
-  LD      init/built-in.o
-  LD      .tmp_vmlinux1
-  KSYM    .tmp_kallsyms1.S
-  AS      .tmp_kallsyms1.o
-  LD      .tmp_vmlinux2
-  KSYM    .tmp_kallsyms2.S
-  AS      .tmp_kallsyms2.o
-  LD      vmlinux
-  SYSMAP  System.map
-  SYSMAP  .tmp_System.map
-  Building modules, stage 2.
-  VOFFSET arch/x86/boot/voffset.h
-  CC      arch/x86/boot/version.o
-  OBJCOPY arch/x86/boot/compressed/vmlinux.bin
-  LZMA    arch/x86/boot/compressed/vmlinux.bin.lzma
-  MODPOST 575 modules
-  MKPIGGY arch/x86/boot/compressed/piggy.S
-  AS      arch/x86/boot/compressed/piggy.o
-  LD      arch/x86/boot/compressed/vmlinux
-  ZOFFSET arch/x86/boot/zoffset.h
-  OBJCOPY arch/x86/boot/vmlinux.bin
-  AS      arch/x86/boot/header.o
-  LD      arch/x86/boot/setup.elf
-  OBJCOPY arch/x86/boot/setup.bin
-  BUILD   arch/x86/boot/bzImage
-Setup is 14972 bytes (padded to 15360 bytes).
-System is 1287 kB
-CRC 64ecf4d
-Kernel: arch/x86/boot/bzImage is ready  (#18)
+Guess more architectures than ARM are affected by this then.
 
+regards
+Joachim Eastwood
 
-so it's a minimal rebuild, not a full kernel rebuild.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+>                                     Linus
+>
