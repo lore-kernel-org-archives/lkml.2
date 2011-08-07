@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab1HGBld (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 21:41:33 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:54974 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753492Ab1HGBlb (ORCPT
+	id S1756937Ab1HGBvp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 21:51:45 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:44810 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756791Ab1HGBvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 21:41:31 -0400
-Date: Sat, 6 Aug 2011 18:41:29 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: lkml <linux-kernel@vger.kernel.org>, jlee@novell.com,
-        joeyli.kernel@gmail.com, akpm <akpm@linux-foundation.org>
-Cc: dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH] gpu/stub: try to make help text readable
-Message-Id: <20110806184129.287dd4f9.rdunlap@xenotime.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Sat, 6 Aug 2011 21:51:43 -0400
+Date: Sat, 06 Aug 2011 18:51:39 -0700 (PDT)
+Message-Id: <20110806.185139.503343378584779938.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 06 Aug 2011 18:51:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
 
-I couldn't parse the STUB_POULSBO help text and the module names
-were misleading, so try to make it more readable, use corrected
-module names, and spell "acpi" as "ACPI".
+Please pull to get the MD5 sequence number changes.
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Lee, Chun-Yi <jlee@novell.com>
-Cc: Lee, Chun-Yi <joeyli.kernel@gmail.com>
-Cc: Dave Airlie <airlied@redhat.com>
----
- drivers/gpu/stub/Kconfig |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Thanks!
 
---- linux-3.0-git22.orig/drivers/gpu/stub/Kconfig
-+++ linux-3.0-git22/drivers/gpu/stub/Kconfig
-@@ -12,7 +12,7 @@ config STUB_POULSBO
- 	help
- 	  Choose this option if you have a system that has Intel GMA500
- 	  (Poulsbo) integrated graphics. If M is selected, the module will
--	  be called Poulsbo. This driver is a stub driver for Poulsbo that
--	  will call poulsbo.ko to enable the acpi backlight control sysfs
--	  entry file because there have no poulsbo native driver can support
-+	  be called poulsbo. This driver is a stub driver for Poulsbo that
-+	  will call psb_gfx.ko to enable the ACPI backlight control sysfs
-+	  entry file because there is no poulsbo native driver that supports
- 	  intel opregion.
+The following changes since commit de96355c111679dd6e2c5c73e25e814c72510c58:
+
+  Merge branch 'drm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6 (2011-08-05 06:44:38 -1000)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net.git master
+
+David S. Miller (2):
+      crypto: Move md5_transform to lib/md5.c
+      net: Compute protocol sequence numbers and fragment IDs using MD5.
+
+ crypto/md5.c                             |   92 +--------
+ drivers/char/random.c                    |  349 +-----------------------------
+ include/linux/cryptohash.h               |    5 +
+ include/linux/random.h                   |   12 -
+ include/net/secure_seq.h                 |   20 ++
+ lib/Makefile                             |    2 +-
+ lib/md5.c                                |   95 ++++++++
+ net/core/Makefile                        |    2 +-
+ net/core/secure_seq.c                    |  184 ++++++++++++++++
+ net/dccp/ipv4.c                          |    1 +
+ net/dccp/ipv6.c                          |    9 +-
+ net/ipv4/inet_hashtables.c               |    1 +
+ net/ipv4/inetpeer.c                      |    1 +
+ net/ipv4/netfilter/nf_nat_proto_common.c |    1 +
+ net/ipv4/route.c                         |    1 +
+ net/ipv4/tcp_ipv4.c                      |    1 +
+ net/ipv6/inet6_hashtables.c              |    1 +
+ net/ipv6/tcp_ipv6.c                      |    1 +
+ 18 files changed, 325 insertions(+), 453 deletions(-)
+ create mode 100644 include/net/secure_seq.h
+ create mode 100644 lib/md5.c
+ create mode 100644 net/core/secure_seq.c
