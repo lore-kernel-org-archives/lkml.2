@@ -1,51 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333Ab1HGRpL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 13:45:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54724 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753291Ab1HGRpJ (ORCPT
+	id S1754329Ab1HGRsd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Aug 2011 13:48:33 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44164 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753291Ab1HGRsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 13:45:09 -0400
+	Sun, 7 Aug 2011 13:48:31 -0400
+Date: Sun, 7 Aug 2011 18:48:29 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Steve French <smfrench@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org
+Subject: Re: new sparse warning fs/cifs/cifsfs.c:168:15: warning: dereference
+ of noderef expression fs/cifs/cifsfs.c:542:15: warning: dereference of
+ noderef expression
+Message-ID: <20110807174829.GY2203@ZenIV.linux.org.uk>
+References: <CAH2r5mszsiu2Gm-DPbfT8UReT=eBTf4Du4eyEapG8Ayn7UN1pw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGhQ9VzBAXv1cW5hAmUmfHQBDcAprLg_8T2XxRyrWT2G85AV6A@mail.gmail.com>
-References: <1312595187-3265-1-git-send-email-msb@chromium.org>
- <CAGhQ9Vxb9F0jJ2o0ft-OOfOUMOArj_ci2gO__mxPkZJaNiA+4A@mail.gmail.com>
- <CA+55aFxKES2bbcYWD29TFsGg19KXauPDwdkgYXXZbZ72kEXduw@mail.gmail.com> <CAGhQ9VzBAXv1cW5hAmUmfHQBDcAprLg_8T2XxRyrWT2G85AV6A@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 7 Aug 2011 10:44:45 -0700
-Message-ID: <CA+55aFyECSVQT9Gi6KuiBrrMoC44CVJRZAb+s0Lt9j0UuKyfwQ@mail.gmail.com>
-Subject: Re: [PATCH] lib/sha1: use the git implementation of SHA-1
-To: Joachim Eastwood <manabian@gmail.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        Ramsay Jones <ramsay@ramsay1.demon.co.uk>,
-        Nicolas Pitre <nico@cam.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        linux@arm.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAH2r5mszsiu2Gm-DPbfT8UReT=eBTf4Du4eyEapG8Ayn7UN1pw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 7, 2011 at 10:36 AM, Joachim  Eastwood <manabian@gmail.com> wrote:
->
-> These printk's come from drivers/char/random.c
-> So it doesn't seem like it hangs in any of the sha_* funtions.
+On Sun, Aug 07, 2011 at 11:22:51AM -0500, Steve French wrote:
+> I noticed a series of sparse warnings (on all calls to cifs's GetXid
+> after building on a newly install fc15 system (yum installed a sparse
+> binary dated June 23).
+> 
+> fs/cifs/cifsfs.c:168:15: warning: dereference of noderef expression
+> fs/cifs/cifsfs.c:542:15: warning: dereference of noderef expression
+> 
+> Has sparse changed to add a new warning - I see (from quick search)
+> others getting this on other modules years ago, but I didn't see
+> anything obvious wrong with the definition of the function, and I
+> hadn't noticed sparse complaining about it before, and would like to
+> remove the 50+ new messages as they clutter the build output.
 
-The only other change is to SHA_WORKSPACE_WORDS - I wonder if some
-code depends on the old (much bigger) workspace for some reason?
+It's not sparse change - the whinge comes from current_fsuid(), i.e. direct
+read of current->cred, even though it's declared with __rcu.  The thing is,
+current->cred does *not* need rcu_dereference() - only the task itself
+can change it.  Easily fixed...
 
-The git SHA1 routines are way smarter than the old SHA1, and will
-re-use the workspace area, so they need only a fraction of the old
-area.
-
-Try changing SHA_WORKSPACE_WORDS back to 80 (in
-include/linux/cryptohash.h). The git sha1 only needs 16 words, but ..
-
-If that fixes it for you, then it's almost certainly some buggy user
-that uses the SHA1 workspace array for its own odd case, and
-incorrectly "knows" that it's that old wasteful 320 bytes. There's a
-few places in networking that uses SHA_WORKSPACE_WORDS.
-
-                                     Linus
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index 48e82af..98f46ef 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -265,10 +265,11 @@ static inline void put_cred(const struct cred *_cred)
+ /**
+  * current_cred - Access the current task's subjective credentials
+  *
+- * Access the subjective credentials of the current task.
++ * Access the subjective credentials of the current task.  RCU-safe,
++ * since nobody else can modify it.
+  */
+ #define current_cred() \
+-	(current->cred)
++	(*(__force struct cred **)&current->cred)
+ 
+ /**
+  * __task_cred - Access a task's objective credentials
+@@ -307,7 +308,7 @@ static inline void put_cred(const struct cred *_cred)
+ ({							\
+ 	struct user_struct *__u;			\
+ 	struct cred *__cred;				\
+-	__cred = (struct cred *) current_cred();	\
++	__cred = current_cred();			\
+ 	__u = get_uid(__cred->user);			\
+ 	__u;						\
+ })
+@@ -322,7 +323,7 @@ static inline void put_cred(const struct cred *_cred)
+ ({							\
+ 	struct group_info *__groups;			\
+ 	struct cred *__cred;				\
+-	__cred = (struct cred *) current_cred();	\
++	__cred = current_cred();			\
+ 	__groups = get_group_info(__cred->group_info);	\
+ 	__groups;					\
+ })
+@@ -341,7 +342,7 @@ static inline void put_cred(const struct cred *_cred)
+ 
+ #define current_cred_xxx(xxx)			\
+ ({						\
+-	current->cred->xxx;			\
++	current_cred()->xxx;			\
+ })
+ 
+ #define current_uid()		(current_cred_xxx(uid))
