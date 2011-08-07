@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914Ab1HGVOf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 17:14:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39027 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755178Ab1HGVOe (ORCPT
+	id S1756204Ab1HGVUh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Aug 2011 17:20:37 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49584 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755262Ab1HGVUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 17:14:34 -0400
+	Sun, 7 Aug 2011 17:20:35 -0400
+Date: Mon, 8 Aug 2011 01:20:31 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Serge Hallyn <serue@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Glauber Costa <glommer@parallels.com>, containers@lists.osdl.org,
+        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [patch 3/4] proc: Introduce the Children: line in /proc/<pid>/status
+Message-ID: <20110807212031.GG2080@sun>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1108072155240.9480@tiger>
-References: <20110805010038.GA18148@redhat.com> <20110805084614.GA1588@x4.trippels.de>
- <CAOJsxLEMf8SbSmJv5u6GZtq_OYH3fpmomT-ioWXQGp83veK7wQ@mail.gmail.com>
- <alpine.DEB.2.00.1108051131440.28580@router.home> <20110805163948.GA11113@redhat.com>
- <alpine.DEB.2.00.1108051146180.28580@router.home> <20110805165119.GA11593@redhat.com>
- <alpine.DEB.2.00.1108051158400.28580@router.home> <20110805171607.GA11703@redhat.com>
- <alpine.DEB.2.00.1108051312090.28580@router.home> <20110805182008.GA22314@redhat.com>
- <CA+55aFwGSJM6g+YXfy_Oyb0OpQP5kH=OxCR-pnBk7RUshL+mXg@mail.gmail.com> <alpine.DEB.2.00.1108072155240.9480@tiger>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 7 Aug 2011 14:13:41 -0700
-Message-ID: <CA+55aFzdp+7+AcCFbx3dCkfqERzYvOZG3c3SUuNAw+X0MJ8iNw@mail.gmail.com>
-Subject: Re: list corruption in the last few days. (block ? crypto ?)
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 7, 2011 at 11:58 AM, Pekka Enberg <penberg@kernel.org> wrote:
->
-> Christoph, I've been reading the code and spotted two potential issues in
-> __slab_free(). The first one seems like an off-by-one where our comparison
-> in deactivate_slab() doesn't match __slab_free.
->
-> The other one is remove_full() call in __slab_free() that can get called
-> even if cache debugging is not enabled.
->
-> Hmm?
+From: Pavel Emelyanov <xemul@parallels.com>
 
-I'd like to do -rc1 today, regardless of whether this fixes things or
-not (-rc1 is already a few days delayed).
+Although we can get the pids of some task's issue, this is just 
+more convenient to have them this way.
 
-The patch seems to be a good fix, and a likely candidate for the
-corruption. Commit log and sign-off? I assume you've given it some
-testing, even if you couldn't reproduce the original issue?
+Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+ fs/proc/array.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-                          Linus
+Index: linux-2.6.git/fs/proc/array.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/array.c
++++ linux-2.6.git/fs/proc/array.c
+@@ -158,6 +158,18 @@ static inline const char *get_task_state
+ 	return *p;
+ }
+ 
++static void task_children(struct seq_file *m, struct task_struct *p, struct pid_namespace *ns)
++{
++	struct task_struct *c;
++
++	seq_printf(m, "Children:");
++	read_lock(&tasklist_lock);
++	list_for_each_entry(c, &p->children, sibling)
++		seq_printf(m, " %d", pid_nr_ns(task_pid(c), ns));
++	read_unlock(&tasklist_lock);
++	seq_putc(m, '\n');
++}
++
+ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+ 				struct pid *pid, struct task_struct *p)
+ {
+@@ -192,6 +204,8 @@ static inline void task_state(struct seq
+ 		cred->uid, cred->euid, cred->suid, cred->fsuid,
+ 		cred->gid, cred->egid, cred->sgid, cred->fsgid);
+ 
++	task_children(m, p, ns);
++
+ 	task_lock(p);
+ 	if (p->files)
+ 		fdt = files_fdtable(p->files);
