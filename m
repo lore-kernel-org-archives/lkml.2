@@ -1,36 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab1HGIzF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 04:55:05 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59295 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751556Ab1HGIzB (ORCPT
+	id S1752487Ab1HGJ2z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Aug 2011 05:28:55 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:32875 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752351Ab1HGJ2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 04:55:01 -0400
-Date: Sun, 7 Aug 2011 09:54:59 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] vfs fix
-Message-ID: <20110807085459.GX2203@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 7 Aug 2011 05:28:54 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org
+Subject: [PATCH] slub: fix check_bytes() for slub debugging
+Date: Sun,  7 Aug 2011 18:30:38 +0900
+Message-Id: <1312709438-7608-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I forgot to remove MAY_NOT_BLOCK from mask when we started to call
-posix_acl_permission() on RCU path.  Ari has caught and fixed that.
-Please, pull from
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
+The check_bytes() function is used by slub debugging.  It returns a pointer
+to the first unmatching byte for a character in the given memory area.
 
-Shortlog:
-Ari Savolainen (1):
-      Fix POSIX ACL permission check
+If the character for matching byte is greater than 0x80, check_bytes()
+doesn't work.  Becuase 64-bit pattern is generated as below.
 
-Diffstat:
- fs/namei.c |    2 +-
+	value64 = value | value << 8 | value << 16 | value << 24;
+	value64 = value64 | value64 << 32;
+
+The integer promotions are performed and sign-extended as the type of value
+is u8.  The upper 32 bits of value64 is 0xffffffff in the first line, and
+the second line has no effect.
+
+This fixes the 64-bit pattern generation.
+
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: linux-mm@kvack.org
+---
+ mm/slub.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/mm/slub.c b/mm/slub.c
+index eb5a8f9..5695f92 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -701,7 +701,7 @@ static u8 *check_bytes(u8 *start, u8 value, unsigned int bytes)
+ 		return check_bytes8(start, value, bytes);
+ 
+ 	value64 = value | value << 8 | value << 16 | value << 24;
+-	value64 = value64 | value64 << 32;
++	value64 = (value64 & 0xffffffff) | value64 << 32;
+ 	prefix = 8 - ((unsigned long)start) % 8;
+ 
+ 	if (prefix) {
+-- 
+1.7.4.4
 
