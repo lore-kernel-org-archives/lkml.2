@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab1HGQ2T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 12:28:19 -0400
-Received: from smtp2.uniroma3.it ([62.241.4.211]:45992 "EHLO smtp2.uniroma3.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752605Ab1HGQ2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 12:28:18 -0400
-Message-ID: <4E2E11AD000385A0@smtp2.uniroma3.it> (added by postmaster@poste.it)
-Reply-To: <verification_supteam@hotmail.com>
-From: "ADMIN-SUPPORT" <zennaro@uniroma3.it>
-Subject: Upgrade Notification
-Date: Sun, 7 Aug 2011 21:55:06 +0530
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+	id S1754098Ab1HGQrt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Aug 2011 12:47:49 -0400
+Received: from mail6.webfaction.com ([74.55.86.74]:41326 "EHLO
+	smtp.webfaction.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab1HGQrr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Aug 2011 12:47:47 -0400
+Subject: Re: RFC: [Restatement] KBUS messaging subsystem
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Tony Ibbs <tibs@tonyibbs.co.uk>
+In-Reply-To: <81866CAA-9010-4167-A556-84191E0BDFBA@tonyibbs.co.uk>
+Date: Sun, 7 Aug 2011 17:47:19 +0100
+Cc: Colin Walters <walters@verbum.org>, lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Florian Fainelli <florian@openwrt.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linux-embedded <linux-embedded@vger.kernel.org>,
+        Tibs at Kynesim <tibs@kynesim.co.uk>,
+        Richard Watts <rrw@kynesim.co.uk>
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 110807-0, 08/07/2011), Outbound message
-X-Antivirus-Status: Clean
-To: unlisted-recipients:; (no To-header on input)
+Message-Id: <D4FF13B8-FD82-4E87-96DA-87A22DD536E4@tonyibbs.co.uk>
+References: <cover.1300450604.git.tibs@tonyibbs.co.uk> <201105171050.38903.florian@openwrt.org> <37F5AF18-99E5-4516-B31F-00F7BD348ADE@tonyibbs.co.uk> <201107061815.36294.florian@openwrt.org> <5F531701-B760-45F0-989D-669013409FE8@tonyibbs.co.uk> <CADkLE3XRg6N2cWHXH_JsU56tfw5v5XmJJLfLBM_RtWJRMcZWtA@mail.gmail.com> <81866CAA-9010-4167-A556-84191E0BDFBA@tonyibbs.co.uk>
+To: Tony Ibbs <tibs@tonyibbs.co.uk>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Upgrade Notification To All Chello Owners
 
- This Email is from Chello Web e-Mail support team and we are sending it
- to
- every Mail Email User Accounts Owner for safety. we are having congestions
- due to the anonymous registration of mail accounts so we are shutting down
- some mail accounts and your account was among those to be deleted. We,are
- sending this email to you so that you can verify and let us know if you
- still want to use this account. If you are still interested please confirm
- your account by filling the space below.Your User name, password, date of
- birth would be needed to verify your account.
+On 3 Aug 2011, at 21:14, Tony Ibbs wrote:
 
- Due to the congestion in all Mail back-users and removal of all unused
- Mail Accounts, We would be shutting down all unused Accounts, You will
- have to confirm your E-Mail by filling out your Chello user Information
- below after clicking the reply Maillot, or your account will be suspended
-within 48 hours for security reasons.
+> On 29 Jul 2011, at 00:58, Colin Walters wrote:
+> 
+>> You don't mention what your performance requirements are
+>> (if any) for example.
+> 
+> We don't particularly have any...
 
- * Username:
- * Password:
-* Date of Birth:
+My colleague says that he has previously done measurements that show
+KBUS to be about 3 times slower than using shared memory and futexes,
+but (of course) much simpler to use.
 
- After following the instructions in the sheet, your account will not be
-interrupted and will continue as normal. Thanks for your attention to this
- request. We apologize for any inconveniences.
+His implication is, I believe, that this is a respectable speed.
 
- Warning!!! Account owner that refuses to update his/her account after two
- weeks of receiving this warning will lose his or her account permanently.
-
- Sincerely
-Chello Communications Help Desk
+Tibs
