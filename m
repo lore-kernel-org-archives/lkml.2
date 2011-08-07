@@ -1,37 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab1HGHC4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 03:02:56 -0400
+	id S1755106Ab1HGHDM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Aug 2011 03:03:12 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:57984 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab1HGHCy (ORCPT
+	with ESMTP id S1753871Ab1HGHDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 03:02:54 -0400
+	Sun, 7 Aug 2011 03:03:01 -0400
 From: Richard Cochran <richardcochran@gmail.com>
 To: <netdev@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>
-Subject: [PATCH 0/2] ptp: bug fixes for 3.1 and 3.0
-Date: Sun,  7 Aug 2011 09:03:02 +0200
-Message-Id: <cover.1312699693.git.richard.cochran@omicron.at>
+Cc: <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
+        <stable@kernel.org>
+Subject: [PATCH 2/2] dp83640: increase receive time stamp buffer size
+Date: Sun,  7 Aug 2011 09:03:04 +0200
+Message-Id: <d38d5b44e8894387852a116492cb825159b5842c.1312699694.git.richard.cochran@omicron.at>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <cover.1312699693.git.richard.cochran@omicron.at>
+References: <cover.1312699693.git.richard.cochran@omicron.at>
+In-Reply-To: <cover.1312699693.git.richard.cochran@omicron.at>
+References: <cover.1312699693.git.richard.cochran@omicron.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These two patches fix two bugs in the PTP Hardware Clock drivers. The
-drivers were first introduced in Linux version 3.0.
+The dp83640 buffers receive time stamps from special PHY status frames,
+matching them to received PTP packets in a work queue. Because the timeout
+for orphaned time stamps is so long and the buffer is so small, the driver
+can drop time stamps under moderate PTP traffic.
 
-Please apply them.
+This commit fixes the issue by decreasing the timeout to (at least) one
+timer tick and increasing the buffer size.
 
-Thanks,
-Richard
-
-
-Richard Cochran (2):
-  gianfar: fix fiper alignment after resetting the time
-  dp83640: increase receive time stamp buffer size
-
- drivers/net/gianfar_ptp.c |    9 ++-------
+Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
+Cc: <stable@kernel.org>
+---
  drivers/net/phy/dp83640.c |    5 ++---
- 2 files changed, 4 insertions(+), 10 deletions(-)
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/phy/dp83640.c b/drivers/net/phy/dp83640.c
+index 2cd8dc5..cb6e0b4 100644
+--- a/drivers/net/phy/dp83640.c
++++ b/drivers/net/phy/dp83640.c
+@@ -34,8 +34,7 @@
+ #define PAGESEL		0x13
+ #define LAYER4		0x02
+ #define LAYER2		0x01
+-#define MAX_RXTS	4
+-#define MAX_TXTS	4
++#define MAX_RXTS	64
+ #define N_EXT_TS	1
+ #define PSF_PTPVER	2
+ #define PSF_EVNT	0x4000
+@@ -218,7 +217,7 @@ static void phy2rxts(struct phy_rxts *p, struct rxts *rxts)
+ 	rxts->seqid = p->seqid;
+ 	rxts->msgtype = (p->msgtype >> 12) & 0xf;
+ 	rxts->hash = p->msgtype & 0x0fff;
+-	rxts->tmo = jiffies + HZ;
++	rxts->tmo = jiffies + 2;
+ }
+ 
+ static u64 phy2txts(struct phy_txts *p)
+-- 
+1.7.0.4
 
