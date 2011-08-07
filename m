@@ -1,28 +1,28 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1751601Ab1HBWXl (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Tue, 2 Aug 2011 18:23:41 -0400
-Received: from mail.eceme.ensino.eb.br ([200.20.16.250]:40279 "EHLO
-        mail.eceme.ensino.eb.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1750926Ab1HBWXh (ORCPT
-        <rfc822;linux-kernel@vger.kernel.org>);
-        Tue, 2 Aug 2011 18:23:37 -0400
-X-Greylist: delayed 6305 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Aug 2011 18:23:37 EDT
-From: "eceme" <eceme@eceme.ensino.eb.br>
-Reply-To: reddot.claim@live.com
+        id S1751393Ab1HGGf3 (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Sun, 7 Aug 2011 02:35:29 -0400
+Received: from mail.mp3c.ru ([217.197.114.155]:1404 "EHLO e-post15.km.ru"
+        rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+        id S1751063Ab1HGGf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+        Sun, 7 Aug 2011 02:35:27 -0400
+X-Greylist: delayed 474 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Aug 2011 02:35:26 EDT
+From: =?windows-1251?b?VG9tIA==?= <rowlandpsshmtom@km.ru>
+To: android-developers@googlegroups.com, linux.kernel@googlegroups.com,
+        linux-kernel@vger.kernel.org, rubyonrails-talk@googlegroups.com,
+        comp.lang.python@googlegroups.com,
+        google-maps-api@googlegroups.com,
+        google-web-toolkit@googlegroups.com, comp.lang.c@googlegroups.com,
+        django-users@googlegroups.com, cake-php@googlegroups.com
 Subject: 
-Date: Tue, 2 Aug 2011 17:37:03 -0200
-Message-Id: <20110802193703.M58135@eceme.ensino.eb.br>
-X-Mailer: OpenWebMail 2.53 
-X-OriginatingIP: 192.251.226.205 (eceme)
+Date: Sun, 7 Aug 2011 10:27:25 +0400
+Message-Id: <4E3E304D.000EDF.06992@e-post15.km.ru>
 MIME-Version: 1.0
-Content-Type: text/plain;
-        charset=utf-8
-To: undisclosed-recipients:;
+Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="windows-1251"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-You Won 600,000.00 Pounds. From RED DOT AWARDS.Contact Dr. Peter Zec For
-Claims.
-Contact : reddot.claim@live.com
+http://produtcs7girlfrined.cz.cc/x2ggx10yd.jsp
