@@ -1,75 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577Ab1HGHI5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 03:08:57 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52931 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab1HGHI4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 03:08:56 -0400
-From: Richard Cochran <richardcochran@gmail.com>
-To: <netdev@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
-        <stable@kernel.org>
-Subject: [PATCH 1/2] gianfar: fix fiper alignment after resetting the time
-Date: Sun,  7 Aug 2011 09:03:03 +0200
-Message-Id: <018b1f12e792c4758d1e601742f758a09dd10d62.1312699694.git.richard.cochran@omicron.at>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1312699693.git.richard.cochran@omicron.at>
-References: <cover.1312699693.git.richard.cochran@omicron.at>
-In-Reply-To: <cover.1312699693.git.richard.cochran@omicron.at>
-References: <cover.1312699693.git.richard.cochran@omicron.at>
+	id S1751464Ab1HGHTO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Aug 2011 03:19:14 -0400
+Received: from mga03.intel.com ([143.182.124.21]:45355 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750846Ab1HGHTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Aug 2011 03:19:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,332,1309762800"; 
+   d="scan'208";a="35919393"
+Date: Sun, 7 Aug 2011 15:18:57 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrea Righi <andrea@betterlinux.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] writeback: IO-less balance_dirty_pages()
+Message-ID: <20110807071857.GC3287@localhost>
+References: <20110806084447.388624428@intel.com>
+ <20110806094527.136636891@intel.com>
+ <20110806164656.GA1590@thinkpad>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="ZGiS0Q5IWpPtfppv"
+Content-Disposition: inline
+In-Reply-To: <20110806164656.GA1590@thinkpad>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After resetting the time, the PPS signals on the FIPER output channels
-are incorrectly offset from the clock time, as can be readily verified
-by a looping back the FIPER to the external time stamp input.
 
-Despite its name, setting the "Fiper Realignment Disable" bit seems to
-fix the problem, at least on the P2020.
+--ZGiS0Q5IWpPtfppv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Also, following the example code from the Freescale BSP, it is not really
-necessary to disable and re-enable the timer in order to reprogram the
-FIPER. (The documentation is rather unclear on this point. It seems that
-writing to the alarm register also disables the FIPER.)
+Andrea,
 
-Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
-Cc: <stable@kernel.org>
+On Sun, Aug 07, 2011 at 12:46:56AM +0800, Andrea Righi wrote:
+> On Sat, Aug 06, 2011 at 04:44:52PM +0800, Wu Fengguang wrote:
+
+> > So here is a pause time oriented approach, which tries to control the
+> > pause time in each balance_dirty_pages() invocations, by controlling
+> > the number of pages dirtied before calling balance_dirty_pages(), for
+> > smooth and efficient dirty throttling:
+> >
+> > - avoid useless (eg. zero pause time) balance_dirty_pages() calls
+> > - avoid too small pause time (less than   4ms, which burns CPU power)
+> > - avoid too large pause time (more than 200ms, which hurts responsiveness)
+> > - avoid big fluctuations of pause times
+> 
+> I definitely agree that too small pauses must be avoided. However, I
+> don't understand very well from the code how the minimum sleep time is
+> regulated.
+
+Thanks for pointing this out. Yes, the sleep time regulation is not
+here and I should have mentioned that above. Since this is only the
+core bits, there will be some followup patches to fix the rough edges.
+(attached the two relevant patches)
+
+> I've added a simple tracepoint (see below) to monitor the pause times in
+> balance_dirty_pages().
+> 
+> Sometimes I see very small pause time if I set a low dirty threshold
+> (<=32MB).
+
+Yeah, it's definitely possible.
+
+> Example:
+> 
+>  # echo $((16 * 1024 * 1024)) > /proc/sys/vm/dirty_bytes
+>  # iozone -A >/dev/null &
+>  # cat /sys/kernel/debug/tracing/trace_pipe
+>  ...
+>           iozone-2075  [001]   380.604961: writeback_dirty_throttle: 1
+>           iozone-2075  [001]   380.605966: writeback_dirty_throttle: 2
+>           iozone-2075  [001]   380.608405: writeback_dirty_throttle: 0
+>           iozone-2075  [001]   380.608980: writeback_dirty_throttle: 1
+>           iozone-2075  [001]   380.609952: writeback_dirty_throttle: 1
+>           iozone-2075  [001]   380.610952: writeback_dirty_throttle: 2
+>           iozone-2075  [001]   380.612662: writeback_dirty_throttle: 0
+>           iozone-2075  [000]   380.613799: writeback_dirty_throttle: 1
+>           iozone-2075  [000]   380.614771: writeback_dirty_throttle: 1
+>           iozone-2075  [000]   380.615767: writeback_dirty_throttle: 2
+>  ...
+> 
+> BTW, I can see this behavior only in the first minute while iozone is
+> running. Ater ~1min things seem to get stable (sleeps are usually
+> between 50ms and 200ms).
+> 
+
+Yeah, it's roughly in line with this graph, where the red dots are the
+pause time:
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v8/512M/xfs-1dd-4k-8p-438M-20:10-3.0.0-next-20110802+-2011-08-06.11:03/balance_dirty_pages-pause.png
+
+Note that the big change of pattern in the middle is due to a
+deliberate disturb: a dd will be started at 100s _reading_ 1GB data,
+which effectively livelocked the other dd dirtier task with the CFQ io
+scheduler. 
+
+> I wonder if we shouldn't add an explicit check also for the minimum
+> sleep time.
+ 
+With the more complete patchset including the pause time regulation,
+the pause time distribution should look much better, falling nicely
+into the range (5ms, 20ms):
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v8/3G/xfs-1dd-4k-8p-2948M-20:10-3.0.0-rc2-next-20110610+-2011-06-12.21:51/balance_dirty_pages-pause.png
+
+> +TRACE_EVENT(writeback_dirty_throttle,
+> +       TP_PROTO(unsigned long sleep),
+> +       TP_ARGS(sleep),
+
+btw, I've just pushed two more tracing patches to the git tree.
+Hope it helps :)
+
+Thanks,
+Fengguang
+
+--ZGiS0Q5IWpPtfppv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=max-pause
+
+Subject: writeback: limit max dirty pause time
+Date: Sat Jun 11 19:21:43 CST 2011
+
+Apply two policies to scale down the max pause time for
+
+1) small number of concurrent dirtiers
+2) small memory system (comparing to storage bandwidth)
+
+MAX_PAUSE=200ms may only be suitable for high end servers with lots of
+concurrent dirtiers, where the large pause time can reduce much overheads.
+
+Otherwise, smaller pause time is desirable whenever possible, so as to
+get good responsiveness and smooth user experiences. It's actually
+required for good disk utilization in the case when all the dirty pages
+can be synced to disk within MAX_PAUSE=200ms.
+
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- drivers/net/gianfar_ptp.c |    9 ++-------
- 1 files changed, 2 insertions(+), 7 deletions(-)
+ mm/page-writeback.c |   43 ++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 41 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/gianfar_ptp.c b/drivers/net/gianfar_ptp.c
-index 1c97861..f67b8ae 100644
---- a/drivers/net/gianfar_ptp.c
-+++ b/drivers/net/gianfar_ptp.c
-@@ -193,14 +193,9 @@ static void set_alarm(struct etsects *etsects)
- /* Caller must hold etsects->lock. */
- static void set_fipers(struct etsects *etsects)
- {
--	u32 tmr_ctrl = gfar_read(&etsects->regs->tmr_ctrl);
--
--	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl & (~TE));
--	gfar_write(&etsects->regs->tmr_prsc,   etsects->tmr_prsc);
-+	set_alarm(etsects);
- 	gfar_write(&etsects->regs->tmr_fiper1, etsects->tmr_fiper1);
- 	gfar_write(&etsects->regs->tmr_fiper2, etsects->tmr_fiper2);
--	set_alarm(etsects);
--	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl|TE);
+--- linux-next.orig/mm/page-writeback.c	2011-08-07 14:23:45.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-08-07 14:25:29.000000000 +0800
+@@ -856,6 +856,42 @@ static unsigned long ratelimit_pages(uns
+ 	return 1;
  }
  
++static unsigned long bdi_max_pause(struct backing_dev_info *bdi,
++				   unsigned long bdi_dirty)
++{
++	unsigned long hi = ilog2(bdi->write_bandwidth);
++	unsigned long lo = ilog2(bdi->dirty_ratelimit);
++	unsigned long t;
++
++	/* target for ~10ms pause on 1-dd case */
++	t = HZ / 50;
++
++	/*
++	 * Scale up pause time for concurrent dirtiers in order to reduce CPU
++	 * overheads.
++	 *
++	 * (N * 20ms) on 2^N concurrent tasks.
++	 */
++	if (hi > lo)
++		t += (hi - lo) * (20 * HZ) / 1024;
++
++	/*
++	 * Limit pause time for small memory systems. If sleeping for too long
++	 * time, a small pool of dirty/writeback pages may go empty and disk go
++	 * idle.
++	 *
++	 * 1ms for every 1MB; may further consider bdi bandwidth.
++	 */
++	if (bdi_dirty)
++		t = min(t, bdi_dirty >> (30 - PAGE_CACHE_SHIFT - ilog2(HZ)));
++
++	/*
++	 * The pause time will be settled within range (max_pause/4, max_pause).
++	 * Apply a minimal value of 4 to get a non-zero max_pause/4.
++	 */
++	return clamp_val(t, 4, MAX_PAUSE);
++}
++
  /*
-@@ -511,7 +506,7 @@ static int gianfar_ptp_probe(struct platform_device *dev)
- 	gfar_write(&etsects->regs->tmr_fiper1, etsects->tmr_fiper1);
- 	gfar_write(&etsects->regs->tmr_fiper2, etsects->tmr_fiper2);
- 	set_alarm(etsects);
--	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl|FS|RTPE|TE);
-+	gfar_write(&etsects->regs->tmr_ctrl,   tmr_ctrl|FS|RTPE|TE|FRD);
+  * balance_dirty_pages() must be called by processes which are generating dirty
+  * data.  It looks at the number of dirty pages in the machine and will force
+@@ -873,6 +909,7 @@ static void balance_dirty_pages(struct a
+ 	unsigned long dirty_thresh;
+ 	unsigned long bdi_thresh;
+ 	long pause = 0;
++	long max_pause;
+ 	bool dirty_exceeded = false;
+ 	unsigned long bw;
+ 	unsigned long base_bw;
+@@ -930,16 +967,18 @@ static void balance_dirty_pages(struct a
+ 		if (unlikely(!writeback_in_progress(bdi)))
+ 			bdi_start_background_writeback(bdi);
  
- 	spin_unlock_irqrestore(&etsects->lock, flags);
++		max_pause = bdi_max_pause(bdi, bdi_dirty);
++
+ 		base_bw = bdi->dirty_ratelimit;
+ 		bw = bdi_position_ratio(bdi, dirty_thresh, nr_dirty,
+ 					bdi_thresh, bdi_dirty);
+ 		if (unlikely(bw == 0)) {
+-			pause = MAX_PAUSE;
++			pause = max_pause;
+ 			goto pause;
+ 		}
+ 		bw = (u64)base_bw * bw >> BANDWIDTH_CALC_SHIFT;
+ 		pause = (HZ * pages_dirtied + bw / 2) / (bw | 1);
+-		pause = min(pause, MAX_PAUSE);
++		pause = min(pause, max_pause);
  
--- 
-1.7.0.4
+ pause:
+ 		trace_balance_dirty_pages(bdi,
 
+--ZGiS0Q5IWpPtfppv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=max-pause-adaption
+
+Subject: writeback: control dirty pause time
+Date: Sat Jun 11 19:32:32 CST 2011
+
+The dirty pause time shall ultimately be controlled by adjusting
+nr_dirtied_pause, since there is relationship
+
+	pause = pages_dirtied / pos_bw
+
+Assuming
+
+	pages_dirtied ~= nr_dirtied_pause
+	pos_bw ~= base_bw
+
+We get
+
+	nr_dirtied_pause ~= base_bw * desired_pause
+
+Here base_bw is preferred over pos_bw because it's more stable.
+
+It's also important to limit possible large transitional errors:
+
+- bw is changing quickly
+- pages_dirtied << nr_dirtied_pause on entering dirty exceeded area
+- pages_dirtied >> nr_dirtied_pause on btrfs (to be improved by a
+  separate fix, but still expect non-trivial errors)
+
+So we end up using the above formula inside clamp_val().
+
+The best test case for this code is to run 100 "dd bs=4M" tasks on
+btrfs and check its pause time distribution.
+
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+--- linux-next.orig/mm/page-writeback.c	2011-08-07 14:51:18.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-08-07 15:02:08.000000000 +0800
+@@ -1021,7 +1021,19 @@ pause:
+ 		bdi->dirty_exceeded = 0;
+ 
+ 	current->nr_dirtied = 0;
+-	current->nr_dirtied_pause = ratelimit_pages(nr_dirty, dirty_thresh);
++	if (pause == 0)
++		current->nr_dirtied_pause =
++				ratelimit_pages(nr_dirty, dirty_thresh);
++	else if (pause < max_pause / 4)
++		current->nr_dirtied_pause = clamp_val(
++						base_bw * (max_pause/2) / HZ,
++						pages_dirtied + pages_dirtied/8,
++						pages_dirtied * 4);
++	else if (pause > max_pause)
++		current->nr_dirtied_pause = 1 | clamp_val(
++						base_bw * (max_pause*3/8) / HZ,
++						current->nr_dirtied_pause / 4,
++						current->nr_dirtied_pause*7/8);
+ 
+ 	if (writeback_in_progress(bdi))
+ 		return;
+
+--ZGiS0Q5IWpPtfppv--
