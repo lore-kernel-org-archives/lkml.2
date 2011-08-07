@@ -1,48 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab1HGRsd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 13:48:33 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44164 "EHLO
+	id S1754455Ab1HGRzS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Aug 2011 13:55:18 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39160 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753291Ab1HGRsb (ORCPT
+	with ESMTP id S1754213Ab1HGRzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 13:48:31 -0400
-Date: Sun, 7 Aug 2011 18:48:29 +0100
+	Sun, 7 Aug 2011 13:55:14 -0400
+Date: Sun, 7 Aug 2011 18:55:11 +0100
 From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Steve French <smfrench@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org
-Subject: Re: new sparse warning fs/cifs/cifsfs.c:168:15: warning: dereference
- of noderef expression fs/cifs/cifsfs.c:542:15: warning: dereference of
- noderef expression
-Message-ID: <20110807174829.GY2203@ZenIV.linux.org.uk>
-References: <CAH2r5mszsiu2Gm-DPbfT8UReT=eBTf4Du4eyEapG8Ayn7UN1pw@mail.gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Subject: fix rcu annotations noise in cred.h
+Message-ID: <20110807175511.GZ2203@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAH2r5mszsiu2Gm-DPbfT8UReT=eBTf4Du4eyEapG8Ayn7UN1pw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 07, 2011 at 11:22:51AM -0500, Steve French wrote:
-> I noticed a series of sparse warnings (on all calls to cifs's GetXid
-> after building on a newly install fc15 system (yum installed a sparse
-> binary dated June 23).
-> 
-> fs/cifs/cifsfs.c:168:15: warning: dereference of noderef expression
-> fs/cifs/cifsfs.c:542:15: warning: dereference of noderef expression
-> 
-> Has sparse changed to add a new warning - I see (from quick search)
-> others getting this on other modules years ago, but I didn't see
-> anything obvious wrong with the definition of the function, and I
-> hadn't noticed sparse complaining about it before, and would like to
-> remove the 50+ new messages as they clutter the build output.
+task->cred is declared as __rcu, and access to other tasks' ->cred is,
+indeed, protected.  Access to current->cred does not need rcu_dereference()
+at all, since only the task itself can change its ->cred.  sparse, of
+course, has no way of knowing that...
 
-It's not sparse change - the whinge comes from current_fsuid(), i.e. direct
-read of current->cred, even though it's declared with __rcu.  The thing is,
-current->cred does *not* need rcu_dereference() - only the task itself
-can change it.  Easily fixed...
+Add force-cast in current_cred(), make current_fsuid() et.al. use it.
 
 Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 ---
