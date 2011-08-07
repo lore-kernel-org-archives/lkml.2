@@ -1,78 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab1HGRgI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 13:36:08 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:34366 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab1HGRgE convert rfc822-to-8bit (ORCPT
+	id S1754327Ab1HGRg4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Aug 2011 13:36:56 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:50985 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754031Ab1HGRgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 13:36:04 -0400
+	Sun, 7 Aug 2011 13:36:54 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1+B3rdXo22BSpaJ2AM+pxYjOMrwoSJdT/gqlSK5BQ
+	sBhXf86mgX7Ry2
+Message-ID: <4E3ECD32.1050802@gmx.de>
+Date: Sun, 07 Aug 2011 17:36:50 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110702 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxKES2bbcYWD29TFsGg19KXauPDwdkgYXXZbZ72kEXduw@mail.gmail.com>
-References: <1312595187-3265-1-git-send-email-msb@chromium.org>
-	<CAGhQ9Vxb9F0jJ2o0ft-OOfOUMOArj_ci2gO__mxPkZJaNiA+4A@mail.gmail.com>
-	<CA+55aFxKES2bbcYWD29TFsGg19KXauPDwdkgYXXZbZ72kEXduw@mail.gmail.com>
-Date: Sun, 7 Aug 2011 19:36:03 +0200
-Message-ID: <CAGhQ9VzBAXv1cW5hAmUmfHQBDcAprLg_8T2XxRyrWT2G85AV6A@mail.gmail.com>
-Subject: Re: [PATCH] lib/sha1: use the git implementation of SHA-1
-From: Joachim Eastwood <manabian@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        Ramsay Jones <ramsay@ramsay1.demon.co.uk>,
-        Nicolas Pitre <nico@cam.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        linux@arm.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: stufever@gmail.com
+CC: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        lethal@linux-sh.org, Wang Shaoyan <wangshaoyan.pt@taobao.com>
+Subject: Re: [PATCH V2] replace strict_strtoul to kstrto[*] and check return
+ value
+References: <1312730922-1211-1-git-send-email-wangshaoyan.pt@taobao.com>
+In-Reply-To: <1312730922-1211-1-git-send-email-wangshaoyan.pt@taobao.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 7, 2011 at 6:52 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sun, Aug 7, 2011 at 4:54 AM, Joachim  Eastwood <manabian@gmail.com> wrote:
->>
->> I see some ARM asm in your patch, maybe this is the cause?
+Hi Wang,
+
+On 08/07/2011 03:28 PM, stufever@gmail.com wrote:
+> From: Wang Shaoyan<wangshaoyan.pt@taobao.com>
 >
-> No, it's just a barrier to make sure the compiler doesn't do crazy
-> things, no actual asm instructions involved.
+> Change since V1:
+>    1.use kstrto*, not kstrtoul
+>    2.replace&buf[0] to buf
+
+it is good that you wrote what you changed. But it would be better if you write 
+it below the commit message like this
+
+<commit message>
+
+Signed-off-by:
+---
+    drivers/video/via/viafbdev.c |  126 ++++++++++++++++++++++-------------------
+    1 files changed, 68 insertions(+), 58 deletions(-)
+
+Change since V1:
+
+as nobody really cares what changed in different patch versions once the final 
+version is applied in git. And if you do it this way I could just do "git am -s 
+<patch>" and would get the commit message without the history.
+
+> This commit replace the function strict_strtoul(becasue commit 33ee3b2e), and check the return value to avoid such warning:
 >
-> That code is quite well tested in git, so I'm surprised it has any
-> problems on arm. It also has zero loops, a hang sounds odd. Can you
-> get some more debug information out of it (for example, where it hangs
-> - maybe "initcall_debug=1" on the kernel command line?
+>    drivers/video/via/viafbdev.c:1992: warning: ignoring return value of 'kstrtoul', declared with attribute warn_unused_result
 
-initcall_debug=1 didn't do anything to the boot log.
+Thanks this looks much saner. Just 2 little issues before it is good enough, I 
+think.
 
-But I add some printk's around the calls to sha_init and sha_transform.
-...
-NET: Registered protocol family 2
-extract_buf: call sha_init
-extract_buf: call sha_init done
-extract_buf: call sha_transform
-extract_buf: call sha_transform done
-extract_buf: call sha_transform
-extract_buf: call sha_transform done
-extract_buf: function exit
+./scripts/checkpatch.pl ./\[PATCH\ V2\]\ replace\ strict_strtoul\ to\ 
+kstrto\[\*\]\ and\ check\ return\ value.eml
+ERROR: trailing whitespace
+#173: FILE: drivers/video/via/viafbdev.c:1974:
++^I^I^Iif (kstrtoint(this_opt + 21, 0, $
 
-These printk's come from drivers/char/random.c
-So it doesn't seem like it hangs in any of the sha_* funtions.
+ERROR: trailing whitespace
+#177: FILE: drivers/video/via/viafbdev.c:1978:
++^I^I^Iif (kstrtoint(this_opt + 19, 0, $
 
-But I never see any of the printk's I added to net/ipv4/syncookies.c
-or net/ipv4/tcp_output.c.
+ERROR: trailing whitespace
+#212: FILE: drivers/video/via/viafbdev.c:1991:
++^I^I^Iif (kstrtoint(this_opt + 30, 0, $
 
-btw, my compiler is: arm-angstrom-linux-gnueabi-gcc (GCC) 4.3.3
+ERROR: trailing whitespace
+#220: FILE: drivers/video/via/viafbdev.c:1999:
++^I^I^Iif (kstrtoint(this_opt + 24, 0, $
 
-regards
-Joachim Eastwood
+total: 4 errors, 0 warnings, 173 lines checked
 
-> The biggest difference with the git sources is the slightly different
-> calling conventions (passing the workspace array as an argument is bad
-> for code generation, btw - since now gcc doesn't see that the
-> workspace accesses are dead) and the fact that the kernel version uses
-> kernel macros like "get_unaligned_be32()" rather than it's own
-> implementation.
+NOTE: whitespace errors detected, you may wish to use scripts/cleanpatch or
+       scripts/cleanfile
+
+./[PATCH V2] replace strict_strtoul to kstrto[*] and check return value.eml has 
+style problems, please review.  If any of these errors
+are false positives report them to the maintainer, see
+CHECKPATCH in MAINTAINERS.
+
+Can you please fix those?
+
+
+> Signed-off-by: Wang Shaoyan<wangshaoyan.pt@taobao.com>
+> ---
+>   drivers/video/via/viafbdev.c |  126 ++++++++++++++++++++++-------------------
+>   1 files changed, 68 insertions(+), 58 deletions(-)
 >
->                                      Linus
->
+> diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+> index 53aa443..7074fc7 100644
+> --- a/drivers/video/via/viafbdev.c
+> +++ b/drivers/video/via/viafbdev.c
+
+[snip]
+
+> @@ -1325,7 +1328,8 @@ static ssize_t viafb_dfpl_proc_write(struct file *file,
+>   	if (copy_from_user(&buf[0], buffer, length))
+>   		return -EFAULT;
+>   	buf[length - 1] = '\0';	/*Ensure end string */
+> -	strict_strtoul(&buf[0], 0, (unsigned long *)&reg_val);
+> +	if (kstrtou8(buf, -1,&reg_val)<  0)
+> +		return -EINVAL;
+>   	viafb_write_reg_mask(CR99, VIACR, reg_val, 0x0f);
+>   	return count;
+>   }
+
+Using -1 instead 0 as base here? Why? What does this cause?
+I assume that it should be 0.
+
+
+Thanks,
+
+Florian Tobias Schandinat
