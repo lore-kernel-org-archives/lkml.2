@@ -1,109 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940Ab1HGTs2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 15:48:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58625 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754755Ab1HGTsZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 15:48:25 -0400
+	id S1754893Ab1HGTvj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Aug 2011 15:51:39 -0400
+Received: from lucidpixels.com ([72.73.18.11]:60177 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754714Ab1HGTvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Aug 2011 15:51:37 -0400
+Date: Sun, 7 Aug 2011 15:51:36 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org
+Subject: kernel 3.0.0: BUG: using smp_processor_id() in preemptible [00000000]
+ code: Xorg/2334
+Message-ID: <alpine.DEB.2.02.1108071547530.24247@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20110807110429.57161269.rdunlap@xenotime.net>
-References: <CAC-yRPQS7r-MMh13Y1m0O+oLBu2OmQqmXS8iHFtCOS9YwrxrkA@mail.gmail.com>
- <20110807110429.57161269.rdunlap@xenotime.net>
-From: Amirali Shambayati <amirali.shambayati@gmail.com>
-Date: Mon, 8 Aug 2011 00:18:04 +0430
-Message-ID: <CAC-yRPTFiU4AwtcpDNse3+eRjjprVPYng9WFbYJMf_Ebe8MGYQ@mail.gmail.com>
-Subject: Re: Compile kernel for various times and problem of too long time consuming
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        kernelnewbies@kernelnewbies.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Would you say how you rebuild kernel?
+Hi,
 
-On Sun, Aug 7, 2011 at 10:34 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On Sun, 7 Aug 2011 21:39:12 +0430 Amirali Shambayati wrote:
->
->> Hi all,
->> Since I want to evaluate performance improvements by changing just one
->> file in kernel(noop-iosched) and compiling kernel is too much
->> time-consuming, I want to know that if I compile kernel for more than
->> one time, does it take similar time to first time?
->>
->> I use following commands. If I don't use "make-kpkg clean" for next
->> times, does it just compile the files which have been modified or it
->> compile whole kernel package again?
->>
->> make-kpkg clean
->> fakeroot make-kpkg --initrd --append-to-version=-some-string-here
->> kernel-image kernel-headers
->
-> Since I never use make-kpkg, I can only tell you that when I modified
-> block/noop-iosched.c and rebuilt the kernel, here is what was rebuilt:
->
->  GEN     /lnx/src/NEXT/linux-next-20110805/X32/Makefile
->  CHK     include/linux/version.h
->  Using /lnx/src/NEXT/linux-next-20110805 as source for kernel
->  CHK     include/generated/utsrelease.h
->  CALL    /lnx/src/NEXT/linux-next-20110805/scripts/checksyscalls.sh
->  CHK     include/generated/compile.h
->  CHK     kernel/config_data.h
->  CC      block/noop-iosched.o
->  LD      block/built-in.o
->  LD      vmlinux.o
->  MODPOST vmlinux.o
->  GEN     .version
->  CHK     include/generated/compile.h
->  UPD     include/generated/compile.h
->  CC      init/version.o
->  LD      init/built-in.o
->  LD      .tmp_vmlinux1
->  KSYM    .tmp_kallsyms1.S
->  AS      .tmp_kallsyms1.o
->  LD      .tmp_vmlinux2
->  KSYM    .tmp_kallsyms2.S
->  AS      .tmp_kallsyms2.o
->  LD      vmlinux
->  SYSMAP  System.map
->  SYSMAP  .tmp_System.map
->  Building modules, stage 2.
->  VOFFSET arch/x86/boot/voffset.h
->  CC      arch/x86/boot/version.o
->  OBJCOPY arch/x86/boot/compressed/vmlinux.bin
->  LZMA    arch/x86/boot/compressed/vmlinux.bin.lzma
->  MODPOST 575 modules
->  MKPIGGY arch/x86/boot/compressed/piggy.S
->  AS      arch/x86/boot/compressed/piggy.o
->  LD      arch/x86/boot/compressed/vmlinux
->  ZOFFSET arch/x86/boot/zoffset.h
->  OBJCOPY arch/x86/boot/vmlinux.bin
->  AS      arch/x86/boot/header.o
->  LD      arch/x86/boot/setup.elf
->  OBJCOPY arch/x86/boot/setup.bin
->  BUILD   arch/x86/boot/bzImage
-> Setup is 14972 bytes (padded to 15360 bytes).
-> System is 1287 kB
-> CRC 64ecf4d
-> Kernel: arch/x86/boot/bzImage is ready  (#18)
->
->
-> so it's a minimal rebuild, not a full kernel rebuild.
->
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->
+Running kernel 3.0.0 (with proprietary fglrx driver), is there a open 
+source driver on the ATI side of things that supports this card similar to 
+nouveau for nvidia cards if that is the root cause of the problem below?
+Or is there a mailing list to discuss this type of problem w/fglrx module 
+loaded?
 
+01:05.0 VGA compatible controller: ATI Technologies Inc M880G [Mobility 
+Radeon HD 4200]
 
+When this occurs (or sometime after) the wireless network connection stops 
+working:
 
--- 
-Amirali Shambayati
-Bachelor Student
-Computer Engineering Department
-Sharif University of Technology
-Tehran, Iran
+[   34.981965] [fglrx] ATIF platform detected with notification ID: 0x81
+[   35.093146] [fglrx] GART Table is not in FRAME_BUFFER range 
+[   35.093327] [fglrx] Could not enable MSI; System prevented initialization
+[   35.093523] BUG: using smp_processor_id() in preemptible [00000000] code: Xor
+g/2334
+[   35.093557] caller is kas_GetExecutionLevel+0xd/0x20 [fglrx]
+[   35.093560] Pid: 2334, comm: Xorg Tainted: P            3.0.0 #3
+[   35.093562] Call Trace:
+[   35.093570]  [<ffffffff812ec5f6>] ? debug_smp_processor_id+0xd6/0xf0
+[   35.093591]  [<ffffffffa01fe42d>] ? kas_GetExecutionLevel+0xd/0x20 [fglrx]
+[   35.093612]  [<ffffffffa01fe4a9>] ? kas_spin_lock+0x9/0xd0 [fglrx]
+[   35.093635]  [<ffffffffa0202c66>] ? KAS_InterlockedList_InsertAtTail+0x76/0x1
+60 [fglrx]
+[   35.093663]  [<ffffffffa022d4e2>] ? firegl_trace+0x72/0x1e0 [fglrx]
+[   35.093688]  [<ffffffffa0218e43>] ? MCIL_InterlockedList+0x193/0x2a0 [fglrx]
+[   35.093721]  [<ffffffffa02ce7b6>] ? FIFO_Queue_Initialize+0xe6/0x100 [fglrx]
+[   35.093746]  [<ffffffffa0211cb5>] ? fireglPcsCommand+0xa5/0x140 [fglrx]
+[   35.093771]  [<ffffffffa0216e39>] ? MCIL_GetRegistrykey+0x269/0x760 [fglrx]
+[   35.093801]  [<ffffffffa02dc362>] ? AvailableCallbacksQueue_Initialize+0x52/0
+x70 [fglrx]
+[   35.093830]  [<ffffffffa02de9cd>] ? InitializeExtension+0x12d/0x280 [fglrx]
+[   35.093858]  [<ffffffffa02df0e8>] ? InitializeInterrupts+0x38/0x60 [fglrx]
+[   35.093890]  [<ffffffffa02cd12d>] ? IRQMGR_InitializeIRQMGR+0xfd/0x110 [fglrx
+]
+[   35.093917]  [<ffffffffa021c6df>] ? IRQMGR_initialize+0x1ef/0x380 [fglrx]
+[   35.093943]  [<ffffffffa021c497>] ? IRQMGR_alloc_context+0xb7/0x110 [fglrx]
+[   35.093969]  [<ffffffffa021b8d2>] ? irqmgr_wrap_initialize+0x22/0xb0 [fglrx]
+[   35.093994]  [<ffffffffa021b1f4>] ? firegl_interrupt_control+0x174/0x1a0 [fgl
+rx]
+[   35.093999]  [<ffffffff81043c39>] ? ns_capable+0x29/0x50
+[   35.094044]  [<ffffffffa021b080>] ? firegl_enable_hifreq_interrupt+0x100/0x10
+0 [fglrx]
+[   35.094072]  [<ffffffffa020cf98>] ? firegl_ioctl+0x1e8/0x250 [fglrx]
+[   35.094098]  [<ffffffffa01fea19>] ? ip_firegl_unlocked_ioctl+0x9/0x10 [fglrx]
+[   35.094105]  [<ffffffff810ce8ee>] ? do_vfs_ioctl+0x8e/0x4f0
+[   35.094112]  [<ffffffff810ced99>] ? sys_ioctl+0x49/0x90
+[   35.094119]  [<ffffffff810be847>] ? sys_write+0x47/0x90
+[   35.094126]  [<ffffffff8165b67b>] ? system_call_fastpath+0x16/0x1b
+
+Justin.
+
