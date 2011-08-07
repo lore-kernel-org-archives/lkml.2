@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab1HGOiA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 10:38:00 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:57278 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752946Ab1HGOh6 (ORCPT
+	id S1753451Ab1HGP2e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Aug 2011 11:28:34 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:53325 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751917Ab1HGP2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 10:37:58 -0400
-Message-ID: <4E3EA340.2010100@gmail.com>
-Date: Sun, 07 Aug 2011 09:37:52 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Stephen Warren <swarren@nvidia.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
-        Colin Cross <ccross@android.com>, linux-tegra@vger.kernel.org,
-        Axel Lin <axel.lin@gmail.com>, Ben Dooks <ben-i2c@fluff.org>
-Subject: Re: [PATCH] dt: add empty of_get_property for non-dt
-References: <1312584630-23371-1-git-send-email-swarren@nvidia.com>
-In-Reply-To: <1312584630-23371-1-git-send-email-swarren@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 7 Aug 2011 11:28:31 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX18YD513YEMYA4V+d+hG58JY5N7Kb/htwamezzjyAl
+	OM7i8NRqh5pDAf
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [PATCH 0/6] viafb modesetting update 2
+Date: Sun,  7 Aug 2011 15:46:54 +0000
+Message-Id: <cover.1312730859.git.FlorianSchandinat@gmx.de>
+X-Mailer: git-send-email 1.6.3.2
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2011 05:50 PM, Stephen Warren wrote:
-> The patch adds empty function of_get_property for non-dt build, so that
-> drivers migrating to dt can save some '#ifdef CONFIG_OF'.
-> 
-> This also fixes the current Tegra compile problem in linux-next.
-> 
-You could just use of_property_read_u32 in the driver. It already has
-empty version and will simplify the driver code some.
+Hi all,
 
-Rob
+this is the second patch series. It's a little less stable than the 
+previous one but it contains some great internal improvements.
+We do no longer rely on the modetable structure across all sections 
+and we use the values in var directly for CRT and DVI when possible. 
+Basically this enables us to allow arbitary modes passed in var. 
+That's not implemented yet and probably will never be the default as 
+we want to do some sanity checking in check_var for the devices 
+connected but would allow overriding buggy information.
+Anyway with these patches it will be very simple to avoid the buggy 
+modetable we use at the moment.
 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
->  include/linux/of.h |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index 0085bb0..9180dc5 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -256,6 +256,13 @@ static inline int of_property_read_string(struct device_node *np,
->  	return -ENOSYS;
->  }
->  
-> +static inline const void *of_get_property(const struct device_node *node,
-> +				const char *name,
-> +				int *lenp)
-> +{
-> +	return NULL;
-> +}
-> +
->  #endif /* CONFIG_OF */
->  
->  static inline int of_property_read_u32(const struct device_node *np,
+
+Best regards,
+
+Florian Tobias Schandinat
+
+
+Florian Tobias Schandinat (6):
+  viafb: add new funcions to select a single mode
+  viafb: eliminate viafb_get_pixclock
+  viafb: use information in var for modesetting
+  viafb: seperate hardware initialization
+  viafb: eliminate modetable dependancy of LCD modesetting
+  viafb: get rid of the remaining modetable structure assumptions
+
+ drivers/video/via/dvi.c      |   30 ++----
+ drivers/video/via/dvi.h      |    3 +-
+ drivers/video/via/global.c   |    2 +
+ drivers/video/via/global.h   |    2 +
+ drivers/video/via/hw.c       |  229 ++++++++++++++++-------------------------
+ drivers/video/via/hw.h       |   12 +--
+ drivers/video/via/lcd.c      |   12 +--
+ drivers/video/via/lcd.h      |    5 +-
+ drivers/video/via/share.h    |    4 -
+ drivers/video/via/viafbdev.c |   38 +++----
+ drivers/video/via/viamode.c  |   58 ++++++++---
+ drivers/video/via/viamode.h  |    4 +-
+ 12 files changed, 177 insertions(+), 222 deletions(-)
 
