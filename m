@@ -1,216 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756855Ab1HGAOy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Aug 2011 20:14:54 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:37099 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755266Ab1HGAOv (ORCPT
+	id S1756878Ab1HGAVD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Aug 2011 20:21:03 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:58966 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753459Ab1HGAVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Aug 2011 20:14:51 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAIHWPU55LbAB/2dsb2JhbAA6CKdpeIFAAQEFJxMcHAcQCAMVAy4UJQMhE8QzDoMbgx0Eo3w
-Date: Sun, 7 Aug 2011 10:14:46 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Pavel Machek <pavel@ucw.cz>, Nigel Cunningham <nigel@tuxonice.net>,
-        Christoph Hellwig <hch@infradead.org>, Christoph <cr2005@u-club.de>,
-        xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing
- processes (v2)
-Message-ID: <20110807001446.GI3162@dastard>
-References: <4E1C70AD.1010101@u-club.de>
- <201108041127.30944.rjw@sisk.pl>
- <201108050025.09792.rjw@sisk.pl>
- <201108062317.19033.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108062317.19033.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 6 Aug 2011 20:21:00 -0400
+Date: Sat, 6 Aug 2011 17:20:58 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Paul Mcquade <paulmcquad@gmail.com>
+Cc: linux-doc <linux-doc@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Email-clients: Add better Thunderbird information.
+Message-Id: <20110806172058.a5deeb72.rdunlap@xenotime.net>
+In-Reply-To: <4E3C78AC.6040509@gmail.com>
+References: <4E3C78AC.6040509@gmail.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 06, 2011 at 11:17:18PM +0200, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> Freeze all filesystems during the freezing of tasks by calling
-> freeze_bdev() for each of them and thaw them during the thawing
-> of tasks with the help of thaw_bdev().
-> 
-> This is needed by hibernation, because some filesystems (e.g. XFS)
-> deadlock with the preallocation of memory used by it if the memory
-> pressure caused by it is too heavy.
-> 
-> The additional benefit of this change is that, if something goes
-> wrong after filesystems have been frozen, they will stay in a
-> consistent state and journal replays won't be necessary (e.g. after
-> a failing suspend or resume).  In particular, this should help to
-> solve a long-standing issue that in some cases during resume from
-> hibernation the boot loader causes the journal to be replied for the
-> filesystem containing the kernel image and initrd causing it to
-> become inconsistent with the information stored in the hibernation
-> image.
-> 
-> This change is based on earlier work by Nigel Cunningham.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+On Sat, 06 Aug 2011 00:11:40 +0100 Paul Mcquade wrote:
+
 > ---
+>  Documentation/email-clients.txt |   12 +++++-------
+>  1 files changed, 5 insertions(+), 7 deletions(-)
 > 
-> OK, so nobody except for Pavel appears to have any comments, so I assume
-> that everyone except for Pavel is fine with the approach, interestingly enough.
-> 
-> I've removed the MS_FROZEN Pavel complained about from freeze_filesystems()
-> and added comments explaining why lockdep_off/on() are used.
-> 
-> Thanks,
-> Rafael
-> 
-> ---
->  fs/block_dev.c         |   56 +++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/fs.h     |    6 +++++
->  kernel/power/process.c |    7 +++++-
->  3 files changed, 68 insertions(+), 1 deletion(-)
-> 
-> Index: linux-2.6/include/linux/fs.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/fs.h
-> +++ linux-2.6/include/linux/fs.h
-> @@ -211,6 +211,7 @@ struct inodes_stat_t {
->  #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
->  #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
->  #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
-> +#define MS_FROZEN	(1<<25) /* bdev has been frozen */
->  #define MS_NOSEC	(1<<28)
->  #define MS_BORN		(1<<29)
->  #define MS_ACTIVE	(1<<30)
-> @@ -2047,6 +2048,8 @@ extern struct super_block *freeze_bdev(s
->  extern void emergency_thaw_all(void);
->  extern int thaw_bdev(struct block_device *bdev, struct super_block *sb);
->  extern int fsync_bdev(struct block_device *);
-> +extern void freeze_filesystems(void);
-> +extern void thaw_filesystems(void);
->  #else
->  static inline void bd_forget(struct inode *inode) {}
->  static inline int sync_blockdev(struct block_device *bdev) { return 0; }
-> @@ -2061,6 +2064,9 @@ static inline int thaw_bdev(struct block
->  {
->  	return 0;
->  }
-> +
-> +static inline void freeze_filesystems(void) {}
-> +static inline void thaw_filesystems(void) {}
->  #endif
->  extern int sync_filesystem(struct super_block *);
->  extern const struct file_operations def_blk_fops;
-> Index: linux-2.6/fs/block_dev.c
-> ===================================================================
-> --- linux-2.6.orig/fs/block_dev.c
-> +++ linux-2.6/fs/block_dev.c
-> @@ -314,6 +314,62 @@ out:
->  }
->  EXPORT_SYMBOL(thaw_bdev);
+> diff --git a/Documentation/email-clients.txt b/Documentation/email-clients.txt
+> index a0b58e2..860c29a 100644
+> --- a/Documentation/email-clients.txt
+> +++ b/Documentation/email-clients.txt
+> @@ -199,18 +199,16 @@ to coerce it into behaving.
 >  
-> +/**
-> + * freeze_filesystems - Force all filesystems into a consistent state.
-> + */
-> +void freeze_filesystems(void)
-> +{
-> +	struct super_block *sb;
+>  To beat some sense out of the internal editor, do this:
+>  
+> -- Under account settings, composition and addressing, uncheck "Compose
+> -  messages in HTML format".
+> -
+>  - Edit your Thunderbird config settings so that it won't use format=flowed.
+>    Go to "edit->preferences->advanced->config editor" to bring up the
+>    thunderbird's registry editor, and set "mailnews.send_plaintext_flowed" to
+>    "false".
+>  
+> -- Enable "preformat" mode: Shft-click on the Write icon to bring up the HTML
+> -  composer, select "Preformat" from the drop-down box just under the subject
+> -  line, then close the message without saving.  (This setting also applies to
+> -  the text composer, but the only control for it is in the HTML composer.)
+> +- Disable HTML Format: Set "mail.identity.id1.compose_html" to "false".
 > +
-> +	/*
-> +	 * This is necessary, because some filesystems (e.g. ext3) lock
-> +	 * mutexes in their .freeze_fs() callbacks and leave them locked for
-> +	 * their .unfreeze_fs() callbacks to unlock.  This is done under
-> +	 * bdev->bd_fsfreeze_mutex, which is then released, but it makes
-> +	 * lockdep think something may be wrong when freeze_bdev() attempts
-> +	 * to acquire bdev->bd_fsfreeze_mutex for the next filesystem.
-> +	 */
-> +	lockdep_off();
-
-I thought those problems were fixed. If they aren't, then they most
-certainly need to be because holding mutexes over system calls is a
-bug.
-
-Well, well:
-
-[252182.603134] ================================================
-[252182.604832] [ BUG: lock held when returning to user space! ]
-[252182.606086] ------------------------------------------------
-[252182.607400] xfs_io/4917 is leaving the kernel with locks still held!
-[252182.608905] 1 lock held by xfs_io/4917:
-[252182.609739]  #0:  (&journal->j_barrier){+.+...}, at: [<ffffffff812a2aaf>] journal_lock_updates+0xef/0x100
-
-<sigh>
-
-Looks like the problem was fixed for ext4, but not ext3.  Please
-report this to the ext3/4 list and get it fixed, don't work around
-it here.
-
-> +	/*
-> +	 * Freeze in reverse order so filesystems depending on others are
-> +	 * frozen in the right order (eg. loopback on ext3).
-> +	 */
-> +	list_for_each_entry_reverse(sb, &super_blocks, s_list) {
-> +		if (!sb->s_root || !sb->s_bdev ||
-> +		    (sb->s_frozen == SB_FREEZE_TRANS) ||
-> +		    (sb->s_flags & MS_RDONLY))
-> +			continue;
+> +- Enable "preformat" mode: Set "editor.quotesPreformatted" to "true".
 > +
-> +		freeze_bdev(sb->s_bdev);
-> +		sb->s_flags |= MS_FROZEN;
-> +	}
+> +- Enable UTF8: Set "prefs.converted-to-utf8" to "true".
+>  
+>  - Install the "toggle wordwrap" extension.  Download the file from:
+>      https://addons.mozilla.org/thunderbird/addon/2351/
+> -- 1.7.4.1
 
-AFAIK, that won't work for btrfs - you have to call freeze_super()
-directly for btrfs because it has a special relationship with
-sb->s_bdev. And besides, all freeze_bdev does is get an active
-reference on the superblock and call freeze_super().
 
-Also, that's traversing the list of superblock with locking and
-dereferencing the superblock without properly checking that the
-superblock is not being torn down. You should probably use
-iterate_supers (or at least copy the code), with a function that
-drops the s_umount read lock befor calling freeze_super() and then
-picks it back up afterwards.
+Applied, thanks.
 
-> +
-> +	lockdep_on();
-> +}
-> +
-> +/**
-> + * thaw_filesystems - Make all filesystems active again.
-> + */
-> +void thaw_filesystems(void)
-> +{
-> +	struct super_block *sb;
-> +
-> +	/*
-> +	 * This is necessary for the same reason as in freeze_filesystems()
-> +	 * above.
-> +	 */
-> +	lockdep_off();
-> +
-> +	list_for_each_entry(sb, &super_blocks, s_list)
-> +		if (sb->s_flags & MS_FROZEN) {
-> +			sb->s_flags &= ~MS_FROZEN;
-> +			thaw_bdev(sb->s_bdev, sb);
-> +		}
-
-And once again, iterate_supers() is what you want here. And you
-should only call thaw_bdev() as it needs to do checks other than
-checking MS_FROZEN e.g. the above will unfreeze filesystems that
-were already frozen at the time a suspend occurs, and that could
-lead to corruption depending on why the filesystem was frozen...
-
-Also, you still need to check for a valid sb->s_bdev here, otherwise
-<splat>.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
