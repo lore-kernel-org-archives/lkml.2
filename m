@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab1HGRJf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 13:09:35 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44098 "EHLO
+	id S1754042Ab1HGRUd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Aug 2011 13:20:33 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57162 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196Ab1HGRJd (ORCPT
+	with ESMTP id S1751799Ab1HGRUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 13:09:33 -0400
+	Sun, 7 Aug 2011 13:20:32 -0400
 MIME-Version: 1.0
-From: Amirali Shambayati <amirali.shambayati@gmail.com>
-Date: Sun, 7 Aug 2011 21:39:12 +0430
-Message-ID: <CAC-yRPQS7r-MMh13Y1m0O+oLBu2OmQqmXS8iHFtCOS9YwrxrkA@mail.gmail.com>
-Subject: Compile kernel for various times and problem of too long time consuming
-To: Linux Kernel <linux-kernel@vger.kernel.org>,
-        kernelnewbies@kernelnewbies.org
+In-Reply-To: <1312362279.10579.38.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1312362279.10579.38.camel@mfleming-mobl1.ger.corp.intel.com>
+Date: Sun, 7 Aug 2011 10:20:30 -0700
+Message-ID: <CAF8ieYU2ThME1Q3u6xOp0sVOh-dPep-874TDY-=-q9E3OiSQAg@mail.gmail.com>
+Subject: Re: avr32: handle_signal() bug?
+From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-Since I want to evaluate performance improvements by changing just one
-file in kernel(noop-iosched) and compiling kernel is too much
-time-consuming, I want to know that if I compile kernel for more than
-one time, does it take similar time to first time?
+Hi Matt,
 
-I use following commands. If I don't use "make-kpkg clean" for next
-times, does it just compile the files which have been modified or it
-compile whole kernel package again?
+On Wed, Aug 3, 2011 at 2:04 AM, Matt Fleming <matt@console-pimps.org> wrote:
+> That doesn't look correct to me. Now, if we were unsuccessful in setting
+> up a signal frame, say, ret == -EFAULT, do we really want to block the
+> signal or any of the signals in the handler mask?
 
-make-kpkg clean
-fakeroot make-kpkg --initrd --append-to-version=-some-string-here
-kernel-image kernel-headers
+I'm assuming this is a rhetorical question :-)
 
+> Is there some intricacy of the avr32 architecture that I'm missing here?
+> It looks to me like this code was copied from the arm implementation
+> from years ago before commit a6c61e9dfdd0 ("[ARM] 3168/1: Update ARM
+> signal delivery and masking").
 
-Thanks for your help in advance,
+I don't think there are any avr32-specific intricacies to consider
+here, and ARM was indeed one of the architectures I looked at when
+writing the signal handling code, so I probably picked up that bug
+from there.
 
---
-Amirali Shambayati
-Bachelor Student
-Computer Engineering Department
-Sharif University of Technology
-Tehran, Iran
+> How about this?
+
+Looks good to me. I'm not sure how to test it though...I can try to
+build a kernel, run it on my board and see if it explodes, but I
+suspect this bug is a lot more subtle than that.
+
+Havard
