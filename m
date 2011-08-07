@@ -1,53 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab1HGNP2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 09:15:28 -0400
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:49508 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751705Ab1HGNP0 (ORCPT
+	id S1753176Ab1HGNeM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Aug 2011 09:34:12 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:52306 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752998Ab1HGNeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 09:15:26 -0400
-Subject: Re: list corruption in the last few days. (block ? crypto ?)
-From: Pekka Enberg <penberg@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-In-Reply-To: <CA+55aFwGSJM6g+YXfy_Oyb0OpQP5kH=OxCR-pnBk7RUshL+mXg@mail.gmail.com>
-References: <20110805010038.GA18148@redhat.com>
-	 <20110805084614.GA1588@x4.trippels.de>
-	 <CAOJsxLEMf8SbSmJv5u6GZtq_OYH3fpmomT-ioWXQGp83veK7wQ@mail.gmail.com>
-	 <alpine.DEB.2.00.1108051131440.28580@router.home>
-	 <20110805163948.GA11113@redhat.com>
-	 <alpine.DEB.2.00.1108051146180.28580@router.home>
-	 <20110805165119.GA11593@redhat.com>
-	 <alpine.DEB.2.00.1108051158400.28580@router.home>
-	 <20110805171607.GA11703@redhat.com>
-	 <alpine.DEB.2.00.1108051312090.28580@router.home>
-	 <20110805182008.GA22314@redhat.com>
-	 <CA+55aFwGSJM6g+YXfy_Oyb0OpQP5kH=OxCR-pnBk7RUshL+mXg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Sun, 07 Aug 2011 16:15:24 +0300
-Message-ID: <1312722924.12515.13.camel@jaguar>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Sun, 7 Aug 2011 09:34:09 -0400
+From: stufever@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-fbdev@vger.kernel.org, FlorianSchandinat@gmx.de, lethal@linux-sh.org,
+        Wang Shaoyan <wangshaoyan.pt@taobao.com>
+Subject: [PATCH] viafb: replace strict_strtoul to kstrtoul and check return value
+Date: Sun,  7 Aug 2011 21:31:24 +0800
+Message-Id: <1312723884-21790-1-git-send-email-wangshaoyan.pt@taobao.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-08-06 at 12:31 -0700, Linus Torvalds wrote:
-> Anybody has any ideas on this one? I'm back home, no more diving :(,
-> ready to make -rc1, but I'd *prefer* to have a handle on this one.
-> 
-> Of course, the fact that it apparently only happens with SLUB
-> debugging on means that the impact is less, but on the other hand I
-> really like all the people who enable debug features and help us test
-> with those on. So..
+From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
 
-Christoph? Do we know if the problem is with partial or full list?
+This commit replace the function strict_strtoul(becasue commit 33ee3b2e), and check the return value to avoid such warning:
 
-			Pekka
+  drivers/video/via/viafbdev.c:1992: warning: ignoring return value of 'kstrtoul', declared with attribute warn_unused_result
+
+Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+---
+ drivers/video/via/viafbdev.c |  137 ++++++++++++++++++++++++------------------
+ 1 files changed, 79 insertions(+), 58 deletions(-)
+
+diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+index 53aa443..5f638d6 100644
+--- a/drivers/video/via/viafbdev.c
++++ b/drivers/video/via/viafbdev.c
+@@ -1158,7 +1158,8 @@ static ssize_t viafb_dvp0_proc_write(struct file *file,
+ 	for (i = 0; i < 3; i++) {
+ 		value = strsep(&pbuf, " ");
+ 		if (value != NULL) {
+-			strict_strtoul(value, 0, (unsigned long *)&reg_val);
++			if (kstrtoul(value, 0, (unsigned long *)&reg_val) < 0)
++				return -EINVAL;
+ 			DEBUG_MSG(KERN_INFO "DVP0:reg_val[%l]=:%x\n", i,
+ 				  reg_val);
+ 			switch (i) {
+@@ -1228,7 +1229,8 @@ static ssize_t viafb_dvp1_proc_write(struct file *file,
+ 	for (i = 0; i < 3; i++) {
+ 		value = strsep(&pbuf, " ");
+ 		if (value != NULL) {
+-			strict_strtoul(value, 0, (unsigned long *)&reg_val);
++			if (kstrtoul(value, 0, (unsigned long *)&reg_val) < 0)
++				return -EINVAL;
+ 			switch (i) {
+ 			case 0:
+ 				viafb_write_reg_mask(CR9B, VIACR,
+@@ -1286,7 +1288,8 @@ static ssize_t viafb_dfph_proc_write(struct file *file,
+ 	if (copy_from_user(&buf[0], buffer, length))
+ 		return -EFAULT;
+ 	buf[length - 1] = '\0';	/*Ensure end string */
+-	strict_strtoul(&buf[0], 0, (unsigned long *)&reg_val);
++	if (kstrtoul(&buf[0], 0, (unsigned long *)&reg_val) < 0)
++		return -EINVAL;
+ 	viafb_write_reg_mask(CR97, VIACR, reg_val, 0x0f);
+ 	return count;
+ }
+@@ -1325,7 +1328,8 @@ static ssize_t viafb_dfpl_proc_write(struct file *file,
+ 	if (copy_from_user(&buf[0], buffer, length))
+ 		return -EFAULT;
+ 	buf[length - 1] = '\0';	/*Ensure end string */
+-	strict_strtoul(&buf[0], 0, (unsigned long *)&reg_val);
++	if (kstrtoul(&buf[0], 0, (unsigned long *)&reg_val) < 0)
++		return -EINVAL;
+ 	viafb_write_reg_mask(CR99, VIACR, reg_val, 0x0f);
+ 	return count;
+ }
+@@ -1394,8 +1398,9 @@ static ssize_t viafb_vt1636_proc_write(struct file *file,
+ 		for (i = 0; i < 2; i++) {
+ 			value = strsep(&pbuf, " ");
+ 			if (value != NULL) {
+-				strict_strtoul(value, 0,
+-					(unsigned long *)&reg_val.Data);
++				if (kstrtoul(value, 0,
++					(unsigned long *)&reg_val.Data) < 0)
++					return -EINVAL;
+ 				switch (i) {
+ 				case 0:
+ 					reg_val.Index = 0x08;
+@@ -1431,8 +1436,9 @@ static ssize_t viafb_vt1636_proc_write(struct file *file,
+ 		for (i = 0; i < 2; i++) {
+ 			value = strsep(&pbuf, " ");
+ 			if (value != NULL) {
+-				strict_strtoul(value, 0,
+-					(unsigned long *)&reg_val.Data);
++				if (kstrtoul(value, 0,
++					(unsigned long *)&reg_val.Data) < 0)
++					return -EINVAL;
+ 				switch (i) {
+ 				case 0:
+ 					reg_val.Index = 0x08;
+@@ -1950,61 +1956,76 @@ static int __init viafb_setup(void)
+ 		if (!*this_opt)
+ 			continue;
+ 
+-		if (!strncmp(this_opt, "viafb_mode1=", 12))
++		if (!strncmp(this_opt, "viafb_mode1=", 12)) {
+ 			viafb_mode1 = kstrdup(this_opt + 12, GFP_KERNEL);
+-		else if (!strncmp(this_opt, "viafb_mode=", 11))
++		} else if (!strncmp(this_opt, "viafb_mode=", 11)) {
+ 			viafb_mode = kstrdup(this_opt + 11, GFP_KERNEL);
+-		else if (!strncmp(this_opt, "viafb_bpp1=", 11))
+-			strict_strtoul(this_opt + 11, 0,
+-				(unsigned long *)&viafb_bpp1);
+-		else if (!strncmp(this_opt, "viafb_bpp=", 10))
+-			strict_strtoul(this_opt + 10, 0,
+-				(unsigned long *)&viafb_bpp);
+-		else if (!strncmp(this_opt, "viafb_refresh1=", 15))
+-			strict_strtoul(this_opt + 15, 0,
+-				(unsigned long *)&viafb_refresh1);
+-		else if (!strncmp(this_opt, "viafb_refresh=", 14))
+-			strict_strtoul(this_opt + 14, 0,
+-				(unsigned long *)&viafb_refresh);
+-		else if (!strncmp(this_opt, "viafb_lcd_dsp_method=", 21))
+-			strict_strtoul(this_opt + 21, 0,
+-				(unsigned long *)&viafb_lcd_dsp_method);
+-		else if (!strncmp(this_opt, "viafb_lcd_panel_id=", 19))
+-			strict_strtoul(this_opt + 19, 0,
+-				(unsigned long *)&viafb_lcd_panel_id);
+-		else if (!strncmp(this_opt, "viafb_accel=", 12))
+-			strict_strtoul(this_opt + 12, 0,
+-				(unsigned long *)&viafb_accel);
+-		else if (!strncmp(this_opt, "viafb_SAMM_ON=", 14))
+-			strict_strtoul(this_opt + 14, 0,
+-				(unsigned long *)&viafb_SAMM_ON);
+-		else if (!strncmp(this_opt, "viafb_active_dev=", 17))
++		} else if (!strncmp(this_opt, "viafb_bpp1=", 11)) {
++			if (kstrtoul(this_opt + 11, 0,
++				(unsigned long *)&viafb_bpp1) < 0)
++				return -EINVAL;
++		} else if (!strncmp(this_opt, "viafb_bpp=", 10)) {
++			if (kstrtoul(this_opt + 10, 0,
++				(unsigned long *)&viafb_bpp) < 0)
++				return -EINVAL;
++		} else if (!strncmp(this_opt, "viafb_refresh1=", 15)) {
++			if (kstrtoul(this_opt + 15, 0,
++				(unsigned long *)&viafb_refresh1) < 0)
++				return -EINVAL;
++		} else if (!strncmp(this_opt, "viafb_refresh=", 14)) {
++			if (kstrtoul(this_opt + 14, 0,
++				(unsigned long *)&viafb_refresh) < 0)
++				return -EINVAL;
++		} else if (!strncmp(this_opt, "viafb_lcd_dsp_method=", 21)) {
++			if (kstrtoul(this_opt + 21, 0,
++				(unsigned long *)&viafb_lcd_dsp_method) < 0)
++				return -EINVAL;
++		} else if (!strncmp(this_opt, "viafb_lcd_panel_id=", 19)) {
++			if (kstrtoul(this_opt + 19, 0,
++				(unsigned long *)&viafb_lcd_panel_id) < 0)
++				return -EINVAL;
++		} else if (!strncmp(this_opt, "viafb_accel=", 12)) {
++			if (kstrtoul(this_opt + 12, 0,
++				(unsigned long *)&viafb_accel) < 0)
++				return -EINVAL;
++		} else if (!strncmp(this_opt, "viafb_SAMM_ON=", 14)) {
++			if (kstrtoul(this_opt + 14, 0,
++				(unsigned long *)&viafb_SAMM_ON) < 0)
++				return -EINVAL;
++		} else if (!strncmp(this_opt, "viafb_active_dev=", 17)) {
+ 			viafb_active_dev = kstrdup(this_opt + 17, GFP_KERNEL);
+-		else if (!strncmp(this_opt,
+-			"viafb_display_hardware_layout=", 30))
+-			strict_strtoul(this_opt + 30, 0,
+-			(unsigned long *)&viafb_display_hardware_layout);
+-		else if (!strncmp(this_opt, "viafb_second_size=", 18))
+-			strict_strtoul(this_opt + 18, 0,
+-				(unsigned long *)&viafb_second_size);
+-		else if (!strncmp(this_opt,
+-			"viafb_platform_epia_dvi=", 24))
+-			strict_strtoul(this_opt + 24, 0,
+-				(unsigned long *)&viafb_platform_epia_dvi);
+-		else if (!strncmp(this_opt,
+-			"viafb_device_lcd_dualedge=", 26))
+-			strict_strtoul(this_opt + 26, 0,
+-				(unsigned long *)&viafb_device_lcd_dualedge);
+-		else if (!strncmp(this_opt, "viafb_bus_width=", 16))
+-			strict_strtoul(this_opt + 16, 0,
+-				(unsigned long *)&viafb_bus_width);
+-		else if (!strncmp(this_opt, "viafb_lcd_mode=", 15))
+-			strict_strtoul(this_opt + 15, 0,
+-				(unsigned long *)&viafb_lcd_mode);
+-		else if (!strncmp(this_opt, "viafb_lcd_port=", 15))
++		} else if (!strncmp(this_opt,
++			"viafb_display_hardware_layout=", 30)) {
++			if (kstrtoul(this_opt + 30, 0,
++			(unsigned long *)&viafb_display_hardware_layout) < 0)
++				return -EINVAL;
++		} else if (!strncmp(this_opt, "viafb_second_size=", 18)) {
++			if (kstrtoul(this_opt + 18, 0,
++				(unsigned long *)&viafb_second_size) < 0)
++				return -EINVAL;
++		} else if (!strncmp(this_opt,
++			"viafb_platform_epia_dvi=", 24)) {
++			if ( kstrtoul(this_opt + 24, 0,
++				(unsigned long *)&viafb_platform_epia_dvi) < 0)
++				return -EINVAL;
++		} else if (!strncmp(this_opt,
++			"viafb_device_lcd_dualedge=", 26)) {
++			if (kstrtoul(this_opt + 26, 0,
++				(unsigned long *)&viafb_device_lcd_dualedge) < 0)
++				return -EINVAL;
++		} else if (!strncmp(this_opt, "viafb_bus_width=", 16)) {
++			if (kstrtoul(this_opt + 16, 0,
++				(unsigned long *)&viafb_bus_width) < 0)
++				return -EINVAL;
++		} else if (!strncmp(this_opt, "viafb_lcd_mode=", 15)) {
++			if (kstrtoul(this_opt + 15, 0,
++				(unsigned long *)&viafb_lcd_mode) < 0)
++				return -EINVAL;
++		} else if (!strncmp(this_opt, "viafb_lcd_port=", 15)) {
+ 			viafb_lcd_port = kstrdup(this_opt + 15, GFP_KERNEL);
+-		else if (!strncmp(this_opt, "viafb_dvi_port=", 15))
++		} else if (!strncmp(this_opt, "viafb_dvi_port=", 15)) {
+ 			viafb_dvi_port = kstrdup(this_opt + 15, GFP_KERNEL);
++		}
+ 	}
+ 	return 0;
+ }
+-- 
+1.7.0.4
 
