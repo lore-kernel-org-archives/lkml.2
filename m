@@ -1,59 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab1HHXvU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 19:51:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34534 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751080Ab1HHXvT (ORCPT
+	id S1753441Ab1HHXxp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 19:53:45 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49967 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080Ab1HHXxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 19:51:19 -0400
+	Mon, 8 Aug 2011 19:53:44 -0400
+Message-ID: <4E407700.5080304@gmail.com>
+Date: Tue, 09 Aug 2011 09:53:36 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <1312844837-10086-1-git-send-email-msb@chromium.org>
-References: <1312844837-10086-1-git-send-email-msb@chromium.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 8 Aug 2011 16:50:22 -0700
-Message-ID: <CA+55aFymLSQyWECCBWLGtChXcJwtWNxOqdJQRbOwGyYzjY=MSg@mail.gmail.com>
-Subject: Re: [PATCH] lib/sha1: remove memsets and allocate workspace on the stack
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Ramsay Jones <ramsay@ramsay1.demon.co.uk>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Joachim Eastwood <manabian@gmail.com>,
-        Andreas Schwab <schwab@linux-m68k.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, grant.likely@secretlab.ca
+Subject: Re: gpio: ep93xx: remove unused inline function
+References: <201108081618.30158.hartleys@visionengravers.com>
+In-Reply-To: <201108081618.30158.hartleys@visionengravers.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 8, 2011 at 4:07 PM, Mandeep Singh Baines <msb@chromium.org> wrote:
+On 09/08/11 09:18, H Hartley Sweeten wrote:
+> Signed-off-by: H Hartley Sweeten<hsweeten@visionengravers.com>
+> Cc: Ryan Mallon<rmallon@gmail.com>
+> Cc: Grant Likely<grant.likely@secretlab.ca>
 >
-> There is no loss of security due to removing the memset. It would be a
-> bug for the stack to leak to userspace. However, a defence-in-depth
-> argument could be made for keeping the clearing of the workspace.
+> ---
+>
+> diff --git a/drivers/gpio/gpio-ep93xx.c b/drivers/gpio/gpio-ep93xx.c
+> index 468b27d..e0ad8e0 100644
+> --- a/drivers/gpio/gpio-ep93xx.c
+> +++ b/drivers/gpio/gpio-ep93xx.c
+> @@ -62,11 +62,6 @@ static void ep93xx_gpio_update_int_params(unsigned port)
+>   		EP93XX_GPIO_REG(int_en_register_offset[port]));
+>   }
+>
+> -static inline void ep93xx_gpio_int_mask(unsigned line)
+> -{
+> -	gpio_int_unmasked[line>>  3]&= ~(1<<  (line&  7));
+> -}
+> -
+>   static void ep93xx_gpio_int_debounce(unsigned int irq, bool enable)
+>   {
+>   	int line = irq_to_gpio(irq);
 
-So I'm nervous about this just because I can see the security crazies
-rising up about this.
+Yup. Looks like it got factored directly into ep93xx_gpio_irq_mask.
 
-The fact is, in our current code in drivers/char/random.c, we do have
-a memset() of the workspace buffer on the stack, and any competent
-compiler should actually just remove it, because it's dead memory (and
-the compiler can *see* that it's dead memory). Of course, I don't know
-if gcc does notice that, but it's a prime example of code that "looks"
-secure, but has absolutely zero actual real security. Getting rid of
-the memset() is actually better for *real* security, in that at least
-it's not some kind of pointless security theater. But I  can see some
-people wanting to add a memory barrier or something to force the
-memset() to actually take place.
+Acked-by: Ryan Mallon <rmallon@gmail.com>
 
-So I dunno.
+Note that we have a lot of line >> 3 and (1 << (line & 7)) scattered 
+through this file. We could do something like this (completely untested):
+----
+gpio-ep93xx: Add helper functions for irq_port and irq_port_mask
 
-Arguably it's theoretically possible to find random data on the stack,
-and maybe it can even be interesting (although I don't think the last
-64 bytes of SHA1 state is all that exciting myself). Personally, I
-consider it unlikely as hell to be relevant to anybody, and anybody
-who has access to the kernel stack has *much* more direct security
-holes than some random data that they can use. But the patch still
-makes me worry about the brouhaha from some people.
+Signed-off-by: Ryan Mallon <rmallon@gmail.com>
+---
 
-                    Linus
+diff --git a/drivers/gpio/gpio-ep93xx.c b/drivers/gpio/gpio-ep93xx.c
+index 72fb9c6..3092155 100644
+--- a/drivers/gpio/gpio-ep93xx.c
++++ b/drivers/gpio/gpio-ep93xx.c
+@@ -45,6 +45,16 @@ static const u8 eoi_register_offset[3]		= { 0x98, 0xb4, 0x54 };
+  static const u8 int_en_register_offset[3]	= { 0x9c, 0xb8, 0x58 };
+  static const u8 int_debounce_register_offset[3]	= { 0xa8, 0xc4, 0x64 };
+
++static inline int irq_port_mask(unsigned int irq)
++{
++	return 1<<  (irq_to_gpio(irq)&  7);
++}
++
++static inline int irq_port(unsigned int irq)
++{
++	return irq_to_gpio(irq)>>  3;
++}
++
+  static void ep93xx_gpio_update_int_params(unsigned port)
+  {
+  	BUG_ON(port>  2);
+@@ -68,9 +78,8 @@ static inline void ep93xx_gpio_int_mask(unsigned line)
+
+  static void ep93xx_gpio_int_debounce(unsigned int irq, bool enable)
+  {
+-	int line = irq_to_gpio(irq);
+-	int port = line>>  3;
+-	int port_mask = 1<<  (line&  7);
++	int port = irq_port(irq);
++	int port_mask = irq_port_mask(irq);
+
+  	if (enable)
+  		gpio_int_debounce[port] |= port_mask;
+@@ -118,9 +127,8 @@ static void ep93xx_gpio_f_irq_handler(unsigned int irq, struct irq_desc *desc)
+
+  static void ep93xx_gpio_irq_ack(struct irq_data *d)
+  {
+-	int line = irq_to_gpio(d->irq);
+-	int port = line>>  3;
+-	int port_mask = 1<<  (line&  7);
++	int port = irq_port(irq);
++	int port_mask = irq_port_mask(irq);
+
+  	if (irqd_get_trigger_type(d) == IRQ_TYPE_EDGE_BOTH) {
+  		gpio_int_type2[port] ^= port_mask; /* switch edge direction */
+@@ -132,9 +140,8 @@ static void ep93xx_gpio_irq_ack(struct irq_data *d)
+
+  static void ep93xx_gpio_irq_mask_ack(struct irq_data *d)
+  {
+-	int line = irq_to_gpio(d->irq);
+-	int port = line>>  3;
+-	int port_mask = 1<<  (line&  7);
++	int port = irq_port(irq);
++	int port_mask = irq_port_mask(irq);
+
+  	if (irqd_get_trigger_type(d) == IRQ_TYPE_EDGE_BOTH)
+  		gpio_int_type2[port] ^= port_mask; /* switch edge direction */
+@@ -147,19 +154,19 @@ static void ep93xx_gpio_irq_mask_ack(struct irq_data *d)
+
+  static void ep93xx_gpio_irq_mask(struct irq_data *d)
+  {
+-	int line = irq_to_gpio(d->irq);
+-	int port = line>>  3;
++	int port = irq_port(irq);
++	int port_mask = irq_port_mask(irq);
+
+-	gpio_int_unmasked[port]&= ~(1<<  (line&  7));
++	gpio_int_unmasked[port]&= ~port_mask;
+  	ep93xx_gpio_update_int_params(port);
+  }
+
+  static void ep93xx_gpio_irq_unmask(struct irq_data *d)
+  {
+-	int line = irq_to_gpio(d->irq);
+-	int port = line>>  3;
++	int port = irq_port(irq);
++	int port_mask = irq_port_mask(irq);
+
+-	gpio_int_unmasked[port] |= 1<<  (line&  7);
++	gpio_int_unmasked[port] |= port_mask;
+  	ep93xx_gpio_update_int_params(port);
+  }
+
+@@ -170,9 +177,8 @@ static void ep93xx_gpio_irq_unmask(struct irq_data *d)
+   */
+  static int ep93xx_gpio_irq_type(struct irq_data *d, unsigned int type)
+  {
+-	const int gpio = irq_to_gpio(d->irq);
+-	const int port = gpio>>  3;
+-	const int port_mask = 1<<  (gpio&  7);
++	const int port = irq_port(d->irq);
++	const int port_mask = irq_port_mask(d->irq);
+  	irq_flow_handler_t handler;
+
+  	gpio_direction_input(gpio);
+
+
