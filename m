@@ -1,83 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab1HHIBy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 04:01:54 -0400
-Received: from exprod5og104.obsmtp.com ([64.18.0.178]:48134 "EHLO
-	exprod5og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751725Ab1HHIBu (ORCPT
+	id S1751686Ab1HHIBs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 04:01:48 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:65425 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab1HHIBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 04:01:50 -0400
-Message-ID: <4E3F97EA.2020600@ge.com>
-Date: Mon, 08 Aug 2011 09:01:46 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: "Emilio G. Cota" <cota@braap.org>
-CC: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] staging: vme: add functions for bridge module refcounting
-References: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch> <1312194053-32310-6-git-send-email-manohar.vanga@cern.ch> <4E39555C.30507@ge.com> <20110803140630.GA29460@becoht-mvanga> <20110803152317.GA21903@flamenco.cs.columbia.edu> <4E3A4904.3040007@ge.com> <20110804163451.GA18422@flamenco.cs.columbia.edu> <4E3B9FA2.3060303@ge.com> <20110805090416.GA4806@becoht-mvanga> <4E3BB6E7.6020809@ge.com> <20110805174728.GA1741@flamenco.cs.columbia.edu>
-In-Reply-To: <20110805174728.GA1741@flamenco.cs.columbia.edu>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Aug 2011 08:01:47.0761 (UTC) FILETIME=[6C0A4610:01CC55A1]
+	Mon, 8 Aug 2011 04:01:46 -0400
+From: stufever@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: tiwai@suse.de, perex@perex.cz, Wang Shaoyan <wangshaoyan.pt@taobao.com>
+Subject: [PATCH] sound: don't use the deprecated function check_region
+Date: Mon,  8 Aug 2011 16:07:12 +0800
+Message-Id: <1312790832-6790-1-git-send-email-wangshaoyan.pt@taobao.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/08/11 18:47, Emilio G. Cota wrote:
-> On Fri, Aug 05, 2011 at 10:24:55 +0100, Martyn Welch wrote:
->> I think that by refcounting the resources being used we
->> will know whether a bridge module is being used or not,
->> thus whether it can be unloaded or not.
-> 
-> But the granularity is wrong; if you want to know whether the
-> bridge is being used, just keep track of the devices *which
-> want to make known* that they're under the bridge.
-> 
+From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
 
-I disagree, it shouldn't be up to the driver to determine whether it's use of
-the bus should be known by the system. The system should know when the bus is
-being used.
+  sound/oss/pss.c: In function 'configure_nonsound_components':
+  sound/oss/pss.c:676: warning: 'check_region' is deprecated (declared at include/linux/ioport.h:201)
 
->> By reference counting the use of resources we minimise the
->> chance of poorly written drivers using resources, but not
->> registering the fact that they are in fact using a VME bridge.
-> 
-> A driver leaking a resource will then leave a bogus refcount
-> on the bus driver--a clear case of self-inflicted pain.
-> 
+Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+---
+ sound/oss/pss.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-As opposed to adding a function that *only* refcounts and therefore requires
-every driver to make extra explicit function call just to keep the refcounts
-up-to-date.
-
-> The argument of "poorly written drivers" does not apply;
-> I would expect all the merged drivers to be "good quality"
-> only, that's why we want to be upstream and why we put effort
-> in reviewing. Your point is well-intentioned, but in
-> practice we'd be shooting ourselves in the foot, potentially
-> ending up with an unremovable vme bridge module--which is
-> worse than a driver leaking a resource.
-> 
-
-Which wouldn't happen because all the upstreamed drivers are "good quality". I
-might add that failing to free a resource will mean that it won't be
-re-allocated, so having visibility of the number of resources having been
-allocated would be advantageous.
-
-> Refcounting must be kept simple & stupid; doing it behind the
-> backs of the drivers we're trying to protect is a mistake.
-> 
-
-I just simply disagree. Forcing each driver to specifically maintain the
-refcount is just stupid when an alternative is possible.
-
-Martyn
-
+diff --git a/sound/oss/pss.c b/sound/oss/pss.c
+index 9b800ce..0fa26bd 100644
+--- a/sound/oss/pss.c
++++ b/sound/oss/pss.c
+@@ -673,9 +673,10 @@ static void configure_nonsound_components(void)
+ 
+ 	if (pss_cdrom_port == -1) {	/* If cdrom port enablation wasn't requested */
+ 		printk(KERN_INFO "PSS: CDROM port not enabled.\n");
+-	} else if (check_region(pss_cdrom_port, 2)) {
++	} else if (!request_region(pss_cdrom_port, 2, "PSS CDROM")) {
+ 		printk(KERN_ERR "PSS: CDROM I/O port conflict.\n");
+ 	} else {
++		release_region(pss_cdrom_port, 2);
+ 		set_io_base(devc, CONF_CDROM, pss_cdrom_port);
+ 		printk(KERN_INFO "PSS: CDROM I/O port set to 0x%x.\n", pss_cdrom_port);
+ 	}
 -- 
-Martyn Welch (Principal Software Engineer) | Registered in England and
-GE Intelligent Platforms                   | Wales (3828642) at 100
-T +44(0)127322748                          | Barbirolli Square, Manchester,
-E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
+1.7.4.1
+
