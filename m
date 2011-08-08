@@ -1,119 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab1HHRRt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 13:17:49 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:55648 "EHLO e2.ny.us.ibm.com"
+	id S1753166Ab1HHRT4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 13:19:56 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:36952 "EHLO www.hansjkoch.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751921Ab1HHRRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 13:17:48 -0400
-Message-ID: <4E4019E1.2090508@us.ibm.com>
-Date: Mon, 08 Aug 2011 10:16:17 -0700
-From: Badari Pulavarty <pbadari@us.ibm.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.16) Gecko/20101125 Thunderbird/3.0.11
+	id S1751217Ab1HHRTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 13:19:55 -0400
+Date: Mon, 8 Aug 2011 19:19:31 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Chris Wright <chrisw@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Anthony Foiani <anthony.foiani@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uio/gen-pci: don't enable interrupts in ISR
+Message-ID: <20110808171931.GB867@local>
+References: <20110804204606.GA19724@linutronix.de>
+ <20110804210413.GA29222@redhat.com>
+ <20110805001507.GA5987@local>
+ <20110808062431.GB5182@redhat.com>
 MIME-Version: 1.0
-To: Liu Yuan <namei.unix@gmail.com>
-CC: Stefan Hajnoczi <stefanha@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Khoa Huynh <khoa@us.ibm.com>
-Subject: Re: [RFC PATCH]vhost-blk: In-kernel accelerator for virtio block
- device
-References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com> <CAJSP0QUKz7LFuARF_n2LcBi_uuSzfmkjrWsHAWrXXkEaQJKkEA@mail.gmail.com> <4E325F98.5090308@gmail.com> <4E32F7F2.4080607@us.ibm.com> <4E363DB9.70801@gmail.com> <1312495132.9603.4.camel@badari-desktop> <4E3BCE4D.7090809@gmail.com> <4E3C302A.3040500@us.ibm.com> <4E3F3D4E.70104@gmail.com> <4E3F6E72.1000907@us.ibm.com> <4E3F90E3.9080600@gmail.com>
-In-Reply-To: <4E3F90E3.9080600@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110808062431.GB5182@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/8/2011 12:31 AM, Liu Yuan wrote:
-> On 08/08/2011 01:04 PM, Badari Pulavarty wrote:
->> On 8/7/2011 6:35 PM, Liu Yuan wrote:
->>> On 08/06/2011 02:02 AM, Badari Pulavarty wrote:
->>>> On 8/5/2011 4:04 AM, Liu Yuan wrote:
->>>>> On 08/05/2011 05:58 AM, Badari Pulavarty wrote:
->>>>>> Hi Liu Yuan,
->>>>>>
->>>>>> I started testing your patches. I applied your kernel patch to 3.0
->>>>>> and applied QEMU to latest git.
->>>>>>
->>>>>> I passed 6 blockdevices from the host to guest (4 vcpu, 4GB RAM).
->>>>>> I ran simple "dd" read tests from the guest on all block devices
->>>>>> (with various blocksizes, iflag=direct).
->>>>>>
->>>>>> Unfortunately, system doesn't stay up. I immediately get into
->>>>>> panic on the host. I didn't get time to debug the problem. Wondering
->>>>>> if you have seen this issue before and/or you have new patchset
->>>>>> to try ?
->>>>>>
->>>>>> Let me know.
->>>>>>
->>>>>> Thanks,
->>>>>> Badari
->>>>>>
->>>>>
->>>>> Okay, it is actually a bug pointed out by MST on the other thread, 
->>>>> that it needs a mutex for completion thread.
->>>>>
->>>>> Now would you please this attachment?This patch only applies to 
->>>>> kernel part, on top of v1 kernel patch.
->>>>>
->>>>> This patch mainly moves completion thread into vhost thread as a 
->>>>> function. As a result, both requests submitting and completion 
->>>>> signalling is in the same thread.
->>>>>
->>>>> Yuan
->>>>
->>>> Unfortunately, "dd" tests (4 out of 6) in the guest hung. I see 
->>>> following messages
->>>>
->>>> virtio_blk virtio2: requests: id 0 is not a head !
->>>> virtio_blk virtio3: requests: id 1 is not a head !
->>>> virtio_blk virtio5: requests: id 1 is not a head !
->>>> virtio_blk virtio1: requests: id 1 is not a head !
->>>>
->>>> I still see host panics. I will collect the host panic and see if 
->>>> its still same or not.
->>>>
->>>> Thanks,
->>>> Badari
->>>>
->>>>
->>> Would you please show me how to reproduce it step by step? I tried 
->>> dd with two block device attached, but didn't get hung nor panic.
->>>
->>> Yuan
->>
->> I did 6 "dd"s on 6 block devices..
->>
->> dd if=/dev/vdb of=/dev/null bs=1M iflag=direct &
->> dd if=/dev/vdc of=/dev/null bs=1M iflag=direct &
->> dd if=/dev/vdd of=/dev/null bs=1M iflag=direct &
->> dd if=/dev/vde of=/dev/null bs=1M iflag=direct &
->> dd if=/dev/vdf of=/dev/null bs=1M iflag=direct &
->> dd if=/dev/vdg of=/dev/null bs=1M iflag=direct &
->>
->> I can reproduce the problem with in 3 minutes :(
->>
->> Thanks,
->> Badari
->>
->>
-> Ah...I made an embarrassing mistake that I tried to 'free()' an 
-> kmem_cache object.
->
-> Would you please revert the vblk-for-kernel-2 patch and apply the new 
-> one attached in this letter?
->
-Hmm.. My version of the code seems to have kzalloc() for used_info. I 
-don't have a version
-that is using kmem_cache_alloc(). Would it be possible for you to send 
-out complete patch
-(with all the fixes applied) for me to try ? This will avoid all the 
-confusion ..
+On Mon, Aug 08, 2011 at 09:24:31AM +0300, Michael S. Tsirkin wrote:
+> On Fri, Aug 05, 2011 at 02:15:07AM +0200, Hans J. Koch wrote:
+> > On Fri, Aug 05, 2011 at 12:04:13AM +0300, Michael S. Tsirkin wrote:
+> > > On Thu, Aug 04, 2011 at 10:46:06PM +0200, Sebastian Andrzej Siewior wrote:
+> > > > As reported by Anthony in a short way:
+> > > > 
+> > > > |irq 17 handler uio_interrupt+0x0/0x68 enabled interrupts
+> > > > |NIP [c0069d84] handle_irq_event_percpu+0x260/0x26c
+> > > > 
+> > > > The problem here is that spin_unlock_irq() enables the interrupts which
+> > > > is a no-no in interrupt context because they always run with interrupts
+> > > > disabled. This is the case even if IRQF_DISABLED has not been specified
+> > > > since v2.6.35. Therefore this patch uses simple spin_locks().
+> > > > 
+> > > > Looking at it further here is only one spot where the lock is hold. So
+> > > > giving the fact that an ISR is not reentrant and is not executed on two
+> > > > cpus at the same time why do we need a lock here?
+> > > 
+> > > I'm not sure anymore. I think the idea was to use
+> > > it for synchronization down the road somehow,
+> > > but it never materialized. Let's drop that lock completely.
+> > 
+> > That sounds reasonable.
+
+Should I hack up a patch to remove the lock, or do you have anything in your
+pipeline?
+
+> > 
+> > > 
+> > > > The driver lacks of ->irqcontrol function so I guess the interrupt is
+> > > > enabled via direct PCI-access in userland.
+> > > 
+> > > Through sysfs.
+> > 
+> > How? With /sys/devices/pci.../enable ?
+> > 
+> > Thanks,
+> > Hans
+> 
+> No. By writing to the command register using
+> /sys/bus/pci/devices/.../config
+
+Hope that works at all times...
+Anyway, the spin_lock in uio_pci_generic.c definetly doesn't help.
 
 Thanks,
-Badari
-
-
+Hans
