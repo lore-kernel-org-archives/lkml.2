@@ -1,83 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab1HHRWQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 13:22:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60727 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751217Ab1HHRWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 13:22:15 -0400
-Date: Mon, 8 Aug 2011 10:20:40 -0700
-From: Greg KH <gregkh@suse.de>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Paul Clements <Paul.Clements@steeleye.com>,
-        Jiri Kosina <trivial@kernel.org>
-Subject: Re: [PATCH] nbd: some trivial improvements
-Message-ID: <20110808172040.GA3191@suse.de>
-References: <1312794004-22047-1-git-send-email-amwang@redhat.com>
+	id S1753481Ab1HHRWf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 13:22:35 -0400
+Received: from waldorf.bytemark.co.uk ([212.110.162.22]:44505 "EHLO
+	waldorf.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab1HHRWd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 13:22:33 -0400
+Date: Mon, 8 Aug 2011 13:22:16 -0400
+From: "Emilio G. Cota" <cota@braap.org>
+To: Martyn Welch <martyn.welch@ge.com>
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/8] staging: vme: add functions for bridge module
+ refcounting
+Message-ID: <20110808172216.GA2311@flamenco.cs.columbia.edu>
+References: <20110804163451.GA18422@flamenco.cs.columbia.edu>
+ <4E3B9FA2.3060303@ge.com>
+ <20110805090416.GA4806@becoht-mvanga>
+ <4E3BB6E7.6020809@ge.com>
+ <20110805174728.GA1741@flamenco.cs.columbia.edu>
+ <4E3F97EA.2020600@ge.com>
+ <20110808091432.GA19570@flamenco.cs.columbia.edu>
+ <4E3FABDA.8080204@ge.com>
+ <20110808101140.GA21300@flamenco.cs.columbia.edu>
+ <4E3FC33D.2080202@ge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1312794004-22047-1-git-send-email-amwang@redhat.com>
+In-Reply-To: <4E3FC33D.2080202@ge.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 05:00:04PM +0800, Amerigo Wang wrote:
-> This patch 1) uses task_pid_nr(current) to get the pid of current process,
->  2) replaces sysfs_create_file() with device_create_file(), 3) lower
-> the loglevel of an error message.
-
-As you are doing 3 different things, please make this 3 different
-patches (remember, one patch per logical thing being done.)
-
+On Mon, Aug 08, 2011 at 12:06:37 +0100, Martyn Welch wrote:
+> On 08/08/11 11:11, Emilio G. Cota wrote:
+> > On Mon, Aug 08, 2011 at 10:26:50 +0100, Martyn Welch wrote:
+> >> On 08/08/11 10:14, Emilio G. Cota wrote:
+> >>> Martyn, no one in the kernel is doing what you propose, for
+> >>> good reason. Look at USB, PCI, RapidIO.  They all provide get
+> >>> and put functions to be called from probe and release.
+> >>
+> >> Really, which functions are these for PCI?
+> > 
+> > pci_get_dev/put in drivers/pci/pci-driver.c.
+> > 
 > 
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: Paul Clements <Paul.Clements@steeleye.com>
-> Signed-off-by: WANG Cong <amwang@redhat.com>
+> Which isn't explicitly used by the vast majority of PCI drivers. In fact the
+> instances which I did find where this was used by a PCI device driver, it
+> appears to be using the old-style PCI probing.
+
+> This is taken care of automatically for drivers using the "newer" PCI driver
+> registration model as part of the probe.
+
+And I don't care. The new model is not doing that nor what you suggest
+anyway, AFAIK it's not incrementing any refcounts for devices--perhaps
+because it cannot be built as a module? I dunno.
+
+Look at other subsystems that usually sit under PCI, like USB
+or RapidIO.
+
+> No, your driver will be told the resource isn't available by vme_lm_request(),
+> it would return null. It would then be up to you as the driver writer to
+> handle that gracefully. In fact, just as you'd have to do if the location
+> monitor was already being used by a different VME device driver which had
+> positioned them where it needed them.
+
+Ok, we may not oops, but this is unnecessary pain for the driver--and
+probably not what the driver wanted.
+
+> > Remember that we're writing a bus driver here, we shouldn't
+> > get on the way of the drivers for the devices on the bus, no
+> > matter how crazy they are.
 > 
-> ---
-> diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-> index f533f33..07cad4b 100644
-> --- a/drivers/block/nbd.c
-> +++ b/drivers/block/nbd.c
-> @@ -405,10 +405,10 @@ static int nbd_do_it(struct nbd_device *lo)
->  
->  	BUG_ON(lo->magic != LO_MAGIC);
->  
-> -	lo->pid = current->pid;
-> -	ret = sysfs_create_file(&disk_to_dev(lo->disk)->kobj, &pid_attr.attr);
-> +	lo->pid = task_pid_nr(current);
-> +	ret = device_create_file(disk_to_dev(lo->disk), &pid_attr);
->  	if (ret) {
-> -		printk(KERN_ERR "nbd: sysfs_create_file failed!");
-> +		printk(KERN_ERR "nbd: device_create_file failed!");
+> Actually we're providing resource management and a bridge independent VME API
+> for VME device drivers as part of a bus specific core, much as USB and PCI do.
+> The VME bridge drivers bind under it, the VME device drivers bind on top of it.
+> 
+> Crazy probably equates to not portable across different VME bridges
 
-Use dev_err() instead please.
+?? Crazy means crazy. ftrace is crazy, linux-rt is crazy. And
+they're great.
 
->  		lo->pid = 0;
->  		return ret;
->  	}
-> @@ -416,7 +416,7 @@ static int nbd_do_it(struct nbd_device *lo)
->  	while ((req = nbd_read_stat(lo)) != NULL)
->  		nbd_end_request(req);
->  
-> -	sysfs_remove_file(&disk_to_dev(lo->disk)->kobj, &pid_attr.attr);
-> +	device_remove_file(disk_to_dev(lo->disk), &pid_attr);
->  	lo->pid = 0;
->  	return 0;
->  }
-> @@ -745,7 +745,7 @@ static int __init nbd_init(void)
->  	BUILD_BUG_ON(sizeof(struct nbd_request) != 28);
->  
->  	if (max_part < 0) {
-> -		printk(KERN_CRIT "nbd: max_part must be >= 0\n");
-> +		printk(KERN_ERR "nbd: max_part must be >= 0\n");
+> , so no I don't agree. I'm in favour of providing as much flexibility to VME device
+> driver authors as possible, without impacting the flexibility of the user to
+> use the drivers on top of different VME bridges.
 
-Again, dev_err() please.  That properly identifies exactly which device
-had problems.
+This is nonsense.
 
-thanks,
+> > IMHO in order to make sure we're on
+> > the right track we must look at other bus drivers. And these
+> > other drivers just keep things simple and stupid, which is
+> > flexible, safe and "Obviously Correct(tm)".
+> 
+> Though I don't think the approach you are advocating is simple for the VME
+> device driver writer (new style PCI drivers don't as a rule directly manage
+> refcounting, in the same way your approach would add complexity for the
+> individual VME device drivers); it's not safe (I deem it unsafe to expect
+> every VME device driver writer to manage the refcounting in their drivers
+> explicitly, just as it appears is the case for PCI devices) and as a result
+> not "Obviously Correct(tm)".
 
-greg k-h
+By your definition there are lots of drivers in the kernel
+that are unsafe..
+
+I'm tired of your non-arguments. I'm just trying to persuade you
+to do what everyone else is doing, with technical reasons. To me
+(and to everybody else in this list, I'd imagine) refcounting
+should be explicit. You're going against what I perceive are
+well-established pratices in the kernel. I can't understand it.
+
+		Emilio
+
