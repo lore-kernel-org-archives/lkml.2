@@ -1,50 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180Ab1HHVwF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 17:52:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43391 "EHLO mx2.suse.de"
+	id S1753080Ab1HHVzp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 17:55:45 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55650 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751310Ab1HHVwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 17:52:03 -0400
-Date: Mon, 8 Aug 2011 14:51:53 -0700
-From: Greg KH <gregkh@suse.de>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.1-rc1 (staging/comedi)
-Message-ID: <20110808215153.GA10848@suse.de>
-References: <CA+55aFwkJdyEpyNY64aAQ5ChrPZ8Kvx9iRUwy1J6_SRaxoN=zA@mail.gmail.com>
- <20110808143516.517a40cc.rdunlap@xenotime.net>
+	id S1752268Ab1HHVzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 17:55:44 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: [Announcement] The PM tree has been renamed
+Date: Mon, 8 Aug 2011 23:57:12 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc1+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110808143516.517a40cc.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108082357.12169.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 02:35:16PM -0700, Randy Dunlap wrote:
-> on x86_64:
-> 
-> ERROR: "labpc_1200_is_unipolar" [drivers/staging/comedi/drivers/ni_labpc_cs.ko] undefined!
-> ERROR: "labpc_1200_ai_gain_bits" [drivers/staging/comedi/drivers/ni_labpc_cs.ko] undefined!
-> ERROR: "range_labpc_1200_ai" [drivers/staging/comedi/drivers/ni_labpc_cs.ko] undefined!
-> ERROR: "labpc_common_detach" [drivers/staging/comedi/drivers/ni_labpc_cs.ko] undefined!
-> ERROR: "labpc_common_attach" [drivers/staging/comedi/drivers/ni_labpc_cs.ko] undefined!
-> 
-> Full kernel (rand)config is attached.
+Hi,
 
-I don't see how this could happen, as you have:
+I've just renamed the PM tree at kernel.org to linux-pm (from suspend-2.6),
+so please use
 
-CONFIG_COMEDI_NI_LABPC_CS=m
-CONFIG_COMEDI_NI_LABPC=m
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
 
-set.  Those functions are all in
-drivers/staging/comedi/drivers/ni_labpc.ko, which should have also
-gotten built, right?
+to access it.  The old one is going to be around until necessary.
 
-totally confused,
-
-greg k-h
+Thanks,
+Rafael
