@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040Ab1HHQvD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 12:51:03 -0400
-Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.32]:47472 "EHLO
+	id S1751703Ab1HHQyh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 12:54:37 -0400
+Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.33]:48953 "EHLO
 	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751106Ab1HHQvA (ORCPT
+	by vger.kernel.org with ESMTP id S1751080Ab1HHQyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 12:51:00 -0400
+	Mon, 8 Aug 2011 12:54:36 -0400
 Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
-X-Authority-Analysis: v=1.1 cv=40Z/dbZBr1wgzPkGSf8y7qdCkiWp+M7NvixVUiz+qMg= c=1 sm=0 a=I7fHHdvOj7QA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:17 a=azj6Gt-4AAAA:8 a=YORvzBCaAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=QyXUC8HyAAAA:8 a=nivgJaiknuMZaBKwFigA:9 a=wwT2R2F2Uhx-xBDMegIA:7 a=CjuIK1q_8ugA:10 a=eJ1lpvm07AkA:10 a=VV2__AUApEoA:10 a=jbrJJM5MRmoA:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:117
+X-Authority-Analysis: v=1.1 cv=40Z/dbZBr1wgzPkGSf8y7qdCkiWp+M7NvixVUiz+qMg= c=1 sm=0 a=I7fHHdvOj7QA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:17 a=azj6Gt-4AAAA:8 a=Z4Rwk6OoAAAA:8 a=YORvzBCaAAAA:8 a=VwQbUJbxAAAA:8 a=S1bmcGEOyt7uxq_W5D8A:9 a=BV9e4L_vBqi1jPXQmI8A:7 a=CjuIK1q_8ugA:10 a=eJ1lpvm07AkA:10 a=jbrJJM5MRmoA:10 a=VV2__AUApEoA:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.79.195.91
 From: "Bob Pearson" <rpearson@systemfabricworks.com>
-To: "'George Spelvin'" <linux@horizon.com>, <fzago@systemfabricworks.com>,
+To: "'George Spelvin'" <linux@horizon.com>, <joakim.tjernlund@transmode.se>
+Cc: <akpm@linux-foundation.org>, <fzago@systemfabricworks.com>,
         <linux-kernel@vger.kernel.org>
-Cc: <akpm@linux-foundation.org>, <joakim.tjernlund@transmode.se>
-References: <20110808092826.21881.qmail@science.horizon.com>
-In-Reply-To: <20110808092826.21881.qmail@science.horizon.com>
+References: <OF53580ACE.F420CB68-ONC12578E6.0039189A-C12578E6.0039CD0F@transmode.se> <20110808105201.25396.qmail@science.horizon.com>
+In-Reply-To: <20110808105201.25396.qmail@science.horizon.com>
 Subject: RE: [PATCH] add slice by 8 algorithm to crc32.c
-Date: Mon, 8 Aug 2011 11:50:57 -0500
-Message-ID: <002901cc55eb$5983b0e0$0c8b12a0$@systemfabricworks.com>
+Date: Mon, 8 Aug 2011 11:54:34 -0500
+Message-ID: <002a01cc55eb$da2f9a10$8e8ece30$@systemfabricworks.com>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQKUs1+vuIfKKALgnml0OUy/M1l2fpOCbEEw
+Thread-Index: AQE27+nmdQWDUo42aQ+pvrkutRkhKpY99xYw
 Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,92 +35,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 > -----Original Message-----
 > From: George Spelvin [mailto:linux@horizon.com]
-> Sent: Monday, August 08, 2011 4:28 AM
-> To: fzago@systemfabricworks.com; linux-kernel@vger.kernel.org
-> Cc: akpm@linux-foundation.org; joakim.tjernlund@transmode.se;
-> linux@horizon.com; rpearson@systemfabricworks.com
-> Subject: [PATCH] add slice by 8 algorithm to crc32.c
+> Sent: Monday, August 08, 2011 5:52 AM
+> To: joakim.tjernlund@transmode.se; linux@horizon.com
+> Cc: akpm@linux-foundation.org; fzago@systemfabricworks.com; linux-
+> kernel@vger.kernel.org; rpearson@systemfabricworks.com
+> Subject: Re: [PATCH] add slice by 8 algorithm to crc32.c
 > 
-> Sorry I didn't see this when first posted.
+> > I prefer to keep the current code which (at the time) generated good
+code
+> > for at least ppc:
+> > 	/* Align it */
+> > 	if (unlikely((long)buf & 3 && len)) {
+> > 		do {
+> > 			DO_CRC(*buf++);
+> > 		} while ((--len) && ((long)buf)&3);
+> > 	}
 > 
-> The "slice by 8" terminology is pretty confusing.  How about
-> "Extended Joakim Tjernlund's optimization from commit
-> 836e2af92503f1642dbc3c3281ec68ec1dd39d2e to 8-way parallelism."
+> Ah, I was looking at fzago's initial patch; I hadn't realized you'd
+> tweaked it.  That's pretty much what I was talking about.
 
-Here is a link to the article I first read about this algorithm. It mentions
-both the 4 and 8 byte version.
-I do not know about priority between Joakim and the folks at Intel but Intel
-is usually credited with the idea in other articles I have seen. Clearly the
-algorithm that is currently in crc32.c is the same as the one described in
-the article. As you can see I mis-copied the name from slicing-by-8 to slice
-by 8.
-
-http://www.intel.com/technology/comms/perfnet/download/CRC_generators.pdf
+Frank actually deserves none of the 'blame' for this effort. He is much more
+experienced in sending in patches to linux-kernel than I am and helped me to
+prepare and send the first version of the patch.
 
 > 
-> Which is essentally what you're doing.  The renaming of tab[0] to t0_le
-> and t0_be, and removal of the DO_CRC4 macro just increases the diff size.
+> Would
+>  	if (unlikely((long)buf & 3) && len) {
 > 
-> If you're looking at speeding up the CRC through larger tables, have
-> you tried using 10+11+11-bit tables?  That would require 20K of tables
-> rather than 8K, but would reduce the number of table lookups per byte.
-> 
-> 
-> One more stunt you could try to increase parallelism: rather than maintain
-> the CRC in one register, maintain it in several, and only XOR and collapse
-> them at the end.
-> 
-> Start with your 64-bit code, but imagine that the second code block's
-> "q = *p32++" always loads 0, and therefore the whole block can be skipped.
-> (Since tab[0] = 0 for all CRC tables.)
-> 
-> This computes the CRC of the even words.  Then do a second one in parallel
-> for the odd words into a separate CRC register.  Then combine them at the
-> end.
-> (Shift one up by 32 bits and XOR into the other.)
-> 
-> This would let you get away with 5K of tables: t4 through t7, and t0.
-> t1 through t3 could be skipped.
-> 
-> 
-> Ideally, I'd write all this code myself, but I'm a bit crunched at work
-> right now so wouldn't be able to get to it for a few days.
-> 
-> 
-> 
-> Another possible simplification to the startup code.  There's no need
-> to compute init_bytes explicitly; just loop until the pointer is aligned:
-> 
-> 	while ((unsigned)buf & 3) {
-> 		if (!len--)
-> 			goto done;
-> #ifdef __LITTLE_ENDIAN
-> 		i0 = *buf++ ^ crc;
-> 		crc = t0_le[i0] ^ (crc >> 8);
-> #else
-> 		i0 = *buf++ ^ (crc >> 24);
-> 		crc = t0_le[i0] ^ (crc << 8);
-> #endif
-> 	}
-> 	p32 = (u32 const *)buf;
-> 	words = len >> 2;
-> 	end_bytes = len & 3;
-> 
-> 
-> ... although I'd prefer to keep the DO_CRC() and DO_CRC4 macros, and
-> extend them to the 64-bit case, to avoid the nested #ifdefs.  That would
-> make:
-> 
-> 	while ((unsigned)buf & 3) {
-> 		if (!len--)
-> 			goto done;
-> 		DO_CRC(*buf++);
-> 	}
-> 	p32 = (u32 const *)buf;
-> 	words = len >> 2;
-> 	end_bytes = len & 3;
-
-Personally I don't like macros unless they are very frequently used as you
-can probably tell. The ifdefs were somewhat rediced in the second version of
-the patch.
+> give the compiler better hints?  len != 0 is awfully
+> likely, actually.
 
