@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab1HHRtG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 13:49:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33501 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751917Ab1HHRtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 13:49:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,338,1309762800"; 
-   d="scan'208";a="36476073"
-Subject: Re: [patch] x86, x2apic: enable the bios request for x2apic optout
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Song, Youquan" <youquan.song@intel.com>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Prarit Bhargava <prarit@redhat.com>, "trenn@suse.de" <trenn@suse.de>,
-        Yinghai Lu <yinghai@kernel.org>
-In-Reply-To: <20110806070019.GG13220@elte.hu>
-References: <1311987173.12777.7.camel@sbsiddha-mobl2>
-	 <1312067391.22074.58.camel@i7.infradead.org>
-	 <1312167661.17578.4.camel@sbsiddha-mobl2>  <20110806070019.GG13220@elte.hu>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Mon, 08 Aug 2011 10:48:29 -0700
-Message-Id: <1312825709.17892.19.camel@sbsiddha-MOBL3.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1753031Ab1HHRtM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 13:49:12 -0400
+Received: from lvps87-230-0-242.dedicated.hosteurope.de ([87.230.0.242]:57777
+	"EHLO lvps87-230-0-242.dedicated.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751917Ab1HHRtI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 13:49:08 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Aug 2011 13:49:08 EDT
+Date: Mon, 8 Aug 2011 19:42:19 +0200
+From: Michael Guntsche <mike@it-loops.com>
+To: netdev <netdev@vger.kernel.org>, linux-kernel@vger.kernel.org
+Subject: [BUG] 3.0-rc1 Bridge not forwarding unicast packages
+Message-ID: <20110808192646@it-loops.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-08-06 at 00:00 -0700, Ingo Molnar wrote:
-> Guys, mind doing this on top of the DMAR cleanup patches Yinghai 
-> posted? (if those patches are fine - i have not checked them in 
-> detail yet)
+Hi list,
 
-Ingo, I don't think Yinghai has posted the cleanup patches that you were
-requesting here http://marc.info/?l=linux-pci&m=131157843015411&w=2.
+I just upgraded my router/bridge combo to 3.1-rc1 from 3.0 for
+testing. On a first look everything seemed to work fine, but when I
+tried to connect via openvpn to my internal network (tap0 being bridged
+with the internal network) I noticed that I was not able to access the
+server on my internal network. I could access the bridge (which is
+acting as the openvpn server as well) just fine though. 
+To debug this I ran tcpdump on the openvpn client and started a ping to the
+internal network. I could see the ARP requests being answered.
 
-or Did I miss those patches Yinghai?
+19:23:49.247846 ARP, Request who-has 192.168.42.127 tell 192.168.42.96,
+length 28
+19:23:49.287752 ARP, Reply 192.168.42.127 is-at 00:13:d4:4f:a2:dc,
+length 46
 
-thanks,
-suresh
+in this case .127 is the server on the internal net and .96 the openvpn
+client, but the icmp request did not arrive on the server. 
+The strange thing I noticed was that I could see broadcasts packages
+from the server on the client
 
+19:23:28.135185 IP 192.168.42.127.631 > 192.168.42.255.631: UDP, length
+187
+19:23:29.470975 IP 192.168.42.96.5353 > 224.0.0.251.5353: .......
+
+but no icmp packages arrived on the server side.
+
+
+brctl showmacs lan
+port no mac addr                is local?       ageing timer
+  1     00:0c:42:28:de:4e       yes                0.00
+  2     00:0c:42:61:7f:f2       yes                0.00
+  1     00:13:d4:4f:a2:dc       no                 0.00 <---- server on the lan side
+  3     8e:22:41:d9:95:23       yes                0.00
+  3     b6:e1:e3:06:c9:1a       no                 5.00 <---- client connected via tap0
+
+Reverting to 3.0 solves the problem for me. I tried just reverting the bridge code on the server to the 3.0 version to make sure that it is really Bridge related, but there are too many changes outside the bridge tree so compilation fails for me.
+
+If you need more information, please to not hesitate to conact me.
+
+Kind regards,
+Michael Guntsche
