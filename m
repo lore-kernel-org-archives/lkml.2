@@ -1,82 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab1HHRb2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 13:31:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40595 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752308Ab1HHRb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 13:31:26 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Shaohua Li <shli@kernel.org>, linux-kernel@vger.kernel.org,
-        Jens Axboe <jaxboe@fusionio.com>, msnitzer@redhat.com
-Subject: Re: [patch] blk-flush: fix flush policy calculation
-References: <x49d3go98ku.fsf@segfault.boston.devel.redhat.com>
-	<CANejiEXK7NSJo-0vshyX6RSqmRbHmyxAw8_wFQEwvTXrEQF3fg@mail.gmail.com>
-	<x4939hju2zh.fsf@segfault.boston.devel.redhat.com>
-	<20110804102039.GD2731@htj.dyndns.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 08 Aug 2011 13:31:22 -0400
-In-Reply-To: <20110804102039.GD2731@htj.dyndns.org> (Tejun Heo's message of
-	"Thu, 4 Aug 2011 12:20:39 +0200")
-Message-ID: <x49bovzizdh.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753679Ab1HHRbo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 13:31:44 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:37965 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753519Ab1HHRbm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 13:31:42 -0400
+Date: Mon, 8 Aug 2011 10:31:40 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Sergiu Iordache <sergiu@chromium.org>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] char drivers: ramoops documentation
+Message-Id: <20110808103140.7726a203.rdunlap@xenotime.net>
+In-Reply-To: <1312823540-7509-1-git-send-email-sergiu@chromium.org>
+References: <1312823540-7509-1-git-send-email-sergiu@chromium.org>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
+On Mon,  8 Aug 2011 10:12:19 -0700 Sergiu Iordache wrote:
 
-> Hello,
->
-> On Tue, Aug 02, 2011 at 01:39:46PM -0400, Jeff Moyer wrote:
->> OK, sorry for top-posting here, but I chased the problem down further.
->> 
->> Commit ae1b1539622fb46e51b4d13b3f9e5f4c713f86ae, block: reimplement
->> FLUSH/FUA to support merge, introduced a regression when running any
->> sort of fsyncing workload using dm-multipath and certain storage (in our
->> case, an HP EVA).  It turns out that dm-multipath always advertised
->> flush+fua support, and passed commands on down the stack, where they
->> used to get stripped off.  The above commit, unfortunately, changed that
->> behavior:
-> ...
->> So, the flush machinery was bypassed in such cases (q->flush_flags == 0
->> && rq->cmd_flags & (REQ_FLUSH|REQ_FUA)).
->> 
->> Now, however, we don't get into the flush machinery at all (which is why
->> my initial patch didn't help this situation).  Instead,
->> __elv_next_request just hands a request with flush and fua bits set to
->> the scsi_request_fn, even though the underlying request_queue does not
->> support flush or fua.
->> 
->> So, where do we fix this?  We could just accept Mike's patch to not send
->> such requests down from dm-mpath, but that seems short-sighted.  We
->> could reinstate some checks in __elv_next_request.  Or, we could put the
->> checks into blk_insert_cloned_request.
->
-> Ah, okay, what changed there was where a request is passed into flush
-> machinery.  Before, it was while the request was being dispatched from
-> elevator to device.  After, it's de-composed when the request enters
-> elevator.  The bug is that there are paths which insert new requests
-> to elevator but didn't check for REQ_FLUSH|FUA.
->
-> I think it would be cleaner to add a wrapper around
-> __elv_add_request() which checks for REQ_FLUSH|FUA and enforce
-> REQ_INSERT_FLUSH if the request needs it.  Note that this should only
-> happen when a request enters the queue for the first time but not on
-> requeues - that was the reason why the decision wasn't made inside
-> __elv_add_request().
+> Add a documentation file describing the usage of Ramoops
+> 
+> Signed-off-by: Sergiu Iordache <sergiu@chromium.org>
+> ---
+>  Documentation/ramoops.txt |   76 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 76 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/ramoops.txt
+> 
+> diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
+> new file mode 100644
+> index 0000000..8fb1ba7
+> --- /dev/null
+> +++ b/Documentation/ramoops.txt
+> @@ -0,0 +1,76 @@
+> +Ramoops oops/panic logger
+> +=========================
+> +
+> +Sergiu Iordache <sergiu@chromium.org>
+> +
+> +Updated: 8 August 2011
+> +
+> +0. Introduction
+> +
+> +Ramoops is an oops/panic logger that writes its logs to RAM before the system
+> +crashes. It works by logging oopses and panics in a circular buffer. Ramoops
+> +needs a system with persistent RAM so that the content of that area can
+> +survive after a restart.
+> +
+> +1. Ramoops concepts
+> +
+> +Ramoops uses a predefined memory area to store the dump. The start and size of
+> +the memory area are set using two variables:
+> +  * "mem_address" for the start
+> +  * "mem_size" for the size. The memory size will be rounded down to a
+> +  power of two.
+> +
+> +The memory area is divided into "record_size" chunks (also rounded down to
+> +power of two) and each oops/panic writes a "record_size" chunk of
+> +information.
+> +
+> +Dumping both oopses and panics can be done by setting 1 in the "dump_oops"
+> +variable while setting 0 in that variable dumps only the panics.
+> +
+> +The module uses a counter to record multiple dumps but the counter gets reset
+> +on restart (i.e. new dumps after the restart will overwrite old ones).
+> +
+> +2. Setting the parameters
+> +
+> +Setting the ramoops parameters can be done in 2 different manners:
+> + 1. Use the module parameters (which have the names of the variables described
+> + as before).
+> + 2. Use a platform device and set the platform data. The parameters can then
+> + be set through that platform data. An example of doing that is:
+> +
+> +#include <linux/ramoops.h>
+> +[...]
+> +
+> +static struct ramoops_platform_data ramoops_data = {
+> +        .mem_size               = <...>,
+> +        .mem_address            = <...>,
+> +        .record_size            = <...>,
+> +        .dump_oops              = <...>,
+> +};
+> +
+> +static struct platform_device ramoops_dev = {
+> +        .name = "ramoops",
+> +        .dev = {
+> +                .platform_data = &ramoops_data,
+> +        },
+> +};
+> +
+> +[... inside a function ...]
+> +int ret;
+> +
+> +ret = platform_device_register(&ramoops_dev);
+> +if (ret) {
+> +	printk(KERN_ERR "unable to register platform device\n");
+> +	return ret;
+> +}
+> +
+> +3. Dump format
+> +
+> +The data dump begins with a header, currently defined as "====" followed by a
+> +timestamp and a new line. The dump then continues with the actual data.
+> +
+> +4. Reading the data
+> +
+> +The dump data can be read from memory (through /dev/mem or other means).
+> +Getting the module parameters, which are needed in order to parse the data, can
+> +be done through /sys/module/ramoops/parameters/* .
+> -- 
 
-OK, we can do a wrapper, but it probably wouldn't be too horrific to
-just fix up blk_insert_cloned_request.
+Thanks.  I can merge it, but the patch needs one more thing:
+a addition to Documentation/00-INDEX for this new file,
+so please resend the patch including that addition.
 
-Now, the next issue is that flush requests issued from the dm target
-down through the stack have no bio associated with them, so we blow up
-on the BUG_ON(!req->bio || req->bio != req->biotail).
-
-Cheers,
-Jeff
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
