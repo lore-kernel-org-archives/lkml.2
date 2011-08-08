@@ -1,156 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920Ab1HHLCQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 07:02:16 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:34779 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751357Ab1HHLCO (ORCPT
+	id S1752245Ab1HHLCY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 07:02:24 -0400
+Received: from relay.parallels.com ([195.214.232.42]:36470 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab1HHLCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 07:02:14 -0400
-From: Per Forlin <per.forlin@stericsson.com>
-To: Felipe Balbi <balbi@ti.com>,
-        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Cc: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linaro-dev@lists.linaro.org>, Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v2] usb: musb: ux500: optimize DMA callback routine
-Date: Mon, 8 Aug 2011 13:01:06 +0200
-Message-ID: <1312801266-11888-1-git-send-email-per.forlin@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
+	Mon, 8 Aug 2011 07:02:19 -0400
+Subject: [PATCH v2] vmscan: reverse lru scanning order
+To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Mon, 8 Aug 2011 15:02:07 +0400
+Message-ID: <20110808110207.30777.30800.stgit@localhost6>
+In-Reply-To: <20110727111002.9985.94938.stgit@localhost6>
+References: <20110727111002.9985.94938.stgit@localhost6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Per Forlin <per.forlin@linaro.org>
+LRU scanning order was accidentially changed in commit v2.6.27-5584-gb69408e:
+"vmscan: Use an indexed array for LRU variables".
+Before that commit reclaimer always scan active lists first.
 
-Skip the use of work queue and call musb_dma_completion() directly from
-DMA callback context.
+This patch just reverse it back.
 
-Here follows measurements on a Snowball board with ondemand governor active.
-
-Performance using work queue:
-(105 MB) copied, 6.23758 s, 16.8 MB/s
-(105 MB) copied, 5.7151 s, 18.3 MB/s
-(105 MB) copied, 5.83583 s, 18.0 MB/s
-(105 MB) copied, 5.93611 s, 17.7 MB/s
-
-Performance without work queue
-(105 MB) copied, 5.62173 s, 18.7 MB/s
-(105 MB) copied, 5.61811 s, 18.7 MB/s
-(105 MB) copied, 5.57817 s, 18.8 MB/s
-(105 MB) copied, 5.58549 s, 18.8 MB/s
-
-Signed-off-by: Per Forlin <per.forlin@linaro.org>
-Acked-by: Mian Yousaf Kaukab<mian.yousaf.kaukab@stericsson.com>
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
-Change log.
-v2: remove cast for void pointer
+ include/linux/mmzone.h |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
- drivers/usb/musb/ux500_dma.c |   43 ++---------------------------------------
- 1 files changed, 3 insertions(+), 40 deletions(-)
-
-diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
-index ef4333f..2402f6e 100644
---- a/drivers/usb/musb/ux500_dma.c
-+++ b/drivers/usb/musb/ux500_dma.c
-@@ -37,7 +37,6 @@ struct ux500_dma_channel {
- 	struct dma_channel channel;
- 	struct ux500_dma_controller *controller;
- 	struct musb_hw_ep *hw_ep;
--	struct work_struct channel_work;
- 	struct dma_chan *dma_chan;
- 	unsigned int cur_len;
- 	dma_cookie_t cookie;
-@@ -56,52 +55,21 @@ struct ux500_dma_controller {
- 	dma_addr_t phy_base;
- };
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index be1ac8d..0094389 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -141,7 +141,8 @@ enum lru_list {
  
--/* Work function invoked from DMA callback to handle tx transfers. */
--static void ux500_tx_work(struct work_struct *data)
--{
--	struct ux500_dma_channel *ux500_channel = container_of(data,
--		struct ux500_dma_channel, channel_work);
--	struct musb_hw_ep       *hw_ep = ux500_channel->hw_ep;
--	struct musb *musb = hw_ep->musb;
--	unsigned long flags;
--
--	dev_dbg(musb->controller, "DMA tx transfer done on hw_ep=%d\n",
--		hw_ep->epnum);
--
--	spin_lock_irqsave(&musb->lock, flags);
--	ux500_channel->channel.actual_len = ux500_channel->cur_len;
--	ux500_channel->channel.status = MUSB_DMA_STATUS_FREE;
--	musb_dma_completion(musb, hw_ep->epnum,
--				ux500_channel->is_tx);
--	spin_unlock_irqrestore(&musb->lock, flags);
--}
--
--/* Work function invoked from DMA callback to handle rx transfers. */
--static void ux500_rx_work(struct work_struct *data)
-+void ux500_dma_callback(void *private_data)
+ #define for_each_lru(l) for (l = 0; l < NR_LRU_LISTS; l++)
+ 
+-#define for_each_evictable_lru(l) for (l = 0; l <= LRU_ACTIVE_FILE; l++)
++#define for_each_evictable_lru(l) \
++	for (l = LRU_ACTIVE_FILE; (int)l >= LRU_INACTIVE_ANON; l--)
+ 
+ static inline int is_file_lru(enum lru_list l)
  {
--	struct ux500_dma_channel *ux500_channel = container_of(data,
--		struct ux500_dma_channel, channel_work);
-+	struct dma_channel *channel = private_data;
-+	struct ux500_dma_channel *ux500_channel = channel->private_data;
- 	struct musb_hw_ep       *hw_ep = ux500_channel->hw_ep;
- 	struct musb *musb = hw_ep->musb;
- 	unsigned long flags;
- 
--	dev_dbg(musb->controller, "DMA rx transfer done on hw_ep=%d\n",
--		hw_ep->epnum);
--
- 	spin_lock_irqsave(&musb->lock, flags);
- 	ux500_channel->channel.actual_len = ux500_channel->cur_len;
- 	ux500_channel->channel.status = MUSB_DMA_STATUS_FREE;
- 	musb_dma_completion(musb, hw_ep->epnum,
- 		ux500_channel->is_tx);
- 	spin_unlock_irqrestore(&musb->lock, flags);
--}
--
--void ux500_dma_callback(void *private_data)
--{
--	struct dma_channel *channel = (struct dma_channel *)private_data;
--	struct ux500_dma_channel *ux500_channel = channel->private_data;
- 
--	schedule_work(&ux500_channel->channel_work);
- }
- 
- static bool ux500_configure_channel(struct dma_channel *channel,
-@@ -330,7 +298,6 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 	void **param_array;
- 	struct ux500_dma_channel *channel_array;
- 	u32 ch_count;
--	void (*musb_channel_work)(struct work_struct *);
- 	dma_cap_mask_t mask;
- 
- 	if ((data->num_rx_channels > UX500_MUSB_DMA_NUM_RX_CHANNELS) ||
-@@ -347,7 +314,6 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 	channel_array = controller->rx_channel;
- 	ch_count = data->num_rx_channels;
- 	param_array = data->dma_rx_param_array;
--	musb_channel_work = ux500_rx_work;
- 
- 	for (dir = 0; dir < 2; dir++) {
- 		for (ch_num = 0; ch_num < ch_count; ch_num++) {
-@@ -374,15 +340,12 @@ static int ux500_dma_controller_start(struct dma_controller *c)
- 				return -EBUSY;
- 			}
- 
--			INIT_WORK(&ux500_channel->channel_work,
--				musb_channel_work);
- 		}
- 
- 		/* Prepare the loop for TX channels */
- 		channel_array = controller->tx_channel;
- 		ch_count = data->num_tx_channels;
- 		param_array = data->dma_tx_param_array;
--		musb_channel_work = ux500_tx_work;
- 		is_tx = 1;
- 	}
- 
--- 
-1.7.4.1
 
