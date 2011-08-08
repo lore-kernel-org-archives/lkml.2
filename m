@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab1HHQk2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 12:40:28 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:44604 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab1HHQkZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 12:40:25 -0400
-Subject: Re: [PATCH] regulator: max8952: removed unused mutex.
-From: Liam Girdwood <lrg@kernel.org>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        myungjoo.ham@gmail.com, Liam Girdwood <lrg@ti.com>
-In-Reply-To: <1312333083-22615-1-git-send-email-myungjoo.ham@samsung.com>
-References: <4E37FE95.7090808@ti.com>
-	 <1312333083-22615-1-git-send-email-myungjoo.ham@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Aug 2011 17:40:20 +0100
-Message-ID: <1312821620.3316.5.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2
+	id S1753540Ab1HHQmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 12:42:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57165 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752192Ab1HHQmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 12:42:14 -0400
+Message-ID: <4E40119A.5010803@zytor.com>
+Date: Mon, 08 Aug 2011 11:40:58 -0500
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+MIME-Version: 1.0
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Ingo Molnar <mingo@elte.hu>, Mel Gorman <mgorman@suse.de>,
+        tglx@linutronix.de, bruno@ioda-net.ch, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Add reboot quirk for Dell Precision M4600
+References: <20110727125651.GH3010@suse.de> <20110806065635.GE13220@elte.hu> <20110806153003.GA1238@srcf.ucam.org>
+In-Reply-To: <20110806153003.GA1238@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-03 at 09:58 +0900, MyungJoo Ham wrote:
-> This patch removes a mutex that is never used in the driver.
+On 08/06/2011 10:30 AM, Matthew Garrett wrote:
+> On Sat, Aug 06, 2011 at 08:56:35AM +0200, Ingo Molnar wrote:
+>> Weird - ACPI is the default Windows method of reboot - how come it 
+>> does not work on that box? Does Windows work around this specific 
+>> machine (unlikely), or is our ACPI boot sequence not 100% compatible 
+>> with the Windows method (more likely IMO)?
 > 
-> Reported-by: Axel Lin
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> ---
->  drivers/regulator/max8952.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
+> The ACPI reboot method on these machines hits the keyboard controller 
+> rather than PCI, which is unusual. What I suspect is that the write 
+> triggers some SMM or EC code that's making assumptions about system 
+> state, and we're not quite identical. Bouncing on the keyboard 
+> controller from userspace with init=/bin/bash wedges in the same way.
 > 
-> diff --git a/drivers/regulator/max8952.c b/drivers/regulator/max8952.c
-> index daff7fd..2fa8a81 100644
-> --- a/drivers/regulator/max8952.c
-> +++ b/drivers/regulator/max8952.c
-> @@ -26,7 +26,6 @@
->  #include <linux/platform_device.h>
->  #include <linux/regulator/driver.h>
->  #include <linux/regulator/max8952.h>
-> -#include <linux/mutex.h>
->  #include <linux/gpio.h>
->  #include <linux/io.h>
->  #include <linux/slab.h>
-> @@ -47,7 +46,6 @@ enum {
->  struct max8952_data {
->  	struct i2c_client	*client;
->  	struct device		*dev;
-> -	struct mutex		mutex;
->  	struct max8952_platform_data *pdata;
->  	struct regulator_dev	*rdev;
->  
-> @@ -208,7 +206,6 @@ static int __devinit max8952_pmic_probe(struct i2c_client *client,
->  	max8952->client = client;
->  	max8952->dev = &client->dev;
->  	max8952->pdata = pdata;
-> -	mutex_init(&max8952->mutex);
->  
->  	max8952->rdev = regulator_register(&regulator, max8952->dev,
->  			&pdata->reg_data, max8952);
 
-Applied.
+I have a vague suspicion that Windows might have a meta-quirk for this
+class of machines, i.e. if the ACPI reboot method, say, points at the
+keyboard controller or points at the "PCI" reboot port then it actually
+uses its own special-purpose routines rather than general routines.  It
+would be extremely interesting to know if "reboot=kbd" works on these boxen.
 
-Thanks
-
-Liam
+	-hpa
 
