@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab1HHOmE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 10:42:04 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38715 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753981Ab1HHOmC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 10:42:02 -0400
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-From: Peter Zijlstra <peterz@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 08 Aug 2011 16:41:41 +0200
-In-Reply-To: <20110808141128.GA22080@localhost>
-References: <20110806084447.388624428@intel.com>
-	 <20110806094526.733282037@intel.com> <1312811193.10488.33.camel@twins>
-	 <20110808141128.GA22080@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1312814501.10488.41.camel@twins>
-Mime-Version: 1.0
+	id S1753566Ab1HHOrF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 10:47:05 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:10476 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751392Ab1HHOrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 10:47:03 -0400
+Message-ID: <4E3FF6DF.2000303@parallels.com>
+Date: Mon, 08 Aug 2011 18:46:55 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>, Nathan Lynch <ntl@pobox.com>,
+        Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Serge Hallyn <serue@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        "containers@lists.osdl.org" <containers@lists.osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [patch 3/4] proc: Introduce the Children: line in /proc/<pid>/status
+References: <20110807212031.GG2080@sun> <20110808144035.GB22863@htj.dyndns.org>
+In-Reply-To: <20110808144035.GB22863@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-08 at 22:11 +0800, Wu Fengguang wrote:
-> @@ -538,11 +538,6 @@ static unsigned long bdi_position_ratio(
->         goal = thresh - thresh / DIRTY_SCOPE;
->         origin = 4 * thresh;
->  
-> -       if (unlikely(origin < limit && dirty > (goal + origin) / 2)) {
-> -               origin = limit;                 /* auxiliary control line */
-> -               goal = (goal + origin) / 2;
-> -               pos_ratio >>= 1;
-> -       }
->         pos_ratio = origin - dirty;
->         pos_ratio <<= BANDWIDTH_CALC_SHIFT;
->         do_div(pos_ratio, origin - goal + 1); 
+On 08/08/2011 06:40 PM, Tejun Heo wrote:
+> On Mon, Aug 08, 2011 at 01:20:31AM +0400, Cyrill Gorcunov wrote:
+>> From: Pavel Emelyanov <xemul@parallels.com>
+>>
+>> Although we can get the pids of some task's issue, this is just 
+>> more convenient to have them this way.
+>>
+>> Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+>> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+>> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> 
+> I'm not necessarily against this one but don't really see much point
+> either.  Can we delay this for now?
 
-So basically, pos_ratio = (4t - d) / (25/8)t, which if I'm not mistaken
-comes out at 32/25 - 8d/25t. Which simply doesn't make sense at all. 
+Sure we can. As I stated previously this one just makes our live easier, but
+we can live without one.
 
+> Thanks.
+> 
 
