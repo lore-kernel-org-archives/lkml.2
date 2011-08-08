@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab1HHWuE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 18:50:04 -0400
-Received: from smtp.ioda.net ([87.98.140.96]:60083 "EHLO smtp.ioda.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752702Ab1HHWuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 18:50:02 -0400
-Message-ID: <4E40680B.3000503@ioda-net.ch>
-Date: Tue, 09 Aug 2011 00:49:47 +0200
-From: Bruno Friedmann <bruno@ioda-net.ch>
-Organization: Ioda-Net =?UTF-8?B?U8Ogcmw=?=
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110729 Thunderbird/6.0
+	id S1752982Ab1HHW50 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 18:57:26 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55679 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279Ab1HHW5Z convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 18:57:25 -0400
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>, Ingo Molnar <mingo@elte.hu>,
-        Mel Gorman <mgorman@suse.de>, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Add reboot quirk for Dell Precision M4600
-References: <20110727125651.GH3010@suse.de> <20110806065635.GE13220@elte.hu> <20110806153003.GA1238@srcf.ucam.org> <4E40119A.5010803@zytor.com>
-In-Reply-To: <4E40119A.5010803@zytor.com>
-X-Enigmail-Version: 1.3a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACxGe6ssT4=kxApaKhv+=7nDcEFVW+oyByFQ_hzcfyZ4gw2C3g@mail.gmail.com>
+References: <1312780773-23142-1-git-send-email-Baohua.Song@csr.com>
+	<20110808081552.GI32513@linux-sh.org>
+	<CACxGe6ssT4=kxApaKhv+=7nDcEFVW+oyByFQ_hzcfyZ4gw2C3g@mail.gmail.com>
+Date: Tue, 9 Aug 2011 07:57:24 +0900
+X-Google-Sender-Auth: fn0qZSfuBVpFrJ6J6WwaBxYV-18
+Message-ID: <CAH9JG2V-66Wn7nwJz6tOkESoQAUJzAg-47YeMY0vzwu6T9O=Rg@mail.gmail.com>
+Subject: Re: [PATCH] GPIOLIB: add generic gpio_set_pull API
+From: Kyungmin Park <kmpark@infradead.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Paul Mundt <lethal@linux-sh.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Barry Song <Baohua.Song@csr.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2011 06:40 PM, H. Peter Anvin wrote:
-> On 08/06/2011 10:30 AM, Matthew Garrett wrote:
->> On Sat, Aug 06, 2011 at 08:56:35AM +0200, Ingo Molnar wrote:
->>> Weird - ACPI is the default Windows method of reboot - how come it 
->>> does not work on that box? Does Windows work around this specific 
->>> machine (unlikely), or is our ACPI boot sequence not 100% compatible 
->>> with the Windows method (more likely IMO)?
+On Tue, Aug 9, 2011 at 3:24 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Mon, Aug 8, 2011 at 2:15 AM, Paul Mundt <lethal@linux-sh.org> wrote:
+>> On Sun, Aug 07, 2011 at 10:19:33PM -0700, Barry Song wrote:
+>>> Now there are many different implementations for GPIO pull configuration, for
+>>> example:
+>>> s3c_gpio_setpull()
+>>> tegra_pinmux_set_pullupdown()
+>>> chipcHw_setPinPullup()
+>>> gpio_pullup()
+>>> s3c2410_gpio_pullup()
+>>>
+>>> This patch adds a new generic gpio_set_pull API so that all SoCs can have unified
+>>> codes.
+>>>
+>>> Signed-off-by: Barry Song <Baohua.Song@csr.com>
 >>
->> The ACPI reboot method on these machines hits the keyboard controller 
->> rather than PCI, which is unusual. What I suspect is that the write 
->> triggers some SMM or EC code that's making assumptions about system 
->> state, and we're not quite identical. Bouncing on the keyboard 
->> controller from userspace with init=/bin/bash wedges in the same way.
->>
-> 
-> I have a vague suspicion that Windows might have a meta-quirk for this
-> class of machines, i.e. if the ACPI reboot method, say, points at the
-> keyboard controller or points at the "PCI" reboot port then it actually
-> uses its own special-purpose routines rather than general routines.  It
-> would be extremely interesting to know if "reboot=kbd" works on these boxen.
-> 
-> 	-hpa
-> 
+>> For arch/arm/mach-shmobile we also have gpio_pull_up() for board-g4evm.c
+>> and gpio_pull_down() for board-mackerel.c. Both of these would benefit
+>> from this sort of an API addition.
+>
+> I think I'm okay with this API change.  Linus, what say you?  How does
+> this interact with your plans for pinctrl?
 
-Ok I will try to activate reboot=kbd tomorrow morning and report the result about it.
+If gpiolib accept the pullup control. gpiolib is better place to
+control gpio config.
+then remains are the gpio driver strength, and power down mode
+control. powerdown pull-up/down, powerdown in/out at samsung gpios.
 
+Thank you,
+Kyungmin Park
 
--- 
-
-Bruno Friedmann
-Ioda-Net SÃ rl www.ioda-net.ch
-
-openSUSE Member & Ambassador
-GPG KEY : D5C9B751C4653227
-irc: tigerfoot
+>
+> g.
+>
+> --
+> Grant Likely, B.Sc., P.Eng.
+> Secret Lab Technologies Ltd.
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
