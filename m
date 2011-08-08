@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250Ab1HHJee (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 05:34:34 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:58959 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034Ab1HHJec (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752028Ab1HHJec (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 8 Aug 2011 05:34:32 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:45073 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab1HHJe3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 05:34:29 -0400
+Date: Mon, 8 Aug 2011 11:34:23 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] memblock: add memblock_start_of_DRAM()
+Message-ID: <20110808093423.GF23937@htj.dyndns.org>
+References: <20110806185923.GA8494@merkur.ravnborg.org>
 MIME-Version: 1.0
-In-Reply-To: <1312666815.18583.221.camel@gandalf.stny.rr.com>
-References: <CAGZ=bq+mJ-9pf0Y22b9LLey0Em2Y7SAA5FnQ5cPsde6GB_aqgw@mail.gmail.com>
-	<1312666815.18583.221.camel@gandalf.stny.rr.com>
-Date: Mon, 8 Aug 2011 17:34:31 +0800
-Message-ID: <CAM_iQpXwvP1S_cPtME5wYRZ5BkGNPebrCU2D6g4Mosse6md+rQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/8] Having perf use libparsevent.a
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Kyle Moffett <kyle@moffetthome.net>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110806185923.GA8494@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 7, 2011 at 5:40 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Sat, 2011-08-06 at 14:47 -0400, Kyle Moffett wrote:
->> On Aug 6, 2011 11:35 AM, "Steven Rostedt" <rostedt@goodmis.org> wrote:
->> >
->> > On Sat, 2011-08-06 at 09:16 -0600, David Ahern wrote:
->> >
->> > > If the library is just for parsing trace events why not call it
->> > > libtraceparse or libtrace? This isn't perf specific functionality.
->> >
->> > Actually, I'm thinking libevents would probably be most appropriate.
->> It
->> > has less to do with perf in general, and more about events. Even
->> reading
->> > the events goes under this category.
->>
->> Ooh, please don't... "libevent" is already an epoll() event-based
->> application helper library and this would be overly confusing.
->
-> OK, what about libkevent, as this has to do with kernel events.
->
+(cc'ing hpa and quoting whole body)
 
-libkevent is still too generic, how about libtraceevent?
+On Sat, Aug 06, 2011 at 08:59:23PM +0200, Sam Ravnborg wrote:
+> SPARC32 require access to the start address.
+> Add a new helper memblock_start_of_DRAM() to give
+> access to the address of the first memblock - which
+> contains the lowest address.
+> 
+> The ackward name was chosen to match the already present
+> memblock_end_of_DRAM().
+> 
+> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> ---
+> Hi Tejun.
+> 
+> I have started to replace bootmem with memblock for sparc32.
+> This is so far the only general functionality missing.
+> 
+> But conversion is not finished yet - more may come.
+> 
+> This is on top of the memblock branch of your misc tree
+
+Yes, this looks good to me.
+
+ Acked-by: Tejun Heo <tj@kernel.org>
+
+hpa, how do you want to proceed with the patchset?
+
+Thanks.
+
+> diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+> index 7c59804..a6bb102 100644
+> --- a/include/linux/memblock.h
+> +++ b/include/linux/memblock.h
+> @@ -157,6 +157,7 @@ phys_addr_t memblock_alloc_base(phys_addr_t size, phys_addr_t align,
+>  phys_addr_t __memblock_alloc_base(phys_addr_t size, phys_addr_t align,
+>  				  phys_addr_t max_addr);
+>  phys_addr_t memblock_phys_mem_size(void);
+> +phys_addr_t memblock_start_of_DRAM(void);
+>  phys_addr_t memblock_end_of_DRAM(void);
+>  void memblock_enforce_memory_limit(phys_addr_t memory_limit);
+>  int memblock_is_memory(phys_addr_t addr);
+> diff --git a/mm/memblock.c b/mm/memblock.c
+> index 07cb3ae..2f55f19 100644
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -782,6 +782,12 @@ phys_addr_t __init memblock_phys_mem_size(void)
+>  	return memblock.memory.total_size;
+>  }
+>  
+> +/* lowest address */
+> +phys_addr_t __init_memblock memblock_start_of_DRAM(void)
+> +{
+> +	return memblock.memory.regions[0].base;
+> +}
+> +
+>  phys_addr_t __init_memblock memblock_end_of_DRAM(void)
+>  {
+>  	int idx = memblock.memory.cnt - 1;
+
+-- 
+tejun
