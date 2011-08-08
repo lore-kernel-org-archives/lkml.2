@@ -1,96 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751144Ab1HHEWy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 00:22:54 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:35589 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab1HHEWx convert rfc822-to-8bit (ORCPT
+	id S1751357Ab1HHEdz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 00:33:55 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:35226 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947Ab1HHEdy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 00:22:53 -0400
-Date: Mon, 8 Aug 2011 06:22:43 +0200
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, Gergely Nagy <algernon@balabit.hu>,
-        david@lang.hm, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Marc Koschewski <marc@osknowledge.org>,
-        lkml <linux-kernel@vger.kernel.org>, James Morris <jmorris@namei.org>,
-        Nick Bowler <nbowler@elliptictech.com>
-Subject: [PATCH v2] cap_syslog: don't use WARN_ONCE for CAP_SYS_ADMIN
- deprecation warning
-Message-ID: <20110808042243.GG19551@elie.gateway.2wire.net>
-References: <20110210144057.GA7193@mail.hallyn.com>
- <AANLkTin-2uDkjPuSPmUE_HZdpxk9zd=Qop=nf==jsyLA@mail.gmail.com>
- <20110803164837.GA2669@elie>
- <CA+55aFw0d0bGQhtLB602=_i-PAMmkBs0vRocvtRZUU33xS8=4A@mail.gmail.com>
+	Mon, 8 Aug 2011 00:33:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+In-Reply-To: <4E3F5C0E.2060207@tao.ma>
+References: <1312519150-3261-1-git-send-email-tm@tao.ma>
+	<4E3B9CAC.7020802@fusionio.com>
+	<CANejiEVX8_2Zbd-b0WCrgoYoY88n9OzQ0s2=T5+LWH1aFd7whg@mail.gmail.com>
+	<4E3F5C0E.2060207@tao.ma>
+Date: Mon, 8 Aug 2011 12:33:52 +0800
+X-Google-Sender-Auth: bgHQvFChsPnZQs7KV9i6GxZjbQI
+Message-ID: <CANejiEVcwmhTFdjgt1OE_XNwayTfQ846tgwGUhyjujb5S4FHZA@mail.gmail.com>
+Subject: Re: [PATCH] block: Make rq_affinity = 1 work as expected.
+From: Shaohua Li <shli@kernel.org>
+To: Tao Ma <tm@tao.ma>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Roland Dreier <roland@purestorage.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CA+55aFw0d0bGQhtLB602=_i-PAMmkBs0vRocvtRZUU33xS8=4A@mail.gmail.com>
-User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-syslog-ng versions before 3.3.0beta1 (2011-05-12) assume that
-CAP_SYS_ADMIN is sufficient to access syslog, so ever since CAP_SYSLOG
-was introduced (2010-11-25) they have triggered a warning.
-v2.6.38-rc5~46 (cap_syslog: accept CAP_SYS_ADMIN for now, 2011-02-10)
-improved matters a little by making syslog-ng work again, just keeping
-the WARN_ONCE().  But still, this is a warning that writes a stack
-trace we don't care about to syslog, sets a taint flag, and alarms
-sysadmins when nothing worse has happened than use of an old userspace
-with a recent kernel.
+2011/8/8 Tao Ma <tm@tao.ma>:
+> Hi Shaohua,
+> On 08/08/2011 10:58 AM, Shaohua Li wrote:
+>> 2011/8/5 Jens Axboe <jaxboe@fusionio.com>:
+>>> On 2011-08-05 06:39, Tao Ma wrote:
+>>>> From: Tao Ma <boyu.mt@taobao.com>
+>>>>
+>>>> Commit 5757a6d76c introduced a new rq_affinity = 2 so as to make
+>>>> the request completed in the __make_request cpu. But it makes the
+>>>> old rq_affinity = 1 not work any more. The root cause is that
+>>>> if the 'cpu' and 'req->cpu' is in the same group and cpu != req->cpu,
+>>>> ccpu will be the same as group_cpu, so the completion will be
+>>>> excuted in the 'cpu' not 'group_cpu'.
+>>>>
+>>>> This patch fix problem by simpling removing group_cpu and the codes
+>>>> are more explicit now. If ccpu == cpu, we complete in cpu, otherwise
+>>>> we raise_blk_irq to ccpu.
+>>>
+>>> Thanks Tao Ma, much more readable too.
+>> Hi Jens,
+>> I rethought the problem when I check interrupt in my system. I thought
+>> we don't need Tao's patch though it makes the code behavior like before.
+>> Let's take an example. My test box has cpu 0-7, one socket. Say request
+>> is added in CPU 1, blk_complete_request occurs at CPU 7. Without Tao's
+>> patch, softirq will be done at CPU 7. With it, an IPI will be directed to CPU 0,
+>> and softirq will be done at CPU 0. In this case, doing softirq at CPU 0 and
+>> CPU 7 have no difference and we can avoid an ipi if doing it in CPU 7.
+> I totally agree with your analysis, but what I am worried is that this
+> does change the old system behavior.
+> And without this patch actually '1' and '2' in rq_affinity has the same
+> effect now in your case. If you do prefer the new codes and the new
+> behavior, then '1' don't need to exist any more(since from your
+> description it seems to only adds an additional IPI overhead and no
+> benefit), or '2' is totally unneeded here.
+with rq_affinity 2, CPU 1 will do the softirq in above case. it's
+still different
+like the rq_affinity 1 case.
 
-Convert the WARN_ONCE to a printk_once to avoid that while continuing
-to give userspace developers a hint that this is an unwanted
-backward-compatibility feature and won't be around forever.
+Thanks,
+Shaohua
 
-Reported-by: Ralf Hildebrandt <ralf.hildebrandt@charite.de>
-Reported-by: Niels <zorglub_olsen@hotmail.com>
-Reported-by: Pawe≈Ç Sikora <pluto@agmk.net>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
-Liked-by: Gergely Nagy <algernon@madhouse-project.org>
-Acked-by: Serge Hallyn <serge@hallyn.com>
-Acked-by: James Morris <jmorris@namei.org>
----
-Linus Torvalds wrote:
 
-> The problem with this one is that converting away from a warning
-> doesn't just get rid of all the ugliness, it gets rid of some of the
-> *useful* information in the warning too.
+>>
+>> we don't need to worry about blk_complete_request occurs at different CPUs.
+>> it's called in interrupt handler. As far as I checked, all my HBA
+>> cards (several LSI)
+>> and AHCI don't support multiple MSI, so I assume blk_complete_request will
+>> only be called in one CPU. Sure, if the assumption is wrong, we still need
+>> Tao's patch, but in most common cases my assumption is correct.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at †http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at †http://www.tux.org/lkml/
 >
-> In particular, when you have a warning like "Attempting to access
-> syslog", you'd better tell people *who* is attempting to access
-> syslog, so that they can fix it or complain to the right person.
-
-True.  I can't imagine people wanting to know much more than the
-process's command line and pid, which is basically what the WARN_ONCE
-gives (though it also gives registers).  Here's an updated patch.
-
-I've carried over the acks from last time; hopefully that's okay.
-Thanks for your help.
-
- kernel/printk.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 37dff342..836a2ae0 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -318,8 +318,10 @@ static int check_syslog_permissions(int type, bool from_file)
- 			return 0;
- 		/* For historical reasons, accept CAP_SYS_ADMIN too, with a warning */
- 		if (capable(CAP_SYS_ADMIN)) {
--			WARN_ONCE(1, "Attempt to access syslog with CAP_SYS_ADMIN "
--				 "but no CAP_SYSLOG (deprecated).\n");
-+			printk_once(KERN_WARNING "%s (%d): "
-+				 "Attempt to access syslog with CAP_SYS_ADMIN "
-+				 "but no CAP_SYSLOG (deprecated).\n",
-+				 current->comm, task_pid_nr(current));
- 			return 0;
- 		}
- 		return -EPERM;
--- 
-1.7.6
-
