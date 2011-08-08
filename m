@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab1HHQmP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 12:42:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57165 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752192Ab1HHQmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 12:42:14 -0400
-Message-ID: <4E40119A.5010803@zytor.com>
-Date: Mon, 08 Aug 2011 11:40:58 -0500
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
-MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Ingo Molnar <mingo@elte.hu>, Mel Gorman <mgorman@suse.de>,
-        tglx@linutronix.de, bruno@ioda-net.ch, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Add reboot quirk for Dell Precision M4600
-References: <20110727125651.GH3010@suse.de> <20110806065635.GE13220@elte.hu> <20110806153003.GA1238@srcf.ucam.org>
-In-Reply-To: <20110806153003.GA1238@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753624Ab1HHQol (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 12:44:41 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35481 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192Ab1HHQok (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 12:44:40 -0400
+Subject: Re: [PATCH] regulator: Ensure enough enable time for max8649
+From: Liam Girdwood <lrg@kernel.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1312260896.6161.1.camel@phoenix>
+References: <1312260896.6161.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 08 Aug 2011 17:44:36 +0100
+Message-ID: <1312821876.3316.6.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2011 10:30 AM, Matthew Garrett wrote:
-> On Sat, Aug 06, 2011 at 08:56:35AM +0200, Ingo Molnar wrote:
->> Weird - ACPI is the default Windows method of reboot - how come it 
->> does not work on that box? Does Windows work around this specific 
->> machine (unlikely), or is our ACPI boot sequence not 100% compatible 
->> with the Windows method (more likely IMO)?
+On Tue, 2011-08-02 at 12:54 +0800, Axel Lin wrote:
+> Integer division may truncate the result, thus max8649_enable_time() may return
+> slightly shorter enable time. This patch fixes it.
 > 
-> The ACPI reboot method on these machines hits the keyboard controller 
-> rather than PCI, which is unusual. What I suspect is that the write 
-> triggers some SMM or EC code that's making assumptions about system 
-> state, and we're not quite identical. Bouncing on the keyboard 
-> controller from userspace with init=/bin/bash wedges in the same way.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/regulator/max8649.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
+> diff --git a/drivers/regulator/max8649.c b/drivers/regulator/max8649.c
+> index 30eb9e5..1062cf9 100644
+> --- a/drivers/regulator/max8649.c
+> +++ b/drivers/regulator/max8649.c
+> @@ -221,7 +221,7 @@ static int max8649_enable_time(struct regulator_dev *rdev)
+>  	ret = (ret & MAX8649_RAMP_MASK) >> 5;
+>  	rate = (32 * 1000) >> ret;	/* uV/uS */
+>  
+> -	return (voltage / rate);
+> +	return DIV_ROUND_UP(voltage, rate);
+>  }
+>  
+>  static int max8649_set_mode(struct regulator_dev *rdev, unsigned int mode)
 
-I have a vague suspicion that Windows might have a meta-quirk for this
-class of machines, i.e. if the ACPI reboot method, say, points at the
-keyboard controller or points at the "PCI" reboot port then it actually
-uses its own special-purpose routines rather than general routines.  It
-would be extremely interesting to know if "reboot=kbd" works on these boxen.
+Applied.
 
-	-hpa
+Thanks
+
+Liam
 
