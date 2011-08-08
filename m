@@ -1,33 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953Ab1HHQ43 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 12:56:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59717 "EHLO mx2.suse.de"
+	id S1752279Ab1HHRB1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 13:01:27 -0400
+Received: from mga11.intel.com ([192.55.52.93]:34336 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751257Ab1HHQ42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 12:56:28 -0400
-Date: Mon, 8 Aug 2011 18:56:26 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Len Brown <lenb@kernel.org>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Dave Jones <davej@redhat.com>,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
-Subject: Re: [PATCH] [TRIVIAL] Fix documentation and comment typo 'no_hz'
-In-Reply-To: <alpine.LFD.2.02.1108061137151.3197@x980>
-Message-ID: <alpine.LNX.2.00.1108081856110.32288@pobox.suse.cz>
-References: <1312634023.2021.7.camel@x61.thuisdomein> <alpine.LFD.2.02.1108061137151.3197@x980>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751583Ab1HHRB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 13:01:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,338,1309762800"; 
+   d="scan'208";a="36978666"
+Subject: Re: [RFC patch] DMAengine/Langwell: put tx descriptor in error path
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <CAJd=RBDCLp0hXNtXVSzUd4De+z9cZLpTDftnxWVGeHauAbsWaQ@mail.gmail.com>
+References: <CAJd=RBDCLp0hXNtXVSzUd4De+z9cZLpTDftnxWVGeHauAbsWaQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 08 Aug 2011 22:30:37 +0530
+Message-ID: <1312822837.1539.38.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 6 Aug 2011, Len Brown wrote:
+On Tue, 2011-07-26 at 20:43 +0800, Hillf Danton wrote:
+> When preparing LLI based periphral transfer, if error encountered, the newly
+> prepared tx descriptor should be put for later recycling.
+> 
+> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+> ---
+>  drivers/dma/intel_mid_dma.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
+> index f653517..b78a65a 100644
+> --- a/drivers/dma/intel_mid_dma.c
+> +++ b/drivers/dma/intel_mid_dma.c
+> @@ -793,6 +793,7 @@ static struct dma_async_tx_descriptor
+> *intel_mid_dma_prep_slave_sg(
+>  				32, 0);
+This looks like a corrupt patch, can you fix this
+>  	if (NULL == desc->lli_pool) {
+>  		pr_err("MID_DMA:LLI pool create failed\n");
+> +		midc_desc_put(midc, desc);
+>  		return NULL;
+>  	}
+> 
+> @@ -800,6 +801,7 @@ static struct dma_async_tx_descriptor
+> *intel_mid_dma_prep_slave_sg(
+>  	if (!desc->lli) {
+>  		pr_err("MID_DMA: LLI alloc failed\n");
+>  		pci_pool_destroy(desc->lli_pool);
+> +		midc_desc_put(midc, desc);
+>  		return NULL;
+>  	}
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> Acked-by: Len Brown <len.brown@intel.com>
-
-Doesn't seem to have been picked up for -next. Applied now, thanks.
 
 -- 
-Jiri Kosina
-SUSE Labs
+~Vinod
+
