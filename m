@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab1HHL5L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 07:57:11 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:41560 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab1HHL5J convert rfc822-to-8bit (ORCPT
+	id S1753422Ab1HHL55 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 07:57:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37940 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752870Ab1HHL54 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 07:57:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <201107230012.p6N0CZSM002466@hera.kernel.org>
-References: <201107230012.p6N0CZSM002466@hera.kernel.org>
-Date: Mon, 8 Aug 2011 13:57:08 +0200
-X-Google-Sender-Auth: H74RIJYW1UJDvelb4WzRnp8Ao_Y
-Message-ID: <CAMuHMdU0Cba9xFjfD6Fq1MqE5xZeDnsdN8qipmR6jQH9J6X4vQ@mail.gmail.com>
-Subject: Re: b43: LCN-PHY add place for new PHY support
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-wireless@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 8 Aug 2011 07:57:56 -0400
+Subject: Re: [PATCH 1/4] perf: Add memory load/store events generic code
+From: Peter Zijlstra <peterz@infradead.org>
+To: Anton Blanchard <anton@samba.org>
+Cc: Paul Mackerras <paulus@samba.org>, Lin Ming <ming.m.lin@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 08 Aug 2011 13:57:30 +0200
+In-Reply-To: <1310138308.3282.708.camel@twins>
+References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
+	 <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
+	 <1309768420.3282.8.camel@twins> <1309769066.3282.14.camel@twins>
+	 <1309867418.3282.73.camel@twins>
+	 <20110705230217.GA9584@bloggs.ozlabs.ibm.com>
+	 <1309960718.3282.289.camel@twins>  <20110708171836.6465a12e@kryten>
+	 <1310138308.3282.708.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1312804650.10488.20.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 23, 2011 at 02:12, Linux Kernel Mailing List
-<linux-kernel@vger.kernel.org> wrote:
-> Gitweb:     http://git.kernel.org/linus/1d738e64f3d957d56c1b51e64ebdef986a8760e3
-> Commit:     1d738e64f3d957d56c1b51e64ebdef986a8760e3
-> Parent:     0cd20a278e1ef9da9f6a987942794c9d65af8c4d
-> Author:     Rafał Miłecki <zajec5@gmail.com>
-> AuthorDate: Thu Jul 7 15:25:27 2011 +0200
-> Committer:  John W. Linville <linville@tuxdriver.com>
-> CommitDate: Fri Jul 8 11:11:25 2011 -0400
+On Fri, 2011-07-08 at 17:18 +0200, Peter Zijlstra wrote:
+> On Fri, 2011-07-08 at 17:18 +1000, Anton Blanchard wrote:
+> > Hi Peter,
+> > 
+> > > The thing we're talking about is Intel PEBS Load Latency/Precise Store
+> > > and AMD IBS where together with a mem op retired event (mem loads
+> > > retired for Load-Latency, mem stores retired for Precise Store)
+> > > provides an additional field describing where the load/store was
+> > > sourced from.
+> > > 
+> > > Such additional data would require the addition of a
+> > > PERF_SAMPLE_SOURCE field or similar, for some reason or other I was
+> > > under the impression some of the PPC chips had something similar. But
+> > > if not, it saves us having to worry about that.
+> > 
+> > It does sound a lot like our event vector, where we can have up to
+> > 64 bits of information that goes with a sample. A lot of the fields
+> > relate to loads and stores, but there are other fields (eg pipeline
+> > information at the point the sample was taken).
+> > 
+> > So we could definitely use a field to capture this.
+> 
+> Happen to have a ref to some docs about that? We'd want to make sure our
+> definition is wide enough to also work for ppc.
 
-> diff --git a/drivers/net/wireless/b43/phy_lcn.h b/drivers/net/wireless/b43/phy_lcn.h
-> new file mode 100644
-> index 0000000..c046c2a
-> --- /dev/null
-> +++ b/drivers/net/wireless/b43/phy_lcn.h
-
-> \ No newline at end of file
-
-Woops...
-
-gcc/cpp also complains:
-
-drivers/net/wireless/b43/phy_lcn.h:14:28: warning: no newline at end of file
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Anton, Paul, any word on this? I'd love to see the specs for that
+power-pmu event vector thing.. It would be a terrible shame if we now
+include an abstraction that somewhat matches your needs but not quite,
+requiring us to either introduce another abi component later or.
