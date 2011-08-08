@@ -1,43 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab1HHVMF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 17:12:05 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:43400 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751544Ab1HHVMD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 17:12:03 -0400
-From: Vijay Chavan <vijaychavan007@gmail.com>
-To: gregkh@suse.de
-Cc: shardy@redhat.com, mge@arcor.de, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vijay Chavan <VijayChavan007@gmail.com>
-Subject: [PATCH] USB: Serial: Added device ID for Qualcomm Modem in Sagemcom's HiLo3G
-Date: Tue,  9 Aug 2011 02:41:12 +0530
-Message-Id: <1312837872-2159-1-git-send-email-VijayChavan007@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1753038Ab1HHVON (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 17:14:13 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:40169 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751953Ab1HHVOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 17:14:12 -0400
+Message-ID: <4E4051A0.8030009@free.fr>
+Date: Mon, 08 Aug 2011 23:14:08 +0200
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: LXC Development <Lxc-devel@lists.sourceforge.net>
+Subject: [RFC] catching sys_reboot syscall
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A new device ID pair is added for Qualcomm Modem present in Sagemcom's HiLo3G module.
 
-Signed-off-by: Vijay Chavan <VijayChavan007@gmail.com>
----
- drivers/usb/serial/qcserial.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Hi all,
 
-diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
-index 54a9dab..27f9ae4 100644
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -45,6 +45,7 @@ static const struct usb_device_id id_table[] = {
- 	{USB_DEVICE(0x05c6, 0x9203)},	/* Generic Gobi Modem device */
- 	{USB_DEVICE(0x05c6, 0x9222)},	/* Generic Gobi Modem device */
- 	{USB_DEVICE(0x05c6, 0x9008)},	/* Generic Gobi QDL device */
-+	{USB_DEVICE(0x05c6, 0x9009)},	/* Generic Gobi Modem device */
- 	{USB_DEVICE(0x05c6, 0x9201)},	/* Generic Gobi QDL device */
- 	{USB_DEVICE(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
- 	{USB_DEVICE(0x05c6, 0x9231)},	/* Generic Gobi QDL device */
--- 
-1.7.1
+I am trying to solve one of the problems the linux container community
+is facing :
+
+   How to catch when a process called the 'reboot' syscall in a container ?
+
+In the case of a VPS, when we shutdown/halt/reboot the container, the
+reboot utility will invoke the sys_reboot syscall which has the bad
+effect to reboot the host. The way to fix that is to drop the
+CAP_SYS_REBOOT capability in the container.
+
+In this case, the container shutdowns correctly but, at the end, the
+init process is waiting indefinitely and we have the containers stuck
+with one process (the init process).
+
+In order to fix that, we used a hypervisor process, parent of the
+container's init process, watching for the container's utmp file and
+detecting when the runlevel changes. When this runlevel change is
+detected we wait for the container to have one process left and then we
+kill the container's init.
+
+That works well if we modify the distro configuration files, we make
+/var/run to not be a tmpfs and we remove all the files inside this
+directory when the container boots. *But* as soon as we upgrade the
+container distro, all the tweaks are lost. So this method works but at
+the cost of tweaking the containers configuration files again and again,
+each time there is an update, which is not tolerable in a production
+environment.
+
+This problem is easy to solve with a small hack in the kernel:
+
+diff --git a/include/asm-generic/siginfo.h b/include/asm-generic/siginfo.h
+index 942d30b..61f3d02 100644
+--- a/include/asm-generic/siginfo.h
++++ b/include/asm-generic/siginfo.h
+@@ -218,7 +218,8 @@ typedef struct siginfo {
+ #define CLD_TRAPPED    (__SI_CHLD|4)    /* traced child has trapped */
+ #define CLD_STOPPED    (__SI_CHLD|5)    /* child has stopped */
+ #define CLD_CONTINUED    (__SI_CHLD|6)    /* stopped child has continued */
+-#define NSIGCHLD    6
++#define CLD_REBOOTED    (__SI_CHLD|7)   /* process was killed by a
+reboot */
++#define NSIGCHLD    7
+ 
+ /*
+  * SIGPOLL si_codes
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 67f5688..41e0889 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2103,6 +2103,7 @@ extern int kill_pgrp(struct pid *pid, int sig, int
+priv);
+ extern int kill_pid(struct pid *pid, int sig, int priv);
+ extern int kill_proc_info(int, struct siginfo *, pid_t);
+ extern int do_notify_parent(struct task_struct *, int);
++extern void do_notify_parent_cldreboot(struct task_struct *, int, char *);
+ extern void __wake_up_parent(struct task_struct *p, struct task_struct
+*parent);
+ extern void force_sig(int, struct task_struct *);
+ extern int send_sig(int, struct task_struct *, int);
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 4e3cff1..09fc254 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1522,6 +1522,46 @@ int do_notify_parent(struct task_struct *tsk, int
+sig)
+     return ret;
+ }
+ 
++void do_notify_parent_cldreboot(struct task_struct *tsk, int why, char
+*buffer)
++{
++    struct siginfo info = { };
++    struct task_struct *parent;
++    struct sighand_struct *sighand;
++    unsigned long flags;
++
++    if (task_ptrace(tsk))
++        parent = tsk->parent;
++    else {
++        tsk = tsk->group_leader;
++        parent = tsk->real_parent;
++    }
++
++    info.si_signo = SIGCHLD;
++    info.si_errno = 0;
++    info.si_status = why;
++
++    rcu_read_lock();
++    info.si_pid = task_pid_nr_ns(tsk, parent->nsproxy->pid_ns);
++    info.si_uid = __task_cred(tsk)->uid;
++    rcu_read_unlock();
++
++    info.si_utime = cputime_to_clock_t(tsk->utime);
++    info.si_stime = cputime_to_clock_t(tsk->stime);
++
++    info.si_code = CLD_REBOOTED;
++
++    sighand = parent->sighand;
++    spin_lock_irqsave(&sighand->siglock, flags);
++    if (sighand->action[SIGCHLD-1].sa.sa_handler != SIG_IGN &&
++        sighand->action[SIGCHLD-1].sa.sa_flags & SA_CLDREBOOT)
++        __group_send_sig_info(SIGCHLD, &info, parent);
++    /*
++     * Even if SIGCHLD is not generated, we must wake up wait4 calls.
++     */
++    __wake_up_parent(tsk, parent);
++    spin_unlock_irqrestore(&sighand->siglock, flags);
++}
++
+ static void do_notify_parent_cldstop(struct task_struct *tsk, int why)
+ {
+     struct siginfo info;
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 18da702..b50449c 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -361,6 +361,13 @@ void kernel_power_off(void)
+ }
+ EXPORT_SYMBOL_GPL(kernel_power_off);
+ 
++static void pid_namespace_reboot(struct pid_namespace *pid_ns,
++                int cmd, char *buffer)
++{
++    struct task_struct *tsk = pid_ns->child_reaper;
++    do_notify_parent_cldreboot(tsk, cmd, buffer);
++}
++
+ static DEFINE_MUTEX(reboot_mutex);
+ 
+ /*
+@@ -374,13 +381,10 @@ static DEFINE_MUTEX(reboot_mutex);
+ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+         void __user *, arg)
+ {
+-    char buffer[256];
++    struct pid_namespace *pid_ns = current->nsproxy->pid_ns;
++    char buffer[256] = { 0 };
+     int ret = 0;
+ 
+-    /* We only trust the superuser with rebooting the system. */
+-    if (!capable(CAP_SYS_BOOT))
+-        return -EPERM;
+-
+     /* For safety, we require "magic" arguments. */
+     if (magic1 != LINUX_REBOOT_MAGIC1 ||
+         (magic2 != LINUX_REBOOT_MAGIC2 &&
+@@ -395,12 +399,45 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2,
+unsigned int, cmd,
+     if ((cmd == LINUX_REBOOT_CMD_POWER_OFF) && !pm_power_off)
+         cmd = LINUX_REBOOT_CMD_HALT;
+ 
++    /* check the cmd parameter */
++    if (cmd != LINUX_REBOOT_CMD_RESTART &&
++#ifdef CONFIG_KEXEC
++        cmd != LINUX_REBOOT_CMD_KEXEC &&
++#endif
++#ifdef CONFIG_HIBERNATION
++        cmd != LINUX_REBOOT_CMD_SW_SUSPEND &&
++#endif
++        cmd != LINUX_REBOOT_CMD_CAD_ON &&
++        cmd != LINUX_REBOOT_CMD_CAD_OFF &&
++        cmd != LINUX_REBOOT_CMD_HALT &&
++        cmd != LINUX_REBOOT_CMD_POWER_OFF &&
++        cmd != LINUX_REBOOT_CMD_RESTART2)
++        return -EINVAL;
++
++    if (cmd == LINUX_REBOOT_CMD_RESTART2)
++        if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0)
++            return -EFAULT;
++
++    /* If we are not in the initial pid namespace, we send a signal
++     * to the parent of this init pid namespace, notifying a shutdown
++     * occured */
++    if (pid_ns != &init_pid_ns)
++        pid_namespace_reboot(pid_ns, cmd, buffer);
++
++    /* We only trust the superuser with rebooting the system. */
++    if (!capable(CAP_SYS_BOOT))
++        return -EPERM;
++
+     mutex_lock(&reboot_mutex);
+     switch (cmd) {
+     case LINUX_REBOOT_CMD_RESTART:
+         kernel_restart(NULL);
+         break;
+ 
++    case LINUX_REBOOT_CMD_RESTART2:
++        kernel_restart(buffer);
++        break;
++
+     case LINUX_REBOOT_CMD_CAD_ON:
+         C_A_D = 1;
+         break;
+@@ -419,16 +456,6 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2,
+unsigned int, cmd,
+         do_exit(0);
+         break;
+ 
+-    case LINUX_REBOOT_CMD_RESTART2:
+-        if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0) {
+-            ret = -EFAULT;
+-            break;
+-        }
+-        buffer[sizeof(buffer) - 1] = '\0';
+-
+-        kernel_restart(buffer);
+-        break;
+-
+ #ifdef CONFIG_KEXEC
+     case LINUX_REBOOT_CMD_KEXEC:
+         ret = kernel_kexec();
+@@ -440,10 +467,6 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2,
+unsigned int, cmd,
+         ret = hibernate();
+         break;
+ #endif
+-
+-    default:
+-        ret = -EINVAL;
+-        break;
+     }
+     mutex_unlock(&reboot_mutex);
+     return ret;
+
+
+With this patch, the container's init parent will receive a SIGCHLD,
+with ssi_code set with the sys_reboot parameter value, when one of the
+process in the container invoke sys_reboot. This solution works very
+well and solves the problem but is it acceptable ? I don't see any
+alternative usable for other use cases. It is probable nobody cares
+about sys_reboot was called because there is nothing to do as the system
+will halt a few microseconds after :)
+
+Does anyone have an idea ?
+
+Thanks in advance
+  -- Daniel
+
 
