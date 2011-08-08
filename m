@@ -1,198 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab1HHOHJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 10:07:09 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:13401 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511Ab1HHOHH convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:8:1>);
-	Mon, 8 Aug 2011 10:07:07 -0400
-Message-Id: <4E4009A50200007800050258@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Mon, 08 Aug 2011 15:07:01 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Matt Fleming" <matt@console-pimps.org>
-Cc: "Jeremy Fitzhardinge" <jeremy.fitzhardinge@citrix.com>,
-        "IngoMolnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
-        <hpa@linux.intel.com>, "Avi Kivity" <avi@redhat.com>, <mjg@redhat.com>,
-        "Marcelo Tosatti" <mtosatti@redhat.com>,
-        "johnstultz" <johnstul@us.ibm.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, efi: Don't recursively acquire rtc_lock
-References: <4E3C30C602000078000740D5@nat28.tlf.novell.com>
- <1312810836.10579.127.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1312810836.10579.127.camel@mfleming-mobl1.ger.corp.intel.com>
+	id S1754109Ab1HHOIw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 10:08:52 -0400
+Received: from mga11.intel.com ([192.55.52.93]:35003 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751259Ab1HHOIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 10:08:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,337,1309762800"; 
+   d="scan'208";a="39146616"
+Subject: Re: [PATCH] dmaengine/dmatest: Terminate transfers on all channels
+ in case of error or exit
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        armando.visconti@st.com, shiraz.hashim@st.com, vipin.kumar@st.com,
+        rajeev-dlh.kumar@st.com, deepak.sikri@st.com, vipulkumar.samar@st.com,
+        amit.virdi@st.com, pratyush.anand@st.com, bhupesh.sharma@st.com,
+        viresh.linux@gmail.com
+In-Reply-To: <4560606c5b6665b47d22c571cd60e526e551c639.1311935349.git.viresh.kumar@st.com>
+References: <4560606c5b6665b47d22c571cd60e526e551c639.1311935349.git.viresh.kumar@st.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 08 Aug 2011 19:37:50 +0530
+Message-ID: <1312812470.1539.27.camel@vkoul-udesk3>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 08.08.11 at 15:40, Matt Fleming <matt@console-pimps.org> wrote:
-> On Fri, 2011-08-05 at 18:04 +0100, Jan Beulich wrote:
->> 
->> Virtual platforms will have to take care of the serialization in the
->> host anyway, so the guest side implementation of getwallclock et al
->> is entirely unaffected.
+On Fri, 2011-07-29 at 16:21 +0530, Viresh Kumar wrote:
+> In case, some error occurs while doing memcpy transfers, we must terminate all
+> transfers physically too. This is achieved by calling device_control() routine
+> with TERMINATE_ALL as parameter.
 > 
-> Ah, OK, that's the important part. I didn't realise that rtc_lock isn't
-> actually required by any other code. In which case, yes, it completely
-> makes sense to push the locking of rtc_lock down into the
-> implementations that actually need it.
+> This is also required to be done in case module is removed while we are in
+> middle of some transfers.
 > 
-> It'd be great if I could get some ACK's from the virtualization guys.
-> 
-> --------8<--------
-> 
-> From a0a39dbb69f6ac675846bf00f30ad153506a4567 Mon Sep 17 00:00:00 2001
-> From: Matt Fleming <matt.fleming@intel.com>
-> Date: Mon, 8 Aug 2011 12:59:35 +0100
-> Subject: [PATCH] x86, efi: Don't recursively acquire rtc_lock
-> 
-> A deadlock was introduced on x86 in commit ef68c8f87ed1 ("x86:
-> Serialize EFI time accesses on rtc_lock") because efi_get_time() and
-> friends can be called with rtc_lock already held by
-> read_persistent_time(), e.g.
-> 
-> timekeeping_init()
->     read_persistent_clock()     <-- acquire rtc_lock
->         efi_get_time()
->             phys_efi_get_time() <-- acquire rtc_lock <DEADLOCK>
-> 
-> To fix this let's push the locking down into the get_wallclock() and
-> set_wallclock() implementations. Only the clock implementations that
-> access the x86 RTC directly need to acquire rtc_lock, so it makes
-> sense to push the locking down into the rtc, vrtc and efi code.
-> 
-> The virtualization implementations don't require rtc_lock to be held
-> because they provide their own serialization.
-> 
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-
-Acked-by: Jan Beulich <jbeulich@novell.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+Applied, thanks
 
 > ---
->  arch/x86/kernel/rtc.c         |   23 ++++++++++++-----------
->  arch/x86/platform/mrst/vrtc.c |    9 +++++++++
->  2 files changed, 21 insertions(+), 11 deletions(-)
+>  drivers/dma/dmatest.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
 > 
-> diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
-> index 3f2ad26..ccdbc16 100644
-> --- a/arch/x86/kernel/rtc.c
-> +++ b/arch/x86/kernel/rtc.c
-> @@ -42,8 +42,11 @@ int mach_set_rtc_mmss(unsigned long nowtime)
->  {
->  	int real_seconds, real_minutes, cmos_minutes;
->  	unsigned char save_control, save_freq_select;
-> +	unsigned long flags;
->  	int retval = 0;
+> diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
+> index b4f5c32..cd8ae03 100644
+> --- a/drivers/dma/dmatest.c
+> +++ b/drivers/dma/dmatest.c
+> @@ -476,6 +476,8 @@ err_srcs:
+>  	pr_notice("%s: terminating after %u tests, %u failures (status %d)\n",
+>  			thread_name, total_tests, failed_tests, ret);
 >  
-> +	spin_lock_irqsave(&rtc_lock, flags);
+> +	/* terminate all transfers on specified channels */
+> +	chan->device->device_control(chan, DMA_TERMINATE_ALL, 0);
+>  	if (iterations > 0)
+>  		while (!kthread_should_stop()) {
+>  			DECLARE_WAIT_QUEUE_HEAD_ONSTACK(wait_dmatest_exit);
+> @@ -498,6 +500,10 @@ static void dmatest_cleanup_channel(struct dmatest_chan *dtc)
+>  		list_del(&thread->node);
+>  		kfree(thread);
+>  	}
 > +
->  	 /* tell the clock it's being set */
->  	save_control = CMOS_READ(RTC_CONTROL);
->  	CMOS_WRITE((save_control|RTC_SET), RTC_CONTROL);
-> @@ -93,12 +96,17 @@ int mach_set_rtc_mmss(unsigned long nowtime)
->  	CMOS_WRITE(save_control, RTC_CONTROL);
->  	CMOS_WRITE(save_freq_select, RTC_FREQ_SELECT);
->  
-> +	spin_unlock_irqrestore(&rtc_lock, flags);
+> +	/* terminate all transfers on specified channels */
+> +	dtc->chan->device->device_control(dtc->chan, DMA_TERMINATE_ALL, 0);
 > +
->  	return retval;
+>  	kfree(dtc);
 >  }
 >  
->  unsigned long mach_get_cmos_time(void)
->  {
->  	unsigned int status, year, mon, day, hour, min, sec, century = 0;
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&rtc_lock, flags);
->  
->  	/*
->  	 * If UIP is clear, then we have >= 244 microseconds before
-> @@ -125,6 +133,8 @@ unsigned long mach_get_cmos_time(void)
->  	status = CMOS_READ(RTC_CONTROL);
->  	WARN_ON_ONCE(RTC_ALWAYS_BCD && (status & RTC_DM_BINARY));
->  
-> +	spin_unlock_irqrestore(&rtc_lock, flags);
-> +
->  	if (RTC_ALWAYS_BCD || !(status & RTC_DM_BINARY)) {
->  		sec = bcd2bin(sec);
->  		min = bcd2bin(min);
-> @@ -169,24 +179,15 @@ EXPORT_SYMBOL(rtc_cmos_write);
->  
->  int update_persistent_clock(struct timespec now)
->  {
-> -	unsigned long flags;
-> -	int retval;
-> -
-> -	spin_lock_irqsave(&rtc_lock, flags);
-> -	retval = x86_platform.set_wallclock(now.tv_sec);
-> -	spin_unlock_irqrestore(&rtc_lock, flags);
-> -
-> -	return retval;
-> +	return x86_platform.set_wallclock(now.tv_sec);
->  }
->  
->  /* not static: needed by APM */
->  void read_persistent_clock(struct timespec *ts)
->  {
-> -	unsigned long retval, flags;
-> +	unsigned long retval;
->  
-> -	spin_lock_irqsave(&rtc_lock, flags);
->  	retval = x86_platform.get_wallclock();
-> -	spin_unlock_irqrestore(&rtc_lock, flags);
->  
->  	ts->tv_sec = retval;
->  	ts->tv_nsec = 0;
-> diff --git a/arch/x86/platform/mrst/vrtc.c b/arch/x86/platform/mrst/vrtc.c
-> index 73d70d6..6d5dbcd 100644
-> --- a/arch/x86/platform/mrst/vrtc.c
-> +++ b/arch/x86/platform/mrst/vrtc.c
-> @@ -58,8 +58,11 @@ EXPORT_SYMBOL_GPL(vrtc_cmos_write);
->  unsigned long vrtc_get_time(void)
->  {
->  	u8 sec, min, hour, mday, mon;
-> +	unsigned long flags;
->  	u32 year;
->  
-> +	spin_lock_irqsave(&rtc_lock, flags);
-> +
->  	while ((vrtc_cmos_read(RTC_FREQ_SELECT) & RTC_UIP))
->  		cpu_relax();
->  
-> @@ -70,6 +73,8 @@ unsigned long vrtc_get_time(void)
->  	mon = vrtc_cmos_read(RTC_MONTH);
->  	year = vrtc_cmos_read(RTC_YEAR);
->  
-> +	spin_unlock_irqrestore(&rtc_lock, flags);
-> +
->  	/* vRTC YEAR reg contains the offset to 1960 */
->  	year += 1960;
->  
-> @@ -83,8 +88,10 @@ unsigned long vrtc_get_time(void)
->  int vrtc_set_mmss(unsigned long nowtime)
->  {
->  	int real_sec, real_min;
-> +	unsigned long flags;
->  	int vrtc_min;
->  
-> +	spin_lock_irqsave(&rtc_lock, flags);
->  	vrtc_min = vrtc_cmos_read(RTC_MINUTES);
->  
->  	real_sec = nowtime % 60;
-> @@ -95,6 +102,8 @@ int vrtc_set_mmss(unsigned long nowtime)
->  
->  	vrtc_cmos_write(real_sec, RTC_SECONDS);
->  	vrtc_cmos_write(real_min, RTC_MINUTES);
-> +	spin_unlock_irqrestore(&rtc_lock, flags);
-> +
->  	return 0;
->  }
->  
-> -- 
-> 1.7.4.4
 
+
+-- 
+~Vinod
 
