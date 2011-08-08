@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab1HHQaY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 12:30:24 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:44129 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752996Ab1HHQaX (ORCPT
+	id S1753641Ab1HHQbv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 12:31:51 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:40928 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753376Ab1HHQbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 12:30:23 -0400
-Date: Mon, 8 Aug 2011 09:30:10 -0700
+	Mon, 8 Aug 2011 12:31:50 -0400
+Date: Mon, 8 Aug 2011 09:31:37 -0700
 From: Jesse Barnes <jbarnes@virtuousgeek.org>
 To: Keith Packard <keithp@keithp.com>
 Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
         linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 2/4] drm/i915: Leave LVDS registers unlocked
-Message-ID: <20110808093010.487c4559@jbarnes-desktop>
-In-Reply-To: <1312653248-3487-3-git-send-email-keithp@keithp.com>
+Subject: Re: [Intel-gfx] [PATCH 3/4] drm/i915: Fix PCH port pipe select in
+ CPT disable paths
+Message-ID: <20110808093137.5ed7b8ba@jbarnes-desktop>
+In-Reply-To: <1312653248-3487-4-git-send-email-keithp@keithp.com>
 References: <1312653248-3487-1-git-send-email-keithp@keithp.com>
-	<1312653248-3487-3-git-send-email-keithp@keithp.com>
+	<1312653248-3487-4-git-send-email-keithp@keithp.com>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -26,18 +27,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  6 Aug 2011 10:54:06 -0700
+On Sat,  6 Aug 2011 10:54:07 -0700
 Keith Packard <keithp@keithp.com> wrote:
 
-> There's no reason to relock them; it just makes operations more
-> complex. This fixes DPMS where the panel registers were locked making
-> the disable not work.
+> CPT pipe select is different from previous generations (using two bits
+> instead of one). All of the paths from intel_disable_pch_ports were
+> not making this distinction.
+> 
+> Mode setting with pipe A turned off would then also force all outputs
+> on pipe B to get turned off as the disable code would mistakenly
+> decide that all of these outputs were on pipe A and turn them off.
+> 
+> This is an extension of the CPT DP disable fix (why didn't I fix this then?)
 > 
 > Signed-off-by: Keith Packard <keithp@keithp.com>
-
-Yep, looks fine.  The only think we might want to sprinkle about are
-checks for panel off so we can avoid visible corruption if we whack
-timing or fb stuff while the panel is on.
+> ---
+>  drivers/gpu/drm/i915/i915_reg.h      |   13 ++-----
+>  drivers/gpu/drm/i915/intel_display.c |   60 ++++++++++++++++++++++++++++++---
+>  2 files changed, 58 insertions(+), 15 deletions(-)
+> 
 
 Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
