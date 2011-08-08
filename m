@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab1HHHuU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 03:50:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48369 "EHLO
+	id S1751662Ab1HHHu7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 03:50:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48375 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751525Ab1HHHuR (ORCPT
+	by vger.kernel.org with ESMTP id S1750960Ab1HHHu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 03:50:17 -0400
+	Mon, 8 Aug 2011 03:50:57 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: linux-kernel@vger.kernel.org
 Cc: patches@opensource.wolfsonmicro.com,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/2] regmap: Skip precious registers when dumping registers via debugfs
-Date: Mon,  8 Aug 2011 15:44:32 +0900
-Message-Id: <1312785872-19629-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/2] regmap: Add precious registers to the driver interface
+Date: Mon,  8 Aug 2011 15:44:31 +0900
+Message-Id: <1312785872-19629-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1312785872-19629-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1312785872-19629-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some devices are sensitive to reads on their registers, especially for
+things like clear on read interrupt status registers. Avoid creating
+problems with these with things like debugfs by allowing drivers to tell
+the core about them. If a register is marked as precious then the core
+will not internally generate any reads of it.
+
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/base/regmap/internal.h       |    1 +
- drivers/base/regmap/regmap-debugfs.c |    4 ++++
- drivers/base/regmap/regmap.c         |    1 +
- 3 files changed, 6 insertions(+), 0 deletions(-)
+ include/linux/regmap.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
-index 78f87f3..a67dc68 100644
---- a/drivers/base/regmap/internal.h
-+++ b/drivers/base/regmap/internal.h
-@@ -45,6 +45,7 @@ struct regmap {
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index aef2b36..c878a4b 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -33,6 +33,9 @@ struct spi_device;
+  *                     can be read from.
+  * @volatile_register: Optional callback returning true if the register
+  *                     value can't be cached.
++ * @precious_register: Optional callback returning true if the rgister
++ *                     should not be read outside of a call from the driver
++ *                     (eg, a clear on read interrupt status register).
+  */
+ struct regmap_config {
+ 	int reg_bits;
+@@ -42,6 +45,7 @@ struct regmap_config {
  	bool (*writeable_reg)(struct device *dev, unsigned int reg);
  	bool (*readable_reg)(struct device *dev, unsigned int reg);
  	bool (*volatile_reg)(struct device *dev, unsigned int reg);
 +	bool (*precious_reg)(struct device *dev, unsigned int reg);
  };
  
- #ifdef CONFIG_DEBUG_FS
-diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-index 2be8bf8..184b618 100644
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -56,6 +56,10 @@ static ssize_t regmap_map_read_file(struct file *file, char __user *user_buf,
- 		    !map->readable_reg(map->dev, i))
- 			continue;
- 
-+		if (map->precious_reg &&
-+		    map->precious_reg(map->dev, i))
-+			continue;
-+
- 		/* If we're in the region the user is trying to read */
- 		if (p >= *ppos) {
- 			/* ...but not beyond it */
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index e68556c..c25c13c 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -101,6 +101,7 @@ struct regmap *regmap_init(struct device *dev,
- 	map->writeable_reg = config->writeable_reg;
- 	map->readable_reg = config->readable_reg;
- 	map->volatile_reg = config->volatile_reg;
-+	map->precious_reg = config->precious_reg;
- 
- 	switch (config->reg_bits) {
- 	case 4:
+ typedef int (*regmap_hw_write)(struct device *dev, const void *data,
 -- 
 1.7.5.4
 
