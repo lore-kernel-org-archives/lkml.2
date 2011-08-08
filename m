@@ -1,39 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079Ab1HHI2T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 04:28:19 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48757 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664Ab1HHI2S (ORCPT
+	id S1751748Ab1HHIdY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 04:33:24 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36177 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab1HHIdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 04:28:18 -0400
-Date: Mon, 8 Aug 2011 09:28:10 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Howells <dhowells@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: fix rcu annotations noise in cred.h
-Message-ID: <20110808082810.GC2203@ZenIV.linux.org.uk>
-References: <20110807175511.GZ2203@ZenIV.linux.org.uk>
- <13248.1312791509@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <13248.1312791509@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 8 Aug 2011 04:33:20 -0400
+From: Per Forlin <per.forlin@linaro.org>
+To: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org,
+        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
+Cc: Per Forlin <per.forlin@linaro.org>
+Subject: [PATCH] usb: musb: ux500: optimize DMA callback routine
+Date: Mon,  8 Aug 2011 10:32:38 +0200
+Message-Id: <1312792358-2445-1-git-send-email-per.forlin@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 09:18:29AM +0100, David Howells wrote:
-> 
-> Al Viro <viro@ZenIV.linux.org.uk> wrote:
-> 
-> >  #define current_cred() \
-> > -	(current->cred)
-> > +	(*(__force struct cred **)&current->cred)
-> 
-> No.  You've cast away the const.  Please don't do that.
+Skip the use of work queue and call musb_dma_completion() directly from
+DMA callback context.
 
-So let's bring const back, not a problem...
+Here follows measurements on a Snowball board with ondemand governor active.
+
+Performance using work queue:
+(105 MB) copied, 6.23758 s, 16.8 MB/s
+(105 MB) copied, 5.7151 s, 18.3 MB/s
+(105 MB) copied, 5.83583 s, 18.0 MB/s
+(105 MB) copied, 5.93611 s, 17.7 MB/s
+
+Performance without work queue
+(105 MB) copied, 5.62173 s, 18.7 MB/s
+(105 MB) copied, 5.61811 s, 18.7 MB/s
+(105 MB) copied, 5.57817 s, 18.8 MB/s
+(105 MB) copied, 5.58549 s, 18.8 MB/s
+
+Signed-off-by: Per Forlin <per.forlin@linaro.org>
+Acked-by: Mian Yousaf Kaukab<mian.yousaf.kaukab@stericsson.com>
+---
+ drivers/usb/musb/ux500_dma.c |   43 ++---------------------------------------
+ 1 files changed, 3 insertions(+), 40 deletions(-)
+
+diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
+index ef4333f..46ba08f 100644
+--- a/drivers/usb/musb/ux500_dma.c
++++ b/drivers/usb/musb/ux500_dma.c
+@@ -37,7 +37,6 @@ struct ux500_dma_channel {
+ 	struct dma_channel channel;
+ 	struct ux500_dma_controller *controller;
+ 	struct musb_hw_ep *hw_ep;
+-	struct work_struct channel_work;
+ 	struct dma_chan *dma_chan;
+ 	unsigned int cur_len;
+ 	dma_cookie_t cookie;
+@@ -56,52 +55,21 @@ struct ux500_dma_controller {
+ 	dma_addr_t phy_base;
+ };
+ 
+-/* Work function invoked from DMA callback to handle tx transfers. */
+-static void ux500_tx_work(struct work_struct *data)
+-{
+-	struct ux500_dma_channel *ux500_channel = container_of(data,
+-		struct ux500_dma_channel, channel_work);
+-	struct musb_hw_ep       *hw_ep = ux500_channel->hw_ep;
+-	struct musb *musb = hw_ep->musb;
+-	unsigned long flags;
+-
+-	dev_dbg(musb->controller, "DMA tx transfer done on hw_ep=%d\n",
+-		hw_ep->epnum);
+-
+-	spin_lock_irqsave(&musb->lock, flags);
+-	ux500_channel->channel.actual_len = ux500_channel->cur_len;
+-	ux500_channel->channel.status = MUSB_DMA_STATUS_FREE;
+-	musb_dma_completion(musb, hw_ep->epnum,
+-				ux500_channel->is_tx);
+-	spin_unlock_irqrestore(&musb->lock, flags);
+-}
+-
+-/* Work function invoked from DMA callback to handle rx transfers. */
+-static void ux500_rx_work(struct work_struct *data)
++void ux500_dma_callback(void *private_data)
+ {
+-	struct ux500_dma_channel *ux500_channel = container_of(data,
+-		struct ux500_dma_channel, channel_work);
++	struct dma_channel *channel = (struct dma_channel *)private_data;
++	struct ux500_dma_channel *ux500_channel = channel->private_data;
+ 	struct musb_hw_ep       *hw_ep = ux500_channel->hw_ep;
+ 	struct musb *musb = hw_ep->musb;
+ 	unsigned long flags;
+ 
+-	dev_dbg(musb->controller, "DMA rx transfer done on hw_ep=%d\n",
+-		hw_ep->epnum);
+-
+ 	spin_lock_irqsave(&musb->lock, flags);
+ 	ux500_channel->channel.actual_len = ux500_channel->cur_len;
+ 	ux500_channel->channel.status = MUSB_DMA_STATUS_FREE;
+ 	musb_dma_completion(musb, hw_ep->epnum,
+ 		ux500_channel->is_tx);
+ 	spin_unlock_irqrestore(&musb->lock, flags);
+-}
+-
+-void ux500_dma_callback(void *private_data)
+-{
+-	struct dma_channel *channel = (struct dma_channel *)private_data;
+-	struct ux500_dma_channel *ux500_channel = channel->private_data;
+ 
+-	schedule_work(&ux500_channel->channel_work);
+ }
+ 
+ static bool ux500_configure_channel(struct dma_channel *channel,
+@@ -330,7 +298,6 @@ static int ux500_dma_controller_start(struct dma_controller *c)
+ 	void **param_array;
+ 	struct ux500_dma_channel *channel_array;
+ 	u32 ch_count;
+-	void (*musb_channel_work)(struct work_struct *);
+ 	dma_cap_mask_t mask;
+ 
+ 	if ((data->num_rx_channels > UX500_MUSB_DMA_NUM_RX_CHANNELS) ||
+@@ -347,7 +314,6 @@ static int ux500_dma_controller_start(struct dma_controller *c)
+ 	channel_array = controller->rx_channel;
+ 	ch_count = data->num_rx_channels;
+ 	param_array = data->dma_rx_param_array;
+-	musb_channel_work = ux500_rx_work;
+ 
+ 	for (dir = 0; dir < 2; dir++) {
+ 		for (ch_num = 0; ch_num < ch_count; ch_num++) {
+@@ -374,15 +340,12 @@ static int ux500_dma_controller_start(struct dma_controller *c)
+ 				return -EBUSY;
+ 			}
+ 
+-			INIT_WORK(&ux500_channel->channel_work,
+-				musb_channel_work);
+ 		}
+ 
+ 		/* Prepare the loop for TX channels */
+ 		channel_array = controller->tx_channel;
+ 		ch_count = data->num_tx_channels;
+ 		param_array = data->dma_tx_param_array;
+-		musb_channel_work = ux500_tx_work;
+ 		is_tx = 1;
+ 	}
+ 
+-- 
+1.7.4.1
+
