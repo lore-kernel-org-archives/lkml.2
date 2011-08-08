@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab1HHXen (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 19:34:43 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:6140 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389Ab1HHXem convert rfc822-to-8bit (ORCPT
+	id S1753483Ab1HHXgj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 19:36:39 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42619 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080Ab1HHXgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 19:34:42 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=IJEB5JZOLoIihSpGKHhxRuiK9rF+PU4JGCyEAvaSF6vo+Coht+u2VAGzEARXPd6Rx
-	hm/DW8OzKu06dHYu688zA==
+	Mon, 8 Aug 2011 19:36:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110808213721.GA1972@redhat.com>
-References: <1312495991-28377-1-git-send-email-zakmagnus@chromium.org>
-	<1312495991-28377-2-git-send-email-zakmagnus@chromium.org>
-	<20110805134042.GJ1972@redhat.com>
-	<CAAuSN919rQj93P8HE69_N5vC04ywMFfeJjRdMhn8ga1V-jFb7A@mail.gmail.com>
-	<20110805184323.GK20762@redhat.com>
-	<CAAuSN91Pi8SbWbU87v7QdDWS_N1GiXsM8dGUYSYKTUCUp+2Mww@mail.gmail.com>
-	<20110808201951.GY1972@redhat.com>
-	<1312836771.22367.35.camel@twins>
-	<20110808213721.GA1972@redhat.com>
-Date: Mon, 8 Aug 2011 16:34:33 -0700
-X-Google-Sender-Auth: 1PP9gc8ekkRw8_K4fcZ0nkK1Ukw
-Message-ID: <CAAuSN91zeipoQVU5jEtvVR1bXeu2c1KGY2sqowYuDzozpa818w@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] Output stall traces in /proc
-From: Alex Neronskiy <zakmagnus@chromium.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Mandeep Singh Baines <msb@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+In-Reply-To: <20110808110658.31053.55013.stgit@localhost6>
+References: <20110808110658.31053.55013.stgit@localhost6>
+Date: Tue, 9 Aug 2011 08:36:37 +0900
+Message-ID: <CAEwNFnBS0BqwnxdC3GDnEVsjm8SVy6tZvcpV7Cy0E=HvkU28=w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] vmscan: promote shared file mapped pages
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 8, 2011 at 2:37 PM, Don Zickus <dzickus@redhat.com> wrote:
-> Maybe irq_work isn't what we needed.  I just wasn't smart enough to figure
-> out how to make sure we can write data in an NMI context and read it in a
-> normal context.  I supposed the whole swapping buffers could work and is
-> simpler.
-So each of the buffers has its own lock, right? If a lock protects a
-pair of buffers, then: A reader takes the lock, and a writing NMI
-comes in and writes to the non-readable buffer and swaps the two. The
-reader still has the lock. Another NMI comes in, sees that the lock is
-unavailable, and writes to the "backup" buffer, which is actually the
-one the reader is still reading from. Bad corrupted read results.
+On Mon, Aug 8, 2011 at 8:06 PM, Konstantin Khlebnikov
+<khlebnikov@openvz.org> wrote:
+> Commit v2.6.33-5448-g6457474 (vmscan: detect mapped file pages used only once)
+> greatly decreases lifetime of single-used mapped file pages.
+> Unfortunately it also decreases life time of all shared mapped file pages.
+> Because after commit v2.6.28-6130-gbf3f3bc (mm: don't mark_page_accessed in fault path)
+> page-fault handler does not mark page active or even referenced.
+>
+> Thus page_check_references() activates file page only if it was used twice while
+> it stays in inactive list, meanwhile it activates anon pages after first access.
+> Inactive list can be small enough, this way reclaimer can accidentally
+> throw away any widely used page if it wasn't used twice in short period.
+>
+> After this patch page_check_references() also activate file mapped page at first
+> inactive list scan if this page is already used multiple times via several ptes.
+>
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-Either way, I don't see how to make the idea work safely for one pair
-of buffers shared by multiple CPU's. It works one-pair-per-CPU, but
-that's not how the current design is. I guess it would need to
-add/remove files every time a processor is added/removed, and there
-have to be some other changes too, obviously. What do you think, Don?
-Should this be a per-CPU thing, instead of global worst?
+Looks good to me.
+But the issue is that we prefer shared mapped file pages aggressively
+by your patch.
 
-Other alternatives:
-1. Try lock. The interrupts will simply not save their data if they
-are locked out by readers.
-2. Work queue + dynamic allocation. No, I don't mean irq_work. This
-works, doesn't it? But it's a bit wasteful of cycles and memory.
+Shared page already have bigger chance to promote than single page
+during same time window as many processes can touch the page.
+
+The your concern is when file LRU is too small or scanning
+aggressively, shared mapping page could lose the chance to activate
+but it is applied single page, too. And still, shared mapping pages
+have a bigger chance to activate compared to single page.  So, our
+algorithm already reflect shared mapping preference a bit.
+
+Fundamental problem is our eviction algorithm consider only recency,
+not frequency. It's very long time problem and it's not easy to fix it
+practically.
+
+Anyway, it's a not subject it's right or not but it's policy thing and
+I support yours.
+
+Acked-by: Minchan Kim <minchan.kim@gmail.com>
+
+
+
+-- 
+Kind regards,
+Minchan Kim
