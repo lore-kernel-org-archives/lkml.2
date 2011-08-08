@@ -1,140 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab1HHJSd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 05:18:33 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:62630 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab1HHJSb convert rfc822-to-8bit (ORCPT
+	id S1751466Ab1HHJ2b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 05:28:31 -0400
+Received: from science.horizon.com ([71.41.210.146]:25177 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751023Ab1HHJ22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 05:18:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOJsxLEUwPgVh4g7OXk_n8b=vcC5zdUWoOPdGvx5W8f12yd6kg@mail.gmail.com>
-References: <20110805010038.GA18148@redhat.com>
-	<20110805084614.GA1588@x4.trippels.de>
-	<CAOJsxLEMf8SbSmJv5u6GZtq_OYH3fpmomT-ioWXQGp83veK7wQ@mail.gmail.com>
-	<alpine.DEB.2.00.1108051131440.28580@router.home>
-	<20110805163948.GA11113@redhat.com>
-	<alpine.DEB.2.00.1108051146180.28580@router.home>
-	<20110805165119.GA11593@redhat.com>
-	<alpine.DEB.2.00.1108051158400.28580@router.home>
-	<20110805171607.GA11703@redhat.com>
-	<alpine.DEB.2.00.1108051312090.28580@router.home>
-	<20110805182008.GA22314@redhat.com>
-	<CA+55aFwGSJM6g+YXfy_Oyb0OpQP5kH=OxCR-pnBk7RUshL+mXg@mail.gmail.com>
-	<alpine.DEB.2.00.1108072155240.9480@tiger>
-	<CA+55aFzdp+7+AcCFbx3dCkfqERzYvOZG3c3SUuNAw+X0MJ8iNw@mail.gmail.com>
-	<alpine.DEB.2.00.1108080817050.25955@tiger>
-	<CAJn8CcGqQwLPoweUN3fed2j0SorZO08NPpxeH70e+rogVsvhAw@mail.gmail.com>
-	<CAOJsxLGyoJjaqsDN8CLVAMF+h72tepSpaouGJ2diQ=FpMiJqdg@mail.gmail.com>
-	<CAJn8CcF0+tU3PMwG2Rfn6L03coL-Z8-OU4KYY9LNf4joOuFkcQ@mail.gmail.com>
-	<CAOJsxLEUwPgVh4g7OXk_n8b=vcC5zdUWoOPdGvx5W8f12yd6kg@mail.gmail.com>
-Date: Mon, 8 Aug 2011 17:18:30 +0800
-Message-ID: <CAJn8CcH9PqLrOvskb=BGM4D5DJCDuRSB6CGM8r-Rz8T4GCTrSQ@mail.gmail.com>
-Subject: Re: list corruption in the last few days. (block ? crypto ?)
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 8 Aug 2011 05:28:28 -0400
+Date: 8 Aug 2011 05:28:26 -0400
+Message-ID: <20110808092826.21881.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: fzago@systemfabricworks.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] add slice by 8 algorithm to crc32.c
+Cc: akpm@linux-foundation.org, joakim.tjernlund@transmode.se,
+        linux@horizon.com, rpearson@systemfabricworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 8, 2011 at 2:38 PM, Pekka Enberg <penberg@kernel.org> wrote:
-> On Mon, Aug 8, 2011 at 9:31 AM, Xiaotian Feng <xtfeng@gmail.com> wrote:
->> On Mon, Aug 8, 2011 at 2:18 PM, Pekka Enberg <penberg@kernel.org> wrote:
->>> On Mon, Aug 8, 2011 at 9:14 AM, Xiaotian Feng <xtfeng@gmail.com> wrote:
->>>> On Mon, Aug 8, 2011 at 1:18 PM, Pekka Enberg <penberg@kernel.org> wrote:
->>>>> Hi Linus,
->>>>>
->>>>> On Sun, Aug 7, 2011 at 11:58 AM, Pekka Enberg <penberg@kernel.org> wrote:
->>>>>>>
->>>>>>> Christoph, I've been reading the code and spotted two potential issues in
->>>>>>> __slab_free(). The first one seems like an off-by-one where our
->>>>>>> comparison
->>>>>>> in deactivate_slab() doesn't match __slab_free.
->>>>>>>
->>>>>>> The other one is remove_full() call in __slab_free() that can get called
->>>>>>> even if cache debugging is not enabled.
->>>>>>>
->>>>>>> Hmm?
->>>>>
->>>>> On Sun, 7 Aug 2011, Linus Torvalds wrote:
->>>>>>
->>>>>> I'd like to do -rc1 today, regardless of whether this fixes things or
->>>>>> not (-rc1 is already a few days delayed).
->>>>>>
->>>>>> The patch seems to be a good fix, and a likely candidate for the
->>>>>> corruption. Commit log and sign-off? I assume you've given it some
->>>>>> testing, even if you couldn't reproduce the original issue?
->>>>>
->>>>> No, I haven't tested the patch myself but here's one in proper format in
->>>>> case someone wants to test it.
->>>>
->>>> I applied it and I'm still seeing the corruption warning start from this :(
->>>>
->>>>  [ 3674.255030] ------------[ cut here ]------------
->>>>  [ 3674.255040] WARNING: at lib/list_debug.c:53 __list_del_entry+0xa1/0xd0()
->>>>  [ 3674.255042] Hardware name: 42424XC
->>>>  [ 3674.255045] list_del corruption. prev->next should be
->>>> ffffea0000493420, but was ffffea0001ab0520
->>>>  [ 3674.255047] Modules linked in: ip6table_filter ip6_tables
->>>> ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4
->>>> xt_state nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp
->>>> iptable_filter ip_tables x_tables binfmt_misc bridge stp parport_pc
->>>> ppdev snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep
->>>> snd_pcm thinkpad_acpi arc4 cryptd aes_x86_64 aes_generic snd_seq_midi
->>>> i915 snd_rawmidi snd_seq_midi_event snd_seq joydev iwlagn btusb
->>>> snd_timer snd_seq_device drm_kms_helper bluetooth uvcvideo snd
->>>> videodev drm mac80211 cfg80211 i2c_algo_bit soundcore tpm_tis tpm
->>>> tpm_bios lp snd_page_alloc psmouse serio_raw v4l2_compat_ioctl32 nvram
->>>> video parport usbhid hid sdhci_pci firewire_ohci ahci libahci sdhci
->>>> firewire_core crc_itu_t e1000e
->>>>  [ 3674.255129] Pid: 3, comm: ksoftirqd/0 Not tainted 3.1.0-rc1+ #38
->>>>  [ 3674.255131] Call Trace:
->>>>  [ 3674.255138]  [<ffffffff8106db3f>] warn_slowpath_common+0x7f/0xc0
->>>>  [ 3674.255143]  [<ffffffff8106dc36>] warn_slowpath_fmt+0x46/0x50
->>>>  [ 3674.255147]  [<ffffffff81331851>] __list_del_entry+0xa1/0xd0
->>>>  [ 3674.255151]  [<ffffffff81331891>] list_del+0x11/0x40
->>>>  [ 3674.255156]  [<ffffffff81179631>] __slab_free+0x3d1/0x3e0
->>>>  [ 3674.255162]  [<ffffffff811c5b06>] ? bvec_free_bs+0x26/0x40
->>>>  [ 3674.255166]  [<ffffffff8117ab27>] ? kmem_cache_free+0x97/0x220
->>>>  [ 3674.255170]  [<ffffffff811c5b06>] ? bvec_free_bs+0x26/0x40
->>>>  [ 3674.255174]  [<ffffffff811c5b06>] ? bvec_free_bs+0x26/0x40
->>>>  [ 3674.255179]  [<ffffffff8117ac9f>] kmem_cache_free+0x20f/0x220
->>>
->>> Can you please also run
->>>
->>>  addr2line -e vmlinux
->>>  0xffffffff81179631
->>>
->>
->> /opt/upstream/linux-3.0/mm/slub.c:1061
->>
->>
->> /*
->>  * list_lock must be held.
->>  */
->> static void remove_full(struct kmem_cache *s, struct page *page)
->> {
->>        if (!(s->flags & SLAB_STORE_USER))
->>                return;
->>
->>        list_del(&page->lru);       <=== here
->> }
->
-> OK, so it's the full list. Looking at deactivate_slab() we actually
-> can access the list without n->list_lock held. Does the attached patch
-> help?
+Sorry I didn't see this when first posted.
 
-I'm still facing a hang with this patch, but I didn't catch the original log :(
-Will try it again and get you updated, thanks.
+The "slice by 8" terminology is pretty confusing.  How about
+"Extended Joakim Tjernlund's optimization from commit
+836e2af92503f1642dbc3c3281ec68ec1dd39d2e to 8-way parallelism."
 
->
->                        Pekka
->
+Which is essentally what you're doing.  The renaming of tab[0] to t0_le
+and t0_be, and removal of the DO_CRC4 macro just increases the diff size.
+
+If you're looking at speeding up the CRC through larger tables, have
+you tried using 10+11+11-bit tables?  That would require 20K of tables
+rather than 8K, but would reduce the number of table lookups per byte.
+
+
+One more stunt you could try to increase parallelism: rather than maintain
+the CRC in one register, maintain it in several, and only XOR and collapse
+them at the end.
+
+Start with your 64-bit code, but imagine that the second code block's
+"q = *p32++" always loads 0, and therefore the whole block can be skipped.
+(Since tab[0] = 0 for all CRC tables.)
+
+This computes the CRC of the even words.  Then do a second one in parallel
+for the odd words into a separate CRC register.  Then combine them at the end.
+(Shift one up by 32 bits and XOR into the other.)
+
+This would let you get away with 5K of tables: t4 through t7, and t0.
+t1 through t3 could be skipped.
+
+
+Ideally, I'd write all this code myself, but I'm a bit crunched at work
+right now so wouldn't be able to get to it for a few days.
+
+
+
+Another possible simplification to the startup code.  There's no need
+to compute init_bytes explicitly; just loop until the pointer is aligned:
+
+	while ((unsigned)buf & 3) {
+		if (!len--)
+			goto done;
+#ifdef __LITTLE_ENDIAN
+		i0 = *buf++ ^ crc;
+		crc = t0_le[i0] ^ (crc >> 8);
+#else
+		i0 = *buf++ ^ (crc >> 24);
+		crc = t0_le[i0] ^ (crc << 8);
+#endif  
+	}
+	p32 = (u32 const *)buf;
+	words = len >> 2;
+	end_bytes = len & 3;
+
+
+... although I'd prefer to keep the DO_CRC() and DO_CRC4 macros, and
+extend them to the 64-bit case, to avoid the nested #ifdefs.  That would
+make:
+
+	while ((unsigned)buf & 3) {
+		if (!len--)
+			goto done;
+		DO_CRC(*buf++);
+	}
+	p32 = (u32 const *)buf;
+	words = len >> 2;
+	end_bytes = len & 3;
