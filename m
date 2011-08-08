@@ -1,240 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab1HHSbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 14:31:09 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:52585 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753946Ab1HHSad (ORCPT
+	id S1754165Ab1HHSbv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 14:31:51 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:50804 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753044Ab1HHSbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 14:30:33 -0400
-From: Marcus Folkesson <marcus.folkesson@gmail.com>
-To: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org,
-        Marcus Folkesson <marcus.folkesson@gmail.com>
-Subject: [PATCH 3/4] regulator: tps65023: Setting correct core regulator for tps65021
-Date: Mon,  8 Aug 2011 20:29:34 +0200
-Message-Id: <1312828175-11999-4-git-send-email-marcus.folkesson@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1312828175-11999-1-git-send-email-marcus.folkesson@gmail.com>
-References: <marcus.folkesson@gmail.com>
- <1312828175-11999-1-git-send-email-marcus.folkesson@gmail.com>
+	Mon, 8 Aug 2011 14:31:50 -0400
+Date: Mon, 8 Aug 2011 11:31:48 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: lkml <linux-kernel@vger.kernel.org>, gregkh <greg@kroah.com>,
+        akpm <akpm@linux-foundation.org>
+Cc: driverdevel <devel@driverdev.osuosl.org>,
+        Marek Belisko <marek.belisko@gmail.com>
+Subject: [PATCH] staging: fix ft1000 sparse warnings
+Message-Id: <20110808113148.578148c2.rdunlap@xenotime.net>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TPS65023 is using VDCDC1 as core regulator and TPS65021 is using VDCDC3.
-Core-regulator and voltage-tables may differ between
-different regulators. These two is now passed as driver data.
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Fix sparse warnings in staging/ft1000/:
+
+drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:69:7: warning: obsolete struct initializer, use C99 syntax
+
+and make many functions & data static.  Examples:
+drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:65:23: warning: symbol 'fw_entry' was not declared. Should it be static?
+drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:836:6: warning: symbol 'ft1000_send_cmd' was not declared. Should it be static?
+drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:1014:6: warning: symbol 'ft1000_proc_drvmsg' was not declared. Should it be static?
+drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:1788:5: warning: symbol 'ft1000_copy_down_pkt' was not declared. Should it be static?
+drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:2096:6: warning: symbol 'stop_ft1000_card' was not declared. Should it be static?
+drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:2155:19: warning: symbol 'init_ft1000_card' was not declared. Should it be static?
+
+rivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c:172:5: warning: symbol 'ft1000_confcheck' was not declared. Should it be static?
+
+drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c:50:5: warning: symbol 'ft1000ReadProc' was not declared. Should it be static?
+drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c:194:6: warning: symbol 'ft1000InitProc' was not declared. Should it be static?
+drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c:207:6: warning: symbol 'ft1000CleanupProc' was not declared. Should it be static?
+
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 ---
- drivers/regulator/tps65023-regulator.c |   96 +++++++++++++++++++++++++-------
- 1 files changed, 75 insertions(+), 21 deletions(-)
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000.h      |   10 ++++
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c   |    8 +--
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c |    3 -
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |   24 ++++-------
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c |    4 -
+ 5 files changed, 27 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
-index 1011470..c1df85d 100644
---- a/drivers/regulator/tps65023-regulator.c
-+++ b/drivers/regulator/tps65023-regulator.c
-@@ -92,7 +92,7 @@
- #define TPS65023_MAX_REG_ID		TPS65023_LDO_2
+--- lnx-31-rc1.orig/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
++++ lnx-31-rc1/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+@@ -56,16 +56,11 @@
+ #include <linux/delay.h>
+ #include "ft1000.h"
  
- /* Supported voltage values for regulators */
--static const u16 VDCDC1_VSEL_table[] = {
-+static const u16 VCORE_VSEL_table[] = {
- 	800, 825, 850, 875,
- 	900, 925, 950, 975,
- 	1000, 1025, 1050, 1075,
-@@ -103,20 +103,20 @@ static const u16 VDCDC1_VSEL_table[] = {
- 	1500, 1525, 1550, 1600,
- };
- 
--static const u16 LDO1_VSEL_table[] = {
-+
-+
-+/* Supported voltage values for LDO regulators
-+ * for tps65021 and tps65023 */
-+static const u16 TPS65023_LDO1_VSEL_table[] = {
- 	1000, 1100, 1300, 1800,
- 	2200, 2600, 2800, 3150,
- };
- 
--static const u16 LDO2_VSEL_table[] = {
-+static const u16 TPS65023_LDO2_VSEL_table[] = {
- 	1050, 1200, 1300, 1800,
- 	2500, 2800, 3000, 3300,
- };
- 
--static unsigned int num_voltages[] = {ARRAY_SIZE(VDCDC1_VSEL_table),
--				0, 0, ARRAY_SIZE(LDO1_VSEL_table),
--				ARRAY_SIZE(LDO2_VSEL_table)};
+-int card_download(struct net_device *dev, const u8 *pFileStart, u32 FileLength);
 -
- /* Regulator specific details */
- struct tps_info {
- 	const char *name;
-@@ -134,6 +134,13 @@ struct tps_pmic {
- 	struct regulator_dev *rdev[TPS65023_NUM_REGULATOR];
- 	const struct tps_info *info[TPS65023_NUM_REGULATOR];
- 	struct regmap *regmap;
-+	u8 core_regulator;
-+};
-+
-+/* Struct passed as driver data */
-+struct tps_driver_data {
-+	const struct tps_info *info;
-+	u8 core_regulator;
+-void ft1000InitProc(struct net_device *dev);
+-void ft1000CleanupProc(struct net_device *dev);
+-
+-const struct firmware *fw_entry;
++static const struct firmware *fw_entry;
+ 
+ static void ft1000_hbchk(u_long data);
+ static struct timer_list poll_timer = {
+-      function:ft1000_hbchk
++      .function = ft1000_hbchk
  };
  
- static int tps_65023_set_bits(struct tps_pmic *tps, u8 reg, u8 mask)
-@@ -260,7 +267,7 @@ static int tps65023_dcdc_get_voltage(struct regulator_dev *dev)
- 	if (dcdc < TPS65023_DCDC_1 || dcdc > TPS65023_DCDC_3)
- 		return -EINVAL;
- 
--	if (dcdc == TPS65023_DCDC_1) {
-+	if (dcdc == tps->core_regulator) {
- 		data = tps_65023_reg_read(tps, TPS65023_REG_DEF_CORE);
- 		if (data < 0)
- 			return data;
-@@ -279,9 +286,8 @@ static int tps65023_dcdc_set_voltage(struct regulator_dev *dev,
- 	int vsel;
- 	int ret;
- 
--	if (dcdc != TPS65023_DCDC_1)
-+	if (dcdc != tps->core_regulator)
- 		return -EINVAL;
--
- 	if (min_uV < tps->info[dcdc]->min_uV
- 			|| min_uV > tps->info[dcdc]->max_uV)
- 		return -EINVAL;
-@@ -380,7 +386,7 @@ static int tps65023_dcdc_list_voltage(struct regulator_dev *dev,
- 	if (dcdc < TPS65023_DCDC_1 || dcdc > TPS65023_DCDC_3)
- 		return -EINVAL;
- 
--	if (dcdc == TPS65023_DCDC_1) {
-+	if (dcdc == tps->core_regulator) {
- 		if (selector >= tps->info[dcdc]->table_len)
- 			return -EINVAL;
- 		else
-@@ -432,7 +438,8 @@ static struct regmap_config tps65023_regmap_config = {
- static int __devinit tps_65023_probe(struct i2c_client *client,
- 				     const struct i2c_device_id *id)
+ static u16 cmdbuffer[1024];
+@@ -788,7 +783,7 @@ static void ft1000_hbchk(u_long data)
+ // Output:
+ //
+ //---------------------------------------------------------------------------
+-void ft1000_send_cmd (struct net_device *dev, u16 *ptempbuffer, int size, u16 qtype)
++static void ft1000_send_cmd (struct net_device *dev, u16 *ptempbuffer, int size, u16 qtype)
  {
--	const struct tps_info *info = (void *)id->driver_data;
-+	const struct tps_driver_data *drv_data = (void *)id->driver_data;
-+	const struct tps_info *info = drv_data->info;
- 	struct regulator_init_data *init_data;
- 	struct regulator_dev *rdev;
- 	struct tps_pmic *tps;
-@@ -464,6 +471,7 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
+ 	struct ft1000_info *info = netdev_priv(dev);
+ 	int i;
+@@ -873,7 +868,8 @@ void ft1000_send_cmd (struct net_device 
+ //          = 1 (successful)
+ //
+ //---------------------------------------------------------------------------
+-bool ft1000_receive_cmd(struct net_device *dev, u16 * pbuffer, int maxsz, u16 *pnxtph)
++static bool ft1000_receive_cmd(struct net_device *dev, u16 *pbuffer,
++				int maxsz, u16 *pnxtph)
+ {
+ 	struct ft1000_info *info = netdev_priv(dev);
+ 	u16 size;
+@@ -966,7 +962,7 @@ bool ft1000_receive_cmd(struct net_devic
+ //     none
+ //
+ //---------------------------------------------------------------------------
+-void ft1000_proc_drvmsg(struct net_device *dev)
++static void ft1000_proc_drvmsg(struct net_device *dev)
+ {
+ 	struct ft1000_info *info = netdev_priv(dev);
+ 	u16 msgtype;
+@@ -1245,7 +1241,7 @@ void ft1000_proc_drvmsg(struct net_devic
+ //              SUCCESS
+ //
+ //---------------------------------------------------------------------------
+-int ft1000_parse_dpram_msg(struct net_device *dev)
++static int ft1000_parse_dpram_msg(struct net_device *dev)
+ {
+ 	struct ft1000_info *info = netdev_priv(dev);
+ 	u16 doorbell;
+@@ -1546,7 +1542,7 @@ static void ft1000_flush_fifo(struct net
+ //              SUCCESS
+ //
+ //---------------------------------------------------------------------------
+-int ft1000_copy_up_pkt(struct net_device *dev)
++static int ft1000_copy_up_pkt(struct net_device *dev)
+ {
+ 	u16 tempword;
+ 	struct ft1000_info *info = netdev_priv(dev);
+@@ -1734,7 +1730,7 @@ int ft1000_copy_up_pkt(struct net_device
+ //              SUCCESS
+ //
+ //---------------------------------------------------------------------------
+-int ft1000_copy_down_pkt(struct net_device *dev, u16 * packet, u16 len)
++static int ft1000_copy_down_pkt(struct net_device *dev, u16 * packet, u16 len)
+ {
+ 	struct ft1000_info *info = netdev_priv(dev);
+ 	union {
+@@ -2102,7 +2098,7 @@ static const struct ethtool_ops ops = {
+ };
  
- 	/* common for all regulators */
- 	tps->client = client;
-+	tps->core_regulator = drv_data->core_regulator;
+ struct net_device *init_ft1000_card(struct pcmcia_device *link,
+-					void *ft1000_reset)
++						void *ft1000_reset)
+ {
+ 	struct ft1000_info *info;
+ 	struct net_device *dev;
+--- lnx-31-rc1.orig/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
++++ lnx-31-rc1/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
+@@ -68,6 +68,16 @@ struct ft1000_info {
+ 	char netdevname[IFNAMSIZ];
+ };
  
- 	for (i = 0; i < TPS65023_NUM_REGULATOR; i++, info++, init_data++) {
- 		/* Store regulator specific information */
-@@ -471,7 +479,7 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
++struct pcmcia_device;
++struct net_device;
++extern struct net_device *init_ft1000_card(struct pcmcia_device *link,
++						void *ft1000_reset);
++extern void stop_ft1000_card(struct net_device *dev);
++extern int card_download(struct net_device *dev, const u8 *pFileStart,
++			size_t FileLength);
++extern void ft1000InitProc(struct net_device *dev);
++extern void ft1000CleanupProc(struct net_device *dev);
++
+ extern u16 ft1000_read_dpram(struct net_device *dev, int offset);
+ extern void card_bootload(struct net_device *dev);
+ extern u16 ft1000_read_dpram_mag_16(struct net_device *dev, int offset, int Index);
+--- lnx-31-rc1.orig/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
++++ lnx-31-rc1/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
+@@ -41,14 +41,12 @@ MODULE_LICENSE("GPL");
  
- 		tps->desc[i].name = info->name;
- 		tps->desc[i].id = i;
--		tps->desc[i].n_voltages = num_voltages[i];
-+		tps->desc[i].n_voltages = info->table_len;
- 		tps->desc[i].ops = (i > TPS65023_DCDC_3 ?
- 					&tps65023_ldo_ops : &tps65023_dcdc_ops);
- 		tps->desc[i].type = REGULATOR_VOLTAGE;
-@@ -529,13 +537,49 @@ static int __devexit tps_65023_remove(struct i2c_client *client)
- 	return 0;
+ /*====================================================================*/
+ 
+-struct net_device *init_ft1000_card(struct pcmcia_device *link,
+-					void *ft1000_reset);
+-void stop_ft1000_card(struct net_device *);
+-
+ static int ft1000_config(struct pcmcia_device *link);
+ static void ft1000_detach(struct pcmcia_device *link);
+ static int ft1000_attach(struct pcmcia_device *link);
+ 
++#include "ft1000.h"
++
+ /*====================================================================*/
+ 
+ static void ft1000_reset(struct pcmcia_device *link)
+@@ -75,7 +73,7 @@ static void ft1000_detach(struct pcmcia_
+ 	free_netdev(dev);
  }
  
-+static const struct tps_info tps65021_regs[] = {
-+	{
-+		.name = "VDCDC1",
-+		.min_uV =  3300000,
-+		.max_uV = 3300000,
-+		.fixed = 1,
-+	},
-+	{
-+		.name = "VDCDC2",
-+		.min_uV =  1800000,
-+		.max_uV = 1800000,
-+		.fixed = 1,
-+	},
-+	{
-+		.name = "VDCDC3",
-+		.min_uV =  800000,
-+		.max_uV = 1600000,
-+		.table_len = ARRAY_SIZE(VCORE_VSEL_table),
-+		.table = VCORE_VSEL_table,
-+	},
-+	{
-+		.name = "LDO1",
-+		.min_uV = 1000000,
-+		.max_uV = 3150000,
-+		.table_len = ARRAY_SIZE(TPS65023_LDO1_VSEL_table),
-+		.table = TPS65023_LDO1_VSEL_table,
-+	},
-+	{
-+		.name = "LDO2",
-+		.min_uV = 1050000,
-+		.max_uV = 3300000,
-+		.table_len = ARRAY_SIZE(TPS65023_LDO2_VSEL_table),
-+		.table = TPS65023_LDO2_VSEL_table,
-+	},
-+};
-+
- static const struct tps_info tps65023_regs[] = {
- 	{
- 		.name = "VDCDC1",
- 		.min_uV =  800000,
- 		.max_uV = 1600000,
--		.table_len = ARRAY_SIZE(VDCDC1_VSEL_table),
--		.table = VDCDC1_VSEL_table,
-+		.table_len = ARRAY_SIZE(VCORE_VSEL_table),
-+		.table = VCORE_VSEL_table,
- 	},
- 	{
- 		.name = "VDCDC2",
-@@ -553,23 +597,33 @@ static const struct tps_info tps65023_regs[] = {
- 		.name = "LDO1",
- 		.min_uV = 1000000,
- 		.max_uV = 3150000,
--		.table_len = ARRAY_SIZE(LDO1_VSEL_table),
--		.table = LDO1_VSEL_table,
-+		.table_len = ARRAY_SIZE(TPS65023_LDO1_VSEL_table),
-+		.table = TPS65023_LDO1_VSEL_table,
- 	},
- 	{
- 		.name = "LDO2",
- 		.min_uV = 1050000,
- 		.max_uV = 3300000,
--		.table_len = ARRAY_SIZE(LDO2_VSEL_table),
--		.table = LDO2_VSEL_table,
-+		.table_len = ARRAY_SIZE(TPS65023_LDO2_VSEL_table),
-+		.table = TPS65023_LDO2_VSEL_table,
- 	},
- };
+-int ft1000_confcheck(struct pcmcia_device *link, void *priv_data)
++static int ft1000_confcheck(struct pcmcia_device *link, void *priv_data)
+ {
+ 	return pcmcia_request_io(link);
+ }
+--- lnx-31-rc1.orig/drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c
++++ lnx-31-rc1/drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c
+@@ -47,8 +47,8 @@
+ 	} \
+ 	len += snprintf(page+len, PAGE_SIZE - len, "%d\n", var[i])
  
-+static struct tps_driver_data tps65021_drv_data = {
-+		.info = tps65021_regs,
-+		.core_regulator = TPS65023_DCDC_3,
-+};
-+
-+static struct tps_driver_data tps65023_drv_data = {
-+		.info = tps65023_regs,
-+		.core_regulator = TPS65023_DCDC_1,
-+};
-+
- static const struct i2c_device_id tps_65023_id[] = {
- 	{.name = "tps65023",
--	.driver_data = (unsigned long) tps65023_regs,},
-+	.driver_data = (unsigned long) &tps65023_drv_data},
- 	{.name = "tps65021",
--	.driver_data = (unsigned long) tps65023_regs,},
-+	.driver_data = (unsigned long) &tps65021_drv_data,},
- 	{ },
- };
+-int ft1000ReadProc(char *page, char **start, off_t off,
+-		   int count, int *eof, void *data)
++static int ft1000ReadProc(char *page, char **start, off_t off,
++			  int count, int *eof, void *data)
+ {
+ 	struct net_device *dev;
+ 	int len;
+--- lnx-31-rc1.orig/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
++++ lnx-31-rc1/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
+@@ -287,7 +287,8 @@ u16 hdr_checksum(struct pseudo_hdr *pHdr
+ 	return chksum;
+ }
  
--- 
-1.7.4.1
-
+-int card_download(struct net_device *dev, const u8 *pFileStart, u32 FileLength)
++int card_download(struct net_device *dev, const u8 *pFileStart,
++		  size_t FileLength)
+ {
+ 	struct ft1000_info *info = (struct ft1000_info *) netdev_priv(dev);
+ 	int Status = SUCCESS;
