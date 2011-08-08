@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931Ab1HHJsU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 05:48:20 -0400
-Received: from lo.gmane.org ([80.91.229.12]:51737 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124Ab1HHJsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 05:48:18 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: WANG Cong <xiyou.wangcong@gmail.com>
-Subject: Re: Compile kernel for various times and problem of too long time
- consuming
-Date: Mon, 8 Aug 2011 09:48:05 +0000 (UTC)
-Message-ID: <j1obck$554$1@dough.gmane.org>
-References: <CAC-yRPQS7r-MMh13Y1m0O+oLBu2OmQqmXS8iHFtCOS9YwrxrkA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 14.205.14.50
-User-Agent: Pan/0.133 (House of Butterflies)
-Cc: kernelnewbies@kernelnewbies.org
+	id S1752195Ab1HHJyd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 05:54:33 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36511 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab1HHJyc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 05:54:32 -0400
+Date: Mon, 8 Aug 2011 13:54:27 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Serge Hallyn <serue@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Glauber Costa <glommer@parallels.com>, containers@lists.osdl.org,
+        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [patch 2/4] vfs: Introduce the fd closing helper
+Message-ID: <20110808095427.GA24017@sun>
+References: <20110807210112.245578619@openvz.org>
+ <20110807210526.994391865@openvz.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110807210526.994391865@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 07 Aug 2011 21:39:12 +0430, Amirali Shambayati wrote:
-
-> Hi all,
-> Since I want to evaluate performance improvements by changing just one
-> file in kernel(noop-iosched) and compiling kernel is too much
-> time-consuming, I want to know that if I compile kernel for more than
-> one time, does it take similar time to first time?
+On Mon, Aug 08, 2011 at 01:01:14AM +0400, Cyrill Gorcunov wrote:
+> From: Pavel Emelyanov <xemul@parallels.com>
 > 
-> I use following commands. If I don't use "make-kpkg clean" for next
-> times, does it just compile the files which have been modified or it
-> compile whole kernel package again?
+> This is nothing but making is possible to call the
+> sys_close from the kernel.
 > 
-> make-kpkg clean
-> fakeroot make-kpkg --initrd --append-to-version=-some-string-here
-> kernel-image kernel-headers
+> Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> ---
 
-Don't run 'make-kpkg clean', and try to use ccache,
-make CC='ccache gcc'
-
+Drop this one for a while.
