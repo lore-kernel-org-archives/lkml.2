@@ -1,123 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab1HHRsI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 13:48:08 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:57943 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268Ab1HHRsE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 13:48:04 -0400
-Subject: Re: [patch v2 04/10] kdump: Trigger kdump via panic notifier chain
- on s390
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
-        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-In-Reply-To: <20110804211432.GE429@redhat.com>
-References: <20110727125504.491183728@linux.vnet.ibm.com>
-	 <20110727125808.028895659@linux.vnet.ibm.com>
-	 <20110801204114.GJ3805@redhat.com> <1312274279.4881.18.camel@br98xy6r>
-	 <20110802192147.GJ6399@redhat.com> <1312365039.3783.36.camel@br98xy6r>
-	 <20110804211432.GE429@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Mon, 08 Aug 2011 19:47:39 +0200
-Message-ID: <1312825659.3537.62.camel@br98xy6r>
+	id S1753716Ab1HHRr5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 13:47:57 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:36681 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751259Ab1HHRry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 13:47:54 -0400
+Date: Mon, 8 Aug 2011 10:48:03 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Michael Guntsche <mike@it-loops.com>
+Cc: netdev <netdev@vger.kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] 3.0-rc1 Bridge not forwarding unicast packages
+Message-ID: <20110808104803.2762dbf7@nehalam.ftrdhcpuser.net>
+In-Reply-To: <20110808192646@it-loops.com>
+References: <20110808192646@it-loops.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Vivek,
+On Mon, 8 Aug 2011 19:42:19 +0200
+Michael Guntsche <mike@it-loops.com> wrote:
 
-On Thu, 2011-08-04 at 17:14 -0400, Vivek Goyal wrote:
-> On Wed, Aug 03, 2011 at 11:50:39AM +0200, Michael Holzheu wrote:
-
-[snip]
- 
-> > Only if the user has specified panic action stand-alone dump, we do the
-> > detour via the stand-alone dump tools.
+> Hi list,
 > 
-> If a user decides to load kdump kernel to capture dump, then why does it
-> still make sense to set panic action as "stand-alone dump tools". One
-> could argue that user loaded kdump kernel but not necessarily wants
-> that mechanism to use, in that case dump-tools does not have to jump
-> to kdump kernel at all. 
-
-The user on s390 can currently freely configure the panic action. If we
-would always do kdump on panic, when kdump is active, we would have to
-ensure in sysfs that the user can't change the setting any more.
-Technically we could do that of course.
-
-One use case we had in mind was that the s390 Linux administrator does
-not have to learn new things when using kdump. kdump can be used as
-extension of the already existing mechanism. Today users configure
-stand-alone dump via sysfs. With kdump + trigger via dump tools they
-could do it still the same way. And also for manual dump they just IPL
-the dump tool as they are used to do it and if kdump is fine, kdump will
-be triggered. Nothing new has to be learned.
-
-If users only want to use kdump without stand-alone dump tools as on
-other architectures also this is possible. Then the panic action will be
-just kdump.
-
-> > 
-> > > like other architectures and jump to stand
-> > > alone kernel only if some piece of code is corrupted and that action
-> > > failed.
-> > > 
-> > > What's the point of jumping to stand alone kenrel in case of panic()
-> > > and then re-enter it back to original kernel using crash_kexec(). Sound
-> > > like a very odd design choice to me.
-> > > 
-> > > I am now I am repeating this question umpteen time simply because
-> > > I never got a good answer except "we have to do it this way".
-> > 
-> > Sometimes communication is really hard and frustrating.
-> > ... but at least we are still communicating.
-> > 
-> > Ok very last try:
-> > 
-> > * We can use the same mechanism for manual dump and automatic dump on
-> > panic: IPL the stand-alone dump tools.
+> I just upgraded my router/bridge combo to 3.1-rc1 from 3.0 for
+> testing. On a first look everything seemed to work fine, but when I
+> tried to connect via openvpn to my internal network (tap0 being bridged
+> with the internal network) I noticed that I was not able to access the
+> server on my internal network. I could access the bridge (which is
+> acting as the openvpn server as well) just fine though. 
+> To debug this I ran tcpdump on the openvpn client and started a ping to the
+> internal network. I could see the ARP requests being answered.
 > 
-> So manual dump/intervention is only required if automatic dump failed?
-
-Manual intervention is required only if panic code does not make it to
-the "IPL stand-alone dump tools" code.
-
+> 19:23:49.247846 ARP, Request who-has 192.168.42.127 tell 192.168.42.96,
+> length 28
+> 19:23:49.287752 ARP, Reply 192.168.42.127 is-at 00:13:d4:4f:a2:dc,
+> length 46
 > 
-> > kdump check and backup
-> > stand-alone dump is implemented only in the stand-alone dump code.
+> in this case .127 is the server on the internal net and .96 the openvpn
+> client, but the icmp request did not arrive on the server. 
+> The strange thing I noticed was that I could see broadcasts packages
+> from the server on the client
 > 
-> My argument is that why stand alone dump is trying to trigger kdump
-> at all? Shouldn't it all be part of loading kdump kernel and user
-> setting panic() action to kdump?
+> 19:23:28.135185 IP 192.168.42.127.631 > 192.168.42.255.631: UDP, length
+> 187
+> 19:23:29.470975 IP 192.168.42.96.5353 > 224.0.0.251.5353: .......
+> 
+> but no icmp packages arrived on the server side.
+> 
+> 
+> brctl showmacs lan
+> port no mac addr                is local?       ageing timer
+>   1     00:0c:42:28:de:4e       yes                0.00
+>   2     00:0c:42:61:7f:f2       yes                0.00
+>   1     00:13:d4:4f:a2:dc       no                 0.00 <---- server on the lan side
+>   3     8e:22:41:d9:95:23       yes                0.00
+>   3     b6:e1:e3:06:c9:1a       no                 5.00 <---- client connected via tap0
+> 
+> Reverting to 3.0 solves the problem for me. I tried just reverting the bridge code on the server to the 3.0 version to make sure that it is really Bridge related, but there are too many changes outside the bridge tree so compilation fails for me.
+> 
+> If you need more information, please to not hesitate to conact me.
+> 
+> Kind regards,
+> Michael Guntsche
 
-To summarize: Our approach was to do it in the stand-alone dump tools
-code for both the manual and the automatic on panic case:
-
-panic ------+                                 +- valid -> kdump
-            +-> IPL dump tools -> try kdump --+
-hard hang --+                                 +- invalid -> stand-alone dump
-
-Your suggestion looks like the following:
-
-panic --> try kdump +-- valid ---> kdump
-                    |
-                    +-- invalid -> IPL dump tools --> stand-alone dump
-
-                                            +- valid -> kdump
-hard hang --> IPL dump tools -> try kdump --+ 
-                                            +- invalid -> stand-alone dump
-
-Is that what you are suggesting? We can do it that way, too. Then
-we would not need the #ifdef CONFIG_S390 in panic().
-
-Michael
-
+Do you have spanning tree enabled?
+If  so you may have a packet loop and now it is being detected.
