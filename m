@@ -1,108 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184Ab1HHSzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 14:55:35 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:53080 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278Ab1HHSze (ORCPT
+	id S1754470Ab1HHS6E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 14:58:04 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:43001 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752284Ab1HHS6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 14:55:34 -0400
-Message-ID: <4E403121.8080402@candelatech.com>
-Date: Mon, 08 Aug 2011 11:55:29 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: gregkh@suse.de, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.0.1 compile error on Fedora 15
-References: <4E402E5F.5010600@candelatech.com> <20110808115238.b19b293e.rdunlap@xenotime.net>
-In-Reply-To: <20110808115238.b19b293e.rdunlap@xenotime.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 8 Aug 2011 14:58:00 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [RFC][PATCH 2/2] x86, cpu, amd: Add a per-vendor BSP function
+Date: Mon,  8 Aug 2011 20:57:52 +0200
+Message-Id: <1312829872-20260-3-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.4.rc2
+In-Reply-To: <1312829872-20260-1-git-send-email-bp@amd64.org>
+References: <1312829872-20260-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2011 11:52 AM, Randy Dunlap wrote:
-> On Mon, 08 Aug 2011 11:43:43 -0700 Ben Greear wrote:
->
->> [greearb@t60-ben linux-3.0.p4s]$ make
->> make -C /home/greearb/git/linux-3.0.dev.y O=/home/greearb/kernel/2.6/linux-3.0.p4s/.
->>     Using /home/greearb/git/linux-3.0.dev.y as source for kernel
->>     GEN     /home/greearb/kernel/2.6/linux-3.0.p4s/Makefile
->>     CHK     include/linux/version.h
->>     CHK     include/generated/utsrelease.h
->>     CALL    /home/greearb/git/linux-3.0.dev.y/scripts/checksyscalls.sh
->>     CHK     include/generated/compile.h
->>     CC      fs/binfmt_misc.o
->> In file included from /home/greearb/git/linux-3.0.dev.y/arch/x86/include/asm/uaccess.h:570:0,
->>                    from /home/greearb/git/linux-3.0.dev.y/include/linux/uaccess.h:5,
->>                    from /home/greearb/git/linux-3.0.dev.y/include/linux/highmem.h:7,
->>                    from /home/greearb/git/linux-3.0.dev.y/include/linux/pagemap.h:10,
->>                    from /home/greearb/git/linux-3.0.dev.y/fs/binfmt_misc.c:26:
->> /home/greearb/git/linux-3.0.dev.y/arch/x86/include/asm/uaccess_32.h: In function ‘parse_command.part.0’:
->> /home/greearb/git/linux-3.0.dev.y/arch/x86/include/asm/uaccess_32.h:211:26: error: call to ‘copy_from_user_overflow’ declared with attribute error:
->> copy_from_user() buffer size is not provably correct
->> make[3]: *** [fs/binfmt_misc.o] Error 1
->> make[2]: *** [fs] Error 2
->> make[1]: *** [sub-make] Error 2
->> make: *** [all] Error 2
->> [greearb@t60-ben linux-3.0.p4s]$
->>
->>
->> The code in question is below.  Is this missing an assignment to n
->> in the else branch?
->>
->> static inline unsigned long __must_check copy_from_user(void *to,
->>                                             const void __user *from,
->>                                             unsigned long n)
->> {
->>           int sz = __compiletime_object_size(to);
->>
->>           if (likely(sz == -1 || sz>= n))
->>                   n = _copy_from_user(to, from, n);
->>           else
->>                   copy_from_user_overflow();
->>
->>           return n;
->> }
->
->
-> Do you have this kconfig option enabled?
-> CONFIG_DEBUG_STRICT_USER_COPY_CHECKS=y
->
-> If so, you should get the error that you reported.
-> If not, then you need a patch like the one below (which has been posted
-> by other people several times -- might need to be added to -stable):
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-I do have that enabled.   I'm slightly confused by your response above:
+Add a per-vendor function which runs everything that needs to run once
+on the BSP during boot. Concentrate AMD-specific functionality there.
 
-Do I need to disable the check AND apply the patch below, or just disable
-the check, or just apply the patch and leave the check enabled?
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/cpu/amd.c    |    5 +++--
+ arch/x86/kernel/cpu/common.c |   21 ++++++++++++++++-----
+ arch/x86/kernel/cpu/cpu.h    |    2 +-
+ 3 files changed, 20 insertions(+), 8 deletions(-)
 
-Thanks,
-Ben
-
->
->
-> ---
->   lib/Makefile |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> --- linux-next-20110728.orig/lib/Makefile
-> +++ linux-next-20110728/lib/Makefile
-> @@ -14,7 +14,7 @@ lib-y := ctype.o string.o vsprintf.o cmd
->   	 proportions.o prio_heap.o ratelimit.o show_mem.o \
->   	 is_single_threaded.o plist.o decompress.o find_next_bit.o
->
-> -lib-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
-> +obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
->   lib-$(CONFIG_MMU) += ioremap.o
->   lib-$(CONFIG_SMP) += cpumask.o
->
-
-
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index b6e3e87..45db331 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -410,7 +410,7 @@ static void __cpuinit early_init_amd_mc(struct cpuinfo_x86 *c)
+ #endif
+ }
+ 
+-static void __cpuinit bsp_init_amd(struct cpuinfo_x86 *c)
++void __init amd_run_on_bsp(struct cpuinfo_x86 *c)
+ {
+ 	if (cpu_has(c, X86_FEATURE_CONSTANT_TSC)) {
+ 
+@@ -436,6 +436,8 @@ static void __cpuinit bsp_init_amd(struct cpuinfo_x86 *c)
+ 		va_align.mask	  = (upperbit - 1) & PAGE_MASK;
+ 		va_align.flags    = ALIGN_VA_32 | ALIGN_VA_64;
+ 	}
++
++	init_amd_e400_c1e_mask();
+ }
+ 
+ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
+@@ -690,7 +692,6 @@ static const struct cpu_dev __cpuinitconst amd_cpu_dev = {
+ 	.c_size_cache	= amd_size_cache,
+ #endif
+ 	.c_early_init   = early_init_amd,
+-	.c_bsp_init	= bsp_init_amd,
+ 	.c_init		= init_amd,
+ 	.c_x86_vendor	= X86_VENDOR_AMD,
+ };
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 8ed394a..67f1d48 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -681,9 +681,6 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
+ 	filter_cpuid_features(c, false);
+ 
+ 	setup_smep(c);
+-
+-	if (this_cpu->c_bsp_init)
+-		this_cpu->c_bsp_init(c);
+ }
+ 
+ void __init early_cpu_init(void)
+@@ -902,16 +899,30 @@ static void vgetcpu_set_mode(void)
+ }
+ #endif
+ 
++static void __init vendor_run_on_bsp(struct cpuinfo_x86 *c)
++{
++	switch (c->x86_vendor) {
++	case X86_VENDOR_AMD:
++		amd_run_on_bsp(c);
++		break;
++
++	default:
++		break;
++	}
++}
++
+ void __init identify_boot_cpu(void)
+ {
+-	identify_cpu(&boot_cpu_data);
+-	init_amd_e400_c1e_mask();
++	struct cpuinfo_x86 *c = &boot_cpu_data;
++
++	identify_cpu(c);
+ #ifdef CONFIG_X86_32
+ 	sysenter_setup();
+ 	enable_sep_cpu();
+ #else
+ 	vgetcpu_set_mode();
+ #endif
++	vendor_run_on_bsp(c);
+ }
+ 
+ void __cpuinit identify_secondary_cpu(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/cpu.h b/arch/x86/kernel/cpu/cpu.h
+index 9d388bf..a41d94e 100644
+--- a/arch/x86/kernel/cpu/cpu.h
++++ b/arch/x86/kernel/cpu/cpu.h
+@@ -18,7 +18,6 @@ struct cpu_dev {
+ 	struct		cpu_model_info c_models[4];
+ 
+ 	void            (*c_early_init)(struct cpuinfo_x86 *);
+-	void		(*c_bsp_init)(struct cpuinfo_x86 *);
+ 	void		(*c_init)(struct cpuinfo_x86 *);
+ 	void		(*c_identify)(struct cpuinfo_x86 *);
+ 	unsigned int	(*c_size_cache)(struct cpuinfo_x86 *, unsigned int);
+@@ -35,5 +34,6 @@ extern const struct cpu_dev *const __x86_cpu_dev_start[],
+ 
+ extern void get_cpu_cap(struct cpuinfo_x86 *c);
+ extern void cpu_detect_cache_sizes(struct cpuinfo_x86 *c);
++extern void amd_run_on_bsp(struct cpuinfo_x86 *c);
+ 
+ #endif
 -- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+1.7.4.rc2
+
