@@ -1,95 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618Ab1HHMtC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 08:49:02 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53821 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab1HHMtA convert rfc822-to-8bit (ORCPT
+	id S1753716Ab1HHMu0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 08:50:26 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:64044 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656Ab1HHMuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 08:49:00 -0400
-From: "Koyamangalath, Abhilash" <abhilash.kv@ti.com>
-To: "Hilman, Kevin" <khilman@ti.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        "paul@pwsan.com" <paul@pwsan.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>
-Date: Mon, 8 Aug 2011 18:18:40 +0530
-Subject: RE: [PATCH 2/2] omap_twl: Prevent SR to enable for am3517/am3505
- devices
-Thread-Topic: [PATCH 2/2] omap_twl: Prevent SR to enable for am3517/am3505
- devices
-Thread-Index: AcxS8UEUxzhSsg5yRe6BnlWaw7shFQC1vRLE
-Message-ID: <FCCFB4CDC6E5564B9182F639FC3560870370A4D96E@dbde02.ent.ti.com>
-References: <1312473569-1212-1-git-send-email-abhilash.kv@ti.com>,<87hb5w3kq0.fsf@ti.com>
-In-Reply-To: <87hb5w3kq0.fsf@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 8 Aug 2011 08:50:25 -0400
+From: =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        linux-kernel@vger.kernel.org, shawn.guo@freescale.com,
+        u.kleine-koenig@pengutronix.de
+Subject: [RESEND][PATCH 0/2] mxs-dma: Bugfixes for mxs-dma originally sent in April
+Date: Mon,  8 Aug 2011 14:47:45 +0200
+Message-Id: <1312807667-24373-1-git-send-email-LW@KARO-electronics.de>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <dc6791e4e926902967a182107d4558d5e0a16381.1303373126.git.LW@KARO-electronics.de>
+References: <dc6791e4e926902967a182107d4558d5e0a16381.1303373126.git.LW@KARO-electronics.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kevin Hilman wrote:
->Abhilash K V <abhilash.kv@ti.com> writes:
-> 
-> > From: Vaibhav Hiremath <hvaibhav@ti.com>
-> >
-> > In case of AM3517 & AM3505, Smart Reflex is not applicable so
-> > we must not enable it. So add check for am3517/05 cpu revision
-> > in omap3_twl_init() and return -ENODEV if true, else continue.
-> >
-> > Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
-> > Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
-> > ---
-> >  arch/arm/mach-omap2/omap_twl.c |    8 ++++++++
-> >  1 files changed, 8 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/arch/arm/mach-omap2/omap_twl.c
-> b/arch/arm/mach-omap2/omap_twl.c
-> > index 07d6140..92fadcb 100644
-> > --- a/arch/arm/mach-omap2/omap_twl.c
-> > +++ b/arch/arm/mach-omap2/omap_twl.c
-> > @@ -269,6 +269,14 @@ int __init omap3_twl_init(void)
-> >        if (!cpu_is_omap34xx())
-> >                return -ENODEV;
-> > 
-> > +     /*
-> > +      * In case of AM3517/AM3505 we should not be going down
-> > +      * further, since SR is not applicable there.
-> > +      */
-> > +     if (cpu_is_omap3505() || cpu_is_omap3517()) {
-> > +             return -ENODEV;
-> > +     }
-> > +
-> 
-> Rather than using cpu_is_*, you should add a new "feature" flag for
-> SmartReflex.  We already have this for things like SGX, IVA, NEON, etc.
-> See <plat/feature.h>
-I did not find a feature.h; did you mean OMAP3_CHECK_FEATURE macro which is used by
-omap3_check_features(), which gleans for presence of L2CACHE, IVA, SGX, NEON, ISP features
-from the Control Device Status Register (0x4800 244C) ?
-There is no such bit-field to indicate the presence of smart-reflex feature in this register.
-AFAIK, there is no such global register as well which could indicate this.
 
-- Abhilash
+Hi,
 
-> Kevin
-> 
-> 
-> >        if (cpu_is_omap3630()) {
-> >                omap3_mpu_volt_info.vp_vddmin =
-> OMAP3630_VP1_VLIMITTO_VDDMIN;
-> >                omap3_mpu_volt_info.vp_vddmax =
-> OMAP3630_VP1_VLIMITTO_VDDMAX; 
-> 
-> 
+I'm resending two bugfixes for the mxs-dma driver, that I had
+originally sent in April which were acked by Shawn Guo and Uwe
+Kleine-König, but obviously were not picked up by any maintainer.
+
+
+Best regards,
+Lothar Waßmann
+---
+ drivers/dma/mxs-dma.c |    3 ++-
+ drivers/dma/mxs-dma.c |   45 ++++++++++++++++++++++++---------------------
+ 2 files changed, 26 insertions(+), 22 deletions(-)
