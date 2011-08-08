@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293Ab1HHNad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 09:30:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44250 "EHLO
+	id S1752771Ab1HHNbj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 09:31:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44256 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751662Ab1HHNac convert rfc822-to-8bit
+	by vger.kernel.org with ESMTP id S1751953Ab1HHNbi convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 09:30:32 -0400
-Subject: [PATCH] headers, ncp: Add missing #include to <linux/ncp_fs.h> for
- userland
+	Mon, 8 Aug 2011 09:31:38 -0400
+Subject: [PATCH] headers, sysctl: Add missing #include to <linux/sysctl.h>
+ for userland
 From: Ben Hutchings <ben@decadent.org.uk>
-To: Petr Vandrovec <petr@vandrovec.name>
-Cc: LKML <linux-kernel@vger.kernel.org>
+To: LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Mon, 08 Aug 2011 14:30:29 +0100
-Message-ID: <1312810229.2591.1154.camel@deadeye>
+Date: Mon, 08 Aug 2011 14:31:36 +0100
+Message-ID: <1312810296.2591.1155.camel@deadeye>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
@@ -25,28 +24,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<linux/ncp_fs.h> uses size_t, defined for userland by <stddef.h>.
+<linux/sysctl.h> uses size_t, defined for userland by <stddef.h>.
 
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/ncp_fs.h |    4 ++++
+ include/linux/sysctl.h |    4 ++++
  1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/ncp_fs.h b/include/linux/ncp_fs.h
-index e13eefe..e220c8a 100644
---- a/include/linux/ncp_fs.h
-+++ b/include/linux/ncp_fs.h
-@@ -16,6 +16,10 @@
- #include <linux/ipx.h>
- #include <linux/ncp_no.h>
+diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+index 11684d9..4c732b7 100644
+--- a/include/linux/sysctl.h
++++ b/include/linux/sysctl.h
+@@ -26,6 +26,10 @@
+ #include <linux/types.h>
+ #include <linux/compiler.h>
  
 +#ifndef __KERNEL__
 +#include <stddef.h>
 +#endif
 +
- /*
-  * ioctl commands
-  */
+ struct completion;
+ 
+ #define CTL_MAXNAME 10		/* how many path components do we allow in a
 -- 
 1.7.5.4
 
