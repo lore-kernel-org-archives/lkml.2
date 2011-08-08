@@ -1,72 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583Ab1HHKBM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 06:01:12 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:47680 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750960Ab1HHKBK (ORCPT
+	id S1752135Ab1HHKOL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 06:14:11 -0400
+Received: from hi-original.com ([202.39.33.172]:51031 "EHLO
+	server.hi-original.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466Ab1HHKOI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 06:01:10 -0400
-Date: Mon, 8 Aug 2011 13:01:06 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Per Forlin <per.forlin@linaro.org>
-Cc: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org,
-        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>
-Subject: Re: [PATCH] usb: musb: ux500: optimize DMA callback routine
-Message-ID: <20110808100105.GA31536@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1312792358-2445-1-git-send-email-per.forlin@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HcAYCG3uE/tztfnV"
-Content-Disposition: inline
-In-Reply-To: <1312792358-2445-1-git-send-email-per.forlin@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 8 Aug 2011 06:14:08 -0400
+X-Greylist: delayed 4210 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Aug 2011 06:14:07 EDT
+Message-Id: <fupsECDkfeQSgwrIQClgGv99D5W11XSdDMBn1rtcFC5x@live.com.my>
+Mime-Version: 1.0
+From: "Alfred L. Leng" <a-leng@live.com.my>
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Reply-To: al.leng@aol.com
+Subject: Matter of interest
+Date: Mon, 8 Aug 2011 17:03:48 +0800
+Content-type: text/plain; charset=iso-8859-1; format=flowed
+Content-transfer-encoding: 8BIT
+X-Antivirus: avast! (VPS 110807-1, 08/08/2011), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It is understandable for you to grow apprehensive reading from me today since  there was no previous communication between us. I am Alfred L. Leng (Dr.), the managing attorney of R & L Associates Malaysia. I came across your contact via scrupulous search conducted by an IT specialist whom I have employed for the purpose of same. The present communication is prompted by a legitimate business interest I have to share and ensue with you. I have left out the detail of the business matter until I hear from you as measure of security. Please be reminded that I would not have incurred great efforts to contact you for a matter of nonentity or to waste your time or mine. Further, be confident that the matter in question is beneficial and legit with no ramification of any sort; details of the matter I will uncover to you in my following communication. Kindly, revert to me accordingly for further exhaustive dialogue. Thank you for your time as I am looking forward for yours and business relation. Sincerely Alfred Leng.
 
---HcAYCG3uE/tztfnV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi,
-
-On Mon, Aug 08, 2011 at 10:32:38AM +0200, Per Forlin wrote:
-
-[snip]
-
-> -/* Work function invoked from DMA callback to handle rx transfers. */
-> -static void ux500_rx_work(struct work_struct *data)
-> +void ux500_dma_callback(void *private_data)
->  {
-> -	struct ux500_dma_channel *ux500_channel =3D container_of(data,
-> -		struct ux500_dma_channel, channel_work);
-> +	struct dma_channel *channel =3D (struct dma_channel *)private_data;
-
-you don't need to explicitly cast a void pointer, please remove that.
-
---=20
-balbi
-
---HcAYCG3uE/tztfnV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOP7PhAAoJEAv8Txj19kN1uAUH/1x9dA6y+Q29FYTWkrAOphtL
-jQcObORYwTC/O0EXy2NLA3L32AsIGOBdCwKdR2+tyJjSpMcLp4BchPgomxHRsWV4
-Kc2XnHQUNWqcYsvKw7bSseSs4vruN+rmj8sDoP6evaxhh4Gb6jOl6e6+rjY4YrBU
-HM6JyASXOhbdAWmQX1DqaSHCB2kkqxK/hv51SLXIgWcZ8sct370sm5A89AVfqp6E
-2AxdSwQxsIm62aueYQL3yiuoZTofhhdGcRDAucN0XWWBzbqnObPRrsz2D5cM8l7f
-6JbPoKf2BjdDVuvoyw7nKrP+zHccbAcsl7lfDVU/M4nwBJfEVLd3C0G9cTKji60=
-=xCQN
------END PGP SIGNATURE-----
-
---HcAYCG3uE/tztfnV--
