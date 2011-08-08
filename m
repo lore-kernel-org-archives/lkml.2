@@ -1,111 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab1HHKTn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 06:19:43 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:35186 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751255Ab1HHKTk (ORCPT
+	id S1752500Ab1HHKUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 06:20:55 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:48350 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab1HHKUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 06:19:40 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+uFfYh4QCuucbptyDpp7ccuuE7ipV7MGTR+H0eRL
-	/pyJEAZIF5KSoL
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-To: linux-fbdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [RFC] fbdev: allow multiple concurrent visible consoles
-Date: Mon,  8 Aug 2011 10:37:44 +0000
-Message-Id: <1312799864-3468-1-git-send-email-FlorianSchandinat@gmx.de>
-X-Mailer: git-send-email 1.6.3.2
-X-Y-GMX-Trusted: 0
+	Mon, 8 Aug 2011 06:20:50 -0400
+Date: Mon, 8 Aug 2011 12:20:45 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Andy Lutomirski <luto@MIT.EDU>
+Cc: Matt Helsley <matthltc@us.ibm.com>, Pavel Emelyanov <xemul@parallels.com>,
+        Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [EXAMPLE CODE] Parasite thread injection and TCP connection
+ hijacking
+Message-ID: <20110808102045.GJ23937@htj.dyndns.org>
+References: <20110806121247.GC23937@htj.dyndns.org>
+ <4E3D3768.3070108@mit.edu>
+ <20110806130037.GD23937@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110806130037.GD23937@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows having multiple visible consoles that receive
-display updates. For example one can have running "top" to monitor
-the system on fb0 and at the same time work on a shell on fb1.
-At the moment that works only with consoles, not with console and
-graphical application nor with two graphical applications.
+On Sat, Aug 06, 2011 at 03:00:37PM +0200, Tejun Heo wrote:
+> Hello,
+> 
+> On Sat, Aug 06, 2011 at 08:45:28AM -0400, Andy Lutomirski wrote:
+> > > 2. Decide where to inject the foreign code and save the original code
+> > >    with PTRACE_PEEKDATA.  Tracer can poke any mapped area regardless
+> > >    of protection flags but it can't add execution permission to the
+> > >    code, so it needs to choose memory area which already has X flag
+> > >    set.  The example code uses the page the %rip is in.
+> > 
+> > If the process is executing from the vsyscall page, then you'll
+> > probably fail.  (Admittedly, this is rather unlikely, given that the
+> > vsyscalls are now exactly one instruction.)  Presumably you also
+> > fail if executing from a read-only MAP_SHARED mapping.
+> 
+> Heh, yeah, I originally thought about scanning /proc/PID/maps to look
+> for the page to use but was lazy and just used %rip.  I think that
+> should work.  I'll note the problem in README.
 
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
----
- drivers/video/console/fbcon.c |   13 ++++++++++++-
- drivers/video/console/fbcon.h |    1 +
- 2 files changed, 13 insertions(+), 1 deletions(-)
+Okay, updated README.
 
-There are probably still some bugs in this and it requires a lot of 
-review and testing before it ready for inclusion. I just want to 
-know whether it looks good and whether the approach taken 
-(it's my 3rd) is acceptable. I think the feature is desirable 
-and I hope that we can avoid the limitation to consoles only one day. 
-The problem that causes it is that the vt.c has a global blanking 
-variable it sets as soon as any graphical application starts and 
-hence no console updates go through anymore.
+  http://code.google.com/p/ptrace-parasite/source/browse/README
 
-diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
-index 8745637..5246a15 100644
---- a/drivers/video/console/fbcon.c
-+++ b/drivers/video/console/fbcon.c
-@@ -710,8 +710,11 @@ static int con2fb_acquire_newinfo(struct vc_data *vc, struct fb_info *info,
- 	if (!err) {
- 		info->fbcon_par = ops;
- 
--		if (vc)
-+		if (vc) {
-+			ops->vc_fg = vc;
-+			vc->vc_display_fg = &ops->vc_fg;
- 			set_blitting_type(vc, info);
-+		}
- 	}
- 
- 	if (err) {
-@@ -814,6 +817,7 @@ static int set_con2fb_map(int unit, int newidx, int user)
- {
- 	struct vc_data *vc = vc_cons[unit].d;
- 	int oldidx = con2fb_map[unit];
-+	struct fbcon_ops *ops;
- 	struct fb_info *info = registered_fb[newidx];
- 	struct fb_info *oldinfo = NULL;
-  	int found, err = 0;
-@@ -839,6 +843,11 @@ static int set_con2fb_map(int unit, int newidx, int user)
- 	if (!err && !found)
-  		err = con2fb_acquire_newinfo(vc, info, unit, oldidx);
- 
-+	if (!err && oldinfo) {
-+		ops = oldinfo->fbcon_par;
-+		if (vc == ops->vc_fg)
-+			ops->vc_fg = NULL;
-+	}
- 
- 	/*
- 	 * If old fb is not mapped to any of the consoles,
-@@ -849,6 +858,8 @@ static int set_con2fb_map(int unit, int newidx, int user)
-  					     found);
- 
-  	if (!err) {
-+		ops = info->fbcon_par;
-+		vc->vc_display_fg = &ops->vc_fg;
-  		int show_logo = (fg_console == 0 && !user &&
-  				 logo_shown != FBCON_LOGO_DONTSHOW);
- 
-diff --git a/drivers/video/console/fbcon.h b/drivers/video/console/fbcon.h
-index 6bd2e0c..adc7316 100644
---- a/drivers/video/console/fbcon.h
-+++ b/drivers/video/console/fbcon.h
-@@ -69,6 +69,7 @@ struct fbcon_ops {
- 	struct timer_list cursor_timer; /* Cursor timer */
- 	struct fb_cursor cursor_state;
- 	struct display *p;
-+	struct vc_data *vc_fg;
-         int    currcon;	                /* Current VC. */
- 	int    cursor_flash;
- 	int    cursor_reset;
+Thanks.
+
 -- 
-1.6.3.2
-
+tejun
