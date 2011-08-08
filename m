@@ -1,118 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924Ab1HHJkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 05:40:15 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46410 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751124Ab1HHJkN convert rfc822-to-8bit (ORCPT
+	id S1752180Ab1HHJlm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 05:41:42 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:47348 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab1HHJlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 05:40:13 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Felipe Balbi" <balbi@ti.com>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, "Per Forlin" <per.forlin@linaro.org>
-Subject: Re: [PATCH] usb: gadget: storage_common: make FSG_NUM_BUFFERS
- variable size
-References: <1312762934-4884-1-git-send-email-per.forlin@linaro.org>
-Date: Mon, 08 Aug 2011 11:40:09 +0200
+	Mon, 8 Aug 2011 05:41:40 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.vzv2g7aa3l0zgt@mnazarewicz-glaptop>
-In-Reply-To: <1312762934-4884-1-git-send-email-per.forlin@linaro.org>
-User-Agent: Opera Mail/11.50 (Linux)
+In-Reply-To: <4E3BE686.7070501@mit.edu>
+References: <CAC4B8726E86A142B27A9E9A2F2F124701922F2855@rrsmsx505.amr.corp.intel.com>
+	<4E3BE686.7070501@mit.edu>
+Date: Mon, 8 Aug 2011 17:41:39 +0800
+Message-ID: <CAM_iQpXRQ8C=y=DUt2pW_wQ_WKZU+2=ZBsGSPA2qmVATkTEQpA@mail.gmail.com>
+Subject: Re: Is there a way to offload everything from cpu0 to other cpus?
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Andy Lutomirski <luto@mit.edu>
+Cc: "Yung, Winson W" <winson.w.yung@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 08 Aug 2011 02:22:14 +0200, Per Forlin <per.forlin@linaro.org>  
-wrote:
-> FSG_NUM_BUFFERS is set to 2 as default.
-> Usually 2 buffers are enough to establish a good
-> double buffering pipeline. But when dealing with expensive
-> request preparation (i.e. dma_map) there may be benefits of
-> increasing the number of buffers. There is an extra cost for
-> every first request, the others are prepared in parallell with
-> an ongoing transfer. Every time all buffers are consumed there is
-> an additional cost for the next first request. Increasing the number
-> of buffers decreases the risk of running out of buffers.
+On Fri, Aug 5, 2011 at 8:48 PM, Andy Lutomirski <luto@mit.edu> wrote:
+> On 08/04/2011 10:53 PM, Yung, Winson W wrote:
+>>
+>> Hi, I would like to know whether it is possible to offload everything
+>> (kernel threads/user apps) to cpu1...x so that I can force cpu0 go into
+>> idle?
+>>
+>> I can affinity all the interrupt to a different cpu by playing with the
+>> /proc/irq/irqx/smp_affinity, how about everything else?
+>>
+>
+> You probably want the isolcpus boot option.
+>
 
-[... benchmark snip ...]
+I think Yung was looking for an interface to move tasks dynamically
+after the system is boot.
 
-> There may not be one optimal number for all boards. That is the
-> reason for adding the number to Kconfig,
-
-It could actually be turned into a run-time configuration, but
-that's a bit more intrusive, so adding Kconfig should be enough
-for now.
-
-> Signed-off-by: Per Forlin <per.forlin@linaro.org>
-
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-
-
-Some not very relevant comments below:
-
-> diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-> index 029e288..bbd17f3 100644
-> --- a/drivers/usb/gadget/Kconfig
-> +++ b/drivers/usb/gadget/Kconfig
-> @@ -96,6 +96,21 @@ config USB_GADGET_VBUS_DRAW
->  	   This value will be used except for system-specific gadget
->  	   drivers that have more specific information.
-> +config USB_GADGET_STORAGE_NUM_BUFFERS
-> +	int "Number of storage pipline buffers"
-
-“pipeline”, missing “e”.
-
-> +	range 2 64
-> +	default 2
-> +	help
-> +	  Usually 2 buffers are enough to establish a good
-> +	  double buffering pipeline. But when dealing with expensive
-
-s/double//.  By definition, “double” buffering uses two buffers, isn't it?
-So if we change number of buffers, it's no longer “double”.
-
-> +	  request preparation (i.e. dma_map) there may be benefits of
-> +	  increasing the number of buffers. There is an extra cost for
-> +	  every first request, the others are prepared in parallell with
-
-“parallel”, too many “l”s.
-
-> +	  an ongoing transfer. Every time all buffers are consumed there is
-> +	  an additional cost for the next first request. Increasing the number
-
-“Next first request” sounds a bit illogical to me.
-
-> +	  of buffers decreases the risk of running out of buffers.
-> +	  If unsure, say 2.
-> +
->  config	USB_GADGET_SELECTED
->  	boolean
-> diff --git a/drivers/usb/gadget/storage_common.c  
-> b/drivers/usb/gadget/storage_common.c
-> index 1fa4f70..512d9cf 100644
-> --- a/drivers/usb/gadget/storage_common.c
-> +++ b/drivers/usb/gadget/storage_common.c
-> @@ -262,8 +262,8 @@ static struct fsg_lun *fsg_lun_from_dev(struct  
-> device *dev)
->  #define EP0_BUFSIZE	256
->  #define DELAYED_STATUS	(EP0_BUFSIZE + 999)	/* An impossibly large value  
-> */
-> -/* Number of buffers we will use.  2 is enough for double-buffering */
-> -#define FSG_NUM_BUFFERS	2
-> +/* Number of buffers we will use.  2 is usually enough for  
-> double-buffering */
-
-s/double-buffering/good buffering pipeline/?
-
-> +#define FSG_NUM_BUFFERS	CONFIG_USB_GADGET_STORAGE_NUM_BUFFERS
-> /* Default size of buffer length. */
->  #define FSG_BUFLEN	((u32)16384)
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
-ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
+Yung, why /sys/devices/system/cpu/cpuX/online doesn't work for you?
