@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab1HHSZM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 14:25:12 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51576 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754076Ab1HHSZL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 14:25:11 -0400
+	id S1754144Ab1HHSZW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 14:25:22 -0400
+Received: from home.keithp.com ([63.227.221.253]:41301 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754062Ab1HHSZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 14:25:19 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 2/4] drm/i915: Leave LVDS registers unlocked
+In-Reply-To: <20110808093010.487c4559@jbarnes-desktop>
+References: <1312653248-3487-1-git-send-email-keithp@keithp.com> <1312653248-3487-3-git-send-email-keithp@keithp.com> <20110808093010.487c4559@jbarnes-desktop>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Mon, 08 Aug 2011 11:25:16 -0700
+Message-ID: <yunwrenu5f7.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-In-Reply-To: <20110808081552.GI32513@linux-sh.org>
-References: <1312780773-23142-1-git-send-email-Baohua.Song@csr.com> <20110808081552.GI32513@linux-sh.org>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 8 Aug 2011 12:24:50 -0600
-X-Google-Sender-Auth: LyABVmyxuGbfh76F3Fw6nXA1fuY
-Message-ID: <CACxGe6ssT4=kxApaKhv+=7nDcEFVW+oyByFQ_hzcfyZ4gw2C3g@mail.gmail.com>
-Subject: Re: [PATCH] GPIOLIB: add generic gpio_set_pull API
-To: Paul Mundt <lethal@linux-sh.org>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Cc: Barry Song <Baohua.Song@csr.com>, workgroup.linux@csr.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 8, 2011 at 2:15 AM, Paul Mundt <lethal@linux-sh.org> wrote:
-> On Sun, Aug 07, 2011 at 10:19:33PM -0700, Barry Song wrote:
->> Now there are many different implementations for GPIO pull configuration, for
->> example:
->> s3c_gpio_setpull()
->> tegra_pinmux_set_pullupdown()
->> chipcHw_setPinPullup()
->> gpio_pullup()
->> s3c2410_gpio_pullup()
->>
->> This patch adds a new generic gpio_set_pull API so that all SoCs can have unified
->> codes.
->>
->> Signed-off-by: Barry Song <Baohua.Song@csr.com>
->
-> For arch/arm/mach-shmobile we also have gpio_pull_up() for board-g4evm.c
-> and gpio_pull_down() for board-mackerel.c. Both of these would benefit
-> from this sort of an API addition.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-I think I'm okay with this API change.  Linus, what say you?  How does
-this interact with your plans for pinctrl?
+On Mon, 8 Aug 2011 09:30:10 -0700, Jesse Barnes <jbarnes@virtuousgeek.org> =
+wrote:
 
-g.
+> Yep, looks fine.  The only think we might want to sprinkle about are
+> checks for panel off so we can avoid visible corruption if we whack
+> timing or fb stuff while the panel is on.
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Yeah, could do. Would be nice to somehow get the LVDS code ripped out of
+the middle of intel_display.c; everything in intel_lvds.c is nicely
+bracketed by prepare/commit, which turn the panel off and back on.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOQCoMQp8BWwlsTdMRAntZAKDo9jpPVwKimY7dkn6U4XZYx6o8bACePgQ8
+js3Q2TBzNnS0pVusKrpcKB8=
+=uXsd
+-----END PGP SIGNATURE-----
+--=-=-=--
