@@ -1,105 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab1HHUXP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 16:23:15 -0400
-Received: from csmtp3.one.com ([91.198.169.23]:30339 "EHLO csmtp3.one.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752923Ab1HHUXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 16:23:14 -0400
-Date: Mon, 8 Aug 2011 22:27:42 +0200
-From: Eric Andersson <eric.andersson@unixphere.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
-        alan@lxorguk.ukuu.org.uk, jic23@cam.ac.uk,
-        xu.zhang@bosch-sensortec.com
-Subject: Re: [PATCH v6 1/1] input: add driver for Bosch Sensortec's BMA150
- accelerometer
-Message-ID: <20110808202742.GA8448@skinner.xfiles.lan>
-References: <1311800027-25982-1-git-send-email-eric.andersson@unixphere.com>
- <1311800027-25982-2-git-send-email-eric.andersson@unixphere.com>
- <20110730191726.GG5686@core.coreip.homeip.net>
- <20110730224917.GA8519@skinner.xfiles.lan>
- <20110731070844.GA23383@core.coreip.homeip.net>
- <CAH+e7S2LU7zr6fcp+f+2UuzyXX_=icBa4OtO7m1YQQ2BtOyMAQ@mail.gmail.com>
- <20110807162325.GA7280@skinner.xfiles.lan>
- <20110808051504.GA7329@core.coreip.homeip.net>
+	id S1753850Ab1HHUXr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 16:23:47 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:40667 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753669Ab1HHUXq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 16:23:46 -0400
+Date: Mon, 8 Aug 2011 16:23:45 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Per Forlin <per.forlin@linaro.org>
+cc: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linaro-dev@lists.linaro.org>
+Subject: Re: [PATCH] usb: gadget: storage_common: make FSG_NUM_BUFFERS variable
+ size
+In-Reply-To: <CAJ0pr19=YHs9At=xXta-9Fro7QYAwpk=5e8SHWaRYgj8+iDKyQ@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1108081616470.1944-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110808051504.GA7329@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22:15 Sun 07 Aug     , Dmitry Torokhov wrote:
-> On Sun, Aug 07, 2011 at 06:23:25PM +0200, Eric Andersson wrote:
-> > > On Sun, Jul 31, 2011 at 12:49:17AM +0200, Dmitry Torokhov wrote:
-> > > > > > +static int bma150_open(struct bma150_data *bma150)
-> > > > > > +{
-> > > > > > + int ret;
-> > > > > > +
-> > > > > > + ret = pm_runtime_set_active(&bma150->client->dev);
-> > > > > > + if (ret < 0)
-> > > > > > +         return ret;
-> > > > > > +
-> > > > > > + pm_runtime_enable(&bma150->client->dev);
-> > > > >
-> > > > > I am pretty sure you want to call pm_runtime_enable() in bma150_probe()
-> > > > > so that parent controller can be suspended until somebody calls
-> > > > > bma150_open() and we mark the device as active (which, in turn, should
-> > > > > wake up its parent).
-> > > >
-> > > > If I call pm_runtime_enable() I cannot use pm_runtime_set_active() later
-> > > > according to the comment in __pm_runtime_set_status (runtime.c):
-> > > > "If runtime PM of the device is disabled or its power.runtime_error
-> > > > field is different from zero, the status may be changed either to
-> > > > RPM_ACTIVE, or to RPM_SUSPENDED..."
-> > > >
-> > > > If the PM of the device is enabled it will return -EAGAIN. Of course, we
-> > > > could enable() in probe, then disable(); set_active(); enable(); in
-> > > > open, but that seems a bit confused, right?
-> > > 
-> > > Hmm, indeed. I do not like the idea about disable/set_active/enable so I
-> > > guess we'll have to keep track of the current mode themselves and call
-> > > bma150_set_mode() ourselves if, after calling pm_runtime_get/put_sync()
-> > > we find that our mode is different from what we expect it to be.
-> > > 
-> > > I also noticed that you did not properly free IRQ on device removal and
-> > > also polled devices need to be freed always (unlike regular input
-> > > devices that should be only unregistered). The default_cfg can't be
-> > > __initdata because it is used by __devinit functions. And my version of
-> > > GCC can't figure out that ipoll_dev never used uninitialized and gives
-> > > false warning.
-> > > 
-> > > I tried correcting these issues in the patch below, along with renaming
-> > > 'ret' to 'error' which I prefer when we dealing with error handling.
-> > > Could you please git it a try and if everything still works I'll fold it
-> > > and commit.
-> > 
-> > Thanks Dmitry! I tried your patch and it worked like a charm!
-> 
-> Excellent, thanks for testing.
-> 
-> > 
-> > Do you take it from here or would you like me to send an updated
-> > version that includes your patch?
-> 
-> No, there is no need for that. I'll fold them all together and queue for
-> 2.6.32.
-Great thanks! Don't forget to add Alan as reviewer. I think he forgot
-reply-all when he mailed me:
-"I'm happy with this one.
-Reviewed-by: Alan Cox <alan@linux.intel.com>"
+On Mon, 8 Aug 2011, Per Forlin wrote:
 
-> I take the other patch that makes polled devices do poll upon opening
-> working well for you too.. Should I queue for .2 as well?
-Yes, why not!
+> On 8 August 2011 20:45, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > On Mon, 8 Aug 2011, Per Forlin wrote:
+> >
+> >> > Okay, 6% is a worthwhile improvement, though not huge.  Did you try 6
+> >> > or 8 buffers?  I bet going beyond 4 makes very little difference.
+> >> >
+> >> On my board 4 buffers are enough. More buffers will make no difference.
+> >>
+> >> Background study
+> >> I started by running dd to measure performance on my target side.
+> >> Simply to measure what would be the maximum bandwidth, 20MiB/s on my
+> >> board. Then I started the gadget mass storage on the device and run
+> >> the sae test from the PC host side, 18.7 MiB/s. I guessed this might
+> >> be due to serialized cache handling. I tested to remove the dma_map
+> >> call (replaced it with virt_to_dma). This is just a dummy test to see
+> >> if this is causing the performance drop. Without dma_map I get
+> >> 20MiB/s. It appears that the loss is due to dma_map call. The dma_map
+> >> only adds latency for the first request.
+> >
+> > What exactly do you mean by "first request"?
+> When both buffers are empty. The first request are filled up by vfs
+> and then prepared. This first time there are no ongoing transfer over
+> USB therefore this cost more, since it can't run in parallel with
+> ongoing transfer. Every time the to buffers run empty there is an
+> extra cost for the first request in the next series of requests. The
+> reason for not getting data from vfs in time I don't know.
 
--- 
-Best regards,
- Eric
+Okay, that makes sense.  But what connection does this have with
+dma_map?  Don't you also have situations where both buffers are empty
+when you replace dma_map with virt_to_dma?
 
-http://www.unixphere.com
+> Instead of getting refill from vfs smoothly the refills comes in
+> burst. VFS fills up the two buffers, then USB manage to transmit all
+> two buffers before VFS refills new data. Roughly 20% of the times VFS
+> fills up data in time before USB has consumed it all. 80% of the times
+> USB manage to consume all data before VFS refills data in the buffers.
+> The reason for the burst like affects are probably due to power save,
+> which add latency in the system.
+
+> This is true. In my system the buffer doesn't get filled up before the
+> previous has finished. With 4 buffers it works fine.
+
+Adding buffers to smooth out the bursty VFS behavior is a reasonable
+thing to do.  But you should improve the patch description and the
+comments; the real reason for reduced throughput is VFS's behavior.  
+Something like what you just wrote here would be fine.
+
+And reduce the maximum number of buffers to 4.  When you've made those 
+changes, I'll Ack the patch.
+
+Alan Stern
+
