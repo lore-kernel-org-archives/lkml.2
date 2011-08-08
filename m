@@ -1,133 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab1HHGb4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 02:31:56 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:34761 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752926Ab1HHGby convert rfc822-to-8bit (ORCPT
+	id S1753413Ab1HHGcJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 02:32:09 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:54585 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752900Ab1HHGb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 02:31:54 -0400
+	Mon, 8 Aug 2011 02:31:56 -0400
+Message-ID: <4E3F82D6.1020609@tao.ma>
+Date: Mon, 08 Aug 2011 14:31:50 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <CAOJsxLGyoJjaqsDN8CLVAMF+h72tepSpaouGJ2diQ=FpMiJqdg@mail.gmail.com>
-References: <20110805010038.GA18148@redhat.com>
-	<20110805084614.GA1588@x4.trippels.de>
-	<CAOJsxLEMf8SbSmJv5u6GZtq_OYH3fpmomT-ioWXQGp83veK7wQ@mail.gmail.com>
-	<alpine.DEB.2.00.1108051131440.28580@router.home>
-	<20110805163948.GA11113@redhat.com>
-	<alpine.DEB.2.00.1108051146180.28580@router.home>
-	<20110805165119.GA11593@redhat.com>
-	<alpine.DEB.2.00.1108051158400.28580@router.home>
-	<20110805171607.GA11703@redhat.com>
-	<alpine.DEB.2.00.1108051312090.28580@router.home>
-	<20110805182008.GA22314@redhat.com>
-	<CA+55aFwGSJM6g+YXfy_Oyb0OpQP5kH=OxCR-pnBk7RUshL+mXg@mail.gmail.com>
-	<alpine.DEB.2.00.1108072155240.9480@tiger>
-	<CA+55aFzdp+7+AcCFbx3dCkfqERzYvOZG3c3SUuNAw+X0MJ8iNw@mail.gmail.com>
-	<alpine.DEB.2.00.1108080817050.25955@tiger>
-	<CAJn8CcGqQwLPoweUN3fed2j0SorZO08NPpxeH70e+rogVsvhAw@mail.gmail.com>
-	<CAOJsxLGyoJjaqsDN8CLVAMF+h72tepSpaouGJ2diQ=FpMiJqdg@mail.gmail.com>
-Date: Mon, 8 Aug 2011 14:31:53 +0800
-Message-ID: <CAJn8CcF0+tU3PMwG2Rfn6L03coL-Z8-OU4KYY9LNf4joOuFkcQ@mail.gmail.com>
-Subject: Re: list corruption in the last few days. (block ? crypto ?)
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Shaohua Li <shli@kernel.org>
+CC: Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Roland Dreier <roland@purestorage.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH] block: Make rq_affinity = 1 work as expected.
+References: <1312519150-3261-1-git-send-email-tm@tao.ma>	<4E3B9CAC.7020802@fusionio.com>	<CANejiEVX8_2Zbd-b0WCrgoYoY88n9OzQ0s2=T5+LWH1aFd7whg@mail.gmail.com>	<4E3F5C0E.2060207@tao.ma>	<CANejiEVcwmhTFdjgt1OE_XNwayTfQ846tgwGUhyjujb5S4FHZA@mail.gmail.com>	<4E3F76D7.4010708@tao.ma> <CANejiEUu=x5z2r7GKXxwF-7mWsaVegbVBBjgOJKMmX7uiM_NSQ@mail.gmail.com>
+In-Reply-To: <CANejiEUu=x5z2r7GKXxwF-7mWsaVegbVBBjgOJKMmX7uiM_NSQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.4 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 8, 2011 at 2:18 PM, Pekka Enberg <penberg@kernel.org> wrote:
-> On Mon, Aug 8, 2011 at 9:14 AM, Xiaotian Feng <xtfeng@gmail.com> wrote:
->> On Mon, Aug 8, 2011 at 1:18 PM, Pekka Enberg <penberg@kernel.org> wrote:
->>> Hi Linus,
->>>
->>> On Sun, Aug 7, 2011 at 11:58 AM, Pekka Enberg <penberg@kernel.org> wrote:
->>>>>
->>>>> Christoph, I've been reading the code and spotted two potential issues in
->>>>> __slab_free(). The first one seems like an off-by-one where our
->>>>> comparison
->>>>> in deactivate_slab() doesn't match __slab_free.
->>>>>
->>>>> The other one is remove_full() call in __slab_free() that can get called
->>>>> even if cache debugging is not enabled.
->>>>>
->>>>> Hmm?
->>>
->>> On Sun, 7 Aug 2011, Linus Torvalds wrote:
->>>>
->>>> I'd like to do -rc1 today, regardless of whether this fixes things or
->>>> not (-rc1 is already a few days delayed).
->>>>
->>>> The patch seems to be a good fix, and a likely candidate for the
->>>> corruption. Commit log and sign-off? I assume you've given it some
->>>> testing, even if you couldn't reproduce the original issue?
->>>
->>> No, I haven't tested the patch myself but here's one in proper format in
->>> case someone wants to test it.
+On 08/08/2011 01:56 PM, Shaohua Li wrote:
+> 2011/8/8 Tao Ma <tm@tao.ma>:
+>> On 08/08/2011 12:33 PM, Shaohua Li wrote:
+>>> 2011/8/8 Tao Ma <tm@tao.ma>:
+>>>> Hi Shaohua,
+>>>> On 08/08/2011 10:58 AM, Shaohua Li wrote:
+>>>>> 2011/8/5 Jens Axboe <jaxboe@fusionio.com>:
+>>>>>> On 2011-08-05 06:39, Tao Ma wrote:
+>>>>>>> From: Tao Ma <boyu.mt@taobao.com>
+>>>>>>>
+>>>>>>> Commit 5757a6d76c introduced a new rq_affinity = 2 so as to make
+>>>>>>> the request completed in the __make_request cpu. But it makes the
+>>>>>>> old rq_affinity = 1 not work any more. The root cause is that
+>>>>>>> if the 'cpu' and 'req->cpu' is in the same group and cpu != req->cpu,
+>>>>>>> ccpu will be the same as group_cpu, so the completion will be
+>>>>>>> excuted in the 'cpu' not 'group_cpu'.
+>>>>>>>
+>>>>>>> This patch fix problem by simpling removing group_cpu and the codes
+>>>>>>> are more explicit now. If ccpu == cpu, we complete in cpu, otherwise
+>>>>>>> we raise_blk_irq to ccpu.
+>>>>>>
+>>>>>> Thanks Tao Ma, much more readable too.
+>>>>> Hi Jens,
+>>>>> I rethought the problem when I check interrupt in my system. I thought
+>>>>> we don't need Tao's patch though it makes the code behavior like before.
+>>>>> Let's take an example. My test box has cpu 0-7, one socket. Say request
+>>>>> is added in CPU 1, blk_complete_request occurs at CPU 7. Without Tao's
+>>>>> patch, softirq will be done at CPU 7. With it, an IPI will be directed to CPU 0,
+>>>>> and softirq will be done at CPU 0. In this case, doing softirq at CPU 0 and
+>>>>> CPU 7 have no difference and we can avoid an ipi if doing it in CPU 7.
+>>>> I totally agree with your analysis, but what I am worried is that this
+>>>> does change the old system behavior.
+>>>> And without this patch actually '1' and '2' in rq_affinity has the same
+>>>> effect now in your case. If you do prefer the new codes and the new
+>>>> behavior, then '1' don't need to exist any more(since from your
+>>>> description it seems to only adds an additional IPI overhead and no
+>>>> benefit), or '2' is totally unneeded here.
+>>> with rq_affinity 2, CPU 1 will do the softirq in above case. it's
+>>> still different
+>>> like the rq_affinity 1 case.
+>> OK, so let's see what's going on without the patch in case rq_affinity = 1.
+>> If the complete cpu and the request cpu are in the same group, the
+>> complete cpu will call softirq.
+>> If the complete cpu and the request cpu are not in the same group, the
+>> group cpu of the request cpu will call softirq.
 >>
->> I applied it and I'm still seeing the corruption warning start from this :(
->>
->>  [ 3674.255030] ------------[ cut here ]------------
->>  [ 3674.255040] WARNING: at lib/list_debug.c:53 __list_del_entry+0xa1/0xd0()
->>  [ 3674.255042] Hardware name: 42424XC
->>  [ 3674.255045] list_del corruption. prev->next should be
->> ffffea0000493420, but was ffffea0001ab0520
->>  [ 3674.255047] Modules linked in: ip6table_filter ip6_tables
->> ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4
->> xt_state nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp
->> iptable_filter ip_tables x_tables binfmt_misc bridge stp parport_pc
->> ppdev snd_hda_codec_conexant snd_hda_intel snd_hda_codec snd_hwdep
->> snd_pcm thinkpad_acpi arc4 cryptd aes_x86_64 aes_generic snd_seq_midi
->> i915 snd_rawmidi snd_seq_midi_event snd_seq joydev iwlagn btusb
->> snd_timer snd_seq_device drm_kms_helper bluetooth uvcvideo snd
->> videodev drm mac80211 cfg80211 i2c_algo_bit soundcore tpm_tis tpm
->> tpm_bios lp snd_page_alloc psmouse serio_raw v4l2_compat_ioctl32 nvram
->> video parport usbhid hid sdhci_pci firewire_ohci ahci libahci sdhci
->> firewire_core crc_itu_t e1000e
->>  [ 3674.255129] Pid: 3, comm: ksoftirqd/0 Not tainted 3.1.0-rc1+ #38
->>  [ 3674.255131] Call Trace:
->>  [ 3674.255138]  [<ffffffff8106db3f>] warn_slowpath_common+0x7f/0xc0
->>  [ 3674.255143]  [<ffffffff8106dc36>] warn_slowpath_fmt+0x46/0x50
->>  [ 3674.255147]  [<ffffffff81331851>] __list_del_entry+0xa1/0xd0
->>  [ 3674.255151]  [<ffffffff81331891>] list_del+0x11/0x40
->>  [ 3674.255156]  [<ffffffff81179631>] __slab_free+0x3d1/0x3e0
->>  [ 3674.255162]  [<ffffffff811c5b06>] ? bvec_free_bs+0x26/0x40
->>  [ 3674.255166]  [<ffffffff8117ab27>] ? kmem_cache_free+0x97/0x220
->>  [ 3674.255170]  [<ffffffff811c5b06>] ? bvec_free_bs+0x26/0x40
->>  [ 3674.255174]  [<ffffffff811c5b06>] ? bvec_free_bs+0x26/0x40
->>  [ 3674.255179]  [<ffffffff8117ac9f>] kmem_cache_free+0x20f/0x220
->
-> Can you please also run
->
->  addr2line -e vmlinux
->  0xffffffff81179631
->
+>> These behaviors are totally different. How can you tell the user what's
+>> going on there? And that' the reason we want 0, 1, 2 for rq_affinity. If
+>> the user does care about the extra IPI(in your case), fine, just set
+>> rq_affinty = 2.
+> rq_affinity=2: finish request in each cpu
+> rq_affinity=1: finish request in one CPU for each socket.
+> Even without your patch, rq_affinity=1 finish request in one CPU too.
+We always finish request in one CPU, that is. The only difference is
+which cpu to do the softirq work.
+> Remember the controller only has one interrupt source. the only difference
+> is request isn't always finished in the first CPU of a socket. I didn't
+> think this is a behavior change which user even cares about.
+That is your think. Thanks. At least it makes me feels strange when I
+came across it and that's the reason why I found it. I am done with it.
 
-/opt/upstream/linux-3.0/mm/slub.c:1061
-
-
-/*
- * list_lock must be held.
- */
-static void remove_full(struct kmem_cache *s, struct page *page)
-{
-        if (!(s->flags & SLAB_STORE_USER))
-                return;
-
-        list_del(&page->lru);       <=== here
-}
-
-
-
-> so that we know whether the corruption happens in the full list or the
-> partial list.
->
->                         Pekka
->
+Thanks
+Tao
