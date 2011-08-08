@@ -1,39 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751545Ab1HHFa5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 01:30:57 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:56875 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab1HHFaz (ORCPT
+	id S1751577Ab1HHFko (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 01:40:44 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:48295 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751106Ab1HHFko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 01:30:55 -0400
-Date: Sun, 07 Aug 2011 22:29:41 -0700 (PDT)
-Message-Id: <20110807.222941.1783212172392022233.davem@davemloft.net>
-To: prox@prolixium.com
-Cc: gregkh@suse.de, linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net/usb: Add IPv6 support to the LG-VL600 LTE USB
- modem driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1312669694-28800-1-git-send-email-prox@prolixium.com>
-References: <1312669694-28800-1-git-send-email-prox@prolixium.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 8 Aug 2011 01:40:44 -0400
+Message-ID: <4E3F76D7.4010708@tao.ma>
+Date: Mon, 08 Aug 2011 13:40:39 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Shaohua Li <shli@kernel.org>
+CC: Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Roland Dreier <roland@purestorage.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH] block: Make rq_affinity = 1 work as expected.
+References: <1312519150-3261-1-git-send-email-tm@tao.ma>	<4E3B9CAC.7020802@fusionio.com>	<CANejiEVX8_2Zbd-b0WCrgoYoY88n9OzQ0s2=T5+LWH1aFd7whg@mail.gmail.com>	<4E3F5C0E.2060207@tao.ma> <CANejiEVcwmhTFdjgt1OE_XNwayTfQ846tgwGUhyjujb5S4FHZA@mail.gmail.com>
+In-Reply-To: <CANejiEVcwmhTFdjgt1OE_XNwayTfQ846tgwGUhyjujb5S4FHZA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 07 Aug 2011 22:29:42 -0700 (PDT)
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.5 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Kamichoff <prox@prolixium.com>
-Date: Sat,  6 Aug 2011 18:28:14 -0400
+On 08/08/2011 12:33 PM, Shaohua Li wrote:
+> 2011/8/8 Tao Ma <tm@tao.ma>:
+>> Hi Shaohua,
+>> On 08/08/2011 10:58 AM, Shaohua Li wrote:
+>>> 2011/8/5 Jens Axboe <jaxboe@fusionio.com>:
+>>>> On 2011-08-05 06:39, Tao Ma wrote:
+>>>>> From: Tao Ma <boyu.mt@taobao.com>
+>>>>>
+>>>>> Commit 5757a6d76c introduced a new rq_affinity = 2 so as to make
+>>>>> the request completed in the __make_request cpu. But it makes the
+>>>>> old rq_affinity = 1 not work any more. The root cause is that
+>>>>> if the 'cpu' and 'req->cpu' is in the same group and cpu != req->cpu,
+>>>>> ccpu will be the same as group_cpu, so the completion will be
+>>>>> excuted in the 'cpu' not 'group_cpu'.
+>>>>>
+>>>>> This patch fix problem by simpling removing group_cpu and the codes
+>>>>> are more explicit now. If ccpu == cpu, we complete in cpu, otherwise
+>>>>> we raise_blk_irq to ccpu.
+>>>>
+>>>> Thanks Tao Ma, much more readable too.
+>>> Hi Jens,
+>>> I rethought the problem when I check interrupt in my system. I thought
+>>> we don't need Tao's patch though it makes the code behavior like before.
+>>> Let's take an example. My test box has cpu 0-7, one socket. Say request
+>>> is added in CPU 1, blk_complete_request occurs at CPU 7. Without Tao's
+>>> patch, softirq will be done at CPU 7. With it, an IPI will be directed to CPU 0,
+>>> and softirq will be done at CPU 0. In this case, doing softirq at CPU 0 and
+>>> CPU 7 have no difference and we can avoid an ipi if doing it in CPU 7.
+>> I totally agree with your analysis, but what I am worried is that this
+>> does change the old system behavior.
+>> And without this patch actually '1' and '2' in rq_affinity has the same
+>> effect now in your case. If you do prefer the new codes and the new
+>> behavior, then '1' don't need to exist any more(since from your
+>> description it seems to only adds an additional IPI overhead and no
+>> benefit), or '2' is totally unneeded here.
+> with rq_affinity 2, CPU 1 will do the softirq in above case. it's
+> still different
+> like the rq_affinity 1 case.
+OK, so let's see what's going on without the patch in case rq_affinity = 1.
+If the complete cpu and the request cpu are in the same group, the
+complete cpu will call softirq.
+If the complete cpu and the request cpu are not in the same group, the
+group cpu of the request cpu will call softirq.
 
-> The LG-VL600 LTE USB modem supports IPv6, but uses and expects an IPv4
-> ethertype (0x800) for these packets instead of the standard 0x86dd.
-> This patch peeks at the IP version in the L3 header and sets the
-> ethertype appropriately for IPv6 packets.
-> 
-> Signed-off-by: Mark Kamichoff <prox@prolixium.com>
+These behaviors are totally different. How can you tell the user what's
+going on there? And that' the reason we want 0, 1, 2 for rq_affinity. If
+the user does care about the extra IPI(in your case), fine, just set
+rq_affinty = 2.
 
-Applied, thanks.
+Thanks
+Tao
