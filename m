@@ -1,44 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab1HHMLl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 08:11:41 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34038 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab1HHMLj convert rfc822-to-8bit (ORCPT
+	id S1752418Ab1HHMSB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 08:18:01 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:61945 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab1HHMR7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 08:11:39 -0400
+	Mon, 8 Aug 2011 08:17:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110808120908.GC15018@n2100.arm.linux.org.uk>
-References: <1309798185-1984-1-git-send-email-vincent.guittot@linaro.org>
-	<20110705131623.GF8286@n2100.arm.linux.org.uk>
-	<20110808110919.GA15018@n2100.arm.linux.org.uk>
-	<CAKfTPtBJXxcJLX_y10Ae6M+3emTwiU1D15DMjq7yxjYTfGdS7Q@mail.gmail.com>
-	<20110808120908.GC15018@n2100.arm.linux.org.uk>
-Date: Mon, 8 Aug 2011 14:11:38 +0200
-Message-ID: <CAKfTPtAYOqwd3jLQsS7NMxgvWC3_M1DDkJNdkzaLhNu2nw6tuw@mail.gmail.com>
-Subject: Re: [PATCH v5] Add ARM cpu topology definition
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1312794859.21052.2.camel@phoenix>
+References: <1312794859.21052.2.camel@phoenix>
+Date: Mon, 8 Aug 2011 14:17:58 +0200
+Message-ID: <CAHR064ggiMvUm1m6g9fpxV-5Bk2PShZQiwjPRrukj0w_EwskWA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] platform-drivers-x86: eeepc-laptop: fix wrong test
+ for successful registered led_classdev
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 August 2011 14:09, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> On Mon, Aug 08, 2011 at 12:34:33PM +0100, Vincent Guittot wrote:
->> On 8 August 2011 12:09, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
->> > On Tue, Jul 05, 2011 at 02:16:23PM +0100, Russell King - ARM Linux wrote:
->> >> Looks fine now, and so can go to my patch system. �Many thanks.
->> >
->> > Ping.
->> >
->> Yes. Do you have additional comments to the patch ?
+Good catch ! It would be great to have a coccinel script to check that
+in scripts/coccinelle/null/.
+
+On Mon, Aug 8, 2011 at 11:14 AM, Axel Lin <axel.lin@gmail.com> wrote:
+> device_create returns &struct device pointer on success, or ERR_PTR() on error.
+> Thus if led_classdev_register fails, led_cdev->dev is always not NULL.
 >
-> The reply you require is on line 4. �It's a shame it missed the merge
-> window.
+> If IS_ERR(eeepc->tpd_led.dev) is ture, it means led_classdev_register fails.
+> If (asus->tpd_led.dev) is NULL, it means we call eeepc_led_exit before
+> calling led_classdev_register for &eeepc->tpd_led.
+>
+> We only want to call led_classdev_unregister for sucessfully registered
+> led_classdev, then we should check (!IS_ERR_OR_NULL(eeepc->tpd_led.dev)).
+>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+
+Acked-by: Corentin Chary <corentin.chary@gmail.com>
+
+> ---
+>  drivers/platform/x86/eeepc-laptop.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+> index 1c45d92..29a216a 100644
+> --- a/drivers/platform/x86/eeepc-laptop.c
+> +++ b/drivers/platform/x86/eeepc-laptop.c
+> @@ -568,7 +568,7 @@ static int eeepc_led_init(struct eeepc_laptop *eeepc)
+>
+>  static void eeepc_led_exit(struct eeepc_laptop *eeepc)
+>  {
+> -       if (eeepc->tpd_led.dev)
+> +       if (!IS_ERR_OR_NULL(eeepc->tpd_led.dev))
+>                led_classdev_unregister(&eeepc->tpd_led);
+>        if (eeepc->led_workqueue)
+>                destroy_workqueue(eeepc->led_workqueue);
+> --
+> 1.7.4.1
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
 
-I've just seen that ... I send it right now
+
+
+-- 
+Corentin Chary
+http://xf.iksaif.net
