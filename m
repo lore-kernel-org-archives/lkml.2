@@ -1,196 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab1HHMoV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 08:44:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22955 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751982Ab1HHMoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 08:44:20 -0400
-Date: Mon, 8 Aug 2011 14:43:33 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+	id S1753618Ab1HHMtC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 08:49:02 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53821 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab1HHMtA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 08:49:00 -0400
+From: "Koyamangalath, Abhilash" <abhilash.kv@ti.com>
+To: "Hilman, Kevin" <khilman@ti.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        "paul@pwsan.com" <paul@pwsan.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        Michal Hocko <mhocko@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        abrestic@google.com
-Subject: Re: [PATCH v3] memcg: add memory.vmscan_stat
-Message-ID: <20110808124333.GA31739@redhat.com>
-References: <20110722171540.74eb9aa7.kamezawa.hiroyu@jp.fujitsu.com>
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>
+Date: Mon, 8 Aug 2011 18:18:40 +0530
+Subject: RE: [PATCH 2/2] omap_twl: Prevent SR to enable for am3517/am3505
+ devices
+Thread-Topic: [PATCH 2/2] omap_twl: Prevent SR to enable for am3517/am3505
+ devices
+Thread-Index: AcxS8UEUxzhSsg5yRe6BnlWaw7shFQC1vRLE
+Message-ID: <FCCFB4CDC6E5564B9182F639FC3560870370A4D96E@dbde02.ent.ti.com>
+References: <1312473569-1212-1-git-send-email-abhilash.kv@ti.com>,<87hb5w3kq0.fsf@ti.com>
+In-Reply-To: <87hb5w3kq0.fsf@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110722171540.74eb9aa7.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 05:15:40PM +0900, KAMEZAWA Hiroyuki wrote:
-> [PATCH] add memory.vmscan_stat
+Kevin Hilman wrote:
+>Abhilash K V <abhilash.kv@ti.com> writes:
 > 
-> commit log of commit 0ae5e89 " memcg: count the soft_limit reclaim in..."
-> says it adds scanning stats to memory.stat file. But it doesn't because
-> we considered we needed to make a concensus for such new APIs.
+> > From: Vaibhav Hiremath <hvaibhav@ti.com>
+> >
+> > In case of AM3517 & AM3505, Smart Reflex is not applicable so
+> > we must not enable it. So add check for am3517/05 cpu revision
+> > in omap3_twl_init() and return -ENODEV if true, else continue.
+> >
+> > Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+> > Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
+> > ---
+> >  arch/arm/mach-omap2/omap_twl.c |    8 ++++++++
+> >  1 files changed, 8 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/arch/arm/mach-omap2/omap_twl.c
+> b/arch/arm/mach-omap2/omap_twl.c
+> > index 07d6140..92fadcb 100644
+> > --- a/arch/arm/mach-omap2/omap_twl.c
+> > +++ b/arch/arm/mach-omap2/omap_twl.c
+> > @@ -269,6 +269,14 @@ int __init omap3_twl_init(void)
+> >        if (!cpu_is_omap34xx())
+> >                return -ENODEV;
+> > 
+> > +     /*
+> > +      * In case of AM3517/AM3505 we should not be going down
+> > +      * further, since SR is not applicable there.
+> > +      */
+> > +     if (cpu_is_omap3505() || cpu_is_omap3517()) {
+> > +             return -ENODEV;
+> > +     }
+> > +
 > 
-> This patch is a trial to add memory.scan_stat. This shows
->   - the number of scanned pages(total, anon, file)
->   - the number of rotated pages(total, anon, file)
->   - the number of freed pages(total, anon, file)
->   - the number of elaplsed time (including sleep/pause time)
-> 
->   for both of direct/soft reclaim.
-> 
-> The biggest difference with oringinal Ying's one is that this file
-> can be reset by some write, as
-> 
->   # echo 0 ...../memory.scan_stat
-> 
-> Example of output is here. This is a result after make -j 6 kernel
-> under 300M limit.
-> 
-> [kamezawa@bluextal ~]$ cat /cgroup/memory/A/memory.scan_stat
-> [kamezawa@bluextal ~]$ cat /cgroup/memory/A/memory.vmscan_stat
-> scanned_pages_by_limit 9471864
-> scanned_anon_pages_by_limit 6640629
-> scanned_file_pages_by_limit 2831235
-> rotated_pages_by_limit 4243974
-> rotated_anon_pages_by_limit 3971968
-> rotated_file_pages_by_limit 272006
-> freed_pages_by_limit 2318492
-> freed_anon_pages_by_limit 962052
-> freed_file_pages_by_limit 1356440
-> elapsed_ns_by_limit 351386416101
-> scanned_pages_by_system 0
-> scanned_anon_pages_by_system 0
-> scanned_file_pages_by_system 0
-> rotated_pages_by_system 0
-> rotated_anon_pages_by_system 0
-> rotated_file_pages_by_system 0
-> freed_pages_by_system 0
-> freed_anon_pages_by_system 0
-> freed_file_pages_by_system 0
-> elapsed_ns_by_system 0
-> scanned_pages_by_limit_under_hierarchy 9471864
-> scanned_anon_pages_by_limit_under_hierarchy 6640629
-> scanned_file_pages_by_limit_under_hierarchy 2831235
-> rotated_pages_by_limit_under_hierarchy 4243974
-> rotated_anon_pages_by_limit_under_hierarchy 3971968
-> rotated_file_pages_by_limit_under_hierarchy 272006
-> freed_pages_by_limit_under_hierarchy 2318492
-> freed_anon_pages_by_limit_under_hierarchy 962052
-> freed_file_pages_by_limit_under_hierarchy 1356440
-> elapsed_ns_by_limit_under_hierarchy 351386416101
-> scanned_pages_by_system_under_hierarchy 0
-> scanned_anon_pages_by_system_under_hierarchy 0
-> scanned_file_pages_by_system_under_hierarchy 0
-> rotated_pages_by_system_under_hierarchy 0
-> rotated_anon_pages_by_system_under_hierarchy 0
-> rotated_file_pages_by_system_under_hierarchy 0
-> freed_pages_by_system_under_hierarchy 0
-> freed_anon_pages_by_system_under_hierarchy 0
-> freed_file_pages_by_system_under_hierarchy 0
-> elapsed_ns_by_system_under_hierarchy 0
->
-> total_xxxx is for hierarchy management.
-> 
-> This will be useful for further memcg developments and need to be
-> developped before we do some complicated rework on LRU/softlimit
-> management.
-> 
-> This patch adds a new struct memcg_scanrecord into scan_control struct.
-> sc->nr_scanned at el is not designed for exporting information. For example,
-> nr_scanned is reset frequentrly and incremented +2 at scanning mapped pages.
-> 
-> For avoiding complexity, I added a new param in scan_control which is for
-> exporting scanning score.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Changelog:
->   - fixed the trigger for recording nr_freed in shrink_inactive_list()
-> Changelog:
->   - renamed as vmscan_stat
->   - handle file/anon
->   - added "rotated"
->   - changed names of param in vmscan_stat.
-> ---
->  Documentation/cgroups/memory.txt |   85 +++++++++++++++++++
->  include/linux/memcontrol.h       |   19 ++++
->  include/linux/swap.h             |    6 -
->  mm/memcontrol.c                  |  172 +++++++++++++++++++++++++++++++++++++--
->  mm/vmscan.c                      |   39 +++++++-
->  5 files changed, 303 insertions(+), 18 deletions(-)
-> 
-> Index: mmotm-0710/Documentation/cgroups/memory.txt
-> ===================================================================
-> --- mmotm-0710.orig/Documentation/cgroups/memory.txt
-> +++ mmotm-0710/Documentation/cgroups/memory.txt
-> @@ -380,7 +380,7 @@ will be charged as a new owner of it.
->  
->  5.2 stat file
->  
-> -memory.stat file includes following statistics
-> +5.2.1 memory.stat file includes following statistics
->  
->  # per-memory cgroup local status
->  cache		- # of bytes of page cache memory.
-> @@ -438,6 +438,89 @@ Note:
->  	 file_mapped is accounted only when the memory cgroup is owner of page
->  	 cache.)
->  
-> +5.2.2 memory.vmscan_stat
-> +
-> +memory.vmscan_stat includes statistics information for memory scanning and
-> +freeing, reclaiming. The statistics shows memory scanning information since
-> +memory cgroup creation and can be reset to 0 by writing 0 as
-> +
-> + #echo 0 > ../memory.vmscan_stat
-> +
-> +This file contains following statistics.
-> +
-> +[param]_[file_or_anon]_pages_by_[reason]_[under_heararchy]
-> +[param]_elapsed_ns_by_[reason]_[under_hierarchy]
-> +
-> +For example,
-> +
-> +  scanned_file_pages_by_limit indicates the number of scanned
-> +  file pages at vmscan.
-> +
-> +Now, 3 parameters are supported
-> +
-> +  scanned - the number of pages scanned by vmscan
-> +  rotated - the number of pages activated at vmscan
-> +  freed   - the number of pages freed by vmscan
-> +
-> +If "rotated" is high against scanned/freed, the memcg seems busy.
-> +
-> +Now, 2 reason are supported
-> +
-> +  limit - the memory cgroup's limit
-> +  system - global memory pressure + softlimit
-> +           (global memory pressure not under softlimit is not handled now)
-> +
-> +When under_hierarchy is added in the tail, the number indicates the
-> +total memcg scan of its children and itself.
+> Rather than using cpu_is_*, you should add a new "feature" flag for
+> SmartReflex.  We already have this for things like SGX, IVA, NEON, etc.
+> See <plat/feature.h>
+I did not find a feature.h; did you mean OMAP3_CHECK_FEATURE macro which is used by
+omap3_check_features(), which gleans for presence of L2CACHE, IVA, SGX, NEON, ISP features
+from the Control Device Status Register (0x4800 244C) ?
+There is no such bit-field to indicate the presence of smart-reflex feature in this register.
+AFAIK, there is no such global register as well which could indicate this.
 
-In your implementation, statistics are only accounted to the memcg
-triggering the limit and the respectively scanned memcgs.
+- Abhilash
 
-Consider the following setup:
-
-	A
-       / \
-      B   C
-     /
-    D
-
-If D tries to charge but hits the limit of A, then B's hierarchy
-counters do not reflect the reclaim activity resulting in D.
-
-That's not consistent with how hierarchy counters usually operate, and
-neither with how you documented it.
-
-On a non-technical note: as Ying Han and I were the other two people
-working on reclaim and statistics, it really irks me that neither of
-us were CCd on this.  Especially on such a controversial change.
+> Kevin
+> 
+> 
+> >        if (cpu_is_omap3630()) {
+> >                omap3_mpu_volt_info.vp_vddmin =
+> OMAP3630_VP1_VLIMITTO_VDDMIN;
+> >                omap3_mpu_volt_info.vp_vddmax =
+> OMAP3630_VP1_VLIMITTO_VDDMAX; 
+> 
+> 
