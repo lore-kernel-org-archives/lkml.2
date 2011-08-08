@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab1HHOvR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 10:51:17 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:36362 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab1HHOvQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 10:51:16 -0400
+	id S1753981Ab1HHOzD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 10:55:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64531 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752731Ab1HHOzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 10:55:00 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] CRED: Restore const to current_cred()
+To: torvalds@osdl.org
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Date: Mon, 08 Aug 2011 15:54:53 +0100
+Message-ID: <20110808145453.16760.45460.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-X-Originating-IP: [81.235.222.155]
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF049F172168@HQMAIL01.nvidia.com>
-References: <1312582534-10871-1-git-send-email-swarren@nvidia.com>
-	<1312582534-10871-2-git-send-email-swarren@nvidia.com>
-	<20110806174519.GB31966@ponder.secretlab.ca>
-	<74CDBE0F657A3D45AFBB94109FB122FF049F172168@HQMAIL01.nvidia.com>
-Date: Mon, 8 Aug 2011 07:51:14 -0700
-Message-ID: <CAOesGMi2CXyAoy56-SdaD5YFzXW6W4wP6mnH+bVvRR3i_Mhk2A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] arm/tegra: Delete irq_to_gpio
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Colin Cross <ccross@android.com>,
-        Erik Gilling <konkers@android.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 8, 2011 at 7:26 AM, Stephen Warren <swarren@nvidia.com> wrote:
-> Grant Likely wrote at Saturday, August 06, 2011 11:45 AM:
->> On Fri, Aug 05, 2011 at 04:15:34PM -0600, Stephen Warren wrote:
->> > irq_to_gpio is deprecated and in the process of being removed. Make that
->> > happen now for ARM Tegra.
->> >
->> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
->>
->> Applied both.  Thanks.
->
-> Didn't you want an Ack by a Tegra maintainer first?
+Commit 3295514841c2112d94451ba5deaf54f5afb78ea9 accidentally dropped the const
+of current->cred inside current_cred() by the insertion of a cast to deal with
+an RCU annotation loss warning from sparce.
 
-Acked-by: Olof Johansson <olof@lixom.net>
+Use an appropriate RCU wrapper instead so as not to lose the const.
 
-But either way is OK. No need to rebase to add an acked-by, as far as
-I am concerned.
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+cc: Al Viro <viro@zeniv.linux.org.uk>
+---
 
+ include/linux/cred.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
--Olof
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index 98f46ef..8e2fd44 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -269,7 +269,7 @@ static inline void put_cred(const struct cred *_cred)
+  * since nobody else can modify it.
+  */
+ #define current_cred() \
+-	(*(__force struct cred **)&current->cred)
++	rcu_dereference_protected(current->cred, 1)
+ 
+ /**
+  * __task_cred - Access a task's objective credentials
+
