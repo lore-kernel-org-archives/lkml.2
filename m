@@ -1,56 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab1HHUgu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 16:36:50 -0400
-Received: from utopia.booyaka.com ([72.9.107.138]:38784 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753622Ab1HHUgt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 16:36:49 -0400
-Date: Mon, 8 Aug 2011 14:36:47 -0600 (MDT)
-From: Paul Walmsley <paul@pwsan.com>
-To: Daniel Morsing <daniel.morsing@gmail.com>
-cc: Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: Re: Build failure: bisected: v3.1-rc1 with config ARCH_OMAP &&
- !ARCH_OMAP4 fails with linker error
-In-Reply-To: <1312819724.14483.29.camel@morsingpad>
-Message-ID: <alpine.DEB.2.00.1108081435340.4764@utopia.booyaka.com>
-References: <1312819724.14483.29.camel@morsingpad>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754061Ab1HHUlx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 16:41:53 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:48077 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753636Ab1HHUlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 16:41:52 -0400
+Date: Mon, 8 Aug 2011 15:44:12 -0500
+From: Jack Steiner <steiner@sgi.com>
+To: mingo@elte.hu, tglx@linutronix.de
+Cc: davej@redhat.com, yinghan@google.com, linux-kernel@vger.kernel.org,
+        mjg@redhat.com
+Subject: Re: [PATCH v2] x86: Reduce clock calibration time during slave cpu
+	startup
+Message-ID: <20110808204412.GA15041@sgi.com>
+References: <20110727135730.GA17717@sgi.com> <20110727140523.GA24206@redhat.com> <20110727141527.GA8453@sgi.com> <20110727155200.GA25381@redhat.com> <20110801184542.GA3939@sgi.com> <20110805104635.GB13055@elte.hu> <20110805131638.GA27779@sgi.com> <20110805213836.GB21114@elte.hu> <20110807003642.GA4442@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110807003642.GA4442@srcf.ucam.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Reduce the startup time for slave cpus.
 
-On Mon, 8 Aug 2011, Daniel Morsing wrote:
+This patch adds hooks for an arch-specific function for clock calibration.
 
-> Building the v3.1-rc1 kernel with ARCH_OMAP && !ARCH_OMAP4 support fails
-> on linking with the following error
-> 
-> ...
->   LD      .tmp_vmlinux1
-> arch/arm/mach-omap2/built-in.o:(.data+0xf7d8): undefined reference to `omap4430_phy_init'
-> arch/arm/mach-omap2/built-in.o:(.data+0xf7dc): undefined reference to `omap4430_phy_exit'
-> arch/arm/mach-omap2/built-in.o:(.data+0xf7e0): undefined reference to `omap4430_phy_power'
-> arch/arm/mach-omap2/built-in.o:(.data+0xf7e4): undefined reference to `omap4430_phy_set_clk'
-> arch/arm/mach-omap2/built-in.o:(.data+0xf7e8): undefined reference to `omap4430_phy_suspend'
-> 
-> I've bisected the first bad commit to "OMAP4: Move common twl6030
-> configuration to twl-common" (commit-id
-> b22f954bae35be115a10c6426dc070f7d652b32e). The problem seems to be
-> unconditionally taking a function pointer to an omap4430 specific
-> function in arch/arm/mach-omap2/twl-common.c. The definition for
-> omap4430_phy_init and friends is in
-> arch/arm/mach-omap2/omap_phy_internal.c, which is only compiled when
-> building with support for one of the omap4430 boards.
+These hooks are used on x86. If a newly started cpu has the same phys_proc_id
+as a core already active, uses the TSC for the delay loop and has a CONSTANT_TSC,
+use the already-calculated value of loops_per_jiffy.
 
-Thanks for the bisect; this should be fixed by 
+This patch reduces the time required to start slave cpus on a 4096 cpu system
+from:
+	465 sec  OLD
+	 62 sec NEW
 
-https://patchwork.kernel.org/patch/963462/
+This reduces boot time on a 4096p system by almost 7 minutes.  Nice...
 
 
-- Paul
+Signed-off-by: Jack Steiner <steiner@sgi.com>
+
+
+---
+V2 - remove assumption that all cores in a socket have the same core frequency.
+     the patch is enabled only if delay() uses the TSC & socket is CONSTANT_TSC.
+
+V3 - Update comments & patch description. No code changes. I think (hope -:) this
+     plus the comments from others on the V2 patch resolves the issues.
+
+
+
+Also see https://lkml.org/lkml/2010/12/14/511 for a previous discussion
+for similar improvement. This patch gives almost equivalent performance
+and is less intrusive.
+
+
+ arch/x86/kernel/smpboot.c |   16 +++++++++++-----
+ arch/x86/kernel/tsc.c     |   19 +++++++++++++++++++
+ init/calibrate.c          |   15 +++++++++++++++
+ 3 files changed, 45 insertions(+), 5 deletions(-)
+
+Index: linux/arch/x86/kernel/smpboot.c
+===================================================================
+--- linux.orig/arch/x86/kernel/smpboot.c	2011-08-05 08:24:19.492148934 -0500
++++ linux/arch/x86/kernel/smpboot.c	2011-08-08 15:21:47.919979997 -0500
+@@ -207,23 +207,29 @@ static void __cpuinit smp_callin(void)
+ 	 * Need to setup vector mappings before we enable interrupts.
+ 	 */
+ 	setup_vector_irq(smp_processor_id());
++
++	/*
++	 * Save our processor parameters. Note: this information
++	 * is needed for clock calibration.
++	 */
++	smp_store_cpu_info(cpuid);
++
+ 	/*
+ 	 * Get our bogomips.
++	 * Update loops_per_jiffy in cpu_data. Previous call to
++	 * smp_store_cpu_info() stored a value that is close but not as
++	 * accurate as the value just calculated.
+ 	 *
+ 	 * Need to enable IRQs because it can take longer and then
+ 	 * the NMI watchdog might kill us.
+ 	 */
+ 	local_irq_enable();
+ 	calibrate_delay();
++	cpu_data(cpuid).loops_per_jiffy = loops_per_jiffy;
+ 	local_irq_disable();
+ 	pr_debug("Stack at about %p\n", &cpuid);
+ 
+ 	/*
+-	 * Save our processor parameters
+-	 */
+-	smp_store_cpu_info(cpuid);
+-
+-	/*
+ 	 * This must be done before setting cpu_online_mask
+ 	 * or calling notify_cpu_starting.
+ 	 */
+Index: linux/arch/x86/kernel/tsc.c
+===================================================================
+--- linux.orig/arch/x86/kernel/tsc.c	2011-08-05 08:24:19.492148934 -0500
++++ linux/arch/x86/kernel/tsc.c	2011-08-08 15:31:43.236111159 -0500
+@@ -995,3 +995,22 @@ void __init tsc_init(void)
+ 	check_system_tsc_reliable();
+ }
+ 
++/*
++ * If we have a constant TSC and are using the TSC for the delay loop,
++ * we can skip clock calibration if another cpu in the same socket has already
++ * been calibrated. This assumes that CONSTANT_TSC applies to all
++ * cpus in the socket - this should be a safe assumption.
++ */
++unsigned long __cpuinit calibrate_delay_is_known(void)
++{
++	int i, cpu = smp_processor_id();
++
++	if (!tsc_disabled && !cpu_has(&cpu_data(cpu), X86_FEATURE_CONSTANT_TSC))
++		return 0;
++
++	for_each_online_cpu(i)
++		if (cpu_data(i).phys_proc_id == cpu_data(cpu).phys_proc_id)
++			return cpu_data(i).loops_per_jiffy;
++	return 0;
++}
++
+Index: linux/init/calibrate.c
+===================================================================
+--- linux.orig/init/calibrate.c	2011-08-05 08:24:19.492148934 -0500
++++ linux/init/calibrate.c	2011-08-08 15:33:17.003985763 -0500
+@@ -246,6 +246,19 @@ recalibrate:
+ 
+ static DEFINE_PER_CPU(unsigned long, cpu_loops_per_jiffy) = { 0 };
+ 
++/*
++ * Check if cpu calibration delay is already known. For example,
++ * some processors with multi-core sockets may have all cores
++ * with the same calibration delay.
++ *
++ * Architectures should override this function if a faster calibration
++ * method is available.
++ */
++unsigned long __attribute__((weak)) __cpuinit calibrate_delay_is_known(void)
++{
++	return 0;
++}
++
+ void __cpuinit calibrate_delay(void)
+ {
+ 	unsigned long lpj;
+@@ -265,6 +278,8 @@ void __cpuinit calibrate_delay(void)
+ 		lpj = lpj_fine;
+ 		pr_info("Calibrating delay loop (skipped), "
+ 			"value calculated using timer frequency.. ");
++	} else if ((lpj = calibrate_delay_is_known())) {
++		;
+ 	} else if ((lpj = calibrate_delay_direct()) != 0) {
+ 		if (!printed)
+ 			pr_info("Calibrating delay using timer "
