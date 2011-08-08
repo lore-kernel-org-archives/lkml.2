@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056Ab1HHUEu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 16:04:50 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:57881 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751917Ab1HHUEt (ORCPT
+	id S1753652Ab1HHUID (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 16:08:03 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:35224 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752150Ab1HHUH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 16:04:49 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=IMRHH3zvIHGNrBF9xvcVpEEvFZbTFIXXV1gPK76lgGiV6v7YbyfeqZKs/7W2ISsvB
-	/FSAq7Ffld+s04qqCH/HA==
-Date: Mon, 8 Aug 2011 13:04:42 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [GIT PULL] Lockless SLUB slowpaths for v3.1-rc1
-In-Reply-To: <alpine.DEB.2.00.1108030908100.24201@router.home>
-Message-ID: <alpine.DEB.2.00.1108081303220.7792@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1107290145080.3279@tiger> <alpine.DEB.2.00.1107291002570.16178@router.home> <alpine.DEB.2.00.1107311136150.12538@chino.kir.corp.google.com> <alpine.DEB.2.00.1107311253560.12538@chino.kir.corp.google.com> <1312145146.24862.97.camel@jaguar>
- <alpine.DEB.2.00.1107311426001.944@chino.kir.corp.google.com> <CAOJsxLHB9jPNyU2qztbEHG4AZWjauCLkwUVYr--8PuBBg1=MCA@mail.gmail.com> <alpine.DEB.2.00.1108012101310.6871@chino.kir.corp.google.com> <alpine.DEB.2.00.1108020913180.18965@router.home>
- <alpine.DEB.2.00.1108020915370.1114@chino.kir.corp.google.com> <alpine.DEB.2.00.1108021131250.21126@router.home> <alpine.DEB.2.00.1108020938200.1114@chino.kir.corp.google.com> <alpine.DEB.2.00.1108030908100.24201@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Mon, 8 Aug 2011 16:07:59 -0400
+From: Per Forlin <per.forlin@linaro.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>, akpm@linux-foundation.org,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Chris Ball <cjb@laptop.org>
+Cc: linux-doc@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linaro-dev@lists.linaro.org, linux-mm@kvack.org,
+        Per Forlin <per.forlin@linaro.org>
+Subject: [PATCH --mmotm v5 0/3] Make fault injection available for MMC IO
+Date: Mon,  8 Aug 2011 22:07:26 +0200
+Message-Id: <1312834049-29910-1-git-send-email-per.forlin@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Aug 2011, Christoph Lameter wrote:
+This patchset is sent to the mm-tree because it depends on Akinobu's patch
+"fault-injection: add ability to export fault_attr in..."
 
-> > The netperf benchmark isn't representative of a heavy slab consuming
-> > workload, I routinely run jobs on these machines that use 20 times the
-> > amount of slab.  From what I saw in the earlier posting of the per-cpu
-> > partial list patch, the min_partial value is set to half of what it was
-> > previously as a per-node partial list.  Since these are 16-core, 4 node
-> > systems, that would mean that after a kmem_cache_shrink() on a cache that
-> > leaves empty slab on the partial lists that we've doubled the memory for
-> > slub's partial lists systemwide.
-> 
-> Cutting down the potential number of empty slabs that we might possible
-> keep around because we have no partial slabs per node increases memory
-> usage?
-> 
+change log:
+ v2 - Resolve build issue in mmc core.c due to multiple init_module by
+      removing the fault inject module.
+    - Export fault injection functions to make them available for modules
+    - Update fault injection documentation on MMC IO  
+ v3 - add function descriptions in core.c
+    - use export GPL for fault injection functions
+ v4 - make the fault_attr per host. This prepares for upcoming patch from
+      Akinobu that adds support for creating debugfs entries in
+      arbitrary directory.
+ v5 - Make use of fault_create_debugfs_attr() in Akinobu's
+      patch "fault-injection: add ability to export fault_attr in...". 
 
-You halved the number of min_partial, but there are 16 partial lists on 
-these machines because they are per-cpu instead of 4 partial lists when 
-they were per-node.
+Per Forlin (3):
+  fault-inject: export fault injection functions
+  mmc: core: add random fault injection
+  fault injection: add documentation on MMC IO fault injection
+
+ Documentation/fault-injection/fault-injection.txt |    5 ++
+ drivers/mmc/core/core.c                           |   44 +++++++++++++++++++++
+ drivers/mmc/core/debugfs.c                        |   24 +++++++++++
+ include/linux/mmc/host.h                          |    7 +++
+ lib/Kconfig.debug                                 |   11 +++++
+ lib/fault-inject.c                                |    2 +
+ 6 files changed, 93 insertions(+), 0 deletions(-)
+
+-- 
+1.7.4.1
+
