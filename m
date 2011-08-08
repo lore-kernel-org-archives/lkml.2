@@ -1,128 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab1HHRbo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 13:31:44 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:37965 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753519Ab1HHRbm (ORCPT
+	id S1753744Ab1HHRcl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 13:32:41 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:39244 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773Ab1HHRck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 13:31:42 -0400
-Date: Mon, 8 Aug 2011 10:31:40 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Sergiu Iordache <sergiu@chromium.org>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] char drivers: ramoops documentation
-Message-Id: <20110808103140.7726a203.rdunlap@xenotime.net>
-In-Reply-To: <1312823540-7509-1-git-send-email-sergiu@chromium.org>
-References: <1312823540-7509-1-git-send-email-sergiu@chromium.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 8 Aug 2011 13:32:40 -0400
+Date: Mon, 8 Aug 2011 13:25:47 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: =?iso-8859-1?Q?G=E1bor?= Stefanik <netrolller.3d@gmail.com>
+Cc: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-wireless@vger.kernel.org
+Subject: Re: b43: LCN-PHY add place for new PHY support
+Message-ID: <20110808172546.GC21103@tuxdriver.com>
+References: <201107230012.p6N0CZSM002466@hera.kernel.org>
+ <CAMuHMdU0Cba9xFjfD6Fq1MqE5xZeDnsdN8qipmR6jQH9J6X4vQ@mail.gmail.com>
+ <CACna6ryx4k5fFmqbDPZ3pdDA_SbjZQQVaJNQyALkx0i8+S-7hA@mail.gmail.com>
+ <CA+XFjioJPCvp+=-3Eg06bzHuXGbFCUoyGguhTL5DqqcpqN0ZXQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+XFjioJPCvp+=-3Eg06bzHuXGbFCUoyGguhTL5DqqcpqN0ZXQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  8 Aug 2011 10:12:19 -0700 Sergiu Iordache wrote:
-
-> Add a documentation file describing the usage of Ramoops
+On Mon, Aug 08, 2011 at 06:07:07PM +0200, Gábor Stefanik wrote:
+> 2011/8/8 Rafał Miłecki <zajec5@gmail.com>:
+> > W dniu 8 sierpnia 2011 13:57 użytkownik Geert Uytterhoeven
+> > <geert@linux-m68k.org> napisał:
+> >> On Sat, Jul 23, 2011 at 02:12, Linux Kernel Mailing List
+> >> <linux-kernel@vger.kernel.org> wrote:
+> >>> Gitweb:     http://git.kernel.org/linus/1d738e64f3d957d56c1b51e64ebdef986a8760e3
+> >>> Commit:     1d738e64f3d957d56c1b51e64ebdef986a8760e3
+> >>> Parent:     0cd20a278e1ef9da9f6a987942794c9d65af8c4d
+> >>> Author:     Rafał Miłecki <zajec5@gmail.com>
+> >>> AuthorDate: Thu Jul 7 15:25:27 2011 +0200
+> >>> Committer:  John W. Linville <linville@tuxdriver.com>
+> >>> CommitDate: Fri Jul 8 11:11:25 2011 -0400
+> >>
+> >>> diff --git a/drivers/net/wireless/b43/phy_lcn.h b/drivers/net/wireless/b43/phy_lcn.h
+> >>> new file mode 100644
+> >>> index 0000000..c046c2a
+> >>> --- /dev/null
+> >>> +++ b/drivers/net/wireless/b43/phy_lcn.h
+> >>
+> >>> \ No newline at end of file
+> >>
+> >> Woops...
+> >>
+> >> gcc/cpp also complains:
+> >>
+> >> drivers/net/wireless/b43/phy_lcn.h:14:28: warning: no newline at end of file
+> >
+> > Sorry, I didn't know we want empty lines at the end. I also don't
+> > think it's mentioned in kernel's CodingStyle.
 > 
-> Signed-off-by: Sergiu Iordache <sergiu@chromium.org>
-> ---
->  Documentation/ramoops.txt |   76 +++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 76 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/ramoops.txt
-> 
-> diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
-> new file mode 100644
-> index 0000000..8fb1ba7
-> --- /dev/null
-> +++ b/Documentation/ramoops.txt
-> @@ -0,0 +1,76 @@
-> +Ramoops oops/panic logger
-> +=========================
-> +
-> +Sergiu Iordache <sergiu@chromium.org>
-> +
-> +Updated: 8 August 2011
-> +
-> +0. Introduction
-> +
-> +Ramoops is an oops/panic logger that writes its logs to RAM before the system
-> +crashes. It works by logging oopses and panics in a circular buffer. Ramoops
-> +needs a system with persistent RAM so that the content of that area can
-> +survive after a restart.
-> +
-> +1. Ramoops concepts
-> +
-> +Ramoops uses a predefined memory area to store the dump. The start and size of
-> +the memory area are set using two variables:
-> +  * "mem_address" for the start
-> +  * "mem_size" for the size. The memory size will be rounded down to a
-> +  power of two.
-> +
-> +The memory area is divided into "record_size" chunks (also rounded down to
-> +power of two) and each oops/panic writes a "record_size" chunk of
-> +information.
-> +
-> +Dumping both oopses and panics can be done by setting 1 in the "dump_oops"
-> +variable while setting 0 in that variable dumps only the panics.
-> +
-> +The module uses a counter to record multiple dumps but the counter gets reset
-> +on restart (i.e. new dumps after the restart will overwrite old ones).
-> +
-> +2. Setting the parameters
-> +
-> +Setting the ramoops parameters can be done in 2 different manners:
-> + 1. Use the module parameters (which have the names of the variables described
-> + as before).
-> + 2. Use a platform device and set the platform data. The parameters can then
-> + be set through that platform data. An example of doing that is:
-> +
-> +#include <linux/ramoops.h>
-> +[...]
-> +
-> +static struct ramoops_platform_data ramoops_data = {
-> +        .mem_size               = <...>,
-> +        .mem_address            = <...>,
-> +        .record_size            = <...>,
-> +        .dump_oops              = <...>,
-> +};
-> +
-> +static struct platform_device ramoops_dev = {
-> +        .name = "ramoops",
-> +        .dev = {
-> +                .platform_data = &ramoops_data,
-> +        },
-> +};
-> +
-> +[... inside a function ...]
-> +int ret;
-> +
-> +ret = platform_device_register(&ramoops_dev);
-> +if (ret) {
-> +	printk(KERN_ERR "unable to register platform device\n");
-> +	return ret;
-> +}
-> +
-> +3. Dump format
-> +
-> +The data dump begins with a header, currently defined as "====" followed by a
-> +timestamp and a new line. The dump then continues with the actual data.
-> +
-> +4. Reading the data
-> +
-> +The dump data can be read from memory (through /dev/mem or other means).
-> +Getting the module parameters, which are needed in order to parse the data, can
-> +be done through /sys/module/ramoops/parameters/* .
-> -- 
+> I'm pretty sure it is basic Unix knowledge that all text files SHOULD
+> (RFC 2119) end with a newline character, unless otherwise noted
+> explicitly. In fact, many Unix text editors automatically insert a
+> newline at the end, and forbid you from deleting it.
 
-Thanks.  I can merge it, but the patch needs one more thing:
-a addition to Documentation/00-INDEX for this new file,
-so please resend the patch including that addition.
+Please use an editor that does this appropriately, but do _not_
+simply add an empty line at the end of a file.  'git am' complains
+about empty lines at the end of a file during a commit.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+I find that simple loading and saving such files with vi is sufficient
+for me -- YMMV.
+
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
