@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792Ab1HHOcb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 10:32:31 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50575 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753455Ab1HHOc3 convert rfc822-to-8bit (ORCPT
+	id S1753819Ab1HHOdO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 10:33:14 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:60604 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab1HHOdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 10:32:29 -0400
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-From: Peter Zijlstra <peterz@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 08 Aug 2011 16:31:49 +0200
-In-Reply-To: <20110808141128.GA22080@localhost>
-References: <20110806084447.388624428@intel.com>
-	 <20110806094526.733282037@intel.com> <1312811193.10488.33.camel@twins>
-	 <20110808141128.GA22080@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1312813909.10488.38.camel@twins>
-Mime-Version: 1.0
+	Mon, 8 Aug 2011 10:33:12 -0400
+Date: Mon, 8 Aug 2011 16:32:55 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        kernel-janitors@vger.kernel.org, linux390@de.ibm.com,
+        Stefan Weinhuber <wein@de.ibm.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/9] drivers/s390/block/dasd_ioctl.c: add missing kfree
+Message-ID: <20110808143255.GA19688@osiris.boeblingen.de.ibm.com>
+References: <1312802283-9107-5-git-send-email-julia@diku.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312802283-9107-5-git-send-email-julia@diku.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-08 at 22:11 +0800, Wu Fengguang wrote:
-> It's actually dead code because (origin < limit) should never happen.
-> I feel so good being able to drop 5 more lines of code :) 
+On Mon, Aug 08, 2011 at 01:17:59PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+> 
+> Data is only used to temporarily hold information to be copied to the user
+> level, so it should be freed before leaving the function.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
 
-OK, but that leaves me trying to figure out what origin is, and why its
-4 * thresh.
+[...]
 
-I'm having a horrible time understanding this stuff.
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+>  drivers/s390/block/dasd_ioctl.c |   10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
+
+Applied. Thanks!
