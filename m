@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347Ab1HHTW2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 15:22:28 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:50038 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab1HHTW1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 15:22:27 -0400
-Subject: Re: drivers/target/target_core_transport.c breakage on i386
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: agrover@redhat.com, linux-kernel@vger.kernel.org,
-        target-devel <target-devel@vger.kernel.org>
-In-Reply-To: <20110808001055.GB2203@ZenIV.linux.org.uk>
-References: <20110808001055.GB2203@ZenIV.linux.org.uk>
-Content-Type: text/plain
-Date: Mon, 08 Aug 2011 12:12:46 -0700
-Message-Id: <1312830766.12502.12.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	id S1752879Ab1HHTZq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 15:25:46 -0400
+Received: from mout4.freenet.de ([195.4.92.94]:35543 "EHLO mout4.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750868Ab1HHTZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 15:25:45 -0400
+Message-ID: <4E403837.6040902@01019freenet.de>
+Date: Mon, 08 Aug 2011 21:25:43 +0200
+From: Andreas Hartmann <andihartmann@01019freenet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110806 Firefox/6.0 SeaMonkey/2.3
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Linux 3.0: broken ums_eneub6250
+References: <hjXX6-Ee-55@gated-at.bofh.it> <hk6nE-6kT-5@gated-at.bofh.it> <hk7Wq-mZ-1@gated-at.bofh.it> <j1mm4l$55a$1@ID-44327.news.uni-berlin.de> <20110808042231.GA6248@kroah.com> <4E3F9B71.7040206@01019freenet.de> <20110808153302.GA8637@kroah.com>
+In-Reply-To: <20110808153302.GA8637@kroah.com>
+X-Enigmail-Version: 1.3a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-08 at 01:10 +0100, Al Viro wrote:
-> In commit ec98f7825c6eaa4a9afb0eb518826efc8a2ed4a2
-> Author: Andy Grover <agrover@redhat.com>
-> Date:   Wed Jul 20 19:28:46 2011 +0000
+Greg KH schrieb:
+> On Mon, Aug 08, 2011 at 10:16:49AM +0200, Andreas Hartmann wrote:
+>> Greg KH schrieb:
+>>> On Sun, Aug 07, 2011 at 08:39:20PM +0200, Andreas Hartmann wrote:
+>>>> Hi,
+>>>>
+>>>> obviously, nobody seems to be interested to work on this bug. Until it's
+>>>> fixed: There is a workaround to get the device working again with 2.6.39
+>>>> and 3.0 - just remove the unusable ums-eneub6250.ko and replace it with
+>>>> the complete old and fine keucr-module - staging but working :-)
+>>>>
+>>>> https://bugzilla.novell.com/show_bug.cgi?id=709243#c1
+>>>
+>>> How about working on a patch for the in-kernel version of the code to
+>>> get it to work properly so we can resolve this?
+>>
+>> If I would be able do this, I would have done it! On the other side: Why
+>> should I do it, if there is a module, which works just fine?
 > 
->     target: Eliminate usage of struct se_mem
+> Because I'm guessing that you wish to see the in-kernel code work
+> properly, right?
 > 
-> we got
-> +       task_count = DIV_ROUND_UP(sectors, dev_max_sectors);
-> and that's sector_t/sector_t.  64bit division on i386 is no-no in
-> the kernel - it emits __udivdi3 call and it's not there.  Can
-> sectors really reach 2^32 here?
+>> But you could send me patches which I could test.
 > 
+> Have you emailed the developers of this driver these questions?  I'm
+> sure they could help you out as they do have the hardware and they wrote
+> the patches in the first place.
+> 
+>>>  Given that very few
+>>> people actually have this hardware,
+>>
+>> It's a MSI CR620 notebook. I don't think, that there are just very few
+>> out there :-).
+>>
+>>> it's hard for us to work on the
+>>> driver.
+>>
+>> Why did you remove a working module if you can't ensure, that the
+>> replacement will cover the old module 100%?
+> 
+> Because I trusted the original developers of that patch, that's the way
+> kernel development works.
+> 
+> So please contact them and they would be glad to work with you to
+> resolve this issue.
 
-Hi Al,
+They have been already connected prior in this thread. I didn't get any
+answer right now.
 
-Just a heads up that this was caught this before -rc1, and we ended up
-adding DIV_ROUND_UP_ULL using do_div() for the 32-bit case here, and
-another DIV_ROUND_UP_SECTOR_T macro that target_core_transport.c is now
-using to address this for i386.
+Obviously they are not interested in fixing the problem.
 
-kernel.h: Add DIV_ROUND_UP_ULL and DIV_ROUND_UP_SECTOR_T macro usage
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff_plain;h=36a26c69b4c70396ef569c3452690fba0c1dec08
-
-Thanks,
-
---nab
+Use google and you will see, that I'm not the first and only one, having
+this problem. Anyhow there isn't any fix. But the working module has
+been removed ... . Thank you!
 
 
+Andreas
