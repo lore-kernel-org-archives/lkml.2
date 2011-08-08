@@ -1,150 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab1HHSnv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 14:43:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54531 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753583Ab1HHSnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 14:43:49 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 11/11] DIO: optimize cache misses in the submission path
-References: <1312259893-4548-1-git-send-email-andi@firstfloor.org>
-	<1312259893-4548-12-git-send-email-andi@firstfloor.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 08 Aug 2011 14:43:38 -0400
-In-Reply-To: <1312259893-4548-12-git-send-email-andi@firstfloor.org> (Andi
-	Kleen's message of "Mon, 1 Aug 2011 21:38:13 -0700")
-Message-ID: <x49zkjjg2w5.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753233Ab1HHSpu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 14:45:50 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:48810 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750774Ab1HHSps (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 14:45:48 -0400
+Date: Mon, 8 Aug 2011 14:45:47 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Per Forlin <per.forlin@linaro.org>
+cc: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linaro-dev@lists.linaro.org>
+Subject: Re: [PATCH] usb: gadget: storage_common: make FSG_NUM_BUFFERS variable
+ size
+In-Reply-To: <CAJ0pr1-DVAiu7Z_Rcumkwji1+=D4Sw2d4GMFsZa-9KCJ06FauA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1108081430140.1944-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <andi@firstfloor.org> writes:
+On Mon, 8 Aug 2011, Per Forlin wrote:
 
-> From: Andi Kleen <ak@linux.intel.com>
->
-> Some investigation of a transaction processing workload showed that
-> a major consumer of cycles in __blockdev_direct_IO is the cache miss
-> while accessing the block size. This is because it has to walk
-> the chain from block_dev to gendisk to queue.
->
-> The block size is needed early on to check alignment and sizes.
-> It's only done if the check for the inode block size fails.
-> But the costly block device state is unconditionally fetched.
->
-> - Reorganize the code to only fetch block dev state when actually
-> needed.
->
-> Then do a prefetch on the block dev early on in the direct IO
-> path. This is worth it, because there is substantial code run
-> before we actually touch the block dev now.
->
-> - I also added some unlikelies to make it clear the compiler
-> that block device fetch code is not normally executed.
->
-> This gave a small, but measurable improvement on a large database
-> benchmark (about 0.3%)
->
-> BTW the check code looks somewhat dubious to me: why is the block size
-> blk size only checked when the inode size check fails? Can
-> someone explain the difference between all these different block
-> sizes? Are they cheaper in a dozen?
+> > Okay, 6% is a worthwhile improvement, though not huge.  Did you try 6
+> > or 8 buffers?  I bet going beyond 4 makes very little difference.
+> >
+> On my board 4 buffers are enough. More buffers will make no difference.
+> 
+> Background study
+> I started by running dd to measure performance on my target side.
+> Simply to measure what would be the maximum bandwidth, 20MiB/s on my
+> board. Then I started the gadget mass storage on the device and run
+> the sae test from the PC host side, 18.7 MiB/s. I guessed this might
+> be due to serialized cache handling. I tested to remove the dma_map
+> call (replaced it with virt_to_dma). This is just a dummy test to see
+> if this is causing the performance drop. Without dma_map I get
+> 20MiB/s. It appears that the loss is due to dma_map call. The dma_map
+> only adds latency for the first request.
 
-There are two block sizes, the block size of the file system (typically
-PAGE_SHIFT), and the logical block size of the underlying storage.  The
-dio blkfactor represents the number of dio blocks in a single fs block.
-Alignment to the fs block means that you don't have to do any sub-block
-zeroing.  It also means you don't have to do as much math in converting
-between dio blocks and fs blocks (big deal, right?).
+What exactly do you mean by "first request"?  g_usb_storage uses two
+usb_request structures for bulk-IN transfers; are they what you're
+talking about?  Or are you talking about calls to usb_ep_queue()?  Or
+something else?
 
-I bet we could default to using the smaller block size all the time, and
-still be able to detect when we don't have to do the sub-block zeroing.
-Maybe that would be a good follow-on patch.
+Your test showed an extra latency of about 0.4 seconds when using 
+dma_map.  All that latency comes from a single request (the first one)?  
+That doesn't sound right.
 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  fs/direct-io.c |   47 +++++++++++++++++++++++++++++++++++++----------
->  1 files changed, 37 insertions(+), 10 deletions(-)
->
-> diff --git a/fs/direct-io.c b/fs/direct-io.c
-> index 03bcc6f..c424b88 100644
-> --- a/fs/direct-io.c
-> +++ b/fs/direct-io.c
-> @@ -1086,8 +1086,8 @@ static inline int drop_refcount(struct dio *dio)
->   * individual fields and will generate much worse code. 
->   * This is important for the whole file.
->   */
-> -ssize_t
-> -__blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
-> +static inline ssize_t
-> +do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
->  	struct block_device *bdev, const struct iovec *iov, loff_t offset, 
->  	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
->  	dio_submit_t submit_io,	int flags)
-> @@ -1096,7 +1096,6 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
->  	size_t size;
->  	unsigned long addr;
->  	unsigned blkbits = inode->i_blkbits;
-> -	unsigned bdev_blkbits = 0;
->  	unsigned blocksize_mask = (1 << blkbits) - 1;
->  	ssize_t retval = -EINVAL;
->  	loff_t end = offset;
-> @@ -1109,12 +1108,14 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
->  	if (rw & WRITE)
->  		rw = WRITE_ODIRECT;
->  
-> -	if (bdev)
-> -		bdev_blkbits = blksize_bits(bdev_logical_block_size(bdev));
-> +	/* 
-> +	 * Avoid references to bdev if not absolutely needed to give
-> +	 * the early prefetch in the caller enough time.
-> +	 */
->  
-> -	if (offset & blocksize_mask) {
-> +	if (unlikely(offset & blocksize_mask)) {
+> Studying the flow of buffers I can see, both buffers are filled with
+> data from vfs, then both are transmitted over USB, burst like
+> behaviour.
 
-You can't make this assumption.  Userspace controls what size/alignment
-of blocks to send in.
+Actually the first buffer is filled from VFS, then it is transmitted 
+over USB.  While the transmission is in progress, the second buffer is 
+filled from VFS.  Each time a transmission ends, the next buffer is 
+queued for transmission -- unless it hasn't been filled yet, in which 
+case it is queued when it gets filled.
 
-> @@ -1312,6 +1315,30 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
->  out:
->  	return retval;
->  }
-> +
-> +ssize_t
-> +__blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
-> +	struct block_device *bdev, const struct iovec *iov, loff_t offset, 
-> +	unsigned long nr_segs, get_block_t get_block, dio_iodone_t end_io,
-> +	dio_submit_t submit_io,	int flags)
-> +{
-> +	/* 
-> +	 * The block device state is needed in the end to finally
-> +	 * submit everything.  Since it's likely to be cache cold
-> +	 * prefetch it here as first thing to hide some of the
-> +	 * latency.
-> +	 * 
-> +	 * Attempt to prefetch the pieces we likely need later.
-> +	 */
-> +	prefetch(&bdev->bd_disk->part_tbl);
-> +	prefetch(bdev->bd_queue);
-> +	prefetch((char *)bdev->bd_queue + SMP_CACHE_BYTES);
-> +
-> +	return do_blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
-> +				     nr_segs, get_block, end_io,
-> +				     submit_io, flags);
-> +}
-> +
->  EXPORT_SYMBOL(__blockdev_direct_IO);
+What do you mean by "burst like behavior"?
 
-Heh... you broke direct_io_worker out again (kind of).  ;-)
+>  More buffers will add "smoothness" and prevent the bursts
+> to affect performance negatively. With 4 buffers, there were very few
+> cases when all 4 buffers were empty during a transfer
 
-Cheers,
-Jeff
+In what sense do the bursts affect performance?  It makes sense that
+having all the buffers empty from time to time would reduce throughput.  
+But as long as each buffer gets filled and queued before the previous
+buffer has finished transmitting, it shouldn't matter how "bursty" the
+behavior is.
+
+Alan Stern
+
