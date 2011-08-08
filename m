@@ -1,104 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445Ab1HHQQf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 12:16:35 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:11752 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786Ab1HHQQe convert rfc822-to-8bit (ORCPT
+	id S1753163Ab1HHQUi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 12:20:38 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:55814 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752347Ab1HHQUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 12:16:34 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=AxfMVsYFpP35zwW8AerPaOlueWM91zxmGFR0CYVK8I+8DsXb3u9hz2ODJqsi/g4qA
-	w1t9tuPpMRjJvYem2BziA==
+	Mon, 8 Aug 2011 12:20:37 -0400
+Date: Mon, 8 Aug 2011 20:20:33 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Serge Hallyn <serue@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>, containers@lists.osdl.org,
+        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [patch 1/4] proc: Introduce the /proc/<pid>/mfd/ directory
+Message-ID: <20110808162032.GC2434@sun>
+References: <20110807210112.245578619@openvz.org>
+ <20110807210526.741513583@openvz.org>
+ <20110808154842.GD22863@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1312819228.22367.0.camel@twins>
-References: <20110721164325.231521704@google.com> <20110721184757.480608533@google.com>
- <CAF1ivSYuYjNXsfCfUj6+rRVQFc1m2EBP3dvtxoo8wJM_EWNtZQ@mail.gmail.com> <1312819228.22367.0.camel@twins>
-From: Paul Turner <pjt@google.com>
-Date: Mon, 8 Aug 2011 09:16:00 -0700
-Message-ID: <CAPM31RKSiBBNeSTg=Uj+6YiknVs1YfJoVNj1PakpzFkvookWsg@mail.gmail.com>
-Subject: Re: [patch 08/18] sched: add support for throttling group entities
-To: Lin Ming <minggr@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Jason Baron <jbaron@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110808154842.GD22863@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 8, 2011 at 9:00 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Mon, 2011-08-08 at 23:46 +0800, Lin Ming wrote:
->> On Fri, Jul 22, 2011 at 12:43 AM, Paul Turner <pjt@google.com> wrote:
->>
->> > +static __used void throttle_cfs_rq(struct cfs_rq *cfs_rq)
->> > +{
->> > +       struct rq *rq = rq_of(cfs_rq);
->> > +       struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(cfs_rq->tg);
->> > +       struct sched_entity *se;
->> > +       long task_delta, dequeue = 1;
->> > +
->> > +       se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
->> > +
->> > +       /* account load preceding throttle */
->> > +       update_cfs_load(cfs_rq, 0);
->> > +
->> > +       task_delta = cfs_rq->h_nr_running;
->> > +       for_each_sched_entity(se) {
->> > +               struct cfs_rq *qcfs_rq = cfs_rq_of(se);
->> > +               /* throttled entity or throttle-on-deactivate */
->> > +               if (!se->on_rq)
->> > +                       break;
->>
->> Does it mean it's possible that child se is unthrottled but parent se
->> is throttled?
->
-> Yep..
->
->> I thought if parent group was throttled then its children should be
->> throttled too.
->> I may misunderstood the code, please correct me then.
->
-> That would be costly, as throttling a parent would require throttling
-> all its children (of which there can be arbitrary many).
->
+On Mon, Aug 08, 2011 at 05:48:42PM +0200, Tejun Heo wrote:
+> Hello,
+> 
+> Maybe cc'ing linux-mm is a good idea for this one?
 
-In case it is not clear, the children of a throttled entity can not be
-scheduled, they are implicitly throttled by virtue of their
-parent/ancestor having reached its bandwidth limit (and being
-throttled).
+Yup!
+...
 
-Consider the hierarchy below:
-  A
- /  \
-D  B
-      \
-       C
+> > 
+> > This thing is aimed to help checkpointing processes.
+> 
+> I generally agree this is a good idea.  Can you please add how it
+> would look (say, example ls -l output) in the patch description?
+> Maybe some people think using both start and end addresses for symlink
+> name is better?
 
-If A and B both have bandwidth limits then B being on_rq depends on:
+OK, will do in update.
 
-1. A being within its bandwidth limit, otherwise the entire hierarchy
-would be dequeued
-2. B being within its bandwidth limit, otherwise the hierarchy B-C
-would be dequeued
+> 
+> Another nit: I find the 'mfd' name a bit confusing as there's no file
+> descriptor involved at all.  Maybe map_files (as we already have maps)
+> or something like that?
 
-B's throttle state is independent of whether A has reached its limit;
-however it will not be runnable while A is throttled.
+map_files looks good to me.
 
-The per-cfs_rq throttle_count may be more directly in-line with what
-your interpretation of "throttled"; it maintains explicit tracking of
-whether or not an entity is throttled (including via its parent).
+> 
+> > +static int proc_mfd_get_link(struct inode *inode, struct path *path)
+> ...
+> > +	down_read(&mm->mmap_sem);
+> > +	for (vma = mm->mmap; vma; vma = vma->vm_next) {
+> > +		if (vma->vm_start < vm_start)
+> > +			continue;
+> > +		if (vma->vm_start > vm_start)
+> > +			break;
+> 
+> Why do linear walk instead of find_vma()?
 
-- Paul
+I suppose we simply missed this helper :/
+
+> 
+> > +static const struct dentry_operations tid_mfd_dentry_operations = {
+> > +	.d_delete	= pid_delete_dentry,
+> > +};
+> 
+> Don't we also need revalidation here like tid_fd_dentry_operations?
+
+Stricktly speaking, yes. Since in previous patchset this entries was
+used in helper tool _only_ when task is frozen it was not needed but
+to fit run-time requirements I think we need d_revalidate here indeed.
+Thanks!
+
+> Also, I think it would be better if all the related functions are
+> collected into one contiguous chunk.  The scattering doesn't seem to
+> make much sense.
+
+ok
+
+> 
+> > +static struct dentry *proc_mfd_lookup(struct inode *dir,
+> > +		struct dentry *dentry, struct nameidata *nd)
+> > +{
+> ..
+> > +	down_read(&mm->mmap_sem);
+> > +	for (vma = mm->mmap; vma; vma = vma->vm_next) {
+> > +		if (vma->vm_start == vm_start)
+> > +			break;
+> > +		if (vma->vm_start > vm_start)
+> > +			goto out_no_vma;
+> > +	}
+> 
+> Ditto, no reason to do linear walk.
+
+ok
+
+> 
+> Thanks.
+> 
+
+Thanks for comments, Tejun!
+
+	Cyrill
