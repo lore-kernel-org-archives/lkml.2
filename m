@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab1HHUIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 16:08:15 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57315 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753429Ab1HHUIM (ORCPT
+	id S1754097Ab1HHUIe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 16:08:34 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:34485 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402Ab1HHUIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 16:08:12 -0400
+	Mon, 8 Aug 2011 16:08:32 -0400
 From: Per Forlin <per.forlin@linaro.org>
 To: Akinobu Mita <akinobu.mita@gmail.com>, akpm@linux-foundation.org,
         Linus Walleij <linus.ml.walleij@gmail.com>,
@@ -15,9 +15,9 @@ To: Akinobu Mita <akinobu.mita@gmail.com>, akpm@linux-foundation.org,
 Cc: linux-doc@vger.kernel.org, linux-mmc@vger.kernel.org,
         linaro-dev@lists.linaro.org, linux-mm@kvack.org,
         Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH --mmotm v5 1/3] fault-inject: export fault injection functions
-Date: Mon,  8 Aug 2011 22:07:27 +0200
-Message-Id: <1312834049-29910-2-git-send-email-per.forlin@linaro.org>
+Subject: [PATCH --mmotm v5 3/3] fault injection: add documentation on MMC IO fault injection
+Date: Mon,  8 Aug 2011 22:07:29 +0200
+Message-Id: <1312834049-29910-4-git-send-email-per.forlin@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1312834049-29910-1-git-send-email-per.forlin@linaro.org>
 References: <1312834049-29910-1-git-send-email-per.forlin@linaro.org>
@@ -25,33 +25,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-export symbols fault_should_fail() and fault_create_debugfs_attr() in order
-to let modules utilize the fault injection
+Add description on how to enable random fault injection
+for MMC IO
 
 Signed-off-by: Per Forlin <per.forlin@linaro.org>
 ---
- lib/fault-inject.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ Documentation/fault-injection/fault-injection.txt |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/lib/fault-inject.c b/lib/fault-inject.c
-index f193b77..328d433 100644
---- a/lib/fault-inject.c
-+++ b/lib/fault-inject.c
-@@ -130,6 +130,7 @@ bool should_fail(struct fault_attr *attr, ssize_t size)
+diff --git a/Documentation/fault-injection/fault-injection.txt b/Documentation/fault-injection/fault-injection.txt
+index 82a5d25..10571df 100644
+--- a/Documentation/fault-injection/fault-injection.txt
++++ b/Documentation/fault-injection/fault-injection.txt
+@@ -21,6 +21,11 @@ o fail_make_request
+   /sys/block/<device>/make-it-fail or
+   /sys/block/<device>/<partition>/make-it-fail. (generic_make_request())
  
- 	return true;
- }
-+EXPORT_SYMBOL_GPL(should_fail);
++o fail_mmc_request
++
++  injects MMC data errors on devices permitted by setting
++  debugfs entries under /sys/kernel/debug/mmc0/fail_mmc_request
++
+ Configure fault-injection capabilities behavior
+ -----------------------------------------------
  
- #ifdef CONFIG_FAULT_INJECTION_DEBUG_FS
- 
-@@ -243,5 +244,6 @@ fail:
- 
- 	return ERR_PTR(-ENOMEM);
- }
-+EXPORT_SYMBOL_GPL(fault_create_debugfs_attr);
- 
- #endif /* CONFIG_FAULT_INJECTION_DEBUG_FS */
 -- 
 1.7.4.1
 
