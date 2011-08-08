@@ -1,38 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab1HHKwI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 06:52:08 -0400
-Received: from science.horizon.com ([71.41.210.146]:10977 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750823Ab1HHKwE (ORCPT
+	id S1751982Ab1HHKzg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 06:55:36 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43769 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460Ab1HHKzf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 06:52:04 -0400
-Date: 8 Aug 2011 06:52:01 -0400
-Message-ID: <20110808105201.25396.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: joakim.tjernlund@transmode.se, linux@horizon.com
-Subject: Re: [PATCH] add slice by 8 algorithm to crc32.c
-Cc: akpm@linux-foundation.org, fzago@systemfabricworks.com,
-        linux-kernel@vger.kernel.org, rpearson@systemfabricworks.com
-In-Reply-To: <OF53580ACE.F420CB68-ONC12578E6.0039189A-C12578E6.0039CD0F@transmode.se>
+	Mon, 8 Aug 2011 06:55:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAC-yRPQS7r-MMh13Y1m0O+oLBu2OmQqmXS8iHFtCOS9YwrxrkA@mail.gmail.com>
+References: <CAC-yRPQS7r-MMh13Y1m0O+oLBu2OmQqmXS8iHFtCOS9YwrxrkA@mail.gmail.com>
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+Date: Mon, 8 Aug 2011 12:55:20 +0200
+Message-ID: <CAAwP0s1O3qZ5LrjuSY-bshsegG260oyVOjXddxDjQzu4z0b4Ow@mail.gmail.com>
+Subject: Re: Compile kernel for various times and problem of too long time consuming
+To: Linux Kernel <linux-kernel@vger.kernel.org>,
+        kernelnewbies@kernelnewbies.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I prefer to keep the current code which (at the time) generated good code
-> for at least ppc:
-> 	/* Align it */
-> 	if (unlikely((long)buf & 3 && len)) {
-> 		do {
-> 			DO_CRC(*buf++);
-> 		} while ((--len) && ((long)buf)&3);
-> 	}
+On Sun, Aug 7, 2011 at 7:09 PM, Amirali Shambayati
+<amirali.shambayati@gmail.com> wrote:
+> Hi all,
+> Since I want to evaluate performance improvements by changing just one
+> file in kernel(noop-iosched) and compiling kernel is too much
+> time-consuming, I want to know that if I compile kernel for more than
+> one time, does it take similar time to first time?
+>
+> I use following commands. If I don't use "make-kpkg clean" for next
+> times, does it just compile the files which have been modified or it
+> compile whole kernel package again?
+>
+> make-kpkg clean
+> fakeroot make-kpkg --initrd --append-to-version=-some-string-here
+> kernel-image kernel-headers
+>
+>
+> Thanks for your help in advance,
+>
+> --
+> Amirali Shambayati
+> Bachelor Student
+> Computer Engineering Department
+> Sharif University of Technology
+> Tehran, Iran
+>
+> _______________________________________________
+> Kernelnewbies mailing list
+> Kernelnewbies@kernelnewbies.org
+> http://lists.kernelnewbies.org/mailman/listinfo/kernelnewbies
+>
 
-Ah, I was looking at fzago's initial patch; I hadn't realized you'd
-tweaked it.  That's pretty much what I was talking about.
+Some time ago I wrote a blog entry about "Speeding up Linux kernel
+compilation", hope it helps
 
-Would
- 	if (unlikely((long)buf & 3) && len) {
+http://martinezjavier.blogspot.com/2011/03/speeding-up-linux-kernel-compilation.html
 
-give the compiler better hints?  len != 0 is awfully
-likely, actually.
+Best regards
+
+-- 
+Javier Martínez Canillas
+(+34) 682 39 81 69
