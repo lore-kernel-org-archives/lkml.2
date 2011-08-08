@@ -1,264 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab1HHVON (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 17:14:13 -0400
-Received: from smtp6-g21.free.fr ([212.27.42.6]:40169 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751953Ab1HHVOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 17:14:12 -0400
-Message-ID: <4E4051A0.8030009@free.fr>
-Date: Mon, 08 Aug 2011 23:14:08 +0200
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: LXC Development <Lxc-devel@lists.sourceforge.net>
-Subject: [RFC] catching sys_reboot syscall
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751702Ab1HHVVc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 17:21:32 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:38451 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868Ab1HHVVa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 17:21:30 -0400
+Subject: Re: [PATCH 7/9] drivers/target/iscsi/iscsi_target_parameters.c:
+	add missing kfree
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Julia Lawall <julia@diku.dk>
+Cc: kernel-janitors@vger.kernel.org, Andy Grover <agrover@redhat.com>,
+        Roland Dreier <roland@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1312802283-9107-7-git-send-email-julia@diku.dk>
+References: <1312802283-9107-7-git-send-email-julia@diku.dk>
+Content-Type: text/plain
+Date: Mon, 08 Aug 2011 14:11:54 -0700
+Message-Id: <1312837914.12502.92.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-08-08 at 13:18 +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+> 
+> At this point, the new_param that has just been allocated has not been
+> stored in the list, so it and new_param->name, once it is defined, have to
+> be freed separately.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @exists@
+> local idexpression x;
+> statement S,S1;
+> expression E;
+> identifier fl;
+> expression *ptr != NULL;
+> @@
+> 
+> x = \(kmalloc\|kzalloc\|kcalloc\)(...);
+> ...
+> if (x == NULL) S
+> <... when != x
+>      when != if (...) { <+...kfree(x)...+> }
+>      when any
+>      when != true x == NULL
+> x->fl
+> ...>
+> (
+> if (x == NULL) S1
+> |
+> if (...) { ... when != x
+>                when forall
+> (
+>  return \(0\|<+...x...+>\|ptr\);
+> |
+> * return ...;
+> )
+> }
+> )
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+>  drivers/target/iscsi/iscsi_target_parameters.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/target/iscsi/iscsi_target_parameters.c b/drivers/target/iscsi/iscsi_target_parameters.c
+> index 252e246..b8dbe44 100644
+> --- a/drivers/target/iscsi/iscsi_target_parameters.c
+> +++ b/drivers/target/iscsi/iscsi_target_parameters.c
+> @@ -584,6 +584,7 @@ int iscsi_copy_param_list(
+>  		if (!new_param->name) {
+>  			pr_err("Unable to allocate memory for"
+>  				" parameter name.\n");
+> +			kfree(new_param);
+>  			goto err_out;
+>  		}
+>  
+> @@ -592,6 +593,8 @@ int iscsi_copy_param_list(
+>  		if (!new_param->value) {
+>  			pr_err("Unable to allocate memory for"
+>  				" parameter value.\n");
+> +			kfree(new_param->name);
+> +			kfree(new_param);
+>  			goto err_out;
+>  		}
+>  
+> 
 
-Hi all,
+Hi Julia,
 
-I am trying to solve one of the problems the linux container community
-is facing :
+Jesper and Dan already caught this one last week, and has been resolved
+with the following patch in lio-core-2.6.git:
 
-   How to catch when a process called the 'reboot' syscall in a container ?
+commit 83f8b803171751082174162cd1fa058c67d579ab
+Author: Jesper Juhl <jj@chaosbits.net>
+Date:   Tue Aug 2 10:26:36 2011 +0200
 
-In the case of a VPS, when we shutdown/halt/reboot the container, the
-reboot utility will invoke the sys_reboot syscall which has the bad
-effect to reboot the host. The way to fix that is to drop the
-CAP_SYS_REBOOT capability in the container.
+    iscsi-target: Fix leak on failure in iscsi_copy_param_list()
 
-In this case, the container shutdowns correctly but, at the end, the
-init process is waiting indefinitely and we have the containers stuck
-with one process (the init process).
+This one is being queued for the next round of target fixes for
+mainline.
 
-In order to fix that, we used a hypervisor process, parent of the
-container's init process, watching for the container's utmp file and
-detecting when the runlevel changes. When this runlevel change is
-detected we wait for the container to have one process left and then we
-kill the container's init.
+Thanks for reporting!
 
-That works well if we modify the distro configuration files, we make
-/var/run to not be a tmpfs and we remove all the files inside this
-directory when the container boots. *But* as soon as we upgrade the
-container distro, all the tweaks are lost. So this method works but at
-the cost of tweaking the containers configuration files again and again,
-each time there is an update, which is not tolerable in a production
-environment.
-
-This problem is easy to solve with a small hack in the kernel:
-
-diff --git a/include/asm-generic/siginfo.h b/include/asm-generic/siginfo.h
-index 942d30b..61f3d02 100644
---- a/include/asm-generic/siginfo.h
-+++ b/include/asm-generic/siginfo.h
-@@ -218,7 +218,8 @@ typedef struct siginfo {
- #define CLD_TRAPPED    (__SI_CHLD|4)    /* traced child has trapped */
- #define CLD_STOPPED    (__SI_CHLD|5)    /* child has stopped */
- #define CLD_CONTINUED    (__SI_CHLD|6)    /* stopped child has continued */
--#define NSIGCHLD    6
-+#define CLD_REBOOTED    (__SI_CHLD|7)   /* process was killed by a
-reboot */
-+#define NSIGCHLD    7
- 
- /*
-  * SIGPOLL si_codes
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 67f5688..41e0889 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2103,6 +2103,7 @@ extern int kill_pgrp(struct pid *pid, int sig, int
-priv);
- extern int kill_pid(struct pid *pid, int sig, int priv);
- extern int kill_proc_info(int, struct siginfo *, pid_t);
- extern int do_notify_parent(struct task_struct *, int);
-+extern void do_notify_parent_cldreboot(struct task_struct *, int, char *);
- extern void __wake_up_parent(struct task_struct *p, struct task_struct
-*parent);
- extern void force_sig(int, struct task_struct *);
- extern int send_sig(int, struct task_struct *, int);
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 4e3cff1..09fc254 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1522,6 +1522,46 @@ int do_notify_parent(struct task_struct *tsk, int
-sig)
-     return ret;
- }
- 
-+void do_notify_parent_cldreboot(struct task_struct *tsk, int why, char
-*buffer)
-+{
-+    struct siginfo info = { };
-+    struct task_struct *parent;
-+    struct sighand_struct *sighand;
-+    unsigned long flags;
-+
-+    if (task_ptrace(tsk))
-+        parent = tsk->parent;
-+    else {
-+        tsk = tsk->group_leader;
-+        parent = tsk->real_parent;
-+    }
-+
-+    info.si_signo = SIGCHLD;
-+    info.si_errno = 0;
-+    info.si_status = why;
-+
-+    rcu_read_lock();
-+    info.si_pid = task_pid_nr_ns(tsk, parent->nsproxy->pid_ns);
-+    info.si_uid = __task_cred(tsk)->uid;
-+    rcu_read_unlock();
-+
-+    info.si_utime = cputime_to_clock_t(tsk->utime);
-+    info.si_stime = cputime_to_clock_t(tsk->stime);
-+
-+    info.si_code = CLD_REBOOTED;
-+
-+    sighand = parent->sighand;
-+    spin_lock_irqsave(&sighand->siglock, flags);
-+    if (sighand->action[SIGCHLD-1].sa.sa_handler != SIG_IGN &&
-+        sighand->action[SIGCHLD-1].sa.sa_flags & SA_CLDREBOOT)
-+        __group_send_sig_info(SIGCHLD, &info, parent);
-+    /*
-+     * Even if SIGCHLD is not generated, we must wake up wait4 calls.
-+     */
-+    __wake_up_parent(tsk, parent);
-+    spin_unlock_irqrestore(&sighand->siglock, flags);
-+}
-+
- static void do_notify_parent_cldstop(struct task_struct *tsk, int why)
- {
-     struct siginfo info;
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 18da702..b50449c 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -361,6 +361,13 @@ void kernel_power_off(void)
- }
- EXPORT_SYMBOL_GPL(kernel_power_off);
- 
-+static void pid_namespace_reboot(struct pid_namespace *pid_ns,
-+                int cmd, char *buffer)
-+{
-+    struct task_struct *tsk = pid_ns->child_reaper;
-+    do_notify_parent_cldreboot(tsk, cmd, buffer);
-+}
-+
- static DEFINE_MUTEX(reboot_mutex);
- 
- /*
-@@ -374,13 +381,10 @@ static DEFINE_MUTEX(reboot_mutex);
- SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
-         void __user *, arg)
- {
--    char buffer[256];
-+    struct pid_namespace *pid_ns = current->nsproxy->pid_ns;
-+    char buffer[256] = { 0 };
-     int ret = 0;
- 
--    /* We only trust the superuser with rebooting the system. */
--    if (!capable(CAP_SYS_BOOT))
--        return -EPERM;
--
-     /* For safety, we require "magic" arguments. */
-     if (magic1 != LINUX_REBOOT_MAGIC1 ||
-         (magic2 != LINUX_REBOOT_MAGIC2 &&
-@@ -395,12 +399,45 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2,
-unsigned int, cmd,
-     if ((cmd == LINUX_REBOOT_CMD_POWER_OFF) && !pm_power_off)
-         cmd = LINUX_REBOOT_CMD_HALT;
- 
-+    /* check the cmd parameter */
-+    if (cmd != LINUX_REBOOT_CMD_RESTART &&
-+#ifdef CONFIG_KEXEC
-+        cmd != LINUX_REBOOT_CMD_KEXEC &&
-+#endif
-+#ifdef CONFIG_HIBERNATION
-+        cmd != LINUX_REBOOT_CMD_SW_SUSPEND &&
-+#endif
-+        cmd != LINUX_REBOOT_CMD_CAD_ON &&
-+        cmd != LINUX_REBOOT_CMD_CAD_OFF &&
-+        cmd != LINUX_REBOOT_CMD_HALT &&
-+        cmd != LINUX_REBOOT_CMD_POWER_OFF &&
-+        cmd != LINUX_REBOOT_CMD_RESTART2)
-+        return -EINVAL;
-+
-+    if (cmd == LINUX_REBOOT_CMD_RESTART2)
-+        if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0)
-+            return -EFAULT;
-+
-+    /* If we are not in the initial pid namespace, we send a signal
-+     * to the parent of this init pid namespace, notifying a shutdown
-+     * occured */
-+    if (pid_ns != &init_pid_ns)
-+        pid_namespace_reboot(pid_ns, cmd, buffer);
-+
-+    /* We only trust the superuser with rebooting the system. */
-+    if (!capable(CAP_SYS_BOOT))
-+        return -EPERM;
-+
-     mutex_lock(&reboot_mutex);
-     switch (cmd) {
-     case LINUX_REBOOT_CMD_RESTART:
-         kernel_restart(NULL);
-         break;
- 
-+    case LINUX_REBOOT_CMD_RESTART2:
-+        kernel_restart(buffer);
-+        break;
-+
-     case LINUX_REBOOT_CMD_CAD_ON:
-         C_A_D = 1;
-         break;
-@@ -419,16 +456,6 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2,
-unsigned int, cmd,
-         do_exit(0);
-         break;
- 
--    case LINUX_REBOOT_CMD_RESTART2:
--        if (strncpy_from_user(&buffer[0], arg, sizeof(buffer) - 1) < 0) {
--            ret = -EFAULT;
--            break;
--        }
--        buffer[sizeof(buffer) - 1] = '\0';
--
--        kernel_restart(buffer);
--        break;
--
- #ifdef CONFIG_KEXEC
-     case LINUX_REBOOT_CMD_KEXEC:
-         ret = kernel_kexec();
-@@ -440,10 +467,6 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2,
-unsigned int, cmd,
-         ret = hibernate();
-         break;
- #endif
--
--    default:
--        ret = -EINVAL;
--        break;
-     }
-     mutex_unlock(&reboot_mutex);
-     return ret;
-
-
-With this patch, the container's init parent will receive a SIGCHLD,
-with ssi_code set with the sys_reboot parameter value, when one of the
-process in the container invoke sys_reboot. This solution works very
-well and solves the problem but is it acceptable ? I don't see any
-alternative usable for other use cases. It is probable nobody cares
-about sys_reboot was called because there is nothing to do as the system
-will halt a few microseconds after :)
-
-Does anyone have an idea ?
-
-Thanks in advance
-  -- Daniel
-
+--nab
 
