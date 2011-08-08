@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab1HHPlM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 11:41:12 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55365 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402Ab1HHPlL (ORCPT
+	id S1752293Ab1HHPqR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 11:46:17 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:59700 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab1HHPqQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 11:41:11 -0400
-From: stufever@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: abelay@mit.edu, bhelgaas@google.com,
-        Wang Shaoyan <wangshaoyan.pt@taobao.com>
-Subject: [PATCH] pnp: replace deprecated __check_region to request_region
-Date: Mon,  8 Aug 2011 23:38:21 +0800
-Message-Id: <1312817901-5313-1-git-send-email-wangshaoyan.pt@taobao.com>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 8 Aug 2011 11:46:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110721184757.480608533@google.com>
+References: <20110721164325.231521704@google.com>
+	<20110721184757.480608533@google.com>
+Date: Mon, 8 Aug 2011 23:46:15 +0800
+Message-ID: <CAF1ivSYuYjNXsfCfUj6+rRVQFc1m2EBP3dvtxoo8wJM_EWNtZQ@mail.gmail.com>
+Subject: Re: [patch 08/18] sched: add support for throttling group entities
+From: Lin Ming <minggr@gmail.com>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Jason Baron <jbaron@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+On Fri, Jul 22, 2011 at 12:43 AM, Paul Turner <pjt@google.com> wrote:
 
-The function __check_region is deprecated, use proper function request_region to replace it.
+> +static __used void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+> +{
+> +       struct rq *rq = rq_of(cfs_rq);
+> +       struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(cfs_rq->tg);
+> +       struct sched_entity *se;
+> +       long task_delta, dequeue = 1;
+> +
+> +       se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
+> +
+> +       /* account load preceding throttle */
+> +       update_cfs_load(cfs_rq, 0);
+> +
+> +       task_delta = cfs_rq->h_nr_running;
+> +       for_each_sched_entity(se) {
+> +               struct cfs_rq *qcfs_rq = cfs_rq_of(se);
+> +               /* throttled entity or throttle-on-deactivate */
+> +               if (!se->on_rq)
+> +                       break;
 
-Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
----
- drivers/pnp/resource.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Does it mean it's possible that child se is unthrottled but parent se
+is throttled?
 
-diff --git a/drivers/pnp/resource.c b/drivers/pnp/resource.c
-index b0ecacb..b1d8cae 100644
---- a/drivers/pnp/resource.c
-+++ b/drivers/pnp/resource.c
-@@ -179,7 +179,7 @@ int pnp_check_port(struct pnp_dev *dev, struct resource *res)
- 	/* check if the resource is already in use, skip if the
- 	 * device is active because it itself may be in use */
- 	if (!dev->active) {
--		if (__check_region(&ioport_resource, *port, length(port, end)))
-+		if (!request_region(*port, length(port, end), "pnp"))
- 			return 0;
- 	}
- 
--- 
-1.7.0.4
+I thought if parent group was throttled then its children should be
+throttled too.
+I may misunderstood the code, please correct me then.
 
+Thanks,
+Lin Ming
