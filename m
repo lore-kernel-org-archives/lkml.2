@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab1HHMSR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 08:18:17 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61945 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196Ab1HHMSP convert rfc822-to-8bit (ORCPT
+	id S1752982Ab1HHMSX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 08:18:23 -0400
+Received: from relay.parallels.com ([195.214.232.42]:39636 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460Ab1HHMSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 08:18:15 -0400
+	Mon, 8 Aug 2011 08:18:20 -0400
+Message-ID: <4E3FD403.6000400@parallels.com>
+Date: Mon, 8 Aug 2011 16:18:11 +0400
+From: Konstantin Khlebnikov <khlebnikov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
 MIME-Version: 1.0
-In-Reply-To: <1312794961.21052.4.camel@phoenix>
-References: <1312794859.21052.2.camel@phoenix>
-	<1312794961.21052.4.camel@phoenix>
-Date: Mon, 8 Aug 2011 14:18:14 +0200
-Message-ID: <CAHR064jQkgt0B8wHX_j301eqTtEakSPw5+TeiUqPpC4AHL6YXg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] platform-drivers-x86: asus-wmi: fix resource leak in asus_wmi_led_exit
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Pekka Enberg <penberg@kernel.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 1/2] vmscan: promote shared file mapped pages
+References: <20110808110658.31053.55013.stgit@localhost6>  <CAOJsxLF909NRC2r6RL+hm1ARve+3mA6UM_CY9epJaauyqJTG8w@mail.gmail.com>
+In-Reply-To: <CAOJsxLF909NRC2r6RL+hm1ARve+3mA6UM_CY9epJaauyqJTG8w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 8, 2011 at 11:16 AM, Axel Lin <axel.lin@gmail.com> wrote:
-> This patch fixes wrong test for successful registered led_classdev,
-> and also fixes a leak due to missing led_classdev_unregister call
-> for asus->kbd_led in asus_wmi_led_exit.
+Pekka Enberg wrote:
+> Hi Konstantin,
 >
-> device_create returns &struct device pointer on success, or ERR_PTR() on error.
-> Thus if led_classdev_register fails, led_cdev->dev is always not NULL.
+> On Mon, Aug 8, 2011 at 2:06 PM, Konstantin Khlebnikov
+> <khlebnikov@openvz.org>  wrote:
+>> Commit v2.6.33-5448-g6457474 (vmscan: detect mapped file pages used only once)
+>> greatly decreases lifetime of single-used mapped file pages.
+>> Unfortunately it also decreases life time of all shared mapped file pages.
+>> Because after commit v2.6.28-6130-gbf3f3bc (mm: don't mark_page_accessed in fault path)
+>> page-fault handler does not mark page active or even referenced.
+>>
+>> Thus page_check_references() activates file page only if it was used twice while
+>> it stays in inactive list, meanwhile it activates anon pages after first access.
+>> Inactive list can be small enough, this way reclaimer can accidentally
+>> throw away any widely used page if it wasn't used twice in short period.
+>>
+>> After this patch page_check_references() also activate file mapped page at first
+>> inactive list scan if this page is already used multiple times via several ptes.
+>>
+>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
 >
-> Thus to unregister a successful registered led_classdev, we should check
-> (!IS_ERR_OR_NULL(asus->tpd_led.dev)) instead of (asus->tpd_led.dev).
->
-> we use IS_ERR_OR_NULL instead of IS_ERR because if we havn't call
-> led_classdev_register, the led_cdev->dev is NULL.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-
-Acked-by: Corentin Chary <corentin.chary@gmail.com>
-
-> ---
->  drivers/platform/x86/asus-wmi.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
-> index 95cba9e..d1049ee 100644
-> --- a/drivers/platform/x86/asus-wmi.c
-> +++ b/drivers/platform/x86/asus-wmi.c
-> @@ -453,7 +453,9 @@ static enum led_brightness kbd_led_get(struct led_classdev *led_cdev)
->
->  static void asus_wmi_led_exit(struct asus_wmi *asus)
->  {
-> -       if (asus->tpd_led.dev)
-> +       if (!IS_ERR_OR_NULL(asus->kbd_led.dev))
-> +               led_classdev_unregister(&asus->kbd_led);
-> +       if (!IS_ERR_OR_NULL(asus->tpd_led.dev))
->                led_classdev_unregister(&asus->tpd_led);
->        if (asus->led_workqueue)
->                destroy_workqueue(asus->led_workqueue);
-> --
-> 1.7.4.1
->
->
->
+> Both patches seem reasonable but the changelogs don't really explain
+> why you're doing the changes. How did you find out about the problem?
+> Is there some workload that's affected? How did you test your changes?
 >
 
+I found this while trying to fix degragation in rhel6 (~2.6.32) from rhel5 (~2.6.18).
+There a complete mess with >100 web/mail/spam/ftp containers,
+they share all their files but there a lot of anonymous pages:
+~500mb shared file mapped memory and 15-20Gb non-shared anonymous memory.
+In this situation major-pagefaults are very costly, because all containers share the same page.
+In my load kernel created a disproportionate pressure on the file memory, compared with the anonymous,
+they equaled only if I raise swappiness up to 150 =)
 
+These patches actually wasn't helped a lot in my problem,
+but I saw noticable (10-20 times) reduce in count and average time of major-pagefault in file-mapped areas.
 
--- 
-Corentin Chary
-http://xf.iksaif.net
+Actually both patches are fixes for commit v2.6.33-5448-g6457474,
+because it was aimed at one scenario (singly used pages),
+but it breaks the logic in other scenarios (shared and/or executable pages)
+
+>                         Pekka
+
