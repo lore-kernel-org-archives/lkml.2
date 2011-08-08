@@ -1,263 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751545Ab1HHFO3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 01:14:29 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55303 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751023Ab1HHFO1 (ORCPT
+	id S1751763Ab1HHFPO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 01:15:14 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:52477 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047Ab1HHFPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 01:14:27 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>, Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Convert pcf50633 to use new register map API
-Date: Mon,  8 Aug 2011 14:14:18 +0900
-Message-Id: <1312780458-3018-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 8 Aug 2011 01:15:12 -0400
+Date: Sun, 7 Aug 2011 22:15:04 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Eric Andersson <eric.andersson@unixphere.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
+        alan@lxorguk.ukuu.org.uk, jic23@cam.ac.uk,
+        xu.zhang@bosch-sensortec.com
+Subject: Re: [PATCH v6 1/1] input: add driver for Bosch Sensortec's BMA150
+ accelerometer
+Message-ID: <20110808051504.GA7329@core.coreip.homeip.net>
+References: <1311800027-25982-1-git-send-email-eric.andersson@unixphere.com>
+ <1311800027-25982-2-git-send-email-eric.andersson@unixphere.com>
+ <20110730191726.GG5686@core.coreip.homeip.net>
+ <20110730224917.GA8519@skinner.xfiles.lan>
+ <20110731070844.GA23383@core.coreip.homeip.net>
+ <CAH+e7S2LU7zr6fcp+f+2UuzyXX_=icBa4OtO7m1YQQ2BtOyMAQ@mail.gmail.com>
+ <20110807162325.GA7280@skinner.xfiles.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110807162325.GA7280@skinner.xfiles.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/Kconfig               |    1 +
- drivers/mfd/pcf50633-core.c       |  114 ++++++++++--------------------------
- include/linux/mfd/pcf50633/core.h |    3 +-
- 3 files changed, 35 insertions(+), 83 deletions(-)
+On Sun, Aug 07, 2011 at 06:23:25PM +0200, Eric Andersson wrote:
+> > On Sun, Jul 31, 2011 at 12:49:17AM +0200, Dmitry Torokhov wrote:
+> > > > > +static int bma150_open(struct bma150_data *bma150)
+> > > > > +{
+> > > > > + int ret;
+> > > > > +
+> > > > > + ret = pm_runtime_set_active(&bma150->client->dev);
+> > > > > + if (ret < 0)
+> > > > > +         return ret;
+> > > > > +
+> > > > > + pm_runtime_enable(&bma150->client->dev);
+> > > >
+> > > > I am pretty sure you want to call pm_runtime_enable() in bma150_probe()
+> > > > so that parent controller can be suspended until somebody calls
+> > > > bma150_open() and we mark the device as active (which, in turn, should
+> > > > wake up its parent).
+> > >
+> > > If I call pm_runtime_enable() I cannot use pm_runtime_set_active() later
+> > > according to the comment in __pm_runtime_set_status (runtime.c):
+> > > "If runtime PM of the device is disabled or its power.runtime_error
+> > > field is different from zero, the status may be changed either to
+> > > RPM_ACTIVE, or to RPM_SUSPENDED..."
+> > >
+> > > If the PM of the device is enabled it will return -EAGAIN. Of course, we
+> > > could enable() in probe, then disable(); set_active(); enable(); in
+> > > open, but that seems a bit confused, right?
+> > 
+> > Hmm, indeed. I do not like the idea about disable/set_active/enable so I
+> > guess we'll have to keep track of the current mode themselves and call
+> > bma150_set_mode() ourselves if, after calling pm_runtime_get/put_sync()
+> > we find that our mode is different from what we expect it to be.
+> > 
+> > I also noticed that you did not properly free IRQ on device removal and
+> > also polled devices need to be freed always (unlike regular input
+> > devices that should be only unregistered). The default_cfg can't be
+> > __initdata because it is used by __devinit functions. And my version of
+> > GCC can't figure out that ipoll_dev never used uninitialized and gives
+> > false warning.
+> > 
+> > I tried correcting these issues in the patch below, along with renaming
+> > 'ret' to 'error' which I prefer when we dealing with error handling.
+> > Could you please git it a try and if everything still works I'll fold it
+> > and commit.
+> 
+> Thanks Dmitry! I tried your patch and it worked like a charm!
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 21574bd..13f0040 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -500,6 +500,7 @@ config MFD_WM8994
- config MFD_PCF50633
- 	tristate "Support for NXP PCF50633"
- 	depends on I2C
-+	select REGMAP_I2C
- 	help
- 	  Say yes here if you have NXP PCF50633 chip on your board.
- 	  This core driver provides register access and IRQ handling
-diff --git a/drivers/mfd/pcf50633-core.c b/drivers/mfd/pcf50633-core.c
-index 57868416..c6720dc 100644
---- a/drivers/mfd/pcf50633-core.c
-+++ b/drivers/mfd/pcf50633-core.c
-@@ -23,45 +23,16 @@
- #include <linux/i2c.h>
- #include <linux/pm.h>
- #include <linux/slab.h>
-+#include <linux/regmap.h>
-+#include <linux/err.h>
- 
- #include <linux/mfd/pcf50633/core.h>
- 
--static int __pcf50633_read(struct pcf50633 *pcf, u8 reg, int num, u8 *data)
--{
--	int ret;
--
--	ret = i2c_smbus_read_i2c_block_data(pcf->i2c_client, reg,
--				num, data);
--	if (ret < 0)
--		dev_err(pcf->dev, "Error reading %d regs at %d\n", num, reg);
--
--	return ret;
--}
--
--static int __pcf50633_write(struct pcf50633 *pcf, u8 reg, int num, u8 *data)
--{
--	int ret;
--
--	ret = i2c_smbus_write_i2c_block_data(pcf->i2c_client, reg,
--				num, data);
--	if (ret < 0)
--		dev_err(pcf->dev, "Error writing %d regs at %d\n", num, reg);
--
--	return ret;
--
--}
--
- /* Read a block of up to 32 regs  */
- int pcf50633_read_block(struct pcf50633 *pcf, u8 reg,
- 					int nr_regs, u8 *data)
- {
--	int ret;
--
--	mutex_lock(&pcf->lock);
--	ret = __pcf50633_read(pcf, reg, nr_regs, data);
--	mutex_unlock(&pcf->lock);
--
--	return ret;
-+	return regmap_raw_read(pcf->regmap, reg, data, nr_regs);
- }
- EXPORT_SYMBOL_GPL(pcf50633_read_block);
- 
-@@ -71,21 +42,22 @@ int pcf50633_write_block(struct pcf50633 *pcf , u8 reg,
- {
- 	int ret;
- 
--	mutex_lock(&pcf->lock);
--	ret = __pcf50633_write(pcf, reg, nr_regs, data);
--	mutex_unlock(&pcf->lock);
-+	ret = regmap_raw_write(pcf->regmap, reg, data, nr_regs);
-+	if (ret != 0)
-+		return ret;
- 
--	return ret;
-+	return nr_regs;
- }
- EXPORT_SYMBOL_GPL(pcf50633_write_block);
- 
- u8 pcf50633_reg_read(struct pcf50633 *pcf, u8 reg)
- {
--	u8 val;
-+	unsigned int val;
-+	int ret;
- 
--	mutex_lock(&pcf->lock);
--	__pcf50633_read(pcf, reg, 1, &val);
--	mutex_unlock(&pcf->lock);
-+	ret = regmap_read(pcf->regmap, reg, &val);
-+	if (ret < 0)
-+		return -1;
- 
- 	return val;
- }
-@@ -93,56 +65,19 @@ EXPORT_SYMBOL_GPL(pcf50633_reg_read);
- 
- int pcf50633_reg_write(struct pcf50633 *pcf, u8 reg, u8 val)
- {
--	int ret;
--
--	mutex_lock(&pcf->lock);
--	ret = __pcf50633_write(pcf, reg, 1, &val);
--	mutex_unlock(&pcf->lock);
--
--	return ret;
-+	return regmap_write(pcf->regmap, reg, val);
- }
- EXPORT_SYMBOL_GPL(pcf50633_reg_write);
- 
- int pcf50633_reg_set_bit_mask(struct pcf50633 *pcf, u8 reg, u8 mask, u8 val)
- {
--	int ret;
--	u8 tmp;
--
--	val &= mask;
--
--	mutex_lock(&pcf->lock);
--	ret = __pcf50633_read(pcf, reg, 1, &tmp);
--	if (ret < 0)
--		goto out;
--
--	tmp &= ~mask;
--	tmp |= val;
--	ret = __pcf50633_write(pcf, reg, 1, &tmp);
--
--out:
--	mutex_unlock(&pcf->lock);
--
--	return ret;
-+	return regmap_update_bits(pcf->regmap, reg, mask, val);
- }
- EXPORT_SYMBOL_GPL(pcf50633_reg_set_bit_mask);
- 
- int pcf50633_reg_clear_bits(struct pcf50633 *pcf, u8 reg, u8 val)
- {
--	int ret;
--	u8 tmp;
--
--	mutex_lock(&pcf->lock);
--	ret = __pcf50633_read(pcf, reg, 1, &tmp);
--	if (ret < 0)
--		goto out;
--
--	tmp &= ~val;
--	ret = __pcf50633_write(pcf, reg, 1, &tmp);
--
--out:
--	mutex_unlock(&pcf->lock);
--
--	return ret;
-+	return regmap_update_bits(pcf->regmap, reg, val, 0);
- }
- EXPORT_SYMBOL_GPL(pcf50633_reg_clear_bits);
- 
-@@ -251,6 +186,11 @@ static int pcf50633_resume(struct device *dev)
- 
- static SIMPLE_DEV_PM_OPS(pcf50633_pm, pcf50633_suspend, pcf50633_resume);
- 
-+static struct regmap_config pcf50633_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+};
-+
- static int __devinit pcf50633_probe(struct i2c_client *client,
- 				const struct i2c_device_id *ids)
- {
-@@ -272,16 +212,23 @@ static int __devinit pcf50633_probe(struct i2c_client *client,
- 
- 	mutex_init(&pcf->lock);
- 
-+	pcf->regmap = regmap_init_i2c(client, &pcf50633_regmap_config);
-+	if (IS_ERR(pcf->regmap)) {
-+		ret = PTR_ERR(pcf->regmap);
-+		dev_err(pcf->dev, "Failed to allocate register map: %d\n",
-+			ret);
-+		goto err_free;
-+	}
-+
- 	i2c_set_clientdata(client, pcf);
- 	pcf->dev = &client->dev;
--	pcf->i2c_client = client;
- 
- 	version = pcf50633_reg_read(pcf, 0);
- 	variant = pcf50633_reg_read(pcf, 1);
- 	if (version < 0 || variant < 0) {
- 		dev_err(pcf->dev, "Unable to probe pcf50633\n");
- 		ret = -ENODEV;
--		goto err_free;
-+		goto err_regmap;
- 	}
- 
- 	dev_info(pcf->dev, "Probed device version %d variant %d\n",
-@@ -328,6 +275,8 @@ static int __devinit pcf50633_probe(struct i2c_client *client,
- 
- 	return 0;
- 
-+err_regmap:
-+	regmap_exit(pcf->regmap);
- err_free:
- 	kfree(pcf);
- 
-@@ -351,6 +300,7 @@ static int __devexit pcf50633_remove(struct i2c_client *client)
- 	for (i = 0; i < PCF50633_NUM_REGULATORS; i++)
- 		platform_device_unregister(pcf->regulator_pdev[i]);
- 
-+	regmap_exit(pcf->regmap);
- 	kfree(pcf);
- 
- 	return 0;
-diff --git a/include/linux/mfd/pcf50633/core.h b/include/linux/mfd/pcf50633/core.h
-index 50d4a04..a808407 100644
---- a/include/linux/mfd/pcf50633/core.h
-+++ b/include/linux/mfd/pcf50633/core.h
-@@ -21,6 +21,7 @@
- #include <linux/mfd/pcf50633/backlight.h>
- 
- struct pcf50633;
-+struct regmap;
- 
- #define PCF50633_NUM_REGULATORS	11
- 
-@@ -134,7 +135,7 @@ enum {
- 
- struct pcf50633 {
- 	struct device *dev;
--	struct i2c_client *i2c_client;
-+	struct regmap *regmap;
- 
- 	struct pcf50633_platform_data *pdata;
- 	int irq;
+Excellent, thanks for testing.
+
+> 
+> Do you take it from here or would you like me to send an updated
+> version that includes your patch?
+
+No, there is no need for that. I'll fold them all together and queue for
+2.6.32.
+
+I take the other patch that makes polled devices do poll upon opening
+working well for you too.. Should I queue for .2 as well?
+
+Thanks.
+
 -- 
-1.7.5.4
-
+Dmitry
