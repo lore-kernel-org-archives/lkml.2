@@ -1,93 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873Ab1HHSTz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 14:19:55 -0400
-Received: from banach.math.auburn.edu ([131.204.45.3]:42739 "EHLO
-	banach.math.auburn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931Ab1HHSTy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 14:19:54 -0400
-Date: Mon, 8 Aug 2011 13:23:56 -0500 (CDT)
-From: Theodore Kilgore <kilgota@banach.math.auburn.edu>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-cc: Hans de Goede <hdegoede@redhat.com>, Greg KH <greg@kroah.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
-        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
-        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Adam Baker <linux@baker-net.org.uk>
-Subject: Re: USB mini-summit at LinuxCon Vancouver
-In-Reply-To: <20110808175837.GA6398@xanatos>
-Message-ID: <alpine.LNX.2.00.1108081316120.21409@banach.math.auburn.edu>
-References: <20110610002103.GA7169@xanatos> <4E3B1B7B.2040501@infradead.org> <20110804225603.GA2557@kroah.com> <4E3B9FB4.30709@redhat.com> <20110808175837.GA6398@xanatos>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753926Ab1HHSUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 14:20:11 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:47670 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751931Ab1HHSUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 14:20:08 -0400
+Date: Mon, 8 Aug 2011 11:20:16 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Michael Guntsche <mike@it-loops.com>
+Cc: netdev <netdev@vger.kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] 3.0-rc1 Bridge not forwarding unicast packages
+Message-ID: <20110808112016.4fc61c4c@nehalam.ftrdhcpuser.net>
+In-Reply-To: <20110808195930@it-loops.com>
+References: <20110808192646@it-loops.com>
+	<20110808104803.2762dbf7@nehalam.ftrdhcpuser.net>
+	<20110808195930@it-loops.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 8 Aug 2011 20:02:52 +0200
+Michael Guntsche <mike@it-loops.com> wrote:
 
-
-On Mon, 8 Aug 2011, Sarah Sharp wrote:
-
-> On Fri, Aug 05, 2011 at 09:45:56AM +0200, Hans de Goede wrote:
-> > Hi,
+> On 08 Aug 11 10:48, Stephen Hemminger wrote:
+> > On Mon, 8 Aug 2011 19:42:19 +0200
+> > Michael Guntsche <mike@it-loops.com> wrote:
 > > 
-> > On 08/05/2011 12:56 AM, Greg KH wrote:
-> > >On Thu, Aug 04, 2011 at 07:21:47PM -0300, Mauro Carvalho Chehab wrote:
-> > I think it is important to separate oranges from apples here, there are
-> > at least 3 different problem classes which all seem to have gotten thrown
-> > onto a pile here:
+> > > Hi list,
+> > > 
+> > > I just upgraded my router/bridge combo to 3.1-rc1 from 3.0 for
+> > > testing. On a first look everything seemed to work fine, but when I
+> > > tried to connect via openvpn to my internal network (tap0 being bridged
+> > > with the internal network) I noticed that I was not able to access the
+> > > server on my internal network. I could access the bridge (which is
+> > > acting as the openvpn server as well) just fine though. 
+> > > To debug this I ran tcpdump on the openvpn client and started a ping to the
+> > > internal network. I could see the ARP requests being answered.
+> > > 
+> > > 19:23:49.247846 ARP, Request who-has 192.168.42.127 tell 192.168.42.96,
+> > > length 28
+> > > 19:23:49.287752 ARP, Reply 192.168.42.127 is-at 00:13:d4:4f:a2:dc,
+> > > length 46
+> > > 
+> > > in this case .127 is the server on the internal net and .96 the openvpn
+> > > client, but the icmp request did not arrive on the server. 
+> > > The strange thing I noticed was that I could see broadcasts packages
+> > > from the server on the client
+> > > 
+> > > 19:23:28.135185 IP 192.168.42.127.631 > 192.168.42.255.631: UDP, length
+> > > 187
+> > > 19:23:29.470975 IP 192.168.42.96.5353 > 224.0.0.251.5353: .......
+> > > 
+> > > but no icmp packages arrived on the server side.
+> > > 
+> > > 
+> > > brctl showmacs lan
+> > > port no mac addr                is local?       ageing timer
+> > >   1     00:0c:42:28:de:4e       yes                0.00
+> > >   2     00:0c:42:61:7f:f2       yes                0.00
+> > >   1     00:13:d4:4f:a2:dc       no                 0.00 <---- server on the lan side
+> > >   3     8e:22:41:d9:95:23       yes                0.00
+> > >   3     b6:e1:e3:06:c9:1a       no                 5.00 <---- client connected via tap0
+> > > 
+> > > Reverting to 3.0 solves the problem for me. I tried just reverting the bridge code on the server to the 3.0 version to make sure that it is really Bridge related, but there are too many changes outside the bridge tree so compilation fails for me.
+> > > 
+> > > If you need more information, please to not hesitate to conact me.
+> > > 
+> > > Kind regards,
+> > > Michael Guntsche
 > > 
-> > 1) The reason Mauro suggested having some discussion on this at the
-> > USB summit is because of a discussion about dual mode cameras on the
-> > linux media list.
-> ...
-> > 3) Re-direction of usb devices to virtual machines. This works by using
-> > the userspace usbfs interface from qemu / vmware / virtualbox / whatever.
-> > The basics of this work fine, but it lacks proper locking / safeguards
-> > for when a vm takes over a usb device from the in kernel driver.
+> > Do you have spanning tree enabled?
+> > If  so you may have a packet loop and now it is being detected.
+> No STP is not enabled
 > 
-> Hi Hans and Mauro,
+> brctl show lan
+> bridge name     bridge id               STP enabled     interfaces
+> lan             8000.000c4228de4e       no              lan_wire
+>                                                         tap0
+>                                                         wlan0
 > 
-> We have do room in the schedule for the USB mini-summit for this
-> discussion, since the schedule is still pretty flexible.  The
-> preliminary schedule is up here:
+> No ebtables rules either just checked that.
+> Is there a way to revert just the bridge code to the 3.0 version so i can make sure it is really the bridge code, and not something else?
 > 
-> http://userweb.kernel.org/~sarah/linuxcon-usb-minisummit.html
-> 
-> I think it's best to discuss the VM redirection in the afternoon when
-> some of the KVM folks join us after Hans' talk on USB redirection over
-> the network.
-> 
-> It sounds like we need a separate topic for the dual mode cameras and TV
-> tuners.  Mauro, do you want to lead that discussion in the early morning
-> (in a 9:30 to 10:30 slot) or in the late afternoon (in a 15:30 to 16:30
-> slot)?  I want to be sure we have all the video/media developers who are
-> interested in this topic present, and I don't know if they will be going
-> to the KVM forum.
 
-Sarah,
+You need to use git bisect, it is not necessarily the bridge code.
+Could be vpn, tap, wlan or lots of other things.
 
-Alas. I would suspect that I am one of the people most interested in the 
-topic of dual-mode cameras, since I have worked on supporting them both in 
-libgphoto2 and in the kernel. But I teach in a university for a living, 
-and the first classes of Fall Semester 2011 start on August 17 in Auburn, 
-Alabama. Knowing this, I decided, months ago, that I simply could not 
-attend a conference which starts on August 16 in Vancouver.
-
-So, after starting all of the current mailing-list discussion on the topic 
-I will not be at the conference. I can only hope that those who do attend 
-will keep me current about what gets discussed.
-
-Theodore Kilgore
