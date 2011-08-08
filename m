@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab1HHO1D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 10:27:03 -0400
-Received: from nm12.access.bullet.mail.mud.yahoo.com ([66.94.237.213]:32088
-	"HELO nm12.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751924Ab1HHO1C (ORCPT
+	id S1753702Ab1HHO1U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 10:27:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46402 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753564Ab1HHO1S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 10:27:02 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 353265.58912.bm@omp1002.access.mail.mud.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=att.net;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=Qacw6FinyV/woksFX3SNq4s8fqimEIdSlYCjMPAmlrVhrIijDIUvmPSc0gUs+acD5DMiBs19bWWtQ/HXkIJDqVwRcrkbcgFiL4D2qkfbEkdmFU0KPCTDc2azXbOpMnimv11C8i/VZTFF2SsASim9rH82g26EB1E1jzcyXzLq4vk=;
-X-YMail-OSG: a4e8KvYVM1niXz2GEuZIOFqhdM8RQsIT90SQN5g3r7EDelq
- Gd7h_TithxmgQVvcIrObISwZUoO8cX_rf3Zu53Vwm86O6ybGdMODciKyN2Hg
- RV.gMwpxiMthi_LjpitDuvq99W4DgHWgpudTGuyrJnrIAd1n1VNuoGrmWUB8
- J1zCKaouF5zyXT2bDJLzNLlGCRk5LLOL0Tq1b9JowFOBAivMlJpidkskA79b
- XCWlzZXZc8VYTDpu1hTR8mhI6Wlcb1X18PSjdjt7bOGKttJDmm8_pBHsUu.y
- v4rLET67Q.MTOlbF.ou7Zm9ffyI0dbOXl7Pfte2K23CQt1VIkxEUI8ocbdkn
- 9FTSrinq.n6olPbFzTRxWM8E5JQ4KejkXAERVdqilK21qGbTgCIkEwZtteEj
- Huc3VsTIyj_Cdj8RAdHuolyzerlpJglhtF0mQKGky6Z03gqImWU2m9eFhyg4
- qpAaCsnVs5tfniXwIAXle7UGKlmSAOlDe9NPex.OtOehto9nj1z4jhBaHCgh
- BtFTGXhdGOgrULXb5B8qEm0QHijJTAC6dNYmk3O6X8HNoqwSlidqzxnKRQwz
- Z8opk5v2TNrSbiCHDy2wESrZzzMRMBXfHHmAuOgBwbZt1oN7SZnHU_Ni4
-X-Mailer: YahooMailRC/574 YahooMailWebService/0.8.113.313619
-Message-ID: <1312813620.63161.YahooMailRC@web181512.mail.ne1.yahoo.com>
-Date: Mon, 8 Aug 2011 07:27:00 -0700 (PDT)
-From: favourndoye <webdraw753@att.net>
-Reply-To: favourndoye <favourndoye42@gmail.com>
-Subject: Hello my love, My name is Favour Ndoye,i come across and read through your profile today and i became interested in you,i will also like to know you the more,and i want you to send an e-mail to my e-mail address so i can give you my picture for you to know whom i am and for the both of us to know each other very well and better in life,and we can achieve it in future because ture love and feeling means alot in future.Here is my private e-mail address you can contact me with it.(favourndoye42@gmail.com)I am waiting for your mail to my e-mail address above and aslo, Remember the distance or colour does not matter but love,feeling,e-motions and sympathetic love matters alot in life. Thanks,and i promise to be honest and to keep a very good relationship with you. Favour.              favourndoye42@gmail.com
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 8 Aug 2011 10:27:18 -0400
+Subject: Re: [PATCH 4/5] writeback: per task dirty rate limit
+From: Peter Zijlstra <peterz@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 08 Aug 2011 16:26:52 +0200
+In-Reply-To: <20110808142318.GC22080@localhost>
+References: <20110806084447.388624428@intel.com>
+	 <20110806094527.002914580@intel.com> <1312811234.10488.34.camel@twins>
+	 <20110808142318.GC22080@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1312813612.10488.36.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-08-08 at 22:23 +0800, Wu Fengguang wrote:
+> +       preempt_disable();
+> +       p = &__get_cpu_var(dirty_leaks);
 
+ p = &get_cpu_var(dirty_leaks);
 
+> +       if (*p > 0 && current->nr_dirtied < ratelimit) {
+> +               nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
+> +               *p -= nr_pages_dirtied;
+> +               current->nr_dirtied += nr_pages_dirtied;
+> +       }
+> +       preempt_enable(); 
+
+put_cpu_var(dirty_leads);
