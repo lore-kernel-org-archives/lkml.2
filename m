@@ -1,53 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab1HHTcf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 15:32:35 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:39668 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab1HHTcd (ORCPT
+	id S1753239Ab1HHTdM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 15:33:12 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:33958 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752933Ab1HHTdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 15:32:33 -0400
-Date: Mon, 8 Aug 2011 21:32:31 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 11/11] DIO: optimize cache misses in the submission path
-Message-ID: <20110808193231.GM5782@one.firstfloor.org>
-References: <1312259893-4548-1-git-send-email-andi@firstfloor.org> <1312259893-4548-12-git-send-email-andi@firstfloor.org> <x49zkjjg2w5.fsf@segfault.boston.devel.redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49zkjjg2w5.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.4.2.2i
+	Mon, 8 Aug 2011 15:33:10 -0400
+Message-ID: <4E4039F3.9010802@candelatech.com>
+Date: Mon, 08 Aug 2011 12:33:07 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: gregkh@suse.de, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.0.1 compile error on Fedora 15
+References: <4E402E5F.5010600@candelatech.com>	<20110808115238.b19b293e.rdunlap@xenotime.net>	<4E403121.8080402@candelatech.com> <20110808121104.5a233da4.rdunlap@xenotime.net>
+In-Reply-To: <20110808121104.5a233da4.rdunlap@xenotime.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I bet we could default to using the smaller block size all the time, and
-> still be able to detect when we don't have to do the sub-block zeroing.
-> Maybe that would be a good follow-on patch.
+On 08/08/2011 12:11 PM, Randy Dunlap wrote:
+> On Mon, 08 Aug 2011 11:55:29 -0700 Ben Greear wrote:
+>
+>> On 08/08/2011 11:52 AM, Randy Dunlap wrote:
+>>> On Mon, 08 Aug 2011 11:43:43 -0700 Ben Greear wrote:
+>>>
+>>>> [greearb@t60-ben linux-3.0.p4s]$ make
+>>>> make -C /home/greearb/git/linux-3.0.dev.y O=/home/greearb/kernel/2.6/linux-3.0.p4s/.
+>>>>      Using /home/greearb/git/linux-3.0.dev.y as source for kernel
+>>>>      GEN     /home/greearb/kernel/2.6/linux-3.0.p4s/Makefile
+>>>>      CHK     include/linux/version.h
+>>>>      CHK     include/generated/utsrelease.h
+>>>>      CALL    /home/greearb/git/linux-3.0.dev.y/scripts/checksyscalls.sh
+>>>>      CHK     include/generated/compile.h
+>>>>      CC      fs/binfmt_misc.o
+>>>> In file included from /home/greearb/git/linux-3.0.dev.y/arch/x86/include/asm/uaccess.h:570:0,
+>>>>                     from /home/greearb/git/linux-3.0.dev.y/include/linux/uaccess.h:5,
+>>>>                     from /home/greearb/git/linux-3.0.dev.y/include/linux/highmem.h:7,
+>>>>                     from /home/greearb/git/linux-3.0.dev.y/include/linux/pagemap.h:10,
+>>>>                     from /home/greearb/git/linux-3.0.dev.y/fs/binfmt_misc.c:26:
+>>>> /home/greearb/git/linux-3.0.dev.y/arch/x86/include/asm/uaccess_32.h: In function ‘parse_command.part.0’:
+>>>> /home/greearb/git/linux-3.0.dev.y/arch/x86/include/asm/uaccess_32.h:211:26: error: call to ‘copy_from_user_overflow’ declared with attribute error:
+>>>> copy_from_user() buffer size is not provably correct
+>>>> make[3]: *** [fs/binfmt_misc.o] Error 1
+>>>> make[2]: *** [fs] Error 2
+>>>> make[1]: *** [sub-make] Error 2
+>>>> make: *** [all] Error 2
+>>>> [greearb@t60-ben linux-3.0.p4s]$
+>>>>
+>>>>
+>>>> The code in question is below.  Is this missing an assignment to n
+>>>> in the else branch?
+>>>>
+>>>> static inline unsigned long __must_check copy_from_user(void *to,
+>>>>                                              const void __user *from,
+>>>>                                              unsigned long n)
+>>>> {
+>>>>            int sz = __compiletime_object_size(to);
+>>>>
+>>>>            if (likely(sz == -1 || sz>= n))
+>>>>                    n = _copy_from_user(to, from, n);
+>>>>            else
+>>>>                    copy_from_user_overflow();
+>>>>
+>>>>            return n;
+>>>> }
+>>>
+>>>
+>>> Do you have this kconfig option enabled?
+>>> CONFIG_DEBUG_STRICT_USER_COPY_CHECKS=y
+>>>
+>>> If so, you should get the error that you reported.
+>>> If not, then you need a patch like the one below (which has been posted
+>>> by other people several times -- might need to be added to -stable):
+>>
+>> I do have that enabled.   I'm slightly confused by your response above:
+>>
+>> Do I need to disable the check AND apply the patch below, or just disable
+>> the check, or just apply the patch and leave the check enabled?
+>
+> Hm, I guess I'm confused also.  The patch only applies to linux-next,
+> not to 3.0.x.
+>
+> The patch below is needed (in linux-next) to fix a build
+> error when CONFIG_DEBUG_STRICT_USER_COPY_CHECKS is not enabled.
+>
+> When you do have CONFIG_DEBUG_STRICT_USER_COPY_CHECKS, the build error is
+> the correct result.  AFAIK.  So it looks to me like you should either
+> disable the kconfig option or fix the code in fs/binfmt_misc.c.
+> I would do the former -- depending on your use case.
 
-It doesn't really matter because it's out of the fast path now.
+I can disable the check, but I hope someone fixes the real problem
+and sends the patch to stable.  Seems a bit lame that we have compile
+errors in stable series...
 
-> > +	/* 
-> > +	 * Avoid references to bdev if not absolutely needed to give
-> > +	 * the early prefetch in the caller enough time.
-> > +	 */
-> >  
-> > -	if (offset & blocksize_mask) {
-> > +	if (unlikely(offset & blocksize_mask)) {
-> 
-> You can't make this assumption.  Userspace controls what size/alignment
-> of blocks to send in.
+Thanks,
+Ben
 
-What assumption do you mean?
+>
+>
+>> Thanks,
+>> Ben
+>>
+>>>
+>>>
+>>> ---
+>>>    lib/Makefile |    2 +-
+>>>    1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>> --- linux-next-20110728.orig/lib/Makefile
+>>> +++ linux-next-20110728/lib/Makefile
+>>> @@ -14,7 +14,7 @@ lib-y := ctype.o string.o vsprintf.o cmd
+>>>    	 proportions.o prio_heap.o ratelimit.o show_mem.o \
+>>>    	 is_single_threaded.o plist.o decompress.o find_next_bit.o
+>>>
+>>> -lib-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+>>> +obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
+>>>    lib-$(CONFIG_MMU) += ioremap.o
+>>>    lib-$(CONFIG_SMP) += cpumask.o
+>>>
+>>
+>>
+>> --
+>
+>
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-The code semantics are identical, just the place where I fetch
-the block size is different (unless I missed something of course)
 
-
--Andi
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
