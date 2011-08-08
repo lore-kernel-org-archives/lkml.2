@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752418Ab1HHMSB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 08:18:01 -0400
+	id S1752823Ab1HHMSR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 08:18:17 -0400
 Received: from mail-vw0-f46.google.com ([209.85.212.46]:61945 "EHLO
 	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab1HHMR7 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752196Ab1HHMSP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 08:17:59 -0400
+	Mon, 8 Aug 2011 08:18:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <1312794859.21052.2.camel@phoenix>
+In-Reply-To: <1312794961.21052.4.camel@phoenix>
 References: <1312794859.21052.2.camel@phoenix>
-Date: Mon, 8 Aug 2011 14:17:58 +0200
-Message-ID: <CAHR064ggiMvUm1m6g9fpxV-5Bk2PShZQiwjPRrukj0w_EwskWA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] platform-drivers-x86: eeepc-laptop: fix wrong test
- for successful registered led_classdev
+	<1312794961.21052.4.camel@phoenix>
+Date: Mon, 8 Aug 2011 14:18:14 +0200
+Message-ID: <CAHR064jQkgt0B8wHX_j301eqTtEakSPw5+TeiUqPpC4AHL6YXg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] platform-drivers-x86: asus-wmi: fix resource leak in asus_wmi_led_exit
 From: Corentin Chary <corentin.chary@gmail.com>
 To: Axel Lin <axel.lin@gmail.com>
 Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
@@ -25,50 +25,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good catch ! It would be great to have a coccinel script to check that
-in scripts/coccinelle/null/.
-
-On Mon, Aug 8, 2011 at 11:14 AM, Axel Lin <axel.lin@gmail.com> wrote:
+On Mon, Aug 8, 2011 at 11:16 AM, Axel Lin <axel.lin@gmail.com> wrote:
+> This patch fixes wrong test for successful registered led_classdev,
+> and also fixes a leak due to missing led_classdev_unregister call
+> for asus->kbd_led in asus_wmi_led_exit.
+>
 > device_create returns &struct device pointer on success, or ERR_PTR() on error.
 > Thus if led_classdev_register fails, led_cdev->dev is always not NULL.
 >
-> If IS_ERR(eeepc->tpd_led.dev) is ture, it means led_classdev_register fails.
-> If (asus->tpd_led.dev) is NULL, it means we call eeepc_led_exit before
-> calling led_classdev_register for &eeepc->tpd_led.
+> Thus to unregister a successful registered led_classdev, we should check
+> (!IS_ERR_OR_NULL(asus->tpd_led.dev)) instead of (asus->tpd_led.dev).
 >
-> We only want to call led_classdev_unregister for sucessfully registered
-> led_classdev, then we should check (!IS_ERR_OR_NULL(eeepc->tpd_led.dev)).
+> we use IS_ERR_OR_NULL instead of IS_ERR because if we havn't call
+> led_classdev_register, the led_cdev->dev is NULL.
 >
 > Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
 Acked-by: Corentin Chary <corentin.chary@gmail.com>
 
 > ---
->  drivers/platform/x86/eeepc-laptop.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>  drivers/platform/x86/asus-wmi.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
 >
-> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-> index 1c45d92..29a216a 100644
-> --- a/drivers/platform/x86/eeepc-laptop.c
-> +++ b/drivers/platform/x86/eeepc-laptop.c
-> @@ -568,7 +568,7 @@ static int eeepc_led_init(struct eeepc_laptop *eeepc)
+> diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
+> index 95cba9e..d1049ee 100644
+> --- a/drivers/platform/x86/asus-wmi.c
+> +++ b/drivers/platform/x86/asus-wmi.c
+> @@ -453,7 +453,9 @@ static enum led_brightness kbd_led_get(struct led_classdev *led_cdev)
 >
->  static void eeepc_led_exit(struct eeepc_laptop *eeepc)
+>  static void asus_wmi_led_exit(struct asus_wmi *asus)
 >  {
-> -       if (eeepc->tpd_led.dev)
-> +       if (!IS_ERR_OR_NULL(eeepc->tpd_led.dev))
->                led_classdev_unregister(&eeepc->tpd_led);
->        if (eeepc->led_workqueue)
->                destroy_workqueue(eeepc->led_workqueue);
+> -       if (asus->tpd_led.dev)
+> +       if (!IS_ERR_OR_NULL(asus->kbd_led.dev))
+> +               led_classdev_unregister(&asus->kbd_led);
+> +       if (!IS_ERR_OR_NULL(asus->tpd_led.dev))
+>                led_classdev_unregister(&asus->tpd_led);
+>        if (asus->led_workqueue)
+>                destroy_workqueue(asus->led_workqueue);
 > --
 > 1.7.4.1
 >
 >
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
 
 
