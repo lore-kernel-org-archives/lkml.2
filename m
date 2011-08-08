@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab1HHT7u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 15:59:50 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:62362 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab1HHT7u (ORCPT
+	id S1753483Ab1HHUBo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 16:01:44 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:36277 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752066Ab1HHUBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 15:59:50 -0400
-Message-ID: <4E40401F.4030309@atmel.com>
-Date: Mon, 08 Aug 2011 20:59:27 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [RFC PATCH 2/2] AT91: dt: simple device tree support for at91sam9g45
- family
-References: <56092075210001f40db485e0b126fe7c0c7b75ac.1312560476.git.nicolas.ferre@atmel.com> <bdd7c02a561bc0655e9dfd4586f42774f2347ca1.1312560476.git.nicolas.ferre@atmel.com> <20110807035751.GC7667@ponder.secretlab.ca>
-In-Reply-To: <20110807035751.GC7667@ponder.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 8 Aug 2011 16:01:42 -0400
+Date: Mon, 8 Aug 2011 13:01:28 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: Dave Airlie <airlied@redhat.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 2/4] drm/i915: Leave LVDS registers unlocked
+Message-ID: <20110808130128.06654f54@jbarnes-desktop>
+In-Reply-To: <yunobzz1xz8.fsf@aiko.keithp.com>
+References: <1312653248-3487-1-git-send-email-keithp@keithp.com>
+	<1312653248-3487-3-git-send-email-keithp@keithp.com>
+	<20110808093010.487c4559@jbarnes-desktop>
+	<yunr54vu4lr.fsf@aiko.keithp.com>
+	<20110808114954.23b62dd3@jbarnes-desktop>
+	<yunobzz1xz8.fsf@aiko.keithp.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2011 04:57 AM, Grant Likely wrote:
-> On Fri, Aug 05, 2011 at 05:24:53PM +0100, Nicolas Ferre wrote:
->> Add basic device tree support for at91sam9g45 SoC family and the
->> at91sam9m10g45ek board.
->> DT is been used to describe the at91sam9g45 SoC memory and AIC. It also
->> adds the dmaengine driver.
->>
->> Signed-off-by: Nicolas Ferre<nicolas.ferre@atmel.com>
->
-> Hi Nicolas,
->
-> Looks like a great start.  I was glad we could work on this last week.
+On Mon, 08 Aug 2011 12:53:31 -0700
+Keith Packard <keithp@keithp.com> wrote:
 
-Yes, that was enriching.
+> On Mon, 8 Aug 2011 11:49:54 -0700, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> 
+> > Yep, it's safe and possible to do on pre-PCH as well.  For panel
+> > fitting we do need to do an actual power cycle when going from
+> > non-native back to native iirc, but we can still leave them unlocked so
+> > we don't have to worry about the lock/unlock sequence everywhere.
+> 
+> Hidden in the unlock patch was a call to intel_lvds_disable from
+> intel_lvds_prepare -- that *always* turns off the LVDS for mode
+> setting. Do we care enough about LVDS mode setting performance that we
+> should try leave the optimization in place that doesn't turn off the
+> backlight when switching between modes?
 
-> Some comments below.
+We hate flicker right?  But generally yes it's safer to just turn it
+off all the time.
 
-I will have to rework this series for sure but I have limited access to 
-my git tree/emails this week... I plan to come back to this next week.
-
->> ---
->>   arch/arm/mach-at91/Kconfig               |    8 ++++++
->>   arch/arm/mach-at91/Makefile.boot         |    2 +
->>   arch/arm/mach-at91/at91sam9g45_devices.c |    3 +-
->>   arch/arm/mach-at91/board-sam9m10g45ek.c  |   36 ++++++++++++++++++++++++++++++
->>   4 files changed, 48 insertions(+), 1 deletions(-)
-
-[..]
-
-Best regards,
 -- 
-Nicolas Ferre
+Jesse Barnes, Intel Open Source Technology Center
