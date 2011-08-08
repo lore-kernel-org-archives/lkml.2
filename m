@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109Ab1HHLS3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 07:18:29 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:53592 "EHLO mgw2.diku.dk"
+	id S1752180Ab1HHLSX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 07:18:23 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:53562 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752658Ab1HHLSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 07:18:16 -0400
+	id S1751748Ab1HHLSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 07:18:11 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Luciano Coelho <coelho@ti.com>
-Cc: kernel-janitors@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: kernel-janitors@vger.kernel.org, Stephen Hemminger <shemminger@vyatta.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Arnd Bergmann <arnd@arndb.de>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 9/9] drivers/net/wireless/wl1251: add missing kfree
-Date: Mon,  8 Aug 2011 13:18:03 +0200
-Message-Id: <1312802283-9107-9-git-send-email-julia@diku.dk>
+Subject: [PATCH 4/9] drivers/staging/bcm/nvm.c: add missing kfree
+Date: Mon,  8 Aug 2011 13:17:58 +0200
+Message-Id: <1312802283-9107-4-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,8 +22,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-In each case, the kfree already at the end of the function is also needed
-in the error case.
+Buff is only used as a temporary buffer within the function, so it should
+be freed before leaving the function in an error case.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -63,46 +63,59 @@ if (...) { ... when != x
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/wireless/wl1251/acx.c |    6 +-----
- drivers/net/wireless/wl1251/cmd.c |    2 +-
- 2 files changed, 2 insertions(+), 6 deletions(-)
+ drivers/staging/bcm/nvm.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/wireless/wl1251/acx.c b/drivers/net/wireless/wl1251/acx.c
-index ef8370e..ad87a1a 100644
---- a/drivers/net/wireless/wl1251/acx.c
-+++ b/drivers/net/wireless/wl1251/acx.c
-@@ -140,8 +140,6 @@ int wl1251_acx_sleep_auth(struct wl1251 *wl, u8 sleep_auth)
- 	auth->sleep_auth = sleep_auth;
+diff --git a/drivers/staging/bcm/nvm.c b/drivers/staging/bcm/nvm.c
+index 4da5b7b..3de0daf 100644
+--- a/drivers/staging/bcm/nvm.c
++++ b/drivers/staging/bcm/nvm.c
+@@ -4013,7 +4013,8 @@ INT BcmCopyISO(PMINI_ADAPTER Adapter, FLASH2X_COPY_SECTION sCopySectStrut)
+ 		if(uiTotalDataToCopy < ISOLength)
+ 		{
+ 			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_PRINTK, 0, 0,"error as Source ISO Section does not have valid signature");
+-			return STATUS_FAILURE;
++			Status = STATUS_FAILURE;
++			goto out;
+ 		}
  
- 	ret = wl1251_cmd_configure(wl, ACX_SLEEP_AUTH, auth, sizeof(*auth));
--	if (ret < 0)
--		return ret;
+ 		uiTotalDataToCopy =(Adapter->psFlash2xCSInfo->OffsetISOImage2Part1End) -
+@@ -4026,7 +4027,8 @@ INT BcmCopyISO(PMINI_ADAPTER Adapter, FLASH2X_COPY_SECTION sCopySectStrut)
+ 		if(uiTotalDataToCopy < ISOLength)
+ 		{
+ 			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_PRINTK, 0, 0,"error as Dest ISO Section does not have enough section size");
+-			return STATUS_FAILURE;
++			Status = STATUS_FAILURE;
++			goto out;
+ 		}
  
- out:
- 	kfree(auth);
-@@ -681,10 +679,8 @@ int wl1251_acx_cca_threshold(struct wl1251 *wl)
+ 		uiTotalDataToCopy = ISOLength;
+@@ -4143,7 +4145,8 @@ INT BcmCopyISO(PMINI_ADAPTER Adapter, FLASH2X_COPY_SECTION sCopySectStrut)
+ 		if(uiTotalDataToCopy < ISOLength)
+ 		{
+ 			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_PRINTK, 0, 0,"error as Source ISO Section does not have valid signature");
+-			return STATUS_FAILURE;
++			Status = STATUS_FAILURE;
++			goto out;
+ 		}
  
- 	ret = wl1251_cmd_configure(wl, ACX_CCA_THRESHOLD,
- 				   detection, sizeof(*detection));
--	if (ret < 0) {
-+	if (ret < 0)
- 		wl1251_warning("failed to set cca threshold: %d", ret);
--		return ret;
--	}
+ 		uiTotalDataToCopy =(Adapter->psFlash2xCSInfo->OffsetISOImage1Part1End) -
+@@ -4156,7 +4159,8 @@ INT BcmCopyISO(PMINI_ADAPTER Adapter, FLASH2X_COPY_SECTION sCopySectStrut)
+ 		if(uiTotalDataToCopy < ISOLength)
+ 		{
+ 			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_PRINTK, 0, 0,"error as Dest ISO Section does not have enough section size");
+-			return STATUS_FAILURE;
++			Status = STATUS_FAILURE;
++			goto out;
+ 		}
  
- out:
- 	kfree(detection);
-diff --git a/drivers/net/wireless/wl1251/cmd.c b/drivers/net/wireless/wl1251/cmd.c
-index 81f164b..d14d69d 100644
---- a/drivers/net/wireless/wl1251/cmd.c
-+++ b/drivers/net/wireless/wl1251/cmd.c
-@@ -241,7 +241,7 @@ int wl1251_cmd_data_path(struct wl1251 *wl, u8 channel, bool enable)
- 	if (ret < 0) {
- 		wl1251_error("tx %s cmd for channel %d failed",
- 			     enable ? "start" : "stop", channel);
--		return ret;
-+		goto out;
+ 		uiTotalDataToCopy = ISOLength;
+@@ -4257,6 +4261,7 @@ INT BcmCopyISO(PMINI_ADAPTER Adapter, FLASH2X_COPY_SECTION sCopySectStrut)
+ 
  	}
  
- 	wl1251_debug(DEBUG_BOOT, "tx %s cmd channel %d",
++out:
+ 	kfree(Buff);
+ 
+ 	return Status;
 
