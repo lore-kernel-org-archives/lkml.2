@@ -1,190 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab1HHUo7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 16:44:59 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:55497 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753418Ab1HHUo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 16:44:57 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Liu, ShuoX" <shuox.liu@intel.com>
-Subject: Re: [PATCH v2] PM: add statistics debugfs file for suspend to ram
-Date: Mon, 8 Aug 2011 22:46:24 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc1+; KDE/4.6.0; x86_64; ; )
-Cc: "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, "Brown, Len" <len.brown@intel.com>,
-        "pavel@ucw.cz" <pavel@ucw.cz>
-References: <6E3BC7F7C9A4BF4286DD4C043110F30B5B8057C04B@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <6E3BC7F7C9A4BF4286DD4C043110F30B5B8057C04B@shsmsx502.ccr.corp.intel.com>
+	id S1754231Ab1HHUp2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 16:45:28 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:34006 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753640Ab1HHUpZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 16:45:25 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201108082246.24726.rjw@sisk.pl>
+In-Reply-To: <Pine.LNX.4.44L0.1108081616470.1944-100000@iolanthe.rowland.org>
+References: <CAJ0pr19=YHs9At=xXta-9Fro7QYAwpk=5e8SHWaRYgj8+iDKyQ@mail.gmail.com>
+	<Pine.LNX.4.44L0.1108081616470.1944-100000@iolanthe.rowland.org>
+Date: Mon, 8 Aug 2011 22:45:24 +0200
+Message-ID: <CAJ0pr1-C+bY0wxHJGga89yU-rHA6bG2jfK9j=equB9nvMUNymQ@mail.gmail.com>
+Subject: Re: [PATCH] usb: gadget: storage_common: make FSG_NUM_BUFFERS
+ variable size
+From: Per Forlin <per.forlin@linaro.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 8 August 2011 22:23, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Mon, 8 Aug 2011, Per Forlin wrote:
+>
+>> On 8 August 2011 20:45, Alan Stern <stern@rowland.harvard.edu> wrote:
+>> > On Mon, 8 Aug 2011, Per Forlin wrote:
+>> >
+>> >> > Okay, 6% is a worthwhile improvement, though not huge.  Did you try 6
+>> >> > or 8 buffers?  I bet going beyond 4 makes very little difference.
+>> >> >
+>> >> On my board 4 buffers are enough. More buffers will make no difference.
+>> >>
+>> >> Background study
+>> >> I started by running dd to measure performance on my target side.
+>> >> Simply to measure what would be the maximum bandwidth, 20MiB/s on my
+>> >> board. Then I started the gadget mass storage on the device and run
+>> >> the sae test from the PC host side, 18.7 MiB/s. I guessed this might
+>> >> be due to serialized cache handling. I tested to remove the dma_map
+>> >> call (replaced it with virt_to_dma). This is just a dummy test to see
+>> >> if this is causing the performance drop. Without dma_map I get
+>> >> 20MiB/s. It appears that the loss is due to dma_map call. The dma_map
+>> >> only adds latency for the first request.
+>> >
+>> > What exactly do you mean by "first request"?
+>> When both buffers are empty. The first request are filled up by vfs
+>> and then prepared. This first time there are no ongoing transfer over
+>> USB therefore this cost more, since it can't run in parallel with
+>> ongoing transfer. Every time the to buffers run empty there is an
+>> extra cost for the first request in the next series of requests. The
+>> reason for not getting data from vfs in time I don't know.
+>
+> Okay, that makes sense.  But what connection does this have with
+> dma_map?  Don't you also have situations where both buffers are empty
+> when you replace dma_map with virt_to_dma?
+>
+All I do here is to remove the cost of dma_map in order to verify if
+dma_map is the one responsible for the delay. If the performance is
+good without dma_map I know the extra cost is due to dma_map running
+in serial instead of parallel. If the performance would be bad even
+without dma_map something else is causing it. It doesn't affect how
+the VFS feeds data to the buffers.
 
-On Monday, August 08, 2011, Liu, ShuoX wrote:
-...
-> @@ -982,6 +1003,8 @@ int dpm_suspend(pm_message_t state)
->  		error = async_error;
->  	if (!error)
->  		dpm_show_time(starttime, state, NULL);
-> +	else
-> +		suspend_stats.failed_suspend++;
->  	return error;
->  }
+>> Instead of getting refill from vfs smoothly the refills comes in
+>> burst. VFS fills up the two buffers, then USB manage to transmit all
+>> two buffers before VFS refills new data. Roughly 20% of the times VFS
+>> fills up data in time before USB has consumed it all. 80% of the times
+>> USB manage to consume all data before VFS refills data in the buffers.
+>> The reason for the burst like affects are probably due to power save,
+>> which add latency in the system.
+>
+>> This is true. In my system the buffer doesn't get filled up before the
+>> previous has finished. With 4 buffers it works fine.
+>
+> Adding buffers to smooth out the bursty VFS behavior is a reasonable
+> thing to do.  But you should improve the patch description and the
+> comments; the real reason for reduced throughput is VFS's behavior.
+> Something like what you just wrote here would be fine.
+I agree. The main reason is to compensate for bursty VFS behavior.
 
-I'd prefer it to be
+>
+> And reduce the maximum number of buffers to 4.  When you've made those
+> changes, I'll Ack the patch.
+I'll do.
 
-  if (error)
-      something;
-  else
-      something else;
-
-> @@ -1090,6 +1113,8 @@ int dpm_suspend_start(pm_message_t state)
->  	error = dpm_prepare(state);
->  	if (!error)
->  		error = dpm_suspend(state);
-> +	else
-> +		suspend_stats.failed_prepare++;
->  	return error;
->  }
-
-Same here.
-
->  EXPORT_SYMBOL_GPL(dpm_suspend_start);
-> diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-> index 6bbcef2..6a8ff23 100644
-> --- a/include/linux/suspend.h
-> +++ b/include/linux/suspend.h
-> @@ -34,6 +34,22 @@ typedef int __bitwise suspend_state_t;
->  #define PM_SUSPEND_MEM		((__force suspend_state_t) 3)
->  #define PM_SUSPEND_MAX		((__force suspend_state_t) 4)
->  
-> +struct suspend_stats {
-> +	int	success;
-> +	int	fail;
-> +	int	failed_freeze;
-> +	int	failed_prepare;
-> +	int	failed_suspend;
-> +	int	failed_suspend_noirq;
-> +	int	failed_resume;
-> +	int	failed_resume_noirq;
-> +#define	REC_FAILED_DEV_NUM	2
-> +	char	failed_devs[REC_FAILED_DEV_NUM][40];
-> +	int	last_failed;
-> +};
-> +
-> +extern struct suspend_stats suspend_stats;
-> +
->  /**
->   * struct platform_suspend_ops - Callbacks for managing platform dependent
->   *	system sleep states.
-> diff --git a/kernel/power/main.c b/kernel/power/main.c
-> index 6c601f8..0977f5d 100644
-> --- a/kernel/power/main.c
-> +++ b/kernel/power/main.c
-> @@ -12,6 +12,8 @@
->  #include <linux/string.h>
->  #include <linux/resume-trace.h>
->  #include <linux/workqueue.h>
-> +#include <linux/debugfs.h>
-> +#include <linux/seq_file.h>
->  
->  #include "power.h"
->  
-> @@ -133,6 +135,59 @@ power_attr(pm_test);
->  
->  #endif /* CONFIG_PM_SLEEP */
->  
-> +#ifdef CONFIG_DEBUG_FS
-> +static int suspend_stats_show(struct seq_file *s, void *unused)
-> +{
-> +	int i, index, last_index;
-> +
-> +	last_index = suspend_stats.last_failed + REC_FAILED_DEV_NUM - 1;
-> +	last_index %= REC_FAILED_DEV_NUM;
-> +	seq_printf(s, "%s: %d\n%s: %d\n%s: %d\n%s: %d\n"
-> +			"%s: %d\n%s: %d\n%s: %d\n%s: %d\n",
-> +			"success", suspend_stats.success,
-> +			"fail", suspend_stats.fail,
-> +			"failed_freeze", suspend_stats.failed_freeze,
-> +			"failed_prepare", suspend_stats.failed_prepare,
-> +			"failed_suspend", suspend_stats.failed_suspend,
-> +			"failed_suspend_noirq",
-> +				suspend_stats.failed_suspend_noirq,
-> +			"failed_resume", suspend_stats.failed_resume,
-> +			"failed_resume_noirq",
-> +				suspend_stats.failed_resume_noirq);
-> +	seq_printf(s,	"failed_devs:\n  last_failed:\t%s\n",
-> +			suspend_stats.failed_devs[last_index]);
-> +	for (i = 1; i < REC_FAILED_DEV_NUM; i++) {
-> +		index = last_index + REC_FAILED_DEV_NUM - i;
-> +		index %= REC_FAILED_DEV_NUM;
-> +		seq_printf(s, "\t\t%s\n",
-> +			suspend_stats.failed_devs[index]);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int suspend_stats_open(struct inode *inode, struct file *file)
-> +{
-> +	return single_open(file, suspend_stats_show, NULL);
-> +}
-> +
-> +static const struct file_operations suspend_stats_operations = {
-> +	.open           = suspend_stats_open,
-> +	.read           = seq_read,
-> +	.llseek         = seq_lseek,
-> +	.release        = single_release,
-> +};
-> +
-> +static int __init pm_debugfs_init(void)
-> +{
-> +	debugfs_create_file("suspend_stats", S_IFREG | S_IRUGO,
-> +			NULL, NULL, &suspend_stats_operations);
-> +	return 0;
-> +}
-> +
-> +late_initcall(pm_debugfs_init);
-> +#endif /* CONFIG_DEBUG_FS */
-> +
->  struct kobject *power_kobj;
->  
->  /**
-> @@ -194,6 +249,10 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
->  	}
->  	if (state < PM_SUSPEND_MAX && *s)
->  		error = enter_state(state);
-> +		if (error)
-> +			suspend_stats.fail++;
-> +		else
-> +			suspend_stats.success++;
->  #endif
->  
->   Exit:
-> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-> index b6b71ad..9bb4281 100644
-> --- a/kernel/power/suspend.c
-> +++ b/kernel/power/suspend.c
-> @@ -106,6 +106,8 @@ static int suspend_prepare(void)
->  	error = suspend_freeze_processes();
->  	if (!error)
->  		return 0;
-> +	else
-> +		suspend_stats.failed_freeze++;
->  
-
-And same here.
-
-Apart from the above, I don't have complaints.
-
-Thanks,
-Rafael
+Thanks for your time and patience,
+Per
