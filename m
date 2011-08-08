@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab1HHPKw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 11:10:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23136 "EHLO mx1.redhat.com"
+	id S1754198Ab1HHPN4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 11:13:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20675 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692Ab1HHPKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 11:10:51 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] autofs4: Use no_printk() for no-op DPRINTK() and use
- __VA_ARGS__ too
-To: torvalds@osdl.org
-Cc: linux-kernel@vger.kernel.org, autofs@linux.kernel.org,
-        David Howells <dhowells@redhat.com>, Ian Kent <raven@themaw.net>
-Date: Mon, 08 Aug 2011 16:10:38 +0100
-Message-ID: <20110808151038.17366.38130.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1751361Ab1HHPNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 11:13:55 -0400
+Date: Mon, 8 Aug 2011 11:13:52 -0400
+From: Dave Jones <davej@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: exception in interrupt during elv_completed_request. (3.0)
+Message-ID: <20110808151352.GA24992@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Jens Axboe <jaxboe@fusionio.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20110808145826.GA22457@redhat.com>
+ <4E3FFAB0.40205@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E3FFAB0.40205@fusionio.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use no_printk() for autofs's no-op DPRINTK() to prevent unused statements from
-becoming accidentally obsolete, and use __VA_ARGS__ too as that's the standard
-way.
+On Mon, Aug 08, 2011 at 05:03:12PM +0200, Jens Axboe wrote:
+ > On 2011-08-08 16:58, Dave Jones wrote:
+ > > Jens,
+ > > 
+ > > We got a report of a panic from a user when he plugged in his usb drive,
+ > > https://bugzilla.redhat.com/attachment.cgi?id=517141
+ > > 
+ > > any ideas what happened here ?
+ > 
+ > 2.6.40?
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Ian Kent <raven@themaw.net>
----
+it's 3.0 in all but name. didn't want to risk breaking dumb userspace in an update
+for older fedora releases.  It does have the scsi_dispatch_cmd fix that went into 3.0.1,
+but otherwise block/ should be stock 3.0
 
- fs/autofs4/autofs_i.h |   10 +++++++---
- fs/autofs4/waitq.c    |    3 ++-
- 2 files changed, 9 insertions(+), 4 deletions(-)
+ > Looks like the recent SCSI removal oopses, perhaps it happened when he
+ > yanked it instead of directly on insertion?
+ 
+sorry my bad, yes, this was on device removal.
 
-diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
-index 475f9c5..c3a419f 100644
---- a/fs/autofs4/autofs_i.h
-+++ b/fs/autofs4/autofs_i.h
-@@ -40,13 +40,17 @@
- /* #define DEBUG */
- 
- #ifdef DEBUG
--#define DPRINTK(fmt, args...)				\
-+#define DPRINTK(fmt, ...)				\
- do {							\
- 	printk(KERN_DEBUG "pid %d: %s: " fmt "\n",	\
--		current->pid, __func__, ##args);	\
-+		current->pid, __func__, ##__VA_ARGS__);	\
- } while (0)
- #else
--#define DPRINTK(fmt, args...) do {} while (0)
-+#define DPRINTK(fmt, ...)					\
-+do {								\
-+	no_printk(KERN_DEBUG "pid %d: %s: " fmt "\n",		\
-+		  current->pid, __func__, ##__VA_ARGS__);	\
-+} while (0)
- #endif
- 
- #define AUTOFS_WARN(fmt, args...)			\
-diff --git a/fs/autofs4/waitq.c b/fs/autofs4/waitq.c
-index 2543598..6313a0d 100644
---- a/fs/autofs4/waitq.c
-+++ b/fs/autofs4/waitq.c
-@@ -104,7 +104,8 @@ static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
- 	size_t pktsz;
- 
- 	DPRINTK("wait id = 0x%08lx, name = %.*s, type=%d",
--		wq->wait_queue_token, wq->name.len, wq->name.name, type);
-+		(unsigned long)wq->wait_queue_token,
-+		wq->name.len, wq->name.name, type);
- 
- 	memset(&pkt,0,sizeof pkt); /* For security reasons */
- 
+according to the user, he did everything right, and unmounted safely.	
+https://bugzilla.redhat.com/show_bug.cgi?id=728872
+
+	Dave
 
