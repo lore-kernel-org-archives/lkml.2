@@ -1,28 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135Ab1HHKOL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 06:14:11 -0400
-Received: from hi-original.com ([202.39.33.172]:51031 "EHLO
-	server.hi-original.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466Ab1HHKOI convert rfc822-to-8bit (ORCPT
+	id S1752292Ab1HHKPy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 06:15:54 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35155 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505Ab1HHKPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 06:14:08 -0400
-X-Greylist: delayed 4210 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Aug 2011 06:14:07 EDT
-Message-Id: <fupsECDkfeQSgwrIQClgGv99D5W11XSdDMBn1rtcFC5x@live.com.my>
-Mime-Version: 1.0
-From: "Alfred L. Leng" <a-leng@live.com.my>
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Reply-To: al.leng@aol.com
-Subject: Matter of interest
-Date: Mon, 8 Aug 2011 17:03:48 +0800
-Content-type: text/plain; charset=iso-8859-1; format=flowed
-Content-transfer-encoding: 8BIT
-X-Antivirus: avast! (VPS 110807-1, 08/08/2011), Outbound message
-X-Antivirus-Status: Clean
+	Mon, 8 Aug 2011 06:15:50 -0400
+Date: Mon, 8 Aug 2011 13:15:46 +0300
+From: "Maxin B. John" <maxin.john@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] arch:arm:plat-omap:iovmm: remove unused variable 'va'
+Message-ID: <20110808101546.GA25572@maxin>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is understandable for you to grow apprehensive reading from me today since  there was no previous communication between us. I am Alfred L. Leng (Dr.), the managing attorney of R & L Associates Malaysia. I came across your contact via scrupulous search conducted by an IT specialist whom I have employed for the purpose of same. The present communication is prompted by a legitimate business interest I have to share and ensue with you. I have left out the detail of the business matter until I hear from you as measure of security. Please be reminded that I would not have incurred great efforts to contact you for a matter of nonentity or to waste your time or mine. Further, be confident that the matter in question is beneficial and legit with no ramification of any sort; details of the matter I will uncover to you in my following communication. Kindly, revert to me accordingly for further exhaustive dialogue. Thank you for your time as I am looking forward for yours and business relation. Sincerely Alfred Leng.
+The pointer "va" returned from "phys_to_virt(pa)" is never used in
+"sgtable_fill_kmalloc()".So,it is safe to remove this set-but-unused variable.
 
-
+Signed-off-by: Maxin B. John <maxin.john@gmail.com>
+---
+diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
+index c60737c..79e7fed 100644
+--- a/arch/arm/plat-omap/iovmm.c
++++ b/arch/arm/plat-omap/iovmm.c
+@@ -423,9 +423,6 @@ static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, u32 da,
+ {
+ 	unsigned int i;
+ 	struct scatterlist *sg;
+-	void *va;
+-
+-	va = phys_to_virt(pa);
+ 
+ 	for_each_sg(sgt->sgl, sg, sgt->nents, i) {
+ 		unsigned bytes;
