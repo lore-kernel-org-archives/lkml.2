@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab1HHOf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 10:35:28 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:58472 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753550Ab1HHOf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 10:35:27 -0400
-Date: Mon, 8 Aug 2011 07:35:24 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: fix rcu annotations noise in cred.h
-Message-ID: <20110808143524.GA2331@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110808123442.GF2385@linux.vnet.ibm.com>
- <20110807175511.GZ2203@ZenIV.linux.org.uk>
- <13248.1312791509@redhat.com>
- <13642.1312808048@redhat.com>
+	id S1753624Ab1HHOhk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 10:37:40 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:47462 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab1HHOhj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 10:37:39 -0400
+Date: Mon, 8 Aug 2011 10:37:23 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: jeremy.fitzhardinge@citrix.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: redefinition of typedef '__guest_handle_uint64_t'
+Message-ID: <20110808143723.GB7213@dumpdata.com>
+References: <alpine.DEB.2.01.1108080146000.9183@trent.utfs.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <13642.1312808048@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.01.1108080146000.9183@trent.utfs.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4E3FF4AC.0149:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 01:54:08PM +0100, David Howells wrote:
-> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On Mon, Aug 08, 2011 at 01:54:39AM -0700, Christian Kujau wrote:
+> Hi,
 > 
-> > This is indeed what rcu_dereference_protected() is intended for.
-> 
-> How about the attached patch?
-> 
-> David
-> ---
-> From: David Howells <dhowells@redhat.com>
-> Subject: [PATCH] CRED: Restore const to current_cred()
-> 
-> Commit 3295514841c2112d94451ba5deaf54f5afb78ea9 accidentally dropped the const
-> of current->cred inside current_cred() by the insertion of a cast to deal with
-> an RCU annotation loss warning from sparce.
-> 
-> Use an appropriate RCU wrapper instead so as not to lose the const.
+> when trying to compile xen/next-3.0 from Jeremy's tree, this happens:
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: Al Viro <viro@zeniv.linux.org.uk>
-> ---
+Ugh, just use the released 3.0 stock kernel.
 > 
->  include/linux/cred.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> ---------------------------------------------------
+> /usr/local/src/linux-xen-next-3-git/arch/x86/kernel/asm-offsets.c:8:
+> /usr/local/src/linux-xen-next-3-git/include/xen/interface/xen.h:527:1: 
+> error: redefinition of typedef '__guest_handle_uint64_t'
+> /usr/local/src/linux-xen-next-3-git/arch/x86/include/asm/xen/interface.h:58:1: 
+> note: previous declaration of '__guest_handle_uint64_t' was here
+> ---------------------------------------------------
+> 
+> The .config is here: http://nerdbynature.de/bits/3.0-rc7/
+> The following makes it compile again, but it may not be the Right Thing 
+> to do:
+> 
+> diff --git a/include/xen/interface/xen.h b/include/xen/interface/xen.h
+> index 3c072c8..5a91c66 100644
+> --- a/include/xen/interface/xen.h
+> +++ b/include/xen/interface/xen.h
+> @@ -524,8 +524,6 @@ struct tmem_op {
+>  	} u;
+>  };
+>  
+> -DEFINE_GUEST_HANDLE(uint64_t);
+> -
+>  #else /* __ASSEMBLY__ */
+>  
+>  /* In assembly code we cannot use C numeric constant suffixes. */
 > 
 > 
-> diff --git a/include/linux/cred.h b/include/linux/cred.h
-> index 98f46ef..8e2fd44 100644
-> --- a/include/linux/cred.h
-> +++ b/include/linux/cred.h
-> @@ -269,7 +269,7 @@ static inline void put_cred(const struct cred *_cred)
->   * since nobody else can modify it.
->   */
->  #define current_cred() \
-> -	(*(__force struct cred **)&current->cred)
-> +	rcu_dereference_protected(current->cred, 1)
+> Thanks,
+> Christian.
+> -- 
+> BOFH excuse #100:
 > 
->  /**
->   * __task_cred - Access a task's objective credentials
+> IRQ dropout
