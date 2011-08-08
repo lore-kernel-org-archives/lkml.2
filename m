@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab1HHRBs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 13:01:48 -0400
-Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.33]:52030 "EHLO
+	id S1752199Ab1HHREJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 13:04:09 -0400
+Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.33]:53024 "EHLO
 	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752562Ab1HHRBr (ORCPT
+	by vger.kernel.org with ESMTP id S1751140Ab1HHREH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 13:01:47 -0400
+	Mon, 8 Aug 2011 13:04:07 -0400
 Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
-X-Authority-Analysis: v=1.1 cv=40Z/dbZBr1wgzPkGSf8y7qdCkiWp+M7NvixVUiz+qMg= c=1 sm=0 a=I7fHHdvOj7QA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:17 a=azj6Gt-4AAAA:8 a=Z4Rwk6OoAAAA:8 a=YORvzBCaAAAA:8 a=VwQbUJbxAAAA:8 a=PoiJNSP8FXPUfPqxG3UA:9 a=AfKvnCsTplZaVKIPVwoA:7 a=CjuIK1q_8ugA:10 a=eJ1lpvm07AkA:10 a=jbrJJM5MRmoA:10 a=VV2__AUApEoA:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:117
+X-Authority-Analysis: v=1.1 cv=40Z/dbZBr1wgzPkGSf8y7qdCkiWp+M7NvixVUiz+qMg= c=1 sm=0 a=I7fHHdvOj7QA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:17 a=Z4Rwk6OoAAAA:8 a=YORvzBCaAAAA:8 a=VwQbUJbxAAAA:8 a=azj6Gt-4AAAA:8 a=u7nYxvMiY8R-AqDTvbQA:9 a=CjuIK1q_8ugA:10 a=jbrJJM5MRmoA:10 a=VV2__AUApEoA:10 a=eJ1lpvm07AkA:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.79.195.91
 From: "Bob Pearson" <rpearson@systemfabricworks.com>
-To: "'George Spelvin'" <linux@horizon.com>, <joakim.tjernlund@transmode.se>
+To: "'Joakim Tjernlund'" <joakim.tjernlund@transmode.se>,
+        "'George Spelvin'" <linux@horizon.com>
 Cc: <akpm@linux-foundation.org>, <fzago@systemfabricworks.com>,
         <linux-kernel@vger.kernel.org>
-References: <OF4BB89E7A.F9308AC6-ONC12578E6.00402167-C12578E6.0040598B@transmode.se> <20110808125459.2961.qmail@science.horizon.com>
-In-Reply-To: <20110808125459.2961.qmail@science.horizon.com>
+References: <OF53580ACE.F420CB68-ONC12578E6.0039189A-C12578E6.0039CD0F@transmode.se> <20110808105201.25396.qmail@science.horizon.com> <OFEA1BD2B2.B2A7F07F-ONC12578E6.003D368C-C12578E6.003D7468@transmode.se>
+In-Reply-To: <OFEA1BD2B2.B2A7F07F-ONC12578E6.003D368C-C12578E6.003D7468@transmode.se>
 Subject: RE: [PATCH] add slice by 8 algorithm to crc32.c
-Date: Mon, 8 Aug 2011 12:01:45 -0500
-Message-ID: <002b01cc55ec$db14fb90$913ef2b0$@systemfabricworks.com>
+Date: Mon, 8 Aug 2011 12:04:05 -0500
+Message-ID: <002c01cc55ed$2eced9e0$8c6c8da0$@systemfabricworks.com>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQEmn2rwcwwFwd4jSYRMyJ8lwL5uRJZemUGQ
+Thread-Index: AQJKDsw680O6b7pIeH/VmFOarr73QwE27+nmAebu6T2T/s2kEA==
 Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Happy to consider this. I have been asking the list for comments about the
-idea of dropping the BITS=2 and BITS=4 algorithms altogether which would
-make the table size just 256. So far no one has claimed that they actually
-care about those algorithms except as 'examples'. The 'Sarwate' algorithm
-(which I added as an 8 bit version) is faster and only adds 2x4KB of table.
-
-If no one really uses the smaller but much slower versions I don't see a
-reason to keep them.
+Same for x86. The code for the pre and post cleanup loops are the same
+there.
 
 > -----Original Message-----
-> From: George Spelvin [mailto:linux@horizon.com]
-> Sent: Monday, August 08, 2011 7:55 AM
-> To: joakim.tjernlund@transmode.se; linux@horizon.com
+> From: Joakim Tjernlund [mailto:joakim.tjernlund@transmode.se]
+> Sent: Monday, August 08, 2011 6:11 AM
+> To: George Spelvin
 > Cc: akpm@linux-foundation.org; fzago@systemfabricworks.com; linux-
 > kernel@vger.kernel.org; rpearson@systemfabricworks.com
 > Subject: Re: [PATCH] add slice by 8 algorithm to crc32.c
 > 
-> > -#define LE_TABLE_SIZE (1 << CRC_LE_BITS)
-> > -#define BE_TABLE_SIZE (1 << CRC_BE_BITS)
-> > +#if CRC_LE_BITS > 8
-> > +# define LE_TABLE_SIZE 256
-> > +#else
-> > +# define LE_TABLE_SIZE (1 << CRC_LE_BITS)
-> > +#endif
-> > +#if CRC_BE_BITS > 8
-> > +# define BE_TABLE_SIZE 256
-> > +#else
-> > +# define BE_TABLE_SIZE (1 << CRC_BE_BITS)
-> > +#endif
+> "George Spelvin" <linux@horizon.com> wrote on 2011/08/08 12:52:01:
 > >
-> > -static uint32_t crc32table_le[4][LE_TABLE_SIZE];
-> > -static uint32_t crc32table_be[4][BE_TABLE_SIZE];
-> > +#define LE_TABLE_ROWS ((CRC_LE_BITS - 1)/8 + 1)
-> > +#define BE_TABLE_ROWS ((CRC_BE_BITS - 1)/8 + 1)
-> > +
-> > +static uint32_t crc32table_le[LE_TABLE_ROWS][LE_TABLE_SIZE];
-> > +static uint32_t crc32table_be[BE_TABLE_ROWS][BE_TABLE_SIZE];
+> > > I prefer to keep the current code which (at the time) generated good
+> code
+> > > for at least ppc:
+> > >    /* Align it */
+> > >    if (unlikely((long)buf & 3 && len)) {
+> > >       do {
+> > >          DO_CRC(*buf++);
+> > >       } while ((--len) && ((long)buf)&3);
+> > >    }
+> >
+> > Ah, I was looking at fzago's initial patch; I hadn't realized you'd
+> > tweaked it.  That's pretty much what I was talking about.
+> >
+> > Would
+> >     if (unlikely((long)buf & 3) && len) {
+> >
+> > give the compiler better hints?  len != 0 is awfully
+> > likely, actually.
 > 
-> Minor cleanup suggestion: The two different ways of computing
-> xE_TABLE_SIZE and xE_TABLE_ROWS is a bit confusing.
-> 
-> May I recommend choosing one of the following:
-> 
-> #if CRC_LE_BITS > 8
-> # define LE_TABLE_ROWS (CRC_LE_BITS/8)
-> # define LE_TABLE_SIZE 256
-> #else
-> # define LE_TABLE_ROWS 1
-> # define LE_TABLE_SIZE (1 << CRC_LE_BITS)
-> #endif
-> 
-> or
-> 
-> #define LE_TABLE_ROWS ((CRC_LE_BITS - 1)/8 + 1)
-> #define LE_TABLE_SIZE (1 << ((CRC_LE_BITS - 1)%8 + 1))
-> 
-> Either one makes the relationship between the two clearer.
+> Doesn't matter on ppc(gcc 4.4.4). The whole while loop is moved out of
+line
+> in both cases and the generated asm is identical.
+
 
