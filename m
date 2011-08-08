@@ -1,109 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708Ab1HHFSy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 01:18:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50988 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab1HHFSw (ORCPT
+	id S1751641Ab1HHFVf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 01:21:35 -0400
+Received: from cluster-d.mailcontrol.com ([85.115.60.190]:54787 "EHLO
+	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106Ab1HHFVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 01:18:52 -0400
-Date: Mon, 8 Aug 2011 08:18:45 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tiger
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>, xtfeng@gmail.com
-Subject: Re: list corruption in the last few days. (block ? crypto ?)
-In-Reply-To: <CA+55aFzdp+7+AcCFbx3dCkfqERzYvOZG3c3SUuNAw+X0MJ8iNw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1108080817050.25955@tiger>
-References: <20110805010038.GA18148@redhat.com> <20110805084614.GA1588@x4.trippels.de> <CAOJsxLEMf8SbSmJv5u6GZtq_OYH3fpmomT-ioWXQGp83veK7wQ@mail.gmail.com> <alpine.DEB.2.00.1108051131440.28580@router.home> <20110805163948.GA11113@redhat.com>
- <alpine.DEB.2.00.1108051146180.28580@router.home> <20110805165119.GA11593@redhat.com> <alpine.DEB.2.00.1108051158400.28580@router.home> <20110805171607.GA11703@redhat.com> <alpine.DEB.2.00.1108051312090.28580@router.home> <20110805182008.GA22314@redhat.com>
- <CA+55aFwGSJM6g+YXfy_Oyb0OpQP5kH=OxCR-pnBk7RUshL+mXg@mail.gmail.com> <alpine.DEB.2.00.1108072155240.9480@tiger> <CA+55aFzdp+7+AcCFbx3dCkfqERzYvOZG3c3SUuNAw+X0MJ8iNw@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 8 Aug 2011 01:21:32 -0400
+From: Barry Song <Baohua.Song@csr.com>
+To: <grant.likely@secretlab.ca>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <workgroup.linux@csr.com>, Barry Song <Baohua.Song@csr.com>
+Subject: [PATCH] GPIOLIB: add generic gpio_set_pull API
+Date: Sun, 7 Aug 2011 22:19:33 -0700
+Message-ID: <1312780773-23142-1-git-send-email-Baohua.Song@csr.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain
+X-Originating-IP: [10.125.36.59]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Now there are many different implementations for GPIO pull configuration, for
+example:
+s3c_gpio_setpull()
+tegra_pinmux_set_pullupdown()
+chipcHw_setPinPullup()
+gpio_pullup()
+s3c2410_gpio_pullup()
 
-On Sun, Aug 7, 2011 at 11:58 AM, Pekka Enberg <penberg@kernel.org> wrote:
->>
->> Christoph, I've been reading the code and spotted two potential issues in
->> __slab_free(). The first one seems like an off-by-one where our comparison
->> in deactivate_slab() doesn't match __slab_free.
->>
->> The other one is remove_full() call in __slab_free() that can get called
->> even if cache debugging is not enabled.
->>
->> Hmm?
+This patch adds a new generic gpio_set_pull API so that all SoCs can have unified
+codes.
 
-On Sun, 7 Aug 2011, Linus Torvalds wrote:
-> I'd like to do -rc1 today, regardless of whether this fixes things or
-> not (-rc1 is already a few days delayed).
->
-> The patch seems to be a good fix, and a likely candidate for the
-> corruption. Commit log and sign-off? I assume you've given it some
-> testing, even if you couldn't reproduce the original issue?
-
-No, I haven't tested the patch myself but here's one in proper format in 
-case someone wants to test it.
-
- 			Pekka
-
->From 85380c605764927576d6ef54e4e8a3354df05d47 Mon Sep 17 00:00:00 2001
-From: Pekka Enberg <penberg@kernel.org>
-Date: Mon, 8 Aug 2011 07:56:49 +0300
-Subject: [PATCH] slub: Fix partial and full list handling in __slab_free
-
-Dave Jones and Xiaotian Feng reported SLUB list corruption:
-
-   https://lkml.org/lkml/2011/8/4/375
-
-   https://lkml.org/lkml/2011/8/3/37
-
-While I haven't able to reproduce the issue, I spotted two problems in
-__slab_free() during code review:
-
-   - The ->nr_partial check in __slab_free() has an off-by-one bug
-     when compared to similar check in deactivate_slab()
-
-   - remove_full() is called even if cache debugging has not been enabled
-
-Reported-by: Dave Jones <davej@redhat.com>
-Reported-by: Xiaotian Feng <xtfeng@gmail.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
 ---
-  mm/slub.c |    5 +++--
-  1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/gpio/gpiolib.c     |   17 +++++++++++++++++
+ include/asm-generic/gpio.h |    3 +++
+ include/linux/gpio.h       |    4 ++++
+ 3 files changed, 24 insertions(+), 0 deletions(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index eb5a8f9..cee8c20 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2368,7 +2368,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
-  	if (was_frozen)
-  		stat(s, FREE_FROZEN);
-  	else {
--		if (unlikely(!inuse && n->nr_partial > s->min_partial))
-+		if (unlikely(!inuse && n->nr_partial >= s->min_partial))
-                          goto slab_empty;
-
-  		/*
-@@ -2376,7 +2376,8 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
-  		 * then add it.
-  		 */
-  		if (unlikely(!prior)) {
--			remove_full(s, page);
-+			if (kmem_cache_debug(s))
-+				remove_full(s, page);
-  			add_partial(n, page, 0);
-  			stat(s, FREE_ADD_PARTIAL);
-  		}
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index a971e3d..a2afa95 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1620,6 +1620,23 @@ int __gpio_to_irq(unsigned gpio)
+ }
+ EXPORT_SYMBOL_GPL(__gpio_to_irq);
+ 
++/**
++ * __gpio_set_pull() - set pull up, pull down or no pull for a gpio
++ * @gpio: gpio which will be configurated
++ * @mode: one of GPIO_PULL_NONE, GPIO_PULL_UP and GPIO_PULL_DOWN
++ * Context: any
++ *
++ * This is used directly or indirectly to implement gpio_set_pull().
++ */
++void __gpio_set_pull(unsigned gpio, unsigned mode)
++{
++	struct gpio_chip	*chip;
++
++	chip = gpio_to_chip(gpio);
++
++	chip->pull(chip, gpio, mode);
++}
++EXPORT_SYMBOL_GPL(__gpio_set_pull);
+ 
+ 
+ /* There's no value in making it easy to inline GPIO calls that may sleep.
+diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+index d494001..f953835 100644
+--- a/include/asm-generic/gpio.h
++++ b/include/asm-generic/gpio.h
+@@ -112,6 +112,9 @@ struct gpio_chip {
+ 	int			(*to_irq)(struct gpio_chip *chip,
+ 						unsigned offset);
+ 
++	void			(*pull)(struct gpio_chip *chip,
++						unsigned offset, unsigned mode);
++
+ 	void			(*dbg_show)(struct seq_file *s,
+ 						struct gpio_chip *chip);
+ 	int			base;
+diff --git a/include/linux/gpio.h b/include/linux/gpio.h
+index 17b5a0d..ac48166 100644
+--- a/include/linux/gpio.h
++++ b/include/linux/gpio.h
+@@ -14,6 +14,10 @@
+ #define GPIOF_OUT_INIT_LOW	(GPIOF_DIR_OUT | GPIOF_INIT_LOW)
+ #define GPIOF_OUT_INIT_HIGH	(GPIOF_DIR_OUT | GPIOF_INIT_HIGH)
+ 
++#define GPIO_PULL_NONE	0
++#define GPIO_PULL_UP	1
++#define GPIO_PULL_DOWN	2
++
+ #ifdef CONFIG_GENERIC_GPIO
+ #include <asm/gpio.h>
+ 
 -- 
-1.7.0.4
+1.7.1
 
+
+
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
