@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243Ab1HHSEV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 14:04:21 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:37130 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751361Ab1HHSEU (ORCPT
+	id S1753086Ab1HHSFi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 14:05:38 -0400
+Received: from www17.your-server.de ([213.133.104.17]:35143 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab1HHSFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 14:04:20 -0400
-X-Sasl-enc: LWZy6GN8Sv5J1/qkau3lJpHD5kBhisMNjj9SLje5qCfS 1312826659
-Date: Mon, 8 Aug 2011 11:04:00 -0700
-From: Greg KH <greg@kroah.com>
-To: "Emilio G. Cota" <cota@braap.org>, Martyn Welch <martyn.welch@ge.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/8] staging: vme: add functions for bridge module
- refcounting
-Message-ID: <20110808180400.GA17257@kroah.com>
-References: <4E3B9FA2.3060303@ge.com>
- <20110805090416.GA4806@becoht-mvanga>
- <4E3BB6E7.6020809@ge.com>
- <20110805174728.GA1741@flamenco.cs.columbia.edu>
- <4E3F97EA.2020600@ge.com>
- <20110808091432.GA19570@flamenco.cs.columbia.edu>
- <4E3FABDA.8080204@ge.com>
- <20110808101140.GA21300@flamenco.cs.columbia.edu>
- <4E3FC33D.2080202@ge.com>
- <20110808172216.GA2311@flamenco.cs.columbia.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110808172216.GA2311@flamenco.cs.columbia.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 8 Aug 2011 14:05:38 -0400
+Subject: Missing put_cpu() in arch/ia64/sn/kernel/sn2/sn_hwperf.c?
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, jes@sgi.com,
+        tony.luck@intel.com
+Cc: Julia Lawall <julia@diku.dk>
+Date: Mon, 08 Aug 2011 20:05:00 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1312826703.5589.155.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 01:22:16PM -0400, Emilio G. Cota wrote:
-> On Mon, Aug 08, 2011 at 12:06:37 +0100, Martyn Welch wrote:
-> > On 08/08/11 11:11, Emilio G. Cota wrote:
-> > > On Mon, Aug 08, 2011 at 10:26:50 +0100, Martyn Welch wrote:
-> > >> On 08/08/11 10:14, Emilio G. Cota wrote:
-> > >>> Martyn, no one in the kernel is doing what you propose, for
-> > >>> good reason. Look at USB, PCI, RapidIO.  They all provide get
-> > >>> and put functions to be called from probe and release.
-> > >>
-> > >> Really, which functions are these for PCI?
-> > > 
-> > > pci_get_dev/put in drivers/pci/pci-driver.c.
-> > > 
-> > 
-> > Which isn't explicitly used by the vast majority of PCI drivers. In fact the
-> > instances which I did find where this was used by a PCI device driver, it
-> > appears to be using the old-style PCI probing.
-> 
-> > This is taken care of automatically for drivers using the "newer" PCI driver
-> > registration model as part of the probe.
+The function sn_hwperf_op_cpu() seems to miss a corresponding put_cpu().
 
-All PCI drivers are using that model, it is not "new" at all (5+ years
-old now.)
+Or is this done in another function? I didn't find it.
 
-The fact is, if you grab a pointer to a device, and save it somewhere,
-you HAVE TO grab a reference to that object at the same time.
+thomas
 
-To not do so is a bug, and must be fixed.
+---
 
-It's that simple.
+ Check for get/put_cpu() imbalances
 
-greg k-h
+ The simplified semantic patch that makes this report is:
+
+* get_cpu()
+... when != put_cpu()
+? get_cpu()
+
+drivers/crypto/n2_core.c:986:25-26: WARNING: Possible missing put_cpu()!
+drivers/crypto/n2_core.c:1041:25-26: WARNING: Possible missing put_cpu()!
+drivers/scsi/fcoe/fcoe.c:1163:29-30: WARNING: Possible missing put_cpu()!
+drivers/scsi/fcoe/fcoe.c:1630:47-48: WARNING: Possible missing put_cpu()!
+arch/um/sys-i386/ldt.c:53:17-18: WARNING: Possible missing put_cpu()!
+arch/powerpc/kernel/machine_kexec_64.c:188:18-19: WARNING: Possible missing put_cpu()!
+arch/ia64/sn/kernel/sn2/sn_hwperf.c:618:52-53: WARNING: Possible missing put_cpu()!
+arch/s390/oprofile/hwsampler.c:553:16-17: WARNING: Possible missing put_cpu()!
+arch/s390/kernel/vtime.c:430:22-23: WARNING: Possible missing put_cpu()!
+arch/s390/kernel/vtime.c:473:15-16: WARNING: Possible missing put_cpu()!
+arch/blackfin/kernel/cplbinfo.c:89:9-10: WARNING: Possible missing put_cpu()!
+
+This list contains some false positives.
+
+Thanks to Julia for the semantic patch to find these kind of errors!
+
+
