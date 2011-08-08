@@ -1,98 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab1HHUUL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 16:20:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21742 "EHLO mx1.redhat.com"
+	id S1753598Ab1HHUXP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 16:23:15 -0400
+Received: from csmtp3.one.com ([91.198.169.23]:30339 "EHLO csmtp3.one.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751408Ab1HHUUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 16:20:10 -0400
-Date: Mon, 8 Aug 2011 16:19:51 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: ZAK Magnus <zakmagnus@google.com>, peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH v4 2/2] Output stall traces in /proc
-Message-ID: <20110808201951.GY1972@redhat.com>
-References: <1312495991-28377-1-git-send-email-zakmagnus@chromium.org>
- <1312495991-28377-2-git-send-email-zakmagnus@chromium.org>
- <20110805134042.GJ1972@redhat.com>
- <CAAuSN919rQj93P8HE69_N5vC04ywMFfeJjRdMhn8ga1V-jFb7A@mail.gmail.com>
- <20110805184323.GK20762@redhat.com>
- <CAAuSN91Pi8SbWbU87v7QdDWS_N1GiXsM8dGUYSYKTUCUp+2Mww@mail.gmail.com>
+	id S1752923Ab1HHUXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 16:23:14 -0400
+Date: Mon, 8 Aug 2011 22:27:42 +0200
+From: Eric Andersson <eric.andersson@unixphere.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        zhengguang.guo@bosch-sensortec.com, stefan.nilsson@unixphere.com,
+        alan@lxorguk.ukuu.org.uk, jic23@cam.ac.uk,
+        xu.zhang@bosch-sensortec.com
+Subject: Re: [PATCH v6 1/1] input: add driver for Bosch Sensortec's BMA150
+ accelerometer
+Message-ID: <20110808202742.GA8448@skinner.xfiles.lan>
+References: <1311800027-25982-1-git-send-email-eric.andersson@unixphere.com>
+ <1311800027-25982-2-git-send-email-eric.andersson@unixphere.com>
+ <20110730191726.GG5686@core.coreip.homeip.net>
+ <20110730224917.GA8519@skinner.xfiles.lan>
+ <20110731070844.GA23383@core.coreip.homeip.net>
+ <CAH+e7S2LU7zr6fcp+f+2UuzyXX_=icBa4OtO7m1YQQ2BtOyMAQ@mail.gmail.com>
+ <20110807162325.GA7280@skinner.xfiles.lan>
+ <20110808051504.GA7329@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAAuSN91Pi8SbWbU87v7QdDWS_N1GiXsM8dGUYSYKTUCUp+2Mww@mail.gmail.com>
+In-Reply-To: <20110808051504.GA7329@core.coreip.homeip.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(adding Peter to the discussion)
-
-On Fri, Aug 05, 2011 at 02:26:12PM -0700, ZAK Magnus wrote:
-> On Fri, Aug 5, 2011 at 11:43 AM, Don Zickus <dzickus@redhat.com> wrote:
-> > I missed that you defined that as a pointer to a spinlock and assigned it
-> > later.  I see what you are doing now, but I am not a fan of it because you
-> > are now using the same spinlock in both the NMI context and the userspace
-> > context.  This can cause deadlocks if something got screwed up in the
-> > seq_printf functions or produced a very large amount of data.  Normally
-> > you don't want to do that.
-> >
-> > What others have done like perf and the APEI error handling is use
-> > something called irq_work_queue(??).  Basically you would capture the
-> > tracae in the NMI context, put it on an irq_work_queue and in the
-> > interrupt context save it to your global trace variable.  Then you could
-> > put spin_lock_irqsave inside the proc sys function and the work queue
-> > function and not have any potential deadlocks.
-> Work queue? Okay. The worker thread still needs a lock in order to
-
-not work_queue, irq_work_queue.
-
-> share the intermediate buffer with the NMI context, though. Any chance
-> of something screwing up in the middle of copying that structure,
-> causing a stall and deadlocking with the NMI?
-
-I believe irq_work_queue uses cmpxchg for all its locking and just swaps
-entries on to a linked list?
-
+On 22:15 Sun 07 Aug     , Dmitry Torokhov wrote:
+> On Sun, Aug 07, 2011 at 06:23:25PM +0200, Eric Andersson wrote:
+> > > On Sun, Jul 31, 2011 at 12:49:17AM +0200, Dmitry Torokhov wrote:
+> > > > > > +static int bma150_open(struct bma150_data *bma150)
+> > > > > > +{
+> > > > > > + int ret;
+> > > > > > +
+> > > > > > + ret = pm_runtime_set_active(&bma150->client->dev);
+> > > > > > + if (ret < 0)
+> > > > > > +         return ret;
+> > > > > > +
+> > > > > > + pm_runtime_enable(&bma150->client->dev);
+> > > > >
+> > > > > I am pretty sure you want to call pm_runtime_enable() in bma150_probe()
+> > > > > so that parent controller can be suspended until somebody calls
+> > > > > bma150_open() and we mark the device as active (which, in turn, should
+> > > > > wake up its parent).
+> > > >
+> > > > If I call pm_runtime_enable() I cannot use pm_runtime_set_active() later
+> > > > according to the comment in __pm_runtime_set_status (runtime.c):
+> > > > "If runtime PM of the device is disabled or its power.runtime_error
+> > > > field is different from zero, the status may be changed either to
+> > > > RPM_ACTIVE, or to RPM_SUSPENDED..."
+> > > >
+> > > > If the PM of the device is enabled it will return -EAGAIN. Of course, we
+> > > > could enable() in probe, then disable(); set_active(); enable(); in
+> > > > open, but that seems a bit confused, right?
+> > > 
+> > > Hmm, indeed. I do not like the idea about disable/set_active/enable so I
+> > > guess we'll have to keep track of the current mode themselves and call
+> > > bma150_set_mode() ourselves if, after calling pm_runtime_get/put_sync()
+> > > we find that our mode is different from what we expect it to be.
+> > > 
+> > > I also noticed that you did not properly free IRQ on device removal and
+> > > also polled devices need to be freed always (unlike regular input
+> > > devices that should be only unregistered). The default_cfg can't be
+> > > __initdata because it is used by __devinit functions. And my version of
+> > > GCC can't figure out that ipoll_dev never used uninitialized and gives
+> > > false warning.
+> > > 
+> > > I tried correcting these issues in the patch below, along with renaming
+> > > 'ret' to 'error' which I prefer when we dealing with error handling.
+> > > Could you please git it a try and if everything still works I'll fold it
+> > > and commit.
+> > 
+> > Thanks Dmitry! I tried your patch and it worked like a charm!
 > 
-> Or maybe the intermediate buffer should be dynamically allocated. That
-> would work without a lock, although it seems slightly inefficient.
-
-Peter,
-
-How does the irq_work_queue work such that you can save info in the NMI
-context and safely pass it to the irq context for processing? 
-
+> Excellent, thanks for testing.
 > 
-> Regarding the lock between the work queue thread and the system call,
-> maybe that should become a mutex instead, since it's all outside of
-> interrupt context at that point?
-
-No it is still in the irq context.
-
-Peter,
-
-If we want to expose data captured in the NMI context through the procfs,
-I assume we can pass that info along using irq_work_queue.  But then when
-reading from procfs do we just lock the data with 'spin_lock_irq' to block
-the irq_work_queue from manipulating the data?  (note we are expecting
-data to be overwritten with fresh data, not serialized out like
-trace/perf).
-
-Cheers,
-Don
-
+> > 
+> > Do you take it from here or would you like me to send an updated
+> > version that includes your patch?
 > 
-> > The softstall case should be ok though.
-> Why's that? The soft stall traces are not written in a NMI context but
-> just in a regular interrupt context, right? Doesn't that pose similar
-> problems?
-> 
-> 
-> These are weird rare corner cases anyway, right? Maybe the simplest
-> thing could be to let the interrupts only try_lock(), so they might
-> sometimes fail to record a stall, but it would be a pretty big
-> coincidence.
+> No, there is no need for that. I'll fold them all together and queue for
+> 2.6.32.
+Great thanks! Don't forget to add Alan as reviewer. I think he forgot
+reply-all when he mailed me:
+"I'm happy with this one.
+Reviewed-by: Alan Cox <alan@linux.intel.com>"
+
+> I take the other patch that makes polled devices do poll upon opening
+> working well for you too.. Should I queue for .2 as well?
+Yes, why not!
+
+-- 
+Best regards,
+ Eric
+
+http://www.unixphere.com
