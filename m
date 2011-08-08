@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751466Ab1HHJ2b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 05:28:31 -0400
-Received: from science.horizon.com ([71.41.210.146]:25177 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751023Ab1HHJ22 (ORCPT
+	id S1751708Ab1HHJdp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 05:33:45 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:35893 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023Ab1HHJdl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 05:28:28 -0400
-Date: 8 Aug 2011 05:28:26 -0400
-Message-ID: <20110808092826.21881.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: fzago@systemfabricworks.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] add slice by 8 algorithm to crc32.c
-Cc: akpm@linux-foundation.org, joakim.tjernlund@transmode.se,
-        linux@horizon.com, rpearson@systemfabricworks.com
+	Mon, 8 Aug 2011 05:33:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <s5h1uwwia80.wl%tiwai@suse.de>
+References: <1312790832-6790-1-git-send-email-wangshaoyan.pt@taobao.com>
+	<s5h1uwwia80.wl%tiwai@suse.de>
+Date: Mon, 8 Aug 2011 17:33:40 +0800
+Message-ID: <CANxBZFqTrWrHqarez4W=rjOTWENgjb_g=PEX5Ja6euE35Hj4HA@mail.gmail.com>
+Subject: Re: [PATCH] sound: don't use the deprecated function check_region
+From: Wang Shaoyan <stufever@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org, perex@perex.cz,
+        Wang Shaoyan <wangshaoyan.pt@taobao.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry I didn't see this when first posted.
+2011/8/8 Takashi Iwai <tiwai@suse.de>:
+> At Mon,  8 Aug 2011 16:07:12 +0800,
+> stufever@gmail.com wrote:
+>>
+>> From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+>>
+>>   sound/oss/pss.c: In function 'configure_nonsound_components':
+>>   sound/oss/pss.c:676: warning: 'check_region' is deprecated (declared at include/linux/ioport.h:201)
+>>
+>> Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+>> ---
+>>  sound/oss/pss.c |    3 ++-
+>>  1 files changed, 2 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/sound/oss/pss.c b/sound/oss/pss.c
+>> index 9b800ce..0fa26bd 100644
+>> --- a/sound/oss/pss.c
+>> +++ b/sound/oss/pss.c
+>> @@ -673,9 +673,10 @@ static void configure_nonsound_components(void)
+>>
+>>       if (pss_cdrom_port == -1) {     /* If cdrom port enablation wasn't requested */
+>>               printk(KERN_INFO "PSS: CDROM port not enabled.\n");
+>> -     } else if (check_region(pss_cdrom_port, 2)) {
+>> +     } else if (!request_region(pss_cdrom_port, 2, "PSS CDROM")) {
+>>               printk(KERN_ERR "PSS: CDROM I/O port conflict.\n");
+>>       } else {
+>> +             release_region(pss_cdrom_port, 2);
+>>               set_io_base(devc, CONF_CDROM, pss_cdrom_port);
+>>               printk(KERN_INFO "PSS: CDROM I/O port set to 0x%x.\n", pss_cdrom_port);
+>>       }
+>
+> Well, this just hides the warning but doesn't fix the possible race,
+> which is the reason check_region() is marked as deprecated after all.
+>
 
-The "slice by 8" terminology is pretty confusing.  How about
-"Extended Joakim Tjernlund's optimization from commit
-836e2af92503f1642dbc3c3281ec68ec1dd39d2e to 8-way parallelism."
+AFAIK, check_region() is deprecated because such usage:
+check_region()
+...do something    <-- here another process may do check and request same region
+request_region()
+But nowadays, request_region has done the check internally, so use the
+proper request_region to check is enough, am I miss something?
 
-Which is essentally what you're doing.  The renaming of tab[0] to t0_le
-and t0_be, and removal of the DO_CRC4 macro just increases the diff size.
+> Instead of releasing the resource there, keep it and release in the
+> destructor properly like other normal resources.
+>
 
-If you're looking at speeding up the CRC through larger tables, have
-you tried using 10+11+11-bit tables?  That would require 20K of tables
-rather than 8K, but would reduce the number of table lookups per byte.
+maybe we can release here?
 
+set_io_base(devc, CONF_CDROM, pss_cdrom_port);
+printk(KERN_INFO "PSS: CDROM I/O port set to 0x%x.\n", pss_cdrom_port);
+release_region(pss_cdrom_port, 2);
 
-One more stunt you could try to increase parallelism: rather than maintain
-the CRC in one register, maintain it in several, and only XOR and collapse
-them at the end.
-
-Start with your 64-bit code, but imagine that the second code block's
-"q = *p32++" always loads 0, and therefore the whole block can be skipped.
-(Since tab[0] = 0 for all CRC tables.)
-
-This computes the CRC of the even words.  Then do a second one in parallel
-for the odd words into a separate CRC register.  Then combine them at the end.
-(Shift one up by 32 bits and XOR into the other.)
-
-This would let you get away with 5K of tables: t4 through t7, and t0.
-t1 through t3 could be skipped.
-
-
-Ideally, I'd write all this code myself, but I'm a bit crunched at work
-right now so wouldn't be able to get to it for a few days.
+>
+> thanks,
+>
+> Takashi
+>
 
 
 
-Another possible simplification to the startup code.  There's no need
-to compute init_bytes explicitly; just loop until the pointer is aligned:
-
-	while ((unsigned)buf & 3) {
-		if (!len--)
-			goto done;
-#ifdef __LITTLE_ENDIAN
-		i0 = *buf++ ^ crc;
-		crc = t0_le[i0] ^ (crc >> 8);
-#else
-		i0 = *buf++ ^ (crc >> 24);
-		crc = t0_le[i0] ^ (crc << 8);
-#endif  
-	}
-	p32 = (u32 const *)buf;
-	words = len >> 2;
-	end_bytes = len & 3;
-
-
-... although I'd prefer to keep the DO_CRC() and DO_CRC4 macros, and
-extend them to the 64-bit case, to avoid the nested #ifdefs.  That would
-make:
-
-	while ((unsigned)buf & 3) {
-		if (!len--)
-			goto done;
-		DO_CRC(*buf++);
-	}
-	p32 = (u32 const *)buf;
-	words = len >> 2;
-	end_bytes = len & 3;
+-- 
+Wang Shaoyan
