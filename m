@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab1HHPxI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 11:53:08 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40587 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752347Ab1HHPxG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 11:53:06 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Jovi Zhang <bookjovi@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/4] perf probe: Fix coredump introduced by probe module option
-Date: Mon,  8 Aug 2011 12:52:53 -0300
-Message-Id: <1312818776-19530-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1312818776-19530-1-git-send-email-acme@infradead.org>
-References: <1312818776-19530-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1752878Ab1HHP6B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 11:58:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7019 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752347Ab1HHP57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 11:57:59 -0400
+Message-ID: <4E40076D.2030303@redhat.com>
+Date: Mon, 08 Aug 2011 11:57:33 -0400
+From: Jarod Wilson <jarod@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Postbox Express 1.0.1 (Macintosh/20100705)
+MIME-Version: 1.0
+To: Anssi Hannula <anssi.hannula@iki.fi>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-media@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/7] [media] ati_remote: add keymap for Medion X10 RF
+ remote
+References: <4E3DB2C2.7040104@iki.fi> <1312669093-23771-1-git-send-email-anssi.hannula@iki.fi> <1312669093-23771-6-git-send-email-anssi.hannula@iki.fi> <20110808055754.GB7329@core.coreip.homeip.net> <4E3FF355.6090807@iki.fi>
+In-Reply-To: <4E3FF355.6090807@iki.fi>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jovi Zhang <bookjovi@gmail.com>
+Anssi Hannula wrote:
+> On 08.08.2011 08:57, Dmitry Torokhov wrote:
+>> On Sun, Aug 07, 2011 at 01:18:11AM +0300, Anssi Hannula wrote:
+>>> Add keymap for the Medion X10 RF remote which uses the ati_remote
+>>> driver, and default to it based on the usb id.
+>> Since rc-core supports loading custom keytmaps should we ass medion
+>> keymap here?
+>>
+>> I think we should keep the original keymap to avoid regressions, but new
+>> keymaps should be offloaded to udev.
+>
+> Well, I simply followed the convention, as all other remotes under
+> media/ have the default table in-kernel.
+>
+> I'm not against putting it off-kernel, but in that case the same should
+> be done for all new media devices. Is that the plan?
 
-perf will coredump if the user doesn't give the "-m" option in probe
-command, this patch fixes it.
+That's the long-term plan, but not every distro has a sufficiently new 
+enough v4l-utils and ir-keytable with udev rules to load keymaps, so 
+we've been adding default remotes in-kernel and userspace (effectively 
+meaning duplicated keymap loads if the user does have ir-keytable with 
+udev rules, but meh). I'd say add it for now, and when we get to the 
+point of v4l-utils ubiquity, we can drop this along with all the other 
+in-kernel rc keymaps.
 
-[root@localhost perf]# ./perf probe --add='PROBE'
-Segmentation fault (core dumped)
-
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1311602888-2389-1-git-send-email-bookjovi@gmail.com
-Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/probe-event.c |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index b82d54f..1c7bfa5 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -1820,11 +1820,15 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
- 		ret = -ENOMEM;
- 		goto error;
- 	}
--	tev->point.module = strdup(module);
--	if (tev->point.module == NULL) {
--		ret = -ENOMEM;
--		goto error;
-+
-+	if (module) {
-+		tev->point.module = strdup(module);
-+		if (tev->point.module == NULL) {
-+			ret = -ENOMEM;
-+			goto error;
-+		}
- 	}
-+
- 	tev->point.offset = pev->point.offset;
- 	tev->point.retprobe = pev->point.retprobe;
- 	tev->nargs = pev->nargs;
 -- 
-1.6.2.5
+Jarod Wilson
+jarod@redhat.com
+
 
