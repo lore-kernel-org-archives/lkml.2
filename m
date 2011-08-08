@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293Ab1HHPqR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 11:46:17 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:59700 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab1HHPqQ convert rfc822-to-8bit (ORCPT
+	id S1752474Ab1HHPss (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 11:48:48 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56140 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab1HHPsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 11:46:16 -0400
+	Mon, 8 Aug 2011 11:48:47 -0400
+Date: Mon, 8 Aug 2011 17:48:42 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
+        Daniel Lezcano <dlezcano@fr.ibm.com>, Serge Hallyn <serue@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>, containers@lists.osdl.org,
+        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [patch 1/4] proc: Introduce the /proc/<pid>/mfd/ directory
+Message-ID: <20110808154842.GD22863@htj.dyndns.org>
+References: <20110807210112.245578619@openvz.org>
+ <20110807210526.741513583@openvz.org>
 MIME-Version: 1.0
-In-Reply-To: <20110721184757.480608533@google.com>
-References: <20110721164325.231521704@google.com>
-	<20110721184757.480608533@google.com>
-Date: Mon, 8 Aug 2011 23:46:15 +0800
-Message-ID: <CAF1ivSYuYjNXsfCfUj6+rRVQFc1m2EBP3dvtxoo8wJM_EWNtZQ@mail.gmail.com>
-Subject: Re: [patch 08/18] sched: add support for throttling group entities
-From: Lin Ming <minggr@gmail.com>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Jason Baron <jbaron@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110807210526.741513583@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 22, 2011 at 12:43 AM, Paul Turner <pjt@google.com> wrote:
+Hello,
 
-> +static __used void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+Maybe cc'ing linux-mm is a good idea for this one?
+
+On Mon, Aug 08, 2011 at 01:01:13AM +0400, Cyrill Gorcunov wrote:
+> This one behaves similarly to the /proc/<pid>/fd/ one - it contains symlinks
+> one for each mapping with file, the name of a symlink is vma->vm_start, the
+> target is the file. Opening a symlink results in a file that point exactly
+> to the same inode as them vma's one.
+> 
+> This thing is aimed to help checkpointing processes.
+
+I generally agree this is a good idea.  Can you please add how it
+would look (say, example ls -l output) in the patch description?
+Maybe some people think using both start and end addresses for symlink
+name is better?
+
+Another nit: I find the 'mfd' name a bit confusing as there's no file
+descriptor involved at all.  Maybe map_files (as we already have maps)
+or something like that?
+
+> +static int proc_mfd_get_link(struct inode *inode, struct path *path)
+...
+> +	down_read(&mm->mmap_sem);
+> +	for (vma = mm->mmap; vma; vma = vma->vm_next) {
+> +		if (vma->vm_start < vm_start)
+> +			continue;
+> +		if (vma->vm_start > vm_start)
+> +			break;
+
+Why do linear walk instead of find_vma()?
+
+> +static const struct dentry_operations tid_mfd_dentry_operations = {
+> +	.d_delete	= pid_delete_dentry,
+> +};
+
+Don't we also need revalidation here like tid_fd_dentry_operations?
+Also, I think it would be better if all the related functions are
+collected into one contiguous chunk.  The scattering doesn't seem to
+make much sense.
+
+> +static struct dentry *proc_mfd_lookup(struct inode *dir,
+> +		struct dentry *dentry, struct nameidata *nd)
 > +{
-> +       struct rq *rq = rq_of(cfs_rq);
-> +       struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(cfs_rq->tg);
-> +       struct sched_entity *se;
-> +       long task_delta, dequeue = 1;
-> +
-> +       se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
-> +
-> +       /* account load preceding throttle */
-> +       update_cfs_load(cfs_rq, 0);
-> +
-> +       task_delta = cfs_rq->h_nr_running;
-> +       for_each_sched_entity(se) {
-> +               struct cfs_rq *qcfs_rq = cfs_rq_of(se);
-> +               /* throttled entity or throttle-on-deactivate */
-> +               if (!se->on_rq)
-> +                       break;
+..
+> +	down_read(&mm->mmap_sem);
+> +	for (vma = mm->mmap; vma; vma = vma->vm_next) {
+> +		if (vma->vm_start == vm_start)
+> +			break;
+> +		if (vma->vm_start > vm_start)
+> +			goto out_no_vma;
+> +	}
 
-Does it mean it's possible that child se is unthrottled but parent se
-is throttled?
+Ditto, no reason to do linear walk.
 
-I thought if parent group was throttled then its children should be
-throttled too.
-I may misunderstood the code, please correct me then.
+Thanks.
 
-Thanks,
-Lin Ming
+-- 
+tejun
