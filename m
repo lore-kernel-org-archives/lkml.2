@@ -1,115 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711Ab1HHRMi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 13:12:38 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:30418 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080Ab1HHRMh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 13:12:37 -0400
-From: Sergiu Iordache <sergiu@chromium.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sergiu Iordache <sergiu@chromium.org>
-Subject: [PATCH v2] char drivers: ramoops documentation
-Date: Mon,  8 Aug 2011 10:12:19 -0700
-Message-Id: <1312823540-7509-1-git-send-email-sergiu@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+	id S1753362Ab1HHRRt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 13:17:49 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:55648 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751921Ab1HHRRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 13:17:48 -0400
+Message-ID: <4E4019E1.2090508@us.ibm.com>
+Date: Mon, 08 Aug 2011 10:16:17 -0700
+From: Badari Pulavarty <pbadari@us.ibm.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.16) Gecko/20101125 Thunderbird/3.0.11
+MIME-Version: 1.0
+To: Liu Yuan <namei.unix@gmail.com>
+CC: Stefan Hajnoczi <stefanha@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Khoa Huynh <khoa@us.ibm.com>
+Subject: Re: [RFC PATCH]vhost-blk: In-kernel accelerator for virtio block
+ device
+References: <1311863346-4338-1-git-send-email-namei.unix@gmail.com> <CAJSP0QUKz7LFuARF_n2LcBi_uuSzfmkjrWsHAWrXXkEaQJKkEA@mail.gmail.com> <4E325F98.5090308@gmail.com> <4E32F7F2.4080607@us.ibm.com> <4E363DB9.70801@gmail.com> <1312495132.9603.4.camel@badari-desktop> <4E3BCE4D.7090809@gmail.com> <4E3C302A.3040500@us.ibm.com> <4E3F3D4E.70104@gmail.com> <4E3F6E72.1000907@us.ibm.com> <4E3F90E3.9080600@gmail.com>
+In-Reply-To: <4E3F90E3.9080600@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a documentation file describing the usage of Ramoops
+On 8/8/2011 12:31 AM, Liu Yuan wrote:
+> On 08/08/2011 01:04 PM, Badari Pulavarty wrote:
+>> On 8/7/2011 6:35 PM, Liu Yuan wrote:
+>>> On 08/06/2011 02:02 AM, Badari Pulavarty wrote:
+>>>> On 8/5/2011 4:04 AM, Liu Yuan wrote:
+>>>>> On 08/05/2011 05:58 AM, Badari Pulavarty wrote:
+>>>>>> Hi Liu Yuan,
+>>>>>>
+>>>>>> I started testing your patches. I applied your kernel patch to 3.0
+>>>>>> and applied QEMU to latest git.
+>>>>>>
+>>>>>> I passed 6 blockdevices from the host to guest (4 vcpu, 4GB RAM).
+>>>>>> I ran simple "dd" read tests from the guest on all block devices
+>>>>>> (with various blocksizes, iflag=direct).
+>>>>>>
+>>>>>> Unfortunately, system doesn't stay up. I immediately get into
+>>>>>> panic on the host. I didn't get time to debug the problem. Wondering
+>>>>>> if you have seen this issue before and/or you have new patchset
+>>>>>> to try ?
+>>>>>>
+>>>>>> Let me know.
+>>>>>>
+>>>>>> Thanks,
+>>>>>> Badari
+>>>>>>
+>>>>>
+>>>>> Okay, it is actually a bug pointed out by MST on the other thread, 
+>>>>> that it needs a mutex for completion thread.
+>>>>>
+>>>>> Now would you please this attachment?This patch only applies to 
+>>>>> kernel part, on top of v1 kernel patch.
+>>>>>
+>>>>> This patch mainly moves completion thread into vhost thread as a 
+>>>>> function. As a result, both requests submitting and completion 
+>>>>> signalling is in the same thread.
+>>>>>
+>>>>> Yuan
+>>>>
+>>>> Unfortunately, "dd" tests (4 out of 6) in the guest hung. I see 
+>>>> following messages
+>>>>
+>>>> virtio_blk virtio2: requests: id 0 is not a head !
+>>>> virtio_blk virtio3: requests: id 1 is not a head !
+>>>> virtio_blk virtio5: requests: id 1 is not a head !
+>>>> virtio_blk virtio1: requests: id 1 is not a head !
+>>>>
+>>>> I still see host panics. I will collect the host panic and see if 
+>>>> its still same or not.
+>>>>
+>>>> Thanks,
+>>>> Badari
+>>>>
+>>>>
+>>> Would you please show me how to reproduce it step by step? I tried 
+>>> dd with two block device attached, but didn't get hung nor panic.
+>>>
+>>> Yuan
+>>
+>> I did 6 "dd"s on 6 block devices..
+>>
+>> dd if=/dev/vdb of=/dev/null bs=1M iflag=direct &
+>> dd if=/dev/vdc of=/dev/null bs=1M iflag=direct &
+>> dd if=/dev/vdd of=/dev/null bs=1M iflag=direct &
+>> dd if=/dev/vde of=/dev/null bs=1M iflag=direct &
+>> dd if=/dev/vdf of=/dev/null bs=1M iflag=direct &
+>> dd if=/dev/vdg of=/dev/null bs=1M iflag=direct &
+>>
+>> I can reproduce the problem with in 3 minutes :(
+>>
+>> Thanks,
+>> Badari
+>>
+>>
+> Ah...I made an embarrassing mistake that I tried to 'free()' an 
+> kmem_cache object.
+>
+> Would you please revert the vblk-for-kernel-2 patch and apply the new 
+> one attached in this letter?
+>
+Hmm.. My version of the code seems to have kzalloc() for used_info. I 
+don't have a version
+that is using kmem_cache_alloc(). Would it be possible for you to send 
+out complete patch
+(with all the fixes applied) for me to try ? This will avoid all the 
+confusion ..
 
-Signed-off-by: Sergiu Iordache <sergiu@chromium.org>
----
- Documentation/ramoops.txt |   76 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 76 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ramoops.txt
+Thanks,
+Badari
 
-diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
-new file mode 100644
-index 0000000..8fb1ba7
---- /dev/null
-+++ b/Documentation/ramoops.txt
-@@ -0,0 +1,76 @@
-+Ramoops oops/panic logger
-+=========================
-+
-+Sergiu Iordache <sergiu@chromium.org>
-+
-+Updated: 8 August 2011
-+
-+0. Introduction
-+
-+Ramoops is an oops/panic logger that writes its logs to RAM before the system
-+crashes. It works by logging oopses and panics in a circular buffer. Ramoops
-+needs a system with persistent RAM so that the content of that area can
-+survive after a restart.
-+
-+1. Ramoops concepts
-+
-+Ramoops uses a predefined memory area to store the dump. The start and size of
-+the memory area are set using two variables:
-+  * "mem_address" for the start
-+  * "mem_size" for the size. The memory size will be rounded down to a
-+  power of two.
-+
-+The memory area is divided into "record_size" chunks (also rounded down to
-+power of two) and each oops/panic writes a "record_size" chunk of
-+information.
-+
-+Dumping both oopses and panics can be done by setting 1 in the "dump_oops"
-+variable while setting 0 in that variable dumps only the panics.
-+
-+The module uses a counter to record multiple dumps but the counter gets reset
-+on restart (i.e. new dumps after the restart will overwrite old ones).
-+
-+2. Setting the parameters
-+
-+Setting the ramoops parameters can be done in 2 different manners:
-+ 1. Use the module parameters (which have the names of the variables described
-+ as before).
-+ 2. Use a platform device and set the platform data. The parameters can then
-+ be set through that platform data. An example of doing that is:
-+
-+#include <linux/ramoops.h>
-+[...]
-+
-+static struct ramoops_platform_data ramoops_data = {
-+        .mem_size               = <...>,
-+        .mem_address            = <...>,
-+        .record_size            = <...>,
-+        .dump_oops              = <...>,
-+};
-+
-+static struct platform_device ramoops_dev = {
-+        .name = "ramoops",
-+        .dev = {
-+                .platform_data = &ramoops_data,
-+        },
-+};
-+
-+[... inside a function ...]
-+int ret;
-+
-+ret = platform_device_register(&ramoops_dev);
-+if (ret) {
-+	printk(KERN_ERR "unable to register platform device\n");
-+	return ret;
-+}
-+
-+3. Dump format
-+
-+The data dump begins with a header, currently defined as "====" followed by a
-+timestamp and a new line. The dump then continues with the actual data.
-+
-+4. Reading the data
-+
-+The dump data can be read from memory (through /dev/mem or other means).
-+Getting the module parameters, which are needed in order to parse the data, can
-+be done through /sys/module/ramoops/parameters/* .
--- 
-1.7.3.1
 
