@@ -1,214 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab1HHXlJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 19:41:09 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51402 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080Ab1HHXlG (ORCPT
+	id S1753521Ab1HHXpV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 19:45:21 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:59846 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751080Ab1HHXpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 19:41:06 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 9 Aug 2011 08:33:45 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        Michal Hocko <mhocko@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        abrestic@google.com
-Subject: Re: [PATCH v3] memcg: add memory.vmscan_stat
-Message-Id: <20110809083345.46cbc8de.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110808124333.GA31739@redhat.com>
-References: <20110722171540.74eb9aa7.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110808124333.GA31739@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Mon, 8 Aug 2011 19:45:19 -0400
+Subject: Re: [PATCH] lib/sha1: remove memsets and allocate workspace on the
+ stack
+From: Joe Perches <joe@perches.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Ramsay Jones <ramsay@ramsay1.demon.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Joachim Eastwood <manabian@gmail.com>,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <1312844837-10086-1-git-send-email-msb@chromium.org>
+References: <1312844837-10086-1-git-send-email-msb@chromium.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 08 Aug 2011 16:45:15 -0700
+Message-ID: <1312847115.1643.22.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Aug 2011 14:43:33 +0200
-Johannes Weiner <jweiner@redhat.com> wrote:
+On Mon, 2011-08-08 at 16:07 -0700, Mandeep Singh Baines wrote:
+> The previous implementation required the workspace to be passed in as
+> a parameter. This prevents the compiler from being able to store the
+> workspace in registers. I've also removed the memset since that also
+> prevents the compiler from storing the workspace in registers.
 
-> On Fri, Jul 22, 2011 at 05:15:40PM +0900, KAMEZAWA Hiroyuki wrote:
-> > [PATCH] add memory.vmscan_stat
-> > 
-> > commit log of commit 0ae5e89 " memcg: count the soft_limit reclaim in..."
-> > says it adds scanning stats to memory.stat file. But it doesn't because
-> > we considered we needed to make a concensus for such new APIs.
-> > 
-> > This patch is a trial to add memory.scan_stat. This shows
-> >   - the number of scanned pages(total, anon, file)
-> >   - the number of rotated pages(total, anon, file)
-> >   - the number of freed pages(total, anon, file)
-> >   - the number of elaplsed time (including sleep/pause time)
-> > 
-> >   for both of direct/soft reclaim.
-> > 
-> > The biggest difference with oringinal Ying's one is that this file
-> > can be reset by some write, as
-> > 
-> >   # echo 0 ...../memory.scan_stat
-> > 
-> > Example of output is here. This is a result after make -j 6 kernel
-> > under 300M limit.
-> > 
-> > [kamezawa@bluextal ~]$ cat /cgroup/memory/A/memory.scan_stat
-> > [kamezawa@bluextal ~]$ cat /cgroup/memory/A/memory.vmscan_stat
-> > scanned_pages_by_limit 9471864
-> > scanned_anon_pages_by_limit 6640629
-> > scanned_file_pages_by_limit 2831235
-> > rotated_pages_by_limit 4243974
-> > rotated_anon_pages_by_limit 3971968
-> > rotated_file_pages_by_limit 272006
-> > freed_pages_by_limit 2318492
-> > freed_anon_pages_by_limit 962052
-> > freed_file_pages_by_limit 1356440
-> > elapsed_ns_by_limit 351386416101
-> > scanned_pages_by_system 0
-> > scanned_anon_pages_by_system 0
-> > scanned_file_pages_by_system 0
-> > rotated_pages_by_system 0
-> > rotated_anon_pages_by_system 0
-> > rotated_file_pages_by_system 0
-> > freed_pages_by_system 0
-> > freed_anon_pages_by_system 0
-> > freed_file_pages_by_system 0
-> > elapsed_ns_by_system 0
-> > scanned_pages_by_limit_under_hierarchy 9471864
-> > scanned_anon_pages_by_limit_under_hierarchy 6640629
-> > scanned_file_pages_by_limit_under_hierarchy 2831235
-> > rotated_pages_by_limit_under_hierarchy 4243974
-> > rotated_anon_pages_by_limit_under_hierarchy 3971968
-> > rotated_file_pages_by_limit_under_hierarchy 272006
-> > freed_pages_by_limit_under_hierarchy 2318492
-> > freed_anon_pages_by_limit_under_hierarchy 962052
-> > freed_file_pages_by_limit_under_hierarchy 1356440
-> > elapsed_ns_by_limit_under_hierarchy 351386416101
-> > scanned_pages_by_system_under_hierarchy 0
-> > scanned_anon_pages_by_system_under_hierarchy 0
-> > scanned_file_pages_by_system_under_hierarchy 0
-> > rotated_pages_by_system_under_hierarchy 0
-> > rotated_anon_pages_by_system_under_hierarchy 0
-> > rotated_file_pages_by_system_under_hierarchy 0
-> > freed_pages_by_system_under_hierarchy 0
-> > freed_anon_pages_by_system_under_hierarchy 0
-> > freed_file_pages_by_system_under_hierarchy 0
-> > elapsed_ns_by_system_under_hierarchy 0
-> >
-> > total_xxxx is for hierarchy management.
-> > 
-> > This will be useful for further memcg developments and need to be
-> > developped before we do some complicated rework on LRU/softlimit
-> > management.
-> > 
-> > This patch adds a new struct memcg_scanrecord into scan_control struct.
-> > sc->nr_scanned at el is not designed for exporting information. For example,
-> > nr_scanned is reset frequentrly and incremented +2 at scanning mapped pages.
-> > 
-> > For avoiding complexity, I added a new param in scan_control which is for
-> > exporting scanning score.
-> > 
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > 
-> > Changelog:
-> >   - fixed the trigger for recording nr_freed in shrink_inactive_list()
-> > Changelog:
-> >   - renamed as vmscan_stat
-> >   - handle file/anon
-> >   - added "rotated"
-> >   - changed names of param in vmscan_stat.
-> > ---
-> >  Documentation/cgroups/memory.txt |   85 +++++++++++++++++++
-> >  include/linux/memcontrol.h       |   19 ++++
-> >  include/linux/swap.h             |    6 -
-> >  mm/memcontrol.c                  |  172 +++++++++++++++++++++++++++++++++++++--
-> >  mm/vmscan.c                      |   39 +++++++-
-> >  5 files changed, 303 insertions(+), 18 deletions(-)
-> > 
-> > Index: mmotm-0710/Documentation/cgroups/memory.txt
-> > ===================================================================
-> > --- mmotm-0710.orig/Documentation/cgroups/memory.txt
-> > +++ mmotm-0710/Documentation/cgroups/memory.txt
-> > @@ -380,7 +380,7 @@ will be charged as a new owner of it.
-> >  
-> >  5.2 stat file
-> >  
-> > -memory.stat file includes following statistics
-> > +5.2.1 memory.stat file includes following statistics
-> >  
-> >  # per-memory cgroup local status
-> >  cache		- # of bytes of page cache memory.
-> > @@ -438,6 +438,89 @@ Note:
-> >  	 file_mapped is accounted only when the memory cgroup is owner of page
-> >  	 cache.)
-> >  
-> > +5.2.2 memory.vmscan_stat
-> > +
-> > +memory.vmscan_stat includes statistics information for memory scanning and
-> > +freeing, reclaiming. The statistics shows memory scanning information since
-> > +memory cgroup creation and can be reset to 0 by writing 0 as
-> > +
-> > + #echo 0 > ../memory.vmscan_stat
-> > +
-> > +This file contains following statistics.
-> > +
-> > +[param]_[file_or_anon]_pages_by_[reason]_[under_heararchy]
-> > +[param]_elapsed_ns_by_[reason]_[under_hierarchy]
-> > +
-> > +For example,
-> > +
-> > +  scanned_file_pages_by_limit indicates the number of scanned
-> > +  file pages at vmscan.
-> > +
-> > +Now, 3 parameters are supported
-> > +
-> > +  scanned - the number of pages scanned by vmscan
-> > +  rotated - the number of pages activated at vmscan
-> > +  freed   - the number of pages freed by vmscan
-> > +
-> > +If "rotated" is high against scanned/freed, the memcg seems busy.
-> > +
-> > +Now, 2 reason are supported
-> > +
-> > +  limit - the memory cgroup's limit
-> > +  system - global memory pressure + softlimit
-> > +           (global memory pressure not under softlimit is not handled now)
-> > +
-> > +When under_hierarchy is added in the tail, the number indicates the
-> > +total memcg scan of its children and itself.
-> 
-> In your implementation, statistics are only accounted to the memcg
-> triggering the limit and the respectively scanned memcgs.
-> 
-> Consider the following setup:
-> 
-> 	A
->        / \
->       B   C
->      /
->     D
-> 
-> If D tries to charge but hits the limit of A, then B's hierarchy
-> counters do not reflect the reclaim activity resulting in D.
-> 
-yes, as I expected.
+I did a similar patch locally.
 
-> That's not consistent with how hierarchy counters usually operate, and
-> neither with how you documented it.
-> 
-Hmm.
+> There is no loss of security due to removing the memset. It would be a
+> bug for the stack to leak to userspace. However, a defence-in-depth
+> argument could be made for keeping the clearing of the workspace.
 
-> On a non-technical note: as Ying Han and I were the other two people
-> working on reclaim and statistics, it really irks me that neither of
-> us were CCd on this.  Especially on such a controversial change.
+You should add #include <linux/crypthash.h> to
+lib/sha1.c and perhaps rationalize the use of __u8
+and char for the second argument to sha_transform in
+the definition and uses.
 
-I always drop CC if no reply/review comes.
+For defense in depth, a bool could be added to sha_transform
+like:
 
-Thanks,
--Kame
+void sha_transform(__u32 *digest, const char *data, bool wipe);
+
+and the internal workspace memset after use if wipe set though
+perhaps the memset could be a compile time option like
+CONFIG_CRYPTO_DEFENSE_IN_DEPTH or such instead.
+
+> diff --git a/drivers/char/random.c b/drivers/char/random.c
+[]
+> @@ -816,13 +816,13 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+>  static void extract_buf(struct entropy_store *r, __u8 *out)
+[]
+> -		sha_transform(hash, (__u8 *)(r->pool + i), workspace);
+> +		sha_transform(hash, (__u8 *)(r->pool + i));
+[]
+> diff --git a/include/linux/cryptohash.h b/include/linux/cryptohash.h
+[]
+> @@ -3,10 +3,9 @@
+[]
+> -void sha_transform(__u32 *digest, const char *data, __u32 *W);
+> +void sha_transform(__u32 *digest, const char *data);
+[]
+> diff --git a/lib/sha1.c b/lib/sha1.c
+[]
+> +void sha_transform(__u32 *digest, const char *data)
+[]
+> diff --git a/net/ipv4/syncookies.c b/net/ipv4/syncookies.c
+[]
+> @@ -50,7 +49,7 @@ static u32 cookie_hash(__be32 saddr, __be32 daddr, __be16 sport, __be16 dport,
+[]
+> -	sha_transform(tmp + 16, (__u8 *)tmp, tmp + 16 + 5);
+> +	sha_transform(tmp + 16, (__u8 *)tmp);
+[]
+> diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+[]
+> @@ -2511,8 +2510,7 @@ struct sk_buff *tcp_make_synack(struct sock *sk, struct dst_entry *dst,
+[]
+>  			sha_transform((__u32 *)&xvp->cookie_bakery[0],
+> -				      (char *)mess,
+> -				      &workspace[0]);
+> +				      (char *)mess);
+[]
+> diff --git a/net/ipv6/syncookies.c b/net/ipv6/syncookies.c
+[]
+> @@ -81,7 +80,7 @@ static u32 cookie_hash(const struct in6_addr *saddr, const struct in6_addr *dadd
+[]
+> -	sha_transform(tmp + 16, (__u8 *)tmp, tmp + 16 + 5);
+> +	sha_transform(tmp + 16, (__u8 *)tmp);
+
 
