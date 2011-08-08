@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab1HHQkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 12:40:15 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41523 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab1HHQkL (ORCPT
+	id S1753891Ab1HHQk2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 12:40:28 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:44604 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192Ab1HHQkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 12:40:11 -0400
-Subject: Re: [PATCH] regulator: fix regulator/consumer.h kernel-doc warning
+	Mon, 8 Aug 2011 12:40:25 -0400
+Subject: Re: [PATCH] regulator: max8952: removed unused mutex.
 From: Liam Girdwood <lrg@kernel.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: lkml <linux-kernel@vger.kernel.org>, Liam Girdwood <lrg@ti.com>,
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        akpm <akpm@linux-foundation.org>
-In-Reply-To: <20110803180902.4d31d143.rdunlap@xenotime.net>
-References: <20110803180902.4d31d143.rdunlap@xenotime.net>
+        myungjoo.ham@gmail.com, Liam Girdwood <lrg@ti.com>
+In-Reply-To: <1312333083-22615-1-git-send-email-myungjoo.ham@samsung.com>
+References: <4E37FE95.7090808@ti.com>
+	 <1312333083-22615-1-git-send-email-myungjoo.ham@samsung.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Aug 2011 17:40:07 +0100
-Message-ID: <1312821607.3316.4.camel@odin>
+Date: Mon, 08 Aug 2011 17:40:20 +0100
+Message-ID: <1312821620.3316.5.camel@odin>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2
 Content-Transfer-Encoding: 7bit
@@ -25,29 +26,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-08-03 at 18:09 -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
+On Wed, 2011-08-03 at 09:58 +0900, MyungJoo Ham wrote:
+> This patch removes a mutex that is never used in the driver.
 > 
-> Fix kernel-doc warning about internal/private data by marking it
-> as "private:" so that kernel-doc will ignore it.
-> 
-> Warning(include/linux/regulator/consumer.h:128): No description found for parameter 'ret'
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> Reported-by: Axel Lin
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 > ---
->  include/linux/regulator/consumer.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  drivers/regulator/max8952.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
 > 
-> --- linux-3.0-git18.orig/include/linux/regulator/consumer.h
-> +++ linux-3.0-git18/include/linux/regulator/consumer.h
-> @@ -123,7 +123,7 @@ struct regulator_bulk_data {
->  	const char *supply;
->  	struct regulator *consumer;
+> diff --git a/drivers/regulator/max8952.c b/drivers/regulator/max8952.c
+> index daff7fd..2fa8a81 100644
+> --- a/drivers/regulator/max8952.c
+> +++ b/drivers/regulator/max8952.c
+> @@ -26,7 +26,6 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/regulator/driver.h>
+>  #include <linux/regulator/max8952.h>
+> -#include <linux/mutex.h>
+>  #include <linux/gpio.h>
+>  #include <linux/io.h>
+>  #include <linux/slab.h>
+> @@ -47,7 +46,6 @@ enum {
+>  struct max8952_data {
+>  	struct i2c_client	*client;
+>  	struct device		*dev;
+> -	struct mutex		mutex;
+>  	struct max8952_platform_data *pdata;
+>  	struct regulator_dev	*rdev;
 >  
-> -	/* Internal use */
-> +	/* private: Internal use */
->  	int ret;
->  };
+> @@ -208,7 +206,6 @@ static int __devinit max8952_pmic_probe(struct i2c_client *client,
+>  	max8952->client = client;
+>  	max8952->dev = &client->dev;
+>  	max8952->pdata = pdata;
+> -	mutex_init(&max8952->mutex);
+>  
+>  	max8952->rdev = regulator_register(&regulator, max8952->dev,
+>  			&pdata->reg_data, max8952);
 
 Applied.
 
