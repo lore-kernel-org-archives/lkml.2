@@ -1,213 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab1HHSbv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 14:31:51 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:50804 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753044Ab1HHSbu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 14:31:50 -0400
-Date: Mon, 8 Aug 2011 11:31:48 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: lkml <linux-kernel@vger.kernel.org>, gregkh <greg@kroah.com>,
-        akpm <akpm@linux-foundation.org>
-Cc: driverdevel <devel@driverdev.osuosl.org>,
-        Marek Belisko <marek.belisko@gmail.com>
-Subject: [PATCH] staging: fix ft1000 sparse warnings
-Message-Id: <20110808113148.578148c2.rdunlap@xenotime.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1754161Ab1HHScq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 14:32:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20989 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752056Ab1HHScp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 14:32:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,338,1309762800"; 
+   d="scan'208";a="35725093"
+Date: Mon, 8 Aug 2011 11:32:41 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Theodore Kilgore <kilgota@banach.math.auburn.edu>
+Cc: Hans de Goede <hdegoede@redhat.com>, Greg KH <greg@kroah.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
+        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
+        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
+        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Adam Baker <linux@baker-net.org.uk>
+Subject: Re: USB mini-summit at LinuxCon Vancouver
+Message-ID: <20110808183241.GA7256@xanatos>
+References: <20110610002103.GA7169@xanatos>
+ <4E3B1B7B.2040501@infradead.org>
+ <20110804225603.GA2557@kroah.com>
+ <4E3B9FB4.30709@redhat.com>
+ <20110808175837.GA6398@xanatos>
+ <alpine.LNX.2.00.1108081316120.21409@banach.math.auburn.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1108081316120.21409@banach.math.auburn.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Mon, Aug 08, 2011 at 01:23:56PM -0500, Theodore Kilgore wrote:
+> 
+> 
+> On Mon, 8 Aug 2011, Sarah Sharp wrote:
+> 
+> > On Fri, Aug 05, 2011 at 09:45:56AM +0200, Hans de Goede wrote:
+> > > Hi,
+> > > 
+> > > On 08/05/2011 12:56 AM, Greg KH wrote:
+> > > >On Thu, Aug 04, 2011 at 07:21:47PM -0300, Mauro Carvalho Chehab wrote:
+> > > I think it is important to separate oranges from apples here, there are
+> > > at least 3 different problem classes which all seem to have gotten thrown
+> > > onto a pile here:
+> > > 
+> > > 1) The reason Mauro suggested having some discussion on this at the
+> > > USB summit is because of a discussion about dual mode cameras on the
+> > > linux media list.
+> > ...
+> > > 3) Re-direction of usb devices to virtual machines. This works by using
+> > > the userspace usbfs interface from qemu / vmware / virtualbox / whatever.
+> > > The basics of this work fine, but it lacks proper locking / safeguards
+> > > for when a vm takes over a usb device from the in kernel driver.
+> > 
+> > Hi Hans and Mauro,
+> > 
+> > We have do room in the schedule for the USB mini-summit for this
+> > discussion, since the schedule is still pretty flexible.  The
+> > preliminary schedule is up here:
+> > 
+> > http://userweb.kernel.org/~sarah/linuxcon-usb-minisummit.html
+> > 
+> > I think it's best to discuss the VM redirection in the afternoon when
+> > some of the KVM folks join us after Hans' talk on USB redirection over
+> > the network.
+> > 
+> > It sounds like we need a separate topic for the dual mode cameras and TV
+> > tuners.  Mauro, do you want to lead that discussion in the early morning
+> > (in a 9:30 to 10:30 slot) or in the late afternoon (in a 15:30 to 16:30
+> > slot)?  I want to be sure we have all the video/media developers who are
+> > interested in this topic present, and I don't know if they will be going
+> > to the KVM forum.
+> 
+> Sarah,
+> 
+> Alas. I would suspect that I am one of the people most interested in the 
+> topic of dual-mode cameras, since I have worked on supporting them both in 
+> libgphoto2 and in the kernel. But I teach in a university for a living, 
+> and the first classes of Fall Semester 2011 start on August 17 in Auburn, 
+> Alabama. Knowing this, I decided, months ago, that I simply could not 
+> attend a conference which starts on August 16 in Vancouver.
+> 
+> So, after starting all of the current mailing-list discussion on the topic 
+> I will not be at the conference. I can only hope that those who do attend 
+> will keep me current about what gets discussed.
 
-Fix sparse warnings in staging/ft1000/:
+No worries, I'll be taking notes and post them to the Linux USB and
+Linux media lists.
 
-drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:69:7: warning: obsolete struct initializer, use C99 syntax
-
-and make many functions & data static.  Examples:
-drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:65:23: warning: symbol 'fw_entry' was not declared. Should it be static?
-drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:836:6: warning: symbol 'ft1000_send_cmd' was not declared. Should it be static?
-drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:1014:6: warning: symbol 'ft1000_proc_drvmsg' was not declared. Should it be static?
-drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:1788:5: warning: symbol 'ft1000_copy_down_pkt' was not declared. Should it be static?
-drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:2096:6: warning: symbol 'stop_ft1000_card' was not declared. Should it be static?
-drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:2155:19: warning: symbol 'init_ft1000_card' was not declared. Should it be static?
-
-rivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c:172:5: warning: symbol 'ft1000_confcheck' was not declared. Should it be static?
-
-drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c:50:5: warning: symbol 'ft1000ReadProc' was not declared. Should it be static?
-drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c:194:6: warning: symbol 'ft1000InitProc' was not declared. Should it be static?
-drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c:207:6: warning: symbol 'ft1000CleanupProc' was not declared. Should it be static?
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- drivers/staging/ft1000/ft1000-pcmcia/ft1000.h      |   10 ++++
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c   |    8 +--
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c |    3 -
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |   24 ++++-------
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c |    4 -
- 5 files changed, 27 insertions(+), 22 deletions(-)
-
---- lnx-31-rc1.orig/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-+++ lnx-31-rc1/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-@@ -56,16 +56,11 @@
- #include <linux/delay.h>
- #include "ft1000.h"
- 
--int card_download(struct net_device *dev, const u8 *pFileStart, u32 FileLength);
--
--void ft1000InitProc(struct net_device *dev);
--void ft1000CleanupProc(struct net_device *dev);
--
--const struct firmware *fw_entry;
-+static const struct firmware *fw_entry;
- 
- static void ft1000_hbchk(u_long data);
- static struct timer_list poll_timer = {
--      function:ft1000_hbchk
-+      .function = ft1000_hbchk
- };
- 
- static u16 cmdbuffer[1024];
-@@ -788,7 +783,7 @@ static void ft1000_hbchk(u_long data)
- // Output:
- //
- //---------------------------------------------------------------------------
--void ft1000_send_cmd (struct net_device *dev, u16 *ptempbuffer, int size, u16 qtype)
-+static void ft1000_send_cmd (struct net_device *dev, u16 *ptempbuffer, int size, u16 qtype)
- {
- 	struct ft1000_info *info = netdev_priv(dev);
- 	int i;
-@@ -873,7 +868,8 @@ void ft1000_send_cmd (struct net_device 
- //          = 1 (successful)
- //
- //---------------------------------------------------------------------------
--bool ft1000_receive_cmd(struct net_device *dev, u16 * pbuffer, int maxsz, u16 *pnxtph)
-+static bool ft1000_receive_cmd(struct net_device *dev, u16 *pbuffer,
-+				int maxsz, u16 *pnxtph)
- {
- 	struct ft1000_info *info = netdev_priv(dev);
- 	u16 size;
-@@ -966,7 +962,7 @@ bool ft1000_receive_cmd(struct net_devic
- //     none
- //
- //---------------------------------------------------------------------------
--void ft1000_proc_drvmsg(struct net_device *dev)
-+static void ft1000_proc_drvmsg(struct net_device *dev)
- {
- 	struct ft1000_info *info = netdev_priv(dev);
- 	u16 msgtype;
-@@ -1245,7 +1241,7 @@ void ft1000_proc_drvmsg(struct net_devic
- //              SUCCESS
- //
- //---------------------------------------------------------------------------
--int ft1000_parse_dpram_msg(struct net_device *dev)
-+static int ft1000_parse_dpram_msg(struct net_device *dev)
- {
- 	struct ft1000_info *info = netdev_priv(dev);
- 	u16 doorbell;
-@@ -1546,7 +1542,7 @@ static void ft1000_flush_fifo(struct net
- //              SUCCESS
- //
- //---------------------------------------------------------------------------
--int ft1000_copy_up_pkt(struct net_device *dev)
-+static int ft1000_copy_up_pkt(struct net_device *dev)
- {
- 	u16 tempword;
- 	struct ft1000_info *info = netdev_priv(dev);
-@@ -1734,7 +1730,7 @@ int ft1000_copy_up_pkt(struct net_device
- //              SUCCESS
- //
- //---------------------------------------------------------------------------
--int ft1000_copy_down_pkt(struct net_device *dev, u16 * packet, u16 len)
-+static int ft1000_copy_down_pkt(struct net_device *dev, u16 * packet, u16 len)
- {
- 	struct ft1000_info *info = netdev_priv(dev);
- 	union {
-@@ -2102,7 +2098,7 @@ static const struct ethtool_ops ops = {
- };
- 
- struct net_device *init_ft1000_card(struct pcmcia_device *link,
--					void *ft1000_reset)
-+						void *ft1000_reset)
- {
- 	struct ft1000_info *info;
- 	struct net_device *dev;
---- lnx-31-rc1.orig/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
-+++ lnx-31-rc1/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
-@@ -68,6 +68,16 @@ struct ft1000_info {
- 	char netdevname[IFNAMSIZ];
- };
- 
-+struct pcmcia_device;
-+struct net_device;
-+extern struct net_device *init_ft1000_card(struct pcmcia_device *link,
-+						void *ft1000_reset);
-+extern void stop_ft1000_card(struct net_device *dev);
-+extern int card_download(struct net_device *dev, const u8 *pFileStart,
-+			size_t FileLength);
-+extern void ft1000InitProc(struct net_device *dev);
-+extern void ft1000CleanupProc(struct net_device *dev);
-+
- extern u16 ft1000_read_dpram(struct net_device *dev, int offset);
- extern void card_bootload(struct net_device *dev);
- extern u16 ft1000_read_dpram_mag_16(struct net_device *dev, int offset, int Index);
---- lnx-31-rc1.orig/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
-+++ lnx-31-rc1/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
-@@ -41,14 +41,12 @@ MODULE_LICENSE("GPL");
- 
- /*====================================================================*/
- 
--struct net_device *init_ft1000_card(struct pcmcia_device *link,
--					void *ft1000_reset);
--void stop_ft1000_card(struct net_device *);
--
- static int ft1000_config(struct pcmcia_device *link);
- static void ft1000_detach(struct pcmcia_device *link);
- static int ft1000_attach(struct pcmcia_device *link);
- 
-+#include "ft1000.h"
-+
- /*====================================================================*/
- 
- static void ft1000_reset(struct pcmcia_device *link)
-@@ -75,7 +73,7 @@ static void ft1000_detach(struct pcmcia_
- 	free_netdev(dev);
- }
- 
--int ft1000_confcheck(struct pcmcia_device *link, void *priv_data)
-+static int ft1000_confcheck(struct pcmcia_device *link, void *priv_data)
- {
- 	return pcmcia_request_io(link);
- }
---- lnx-31-rc1.orig/drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c
-+++ lnx-31-rc1/drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c
-@@ -47,8 +47,8 @@
- 	} \
- 	len += snprintf(page+len, PAGE_SIZE - len, "%d\n", var[i])
- 
--int ft1000ReadProc(char *page, char **start, off_t off,
--		   int count, int *eof, void *data)
-+static int ft1000ReadProc(char *page, char **start, off_t off,
-+			  int count, int *eof, void *data)
- {
- 	struct net_device *dev;
- 	int len;
---- lnx-31-rc1.orig/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
-+++ lnx-31-rc1/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
-@@ -287,7 +287,8 @@ u16 hdr_checksum(struct pseudo_hdr *pHdr
- 	return chksum;
- }
- 
--int card_download(struct net_device *dev, const u8 *pFileStart, u32 FileLength)
-+int card_download(struct net_device *dev, const u8 *pFileStart,
-+		  size_t FileLength)
- {
- 	struct ft1000_info *info = (struct ft1000_info *) netdev_priv(dev);
- 	int Status = SUCCESS;
+Sarah Sharp
