@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab1HHRtM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 13:49:12 -0400
-Received: from lvps87-230-0-242.dedicated.hosteurope.de ([87.230.0.242]:57777
-	"EHLO lvps87-230-0-242.dedicated.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751917Ab1HHRtI (ORCPT
+	id S1752788Ab1HHRvK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 13:51:10 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44666 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab1HHRvH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 13:49:08 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Aug 2011 13:49:08 EDT
-Date: Mon, 8 Aug 2011 19:42:19 +0200
-From: Michael Guntsche <mike@it-loops.com>
-To: netdev <netdev@vger.kernel.org>, linux-kernel@vger.kernel.org
-Subject: [BUG] 3.0-rc1 Bridge not forwarding unicast packages
-Message-ID: <20110808192646@it-loops.com>
+	Mon, 8 Aug 2011 13:51:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOesGMi2CXyAoy56-SdaD5YFzXW6W4wP6mnH+bVvRR3i_Mhk2A@mail.gmail.com>
+References: <1312582534-10871-1-git-send-email-swarren@nvidia.com>
+ <1312582534-10871-2-git-send-email-swarren@nvidia.com> <20110806174519.GB31966@ponder.secretlab.ca>
+ <74CDBE0F657A3D45AFBB94109FB122FF049F172168@HQMAIL01.nvidia.com> <CAOesGMi2CXyAoy56-SdaD5YFzXW6W4wP6mnH+bVvRR3i_Mhk2A@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 8 Aug 2011 11:50:47 -0600
+X-Google-Sender-Auth: Uzj8zN7V9o_KtginLsesDoFoydY
+Message-ID: <CACxGe6ubndfYNxgRfrLtCZ8cP0FddwTpG_FBZKXVZb0OHJVt6w@mail.gmail.com>
+Subject: RE: [PATCH 2/2] arm/tegra: Delete irq_to_gpio
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Erik Gilling <konkers@android.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, Colin Cross <ccross@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi list,
+On Aug 8, 2011 8:26 AM, "Stephen Warren" <swarren@nvidia.com> wrote:
+>
+> Grant Likely wrote at Saturday, August 06, 2011 11:45 AM:
+> > On Fri, Aug 05, 2011 at 04:15:34PM -0600, Stephen Warren wrote:
+> > > irq_to_gpio is deprecated and in the process of being removed. Make that
+> > > happen now for ARM Tegra.
+> > >
+> > > Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> >
+> > Applied both.  Thanks.
+>
+> Didn't you want an Ack by a Tegra maintainer first?
 
-I just upgraded my router/bridge combo to 3.1-rc1 from 3.0 for
-testing. On a first look everything seemed to work fine, but when I
-tried to connect via openvpn to my internal network (tap0 being bridged
-with the internal network) I noticed that I was not able to access the
-server on my internal network. I could access the bridge (which is
-acting as the openvpn server as well) just fine though. 
-To debug this I ran tcpdump on the openvpn client and started a ping to the
-internal network. I could see the ARP requests being answered.
+It looks like a pretty low risk change.  I didn't see much risk in
+picking it up and getting it off my plate.  I can always pull things
+back out of my tree if someone complains.  I'll add Olof's ack before
+it gets into linux-next.
 
-19:23:49.247846 ARP, Request who-has 192.168.42.127 tell 192.168.42.96,
-length 28
-19:23:49.287752 ARP, Reply 192.168.42.127 is-at 00:13:d4:4f:a2:dc,
-length 46
+>
+> I assume they were both applied to gpio-next (although a fresh fetch  of that
+> doesn't show the commits)
 
-in this case .127 is the server on the internal net and .96 the openvpn
-client, but the icmp request did not arrive on the server. 
-The strange thing I noticed was that I could see broadcasts packages
-from the server on the client
+I can't push it out until after 3.1-rc1 is released because it is
+targeted at 3.2 now.
 
-19:23:28.135185 IP 192.168.42.127.631 > 192.168.42.255.631: UDP, length
-187
-19:23:29.470975 IP 192.168.42.96.5353 > 224.0.0.251.5353: .......
-
-but no icmp packages arrived on the server side.
-
-
-brctl showmacs lan
-port no mac addr                is local?       ageing timer
-  1     00:0c:42:28:de:4e       yes                0.00
-  2     00:0c:42:61:7f:f2       yes                0.00
-  1     00:13:d4:4f:a2:dc       no                 0.00 <---- server on the lan side
-  3     8e:22:41:d9:95:23       yes                0.00
-  3     b6:e1:e3:06:c9:1a       no                 5.00 <---- client connected via tap0
-
-Reverting to 3.0 solves the problem for me. I tried just reverting the bridge code on the server to the 3.0 version to make sure that it is really Bridge related, but there are too many changes outside the bridge tree so compilation fails for me.
-
-If you need more information, please to not hesitate to conact me.
-
-Kind regards,
-Michael Guntsche
+g.
