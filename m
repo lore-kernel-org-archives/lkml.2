@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab1HHOlO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 10:41:14 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:42054 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab1HHOlN (ORCPT
+	id S1754038Ab1HHOld (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 10:41:33 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:50323 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab1HHOlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 10:41:13 -0400
-Date: Mon, 8 Aug 2011 16:39:42 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Nathan Lynch <ntl@pobox.com>, Oren Laadan <orenl@cs.columbia.edu>,
-        Daniel Lezcano <dlezcano@fr.ibm.com>, Serge Hallyn <serue@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>, containers@lists.osdl.org,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [patch 2/4] vfs: Introduce the fd closing helper
-Message-ID: <20110808143942.GA22863@htj.dyndns.org>
-References: <20110807210112.245578619@openvz.org>
- <20110807210526.994391865@openvz.org>
- <20110808095427.GA24017@sun>
+	Mon, 8 Aug 2011 10:41:31 -0400
+Date: Mon, 8 Aug 2011 11:41:24 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jovi Zhang <bookjovi@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: fix coredump caused by introduce of probe module
+ option
+Message-ID: <20110808144124.GA2297@ghostprotocols.net>
+References: <1311602888-2389-1-git-send-email-bookjovi@gmail.com>
+ <CACV3sbKNgbqX+W05mp0H0Etggext9tRx4bfPA+pT8sgudpoy5Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110808095427.GA24017@sun>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACV3sbKNgbqX+W05mp0H0Etggext9tRx4bfPA+pT8sgudpoy5Q@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 01:54:27PM +0400, Cyrill Gorcunov wrote:
-> On Mon, Aug 08, 2011 at 01:01:14AM +0400, Cyrill Gorcunov wrote:
-> > From: Pavel Emelyanov <xemul@parallels.com>
-> > 
-> > This is nothing but making is possible to call the
-> > sys_close from the kernel.
-> > 
-> > Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
-> > Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-> > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Em Mon, Aug 08, 2011 at 11:01:19AM +0800, Jovi Zhang escreveu:
+> On Mon, Jul 25, 2011 at 10:08 PM,  <bookjovi@gmail.com> wrote:
+> > From: root <root@localhost.localdomain>
+> >
+> > perf will coredump if user don't give "-m" option in probe command,
+> > this patch fix it.
+> >
+> > [root@localhost perf]# ./perf probe --add='PROBE'
+> > Segmentation fault (core dumped)
+> >
+> > Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
 > > ---
+> >  tools/perf/util/probe-event.c |   12 ++++++++----
+> >  1 files changed, 8 insertions(+), 4 deletions(-)
+> >
 > 
-> Drop this one for a while.
+> Hi acme,
+>    Can this patch go through your tree?
+>    (Get rid of "From" field, that's suck. :))
 
-Yeah, I don't see why this would be necessary.
+yeah, I'm applying it.
 
-Thanks.
+Thanks,
 
--- 
-tejun
+- Arnaldo
