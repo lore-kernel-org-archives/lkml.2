@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458Ab1HHVYY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 17:24:24 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59231 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520Ab1HHVYX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 17:24:23 -0400
-Date: Mon, 8 Aug 2011 23:24:18 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] slub: fix check_bytes() for slub debugging
-Message-ID: <20110808212418.GA3297@joi.lan>
-References: <1312709438-7608-1-git-send-email-akinobu.mita@gmail.com>
+	id S1752006Ab1HHVak (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 17:30:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36046 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750868Ab1HHVak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 17:30:40 -0400
+Message-ID: <4E40555E.90904@redhat.com>
+Date: Mon, 08 Aug 2011 17:30:06 -0400
+From: Jarod Wilson <jarod@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Postbox Express 1.0.1 (Macintosh/20100705)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312709438-7608-1-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: stufever@gmail.com
+CC: linux-kernel@vger.kernel.org, mchehab@infradead.org,
+        Wang Shaoyan <wangshaoyan.pt@taobao.com>,
+        =?ISO-8859-1?Q?David_H=E4rdeman?= <david@hardeman.nu>
+Subject: Re: [PATCH] media: declare redrat3_init_rc_dev with the same parameter
+ types
+References: <1312651155-21891-1-git-send-email-wangshaoyan.pt@taobao.com>
+In-Reply-To: <1312651155-21891-1-git-send-email-wangshaoyan.pt@taobao.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 07, 2011 at 06:30:38PM +0900, Akinobu Mita wrote:
-> The check_bytes() function is used by slub debugging.  It returns a pointer
-> to the first unmatching byte for a character in the given memory area.
-> 
-> If the character for matching byte is greater than 0x80, check_bytes()
-> doesn't work.  Becuase 64-bit pattern is generated as below.
-> 
-> 	value64 = value | value << 8 | value << 16 | value << 24;
-> 	value64 = value64 | value64 << 32;
-> 
-> The integer promotions are performed and sign-extended as the type of value
-> is u8.  The upper 32 bits of value64 is 0xffffffff in the first line, and
-> the second line has no effect.
-> 
-> This fixes the 64-bit pattern generation.
+stufever@gmail.com wrote:
+> From: Wang Shaoyan<wangshaoyan.pt@taobao.com>
+>
+>    drivers/media/rc/redrat3.c: In function 'redrat3_init_rc_dev':
+>    drivers/media/rc/redrat3.c:1107: warning: assignment from incompatible pointer type
+>
+> Signed-off-by: Wang Shaoyan<wangshaoyan.pt@taobao.com>
+> ---
+>   drivers/media/rc/redrat3.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/media/rc/redrat3.c b/drivers/media/rc/redrat3.c
+> index a166044..332ffa4 100644
+> --- a/drivers/media/rc/redrat3.c
+> +++ b/drivers/media/rc/redrat3.c
+> @@ -912,7 +912,7 @@ static int redrat3_set_tx_carrier(struct rc_dev *dev, u32 carrier)
+>   	return carrier;
+>   }
+>
+> -static int redrat3_transmit_ir(struct rc_dev *rcdev, int *txbuf, u32 n)
+> +static int redrat3_transmit_ir(struct rc_dev *rcdev, unsigned *txbuf, unsigned n)
+>   {
+>   	struct redrat3_dev *rr3 = rcdev->priv;
+>   	struct device *dev = rr3->dev;
 
-Thank you. I'm a bit ashamed about this bug... I introduced this bug, so:
-Reviewed-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Not sure if this change is complete. See the mceusb.c changes in commit 
+5588dc2b025fd8b2188142b8d59efe562bd57d80. Fixing this is on my TODO 
+list, and I have the hardware to test, just haven't got to it yet. 
+Actually, I have a patch that closely matches the referenced mceusb.c 
+changes now, I just need to test it out...
 
-I tested your patch to check if performance improvements of commit
-c4089f98e943ff445665dea49c190657b34ccffe come from this bug or not.
-And forunately they aren't - performance is exactly the same.
+-- 
+Jarod Wilson
+jarod@redhat.com
 
-How did you find it?
 
-Marcin
