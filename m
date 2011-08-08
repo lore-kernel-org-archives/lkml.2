@@ -1,123 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab1HHMut (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 08:50:49 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:64052 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab1HHMur (ORCPT
+	id S1753704Ab1HHMvn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 08:51:43 -0400
+Received: from relay.parallels.com ([195.214.232.42]:32948 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753502Ab1HHMvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 08:50:47 -0400
-From: =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        linux-kernel@vger.kernel.org, shawn.guo@freescale.com,
-        u.kleine-koenig@pengutronix.de
-Cc: =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [RESEND][PATCH 2/2] mxs-dma: enable CLKGATE before accessing registers
-Date: Mon,  8 Aug 2011 14:47:47 +0200
-Message-Id: <1312807667-24373-3-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1312807667-24373-2-git-send-email-LW@KARO-electronics.de>
-References: <dc6791e4e926902967a182107d4558d5e0a16381.1303373126.git.LW@KARO-electronics.de>
- <1312807667-24373-1-git-send-email-LW@KARO-electronics.de>
- <1312807667-24373-2-git-send-email-LW@KARO-electronics.de>
+	Mon, 8 Aug 2011 08:51:42 -0400
+Message-ID: <4E3FDBD7.2030801@parallels.com>
+Date: Mon, 8 Aug 2011 16:51:35 +0400
+From: Konstantin Khlebnikov <khlebnikov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Pekka Enberg <penberg@kernel.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 1/2] vmscan: promote shared file mapped pages
+References: <20110808110658.31053.55013.stgit@localhost6>	<CAOJsxLF909NRC2r6RL+hm1ARve+3mA6UM_CY9epJaauyqJTG8w@mail.gmail.com>	<4E3FD403.6000400@parallels.com>  <CAOJsxLHOM3NR8Rqzj4pp=9PP2UU=coPd6ftHFihjLQRiHMobfw@mail.gmail.com>
+In-Reply-To: <CAOJsxLHOM3NR8Rqzj4pp=9PP2UU=coPd6ftHFihjLQRiHMobfw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After calling mxs_dma_disable_chan() for a channel, that channel
-becomes unusable because some controller registers can only be written
-when the clock is enabled via CLKGATE.
+Pekka Enberg wrote:
+> On Mon, Aug 8, 2011 at 3:18 PM, Konstantin Khlebnikov
+> <khlebnikov@parallels.com>  wrote:
+>> Pekka Enberg wrote:
+>>>
+>>> Hi Konstantin,
+>>>
+>>> On Mon, Aug 8, 2011 at 2:06 PM, Konstantin Khlebnikov
+>>> <khlebnikov@openvz.org>    wrote:
+>>>>
+>>>> Commit v2.6.33-5448-g6457474 (vmscan: detect mapped file pages used only
+>>>> once)
+>>>> greatly decreases lifetime of single-used mapped file pages.
+>>>> Unfortunately it also decreases life time of all shared mapped file
+>>>> pages.
+>>>> Because after commit v2.6.28-6130-gbf3f3bc (mm: don't mark_page_accessed
+>>>> in fault path)
+>>>> page-fault handler does not mark page active or even referenced.
+>>>>
+>>>> Thus page_check_references() activates file page only if it was used
+>>>> twice while
+>>>> it stays in inactive list, meanwhile it activates anon pages after first
+>>>> access.
+>>>> Inactive list can be small enough, this way reclaimer can accidentally
+>>>> throw away any widely used page if it wasn't used twice in short period.
+>>>>
+>>>> After this patch page_check_references() also activate file mapped page
+>>>> at first
+>>>> inactive list scan if this page is already used multiple times via
+>>>> several ptes.
+>>>>
+>>>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>>>
+>>> Both patches seem reasonable but the changelogs don't really explain
+>>> why you're doing the changes. How did you find out about the problem?
+>>> Is there some workload that's affected? How did you test your changes?
+>>>
+>>
+>> I found this while trying to fix degragation in rhel6 (~2.6.32) from rhel5
+>> (~2.6.18).
+>> There a complete mess with>100 web/mail/spam/ftp containers,
+>> they share all their files but there a lot of anonymous pages:
+>> ~500mb shared file mapped memory and 15-20Gb non-shared anonymous memory.
+>> In this situation major-pagefaults are very costly, because all containers
+>> share the same page.
+>> In my load kernel created a disproportionate pressure on the file memory,
+>> compared with the anonymous,
+>> they equaled only if I raise swappiness up to 150 =)
+>>
+>> These patches actually wasn't helped a lot in my problem,
+>> but I saw noticable (10-20 times) reduce in count and average time of
+>> major-pagefault in file-mapped areas.
+>>
+>> Actually both patches are fixes for commit v2.6.33-5448-g6457474,
+>> because it was aimed at one scenario (singly used pages),
+>> but it breaks the logic in other scenarios (shared and/or executable pages)
+>
+> It'd be nice to have such details in the changelogs. FWIW,
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- drivers/dma/mxs-dma.c |   45 ++++++++++++++++++++++++---------------------
- 1 files changed, 24 insertions(+), 21 deletions(-)
+It's not quite honest, I did not do any measurements in the mainline kernel,
+I only boot 3.1-rc1 with them on my laptop.
+It would be nice to repeat the measurements from v2.6.30-5507-g8cab475,
+but I do not have time for that right now.
 
-diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
-index f2ddcbd..7deab8a 100644
---- a/drivers/dma/mxs-dma.c
-+++ b/drivers/dma/mxs-dma.c
-@@ -130,6 +130,23 @@ struct mxs_dma_engine {
- 	struct mxs_dma_chan		mxs_chans[MXS_DMA_CHANNELS];
- };
- 
-+static inline void mxs_dma_clkgate(struct mxs_dma_chan *mxs_chan, int enable)
-+{
-+	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
-+	int chan_id = mxs_chan->chan.chan_id;
-+	int set_clr = enable ? MXS_CLR_ADDR : MXS_SET_ADDR;
-+
-+	/* enable apbh channel clock */
-+	if (dma_is_apbh()) {
-+		if (apbh_is_old())
-+			writel(1 << (chan_id + BP_APBH_CTRL0_CLKGATE_CHANNEL),
-+				mxs_dma->base + HW_APBHX_CTRL0 + set_clr);
-+		else
-+			writel(1 << chan_id,
-+				mxs_dma->base + HW_APBHX_CTRL0 + set_clr);
-+	}
-+}
-+
- static void mxs_dma_reset_chan(struct mxs_dma_chan *mxs_chan)
- {
- 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
-@@ -148,38 +165,21 @@ static void mxs_dma_enable_chan(struct mxs_dma_chan *mxs_chan)
- 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
- 	int chan_id = mxs_chan->chan.chan_id;
- 
-+	/* clkgate needs to be enabled before writing other registers */
-+	mxs_dma_clkgate(mxs_chan, 1);
-+
- 	/* set cmd_addr up */
- 	writel(mxs_chan->ccw_phys,
- 		mxs_dma->base + HW_APBHX_CHn_NXTCMDAR(chan_id));
- 
--	/* enable apbh channel clock */
--	if (dma_is_apbh()) {
--		if (apbh_is_old())
--			writel(1 << (chan_id + BP_APBH_CTRL0_CLKGATE_CHANNEL),
--				mxs_dma->base + HW_APBHX_CTRL0 + MXS_CLR_ADDR);
--		else
--			writel(1 << chan_id,
--				mxs_dma->base + HW_APBHX_CTRL0 + MXS_CLR_ADDR);
--	}
--
- 	/* write 1 to SEMA to kick off the channel */
- 	writel(1, mxs_dma->base + HW_APBHX_CHn_SEMA(chan_id));
- }
- 
- static void mxs_dma_disable_chan(struct mxs_dma_chan *mxs_chan)
- {
--	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
--	int chan_id = mxs_chan->chan.chan_id;
--
- 	/* disable apbh channel clock */
--	if (dma_is_apbh()) {
--		if (apbh_is_old())
--			writel(1 << (chan_id + BP_APBH_CTRL0_CLKGATE_CHANNEL),
--				mxs_dma->base + HW_APBHX_CTRL0 + MXS_SET_ADDR);
--		else
--			writel(1 << chan_id,
--				mxs_dma->base + HW_APBHX_CTRL0 + MXS_SET_ADDR);
--	}
-+	mxs_dma_clkgate(mxs_chan, 0);
- 
- 	mxs_chan->status = DMA_SUCCESS;
- }
-@@ -336,7 +336,10 @@ static int mxs_dma_alloc_chan_resources(struct dma_chan *chan)
- 	if (ret)
- 		goto err_clk;
- 
-+	/* clkgate needs to be enabled for reset to finish */
-+	mxs_dma_clkgate(mxs_chan, 1);
- 	mxs_dma_reset_chan(mxs_chan);
-+	mxs_dma_clkgate(mxs_chan, 0);
- 
- 	dma_async_tx_descriptor_init(&mxs_chan->desc, chan);
- 	mxs_chan->desc.tx_submit = mxs_dma_tx_submit;
--- 
-1.5.6.5
+>
+> Acked-by: Pekka Enberg<penberg@kernel.org>
 
