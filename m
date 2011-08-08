@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab1HHDsQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 23:48:16 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43993 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753725Ab1HHDsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 23:48:14 -0400
-Date: Mon, 8 Aug 2011 13:48:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: linux-next: manual merge of the i7300_edac tree with Linus' tree
-Message-Id: <20110808134808.263962c573bcffac2e28a003@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751468Ab1HHEXR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 00:23:17 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:58337 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751241Ab1HHEXN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 00:23:13 -0400
+X-Sasl-enc: w9F1SCfgc0By9r9XF2lUnf0A+r7YDlX7BBVOzEdI0AXp 1312777391
+Date: Sun, 7 Aug 2011 21:22:31 -0700
+From: Greg KH <greg@kroah.com>
+To: Andreas Hartmann <andihartmann@01019freenet.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Linux 3.0: broken ums_eneub6250
+Message-ID: <20110808042231.GA6248@kroah.com>
+References: <hjXX6-Ee-55@gated-at.bofh.it>
+ <hk6nE-6kT-5@gated-at.bofh.it>
+ <hk7Wq-mZ-1@gated-at.bofh.it>
+ <j1mm4l$55a$1@ID-44327.news.uni-berlin.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <j1mm4l$55a$1@ID-44327.news.uni-berlin.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro,
+On Sun, Aug 07, 2011 at 08:39:20PM +0200, Andreas Hartmann wrote:
+> Hi,
+> 
+> obviously, nobody seems to be interested to work on this bug. Until it's
+> fixed: There is a workaround to get the device working again with 2.6.39
+> and 3.0 - just remove the unusable ums-eneub6250.ko and replace it with
+> the complete old and fine keucr-module - staging but working :-)
+> 
+> https://bugzilla.novell.com/show_bug.cgi?id=709243#c1
 
-Today's linux-next merge of the i7300_edac tree got a conflict in
-arch/x86/kernel/cpu/mcheck/mce.c between commit b77e70bf3535 ("x86, mce:
-Replace MCE_SELF_VECTOR by irq_work") from Linus' tree and commit
-cd90cc84c6bf ("i7core_edac: Drop the edac_mce facility") from the
-i7300_edac tree.
+How about working on a patch for the in-kernel version of the code to
+get it to work properly so we can resolve this?  Given that very few
+people actually have this hardware, it's hard for us to work on the
+driver.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+If you could run 'git bisect' to try to find the problem, that would be
+appreciated.
 
-diff --cc arch/x86/kernel/cpu/mcheck/mce.c
-index 08363b0,9c03d98..0000000
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@@ -36,10 -37,12 +36,9 @@@
-  #include <linux/fs.h>
-  #include <linux/mm.h>
-  #include <linux/debugfs.h>
-- #include <linux/edac_mce.h>
- +#include <linux/irq_work.h>
-  
-  #include <asm/processor.h>
- -#include <asm/hw_irq.h>
- -#include <asm/apic.h>
- -#include <asm/idle.h>
- -#include <asm/ipi.h>
-  #include <asm/mce.h>
-  #include <asm/msr.h>
-  
+thanks,
+
+greg k-h
