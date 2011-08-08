@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab1HHL55 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 07:57:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37940 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752870Ab1HHL54 convert rfc822-to-8bit (ORCPT
+	id S1753323Ab1HHL72 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 07:59:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63114 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069Ab1HHL70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 07:57:56 -0400
-Subject: Re: [PATCH 1/4] perf: Add memory load/store events generic code
-From: Peter Zijlstra <peterz@infradead.org>
-To: Anton Blanchard <anton@samba.org>
-Cc: Paul Mackerras <paulus@samba.org>, Lin Ming <ming.m.lin@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 08 Aug 2011 13:57:30 +0200
-In-Reply-To: <1310138308.3282.708.camel@twins>
-References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
-	 <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
-	 <1309768420.3282.8.camel@twins> <1309769066.3282.14.camel@twins>
-	 <1309867418.3282.73.camel@twins>
-	 <20110705230217.GA9584@bloggs.ozlabs.ibm.com>
-	 <1309960718.3282.289.camel@twins>  <20110708171836.6465a12e@kryten>
-	 <1310138308.3282.708.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1312804650.10488.20.camel@twins>
-Mime-Version: 1.0
+	Mon, 8 Aug 2011 07:59:26 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Per Forlin" <per.forlin@linaro.org>
+Cc: "Felipe Balbi" <balbi@ti.com>, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org
+Subject: Re: [PATCH] usb: gadget: storage_common: make FSG_NUM_BUFFERS
+ variable size
+References: <1312762934-4884-1-git-send-email-per.forlin@linaro.org>
+ <op.vzv2g7aa3l0zgt@mnazarewicz-glaptop>
+ <CAJ0pr19edNL29ghqmAp_mwP0whoGZL_p1bQX23KaUsJGVDXQhg@mail.gmail.com>
+Date: Mon, 08 Aug 2011 13:59:23 +0200
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.vzv8w92p3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <CAJ0pr19edNL29ghqmAp_mwP0whoGZL_p1bQX23KaUsJGVDXQhg@mail.gmail.com>
+User-Agent: Opera Mail/11.50 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-08 at 17:18 +0200, Peter Zijlstra wrote:
-> On Fri, 2011-07-08 at 17:18 +1000, Anton Blanchard wrote:
-> > Hi Peter,
-> > 
-> > > The thing we're talking about is Intel PEBS Load Latency/Precise Store
-> > > and AMD IBS where together with a mem op retired event (mem loads
-> > > retired for Load-Latency, mem stores retired for Precise Store)
-> > > provides an additional field describing where the load/store was
-> > > sourced from.
-> > > 
-> > > Such additional data would require the addition of a
-> > > PERF_SAMPLE_SOURCE field or similar, for some reason or other I was
-> > > under the impression some of the PPC chips had something similar. But
-> > > if not, it saves us having to worry about that.
-> > 
-> > It does sound a lot like our event vector, where we can have up to
-> > 64 bits of information that goes with a sample. A lot of the fields
-> > relate to loads and stores, but there are other fields (eg pipeline
-> > information at the point the sample was taken).
-> > 
-> > So we could definitely use a field to capture this.
-> 
-> Happen to have a ref to some docs about that? We'd want to make sure our
-> definition is wide enough to also work for ppc.
+>> On Mon, 08 Aug 2011 02:22:14 +0200, Per Forlin wrote:
+>>> There may not be one optimal number for all boards. That is the
+>>> reason for adding the number to Kconfig,
 
-Anton, Paul, any word on this? I'd love to see the specs for that
-power-pmu event vector thing.. It would be a terrible shame if we now
-include an abstraction that somewhat matches your needs but not quite,
-requiring us to either introduce another abi component later or.
+> 2011/8/8 Michal Nazarewicz <mina86@mina86.com>:
+>> It could actually be turned into a run-time configuration, but
+>> that's a bit more intrusive,
+
+On Mon, 08 Aug 2011 12:50:01 +0200, Per Forlin wrote:
+> I consider this too but couldn't see how this would be done nicely.
+
+
+In f_mass_storage.c, the buffers are stored in fsg_common structure
+as an fixed size array.  Instead, this could be replaced by a pointer
+and buffhds_count field with number of buffers.
+
+The buffhds_count would have to initialised in fsg_common_init() from
+a (new) field stored in fsg_config structure, which in turn in most
+cases is filled by values from fsg_module_parameters which correspond
+to module parameters defined in FSG_MODULE_PARAMATERS() macro.
+
+The buffers are allocated in fsg_common_init() (see line 2815).  All
+that would need to be change is to use value stored in fsg_common
+instead of FSG_NUM_BUFFERS and first allocate space for the
+common->buffhds array.
+
+Similarly, fsg_common_realese() would have to get the number of
+buffers from fsg_common structure and free common->buffhds after
+freeing each individual buffers.
+
+As far as I can tell, other places where FSG_NUM_BUFFERS is used
+would be a simple s/FSG_NUM_BUFFERS/common->buffhds_count/g.
+
+
+If you also care about file_storage.c, almost the same expect the
+module parameter juggling is a bit easier.
+
+
+But as I've said previously, it's not like I'm saying that's the way
+it should be done right now.  I'm just describing how it could be
+done should someone need to be able to change number of buffers via
+module parameter rather then recompiling the module.
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
