@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905Ab1HHJDu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 05:03:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43788 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab1HHJDs convert rfc822-to-8bit (ORCPT
+	id S1751577Ab1HHJIM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 05:08:12 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:36939 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab1HHJII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 05:03:48 -0400
-Subject: Re: [PATCH v2 6/6] perf tool: Parse general/raw events from sysfs
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 08 Aug 2011 11:03:27 +0200
-In-Reply-To: <1312793866.4115.5.camel@minggr.sh.intel.com>
-References: <1310740503-15608-1-git-send-email-ming.m.lin@intel.com>
-	 <1310740503-15608-7-git-send-email-ming.m.lin@intel.com>
-	 <CABPqkBRTw5mcHn29gba8OyeUfMuGU3mQcKsrADug1401n6j0kw@mail.gmail.com>
-	 <1312673888.2664.18.camel@hp6530s>
-	 <CABPqkBTp_R6RRUdkYwB5O6HN6i05V=4eV3Pb2NaS3KZUhBN7fg@mail.gmail.com>
-	 <1312765681.3938.1668.camel@minggr.sh.intel.com>
-	 <1312793298.10488.2.camel@twins>
-	 <1312793866.4115.5.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1312794207.10488.6.camel@twins>
-Mime-Version: 1.0
+	Mon, 8 Aug 2011 05:08:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110806225202.GO6058@hexapodia.org>
+References: <20110806225202.GO6058@hexapodia.org>
+Date: Mon, 8 Aug 2011 17:08:07 +0800
+Message-ID: <CAM_iQpVDo6U0_hwFCFoLVSVeBtCihZQPhxUS_3N4iz5tfSsoYA@mail.gmail.com>
+Subject: Re: powertop "pread cpu0 0xe8 : Bad file descriptor" fixed by CONFIG_MSR
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Andy Isaacson <adi@hexapodia.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-08 at 16:57 +0800, Lin Ming wrote:
-> On Mon, 2011-08-08 at 16:48 +0800, Peter Zijlstra wrote:
-> > On Mon, 2011-08-08 at 09:08 +0800, Lin Ming wrote:
-> > > 
-> > > We only need to register one pmu with two same graphics cards.
-> > > Then we can overload pid argument of sys_perf_event_open() to
-> > > differentiate each instance of graphic card.
-> > > 
-> > > Just like perf cgroup does. 
-> > 
-> > I don't like that much at all.. For one it will make it impossible to
-> > put the pmu device in the right sysfs topology.
-> 
-> So do you prefer adding a number to gpu name, as Stephane mentioned?
+On Sun, Aug 7, 2011 at 6:52 AM, Andy Isaacson <adi@hexapodia.org> wrote:
+> I hadn't seen this issue discussed on the list, and I don't know of a
+> powertop mailing list, so here's what stymied my use of powertop until I
+> straced it.
+>
+> With CONFIG_MSR=n, powertop "1.97-2" (from Debian unstable) on 3.0.1
+> (and presumably many other recent kernels) exits at startup with:
+>
+> pread cpu0 0xe8 : Bad file descriptor
+>
+> strace shows:
+>
+> open("/dev/cpu/0/msr", O_RDONLY) = -1 ENOENT (No such file or directory)
+> pread(4294967295, 0x7fff4c8347c8, 8, 232) = -1 EBADF (Bad file descriptor)
+>
 
-Not quite having read back that far (reading my email in date-reverse
-manner this morning), yeah. That allows links from /sys/bus/pci/... back
-to the pmu device.
+Seems powertop forgot to check the return value of that open().
+This is a bug of powertop, not kernel.
