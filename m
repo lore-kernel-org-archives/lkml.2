@@ -1,105 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab1HHScq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 14:32:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20989 "EHLO mga09.intel.com"
+	id S1754109Ab1HHSe3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 14:34:29 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:46699 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752056Ab1HHScp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 14:32:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,338,1309762800"; 
-   d="scan'208";a="35725093"
-Date: Mon, 8 Aug 2011 11:32:41 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Theodore Kilgore <kilgota@banach.math.auburn.edu>
-Cc: Hans de Goede <hdegoede@redhat.com>, Greg KH <greg@kroah.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
-        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
-        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Adam Baker <linux@baker-net.org.uk>
-Subject: Re: USB mini-summit at LinuxCon Vancouver
-Message-ID: <20110808183241.GA7256@xanatos>
-References: <20110610002103.GA7169@xanatos>
- <4E3B1B7B.2040501@infradead.org>
- <20110804225603.GA2557@kroah.com>
- <4E3B9FB4.30709@redhat.com>
- <20110808175837.GA6398@xanatos>
- <alpine.LNX.2.00.1108081316120.21409@banach.math.auburn.edu>
+	id S1752994Ab1HHSe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 14:34:27 -0400
+Date: Mon, 8 Aug 2011 11:33:56 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: trigger_all_cpu_backtrace() has no generic implementation (was
+ Re: [regression, 3.1, rcu] rcu_sched_state detected stall on CPU 8
+ (t=15000 jiffies))
+Message-ID: <20110808183356.GL4435@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110803022857.GH12870@dastard>
+ <20110803025222.GI12870@dastard>
+ <20110803063049.GD13065@linux.vnet.ibm.com>
+ <20110805003316.GA3162@dastard>
+ <20110805064119.GB13065@linux.vnet.ibm.com>
+ <20110805084839.GB3162@dastard>
+ <20110805112429.GM13065@linux.vnet.ibm.com>
+ <20110806002056.GC3162@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1108081316120.21409@banach.math.auburn.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110806002056.GC3162@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 01:23:56PM -0500, Theodore Kilgore wrote:
-> 
-> 
-> On Mon, 8 Aug 2011, Sarah Sharp wrote:
-> 
-> > On Fri, Aug 05, 2011 at 09:45:56AM +0200, Hans de Goede wrote:
-> > > Hi,
+On Sat, Aug 06, 2011 at 10:20:56AM +1000, Dave Chinner wrote:
+> On Fri, Aug 05, 2011 at 04:24:29AM -0700, Paul E. McKenney wrote:
+> > On Fri, Aug 05, 2011 at 06:48:39PM +1000, Dave Chinner wrote:
+> > > On Thu, Aug 04, 2011 at 11:41:19PM -0700, Paul E. McKenney wrote:
+> > > > On Fri, Aug 05, 2011 at 10:33:16AM +1000, Dave Chinner wrote:
+> > > > > On Tue, Aug 02, 2011 at 11:30:50PM -0700, Paul E. McKenney wrote:
+> > > > > > On Wed, Aug 03, 2011 at 12:52:22PM +1000, Dave Chinner wrote:
+> > > > > > > On Wed, Aug 03, 2011 at 12:28:57PM +1000, Dave Chinner wrote:
+> > > > > > > > Hi Paul,
+> > > > > > > > 
+> > > > > > > > I've had this hang a couple of times now, so I figured it isn't an
+> > > > > > > > isolated event. I am getting kernels occassionally hanging with the
+> > > > > > > > following output occurring:
+> > > > > > > > 
+> > > > > > > > [   62.812011] INFO: rcu_sched_state detected stall on CPU 8 (t=15000 jiffies)
+> > > > > > > > [  242.936009] INFO: rcu_sched_state detected stall on CPU 8 (t=60031 jiffies)
+> > > > > 
+> > > > > ....
+> > > > > 
+> > > > > > > This might be a false alarm - I've just diagnosed(*) that a kernel
+> > > > > > > thread was stuck in a hard loop therefore not giving up the CPU.
+> > > > > > 
+> > > > > > Ah, that is indeed one of the conditions that RCU CPU stall warnings
+> > > > > > can catch.
+> > > > > > 
+> > > > > > > Perhaps this is error message could be more informative?
+> > > > > > > The detector is acting like the hung task detector, except it's
+> > > > > > > working on kernel code stuck in a loop burning CPU, so maybe dumping
+> > > > > > > a stack trace of the spinning CPU (i.e. similar to sysrq-l output)
+> > > > > > > might be a useful addition to tracking down such stalls?
+> > > > > > 
+> > > > > > Strange.  There is a trigger_all_cpu_backtrace() call that is supposed
+> > > > > > to dump all CPUs' stacks.  It has been working in the past, but you are
+> > > > > > the second person in a couple of weeks to report that it isn't doing
+> > > > > > its job.  (Though the other one was running the -rt tree.)
+> > > > > 
+> > > > > Ok, so it is supposed to be dumping the stack. Good.
+> > > > 
+> > > > Yep!
+> ....
+> > > > > I'm running on x86_64 (inside a KVM VM) so it should be present.
+> > > > 
+> > > > Indeed it should!  Is NMI delivery busted or something?
 > > > 
-> > > On 08/05/2011 12:56 AM, Greg KH wrote:
-> > > >On Thu, Aug 04, 2011 at 07:21:47PM -0300, Mauro Carvalho Chehab wrote:
-> > > I think it is important to separate oranges from apples here, there are
-> > > at least 3 different problem classes which all seem to have gotten thrown
-> > > onto a pile here:
+> > > Not that I know of.
+> ....
+> > > > Just out of curiosity, what are you thinking of doing in the code to
+> > > > figure out that trigger_all_cpu_backtrace() didn't work and that it
+> > > > was time to fall back on sysrq-l-style processing?
 > > > 
-> > > 1) The reason Mauro suggested having some discussion on this at the
-> > > USB summit is because of a discussion about dual mode cameras on the
-> > > linux media list.
-> > ...
-> > > 3) Re-direction of usb devices to virtual machines. This works by using
-> > > the userspace usbfs interface from qemu / vmware / virtualbox / whatever.
-> > > The basics of this work fine, but it lacks proper locking / safeguards
-> > > for when a vm takes over a usb device from the in kernel driver.
+> > > -	trigger_all_cpu_backtrace();
+> > > +	if (!trigger_all_cpu_backtrace()) {
+> > > +		pr_err("trigger_all_cpu_backtrace returned false!");
 > > 
-> > Hi Hans and Mauro,
+> > So a good defensive-programming patch would be something like the
+> > following, right?
 > > 
-> > We have do room in the schedule for the USB mini-summit for this
-> > discussion, since the schedule is still pretty flexible.  The
-> > preliminary schedule is up here:
+> > 	if (!trigger_all_cpu_backtrace()) {
+> > 		pr_err("Falling back to dump_stack()");
+> > 		dump_stack();
+> > 	}
 > > 
-> > http://userweb.kernel.org/~sarah/linuxcon-usb-minisummit.html
+> > > And I see:
+> > > 
+> > > [   90.808037] INFO: rcu_sched_state detected stall on CPU 8 (t=15000 jiffies)
+> > > [   90.808037] trigger_all_cpu_backtrace returned false
+> > > 
+> > > Which indicates that arch_trigger_all_cpu_backtrace is indeed not
+> > > defined, and that sysrq-l is using the fallback.
+> > > 
+> > > My .config is below if you want to look into it further.
 > > 
-> > I think it's best to discuss the VM redirection in the afternoon when
-> > some of the KVM folks join us after Hans' talk on USB redirection over
-> > the network.
-> > 
-> > It sounds like we need a separate topic for the dual mode cameras and TV
-> > tuners.  Mauro, do you want to lead that discussion in the early morning
-> > (in a 9:30 to 10:30 slot) or in the late afternoon (in a 15:30 to 16:30
-> > slot)?  I want to be sure we have all the video/media developers who are
-> > interested in this topic present, and I don't know if they will be going
-> > to the KVM forum.
+> > My ability to do so is quite limited, but you do have
+> > CONFIG_X86_LOCAL_APIC=y.  I took a quick look but don't immediately
+> > see why you would not be getting the NMI variant.
 > 
-> Sarah,
+> It would appear to be because include/linux/nmi.h does not do
+> #include <asm/nmi.h> where arch_trigger_all_cpu_backtrace is
+> defined.
 > 
-> Alas. I would suspect that I am one of the people most interested in the 
-> topic of dual-mode cameras, since I have worked on supporting them both in 
-> libgphoto2 and in the kernel. But I teach in a university for a living, 
-> and the first classes of Fall Semester 2011 start on August 17 in Auburn, 
-> Alabama. Knowing this, I decided, months ago, that I simply could not 
-> attend a conference which starts on August 16 in Vancouver.
+> I think this is the case from looking at the build deps for
+> rcutree.h: I see include/linux/nmi.h but no asm/nmi.h. It appears
+> that asm/nmi.h is only included if this config ifdef is true:
 > 
-> So, after starting all of the current mailing-list discussion on the topic 
-> I will not be at the conference. I can only hope that those who do attend 
-> will keep me current about what gets discussed.
+> #if defined(ARCH_HAS_NMI_WATCHDOG) || defined(CONFIG_HARDLOCKUP_DETECTOR)
+> #include <asm/nmi.h>
+> 
+> And my .config has:
+> 
+> $ grep CONFIG_HARDLOCKUP_DETECTOR .config
+> # CONFIG_HARDLOCKUP_DETECTOR is not set
+> $
+> 
+> And ARCH_HAS_NMI_WATCHDOG is only defined for these archs:
+> 
+> $ grep ARCH_HAS_NMI_WATCHDOG -r arch
+> arch/blackfin/include/asm/irq.h:# define ARCH_HAS_NMI_WATCHDOG
+> arch/mn10300/include/asm/reset-regs.h:#define ARCH_HAS_NMI_WATCHDOG /* See include/linux/nmi.h */
+> arch/sparc/include/asm/irq_64.h:#define ARCH_HAS_NMI_WATCHDOG
+> $
+> 
+> So unless you configure the CONFIG_HARDLOCKUP_DETECTOR into a
+> kernel, trigger_all_cpu_backtrace() will simply fail.
+> 
+> And i can't just convert this to always include asm/nmi.h, because:
+> 
+> $ find arch -name nmi.h
+> arch/blackfin/include/asm/nmi.h
+> arch/mips/include/asm/sn/nmi.h
+> arch/mn10300/include/asm/nmi.h
+> arch/s390/include/asm/nmi.h
+> arch/sparc/include/asm/nmi.h
+> arch/x86/include/asm/nmi.h
+> $
+> 
+> Only a few platforms actually define asm/nmi.h. The whole platform
+> specific trigger_all_cpu_backtrace() stuff is just broken - it's not
+> just platform specific, it's platform and config specific, without
+> having any indication that it is config specific....
+> 
+> Arch specific code is supposed to have a generic implementation for
+> platfoms that don't implement it. It's pretty clear from the
+> sysrq-l code that a generic implementation is possible, so I'm
+> wondering why trigger_all_cpu_backtrace doesn't own that generic
+> fallback code.....
 
-No worries, I'll be taking notes and post them to the Linux USB and
-Linux media lists.
+This does seem a bit sub-optimal to me as well.  :-/
 
-Sarah Sharp
+In the meantime, I am calling dump_stack() if trigger_all_cpu_backtrace()
+returns false.
+
+For whatever it is worth, one issue with using something like
+smp_call_function() in my particular case is that irqs are disabled.
+
+							Thanx, Paul
