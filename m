@@ -1,24 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab1HHKvK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 06:51:10 -0400
-Received: from mail.trabajo.gob.hn ([207.42.179.137]:34045 "EHLO
-	mail.trabajo.gob.hn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab1HHKvJ convert rfc822-to-8bit (ORCPT
+	id S1752183Ab1HHKwI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 06:52:08 -0400
+Received: from science.horizon.com ([71.41.210.146]:10977 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750823Ab1HHKwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 06:51:09 -0400
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: "Winner"
-To: Recipients <info@mail.com>
-From: =?utf-8?q?Motorola_=C2=AE__=3Cinfo=40mail=2Ecom=3E?=@mail.trabajo.gob.hn
-Date: Mon, 08 Aug 2011 18:56:15 -0700
-Reply-To: beeline@diploma.com
-Message-Id: <20110808105749.B43671F8857@mail.trabajo.gob.hn>
+	Mon, 8 Aug 2011 06:52:04 -0400
+Date: 8 Aug 2011 06:52:01 -0400
+Message-ID: <20110808105201.25396.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: joakim.tjernlund@transmode.se, linux@horizon.com
+Subject: Re: [PATCH] add slice by 8 algorithm to crc32.c
+Cc: akpm@linux-foundation.org, fzago@systemfabricworks.com,
+        linux-kernel@vger.kernel.org, rpearson@systemfabricworks.com
+In-Reply-To: <OF53580ACE.F420CB68-ONC12578E6.0039189A-C12578E6.0039CD0F@transmode.se>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You Won £600,000.00GBP  from Motorola Promotion 2011. Bee Line Courier Service UK (beeline@diploma.com)for your Check delivery with your Name,Address,Country,Phone Number
+> I prefer to keep the current code which (at the time) generated good code
+> for at least ppc:
+> 	/* Align it */
+> 	if (unlikely((long)buf & 3 && len)) {
+> 		do {
+> 			DO_CRC(*buf++);
+> 		} while ((--len) && ((long)buf)&3);
+> 	}
+
+Ah, I was looking at fzago's initial patch; I hadn't realized you'd
+tweaked it.  That's pretty much what I was talking about.
+
+Would
+ 	if (unlikely((long)buf & 3) && len) {
+
+give the compiler better hints?  len != 0 is awfully
+likely, actually.
