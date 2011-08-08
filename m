@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab1HHSag (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 14:30:36 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:41400 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913Ab1HHSac (ORCPT
+	id S1754205Ab1HHSax (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 14:30:53 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:65408 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754087Ab1HHSae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 14:30:32 -0400
+	Mon, 8 Aug 2011 14:30:34 -0400
 From: Marcus Folkesson <marcus.folkesson@gmail.com>
 To: Liam Girdwood <lrg@ti.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: linux-kernel@vger.kernel.org,
         Marcus Folkesson <marcus.folkesson@gmail.com>
-Subject: [PATCH 2/4] regulator: tps65023: Set missing bit for update core-voltage
-Date: Mon,  8 Aug 2011 20:29:33 +0200
-Message-Id: <1312828175-11999-3-git-send-email-marcus.folkesson@gmail.com>
+Subject: [PATCH 4/4] regulator: tps65023: Added support for the similiar TPS65020 chip
+Date: Mon,  8 Aug 2011 20:29:35 +0200
+Message-Id: <1312828175-11999-5-git-send-email-marcus.folkesson@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1312828175-11999-1-git-send-email-marcus.folkesson@gmail.com>
 References: <marcus.folkesson@gmail.com>
@@ -23,51 +23,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setting the GO bit in CTRL2 for updating the core voltage
+Defines a new voltage-table and allows registering of the tps65020 device.
 
 Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/regulator/tps65023-regulator.c |   19 +++++++++++++++----
- 1 files changed, 15 insertions(+), 4 deletions(-)
+ drivers/regulator/tps65023-regulator.c |   53 ++++++++++++++++++++++++++++++++
+ 1 files changed, 53 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/regulator/tps65023-regulator.c b/drivers/regulator/tps65023-regulator.c
-index 7bd3c4d..1011470 100644
+index c1df85d..e599d40 100644
 --- a/drivers/regulator/tps65023-regulator.c
 +++ b/drivers/regulator/tps65023-regulator.c
-@@ -277,6 +277,7 @@ static int tps65023_dcdc_set_voltage(struct regulator_dev *dev,
- 	struct tps_pmic *tps = rdev_get_drvdata(dev);
- 	int dcdc = rdev_get_id(dev);
- 	int vsel;
-+	int ret;
+@@ -103,7 +103,16 @@ static const u16 VCORE_VSEL_table[] = {
+ 	1500, 1525, 1550, 1600,
+ };
  
- 	if (dcdc != TPS65023_DCDC_1)
- 		return -EINVAL;
-@@ -299,11 +300,21 @@ static int tps65023_dcdc_set_voltage(struct regulator_dev *dev,
++/* Supported voltage values for LDO regulators for tps65020 */
++static const u16 TPS65020_LDO1_VSEL_table[] = {
++	1000, 1050, 1100, 1300,
++	1800, 2500, 3000, 3300,
++};
  
- 	*selector = vsel;
++static const u16 TPS65020_LDO2_VSEL_table[] = {
++	1000, 1050, 1100, 1300,
++	1800, 2500, 3000, 3300,
++};
  
--	/* write to the register in case we found a match */
- 	if (vsel == tps->info[dcdc]->table_len)
--		return -EINVAL;
--	else
--		return tps_65023_reg_write(tps, TPS65023_REG_DEF_CORE, vsel);
-+		goto failed;
-+
-+	ret = tps_65023_reg_write(tps, TPS65023_REG_DEF_CORE, vsel);
-+
-+	/* Tell the chip that we have changed the value in DEFCORE
-+	 * and its time to update the core voltage
-+	 */
-+	tps_65023_set_bits(tps, TPS65023_REG_CON_CTRL2,
-+						TPS65023_REG_CTRL2_GO);
-+
-+	return ret;
-+
-+failed:
-+	return -EINVAL;
+ /* Supported voltage values for LDO regulators
+  * for tps65021 and tps65023 */
+@@ -537,6 +546,43 @@ static int __devexit tps_65023_remove(struct i2c_client *client)
+ 	return 0;
  }
  
- static int tps65023_ldo_get_voltage(struct regulator_dev *dev)
++static const struct tps_info tps65020_regs[] = {
++	{
++		.name = "VDCDC1",
++		.min_uV = 3300000,
++		.max_uV = 3300000,
++		.fixed	= 1,
++	},
++	{
++		.name = "VDCDC2",
++		.min_uV =  1800000,
++		.max_uV = 1800000,
++		.fixed = 1,
++	},
++	{
++		.name = "VDCDC3",
++		.min_uV =  800000,
++		.max_uV = 1600000,
++		.table_len = ARRAY_SIZE(VCORE_VSEL_table),
++		.table = VCORE_VSEL_table,
++	},
++
++	{
++		.name = "LDO1",
++		.min_uV = 1000000,
++		.max_uV = 3150000,
++		.table_len = ARRAY_SIZE(TPS65020_LDO1_VSEL_table),
++		.table = TPS65020_LDO1_VSEL_table,
++	},
++	{
++		.name = "LDO2",
++		.min_uV = 1050000,
++		.max_uV = 3300000,
++		.table_len = ARRAY_SIZE(TPS65020_LDO2_VSEL_table),
++		.table = TPS65020_LDO2_VSEL_table,
++	},
++};
++
+ static const struct tps_info tps65021_regs[] = {
+ 	{
+ 		.name = "VDCDC1",
+@@ -609,6 +655,11 @@ static const struct tps_info tps65023_regs[] = {
+ 	},
+ };
+ 
++static struct tps_driver_data tps65020_drv_data = {
++	.info = tps65020_regs,
++	.core_regulator = TPS65023_DCDC_3,
++};
++
+ static struct tps_driver_data tps65021_drv_data = {
+ 		.info = tps65021_regs,
+ 		.core_regulator = TPS65023_DCDC_3,
+@@ -624,6 +675,8 @@ static const struct i2c_device_id tps_65023_id[] = {
+ 	.driver_data = (unsigned long) &tps65023_drv_data},
+ 	{.name = "tps65021",
+ 	.driver_data = (unsigned long) &tps65021_drv_data,},
++	{.name = "tps65020",
++	.driver_data = (unsigned long) &tps65020_drv_data},
+ 	{ },
+ };
+ 
 -- 
 1.7.4.1
 
