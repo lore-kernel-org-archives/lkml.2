@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752996Ab1HHM0c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 08:26:32 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38552 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab1HHM0b convert rfc822-to-8bit (ORCPT
+	id S1752896Ab1HHM2h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 08:28:37 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11535 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438Ab1HHM2g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 08:26:31 -0400
+	Mon, 8 Aug 2011 08:28:36 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 08 Aug 2011 05:28:35 -0700
+From: Danny Huang <dahuang@nvidia.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "lrg@ti.com" <lrg@ti.com>, "mike@compulab.co.il" <mike@compulab.co.il>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        Xin Xie <xxie@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 8 Aug 2011 20:28:30 +0800
+Subject: RE: [PATCH] regulator: tps6586x: add SMx slew rate setting
+Thread-Topic: [PATCH] regulator: tps6586x: add SMx slew rate setting
+Thread-Index: AcxVrskVDJeoqhR5TxqOvq4U1Qv1wQAEtQcQ
+Message-ID: <1BA5D2DFD2730747A2B3725B59933B93C07A475743@HKMAIL01.nvidia.com>
+References: <1312457662-4490-1-git-send-email-dahuang@nvidia.com>
+ <20110804121237.GA9959@opensource.wolfsonmicro.com>
+ <1BA5D2DFD2730747A2B3725B59933B93C07A47561C@HKMAIL01.nvidia.com>
+ <20110808093703.GC12376@opensource.wolfsonmicro.com>
+In-Reply-To: <20110808093703.GC12376@opensource.wolfsonmicro.com>
+Accept-Language: zh-TW, en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-TW, en-US
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdU0Cba9xFjfD6Fq1MqE5xZeDnsdN8qipmR6jQH9J6X4vQ@mail.gmail.com>
-References: <201107230012.p6N0CZSM002466@hera.kernel.org>
-	<CAMuHMdU0Cba9xFjfD6Fq1MqE5xZeDnsdN8qipmR6jQH9J6X4vQ@mail.gmail.com>
-Date: Mon, 8 Aug 2011 14:26:30 +0200
-Message-ID: <CACna6ryx4k5fFmqbDPZ3pdDA_SbjZQQVaJNQyALkx0i8+S-7hA@mail.gmail.com>
-Subject: Re: b43: LCN-PHY add place for new PHY support
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-wireless@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 8 sierpnia 2011 13:57 użytkownik Geert Uytterhoeven
-<geert@linux-m68k.org> napisał:
-> On Sat, Jul 23, 2011 at 02:12, Linux Kernel Mailing List
-> <linux-kernel@vger.kernel.org> wrote:
->> Gitweb:     http://git.kernel.org/linus/1d738e64f3d957d56c1b51e64ebdef986a8760e3
->> Commit:     1d738e64f3d957d56c1b51e64ebdef986a8760e3
->> Parent:     0cd20a278e1ef9da9f6a987942794c9d65af8c4d
->> Author:     Rafał Miłecki <zajec5@gmail.com>
->> AuthorDate: Thu Jul 7 15:25:27 2011 +0200
->> Committer:  John W. Linville <linville@tuxdriver.com>
->> CommitDate: Fri Jul 8 11:11:25 2011 -0400
->
->> diff --git a/drivers/net/wireless/b43/phy_lcn.h b/drivers/net/wireless/b43/phy_lcn.h
->> new file mode 100644
->> index 0000000..c046c2a
->> --- /dev/null
->> +++ b/drivers/net/wireless/b43/phy_lcn.h
->
->> \ No newline at end of file
->
-> Woops...
->
-> gcc/cpp also complains:
->
-> drivers/net/wireless/b43/phy_lcn.h:14:28: warning: no newline at end of file
+From: Mark Brown, Sent: Monday, August 08, 2011 17:37
+> On Fri, Aug 05, 2011 at 07:51:15PM +0800, Danny Huang wrote:
+> > Thanks for the feedback.
+> > The reason for using driver_data is that I can't find a proper field in
+> regulator_init_data for the slew rate setting.
+> > I'll do some correction based on the feedback and try to add a new field for
+> the slew rate setting.
+> 
+> No, this is OK - we should really rename the driver_data field, it's
+> very misleading.  However:
+> 
+> > +       return tps6586x_write(parent, reg, setting->slew_rate);
+> 
+> what happens if the user sets zero for the slew rate (eg, if another
+> field is added to the platform data that they want to set)?  Is this a
+> sane setting (like the chip default) or might it break something?
 
-Sorry, I didn't know we want empty lines at the end. I also don't
-think it's mentioned in kernel's CodingStyle.
+Zero is a valid setting for the regulator but not the default setting.
+The default setting is 0x07.
+This might affect the system stability under some particular condition.
+I thought that users should pick a proper setting before init.
 
-I'll fix that when doing LCN stuff, if you agree separated patch is not needed.
-
-My gcc didn't complain :|
-
--- 
-Rafał
