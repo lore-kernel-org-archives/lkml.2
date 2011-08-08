@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544Ab1HHIsq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 04:48:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34352 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab1HHIsq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 04:48:46 -0400
-Subject: Re: [PATCH v2 6/6] perf tool: Parse general/raw events from sysfs
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 08 Aug 2011 10:48:18 +0200
-In-Reply-To: <1312765681.3938.1668.camel@minggr.sh.intel.com>
-References: <1310740503-15608-1-git-send-email-ming.m.lin@intel.com>
-	 <1310740503-15608-7-git-send-email-ming.m.lin@intel.com>
-	 <CABPqkBRTw5mcHn29gba8OyeUfMuGU3mQcKsrADug1401n6j0kw@mail.gmail.com>
-	 <1312673888.2664.18.camel@hp6530s>
-	 <CABPqkBTp_R6RRUdkYwB5O6HN6i05V=4eV3Pb2NaS3KZUhBN7fg@mail.gmail.com>
-	 <1312765681.3938.1668.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1312793298.10488.2.camel@twins>
-Mime-Version: 1.0
+	id S1751887Ab1HHIum (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 04:50:42 -0400
+Received: from mail0.scram.de ([78.47.204.202]:49013 "EHLO mail.scram.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751499Ab1HHIul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 04:50:41 -0400
+Authentication-Results: localhost; dkim=pass (1024-bit key)
+	header.i=@scram.de; dkim-asp=signed
+X-Spam-Flag: NO
+X-Spam-Score: -4.376
+Authentication-Results: amavis.colab.de (amavisd-new); dkim=pass
+	header.i=@scram.de
+From: Jochen Friedrich <jochen@scram.de>
+To: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        bryan.wu@canonical.com, kristoffer.ericson@gmail.com
+Cc: linux-kernel@vger.kernel.org, Jochen Friedrich <jochen@scram.de>
+Subject: [PATCH 3.2 0/4] ARM: simpad: Add support for GPIO attached hardware
+Date: Mon,  8 Aug 2011 10:49:35 +0200
+Message-Id: <1312793379-6020-1-git-send-email-jochen@scram.de>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-08 at 09:08 +0800, Lin Ming wrote:
-> 
-> We only need to register one pmu with two same graphics cards.
-> Then we can overload pid argument of sys_perf_event_open() to
-> differentiate each instance of graphic card.
-> 
-> Just like perf cgroup does. 
+This series enables GPIO API on UCB1x00 and implements the GPIO
+API on the CS3 latch. The third patch finally registers platform
+devices for the GPIO attached LED, buttons and I2C bus.
 
-I don't like that much at all.. For one it will make it impossible to
-put the pmu device in the right sysfs topology.
+ARM: simpad: Add ucb1x00 GPIO definitions and register GPIO
+ARM: simpad: Cleanup CS3 accessors and add GPIO API
+ARM: simpad: add GPIO based device definitions
+ARM: simpad: replace ARM specific LED code
+
+Overall diffstat:
+
+ arch/arm/mach-sa1100/leds-simpad.c           |  100 ------------
+ b/arch/arm/mach-sa1100/Makefile              |    1 
+ b/arch/arm/mach-sa1100/include/mach/simpad.h |   94 +++++++++--
+ b/arch/arm/mach-sa1100/leds.c                |    2 
+ b/arch/arm/mach-sa1100/leds.h                |    1 
+ b/arch/arm/mach-sa1100/simpad.c              |  213 +++++++++++++++++++++++----
+ b/drivers/pcmcia/sa1100_simpad.c             |   35 ++--
+ 7 files changed, 275 insertions(+), 171 deletions(-)
