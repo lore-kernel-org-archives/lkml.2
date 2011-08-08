@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577Ab1HHJIM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 05:08:12 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:36939 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab1HHJII (ORCPT
+	id S1752031Ab1HHJOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 05:14:32 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63873 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab1HHJO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 05:08:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110806225202.GO6058@hexapodia.org>
-References: <20110806225202.GO6058@hexapodia.org>
-Date: Mon, 8 Aug 2011 17:08:07 +0800
-Message-ID: <CAM_iQpVDo6U0_hwFCFoLVSVeBtCihZQPhxUS_3N4iz5tfSsoYA@mail.gmail.com>
-Subject: Re: powertop "pread cpu0 0xe8 : Bad file descriptor" fixed by CONFIG_MSR
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Andy Isaacson <adi@hexapodia.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 8 Aug 2011 05:14:28 -0400
+Subject: [PATCH 1/3] platform-drivers-x86: eeepc-laptop: fix wrong test for
+ successful registered led_classdev
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Corentin Chary <corentincj@iksaif.net>, Matthew Garrett <mjg@redhat.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 08 Aug 2011 17:14:19 +0800
+Message-ID: <1312794859.21052.2.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 7, 2011 at 6:52 AM, Andy Isaacson <adi@hexapodia.org> wrote:
-> I hadn't seen this issue discussed on the list, and I don't know of a
-> powertop mailing list, so here's what stymied my use of powertop until I
-> straced it.
->
-> With CONFIG_MSR=n, powertop "1.97-2" (from Debian unstable) on 3.0.1
-> (and presumably many other recent kernels) exits at startup with:
->
-> pread cpu0 0xe8 : Bad file descriptor
->
-> strace shows:
->
-> open("/dev/cpu/0/msr", O_RDONLY) = -1 ENOENT (No such file or directory)
-> pread(4294967295, 0x7fff4c8347c8, 8, 232) = -1 EBADF (Bad file descriptor)
->
+device_create returns &struct device pointer on success, or ERR_PTR() on error.
+Thus if led_classdev_register fails, led_cdev->dev is always not NULL.
 
-Seems powertop forgot to check the return value of that open().
-This is a bug of powertop, not kernel.
+If IS_ERR(eeepc->tpd_led.dev) is ture, it means led_classdev_register fails.
+If (asus->tpd_led.dev) is NULL, it means we call eeepc_led_exit before
+calling led_classdev_register for &eeepc->tpd_led.
+
+We only want to call led_classdev_unregister for sucessfully registered
+led_classdev, then we should check (!IS_ERR_OR_NULL(eeepc->tpd_led.dev)).
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/platform/x86/eeepc-laptop.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+index 1c45d92..29a216a 100644
+--- a/drivers/platform/x86/eeepc-laptop.c
++++ b/drivers/platform/x86/eeepc-laptop.c
+@@ -568,7 +568,7 @@ static int eeepc_led_init(struct eeepc_laptop *eeepc)
+ 
+ static void eeepc_led_exit(struct eeepc_laptop *eeepc)
+ {
+-	if (eeepc->tpd_led.dev)
++	if (!IS_ERR_OR_NULL(eeepc->tpd_led.dev))
+ 		led_classdev_unregister(&eeepc->tpd_led);
+ 	if (eeepc->led_workqueue)
+ 		destroy_workqueue(eeepc->led_workqueue);
+-- 
+1.7.4.1
+
+
+
