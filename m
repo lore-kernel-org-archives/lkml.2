@@ -1,114 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432Ab1HHVD4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 17:03:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12863 "EHLO mx1.redhat.com"
+	id S1752277Ab1HHVKF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 17:10:05 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:55553 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753090Ab1HHVDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 17:03:54 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] perf, sched: Do not delete session object prematurely
-Date: Mon,  8 Aug 2011 23:03:34 +0200
-Message-Id: <1312837414-3819-1-git-send-email-jolsa@redhat.com>
+	id S1751392Ab1HHVKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 17:10:03 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH] PM / Freezer: Freeze filesystems while freezing processes (v2)
+Date: Mon, 8 Aug 2011 23:11:27 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc1+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Pavel Machek <pavel@ucw.cz>, Nigel Cunningham <nigel@tuxonice.net>,
+        Christoph Hellwig <hch@infradead.org>, Christoph <cr2005@u-club.de>,
+        xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-fsdevel@vger.kernel.org
+References: <4E1C70AD.1010101@u-club.de> <201108062317.19033.rjw@sisk.pl> <20110807001446.GI3162@dastard>
+In-Reply-To: <20110807001446.GI3162@dastard>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108082311.28190.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The session object is released prematurely when processing
-events for latency command. The session's thread objects are
-used within the output_lat_thread function.
+On Sunday, August 07, 2011, Dave Chinner wrote:
+> On Sat, Aug 06, 2011 at 11:17:18PM +0200, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > 
+> > Freeze all filesystems during the freezing of tasks by calling
+> > freeze_bdev() for each of them and thaw them during the thawing
+> > of tasks with the help of thaw_bdev().
+> > 
+> > This is needed by hibernation, because some filesystems (e.g. XFS)
+> > deadlock with the preallocation of memory used by it if the memory
+> > pressure caused by it is too heavy.
+> > 
+> > The additional benefit of this change is that, if something goes
+> > wrong after filesystems have been frozen, they will stay in a
+> > consistent state and journal replays won't be necessary (e.g. after
+> > a failing suspend or resume).  In particular, this should help to
+> > solve a long-standing issue that in some cases during resume from
+> > hibernation the boot loader causes the journal to be replied for the
+> > filesystem containing the kernel image and initrd causing it to
+> > become inconsistent with the information stored in the hibernation
+> > image.
+> > 
+> > This change is based on earlier work by Nigel Cunningham.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> > 
+> > OK, so nobody except for Pavel appears to have any comments, so I assume
+> > that everyone except for Pavel is fine with the approach, interestingly enough.
+> > 
+> > I've removed the MS_FROZEN Pavel complained about from freeze_filesystems()
+> > and added comments explaining why lockdep_off/on() are used.
+> > 
+> > Thanks,
+> > Rafael
+> > 
+> > ---
+> >  fs/block_dev.c         |   56 +++++++++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/fs.h     |    6 +++++
+> >  kernel/power/process.c |    7 +++++-
+> >  3 files changed, 68 insertions(+), 1 deletion(-)
+> > 
+> > Index: linux-2.6/include/linux/fs.h
+> > ===================================================================
+> > --- linux-2.6.orig/include/linux/fs.h
+> > +++ linux-2.6/include/linux/fs.h
+> > @@ -211,6 +211,7 @@ struct inodes_stat_t {
+> >  #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
+> >  #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
+> >  #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
+> > +#define MS_FROZEN	(1<<25) /* bdev has been frozen */
+> >  #define MS_NOSEC	(1<<28)
+> >  #define MS_BORN		(1<<29)
+> >  #define MS_ACTIVE	(1<<30)
+> > @@ -2047,6 +2048,8 @@ extern struct super_block *freeze_bdev(s
+> >  extern void emergency_thaw_all(void);
+> >  extern int thaw_bdev(struct block_device *bdev, struct super_block *sb);
+> >  extern int fsync_bdev(struct block_device *);
+> > +extern void freeze_filesystems(void);
+> > +extern void thaw_filesystems(void);
+> >  #else
+> >  static inline void bd_forget(struct inode *inode) {}
+> >  static inline int sync_blockdev(struct block_device *bdev) { return 0; }
+> > @@ -2061,6 +2064,9 @@ static inline int thaw_bdev(struct block
+> >  {
+> >  	return 0;
+> >  }
+> > +
+> > +static inline void freeze_filesystems(void) {}
+> > +static inline void thaw_filesystems(void) {}
+> >  #endif
+> >  extern int sync_filesystem(struct super_block *);
+> >  extern const struct file_operations def_blk_fops;
+> > Index: linux-2.6/fs/block_dev.c
+> > ===================================================================
+> > --- linux-2.6.orig/fs/block_dev.c
+> > +++ linux-2.6/fs/block_dev.c
+> > @@ -314,6 +314,62 @@ out:
+> >  }
+> >  EXPORT_SYMBOL(thaw_bdev);
+> >  
+> > +/**
+> > + * freeze_filesystems - Force all filesystems into a consistent state.
+> > + */
+> > +void freeze_filesystems(void)
+> > +{
+> > +	struct super_block *sb;
+> > +
+> > +	/*
+> > +	 * This is necessary, because some filesystems (e.g. ext3) lock
+> > +	 * mutexes in their .freeze_fs() callbacks and leave them locked for
+> > +	 * their .unfreeze_fs() callbacks to unlock.  This is done under
+> > +	 * bdev->bd_fsfreeze_mutex, which is then released, but it makes
+> > +	 * lockdep think something may be wrong when freeze_bdev() attempts
+> > +	 * to acquire bdev->bd_fsfreeze_mutex for the next filesystem.
+> > +	 */
+> > +	lockdep_off();
+> 
+> I thought those problems were fixed. If they aren't, then they most
+> certainly need to be because holding mutexes over system calls is a
+> bug.
+> 
+> Well, well:
+> 
+> [252182.603134] ================================================
+> [252182.604832] [ BUG: lock held when returning to user space! ]
+> [252182.606086] ------------------------------------------------
+> [252182.607400] xfs_io/4917 is leaving the kernel with locks still held!
+> [252182.608905] 1 lock held by xfs_io/4917:
+> [252182.609739]  #0:  (&journal->j_barrier){+.+...}, at: [<ffffffff812a2aaf>] journal_lock_updates+0xef/0x100
+> 
+> <sigh>
+> 
+> Looks like the problem was fixed for ext4, but not ext3.  Please
+> report this to the ext3/4 list and get it fixed, don't work around
+> it here.
 
-Runnning following commands:
+OK, but I guess I'll have to post a patch to fix this myself so that
+anyone notices. :-)
 
- # perf sched record
- # perf sched latency
+> > +	/*
+> > +	 * Freeze in reverse order so filesystems depending on others are
+> > +	 * frozen in the right order (eg. loopback on ext3).
+> > +	 */
+> > +	list_for_each_entry_reverse(sb, &super_blocks, s_list) {
+> > +		if (!sb->s_root || !sb->s_bdev ||
+> > +		    (sb->s_frozen == SB_FREEZE_TRANS) ||
+> > +		    (sb->s_flags & MS_RDONLY))
+> > +			continue;
+> > +
+> > +		freeze_bdev(sb->s_bdev);
+> > +		sb->s_flags |= MS_FROZEN;
+> > +	}
+> 
+> AFAIK, that won't work for btrfs - you have to call freeze_super()
+> directly for btrfs because it has a special relationship with
+> sb->s_bdev. And besides, all freeze_bdev does is get an active
+> reference on the superblock and call freeze_super().
 
-the latter displays incorrect data and might cause access
-violation.
+OK, so do you mean I should call freeze_super() rather than freeze_bdev()?
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/builtin-sched.c |   22 +++++++++++++++-------
- 1 files changed, 15 insertions(+), 7 deletions(-)
+> Also, that's traversing the list of superblock with locking and
+> dereferencing the superblock without properly checking that the
+> superblock is not being torn down. You should probably use
+> iterate_supers (or at least copy the code), with a function that
+> drops the s_umount read lock befor calling freeze_super() and then
+> picks it back up afterwards.
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index dcfe887..3d5702c 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1637,23 +1637,29 @@ static struct perf_event_ops event_ops = {
- 	.ordered_samples	= true,
- };
- 
--static int read_events(void)
-+static void read_events(bool destroy, struct perf_session **psession)
- {
- 	int err = -EINVAL;
- 	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
- 							 0, false, &event_ops);
- 	if (session == NULL)
--		return -ENOMEM;
-+		die("No Memory");
- 
- 	if (perf_session__has_traces(session, "record -R")) {
- 		err = perf_session__process_events(session, &event_ops);
-+		if (err)
-+			die("Failed to process events, error %d", err);
-+
- 		nr_events      = session->hists.stats.nr_events[0];
- 		nr_lost_events = session->hists.stats.total_lost;
- 		nr_lost_chunks = session->hists.stats.nr_events[PERF_RECORD_LOST];
- 	}
- 
--	perf_session__delete(session);
--	return err;
-+	if (destroy)
-+		perf_session__delete(session);
-+
-+	if (psession)
-+		*psession = session;
- }
- 
- static void print_bad_events(void)
-@@ -1689,9 +1695,10 @@ static void print_bad_events(void)
- static void __cmd_lat(void)
- {
- 	struct rb_node *next;
-+	struct perf_session *session;
- 
- 	setup_pager();
--	read_events();
-+	read_events(false, &session);
- 	sort_lat();
- 
- 	printf("\n ---------------------------------------------------------------------------------------------------------------\n");
-@@ -1717,6 +1724,7 @@ static void __cmd_lat(void)
- 	print_bad_events();
- 	printf("\n");
- 
-+	perf_session__delete(session);
- }
- 
- static struct trace_sched_handler map_ops  = {
-@@ -1731,7 +1739,7 @@ static void __cmd_map(void)
- 	max_cpu = sysconf(_SC_NPROCESSORS_CONF);
- 
- 	setup_pager();
--	read_events();
-+	read_events(true, NULL);
- 	print_bad_events();
- }
- 
-@@ -1744,7 +1752,7 @@ static void __cmd_replay(void)
- 
- 	test_calibrations();
- 
--	read_events();
-+	read_events(true, NULL);
- 
- 	printf("nr_run_events:        %ld\n", nr_run_events);
- 	printf("nr_sleep_events:      %ld\n", nr_sleep_events);
--- 
-1.7.1
+Hmm, I'll try that, but I doubt I'll get it right first time. :-)
 
+> > +
+> > +	lockdep_on();
+> > +}
+> > +
+> > +/**
+> > + * thaw_filesystems - Make all filesystems active again.
+> > + */
+> > +void thaw_filesystems(void)
+> > +{
+> > +	struct super_block *sb;
+> > +
+> > +	/*
+> > +	 * This is necessary for the same reason as in freeze_filesystems()
+> > +	 * above.
+> > +	 */
+> > +	lockdep_off();
+> > +
+> > +	list_for_each_entry(sb, &super_blocks, s_list)
+> > +		if (sb->s_flags & MS_FROZEN) {
+> > +			sb->s_flags &= ~MS_FROZEN;
+> > +			thaw_bdev(sb->s_bdev, sb);
+> > +		}
+> 
+> And once again, iterate_supers() is what you want here.
+
+OK
+
+> And you should only call thaw_bdev() as it needs to do checks other
+> than checking MS_FROZEN
+
+Hmm, I'm not really sure what you mean?
+
+> e.g. the above will unfreeze filesystems that
+> were already frozen at the time a suspend occurs, and that could
+> lead to corruption depending on why the filesystem was frozen...
+> 
+> Also, you still need to check for a valid sb->s_bdev here, otherwise
+> <splat>.
+
+I see.
+
+Thanks,
+Rafael
