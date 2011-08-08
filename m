@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab1HHMSb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 08:18:31 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61945 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753019Ab1HHMS2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 08:18:28 -0400
+	id S1752249Ab1HHMW7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 08:22:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41808 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750877Ab1HHMW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 08:22:58 -0400
+Date: Mon, 8 Aug 2011 14:22:55 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v2] vmscan: reverse lru scanning order
+Message-ID: <20110808122255.GC14803@tiehlicka.suse.cz>
+References: <20110727111002.9985.94938.stgit@localhost6>
+ <20110808110207.30777.30800.stgit@localhost6>
 MIME-Version: 1.0
-In-Reply-To: <1312795038.21052.6.camel@phoenix>
-References: <1312794859.21052.2.camel@phoenix>
-	<1312795038.21052.6.camel@phoenix>
-Date: Mon, 8 Aug 2011 14:18:27 +0200
-Message-ID: <CAHR064ix9i3-j8T_B53YzLrgFp+Ms4DmnPW8FWdN-Q2J99Fk2w@mail.gmail.com>
-Subject: Re: [PATCH 3/3] platform-drivers-x86: asus-laptop: fix wrong test for
- successful registered led_classdev
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110808110207.30777.30800.stgit@localhost6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 8, 2011 at 11:17 AM, Axel Lin <axel.lin@gmail.com> wrote:
-> device_create returns &struct device pointer on success, or ERR_PTR() on error.
-> Thus if led_classdev_register fails, led_cdev->dev is always not NULL.
->
-> Thus to unregister a successful registered led_classdev, we should check
-> IS_ERR_OR_NULL macro for led_cdev->dev instead of checking if led_cdev->dev
-> is NULL or not.
->
-> we use IS_ERR_OR_NULL instead of IS_ERR because if we havn't call
-> led_classdev_register, the led_cdev->dev is NULL.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Mon 08-08-11 15:02:07, Konstantin Khlebnikov wrote:
+> LRU scanning order was accidentially changed in commit v2.6.27-5584-gb69408e:
+> "vmscan: Use an indexed array for LRU variables".
+> Before that commit reclaimer always scan active lists first.
+> 
+> This patch just reverse it back.
 
-Acked-by: Corentin Chary <corentin.chary@gmail.com>
+I am still not sure I see why the ordering matters that much.
+One thing that might matter is that shrink_list moves some pages from
+active to inactive list if inactive is low so it makes sense to try to
+shrink active before inactive. It would be a problem if inactive was
+almost empty. Then we would just waste time by shrinking inactive first.
+I am not sure how real problem is that, though. 
 
+Whatever is the reason, I think it should be documented in the
+changelog.
+The change makes sense to me.
 
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 > ---
->  drivers/platform/x86/asus-laptop.c |   12 ++++++------
->  1 files changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
-> index fa6d7ec..0e071fa 100644
-> --- a/drivers/platform/x86/asus-laptop.c
-> +++ b/drivers/platform/x86/asus-laptop.c
-> @@ -430,17 +430,17 @@ static enum led_brightness asus_kled_cdev_get(struct led_classdev *led_cdev)
->
->  static void asus_led_exit(struct asus_laptop *asus)
->  {
-> -       if (asus->mled.led.dev)
-> +       if (!IS_ERR_OR_NULL(asus->mled.led.dev))
->                led_classdev_unregister(&asus->mled.led);
-> -       if (asus->tled.led.dev)
-> +       if (!IS_ERR_OR_NULL(asus->tled.led.dev))
->                led_classdev_unregister(&asus->tled.led);
-> -       if (asus->pled.led.dev)
-> +       if (!IS_ERR_OR_NULL(asus->pled.led.dev))
->                led_classdev_unregister(&asus->pled.led);
-> -       if (asus->rled.led.dev)
-> +       if (!IS_ERR_OR_NULL(asus->rled.led.dev))
->                led_classdev_unregister(&asus->rled.led);
-> -       if (asus->gled.led.dev)
-> +       if (!IS_ERR_OR_NULL(asus->gled.led.dev))
->                led_classdev_unregister(&asus->gled.led);
-> -       if (asus->kled.led.dev)
-> +       if (!IS_ERR_OR_NULL(asus->kled.led.dev))
->                led_classdev_unregister(&asus->kled.led);
->        if (asus->led_workqueue) {
->                destroy_workqueue(asus->led_workqueue);
+>  include/linux/mmzone.h |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index be1ac8d..0094389 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -141,7 +141,8 @@ enum lru_list {
+>  
+>  #define for_each_lru(l) for (l = 0; l < NR_LRU_LISTS; l++)
+>  
+> -#define for_each_evictable_lru(l) for (l = 0; l <= LRU_ACTIVE_FILE; l++)
+> +#define for_each_evictable_lru(l) \
+> +	for (l = LRU_ACTIVE_FILE; (int)l >= LRU_INACTIVE_ANON; l--)
+>  
+>  static inline int is_file_lru(enum lru_list l)
+>  {
+> 
 > --
-> 1.7.4.1
->
->
->
->
-
-
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Corentin Chary
-http://xf.iksaif.net
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
