@@ -1,44 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308Ab1HHJhS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 05:37:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60528 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751847Ab1HHJhN (ORCPT
+	id S1751924Ab1HHJkP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 05:40:15 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46410 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab1HHJkN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 05:37:13 -0400
-Date: Mon, 8 Aug 2011 18:37:05 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Danny Huang <dahuang@nvidia.com>
-Cc: "lrg@ti.com" <lrg@ti.com>, "mike@compulab.co.il" <mike@compulab.co.il>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Xin Xie <xxie@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: tps6586x: add SMx slew rate setting
-Message-ID: <20110808093703.GC12376@opensource.wolfsonmicro.com>
-References: <1312457662-4490-1-git-send-email-dahuang@nvidia.com>
- <20110804121237.GA9959@opensource.wolfsonmicro.com>
- <1BA5D2DFD2730747A2B3725B59933B93C07A47561C@HKMAIL01.nvidia.com>
+	Mon, 8 Aug 2011 05:40:13 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Felipe Balbi" <balbi@ti.com>, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, "Per Forlin" <per.forlin@linaro.org>
+Subject: Re: [PATCH] usb: gadget: storage_common: make FSG_NUM_BUFFERS
+ variable size
+References: <1312762934-4884-1-git-send-email-per.forlin@linaro.org>
+Date: Mon, 08 Aug 2011 11:40:09 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1BA5D2DFD2730747A2B3725B59933B93C07A47561C@HKMAIL01.nvidia.com>
-X-Cookie: You will have long and healthy life.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.vzv2g7aa3l0zgt@mnazarewicz-glaptop>
+In-Reply-To: <1312762934-4884-1-git-send-email-per.forlin@linaro.org>
+User-Agent: Opera Mail/11.50 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 05, 2011 at 07:51:15PM +0800, Danny Huang wrote:
-> Thanks for the feedback.
-> The reason for using driver_data is that I can't find a proper field in regulator_init_data for the slew rate setting.
-> I'll do some correction based on the feedback and try to add a new field for the slew rate setting.
+On Mon, 08 Aug 2011 02:22:14 +0200, Per Forlin <per.forlin@linaro.org>  
+wrote:
+> FSG_NUM_BUFFERS is set to 2 as default.
+> Usually 2 buffers are enough to establish a good
+> double buffering pipeline. But when dealing with expensive
+> request preparation (i.e. dma_map) there may be benefits of
+> increasing the number of buffers. There is an extra cost for
+> every first request, the others are prepared in parallell with
+> an ongoing transfer. Every time all buffers are consumed there is
+> an additional cost for the next first request. Increasing the number
+> of buffers decreases the risk of running out of buffers.
 
-No, this is OK - we should really rename the driver_data field, it's
-very misleading.  However:
+[... benchmark snip ...]
 
-> +       return tps6586x_write(parent, reg, setting->slew_rate);
+> There may not be one optimal number for all boards. That is the
+> reason for adding the number to Kconfig,
 
-what happens if the user sets zero for the slew rate (eg, if another
-field is added to the platform data that they want to set)?  Is this a
-sane setting (like the chip default) or might it break something?
+It could actually be turned into a run-time configuration, but
+that's a bit more intrusive, so adding Kconfig should be enough
+for now.
+
+> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+
+
+Some not very relevant comments below:
+
+> diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+> index 029e288..bbd17f3 100644
+> --- a/drivers/usb/gadget/Kconfig
+> +++ b/drivers/usb/gadget/Kconfig
+> @@ -96,6 +96,21 @@ config USB_GADGET_VBUS_DRAW
+>  	   This value will be used except for system-specific gadget
+>  	   drivers that have more specific information.
+> +config USB_GADGET_STORAGE_NUM_BUFFERS
+> +	int "Number of storage pipline buffers"
+
+“pipeline”, missing “e”.
+
+> +	range 2 64
+> +	default 2
+> +	help
+> +	  Usually 2 buffers are enough to establish a good
+> +	  double buffering pipeline. But when dealing with expensive
+
+s/double//.  By definition, “double” buffering uses two buffers, isn't it?
+So if we change number of buffers, it's no longer “double”.
+
+> +	  request preparation (i.e. dma_map) there may be benefits of
+> +	  increasing the number of buffers. There is an extra cost for
+> +	  every first request, the others are prepared in parallell with
+
+“parallel”, too many “l”s.
+
+> +	  an ongoing transfer. Every time all buffers are consumed there is
+> +	  an additional cost for the next first request. Increasing the number
+
+“Next first request” sounds a bit illogical to me.
+
+> +	  of buffers decreases the risk of running out of buffers.
+> +	  If unsure, say 2.
+> +
+>  config	USB_GADGET_SELECTED
+>  	boolean
+> diff --git a/drivers/usb/gadget/storage_common.c  
+> b/drivers/usb/gadget/storage_common.c
+> index 1fa4f70..512d9cf 100644
+> --- a/drivers/usb/gadget/storage_common.c
+> +++ b/drivers/usb/gadget/storage_common.c
+> @@ -262,8 +262,8 @@ static struct fsg_lun *fsg_lun_from_dev(struct  
+> device *dev)
+>  #define EP0_BUFSIZE	256
+>  #define DELAYED_STATUS	(EP0_BUFSIZE + 999)	/* An impossibly large value  
+> */
+> -/* Number of buffers we will use.  2 is enough for double-buffering */
+> -#define FSG_NUM_BUFFERS	2
+> +/* Number of buffers we will use.  2 is usually enough for  
+> double-buffering */
+
+s/double-buffering/good buffering pipeline/?
+
+> +#define FSG_NUM_BUFFERS	CONFIG_USB_GADGET_STORAGE_NUM_BUFFERS
+> /* Default size of buffer length. */
+>  #define FSG_BUFLEN	((u32)16384)
+
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michal "mina86" Nazarewicz    (o o)
+ooo +-----<email/xmpp: mnazarewicz@google.com>-----ooO--(_)--Ooo--
