@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab1HHVhP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 17:37:15 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:50758 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751357Ab1HHVhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 17:37:13 -0400
-Date: Mon, 8 Aug 2011 14:37:11 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-edac@vger.kernel.org
-Subject: Re: Linux 3.1-rc1 (i7core_edac build error)
-Message-Id: <20110808143711.b5d3a5a2.rdunlap@xenotime.net>
-In-Reply-To: <20110808213159.GA22088@liondog.tnic>
-References: <CA+55aFwkJdyEpyNY64aAQ5ChrPZ8Kvx9iRUwy1J6_SRaxoN=zA@mail.gmail.com>
-	<20110808135931.b234469c.rdunlap@xenotime.net>
-	<20110808213159.GA22088@liondog.tnic>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1752911Ab1HHVhf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 17:37:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18170 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751610Ab1HHVhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 17:37:34 -0400
+Date: Mon, 8 Aug 2011 17:37:21 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: ZAK Magnus <zakmagnus@google.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH v4 2/2] Output stall traces in /proc
+Message-ID: <20110808213721.GA1972@redhat.com>
+References: <1312495991-28377-1-git-send-email-zakmagnus@chromium.org>
+ <1312495991-28377-2-git-send-email-zakmagnus@chromium.org>
+ <20110805134042.GJ1972@redhat.com>
+ <CAAuSN919rQj93P8HE69_N5vC04ywMFfeJjRdMhn8ga1V-jFb7A@mail.gmail.com>
+ <20110805184323.GK20762@redhat.com>
+ <CAAuSN91Pi8SbWbU87v7QdDWS_N1GiXsM8dGUYSYKTUCUp+2Mww@mail.gmail.com>
+ <20110808201951.GY1972@redhat.com>
+ <1312836771.22367.35.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312836771.22367.35.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Aug 2011 23:31:59 +0200 Borislav Petkov wrote:
-
-> On Mon, Aug 08, 2011 at 01:59:31PM -0700, Randy Dunlap wrote:
-> > on x86_64:
-> > 
-> > ERROR: "x86_mce_decoder_chain" [drivers/edac/i7core_edac.ko] undefined!
-> > 
-> > Full kernel (rand)config file is attached.
+On Mon, Aug 08, 2011 at 10:52:51PM +0200, Peter Zijlstra wrote:
+> Since its the NMI context that's generating the data, disabling IRQs
+> will obviously not do much good.
 > 
-> This has got to be linux-next because the x86_mce_decoder_chain for
-> i7core_edac is not upstream yet, AFAICT.
-
-Agreed.  Too many simultaneous build trees.  Sorry about that.
-
-
-> If so, then
+> Also, if you've got a procfs output, what do you need irq_work for?
 > 
-> http://git.kernel.org/?p=linux/kernel/git/mchehab/edac.git;a=commitdiff;h=cd90cc84c6bf0f40a681900c609c044336a1b12e
+> Depending on the type of data and kind of data loss you can incur, would
+> a static per-cpu buffer be ok? You can guard it by a single bit, if
+> cleared NMI can write, if set NMI will skip over and loose the data.
 > 
-> needs to be changed to depend on X86_MCE. Mauro, you want an updated
-> patch or you don't rebase your linux-next branch and need a diff ontop?
+> Then your procfs routine can set the bit, dump out the latest version of
+> the data and clear the bit again. If you always want the NMI thing to be
+> able to write, use two buffers, if you 'lock' then one at a time,
+> there's always one writable.
 > 
-> Thanks.
+> All you need is atomic bitops :-)
 > 
-> -- 
-> Regards/Gruss,
->     Boris.
+> > > > The softstall case should be ok though.
+> > > Why's that? The soft stall traces are not written in a NMI context but
+> > > just in a regular interrupt context, right? Doesn't that pose similar
+> > > problems?
+> 
+> You should be able to do stack traces from NMI context, that's what perf
+> does after all.
+> 
+> > > These are weird rare corner cases anyway, right? Maybe the simplest
+> > > thing could be to let the interrupts only try_lock(), so they might
+> > > sometimes fail to record a stall, but it would be a pretty big
+> > > coincidence.
+> 
+> Sure you can do a trylock. I'm still not quite sure what you want the
+> irq_work for.. there's no guarantee the interrupt runs immediately after
+> the NMI, it could be the NMI is in the middle of a irq disabled region,
+> or the whole thing is ran on an architecture without
+> arch_irq_work_raise().
 
-Thanks.
+Maybe irq_work isn't what we needed.  I just wasn't smart enough to figure
+out how to make sure we can write data in an NMI context and read it in a
+normal context.  I supposed the whole swapping buffers could work and is
+simpler.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Basically, Zak was working on a way to save stack traces of potential
+hard/soft lockups (ones that lockup for a minimum amount of time but
+un-lockup before actually triggering anything).  The idea was to get
+visibility of who is spending time doing some wrong before it is too late.
+
+Cheers,
+Don
+
