@@ -1,71 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391Ab1HHVCx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 17:02:53 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:40606 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753429Ab1HHVCv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 17:02:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+XFjioJPCvp+=-3Eg06bzHuXGbFCUoyGguhTL5DqqcpqN0ZXQ@mail.gmail.com>
-References: <201107230012.p6N0CZSM002466@hera.kernel.org>
-	<CAMuHMdU0Cba9xFjfD6Fq1MqE5xZeDnsdN8qipmR6jQH9J6X4vQ@mail.gmail.com>
-	<CACna6ryx4k5fFmqbDPZ3pdDA_SbjZQQVaJNQyALkx0i8+S-7hA@mail.gmail.com>
-	<CA+XFjioJPCvp+=-3Eg06bzHuXGbFCUoyGguhTL5DqqcpqN0ZXQ@mail.gmail.com>
-Date: Mon, 8 Aug 2011 23:02:50 +0200
-Message-ID: <CACna6rwFbDTxBf2ykVbSHbTp53S1uMKCnm_46wccycDbRmWz8A@mail.gmail.com>
-Subject: Re: b43: LCN-PHY add place for new PHY support
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: =?UTF-8?Q?G=C3=A1bor_Stefanik?= <netrolller.3d@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-wireless@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754432Ab1HHVD4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 17:03:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12863 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753090Ab1HHVDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 17:03:54 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH] perf, sched: Do not delete session object prematurely
+Date: Mon,  8 Aug 2011 23:03:34 +0200
+Message-Id: <1312837414-3819-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 8 sierpnia 2011 18:07 użytkownik Gábor Stefanik
-<netrolller.3d@gmail.com> napisał:
-> 2011/8/8 Rafał Miłecki <zajec5@gmail.com>:
->> W dniu 8 sierpnia 2011 13:57 użytkownik Geert Uytterhoeven
->> <geert@linux-m68k.org> napisał:
->>> On Sat, Jul 23, 2011 at 02:12, Linux Kernel Mailing List
->>> <linux-kernel@vger.kernel.org> wrote:
->>>> Gitweb:     http://git.kernel.org/linus/1d738e64f3d957d56c1b51e64ebdef986a8760e3
->>>> Commit:     1d738e64f3d957d56c1b51e64ebdef986a8760e3
->>>> Parent:     0cd20a278e1ef9da9f6a987942794c9d65af8c4d
->>>> Author:     Rafał Miłecki <zajec5@gmail.com>
->>>> AuthorDate: Thu Jul 7 15:25:27 2011 +0200
->>>> Committer:  John W. Linville <linville@tuxdriver.com>
->>>> CommitDate: Fri Jul 8 11:11:25 2011 -0400
->>>
->>>> diff --git a/drivers/net/wireless/b43/phy_lcn.h b/drivers/net/wireless/b43/phy_lcn.h
->>>> new file mode 100644
->>>> index 0000000..c046c2a
->>>> --- /dev/null
->>>> +++ b/drivers/net/wireless/b43/phy_lcn.h
->>>
->>>> \ No newline at end of file
->>>
->>> Woops...
->>>
->>> gcc/cpp also complains:
->>>
->>> drivers/net/wireless/b43/phy_lcn.h:14:28: warning: no newline at end of file
->>
->> Sorry, I didn't know we want empty lines at the end. I also don't
->> think it's mentioned in kernel's CodingStyle.
->
-> I'm pretty sure it is basic Unix knowledge that all text files SHOULD
-> (RFC 2119) end with a newline character, unless otherwise noted
-> explicitly. In fact, many Unix text editors automatically insert a
-> newline at the end, and forbid you from deleting it.
+The session object is released prematurely when processing
+events for latency command. The session's thread objects are
+used within the output_lat_thread function.
 
-OK, thanks, will avoid that in the future.
+Runnning following commands:
 
+ # perf sched record
+ # perf sched latency
+
+the latter displays incorrect data and might cause access
+violation.
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/builtin-sched.c |   22 +++++++++++++++-------
+ 1 files changed, 15 insertions(+), 7 deletions(-)
+
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index dcfe887..3d5702c 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -1637,23 +1637,29 @@ static struct perf_event_ops event_ops = {
+ 	.ordered_samples	= true,
+ };
+ 
+-static int read_events(void)
++static void read_events(bool destroy, struct perf_session **psession)
+ {
+ 	int err = -EINVAL;
+ 	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
+ 							 0, false, &event_ops);
+ 	if (session == NULL)
+-		return -ENOMEM;
++		die("No Memory");
+ 
+ 	if (perf_session__has_traces(session, "record -R")) {
+ 		err = perf_session__process_events(session, &event_ops);
++		if (err)
++			die("Failed to process events, error %d", err);
++
+ 		nr_events      = session->hists.stats.nr_events[0];
+ 		nr_lost_events = session->hists.stats.total_lost;
+ 		nr_lost_chunks = session->hists.stats.nr_events[PERF_RECORD_LOST];
+ 	}
+ 
+-	perf_session__delete(session);
+-	return err;
++	if (destroy)
++		perf_session__delete(session);
++
++	if (psession)
++		*psession = session;
+ }
+ 
+ static void print_bad_events(void)
+@@ -1689,9 +1695,10 @@ static void print_bad_events(void)
+ static void __cmd_lat(void)
+ {
+ 	struct rb_node *next;
++	struct perf_session *session;
+ 
+ 	setup_pager();
+-	read_events();
++	read_events(false, &session);
+ 	sort_lat();
+ 
+ 	printf("\n ---------------------------------------------------------------------------------------------------------------\n");
+@@ -1717,6 +1724,7 @@ static void __cmd_lat(void)
+ 	print_bad_events();
+ 	printf("\n");
+ 
++	perf_session__delete(session);
+ }
+ 
+ static struct trace_sched_handler map_ops  = {
+@@ -1731,7 +1739,7 @@ static void __cmd_map(void)
+ 	max_cpu = sysconf(_SC_NPROCESSORS_CONF);
+ 
+ 	setup_pager();
+-	read_events();
++	read_events(true, NULL);
+ 	print_bad_events();
+ }
+ 
+@@ -1744,7 +1752,7 @@ static void __cmd_replay(void)
+ 
+ 	test_calibrations();
+ 
+-	read_events();
++	read_events(true, NULL);
+ 
+ 	printf("nr_run_events:        %ld\n", nr_run_events);
+ 	printf("nr_sleep_events:      %ld\n", nr_sleep_events);
 -- 
-Rafał
+1.7.1
+
