@@ -1,169 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab1HHSe3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 14:34:29 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:46699 "EHLO e2.ny.us.ibm.com"
+	id S1754093Ab1HHShM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 14:37:12 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:39105 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752994Ab1HHSe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 14:34:27 -0400
-Date: Mon, 8 Aug 2011 11:33:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: trigger_all_cpu_backtrace() has no generic implementation (was
- Re: [regression, 3.1, rcu] rcu_sched_state detected stall on CPU 8
- (t=15000 jiffies))
-Message-ID: <20110808183356.GL4435@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20110803022857.GH12870@dastard>
- <20110803025222.GI12870@dastard>
- <20110803063049.GD13065@linux.vnet.ibm.com>
- <20110805003316.GA3162@dastard>
- <20110805064119.GB13065@linux.vnet.ibm.com>
- <20110805084839.GB3162@dastard>
- <20110805112429.GM13065@linux.vnet.ibm.com>
- <20110806002056.GC3162@dastard>
+	id S1751603Ab1HHShI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 14:37:08 -0400
+Date: Mon, 8 Aug 2011 20:37:01 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Dan Carpenter <error27@gmail.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        kernel-janitors@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9] drivers/scsi/atp870u.c: add missing kfree
+In-Reply-To: <20110808181238.GB7659@shale.localdomain>
+Message-ID: <Pine.LNX.4.64.1108082036451.12465@ask.diku.dk>
+References: <1312802283-9107-1-git-send-email-julia@diku.dk>
+ <20110808181238.GB7659@shale.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110806002056.GC3162@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 06, 2011 at 10:20:56AM +1000, Dave Chinner wrote:
-> On Fri, Aug 05, 2011 at 04:24:29AM -0700, Paul E. McKenney wrote:
-> > On Fri, Aug 05, 2011 at 06:48:39PM +1000, Dave Chinner wrote:
-> > > On Thu, Aug 04, 2011 at 11:41:19PM -0700, Paul E. McKenney wrote:
-> > > > On Fri, Aug 05, 2011 at 10:33:16AM +1000, Dave Chinner wrote:
-> > > > > On Tue, Aug 02, 2011 at 11:30:50PM -0700, Paul E. McKenney wrote:
-> > > > > > On Wed, Aug 03, 2011 at 12:52:22PM +1000, Dave Chinner wrote:
-> > > > > > > On Wed, Aug 03, 2011 at 12:28:57PM +1000, Dave Chinner wrote:
-> > > > > > > > Hi Paul,
-> > > > > > > > 
-> > > > > > > > I've had this hang a couple of times now, so I figured it isn't an
-> > > > > > > > isolated event. I am getting kernels occassionally hanging with the
-> > > > > > > > following output occurring:
-> > > > > > > > 
-> > > > > > > > [   62.812011] INFO: rcu_sched_state detected stall on CPU 8 (t=15000 jiffies)
-> > > > > > > > [  242.936009] INFO: rcu_sched_state detected stall on CPU 8 (t=60031 jiffies)
-> > > > > 
-> > > > > ....
-> > > > > 
-> > > > > > > This might be a false alarm - I've just diagnosed(*) that a kernel
-> > > > > > > thread was stuck in a hard loop therefore not giving up the CPU.
-> > > > > > 
-> > > > > > Ah, that is indeed one of the conditions that RCU CPU stall warnings
-> > > > > > can catch.
-> > > > > > 
-> > > > > > > Perhaps this is error message could be more informative?
-> > > > > > > The detector is acting like the hung task detector, except it's
-> > > > > > > working on kernel code stuck in a loop burning CPU, so maybe dumping
-> > > > > > > a stack trace of the spinning CPU (i.e. similar to sysrq-l output)
-> > > > > > > might be a useful addition to tracking down such stalls?
-> > > > > > 
-> > > > > > Strange.  There is a trigger_all_cpu_backtrace() call that is supposed
-> > > > > > to dump all CPUs' stacks.  It has been working in the past, but you are
-> > > > > > the second person in a couple of weeks to report that it isn't doing
-> > > > > > its job.  (Though the other one was running the -rt tree.)
-> > > > > 
-> > > > > Ok, so it is supposed to be dumping the stack. Good.
-> > > > 
-> > > > Yep!
-> ....
-> > > > > I'm running on x86_64 (inside a KVM VM) so it should be present.
-> > > > 
-> > > > Indeed it should!  Is NMI delivery busted or something?
-> > > 
-> > > Not that I know of.
-> ....
-> > > > Just out of curiosity, what are you thinking of doing in the code to
-> > > > figure out that trigger_all_cpu_backtrace() didn't work and that it
-> > > > was time to fall back on sysrq-l-style processing?
-> > > 
-> > > -	trigger_all_cpu_backtrace();
-> > > +	if (!trigger_all_cpu_backtrace()) {
-> > > +		pr_err("trigger_all_cpu_backtrace returned false!");
-> > 
-> > So a good defensive-programming patch would be something like the
-> > following, right?
-> > 
-> > 	if (!trigger_all_cpu_backtrace()) {
-> > 		pr_err("Falling back to dump_stack()");
-> > 		dump_stack();
-> > 	}
-> > 
-> > > And I see:
-> > > 
-> > > [   90.808037] INFO: rcu_sched_state detected stall on CPU 8 (t=15000 jiffies)
-> > > [   90.808037] trigger_all_cpu_backtrace returned false
-> > > 
-> > > Which indicates that arch_trigger_all_cpu_backtrace is indeed not
-> > > defined, and that sysrq-l is using the fallback.
-> > > 
-> > > My .config is below if you want to look into it further.
-> > 
-> > My ability to do so is quite limited, but you do have
-> > CONFIG_X86_LOCAL_APIC=y.  I took a quick look but don't immediately
-> > see why you would not be getting the NMI variant.
-> 
-> It would appear to be because include/linux/nmi.h does not do
-> #include <asm/nmi.h> where arch_trigger_all_cpu_backtrace is
-> defined.
-> 
-> I think this is the case from looking at the build deps for
-> rcutree.h: I see include/linux/nmi.h but no asm/nmi.h. It appears
-> that asm/nmi.h is only included if this config ifdef is true:
-> 
-> #if defined(ARCH_HAS_NMI_WATCHDOG) || defined(CONFIG_HARDLOCKUP_DETECTOR)
-> #include <asm/nmi.h>
-> 
-> And my .config has:
-> 
-> $ grep CONFIG_HARDLOCKUP_DETECTOR .config
-> # CONFIG_HARDLOCKUP_DETECTOR is not set
-> $
-> 
-> And ARCH_HAS_NMI_WATCHDOG is only defined for these archs:
-> 
-> $ grep ARCH_HAS_NMI_WATCHDOG -r arch
-> arch/blackfin/include/asm/irq.h:# define ARCH_HAS_NMI_WATCHDOG
-> arch/mn10300/include/asm/reset-regs.h:#define ARCH_HAS_NMI_WATCHDOG /* See include/linux/nmi.h */
-> arch/sparc/include/asm/irq_64.h:#define ARCH_HAS_NMI_WATCHDOG
-> $
-> 
-> So unless you configure the CONFIG_HARDLOCKUP_DETECTOR into a
-> kernel, trigger_all_cpu_backtrace() will simply fail.
-> 
-> And i can't just convert this to always include asm/nmi.h, because:
-> 
-> $ find arch -name nmi.h
-> arch/blackfin/include/asm/nmi.h
-> arch/mips/include/asm/sn/nmi.h
-> arch/mn10300/include/asm/nmi.h
-> arch/s390/include/asm/nmi.h
-> arch/sparc/include/asm/nmi.h
-> arch/x86/include/asm/nmi.h
-> $
-> 
-> Only a few platforms actually define asm/nmi.h. The whole platform
-> specific trigger_all_cpu_backtrace() stuff is just broken - it's not
-> just platform specific, it's platform and config specific, without
-> having any indication that it is config specific....
-> 
-> Arch specific code is supposed to have a generic implementation for
-> platfoms that don't implement it. It's pretty clear from the
-> sysrq-l code that a generic implementation is possible, so I'm
-> wondering why trigger_all_cpu_backtrace doesn't own that generic
-> fallback code.....
+On Mon, 8 Aug 2011, Dan Carpenter wrote:
 
-This does seem a bit sub-optimal to me as well.  :-/
+> This one is going to need to be redone.  There are some parenthesis
+> missing so the new code will always fail.
+> 
+> > -1 is probably not the best return value either.
+> 
+> Nope.  It's not.  You could avoid it most of the time by passing the
+> error code from the lower levels, as I show below.
 
-In the meantime, I am calling dump_stack() if trigger_all_cpu_backtrace()
-returns false.
+OK, I will look into it.  Thanks.
 
-For whatever it is worth, one issue with using something like
-smp_call_function() in my particular case is that irqs are disabled.
+julia
 
-							Thanx, Paul
+
+> >  drivers/scsi/atp870u.c |  113 +++++++++++++++++++++++++++++--------------------
+> >  1 file changed, 69 insertions(+), 44 deletions(-)
+> > 
+> > diff --git a/drivers/scsi/atp870u.c b/drivers/scsi/atp870u.c
+> > index 7e6eca4..271211c 100644
+> > --- a/drivers/scsi/atp870u.c
+> > +++ b/drivers/scsi/atp870u.c
+> > @@ -2552,7 +2552,7 @@ static int atp870u_init_tables(struct Scsi_Host *host)
+> >  	return 0;
+> >  }
+> >  
+> > -/* return non-zero on detection */
+> > +/* return zero on detection */
+> >  static int atp870u_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+> >  {
+> >  	unsigned char k, m, c;
+> > @@ -2563,19 +2563,23 @@ static int atp870u_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+> >  	struct atp_unit *atpdev, *p;
+> >  	unsigned char setupdata[2][16];
+> >  	int count = 0;
+> > +	int ret = 0;
+> >  
+> >  	atpdev = kzalloc(sizeof(*atpdev), GFP_KERNEL);
+> >  	if (!atpdev)
+> >  		return -ENOMEM;
+> >  
+> > -	if (pci_enable_device(pdev))
+> > -		goto err_eio;
+> > +	if (pci_enable_device(pdev)) {
+> 
+> 	ret = pci_enable_device();
+> 
+> > +		ret = -EIO;
+> > +		goto out;
+> > +	}
+> >  
+> >          if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
+> 	ret = pci_set_dma_mask();
+> 
+> 
+> >                  printk(KERN_INFO "atp870u: use 32bit DMA mask.\n");
+> >          } else {
+> >                  printk(KERN_ERR "atp870u: DMA mask required but not available.\n");
+> > -		goto err_eio;
+> > +		ret = -EIO;
+> > +		goto out;
+> >          }
+> >  
+> >  	/*
+> > @@ -2584,8 +2588,10 @@ static int atp870u_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+> >  	 */
+> >  	if (ent->device == PCI_DEVICE_ID_ARTOP_AEC7610) {
+> >  		error = pci_read_config_byte(pdev, PCI_CLASS_REVISION, &atpdev->chip_ver);
+> > -		if (atpdev->chip_ver < 2)
+> > -			goto err_eio;
+> > +		if (atpdev->chip_ver < 2) {
+> > +			ret = -EIO;
+> > +			goto out;
+> > +		}
+> >  	}
+> >  
+> >  	switch (ent->device) {
+> > @@ -2675,8 +2681,10 @@ flash_ok_880:
+> >  		outb(atpdev->global_map[0], base_io + 0x35);
+> >   
+> >  		shpnt = scsi_host_alloc(&atp870u_template, sizeof(struct atp_unit));
+> > -		if (!shpnt)
+> > -			goto err_nomem;
+> > +		if (!shpnt) {
+> > +			ret = -ENOMEM;
+> > +			goto out;
+> > +		}
+> >  
+> >  		p = (struct atp_unit *)&shpnt->hostdata;
+> >  
+> > @@ -2686,11 +2694,13 @@ flash_ok_880:
+> >  		memcpy(p, atpdev, sizeof(*atpdev));
+> >  		if (atp870u_init_tables(shpnt) < 0) {
+> 
+> 		ret = atp870u_init_tables();
+> 
+> 
+> >  			printk(KERN_ERR "Unable to allocate tables for Acard controller\n");
+> > +			ret = -1;
+> >  			goto unregister;
+> >  		}
+> >  
+> >  		if (request_irq(pdev->irq, atp870u_intr_handle, IRQF_SHARED, "atp880i", shpnt)) {
+> 
+> 		ret = request_irq();
+> 
+> 
+> >   			printk(KERN_ERR "Unable to allocate IRQ%d for Acard controller.\n", pdev->irq);
+> > +			ret = -1;
+> >  			goto free_tables;
+> >  		}
+> >  
+> > @@ -2745,8 +2755,10 @@ flash_ok_880:
+> >  		atpdev->pciport[1] = base_io + 0x50;
+> >  				
+> >  		shpnt = scsi_host_alloc(&atp870u_template, sizeof(struct atp_unit));
+> > -		if (!shpnt)
+> > -			goto err_nomem;
+> > +		if (!shpnt) {
+> > +			ret = -ENOMEM;
+> > +			goto out;
+> > +		}
+> >          	
+> >  		p = (struct atp_unit *)&shpnt->hostdata;
+> >          	
+> > @@ -2754,14 +2766,17 @@ flash_ok_880:
+> >  		atpdev->pdev = pdev;
+> >  		pci_set_drvdata(pdev, p);
+> >  		memcpy(p, atpdev, sizeof(struct atp_unit));
+> > -		if (atp870u_init_tables(shpnt) < 0)
+> > +		if (atp870u_init_tables(shpnt) < 0) {
+> 
+> 		ret = atp870u_init_tables();
+> 
+> > +			ret = -1;
+> >  			goto unregister;
+> > +		}
+> >  			
+> >  #ifdef ED_DBGP		
+> >  	printk("request_irq() shpnt %p hostdata %p\n", shpnt, p);
+> >  #endif	        
+> >  		if (request_irq(pdev->irq, atp870u_intr_handle, IRQF_SHARED, "atp870u", shpnt)) {
+> 
+> 		ret = request_irq();
+> 
+> > -				printk(KERN_ERR "Unable to allocate IRQ for Acard controller.\n");
+> > +			printk(KERN_ERR "Unable to allocate IRQ for Acard controller.\n");
+> > +			ret = -1;
+> >  			goto free_tables;
+> >  		}
+> >  		
+> > @@ -2772,13 +2787,11 @@ flash_ok_880:
+> >          	
+> >  		n=0x1f80;
+> >  next_fblk_885:
+> > -		if (n >= 0x2000) {
+> > -		   goto flash_ok_885;
+> > -		}
+> > +		if (n >= 0x2000)
+> > +			goto flash_ok_885;
+> >  		outw(n,base_io + 0x3c);
+> > -		if (inl(base_io + 0x38) == 0xffffffff) {
+> > -		   goto flash_ok_885;
+> > -		}
+> > +		if (inl(base_io + 0x38) == 0xffffffff)
+> > +			goto flash_ok_885;
+> >  		for (m=0; m < 2; m++) {
+> >  		    p->global_map[m]= 0;
+> >  		    for (k=0; k < 4; k++) {
+> > @@ -2930,8 +2943,10 @@ flash_ok_885:
+> >  		}
+> >  
+> >  		shpnt = scsi_host_alloc(&atp870u_template, sizeof(struct atp_unit));
+> > -		if (!shpnt)
+> > -			goto err_nomem;
+> > +		if (!shpnt) {
+> > +			ret = -ENOMEM;
+> > +			goto out;
+> > +		}
+> >  
+> >  		p = (struct atp_unit *)&shpnt->hostdata;
+> >  		
+> > @@ -2940,10 +2955,12 @@ flash_ok_885:
+> >  		pci_set_drvdata(pdev, p);
+> >  		memcpy(p, atpdev, sizeof(*atpdev));
+> >  		if (atp870u_init_tables(shpnt) < 0)
+> 
+> 		ret = atp870u_init_tables()
+> 
+> > +			ret = -1;
+> >  			goto unregister;
+> 
+> parenthesis needed here.
+> 
+> >  
+> >  		if (request_irq(pdev->irq, atp870u_intr_handle, IRQF_SHARED, "atp870i", shpnt)) {
+> 
+> 		ret = request_irq();
+> 
+> >  			printk(KERN_ERR "Unable to allocate IRQ%d for Acard controller.\n", pdev->irq);
+> > +			ret = -1;
+> >  			goto free_tables;
+> >  		}
+> >  
+> > @@ -2991,26 +3008,38 @@ flash_ok_885:
+> >  		shpnt->io_port = base_io;
+> >  		shpnt->n_io_port = 0x40;	/* Number of bytes of I/O space used */
+> >  		shpnt->irq = pdev->irq;		
+> > -	} 
+> > -		spin_unlock_irqrestore(shpnt->host_lock, flags);
+> > -		if(ent->device==ATP885_DEVID) {
+> > -			if(!request_region(base_io, 0xff, "atp870u")) /* Register the IO ports that we use */
+> > -				goto request_io_fail;
+> > -		} else if((ent->device==ATP880_DEVID1)||(ent->device==ATP880_DEVID2)) {
+> > -			if(!request_region(base_io, 0x60, "atp870u")) /* Register the IO ports that we use */
+> > -				goto request_io_fail;
+> > -		} else {
+> > -			if(!request_region(base_io, 0x40, "atp870u")) /* Register the IO ports that we use */
+> > -				goto request_io_fail;
+> > -		}				
+> > -		count++;
+> > -		if (scsi_add_host(shpnt, &pdev->dev))
+> > -			goto scsi_add_fail;
+> > -		scsi_scan_host(shpnt);
+> > +	}
+> > +	spin_unlock_irqrestore(shpnt->host_lock, flags);
+> > +	if (ent->device == ATP885_DEVID) {
+> > +		/* Register the IO ports that we use */
+> > +		if (!request_region(base_io, 0xff, "atp870u")) {
+> > +			ret = -1;
+> 
+> 	If request_region() fails then the correct return is actually
+> 	-EBUSY.
+> 
+> > +			goto request_io_fail;
+> > +		}
+> > +	} else if ((ent->device == ATP880_DEVID1) ||
+> > +		   (ent->device == ATP880_DEVID2)) {
+> > +		/* Register the IO ports that we use */
+> > +		if (!request_region(base_io, 0x60, "atp870u")) {
+> > +			ret = -1;
+> 
+> 			ret = -EBUSY;
+> 
+> > +			goto request_io_fail;
+> > +		}
+> > +	} else {
+> > +		/* Register the IO ports that we use */
+> > +		if (!request_region(base_io, 0x40, "atp870u")) {
+> > +			ret = -1;
+> 
+> 			ret = -EBUSY;
+> 
+> > +			goto request_io_fail;
+> > +		}
+> > +	}
+> > +	count++;
+> > +	if (scsi_add_host(shpnt, &pdev->dev)) {
+> 	ret = scsi_add_host();
+> 
+> 
+> > +		ret = -1;
+> > +		goto scsi_add_fail;
+> > +	}
+> 
+> regards,
+> dan carpenter
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
