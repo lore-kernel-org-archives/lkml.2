@@ -1,145 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab1HHTdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 15:33:12 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:33958 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab1HHTdK (ORCPT
+	id S1753276Ab1HHTeE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 15:34:04 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:62081 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139Ab1HHTeC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 15:33:10 -0400
-Message-ID: <4E4039F3.9010802@candelatech.com>
-Date: Mon, 08 Aug 2011 12:33:07 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Mon, 8 Aug 2011 15:34:02 -0400
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: gregkh@suse.de, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.0.1 compile error on Fedora 15
-References: <4E402E5F.5010600@candelatech.com>	<20110808115238.b19b293e.rdunlap@xenotime.net>	<4E403121.8080402@candelatech.com> <20110808121104.5a233da4.rdunlap@xenotime.net>
-In-Reply-To: <20110808121104.5a233da4.rdunlap@xenotime.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <Pine.LNX.4.44L0.1108081430140.1944-100000@iolanthe.rowland.org>
+References: <CAJ0pr1-DVAiu7Z_Rcumkwji1+=D4Sw2d4GMFsZa-9KCJ06FauA@mail.gmail.com>
+	<Pine.LNX.4.44L0.1108081430140.1944-100000@iolanthe.rowland.org>
+Date: Mon, 8 Aug 2011 21:34:00 +0200
+Message-ID: <CAJ0pr19=YHs9At=xXta-9Fro7QYAwpk=5e8SHWaRYgj8+iDKyQ@mail.gmail.com>
+Subject: Re: [PATCH] usb: gadget: storage_common: make FSG_NUM_BUFFERS
+ variable size
+From: Per Forlin <per.forlin@linaro.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2011 12:11 PM, Randy Dunlap wrote:
-> On Mon, 08 Aug 2011 11:55:29 -0700 Ben Greear wrote:
+On 8 August 2011 20:45, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Mon, 8 Aug 2011, Per Forlin wrote:
 >
->> On 08/08/2011 11:52 AM, Randy Dunlap wrote:
->>> On Mon, 08 Aug 2011 11:43:43 -0700 Ben Greear wrote:
->>>
->>>> [greearb@t60-ben linux-3.0.p4s]$ make
->>>> make -C /home/greearb/git/linux-3.0.dev.y O=/home/greearb/kernel/2.6/linux-3.0.p4s/.
->>>>      Using /home/greearb/git/linux-3.0.dev.y as source for kernel
->>>>      GEN     /home/greearb/kernel/2.6/linux-3.0.p4s/Makefile
->>>>      CHK     include/linux/version.h
->>>>      CHK     include/generated/utsrelease.h
->>>>      CALL    /home/greearb/git/linux-3.0.dev.y/scripts/checksyscalls.sh
->>>>      CHK     include/generated/compile.h
->>>>      CC      fs/binfmt_misc.o
->>>> In file included from /home/greearb/git/linux-3.0.dev.y/arch/x86/include/asm/uaccess.h:570:0,
->>>>                     from /home/greearb/git/linux-3.0.dev.y/include/linux/uaccess.h:5,
->>>>                     from /home/greearb/git/linux-3.0.dev.y/include/linux/highmem.h:7,
->>>>                     from /home/greearb/git/linux-3.0.dev.y/include/linux/pagemap.h:10,
->>>>                     from /home/greearb/git/linux-3.0.dev.y/fs/binfmt_misc.c:26:
->>>> /home/greearb/git/linux-3.0.dev.y/arch/x86/include/asm/uaccess_32.h: In function â€˜parse_command.part.0â€™:
->>>> /home/greearb/git/linux-3.0.dev.y/arch/x86/include/asm/uaccess_32.h:211:26: error: call to â€˜copy_from_user_overflowâ€™ declared with attribute error:
->>>> copy_from_user() buffer size is not provably correct
->>>> make[3]: *** [fs/binfmt_misc.o] Error 1
->>>> make[2]: *** [fs] Error 2
->>>> make[1]: *** [sub-make] Error 2
->>>> make: *** [all] Error 2
->>>> [greearb@t60-ben linux-3.0.p4s]$
->>>>
->>>>
->>>> The code in question is below.  Is this missing an assignment to n
->>>> in the else branch?
->>>>
->>>> static inline unsigned long __must_check copy_from_user(void *to,
->>>>                                              const void __user *from,
->>>>                                              unsigned long n)
->>>> {
->>>>            int sz = __compiletime_object_size(to);
->>>>
->>>>            if (likely(sz == -1 || sz>= n))
->>>>                    n = _copy_from_user(to, from, n);
->>>>            else
->>>>                    copy_from_user_overflow();
->>>>
->>>>            return n;
->>>> }
->>>
->>>
->>> Do you have this kconfig option enabled?
->>> CONFIG_DEBUG_STRICT_USER_COPY_CHECKS=y
->>>
->>> If so, you should get the error that you reported.
->>> If not, then you need a patch like the one below (which has been posted
->>> by other people several times -- might need to be added to -stable):
+>> > Okay, 6% is a worthwhile improvement, though not huge.  Did you try 6
+>> > or 8 buffers?  I bet going beyond 4 makes very little difference.
+>> >
+>> On my board 4 buffers are enough. More buffers will make no difference.
 >>
->> I do have that enabled.   I'm slightly confused by your response above:
->>
->> Do I need to disable the check AND apply the patch below, or just disable
->> the check, or just apply the patch and leave the check enabled?
+>> Background study
+>> I started by running dd to measure performance on my target side.
+>> Simply to measure what would be the maximum bandwidth, 20MiB/s on my
+>> board. Then I started the gadget mass storage on the device and run
+>> the sae test from the PC host side, 18.7 MiB/s. I guessed this might
+>> be due to serialized cache handling. I tested to remove the dma_map
+>> call (replaced it with virt_to_dma). This is just a dummy test to see
+>> if this is causing the performance drop. Without dma_map I get
+>> 20MiB/s. It appears that the loss is due to dma_map call. The dma_map
+>> only adds latency for the first request.
 >
-> Hm, I guess I'm confused also.  The patch only applies to linux-next,
-> not to 3.0.x.
->
-> The patch below is needed (in linux-next) to fix a build
-> error when CONFIG_DEBUG_STRICT_USER_COPY_CHECKS is not enabled.
->
-> When you do have CONFIG_DEBUG_STRICT_USER_COPY_CHECKS, the build error is
-> the correct result.  AFAIK.  So it looks to me like you should either
-> disable the kconfig option or fix the code in fs/binfmt_misc.c.
-> I would do the former -- depending on your use case.
+> What exactly do you mean by "first request"?
+When both buffers are empty. The first request are filled up by vfs
+and then prepared. This first time there are no ongoing transfer over
+USB therefore this cost more, since it can't run in parallel with
+ongoing transfer. Every time the to buffers run empty there is an
+extra cost for the first request in the next series of requests. The
+reason for not getting data from vfs in time I don't know.
 
-I can disable the check, but I hope someone fixes the real problem
-and sends the patch to stable.  Seems a bit lame that we have compile
-errors in stable series...
+> Your test showed an extra latency of about 0.4 seconds when using
+> dma_map.  All that latency comes from a single request (the first one)?
+> That doesn't sound right.
+>
+This "first request scenario" I refer to happens very often.
+
+>> Studying the flow of buffers I can see, both buffers are filled with
+>> data from vfs, then both are transmitted over USB, burst like
+>> behaviour.
+>
+> Actually the first buffer is filled from VFS, then it is transmitted
+> over USB.  While the transmission is in progress, the second buffer is
+> filled from VFS.  Each time a transmission ends, the next buffer is
+> queued for transmission -- unless it hasn't been filled yet, in which
+> case it is queued when it gets filled.
+>
+> What do you mean by "burst like behavior"?
+>
+Instead of getting refill from vfs smoothly the refills comes in
+burst. VFS fills up the two buffers, then USB manage to transmit all
+two buffers before VFS refills new data. Roughly 20% of the times VFS
+fills up data in time before USB has consumed it all. 80% of the times
+USB manage to consume all data before VFS refills data in the buffers.
+The reason for the burst like affects are probably due to power save,
+which add latency in the system.
+
+>>  More buffers will add "smoothness" and prevent the bursts
+>> to affect performance negatively. With 4 buffers, there were very few
+>> cases when all 4 buffers were empty during a transfer
+>
+> In what sense do the bursts affect performance?  It makes sense that
+> having all the buffers empty from time to time would reduce throughput.
+> But as long as each buffer gets filled and queued before the previous
+> buffer has finished transmitting, it shouldn't matter how "bursty" the
+> behavior is.
+>
+This is true. In my system the buffer doesn't get filled up before the
+previous has finished. With 4 buffers it works fine.
 
 Thanks,
-Ben
-
->
->
->> Thanks,
->> Ben
->>
->>>
->>>
->>> ---
->>>    lib/Makefile |    2 +-
->>>    1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> --- linux-next-20110728.orig/lib/Makefile
->>> +++ linux-next-20110728/lib/Makefile
->>> @@ -14,7 +14,7 @@ lib-y := ctype.o string.o vsprintf.o cmd
->>>    	 proportions.o prio_heap.o ratelimit.o show_mem.o \
->>>    	 is_single_threaded.o plist.o decompress.o find_next_bit.o
->>>
->>> -lib-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
->>> +obj-$(CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS) += usercopy.o
->>>    lib-$(CONFIG_MMU) += ioremap.o
->>>    lib-$(CONFIG_SMP) += cpumask.o
->>>
->>
->>
->> --
->
->
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+Per
