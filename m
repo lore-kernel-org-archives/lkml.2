@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab1HHLCY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 07:02:24 -0400
-Received: from relay.parallels.com ([195.214.232.42]:36470 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab1HHLCT (ORCPT
+	id S1752079Ab1HHLEw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 07:04:52 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51672 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab1HHLEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 07:02:19 -0400
-Subject: [PATCH v2] vmscan: reverse lru scanning order
-To: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Mon, 8 Aug 2011 15:02:07 +0400
-Message-ID: <20110808110207.30777.30800.stgit@localhost6>
-In-Reply-To: <20110727111002.9985.94938.stgit@localhost6>
-References: <20110727111002.9985.94938.stgit@localhost6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Aug 2011 07:04:51 -0400
+From: stufever@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: tiwai@suse.de, perex@perex.cz, Wang Shaoyan <wangshaoyan.pt@taobao.com>
+Subject: [PATCH] sound: don't use the deprecated function check_region
+Date: Mon,  8 Aug 2011 19:10:26 +0800
+Message-Id: <1312801826-7521-1-git-send-email-wangshaoyan.pt@taobao.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LRU scanning order was accidentially changed in commit v2.6.27-5584-gb69408e:
-"vmscan: Use an indexed array for LRU variables".
-Before that commit reclaimer always scan active lists first.
+From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
 
-This patch just reverse it back.
+  sound/oss/pss.c: In function 'configure_nonsound_components':
+  sound/oss/pss.c:676: warning: 'check_region' is deprecated (declared at include/linux/ioport.h:201)
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
 ---
- include/linux/mmzone.h |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ sound/oss/pss.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index be1ac8d..0094389 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -141,7 +141,8 @@ enum lru_list {
+diff --git a/sound/oss/pss.c b/sound/oss/pss.c
+index 9b800ce..2fc0624 100644
+--- a/sound/oss/pss.c
++++ b/sound/oss/pss.c
+@@ -673,7 +673,8 @@ static void configure_nonsound_components(void)
  
- #define for_each_lru(l) for (l = 0; l < NR_LRU_LISTS; l++)
+ 	if (pss_cdrom_port == -1) {	/* If cdrom port enablation wasn't requested */
+ 		printk(KERN_INFO "PSS: CDROM port not enabled.\n");
+-	} else if (check_region(pss_cdrom_port, 2)) {
++	} else if (!request_region(pss_cdrom_port, 2, "PSS CDROM")) {
++		pss_cdrom_port = -1;
+ 		printk(KERN_ERR "PSS: CDROM I/O port conflict.\n");
+ 	} else {
+ 		set_io_base(devc, CONF_CDROM, pss_cdrom_port);
+@@ -1232,7 +1233,8 @@ static void __exit cleanup_pss(void)
+ 		if(pssmpu)
+ 			unload_pss_mpu(&cfg_mpu);
+ 		unload_pss(&cfg);
+-	}
++	} else if (pss_cdrom_port != -1)
++		release_region(pss_cdrom_port, 2);
  
--#define for_each_evictable_lru(l) for (l = 0; l <= LRU_ACTIVE_FILE; l++)
-+#define for_each_evictable_lru(l) \
-+	for (l = LRU_ACTIVE_FILE; (int)l >= LRU_INACTIVE_ANON; l--)
- 
- static inline int is_file_lru(enum lru_list l)
- {
+ 	if(!pss_keep_settings)	/* Keep hardware settings if asked */
+ 	{
+-- 
+1.7.4.1
 
