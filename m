@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab1HHOLg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 10:11:36 -0400
-Received: from mga03.intel.com ([143.182.124.21]:63002 "EHLO mga03.intel.com"
+	id S1753184Ab1HHOSI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 10:18:08 -0400
+Received: from mga14.intel.com ([143.182.124.37]:23296 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751524Ab1HHOLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 10:11:35 -0400
+	id S1752284Ab1HHOSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 10:18:07 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,337,1309762800"; 
-   d="scan'208";a="36264186"
-Date: Mon, 8 Aug 2011 22:11:28 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] writeback: dirty position control
-Message-ID: <20110808141128.GA22080@localhost>
-References: <20110806084447.388624428@intel.com>
- <20110806094526.733282037@intel.com>
- <1312811193.10488.33.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312811193.10488.33.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+   d="scan'208";a="5097834"
+Subject: Re: [RESEND][PATCH 0/2] mxs-dma: Bugfixes for mxs-dma originally
+ sent in April
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Lothar =?ISO-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        shawn.guo@freescale.com, u.kleine-koenig@pengutronix.de
+In-Reply-To: <1312807667-24373-1-git-send-email-LW@KARO-electronics.de>
+References: <dc6791e4e926902967a182107d4558d5e0a16381.1303373126.git.LW@KARO-electronics.de>
+	 <1312807667-24373-1-git-send-email-LW@KARO-electronics.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 08 Aug 2011 19:47:19 +0530
+Message-ID: <1312813039.1539.35.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 09:46:33PM +0800, Peter Zijlstra wrote:
-> On Sat, 2011-08-06 at 16:44 +0800, Wu Fengguang wrote:
-> > +static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
-> > +                                       unsigned long thresh,
-> > +                                       unsigned long dirty,
-> > +                                       unsigned long bdi_thresh,
-> > +                                       unsigned long bdi_dirty)
-> > +{
-> > +       unsigned long limit = hard_dirty_limit(thresh);
-> > +       unsigned long origin;
-> > +       unsigned long goal;
-> > +       unsigned long long span;
-> > +       unsigned long long pos_ratio;   /* for scaling up/down the rate limit */
-> > +
-> > +       if (unlikely(dirty >= limit))
-> > +               return 0;
-> > +
-> > +       /*
-> > +        * global setpoint
-> > +        */
-> > +       goal = thresh - thresh / DIRTY_SCOPE;
-> > +       origin = 4 * thresh;
-> > +
-> > +       if (unlikely(origin < limit && dirty > (goal + origin) / 2)) {
-> > +               origin = limit;                 /* auxiliary control line */
-> > +               goal = (goal + origin) / 2;
-> > +               pos_ratio >>= 1; 
+On Mon, 2011-08-08 at 14:47 +0200, Lothar Waßmann wrote:
+> Hi,
 > 
-> use before init?
+> I'm resending two bugfixes for the mxs-dma driver, that I had
+> originally sent in April which were acked by Shawn Guo and Uwe
+> Kleine-König, but obviously were not picked up by any maintainer.
+Sorry about that, in case you received ack on same patch you can carry
+them when you resend.
 
-Yeah it's embarrassing, I find this bug all the way back to the initial version...
+Shawn, Uwe Kleine-König pls send your acks again, I will apply these
 
-It's actually dead code because (origin < limit) should never happen.
-I feel so good being able to drop 5 more lines of code :)
+> 
+> 
+> Best regards,
+> Lothar Waßmann
+> ---
+>  drivers/dma/mxs-dma.c |    3 ++-
+>  drivers/dma/mxs-dma.c |   45 ++++++++++++++++++++++++---------------------
+>  2 files changed, 26 insertions(+), 22 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Thanks,
-Fengguang
----
 
---- linux-next.orig/mm/page-writeback.c	2011-08-08 21:56:11.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-08-08 22:04:48.000000000 +0800
-@@ -538,11 +538,6 @@ static unsigned long bdi_position_ratio(
- 	goal = thresh - thresh / DIRTY_SCOPE;
- 	origin = 4 * thresh;
- 
--	if (unlikely(origin < limit && dirty > (goal + origin) / 2)) {
--		origin = limit;			/* auxiliary control line */
--		goal = (goal + origin) / 2;
--		pos_ratio >>= 1;
--	}
- 	pos_ratio = origin - dirty;
- 	pos_ratio <<= BANDWIDTH_CALC_SHIFT;
- 	do_div(pos_ratio, origin - goal + 1);
+-- 
+~Vinod
+
