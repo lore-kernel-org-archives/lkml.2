@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab1HHMZs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 08:25:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46116 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583Ab1HHMZq convert rfc822-to-8bit (ORCPT
+	id S1752996Ab1HHM0c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 08:26:32 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38552 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab1HHM0b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 08:25:46 -0400
-Subject: Re: regarding [PATCH] Add libpfm4 support (v3)
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Arun Sharma <asharma@fb.com>
-Date: Mon, 08 Aug 2011 14:25:25 +0200
-In-Reply-To: <20110808120432.GB2076@jolsa.brq.redhat.com>
-References: <20110808120432.GB2076@jolsa.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 8 Aug 2011 08:26:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMuHMdU0Cba9xFjfD6Fq1MqE5xZeDnsdN8qipmR6jQH9J6X4vQ@mail.gmail.com>
+References: <201107230012.p6N0CZSM002466@hera.kernel.org>
+	<CAMuHMdU0Cba9xFjfD6Fq1MqE5xZeDnsdN8qipmR6jQH9J6X4vQ@mail.gmail.com>
+Date: Mon, 8 Aug 2011 14:26:30 +0200
+Message-ID: <CACna6ryx4k5fFmqbDPZ3pdDA_SbjZQQVaJNQyALkx0i8+S-7hA@mail.gmail.com>
+Subject: Re: b43: LCN-PHY add place for new PHY support
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-wireless@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1312806326.10488.30.camel@twins>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-08 at 14:04 +0200, Jiri Olsa wrote:
-> hi,
-> 
-> any chance of getting this included?
-> http://article.gmane.org/gmane.comp.linux.perfmon2.devel/2912
-> http://article.gmane.org/gmane.comp.linux.perfmon2.devel/2912/raw
-> 
-> it needs just some little changes to fit to current tip tree
+W dniu 8 sierpnia 2011 13:57 użytkownik Geert Uytterhoeven
+<geert@linux-m68k.org> napisał:
+> On Sat, Jul 23, 2011 at 02:12, Linux Kernel Mailing List
+> <linux-kernel@vger.kernel.org> wrote:
+>> Gitweb:     http://git.kernel.org/linus/1d738e64f3d957d56c1b51e64ebdef986a8760e3
+>> Commit:     1d738e64f3d957d56c1b51e64ebdef986a8760e3
+>> Parent:     0cd20a278e1ef9da9f6a987942794c9d65af8c4d
+>> Author:     Rafał Miłecki <zajec5@gmail.com>
+>> AuthorDate: Thu Jul 7 15:25:27 2011 +0200
+>> Committer:  John W. Linville <linville@tuxdriver.com>
+>> CommitDate: Fri Jul 8 11:11:25 2011 -0400
+>
+>> diff --git a/drivers/net/wireless/b43/phy_lcn.h b/drivers/net/wireless/b43/phy_lcn.h
+>> new file mode 100644
+>> index 0000000..c046c2a
+>> --- /dev/null
+>> +++ b/drivers/net/wireless/b43/phy_lcn.h
+>
+>> \ No newline at end of file
+>
+> Woops...
+>
+> gcc/cpp also complains:
+>
+> drivers/net/wireless/b43/phy_lcn.h:14:28: warning: no newline at end of file
 
-While I don't mind extending the current way to input events I don't
-think using libpfm4 for it is desired.
+Sorry, I didn't know we want empty lines at the end. I also don't
+think it's mentioned in kernel's CodingStyle.
 
-One of the ideas that has been floating about is to provide a format
-file in the sysfs representation of the pmu. This format file would
-describe the config space. The tool would parse this and use it to
-provide better input capabilities.
+I'll fix that when doing LCN stuff, if you agree separated patch is not needed.
 
-This is not an easy task however, since the format syntax needs to be
-capable enough to describe all the various config muck we need to
-support, think for example of the P4 mess.
+My gcc didn't complain :|
 
-For Intel/AMD (excluding P4) its mostly simple, with Intel having a
-slightly harder time for the offcore bits.
-
-As to the various arch event lists, again that is not something we need
-a whole library for, parsing those text files isn't hard. Maintaining
-the various arch event lists in a sane format is the 'hard' part and is
-something I think we should push to the vendors, because they're
-basically the only ones capable.
-
-
+-- 
+Rafał
