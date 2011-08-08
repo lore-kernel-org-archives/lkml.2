@@ -1,97 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab1HHMvn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 08:51:43 -0400
-Received: from relay.parallels.com ([195.214.232.42]:32948 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab1HHMvm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 08:51:42 -0400
-Message-ID: <4E3FDBD7.2030801@parallels.com>
-Date: Mon, 8 Aug 2011 16:51:35 +0400
-From: Konstantin Khlebnikov <khlebnikov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 1/2] vmscan: promote shared file mapped pages
-References: <20110808110658.31053.55013.stgit@localhost6>	<CAOJsxLF909NRC2r6RL+hm1ARve+3mA6UM_CY9epJaauyqJTG8w@mail.gmail.com>	<4E3FD403.6000400@parallels.com>  <CAOJsxLHOM3NR8Rqzj4pp=9PP2UU=coPd6ftHFihjLQRiHMobfw@mail.gmail.com>
-In-Reply-To: <CAOJsxLHOM3NR8Rqzj4pp=9PP2UU=coPd6ftHFihjLQRiHMobfw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753662Ab1HHMys (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 08:54:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63317 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752870Ab1HHMyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 08:54:47 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20110808123442.GF2385@linux.vnet.ibm.com>
+References: <20110808123442.GF2385@linux.vnet.ibm.com> <20110807175511.GZ2203@ZenIV.linux.org.uk> <13248.1312791509@redhat.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: dhowells@redhat.com, Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: fix rcu annotations noise in cred.h
+Date: Mon, 08 Aug 2011 13:54:08 +0100
+Message-ID: <13642.1312808048@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pekka Enberg wrote:
-> On Mon, Aug 8, 2011 at 3:18 PM, Konstantin Khlebnikov
-> <khlebnikov@parallels.com>  wrote:
->> Pekka Enberg wrote:
->>>
->>> Hi Konstantin,
->>>
->>> On Mon, Aug 8, 2011 at 2:06 PM, Konstantin Khlebnikov
->>> <khlebnikov@openvz.org>    wrote:
->>>>
->>>> Commit v2.6.33-5448-g6457474 (vmscan: detect mapped file pages used only
->>>> once)
->>>> greatly decreases lifetime of single-used mapped file pages.
->>>> Unfortunately it also decreases life time of all shared mapped file
->>>> pages.
->>>> Because after commit v2.6.28-6130-gbf3f3bc (mm: don't mark_page_accessed
->>>> in fault path)
->>>> page-fault handler does not mark page active or even referenced.
->>>>
->>>> Thus page_check_references() activates file page only if it was used
->>>> twice while
->>>> it stays in inactive list, meanwhile it activates anon pages after first
->>>> access.
->>>> Inactive list can be small enough, this way reclaimer can accidentally
->>>> throw away any widely used page if it wasn't used twice in short period.
->>>>
->>>> After this patch page_check_references() also activate file mapped page
->>>> at first
->>>> inactive list scan if this page is already used multiple times via
->>>> several ptes.
->>>>
->>>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->>>
->>> Both patches seem reasonable but the changelogs don't really explain
->>> why you're doing the changes. How did you find out about the problem?
->>> Is there some workload that's affected? How did you test your changes?
->>>
->>
->> I found this while trying to fix degragation in rhel6 (~2.6.32) from rhel5
->> (~2.6.18).
->> There a complete mess with>100 web/mail/spam/ftp containers,
->> they share all their files but there a lot of anonymous pages:
->> ~500mb shared file mapped memory and 15-20Gb non-shared anonymous memory.
->> In this situation major-pagefaults are very costly, because all containers
->> share the same page.
->> In my load kernel created a disproportionate pressure on the file memory,
->> compared with the anonymous,
->> they equaled only if I raise swappiness up to 150 =)
->>
->> These patches actually wasn't helped a lot in my problem,
->> but I saw noticable (10-20 times) reduce in count and average time of
->> major-pagefault in file-mapped areas.
->>
->> Actually both patches are fixes for commit v2.6.33-5448-g6457474,
->> because it was aimed at one scenario (singly used pages),
->> but it breaks the logic in other scenarios (shared and/or executable pages)
->
-> It'd be nice to have such details in the changelogs. FWIW,
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-It's not quite honest, I did not do any measurements in the mainline kernel,
-I only boot 3.1-rc1 with them on my laptop.
-It would be nice to repeat the measurements from v2.6.30-5507-g8cab475,
-but I do not have time for that right now.
+> This is indeed what rcu_dereference_protected() is intended for.
 
->
-> Acked-by: Pekka Enberg<penberg@kernel.org>
+How about the attached patch?
 
+David
+---
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] CRED: Restore const to current_cred()
+
+Commit 3295514841c2112d94451ba5deaf54f5afb78ea9 accidentally dropped the const
+of current->cred inside current_cred() by the insertion of a cast to deal with
+an RCU annotation loss warning from sparce.
+
+Use an appropriate RCU wrapper instead so as not to lose the const.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Al Viro <viro@zeniv.linux.org.uk>
+---
+
+ include/linux/cred.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index 98f46ef..8e2fd44 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -269,7 +269,7 @@ static inline void put_cred(const struct cred *_cred)
+  * since nobody else can modify it.
+  */
+ #define current_cred() \
+-	(*(__force struct cred **)&current->cred)
++	rcu_dereference_protected(current->cred, 1)
+ 
+ /**
+  * __task_cred - Access a task's objective credentials
