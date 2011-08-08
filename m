@@ -1,142 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab1HHRqb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 13:46:31 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:50087 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751748Ab1HHRq3 (ORCPT
+	id S1753528Ab1HHRro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 13:47:44 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:59307 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562Ab1HHRrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 13:46:29 -0400
-Date: Mon, 8 Aug 2011 10:46:27 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Sergiu Iordache <sergiu@chromium.org>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] char drivers: ramoops documentation
-Message-Id: <20110808104627.21096997.rdunlap@xenotime.net>
-In-Reply-To: <1312825203-22909-1-git-send-email-sergiu@chromium.org>
-References: <1312825203-22909-1-git-send-email-sergiu@chromium.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Mon, 8 Aug 2011 13:47:43 -0400
+Date: Mon, 8 Aug 2011 10:47:10 -0700
+From: Nishanth Aravamudan <nacc@us.ibm.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Milton Miller <miltonm@bga.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Will Schmidt <will_schmidt@vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 6/9] arch/powerpc/platforms/pseries/iommu.c: add missing
+ kfree
+Message-ID: <20110808174710.GA3681@us.ibm.com>
+References: <1312802283-9107-6-git-send-email-julia@diku.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312802283-9107-6-git-send-email-julia@diku.dk>
+X-Operating-System: Linux 2.6.38-10-generic (x86_64)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  8 Aug 2011 10:40:03 -0700 Sergiu Iordache wrote:
-
-> Add a documentation file describing the usage of Ramoops
+On 08.08.2011 [13:18:00 +0200], Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> Signed-off-by: Sergiu Iordache <sergiu@chromium.org>
-
-Applied, thanks.
-
-> ---
->  Documentation/00-INDEX    |    2 +
->  Documentation/ramoops.txt |   76 +++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 78 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/ramoops.txt
+> At this point, window has not been stored anywhere, so it has to be freed
+> before leaving the function.
 > 
-> diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
-> index 8dfc670..9bc0f9e 100644
-> --- a/Documentation/00-INDEX
-> +++ b/Documentation/00-INDEX
-> @@ -276,6 +276,8 @@ printk-formats.txt
->  	- how to get printk format specifiers right
->  prio_tree.txt
->  	- info on radix-priority-search-tree use for indexing vmas.
-> +ramoops.txt
-> +	- documentation of the ramoops oops/panic logging module.
->  rbtree.txt
->  	- info on what red-black trees are and what they are for.
->  robust-futex-ABI.txt
-> diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
-> new file mode 100644
-> index 0000000..8fb1ba7
-> --- /dev/null
-> +++ b/Documentation/ramoops.txt
-> @@ -0,0 +1,76 @@
-> +Ramoops oops/panic logger
-> +=========================
-> +
-> +Sergiu Iordache <sergiu@chromium.org>
-> +
-> +Updated: 8 August 2011
-> +
-> +0. Introduction
-> +
-> +Ramoops is an oops/panic logger that writes its logs to RAM before the system
-> +crashes. It works by logging oopses and panics in a circular buffer. Ramoops
-> +needs a system with persistent RAM so that the content of that area can
-> +survive after a restart.
-> +
-> +1. Ramoops concepts
-> +
-> +Ramoops uses a predefined memory area to store the dump. The start and size of
-> +the memory area are set using two variables:
-> +  * "mem_address" for the start
-> +  * "mem_size" for the size. The memory size will be rounded down to a
-> +  power of two.
-> +
-> +The memory area is divided into "record_size" chunks (also rounded down to
-> +power of two) and each oops/panic writes a "record_size" chunk of
-> +information.
-> +
-> +Dumping both oopses and panics can be done by setting 1 in the "dump_oops"
-> +variable while setting 0 in that variable dumps only the panics.
-> +
-> +The module uses a counter to record multiple dumps but the counter gets reset
-> +on restart (i.e. new dumps after the restart will overwrite old ones).
-> +
-> +2. Setting the parameters
-> +
-> +Setting the ramoops parameters can be done in 2 different manners:
-> + 1. Use the module parameters (which have the names of the variables described
-> + as before).
-> + 2. Use a platform device and set the platform data. The parameters can then
-> + be set through that platform data. An example of doing that is:
-> +
-> +#include <linux/ramoops.h>
-> +[...]
-> +
-> +static struct ramoops_platform_data ramoops_data = {
-> +        .mem_size               = <...>,
-> +        .mem_address            = <...>,
-> +        .record_size            = <...>,
-> +        .dump_oops              = <...>,
-> +};
-> +
-> +static struct platform_device ramoops_dev = {
-> +        .name = "ramoops",
-> +        .dev = {
-> +                .platform_data = &ramoops_data,
-> +        },
-> +};
-> +
-> +[... inside a function ...]
-> +int ret;
-> +
-> +ret = platform_device_register(&ramoops_dev);
-> +if (ret) {
-> +	printk(KERN_ERR "unable to register platform device\n");
-> +	return ret;
-> +}
-> +
-> +3. Dump format
-> +
-> +The data dump begins with a header, currently defined as "====" followed by a
-> +timestamp and a new line. The dump then continues with the actual data.
-> +
-> +4. Reading the data
-> +
-> +The dump data can be read from memory (through /dev/mem or other means).
-> +Getting the module parameters, which are needed in order to parse the data, can
-> +be done through /sys/module/ramoops/parameters/* .
-> -- 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @exists@
+> local idexpression x;
+> statement S,S1;
+> expression E;
+> identifier fl;
+> expression *ptr != NULL;
+> @@
+> 
+> x = \(kmalloc\|kzalloc\|kcalloc\)(...);
+> ...
+> if (x == NULL) S
+> <... when != x
+>      when != if (...) { <+...kfree(x)...+> }
+>      when any
+>      when != true x == NULL
+> x->fl
+> ...>
+> (
+> if (x == NULL) S1
+> |
+> if (...) { ... when != x
+>                when forall
+> (
+>  return \(0\|<+...x...+>\|ptr\);
+> |
+> * return ...;
+> )
+> }
+> )
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
+Acked-by: Nishanth Aravamudan <nacc@us.ibm.com>
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Thanks,
+Nish
+
+-- 
+Nishanth Aravamudan <nacc@us.ibm.com>
+IBM Linux Technology Center
