@@ -1,104 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab1HHBit (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Aug 2011 21:38:49 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:23793 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab1HHBiq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Aug 2011 21:38:46 -0400
-X-AuditID: cbfee61b-b7c3dae000002cb8-13-4e3f3e244d06
-Date: Mon, 08 Aug 2011 10:38:44 +0900
-From: Seungwon Jeon <tgih.jun@samsung.com>
-Subject: RE: [PATCH] mmc: dw_mmc: Fix DDR mode support.
-In-reply-to: <CAELcNGTNA83nD3kCh=-BJ6DxRqnNaRznn3mTd5PVY_fRArp+fA@mail.gmail.com>
-To: "'Jae hoon Chung'" <jh80.chung@gmail.com>,
-        "'Will Newton'" <will.newton@gmail.com>
-Cc: linux-mmc@vger.kernel.org, cjb@laptop.org, linux-kernel@vger.kernel.org
-Message-id: <009d01cc556b$e99cc9d0$bcd65d70$%jun@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=UTF-8
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcxTt5+tqAyD8PFVQbWtzlNQHsaFQwBsW46w
-References: <1312515303-17169-1-git-send-email-tgih.jun@samsung.com>
- <CAFbHwiT3p3pSC1q4xQRYkLzSG7tPuGLXB4KKwC-8HWMmtF+fhA@mail.gmail.com>
- <CAELcNGTNA83nD3kCh=-BJ6DxRqnNaRznn3mTd5PVY_fRArp+fA@mail.gmail.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1752771Ab1HHCJV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Aug 2011 22:09:21 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:45734 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751248Ab1HHCJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Aug 2011 22:09:19 -0400
+Date: Sun, 7 Aug 2011 19:09:14 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
+Message-ID: <20110808020914.GC2385@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110804140438.GT13065@linux.vnet.ibm.com>
+ <20110804150603.GL2096@zod.bos.redhat.com>
+ <20110804162658.GZ13065@linux.vnet.ibm.com>
+ <20110804173145.GM2096@zod.bos.redhat.com>
+ <CA+5PVA7R+H4MfU=war6G3ZRYEi6nZ=vVZ3B8g-Ag6pOdA4cTBw@mail.gmail.com>
+ <20110805065646.GC13065@linux.vnet.ibm.com>
+ <20110805142245.GP2096@zod.bos.redhat.com>
+ <20110805170805.GB22164@somewhere>
+ <20110805222641.GB2245@linux.vnet.ibm.com>
+ <20110805231216.GE22164@somewhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110805231216.GE22164@somewhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jaehoon Chung wrote:
+On Sat, Aug 06, 2011 at 01:12:18AM +0200, Frederic Weisbecker wrote:
+> On Fri, Aug 05, 2011 at 03:26:41PM -0700, Paul E. McKenney wrote:
+> > On Fri, Aug 05, 2011 at 07:08:08PM +0200, Frederic Weisbecker wrote:
+> > > On Fri, Aug 05, 2011 at 10:22:45AM -0400, Josh Boyer wrote:
+> > > > On Thu, Aug 04, 2011 at 11:56:46PM -0700, Paul E. McKenney wrote:
+> > > > > > > I could be missing something obvious, but I don't see a way to avoid
+> > > > > > > using GFP_KERNEL without a lot of rip-up in the rest of the init path.
+> > > > > > 
+> > > > > > As an aside, I bisected this back to:
+> > > > > > 
+> > > > > > e8f7c70f44f sched: Make sleeping inside spinlock detection working in
+> > > > > > !CONFIG_PREEMPT
+> > > > > 
+> > > > > OK, added Frederic on CC.
+> > > > > 
+> > > > > > However, that doesn't seem all that helpful.  The
+> > > > > > CONFIG_DEBUG_SPINLOCK_SLEEP option later got renamed to
+> > > > > > DEBUG_ATOMIC_SLEEP, and all it's doing is selecting PREEMPT_COUNT.  At
+> > > > > > first glance, it seems this commit just allowed an issue that's been
+> > > > > > around for a while (benign or otherwise) to finally show up.
+> > > > > > 
+> > > > > > (The Fedora kernel configs have CONFIG_PREEMPT_VOLUNTARY set, but not
+> > > > > > CONFIG_PREEMPT so PREEMPT_COUNT wasn't getting selected until this
+> > > > > > option did so.)
+> > > > > 
+> > > > > Understood.  So my question is "what is the real way to fix this?"
+> > > > > Within RCU, I would probably wrapper the calls to set_need_resched()
+> > > > > so that it checks for the scheduler being fully alive.  Except for the
+> > > > > call from rcu_enter_nohz(), of course -- if that one is called before
+> > > > > the scheduler is ready, then that is a bug that needs to be fixed.
+> > > > 
+> > > > By scheduler being fully alive, do you mean when rcu_scheduler_starting
+> > > > is called?  Or do you mean the actual scheduler, because sched_init is
+> > > > called well before any of this happens.
+> > > > 
+> > > > > Nevertheless, I am wondering if all of this isn't really papering over
+> > > > > some real problem somewhere.  The way we get to this place is from people
+> > > > > registering RCU callbacks during early boot, which is OK in and of itself,
+> > > > > at least in moderation.  But if someone is expecting those callbacks to be
+> > > > > invoked before the scheduler is fully set up and running multiple tasks,
+> > > > > they are going to be disappointed.
+> > > > 
+> > > > Is there a way to dump what callbacks have been registered?  As far as I
+> > > > can see, we call rcu_check_callbacks unconditionally when a timer
+> > > > interrupt is taken and that calls rcu_pending unconditionally as well.
+> > > > Before that, rcu_init is called which eventually sets up the per-cpu
+> > > > data via rcu_init_percpu_data and that sets rdp->qs_pending = 1.
+> > > > Until a quiescent state is reached __rcu_pending is going to try and
+> > > > force it, which is where the set_need_resched is called.
+> > > > 
+> > > > Basically, I took what you said about wrapping set_need_resched and came
+> > > > up with the patch below.  It gets rid of the oops from pidmap_init, but
+> > > > I need to test it a bit more.  Would be happy to have feedback.
+> > > > 
+> > > > josh
+> > > > 
+> > > > ---
+> > > > 
+> > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > > > index ba06207..8c6cb6e 100644
+> > > > --- a/kernel/rcutree.c
+> > > > +++ b/kernel/rcutree.c
+> > > > @@ -1681,8 +1681,14 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+> > > >  		rdp->n_rp_qs_pending++;
+> > > >  		if (!rdp->preemptible &&
+> > > >  		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
+> > > > -				 jiffies))
+> > > > -			set_need_resched();
+> > > > +				 jiffies)) {
+> > > > +			/* Make sure we're ready to mark the task as needing
+> > > > + 			 * rescheduling otherwise we can trigger oopes early
+> > > > + 			 * in the init path
+> > > > + 			 */
+> > > > +			if (rcu_scheduler_active)
+> > > > +				set_need_resched();
+> > > 
+> > > What about we avoid setting rdp->qs_pending = 1 for the CPU
+> > > that handles the boot?
+> > 
+> > That sounds promising -- only checked at the beginning of a grace period,
+> > so not too much overhead.  In contrast, __rcu_pending() is called
+> > multiple times per transition to dyntick-idle state.
+> > 
+> > I will take a look at this.
+> > 
+> > 							Thanx, Paul
 > 
-> Hi Seungwon
-> 
-> This patch is looks fine to me..
-> 
-> Just ask to you...Don't you want to locate MMC_CAP_MMC_HIGHSPEED in
-> platdata?
+> I actually thought it could be done from rcu_init_percpu_data(). This
+> is where we initialize the qs_pending to 1, which I believe is responsible
+> for that set_need_resched() from rcu soon after on boot.
 
-Thank you for your comment.
-Of course, I have considered appropriate location for MMC_CAP_MMC_HIGHSPEED.
-But it seems to be difficult to distinguish a difference between MMC_CAP_SD_HIGHSPEED and MMC_CAP_MMC_HIGHSPEED,
-if DW_MCI_QUIRK_HIGHSPEED is defined.
+That would cover some of the situations, but...
 
-Beset regards,
-Seungwon Jeon.
+> It's possible we also have secondary offenders in places that enqueue
+> rcu callbacks in the boot. But if not, then we are fine with tweaking
+> that qs_pending on cpu boot.
 
-> 
-> Regards,
-> Jaehoon Chung
-> 
-> 
-> 2011/8/5 Will Newton <will.newton@gmail.com>:
-> > On Fri, Aug 5, 2011 at 4:35 AM, Seungwon Jeon <tgih.jun@samsung.com>
-> wrote:
-> >> Host driver can't get a hint of DDR mode through ios->ddr flag anymore.
-> >> ios->timing is currently used to inform DDR mode as a substitute.
-> >> And capability of MMC_CAP_MMC_HIGHSPEED is added for DDR support.
-> >>
-> >> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
-> >> ---
-> >>  drivers/mmc/host/dw_mmc.c |    4 ++--
-> >>  1 files changed, 2 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> >> index d65511e..b412a1d 100644
-> >> --- a/drivers/mmc/host/dw_mmc.c
-> >> +++ b/drivers/mmc/host/dw_mmc.c
-> >> @@ -699,7 +699,7 @@ static void dw_mci_set_ios(struct mmc_host *mmc,
-> struct mmc_ios *ios)
-> >>        }
-> >>
-> >>        /* DDR mode set */
-> >> -       if (ios->ddr) {
-> >> +       if (ios->timing == MMC_TIMING_UHS_DDR50) {
-> >>                regs = mci_readl(slot->host, UHS_REG);
-> >>                regs |= (0x1 << slot->id) << 16;
-> >>                mci_writel(slot->host, UHS_REG, regs);
-> >> @@ -1646,7 +1646,7 @@ static int __init dw_mci_init_slot(struct dw_mci
-> *host, unsigned int id)
-> >>                        mmc->caps |= MMC_CAP_4_BIT_DATA;
-> >>
-> >>        if (host->pdata->quirks & DW_MCI_QUIRK_HIGHSPEED)
-> >> -               mmc->caps |= MMC_CAP_SD_HIGHSPEED;
-> >> +               mmc->caps |= MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
-> >>
-> >>  #ifdef CONFIG_MMC_DW_IDMAC
-> >>        mmc->max_segs = host->ring_size;
-> >> --
-> >> 1.7.0.4
-> >
-> > Acked-by: Will Newton <will.newton@imgtec.com>
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The first time we take a scheduling-clock interrupt on a CPU with a
+callback queued, we will also set qs_pending.  Hence the need to also
+suppress the assignment in __note_new_gpnum().  Or better yet, just
+prevent new grace periods in cpu_needs_another_gp().  I believe that doing
+this will make it unnecessary to do anything in rcu_init_percpu_data().
 
+> Because the initial qs_pending = 1 in rcu_init_percpu_data()
+> is useful only if a grace period has started, but by the time
+> rcu_init() is called I guess it can't be the case.
+
+Plus it is necessary to suppress RCU CPU stall warnings at boot time.
+
+> > 
+> > > > +		}
+> > > >  	} else if (rdp->qs_pending && rdp->passed_quiesc) {
+> > > >  		rdp->n_rp_report_qs++;
+> > > >  		return 1;
+
+							Thanx, Paul
