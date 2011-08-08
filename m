@@ -1,135 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab1HHMeU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 08:34:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10153 "EHLO mx1.redhat.com"
+	id S1753500Ab1HHMer (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 08:34:47 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:51362 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751525Ab1HHMeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 08:34:18 -0400
-Date: Mon, 8 Aug 2011 08:34:07 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Oliver Neukum <oliver@neukum.org>,
-        Alexey ORISHKO <alexey.orishko@stericsson.com>
-Cc: gregkh@suse.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH v4] usbnet/cdc_ncm: Don't use stack variables for DMA
-Message-ID: <20110808123406.GA2526@zod.bos.redhat.com>
+	id S1751525Ab1HHMeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 08:34:46 -0400
+Date: Mon, 8 Aug 2011 05:34:42 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: fix rcu annotations noise in cred.h
+Message-ID: <20110808123442.GF2385@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20110807175511.GZ2203@ZenIV.linux.org.uk>
+ <13248.1312791509@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <13248.1312791509@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cdc_ncm driver still has a few places where stack variables are
-passed to the cdc_ncm_do_request function.  This triggers a stack trace in
-lib/dma-debug.c if the CONFIG_DEBUG_DMA_API option is set.
+On Mon, Aug 08, 2011 at 09:18:29AM +0100, David Howells wrote:
+> 
+> Al Viro <viro@ZenIV.linux.org.uk> wrote:
+> 
+> >  #define current_cred() \
+> > -	(current->cred)
+> > +	(*(__force struct cred **)&current->cred)
+> 
+> No.  You've cast away the const.  Please don't do that.
+> 
+> Paul: isn't there some better way of doing this using an RCU wrapper macro?
+> 
+> 	#define current_cred() \
+> 		rcu_dereference_protected(current->cred, 1) 
+> 
+> Perhaps?
 
-Adjust these calls to pass parameters that have been allocated with
-kzalloc.
+This is indeed what rcu_dereference_protected() is intended for.
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
----
-v4: Rebase against 3.1-rc1
-v3: Fix checkpatch errors
-v2: Fix leak in error path
-
- drivers/net/usb/cdc_ncm.c |   47 ++++++++++++++++++++++++++++++++++++--------
- 1 files changed, 38 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
-index a03336e..f06fb78 100644
---- a/drivers/net/usb/cdc_ncm.c
-+++ b/drivers/net/usb/cdc_ncm.c
-@@ -228,23 +228,40 @@ static u8 cdc_ncm_setup(struct cdc_ncm_ctx *ctx)
- 	if (ctx->rx_max != le32_to_cpu(ctx->ncm_parm.dwNtbInMaxSize)) {
- 
- 		if (flags & USB_CDC_NCM_NCAP_NTB_INPUT_SIZE) {
--			struct usb_cdc_ncm_ndp_input_size ndp_in_sz;
-+			struct usb_cdc_ncm_ndp_input_size *ndp_in_sz;
-+
-+			ndp_in_sz = kzalloc(sizeof(*ndp_in_sz), GFP_KERNEL);
-+			if (!ndp_in_sz) {
-+				err = -ENOMEM;
-+				goto size_err;
-+			}
-+
- 			err = usb_control_msg(ctx->udev,
- 					usb_sndctrlpipe(ctx->udev, 0),
- 					USB_CDC_SET_NTB_INPUT_SIZE,
- 					USB_TYPE_CLASS | USB_DIR_OUT
- 					 | USB_RECIP_INTERFACE,
--					0, iface_no, &ndp_in_sz, 8, 1000);
-+					0, iface_no, ndp_in_sz, 8, 1000);
-+			kfree(ndp_in_sz);
- 		} else {
--			__le32 dwNtbInMaxSize = cpu_to_le32(ctx->rx_max);
-+			__le32 *dwNtbInMaxSize;
-+			dwNtbInMaxSize = kzalloc(sizeof(*dwNtbInMaxSize),
-+					GFP_KERNEL);
-+			if (!dwNtbInMaxSize) {
-+				err = -ENOMEM;
-+				goto size_err;
-+			}
-+			*dwNtbInMaxSize = cpu_to_le32(ctx->rx_max);
-+
- 			err = usb_control_msg(ctx->udev,
- 					usb_sndctrlpipe(ctx->udev, 0),
- 					USB_CDC_SET_NTB_INPUT_SIZE,
- 					USB_TYPE_CLASS | USB_DIR_OUT
- 					 | USB_RECIP_INTERFACE,
--					0, iface_no, &dwNtbInMaxSize, 4, 1000);
-+					0, iface_no, dwNtbInMaxSize, 4, 1000);
-+			kfree(dwNtbInMaxSize);
- 		}
--
-+size_err:
- 		if (err < 0)
- 			pr_debug("Setting NTB Input Size failed\n");
- 	}
-@@ -325,19 +342,29 @@ static u8 cdc_ncm_setup(struct cdc_ncm_ctx *ctx)
- 
- 	/* set Max Datagram Size (MTU) */
- 	if (flags & USB_CDC_NCM_NCAP_MAX_DATAGRAM_SIZE) {
--		__le16 max_datagram_size;
-+		__le16 *max_datagram_size;
- 		u16 eth_max_sz = le16_to_cpu(ctx->ether_desc->wMaxSegmentSize);
-+
-+		max_datagram_size = kzalloc(sizeof(*max_datagram_size),
-+				GFP_KERNEL);
-+		if (!max_datagram_size) {
-+			err = -ENOMEM;
-+			goto max_dgram_err;
-+		}
-+
- 		err = usb_control_msg(ctx->udev, usb_rcvctrlpipe(ctx->udev, 0),
- 				USB_CDC_GET_MAX_DATAGRAM_SIZE,
- 				USB_TYPE_CLASS | USB_DIR_IN
- 				 | USB_RECIP_INTERFACE,
--				0, iface_no, &max_datagram_size,
-+				0, iface_no, max_datagram_size,
- 				2, 1000);
- 		if (err < 0) {
- 			pr_debug("GET_MAX_DATAGRAM_SIZE failed, use size=%u\n",
- 						CDC_NCM_MIN_DATAGRAM_SIZE);
-+			kfree(max_datagram_size);
- 		} else {
--			ctx->max_datagram_size = le16_to_cpu(max_datagram_size);
-+			ctx->max_datagram_size =
-+				le16_to_cpu(*max_datagram_size);
- 			/* Check Eth descriptor value */
- 			if (eth_max_sz < CDC_NCM_MAX_DATAGRAM_SIZE) {
- 				if (ctx->max_datagram_size > eth_max_sz)
-@@ -360,8 +387,10 @@ static u8 cdc_ncm_setup(struct cdc_ncm_ctx *ctx)
- 						USB_TYPE_CLASS | USB_DIR_OUT
- 						 | USB_RECIP_INTERFACE,
- 						0,
--						iface_no, &max_datagram_size,
-+						iface_no, max_datagram_size,
- 						2, 1000);
-+			kfree(max_datagram_size);
-+max_dgram_err:
- 			if (err < 0)
- 				pr_debug("SET_MAX_DATAGRAM_SIZE failed\n");
- 		}
+							Thanx, Paul
