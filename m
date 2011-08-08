@@ -1,118 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab1HHVVc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 17:21:32 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:38451 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868Ab1HHVVa (ORCPT
+	id S1752268Ab1HHVXY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 17:23:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:33569 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257Ab1HHVXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 17:21:30 -0400
-Subject: Re: [PATCH 7/9] drivers/target/iscsi/iscsi_target_parameters.c:
-	add missing kfree
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Julia Lawall <julia@diku.dk>
-Cc: kernel-janitors@vger.kernel.org, Andy Grover <agrover@redhat.com>,
-        Roland Dreier <roland@kernel.org>, Christoph Hellwig <hch@lst.de>,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1312802283-9107-7-git-send-email-julia@diku.dk>
-References: <1312802283-9107-7-git-send-email-julia@diku.dk>
-Content-Type: text/plain
-Date: Mon, 08 Aug 2011 14:11:54 -0700
-Message-Id: <1312837914.12502.92.camel@haakon2.linux-iscsi.org>
+	Mon, 8 Aug 2011 17:23:23 -0400
+X-Authority-Analysis: v=1.1 cv=YhhhcVvq/Bf3xBNEvzTEV9JHGW2mXul7kEbaqsyQnMQ= c=1 sm=0 a=5jgD01Iq_tUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=GU8c9pHAfEAYzgNsjLQA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/4 v2] [GIT PULL][v3.2] x86: Consolidate 32 and 64 bit
+ thread_info
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Brian Gerst <brgerst@gmail.com>
+In-Reply-To: <4E3CA12D.1030408@zytor.com>
+References: <20110806011102.721109343@goodmis.org>
+	 <4E3CA12D.1030408@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 08 Aug 2011 17:23:19 -0400
+Message-ID: <1312838599.18583.238.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-08 at 13:18 +0200, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> At this point, the new_param that has just been allocated has not been
-> stored in the list, so it and new_param->name, once it is defined, have to
-> be freed separately.
-> 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @exists@
-> local idexpression x;
-> statement S,S1;
-> expression E;
-> identifier fl;
-> expression *ptr != NULL;
-> @@
-> 
-> x = \(kmalloc\|kzalloc\|kcalloc\)(...);
-> ...
-> if (x == NULL) S
-> <... when != x
->      when != if (...) { <+...kfree(x)...+> }
->      when any
->      when != true x == NULL
-> x->fl
-> ...>
-> (
-> if (x == NULL) S1
-> |
-> if (...) { ... when != x
->                when forall
-> (
->  return \(0\|<+...x...+>\|ptr\);
-> |
-> * return ...;
-> )
-> }
-> )
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
->  drivers/target/iscsi/iscsi_target_parameters.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/target/iscsi/iscsi_target_parameters.c b/drivers/target/iscsi/iscsi_target_parameters.c
-> index 252e246..b8dbe44 100644
-> --- a/drivers/target/iscsi/iscsi_target_parameters.c
-> +++ b/drivers/target/iscsi/iscsi_target_parameters.c
-> @@ -584,6 +584,7 @@ int iscsi_copy_param_list(
->  		if (!new_param->name) {
->  			pr_err("Unable to allocate memory for"
->  				" parameter name.\n");
-> +			kfree(new_param);
->  			goto err_out;
->  		}
->  
-> @@ -592,6 +593,8 @@ int iscsi_copy_param_list(
->  		if (!new_param->value) {
->  			pr_err("Unable to allocate memory for"
->  				" parameter value.\n");
-> +			kfree(new_param->name);
-> +			kfree(new_param);
->  			goto err_out;
->  		}
->  
-> 
+On Fri, 2011-08-05 at 19:04 -0700, H. Peter Anvin wrote:
 
-Hi Julia,
+> I'd like to wait until the merge window is over with pulling in 3.2
+> material ... nothing personal or technical, just to simplify management.
 
-Jesper and Dan already caught this one last week, and has been resolved
-with the following patch in lio-core-2.6.git:
+No prob, and the merge window is now closed :)
 
-commit 83f8b803171751082174162cd1fa058c67d579ab
-Author: Jesper Juhl <jj@chaosbits.net>
-Date:   Tue Aug 2 10:26:36 2011 +0200
+-- Steve
 
-    iscsi-target: Fix leak on failure in iscsi_copy_param_list()
 
-This one is being queued for the next round of target fixes for
-mainline.
-
-Thanks for reporting!
-
---nab
 
