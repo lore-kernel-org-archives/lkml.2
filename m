@@ -1,211 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab1HHUIV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 16:08:21 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57315 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753819Ab1HHUIT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 16:08:19 -0400
-From: Per Forlin <per.forlin@linaro.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>, akpm@linux-foundation.org,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Chris Ball <cjb@laptop.org>
-Cc: linux-doc@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linaro-dev@lists.linaro.org, linux-mm@kvack.org,
-        Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH --mmotm v5 2/3] mmc: core: add random fault injection
-Date: Mon,  8 Aug 2011 22:07:28 +0200
-Message-Id: <1312834049-29910-3-git-send-email-per.forlin@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1312834049-29910-1-git-send-email-per.forlin@linaro.org>
-References: <1312834049-29910-1-git-send-email-per.forlin@linaro.org>
+	id S1753327Ab1HHUUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 16:20:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21742 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751408Ab1HHUUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 16:20:10 -0400
+Date: Mon, 8 Aug 2011 16:19:51 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: ZAK Magnus <zakmagnus@google.com>, peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH v4 2/2] Output stall traces in /proc
+Message-ID: <20110808201951.GY1972@redhat.com>
+References: <1312495991-28377-1-git-send-email-zakmagnus@chromium.org>
+ <1312495991-28377-2-git-send-email-zakmagnus@chromium.org>
+ <20110805134042.GJ1972@redhat.com>
+ <CAAuSN919rQj93P8HE69_N5vC04ywMFfeJjRdMhn8ga1V-jFb7A@mail.gmail.com>
+ <20110805184323.GK20762@redhat.com>
+ <CAAuSN91Pi8SbWbU87v7QdDWS_N1GiXsM8dGUYSYKTUCUp+2Mww@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAAuSN91Pi8SbWbU87v7QdDWS_N1GiXsM8dGUYSYKTUCUp+2Mww@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support to inject data errors after a completed host transfer.
-The mmc core will return error even though the host transfer is successful.
-This simple fault injection proved to be very useful to test the
-non-blocking error handling in the mmc_blk_issue_rw_rq().
-Random faults can also test how the host driver handles pre_req()
-and post_req() in case of errors.
+(adding Peter to the discussion)
 
-Signed-off-by: Per Forlin <per.forlin@linaro.org>
-Acked-by: Akinobu Mita <akinobu.mita@gmail.com>
----
- drivers/mmc/core/core.c    |   44 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/mmc/core/debugfs.c |   24 ++++++++++++++++++++++++
- include/linux/mmc/host.h   |    7 +++++++
- lib/Kconfig.debug          |   11 +++++++++++
- 4 files changed, 86 insertions(+), 0 deletions(-)
+On Fri, Aug 05, 2011 at 02:26:12PM -0700, ZAK Magnus wrote:
+> On Fri, Aug 5, 2011 at 11:43 AM, Don Zickus <dzickus@redhat.com> wrote:
+> > I missed that you defined that as a pointer to a spinlock and assigned it
+> > later.  I see what you are doing now, but I am not a fan of it because you
+> > are now using the same spinlock in both the NMI context and the userspace
+> > context.  This can cause deadlocks if something got screwed up in the
+> > seq_printf functions or produced a very large amount of data.  Normally
+> > you don't want to do that.
+> >
+> > What others have done like perf and the APEI error handling is use
+> > something called irq_work_queue(??).  Basically you would capture the
+> > tracae in the NMI context, put it on an irq_work_queue and in the
+> > interrupt context save it to your global trace variable.  Then you could
+> > put spin_lock_irqsave inside the proc sys function and the work queue
+> > function and not have any potential deadlocks.
+> Work queue? Okay. The worker thread still needs a lock in order to
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 89bdeae..a4996b0 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -25,6 +25,11 @@
- #include <linux/pm_runtime.h>
- #include <linux/suspend.h>
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+#include <linux/fault-inject.h>
-+#include <linux/random.h>
-+#endif
-+
- #include <linux/mmc/card.h>
- #include <linux/mmc/host.h>
- #include <linux/mmc/mmc.h>
-@@ -83,6 +88,43 @@ static void mmc_flush_scheduled_work(void)
- 	flush_workqueue(workqueue);
- }
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+
-+/*
-+ * Internal function. Inject random data errors.
-+ * If mmc_data is NULL no errors are injected.
-+ */
-+static void mmc_should_fail_request(struct mmc_host *host,
-+				    struct mmc_request *mrq)
-+{
-+	struct mmc_command *cmd = mrq->cmd;
-+	struct mmc_data *data = mrq->data;
-+	static const int data_errors[] = {
-+		-ETIMEDOUT,
-+		-EILSEQ,
-+		-EIO,
-+	};
-+
-+	if (!data)
-+		return;
-+
-+	if (cmd->error || data->error ||
-+	    !should_fail(&host->fail_mmc_request, data->blksz * data->blocks))
-+		return;
-+
-+	data->error = data_errors[random32() % ARRAY_SIZE(data_errors)];
-+	data->bytes_xfered = (random32() % (data->bytes_xfered >> 9)) << 9;
-+}
-+
-+#else /* CONFIG_FAIL_MMC_REQUEST */
-+
-+static void mmc_should_fail_request(struct mmc_host *host,
-+				    struct mmc_request *mrq)
-+{
-+}
-+
-+#endif /* CONFIG_FAIL_MMC_REQUEST */
-+
- /**
-  *	mmc_request_done - finish processing an MMC request
-  *	@host: MMC host which completed request
-@@ -109,6 +151,8 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
- 		cmd->error = 0;
- 		host->ops->request(host, mrq);
- 	} else {
-+		mmc_should_fail_request(host, mrq);
-+
- 		led_trigger_event(host->led, LED_OFF);
- 
- 		pr_debug("%s: req done (CMD%u): %d: %08x %08x %08x %08x\n",
-diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
-index f573753..548c2e7 100644
---- a/drivers/mmc/core/debugfs.c
-+++ b/drivers/mmc/core/debugfs.c
-@@ -13,6 +13,9 @@
- #include <linux/seq_file.h>
- #include <linux/slab.h>
- #include <linux/stat.h>
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+#include <linux/fault-inject.h>
-+#endif
- 
- #include <linux/mmc/card.h>
- #include <linux/mmc/host.h>
-@@ -159,6 +162,20 @@ static int mmc_clock_opt_set(void *data, u64 val)
- 	return 0;
- }
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+
-+static DECLARE_FAULT_ATTR(fail_mmc_request);
-+/*
-+ * Internal function. Pass the boot param fail_mmc_request to
-+ * the setup fault injection attributes routine.
-+ */
-+static int __init setup_fail_mmc_request(char *str)
-+{
-+	return setup_fault_attr(&fail_mmc_request, str);
-+}
-+__setup("fail_mmc_request=", setup_fail_mmc_request);
-+#endif
-+
- DEFINE_SIMPLE_ATTRIBUTE(mmc_clock_fops, mmc_clock_opt_get, mmc_clock_opt_set,
- 	"%llu\n");
- 
-@@ -189,6 +206,13 @@ void mmc_add_host_debugfs(struct mmc_host *host)
- 				root, &host->clk_delay))
- 		goto err_node;
- #endif
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+	host->fail_mmc_request = fail_mmc_request;
-+	if (IS_ERR(fault_create_debugfs_attr("fail_mmc_request",
-+					     root,
-+					     &host->fail_mmc_request)))
-+		goto err_node;
-+#endif
- 	return;
- 
- err_node:
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 0f83858..ee472fe 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -12,6 +12,9 @@
- 
- #include <linux/leds.h>
- #include <linux/sched.h>
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+#include <linux/fault-inject.h>
-+#endif
- 
- #include <linux/mmc/core.h>
- #include <linux/mmc/pm.h>
-@@ -304,6 +307,10 @@ struct mmc_host {
- 
- 	struct mmc_async_req	*areq;		/* active async req */
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+	struct fault_attr	fail_mmc_request;
-+#endif
-+
- 	unsigned long		private[0] ____cacheline_aligned;
- };
- 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 47879c7..ebff0c9 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1090,6 +1090,17 @@ config FAIL_IO_TIMEOUT
- 	  Only works with drivers that use the generic timeout handling,
- 	  for others it wont do anything.
- 
-+config FAIL_MMC_REQUEST
-+	bool "Fault-injection capability for MMC IO"
-+	select DEBUG_FS
-+	depends on FAULT_INJECTION && MMC
-+	help
-+	  Provide fault-injection capability for MMC IO.
-+	  This will make the mmc core return data errors. This is
-+	  useful to test the error handling in the mmc block device
-+	  and to test how the mmc host driver handles retries from
-+	  the block device.
-+
- config FAULT_INJECTION_DEBUG_FS
- 	bool "Debugfs entries for fault-injection capabilities"
- 	depends on FAULT_INJECTION && SYSFS && DEBUG_FS
--- 
-1.7.4.1
+not work_queue, irq_work_queue.
 
+> share the intermediate buffer with the NMI context, though. Any chance
+> of something screwing up in the middle of copying that structure,
+> causing a stall and deadlocking with the NMI?
+
+I believe irq_work_queue uses cmpxchg for all its locking and just swaps
+entries on to a linked list?
+
+> 
+> Or maybe the intermediate buffer should be dynamically allocated. That
+> would work without a lock, although it seems slightly inefficient.
+
+Peter,
+
+How does the irq_work_queue work such that you can save info in the NMI
+context and safely pass it to the irq context for processing? 
+
+> 
+> Regarding the lock between the work queue thread and the system call,
+> maybe that should become a mutex instead, since it's all outside of
+> interrupt context at that point?
+
+No it is still in the irq context.
+
+Peter,
+
+If we want to expose data captured in the NMI context through the procfs,
+I assume we can pass that info along using irq_work_queue.  But then when
+reading from procfs do we just lock the data with 'spin_lock_irq' to block
+the irq_work_queue from manipulating the data?  (note we are expecting
+data to be overwritten with fresh data, not serialized out like
+trace/perf).
+
+Cheers,
+Don
+
+> 
+> > The softstall case should be ok though.
+> Why's that? The soft stall traces are not written in a NMI context but
+> just in a regular interrupt context, right? Doesn't that pose similar
+> problems?
+> 
+> 
+> These are weird rare corner cases anyway, right? Maybe the simplest
+> thing could be to let the interrupts only try_lock(), so they might
+> sometimes fail to record a stall, but it would be a pretty big
+> coincidence.
