@@ -1,119 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab1HHVar (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 17:30:47 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:22872 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279Ab1HHVap (ORCPT
+	id S1752923Ab1HHVa4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 17:30:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:35409 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752788Ab1HHVay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 17:30:45 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=E6f4gP6zATsTCr+2RFYMspggYDCGGaaQ2OQ1YRo2S3yWyxD/Fz/V+0ogS+E9+mwo8
-	xODVXwsW9b0sZm8QRsLxQ==
-From: Iliyan Malchev <malchev@google.com>
-To: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Iliyan Malchev <malchev@google.com>
-Subject: [PATCH 1/2] slub: extend slub_debug to handle multiple slabs
-Date: Mon,  8 Aug 2011 14:30:19 -0700
-Message-Id: <1312839019-17987-1-git-send-email-malchev@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Mon, 8 Aug 2011 17:30:54 -0400
+X-Authority-Analysis: v=1.1 cv=s3eDhkhcaTLnj7IEXy8aaXUiY7FbET0mf+/2Xe0elbc= c=1 sm=0 a=JVmKiHRY1FkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=fJs8Fh-PZohCs0LbTGwA:9 a=MALq8dt0wkdbvOxrUOQA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 0/8] Having perf use libparsevent.a
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <20110806065122.GC13220@elte.hu>
+References: <20110805205921.909038487@goodmis.org>
+	 <20110805212409.GA21114@elte.hu>
+	 <1312592488.18583.215.camel@gandalf.stny.rr.com>
+	 <20110806065122.GC13220@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 08 Aug 2011 17:30:52 -0400
+Message-ID: <1312839052.18583.243.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend the slub_debug syntax to "slub_debug=<flags>[,<slub>]*", where <slub>
-may contain an asterisk at the end.  For example, the following would poison
-all kmalloc slabs:
+On Sat, 2011-08-06 at 08:51 +0200, Ingo Molnar wrote:
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > Ingo, I was trying to do as you said, but to do so would require a 
+> > lot of restructuring of the perf code base. I started talking with 
+> > Arnaldo, as he's doing a lot of the work in the tools/perf code, 
+> > and he's the one that suggested that I do it this way. It made 
+> > things a lot easier.
+> 
+> Could you guys please talk some more and clear it up? There's 
+> absolutely no technical reason why tools/perf/lib/ (or 
+> tools/perf/libperf/) should be harder than tools/lib/.
 
-	slub_debug=P,kmalloc*
+The issue was trying to use the Makefile within perf for the building.
+There was issues with the warning flags and also the deps that are
+automatically made with libparsevent.
 
-and the following would apply the default flags to all kmalloc and all block IO
-slabs:
+But you are correct, if I were to just move the pointers over to
+tools/perf/lib/events instead of tools/lib/events and had it be a
+separate entity in the build process, then it would not be any different
+between the two locations.
 
-	slub_debug=,bio*,kmalloc*
+But there are two non-technical issues with that. Is it wise to have a
+different type of build process within the tools/perf directory. The
+libparsevents follows the Linux build system more than the git build
+system.
 
-Signed-off-by: Iliyan Malchev <malchev@google.com>
----
- Documentation/vm/slub.txt |   12 +++++++++---
- mm/slub.c                 |   32 +++++++++++++++++++++++++++++---
- 2 files changed, 38 insertions(+), 6 deletions(-)
+The other being, is the parse events a perf only thing? Maybe having a
+tools/lib would be nice even if it is. Because we can put things in
+tools/lib that will go as a separate package. perf could depend on
+tools/lib but there's no reason that tools/lib should depend on perf.
 
-diff --git a/Documentation/vm/slub.txt b/Documentation/vm/slub.txt
-index 07375e7..caa5b4a 100644
---- a/Documentation/vm/slub.txt
-+++ b/Documentation/vm/slub.txt
-@@ -31,8 +31,9 @@ Parameters may be given to slub_debug. If none is specified then full
- debugging is enabled. Format:
- 
- slub_debug=<Debug-Options>       Enable options for all slabs
--slub_debug=<Debug-Options>,<slab name>
--				Enable options only for select slabs
-+slub_debug=<Debug-Options>,<slab name1>,<slab name2>,...
-+				Enable options only for select slabs (no spaces
-+				after a comma)
- 
- Possible debug options are
- 	F		Sanity checks on (enables SLAB_DEBUG_FREE. Sorry
-@@ -55,7 +56,12 @@ Trying to find an issue in the dentry cache? Try
- 
- 	slub_debug=,dentry
- 
--to only enable debugging on the dentry cache.
-+to only enable debugging on the dentry cache.  You may use an asterisk at the
-+end of the slab name, in order to cover all slabs with the same prefix.  For
-+example, here's how you can poison the dentry cache as well as all kmalloc
-+slabs:
-+
-+	slub_debug=P,kmalloc-*,dentry
- 
- Red zoning and tracking may realign the slab.  We can just apply sanity checks
- to the dentry cache with
-diff --git a/mm/slub.c b/mm/slub.c
-index eb5a8f9..8e7a282 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1275,9 +1275,35 @@ static unsigned long kmem_cache_flags(unsigned long objsize,
- 	/*
- 	 * Enable debugging if selected on the kernel commandline.
- 	 */
--	if (slub_debug && (!slub_debug_slabs ||
--		!strncmp(slub_debug_slabs, name, strlen(slub_debug_slabs))))
--		flags |= slub_debug;
-+
-+	char *end, *n, *glob;
-+	int len = strlen(name);
-+
-+	/* If slub_debug = 0, it folds into the if conditional. */
-+	if (!slub_debug_slabs)
-+		return flags | slub_debug;
-+
-+	n = slub_debug_slabs;
-+	while (*n) {
-+		int cmplen;
-+
-+		end = strchr(n, ',');
-+		if (!end)
-+			end = n + strlen(n);
-+
-+		glob = strnchr(n, end - n, '*');
-+		if (glob)
-+			cmplen = glob - n;
-+		else
-+			cmplen = max(len, end - n);
-+
-+		if (!strncmp(name, n, cmplen)) {
-+			flags |= slub_debug;
-+			break;
-+		}
-+
-+		n = *end ? end + 1 : end;
-+	}
- 
- 	return flags;
- }
--- 
-1.7.3.1
+-- Steve
+
 
