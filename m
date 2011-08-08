@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab1HHLSU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 07:18:20 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:53555 "EHLO mgw2.diku.dk"
+	id S1752628Ab1HHLSP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 07:18:15 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:53547 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751866Ab1HHLSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751468Ab1HHLSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Aug 2011 07:18:11 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Luciano Coelho <coelho@ti.com>
-Cc: kernel-janitors@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/9] drivers/net/wireless/wl12xx: add missing kfree
-Date: Mon,  8 Aug 2011 13:17:56 +0200
-Message-Id: <1312802283-9107-2-git-send-email-julia@diku.dk>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: kernel-janitors@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 3/9] drivers/ata/sata_dwc_460ex.c: add missing kfree
+Date: Mon,  8 Aug 2011 13:17:57 +0200
+Message-Id: <1312802283-9107-3-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,8 +21,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-In each case, the freed data should be freed in the error handling code as
-well.
+Currently, error handling code in this function calls the function
+sata_dwc_port_stop, but this function has essentially no effect if hsdevp
+has not been stored in ap, which is the case throughout this function.  The
+only effect is to print a debugging message including ap->print_id.
+
+The code is rewritten to not call sata_dwc_port_stop, but instead to jump
+to a local label that prints the original error message and the print_id
+information.  In the case where hsdevp has been already allocated (but not
+yet stored in ap), this value is freed as well.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -63,54 +69,40 @@ if (...) { ... when != x
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/wireless/wl12xx/acx.c      |    6 +-----
- drivers/net/wireless/wl12xx/testmode.c |    5 ++++-
- 2 files changed, 5 insertions(+), 6 deletions(-)
+ drivers/ata/sata_dwc_460ex.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/wireless/wl12xx/testmode.c b/drivers/net/wireless/wl12xx/testmode.c
-index 5d5e1ef..88add68 100644
---- a/drivers/net/wireless/wl12xx/testmode.c
-+++ b/drivers/net/wireless/wl12xx/testmode.c
-@@ -139,12 +139,15 @@ static int wl1271_tm_cmd_interrogate(struct wl1271 *wl, struct nlattr *tb[])
- 
- 	if (ret < 0) {
- 		wl1271_warning("testmode cmd interrogate failed: %d", ret);
-+		kfree(cmd);
- 		return ret;
+diff --git a/drivers/ata/sata_dwc_460ex.c b/drivers/ata/sata_dwc_460ex.c
+index 0a9a774..5c42374 100644
+--- a/drivers/ata/sata_dwc_460ex.c
++++ b/drivers/ata/sata_dwc_460ex.c
+@@ -1329,7 +1329,7 @@ static int sata_dwc_port_start(struct ata_port *ap)
+ 			dev_err(ap->dev, "%s: dma_alloc_coherent failed\n",
+ 				 __func__);
+ 			err = -ENOMEM;
+-			goto CLEANUP;
++			goto CLEANUP_ALLOC;
+ 		}
  	}
  
- 	skb = cfg80211_testmode_alloc_reply_skb(wl->hw->wiphy, sizeof(*cmd));
--	if (!skb)
-+	if (!skb) {
-+		kfree(cmd);
- 		return -ENOMEM;
-+	}
+@@ -1349,15 +1349,13 @@ static int sata_dwc_port_start(struct ata_port *ap)
+ 	/* Clear any error bits before libata starts issuing commands */
+ 	clear_serror();
+ 	ap->private_data = hsdevp;
++	dev_dbg(ap->dev, "%s: done\n", __func__);
++	return 0;
  
- 	NLA_PUT(skb, WL1271_TM_ATTR_DATA, sizeof(*cmd), cmd);
- 
-diff --git a/drivers/net/wireless/wl12xx/acx.c b/drivers/net/wireless/wl12xx/acx.c
-index 7e33f1f..34f6ab5 100644
---- a/drivers/net/wireless/wl12xx/acx.c
-+++ b/drivers/net/wireless/wl12xx/acx.c
-@@ -77,8 +77,6 @@ int wl1271_acx_sleep_auth(struct wl1271 *wl, u8 sleep_auth)
- 	auth->sleep_auth = sleep_auth;
- 
- 	ret = wl1271_cmd_configure(wl, ACX_SLEEP_AUTH, auth, sizeof(*auth));
--	if (ret < 0)
--		return ret;
- 
- out:
- 	kfree(auth);
-@@ -624,10 +622,8 @@ int wl1271_acx_cca_threshold(struct wl1271 *wl)
- 
- 	ret = wl1271_cmd_configure(wl, ACX_CCA_THRESHOLD,
- 				   detection, sizeof(*detection));
--	if (ret < 0) {
-+	if (ret < 0)
- 		wl1271_warning("failed to set cca threshold: %d", ret);
--		return ret;
++CLEANUP_ALLOC:
++	kfree(hsdevp);
+ CLEANUP:
+-	if (err) {
+-		sata_dwc_port_stop(ap);
+-		dev_dbg(ap->dev, "%s: fail\n", __func__);
+-	} else {
+-		dev_dbg(ap->dev, "%s: done\n", __func__);
 -	}
+-
++	dev_dbg(ap->dev, "%s: fail. ap->id = %d\n", __func__, ap->print_id);
+ 	return err;
+ }
  
- out:
- 	kfree(detection);
-
