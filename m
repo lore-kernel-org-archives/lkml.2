@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab1HHRFh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 13:05:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59940 "EHLO mx2.suse.de"
+	id S1753189Ab1HHRFk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 13:05:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59952 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751799Ab1HHRFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 13:05:35 -0400
-Date: Mon, 8 Aug 2011 10:03:00 -0700
+	id S1751799Ab1HHRFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 13:05:38 -0400
+Date: Mon, 8 Aug 2011 10:04:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [Stable-review] [07/55] SUNRPC: Fix a race between work-queue
- and rpc_killall_tasks
-Message-ID: <20110808170300.GA27419@suse.de>
-References: <20110806000249.573906795@clark.kroah.org>
- <1312738681.2591.1024.camel@deadeye>
+Cc: James Bottomley <JBottomley@Parallels.com>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, stable-review@kernel.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [Stable-review] [28/55] [SCSI] fix crash in scsi_dispatch_cmd()
+Message-ID: <20110808170424.GB27419@suse.de>
+References: <20110806000251.682788533@clark.kroah.org>
+ <1312739411.2591.1026.camel@deadeye>
+ <1312739484.2591.1027.camel@deadeye>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1312738681.2591.1024.camel@deadeye>
+In-Reply-To: <1312739484.2591.1027.camel@deadeye>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 07, 2011 at 06:38:01PM +0100, Ben Hutchings wrote:
-> On Fri, 2011-08-05 at 17:01 -0700, Greg KH wrote:
-> > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+On Sun, Aug 07, 2011 at 06:51:24PM +0100, Ben Hutchings wrote:
+> On Sun, 2011-08-07 at 18:50 +0100, Ben Hutchings wrote:
+> > On Fri, 2011-08-05 at 17:01 -0700, Greg KH wrote:
+> > > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+> > > 
+> > > ------------------
+> > > 
+> > > From: James Bottomley <James.Bottomley@HansenPartnership.com>
+> > > 
+> > > commit bfe159a51203c15d23cb3158fffdc25ec4b4dda1 upstream.
+> > > 
+> > > USB surprise removal of sr is triggering an oops in
+> > > scsi_dispatch_command().  What seems to be happening is that USB is
+> > > hanging on to a queue reference until the last close of the upper
+> > > device, so the crash is caused by surprise remove of a mounted CD
+> > > followed by attempted unmount.
+> > [...]
 > > 
-> > ------------------
-> > 
-> > From: Trond Myklebust <Trond.Myklebust@netapp.com>
-> > 
-> > commit b55c59892e1f3b6c7d4b9ccffb4263e1486fb990 upstream.
-> > 
-> > Since rpc_killall_tasks may modify the rpc_task's tk_action field
-> > without any locking, we need to be careful when dereferencing it.
-> [...]
+> > This has been reported in 2.6.39.y and 3.0, but not in 2.6.32.y.
 > 
-> This isn't nearly careful enough to avoid races.  You must at least use
-> the ACCESS_ONCE macro, otherwise the compiler can just optimise away the
-> local variable this introduces.
+> That is, AFAIK.
 
-Well, that's an upstream issue as well, right?  Not much I can do here
-in the stable updates :)
+Oops, good catch, I've dropped this from the .32 and .33 queue now, it's
+not needed there at all.
 
 greg k-h
