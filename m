@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab1HHOld (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 10:41:33 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:50323 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab1HHOlb (ORCPT
+	id S1754098Ab1HHOmE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 10:42:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38715 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753981Ab1HHOmC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 10:41:31 -0400
-Date: Mon, 8 Aug 2011 11:41:24 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jovi Zhang <bookjovi@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: fix coredump caused by introduce of probe module
- option
-Message-ID: <20110808144124.GA2297@ghostprotocols.net>
-References: <1311602888-2389-1-git-send-email-bookjovi@gmail.com>
- <CACV3sbKNgbqX+W05mp0H0Etggext9tRx4bfPA+pT8sgudpoy5Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACV3sbKNgbqX+W05mp0H0Etggext9tRx4bfPA+pT8sgudpoy5Q@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 8 Aug 2011 10:42:02 -0400
+Subject: Re: [PATCH 2/5] writeback: dirty position control
+From: Peter Zijlstra <peterz@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 08 Aug 2011 16:41:41 +0200
+In-Reply-To: <20110808141128.GA22080@localhost>
+References: <20110806084447.388624428@intel.com>
+	 <20110806094526.733282037@intel.com> <1312811193.10488.33.camel@twins>
+	 <20110808141128.GA22080@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1312814501.10488.41.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Aug 08, 2011 at 11:01:19AM +0800, Jovi Zhang escreveu:
-> On Mon, Jul 25, 2011 at 10:08 PM,  <bookjovi@gmail.com> wrote:
-> > From: root <root@localhost.localdomain>
-> >
-> > perf will coredump if user don't give "-m" option in probe command,
-> > this patch fix it.
-> >
-> > [root@localhost perf]# ./perf probe --add='PROBE'
-> > Segmentation fault (core dumped)
-> >
-> > Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
-> > ---
-> >  tools/perf/util/probe-event.c |   12 ++++++++----
-> >  1 files changed, 8 insertions(+), 4 deletions(-)
-> >
-> 
-> Hi acme,
->    Can this patch go through your tree?
->    (Get rid of "From" field, that's suck. :))
+On Mon, 2011-08-08 at 22:11 +0800, Wu Fengguang wrote:
+> @@ -538,11 +538,6 @@ static unsigned long bdi_position_ratio(
+>         goal = thresh - thresh / DIRTY_SCOPE;
+>         origin = 4 * thresh;
+>  
+> -       if (unlikely(origin < limit && dirty > (goal + origin) / 2)) {
+> -               origin = limit;                 /* auxiliary control line */
+> -               goal = (goal + origin) / 2;
+> -               pos_ratio >>= 1;
+> -       }
+>         pos_ratio = origin - dirty;
+>         pos_ratio <<= BANDWIDTH_CALC_SHIFT;
+>         do_div(pos_ratio, origin - goal + 1); 
 
-yeah, I'm applying it.
+So basically, pos_ratio = (4t - d) / (25/8)t, which if I'm not mistaken
+comes out at 32/25 - 8d/25t. Which simply doesn't make sense at all. 
 
-Thanks,
 
-- Arnaldo
