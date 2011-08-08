@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab1HHTZq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 15:25:46 -0400
-Received: from mout4.freenet.de ([195.4.92.94]:35543 "EHLO mout4.freenet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750868Ab1HHTZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 15:25:45 -0400
-Message-ID: <4E403837.6040902@01019freenet.de>
-Date: Mon, 08 Aug 2011 21:25:43 +0200
-From: Andreas Hartmann <andihartmann@01019freenet.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110806 Firefox/6.0 SeaMonkey/2.3
+	id S1753025Ab1HHT0c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 15:26:32 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15174 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066Ab1HHT0a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 15:26:30 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 08 Aug 2011 12:26:09 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Rob Herring <robherring2@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Ben Dooks <ben-i2c@fluff.org>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Colin Cross <ccross@android.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Axel Lin <axel.lin@gmail.com>
+Date: Mon, 8 Aug 2011 12:26:04 -0700
+Subject: RE: [PATCH] dt: add empty of_get_property for non-dt
+Thread-Topic: [PATCH] dt: add empty of_get_property for non-dt
+Thread-Index: AcxVD5sBdeSFpli1QSOgnepQW5qjMAA8TN1A
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049F172239@HQMAIL01.nvidia.com>
+References: <1312584630-23371-1-git-send-email-swarren@nvidia.com>
+ <4E3EA340.2010100@gmail.com>
+In-Reply-To: <4E3EA340.2010100@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.0: broken ums_eneub6250
-References: <hjXX6-Ee-55@gated-at.bofh.it> <hk6nE-6kT-5@gated-at.bofh.it> <hk7Wq-mZ-1@gated-at.bofh.it> <j1mm4l$55a$1@ID-44327.news.uni-berlin.de> <20110808042231.GA6248@kroah.com> <4E3F9B71.7040206@01019freenet.de> <20110808153302.GA8637@kroah.com>
-In-Reply-To: <20110808153302.GA8637@kroah.com>
-X-Enigmail-Version: 1.3a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH schrieb:
-> On Mon, Aug 08, 2011 at 10:16:49AM +0200, Andreas Hartmann wrote:
->> Greg KH schrieb:
->>> On Sun, Aug 07, 2011 at 08:39:20PM +0200, Andreas Hartmann wrote:
->>>> Hi,
->>>>
->>>> obviously, nobody seems to be interested to work on this bug. Until it's
->>>> fixed: There is a workaround to get the device working again with 2.6.39
->>>> and 3.0 - just remove the unusable ums-eneub6250.ko and replace it with
->>>> the complete old and fine keucr-module - staging but working :-)
->>>>
->>>> https://bugzilla.novell.com/show_bug.cgi?id=709243#c1
->>>
->>> How about working on a patch for the in-kernel version of the code to
->>> get it to work properly so we can resolve this?
->>
->> If I would be able do this, I would have done it! On the other side: Why
->> should I do it, if there is a module, which works just fine?
-> 
-> Because I'm guessing that you wish to see the in-kernel code work
-> properly, right?
-> 
->> But you could send me patches which I could test.
-> 
-> Have you emailed the developers of this driver these questions?  I'm
-> sure they could help you out as they do have the hardware and they wrote
-> the patches in the first place.
-> 
->>>  Given that very few
->>> people actually have this hardware,
->>
->> It's a MSI CR620 notebook. I don't think, that there are just very few
->> out there :-).
->>
->>> it's hard for us to work on the
->>> driver.
->>
->> Why did you remove a working module if you can't ensure, that the
->> replacement will cover the old module 100%?
-> 
-> Because I trusted the original developers of that patch, that's the way
-> kernel development works.
-> 
-> So please contact them and they would be glad to work with you to
-> resolve this issue.
+Rob Herring wrote at Sunday, August 07, 2011 8:38 AM:
+> On 08/05/2011 05:50 PM, Stephen Warren wrote:
+> > The patch adds empty function of_get_property for non-dt build, so that
+> > drivers migrating to dt can save some '#ifdef CONFIG_OF'.
+> >
+> > This also fixes the current Tegra compile problem in linux-next.
+>
+> You could just use of_property_read_u32 in the driver. It already has
+> empty version and will simplify the driver code some.
 
-They have been already connected prior in this thread. I didn't get any
-answer right now.
+Yes, that would also work.
 
-Obviously they are not interested in fixing the problem.
+Grant, Ben, do you have a preference for which option to choose?
 
-Use google and you will see, that I'm not the first and only one, having
-this problem. Anyhow there isn't any fix. But the working module has
-been removed ... . Thank you!
+Thanks.
 
+> > diff --git a/include/linux/of.h b/include/linux/of.h
+...
+> > +static inline const void *of_get_property(const struct device_node *node,
+> > +				const char *name,
+> > +				int *lenp)
+> > +{
+> > +	return NULL;
+> > +}
+> > +
 
-Andreas
+-- 
+nvpublic
+
