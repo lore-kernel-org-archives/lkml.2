@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab1HHSOw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 14:14:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1930 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751799Ab1HHSOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 14:14:50 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 06/11] DIO: Inline the complete submission path v2
-References: <1312259893-4548-1-git-send-email-andi@firstfloor.org>
-	<1312259893-4548-7-git-send-email-andi@firstfloor.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 08 Aug 2011 14:14:43 -0400
-In-Reply-To: <1312259893-4548-7-git-send-email-andi@firstfloor.org> (Andi
-	Kleen's message of "Mon, 1 Aug 2011 21:38:08 -0700")
-Message-ID: <x49liv3hiss.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753267Ab1HHSS2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 14:18:28 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:44416 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab1HHSS0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 14:18:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CAJd=RBD+Zua+oENvJWa5B1s8JvJfF-7vc2QAJEKTOPfpao+FPg@mail.gmail.com>
+References: <201107170901.00119.bvanassche@acm.org> <CAJd=RBD+Zua+oENvJWa5B1s8JvJfF-7vc2QAJEKTOPfpao+FPg@mail.gmail.com>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Mon, 8 Aug 2011 20:18:04 +0200
+X-Google-Sender-Auth: wKxh0fe3p2XwJgGx5ZIKhobX4OQ
+Message-ID: <CAO+b5-qs0Uvya_LddE7KhBbWLvSJPsiJqfj3-WGPvjK9rJ6SOQ@mail.gmail.com>
+Subject: Re: [PATCH] futex: Fix spelling in a source code comment
+To: linux-kernel@vger.kernel.org, Darren Hart <dvhltc@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <andi@firstfloor.org> writes:
-
-> From: Andi Kleen <ak@linux.intel.com>
+On Sun, Jul 17, 2011 at 2:52 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> On Sun, Jul 17, 2011 at 3:01 PM, Bart Van Assche <bvanassche@acm.org> wrote:
+>> Change a single occurrence of "unlcoked" into "unlocked".
+>>
+>> Signed-off-by: Bart Van Assche <bvanassche@acm.org>
 >
-> Add inlines to all the submission path functions. While this increases
-> code size it also gives gcc a lot of optimization opportunities
-> in this critical hotpath.
->
-> In particular -- together with some other changes -- this
-> allows gcc to get rid of the unnecessary clearing of
-> sdio at the beginning and optimize the messy parameter passing.
-> Any non inlining of a function which takes a sdio parameter
-> would break this optimization because they cannot be done if the
-> address of a structure is taken.
+> Good catch, Acked-by: Hillf Danton <dhillf@gmail.com>
 
-Do you want to use __always_inline, then?
+Hello,
 
-Cheers,
-Jeff
+I would appreciate it if anyone could pick up this patch
+(http://lkml.org/lkml/2011/7/17/6).
+
+Thanks,
+
+Bart.
