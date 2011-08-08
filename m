@@ -1,60 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab1HHING (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 04:13:06 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48683 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab1HHINC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 04:13:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAC-yRPQegTVC6DPMC=-F2GazS5Nsf+SvbuKqv2x3QRypnTFkhA@mail.gmail.com>
-References: <CAC-yRPQegTVC6DPMC=-F2GazS5Nsf+SvbuKqv2x3QRypnTFkhA@mail.gmail.com>
-Date: Mon, 8 Aug 2011 11:13:00 +0300
-Message-ID: <CANMAZFUqg=7j3TSn0HuMn2+ifgd=Bk+qsMUAQqwdwps5vs0=nQ@mail.gmail.com>
-Subject: Re: new kernel boot
-From: Eduard Sinelnikov <eduard.sinelnikov@gmail.com>
-To: Amirali Shambayati <amirali.shambayati@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        kernelnewbies@kernelnewbies.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751866Ab1HHIQQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 04:16:16 -0400
+Received: from linux-sh.org ([111.68.239.195]:51512 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899Ab1HHIQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 04:16:15 -0400
+Date: Mon, 8 Aug 2011 17:15:52 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Barry Song <Baohua.Song@csr.com>
+Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, workgroup.linux@csr.com
+Subject: Re: [PATCH] GPIOLIB: add generic gpio_set_pull API
+Message-ID: <20110808081552.GI32513@linux-sh.org>
+References: <1312780773-23142-1-git-send-email-Baohua.Song@csr.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312780773-23142-1-git-send-email-Baohua.Song@csr.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Aug 07, 2011 at 10:19:33PM -0700, Barry Song wrote:
+> Now there are many different implementations for GPIO pull configuration, for
+> example:
+> s3c_gpio_setpull()
+> tegra_pinmux_set_pullupdown()
+> chipcHw_setPinPullup()
+> gpio_pullup()
+> s3c2410_gpio_pullup()
+> 
+> This patch adds a new generic gpio_set_pull API so that all SoCs can have unified
+> codes.
+> 
+> Signed-off-by: Barry Song <Baohua.Song@csr.com>
 
-I got this problem ( compiled kernel from scratch )
-Your problem is that the modules is not competible with your ramfs(the
-initial OS before loading the real Kernel) file.
-( this file is /boot/initrd.img.2-6...... )
-
-I have to create the ramfs via mkinitramfs command
-
-also you have to update the grub to point to the new ramfs file.
-
-Eduard Sinelnikov.
-
-2011/8/8 Amirali Shambayati <amirali.shambayati@gmail.com>:
-> Hi all,
-> I successfully installed new kernel but as new kernel is going to
-> boot, I receive this error:
-> FATAL:could not load /lib/modules/2.6.32.43kerneltest/modules.dep : No
-> such file or directory
->
-> I checked /lib/modules/2.6.32.43kerneltest directory, and modules.dep
-> exists! Any guidance how can I solve the problem?
->
-> Thanks in advance,
-> --
-> Amirali Shambayati
-> Bachelor Student
-> Computer Engineering Department
-> Sharif University of Technology
-> Tehran, Iran
->
-> _______________________________________________
-> Kernelnewbies mailing list
-> Kernelnewbies@kernelnewbies.org
-> http://lists.kernelnewbies.org/mailman/listinfo/kernelnewbies
->
+For arch/arm/mach-shmobile we also have gpio_pull_up() for board-g4evm.c
+and gpio_pull_down() for board-mackerel.c. Both of these would benefit
+from this sort of an API addition.
