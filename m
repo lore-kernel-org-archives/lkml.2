@@ -1,108 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab1HHKZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 06:25:57 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:40242 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751686Ab1HHKZz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 06:25:55 -0400
-Subject: Re: avr32: handle_signal() bug?
-From: Matt Fleming <matt@console-pimps.org>
-To: =?ISO-8859-1?Q?H=E5vard?= Skinnemoen <hskinnemoen@gmail.com>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
-In-Reply-To: <CAF8ieYU2ThME1Q3u6xOp0sVOh-dPep-874TDY-=-q9E3OiSQAg@mail.gmail.com>
-References: <1312362279.10579.38.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <CAF8ieYU2ThME1Q3u6xOp0sVOh-dPep-874TDY-=-q9E3OiSQAg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Aug 2011 11:25:49 +0100
-Message-ID: <1312799149.10579.109.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	id S1752279Ab1HHKbX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 06:31:23 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:53525 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751725Ab1HHKbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 06:31:22 -0400
+In-Reply-To: <20110808092826.21881.qmail@science.horizon.com>
+References: <20110808092826.21881.qmail@science.horizon.com>
+Subject: Re: [PATCH] add slice by 8 algorithm to crc32.c
+X-KeepSent: 53580ACE:F420CB68-C12578E6:0039189A;
+ type=4; name=$KeepSent
+To: "George Spelvin" <linux@horizon.com>
+Cc: akpm@linux-foundation.org, fzago@systemfabricworks.com,
+        linux-kernel@vger.kernel.org, rpearson@systemfabricworks.com
+X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
+Message-ID: <OF53580ACE.F420CB68-ONC12578E6.0039189A-C12578E6.0039CD0F@transmode.se>
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Mon, 8 Aug 2011 12:31:20 +0200
+X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
+ 08/08/2011 12:31:20
+MIME-Version: 1.0
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-08-07 at 10:20 -0700, Håvard Skinnemoen wrote:
-> Hi Matt,
-> 
-> On Wed, Aug 3, 2011 at 2:04 AM, Matt Fleming <matt@console-pimps.org> wrote:
-> > That doesn't look correct to me. Now, if we were unsuccessful in setting
-> > up a signal frame, say, ret == -EFAULT, do we really want to block the
-> > signal or any of the signals in the handler mask?
-> 
-> I'm assuming this is a rhetorical question :-)
+Hi George, just a quick comment or two.
 
-Sort of. I phrased it as a question so that someone could point out
-whether my analysis was correct or not ;-)
+"George Spelvin" <linux@horizon.com> wrote on 2011/08/08 11:28:26:
+>
+> Sorry I didn't see this when first posted.
+>
+> The "slice by 8" terminology is pretty confusing.  How about
+> "Extended Joakim Tjernlund's optimization from commit
+> 836e2af92503f1642dbc3c3281ec68ec1dd39d2e to 8-way parallelism."
+>
+> Which is essentally what you're doing.  The renaming of tab[0] to t0_le
+> and t0_be, and removal of the DO_CRC4 macro just increases the diff size.
 
-> Looks good to me. I'm not sure how to test it though...I can try to
-> build a kernel, run it on my board and see if it explodes, but I
-> suspect this bug is a lot more subtle than that.
+Yes, and also increases ppc size. The matrix needs to stay. I have proposed
+to add this intead:
+@@ -51,20 +51,21 @@ static inline u32
+ crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
+ {
+ # ifdef __LITTLE_ENDIAN
+-#  define DO_CRC(x) crc = tab[0][(crc ^ (x)) & 255] ^ (crc >> 8)
+-#  define DO_CRC4 crc = tab[3][(crc) & 255] ^ \
+-		tab[2][(crc >> 8) & 255] ^ \
+-		tab[1][(crc >> 16) & 255] ^ \
+-		tab[0][(crc >> 24) & 255]
++#  define DO_CRC(x) crc = t0[(crc ^ (x)) & 255] ^ (crc >> 8)
++#  define DO_CRC4 crc = t3[(crc) & 255] ^ \
++		t2[(crc >> 8) & 255] ^ \
++		t1[(crc >> 16) & 255] ^ \
++		t0[(crc >> 24) & 255]
+ # else
+-#  define DO_CRC(x) crc = tab[0][((crc >> 24) ^ (x)) & 255] ^ (crc << 8)
+-#  define DO_CRC4 crc = tab[0][(crc) & 255] ^ \
+-		tab[1][(crc >> 8) & 255] ^ \
+-		tab[2][(crc >> 16) & 255] ^ \
+-		tab[3][(crc >> 24) & 255]
++#  define DO_CRC(x) crc = t0[((crc >> 24) ^ (x)) & 255] ^ (crc << 8)
++#  define DO_CRC4 crc = t0[(crc) & 255] ^ \
++		t1[(crc >> 8) & 255] ^  \
++		t2[(crc >> 16) & 255] ^	\
++		t3[(crc >> 24) & 255]
+ # endif
+ 	const u32 *b;
+ 	size_t    rem_len;
++	const u32 *t0=tab[0], *t1=tab[1], *t2=tab[2], *t3=tab[3];
 
-I suspect the best test would be one that makes use of SA_NODEFER.
-Something like this,
+This saves 3 insns for ppc in the hot loop, hopefully x86 is happy with this too.
 
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+>
+> If you're looking at speeding up the CRC through larger tables, have
+> you tried using 10+11+11-bit tables?  That would require 20K of tables
+> rather than 8K, but would reduce the number of table lookups per byte.
+>
+>
+> One more stunt you could try to increase parallelism: rather than maintain
+> the CRC in one register, maintain it in several, and only XOR and collapse
+> them at the end.
+>
+> Start with your 64-bit code, but imagine that the second code block's
+> "q = *p32++" always loads 0, and therefore the whole block can be skipped.
+> (Since tab[0] = 0 for all CRC tables.)
+>
+> This computes the CRC of the even words.  Then do a second one in parallel
+> for the odd words into a separate CRC register.  Then combine them at the end.
+> (Shift one up by 32 bits and XOR into the other.)
+>
+> This would let you get away with 5K of tables: t4 through t7, and t0.
+> t1 through t3 could be skipped.
+>
+>
+> Ideally, I'd write all this code myself, but I'm a bit crunched at work
+> right now so wouldn't be able to get to it for a few days.
+>
+>
+>
+> Another possible simplification to the startup code.  There's no need
+> to compute init_bytes explicitly; just loop until the pointer is aligned:
+>
+>    while ((unsigned)buf & 3) {
+>       if (!len--)
+>          goto done;
+> #ifdef __LITTLE_ENDIAN
+>       i0 = *buf++ ^ crc;
+>       crc = t0_le[i0] ^ (crc >> 8);
+> #else
+>       i0 = *buf++ ^ (crc >> 24);
+>       crc = t0_le[i0] ^ (crc << 8);
+> #endif
+>    }
+>    p32 = (u32 const *)buf;
+>    words = len >> 2;
+>    end_bytes = len & 3;
+>
+>
+> ... although I'd prefer to keep the DO_CRC() and DO_CRC4 macros, and
+> extend them to the 64-bit case, to avoid the nested #ifdefs.  That would
+> make:
+>
+>    while ((unsigned)buf & 3) {
+>       if (!len--)
+>          goto done;
+>       DO_CRC(*buf++);
+>    }
+>    p32 = (u32 const *)buf;
+>    words = len >> 2;
+>    end_bytes = len & 3;
 
-void handler(int signum)
-{
-	sigset_t mask;
-
-	sigprocmask(SIG_BLOCK, NULL, &mask);
-	printf("SIGUSR2: %s\n",
-	       sigismember(&mask, SIGUSR2) ? "blocked" : "not blocked");
-	printf("SIGTERM: %s\n",
-	       sigismember(&mask, SIGTERM) ? "blocked" : "not blocked");
-}
-
-int main(int argc, char **argv)
-{
-	pid_t pid;
-
-	pid = fork();
-	if (pid == -1) {
-		perror("fork");
-		exit(EXIT_FAILURE);
-	} else if (!pid) {
-		struct sigaction act;
-
-		memset(&act, 0, sizeof(act));
-		act.sa_handler = handler;
-		act.sa_flags = SA_NODEFER;
-
-		sigaddset(&act.sa_mask, SIGUSR2);
-		sigaddset(&act.sa_mask, SIGTERM);
-
-		sigaction(SIGUSR1, &act, NULL);
-
-		pause();
-	} else {
-		int status;
-
-		sleep(3);
-		kill(pid, SIGUSR1);
-		waitpid(pid, &status, 0);
+I prefer to keep the current code which (at the time) generated good code
+for at least ppc:
+	/* Align it */
+	if (unlikely((long)buf & 3 && len)) {
+		do {
+			DO_CRC(*buf++);
+		} while ((--len) && ((long)buf)&3);
 	}
-
-	return 0;
-}
-
-Without the patch applied I would expect this testcase to run the signal
-handler without SIGUSR2 or SIGTERM blocked. With the patch I'd hope you
-would see the following,
-
-[matt@mfleming-mobl1 signal-tests]$ ./nodefer
-SIGUSR2: blocked
-SIGTERM: blocked
-
--- 
-Matt Fleming, Intel Open Source Technology Center
 
