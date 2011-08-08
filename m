@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064Ab1HHLS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 07:18:27 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:53604 "EHLO mgw2.diku.dk"
+	id S1753109Ab1HHLS3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 07:18:29 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:53592 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468Ab1HHLSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 07:18:17 -0400
+	id S1752658Ab1HHLSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 07:18:16 -0400
 From: Julia Lawall <julia@diku.dk>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: kernel-janitors@vger.kernel.org, Andy Grover <agrover@redhat.com>,
-        Roland Dreier <roland@kernel.org>, Christoph Hellwig <hch@lst.de>,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
+To: Luciano Coelho <coelho@ti.com>
+Cc: kernel-janitors@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 7/9] drivers/target/iscsi/iscsi_target_parameters.c: add missing kfree
-Date: Mon,  8 Aug 2011 13:18:01 +0200
-Message-Id: <1312802283-9107-7-git-send-email-julia@diku.dk>
+Subject: [PATCH 9/9] drivers/net/wireless/wl1251: add missing kfree
+Date: Mon,  8 Aug 2011 13:18:03 +0200
+Message-Id: <1312802283-9107-9-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,9 +22,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-At this point, the new_param that has just been allocated has not been
-stored in the list, so it and new_param->name, once it is defined, have to
-be freed separately.
+In each case, the kfree already at the end of the function is also needed
+in the error case.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -64,28 +63,46 @@ if (...) { ... when != x
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/target/iscsi/iscsi_target_parameters.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/wireless/wl1251/acx.c |    6 +-----
+ drivers/net/wireless/wl1251/cmd.c |    2 +-
+ 2 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target_parameters.c b/drivers/target/iscsi/iscsi_target_parameters.c
-index 252e246..b8dbe44 100644
---- a/drivers/target/iscsi/iscsi_target_parameters.c
-+++ b/drivers/target/iscsi/iscsi_target_parameters.c
-@@ -584,6 +584,7 @@ int iscsi_copy_param_list(
- 		if (!new_param->name) {
- 			pr_err("Unable to allocate memory for"
- 				" parameter name.\n");
-+			kfree(new_param);
- 			goto err_out;
- 		}
+diff --git a/drivers/net/wireless/wl1251/acx.c b/drivers/net/wireless/wl1251/acx.c
+index ef8370e..ad87a1a 100644
+--- a/drivers/net/wireless/wl1251/acx.c
++++ b/drivers/net/wireless/wl1251/acx.c
+@@ -140,8 +140,6 @@ int wl1251_acx_sleep_auth(struct wl1251 *wl, u8 sleep_auth)
+ 	auth->sleep_auth = sleep_auth;
  
-@@ -592,6 +593,8 @@ int iscsi_copy_param_list(
- 		if (!new_param->value) {
- 			pr_err("Unable to allocate memory for"
- 				" parameter value.\n");
-+			kfree(new_param->name);
-+			kfree(new_param);
- 			goto err_out;
- 		}
+ 	ret = wl1251_cmd_configure(wl, ACX_SLEEP_AUTH, auth, sizeof(*auth));
+-	if (ret < 0)
+-		return ret;
  
+ out:
+ 	kfree(auth);
+@@ -681,10 +679,8 @@ int wl1251_acx_cca_threshold(struct wl1251 *wl)
+ 
+ 	ret = wl1251_cmd_configure(wl, ACX_CCA_THRESHOLD,
+ 				   detection, sizeof(*detection));
+-	if (ret < 0) {
++	if (ret < 0)
+ 		wl1251_warning("failed to set cca threshold: %d", ret);
+-		return ret;
+-	}
+ 
+ out:
+ 	kfree(detection);
+diff --git a/drivers/net/wireless/wl1251/cmd.c b/drivers/net/wireless/wl1251/cmd.c
+index 81f164b..d14d69d 100644
+--- a/drivers/net/wireless/wl1251/cmd.c
++++ b/drivers/net/wireless/wl1251/cmd.c
+@@ -241,7 +241,7 @@ int wl1251_cmd_data_path(struct wl1251 *wl, u8 channel, bool enable)
+ 	if (ret < 0) {
+ 		wl1251_error("tx %s cmd for channel %d failed",
+ 			     enable ? "start" : "stop", channel);
+-		return ret;
++		goto out;
+ 	}
+ 
+ 	wl1251_debug(DEBUG_BOOT, "tx %s cmd channel %d",
 
