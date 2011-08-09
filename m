@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab1HIMBi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 08:01:38 -0400
-Received: from smtp.ioda.net ([87.98.140.96]:42937 "EHLO smtp.ioda.net"
+	id S1753460Ab1HIMBr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 08:01:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37566 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752641Ab1HIMBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 08:01:37 -0400
-Message-ID: <4E41197D.30209@ioda-net.ch>
-Date: Tue, 09 Aug 2011 13:26:53 +0200
-From: Bruno Friedmann <bruno@ioda-net.ch>
-Organization: Ioda-Net =?UTF-8?B?U8Ogcmw=?=
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110729 Thunderbird/6.0
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>, Ingo Molnar <mingo@elte.hu>,
-        Mel Gorman <mgorman@suse.de>, tglx@linutronix.de,
+	id S1753415Ab1HIMBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 08:01:45 -0400
+Date: Tue, 9 Aug 2011 15:02:07 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Chris Wright <chrisw@redhat.com>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Anthony Foiani <anthony.foiani@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Add reboot quirk for Dell Precision M4600
-References: <20110727125651.GH3010@suse.de> <20110806065635.GE13220@elte.hu> <20110806153003.GA1238@srcf.ucam.org> <4E40119A.5010803@zytor.com>
-In-Reply-To: <4E40119A.5010803@zytor.com>
-X-Enigmail-Version: 1.3a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] uio/gen-pci: don't enable interrupts in ISR
+Message-ID: <20110809120206.GB524@redhat.com>
+References: <20110804204606.GA19724@linutronix.de>
+ <20110804210413.GA29222@redhat.com>
+ <20110805191842.GA4224@linutronix.de>
+ <20110808064050.GC5182@redhat.com>
+ <4E411D72.7000604@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E411D72.7000604@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2011 06:40 PM, H. Peter Anvin wrote:
-> On 08/06/2011 10:30 AM, Matthew Garrett wrote:
->> On Sat, Aug 06, 2011 at 08:56:35AM +0200, Ingo Molnar wrote:
->>> Weird - ACPI is the default Windows method of reboot - how come it 
->>> does not work on that box? Does Windows work around this specific 
->>> machine (unlikely), or is our ACPI boot sequence not 100% compatible 
->>> with the Windows method (more likely IMO)?
->>
->> The ACPI reboot method on these machines hits the keyboard controller 
->> rather than PCI, which is unusual. What I suspect is that the write 
->> triggers some SMM or EC code that's making assumptions about system 
->> state, and we're not quite identical. Bouncing on the keyboard 
->> controller from userspace with init=/bin/bash wedges in the same way.
->>
+On Tue, Aug 09, 2011 at 01:43:46PM +0200, Sebastian Andrzej Siewior wrote:
+> Michael S. Tsirkin wrote:
+> >>It seems to me that you could drop this "user block" thing
+> >>since you never change anything outside of this command register and it
+> >>does not stop the race.
+> >
+> >I don't think so: if we did, we would lose userspace modifications to
+> >other bits such as io enable, and there's no way to guess what their
+> >values should be.
 > 
-> I have a vague suspicion that Windows might have a meta-quirk for this
-> class of machines, i.e. if the ACPI reboot method, say, points at the
-> keyboard controller or points at the "PCI" reboot port then it actually
-> uses its own special-purpose routines rather than general routines.  It
-> would be extremely interesting to know if "reboot=kbd" works on these boxen.
+> How so?
 > 
-> 	-hpa
-> 
+> Sebastian
 
-Test done with reboot=pci and unfortunately doesn't work.
+Let's assume we start with e.g. io enable bit cleared.
 
+
+    user                                kernel
+ read config                               |
+ set io enable                             |
+     |                                  interrupt                                                
+     |                              read + set interrupt mask
+ write config back                         |
+					write
+
+
+
+We end up with io enable bit cleared. Locking around rmw
+that we have fixes this race.
 
 -- 
-
-Bruno Friedmann
-Ioda-Net Sàrl www.ioda-net.ch
-
-openSUSE Member & Ambassador
-GPG KEY : D5C9B751C4653227
-irc: tigerfoot
+MST
