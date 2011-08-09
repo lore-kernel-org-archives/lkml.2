@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab1HILh1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 07:37:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12016 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753254Ab1HILh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 07:37:26 -0400
-Date: Tue, 9 Aug 2011 14:37:43 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Chris Wright <chrisw@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Anthony Foiani <anthony.foiani@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uio/gen-pci: don't enable interrupts in ISR
-Message-ID: <20110809113743.GA32299@redhat.com>
-References: <20110804204606.GA19724@linutronix.de>
- <20110804210413.GA29222@redhat.com>
- <20110805001507.GA5987@local>
- <20110808062431.GB5182@redhat.com>
- <20110808171931.GB867@local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110808171931.GB867@local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753387Ab1HILkW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 07:40:22 -0400
+Received: from mail-iy0-f170.google.com ([209.85.210.170]:33560 "EHLO
+	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753134Ab1HILkV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 07:40:21 -0400
+Subject: [PATCH] drivers/leds: leds-renesas-tpu.c needs module.h
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Magnus Damm <damm@opensource.se>, Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Aug 2011 19:40:08 +0800
+Message-ID: <1312890008.14708.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 07:19:31PM +0200, Hans J. Koch wrote:
-> On Mon, Aug 08, 2011 at 09:24:31AM +0300, Michael S. Tsirkin wrote:
-> > On Fri, Aug 05, 2011 at 02:15:07AM +0200, Hans J. Koch wrote:
-> > > On Fri, Aug 05, 2011 at 12:04:13AM +0300, Michael S. Tsirkin wrote:
-> > > > On Thu, Aug 04, 2011 at 10:46:06PM +0200, Sebastian Andrzej Siewior wrote:
-> > > > > As reported by Anthony in a short way:
-> > > > > 
-> > > > > |irq 17 handler uio_interrupt+0x0/0x68 enabled interrupts
-> > > > > |NIP [c0069d84] handle_irq_event_percpu+0x260/0x26c
-> > > > > 
-> > > > > The problem here is that spin_unlock_irq() enables the interrupts which
-> > > > > is a no-no in interrupt context because they always run with interrupts
-> > > > > disabled. This is the case even if IRQF_DISABLED has not been specified
-> > > > > since v2.6.35. Therefore this patch uses simple spin_locks().
-> > > > > 
-> > > > > Looking at it further here is only one spot where the lock is hold. So
-> > > > > giving the fact that an ISR is not reentrant and is not executed on two
-> > > > > cpus at the same time why do we need a lock here?
-> > > > 
-> > > > I'm not sure anymore. I think the idea was to use
-> > > > it for synchronization down the road somehow,
-> > > > but it never materialized. Let's drop that lock completely.
-> > > 
-> > > That sounds reasonable.
-> 
-> Should I hack up a patch to remove the lock, or do you have anything in your
-> pipeline?
+leds-renesas-tpu.c needs to include linux/module.h to fix below build errors.
+
+  CC      drivers/leds/leds-renesas-tpu.o
+drivers/leds/leds-renesas-tpu.c:341: error: expected declaration specifiers or '...' before string constant
+drivers/leds/leds-renesas-tpu.c:341: warning: data definition has no type or storage class
+drivers/leds/leds-renesas-tpu.c:341: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
+drivers/leds/leds-renesas-tpu.c:341: warning: function declaration isn't a prototype
+drivers/leds/leds-renesas-tpu.c:342: error: expected declaration specifiers or '...' before string constant
+drivers/leds/leds-renesas-tpu.c:342: warning: data definition has no type or storage class
+drivers/leds/leds-renesas-tpu.c:342: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
+drivers/leds/leds-renesas-tpu.c:342: warning: function declaration isn't a prototype
+drivers/leds/leds-renesas-tpu.c:343: error: expected declaration specifiers or '...' before string constant
+drivers/leds/leds-renesas-tpu.c:343: warning: data definition has no type or storage class
+drivers/leds/leds-renesas-tpu.c:343: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
+drivers/leds/leds-renesas-tpu.c:343: warning: function declaration isn't a prototype
+make[2]: *** [drivers/leds/leds-renesas-tpu.o] Error 1
+make[1]: *** [drivers/leds] Error 2
+make: *** [drivers] Error 2
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/leds/leds-renesas-tpu.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/leds/leds-renesas-tpu.c b/drivers/leds/leds-renesas-tpu.c
+index 5bfb40e1..d9a7d72 100644
+--- a/drivers/leds/leds-renesas-tpu.c
++++ b/drivers/leds/leds-renesas-tpu.c
+@@ -17,6 +17,7 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+  */
+ 
++#include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
+ #include <linux/spinlock.h>
+-- 
+1.7.4.1
 
 
-Please do.
 
-> > > 
-> > > > 
-> > > > > The driver lacks of ->irqcontrol function so I guess the interrupt is
-> > > > > enabled via direct PCI-access in userland.
-> > > > 
-> > > > Through sysfs.
-> > > 
-> > > How? With /sys/devices/pci.../enable ?
-> > > 
-> > > Thanks,
-> > > Hans
-> > 
-> > No. By writing to the command register using
-> > /sys/bus/pci/devices/.../config
-> 
-> Hope that works at all times...
-> Anyway, the spin_lock in uio_pci_generic.c definetly doesn't help.
-> 
-> Thanks,
-> Hans
-
-True.
