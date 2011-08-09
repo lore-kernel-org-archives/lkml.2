@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab1HIKNB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 06:13:01 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59706 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753143Ab1HIKNA convert rfc822-to-8bit (ORCPT
+	id S1753229Ab1HIKOr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 06:14:47 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35875 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab1HIKOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 06:13:00 -0400
-Subject: Re: [PATCH] cpufreq: ondemand ignore_nice_level
-From: Peter Zijlstra <peterz@infradead.org>
-To: joni@shade-fx.com
-Cc: linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>
-Date: Tue, 09 Aug 2011 12:12:39 +0200
-In-Reply-To: <4e403bd4.5YAAoSWMDWtU5KOP%joni@shade-fx.com>
-References: <4e403bd4.5YAAoSWMDWtU5KOP%joni@shade-fx.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1312884759.22367.64.camel@twins>
+	Tue, 9 Aug 2011 06:14:46 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 9 Aug 2011 19:07:25 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] memcg: fix drain_all_stock crash
+Message-Id: <20110809190725.96309c88.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110809100944.GE7463@tiehlicka.suse.cz>
+References: <cover.1311338634.git.mhocko@suse.cz>
+	<a9244082ba28c4c2e4a6997311d5493bdaa117e9.1311338634.git.mhocko@suse.cz>
+	<20110808184738.GA7749@redhat.com>
+	<20110808214704.GA4396@tiehlicka.suse.cz>
+	<20110808231912.GA29002@redhat.com>
+	<20110809072615.GA7463@tiehlicka.suse.cz>
+	<20110809093150.GC7463@tiehlicka.suse.cz>
+	<20110809183216.97daf2b0.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110809094503.GD7463@tiehlicka.suse.cz>
+	<20110809185313.dc784d70.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110809100944.GE7463@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-How very good of you to CC all the relevant maintainers..
+On Tue, 9 Aug 2011 12:09:44 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-On Mon, 2011-08-08 at 22:41 +0300, joni@shade-fx.com wrote:
-> @@ -3755,7 +3755,7 @@ unsigned long long thread_group_sched_runtime(struct task_struct *p)
->   * @cputime_scaled: cputime scaled by cpu frequency
->   */
->  void account_user_time(struct task_struct *p, cputime_t cputime,
-> -                      cputime_t cputime_scaled)
-> +               cputime_t cputime_scaled)
->  {
->         struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
->         cputime64_t tmp;
+> On Tue 09-08-11 18:53:13, KAMEZAWA Hiroyuki wrote:
+> > On Tue, 9 Aug 2011 11:45:03 +0200
+> > Michal Hocko <mhocko@suse.cz> wrote:
+> > 
+> > > On Tue 09-08-11 18:32:16, KAMEZAWA Hiroyuki wrote:
+> > > > On Tue, 9 Aug 2011 11:31:50 +0200
+> > > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > > 
+> > > > > What do you think about the half backed patch bellow? I didn't manage to
+> > > > > test it yet but I guess it should help. I hate asymmetry of drain_lock
+> > > > > locking (it is acquired somewhere else than it is released which is
+> > > > > not). I will think about a nicer way how to do it.
+> > > > > Maybe I should also split the rcu part in a separate patch.
+> > > > > 
+> > > > > What do you think?
+> > > > 
+> > > > 
+> > > > I'd like to revert 8521fc50 first and consider total design change
+> > > > rather than ad-hoc fix.
+> > > 
+> > > Agreed. Revert should go into 3.0 stable as well. Although the global
+> > > mutex is buggy we have that behavior for a long time without any reports.
+> > > We should address it but it can wait for 3.2.
+> 
+> I will send the revert request to Linus.
+> 
+> > What "buggy" means here ? "problematic" or "cause OOps ?"
+> 
+> I have described that in an earlier email. Consider pathological case
+> when CPU0 wants to async. drain a memcg which has a lot of cached charges while
+> CPU1 is already draining so it holds the mutex. CPU0 backs off so it has
+> to reclaim although we could prevent from it by getting rid of cached
+> charges. This is not critical though.
+> 
 
-I'm very sure the old alignment was preferred.
+That problem should be fixed by background reclaim.
+I'll do it after fixing numascan. (and dirty-ratio problem...)
 
-> @@ -3769,9 +3769,11 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
->         tmp = cputime_to_cputime64(cputime);
->         if (TASK_NICE(p) > 0)
->                 cpustat->nice = cputime64_add(cpustat->nice, tmp);
-> -       else
-> +       else 
->                 cpustat->user = cputime64_add(cpustat->user, tmp);
->  
-> +       cpustat->nicevalue[TASK_USER_PRIO(p)] = cputime64_add(cpustat->nicevalue[TASK_USER_PRIO(p)], tmp);
-> +
->         cpuacct_update_stats(p, CPUACCT_STAT_USER, cputime);
->         /* Account for user time used */
->         acct_update_integrals(p); 
-
-Yay! more senseless accounting.. we really need more of that. What's
-even better is your data array being 320 bytes spanning 5 cachelines,
-and thus the above almost guarantees a cacheline miss.
-
-All round good stuff, and as DaveJ already pointed out, all without any
-justification what so ever.
+Thanks,
+-Kame
 
