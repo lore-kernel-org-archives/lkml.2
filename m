@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab1HIRau (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 13:30:50 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14630 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754115Ab1HIRat convert rfc822-to-8bit (ORCPT
+	id S1754235Ab1HIRba (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 13:31:30 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61608 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753181Ab1HIRb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 13:30:49 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 09 Aug 2011 10:30:25 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Ben Dooks <ben-i2c@fluff.org>
-CC: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jean Delvare <khali@linux-fr.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Colin Cross <ccross@android.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Axel Lin <axel.lin@gmail.com>, Rob Herring <robherring2@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>
-Date: Tue, 9 Aug 2011 10:30:21 -0700
-Subject: RE: Tegra I2C driver compilation failure (was: RE: [PATCH] dt: add
- empty of_get_property for non-dt)
-Thread-Topic: Tegra I2C driver compilation failure (was: RE: [PATCH] dt: add
- empty of_get_property for non-dt)
-Thread-Index: AcxWsFc11cpLxv4jSKS6ILv8C370YAACYXXw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF04A06872DF@HQMAIL01.nvidia.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF04A0687289@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04A0687289@HQMAIL01.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Aug 2011 13:31:29 -0400
+Date: Tue, 9 Aug 2011 19:31:23 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>
+Subject: Re: [PATCH 1/8] cgroups: Add res_counter_write_u64() API
+Message-ID: <20110809173117.GB31645@somewhere.redhat.com>
+References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com>
+ <1311956010-32076-2-git-send-email-fweisbec@gmail.com>
+ <20110809151739.GB15311@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110809151739.GB15311@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren wrote at Tuesday, August 09, 2011 10:22 AM:
-> Stephen Warren wrote at Monday, August 08, 2011 1:26 PM:
-> > Rob Herring wrote at Sunday, August 07, 2011 8:38 AM:
-> > > On 08/05/2011 05:50 PM, Stephen Warren wrote:
-> > > > The patch adds empty function of_get_property for non-dt build, so that
-> > > > drivers migrating to dt can save some '#ifdef CONFIG_OF'.
-> > > >
-> > > > This also fixes the current Tegra compile problem in linux-next.
-> > >
-> > > You could just use of_property_read_u32 in the driver. It already has
-> > > empty version and will simplify the driver code some.
+On Tue, Aug 09, 2011 at 05:17:39PM +0200, Oleg Nesterov wrote:
+> On 07/29, Frederic Weisbecker wrote:
 > >
-> > Yes, that would also work.
-> >
-> > Grant, Ben, do you have a preference for which option to choose?
+> > +void res_counter_write_u64(struct res_counter *counter, int member, u64 val)
+> > +{
+> > +	unsigned long long *target;
+> > +	unsigned long flags;
+> > +
+> > +	spin_lock_irqsave(&counter->lock, flags);
+> > +	target = res_counter_member(counter, member);
+> > +	*target = val;
+> > +	spin_unlock_irqrestore(&counter->lock, flags);
+> > +}
 > 
-> Well, all three possible fixes have been posted now:
+> Hmm. Why do we need counter->lock?
 > 
-> Add ifdef to i2c driver:
-> http://www.spinics.net/lists/linux-tegra/msg01720.html
-> 
-> Implement empty of_get_property:
-> http://www.spinics.net/lists/linux-tegra/msg01881.html
+> OK, probably it is for BITS_PER_LONG < 64. May be it makes sense
+> to ifdef, just to make the code more understandable.
 
-Grant has merged this one into a devicetree branch. Thanks!
-
-> Switch i2c driver to use of_property_read_u32:
-> http://permalink.gmane.org/gmane.linux.ports.arm.kernel/127807
-> 
-> Ben, please could you please pick one of the changes and apply it, so
-> that linux-next compiles for Tegra? Thanks!
-
--- 
-nvpublic
-
+Ok, will add that.
