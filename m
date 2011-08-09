@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab1HIMTQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 08:19:16 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:58809 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752878Ab1HIMTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 08:19:15 -0400
-From: Julia Lawall <julia@diku.dk>
-To: Dave Airlie <airlied@redhat.com>
-Cc: kernel-janitors@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Rakib Mullick <rakib.mullick@gmail.com>,
-        Alex Deucher <alexdeucher@gmail.com>,
-        Daniel J Blueman <daniel.blueman@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/gpu/vga/vgaarb.c: add missing kfree
-Date: Tue,  9 Aug 2011 14:19:08 +0200
-Message-Id: <1312892348-22615-1-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1753233Ab1HIMXk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 08:23:40 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:36306 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906Ab1HIMXj convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:12:1>);
+	Tue, 9 Aug 2011 08:23:39 -0400
+Message-Id: <4E414320020000780005057E@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Tue, 09 Aug 2011 13:24:32 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Dan Magenheimer" <dan.magenheimer@oracle.com>
+Cc: <hannes@cmpxchg.org>, <jackdachef@gmail.com>, <hughd@google.com>,
+        <jeremy@goop.org>, <npiggin@kernel.dk>, <linux-mm@kvack.org>,
+        <akpm@linux-foundation.org>, <sjenning@linux.vnet.ibm.com>,
+        <chris.mason@oracle.com>, <konrad.wilk@oracle.com>,
+        <kurt.hackel@oracle.com>, <riel@redhat.com>, <ngupta@vflare.org>,
+        <linux-kernel@vger.kernel.org>, <matthew@wil.cx>
+Subject: Re: Subject: [PATCH V6 1/4] mm: frontswap: swap data structure
+	 changes
+References: <20110808204555.GA15850@ca-server1.us.oracle.com>
+In-Reply-To: <20110808204555.GA15850@ca-server1.us.oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+>>> On 08.08.11 at 22:45, Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+> From: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Subject: [PATCH V6 1/4] mm: frontswap: swap data structure changes
+> 
+> This first patch of four in the frontswap series makes available core
+> swap data structures (swap_lock, swap_list and swap_info) that are
+> needed by frontswap.c but we don't need to expose them to the dozens
+> of files that include swap.h so we create a new swapfile.h just to
+> extern-ify these.
+> 
+> Also add frontswap-related elements to swap_info_struct.  Frontswap_map
+> points to vzalloc'ed one-bit-per-swap-page metadata that indicates
+> whether the swap page is in frontswap or in the device and frontswap_pages
+> counts how many pages are in frontswap.  We don't tie these to
+> CONFIG_FRONTSWAP to avoid unnecessary clutter around various frontswap
+> hooks.
+> 
+> [v6: rebase to 3.0-rc1]
+> [v5: no change from v4]
+> [v4: rebase to 2.6.39]
+> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Reviewed-by: Konrad Wilk <konrad.wilk@oracle.com>
+> Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Nitin Gupta <ngupta@vflare.org>
+> Cc: Matthew Wilcox <matthew@wil.cx>
+> Cc: Chris Mason <chris.mason@oracle.com>
+> Cc: Jan Beulich <JBeulich@novell.com>
+> Cc: Rik Riel <riel@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> 
+> --- linux/include/linux/swapfile.h	1969-12-31 17:00:00.000000000 -0700
+> +++ frontswap/include/linux/swapfile.h	2011-08-08 08:59:03.951694506 -0600
+> @@ -0,0 +1,13 @@
+> +#ifndef _LINUX_SWAPFILE_H
+> +#define _LINUX_SWAPFILE_H
+> +
+> +/*
+> + * these were static in swapfile.c but frontswap.c needs them and we don't
+> + * want to expose them to the dozens of source files that include swap.h
+> + */
+> +extern spinlock_t swap_lock;
+> +extern struct swap_list_t swap_list;
+> +extern struct swap_info_struct *swap_info[];
+> +extern int try_to_unuse(unsigned int, bool, unsigned long);
+> +
+> +#endif /* _LINUX_SWAPFILE_H */
+> --- linux/include/linux/swap.h	2011-08-08 08:19:25.880690134 -0600
+> +++ frontswap/include/linux/swap.h	2011-08-08 08:59:03.952691415 -0600
+> @@ -194,6 +194,8 @@ struct swap_info_struct {
+>  	struct block_device *bdev;	/* swap device or bdev of swap file */
+>  	struct file *swap_file;		/* seldom referenced */
+>  	unsigned int old_block_size;	/* seldom referenced */
 
-kbuf is a buffer that is local to this function, so all of the error paths
-leaving the function should release it.
+#ifdef CONFIG_FRONTSWAP
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+> +	unsigned long *frontswap_map;	/* frontswap in-use, one bit per page */
+> +	unsigned int frontswap_pages;	/* frontswap pages in-use counter */
 
----
- drivers/gpu/vga/vgaarb.c |   18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
-index c72f1c0..18376f1 100644
---- a/drivers/gpu/vga/vgaarb.c
-+++ b/drivers/gpu/vga/vgaarb.c
-@@ -993,14 +993,20 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 				uc = &priv->cards[i];
- 		}
- 
--		if (!uc)
--			return -EINVAL;
-+		if (!uc) {
-+			ret_val = -EINVAL;
-+			goto done;
-+		}
- 
--		if (io_state & VGA_RSRC_LEGACY_IO && uc->io_cnt == 0)
--			return -EINVAL;
-+		if (io_state & VGA_RSRC_LEGACY_IO && uc->io_cnt == 0) {
-+			ret_val = -EINVAL;
-+			goto done;
-+		}
- 
--		if (io_state & VGA_RSRC_LEGACY_MEM && uc->mem_cnt == 0)
--			return -EINVAL;
-+		if (io_state & VGA_RSRC_LEGACY_MEM && uc->mem_cnt == 0) {
-+			ret_val = -EINVAL;
-+			goto done;
-+		}
- 
- 		vga_put(pdev, io_state);
- 
+#endif
+
+(to eliminate any overhead with that config option unset)
+
+Jan
+
+>  };
+>  
+>  struct swap_list_t {
+
+
 
