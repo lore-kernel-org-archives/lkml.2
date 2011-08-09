@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab1HIWP6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 18:15:58 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:52591 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656Ab1HIWP5 (ORCPT
+	id S1752752Ab1HIW12 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 18:27:28 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:10475 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984Ab1HIW11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 18:15:57 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6433"; a="109191198"
-Message-ID: <4E41B19C.3040209@codeaurora.org>
-Date: Tue, 09 Aug 2011 15:15:56 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
-MIME-Version: 1.0
-To: Simon Glass <sjg@chromium.org>
-CC: linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Simon Glass <sjg@google.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dave Martin <dave.martin@linaro.org>, Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH v5] ARM: Use generic BUG() handler
-References: <1311926200-24806-1-git-send-email-sjg@chromium.org>
-In-Reply-To: <1311926200-24806-1-git-send-email-sjg@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Aug 2011 18:27:27 -0400
+From: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+To: wim@iguana.be
+Cc: Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        linux-kernel@vger.kernel.org,
+        Thomas Mingarelli <thomas.mingarelli@hp.com>
+Message-Id: <20110809222833.2900.70975.sendpatchset@nchumbalkar.americas.cpqcorp.net>
+Subject: [PATCH] watchdog: hpwdt: prevent multiple "NMI occurred" messages
+Date: Tue,  9 Aug 2011 22:27:26 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2011 12:56 AM, Simon Glass wrote:
-> From: Simon Glass <sjg@google.com>
->
-> ARM uses its own BUG() handler which makes its output slightly different
-> from other archtectures.
->
-> One of the problems is that the ARM implementation doesn't report the function
-> with the BUG() in it, but always reports the PC being in __bug(). The generic
-> implementation doesn't have this problem.
->
-> Currently we get something like:
->
-> kernel BUG at fs/proc/breakme.c:35!
-> Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> ...
-> PC is at __bug+0x20/0x2c
->
-> With this patch it displays:
->
-> kernel BUG at fs/proc/breakme.c:35!
-> Internal error: Oops - undefined instruction: 0 [#1] PREEMPT SMP
-> ...
-> PC is at write_breakme+0xd0/0x1b4
->
-> This implementation uses an undefined instruction to implement BUG, and sets up
-> a bug table containing the relevant information. Many versions of gcc do not
-> support %c properly for ARM (inserting a # when they shouldn't) so we work
-> around this using distasteful macro magic.
->
-> v1: Initial version to replace existing ARM BUG() implementation with something
-> more similar to other architectures.
->
-> v2: Add Thumb support, remove backtrace whitespace output changes. Change to
-> use macros instead of requiring the asm %d flag to work (thanks to
-> Dave Martin <dave.martin@linaro.org>)
->
-> v3: Remove old BUG() implementation in favor of this one.
-> Remove the Backtrace: message (will submit this separately).
-> Use ARM_EXIT_KEEP() so that some architectures can dump exit text at link time
-> thanks to Stephen Boyd <sboyd@codeaurora.org> (although since we always
-> define GENERIC_BUG this might be academic.)
-> Rebase to linux-2.6.git master.
->
-> v4: Allow BUGS in modules (these were not reported correctly in v3)
-> (thanks to Stephen Boyd <sboyd@codeaurora.org> for suggesting that.)
-> Remove __bug() as this is no longer needed.
->
-> v5: Add %progbits as the section flags.
 
-Tested-by: Stephen Boyd <sboyd@codeaurora.org>
+On platforms with no iCRU support don't print two, (possibly conflicting), 
+"NMI occurred" messages when the firmware is unable to source the NMI.
 
-> Signed-off-by: Simon Glass <sjg@chromium.org>
-> ---
->
+Please note that one of the enhancements to the v1.3.0 hpwdt driver is to panic and allow 
+KDUMP to succeed even on NMIs that are unknown to the platform firmware.
 
-Can you update the patch in the patch tracker? It would be great to see
-this in the next merge window.
+Signed-off-by: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+Reviewed-by: Thomas Mingarelli <thomas.mingarelli@hp.com>
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index 410fba4..809cbda 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -494,15 +494,16 @@ static int hpwdt_pretimeout(struct notifier_block *nb, unsigned long ulReason,
+ 		asminline_call(&cmn_regs, cru_rom_addr);
+ 	die_nmi_called = 1;
+ 	spin_unlock_irqrestore(&rom_lock, rom_pl);
++
++	if (allow_kdump)
++		hpwdt_stop();
++
+ 	if (!is_icru) {
+ 		if (cmn_regs.u1.ral == 0) {
+-			printk(KERN_WARNING "hpwdt: An NMI occurred, "
++			panic("An NMI occurred, "
+ 				"but unable to determine source.\n");
+ 		}
+ 	}
+-
+-	if (allow_kdump)
+-		hpwdt_stop();
+ 	panic("An NMI occurred, please see the Integrated "
+ 		"Management Log for details.\n");
+ 
