@@ -1,50 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab1HIWg3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 18:36:29 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35535 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751314Ab1HIWg2 (ORCPT
+	id S1751061Ab1HIXCI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 19:02:08 -0400
+Received: from banach.math.auburn.edu ([131.204.45.3]:36105 "EHLO
+	banach.math.auburn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722Ab1HIXCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 18:36:28 -0400
+	Tue, 9 Aug 2011 19:02:06 -0400
+Date: Tue, 9 Aug 2011 18:05:49 -0500 (CDT)
+From: Theodore Kilgore <kilgota@banach.math.auburn.edu>
+To: Hans de Goede <hdegoede@redhat.com>
+cc: Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
+        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
+        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
+        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Adam Baker <linux@baker-net.org.uk>
+Subject: Re: USB mini-summit at LinuxCon Vancouver
+In-Reply-To: <4E41912F.50901@redhat.com>
+Message-ID: <alpine.LNX.2.00.1108091640300.23684@banach.math.auburn.edu>
+References: <Pine.LNX.4.44L0.1108091016380.1949-100000@iolanthe.rowland.org> <4E41912F.50901@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAObL_7G09yBtfFpdvmRMNn59T-jTsj_MFK+xBer+qq3BUjcKUg@mail.gmail.com>
-References: <20110805200945.GA14014@tassilo.jf.intel.com> <4E3C5154.2050307@zytor.com>
- <CAObL_7E3yOHtx9N3qd2UXVn+h6tACoNjekRhiMcHrzb=Mu4q8A@mail.gmail.com>
- <4E3C571C.1070903@zytor.com> <20110805205222.GK5782@one.firstfloor.org>
- <CAObL_7G2TqBVXvfuh2GPNteYBNoc8_s398KS+jPOPQYAhPHz0Q@mail.gmail.com>
- <20110805212153.GL5782@one.firstfloor.org> <CAObL_7Exnu8rHNY67o_HutizpLrGMx0heYU8wKXeEutXZywvdA@mail.gmail.com>
- <20110809150424.GO5782@one.firstfloor.org> <CAObL_7HL7SwCfXsD3dPesE4cU-nmoMCRVCP6u2Mn8efo7EG5Zg@mail.gmail.com>
- <4E416716.1040904@zytor.com> <CAObL_7FzTisOGJLP7wGUKDCO6qJ20-kaMFWdjm0a+dKpNWBe3g@mail.gmail.com>
- <1312919938.17118.YahooMailNeo@web120010.mail.ne1.yahoo.com> <CAObL_7G09yBtfFpdvmRMNn59T-jTsj_MFK+xBer+qq3BUjcKUg@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 9 Aug 2011 15:36:06 -0700
-Message-ID: <CA+55aFyV65BNjdsmS9oTaRwWzyJZS3BDEDJBx5Poy-vGp5iN_Q@mail.gmail.com>
-Subject: Re: New vsyscall emulation breaks JITs
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Greg Lueck <lueckintel@yahoo.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kimwooyoung@gmail.com" <kimwooyoung@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 9, 2011 at 2:04 PM, Andrew Lutomirski <luto@mit.edu> wrote:
->
-> Here's a different proposal, then:
->
-> What if the kernel had the sequence:
->
-> mov $__NR_whatever,%eax
-> syscall
-> ret
->
-> in the vsyscall page but marked the vsyscall page NX.
 
-This sounds like a sound idea. And then the difference between "fast
-and native" and "slow and trapping" ends up literally being just the
-NX bit.
 
-                        Linus
+On Tue, 9 Aug 2011, Hans de Goede wrote:
+
+> Hi,
+> 
+> On 08/09/2011 04:19 PM, Alan Stern wrote:
+> > On Tue, 9 Aug 2011, Hans de Goede wrote:
+> > 
+> > > I would really like to see the dual mode camera and TV tuner discussion
+> > > separated. They are 2 different issues AFAIK.
+> > > 
+> > > 1) Dual mode cameras:
+> > > 
+> > > In the case of the dual mode camera we have 1 single device (both at
+> > > the hardware level and at the logical block level), which can do 2 things,
+> > > but not at the same time. It can stream live video data from a sensor,
+> > > or it can retrieve earlier taken pictures from some picture memory.
+> > > 
+> > > Unfortunately even though these 2 functions live in a single logical
+> > > block,
+> > > historically we've developed 2 drivers for them. This leads to fighting
+> > > over device ownership (surprise surprise), and to me the solution is
+> > > very clear, 1 logical block == 1 driver.
+> > 
+> > According to Theodore, we have developed 5 drivers for them because the
+> > stillcam modes in different devices use four different vendor-specific
+> > drivers.
+> 
+> Yes, but so the the webcam modes of the different devices, so for
+> the 5 (not sure if that is the right number) dual-cam mode chipsets
+> we support there will be 5 drivers, each supporting both the
+> webcam and the access to pictures stored in memory of the chipset
+> they support. So 5 chipsets -> 5 drivers each supporting 1 chipset,
+> and both functions of the single logical device that chipset
+> represents.
+> 
+> >  Does it really make sense to combine 5 drivers into one?
+> 
+> Right, that is not the plan. The plan is to simply stop having 2 drivers
+> for 1 logical (and physical) block. So we go from 10 drivers, 5 stillcam
+> + 5 webcam, to just 5 drivers. We will also likely be able to share
+> code between the code for the 2 functionalities for things like generic
+> set / get register functions, initialization, etc.
+
+Probably this is a good time for some inventory to be done.
+
+ sure of the exact number of drivers. The jeilinj driver does not count 
+here. It is a standard mass storage device as a still camera, and if it is 
+going to be hooked up as a webcam then it has to have some buttons pushed 
+just so, prior to hookup -- after which it comes up with a different USB 
+Product number as a proprietary webcam device, supported by the jeilinj 
+driver. Thus, this is not one of the droids we are looking for.
+
+Specifically, the currently affected drivers are sq905, sq905c, mr97310a, 
+and sn9c2028. 
+
+Fuji Finepix seems to produce both still cameras (PTP protocol) and 
+webcams. If there are currently any dual-mode cameras, it is not obvious. 
+Perhaps any of these which can be dual mode are like the jeilinj cameras 
+and come up under different Product numbers in the different modes, which 
+is not a problem. 
+
+There do seem to exist stv06xx dual-mode cameras:
+
+stv0680/stv0680.c:      { "STM:USB Dual-mode camera",   0x0553, 0x0202, 1 
+},
+
+is found in camlibs/stv0680, for example, along with a whole bunch of 
+other cameras with the same Vendor:Product number. It seems, too, that the 
+same Vendor:Product number is listed in gspca/stv0680.c
+
+So I guess we found another affected driver.
+
+
+The intersection seems to be void between the lists of the spca50x cameras 
+and webcams, though one can not be certain about the future. I do know of 
+another dualmode camera, powered by the JL2005A chip. I wrote a kernel 
+module for it some months ago. Said module has not been sent upward 
+because of mysterious issues with one of the three cameras used for 
+testing it.
+
+We also find among the gspca driver files this
+
+* GSPCA sub driver for W996[78]CF JPEG USB Dual Mode Camera Chip.
+ *
+ * Copyright (C) 2009 Hans de Goede <hdegoede@redhat.com>
+
+but I am not sure about which cameras are using this.
+
+Theodore Kilgore
