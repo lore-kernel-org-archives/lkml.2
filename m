@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101Ab1HIPI6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 11:08:58 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59461 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752149Ab1HIPI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 11:08:57 -0400
-Date: Wed, 10 Aug 2011 01:08:47 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 1/2] regmap: Use int rather than size_t for lengths when
- logging blocks
-Message-Id: <20110810010847.77e916a7780ffddd98d91f68@canb.auug.org.au>
-In-Reply-To: <1312876805-460-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1312876805-460-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__10_Aug_2011_01_08_47_+1000_KNcZq9lAS1xGZKYt"
+	id S1753223Ab1HIPJK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 11:09:10 -0400
+Received: from nm1-vm0.bullet.mail.kr3.yahoo.com ([111.67.240.242]:28798 "HELO
+	nm1-vm0.bullet.mail.kr3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753166Ab1HIPJI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 11:09:08 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 317601.85740.bm@omp1002.mail.kr3.yahoo.com
+X-YMail-OSG: 24Uk8dIVM1l0y5a1oW_Ju.BtRaozVqJt8CeSwTRn9e1_mKE
+ auvDuch5eQdaoou36FG751nAEh0GQ_WbZssI9DRRWgDs09PkGJMSX.ZkSRvV
+ ..13pVxSBnSGey1FUJgviCqomQdLoWmxmsramEGgoZJP2cktXR.p9ykSQJPL
+ QVKLSNEv_LpoDzs3oezvOkB.xLz2A5iDCPLYirBty5wFzW4DgOkyAUZHkt8_
+ 9FhqmuTPQ2oMQF60ISsQYH5hidUKag8QVebh.LzPbs4b9Ln3yYLWrucGTT5u
+ iVwfun9mO.P7XliTXmFXF0V1MRwkUTbRF7vj4k2BYu2QQwFyBz7xdFT8P_.X
+ bV5h4fWlg5w1LcyIBseuTNbW4kidSXWFqsiEkXmkC1p3Lnr87K8Arj1mDX_E
+ v7tOJssXQyqMMLSZg3xNcurTESMEtBx6v7meJshy7FHPqA2Cz2._6LTqgI_F
+ 6lVcTWMjG4xAiG6OCEwiKJsSGqdPpTXZlRhBsi2OB1bdzibwFmBamxef6oVu
+ dn0EBWBw2mVt72Eg3mA6fwGcxlKMNl.U3S5B0DIBdJcwlJclin1relqeBUcm
+ RYeDSFg5QWDCq1UtQlG9xsdHWJtme7rcfqz_nkZAD2.iplLRI1EJEExBH0f8
+ vyGX8lTcbQfb3H3h6OWHzy73fFhs-
+X-RocketYMMF: sanstraz
+X-Mailer: YahooMailClassic/14.0.4 YahooMailWebService/0.8.113.313619
+Message-ID: <1312902545.32332.YahooMailClassic@web70708.mail.kr3.yahoo.com>
+Date: Wed, 10 Aug 2011 00:09:05 +0900 (KST)
+From: fabrice tuba <fabricetuba@voila.fr>
+Reply-To: fabricetuba@gmail.com
+Subject: Dear  Friend
+To: undisclosed recipients:;
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__10_Aug_2011_01_08_47_+1000_KNcZq9lAS1xGZKYt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Mark,
+Dear  Friend
 
-On Tue,  9 Aug 2011 17:00:04 +0900 Mark Brown <broonie@opensource.wolfsonmi=
-cro.com> wrote:
->
-> x86_64 warns as size_t is not an int.
->=20
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Stephen Rothwell <sfr@canb.auug.org.au>
+This is to inform you that we have already sent you $8000.00USD
+through Western Union for your full compensation payment of
+$1,000,000.00USD by the United Nations and ECOWAS. For supporting
+individuals due to the worldwide economy meltdown,flooding and
+political crisises going on arround the world.
 
-Reported-by?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+The fund was sent on the name which you use in opening your e-mail
+address. Please, pick up the Western Union informations below and rush
+to any western union to pick up the $8000.00USD and respond back to
+enable Western Union send you another payment immediately.
 
---Signature=_Wed__10_Aug_2011_01_08_47_+1000_KNcZq9lAS1xGZKYt
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+For you to be sure of this payment,TRACK the MTCN in this site
+(www.westernunion.com) it will shows that the money is Avalaible for
+pick up.
 
-iQEcBAEBAgAGBQJOQU1/AAoJEDMEi1NhKgbsB2gH/1827uNCpTmzzPUfnkQelCIX
-q8lD3PWqEeWKgzjpBs3OFEhnmm9du9Tk00mP5lJGJRTz7JBBbt+JrUkHIiSJKyg/
-8DpbzK282tzBFjq9Ifuz2/l1h8Me9sJO1Ji+YF/4FgB0VAh0o7M93/EMloYGJruY
-nl1wqA3N7Z61QWS+3LJ4kXOxslmCrFbejC8FjHoUuIefUv3LuXj+8QO0/ULRjlnd
-zJL1vr4kqfGgD5q6vaB3bCfDWbUq1r864azZOeLNPn+uxYY9IPntUFxqfkeQwNZ2
-iU6eiLd2XjBWBLMmcI7ApComhKpe36Rn6ti5AOuXWYWhbuSEEouUuWAOiRS+SJ4=
-=dJlT
------END PGP SIGNATURE-----
+WESTERN UNION TRANSFER INFORMATIONS
 
---Signature=_Wed__10_Aug_2011_01_08_47_+1000_KNcZq9lAS1xGZKYt--
+Sender.........SAMUEL  SUNDAY
+MTCN...........894 229 8845
+COUNTRY:---------------BURKINA FASO
+QUESTION:--------------PICK IT
+ANSWER: ---------------NOW
+
+NOTE: Get back to me immediately you pick up this $8000USD.
+
+Thanks
+Mr Fabrice Tuba
+
