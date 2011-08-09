@@ -1,151 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752279Ab1HIFz6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 01:55:58 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:20828 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751036Ab1HIFz5 (ORCPT
+	id S1752282Ab1HIF7r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 01:59:47 -0400
+Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.33]:33623 "EHLO
+	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751288Ab1HIF7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 01:55:57 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AoADAFfIQE55LbABgWdsb2JhbABCpykVAQEWJiWBQAEBAwEBOhwPFAULCAMOChUZFCUDIRMJEodSBL4LDoMrgw0Eo38
-Date: Tue, 9 Aug 2011 15:55:51 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Greg Thelen <gthelen@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] IO-less dirty throttling v8
-Message-ID: <20110809055551.GP3162@dastard>
-References: <20110806084447.388624428@intel.com>
- <20110809020127.GA3700@redhat.com>
+	Tue, 9 Aug 2011 01:59:46 -0400
+Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (PLAIN)
+X-Authority-Analysis: v=1.1 cv=QcSFu2tMqX8VyBnwf4xZriMeG3TVj1s8v1Rcea0EwGI= c=1 sm=0 a=869cbtyjxWwA:10 a=8-KpdD9Xxr4A:10 a=ozIaqLvjkoIA:10 a=8nJEP1OIZ-IA:10 a=r17jK6sfZkYSxad0qIwqKg==:17 a=YORvzBCaAAAA:8 a=vXkmktcHWjgQkTmhYysA:9 a=OQkymPyWBUoQeu0Z-EUA:7 a=wPNLvfGTeEIA:10 a=VV2__AUApEoA:10 a=r17jK6sfZkYSxad0qIwqKg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 24.153.165.185
+Message-ID: <4E40CCCF.5070000@systemfabricworks.com>
+Date: Tue, 09 Aug 2011 00:59:43 -0500
+From: Bob Pearson <rpearson@systemfabricworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110809020127.GA3700@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, linux@horizon.com,
+        joakim.tjernlund@transmode.se, fzago@systemfabricworks.com,
+        rpearson@systemfabricworks.com, akpm@linux-foundation.org,
+        rdunlap@xenotime.net
+Subject: [patch v4 1/7] crc32: move-to-documentation.diff
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 10:01:27PM -0400, Vivek Goyal wrote:
-> On Sat, Aug 06, 2011 at 04:44:47PM +0800, Wu Fengguang wrote:
-> > Hi all,
-> > 
-> > The _core_ bits of the IO-less balance_dirty_pages().
-> > Heavily simplified and re-commented to make it easier to review.
-> > 
-> > 	git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git dirty-throttling-v8
-> > 
-> > Only the bare minimal algorithms are presented, so you will find some rough
-> > edges in the graphs below. But it's usable :)
-> > 
-> > 	http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v8/
-> > 
-> > And an introduction to the (more complete) algorithms:
-> > 
-> > 	http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/slides/smooth-dirty-throttling.pdf
-> > 
-> > Questions and reviews are highly appreciated!
-> 
-> Hi Wu,
-> 
-> I am going through the slide number 39 where you talk about it being
-> future proof and it can be used for IO control purposes. You have listed
-> following merits of this approach.
-> 
-> * per-bdi nature, works on NFS and Software RAID
-> * no delayed response (working at the right layer)
-> * no page tracking, hence decoupled from memcg
-> * no interactions with FS and CFQ
-> * get proportional IO controller for free
-> * reuse/inherit all the base facilities/functions
-> 
-> I would say that it will also be a good idea to list the demerits of
-> this approach in current form and that is that it only deals with
-> controlling buffered write IO and nothing else.
+Moved a nice but long comment from lib/crc32.c to Documentation/crc32.txt
+where it will more likely get read.
 
-That's not a demerit - that is all it is designed to do.
+Added filename and description to Documentation/00-INDEX
 
-> So on the same block device, other direct writes might be going on
-> from same group and in this scheme a user will not have any
-> control.
+Signed-off-by: Bob Pearson <rpearson@systemfabricworks.com>
 
-But it is taken into account by the IO write throttling.
+---
+ Documentation/00-INDEX  |    2
+ Documentation/crc32.txt |  129 ++++++++++++++++++++++++++++++++++++++++++++++++
+ lib/crc32.c             |  127 -----------------------------------------------
+ 3 files changed, 131 insertions(+), 127 deletions(-)
 
-> Another disadvantage is that throttling at page cache
-> level does not take care of IO spikes at device level.
+Index: infiniband/lib/crc32.c
+===================================================================
+--- infiniband.orig/lib/crc32.c
++++ infiniband/lib/crc32.c
+@@ -208,133 +208,6 @@ u32 __pure crc32_be(u32 crc, unsigned ch
+ EXPORT_SYMBOL(crc32_le);
+ EXPORT_SYMBOL(crc32_be);
 
-And that is handled as well.
+-/*
+- * A brief CRC tutorial.
+- *
+- * A CRC is a long-division remainder.  You add the CRC to the message,
+- * and the whole thing (message+CRC) is a multiple of the given
+- * CRC polynomial.  To check the CRC, you can either check that the
+- * CRC matches the recomputed value, *or* you can check that the
+- * remainder computed on the message+CRC is 0.  This latter approach
+- * is used by a lot of hardware implementations, and is why so many
+- * protocols put the end-of-frame flag after the CRC.
+- *
+- * It's actually the same long division you learned in school, except that
+- * - We're working in binary, so the digits are only 0 and 1, and
+- * - When dividing polynomials, there are no carries.  Rather than add and
+- *   subtract, we just xor.  Thus, we tend to get a bit sloppy about
+- *   the difference between adding and subtracting.
+- *
+- * A 32-bit CRC polynomial is actually 33 bits long.  But since it's
+- * 33 bits long, bit 32 is always going to be set, so usually the CRC
+- * is written in hex with the most significant bit omitted.  (If you're
+- * familiar with the IEEE 754 floating-point format, it's the same idea.)
+- *
+- * Note that a CRC is computed over a string of *bits*, so you have
+- * to decide on the endianness of the bits within each byte.  To get
+- * the best error-detecting properties, this should correspond to the
+- * order they're actually sent.  For example, standard RS-232 serial is
+- * little-endian; the most significant bit (sometimes used for parity)
+- * is sent last.  And when appending a CRC word to a message, you should
+- * do it in the right order, matching the endianness.
+- *
+- * Just like with ordinary division, the remainder is always smaller than
+- * the divisor (the CRC polynomial) you're dividing by.  Each step of the
+- * division, you take one more digit (bit) of the dividend and append it
+- * to the current remainder.  Then you figure out the appropriate multiple
+- * of the divisor to subtract to being the remainder back into range.
+- * In binary, it's easy - it has to be either 0 or 1, and to make the
+- * XOR cancel, it's just a copy of bit 32 of the remainder.
+- *
+- * When computing a CRC, we don't care about the quotient, so we can
+- * throw the quotient bit away, but subtract the appropriate multiple of
+- * the polynomial from the remainder and we're back to where we started,
+- * ready to process the next bit.
+- *
+- * A big-endian CRC written this way would be coded like:
+- * for (i = 0; i < input_bits; i++) {
+- * 	multiple = remainder & 0x80000000 ? CRCPOLY : 0;
+- * 	remainder = (remainder << 1 | next_input_bit()) ^ multiple;
+- * }
+- * Notice how, to get at bit 32 of the shifted remainder, we look
+- * at bit 31 of the remainder *before* shifting it.
+- *
+- * But also notice how the next_input_bit() bits we're shifting into
+- * the remainder don't actually affect any decision-making until
+- * 32 bits later.  Thus, the first 32 cycles of this are pretty boring.
+- * Also, to add the CRC to a message, we need a 32-bit-long hole for it at
+- * the end, so we have to add 32 extra cycles shifting in zeros at the
+- * end of every message,
+- *
+- * So the standard trick is to rearrage merging in the next_input_bit()
+- * until the moment it's needed.  Then the first 32 cycles can be precomputed,
+- * and merging in the final 32 zero bits to make room for the CRC can be
+- * skipped entirely.
+- * This changes the code to:
+- * for (i = 0; i < input_bits; i++) {
+- *      remainder ^= next_input_bit() << 31;
+- * 	multiple = (remainder & 0x80000000) ? CRCPOLY : 0;
+- * 	remainder = (remainder << 1) ^ multiple;
+- * }
+- * With this optimization, the little-endian code is simpler:
+- * for (i = 0; i < input_bits; i++) {
+- *      remainder ^= next_input_bit();
+- * 	multiple = (remainder & 1) ? CRCPOLY : 0;
+- * 	remainder = (remainder >> 1) ^ multiple;
+- * }
+- *
+- * Note that the other details of endianness have been hidden in CRCPOLY
+- * (which must be bit-reversed) and next_input_bit().
+- *
+- * However, as long as next_input_bit is returning the bits in a sensible
+- * order, we can actually do the merging 8 or more bits at a time rather
+- * than one bit at a time:
+- * for (i = 0; i < input_bytes; i++) {
+- * 	remainder ^= next_input_byte() << 24;
+- * 	for (j = 0; j < 8; j++) {
+- * 		multiple = (remainder & 0x80000000) ? CRCPOLY : 0;
+- * 		remainder = (remainder << 1) ^ multiple;
+- * 	}
+- * }
+- * Or in little-endian:
+- * for (i = 0; i < input_bytes; i++) {
+- * 	remainder ^= next_input_byte();
+- * 	for (j = 0; j < 8; j++) {
+- * 		multiple = (remainder & 1) ? CRCPOLY : 0;
+- * 		remainder = (remainder << 1) ^ multiple;
+- * 	}
+- * }
+- * If the input is a multiple of 32 bits, you can even XOR in a 32-bit
+- * word at a time and increase the inner loop count to 32.
+- *
+- * You can also mix and match the two loop styles, for example doing the
+- * bulk of a message byte-at-a-time and adding bit-at-a-time processing
+- * for any fractional bytes at the end.
+- *
+- * The only remaining optimization is to the byte-at-a-time table method.
+- * Here, rather than just shifting one bit of the remainder to decide
+- * in the correct multiple to subtract, we can shift a byte at a time.
+- * This produces a 40-bit (rather than a 33-bit) intermediate remainder,
+- * but again the multiple of the polynomial to subtract depends only on
+- * the high bits, the high 8 bits in this case.
+- *
+- * The multiple we need in that case is the low 32 bits of a 40-bit
+- * value whose high 8 bits are given, and which is a multiple of the
+- * generator polynomial.  This is simply the CRC-32 of the given
+- * one-byte message.
+- *
+- * Two more details: normally, appending zero bits to a message which
+- * is already a multiple of a polynomial produces a larger multiple of that
+- * polynomial.  To enable a CRC to detect this condition, it's common to
+- * invert the CRC before appending it.  This makes the remainder of the
+- * message+crc come out not as zero, but some fixed non-zero value.
+- *
+- * The same problem applies to zero bits prepended to the message, and
+- * a similar solution is used.  Instead of starting with a remainder of
+- * 0, an initial remainder of all ones is used.  As long as you start
+- * the same way on decoding, it doesn't make a difference.
+- */
+-
+ #ifdef UNITTEST
 
-How? By the indirect effect other IO and IO spikes have on the
-writeback rate. That is, other IO reduces the writeback bandwidth,
-which then changes the throttling parameters via feedback loops.
-
-The buffered write throttle is designed to reduce the page cache
-dirtying rate to the current cleaning rate of the backing device
-is. Increase the cleaning rate (i.e. device is otherwise idle) and
-it will throttle less. Decrease the cleaning rate (i.e. other IO
-spikes or block IO throttle activates) and it will throttle more.
-
-We have to do vary buffered write throttling like this to adapt to
-changing IO workloads (e.g.  someone starting a read-heavy workload
-will slow down writeback rate, so we need to throttle buffered
-writes more aggressively), so it has to be independent of any sort
-of block layer IO controller.
-
-Simply put: the block IO controller still has direct control over
-the rate at which buffered writes drain out of the system. The
-IO-less write throttle simply limits the rate at which buffered
-writes come into the system to match whatever the IO path allows to
-drain out....
-
-> Now I think one could probably come up with more sophisticated scheme
-> where throttling is done at bdi level but is also accounted at device
-> level at IO controller. (Something similar I had done in the past but
-> Dave Chinner did not like it).
-
-I don't like it because it is solution to a specific problem and
-requires complex coupling across multiple layers of the system. We
-are trying to move away from that throttling model. More
-fundamentally, though, is that it is not a general solution to the
-entire class of "IO writeback rate changed" problems that buffered
-write throttling needs to solve.
-
-> Anyway, keeping track of per cgroup rate and throttling accordingly
-> can definitely help implement an algorithm for per cgroup IO control.
-> We probably just need to find a reasonable way to account all this
-> IO to end device so that we have control of all kind of IO of a cgroup.
-> How do you implement proportional control here? From overall bdi bandwidth
-> vary per cgroup bandwidth regularly based on cgroup weight? Again the
-> issue here is that it controls only buffered WRITES and nothing else and
-> in this case co-ordinating with CFQ will probably be hard. So I guess
-> usage of proportional IO just for buffered WRITES will have limited
-> usage.
-
-The whole point of doing the throttling this way is that we don't
-need any sort of special connection between block IO throttling and
-page cache (buffered write) throttling. We significantly reduce the
-coupling between the layers by relying on feedback-driven control
-loops to determine the buffered write throttling thresholds
-adaptively. IOWs, the IO-less write throttling at the page cache
-will adjust automatically to whatever throughput the block IO
-throttling allows async writes to achieve.
-
-However, before we have a "finished product", there is still another
-piece of the puzzle to be put in place - memcg-aware buffered
-writeback. That is, having a flusher thread do work on behalf of
-memcg in the IO context of the memcg. Then the IO controller just
-sees a stream of async writes in the context of the memcg the
-buffered writes came from in the first place. The block layer
-throttles them just like any other IO in the IO context of the
-memcg...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+ #include <stdlib.h>
+Index: infiniband/Documentation/crc32.txt
+===================================================================
+--- /dev/null
++++ infiniband/Documentation/crc32.txt
+@@ -0,0 +1,129 @@
++
++A brief CRC tutorial.
++
++A CRC is a long-division remainder.  You add the CRC to the message,
++and the whole thing (message+CRC) is a multiple of the given
++CRC polynomial.  To check the CRC, you can either check that the
++CRC matches the recomputed value, *or* you can check that the
++remainder computed on the message+CRC is 0.  This latter approach
++is used by a lot of hardware implementations, and is why so many
++protocols put the end-of-frame flag after the CRC.
++
++It's actually the same long division you learned in school, except that
++- We're working in binary, so the digits are only 0 and 1, and
++- When dividing polynomials, there are no carries.  Rather than add and
++  subtract, we just xor.  Thus, we tend to get a bit sloppy about
++  the difference between adding and subtracting.
++
++A 32-bit CRC polynomial is actually 33 bits long.  But since it's
++33 bits long, bit 32 is always going to be set, so usually the CRC
++is written in hex with the most significant bit omitted.  (If you're
++familiar with the IEEE 754 floating-point format, it's the same idea.)
++
++Note that a CRC is computed over a string of *bits*, so you have
++to decide on the endianness of the bits within each byte.  To get
++the best error-detecting properties, this should correspond to the
++order they're actually sent.  For example, standard RS-232 serial is
++little-endian; the most significant bit (sometimes used for parity)
++is sent last.  And when appending a CRC word to a message, you should
++do it in the right order, matching the endianness.
++
++Just like with ordinary division, the remainder is always smaller than
++the divisor (the CRC polynomial) you're dividing by.  Each step of the
++division, you take one more digit (bit) of the dividend and append it
++to the current remainder.  Then you figure out the appropriate multiple
++of the divisor to subtract to being the remainder back into range.
++In binary, it's easy - it has to be either 0 or 1, and to make the
++XOR cancel, it's just a copy of bit 32 of the remainder.
++
++When computing a CRC, we don't care about the quotient, so we can
++throw the quotient bit away, but subtract the appropriate multiple of
++the polynomial from the remainder and we're back to where we started,
++ready to process the next bit.
++
++A big-endian CRC written this way would be coded like:
++for (i = 0; i < input_bits; i++) {
++	multiple = remainder & 0x80000000 ? CRCPOLY : 0;
++	remainder = (remainder << 1 | next_input_bit()) ^ multiple;
++}
++
++Notice how, to get at bit 32 of the shifted remainder, we look
++at bit 31 of the remainder *before* shifting it.
++
++But also notice how the next_input_bit() bits we're shifting into
++the remainder don't actually affect any decision-making until
++32 bits later.  Thus, the first 32 cycles of this are pretty boring.
++Also, to add the CRC to a message, we need a 32-bit-long hole for it at
++the end, so we have to add 32 extra cycles shifting in zeros at the
++end of every message,
++
++So the standard trick is to rearrage merging in the next_input_bit()
++until the moment it's needed.  Then the first 32 cycles can be precomputed,
++and merging in the final 32 zero bits to make room for the CRC can be
++skipped entirely.
++This changes the code to:
++for (i = 0; i < input_bits; i++) {
++     remainder ^= next_input_bit() << 31;
++	multiple = (remainder & 0x80000000) ? CRCPOLY : 0;
++	remainder = (remainder << 1) ^ multiple;
++}
++
++With this optimization, the little-endian code is simpler:
++for (i = 0; i < input_bits; i++) {
++     remainder ^= next_input_bit();
++	multiple = (remainder & 1) ? CRCPOLY : 0;
++	remainder = (remainder >> 1) ^ multiple;
++}
++
++Note that the other details of endianness have been hidden in CRCPOLY
++(which must be bit-reversed) and next_input_bit().
++
++However, as long as next_input_bit is returning the bits in a sensible
++order, we can actually do the merging 8 or more bits at a time rather
++than one bit at a time:
++for (i = 0; i < input_bytes; i++) {
++	remainder ^= next_input_byte() << 24;
++	for (j = 0; j < 8; j++) {
++		multiple = (remainder & 0x80000000) ? CRCPOLY : 0;
++		remainder = (remainder << 1) ^ multiple;
++	}
++}
++Or in little-endian:
++for (i = 0; i < input_bytes; i++) {
++	remainder ^= next_input_byte();
++	for (j = 0; j < 8; j++) {
++		multiple = (remainder & 1) ? CRCPOLY : 0;
++		remainder = (remainder << 1) ^ multiple;
++	}
++}
++
++If the input is a multiple of 32 bits, you can even XOR in a 32-bit
++word at a time and increase the inner loop count to 32.
++
++You can also mix and match the two loop styles, for example doing the
++bulk of a message byte-at-a-time and adding bit-at-a-time processing
++for any fractional bytes at the end.
++
++The only remaining optimization is to the byte-at-a-time table method.
++Here, rather than just shifting one bit of the remainder to decide
++in the correct multiple to subtract, we can shift a byte at a time.
++This produces a 40-bit (rather than a 33-bit) intermediate remainder,
++but again the multiple of the polynomial to subtract depends only on
++the high bits, the high 8 bits in this case.
++
++The multiple we need in that case is the low 32 bits of a 40-bit
++value whose high 8 bits are given, and which is a multiple of the
++generator polynomial.  This is simply the CRC-32 of the given
++one-byte message.
++
++Two more details: normally, appending zero bits to a message which
++is already a multiple of a polynomial produces a larger multiple of that
++polynomial.  To enable a CRC to detect this condition, it's common to
++invert the CRC before appending it.  This makes the remainder of the
++message+crc come out not as zero, but some fixed non-zero value.
++
++The same problem applies to zero bits prepended to the message, and
++a similar solution is used.  Instead of starting with a remainder of
++0, an initial remainder of all ones is used.  As long as you start
++the same way on decoding, it doesn't make a difference.
++
+Index: infiniband/Documentation/00-INDEX
+===================================================================
+--- infiniband.orig/Documentation/00-INDEX
++++ infiniband/Documentation/00-INDEX
+@@ -104,6 +104,8 @@ cpuidle/
+ 	- info on CPU_IDLE, CPU idle state management subsystem.
+ cputopology.txt
+ 	- documentation on how CPU topology info is exported via sysfs.
++crc32.txt
++	- brief tutorial on CRC computation
+ cris/
+ 	- directory with info about Linux on CRIS architecture.
+ crypto/
