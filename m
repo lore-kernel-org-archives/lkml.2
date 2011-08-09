@@ -1,246 +1,396 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab1HIM2B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 08:28:01 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:10571 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097Ab1HIM16 (ORCPT
+	id S1753520Ab1HIMac (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 08:30:32 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:49593 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753097Ab1HIMab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 08:27:58 -0400
-Date: Tue, 9 Aug 2011 14:27:57 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [linux-pm] Crash when suspending Lenovo T510 laptop (2.6.39.3)
-In-Reply-To: <alpine.LNX.2.00.1108061049510.4163@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1108091426090.17636@swampdragon.chaosbits.net>
-References: <Pine.LNX.4.44L0.1108051641040.2055-100000@iolanthe.rowland.org> <alpine.LNX.2.00.1108061049510.4163@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 9 Aug 2011 08:30:31 -0400
+X-IronPort-AV: E=Sophos;i="4.67,342,1309737600"; 
+   d="scan'208";a="7176866"
+Subject: Re: [PATCH] xen: modify kernel mappings corresponding to granted
+ pages
+From: Ian Campbell <Ian.Campbell@eu.citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Jeremy Fitzhardinge" <Jeremy.Fitzhardinge@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110809023407.GA13905@dumpdata.com>
+References: <1311699345-32579-1-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <20110809023407.GA13905@dumpdata.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Tue, 9 Aug 2011 13:30:28 +0100
+Message-ID: <1312893028.26263.129.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 6 Aug 2011, Jesper Juhl wrote:
+On Tue, 2011-08-09 at 03:34 +0100, Konrad Rzeszutek Wilk wrote:
+> On Tue, Jul 26, 2011 at 05:55:45PM +0100, stefano.stabellini@eu.citrix.com wrote:
+> > From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> >
+> > If we want to use granted pages for AIO, changing the mappings of a user
+> > vma and the corresponding p2m is not enough, we also need to update the
+> > kernel mappings accordingly.
+> > On x86_64 it is easy, we can issue another HYPERVISOR_grant_table_op
+> > right away in m2p_add_override. We can remove the mappings using another
+> > HYPERVISOR_grant_table_op in m2p_remove_override.
+> > On x86_32 it is more difficult because the pages are highmem pages and
+> > therefore we need to catch the set_pte that tries to map a granted page
+> > and issue an HYPERVISOR_grant_table_op instead.
+> > Same thing for unmapping them: we need to catch the pte clear or the
+> > set_pte that try to unmap a granted page and issue an
+> > HYPERVISOR_grant_table_op.
+> 
+> So I hadn't looked at this in detail, but I wonder if we can use the
+> MULTIcall for this? It looks like we need to do two hypercalls so why
+> not batch it?
 
-> On Fri, 5 Aug 2011, Alan Stern wrote:
-> 
-> > On Fri, 5 Aug 2011, Rafael J. Wysocki wrote:
-> > 
-> > > > You're right, sorry.  System suspend was not involved, so the problem
-> > > > was triggerend by runtime suspend alone, resulting from unplugging the
-> > > > Ethernet cable.
-> > > > 
-> > > > It looks like the crash started in pci_disable_msi().
-> > > 
-> > > OTOH, I'm not sure how pci_legacy_suspend_late() was called.
-> > > In theory it is only called by the system suspend code and it surely
-> > > is not called for e1000e.
-> > 
-> > The ? indicates that pci_legacy_suspend_late() wasn't necessarily on
-> > the task's call stack; it may simply have been a leftover pointer from
-> > some other operation, sitting somewhere in the middle of the stack
-> > page.
-> > 
-> 
-> Not sure if it helps, but I've been trying to reproduce the crash and 
-> although I've not succeeded doing that yet, I've got something else.
-> 
-> While trying to reproduce by unplugging/replugging ethernet and 
-> resuming/suspending a lot I found the following in dmesg after one of the 
-> resumes - the system seems to be working fine though and network works 
-> as well, so it's not the same complete crash but it looks 
-> potentially related :
-> 
-> [ 6564.921192] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100103, writing 0x100107)
-> [ 6564.921222] ehci_hcd 0000:00:1a.0: restoring config space at offset 0xf (was 0x400, writing 0x40b)
-> [ 6564.921240] ehci_hcd 0000:00:1a.0: restoring config space at offset 0x4 (was 0x0, writing 0xf2828000)
-> [ 6564.921247] ehci_hcd 0000:00:1a.0: restoring config space at offset 0x1 (was 0x2900000, writing 0x2900102)
-> [ 6564.937545] ehci_hcd 0000:00:1a.0: power state changed by ACPI to D0
-> [ 6564.937554] ehci_hcd 0000:00:1a.0: power state changed by ACPI to D0
-> [ 6564.937708] pcieport 0000:00:1c.1: restoring config space at offset 0x7 (was 0xf0, writing 0x200000f0)
-> [ 6564.937805] pcieport 0000:00:1c.4: restoring config space at offset 0xf (was 0x100, writing 0x4010b)
-> [ 6564.937815] pcieport 0000:00:1c.4: restoring config space at offset 0x9 (was 0x10001, writing 0x1fff1)
-> [ 6564.937820] pcieport 0000:00:1c.4: restoring config space at offset 0x8 (was 0x0, writing 0xf250f250)
-> [ 6564.937824] pcieport 0000:00:1c.4: restoring config space at offset 0x7 (was 0x20000000, writing 0x200000f0)
-> [ 6564.937832] pcieport 0000:00:1c.4: restoring config space at offset 0x3 (was 0x810000, writing 0x810010)
-> [ 6564.937838] pcieport 0000:00:1c.4: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
-> [ 6564.937872] ehci_hcd 0000:00:1d.0: restoring config space at offset 0xf (was 0x400, writing 0x40b)
-> [ 6564.937890] ehci_hcd 0000:00:1d.0: restoring config space at offset 0x4 (was 0x0, writing 0xf2828400)
-> [ 6564.937897] ehci_hcd 0000:00:1d.0: restoring config space at offset 0x1 (was 0x2900000, writing 0x2900102)
-> [ 6564.937915] ehci_hcd 0000:00:1d.0: power state changed by ACPI to D0
-> [ 6564.937918] ehci_hcd 0000:00:1d.0: power state changed by ACPI to D0
-> [ 6564.938019] ahci 0000:00:1f.2: restoring config space at offset 0x1 (was 0x2b00007, writing 0x2b00407)
-> [ 6564.938085] intel ips 0000:00:1f.6: restoring config space at offset 0xf (was 0x400, writing 0x40b)
-> [ 6564.938107] intel ips 0000:00:1f.6: restoring config space at offset 0x1 (was 0x100000, writing 0x100002)
-> [ 6564.938674] PM: early resume of devices complete after 17.784 msecs[ 6564.939048] sdhci-pci 0000:0d:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-> [ 6564.939053] iwlagn 0000:03:00.0: RF_KILL bit toggled to disable radio.
-> [ 6564.939118] e1000e 0000:00:19.0: irq 41 for MSI/MSI-X
-> [ 6564.942219] ehci_hcd 0000:00:1a.0: power state changed by ACPI to D0
-> [ 6564.942229] pci 0000:00:1e.0: setting latency timer to 64
-> [ 6564.942236] ehci_hcd 0000:00:1d.0: power state changed by ACPI to D0
-> [ 6564.942246] HDA Intel 0000:00:1b.0: PCI INT B -> GSI 17 (level, low) -> IRQ 17
-> [ 6564.942253] HDA Intel 0000:00:1b.0: setting latency timer to 64
-> [ 6564.942261] ehci_hcd 0000:00:1a.0: power state changed by ACPI to D0
-> [ 6564.942265] ahci 0000:00:1f.2: setting latency timer to 64
-> [ 6564.942276] ehci_hcd 0000:00:1a.0: PCI INT D -> GSI 23 (level, low) -> IRQ 23
-> [ 6564.942344] ehci_hcd 0000:00:1a.0: setting latency timer to 64
-> [ 6564.942360] HDA Intel 0000:00:1b.0: irq 44 for MSI/MSI-X
-> [ 6564.942436] ehci_hcd 0000:00:1d.0: power state changed by ACPI to D0
-> [ 6564.942444] ehci_hcd 0000:00:1d.0: PCI INT D -> GSI 19 (level, low) -> IRQ 19
-> [ 6564.942452] ehci_hcd 0000:00:1d.0: setting latency timer to 64
-> [ 6564.942456] sd 0:0:0:0: [sda] Starting disk
-> [ 6564.942458] i915 0000:00:02.0: power state changed by ACPI to D0
-> [ 6564.942463] i915 0000:00:02.0: power state changed by ACPI to D0
-> [ 6564.942466] i915 0000:00:02.0: setting latency timer to 64
-> [ 6564.997449] firewire_ohci 0000:0d:00.3: irq 45 for MSI/MSI-X
-> [ 6564.997785] firewire_core: skipped bus generations, destroying all nodes
-> [ 6565.123881] usb 2-1.1: reset full speed USB device number 3 using ehci_hcd
-> [ 6565.256738] ata6: SATA link down (SStatus 0 SControl 300)
-> [ 6565.256782] ata2: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-> [ 6565.259348] ata2.00: ACPI cmd e3/00:1f:00:00:00:a0 (IDLE) succeeded
-> [ 6565.259563] ata2.00: ACPI cmd e3/00:02:00:00:00:a0 (IDLE) succeeded
-> [ 6565.263747] ata2.00: ACPI cmd e3/00:1f:00:00:00:a0 (IDLE) succeeded
-> [ 6565.263990] ata2.00: ACPI cmd e3/00:02:00:00:00:a0 (IDLE) succeeded
-> [ 6565.265544] ata2.00: configured for UDMA/66
-> [ 6565.276723] ata5: SATA link down (SStatus 0 SControl 300)
-> [ 6565.439619] sdhci-pci 0000:0d:00.0: Will use DMA mode even though HW doesn't fully claim to support it.
-> [ 6565.439631] sdhci-pci 0000:0d:00.0: setting latency timer to 64
-> [ 6565.463009] usb 1-1.2: reset low speed USB device number 3 using ehci_hcd
-> [ 6565.496163] firewire_core: rediscovered device fw0
-> [ 6565.802321] usb 1-1.3: reset full speed USB device number 4 using ehci_hcd
-> [ 6565.951782] usb 1-1.6: reset high speed USB device number 6 using ehci_hcd
-> [ 6566.014871] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [ 6566.021871] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
-> [ 6566.021877] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
-> [ 6566.022178] ata1.00: ACPI cmd ef/5f:00:00:00:00:a0 (SET FEATURES) succeeded
-> [ 6566.022183] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
-> [ 6566.024813] ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
-> [ 6566.024819] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
-> [ 6566.025080] ata1.00: ACPI cmd ef/5f:00:00:00:00:a0 (SET FEATURES) succeeded
-> [ 6566.025085] ata1.00: ACPI cmd ef/10:03:00:00:00:a0 (SET FEATURES) filtered out
-> [ 6566.026327] ata1.00: configured for UDMA/100
-> [ 6566.104911] usb 2-1.1.4: reset full speed USB device number 4 using ehci_hcd
-> [ 6566.190354] PM: resume of devices complete after 1254.565 msecs
-> [ 6566.191321] PM: Finishing wakeup.
-> [ 6566.191323] Restarting tasks ... done.
-> [ 6566.199706] video LNXVIDEO:00: Restoring backlight state
-> [ 6566.661832] e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx
-> [ 6566.661839] e1000e 0000:00:19.0: eth0: 10/100 speed: disabling TSO
-> [ 6566.662160] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-> [ 6568.525731] e1000e 0000:00:19.0: PME# enabled
-> [ 6568.551863] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf2600000-0xf261ffff] (PCI address [0xf2600000-0xf261ffff])
-> [ 6568.551876] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf2625000-0xf2625fff] (PCI address [0xf2625000-0xf2625fff])
-> [ 6568.551886] e1000e 0000:00:19.0: BAR 2: set to [io  0x1820-0x183f] (PCI address [0x1820-0x183f])
-> [ 6568.551909] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10b)
-> [ 6568.551936] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
-> [ 6568.551999] e1000e 0000:00:19.0: PME# disabled
-> [ 6568.645183] e1000e 0000:00:19.0: irq 41 for MSI/MSI-X
-> [ 6568.698271] e1000e 0000:00:19.0: irq 41 for MSI/MSI-X
-> [ 6568.699163] ADDRCONF(NETDEV_UP): eth0: link is not ready
-> [ 6568.814811] e1000e 0000:00:19.0: PME# enabled
-> [ 6568.844535] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf2600000-0xf261ffff] (PCI address [0xf2600000-0xf261ffff])
-> [ 6568.844548] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf2625000-0xf2625fff] (PCI address [0xf2625000-0xf2625fff])
-> [ 6568.844558] e1000e 0000:00:19.0: BAR 2: set to [io  0x1820-0x183f] (PCI address [0x1820-0x183f])
-> [ 6568.844580] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10b)
-> [ 6568.844607] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100507)
-> [ 6568.844668] e1000e 0000:00:19.0: PME# disabled
-> [ 6568.937809] e1000e 0000:00:19.0: irq 41 for MSI/MSI-X
-> [ 6568.990871] e1000e 0000:00:19.0: irq 41 for MSI/MSI-X
-> [ 6568.991756] ADDRCONF(NETDEV_UP): eth0: link is not ready
-> [ 6569.991674] ------------[ cut here ]------------
-> [ 6569.991694] WARNING: at drivers/net/e1000e/netdev.c:5221 __e1000_shutdown+0x43f/0x4c0 [e1000e]()
-> [ 6569.991698] Hardware name: 4384GJG
-> [ 6569.991699] Modules linked in: snd_seq snd_seq_device aesni_intel cryptd aes_x86_64 aes_generic ipv6 uvcvideo videodev media v4l2_compat_ioctl32 usbhid hid snd_hda_codec_hdmi btusb bluetooth snd_hda_codec_conexant arc4 ecb snd_hda_intel snd_hda_codec snd_hwdep e1000e i915 snd_pcm iwlagn ehci_hcd snd_timer drm_kms_helper usbcore snd_page_alloc sdhci_pci sdhci pcspkr mmc_core sg drm vboxnetadp vboxnetflt evdev tpm_tis i2c_algo_bit mac80211 serio_raw psmouse iTCO_wdt vboxdrv firewire_ohci firewire_core i2c_i801 crc_itu_t i2c_core iTCO_vendor_support cfg80211 battery thermal intel_ips wmi tpm intel_agp video ac tpm_bios button intel_gtt cpufreq_ondemand msr acpi_cpufreq freq_table processor mperf thinkpad_acpi rfkill snd soundcore nvram ext4 mbcache jbd2 crc16 sr_mod sd_mod cdrom ahci libahci libata scsi_mod
-> [ 6569.991778] Pid: 7847, comm: kworker/1:0 Not tainted 2.6.39-ARCH #1
-> [ 6569.991781] Call Trace:
-> [ 6569.991792]  [<ffffffff8105b90f>] warn_slowpath_common+0x7f/0xc0
-> [ 6569.991797]  [<ffffffff8105b96a>] warn_slowpath_null+0x1a/0x20
-> [ 6569.991804]  [<ffffffffa064df7f>] __e1000_shutdown+0x43f/0x4c0 [e1000e]
-> [ 6569.991816]  [<ffffffff81012fc9>] ? sched_clock+0x9/0x10
-> [ 6569.991819]  [<ffffffffa064e039>] e1000_runtime_suspend+0x39/0x50 [e1000e]
-> [ 6569.991823]  [<ffffffff8100a6cf>] ? __switch_to+0xbf/0x2f0
-> [ 6569.991828]  [<ffffffff812392dd>] pci_pm_runtime_suspend+0x4d/0x100
-> [ 6569.991830]  [<ffffffff81239290>] ? pci_legacy_suspend_late+0x100/0x100
-> [ 6569.991834]  [<ffffffff812e7d52>] rpm_callback+0x42/0x80
-> [ 6569.991837]  [<ffffffff813e4faf>] ? schedule+0x33f/0xad0
-> [ 6569.991839]  [<ffffffff812e82fa>] rpm_suspend+0x1da/0x3f0
-> [ 6569.991843]  [<ffffffff8107701c>] ? queue_delayed_work_on+0xbc/0x150
-> [ 6569.991846]  [<ffffffff812e9380>] ? pm_schedule_suspend+0xe0/0xe0
-> [ 6569.991848]  [<ffffffff812e941a>] pm_runtime_work+0x9a/0xc0
-> [ 6569.991850]  [<ffffffff81077f6e>] process_one_work+0x11e/0x4c0
-> [ 6569.991852]  [<ffffffff810788ff>] worker_thread+0x15f/0x350
-> [ 6569.991854]  [<ffffffff810787a0>] ? manage_workers.isra.29+0x230/0x230
-> [ 6569.991857]  [<ffffffff8107d6ec>] kthread+0x8c/0xa0
-> [ 6569.991860]  [<ffffffff813e9fe4>] kernel_thread_helper+0x4/0x10
-> [ 6569.991862]  [<ffffffff8107d660>] ? kthread_worker_fn+0x190/0x190
-> [ 6569.991864]  [<ffffffff813e9fe0>] ? gs_change+0x13/0x13
-> [ 6569.991865] ---[ end trace c54917cde5791882 ]---
-> [ 6570.221032] e1000e 0000:00:19.0: PME# enabled
-> [ 6570.464118] EXT4-fs (sda3): re-mounted. Opts: commit=0
-> [ 6570.466279] EXT4-fs (sda1): re-mounted. Opts: commit=0
-> [ 6570.644945] EXT4-fs (sda4): re-mounted. Opts: commit=0
-> [ 6571.823780] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf2600000-0xf261ffff] (PCI address [0xf2600000-0xf261ffff])
-> [ 6571.823791] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf2625000-0xf2625fff] (PCI address [0xf2625000-0xf2625fff])
-> [ 6571.823800] e1000e 0000:00:19.0: BAR 2: set to [io  0x1820-0x183f] (PCI address [0x1820-0x183f])
-> [ 6571.823821] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10b)
-> [ 6571.823847] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
-> [ 6571.823885] e1000e 0000:00:19.0: PME# disabled
-> [ 6571.823965] e1000e 0000:00:19.0: irq 41 for MSI/MSI-X
-> [ 6571.826445] e1000e 0000:00:19.0: eth0: PHY Wakeup cause - Link Status  Change
-> [ 6573.521494] e1000e: eth0 NIC Link is Up 100 Mbps Full Duplex, Flow Control: Rx
-> [ 6573.521500] e1000e 0000:00:19.0: eth0: 10/100 speed: disabling TSO
-> [ 6573.521814] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-> 
-> The kernel is still the same 2.6.39.3
-> 
-> Hope that helps.
-> 
-> I'll keep trying to reproduce the crash - will probably build a 3.0.1 with 
-> lots of debug options enabled and try to reproduce with that.
-> 
-> 
+That was going to be my next question. We should definitely batch these
+if possible.
 
-Just happened again, this time with 3.0.1 :
+> And while we are it - we could change the MMU ops to only do this on
+> initial domain and for the domU case do the old mechanism?
 
-[30377.372749] ------------[ cut here ]------------
-[30377.372779] WARNING: at drivers/net/e1000e/netdev.c:5235 __e1000_shutdown+0x43f/0x4c0 [e1000e]()
-[30377.372783] Hardware name: 4384GJG
-[30377.372786] Modules linked in: vboxnetadp vboxnetflt vboxdrv appletalk ipx p8022 psnap llc p8023 ipv6 snd_hda_codec_hdmi snd_hda_codec_conexant uvcvideo videodev media v4l2_compat_ioctl32 snd_hda_intel snd_hda_codec snd_hwdep snd_pcm cpufreq_ondemand serio_raw arc4 snd_timer snd_page_alloc psmouse i915 drm_kms_helper sg msr drm acpi_cpufreq iwlagn i2c_algo_bit mac80211 freq_table video evdev e1000e firewire_ohci i2c_i801 battery mxm_wmi i2c_core cfg80211 mei(C) tpm_tis firewire_core iTCO_wdt ac iTCO_vendor_support tpm intel_agp crc_itu_t sdhci_pci sdhci mmc_core intel_ips intel_gtt tpm_bios thermal pcspkr wmi mperf processor button thinkpad_acpi rfkill snd soundcore nvram ext4 mbcache jbd2 crc16 sr_mod cdrom sd_mod usbhid hid ahci libahci libata ehci_hcd scsi_mod usbcore [last unloaded: vboxdrv]
-[30377.372876] Pid: 17558, comm: kworker/1:0 Tainted: G         C  3.0-ARCH #1
-[30377.372879] Call Trace:
-[30377.372895]  [<ffffffff8105c7bf>] warn_slowpath_common+0x7f/0xc0
-[30377.372898]  [<ffffffff8105c81a>] warn_slowpath_null+0x1a/0x20
-[30377.372902]  [<ffffffffa02603cf>] __e1000_shutdown+0x43f/0x4c0 [e1000e]
-[30377.372906]  [<ffffffffa0260489>] e1000_runtime_suspend+0x39/0x50 [e1000e]
-[30377.372911]  [<ffffffff81240b9d>] pci_pm_runtime_suspend+0x4d/0x100
-[30377.372913]  [<ffffffff81240b50>] ? pci_legacy_suspend_late+0x100/0x100
-[30377.372918]  [<ffffffff812f26e2>] rpm_callback+0x42/0x80
-[30377.372920]  [<ffffffff812f2c7c>] rpm_suspend+0x1cc/0x3e0
-[30377.372922]  [<ffffffff812f3c80>] ? pm_schedule_suspend+0xe0/0xe0
-[30377.372925]  [<ffffffff812f3d1a>] pm_runtime_work+0x9a/0xc0
-[30377.372929]  [<ffffffff81079576>] process_one_work+0x116/0x4d0
-[30377.372932]  [<ffffffff81079f1f>] worker_thread+0x15f/0x350
-[30377.372934]  [<ffffffff81079dc0>] ? manage_workers.isra.29+0x230/0x230
-[30377.372936]  [<ffffffff8107ed2c>] kthread+0x8c/0xa0
-[30377.372940]  [<ffffffff813f4ea4>] kernel_thread_helper+0x4/0x10
-[30377.372942]  [<ffffffff8107eca0>] ? kthread_worker_fn+0x190/0x190
-[30377.372947]  [<ffffffff813f4ea0>] ? gs_change+0x13/0x13
-[30377.372949] ---[ end trace 91bf31e3c70d5224 ]---
-[30377.672896] e1000e 0000:00:19.0: PME# enabled
-[30379.316301] e1000e 0000:00:19.0: BAR 0: set to [mem 0xf2600000-0xf261ffff] (PCI address [0xf2600000-0xf261ffff])
-[30379.316308] e1000e 0000:00:19.0: BAR 1: set to [mem 0xf2625000-0xf2625fff] (PCI address [0xf2625000-0xf2625fff])
-[30379.316313] e1000e 0000:00:19.0: BAR 2: set to [io  0x1820-0x183f] (PCI address [0x1820-0x183f])
-[30379.316337] e1000e 0000:00:19.0: restoring config space at offset 0xf (was 0x100, writing 0x10b)
-[30379.316358] e1000e 0000:00:19.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100107)
-[30379.316391] e1000e 0000:00:19.0: PME# disabled
-[30379.316463] e1000e 0000:00:19.0: irq 41 for MSI/MSI-X
-[30379.318956] e1000e 0000:00:19.0: eth0: PHY Wakeup cause - Link Status  Change
+We need this in domU for driver domains and the like, don't we?
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+> In essence
+> adding two variants of the xen_set_pte - domU and dom0? .. And we
+> should get rid of the debug one (xen_set_pte_debug) - it has helped a bit
+> but I don't think anybody is using it except me.
+> 
+> >
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > ---
+> >  arch/x86/include/asm/xen/page.h |    5 ++-
+> >  arch/x86/xen/mmu.c              |   68 +++++++++++++++++++++++++++++++++++++++
+> >  arch/x86/xen/p2m.c              |   47 ++++++++++++++++++++------
+> >  drivers/xen/gntdev.c            |   27 +++++++++++++++-
+> >  drivers/xen/grant-table.c       |    4 +-
+> >  include/xen/grant_table.h       |    1 +
+> >  6 files changed, 137 insertions(+), 15 deletions(-)
+> >
+> > diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+> > index 64a619d..ec7bbfb 100644
+> > --- a/arch/x86/include/asm/xen/page.h
+> > +++ b/arch/x86/include/asm/xen/page.h
+> > @@ -12,6 +12,7 @@
+> >  #include <asm/pgtable.h>
+> >
+> >  #include <xen/interface/xen.h>
+> > +#include <xen/grant_table.h>
+> >  #include <xen/features.h>
+> >
+> >  /* Xen machine address */
+> > @@ -31,8 +32,10 @@ typedef struct xpaddr {
+> >  #define INVALID_P2M_ENTRY    (~0UL)
+> >  #define FOREIGN_FRAME_BIT    (1UL<<(BITS_PER_LONG-1))
+> >  #define IDENTITY_FRAME_BIT   (1UL<<(BITS_PER_LONG-2))
+> > +#define GRANT_FRAME_BIT      (1UL<<(BITS_PER_LONG-3))
+> >  #define FOREIGN_FRAME(m)     ((m) | FOREIGN_FRAME_BIT)
+> >  #define IDENTITY_FRAME(m)    ((m) | IDENTITY_FRAME_BIT)
+> > +#define GRANT_FRAME(m)       ((m) | GRANT_FRAME_BIT)
+> >
+> >  /* Maximum amount of memory we can handle in a domain in pages */
+> >  #define MAX_DOMAIN_PAGES                                             \
+> > @@ -48,7 +51,7 @@ extern unsigned long set_phys_range_identity(unsigned long pfn_s,
+> >                                            unsigned long pfn_e);
+> >
+> >  extern int m2p_add_override(unsigned long mfn, struct page *page,
+> > -                         bool clear_pte);
+> > +                         struct gnttab_map_grant_ref *kmap_op);
+> >  extern int m2p_remove_override(struct page *page, bool clear_pte);
+> >  extern struct page *m2p_find_override(unsigned long mfn);
+> >  extern unsigned long m2p_find_override_pfn(unsigned long mfn, unsigned long pfn);
+> > diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+> > index 4e37a7c0..13f20d8 100644
+> > --- a/arch/x86/xen/mmu.c
+> > +++ b/arch/x86/xen/mmu.c
+> > @@ -282,8 +282,70 @@ static bool xen_batched_set_pte(pte_t *ptep, pte_t pteval)
+> >       return true;
+> >  }
+> >
+> > +#ifdef CONFIG_HIGHMEM
+> > +static int xen_unmap_granted_page(pte_t *ptep)
+> > +{
+> > +     unsigned long mfn;
+> > +     struct page *page;
+> > +
+> > +     if (pte_flags(*ptep) & _PAGE_USER)
+> > +             return 1;
+> > +     mfn = (ptep->pte & PTE_PFN_MASK) >> PAGE_SHIFT;
+> > +     page = m2p_find_override(mfn);
+> > +     if (page != NULL && (page->private & GRANT_FRAME_BIT)) {
+> > +             int ret;
+> > +             struct gnttab_unmap_grant_ref kunmap_op;
+> > +             struct gnttab_map_grant_ref *kmap_op =
+> > +                     (struct gnttab_map_grant_ref *) page->index;
+> > +             kunmap_op.host_addr = kmap_op->host_addr;
+> > +             kunmap_op.handle = kmap_op->handle;
+> > +             kunmap_op.dev_bus_addr = 0;
+> > +             ret = HYPERVISOR_grant_table_op(
+> > +                             GNTTABOP_unmap_grant_ref, &kunmap_op, 1);
+> > +             WARN(ret, "m2p_remove_override: pfn %lx mfn %lx, failed to "
+> > +                     "modify kernel mappings", page_to_pfn(page), mfn);
+> > +             return ret;
+> > +     }
+> > +     return 1;
+> > +}
+> > +#endif
+> > +
+> >  static void xen_set_pte(pte_t *ptep, pte_t pteval)
+> >  {
+> > +#ifdef CONFIG_HIGHMEM
+> > +     if (!(pte_flags(pteval) & _PAGE_USER)) {
+> > +             int ret;
+> > +             struct page *page;
+> > +             unsigned long mfn = (pteval.pte & PTE_PFN_MASK) >> PAGE_SHIFT;
+> > +             page = m2p_find_override(mfn);
+> > +             /*
+> > +              * if this is a granted page we need to use a grant table
+> > +              * hypercall to map it instead
+> > +              */
+> > +             if (page != NULL && (page->private & GRANT_FRAME_BIT)) {
+> > +                     struct gnttab_map_grant_ref *kmap_op =
+> > +                             (struct gnttab_map_grant_ref *) page->index;
+> > +                     unsigned long old_mfn = kmap_op->dev_bus_addr;
+> > +                     kmap_op->host_addr =
+> > +                             arbitrary_virt_to_machine(ptep).maddr;
+> > +                     kmap_op->dev_bus_addr = 0;
+> > +                     ret = HYPERVISOR_grant_table_op(
+> > +                                     GNTTABOP_map_grant_ref, kmap_op, 1);
+> > +                     WARN(ret, "xen_set_pte: pfn %lx mfn %lx, failed to "
+> > +                             "modify kernel mappings",
+> > +                             page_to_pfn(page), mfn);
+> > +                     kmap_op->dev_bus_addr = old_mfn;
+> > +                     return;
+> > +             }
+> > +             /*
+> > +              * even if it is not a granted page, the old page we are about
+> > +              * to overwrite could be a granted page and in that case we need
+> > +              * to unmap it using a grant table hypercall
+> > +              */
+> > +             xen_unmap_granted_page(ptep);
+> > +     }
+> > +#endif
+> > +
+> >       if (!xen_batched_set_pte(ptep, pteval))
+> >               native_set_pte(ptep, pteval);
+> >  }
+> > @@ -548,6 +610,12 @@ static void xen_set_pte_atomic(pte_t *ptep, pte_t pte)
+> >
+> >  static void xen_pte_clear(struct mm_struct *mm, unsigned long addr, pte_t *ptep)
+> >  {
+> > +     /*
+> > +      * check if this is a granted page and unmap it using a grant table
+> > +      * hypercall in that case
+> > +      */
+> > +     if (!xen_unmap_granted_page(ptep))
+> > +             return;
+> >       if (!xen_batched_set_pte(ptep, native_make_pte(0)))
+> >               native_pte_clear(mm, addr, ptep);
+> >  }
+> > diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> > index 58efeb9..1c4d2b5 100644
+> > --- a/arch/x86/xen/p2m.c
+> > +++ b/arch/x86/xen/p2m.c
+> > @@ -161,6 +161,7 @@
+> >  #include <asm/xen/page.h>
+> >  #include <asm/xen/hypercall.h>
+> >  #include <asm/xen/hypervisor.h>
+> > +#include <xen/grant_table.h>
+> >
+> >  #include "xen-ops.h"
+> >
+> > @@ -676,7 +677,8 @@ static unsigned long mfn_hash(unsigned long mfn)
+> >  }
+> >
+> >  /* Add an MFN override for a particular page */
+> > -int m2p_add_override(unsigned long mfn, struct page *page, bool clear_pte)
+> > +int m2p_add_override(unsigned long mfn, struct page *page,
+> > +             struct gnttab_map_grant_ref *kmap_op)
+> >  {
+> >       unsigned long flags;
+> >       unsigned long pfn;
+> > @@ -699,9 +701,18 @@ int m2p_add_override(unsigned long mfn, struct page *page, bool clear_pte)
+> >       if (unlikely(!set_phys_to_machine(pfn, FOREIGN_FRAME(mfn))))
+> >               return -ENOMEM;
+> >
+> > -     if (clear_pte && !PageHighMem(page))
+> > -             /* Just zap old mapping for now */
+> > -             pte_clear(&init_mm, address, ptep);
+> > +     if (kmap_op != NULL) {
+> > +             if (!PageHighMem(page)) {
+> > +                     int ret = HYPERVISOR_grant_table_op(
+> > +                                     GNTTABOP_map_grant_ref, kmap_op, 1);
+> > +                     WARN(ret, "m2p_add_override: pfn %lx mfn %lx, "
+> > +                             "failed to modify kernel mappings", pfn, mfn);
+> > +             }
+> > +             page->private |= GRANT_FRAME_BIT;
+> > +             /* let's use dev_bus_addr to record the old mfn instead */
+> > +             kmap_op->dev_bus_addr = page->index;
+> > +             page->index = (unsigned long) kmap_op;
+> > +     }
+> >       spin_lock_irqsave(&m2p_override_lock, flags);
+> >       list_add(&page->lru,  &m2p_overrides[mfn_hash(mfn)]);
+> >       spin_unlock_irqrestore(&m2p_override_lock, flags);
+> > @@ -735,13 +746,27 @@ int m2p_remove_override(struct page *page, bool clear_pte)
+> >       spin_lock_irqsave(&m2p_override_lock, flags);
+> >       list_del(&page->lru);
+> >       spin_unlock_irqrestore(&m2p_override_lock, flags);
+> > -     set_phys_to_machine(pfn, page->index);
+> >
+> > -     if (clear_pte && !PageHighMem(page))
+> > -             set_pte_at(&init_mm, address, ptep,
+> > -                             pfn_pte(pfn, PAGE_KERNEL));
+> > -             /* No tlb flush necessary because the caller already
+> > -              * left the pte unmapped. */
+> > +     if (clear_pte) {
+> > +             struct gnttab_map_grant_ref *map_op =
+> > +                     (struct gnttab_map_grant_ref *) page->index;
+> > +             set_phys_to_machine(pfn, map_op->dev_bus_addr);
+> > +             if (!PageHighMem(page)) {
+> > +                     int ret;
+> > +                     struct gnttab_unmap_grant_ref unmap_op;
+> > +                     unmap_op.host_addr = map_op->host_addr;
+> > +                     unmap_op.handle = map_op->handle;
+> > +                     unmap_op.dev_bus_addr = 0;
+> > +                     ret = HYPERVISOR_grant_table_op(
+> > +                                     GNTTABOP_unmap_grant_ref, &unmap_op, 1);
+> > +                     WARN(ret, "m2p_remove_override: pfn %lx mfn %lx, "
+> > +                             "failed to modify kernel mappings", pfn, mfn);
+> > +                     set_pte_at(&init_mm, address, ptep,
+> > +                                     pfn_pte(pfn, PAGE_KERNEL));
+> > +                     __flush_tlb_single(address);
+> > +             }
+> > +     } else
+> > +             set_phys_to_machine(pfn, page->index);
+> >
+> >       return 0;
+> >  }
+> > @@ -758,7 +783,7 @@ struct page *m2p_find_override(unsigned long mfn)
+> >       spin_lock_irqsave(&m2p_override_lock, flags);
+> >
+> >       list_for_each_entry(p, bucket, lru) {
+> > -             if (p->private == mfn) {
+> > +             if ((p->private & (~GRANT_FRAME_BIT)) == mfn) {
+> >                       ret = p;
+> >                       break;
+> >               }
+> > diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+> > index f914b26..ca41772 100644
+> > --- a/drivers/xen/gntdev.c
+> > +++ b/drivers/xen/gntdev.c
+> > @@ -83,6 +83,7 @@ struct grant_map {
+> >       struct ioctl_gntdev_grant_ref *grants;
+> >       struct gnttab_map_grant_ref   *map_ops;
+> >       struct gnttab_unmap_grant_ref *unmap_ops;
+> > +     struct gnttab_map_grant_ref   *kmap_ops;
+> >       struct page **pages;
+> >  };
+> >
+> > @@ -116,10 +117,12 @@ static struct grant_map *gntdev_alloc_map(struct gntdev_priv *priv, int count)
+> >       add->grants    = kzalloc(sizeof(add->grants[0])    * count, GFP_KERNEL);
+> >       add->map_ops   = kzalloc(sizeof(add->map_ops[0])   * count, GFP_KERNEL);
+> >       add->unmap_ops = kzalloc(sizeof(add->unmap_ops[0]) * count, GFP_KERNEL);
+> > +     add->kmap_ops  = kzalloc(sizeof(add->kmap_ops[0])  * count, GFP_KERNEL);
+> >       add->pages     = kzalloc(sizeof(add->pages[0])     * count, GFP_KERNEL);
+> >       if (NULL == add->grants    ||
+> >           NULL == add->map_ops   ||
+> >           NULL == add->unmap_ops ||
+> > +         NULL == add->kmap_ops  ||
+> >           NULL == add->pages)
+> >               goto err;
+> >
+> > @@ -129,6 +132,7 @@ static struct grant_map *gntdev_alloc_map(struct gntdev_priv *priv, int count)
+> >       for (i = 0; i < count; i++) {
+> >               add->map_ops[i].handle = -1;
+> >               add->unmap_ops[i].handle = -1;
+> > +             add->kmap_ops[i].handle = -1;
+> >       }
+> >
+> >       add->index = 0;
+> > @@ -142,6 +146,7 @@ err:
+> >       kfree(add->grants);
+> >       kfree(add->map_ops);
+> >       kfree(add->unmap_ops);
+> > +     kfree(add->kmap_ops);
+> >       kfree(add);
+> >       return NULL;
+> >  }
+> > @@ -243,10 +248,30 @@ static int map_grant_pages(struct grant_map *map)
+> >                       gnttab_set_unmap_op(&map->unmap_ops[i], addr,
+> >                               map->flags, -1 /* handle */);
+> >               }
+> > +     } else {
+> > +             for (i = 0; i < map->count; i++) {
+> > +                     unsigned level;
+> > +                     unsigned long address = (unsigned long)
+> > +                             pfn_to_kaddr(page_to_pfn(map->pages[i]));
+> > +                     pte_t *ptep;
+> > +                     u64 pte_maddr = 0;
+> > +                     if (!PageHighMem(map->pages[i])) {
+> > +                             ptep = lookup_address(address, &level);
+> > +                             pte_maddr =
+> > +                                     arbitrary_virt_to_machine(ptep).maddr;
+> > +                     }
+> > +                     gnttab_set_map_op(&map->kmap_ops[i], pte_maddr,
+> > +                             map->flags |
+> > +                             GNTMAP_host_map |
+> > +                             GNTMAP_contains_pte,
+> > +                             map->grants[i].ref,
+> > +                             map->grants[i].domid);
+> > +             }
+> >       }
+> >
+> >       pr_debug("map %d+%d\n", map->index, map->count);
+> > -     err = gnttab_map_refs(map->map_ops, map->pages, map->count);
+> > +     err = gnttab_map_refs(map->map_ops, use_ptemod ? map->kmap_ops : NULL,
+> > +                     map->pages, map->count);
+> >       if (err)
+> >               return err;
+> >
+> > diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> > index fd725cd..1e8669a 100644
+> > --- a/drivers/xen/grant-table.c
+> > +++ b/drivers/xen/grant-table.c
+> > @@ -448,6 +448,7 @@ unsigned int gnttab_max_grant_frames(void)
+> >  EXPORT_SYMBOL_GPL(gnttab_max_grant_frames);
+> >
+> >  int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> > +                     struct gnttab_map_grant_ref *kmap_ops,
+> >                   struct page **pages, unsigned int count)
+> >  {
+> >       int i, ret;
+> > @@ -488,8 +489,7 @@ int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> >                        */
+> >                       return -EOPNOTSUPP;
+> >               }
+> > -             ret = m2p_add_override(mfn, pages[i],
+> > -                                    map_ops[i].flags & GNTMAP_contains_pte);
+> > +             ret = m2p_add_override(mfn, pages[i], &kmap_ops[i]);
+> >               if (ret)
+> >                       return ret;
+> >       }
+> > diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+> > index b1fab6b..6b99bfb 100644
+> > --- a/include/xen/grant_table.h
+> > +++ b/include/xen/grant_table.h
+> > @@ -156,6 +156,7 @@ unsigned int gnttab_max_grant_frames(void);
+> >  #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
+> >
+> >  int gnttab_map_refs(struct gnttab_map_grant_ref *map_ops,
+> > +                     struct gnttab_map_grant_ref *kmap_ops,
+> >                   struct page **pages, unsigned int count);
+> >  int gnttab_unmap_refs(struct gnttab_unmap_grant_ref *unmap_ops,
+> >                     struct page **pages, unsigned int count);
+> > --
+> > 1.7.2.3
+
 
