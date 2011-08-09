@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041Ab1HISvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 14:51:23 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:63196 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab1HISvW (ORCPT
+	id S1753234Ab1HISwg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 14:52:36 -0400
+Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.32]:39744 "EHLO
+	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751484Ab1HISwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 14:51:22 -0400
-Date: Tue, 9 Aug 2011 14:51:00 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 2/3] xen/pv-on-hvm kexec: rebind virqs to
- existing eventchannel ports
-Message-ID: <20110809185100.GA19520@dumpdata.com>
-References: <20110804162053.723541930@aepfle.de>
- <20110804162054.510901329@aepfle.de>
- <1312881460.26263.46.camel@zakaz.uk.xensource.com>
- <20110809152806.GA12710@aepfle.de>
+	Tue, 9 Aug 2011 14:52:35 -0400
+Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
+X-Authority-Analysis: v=1.1 cv=QcSFu2tMqX8VyBnwf4xZriMeG3TVj1s8v1Rcea0EwGI= c=1 sm=0 a=_Vs4JnOmORAA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:17 a=Z4Rwk6OoAAAA:8 a=YORvzBCaAAAA:8 a=VwQbUJbxAAAA:8 a=68eEZQRoAAAA:8 a=azj6Gt-4AAAA:8 a=IuEUi4aQjoqH0N5WOacA:9 a=r-UhdREFDPBmZV-uqjYA:7 a=CjuIK1q_8ugA:10 a=jbrJJM5MRmoA:10 a=VV2__AUApEoA:10 a=7YLhZ6jOsBkA:10 a=eJ1lpvm07AkA:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.79.195.91
+From: "Bob Pearson" <rpearson@systemfabricworks.com>
+To: "'Joakim Tjernlund'" <joakim.tjernlund@transmode.se>,
+        "'George Spelvin'" <linux@horizon.com>
+Cc: <akpm@linux-foundation.org>, <fzago@systemfabricworks.com>,
+        <linux-kernel@vger.kernel.org>, <rdunlap@xenotime.net>
+References: <4E40CCCF.5070000@systemfabricworks.com> <20110809114504.6140.qmail@science.horizon.com> <OF2A1D4C02.965787E8-ONC12578E7.005C021E-C12578E7.005C7904@transmode.se>
+In-Reply-To: <OF2A1D4C02.965787E8-ONC12578E7.005C021E-C12578E7.005C7904@transmode.se>
+Subject: RE: [patch v4 1/7] crc32: move-to-documentation.diff
+Date: Tue, 9 Aug 2011 13:52:33 -0500
+Message-ID: <016e01cc56c5$800662f0$801328d0$@systemfabricworks.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110809152806.GA12710@aepfle.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090208.4E4181A3.0093,ss=1,re=0.000,fgs=0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQJabRQfxXM+gSqso4JdrKcJlf7P5wIApd4OAe6fAaOT2TaZwA==
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 09, 2011 at 05:28:06PM +0200, Olaf Hering wrote:
-> On Tue, Aug 09, Ian Campbell wrote:
+
+
+> -----Original Message-----
+> From: Joakim Tjernlund [mailto:joakim.tjernlund@transmode.se]
+> Sent: Tuesday, August 09, 2011 11:50 AM
+> To: George Spelvin
+> Cc: akpm@linux-foundation.org; fzago@systemfabricworks.com; linux-
+> kernel@vger.kernel.org; rdunlap@xenotime.net;
+> rpearson@systemfabricworks.com
+> Subject: Re: [patch v4 1/7] crc32: move-to-documentation.diff
 > 
-> > On Thu, 2011-08-04 at 17:20 +0100, Olaf Hering wrote:
-> > > During a kexec boot some virqs such as timer and debugirq were already
-> > > registered by the old kernel.  The hypervisor will return -EEXISTS from
-> > > the new EVTCHNOP_bind_virq request and the BUG in bind_virq_to_irq()
-> > > triggers.  Catch the -EEXISTS error and loop through all possible ports to find
-> > > what port belongs to the virq/cpu combo.
-> > 
-> > Would it be better to proactively just query the status of all event
-> > channels early on, like you do in find_virq, and setup the irq info
-> > structures as appropriate? Rather than waiting for an -EEXISTS I mean.
-
-We only create those structures when the IRQ handler is setup. And since
-this is a new kernel, the irq_get_handler_data(irq) won't be present.
+> "George Spelvin" <linux@horizon.com> wrote on 2011/08/09 13:45:04:
+> >
+> > Here's a hopefully-improved Documentation file, which explains the
+slicing
+> > algorithm as well.  As long as you have a big diff, it seems worth
+tweaking.
+> >
+> > You also might want to leave a pointer in lib/crc32.c to the relocated
+docs.
+> >
+> > (I'm just inclding the whole changed file because I assume it's easier
+> > to review that way; do you prefer a diff?)
 > 
-> Now that I read that again more carefully: 
-> No idea if thats possible, I will leave that answer to Jeremy/Konrad.
+> Nice, reading this once again I think I found an old typo. See below
+> 
+> Perhaps Bob can add this addition to his patch series?
+> 
+> >
+> > === Cut here ===
+> ...
+> > Or in little-endian:
+> > for (i = 0; i < input_bytes; i++) {
+> >    remainder ^= next_input_byte();
+> >    for (j = 0; j < 8; j++) {
+> >       multiple = (remainder & 1) ? CRCPOLY : 0;
+> >       remainder = (remainder << 1) ^ multiple;
+> 
+> Should not above line be:
+>        remainder = (remainder >> 1) ^ multiple;
 
-But we could an optimization. The find_virq does a search every time
-from 0->NR_EVENTS. Perhaps we can also check the xen_irq_list_head
-to skip over the event channels we have already created?
+I agree. Will change in text.
 
-Something like this:
+> ?
+> 
+> >    }
+> > }
+> >
+> > If the input is a multiple of 32 bits, you can even XOR in a 32-bit
+> > word at a time and increase the inner loop count to 32.
 
-   bool skip = false;
-   list_for_each_entry(info, &xen_irq_list_head, list)
-   if (info->evtchn == port && info->cpu == cpu) {
-        skip=true;
-        break;
-    }
-    if (skip)
-        continue
-
-    .. snip..
-    and here is the EVTCHNOP_status hypercall.
