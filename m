@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925Ab1HITrF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 15:47:05 -0400
-Received: from [95.166.99.235] ([95.166.99.235]:58647 "EHLO kernel.dk"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722Ab1HITrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 15:47:03 -0400
-Message-ID: <4E4181E4.3090704@kernel.dk>
-Date: Tue, 09 Aug 2011 20:52:20 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1751319Ab1HITum (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 15:50:42 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:44211 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab1HITul convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 15:50:41 -0400
 MIME-Version: 1.0
-To: Kyungmin Park <kmpark@infradead.org>
-CC: linux-kernel@vger.kernel.org, arnd@arndb.de, jh80.chung@samsung.com
-Subject: Re: [RFC PATCH] request: teach the device more intelligent
-References: <20110809034724.GA22257@july>
-In-Reply-To: <20110809034724.GA22257@july>
+In-Reply-To: <20110803125524.GC23953@n2100.arm.linux.org.uk>
+References: <cover.1311936523.git.viresh.kumar@st.com>
+	<96781d46e41fa6ffc04b88527a25d73f5a59eda8.1311936524.git.viresh.kumar@st.com>
+	<20110730120740.GA15791@n2100.arm.linux.org.uk>
+	<20110730130537.GB15791@n2100.arm.linux.org.uk>
+	<CAKnu2MqTYF43wW3axM--jXdtvsCyRBTLEHDc3hPoJYAmTAL5UA@mail.gmail.com>
+	<CAKnu2MppEKxZD2Z77tfShMfG80d-Xx26yBGhZtJkJ2C6SjE=1w@mail.gmail.com>
+	<20110731170451.GC2975@n2100.arm.linux.org.uk>
+	<CACRpkdZTsD=7woN1qV-sFpsJTyT0LQBq+q=xTOwuewAk=ijBjQ@mail.gmail.com>
+	<20110803125524.GC23953@n2100.arm.linux.org.uk>
+Date: Tue, 9 Aug 2011 21:50:40 +0200
+Message-ID: <CACRpkdYasq+Ha1K4Guma9XqJub348QgXDK9=Jnr6CzAj0Zf9pA@mail.gmail.com>
+Subject: Re: [PATCH 07/18] dmaengine/amba-pl08x: Enable/Disable amba_pclk with
+ channel requests
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Viresh Kumar <viresh.kumar@st.com>, pratyush.anand@st.com,
+        rajeev-dlh.kumar@st.com, armando.visconti@st.com,
+        bhupesh.sharma@st.com, vinod.koul@intel.com,
+        linux-kernel@vger.kernel.org, vipin.kumar@st.com, shiraz.hashim@st.com,
+        amit.virdi@st.com, vipulkumar.samar@st.com, viresh.linux@gmail.com,
+        deepak.sikri@st.com, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-08-09 05:47, Kyungmin Park wrote:
-> Hi Jens
-> 
-> Now eMMC device requires the upper layer information to improve the data
-> performance and reliability.
-> 
-> . Context ID
-> Using the context information, it can sort out the data internally and improve the performance.
-> The main problem is that it's needed to define "What's the context". 
-> Actually I expect cfq queue has own unique ID but it doesn't so decide to use the pid instead
-> 
-> . Data Tag
-> Using the Data Tag (1-bit information), It writes the data at SLC area when it's hot data. So it can make the chip more reliable.
-> First I expect the REQ_META but current ext4 doesn't pass the WRITE_META. only use the READ_META. so it needs to investigate it.
-> 
-> With these characteristics, it's helpful to teach the device. After some consideration. it's needed to pass out these information at request data structure.
-> 
-> Can you give your opinions and does it proper fields at requests?
+On Wed, Aug 3, 2011 at 2:55 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Tue, Aug 02, 2011 at 11:05:38AM +0200, Linus Walleij wrote:
+>> On Sun, Jul 31, 2011 at 7:04 PM, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>> > On Sun, Jul 31, 2011 at 02:04:47AM +0200, Linus Walleij wrote:
+>> >>
+>> >> ..and while it will just cause some double refcounts on the clock,
+>> >> it makes sense to delete the pclk manipulation from the PL022
+>> >> driver code as part of the patch, like this:
+>> >
+>> > Yes, this looks fine.  Shall I wrap it up as part of my patch?
+>>
+>> Yes please.
+>> Acked-by.
+>
+> Can you give this a try - this adds runtime PM to the primecell core,
+> updates the SPI driver for those changes, and adds runtime PM to the
+> MMCI driver.  I've briefly tested this on Versatile PB926, though
+> obviously not the SPI stuff very much because Versatile has no SPI
+> peripherals.
+>
+> I chose the PCI methodology to this - rather than having every driver
+> fiddle about with enabling runtime PM, that's dealt with in the core
+> and instead, drivers just do a put() in their probe and a balancing
+> get() in their remove function to activate runtime PM for the device.
 
-You need this to work on all IO schedulers, not just cfq. And since
-that's the case, there's no need to add this field since you can just
-retrieve it if the driver asks for it. For CFQ, it could look like this:
+Sorry for the delay.
 
-static int cfq_foo(struct request *rq)
-{
-        struct cfq_queue *cfqq = rq->elevator_private[1];
+It works like a charm. I've tested it on U300 with a loopback test
+and MMC and for both it works perfectly and the reference
+counter goes to zero when unused.
 
-        if (cfqq)
-                return cfqq->pid;
+Tested-by: Linus Walleij <linus.walleij@linaro.org>
 
-        return -1;
-}
-
-As to the hot part, I think that would be better as just a request flag
-like eg the meta flag.
-
--- 
-Jens Axboe
-
+Yours,
+Linus Walleij
