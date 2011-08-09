@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab1HIIBN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 04:01:13 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:54572 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373Ab1HIIBM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 04:01:12 -0400
+	id S1752745Ab1HIICT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 04:02:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17695 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752517Ab1HIICR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 04:02:17 -0400
+Date: Tue, 9 Aug 2011 10:01:59 +0200
+From: Johannes Weiner <jweiner@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        Michal Hocko <mhocko@suse.cz>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        abrestic@google.com
+Subject: Re: [PATCH v3] memcg: add memory.vmscan_stat
+Message-ID: <20110809080159.GA32015@redhat.com>
+References: <20110722171540.74eb9aa7.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110808124333.GA31739@redhat.com>
+ <20110809083345.46cbc8de.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1312859345.1743.9.camel@ymzhang>
-References: <1312859345.1743.9.camel@ymzhang>
-Date: Tue, 9 Aug 2011 16:01:10 +0800
-Message-ID: <CABqxG0dMcZUw9PVdfpz=V6d05=o+UcWKD_0PyoKir+4i08S+sA@mail.gmail.com>
-Subject: Re: [PATCH ] printk: add module parameter console_suspend_enabled to
- control console_suspend_enabled
-From: Dave Young <hidave.darkstar@gmail.com>
-To: yanmin_zhang@linux.intel.com
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110809083345.46cbc8de.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 9, 2011 at 11:09 AM, Yanmin Zhang
-<yanmin_zhang@linux.intel.com> wrote:
-> We are enabling some power features on medfield. To test suspend-2-RAM
-> conveniently, we need turn on/off console_suspend_enabled frequently.
->
-> Below patch adds a module parameter, so users could change it by:
-> /sys/module/printk/parameters/console_suspend_enabled
+On Tue, Aug 09, 2011 at 08:33:45AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Mon, 8 Aug 2011 14:43:33 +0200
+> Johannes Weiner <jweiner@redhat.com> wrote:
+> > On a non-technical note: as Ying Han and I were the other two people
+> > working on reclaim and statistics, it really irks me that neither of
+> > us were CCd on this.  Especially on such a controversial change.
+> 
+> I always drop CC if no reply/review comes.
 
-What about change name to no_console_suspend? Or it will be weird if
-boot kernel with both no_console_suspend and
-printk.console_suspend_enabled set.
+There is always the possibility that a single mail in an otherwise
+unrelated patch series is overlooked (especially while on vacation ;).
+Getting CCd on revisions and -mm inclusion is a really nice reminder.
 
->
-> Signed-off-by: Yanmin Zhang <yanmin.zhang@intel.com>
->
-> ---
->  kernel/printk.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index 37dff34..ce00f1b 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -1106,6 +1106,8 @@ static int __init console_suspend_disable(char *str)
->        return 1;
->  }
->  __setup("no_console_suspend", console_suspend_disable);
-> +module_param_named(console_suspend_enabled, console_suspend_enabled,
-> +               bool, S_IRUGO | S_IWUSR);
->
->  /**
->  * suspend_console - suspend the console subsystem
-> --
-> 1.7.1
->
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-
-
-
--- 
-Regards
-Yang RuiRui
+Unless there is a really good reason not to (is there ever?), could
+you please keep CCs?
