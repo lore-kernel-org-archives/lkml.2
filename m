@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471Ab1HIUUr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 16:20:47 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47550 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752412Ab1HIUUq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 16:20:46 -0400
-Subject: Re: [PATCH] hpsa: fix physical device lun and target numbering
- problem
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: scameron@beardog.cce.hp.com
-Cc: Stephen Cameron <stephenmcameron@gmail.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mikem@beardog.cce.hp.com,
-        thenzl@redhat.com, akpm@linux-foundation.org, axboe@kernel.dk
-In-Reply-To: <20110809200954.GH27723@beardog.cce.hp.com>
-References: <20110809131801.10649.44268.stgit@beardog.cce.hp.com>
-	 <CADzpL0SnZ+t6RT5iU2Ne+HEdBO1n2K51WwqaVDHXPs1CDHGk2A@mail.gmail.com>
-	 <CADzpL0TZfdQqoE-X-tN0SrsNSOvqJAsX8DzC46XpM_JihJY29w@mail.gmail.com>
-	 <1312920391.8648.6.camel@mulgrave>
-	 <20110809200954.GH27723@beardog.cce.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Aug 2011 15:20:41 -0500
-Message-ID: <1312921242.8648.11.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1+jejb.1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1753481Ab1HIUWn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 16:22:43 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:39858 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752735Ab1HIUWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 16:22:42 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: Greg KH <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "stable-review@kernel.org" <stable-review@kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [Stable-review] [28/55] [SCSI] fix crash in scsi_dispatch_cmd()
+Thread-Topic: [Stable-review] [28/55] [SCSI] fix crash in scsi_dispatch_cmd()
+Thread-Index: AQHMVS8JppVwAs6Xz0uGJqTkQMem7ZUTpWwAgAASYoCAAbdUAA==
+Date: Tue, 9 Aug 2011 20:22:37 +0000
+Message-ID: <1312921356.8648.13.camel@mulgrave>
+References: <20110806000251.682788533@clark.kroah.org>
+	 <1312739411.2591.1026.camel@deadeye> <1312739484.2591.1027.camel@deadeye>
+	 <20110808170424.GB27419@suse.de>  <20110808181011.GE29924@decadent.org.uk>
+In-Reply-To: <20110808181011.GE29924@decadent.org.uk>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [76.243.235.53]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <A84AD9E80330C946A80C9257334FF172@sw.swsoft.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p79KMpF3032529
 
-On Tue, 2011-08-09 at 15:09 -0500, scameron@beardog.cce.hp.com wrote:
-> On Tue, Aug 09, 2011 at 03:06:31PM -0500, James Bottomley wrote:
-> > On Tue, 2011-08-09 at 14:58 -0500, Stephen Cameron wrote:
-> > > On Tue, Aug 9, 2011 at 8:33 AM, Stephen Cameron
-> > > <stephenmcameron@gmail.com> wrote:
+On Mon, 2011-08-08 at 19:10 +0100, Ben Hutchings wrote:
+> On Mon, Aug 08, 2011 at 10:04:24AM -0700, Greg KH wrote:
+> > On Sun, Aug 07, 2011 at 06:51:24PM +0100, Ben Hutchings wrote:
+> > > On Sun, 2011-08-07 at 18:50 +0100, Ben Hutchings wrote:
+> > > > On Fri, 2011-08-05 at 17:01 -0700, Greg KH wrote:
+> > > > > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+> > > > > 
+> > > > > ------------------
+> > > > > 
+> > > > > From: James Bottomley <James.Bottomley@HansenPartnership.com>
+> > > > > 
+> > > > > commit bfe159a51203c15d23cb3158fffdc25ec4b4dda1 upstream.
+> > > > > 
+> > > > > USB surprise removal of sr is triggering an oops in
+> > > > > scsi_dispatch_command().  What seems to be happening is that USB is
+> > > > > hanging on to a queue reference until the last close of the upper
+> > > > > device, so the crash is caused by surprise remove of a mounted CD
+> > > > > followed by attempted unmount.
+> > > > [...]
+> > > > 
+> > > > This has been reported in 2.6.39.y and 3.0, but not in 2.6.32.y.
 > > > 
-> > > > Despite the above patch, which I do think is correct, I can still get
-> > > > a panic (on RHEL 6.1 with 2.6.31-rc1 kernel)
-> > > 
-> > > Er, I meant 3.1-rc1, not 2.6.31-rc1.
+> > > That is, AFAIK.
 > > 
-> > Do I take it from the fact that you cc'd stable that you want these
-> > patches in the stable tree in spite of not adding the stable tag?
-> > 
-> > James
-> > 
-> 
-> Well, I obviously don't know how to CC stable properly.
+> > Oops, good catch, I've dropped this from the .32 and .33 queue now, it's
+> > not needed there at all.
+>  
+> Well, it is entirely possible that I am confusing multiple bugs (I
+> actualy attempted to delete this message from my outgoing mail queue
+> as I was becoming less confident about it).  I assume James can
+> confirm one way or the other.
 
-Yes, that's why Greg keeps sending you a form letter.
-
-> I think I will stop since it only seems to annoy Greg
-> and make me feel like an idiot for trying.
-
-First, but why don't you actually read the file Greg keeps referring you
-to in his form letter:
-
- Documentation/stable_kernel_rules.txt
-
-It actually tells you how to submit, and what this tag thing I've been
-asking about is.  It's only 80 lines long and will amply repay time
-spent reading it.
+No ... There is an original bug somewhere that might permeate to 2.6.32
+which the patch series fixes, but I don't think all the precursors were
+stable tagged and it's a race condition which only started showing up in
+2.6.38.
 
 James
 
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
