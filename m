@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751315Ab1HIEhQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 00:37:16 -0400
-Received: from mga03.intel.com ([143.182.124.21]:57416 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750916Ab1HIEhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 00:37:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,341,1309762800"; 
-   d="scan'208";a="36539925"
-Subject: Re: [PATCH] dmaengine: pl330: add missing include of scatterlist.h
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jassi Brar <jassisinghbrar@gmail.com>
-In-Reply-To: <CABb+yY2bt0M0X0o-2578eBcP7vwvjykCykKv6e0+HZ17Qset_w@mail.gmail.com>
-References: <1312830866-2932-1-git-send-email-robherring2@gmail.com>
-	 <CABb+yY2bt0M0X0o-2578eBcP7vwvjykCykKv6e0+HZ17Qset_w@mail.gmail.com>
+	id S1751288Ab1HIEmi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 00:42:38 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37042 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab1HIEmh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 00:42:37 -0400
+Subject: Re: linux-next: manual merge of the moduleh tree with the
+ slave-dma tree
+From: Vinod Koul <vkoul@infradead.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Dan <dan.j.williams@intel.com>
+Cc: vinod.koul@intel.com, Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20110809125623.e25f685fd20c787fcf58fcfc@canb.auug.org.au>
+References: <20110809125623.e25f685fd20c787fcf58fcfc@canb.auug.org.au>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Aug 2011 10:06:18 +0530
-Message-ID: <1312864578.1539.46.camel@vkoul-udesk3>
+Date: Tue, 09 Aug 2011 10:11:33 +0530
+Message-ID: <1312864893.1539.48.camel@vkoul-udesk3>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-09 at 00:59 +0530, Jassi Brar wrote:
-> On Tue, Aug 9, 2011 at 12:44 AM, Rob Herring <robherring2@gmail.com> wrote:
-> > From: Rob Herring <rob.herring@calxeda.com>
-> >
-> > scatterlist.h was getting implicitly included and now is not which
-> > causes this compile error:
-> >
-> > drivers/dma/pl330.c: In function ‘pl330_prep_slave_sg’:
-> > drivers/dma/pl330.c:603:2: error: implicit declaration of function
-> > ‘for_each_sg’
-> >
-> > Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> > Cc: Jassi Brar <jassisinghbrar@gmail.com>
-> > Cc: Vinod Koul <vkoul@infradead.org>
+On Tue, 2011-08-09 at 12:56 +1000, Stephen Rothwell wrote:
 > 
-> Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
+> Vinod, that slave-dma tree patch should probably remove the bare "struct
+> scallerlist;" since it now includes scatterlist,h.
 > 
-> thnx
+Yes, makes sense Dan does this look good to you
+
+From: Vinod Koul <vinod.koul@intel.com>
+Date: Tue, 9 Aug 2011 10:08:10 +0530
+Subject: [PATCH] dmaengine: remove struct scatterlist for header
 
 Commit 90b44f8 introduces dmaengine_prep_slave_single API which adds
-scatterlist.h in dmaengine.h, since you already include dmaengine.h this
-patch shouldn't be required
+scatterlist.h in dmaengine.h, so defining struct scatterlist is not
+required
 
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+---
+ include/linux/dmaengine.h |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 0d738c9..ace51af 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -26,8 +26,6 @@
+ #include <linux/dma-direction.h>
+ #include <linux/scatterlist.h>
+ 
+-struct scatterlist;
+-
+ /**
+  * typedef dma_cookie_t - an opaque DMA cookie
+  *
 -- 
-~Vinod
+1.7.0.4
+
+
+
 
