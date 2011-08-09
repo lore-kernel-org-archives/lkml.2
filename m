@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750926Ab1HIA0t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 20:26:49 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:51903 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab1HIA0s (ORCPT
+	id S1750957Ab1HIAjK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 20:39:10 -0400
+Received: from mail209.messagelabs.com ([216.82.255.3]:47278 "EHLO
+	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab1HIAjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 20:26:48 -0400
+	Mon, 8 Aug 2011 20:39:08 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-14.tower-209.messagelabs.com!1312850345!13057298!16
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.180]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] gpio: ep93xx: remove usless pr_err message
+Date: Mon, 8 Aug 2011 17:38:44 -0700
+User-Agent: KMail/1.9.9
+CC: <rmallon@gmail.com>, <grant.likely@secretlab.ca>
 MIME-Version: 1.0
-In-Reply-To: <20110809090455.92901845.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110808110658.31053.55013.stgit@localhost6>
-	<20110808110659.31053.92935.stgit@localhost6>
-	<CAEwNFnBojMWL1QRfn_buhwUwMOBRGSUGdWBgmzdt9vsCVmLFmQ@mail.gmail.com>
-	<20110809090455.92901845.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Tue, 9 Aug 2011 09:26:47 +0900
-Message-ID: <CAEwNFnDKsCFWFshHxUkfc3dBTF=0-0eH2ZunyRYt2tcxW72KuA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] vmscan: activate executable pages after first usage
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201108081738.44996.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Kame.
+All the IRQ_TYPE_* options are handled so the pr_err message is
+not really necessary, remove it.
 
-On Tue, Aug 9, 2011 at 9:04 AM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Tue, 9 Aug 2011 09:02:28 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
->
->> On Mon, Aug 8, 2011 at 8:07 PM, Konstantin Khlebnikov
->> <khlebnikov@openvz.org> wrote:
->> > Logic added in commit v2.6.30-5507-g8cab475
->> > (vmscan: make mapped executable pages the first class citizen)
->> > was noticeably weakened in commit v2.6.33-5448-g6457474
->> > (vmscan: detect mapped file pages used only once)
->> >
->> > Currently these pages can become "first class citizens" only after second usage.
->> >
->> > After this patch page_check_references() will activate they after first usage,
->> > and executable code gets yet better chance to stay in memory.
->> >
->> > TODO:
->> > run some cool tests like in v2.6.30-5507-g8cab475 =)
->> >
->> > Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
->> > ---
->>
->> It might be a very controversial topic.
->> AFAIR, at least, we did when vmscan: make mapped executable pages the
->> first class citizen was merged. :)
->>
->> You try to change behavior.
->>
->> Old : protect *working set* executable page
->> New: protect executable page *unconditionally*.
->>
->
-> Hmm ? I thought
-> Old: protect pages if referenced twice
-> New: protect executable page if referenced once.
->
-> IIUC, ANON is proteced if it's referenced once.
->
-> So, this patch changes EXECUTABLE file to the same class as ANON pages.
+Also, since this was the only pr_* use in the file, remove the pr_fmt.
 
-"Working set" means two reference in implementation of the moment. But
-it can change in future as many as we want.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ryan Mallon <rmallon@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
 
-"Unconditionally" means that all of mapped page starts from referenced
-pte so it would activate all of executable pages.
+---
 
->
-> Anyway, I agree test/measurement is required.
-
-Absolutely.
-
--- 
-Kind regards,
-Minchan Kim
+diff --git a/drivers/gpio/gpio-ep93xx.c b/drivers/gpio/gpio-ep93xx.c
+index 468b27d..b229a29 100644
+--- a/drivers/gpio/gpio-ep93xx.c
++++ b/drivers/gpio/gpio-ep93xx.c
+@@ -12,8 +12,6 @@
+  *  published by the Free Software Foundation.
+  */
+ 
+-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+-
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+@@ -209,7 +207,6 @@ static int ep93xx_gpio_irq_type(struct irq_data *d, unsigned int type)
+ 		handler = handle_edge_irq;
+ 		break;
+ 	default:
+-		pr_err("failed to set irq type %d for gpio %d\n", type, gpio);
+ 		return -EINVAL;
+ 	}
+ 
