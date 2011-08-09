@@ -1,99 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752280Ab1HIDdK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 23:33:10 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:42021 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631Ab1HIDdJ (ORCPT
+	id S1752309Ab1HIDlm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 23:41:42 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:52227 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752144Ab1HIDlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 23:33:09 -0400
-Subject: Re: [PATCH] slub: fix check_bytes() for slub debugging
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-mm@kvack.org
-In-Reply-To: <1312859440.2531.20.camel@edumazet-laptop>
-References: <1312709438-7608-1-git-send-email-akinobu.mita@gmail.com>
-	 <1312859440.2531.20.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Aug 2011 05:33:03 +0200
-Message-ID: <1312860783.2531.31.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 8 Aug 2011 23:41:40 -0400
+X-Sasl-enc: JjZGgAtZB/gljwZMiv0cqI2MihRBI7YtPgqG0FuskmZf 1312861299
+Date: Mon, 8 Aug 2011 20:39:19 -0700
+From: Greg KH <greg@kroah.com>
+To: Andreas Hartmann <andihartmann@01019freenet.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Linux 3.0: broken ums_eneub6250
+Message-ID: <20110809033919.GB13283@kroah.com>
+References: <hjXX6-Ee-55@gated-at.bofh.it>
+ <hk6nE-6kT-5@gated-at.bofh.it>
+ <hk7Wq-mZ-1@gated-at.bofh.it>
+ <j1mm4l$55a$1@ID-44327.news.uni-berlin.de>
+ <20110808042231.GA6248@kroah.com>
+ <4E3F9B71.7040206@01019freenet.de>
+ <20110808153302.GA8637@kroah.com>
+ <4E403837.6040902@01019freenet.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E403837.6040902@01019freenet.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 09 août 2011 à 05:10 +0200, Eric Dumazet a écrit :
-> Le dimanche 07 août 2011 à 18:30 +0900, Akinobu Mita a écrit :
-> > The check_bytes() function is used by slub debugging.  It returns a pointer
-> > to the first unmatching byte for a character in the given memory area.
+On Mon, Aug 08, 2011 at 09:25:43PM +0200, Andreas Hartmann wrote:
+> Greg KH schrieb:
+> > On Mon, Aug 08, 2011 at 10:16:49AM +0200, Andreas Hartmann wrote:
+> >> Greg KH schrieb:
+> >>> On Sun, Aug 07, 2011 at 08:39:20PM +0200, Andreas Hartmann wrote:
+> >>>> Hi,
+> >>>>
+> >>>> obviously, nobody seems to be interested to work on this bug. Until it's
+> >>>> fixed: There is a workaround to get the device working again with 2.6.39
+> >>>> and 3.0 - just remove the unusable ums-eneub6250.ko and replace it with
+> >>>> the complete old and fine keucr-module - staging but working :-)
+> >>>>
+> >>>> https://bugzilla.novell.com/show_bug.cgi?id=709243#c1
+> >>>
+> >>> How about working on a patch for the in-kernel version of the code to
+> >>> get it to work properly so we can resolve this?
+> >>
+> >> If I would be able do this, I would have done it! On the other side: Why
+> >> should I do it, if there is a module, which works just fine?
 > > 
-> > If the character for matching byte is greater than 0x80, check_bytes()
-> > doesn't work.  Becuase 64-bit pattern is generated as below.
+> > Because I'm guessing that you wish to see the in-kernel code work
+> > properly, right?
 > > 
-> > 	value64 = value | value << 8 | value << 16 | value << 24;
-> > 	value64 = value64 | value64 << 32;
+> >> But you could send me patches which I could test.
 > > 
-> > The integer promotions are performed and sign-extended as the type of value
-> > is u8.  The upper 32 bits of value64 is 0xffffffff in the first line, and
-> > the second line has no effect.
+> > Have you emailed the developers of this driver these questions?  I'm
+> > sure they could help you out as they do have the hardware and they wrote
+> > the patches in the first place.
 > > 
-> > This fixes the 64-bit pattern generation.
+> >>>  Given that very few
+> >>> people actually have this hardware,
+> >>
+> >> It's a MSI CR620 notebook. I don't think, that there are just very few
+> >> out there :-).
+> >>
+> >>> it's hard for us to work on the
+> >>> driver.
+> >>
+> >> Why did you remove a working module if you can't ensure, that the
+> >> replacement will cover the old module 100%?
 > > 
-> > Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> > Cc: Christoph Lameter <cl@linux-foundation.org>
-> > Cc: Pekka Enberg <penberg@kernel.org>
-> > Cc: Matt Mackall <mpm@selenic.com>
-> > Cc: linux-mm@kvack.org
-> > ---
-> >  mm/slub.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > Because I trusted the original developers of that patch, that's the way
+> > kernel development works.
 > > 
-> > diff --git a/mm/slub.c b/mm/slub.c
-> > index eb5a8f9..5695f92 100644
-> > --- a/mm/slub.c
-> > +++ b/mm/slub.c
-> > @@ -701,7 +701,7 @@ static u8 *check_bytes(u8 *start, u8 value, unsigned int bytes)
-> >  		return check_bytes8(start, value, bytes);
-> >  
-> >  	value64 = value | value << 8 | value << 16 | value << 24;
-> > -	value64 = value64 | value64 << 32;
-> > +	value64 = (value64 & 0xffffffff) | value64 << 32;
-> >  	prefix = 8 - ((unsigned long)start) % 8;
-> >  
-> >  	if (prefix) {
+> > So please contact them and they would be glad to work with you to
+> > resolve this issue.
 > 
-> Still buggy I am afraid. Could we use the following ?
+> They have been already connected prior in this thread. I didn't get any
+> answer right now.
 > 
-> 
-> 	value64 = value;
-> 	value64 |= value64 << 8;
-> 	value64 |= value64 << 16;
-> 	value64 |= value64 << 32;
-> 
-> 
+> Obviously they are not interested in fixing the problem.
 
-Well, 'buggy' was not well chosen.
+That's rude, perhaps they were busy, or, the driver works for them on
+their hardware, but something is different with your device that is
+different here.
 
-Another possibility would be to use a multiply if arch has a fast
-multiplier...
+good luck,
 
-
-	value64 = value;
-#if defined(ARCH_HAS_FAST_MULTIPLIER) && BITS_PER_LONG == 64
-	value64 *= 0x0101010101010101;
-#elif defined(ARCH_HAS_FAST_MULTIPLIER)
-	value64 *= 0x01010101;
-	value64 |= value64 << 32;
-#else
-	value64 |= value64 << 8;
-	value64 |= value64 << 16;
-	value64 |= value64 << 32;
-#endif
-
-
-
-
+greg k-h
