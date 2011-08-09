@@ -1,140 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751117Ab1HIXGA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 19:06:00 -0400
-Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.33]:34563 "EHLO
-	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750722Ab1HIXF7 (ORCPT
+	id S1751339Ab1HIXNp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 19:13:45 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60813 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752Ab1HIXNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 19:05:59 -0400
-Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
-X-Authority-Analysis: v=1.1 cv=40Z/dbZBr1wgzPkGSf8y7qdCkiWp+M7NvixVUiz+qMg= c=1 sm=0 a=wzY9NJouJbkA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:17 a=RHkfpXlEtdmpkEgYaLUA:9 a=oCbrjNO3B1QVZlXXUEcA:7 a=CjuIK1q_8ugA:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.79.195.91
-From: "Bob Pearson" <rpearson@systemfabricworks.com>
-To: "'Joakim Tjernlund'" <joakim.tjernlund@transmode.se>,
-        "George Spelvin" <linux@horizon.com>
-Cc: <akpm@linux-foundation.org>, <fzago@systemfabricworks.com>,
-        <linux@horizon.com>, <linux-kernel@vger.kernel.org>
-References: <4E40C5C7.2050609@systemfabricworks.com> <00d401cc565c$98eeab60$cacc0220$@systemfabricworks.com> <OF4E555F7A.DF08D1FB-ONC12578E7.005FA1A8-C12578E7.0060F7CA@transmode.se>
-In-Reply-To: <OF4E555F7A.DF08D1FB-ONC12578E7.005FA1A8-C12578E7.0060F7CA@transmode.se>
-Subject: RE: [patch v3 7/7] crc32: final-cleanup.diff
-Date: Tue, 9 Aug 2011 18:05:56 -0500
-Message-ID: <019701cc56e8$e606f9c0$b214ed40$@systemfabricworks.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQFUJhJtE0E7wgc4id8VkXG2Xj6UAAJcT3PpAdqTgv2V46s5IA==
-Content-Language: en-us
+	Tue, 9 Aug 2011 19:13:44 -0400
+From: Kolymine <kolymine@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Kolymine <kolymine@gmail.com>
+Subject: [PATCH] Staging : winbond : fix coding style issue in phy_calibration.c
+Date: Wed, 10 Aug 2011 01:13:38 +0200
+Message-Id: <1312931618-14470-1-git-send-email-kolymine@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <Staging-winbond-fix>
+References: <Staging-winbond-fix>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thus us a patch to the phy_calibration.c file that fixes up coding style warning found by the checkpatch.pl tool
 
+Signed-off-by: Vincent Abel-Grimalt <kolymine@gmail.com>
+---
+ drivers/staging/winbond/phy_calibration.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-> 
-> Doing this adds one insn to ppc. What is good for x86 isn't for
-> pcc32 (and I guess any modern arch).
-
-I looked at the assembly output from the original code and I see two
-compares at the end of the first loop, one for --len and one for (buf & 3)
-which it has to compute. You are better off just computing buf & 3 once and
-comparing with len once to compute init_len then in each iteration in the
-loop you only have to compare one thing.
-
-As proposed:
-        init_len = min((-((uintptr_t)buf)) & 3, len);
-        ...
-
-        /* process unaligned initial bytes */
-        for (i = 0; i < init_len; i++)
-                DO_CRC(*buf++);
-
-
-crc32x_le:
-        <.....>
-        negq    %rcx				# (-buf)
-        andl    $3, %ecx				# (-buf) & 3
-        cmpq    %rdx, %rcx				# min()
-        cmova   %rdx, %rcx				# init_len = 
-        xorl    %edi, %edi				# i = 0
-        <.....>
-        jmp     .L2
-.L3:
-# crc = tab[0][(crc ^ (*buf++)) & 255] ^ (crc >> 8)
-        movb    (%rsi,%rdi), %dl			# buf[i]
-        incq    %rdi					# buf++
-        xorl    %eax, %edx				# crc ^ *buf++
-        shrl    $8, %eax				# crc >> 8
-        movzbl  %dl, %edx				# & 255
-        xorl    crc32table_le(,%rdx,4), %eax                 # crc =
-tab[...] ^ (crc >> 8)
-.L2:
-        cmpq    %rcx, %rdi				# compare i with
-init_len
-        jb      .L3
-        <.....>
-
-As was originally:
-        if (unlikely((long)buf & 3 && len)) {
-                do {
-                        DO_CRC(*buf++);
-                } while ((--len) && ((long)buf)&3);
-        }
-
-crc32x_le:
-        pushq   %rbp
-        movl    %edi, %eax
-        pushq   %rbx
-        testb   $3, %sil
-        je      .L16
-        testq   %rdx, %rdx
-.L25:
-        je      .L16
-        movb    (%rsi), %cl				# *p
-        incq    %rsi					# p++
-        xorl    %eax, %ecx				# crc ^ *p
-        shrl    $8, %eax				# crc >> 8
-        movzbl  %cl, %ecx				# ... & 255
-        xorl    crc32table_le(,%rcx,4), %eax		# tab[...] ^ (crc >>
-8)
-        decq    %rdx				# len--
-        je      .L16					# if len != 0
-continue
-        testb   $3, %sil				# buf & 3
-        jmp     .L25					# if buf & 3
-continue
-.L16:
-
-The first loop has 8 instructions second one has 11 instructions. First loop
-has slightly more setup to compute init_len, second loop has a couple of
-extra branches to compute the if() outside of the loop.
-
-I get better performance with the new form of the loop. How, does PPC get
-better results with two tests?
-
-> 
-> > >
-> > > -/* implements slicing-by-4 or slicing-by-8 algorithm */
-> > > -static inline u32
-> > > -crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32
-> > > (*tab)[256])
-> >
-> > After careful measurements and looking at asm code I figured out that
-> there
-> > was no penalty for using 2D array. That allowed me to go back to the
-> > original form.
-> 
-> What about my suggestion to assign each table to a ptr? This was good
-> for ppc so if it doesn't slow x86 it should be added.
-
-Gcc is very clever and inlined crc32_body() into crc32_le() and crc32_be()
-and then replaced references to tab[x][y] with references to crc32table_le
-and crc32table_be plus a constant offset which depended on the first index
-([x]). So in effect it completely unrolled back to 1D arrays as
-(crc32table_le + offset)[y], which is equivalent to the t0_le[y] code I had
-before.
-
+diff --git a/drivers/staging/winbond/phy_calibration.c b/drivers/staging/winbond/phy_calibration.c
+index c5a07fb..77a3fff 100644
+--- a/drivers/staging/winbond/phy_calibration.c
++++ b/drivers/staging/winbond/phy_calibration.c
+@@ -24,7 +24,7 @@
+ 
+ #define AG_CONST        0.6072529350
+ #define FIXED(X)        ((s32)((X) * 32768.0))
+-#define DEG2RAD(X)      0.017453 * (X)
++#define DEG2RAD(X)      (0.017453 * (X))
+ 
+ static const s32 Angles[] = {
+ 	FIXED(DEG2RAD(45.0)),     FIXED(DEG2RAD(26.565)),   FIXED(DEG2RAD(14.0362)),
+@@ -51,7 +51,7 @@ s32 _s13_to_s32(u32 data)
+ 	if ((data & BIT(12)) != 0)
+ 		val |= 0xFFFFF000;
+ 
+-	return ((s32) val);
++	return (s32) val;
+ }
+ 
+ u32 _s32_to_s13(s32 data)
+@@ -184,7 +184,7 @@ s32 _floor(s32 n)
+ 	else
+ 		n -= 5;
+ 
+-	return (n/10);
++	return n/10;
+ }
+ 
+ /****************************************************************************/
+@@ -455,7 +455,7 @@ void _txidac_dc_offset_cancellation_winbond(struct hw_data *phw_data)
+ 	phy_set_rf_data(phw_data, 11, (11<<24)|0x1901D6);
+ 	/* 0x05 0x24C60A  ; 09318  ; Calibration (6c). setting TX-VGA gain: TXGCH=2 & GPK=110 --> to be optimized */
+ 	phy_set_rf_data(phw_data, 5, (5<<24)|0x24C48A);
+-        /* 0x06 0x06880C  ; 01A20  ; Calibration (6d). RXGCH=00; RXGCL=100 000 (RXVGA=32) --> to be optimized */
++	/* 0x06 0x06880C  ; 01A20  ; Calibration (6d). RXGCH=00; RXGCL=100 000 (RXVGA=32) --> to be optimized */
+ 	phy_set_rf_data(phw_data, 6, (6<<24)|0x06890C);
+ 	/* 0x00 0xFDF1C0  ; 3F7C7  ; Calibration (6e). turn on IQ imbalance/Test mode */
+ 	phy_set_rf_data(phw_data, 0, (0<<24)|0xFDF1C0);
+@@ -577,7 +577,7 @@ void _txqdac_dc_offset_cacellation_winbond(struct hw_data *phw_data)
+ 	phy_set_rf_data(phw_data, 11, (11<<24)|0x1901D6);
+ 	/* 0x05 0x24C60A  ; 09318  ; Calibration (6c). setting TX-VGA gain: TXGCH=2 & GPK=110 --> to be optimized */
+ 	phy_set_rf_data(phw_data, 5, (5<<24)|0x24C48A);
+-        /* 0x06 0x06880C  ; 01A20  ; Calibration (6d). RXGCH=00; RXGCL=100 000 (RXVGA=32) --> to be optimized */
++	/* 0x06 0x06880C  ; 01A20  ; Calibration (6d). RXGCH=00; RXGCL=100 000 (RXVGA=32) --> to be optimized */
+ 	phy_set_rf_data(phw_data, 6, (6<<24)|0x06890C);
+ 	/* 0x00 0xFDF1C0  ; 3F7C7  ; Calibration (6e). turn on IQ imbalance/Test mode */
+ 	phy_set_rf_data(phw_data, 0, (0<<24)|0xFDF1C0);
+@@ -974,7 +974,7 @@ void _tx_iq_calibration_winbond(struct hw_data *phw_data)
+ 	phy_set_rf_data(phw_data, 11, (11<<24)|0x19BDD6); /* 20060612.1.a 0x1905D6); */
+ 	/* 0x05 0x24C60A  ; 09318  ; Calibration (6c). setting TX-VGA gain: TXGCH=2 & GPK=110 --> to be optimized */
+ 	phy_set_rf_data(phw_data, 5, (5<<24)|0x24C60A); /* 0x24C60A (high temperature) */
+-        /* 0x06 0x06880C  ; 01A20  ; Calibration (6d). RXGCH=00; RXGCL=100 000 (RXVGA=32) --> to be optimized */
++	/* 0x06 0x06880C  ; 01A20  ; Calibration (6d). RXGCH=00; RXGCL=100 000 (RXVGA=32) --> to be optimized */
+ 	phy_set_rf_data(phw_data, 6, (6<<24)|0x34880C); /* 20060612.1.a 0x06890C); */
+ 	/* 0x00 0xFDF1C0  ; 3F7C7  ; Calibration (6e). turn on IQ imbalance/Test mode */
+ 	phy_set_rf_data(phw_data, 0, (0<<24)|0xFDF1C0);
+-- 
+1.7.4.1
 
