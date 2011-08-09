@@ -1,97 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab1HIRKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 13:10:45 -0400
-Received: from mga02.intel.com ([134.134.136.20]:9636 "EHLO mga02.intel.com"
+	id S1754163Ab1HIRNx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 13:13:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20219 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753893Ab1HIRKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 13:10:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,344,1309762800"; 
-   d="scan'208";a="36830408"
-Date: Tue, 9 Aug 2011 10:10:41 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Greg KH <greg@kroah.com>, Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
-        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
-        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Theodore Kilgore <kilgota@banach.math.auburn.edu>,
-        Adam Baker <linux@baker-net.org.uk>
-Subject: Re: USB mini-summit at LinuxCon Vancouver
-Message-ID: <20110809171041.GA5634@xanatos>
-References: <20110610002103.GA7169@xanatos>
- <4E3B1B7B.2040501@infradead.org>
- <20110804225603.GA2557@kroah.com>
- <4E3B9FB4.30709@redhat.com>
- <20110808175837.GA6398@xanatos>
- <4E40E74C.9060902@redhat.com>
+	id S1753893Ab1HIRNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 13:13:52 -0400
+Date: Tue, 9 Aug 2011 13:13:49 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Shaohua Li <shli@kernel.org>, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>,
+        msnitzer@redhat.com
+Subject: Re: [patch] blk-flush: fix flush policy calculation
+Message-ID: <20110809171349.GE6482@redhat.com>
+References: <x49d3go98ku.fsf@segfault.boston.devel.redhat.com>
+ <CANejiEXK7NSJo-0vshyX6RSqmRbHmyxAw8_wFQEwvTXrEQF3fg@mail.gmail.com>
+ <x4939hju2zh.fsf@segfault.boston.devel.redhat.com>
+ <20110802181739.GE6399@redhat.com>
+ <x49ty9zsm1n.fsf@segfault.boston.devel.redhat.com>
+ <20110802184125.GF6399@redhat.com>
+ <x49oc07sija.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E40E74C.9060902@redhat.com>
+In-Reply-To: <x49oc07sija.fsf@segfault.boston.devel.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 09, 2011 at 09:52:44AM +0200, Hans de Goede wrote:
-> Hi,
+On Tue, Aug 02, 2011 at 03:46:49PM -0400, Jeff Moyer wrote:
+> Vivek Goyal <vgoyal@redhat.com> writes:
 > 
-> On 08/08/2011 07:58 PM, Sarah Sharp wrote:
-> >On Fri, Aug 05, 2011 at 09:45:56AM +0200, Hans de Goede wrote:
-> >>Hi,
-> >>
-> >>On 08/05/2011 12:56 AM, Greg KH wrote:
-> >>>On Thu, Aug 04, 2011 at 07:21:47PM -0300, Mauro Carvalho Chehab wrote:
-> >>I think it is important to separate oranges from apples here, there are
-> >>at least 3 different problem classes which all seem to have gotten thrown
-> >>onto a pile here:
-> >>
-> >>1) The reason Mauro suggested having some discussion on this at the
-> >>USB summit is because of a discussion about dual mode cameras on the
-> >>linux media list.
-> >...
-> >>3) Re-direction of usb devices to virtual machines. This works by using
-> >>the userspace usbfs interface from qemu / vmware / virtualbox / whatever.
-> >>The basics of this work fine, but it lacks proper locking / safeguards
-> >>for when a vm takes over a usb device from the in kernel driver.
+> >> In testing, I did this:
+> >> 
+> >> @@ -1817,6 +1817,14 @@ int blk_insert_cloned_request(struct
+> >> request_queue *q, struct request *rq)
+> >>                 return -EIO;
+> >>  #endif
+> >>  
+> >> +       if ((rq->cmd_flags & (REQ_FLUSH|REQ_FUA)) && !q->flush_flags) {
+> >> +               rq->cmd_flags &= ~(REQ_FLUSH|REQ_FUA);
+> >> +               if (!blk_rq_bytes(rq)) {
+> >> +                       blk_end_request(rq, 0, 0);
+> >> +                       return 0;
+> >> +               }
+> >> +       }
+> >> +
 > >
-> >Hi Hans and Mauro,
-> >
-> >We have do room in the schedule for the USB mini-summit for this
-> >discussion, since the schedule is still pretty flexible.  The
-> >preliminary schedule is up here:
-> >
-> >http://userweb.kernel.org/~sarah/linuxcon-usb-minisummit.html
-> >
-> >I think it's best to discuss the VM redirection in the afternoon when
-> >some of the KVM folks join us after Hans' talk on USB redirection over
-> >the network.
-> >
+> > Will it make more sense to take care resetting flush/fua flags in
+> > blk_insert_flush()
 > 
-> That seems best to me too. I'm available at both proposed time slots,
-> and I would like to join both discussions.
+> Yes, that's much cleaner.
 > 
-> >It sounds like we need a separate topic for the dual mode cameras and TV
-> >tuners.  Mauro, do you want to lead that discussion in the early morning
-> >(in a 9:30 to 10:30 slot) or in the late afternoon (in a 15:30 to 16:30
-> >slot)?  I want to be sure we have all the video/media developers who are
-> >interested in this topic present, and I don't know if they will be going
-> >to the KVM forum.
+> > and also the part which will end the request if request is empty.
 > 
-> I would really like to see the dual mode camera and TV tuner discussion
-> separated. They are 2 different issues AFAIK.
+> Mmm-hmm.
+> 
+> I tried this, and it blew up in my face.  ;-)  Cloned requests from
+> device-mapper-land have rq->end_io filled in, which causes
+> blk_insert_flush to BUG here:
+> 
+>         BUG_ON(rq->end_io);
 
-Ok, great, I've put both topics in the morning, in separate slots.
+So how does it work when underlying device supports FLUSH/FUA? That means
+that dm-multipath requets never go through flush machinery? So if a
+queue does not support FUA but supports FLUSH, then FUA will not be
+honored by the underlying driver and request can very well be in cache?
 
-Sarah Sharp
+IOW, looks like even if component devices of a multipath device support
+FLUSH, requests don't go through it and hence atleast FUA is broken? And
+that would also mean that these don't benefit from flush merge logic.
+
+I guess we need to sort out this req->end_io issue and if both caller
+and flush machinery needs to make use of this pointer, then flush 
+machinery should save it and restore on completion path.
+
+Thanks
+Vivek
