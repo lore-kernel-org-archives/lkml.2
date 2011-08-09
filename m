@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab1HIJey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 05:34:54 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:51915 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab1HIJex convert rfc822-to-8bit (ORCPT
+	id S1752606Ab1HIJiX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 05:38:23 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:55489 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab1HIJiV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 05:34:53 -0400
+	Tue, 9 Aug 2011 05:38:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAC5umygEJy8he1X2Egiuh16HGCC6=Krxv1F3j=bh7xrZmNTHJg@mail.gmail.com>
-References: <1312834049-29910-1-git-send-email-per.forlin@linaro.org>
-	<CAC5umyhWr8t7HyQVEn-W-7HSaeESnTLX8okcQNqPO6mYFuWtUg@mail.gmail.com>
-	<CAJ0pr18Mpv7mFHC3NnfqEqtTFd_qgNhH9rZgCENgH0zKmBfFsQ@mail.gmail.com>
-	<CAC5umygEJy8he1X2Egiuh16HGCC6=Krxv1F3j=bh7xrZmNTHJg@mail.gmail.com>
-Date: Tue, 9 Aug 2011 11:34:51 +0200
-Message-ID: <CAJ0pr182aHm7H+s04Pqg5_CxVQLAhGOwLHQ_-aUS7ZgWKSwMxQ@mail.gmail.com>
-Subject: Re: [PATCH --mmotm v5 0/3] Make fault injection available for MMC IO
-From: Per Forlin <per.forlin@linaro.org>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: akpm@linux-foundation.org, Linus Walleij <linus.ml.walleij@gmail.com>,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Chris Ball <cjb@laptop.org>, linux-doc@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linaro-dev@lists.linaro.org,
+In-Reply-To: <1312860783.2531.31.camel@edumazet-laptop>
+References: <1312709438-7608-1-git-send-email-akinobu.mita@gmail.com>
+	<1312859440.2531.20.camel@edumazet-laptop>
+	<1312860783.2531.31.camel@edumazet-laptop>
+Date: Tue, 9 Aug 2011 18:38:21 +0900
+Message-ID: <CAC5umyhLuhNK55WDXTii2SFsqPNau1B9F1z+E0r0CaLNkGZfDg@mail.gmail.com>
+Subject: Re: [PATCH] slub: fix check_bytes() for slub debugging
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
         linux-mm@kvack.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
@@ -29,20 +26,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 August 2011 11:24, Akinobu Mita <akinobu.mita@gmail.com> wrote:
-> 2011/8/9 Per Forlin <per.forlin@linaro.org>:
->
->> Patch #1 "fault-injection: export fault injection functions" is merged
->
-> Maybe you are looking at wrong tree.  I can't find it in Linus' tree or
-> mmotm patches.
->
-Thanks for double checking! I looked at the wrong tree. What a mess I
-am creating.
-Do you think it would be possible to get only the export
-fault-injection patch in 3.1? I know it's not a bugfix so I guess it
-wont be accepted.
-I'll prepare v6 of this patch-set.
+2011/8/9 Eric Dumazet <eric.dumazet@gmail.com>:
 
-Thanks for your help,
-Per
+>> > diff --git a/mm/slub.c b/mm/slub.c
+>> > index eb5a8f9..5695f92 100644
+>> > --- a/mm/slub.c
+>> > +++ b/mm/slub.c
+>> > @@ -701,7 +701,7 @@ static u8 *check_bytes(u8 *start, u8 value, unsigned int bytes)
+>> >             return check_bytes8(start, value, bytes);
+>> >
+>> >     value64 = value | value << 8 | value << 16 | value << 24;
+>> > -   value64 = value64 | value64 << 32;
+>> > +   value64 = (value64 & 0xffffffff) | value64 << 32;
+>> >     prefix = 8 - ((unsigned long)start) % 8;
+>> >
+>> >     if (prefix) {
+>>
+>> Still buggy I am afraid. Could we use the following ?
+>>
+>>
+>>       value64 = value;
+>>       value64 |= value64 << 8;
+>>       value64 |= value64 << 16;
+>>       value64 |= value64 << 32;
+>>
+>>
+>
+> Well, 'buggy' was not well chosen.
+>
+> Another possibility would be to use a multiply if arch has a fast
+> multiplier...
+>
+>
+>        value64 = value;
+> #if defined(ARCH_HAS_FAST_MULTIPLIER) && BITS_PER_LONG == 64
+>        value64 *= 0x0101010101010101;
+> #elif defined(ARCH_HAS_FAST_MULTIPLIER)
+>        value64 *= 0x01010101;
+>        value64 |= value64 << 32;
+> #else
+>        value64 |= value64 << 8;
+>        value64 |= value64 << 16;
+>        value64 |= value64 << 32;
+> #endif
+
+I don't really care about which one should be used.  So tell me if I need
+to resend it with this improvement.
