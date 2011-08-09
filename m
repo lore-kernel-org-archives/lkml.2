@@ -1,162 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab1HILfZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 07:35:25 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64538 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753254Ab1HILfX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 07:35:23 -0400
-Date: Tue, 9 Aug 2011 13:35:18 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Boyer <jwboyer@redhat.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 3.0-git15 Atomic scheduling in pidmap_init
-Message-ID: <20110809113514.GA27301@somewhere.redhat.com>
-References: <20110804173145.GM2096@zod.bos.redhat.com>
- <CA+5PVA7R+H4MfU=war6G3ZRYEi6nZ=vVZ3B8g-Ag6pOdA4cTBw@mail.gmail.com>
- <20110805065646.GC13065@linux.vnet.ibm.com>
- <20110805142245.GP2096@zod.bos.redhat.com>
- <20110805170805.GB22164@somewhere>
- <20110805222641.GB2245@linux.vnet.ibm.com>
- <20110805231216.GE22164@somewhere>
- <20110808020914.GC2385@linux.vnet.ibm.com>
- <20110808025505.GF29058@somewhere>
- <20110808031014.GE2385@linux.vnet.ibm.com>
+	id S1753330Ab1HILh1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 07:37:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12016 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753254Ab1HILh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 07:37:26 -0400
+Date: Tue, 9 Aug 2011 14:37:43 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Hans J. Koch" <hjk@hansjkoch.de>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Chris Wright <chrisw@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Anthony Foiani <anthony.foiani@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uio/gen-pci: don't enable interrupts in ISR
+Message-ID: <20110809113743.GA32299@redhat.com>
+References: <20110804204606.GA19724@linutronix.de>
+ <20110804210413.GA29222@redhat.com>
+ <20110805001507.GA5987@local>
+ <20110808062431.GB5182@redhat.com>
+ <20110808171931.GB867@local>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110808031014.GE2385@linux.vnet.ibm.com>
+In-Reply-To: <20110808171931.GB867@local>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 07, 2011 at 08:10:14PM -0700, Paul E. McKenney wrote:
-> On Mon, Aug 08, 2011 at 04:55:07AM +0200, Frederic Weisbecker wrote:
-> > On Sun, Aug 07, 2011 at 07:09:14PM -0700, Paul E. McKenney wrote:
-> > > On Sat, Aug 06, 2011 at 01:12:18AM +0200, Frederic Weisbecker wrote:
-> > > > On Fri, Aug 05, 2011 at 03:26:41PM -0700, Paul E. McKenney wrote:
-> > > > > On Fri, Aug 05, 2011 at 07:08:08PM +0200, Frederic Weisbecker wrote:
-> > > > > > On Fri, Aug 05, 2011 at 10:22:45AM -0400, Josh Boyer wrote:
-> > > > > > > On Thu, Aug 04, 2011 at 11:56:46PM -0700, Paul E. McKenney wrote:
-> > > > > > > > > > I could be missing something obvious, but I don't see a way to avoid
-> > > > > > > > > > using GFP_KERNEL without a lot of rip-up in the rest of the init path.
-> > > > > > > > > 
-> > > > > > > > > As an aside, I bisected this back to:
-> > > > > > > > > 
-> > > > > > > > > e8f7c70f44f sched: Make sleeping inside spinlock detection working in
-> > > > > > > > > !CONFIG_PREEMPT
-> > > > > > > > 
-> > > > > > > > OK, added Frederic on CC.
-> > > > > > > > 
-> > > > > > > > > However, that doesn't seem all that helpful.  The
-> > > > > > > > > CONFIG_DEBUG_SPINLOCK_SLEEP option later got renamed to
-> > > > > > > > > DEBUG_ATOMIC_SLEEP, and all it's doing is selecting PREEMPT_COUNT.  At
-> > > > > > > > > first glance, it seems this commit just allowed an issue that's been
-> > > > > > > > > around for a while (benign or otherwise) to finally show up.
-> > > > > > > > > 
-> > > > > > > > > (The Fedora kernel configs have CONFIG_PREEMPT_VOLUNTARY set, but not
-> > > > > > > > > CONFIG_PREEMPT so PREEMPT_COUNT wasn't getting selected until this
-> > > > > > > > > option did so.)
-> > > > > > > > 
-> > > > > > > > Understood.  So my question is "what is the real way to fix this?"
-> > > > > > > > Within RCU, I would probably wrapper the calls to set_need_resched()
-> > > > > > > > so that it checks for the scheduler being fully alive.  Except for the
-> > > > > > > > call from rcu_enter_nohz(), of course -- if that one is called before
-> > > > > > > > the scheduler is ready, then that is a bug that needs to be fixed.
-> > > > > > > 
-> > > > > > > By scheduler being fully alive, do you mean when rcu_scheduler_starting
-> > > > > > > is called?  Or do you mean the actual scheduler, because sched_init is
-> > > > > > > called well before any of this happens.
-> > > > > > > 
-> > > > > > > > Nevertheless, I am wondering if all of this isn't really papering over
-> > > > > > > > some real problem somewhere.  The way we get to this place is from people
-> > > > > > > > registering RCU callbacks during early boot, which is OK in and of itself,
-> > > > > > > > at least in moderation.  But if someone is expecting those callbacks to be
-> > > > > > > > invoked before the scheduler is fully set up and running multiple tasks,
-> > > > > > > > they are going to be disappointed.
-> > > > > > > 
-> > > > > > > Is there a way to dump what callbacks have been registered?  As far as I
-> > > > > > > can see, we call rcu_check_callbacks unconditionally when a timer
-> > > > > > > interrupt is taken and that calls rcu_pending unconditionally as well.
-> > > > > > > Before that, rcu_init is called which eventually sets up the per-cpu
-> > > > > > > data via rcu_init_percpu_data and that sets rdp->qs_pending = 1.
-> > > > > > > Until a quiescent state is reached __rcu_pending is going to try and
-> > > > > > > force it, which is where the set_need_resched is called.
-> > > > > > > 
-> > > > > > > Basically, I took what you said about wrapping set_need_resched and came
-> > > > > > > up with the patch below.  It gets rid of the oops from pidmap_init, but
-> > > > > > > I need to test it a bit more.  Would be happy to have feedback.
-> > > > > > > 
-> > > > > > > josh
-> > > > > > > 
-> > > > > > > ---
-> > > > > > > 
-> > > > > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > > > > > index ba06207..8c6cb6e 100644
-> > > > > > > --- a/kernel/rcutree.c
-> > > > > > > +++ b/kernel/rcutree.c
-> > > > > > > @@ -1681,8 +1681,14 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
-> > > > > > >  		rdp->n_rp_qs_pending++;
-> > > > > > >  		if (!rdp->preemptible &&
-> > > > > > >  		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
-> > > > > > > -				 jiffies))
-> > > > > > > -			set_need_resched();
-> > > > > > > +				 jiffies)) {
-> > > > > > > +			/* Make sure we're ready to mark the task as needing
-> > > > > > > + 			 * rescheduling otherwise we can trigger oopes early
-> > > > > > > + 			 * in the init path
-> > > > > > > + 			 */
-> > > > > > > +			if (rcu_scheduler_active)
-> > > > > > > +				set_need_resched();
-> > > > > > 
-> > > > > > What about we avoid setting rdp->qs_pending = 1 for the CPU
-> > > > > > that handles the boot?
+On Mon, Aug 08, 2011 at 07:19:31PM +0200, Hans J. Koch wrote:
+> On Mon, Aug 08, 2011 at 09:24:31AM +0300, Michael S. Tsirkin wrote:
+> > On Fri, Aug 05, 2011 at 02:15:07AM +0200, Hans J. Koch wrote:
+> > > On Fri, Aug 05, 2011 at 12:04:13AM +0300, Michael S. Tsirkin wrote:
+> > > > On Thu, Aug 04, 2011 at 10:46:06PM +0200, Sebastian Andrzej Siewior wrote:
+> > > > > As reported by Anthony in a short way:
 > > > > > 
-> > > > > That sounds promising -- only checked at the beginning of a grace period,
-> > > > > so not too much overhead.  In contrast, __rcu_pending() is called
-> > > > > multiple times per transition to dyntick-idle state.
+> > > > > |irq 17 handler uio_interrupt+0x0/0x68 enabled interrupts
+> > > > > |NIP [c0069d84] handle_irq_event_percpu+0x260/0x26c
 > > > > > 
-> > > > > I will take a look at this.
+> > > > > The problem here is that spin_unlock_irq() enables the interrupts which
+> > > > > is a no-no in interrupt context because they always run with interrupts
+> > > > > disabled. This is the case even if IRQF_DISABLED has not been specified
+> > > > > since v2.6.35. Therefore this patch uses simple spin_locks().
 > > > > > 
-> > > > > 							Thanx, Paul
+> > > > > Looking at it further here is only one spot where the lock is hold. So
+> > > > > giving the fact that an ISR is not reentrant and is not executed on two
+> > > > > cpus at the same time why do we need a lock here?
 > > > > 
-> > > > I actually thought it could be done from rcu_init_percpu_data(). This
-> > > > is where we initialize the qs_pending to 1, which I believe is responsible
-> > > > for that set_need_resched() from rcu soon after on boot.
+> > > > I'm not sure anymore. I think the idea was to use
+> > > > it for synchronization down the road somehow,
+> > > > but it never materialized. Let's drop that lock completely.
 > > > 
-> > > That would cover some of the situations, but...
-> > > 
-> > > > It's possible we also have secondary offenders in places that enqueue
-> > > > rcu callbacks in the boot. But if not, then we are fine with tweaking
-> > > > that qs_pending on cpu boot.
-> > > 
-> > > The first time we take a scheduling-clock interrupt on a CPU with a
-> > > callback queued, we will also set qs_pending.  Hence the need to also
-> > > suppress the assignment in __note_new_gpnum().  Or better yet, just
-> > > prevent new grace periods in cpu_needs_another_gp().  I believe that doing
-> > > this will make it unnecessary to do anything in rcu_init_percpu_data().
-> > 
-> > Yeah if we have callbacks enqueued during the boot then we need to have
-> > a check in cpu_needs_another_gp().
-> > 
-> > Now rcu_init_percpu_data() still sets rdp->qs_pending to 1, and that
-> > is going to stay as is as long as preemption is disabled.
+> > > That sounds reasonable.
 > 
-> But setting rdp->qs_pending to 1 in rcu_init_percpu_data() has no effect
-> until a grace period starts.  So, if grace periods are prevented from
-> starting, no need to mess with rcu_init_percpu_data().  Especially given
-> that rcu_init_percpu_data() is also used at late boot and runtime for
-> CPU hotplug.
+> Should I hack up a patch to remove the lock, or do you have anything in your
+> pipeline?
 
-Ok.
 
+Please do.
+
+> > > 
+> > > > 
+> > > > > The driver lacks of ->irqcontrol function so I guess the interrupt is
+> > > > > enabled via direct PCI-access in userland.
+> > > > 
+> > > > Through sysfs.
+> > > 
+> > > How? With /sys/devices/pci.../enable ?
+> > > 
+> > > Thanks,
+> > > Hans
+> > 
+> > No. By writing to the command register using
+> > /sys/bus/pci/devices/.../config
 > 
-> So I believe that it is sufficient to change cpu_needs_another_gp()
-> to check for boot being far enough along to allow grace periods.
+> Hope that works at all times...
+> Anyway, the spin_lock in uio_pci_generic.c definetly doesn't help.
+> 
+> Thanks,
+> Hans
 
-Yep, sounds good.
-
-Thanks.
+True.
