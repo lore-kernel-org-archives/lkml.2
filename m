@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873Ab1HJBuJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 21:50:09 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46080 "EHLO smtps.tip.net.au"
+	id S1752639Ab1HJCCJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 22:02:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34578 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752671Ab1HJBuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 21:50:07 -0400
-Date: Wed, 10 Aug 2011 11:49:56 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: build failure after merge of the moduleh tree
-Message-Id: <20110810114956.238d66772883636e3040d29f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752485Ab1HJCCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 22:02:06 -0400
+Date: Tue, 9 Aug 2011 13:30:55 -0700
+From: Greg KH <gregkh@suse.de>
+To: pavan_savoy@ti.com
+Cc: linux-kernel@vger.kernel.org, pavan_savoy@sify.com
+Subject: Re: [PATCH 1/8] drivers:misc: ti-st: avoid a misleading dbg msg
+Message-ID: <20110809203055.GA10918@suse.de>
+References: <1312918749-29627-1-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-2-git-send-email-pavan_savoy@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312918749-29627-2-git-send-email-pavan_savoy@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Tue, Aug 09, 2011 at 02:38:53PM -0500, pavan_savoy@ti.com wrote:
+> From: Pavan Savoy <pavan_savoy@ti.com>
+> 
+> Previously the private data of each protocol registered to use ST was
+> used to determine whether the protocol was registered to use shared
+> transport or otherwise.
+> However, now a flag is_registered is maintained to identify whether a
+> protocol intends to use ST.
+> Upon closing of the UART the error message relevant to this lack of
+> un-registration was misleading and this patch fixes that.
+> 
+> Change-Id: I1a452dccd7b4bd53cce923df5b61ce077b7aa466
 
-After merging the moduleh tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+What is this field for?  It's pretty irrelevant for upstream kernel
+work, right?
 
-arch/x86/kernel/cpu/amd.c: In function 'bsp_init_amd':
-arch/x86/kernel/cpu/amd.c:437:3: error: 'va_align' undeclared (first use in this function)
-arch/x86/kernel/cpu/amd.c:438:23: error: 'ALIGN_VA_32' undeclared (first use in this function)
-arch/x86/kernel/cpu/amd.c:438:37: error: 'ALIGN_VA_64' undeclared (first use in this function)
+Please remove.
 
-Caused by the module.h split up intreacting with commit dfb09f9b7ab0
-("x86, amd: Avoid cache aliasing penalties on AMD family 15h") from the
-tip tree.
-
-I have added the following patch for today (this, or something similar,
-could be applied to the tip tree directly - the export.h include below
-was added by the module.h splitup).
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 10 Aug 2011 11:45:44 +1000
-Subject: [PATCH] x86, amd: using va_align requires includeing elf.h
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/x86/kernel/cpu/amd.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index c17a8c4..a19a209 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -2,6 +2,7 @@
- #include <linux/bitops.h>
- #include <linux/export.h>
- #include <linux/mm.h>
-+#include <linux/elf.h>
- 
- #include <linux/io.h>
- #include <asm/processor.h>
--- 
-1.7.5.4
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+greg k-h
