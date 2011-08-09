@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab1HIPz2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 11:55:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34408 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751812Ab1HIPz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 11:55:27 -0400
-Date: Tue, 9 Aug 2011 08:25:24 -0700
-From: Greg KH <gregkh@suse.de>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: cota@braap.org, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/8] staging: vme: rename *_slot_get to *_get_slot
-Message-ID: <20110809152524.GA5697@suse.de>
-References: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch>
- <1312194053-32310-7-git-send-email-manohar.vanga@cern.ch>
- <4E369C26.5040300@ge.com>
- <20110801123121.GA7130@becoht-mvanga>
- <4E414FC0.8070700@ge.com>
+	id S1753877Ab1HIQAa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 12:00:30 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38402 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753011Ab1HIQA3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 12:00:29 -0400
+Date: Tue, 9 Aug 2011 12:00:28 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Paul Bolle <pebolle@tiscali.nl>
+cc: Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        Greg Kroah-Hartman <gregkh@suse.de>, <linux-bluetooth@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [RFC] BTUSB: be quiet on device disconnect
+In-Reply-To: <1312902988.1853.24.camel@x61.thuisdomein>
+Message-ID: <Pine.LNX.4.44L0.1108091159050.1949-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E414FC0.8070700@ge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 09, 2011 at 04:18:24PM +0100, Martyn Welch wrote:
-> On 01/08/11 13:31, Manohar Vanga wrote:
-> > Hi Martyn,
-> > 
-> >> If your doing vme_slot_get, then there's also vme_lm_get, vme_master_get and
-> >> vme_slave_get.
-> >>
-> >> Doing just this would then lead to more inconsistency in the naming and
-> >> wouldn't even get rid of all the functions using the *_get naming convention.
-> > 
-> > I can simply change those as well and resend :)
-> > 
-> >> I'm not sure this change is worth it.
-> > 
-> > I thought it would be worth changing this especially with the addition of bridge
-> > refcounting functions (which have the *_get/_set convention).
-> > 
-> 
-> The naming of the API is reasonably consistent at the moment. It looks like we
-> aren't going to need to export vme_bus_get and vme_bus_put based on the
-> conversation on patch 5. In addition to this, I've discovered that the
-> functions for USB are actually called usb_get_dev and usb_put_dev, so the
-> *_put/get convention isn't very strictly adhered to. I'd prefer to keep the
-> API as is.
+On Tue, 9 Aug 2011, Paul Bolle wrote:
 
-It's not that strict, so I wouldn't worry about changing the names, as
-it's obvious what is happening.
+> 1) I added Greg and linux-usb@vger.kernel.org because usb_submit_urb()
+> doesn't specify the meaning of its negative return values. I traced
 
-greg k-h
+In fact, many of these values are documented in 
+Documentation/usb/error-codes.txt.
+
+> -EPERM to usb_hcd_link_urb_to_ep(). That returns -EPERM if the urb is
+> "being killed". Did I trace the calls made by usb_submit_urb()
+> correctly? I also just assumed that -ENODEV always means device got
+> disconnected or something comparable. Is that correct too?
+
+Yes, those are both correct.
+
+Alan Stern
+
