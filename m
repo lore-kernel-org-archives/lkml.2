@@ -1,37 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785Ab1HICJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 22:09:20 -0400
-Received: from eastrmfepi108.cox.net ([68.230.241.204]:41136 "EHLO
-	eastrmfepi108.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179Ab1HICJP (ORCPT
+	id S1751758Ab1HICNr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 22:13:47 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18659 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518Ab1HICNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 22:09:15 -0400
-X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Aug 2011 22:09:14 EDT
-X-CT-Class: Bulk
-X-CT-Score: 5.00
-X-CT-RefID: str=0001.0A020206.4E40944E.00BC,ss=3,sh,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=aUFDW8FZeteuO/fxyvToEy2C7OWB/cKxsZjvUqUod7E=
- c=1 sm=1 a=MXmjfxSvDUQA:10 a=G8Uczd0VNMoA:10 a=nLyEhCJx4LcA:10
- a=IkcTkHD0fZMA:10 a=QHrv1LMrP22n1j3mDlRUbg==:17 a=etAFru0ZB5O03PModsgA:9
- a=QEXdDO2ut3YA:10 a=3Rbdsy8jNH4A:10 a=BqenECGhxQkA:10
- a=QHrv1LMrP22n1j3mDlRUbg==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20110808220244.KSKYI.1107135.imail@eastrmwml43>
-Date: Mon, 8 Aug 2011 22:02:44 -0400
-From: Wins <vbnmvbv@cox.net>
-Reply-To: ecowas.fdv@qatar.io
-Subject: Your email address have won you $1 Million Dollars
+	Mon, 8 Aug 2011 22:13:45 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 08 Aug 2011 19:12:59 -0700
+Date: Mon, 8 Aug 2011 19:12:58 -0700
+From: Robert Morell <rmorell@nvidia.com>
+To: Dilan Lee <dilee@nvidia.com>
+Cc: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "arun.murthy@stericsson.com" <arun.murthy@stericsson.com>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        Jordan Nien <JNien@nvidia.com>, Stephen Warren <swarren@nvidia.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH] video: Add a callback 'notify_after' for backlight
+ control
+Message-ID: <20110809021258.GM27748@morell.nvidia.com>
+References: <1312855525-21464-1-git-send-email-dilee@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312855525-21464-1-git-send-email-dilee@nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-for claims contact via e-mail: ecowas.fdv@qatar.io or call: +2348098617263
+On Mon, Aug 08, 2011 at 07:05:25PM -0700, Dilan Lee wrote:
+[...]
+> For example, GPIO backlight_en has to be risen after pwm has been enabled
+> to meet panel power on sequence defined in panel specification.
+
+I still think this information is irrelevant/nonsensical here, and
+should be omitted entirely..
+
+[...]
+
+>  	unsigned int		lth_brightness;
+>  	int			(*notify)(struct device *,
+> -					  int brightness);
+> +					int brightness);
+
+Please don't change the line above; unlike the one you added after, it
+was already lined up properly with its argument list.
+
+Otherwise,
+Reviewed-by: Robert Morell <rmorell@nvidia.com>
