@@ -1,164 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264Ab1HIOd1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 10:33:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57657 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722Ab1HIOd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 10:33:26 -0400
-Date: Tue, 9 Aug 2011 16:33:14 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH v5 0/6]  memg: better numa scanning
-Message-ID: <20110809143314.GJ7463@tiehlicka.suse.cz>
-References: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1752734Ab1HIOdt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 10:33:49 -0400
+Received: from portal.weinmann.de ([62.8.140.122]:52865 "EHLO
+	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824Ab1HIOds convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 10:33:48 -0400
+X-Greylist: delayed 1017 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Aug 2011 10:33:47 EDT
+From: "Voss, Nikolaus" <N.Voss@weinmann.de>
+To: "'Jean-Christophe PLAGNIOL-VILLARD'" <plagnioj@jcrosoft.com>,
+        "'Sergei Shtylyov'" <sshtylyov@mvista.com>
+CC: "'Nicolas Ferre'" <nicolas.ferre@atmel.com>,
+        "'Greg Kroah-Hartman'" <gregkh@suse.de>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'Linux Kernel'" <linux-kernel@vger.kernel.org>
+Date: Tue, 9 Aug 2011 16:16:24 +0200
+Subject: [PATCH] atmel_serial: fix atmel_default_console_device
+Thread-Topic: [PATCH] atmel_serial: fix atmel_default_console_device
+Thread-Index: AcxWiWowYvUB70uAQRClWD1ClH6RwQAFJubg
+Message-ID: <EF2E73589CA71846A15D0B2CDF79505D087B0192D4@wm021.weinmann.com>
+References: <1307541740.10626.15.camel@hcegtvedt.norway.atmel.com>
+ <1308666679-12111-1-git-send-email-plagnioj@jcrosoft.com>
+ <loom.20110808T170457-559@post.gmane.org> <4E411CEF.10004@ru.mvista.com>
+In-Reply-To: <4E411CEF.10004@ru.mvista.com>
+Accept-Language: en-US, de-DE
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, de-DE
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110809190450.16d7f845.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-08-11 19:04:50, KAMEZAWA Hiroyuki wrote:
-> 
-> No major update since the last version I posted 27/Jul.
-> The patch is rebased onto mmotm-Aug3.
-> 
-> This patch set implements a victim node selection logic and some
-> behavior fix in vmscan.c for memcg.
-> The logic calculates 'weight' for each nodes and a victim node
-> will be selected by comparing 'weight' in fair style.
-> The core is how to calculate 'weight' and this patch implements
-> a logic, which make use of recent lotation logic and the amount
-> of file caches and inactive anon pages.
-> 
-> I'll be absent in 12/Aug - 17/Aug.
-> I'm sorry if my response is delayed.
-> 
-> In this time, I did 'kernel make' test ...as
-> ==
-> #!/bin/bash -x
-> 
-> cgset -r memory.limit_in_bytes=500M A
-> 
-> make -j 4 clean
-> sync
-> sync
-> sync
-> echo 3 > /proc/sys/vm/drop_caches
-> sleep 1
-> echo 0 > /cgroup/memory/A/memory.vmscan_stat
-> cgexec -g memory:A -g cpuset:A time make -j 8
-> ==
-> 
-> On 8cpu, 4-node fake-numa box.
+reflect new static uart platform ids introduced by patch
+http://article.gmane.org/gmane.linux.kernel/1126105
+---
+ drivers/tty/serial/atmel_serial.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-How big are those nodes? I assume that you haven't used any numa
-policies, right?
-
-> (each node has 2cpus.)
-> 
-> Under the limit of 500M, 'make' need to scan memory to reclaim.
-> This tests see how vmscan works.
-> 
-> When cpuset.memory_spread_page==0.
-
-> 
-> [Before patch]
-> 773.07user 305.45system 4:09.64elapsed 432%CPU (0avgtext+0avgdata 1456576maxresident)k
-> 4397944inputs+5093232outputs (9688major+35689066minor)pagefaults 0swaps
-> scanned_pages_by_limit 3867645
-> scanned_anon_pages_by_limit 1518266
-> scanned_file_pages_by_limit 2349379
-> rotated_pages_by_limit 1502640
-> rotated_anon_pages_by_limit 1416627
-> rotated_file_pages_by_limit 86013
-> freed_pages_by_limit 1005141
-> freed_anon_pages_by_limit 24577
-> freed_file_pages_by_limit 980564
-> elapsed_ns_by_limit 82833866094
-> 
-> [Patched]
-> 773.73user 305.09system 3:51.28elapsed 466%CPU (0avgtext+0avgdata 1458464maxresident)k
-> 4400264inputs+4797056outputs (5578major+35690202minor)pagefaults 0swaps
-
-Hmm, 57% reduction of major page faults which doesn't fit with other
-numbers. At least I do not see any corelation with them. Your workload
-has freed more or less the same number of file pages (>1% less). Do you
-have a theory for that?
-
-Is it possible that this is caused by "memcg: stop vmscan when enough
-done."?
-
-> 
-> scanned_pages_by_limit 4326462
-> scanned_anon_pages_by_limit 1310619
-> scanned_file_pages_by_limit 3015843
-> rotated_pages_by_limit 1264223
-> rotated_anon_pages_by_limit 1247180
-> rotated_file_pages_by_limit 17043
-> freed_pages_by_limit 1003434
-> freed_anon_pages_by_limit 20599
-> freed_file_pages_by_limit 982835
-> elapsed_ns_by_limit 42495200307
-> 
-> elapsed time for vmscan and the number of page faults are reduced.
-> 
-> 
-> When cpuset.memory_spread_page==1, in this case, file cache will be
-> spread to the all nodes in round robin.
-> ==
-> [Before Patch + cpuset spread=1]
-> 773.23user 309.55system 4:26.83elapsed 405%CPU (0avgtext+0avgdata 1457696maxresident)k
-> 5400928inputs+5105368outputs (17344major+35735886minor)pagefaults 0swaps
-> 
-> scanned_pages_by_limit 3731787
-> scanned_anon_pages_by_limit 1374310
-> scanned_file_pages_by_limit 2357477
-> rotated_pages_by_limit 1403160
-> rotated_anon_pages_by_limit 1293568
-> rotated_file_pages_by_limit 109592
-> freed_pages_by_limit 1120828
-> freed_anon_pages_by_limit 20076
-> freed_file_pages_by_limit 1100752
-> elapsed_ns_by_limit 82458981267
-> 
-> 
-> [Patched + cpuset spread=1]
-> 773.56user 306.02system 3:52.28elapsed 464%CPU (0avgtext+0avgdata 1458160maxresident)k
-> 4173504inputs+4783688outputs (5971major+35666498minor)pagefaults 0swaps
-
-page fauls and time seem to be consistent with the previous test which
-is really good. 
-
-> 
-> scanned_pages_by_limit 2672392
-> scanned_anon_pages_by_limit 1140069
-> scanned_file_pages_by_limit 1532323
-> rotated_pages_by_limit 1108124
-> rotated_anon_pages_by_limit 1088982
-> rotated_file_pages_by_limit 19142
-> freed_pages_by_limit 975653
-> freed_anon_pages_by_limit 12578
-> freed_file_pages_by_limit 963075
-> elapsed_ns_by_limit 46482588602
-> 
-> elapsed time for vmscan and the number of page faults are reduced.
-> 
-> Thanks,
-> -Kame
-
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index af9b781..b922f5d 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -1609,9 +1609,11 @@ static struct console atmel_console = {
+ static int __init atmel_console_init(void)
+ {
+ 	if (atmel_default_console_device) {
+-		add_preferred_console(ATMEL_DEVICENAME,
+-				      atmel_default_console_device->id, NULL);
+-		atmel_init_port(&atmel_ports[atmel_default_console_device->id],
++		struct atmel_uart_data *pdata =
++			atmel_default_console_device->dev.platform_data;
++
++		add_preferred_console(ATMEL_DEVICENAME, pdata->num, NULL);
++		atmel_init_port(&atmel_ports[pdata->num],
+ 				atmel_default_console_device);
+ 		register_console(&atmel_console);
+ 	}
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+1.7.4.1
+
