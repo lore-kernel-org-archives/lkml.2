@@ -1,46 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321Ab1HIR7m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 13:59:42 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:41259 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753373Ab1HIR7i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 13:59:38 -0400
-Subject: Re: [PATCH] gianfar: reduce stack usage in gianfar_ethtool.c
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: stufever@gmail.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        davem@davemloft.net, Wang Shaoyan <wangshaoyan.pt@taobao.com>
-In-Reply-To: <1312912326.11924.12.camel@Joe-Laptop>
-References: <1312907945-1982-1-git-send-email-wangshaoyan.pt@taobao.com>
-	 <1312908784.2371.53.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <1312912326.11924.12.camel@Joe-Laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Aug 2011 19:59:34 +0200
-Message-ID: <1312912774.2547.1.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1754475Ab1HISAg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 14:00:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25079 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754115Ab1HISAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 14:00:34 -0400
+Date: Tue, 9 Aug 2011 19:57:08 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>
+Subject: Re: [PATCH 7/8] cgroups: Add a task counter subsystem
+Message-ID: <20110809175708.GA27866@redhat.com>
+References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com> <1311956010-32076-8-git-send-email-fweisbec@gmail.com> <20110809151155.GA15311@redhat.com> <20110809172746.GA31645@somewhere.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110809172746.GA31645@somewhere.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 09 août 2011 à 10:52 -0700, Joe Perches a écrit :
-> On Tue, 2011-08-09 at 18:53 +0200, Eric Dumazet wrote:
-> > Le mercredi 10 août 2011 à 00:39 +0800, stufever@gmail.com a écrit :
-> []
-> > > +	if (!local_rqfpr || !local_rqfcr) {
-> > > +		pr_err("Out of memory\n");
-> > 	Please remove this pr_err(), kmalloc() will complain already.
-> 
-> Always?
-> I know there's a trace option, but is it always on?
-> 
+On 08/09, Frederic Weisbecker wrote:
+>
+> On Tue, Aug 09, 2011 at 05:11:55PM +0200, Oleg Nesterov wrote:
+> >
+> > This doesn't look right or I missed something.
+> >
+> > What if tsk exits in between? Afaics this can happen with both
+> > cgroup_attach_task() and cgroup_attach_proc().
+> >
+> > Let's look at cgroup_attach_task(). Suppose that
+> > task_counter_can_attach_task() succeeds and charges the new cgrp,
+> > Then cgroup_task_migrate() returns -ESRCH. Who will uncharge the
+> > new cgrp?
+> >
+>
+> I may totally be missing something but that looks safe to me.
+> If the task has exited then cgroup_task_migrate() fails then we
+> rollback with ->cancel_attach_task().
 
-Yes, unless caller added ___GFP_NOWARN in gfp :
+cgroup_attach_task() doesn't call ->cancel_attach_task() ;)
 
-ptr = kmalloc(size, GFP_KERNEL | ___GFP_NOWARN);
+> > cgroup_attach_proc() is different, it calls cgroup_task_migrate()
+> > after ->attach_task(). Cough.
+>
+> That's bad. I need to fix that.
+>
+> So if it returns -ESRCH, I shall not call attach_task() on it
+> but cancel_attach_task().
 
+Afaics this can't help, or I misunderstood. probably attach_task()
+can check PF_EXITING...
 
+> > ->attach_task() can be skipped if cgrp == oldcgrp... Probably this
+> > is fine, in this case can_attach_task() shouldn't actually charge.
+>
+> In fact in this case it simply doesn't charge. res_counter_common_ancestor()
+> returns the res_counter for cgrp as a limit and thus charging stops as soon
+> as it starts.
+
+Yes, this is what I meant. Just it wasn't immediately obvious for me,
+initially I thought this is buggy.
+
+> @@ -1295,6 +1295,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+> > >  	p->group_leader = p;
+> > >  	INIT_LIST_HEAD(&p->thread_group);
+> > >
+> > > +	retval = cgroup_task_counter_fork(p);
+> > > +	if (retval)
+> > > +		goto bad_fork_free_pid;
+> > > +
+> >
+> > Well, imho this is not good. You are adding yet another cgroup hook.
+> > Why you can not reuse cgroup_fork_callbacks() ?
+> >
+> > Yes, it returns void. Can't we chane ->fork() to return the error and
+> > make it boolean?
+>
+> That was my first proposition (minus the rollback with exit() that I forgot)
+> but Paul Menage said that added unnecessary complexity in the fork callbacks.
+
+Hmm. Yes, this adds some complexity in the fork callbacks.
+
+But yet another cgroup_task_counter_fork() hook complicates the core kernel
+code. And since I personally do not care about cgroups at all, I think this
+is much worse ;)
+
+> I would personally prefer that.
+
+I strongly agree.
+
+OK. Lets do it this way. Perhaps we can convince Paul later and cleanup.
+
+Oleg.
 
