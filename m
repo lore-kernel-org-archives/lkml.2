@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab1HISlx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 14:41:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32292 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753280Ab1HISlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 14:41:51 -0400
-Date: Tue, 9 Aug 2011 20:39:00 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>
-Subject: Re: [PATCH 7/8] cgroups: Add a task counter subsystem
-Message-ID: <20110809183900.GA29472@redhat.com>
-References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com> <1311956010-32076-8-git-send-email-fweisbec@gmail.com> <20110809151155.GA15311@redhat.com> <20110809172746.GA31645@somewhere.redhat.com> <20110809175708.GA27866@redhat.com> <20110809180942.GC31645@somewhere.redhat.com> <20110809181947.GB28442@redhat.com> <20110809183402.GD31645@somewhere.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110809183402.GD31645@somewhere.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752957Ab1HISrs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 14:47:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37661 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab1HISrr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 14:47:47 -0400
+Subject: Re: [ANNOUNCE] 3.0.1-rt8
+From: Peter Zijlstra <peterz@infradead.org>
+To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Tue, 09 Aug 2011 20:47:26 +0200
+In-Reply-To: <4E417D12.70608@localhost>
+References: <1312580681.28695.44.camel@twins> <4E417D12.70608@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2- 
+Message-ID: <1312915646.1083.79.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09, Frederic Weisbecker wrote:
->
-> On Tue, Aug 09, 2011 at 08:19:47PM +0200, Oleg Nesterov wrote:
-> >
-> > Yes, but how this can help?
-> >
-> > ->attach_task() is called before cgroup_task_migrate(). Suppose
-> > that it exits before ->attach_task(). In this case we shouldn't
-> > uncharge the old cgroup, it was already uncharged by cgroup_exit.
->
-> Yeah that's why in cgroup_attach_proc() we need to call cgroup_task_migrate()
-> before ->attach_task(), as it's done in cgroup_attach_task().
+On Tue, 2011-08-09 at 11:31 -0700, Fernando Lopez-Lezcano wrote:
+> Hmmm, what are reasonable values for CONFIG_RCU_BOOST_PRIO and 
+> CONFIG_RCU_BOOST_DELAY? (or at least what are you using?).
 
-Agreed. I do not undertand why attach task/proc should differ. This
-doesn't look good even if (currently) correct.
+I'm using the defaults, since I haven't actually got a workload besides
+compiling kernels ;-)
 
-> And also call
-> cancel_attach_task() if it fails there with -ESRCH without cancelling
-> the whole group attachment.
+Changing these values is very much workload dependent, the PRIO should
+be high enough not to cause memory starvation, but low enough not to
+disrupt anything important, and thus completely dependent on you
+favourite RT workload.
 
-Probably... and attach_task() should do the same.
+The same goes for the DELAY, too long and you run out of memory, too
+short and you get more overhead, depends on your workload, your machine
+memory size etc..
 
-Oleg.
-
+Paul should of course be put on trial for giving us these knobs, but
+seeing where they come from I totally understand they exist ;-)
