@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab1HISly (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 14:41:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36250 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab1HISlw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 14:41:52 -0400
-Subject: Re: [PATCH 5/5] writeback: IO-less balance_dirty_pages()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 09 Aug 2011 20:41:05 +0200
-In-Reply-To: <20110809181543.GG6482@redhat.com>
-References: <20110806084447.388624428@intel.com>
-	 <20110806094527.136636891@intel.com> <20110809181543.GG6482@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1312915266.1083.75.camel@twins>
-Mime-Version: 1.0
+	id S1753373Ab1HISlx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 14:41:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32292 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753280Ab1HISlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 14:41:51 -0400
+Date: Tue, 9 Aug 2011 20:39:00 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>
+Subject: Re: [PATCH 7/8] cgroups: Add a task counter subsystem
+Message-ID: <20110809183900.GA29472@redhat.com>
+References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com> <1311956010-32076-8-git-send-email-fweisbec@gmail.com> <20110809151155.GA15311@redhat.com> <20110809172746.GA31645@somewhere.redhat.com> <20110809175708.GA27866@redhat.com> <20110809180942.GC31645@somewhere.redhat.com> <20110809181947.GB28442@redhat.com> <20110809183402.GD31645@somewhere.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110809183402.GD31645@somewhere.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-09 at 14:15 -0400, Vivek Goyal wrote:
-> 
-> So far bw had pos_ratio as value now it will be replaced with actual
-> bandwidth as value. It makes code confusing. So using pos_ratio will
-> help. 
+On 08/09, Frederic Weisbecker wrote:
+>
+> On Tue, Aug 09, 2011 at 08:19:47PM +0200, Oleg Nesterov wrote:
+> >
+> > Yes, but how this can help?
+> >
+> > ->attach_task() is called before cgroup_task_migrate(). Suppose
+> > that it exits before ->attach_task(). In this case we shouldn't
+> > uncharge the old cgroup, it was already uncharged by cgroup_exit.
+>
+> Yeah that's why in cgroup_attach_proc() we need to call cgroup_task_migrate()
+> before ->attach_task(), as it's done in cgroup_attach_task().
 
-Agreed on consistency, also I'm not sure bandwidth is the right term
-here to begin with, its a pages/s unit and I think rate would be better
-here. But whatever ;-)
+Agreed. I do not undertand why attach task/proc should differ. This
+doesn't look good even if (currently) correct.
+
+> And also call
+> cancel_attach_task() if it fails there with -ESRCH without cancelling
+> the whole group attachment.
+
+Probably... and attach_task() should do the same.
+
+Oleg.
+
