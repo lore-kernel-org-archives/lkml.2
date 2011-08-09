@@ -1,170 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753602Ab1HIPW4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 11:22:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32882 "EHLO mx2.suse.de"
+	id S1753494Ab1HIPYa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 11:24:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63930 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753122Ab1HIPWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 11:22:21 -0400
-Date: Tue, 9 Aug 2011 17:22:18 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2 v2] memcg: make oom_lock 0 and 1 based rather than
- coutner
-Message-ID: <20110809152218.GK7463@tiehlicka.suse.cz>
-References: <cover.1310732789.git.mhocko@suse.cz>
- <44ec61829ed8a83b55dc90a7aebffdd82fe0e102.1310732789.git.mhocko@suse.cz>
- <20110809140312.GA2265@redhat.com>
+	id S1752880Ab1HIPY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 11:24:29 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>
+Subject: [block] allow blk_flush_policy to return REQ_FSEQ_DATA independent of *FLUSH
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 09 Aug 2011 11:24:24 -0400
+Message-ID: <x49ty9qehg7.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110809140312.GA2265@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-08-11 16:03:12, Johannes Weiner wrote:
-> On Wed, Jul 13, 2011 at 01:05:49PM +0200, Michal Hocko wrote:
-> > @@ -1803,37 +1806,83 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
-> >  /*
-> >   * Check OOM-Killer is already running under our hierarchy.
-> >   * If someone is running, return false.
-> > + * Has to be called with memcg_oom_mutex
-> >   */
-> >  static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
-> >  {
-> > -	int x, lock_count = 0;
-> > -	struct mem_cgroup *iter;
-> > +	int lock_count = -1;
-> > +	struct mem_cgroup *iter, *failed = NULL;
-> > +	bool cond = true;
-> >  
-> > -	for_each_mem_cgroup_tree(iter, mem) {
-> > -		x = atomic_inc_return(&iter->oom_lock);
-> > -		lock_count = max(x, lock_count);
-> > +	for_each_mem_cgroup_tree_cond(iter, mem, cond) {
-> > +		bool locked = iter->oom_lock;
-> > +
-> > +		iter->oom_lock = true;
-> > +		if (lock_count == -1)
-> > +			lock_count = iter->oom_lock;
-> > +		else if (lock_count != locked) {
-> > +			/*
-> > +			 * this subtree of our hierarchy is already locked
-> > +			 * so we cannot give a lock.
-> > +			 */
-> > +			lock_count = 0;
-> > +			failed = iter;
-> > +			cond = false;
-> > +		}
-> 
-> I noticed system-wide hangs during a parallel/hierarchical memcg test
-> and found that a single task with a central i_mutex held was sleeping
-> on the memcg oom waitqueue, stalling everyone else contending for that
-> same inode.
+Hi,
 
-Nasty. Thanks for reporting and fixing this. The condition is screwed
-totally :/
+blk_insert_flush has the following check:
 
-> 
-> The problem is the above code, which never succeeds in hierarchies
-> with more than one member.  The first task going OOM tries to oom lock
-> the hierarchy, fails, goes to sleep on the OOM waitqueue with the
-> mutex held, without anybody actually OOM killing anything to make
-> progress.
-> 
-> Here is a patch that rectified things for me.
-> 
-> ---
-> From c4b52cbe01ed67d6487a96850400cdf5a9de91aa Mon Sep 17 00:00:00 2001
-> From: Johannes Weiner <jweiner@redhat.com>
-> Date: Tue, 9 Aug 2011 15:31:30 +0200
-> Subject: [patch] memcg: fix hierarchical oom locking
-> 
-> Commit "79dfdac memcg: make oom_lock 0 and 1 based rather than
-> counter" tried to oom lock the hierarchy and roll back upon
-> encountering an already locked memcg.
-> 
-> The code is pretty confused when it comes to detecting a locked memcg,
-> though, so it would fail and rollback after locking one memcg and
-> encountering an unlocked second one.
-> 
-> The result is that oom-locking hierarchies fails unconditionally and
-> that every oom killer invocation simply goes to sleep on the oom
-> waitqueue forever.  The tasks practically hang forever without anyone
-> intervening, possibly holding locks that trip up unrelated tasks, too.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+	/*
+	 * If there's data but flush is not necessary, the request can be
+	 * processed directly without going through flush machinery.  Queue
+	 * for normal execution.
+	 */
+	if ((policy & REQ_FSEQ_DATA) &&
+	    !(policy & (REQ_FSEQ_PREFLUSH | REQ_FSEQ_POSTFLUSH))) {
+		list_add_tail(&rq->queuelist, &q->queue_head);
+		return;
+	}
 
-Looks good. Thanks!
-Just a minor nit about done label bellow.
+However, blk_flush_policy will not return with policy set to only
+REQ_FSEQ_DATA:
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  mm/memcontrol.c |   14 ++++----------
->  1 files changed, 4 insertions(+), 10 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 930de94..649c568 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1841,25 +1841,19 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
->   */
->  static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
->  {
-> -	int lock_count = -1;
+static unsigned int blk_flush_policy(unsigned int fflags, struct request *rq)
+{
+	unsigned int policy = 0;
 
-Yes, the whole lock_count thingy is just stupid. We care just about all
-or nothing and state of the first is really not important.
+	if (fflags & REQ_FLUSH) {
+		if (rq->cmd_flags & REQ_FLUSH)
+			policy |= REQ_FSEQ_PREFLUSH;
+		if (blk_rq_sectors(rq))
+			policy |= REQ_FSEQ_DATA;
+		if (!(fflags & REQ_FUA) && (rq->cmd_flags & REQ_FUA))
+			policy |= REQ_FSEQ_POSTFLUSH;
+	}
+	return policy;
+}
 
->  	struct mem_cgroup *iter, *failed = NULL;
->  	bool cond = true;
->  
->  	for_each_mem_cgroup_tree_cond(iter, mem, cond) {
-> -		bool locked = iter->oom_lock;
-> -
-> -		iter->oom_lock = true;
-> -		if (lock_count == -1)
-> -			lock_count = iter->oom_lock;
-> -		else if (lock_count != locked) {
-> +		if (iter->oom_lock) {
->  			/*
->  			 * this subtree of our hierarchy is already locked
->  			 * so we cannot give a lock.
->  			 */
-> -			lock_count = 0;
->  			failed = iter;
->  			cond = false;
-> -		}
-> +		} else
-> +			iter->oom_lock = true;
->  	}
->  
->  	if (!failed)
+Notice that REQ_FSEQ_DATA is only set if REQ_FLUSH is set.  Fix this
+mismatch by moving the setting of REQ_FSEQ_DATA outside of the REQ_FLUSH
+check.
 
-We can return here and get rid of done label.
+Tejun notes:
 
-> @@ -1878,7 +1872,7 @@ static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
->  		iter->oom_lock = false;
->  	}
->  done:
-> -	return lock_count;
-> +	return failed == NULL;
->  }
->  
->  /*
-> -- 
-> 1.7.6
+  Hmmm... yes, this can become a correctness issue if (and only if)
+  blk_queue_flush() is called to change q->flush_flags while requests
+  are in-flight; otherwise, requests wouldn't reach the function at all.
+  Also, I think it would be a generally good idea to always set
+  FSEQ_DATA if the request has data.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Cheers,
+Jeff
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+
+diff --git a/block/blk-flush.c b/block/blk-flush.c
+index bb21e4c..2d162bd 100644
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -95,11 +95,12 @@ static unsigned int blk_flush_policy(unsigned int fflags, struct request *rq)
+ {
+ 	unsigned int policy = 0;
+ 
++	if (blk_rq_sectors(rq))
++		policy |= REQ_FSEQ_DATA;
++
+ 	if (fflags & REQ_FLUSH) {
+ 		if (rq->cmd_flags & REQ_FLUSH)
+ 			policy |= REQ_FSEQ_PREFLUSH;
+-		if (blk_rq_sectors(rq))
+-			policy |= REQ_FSEQ_DATA;
+ 		if (!(fflags & REQ_FUA) && (rq->cmd_flags & REQ_FUA))
+ 			policy |= REQ_FSEQ_POSTFLUSH;
+ 	}
