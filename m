@@ -1,152 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047Ab1HIVTk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 17:19:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25192 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751785Ab1HIVTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 17:19:39 -0400
-Date: Tue, 9 Aug 2011 17:19:23 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: ebiederm@xmission.com, mahesh@linux.vnet.ibm.com, hbabu@us.ibm.com,
-        oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: Re: [patch v2 04/10] kdump: Trigger kdump via panic notifier chain
- on s390
-Message-ID: <20110809211923.GJ6482@redhat.com>
-References: <20110727125504.491183728@linux.vnet.ibm.com>
- <20110727125808.028895659@linux.vnet.ibm.com>
- <20110801204114.GJ3805@redhat.com>
- <1312274279.4881.18.camel@br98xy6r>
- <20110802192147.GJ6399@redhat.com>
- <1312365039.3783.36.camel@br98xy6r>
- <20110804211432.GE429@redhat.com>
- <1312825659.3537.62.camel@br98xy6r>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312825659.3537.62.camel@br98xy6r>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752812Ab1HIVfI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 17:35:08 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:32425 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751257Ab1HIVfG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 17:35:06 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: NK2dapwVM1nA2GgaUV6zv23VIuWDjKM6dmv4tUJWFG9O5zZ
+ gQejgu7V6eJy1qsoWWBcpvQCFnrSVfFJZBJs94MJqkDofRrb8XMDKkEwGhQI
+ FErviznZ1Jm8nK9ftDpZbx7.TvH5BeuoIXb7VFPqjs.2f55QqN1u_ptRc92l
+ vOn7FqDeBUSJFyoyDWWeT0_JvypEcHsae.nFk7z23ilNsf.ypV2ayUy_y73L
+ UswxWu3AbTtRvMfHhaZ.1ZAgbdKHBIphUY3XsWSk4q_YxQG7iaToeOrb4jFL
+ WQ5MrnPrBwY467ykFSmZoEvEW2CP.fnlgrSxSloxQKPBKfvJZ5nBQ4XR2spm
+ Sjywy6MI4x4paEiV7wpaUFRRJcP1kgma7mNSG.V9nV0l4L7TB00BUY.KF_VA
+ S_fi_vNtyH29PMfjd_2.Kog--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Message-Id: <20110809211259.123603907@linux.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 09 Aug 2011 16:12:22 -0500
+From: Christoph Lameter <cl@linux.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: tj@kernel.org
+Cc: Metathronius Galabant <m.galabant@googlemail.com>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Adrian Drzewiecki <z@drze.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: [slub p4 1/7] slub: free slabs without holding locks (V2)
+References: <20110809211221.831975979@linux.com>
+Content-Disposition: inline; filename=slub_free_wo_locks
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 07:47:39PM +0200, Michael Holzheu wrote:
-> Hello Vivek,
-> 
-> On Thu, 2011-08-04 at 17:14 -0400, Vivek Goyal wrote:
-> > On Wed, Aug 03, 2011 at 11:50:39AM +0200, Michael Holzheu wrote:
-> 
-> [snip]
->  
-> > > Only if the user has specified panic action stand-alone dump, we do the
-> > > detour via the stand-alone dump tools.
-> > 
-> > If a user decides to load kdump kernel to capture dump, then why does it
-> > still make sense to set panic action as "stand-alone dump tools". One
-> > could argue that user loaded kdump kernel but not necessarily wants
-> > that mechanism to use, in that case dump-tools does not have to jump
-> > to kdump kernel at all. 
-> 
-> The user on s390 can currently freely configure the panic action. If we
-> would always do kdump on panic, when kdump is active, we would have to
-> ensure in sysfs that the user can't change the setting any more.
-> Technically we could do that of course.
-> 
-> One use case we had in mind was that the s390 Linux administrator does
-> not have to learn new things when using kdump. kdump can be used as
-> extension of the already existing mechanism. Today users configure
-> stand-alone dump via sysfs. With kdump + trigger via dump tools they
-> could do it still the same way. And also for manual dump they just IPL
-> the dump tool as they are used to do it and if kdump is fine, kdump will
-> be triggered. Nothing new has to be learned.
-> 
-> If users only want to use kdump without stand-alone dump tools as on
-> other architectures also this is possible. Then the panic action will be
-> just kdump.
+There are two situations in which slub holds a lock while releasing
+pages:
 
-IMHO, it makes sense to introduce a new trigger action "kdump" and let
-user configure that instead of masking everything behind dump tools.
+	A. During kmem_cache_shrink()
+	B. During kmem_cache_close()
 
-In fact, we don't have to even configure it. Like other architectures, 
-we can always call crash_kexec() upon panic() if there is a crash
-kernel loaded. That way, panic() path remains simple and there are
-no arch specific #ifdefs.
+For A build a list while holding the lock and then release the pages
+later. In case of B we are the last remaining user of the slab so
+there is no need to take the listlock.
 
-> 
-> > > 
-> > > > like other architectures and jump to stand
-> > > > alone kernel only if some piece of code is corrupted and that action
-> > > > failed.
-> > > > 
-> > > > What's the point of jumping to stand alone kenrel in case of panic()
-> > > > and then re-enter it back to original kernel using crash_kexec(). Sound
-> > > > like a very odd design choice to me.
-> > > > 
-> > > > I am now I am repeating this question umpteen time simply because
-> > > > I never got a good answer except "we have to do it this way".
-> > > 
-> > > Sometimes communication is really hard and frustrating.
-> > > ... but at least we are still communicating.
-> > > 
-> > > Ok very last try:
-> > > 
-> > > * We can use the same mechanism for manual dump and automatic dump on
-> > > panic: IPL the stand-alone dump tools.
-> > 
-> > So manual dump/intervention is only required if automatic dump failed?
-> 
-> Manual intervention is required only if panic code does not make it to
-> the "IPL stand-alone dump tools" code.
-> 
-> > 
-> > > kdump check and backup
-> > > stand-alone dump is implemented only in the stand-alone dump code.
-> > 
-> > My argument is that why stand alone dump is trying to trigger kdump
-> > at all? Shouldn't it all be part of loading kdump kernel and user
-> > setting panic() action to kdump?
-> 
-> To summarize: Our approach was to do it in the stand-alone dump tools
-> code for both the manual and the automatic on panic case:
-> 
-> panic ------+                                 +- valid -> kdump
->             +-> IPL dump tools -> try kdump --+
-> hard hang --+                                 +- invalid -> stand-alone dump
-> 
-> Your suggestion looks like the following:
-> 
-> panic --> try kdump +-- valid ---> kdump
->                     |
->                     +-- invalid -> IPL dump tools --> stand-alone dump
-> 
->                                             +- valid -> kdump
-> hard hang --> IPL dump tools -> try kdump --+ 
->                                             +- invalid -> stand-alone dump
+After this patch all calls to the page allocator to free pages are
+done without holding any spinlocks. kmem_cache_destroy() will still
+hold the slub_lock semaphore.
 
-I think thew whole notion of jumping from dump tools to kdump is not
-a very good design as it enforces us to pass additional state to dump
-tools and also the awkward notion of re-enter the crashed kernel
-(crash_kexec() being called from dump tools).
+V1->V2. Remove kfree. Avoid locking in free_partial.
 
-Is there a notion of NMI on s390. What's the x86 NMI equivalent on s390.
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-> Is that what you are suggesting? We can do it that way, too. Then
-> we would not need the #ifdef CONFIG_S390 in panic().
+---
+ mm/slub.c |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-How about keeping it simple in first round.
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2011-08-09 13:01:59.071582163 -0500
++++ linux-2.6/mm/slub.c	2011-08-09 13:05:00.051582012 -0500
+@@ -2970,13 +2970,13 @@ static void list_slab_objects(struct kme
+ 
+ /*
+  * Attempt to free all partial slabs on a node.
++ * This is called from kmem_cache_close(). We must be the last thread
++ * using the cache and therefore we do not need to lock anymore.
+  */
+ static void free_partial(struct kmem_cache *s, struct kmem_cache_node *n)
+ {
+-	unsigned long flags;
+ 	struct page *page, *h;
+ 
+-	spin_lock_irqsave(&n->list_lock, flags);
+ 	list_for_each_entry_safe(page, h, &n->partial, lru) {
+ 		if (!page->inuse) {
+ 			remove_partial(n, page);
+@@ -2986,7 +2986,6 @@ static void free_partial(struct kmem_cac
+ 				"Objects remaining on kmem_cache_close()");
+ 		}
+ 	}
+-	spin_unlock_irqrestore(&n->list_lock, flags);
+ }
+ 
+ /*
+@@ -3020,6 +3019,7 @@ void kmem_cache_destroy(struct kmem_cach
+ 	s->refcount--;
+ 	if (!s->refcount) {
+ 		list_del(&s->list);
++		up_write(&slub_lock);
+ 		if (kmem_cache_close(s)) {
+ 			printk(KERN_ERR "SLUB %s: %s called for cache that "
+ 				"still has objects.\n", s->name, __func__);
+@@ -3028,8 +3028,8 @@ void kmem_cache_destroy(struct kmem_cach
+ 		if (s->flags & SLAB_DESTROY_BY_RCU)
+ 			rcu_barrier();
+ 		sysfs_slab_remove(s);
+-	}
+-	up_write(&slub_lock);
++	} else
++		up_write(&slub_lock);
+ }
+ EXPORT_SYMBOL(kmem_cache_destroy);
+ 
+@@ -3347,23 +3347,23 @@ int kmem_cache_shrink(struct kmem_cache
+ 		 * list_lock. page->inuse here is the upper limit.
+ 		 */
+ 		list_for_each_entry_safe(page, t, &n->partial, lru) {
+-			if (!page->inuse) {
+-				remove_partial(n, page);
+-				discard_slab(s, page);
+-			} else {
+-				list_move(&page->lru,
+-				slabs_by_inuse + page->inuse);
+-			}
++			list_move(&page->lru, slabs_by_inuse + page->inuse);
++			if (!page->inuse)
++				n->nr_partial--;
+ 		}
+ 
+ 		/*
+ 		 * Rebuild the partial list with the slabs filled up most
+ 		 * first and the least used slabs at the end.
+ 		 */
+-		for (i = objects - 1; i >= 0; i--)
++		for (i = objects - 1; i > 0; i--)
+ 			list_splice(slabs_by_inuse + i, n->partial.prev);
+ 
+ 		spin_unlock_irqrestore(&n->list_lock, flags);
++
++		/* Release empty slabs */
++		list_for_each_entry_safe(page, t, slabs_by_inuse, lru)
++			discard_slab(s, page);
+ 	}
+ 
+ 	kfree(slabs_by_inuse);
 
-- Always use kdump for capturing dump is kdump kernel is loaded. If user
-  does not want to use kdump, don't load kdump kenrel.
-
-- Use NMI equivalent to handle the hard hang case. In case there is no
-  equivalent, how about keeping it simple in first go and always use
-  dump-tools to capture full dump and improve upon it in a later patchset.
-
-  (This is no worse then today as today you don't have any filtering
-   mechanism).
-
-Thanks
-Vivek
