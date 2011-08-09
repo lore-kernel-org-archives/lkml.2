@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab1HITkL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 15:40:11 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58062 "EHLO
+	id S1752970Ab1HITkJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 15:40:09 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58063 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab1HITjQ (ORCPT
+	with ESMTP id S1751537Ab1HITjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 9 Aug 2011 15:39:16 -0400
 From: <pavan_savoy@ti.com>
 To: <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
 CC: <pavan_savoy@sify.com>, Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH 3/8] drivers:misc: ti-st: reinit completion on ver read
-Date: Tue, 9 Aug 2011 14:39:04 -0500
-Message-ID: <1312918749-29627-13-git-send-email-pavan_savoy@ti.com>
+Subject: [PATCH 1/8] drivers:misc: ti-st: avoid a misleading dbg msg
+Date: Tue, 9 Aug 2011 14:39:02 -0500
+Message-ID: <1312918749-29627-11-git-send-email-pavan_savoy@ti.com>
 X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1312918749-29627-12-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <1312918749-29627-10-git-send-email-pavan_savoy@ti.com>
 References: <1312918749-29627-1-git-send-email-pavan_savoy@ti.com>
  <1312918749-29627-2-git-send-email-pavan_savoy@ti.com>
  <1312918749-29627-3-git-send-email-pavan_savoy@ti.com>
@@ -25,8 +25,6 @@ References: <1312918749-29627-1-git-send-email-pavan_savoy@ti.com>
  <1312918749-29627-8-git-send-email-pavan_savoy@ti.com>
  <1312918749-29627-9-git-send-email-pavan_savoy@ti.com>
  <1312918749-29627-10-git-send-email-pavan_savoy@ti.com>
- <1312918749-29627-11-git-send-email-pavan_savoy@ti.com>
- <1312918749-29627-12-git-send-email-pavan_savoy@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,29 +33,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pavan Savoy <pavan_savoy@ti.com>
 
-After the version information has been read, the completion which assists in
-wait_for_completion during the firmware send/wait sequence is being re-used
-and hence this needs to be re-initialised for fool proof firmware download
-retries.
+Previously the private data of each protocol registered to use ST was
+used to determine whether the protocol was registered to use shared
+transport or otherwise.
+However, now a flag is_registered is maintained to identify whether a
+protocol intends to use ST.
+Upon closing of the UART the error message relevant to this lack of
+un-registration was misleading and this patch fixes that.
 
-Change-Id: Ia75485b83992ecbdd70cfcf15a41f551a1d86c56
+Change-Id: I1a452dccd7b4bd53cce923df5b61ce077b7aa466
 Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
 ---
- drivers/misc/ti-st/st_kim.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/misc/ti-st/st_core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
-index 6884dd1..e5639ca 100644
---- a/drivers/misc/ti-st/st_kim.c
-+++ b/drivers/misc/ti-st/st_kim.c
-@@ -210,6 +210,7 @@ static long read_local_version(struct kim_data_s *kim_gdata, char *bts_scr_name)
- 		pr_err(" waiting for ver info- timed out ");
- 		return -ETIMEDOUT;
+diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
+index 54c91ff..c8e335d 100644
+--- a/drivers/misc/ti-st/st_core.c
++++ b/drivers/misc/ti-st/st_core.c
+@@ -717,7 +717,7 @@ static void st_tty_close(struct tty_struct *tty)
+ 	 */
+ 	spin_lock_irqsave(&st_gdata->lock, flags);
+ 	for (i = ST_BT; i < ST_MAX_CHANNELS; i++) {
+-		if (st_gdata->list[i] != NULL)
++		if (st_gdata->is_registered[i] == true)
+ 			pr_err("%d not un-registered", i);
+ 		st_gdata->list[i] = NULL;
  	}
-+	INIT_COMPLETION(kim_gdata->kim_rcvd);
- 
- 	version =
- 		MAKEWORD(kim_gdata->resp_buffer[13],
 -- 
 1.7.4.1
 
