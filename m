@@ -1,25 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab1HITlN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 15:41:13 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53986 "EHLO comal.ext.ti.com"
+	id S1753187Ab1HITlL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 15:41:11 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38943 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149Ab1HITjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751273Ab1HITjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 9 Aug 2011 15:39:16 -0400
 From: <pavan_savoy@ti.com>
 To: <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
 CC: <pavan_savoy@sify.com>, Pavan Savoy <pavan_savoy@ti.com>
 Subject: [PATCH 6/8] drivers:misc: ti-st: wait for completion at fail
-Date: Tue, 9 Aug 2011 14:38:58 -0500
-Message-ID: <1312918749-29627-7-git-send-email-pavan_savoy@ti.com>
+Date: Tue, 9 Aug 2011 14:39:07 -0500
+Message-ID: <1312918749-29627-16-git-send-email-pavan_savoy@ti.com>
 X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1312918749-29627-6-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <1312918749-29627-15-git-send-email-pavan_savoy@ti.com>
 References: <1312918749-29627-1-git-send-email-pavan_savoy@ti.com>
  <1312918749-29627-2-git-send-email-pavan_savoy@ti.com>
  <1312918749-29627-3-git-send-email-pavan_savoy@ti.com>
  <1312918749-29627-4-git-send-email-pavan_savoy@ti.com>
  <1312918749-29627-5-git-send-email-pavan_savoy@ti.com>
  <1312918749-29627-6-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-7-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-8-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-9-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-10-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-11-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-12-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-13-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-14-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-15-git-send-email-pavan_savoy@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
