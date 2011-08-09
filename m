@@ -1,81 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab1HIVNL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 17:13:11 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:41526 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752656Ab1HIVND (ORCPT
+	id S1753397Ab1HIVN2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 17:13:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:60898 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295Ab1HIVNZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 17:13:03 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 8wE4b8AVM1mr6vWzJxPDwycUdRW3VLBsNU9gN4UYMfACJCn
- 44r5JbOjJbujg4evczLT0zM80WbxatvAKR3VXwas4brTEsRPGnrHBrRAtcbQ
- KOeYJ2pxj0_YtcFJkY4ootmA5fItSaHTyuzvKOo6LeFOpIdei_FybKJa3BTv
- gJAXk8Pdyo79a6v4zO4FgM09IDeNjG_.Wc59xJx.hE5jJy7EbdaYNH.dTA59
- XiLg7kMzILSF82wBFA0015cn1eyuGiRMp9u9KGksxkEGKVzMd9ORqf0WmVPR
- rTMd3vCj6e4tqaIuKnng9WanZly7VOQM6vDb0Z4dOQWkbeKd6q_528euDX6L
- Rn3KU8bleqrl7uK0besyDutj12xZFxku8T_2NvWVkMI70z8jB5CyP9ZXzn4c
- u6_.k.DqSsguZ8yHUA.cVrg--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Message-Id: <20110809211300.388362487@linux.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 09 Aug 2011 16:12:24 -0500
-From: Christoph Lameter <cl@linux.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: tj@kernel.org
-Cc: Metathronius Galabant <m.galabant@googlemail.com>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Adrian Drzewiecki <z@drze.net>
+	Tue, 9 Aug 2011 17:13:25 -0400
+Date: Wed, 10 Aug 2011 00:13:20 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [slub p4 3/7] slub: Prepare inuse field in new_slab()
-References: <20110809211221.831975979@linux.com>
-Content-Disposition: inline; filename=new_slab
+Subject: [PATCH] kstrtox: common code between kstrto*() and simple_strto*()
+ functions
+Message-ID: <20110809211320.GA8716@p183.telecom.by>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-inuse will always be set to page->objects. There is no point in
-initializing the field to zero in new_slab() and then overwriting
-the value in __slab_alloc().
+Currently termination logic (\0 or \n\0) is hardcoded in _kstrtoull(),
+avoid that for code reuse between kstrto*() and simple_strtoull().
+Essentially, make them different only in termination logic.
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+simple_strtoull() (and scanf(), BTW) ignores integer overflow,
+that's a bug we currently don't have guts to fix,
+making KSTRTOX_OVERFLOW hack necessary.
 
+Almost forgot: patch shrinks code size by about ~80 bytes on x86_64.
 
+Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- mm/slub.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
 
-Index: linux-2.6/mm/slub.c
-===================================================================
---- linux-2.6.orig/mm/slub.c	2011-08-09 13:05:06.211582007 -0500
-+++ linux-2.6/mm/slub.c	2011-08-09 13:05:07.091582007 -0500
-@@ -1447,7 +1447,7 @@ static struct page *new_slab(struct kmem
- 	set_freepointer(s, last, NULL);
- 
- 	page->freelist = start;
--	page->inuse = 0;
-+	page->inuse = page->objects;
- 	page->frozen = 1;
- out:
- 	return page;
-@@ -2139,7 +2139,6 @@ new_slab:
- 		 */
- 		object = page->freelist;
- 		page->freelist = NULL;
--		page->inuse = page->objects;
- 
- 		stat(s, ALLOC_SLAB);
- 		c->node = page_to_nid(page);
-@@ -2681,7 +2680,7 @@ static void early_kmem_cache_node_alloc(
- 	n = page->freelist;
- 	BUG_ON(!n);
- 	page->freelist = get_freepointer(kmem_cache_node, n);
--	page->inuse++;
-+	page->inuse = 1;
- 	page->frozen = 0;
- 	kmem_cache_node->node[node] = n;
- #ifdef CONFIG_SLUB_DEBUG
+ lib/kstrtox.c  |   75 ++++++++++++++++++++++++++++++++++++++++-----------------
+ lib/kstrtox.h  |    8 ++++++
+ lib/vsprintf.c |   33 +++++--------------------
+ 3 files changed, 68 insertions(+), 48 deletions(-)
 
+--- a/lib/kstrtox.c
++++ b/lib/kstrtox.c
+@@ -18,26 +18,40 @@
+ #include <linux/module.h>
+ #include <linux/types.h>
+ #include <asm/uaccess.h>
++#include "kstrtox.h"
+ 
+-static int _kstrtoull(const char *s, unsigned int base, unsigned long long *res)
++const char *_parse_integer_fixup_radix(const char *s, unsigned int *base)
+ {
+-	unsigned long long acc;
+-	int ok;
+-
+-	if (base == 0) {
++	if (*base == 0) {
+ 		if (s[0] == '0') {
+ 			if (_tolower(s[1]) == 'x' && isxdigit(s[2]))
+-				base = 16;
++				*base = 16;
+ 			else
+-				base = 8;
++				*base = 8;
+ 		} else
+-			base = 10;
++			*base = 10;
+ 	}
+-	if (base == 16 && s[0] == '0' && _tolower(s[1]) == 'x')
++	if (*base == 16 && s[0] == '0' && _tolower(s[1]) == 'x')
+ 		s += 2;
++	return s;
++}
+ 
+-	acc = 0;
+-	ok = 0;
++/*
++ * Convert non-negative integer string representation in explicitly given radix
++ * to an integer.
++ * Return number of characters consumed maybe or-ed with overflow bit.
++ * If overflow occurs, result integer (incorrect) is still returned.
++ *
++ * Don't you dare use this function.
++ */
++unsigned int _parse_integer(const char *s, unsigned int base, unsigned long long *res)
++{
++	unsigned int rv;
++	int overflow;
++
++	*res = 0;
++	rv = 0;
++	overflow = 0;
+ 	while (*s) {
+ 		unsigned int val;
+ 
+@@ -45,23 +59,40 @@ static int _kstrtoull(const char *s, unsigned int base, unsigned long long *res)
+ 			val = *s - '0';
+ 		else if ('a' <= _tolower(*s) && _tolower(*s) <= 'f')
+ 			val = _tolower(*s) - 'a' + 10;
+-		else if (*s == '\n' && *(s + 1) == '\0')
+-			break;
+ 		else
+-			return -EINVAL;
++			break;
+ 
+ 		if (val >= base)
+-			return -EINVAL;
+-		if (acc > div_u64(ULLONG_MAX - val, base))
+-			return -ERANGE;
+-		acc = acc * base + val;
+-		ok = 1;
+-
++			break;
++		if (*res > div_u64(ULLONG_MAX - val, base))
++			overflow = 1;
++		*res = *res * base + val;
++		rv++;
+ 		s++;
+ 	}
+-	if (!ok)
++	if (overflow)
++		rv |= KSTRTOX_OVERFLOW;
++	return rv;
++}
++
++static int _kstrtoull(const char *s, unsigned int base, unsigned long long *res)
++{
++	unsigned long long _res;
++	unsigned int rv;
++
++	s = _parse_integer_fixup_radix(s, &base);
++	rv = _parse_integer(s, base, &_res);
++	if (rv & KSTRTOX_OVERFLOW)
++		return -ERANGE;
++	rv &= ~KSTRTOX_OVERFLOW;
++	if (rv == 0)
++		return -EINVAL;
++	s += rv;
++	if (*s == '\n')
++		s++;
++	if (*s)
+ 		return -EINVAL;
+-	*res = acc;
++	*res = _res;
+ 	return 0;
+ }
+ 
+--- /dev/null
++++ b/lib/kstrtox.h
+@@ -0,0 +1,8 @@
++#ifndef _LIB_KSTRTOX_H
++#define _LIB_KSTRTOX_H
++
++#define KSTRTOX_OVERFLOW	(1U << 31)
++const char *_parse_integer_fixup_radix(const char *s, unsigned int *base);
++unsigned int _parse_integer(const char *s, unsigned int base, unsigned long long *res);
++
++#endif
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -31,17 +31,7 @@
+ #include <asm/div64.h>
+ #include <asm/sections.h>	/* for dereference_function_descriptor() */
+ 
+-static unsigned int simple_guess_base(const char *cp)
+-{
+-	if (cp[0] == '0') {
+-		if (_tolower(cp[1]) == 'x' && isxdigit(cp[2]))
+-			return 16;
+-		else
+-			return 8;
+-	} else {
+-		return 10;
+-	}
+-}
++#include "kstrtox.h"
+ 
+ /**
+  * simple_strtoull - convert a string to an unsigned long long
+@@ -51,23 +41,14 @@ static unsigned int simple_guess_base(const char *cp)
+  */
+ unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int base)
+ {
+-	unsigned long long result = 0;
++	unsigned long long result;
++	unsigned int rv;
+ 
+-	if (!base)
+-		base = simple_guess_base(cp);
++	cp = _parse_integer_fixup_radix(cp, &base);
++	rv = _parse_integer(cp, base, &result);
++	/* FIXME */
++	cp += (rv & ~KSTRTOX_OVERFLOW);
+ 
+-	if (base == 16 && cp[0] == '0' && _tolower(cp[1]) == 'x')
+-		cp += 2;
+-
+-	while (isxdigit(*cp)) {
+-		unsigned int value;
+-
+-		value = isdigit(*cp) ? *cp - '0' : _tolower(*cp) - 'a' + 10;
+-		if (value >= base)
+-			break;
+-		result = result * base + value;
+-		cp++;
+-	}
+ 	if (endp)
+ 		*endp = (char *)cp;
+ 
