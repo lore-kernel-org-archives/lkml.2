@@ -1,344 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab1HIQdb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 12:33:31 -0400
-Received: from mail.mnsspb.ru ([84.204.75.2]:40234 "EHLO mail.mnsspb.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752149Ab1HIQda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 12:33:30 -0400
-Date: Tue, 9 Aug 2011 20:32:06 +0400
-From: Kirill Smelkov <kirr@mns.spb.ru>
-To: Vasily Khoruzhick <anarsoul@gmail.com>
-Cc: intel-gfx@lists.freedesktop.org, Keith Packard <keithp@keithp.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Herbert Xu <herbert@gondor.hengli.com.au>, Luke-Jr <luke@dashjr.org>,
-        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
-        Pekka Enberg <penberg@kernel.org>, Ray Lee <ray-lk@madrabbit.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [Intel-gfx] Major 2.6.38 / 2.6.39 / 3.0 regression ignored?
-Message-ID: <20110809163206.GA3410@tugrik.mns.mnsspb.ru>
-References: <013811$4lfs6@fmsmga002.fm.intel.com> <201108091809.58425.anarsoul@gmail.com> <20110809153446.GA22077@tugrik.mns.mnsspb.ru> <201108091903.00071.anarsoul@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201108091903.00071.anarsoul@gmail.com>
-Organization: Marine Bridge & Navigation Systems
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753919Ab1HIQhB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 12:37:01 -0400
+Received: from relay.pcl-ipout02.plus.net ([212.159.7.100]:7208 "EHLO
+	relay.pcl-ipout02.plus.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752673Ab1HIQhA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 12:37:00 -0400
+X-Greylist: delayed 571 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Aug 2011 12:36:59 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ap4lABpfQU7Unw4S/2dsb2JhbABCgh2CbJJmNY8ad4JAcTUYE4dvrXECh1OJLQ6GOASYDoRmhnw
+Subject: [PATCH] mfd: asic3: Fix SD card resume after suspend
+From: "Paul Parsons" <lost.distance@yahoo.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <philipp.zabel@gmail.com>, <sameo@linux.intel.com>, <mad_soft@inbox.ru>,
+        <koen@dominion.thruhere.net>
+Date: Tue, 09 Aug 2011 16:27:24 +0000
+Content-Type: text/plain
+Mime-Version: 1.0
+X-Mailer: email v2.5.0 (Linux 2.6.39 x86_64 [http://email.cleancode.org])
+Message-Id: <E1Qqp9K-0000wd-O4@outmx06.plus.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 09, 2011 at 07:02:59PM +0300, Vasily Khoruzhick wrote:
-> On Tuesday 09 August 2011 18:34:46 Kirill Smelkov wrote:
-> > On Tue, Aug 09, 2011 at 06:09:57PM +0300, Vasily Khoruzhick wrote:
-> > > On Tuesday 09 August 2011 17:47:56 Kirill Smelkov wrote:
-> > > > On Tue, Aug 09, 2011 at 05:00:52PM +0300, Vasily Khoruzhick wrote:
-> > > > > On Tuesday 09 August 2011 15:08:03 Kirill Smelkov wrote:
-> > > > > > On Tue, Jul 26, 2011 at 05:48:27PM +0400, Kirill Smelkov wrote:
-> > > > > > > On Sat, Jul 23, 2011 at 12:23:36AM +0400, Kirill Smelkov wrote:
-> > > > > > > > Keith,
-> > > > > > > > 
-> > > > > > > > first of all thanks for your prompt reply. Then...
-> > > > > > > > 
-> > > > > > > > On Fri, Jul 22, 2011 at 11:00:41AM -0700, Keith Packard wrote:
-> > > > > > > > > On Fri, 22 Jul 2011 15:08:06 +0400, Kirill Smelkov
-> > > > > > > > > <kirr@mns.spb.ru>
-> > > > > 
-> > > > > wrote:
-> > > > > > > > > > And now after v3.0 is out, I've tested it again, and yes,
-> > > > > > > > > > like it was broken on v3.0-rc5, it is (now even more)
-> > > > > > > > > > broken on v3.0 -- after first
-> > > > > > > > > 
-> > > > > > > > > > bad io access the system freezes completely:
-> > > > > > > > > I looked at this when I first saw it (a couple of weeks ago),
-> > > > > > > > > and I couldn't see any obvious reason this patch would cause
-> > > > > > > > > this particular problem. I didn't want to revert the patch
-> > > > > > > > > at that point as I feared it would cause other subtle
-> > > > > > > > > problems. Given that you've got a work-around, it seemed
-> > > > > > > > > best to just push this off past 3.0.
-> > > > > > > > 
-> > > > > > > > What kind of a workaround are you talking about? Sorry, to me
-> > > > > > > > it all looked like "UMS is being ignored forever". Anyway,
-> > > > > > > > let's move on to try to solve the issue.
-> > > > > > > > 
-> > > > > > > > > Given the failing address passed to ioread32, this seems like
-> > > > > > > > > it's probably the call to READ_BREADCRUMB --
-> > > > > > > > > I915_BREADCRUMB_INDEX is 0x21, which is an offset in 32-bit
-> > > > > > > > > units within the hardware status page. If the
-> > > > > > > > > status_page.page_addr value was zero, then the computed
-> > > > > > > > > address would end up being 0x84.
-> > > > > > > > > 
-> > > > > > > > > And, it looks like status_page.page_addr *will* end up being
-> > > > > > > > > zero as a result of the patch in question. The patch resets
-> > > > > > > > > the entire ring structure contents back to the initial
-> > > > > > > > > values, which includes smashing the status_page structure to
-> > > > > > > > > zero, clearing the value of status_page.page_addr set in
-> > > > > > > > > i915_init_phys_hws.
-> > > > > > > > > 
-> > > > > > > > > Here's an untested patch which moves the initialization of
-> > > > > > > > > status_page.page_addr into intel_render_ring_init_dri. I note
-> > > > > > > > > that intel_init_render_ring_buffer *already* has the setting
-> > > > > > > > > of the status_page.page_addr value, and so I've removed the
-> > > > > > > > > setting of status_page.page_addr from i915_init_phys_hws.
-> > > > > > > > > 
-> > > > > > > > > I suspect we could remove the memset from
-> > > > > > > > > intel_init_render_ring_buffer; it seems entirely superfluous
-> > > > > > > > > given the memset in i915_init_phys_hws.
-> > > > > > > > > 
-> > > > > > > > > From 159ba1dd207fc52590ce8a3afd83f40bd2cedf46 Mon Sep 17
-> > > > > > > > > 00:00:00 2001 From: Keith Packard <keithp@keithp.com>
-> > > > > > > > > Date: Fri, 22 Jul 2011 10:44:39 -0700
-> > > > > > > > > Subject: [PATCH] drm/i915: Initialize RCS ring status page
-> > > > > > > > > address in
-> > > > > > > > > 
-> > > > > > > > >  intel_render_ring_init_dri
-> > > > > > > > > 
-> > > > > > > > > Physically-addressed hardware status pages are initialized
-> > > > > > > > > early in the driver load process by i915_init_phys_hws. For
-> > > > > > > > > UMS environments, the ring structure is not initialized
-> > > > > > > > > until the X server starts. At that point, the entire ring
-> > > > > > > > > structure is re-initialized with all new values. Any values
-> > > > > > > > > set in the ring structure (including
-> > > > > > > > > ring->status_page.page_addr) will be lost when the ring is
-> > > > > > > > > re-initialized.
-> > > > > > > > > 
-> > > > > > > > > This patch moves the initialization of the
-> > > > > > > > > status_page.page_addr value to intel_render_ring_init_dri.
-> > > > > > > > > 
-> > > > > > > > > Signed-off-by: Keith Packard <keithp@keithp.com>
-> > > > > > > > > ---
-> > > > > > > > > 
-> > > > > > > > >  drivers/gpu/drm/i915/i915_dma.c         |    6 ++----
-> > > > > > > > >  drivers/gpu/drm/i915/intel_ringbuffer.c |    3 +++
-> > > > > > > > >  2 files changed, 5 insertions(+), 4 deletions(-)
-> > > > > > > > > 
-> > > > > > > > > diff --git a/drivers/gpu/drm/i915/i915_dma.c
-> > > > > > > > > b/drivers/gpu/drm/i915/i915_dma.c index 1271282..8a3942c
-> > > > > > > > > 100644 --- a/drivers/gpu/drm/i915/i915_dma.c
-> > > > > > > > > +++ b/drivers/gpu/drm/i915/i915_dma.c
-> > > > > > > > > @@ -61,7 +61,6 @@ static void i915_write_hws_pga(struct
-> > > > > > > > > drm_device *dev)
-> > > > > > > > > 
-> > > > > > > > >  static int i915_init_phys_hws(struct drm_device *dev)
-> > > > > > > > >  {
-> > > > > > > > >  
-> > > > > > > > >  	drm_i915_private_t *dev_priv = dev->dev_private;
-> > > > > > > > > 
-> > > > > > > > > -	struct intel_ring_buffer *ring = LP_RING(dev_priv);
-> > > > > > > > > 
-> > > > > > > > >  	/* Program Hardware Status Page */
-> > > > > > > > >  	dev_priv->status_page_dmah =
-> > > > > > > > > 
-> > > > > > > > > @@ -71,10 +70,9 @@ static int i915_init_phys_hws(struct
-> > > > > > > > > drm_device *dev)
-> > > > > > > > > 
-> > > > > > > > >  		DRM_ERROR("Can not allocate hardware status page\n");
-> > > > > > > > >  		return -ENOMEM;
-> > > > > > > > >  	
-> > > > > > > > >  	}
-> > > > > > > > > 
-> > > > > > > > > -	ring->status_page.page_addr =
-> > > > > > > > > -		(void __force __iomem *)dev_priv->status_page_dmah-
-> >vaddr;
-> > > > > > > > > 
-> > > > > > > > > -	memset_io(ring->status_page.page_addr, 0, PAGE_SIZE);
-> > > > > > > > > +	memset_io((void __force __iomem
-> > > > > > > > > *)dev_priv->status_page_dmah->vaddr, +		  0, PAGE_SIZE);
-> > > > > > > > > 
-> > > > > > > > >  	i915_write_hws_pga(dev);
-> > > > > > > > > 
-> > > > > > > > > diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c
-> > > > > > > > > b/drivers/gpu/drm/i915/intel_ringbuffer.c index
-> > > > > > > > > e961568..47b9b27 100644
-> > > > > > > > > --- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-> > > > > > > > > +++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-> > > > > > > > > @@ -1321,6 +1321,9 @@ int intel_render_ring_init_dri(struct
-> > > > > > > > > drm_device *dev, u64 start, u32 size)
-> > > > > > > > > 
-> > > > > > > > >  		ring->get_seqno = pc_render_get_seqno;
-> > > > > > > > >  	
-> > > > > > > > >  	}
-> > > > > > > > > 
-> > > > > > > > > +	if (!I915_NEED_GFX_HWS(dev))
-> > > > > > > > > +		ring->status_page.page_addr =
-> > > > > > > > > dev_priv->status_page_dmah->vaddr; +
-> > > > > > > > > 
-> > > > > > > > >  	ring->dev = dev;
-> > > > > > > > >  	INIT_LIST_HEAD(&ring->active_list);
-> > > > > > > > >  	INIT_LIST_HEAD(&ring->request_list);
-> > > > > > > > 
-> > > > > > > > I can't tell whether this is correct, because intel gfx driver
-> > > > > > > > is unknown to me, but from the first glance your description
-> > > > > > > > sounds reasonable.
-> > > > > > > > 
-> > > > > > > > I'm out of office till ~ next week's tuesday, and on return
-> > > > > > > > I'll try to test it on the hardware in question.
-> > > > > > > 
-> > > > > > > Keith, thanks again for the patch. As promised I've tested it on
-> > > > > > > the hardware in question and yes, bad_access is gone and X seems
-> > > > > > > to work, so thank you, but...
-> > > > > > > 
-> > > > > > > 
-> > > > > > > I see there are more such bugs in introduced-in-guilty-patch
-> > > > > > > intel_render_ring_init_dri(). For example ring->irq_queue is
-> > > > > > > left uninitialized and also ring->irq_lock etc...
-> > > > > > > 
-> > > > > > > 
-> > > > > > > I'm X newbie, so if here is something stupid X-wise, please don't
-> > > > > > > beat me too hard, but to me the gist of the problem is the
-> > > > > > > original patch, where Chris does
-> > > > > > > 
-> > > > > > > ( git show e8616b6ced6137085e6657cc63bc2fe3900b8616 )
-> > > > > > > 
-> > > > > > > > diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c
-> > > > > > > > b/drivers/gpu/drm/i915/intel_ringbuffer.c index
-> > > > > > > > 03e3370..51fbc5e 100644
-> > > > > > > > --- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-> > > > > > > > +++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-> > > > > > > > @@ -1291,6 +1291,48 @@ int intel_init_render_ring_buffer(struct
-> > > > > > > > drm_device *dev)
-> > > > > > > > 
-> > > > > > > >         return intel_init_ring_buffer(dev, ring);
-> > > > > > > >  
-> > > > > > > >  }
-> > > > > > > > 
-> > > > > > > > +int intel_render_ring_init_dri(struct drm_device *dev, u64
-> > > > > > > > start, u32 size) +{
-> > > > > > > > +       drm_i915_private_t *dev_priv = dev->dev_private;
-> > > > > > > > +       struct intel_ring_buffer *ring = &dev_priv->ring[RCS];
-> > > > > > > > +
-> > > > > > > > +       *ring = render_ring;
-> > > > > > > > 
-> > > > > > >           ^^^^^^^^^^^^^^^^^^^
-> > > > > > >           here resets
-> > > > > > > > 
-> > > > > > > > +       if (INTEL_INFO(dev)->gen >= 6) {
-> > > > > > > > +               ring->add_request = gen6_add_request;
-> > > > > > > > +               ring->irq_get = gen6_render_ring_get_irq;
-> > > > > > > > +               ring->irq_put = gen6_render_ring_put_irq;
-> > > > > > > > +       } else if (IS_GEN5(dev)) {
-> > > > > > > > +               ring->add_request = pc_render_add_request;
-> > > > > > > > +               ring->get_seqno = pc_render_get_seqno;
-> > > > > > > > +       }
-> > > > > > > 
-> > > > > > > and then the rest of the `ring` is initialized seemingly
-> > > > > > > copy-pasted
-> > > > > > > 
-> > > > > > > from intel_init_ring_buffer():
-> > > > > > > > +       ring->dev = dev;
-> > > > > > > > +       INIT_LIST_HEAD(&ring->active_list);
-> > > > > > > > +       INIT_LIST_HEAD(&ring->request_list);
-> > > > > > > > +       INIT_LIST_HEAD(&ring->gpu_write_list);
-> > > > > > > > +
-> > > > > > > > +       ring->size = size;
-> > > > > > > > +       ring->effective_size = ring->size;
-> > > > > > > > +       if (IS_I830(ring->dev))
-> > > > > > > > +               ring->effective_size -= 128;
-> > > > > > > > +
-> > > > > > > > +       ring->map.offset = start;
-> > > > > > > > +       ring->map.size = size;
-> > > > > > > > +       ring->map.type = 0;
-> > > > > > > > +       ring->map.flags = 0;
-> > > > > > > > +       ring->map.mtrr = 0;
-> > > > > > > 
-> > > > > > > ...
-> > > > > > > 
-> > > > > > > where both 3 chunks go almost exactly from
-> > > > > > > intel_init_ring_buffer(), and ring->effective_size tweak even
-> > > > > > > stripped original comment:
-> > > > > > > 
-> > > > > > > # original version from intel_init_ring_buffer():
-> > > > > > >         /* Workaround an erratum on the i830 which causes a hang
-> > > > > > >         if
-> > > > > > >         
-> > > > > > >          * the TAIL pointer points to within the last 2
-> > > > > > >          cachelines * of the buffer.
-> > > > > > >          */
-> > > > > > >         
-> > > > > > >         ring->effective_size = ring->size;
-> > > > > > >         if (IS_I830(ring->dev))
-> > > > > > >         
-> > > > > > >                 ring->effective_size -= 128;
-> > > > > > > 
-> > > > > > > ...
-> > > > > > > 
-> > > > > > > 
-> > > > > > > The line marked "here resets" resets all the fields, and maybe
-> > > > > > > it's not a good idea to re-initialize them all afterwards
-> > > > > > > (missing some as this thread show), or at least if it is really
-> > > > > > > needed, share initialization code between
-> > > > > > > intel_render_ring_init_dri() and intel_init_ring_buffer() ?
-> > > > > > > 
-> > > > > > > >From the outside it looks like the offending patch was done as a
-> > > > > > > >quick
-> > > > > > > 
-> > > > > > > fix in a hurry (lots of copy-paste), and maybe it would be better
-> > > > > > > to re-do it properly...
-> > > > > > 
-> > > > > > Silence... ?
-> > > > > > 
-> > > > > > I read UMS is still ignored, because e.g. that uninitialized
-> > > > > > ring->irq_lock which I've wrote about above is for sure used e.g.
-> > > > > > in gen6_render_ring_get_irq() added to ring vtable in
-> > > > > > intel_render_ring_init_dri().
-> > > > > 
-> > > > > I really doubt that UMS supports gen6 hardware.
-> > > > 
-> > > > Then why it is there in intel_render_ring_init_dri():
-> > > >     int intel_render_ring_init_dri(struct drm_device *dev, u64 start,
-> > > >     u32
-> > > > 
-> > > > size) {
-> > > > 
-> > > >     	drm_i915_private_t *dev_priv = dev->dev_private;
-> > > >     	struct intel_ring_buffer *ring = &dev_priv->ring[RCS];
-> > > >     	
-> > > >     	*ring = render_ring;
-> > > >     	if (INTEL_INFO(dev)->gen >= 6) {
-> > > 
-> > > This branch executes only when hw generation is 6 or newer.
-> > 
-> > and adds gen6_render_ring_get_irq() to vtable which uses ring->irq_lock
-> > which is left uninitialized.
-> > 
-> > I don't understand what you were trying to say. How does it matter if
-> > some branch executes only for such-and-such hardware, when this branch
-> > contains bugs? Could you please clarify?
-> 
-> I want to say that xf86-video-intel with gen6 support does not support UMS. So 
-> you can't even hit this "bug".
+The mfd/asic3 driver did not define the suspend/resume handlers for the mmc cell
+driver. Consequently the mmc driver did not resume properly after returning from
+suspend, making sd cards unusable and preventing suspend from being entered a
+second time. This patch adds the suspend/resume handlers, fixing the problem.
 
+Signed-off-by: Paul Parsons <lost.distance@yahoo.com>
+---
 
-Ok, but so then there is a dead code in the kernel, right? Or not dead
-at all because potentially some non-X userspace could trigger the bug.
+Thanks to Dmitry Artamonow for this fix.
 
-Why it was added in the first place?
+diff -uprN clean-3.0.1/drivers/mfd/asic3.c linux-3.0.1/drivers/mfd/asic3.c
+--- clean-3.0.1/drivers/mfd/asic3.c	2011-08-05 05:59:21.000000000 +0100
++++ linux-3.0.1/drivers/mfd/asic3.c	2011-08-07 23:34:38.036672007 +0100
+@@ -779,6 +779,8 @@ static struct mfd_cell asic3_cell_mmc =
+ 	.name          = "tmio-mmc",
+ 	.enable        = asic3_mmc_enable,
+ 	.disable       = asic3_mmc_disable,
++	.suspend       = asic3_mmc_disable,
++	.resume        = asic3_mmc_enable,
+ 	.platform_data = &asic3_mmc_data,
+ 	.pdata_size    = sizeof(asic3_mmc_data),
+ 	.num_resources = ARRAY_SIZE(asic3_mmc_resources),
 
-
-To me, intel_render_ring_init_dri() looks like being copy-pasted from
-several places in a hurry. And I was already beaten by one bug
-introduced in it, without a single response for 3 kernel cycles though
-I've asked for help several times and provided detailed info.
-
-Finally Keith analyzed and plugged NULL-pointer dereference (thanks)
-but I'm telling, it seems there are more bugs introduced in e8616b6c.
-
-The patch title says "drm/i915: Initialise ring vfuncs for old DRI
-paths" and one could ask, why couldn't it be done without bugs and
-regressions. Are we waiting for another one hitting left bugs instead of
-fix them in the first place?
-
-Quite frankly, I don't understand intel-gfx developers attitude: why is
-it me, just random user who is nitpicking here? Why there is no
-interest/will to analyze now obviously buggy/duplicate code and fix it?
-
-
-If support for UMS/old-dri/whatever is dropped, could you please say so
-and clean the driver from legacy code and move on. That would be at
-least fair for people not hoping their old setups will continue to
-work.
-
-
-Thanks,
-Kirill
