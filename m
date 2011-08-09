@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab1HIMsP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 08:48:15 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37398 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753377Ab1HIMsO (ORCPT
+	id S1753800Ab1HIMsZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 08:48:25 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:44572 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753755Ab1HIMsX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 08:48:14 -0400
-Date: Tue, 9 Aug 2011 13:50:50 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Andy Lutomirski <luto@MIT.EDU>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v3 0/2] Forcibly enable some MISC_ENABLE features on
- Intel
-Message-ID: <20110809135050.79eed316@lxorguk.ukuu.org.uk>
-In-Reply-To: <cover.1312893572.git.luto@mit.edu>
-References: <cover.1312893572.git.luto@mit.edu>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Aug 2011 08:48:23 -0400
+X-Greylist: delayed 722 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Aug 2011 08:48:23 EDT
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] rio: Use discovered bit to test if enumeration is complete
+Date: Tue, 9 Aug 2011 05:36:06 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552020244E5@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <1312856226-3695-1-git-send-email-b34182@freescale.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] rio: Use discovered bit to test if enumeration is complete
+Thread-Index: AcxWOnctAilG1DiZSVCzXuWudXwofgAVbRcA
+References: <1312856226-3695-1-git-send-email-b34182@freescale.com>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Liu Gang" <b34182@freescale.com>, <linux-kernel@vger.kernel.org>
+Cc: <r58472@freescale.com>, <r61911@freescale.com>, <linuxppc-dev@ozlabs.org>,
+        "Liu Gang" <Gang.Liu@freescale.com>, <akpm@linux-foundation.org>,
+        <B11780@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  9 Aug 2011 08:41:04 -0400
-Andy Lutomirski <luto@MIT.EDU> wrote:
+On Monday, August 08, 2011 at 10:17 PM, Liu Gang wrote:
+> Subject: [PATCH] rio: Use discovered bit to test if enumeration is
+> complete
+> 
+> The discovered bit in PGCCSR register indicates if the device has
+> been discovered by system host. In Rapidio system, some agent devices
+> can also be master devices. They can issue requests into the system.
+> 
+> Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
+> ---
+>  drivers/rapidio/rio-scan.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 
-> Intel allows BIOS or the OS to enable or disable some CPU fueatures via
-> IA32_MISC_ENABLE.  I have machines that don't enable fast strings or
-> monitor/mwait in BIOS, so do it on bootup instead.
+Acked-by: Alexandre Bounine <alexandre.bounine@idt.com>
 
-The question is - why. 
-
-> The Intel SDM volume 3, appendix B.1 says that the OS should not touch
-> the monitor enable bit if SSE3 is not present, which presumably means
-> that the OS may touch that bit if SSE3 is present.  In any case, these
-> patches seem to work.
-
-That's a big "presumes"
-
-For example back in Pentium days the BIOS sometimes turned off a string
-fast path because it was subtly not reliable on certain parts and could
-corrupt.
-
-It's possible your BIOS vendor has a good reason for doing this. It's
-also possible its a bug, or a left over perhaps from some pre-release
-processor or something.
-
-I think a bit more research is probably appropriate before processor
-configuration hacks go in that 'seem to work'.
-
-Alan
