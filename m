@@ -1,59 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751752Ab1HIXig (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 19:38:36 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55729 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751256Ab1HIXif (ORCPT
+	id S1751765Ab1HIXn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 19:43:57 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:46037 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526Ab1HIXn4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 19:38:35 -0400
-Date: Wed, 10 Aug 2011 00:38:17 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, Arnaud Lacombe <lacombar@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: [PATCH 1/5] um: Use __i386__ in ifdef for vsyscall exports, not
- SUBARCH_i386
-Message-ID: <20110809233817.GL2203@ZenIV.linux.org.uk>
-References: <1312066693.22074.50.camel@i7.infradead.org>
- <1312066923.22074.53.camel@i7.infradead.org>
- <CAFLxGvy0QqoySDFwZpygHeXvQ7hG-B7z5iZq8qx3GUkFX8w2RQ@mail.gmail.com>
- <1312151063.18010.25.camel@i7.infradead.org>
- <20110731224834.GC2203@ZenIV.linux.org.uk>
- <20110731225801.GD2203@ZenIV.linux.org.uk>
- <1312153988.18010.39.camel@i7.infradead.org>
- <CAFLxGvyewG70ZgU41Kmu_eOYpjZ0TVXYwYq1AfS1sXONAM6G_w@mail.gmail.com>
- <20110801043207.GE2203@ZenIV.linux.org.uk>
- <CAFLxGvwxQ2VeqkDpkiVks35DHxZFvAP5nKUtD7i4Z32291otOg@mail.gmail.com>
+	Tue, 9 Aug 2011 19:43:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFLxGvwxQ2VeqkDpkiVks35DHxZFvAP5nKUtD7i4Z32291otOg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E4181E4.3090704@kernel.dk>
+References: <20110809034724.GA22257@july>
+	<4E4181E4.3090704@kernel.dk>
+Date: Wed, 10 Aug 2011 08:43:55 +0900
+X-Google-Sender-Auth: ryGTEqB3_txEzZfKYOVCtbG0P1U
+Message-ID: <CAH9JG2X5yb9JEyO60YeLFHcuNp54m-xX8M-xSR7+DEY7FKQL1Q@mail.gmail.com>
+Subject: Re: [RFC PATCH] request: teach the device more intelligent
+From: Kyungmin Park <kmpark@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, jh80.chung@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 01, 2011 at 07:52:35PM +0200, richard -rw- weinberger wrote:
+On Wed, Aug 10, 2011 at 3:52 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> On 2011-08-09 05:47, Kyungmin Park wrote:
+>> Hi Jens
+>>
+>> Now eMMC device requires the upper layer information to improve the data
+>> performance and reliability.
+>>
+>> . Context ID
+>> Using the context information, it can sort out the data internally and improve the performance.
+>> The main problem is that it's needed to define "What's the context".
+>> Actually I expect cfq queue has own unique ID but it doesn't so decide to use the pid instead
+>>
+>> . Data Tag
+>> Using the Data Tag (1-bit information), It writes the data at SLC area when it's hot data. So it can make the chip more reliable.
+>> First I expect the REQ_META but current ext4 doesn't pass the WRITE_META. only use the READ_META. so it needs to investigate it.
+>>
+>> With these characteristics, it's helpful to teach the device. After some consideration. it's needed to pass out these information at request data structure.
+>>
+>> Can you give your opinions and does it proper fields at requests?
+>
+> You need this to work on all IO schedulers, not just cfq.
+Of course if the concept is acceptable, I'll add the other IO schedulers also.
 
-> Ok, will look at it in the next few days.
-> "sys-{i386,x86_64} merged" sounds great!
+> And since that's the case, there's no need to add this field since you can just
+> retrieve it if the driver asks for it. For CFQ, it could look like this:
+>
+> static int cfq_foo(struct request *rq)
+> {
+>        struct cfq_queue *cfqq = rq->elevator_private[1];
+>
+>        if (cfqq)
+>                return cfqq->pid;
+>
+>        return -1;
+> }
 
-	Update pushed; x86-specific stuff moved to arch/x86/um, more things
-merged/cleaned up.  Works here, both for 32bit and 64bit builds...  At least
-as well as the mainline one does, that is - there still are two very annoying
-issues, shared with mainline at least as far back as 2.6.36:
-	* dancing close to OOM sometimes ends up with reserved pages showing
-up in pagetables.  Code in mm/* is Not Happy(tm)...
-	* tty-on-xterm sometimes crashes on the first keysyms reaching it;
-as far as I can tell, it's something related to SIGWINCH handling - whether
-it happens or not depends on the way xterm windows are laid out and flipping
-between them first seems to prevent that shit.  If it hasn't happened at once,
-it won't happen at all...  Something in drivers/chan or drivers/line, most
-likely...
+The actual user of these information is device driver. e.g.,
+drivers/mmc/card/block.c
+So it's not good to use cfq data structure at D/D. some time later
+these are also used at scsi device drivers.
+>
+> As to the hot part, I think that would be better as just a request flag
+> like eg the meta flag.
+Yes it can use the JBD_flags at cfq. but same reason it's not proper
+reference at device drivers. that's reason to make a filed at request.
 
-	I can post the damn thing as patch series, but it's about 380Mb
-even with git format-patch -M and 78-posting mailbomb is a bit over the top
-anyway...
+Device driver should or must see the request data structure and don't
+refer the upper layer data structures.
+
+Thank you,
+Kyungmin Park
