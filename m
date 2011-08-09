@@ -1,66 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604Ab1HIFpm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 01:45:42 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:36526 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751036Ab1HIFpl (ORCPT
+	id S1752058Ab1HIFxB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 01:53:01 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:42466 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab1HIFw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 01:45:41 -0400
-X-Sasl-enc: eZ2oFuRwOed4LGyKmWXTauPrbx9G6G2m6pxoYVj4pPka 1312868740
-Date: Mon, 8 Aug 2011 22:43:23 -0700
-From: Greg KH <greg@kroah.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>
-Subject: Re: exception in interrupt during elv_completed_request. (3.0)
-Message-ID: <20110809054323.GA3653@kroah.com>
-References: <20110808145826.GA22457@redhat.com>
- <4E3FFAB0.40205@fusionio.com>
- <20110808151352.GA24992@redhat.com>
- <4E3FFDB9.3090805@fusionio.com>
+	Tue, 9 Aug 2011 01:52:59 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:sender:date:from:to:cc:subject:message-id:
+	references:mime-version:content-type:content-disposition:in-reply-to:
+	x-operating-system:user-agent:x-system-of-record;
+	b=HOg449HEQlRl0UHpuvfJoZQ0Fu1xcyDmPmn7b5aDpCyE0zJwrZ1EVrO5XQ7Xd4p1Z
+	CB6ZzYpQnT06q2630EC0A==
+Date: Mon, 8 Aug 2011 22:52:27 -0700
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Joe Perches <joe@perches.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
+        Ramsay Jones <ramsay@ramsay1.demon.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Joachim Eastwood <manabian@gmail.com>,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] lib/sha1: remove memsets and allocate workspace on the
+ stack
+Message-ID: <20110809055226.GE6103@google.com>
+References: <1312844837-10086-1-git-send-email-msb@chromium.org>
+ <1312847115.1643.22.camel@Joe-Laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E3FFDB9.3090805@fusionio.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1312847115.1643.22.camel@Joe-Laptop>
+X-Operating-System: Linux/2.6.32-gg426-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 05:16:09PM +0200, Jens Axboe wrote:
-> On 2011-08-08 17:13, Dave Jones wrote:
-> > On Mon, Aug 08, 2011 at 05:03:12PM +0200, Jens Axboe wrote:
-> >  > On 2011-08-08 16:58, Dave Jones wrote:
-> >  > > Jens,
-> >  > > 
-> >  > > We got a report of a panic from a user when he plugged in his usb drive,
-> >  > > https://bugzilla.redhat.com/attachment.cgi?id=517141
-> >  > > 
-> >  > > any ideas what happened here ?
-> >  > 
-> >  > 2.6.40?
-> > 
-> > it's 3.0 in all but name. didn't want to risk breaking dumb userspace
-> > in an update for older fedora releases.  It does have the
-> > scsi_dispatch_cmd fix that went into 3.0.1, but otherwise block/
-> > should be stock 3.0
+Joe Perches (joe@perches.com) wrote:
+> On Mon, 2011-08-08 at 16:07 -0700, Mandeep Singh Baines wrote:
+> > The previous implementation required the workspace to be passed in as
+> > a parameter. This prevents the compiler from being able to store the
+> > workspace in registers. I've also removed the memset since that also
+> > prevents the compiler from storing the workspace in registers.
 > 
-> OK
+> I did a similar patch locally.
 > 
-> >  > Looks like the recent SCSI removal oopses, perhaps it happened when he
-> >  > yanked it instead of directly on insertion?
-> >  
-> > sorry my bad, yes, this was on device removal.
-> > 
-> > according to the user, he did everything right, and unmounted safely.	
-> > https://bugzilla.redhat.com/show_bug.cgi?id=728872
+> > There is no loss of security due to removing the memset. It would be a
+> > bug for the stack to leak to userspace. However, a defence-in-depth
+> > argument could be made for keeping the clearing of the workspace.
 > 
-> James?
+> You should add #include <linux/crypthash.h> to
+> lib/sha1.c and perhaps rationalize the use of __u8
+> and char for the second argument to sha_transform in
+> the definition and uses.
+> 
+> For defense in depth, a bool could be added to sha_transform
+> like:
+> 
+> void sha_transform(__u32 *digest, const char *data, bool wipe);
+> 
 
-Should be resolved in 3.0.1 now.
+This seems reasonable to me. In our case, there is no secrecy
+issue. We hash the blocks of the RO root filesystem. There is nothing
+secret about the rootfs blocks or their hash. We use the hashes to verify
+that the blocks haven't been modified by an attacker.
 
-If not, please let James, and me, know.
+We don't call sha_tranform directly. We use crypto_hash_digest. So maybe
+add a wipe param there. I'm happy to work on or test such a patch if folks
+think its interesting. Its saves me 190 ms on a 6 second boot. I suspect
+there may be other hash intense applications that also don't need secracy.
 
-greg k-h
+> and the internal workspace memset after use if wipe set though
+> perhaps the memset could be a compile time option like
+> CONFIG_CRYPTO_DEFENSE_IN_DEPTH or such instead.
+> 
+
+Maybe instead use wipe=0 in code paths where you don't need secracy.
+
+> > diff --git a/drivers/char/random.c b/drivers/char/random.c
+> []
+> > @@ -816,13 +816,13 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+> >  static void extract_buf(struct entropy_store *r, __u8 *out)
+> []
+> > -		sha_transform(hash, (__u8 *)(r->pool + i), workspace);
+> > +		sha_transform(hash, (__u8 *)(r->pool + i));
+> []
+> > diff --git a/include/linux/cryptohash.h b/include/linux/cryptohash.h
+> []
+> > @@ -3,10 +3,9 @@
+> []
+> > -void sha_transform(__u32 *digest, const char *data, __u32 *W);
+> > +void sha_transform(__u32 *digest, const char *data);
+> []
+> > diff --git a/lib/sha1.c b/lib/sha1.c
+> []
+> > +void sha_transform(__u32 *digest, const char *data)
+> []
+> > diff --git a/net/ipv4/syncookies.c b/net/ipv4/syncookies.c
+> []
+> > @@ -50,7 +49,7 @@ static u32 cookie_hash(__be32 saddr, __be32 daddr, __be16 sport, __be16 dport,
+> []
+> > -	sha_transform(tmp + 16, (__u8 *)tmp, tmp + 16 + 5);
+> > +	sha_transform(tmp + 16, (__u8 *)tmp);
+> []
+> > diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+> []
+> > @@ -2511,8 +2510,7 @@ struct sk_buff *tcp_make_synack(struct sock *sk, struct dst_entry *dst,
+> []
+> >  			sha_transform((__u32 *)&xvp->cookie_bakery[0],
+> > -				      (char *)mess,
+> > -				      &workspace[0]);
+> > +				      (char *)mess);
+> []
+> > diff --git a/net/ipv6/syncookies.c b/net/ipv6/syncookies.c
+> []
+> > @@ -81,7 +80,7 @@ static u32 cookie_hash(const struct in6_addr *saddr, const struct in6_addr *dadd
+> []
+> > -	sha_transform(tmp + 16, (__u8 *)tmp, tmp + 16 + 5);
+> > +	sha_transform(tmp + 16, (__u8 *)tmp);
+> 
+> 
