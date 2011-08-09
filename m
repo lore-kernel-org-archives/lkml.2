@@ -1,313 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab1HIU5v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 16:57:51 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:45062
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751227Ab1HIU5t convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 16:57:49 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zz542M1432N4015Lzz1202hzz8275bh8275dhz2ei2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPVD:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
-From: Saurav Kashyap <saurav.kashyap@qlogic.com>
-To: Joe Perches <joe@perches.com>, Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Linux Driver <Linux-Driver@qlogic.com>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 9 Aug 2011 15:55:17 -0500
-Subject: RE: [PATCH 2/2] qla2xxx: Add __attribute__((format(printf... and
- fix fallout
-Thread-Topic: [PATCH 2/2] qla2xxx: Add __attribute__((format(printf... and
- fix fallout
-Thread-Index: AcxPDUkvTBw9XK5QQ+qDCJnpj62zsAHyU2qQ
-Message-ID: <1FB7DC5E34DADB499463B6EA89DF40A466A513A7DE@MNEXMB1.qlogic.org>
-References: <cover.1312067036.git.joe@perches.com>
- <78b07ee25e54ac4577a4def49188417ae0c8a8fa.1312067036.git.joe@perches.com>
-In-Reply-To: <78b07ee25e54ac4577a4def49188417ae0c8a8fa.1312067036.git.joe@perches.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752332Ab1HIVE5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 17:04:57 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:37798 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882Ab1HIVEz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 17:04:55 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: qlogic.com
+In-Reply-To: <1312919938.17118.YahooMailNeo@web120010.mail.ne1.yahoo.com>
+References: <20110805200945.GA14014@tassilo.jf.intel.com> <4E3C5154.2050307@zytor.com>
+ <CAObL_7E3yOHtx9N3qd2UXVn+h6tACoNjekRhiMcHrzb=Mu4q8A@mail.gmail.com>
+ <4E3C571C.1070903@zytor.com> <20110805205222.GK5782@one.firstfloor.org>
+ <CAObL_7G2TqBVXvfuh2GPNteYBNoc8_s398KS+jPOPQYAhPHz0Q@mail.gmail.com>
+ <20110805212153.GL5782@one.firstfloor.org> <CAObL_7Exnu8rHNY67o_HutizpLrGMx0heYU8wKXeEutXZywvdA@mail.gmail.com>
+ <20110809150424.GO5782@one.firstfloor.org> <CAObL_7HL7SwCfXsD3dPesE4cU-nmoMCRVCP6u2Mn8efo7EG5Zg@mail.gmail.com>
+ <4E416716.1040904@zytor.com> <CAObL_7FzTisOGJLP7wGUKDCO6qJ20-kaMFWdjm0a+dKpNWBe3g@mail.gmail.com>
+ <1312919938.17118.YahooMailNeo@web120010.mail.ne1.yahoo.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Tue, 9 Aug 2011 17:04:35 -0400
+X-Google-Sender-Auth: J-EiOu0hOyFdp5hdOJu6lU-ghhs
+Message-ID: <CAObL_7G09yBtfFpdvmRMNn59T-jTsj_MFK+xBer+qq3BUjcKUg@mail.gmail.com>
+Subject: Re: New vsyscall emulation breaks JITs
+To: Greg Lueck <lueckintel@yahoo.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "kimwooyoung@gmail.com" <kimwooyoung@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+On Tue, Aug 9, 2011 at 3:58 PM, Greg Lueck <lueckintel@yahoo.com> wrote:
+> I apologize that I’m just jumping into this conversation now.  I was swamped
+> yesterday and this morning, and I only just started reading it today.
+> Pin needs to recognize all possible syscall trap instructions, so we will
+> need to change our code to recognize INT 0xCC as a syscall trap.  When Pin
+> recognizes a system call trap instruction, it does _not_ copy the
+> instruction into the translated code area.  Instead, we arrange for the trap
+> to be executed natively from within our Pin VM engine.  On 64-bit, we use
+> the SYSCALL instruction to do the trap regardless of what the original
+> instruction was.  The SEGV that Andi saw is really just fallout from the
+> fact that Pin didn’t know about INT 0xCC.  We assume that any INT
+> instruction with no special semantic will just fault.  We copy these unknown
+> INT’s into the Pin translated code area and execute them from there, where
+> we expect them to raise a synchronous signal.  Pin’s signal emulation will
+> take over from this point in case the application intentionally executed the
+> weird INT with the expectation of handling the signal.
+> In addition to recognizing the INT 0xCC instruction as a system call, we
+> should probably handle unknown INT’s in the vdso / vsyscall gate area
+> specially.  For example, we may want to raise a warning since this case
+> probably indicates a new system call trap that we must handle specially.
+> I need to read through the thread in more detail still, but I think one of
+> the proposals was to use additional INT’s for syscall traps in the vsyscall
+> area.  If so, Pin will need to recognize these.  It would be helpful to us
+> if you could provide a disassembly of the proposed vsyscall and vdso gate
+> areas.  Or, we could probably work with Andi to get these from the kernel
+> sources.  In particular, we need to know how to find the system call number
+> and its arguments at the point when the application executes the INT that
+> traps into the kernel.  (We know the normal ABI for passing system call
+> arguments, but I suppose it’s possible that these new INT’s will use a
+> different ABI.)
 
-Thanks,
-~Saurav
+Eek.  I'd really rather not have anything make any assumption beyond
+the fact that a call or jump to the vsyscall page has certain
+semantics.
 
-> -----Original Message-----
-> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
-> owner@vger.kernel.org] On Behalf Of Joe Perches
-> Sent: 30 July 2011 16:05
-> To: Andrew Vasquez; Linux Driver
-> Cc: James E.J. Bottomley; linux-scsi@vger.kernel.org; linux-kernel
-> Subject: [PATCH 2/2] qla2xxx: Add __attribute__((format(printf... and
-> fix fallout
->
-> Make the local logging functions verify their arguments
-> and fixup the current broken uses as appropriate.
->
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/scsi/qla2xxx/qla_attr.c |    4 ++--
->  drivers/scsi/qla2xxx/qla_dbg.h  |    8 ++++----
->  drivers/scsi/qla2xxx/qla_init.c |    3 ++-
->  drivers/scsi/qla2xxx/qla_iocb.c |    2 +-
->  drivers/scsi/qla2xxx/qla_isr.c  |    2 +-
->  drivers/scsi/qla2xxx/qla_nx.c   |   12 ++++++------
->  drivers/scsi/qla2xxx/qla_os.c   |   12 ++++++------
->  drivers/scsi/qla2xxx/qla_sup.c  |    5 +++--
->  8 files changed, 25 insertions(+), 23 deletions(-)
->
-> diff --git a/drivers/scsi/qla2xxx/qla_attr.c
-> b/drivers/scsi/qla2xxx/qla_attr.c
-> index 7836eb0..dc57471 100644
-> --- a/drivers/scsi/qla2xxx/qla_attr.c
-> +++ b/drivers/scsi/qla2xxx/qla_attr.c
-> @@ -634,7 +634,7 @@ qla2x00_sysfs_write_edc(struct file *filp, struct
-> kobject *kobj,
->           dev, adr, len, opt);
->       if (rval != QLA_SUCCESS) {
->               ql_log(ql_log_warn, vha, 0x7074,
-> -                 "Unable to write EDC (%x) %02x:%04x:%02x:%02x\n",
-> +                 "Unable to write EDC (%x) %02x:%04x:%02x:%02x:%02x\n",
->                   rval, dev, adr, opt, len, buf[8]);
->               return 0;
->       }
-> @@ -691,7 +691,7 @@ qla2x00_sysfs_write_edc_status(struct file *filp,
-> struct kobject *kobj,
->                       dev, adr, len, opt);
->       if (rval != QLA_SUCCESS) {
->               ql_log(ql_log_info, vha, 0x7075,
-> -                 "Unable to write EDC status (%x) %02x:%04x:%02x.\n",
-> +                 "Unable to write EDC status (%x)
-> %02x:%04x:%02x:%02x.\n",
->                   rval, dev, adr, opt, len);
->               return 0;
->       }
-> diff --git a/drivers/scsi/qla2xxx/qla_dbg.h
-> b/drivers/scsi/qla2xxx/qla_dbg.h
-> index 0692814..29a7822 100644
-> --- a/drivers/scsi/qla2xxx/qla_dbg.h
-> +++ b/drivers/scsi/qla2xxx/qla_dbg.h
-> @@ -244,14 +244,14 @@ struct qla2xxx_fw_dump {
->
->  extern int ql_errlev;
->
-> -void
-> +void __attribute__((format (printf, 4, 5)))
->  ql_dbg(uint32_t, scsi_qla_host_t *vha, int32_t, const char *fmt, ...);
-> -void
-> +void __attribute__((format (printf, 4, 5)))
->  ql_dbg_pci(uint32_t, struct pci_dev *pdev, int32_t, const char *fmt,
-> ...);
->
-> -void
-> +void __attribute__((format (printf, 4, 5)))
->  ql_log(uint32_t, scsi_qla_host_t *vha, int32_t, const char *fmt, ...);
-> -void
-> +void __attribute__((format (printf, 4, 5)))
->  ql_log_pci(uint32_t, struct pci_dev *pdev, int32_t, const char *fmt,
-> ...);
->
->  /* Debug Levels */
-> diff --git a/drivers/scsi/qla2xxx/qla_init.c
-> b/drivers/scsi/qla2xxx/qla_init.c
-> index def6942..351b1ec 100644
-> --- a/drivers/scsi/qla2xxx/qla_init.c
-> +++ b/drivers/scsi/qla2xxx/qla_init.c
-> @@ -4186,7 +4186,8 @@ qla2x00_abort_isp(scsi_qla_host_t *vha)
->               spin_unlock_irqrestore(&ha->vport_slock, flags);
->
->       } else {
-> -             ql_log(ql_log_warn, vha, 0x8023, "%s **** FAILED ****.\n");
-> +             ql_log(ql_log_warn, vha, 0x8023, "%s **** FAILED ****.\n",
-> +                    __func__);
->       }
->
->       return(status);
-> diff --git a/drivers/scsi/qla2xxx/qla_iocb.c
-> b/drivers/scsi/qla2xxx/qla_iocb.c
-> index 49d6906..f8bac2c 100644
-> --- a/drivers/scsi/qla2xxx/qla_iocb.c
-> +++ b/drivers/scsi/qla2xxx/qla_iocb.c
-> @@ -858,7 +858,7 @@ qla24xx_walk_and_build_sglist(struct qla_hw_data
-> *ha, srb_t *sp, uint32_t *dsd,
->               sle_dma = sg_dma_address(sg);
->               ql_dbg(ql_dbg_io, vha, 0x300a,
->                   "sg entry %d - addr=0x%x 0x%x, " "len=%d for
-> cmd=%p.\n",
-> -                 cur_dsd, i, LSD(sle_dma), MSD(sle_dma), sg_dma_len(sg),
-> +                 i, LSD(sle_dma), MSD(sle_dma), sg_dma_len(sg),
->                   sp->cmd);
->               *cur_dsd++ = cpu_to_le32(LSD(sle_dma));
->               *cur_dsd++ = cpu_to_le32(MSD(sle_dma));
-> diff --git a/drivers/scsi/qla2xxx/qla_isr.c
-> b/drivers/scsi/qla2xxx/qla_isr.c
-> index b16b772..0eac872 100644
-> --- a/drivers/scsi/qla2xxx/qla_isr.c
-> +++ b/drivers/scsi/qla2xxx/qla_isr.c
-> @@ -298,7 +298,7 @@ qla81xx_idc_event(scsi_qla_host_t *vha, uint16_t
-> aen, uint16_t descr)
->               return;
->
->       ql_dbg(ql_dbg_async, vha, 0x5022,
-> -         "Inter-Driver Commucation %s -- ACK timeout=%d.\n",
-> +         "%lu Inter-Driver Communication %s -- ACK timeout=%d.\n",
->           vha->host_no, event[aen & 0xff], timeout);
->
->       rval = qla2x00_post_idc_ack_work(vha, mb);
-> diff --git a/drivers/scsi/qla2xxx/qla_nx.c
-> b/drivers/scsi/qla2xxx/qla_nx.c
-> index 5cbf33a..42a0992 100644
-> --- a/drivers/scsi/qla2xxx/qla_nx.c
-> +++ b/drivers/scsi/qla2xxx/qla_nx.c
-> @@ -362,7 +362,7 @@ qla82xx_pci_set_crbwindow_2M(struct qla_hw_data
-> *ha, ulong *off)
->               ql_dbg(ql_dbg_p3p, vha, 0xb000,
->                   "%s: Written crbwin (0x%x) "
->                   "!= Read crbwin (0x%x), off=0x%lx.\n",
-> -                 ha->crb_win, win_read, *off);
-> +                 __func__, ha->crb_win, win_read, *off);
->       }
->       *off = (*off & MASK(16)) + CRB_INDIRECT_2M + ha->nx_pcibase;
->  }
-> @@ -402,7 +402,7 @@ qla82xx_pci_set_crbwindow(struct qla_hw_data *ha,
-> u64 off)
->       }
->       /* strange address given */
->       ql_dbg(ql_dbg_p3p, vha, 0xb001,
-> -         "%x: Warning: unm_nic_pci_set_crbwindow "
-> +         "%s: Warning: unm_nic_pci_set_crbwindow "
->           "called with an unknown address(%llx).\n",
->           QLA2XXX_DRIVER_NAME, off);
->       return off;
-> @@ -1704,12 +1704,12 @@ qla82xx_iospace_config(struct qla_hw_data *ha)
->       ql_dbg_pci(ql_dbg_multiq, ha->pdev, 0xc006,
->           "nx_pci_base=%p iobase=%p "
->           "max_req_queues=%d msix_count=%d.\n",
-> -         ha->nx_pcibase, ha->iobase,
-> +         (void *)ha->nx_pcibase, ha->iobase,
->           ha->max_req_queues, ha->msix_count);
->       ql_dbg_pci(ql_dbg_init, ha->pdev, 0x0010,
->           "nx_pci_base=%p iobase=%p "
->           "max_req_queues=%d msix_count=%d.\n",
-> -         ha->nx_pcibase, ha->iobase,
-> +         (void *)ha->nx_pcibase, ha->iobase,
->           ha->max_req_queues, ha->msix_count);
->       return 0;
->
-> @@ -1737,7 +1737,7 @@ qla82xx_pci_config(scsi_qla_host_t *vha)
->       ret = pci_set_mwi(ha->pdev);
->       ha->chip_revision = ha->pdev->revision;
->       ql_dbg(ql_dbg_init, vha, 0x0043,
-> -         "Chip revision:%ld.\n",
-> +         "Chip revision:%d.\n",
->           ha->chip_revision);
->       return 0;
->  }
-> @@ -3939,7 +3939,7 @@ int
-> qla2x00_wait_for_fcoe_ctx_reset(scsi_qla_host_t *vha)
->               }
->       }
->       ql_dbg(ql_dbg_p3p, vha, 0xb027,
-> -         "%s status=%d.\n", status);
-> +            "%s: status=%d.\n", __func__, status);
->
->       return status;
->  }
-> diff --git a/drivers/scsi/qla2xxx/qla_os.c
-> b/drivers/scsi/qla2xxx/qla_os.c
-> index e02df27..16cadc9 100644
-> --- a/drivers/scsi/qla2xxx/qla_os.c
-> +++ b/drivers/scsi/qla2xxx/qla_os.c
-> @@ -1041,7 +1041,7 @@ __qla2xxx_eh_generic_reset(char *name, enum
-> nexus_wait_type type,
->  eh_reset_failed:
->       ql_log(ql_log_info, vha, 0x800f,
->           "%s RESET FAILED: %s for id %d lun %d cmd=%p.\n", name,
-> -         reset_errors[err], cmd->device->id, cmd->device->lun);
-> +         reset_errors[err], cmd->device->id, cmd->device->lun, cmd);
->       return FAILED;
->  }
->
-> @@ -1856,7 +1856,7 @@ qla2x00_set_isp_flags(struct qla_hw_data *ha)
->               ha->flags.port0 = 0;
->       ql_dbg_pci(ql_dbg_init, ha->pdev, 0x000b,
->           "device_type=0x%x port=%d fw_srisc_address=%p.\n",
-> -         ha->device_type, ha->flags.port0, ha->fw_srisc_address);
-> +         ha->device_type, ha->flags.port0, (void *)ha-
-> >fw_srisc_address);
->  }
->
->  static int
-> @@ -1896,8 +1896,8 @@ qla2x00_iospace_config(struct qla_hw_data *ha)
->       }
->       ha->pio_address = pio;
->       ql_dbg_pci(ql_dbg_init, ha->pdev, 0x0014,
-> -         "PIO address=%p.\n",
-> -         ha->pio_address);
-> +         "PIO address=%llu.\n",
-> +         (unsigned long long)ha->pio_address);
->
->  skip_pio:
->       /* Use MMIO operations for all accesses. */
-> @@ -2263,7 +2263,7 @@ qla2x00_probe_one(struct pci_dev *pdev, const
-> struct pci_device_id *id)
->       ql_dbg(ql_dbg_init, base_vha, 0x0033,
->           "max_id=%d this_id=%d "
->           "cmd_per_len=%d unique_id=%d max_cmd_len=%d max_channel=%d "
-> -         "max_lun=%d transportt=%p, vendor_id=%d.\n", host->max_id,
-> +         "max_lun=%d transportt=%p, vendor_id=%llu.\n", host->max_id,
->           host->this_id, host->cmd_per_lun, host->unique_id,
->           host->max_cmd_len, host->max_channel, host->max_lun,
->           host->transportt, sht->vendor_id);
-> @@ -2864,7 +2864,7 @@ qla2x00_mem_alloc(struct qla_hw_data *ha,
-> uint16_t req_len, uint16_t rsp_len,
->               if (!ha->sns_cmd)
->                       goto fail_dma_pool;
->               ql_dbg_pci(ql_dbg_init, ha->pdev, 0x0026,
-> -                 "sns_cmd.\n", ha->sns_cmd);
-> +                 "sns_cmd: %p.\n", ha->sns_cmd);
->       } else {
->       /* Get consistent memory allocated for MS IOCB */
->               ha->ms_iocb = dma_pool_alloc(ha->s_dma_pool, GFP_KERNEL,
-> diff --git a/drivers/scsi/qla2xxx/qla_sup.c
-> b/drivers/scsi/qla2xxx/qla_sup.c
-> index eff1356..16bc728 100644
-> --- a/drivers/scsi/qla2xxx/qla_sup.c
-> +++ b/drivers/scsi/qla2xxx/qla_sup.c
-> @@ -904,8 +904,9 @@ no_flash_data:
->       }
->  done:
->       ql_dbg(ql_dbg_init, vha, 0x004d,
-> -         "FDT[%x]: (0x%x/0x%x) erase=0x%x "
-> -         "pr=%x upro=%x wrtd=0x%x blk=0x%x.\n", loc, mid, fid,
-> +         "FDT[%s]: (0x%x/0x%x) erase=0x%x "
-> +         "pr=%x wrtd=0x%x blk=0x%x.\n",
-> +         loc, mid, fid,
->           ha->fdt_erase_cmd, ha->fdt_protect_sec_cmd,
->           ha->fdt_wrt_disable, ha->fdt_block_size);
->
-> --
-> 1.7.6.131.g99019
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I also saw that you bumped into a Pin error with 3.0 kernels.
+> Coincidentally, this was fixed last week and will be available in our next
+> Pin release.  If you would like a private kit with this fix, I can send you
+> one.
 
+That would be helpful.
 
-This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
+> Finally, I’d like to answer your questions about why Pin can’t just execute
+> the vdso / vsyscall code natively.  We changed the way Pin handles the gate
+> code when we added our attach / detach feature, allowing Pin to attach to a
+> native process.  Consider that Pin may attach to a process that is executing
+> in the middle of the gate code, or worse, it may attach while in a signal
+> handler that will subsequently return into the middle of the gate code.  In
+> both cases, Pin will not see the CALL instruction that enters the gate, so
+> it’s too late to simply call the gate code natively.  We can’t natively
+> execute in the middle of the gate because the RET will execute natively and
+> continue native execution of the rest of the application, outside of Pin’s
+> JIT compiler.  We thought about single-stepping the application until the PC
+> is outside of the gate area, but this wouldn’t work in the signal handler
+> case.
 
+That's a fun corner case.  Is the problem that you might receive a
+signal while single-stepping?
+
+>  Instead, we decided to let Pin JIT-compile the gate code instructions
+> just like any other application code, and we handle the SYSENTER instruction
+> specially (on 32-bit).  When we see SYSENTER, Pin executes the syscall
+> natively and then resumes JIT-compilation at the normal resume point in the
+> gate area.  This works regardless of where Pin attaches to the application,
+> and it also has the nice advantage that Pin tools see the exact sequence of
+> user space instructions that the application would execute if it ran
+> natively.
+
+Here's a different proposal, then:
+
+What if the kernel had the sequence:
+
+mov $__NR_whatever,%eax
+syscall
+ret
+
+in the vsyscall page but marked the vsyscall page NX.  Then the kernel
+would emulate the vsyscall when it received an instruction fetch page
+fault.  pin could do exactly what it does right now, since the code
+that RIP is pointing at if the attach happens right before the fault
+would do what it's supposed to do.
+
+--Andy
