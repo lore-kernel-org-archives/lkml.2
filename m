@@ -1,55 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab1HIPlw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 11:41:52 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57376 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753230Ab1HIPlv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 11:41:51 -0400
+	id S1753790Ab1HIPnv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 11:43:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34048 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752302Ab1HIPnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 11:43:49 -0400
+Date: Tue, 9 Aug 2011 17:43:46 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2 v2] memcg: make oom_lock 0 and 1 based rather than
+ coutner
+Message-ID: <20110809154346.GA18800@tiehlicka.suse.cz>
+References: <cover.1310732789.git.mhocko@suse.cz>
+ <44ec61829ed8a83b55dc90a7aebffdd82fe0e102.1310732789.git.mhocko@suse.cz>
+ <20110809140312.GA2265@redhat.com>
+ <20110809152218.GK7463@tiehlicka.suse.cz>
+ <20110809153732.GC13411@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1312880303.1676.5.camel@Joe-Laptop>
-References: <1312844837-10086-1-git-send-email-msb@chromium.org>
- <1312847115.1643.22.camel@Joe-Laptop> <20110809055226.GE6103@google.com> <1312880303.1676.5.camel@Joe-Laptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 9 Aug 2011 08:41:00 -0700
-Message-ID: <CA+55aFwHEoDkWr6Mh=r1KG4MLRbY0_iVF-v3BPkK+zhxkriHdw@mail.gmail.com>
-Subject: Re: [PATCH] treewide: Update sha_transform
-To: Joe Perches <joe@perches.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        Ramsay Jones <ramsay@ramsay1.demon.co.uk>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Joachim Eastwood <manabian@gmail.com>,
-        Andreas Schwab <schwab@linux-m68k.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        GeertUytterhoeven <geert@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110809153732.GC13411@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 9, 2011 at 1:58 AM, Joe Perches <joe@perches.com> wrote:
->
-> Eliminate possible sha_transform unaligned accesses to data by copying
-> data to an aligned __u32 array if necessary.
+On Tue 09-08-11 17:37:32, Johannes Weiner wrote:
+> On Tue, Aug 09, 2011 at 05:22:18PM +0200, Michal Hocko wrote:
+> > On Tue 09-08-11 16:03:12, Johannes Weiner wrote:
+> > >  	struct mem_cgroup *iter, *failed = NULL;
+> > >  	bool cond = true;
+> > >  
+> > >  	for_each_mem_cgroup_tree_cond(iter, mem, cond) {
+> > > -		bool locked = iter->oom_lock;
+> > > -
+> > > -		iter->oom_lock = true;
+> > > -		if (lock_count == -1)
+> > > -			lock_count = iter->oom_lock;
+> > > -		else if (lock_count != locked) {
+> > > +		if (iter->oom_lock) {
+> > >  			/*
+> > >  			 * this subtree of our hierarchy is already locked
+> > >  			 * so we cannot give a lock.
+> > >  			 */
+> > > -			lock_count = 0;
+> > >  			failed = iter;
+> > >  			cond = false;
+> > > -		}
+> > > +		} else
+> > > +			iter->oom_lock = true;
+> > >  	}
+> > >  
+> > >  	if (!failed)
+> > 
+> > We can return here and get rid of done label.
+> 
+> Ah, right you are.  Here is an update.
 
-This is wrong. Not only does it double the stack space, when I tried
-it for git it just made things slower. So don't do it.
+Thanks!
 
-If some architecture has a bad "get_unaligned_be32()", then that's
-just something for the arch maintainers to fix.
+> 
+> ---
+> From 86b36904033e6c6a1af4716e9deef13ebd31e64c Mon Sep 17 00:00:00 2001
+> From: Johannes Weiner <jweiner@redhat.com>
+> Date: Tue, 9 Aug 2011 15:31:30 +0200
+> Subject: [patch] memcg: fix hierarchical oom locking
+> 
+> Commit "79dfdac memcg: make oom_lock 0 and 1 based rather than
+> counter" tried to oom lock the hierarchy and roll back upon
+> encountering an already locked memcg.
+> 
+> The code is confused when it comes to detecting a locked memcg,
+> though, so it would fail and rollback after locking one memcg and
+> encountering an unlocked second one.
 
-> Add sha_transform wipe argument to force workspace clearing if desired.
+It is actually worse than that. The way how it is broken also allows to
+lock a hierarchy which already contains locked subtree...
 
-I disagree. As already mentioned, any competent compiler would make
-that thing go away anyway. And there is no reason to believe that it's
-actually a real fix for any real security issue, so it's voodoo
-programming for several reasons.
+> 
+> The result is that oom-locking hierarchies fails unconditionally and
+> that every oom killer invocation simply goes to sleep on the oom
+> waitqueue forever.  The tasks practically hang forever without anyone
+> intervening, possibly holding locks that trip up unrelated tasks, too.
+> 
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  mm/memcontrol.c |   17 +++++------------
+>  1 files changed, 5 insertions(+), 12 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index c6faa32..f39c8fb 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1843,29 +1843,23 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
+>   */
+>  static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
+>  {
+> -	int lock_count = -1;
+>  	struct mem_cgroup *iter, *failed = NULL;
+>  	bool cond = true;
+>  
+>  	for_each_mem_cgroup_tree_cond(iter, mem, cond) {
+> -		bool locked = iter->oom_lock;
+> -
+> -		iter->oom_lock = true;
+> -		if (lock_count == -1)
+> -			lock_count = iter->oom_lock;
+> -		else if (lock_count != locked) {
+> +		if (iter->oom_lock) {
+>  			/*
+>  			 * this subtree of our hierarchy is already locked
+>  			 * so we cannot give a lock.
+>  			 */
+> -			lock_count = 0;
+>  			failed = iter;
+>  			cond = false;
+> -		}
+> +		} else
+> +			iter->oom_lock = true;
+>  	}
+>  
+>  	if (!failed)
+> -		goto done;
+> +		return true;
+>  
+>  	/*
+>  	 * OK, we failed to lock the whole subtree so we have to clean up
+> @@ -1879,8 +1873,7 @@ static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
+>  		}
+>  		iter->oom_lock = false;
+>  	}
+> -done:
+> -	return lock_count;
+> +	return false;
+>  }
+>  
+>  /*
+> -- 
+> 1.7.6
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-We shouldn't do voodoo stuff. Or rather, I'm perfectly ok if you guys
-all do your little wax figures of me in the privacy of your own homes
-- freedom of religion and all that - but please don't do it in the
-kernel.
-
-                    Linus
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
