@@ -1,105 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab1HIPPV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 11:15:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22063 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752006Ab1HIPPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 11:15:20 -0400
-Date: Tue, 9 Aug 2011 17:11:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>
-Subject: Re: [PATCH 7/8] cgroups: Add a task counter subsystem
-Message-ID: <20110809151155.GA15311@redhat.com>
-References: <1311956010-32076-1-git-send-email-fweisbec@gmail.com> <1311956010-32076-8-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1311956010-32076-8-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753243Ab1HIPQg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 11:16:36 -0400
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:40886 "EHLO
+	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006Ab1HIPQf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 11:16:35 -0400
+Subject: [PATCH] [RFC] BTUSB: be quiet on device disconnect
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-bluetooth@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Aug 2011 17:16:28 +0200
+Message-ID: <1312902988.1853.24.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29, Frederic Weisbecker wrote:
->
-> +static int task_counter_can_attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
-> +					struct task_struct *tsk)
-> +{
-> +	struct res_counter *res = cgroup_task_counter_res(cgrp);
-> +	struct res_counter *old_res = cgroup_task_counter_res(old_cgrp);
-> +	struct res_counter *limit_fail_at;
-> +
-> +	common_ancestor = res_counter_common_ancestor(res, old_res);
-> +
-> +	return res_counter_charge_until(res, common_ancestor, 1, &limit_fail_at);
-> +}
->
-> ...
->
-> +static void task_counter_attach_task(struct cgroup *cgrp, struct cgroup *old_cgrp,
-> +				     struct task_struct *tsk)
-> +{
-> +	res_counter_uncharge_until(cgroup_task_counter_res(old_cgrp), common_ancestor, 1);
-> +}
+Disabling the bluetooth usb device embedded in (some) ThinkPads tends to
+lead to errors like these:
+    btusb_bulk_complete: hci0 urb ffff88011b9bfd68 failed to resubmit (19)
+    btusb_intr_complete: hci0 urb ffff88011b46a318 failed to resubmit (19)
+    btusb_bulk_complete: hci0 urb ffff88011b46a000 failed to resubmit (19)
 
-This doesn't look right or I missed something.
+That is because usb_disconnect() doesn't "quiesces" pending urbs.
 
-What if tsk exits in between? Afaics this can happen with both
-cgroup_attach_task() and cgroup_attach_proc().
+Disconnecting a device is a normal thing to happen so it's no big deal
+that usb_submit_urb() returns -ENODEV. The simplest way to get rid of
+these errors is to stop treating that return as an error. Trivial,
+actually.
 
-Let's look at cgroup_attach_task(). Suppose that
-task_counter_can_attach_task() succeeds and charges the new cgrp,
-Then cgroup_task_migrate() returns -ESRCH. Who will uncharge the
-new cgrp?
+While we're at it, add comments to be explicit about the reasons we're
+not complaining about -EPERM and -ENODEV.
 
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) This patch seems to put an end to a pet peeve of mine: the errors in
+the logs of a ThinkPad when I disable its embedded bluetooth.
 
-cgroup_attach_proc() is different, it calls cgroup_task_migrate()
-after ->attach_task(). Cough.
+1) I added Greg and linux-usb@vger.kernel.org because usb_submit_urb()
+doesn't specify the meaning of its negative return values. I traced
+-EPERM to usb_hcd_link_urb_to_ep(). That returns -EPERM if the urb is
+"being killed". Did I trace the calls made by usb_submit_urb()
+correctly? I also just assumed that -ENODEV always means device got
+disconnected or something comparable. Is that correct too?
 
-In this case old_cgrp can be uncharged twice, no? And again, nobody
-will uncharge the new cgrp?
+2) Sent as an RFC because btusb's btusb_*_complete() functions puzzle
+me. If I read their code correctly these three functions will be an
+urb's completion handler when usb_submit_urb() is called on that urb.
+This means they will be called when usb_submit_urb() is done doing its
+stuff. But they themselves also call usb_submit_urb()! So, apparently,
+there's this endless loop:
+    usb_submit_urb()
+        btusb_*_complete()
+           usb_submit_urb()
+               [...]
 
+It seems that usb_submit_urb() returning -EPERM is the expected way for
+this loop to end. Am I reading this correctly? If so, doesn't this need
+some comments to explain that? But perhaps calling usb_submit_urb() in a
+completion handler is a common pattern for usb devices.
 
+ drivers/bluetooth/btusb.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
-->attach_task() can be skipped if cgrp == oldcgrp... Probably this
-is fine, in this case can_attach_task() shouldn't actually charge.
-
-
-> @@ -1295,6 +1295,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->  	p->group_leader = p;
->  	INIT_LIST_HEAD(&p->thread_group);
->
-> +	retval = cgroup_task_counter_fork(p);
-> +	if (retval)
-> +		goto bad_fork_free_pid;
-> +
-
-Well, imho this is not good. You are adding yet another cgroup hook.
-Why you can not reuse cgroup_fork_callbacks() ?
-
-Yes, it returns void. Can't we chane ->fork() to return the error and
-make it boolean?
-
-Better yet,
-
-	-	cgroup_fork_callbacks(p);
-	-	cgroup_callbacks_done = 1;
-	+	failed_ss = cgroup_fork_callbacks(p);
-	+	if (failed_ss)
-	+		goto bad_fork_free_pid;
-
-	...
-
-	-	cgroup_exit(p, cgroup_callbacks_done);
-	+	cgroup_exit(p, failed_ss);
-
-What do you think?
-
-Oleg.
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 91d13a9..9e4448e 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -256,7 +256,9 @@ static void btusb_intr_complete(struct urb *urb)
+ 
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+ 	if (err < 0) {
+-		if (err != -EPERM)
++		/* -EPERM: urb is being killed;
++		 * -ENODEV: device got disconnected */
++		if (err != -EPERM && err != -ENODEV)
+ 			BT_ERR("%s urb %p failed to resubmit (%d)",
+ 						hdev->name, urb, -err);
+ 		usb_unanchor_urb(urb);
+@@ -341,7 +343,9 @@ static void btusb_bulk_complete(struct urb *urb)
+ 
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+ 	if (err < 0) {
+-		if (err != -EPERM)
++		/* -EPERM: urb is being killed;
++		 * -ENODEV: device got disconnected */
++		if (err != -EPERM && err != -ENODEV)
+ 			BT_ERR("%s urb %p failed to resubmit (%d)",
+ 						hdev->name, urb, -err);
+ 		usb_unanchor_urb(urb);
+@@ -431,7 +435,9 @@ static void btusb_isoc_complete(struct urb *urb)
+ 
+ 	err = usb_submit_urb(urb, GFP_ATOMIC);
+ 	if (err < 0) {
+-		if (err != -EPERM)
++		/* -EPERM: urb is being killed;
++		 * -ENODEV: device got disconnected */
++		if (err != -EPERM && err != -ENODEV)
+ 			BT_ERR("%s urb %p failed to resubmit (%d)",
+ 						hdev->name, urb, -err);
+ 		usb_unanchor_urb(urb);
+-- 
+1.7.4.4
 
