@@ -1,71 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab1HIPDS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 11:03:18 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:44407 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750850Ab1HIPDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 11:03:17 -0400
-Date: Tue, 9 Aug 2011 17:02:24 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Bruno Friedmann <bruno@ioda-net.ch>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Mel Gorman <mgorman@suse.de>, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Add reboot quirk for Dell Precision M4600
-Message-ID: <20110809150224.GF28228@elte.hu>
-References: <20110727125651.GH3010@suse.de>
- <20110806065635.GE13220@elte.hu>
- <20110806153003.GA1238@srcf.ucam.org>
- <4E40119A.5010803@zytor.com>
- <4E41197D.30209@ioda-net.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E41197D.30209@ioda-net.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752944Ab1HIPEA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 11:04:00 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51942 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807Ab1HIPD7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 11:03:59 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH] Staging: comedi: fix printk and NULL initialization issue in adv_pci_dio.c
+Date: Tue,  9 Aug 2011 20:48:00 +0530
+Message-Id: <1312903080-24677-1-git-send-email-ravi.shankar@greenturtles.in>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH]Staging: comedi: fix warning issue in adv_pci_dio.c>
+References: <[PATCH]Staging: comedi: fix warning issue in adv_pci_dio.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-* Bruno Friedmann <bruno@ioda-net.ch> wrote:
+This is a patch to the adv_pci_dio.c file that fixes up a printk and NULL initializtion warning found by the checkpatch.pl tool
 
-> On 08/08/2011 06:40 PM, H. Peter Anvin wrote:
-> > On 08/06/2011 10:30 AM, Matthew Garrett wrote:
-> >> On Sat, Aug 06, 2011 at 08:56:35AM +0200, Ingo Molnar wrote:
-> >>> Weird - ACPI is the default Windows method of reboot - how come it 
-> >>> does not work on that box? Does Windows work around this specific 
-> >>> machine (unlikely), or is our ACPI boot sequence not 100% compatible 
-> >>> with the Windows method (more likely IMO)?
-> >>
-> >> The ACPI reboot method on these machines hits the keyboard controller 
-> >> rather than PCI, which is unusual. What I suspect is that the write 
-> >> triggers some SMM or EC code that's making assumptions about system 
-> >> state, and we're not quite identical. Bouncing on the keyboard 
-> >> controller from userspace with init=/bin/bash wedges in the same way.
-> >>
-> > 
-> > I have a vague suspicion that Windows might have a meta-quirk for this
-> > class of machines, i.e. if the ACPI reboot method, say, points at the
-> > keyboard controller or points at the "PCI" reboot port then it actually
-> > uses its own special-purpose routines rather than general routines.  It
-> > would be extremely interesting to know if "reboot=kbd" works on these boxen.
-> > 
-> > 	-hpa
-> > 
-> 
-> Test done with reboot=pci and unfortunately doesn't work.
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/adv_pci_dio.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
 
-Didn't hpa suggest reboot=kbd?
+diff --git a/drivers/staging/comedi/drivers/adv_pci_dio.c b/drivers/staging/comedi/drivers/adv_pci_dio.c
+index d23799b..ed59722 100644
+--- a/drivers/staging/comedi/drivers/adv_pci_dio.c
++++ b/drivers/staging/comedi/drivers/adv_pci_dio.c
+@@ -422,7 +422,7 @@ struct pci_dio_private {
+ 	unsigned short IDIFiltrHigh[8];	/*  IDI's filter value high signal */
+ };
+ 
+-static struct pci_dio_private *pci_priv = NULL;	/* list of allocated cards */
++static struct pci_dio_private *pci_priv;	/* list of allocated cards */
+ 
+ #define devpriv ((struct pci_dio_private *)dev->private)
+ #define this_board ((const struct dio_boardtype *)dev->board_ptr)
+@@ -1106,11 +1106,11 @@ static int pci_dio_attach(struct comedi_device *dev,
+ 	unsigned long iobase;
+ 	struct pci_dev *pcidev = NULL;
+ 
+-	printk("comedi%d: adv_pci_dio: ", dev->minor);
++	printk(KERN_WARNING "comedi%d: adv_pci_dio: ", dev->minor);
+ 
+ 	ret = alloc_private(dev, sizeof(struct pci_dio_private));
+ 	if (ret < 0) {
+-		printk(", Error: Cann't allocate private memory!\n");
++		printk(KERN_CONT ", Error: Cann't allocate private memory!\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -1140,19 +1140,19 @@ static int pci_dio_attach(struct comedi_device *dev,
+ 	}
+ 
+ 	if (!dev->board_ptr) {
+-		printk(", Error: Requested type of the card was not found!\n");
++		printk(KERN_CONT ", Error: Requested type of the card was not found!\n");
+ 		return -EIO;
+ 	}
+ 
+ 	if (comedi_pci_enable(pcidev, driver_pci_dio.driver_name)) {
+-		printk
+-		    (", Error: Can't enable PCI device and request regions!\n");
++		printk(KERN_CONT ", Error: Can't enable"
++				" PCI device and request regions!\n");
+ 		return -EIO;
+ 	}
+ 	iobase = pci_resource_start(pcidev, this_board->main_pci_region);
+-	printk(", b:s:f=%d:%d:%d, io=0x%4lx",
+-	       pcidev->bus->number, PCI_SLOT(pcidev->devfn),
+-	       PCI_FUNC(pcidev->devfn), iobase);
++	printk(KERN_CONT ", b:s:f=%d:%d:%d, io=0x%4lx",
++			pcidev->bus->number, PCI_SLOT(pcidev->devfn),
++			PCI_FUNC(pcidev->devfn), iobase);
+ 
+ 	dev->iobase = iobase;
+ 	dev->board_name = this_board->name;
+@@ -1178,11 +1178,11 @@ static int pci_dio_attach(struct comedi_device *dev,
+ 
+ 	ret = alloc_subdevices(dev, n_subdevices);
+ 	if (ret < 0) {
+-		printk(", Error: Cann't allocate subdevice memory!\n");
++		printk(KERN_CONT ", Error: Cann't allocate subdevice memory!\n");
+ 		return ret;
+ 	}
+ 
+-	printk(".\n");
++	printk(KERN_CONT ".\n");
+ 
+ 	subdev = 0;
+ 
+-- 
+1.6.5.2
 
-Thanks,
-
-	Ingo
