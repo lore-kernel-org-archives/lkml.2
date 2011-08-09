@@ -1,161 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423Ab1HIPBh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 11:01:37 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:33168 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750850Ab1HIPBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 11:01:34 -0400
-Date: Tue, 9 Aug 2011 17:00:35 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: Andrew Lutomirski <luto@mit.edu>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] x86: Enable fast strings on Intel if BIOS hasn't
- already
-Message-ID: <20110809150035.GE28228@elte.hu>
-References: <cover.1312630712.git.luto@mit.edu>
- <9a8f28ccbe44cd323a01e9a23b531cb869185a21.1312630712.git.luto@mit.edu>
- <493994B35A117E4F832F97C4719C4C040132C5FB69@orsmsx505.amr.corp.intel.com>
- <CAObL_7F2+eXTPo7a631Lh7GD_UpDQXgW_GSDp9Km7pwhwmM6Cw@mail.gmail.com>
- <493994B35A117E4F832F97C4719C4C040132C5FBE0@orsmsx505.amr.corp.intel.com>
+	id S1752874Ab1HIPB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 11:01:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36406 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752035Ab1HIPB5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 11:01:57 -0400
+Date: Wed, 10 Aug 2011 00:01:53 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warnings after merge of the regmap tree
+Message-ID: <20110809150152.GD15861@opensource.wolfsonmicro.com>
+References: <20110809132111.af88776afc00f9e87e1bd6a1@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <493994B35A117E4F832F97C4719C4C040132C5FBE0@orsmsx505.amr.corp.intel.com>
+In-Reply-To: <20110809132111.af88776afc00f9e87e1bd6a1@canb.auug.org.au>
+X-Cookie: Be careful!  UGLY strikes 9 out of 10!
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 09, 2011 at 01:21:11PM +1000, Stephen Rothwell wrote:
 
-* Yu, Fenghua <fenghua.yu@intel.com> wrote:
+> After merging the regmap tree, today's linux-next build (x86_64
+> allmodconfig) produced these warning:
 
-> > -----Original Message-----
-> > From: amluto@gmail.com [mailto:amluto@gmail.com] On Behalf Of Andrew
-> > Lutomirski
-> > Sent: Saturday, August 06, 2011 4:32 PM
-> > To: Yu, Fenghua
-> > Cc: x86@kernel.org; linux-kernel@vger.kernel.org; Matthew Garrett; Len
-> > Brown; linux-acpi@vger.kernel.org; Ingo Molnar
-> > Subject: Re: [PATCH v2 1/2] x86: Enable fast strings on Intel if BIOS
-> > hasn't already
-> > 
-> > On Sat, Aug 6, 2011 at 3:33 PM, Yu, Fenghua <fenghua.yu@intel.com>
-> > wrote:
-> > >> -----Original Message-----
-> > >> From: Andy Lutomirski [mailto:luto@MIT.EDU]
-> > >> Sent: Saturday, August 06, 2011 4:43 AM
-> > >> To: x86@kernel.org; linux-kernel@vger.kernel.org
-> > >> Cc: Yu, Fenghua; Matthew Garrett; Len Brown; linux-
-> > >> acpi@vger.kernel.org; Ingo Molnar; Andy Lutomirski
-> > >> Subject: [PATCH v2 1/2] x86: Enable fast strings on Intel if BIOS
-> > >> hasn't already
-> > >>
-> > >> Intel SDM volume 3A, 8.4.2 says:
-> > >>
-> > >>   Software can disable fast-string operation by clearing the
-> > >>   fast-string-enable bit (bit 0) of IA32_MISC_ENABLE MSR.
-> > >>   However, Intel recomments that system software always enable
-> > >>   fast-string operation.
-> > >>
-> > >> The Intel DQ67SW board (with latest BIOS) disables fast string
-> > >> operations if TXT is enabled.  A Lenovo X220 disables it regardless
-> > >> of TXT setting.  I doubt I'm the only person with a dumb BIOS like
-> > >> this.
-> > >>
-> > >> Signed-off-by: Andy Lutomirski <luto@mit.edu>
-> > >> ---
-> > >>  arch/x86/kernel/cpu/intel.c |   25 ++++++++++++++++++++++---
-> > >>  1 files changed, 22 insertions(+), 3 deletions(-)
-> > >>
-> > >> diff --git a/arch/x86/kernel/cpu/intel.c
-> > b/arch/x86/kernel/cpu/intel.c
-> > >> index ed6086e..c80ab41 100644
-> > >> --- a/arch/x86/kernel/cpu/intel.c
-> > >> +++ b/arch/x86/kernel/cpu/intel.c
-> > >> @@ -30,6 +30,7 @@
-> > >>  static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
-> > >>  {
-> > >>       u64 misc_enable;
-> > >> +     bool allow_fast_string = true;
-> > >>
-> > >>       /* Unmask CPUID levels if masked: */
-> > >>       if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
-> > >> @@ -118,8 +119,9 @@ static void __cpuinit early_init_intel(struct
-> > >> cpuinfo_x86 *c)
-> > >>        * (model 2) with the same problem.
-> > >>        */
-> > >>       if (c->x86 == 15) {
-> > >> -             rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
-> > >> +             allow_fast_string = false;
-> > >>
-> > >> +             rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
-> > >>               if (misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING) {
-> > >>                       printk(KERN_INFO "kmemcheck: Disabling fast
-> > string
-> > >> operations\n");
-> > >>
-> > >> @@ -130,11 +132,28 @@ static void __cpuinit early_init_intel(struct
-> > >> cpuinfo_x86 *c)
-> > >>  #endif
-> > >>
-> > >>       /*
-> > >> -      * If fast string is not enabled in IA32_MISC_ENABLE for any
-> > >> reason,
-> > >> -      * clear the fast string and enhanced fast string CPU
-> > >> capabilities.
-> > >> +      * If BIOS didn't enable fast string operation, try to enable
-> > >> +      * it ourselves.  If that fails, then clear the fast string
-> > >> +      * and enhanced fast string CPU capabilities.
-> > >>        */
-> > >>       if (c->x86 > 6 || (c->x86 == 6 && c->x86_model >= 0xd)) {
-> > >>               rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
-> > >> +
-> > >> +             if (allow_fast_string &&
-> > >> +                 !(misc_enable & MSR_IA32_MISC_ENABLE_FAST_STRING))
-> > {
-> > >> +                     misc_enable |=
-> > MSR_IA32_MISC_ENABLE_FAST_STRING;
-> > >> +                     wrmsr_safe(MSR_IA32_MISC_ENABLE,
-> > (u32)misc_enable,
-> > >> +                                (u32)(misc_enable >> 32));
-> > >> +
-> > >> +                     /* Re-read to make sure it stuck. */
-> > >> +                     rdmsrl(MSR_IA32_MISC_ENABLE, misc_enable);
-> > >> +
-> > >> +                     if (misc_enable &
-> > MSR_IA32_MISC_ENABLE_FAST_STRING)
-> > >> +                             printk(KERN_WARNING FW_WARN "CPU #%d:
-> > "
-> > >> +
-> >  "IA32_MISC_ENABLE.FAST_STRING_ENABLE "
-> > >> +                                    "was not set", c->cpu_index);
-> > > This printk is redundant because the same info is dumped in the below
-> > printk. Plus it's not firmware's issue if we can not set fast string
-> > bit 0 in MISC_ENABLE register. So I don't think FW_WARN is right.
-> > 
-> > Huh?  This is the success path -- the patch prints the warning if
-> > flipping the bit worked...
-> 
-> Ok. I see.
-> 
-> Still I would suggest to remove this printk. This info will be 
-> printed on every single CPU if BIOS doesn't enable fast string. 
+Well, if you will go and test with minority architectures with strange
+choices for standard types :)
 
-just do printk_once(). We want to inform the user that something's 
-going on.
-
-Thanks,
-
-	Ingo
+Should be fixed in -next tomorrow.
