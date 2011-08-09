@@ -1,27 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab1HIQHj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 12:07:39 -0400
-Received: from hi-original.com ([202.39.33.172]:48973 "EHLO
-	server.hi-original.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880Ab1HIQHi convert rfc822-to-8bit (ORCPT
+	id S1753763Ab1HIQIo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 12:08:44 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:45774 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752880Ab1HIQIn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 12:07:38 -0400
-Message-Id: <W0WLkC4CbCbKhHjCEWambr0OeKGwQx0swfXpphAoPsqS@live.com.my>
+	Tue, 9 Aug 2011 12:08:43 -0400
+Subject: Re: [PATCH] gianfar: reduce stack usage in gianfar_ethtool.c
+From: Joe Perches <joe@perches.com>
+To: stufever@gmail.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
+        Sandeep.Kumar@freescale.com, Wang Shaoyan <wangshaoyan.pt@taobao.com>
+In-Reply-To: <1312904711-1855-1-git-send-email-wangshaoyan.pt@taobao.com>
+References: <1312904711-1855-1-git-send-email-wangshaoyan.pt@taobao.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Aug 2011 09:08:38 -0700
+Message-ID: <1312906118.11924.8.camel@Joe-Laptop>
 Mime-Version: 1.0
-From: "Alfred L. Leng" <a-leng@live.com.my>
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Reply-To: al.leng@aol.com
-Subject: Matter of interest
-Date: Wed, 10 Aug 2011 00:07:29 +0800
-Content-type: text/plain; charset=iso-8859-1; format=flowed
-Content-transfer-encoding: 8BIT
-X-Antivirus: avast! (VPS 110809-0, 08/09/2011), Outbound message
-X-Antivirus-Status: Clean
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is understandable for you to grow apprehensive reading from me today since  there was no previous communication between us. I am Alfred L. Leng (Dr.), the managing attorney of R & L Associates Malaysia. I came across your contact via scrupulous search conducted by an IT specialist whom I have employed for the purpose of same. The present communication is prompted by a legitimate business interest I have to share and ensue with you. I have left out the detail of the business matter until I hear from you as measure of security. Please be reminded that I would not have incurred great efforts to contact you for a matter of nonentity or to waste your time or mine. Further, be confident that the matter in question is beneficial and legit with no ramification of any sort; details of the matter I will uncover to you in my following communication. Kindly, revert to me accordingly for further exhaustive dialogue. Thank you for your time as I am looking forward for yours and business relation. Sincerely Alfred Leng.
+On Tue, 2011-08-09 at 23:45 +0800, stufever@gmail.com wrote:
+> From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+>   drivers/net/gianfar_ethtool.c:765: warning: the frame size of 2048 bytes is larger than 1024 bytes
+[]
+> diff --git a/drivers/net/gianfar_ethtool.c b/drivers/net/gianfar_ethtool.c
+[]
+> @@ -686,10 +686,26 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
+>  {
+>  	unsigned int last_rule_idx = priv->cur_filer_idx;
+>  	unsigned int cmp_rqfpr;
+> -	unsigned int local_rqfpr[MAX_FILER_IDX + 1];
+> -	unsigned int local_rqfcr[MAX_FILER_IDX + 1];
+> +	unsigned int *local_rqfpr;
+> +	unsigned int *local_rqfcr;
+>  	int i = 0x0, k = 0x0;
+>  	int j = MAX_FILER_IDX, l = 0x0;
+> +	int ret = 1;
+> +
+> +	local_rqfpr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
+> +		GFP_KERNEL);
+> +	if (!local_rqfpr) {
+> +		pr_err("Out of memory\n");
+> +		ret = 0;
+> +		got err;
+> +	}
+> +	local_rqfcr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
+> +		GFP_KERNEL);
+> +	if (!local_rqfcr) {
+> +		pr_err("Out of memory\n");
+> +		ret = 0;
+> +		goto err1;
+> +	}
 
+Perhaps it'd be clearer to use:
+
+	local_rqfpr = kmalloc(...)
+	local_rqfcr = kmalloc(...)
+	if (!local_rqfpr || !local_rqfcr) {
+		pr_err(...)
+		ret = -ENOMEM;
+		goto err;
+	}
+
+[...]
+
+err:
+	kfree(local_rqfpr);
+	kfree(local_rqfcr);
+	return ret;
+
+Is the "local_" prefix useful?
+It seems like visual noise to me.
 
