@@ -1,161 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753790Ab1HIPnv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 11:43:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34048 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752302Ab1HIPnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 11:43:49 -0400
-Date: Tue, 9 Aug 2011 17:43:46 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2 v2] memcg: make oom_lock 0 and 1 based rather than
- coutner
-Message-ID: <20110809154346.GA18800@tiehlicka.suse.cz>
-References: <cover.1310732789.git.mhocko@suse.cz>
- <44ec61829ed8a83b55dc90a7aebffdd82fe0e102.1310732789.git.mhocko@suse.cz>
- <20110809140312.GA2265@redhat.com>
- <20110809152218.GK7463@tiehlicka.suse.cz>
- <20110809153732.GC13411@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110809153732.GC13411@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753716Ab1HIPnr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 11:43:47 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48034 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab1HIPnq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 11:43:46 -0400
+Subject: Re: [PATCH] gianfar: reduce stack usage in gianfar_ethtool.c
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: stufever@gmail.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
+        Sandeep.Kumar@freescale.com, Wang Shaoyan <wangshaoyan.pt@taobao.com>
+In-Reply-To: <1312903103-1734-1-git-send-email-wangshaoyan.pt@taobao.com>
+References: <1312903103-1734-1-git-send-email-wangshaoyan.pt@taobao.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Aug 2011 17:43:44 +0200
+Message-ID: <1312904624.2371.40.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-08-11 17:37:32, Johannes Weiner wrote:
-> On Tue, Aug 09, 2011 at 05:22:18PM +0200, Michal Hocko wrote:
-> > On Tue 09-08-11 16:03:12, Johannes Weiner wrote:
-> > >  	struct mem_cgroup *iter, *failed = NULL;
-> > >  	bool cond = true;
-> > >  
-> > >  	for_each_mem_cgroup_tree_cond(iter, mem, cond) {
-> > > -		bool locked = iter->oom_lock;
-> > > -
-> > > -		iter->oom_lock = true;
-> > > -		if (lock_count == -1)
-> > > -			lock_count = iter->oom_lock;
-> > > -		else if (lock_count != locked) {
-> > > +		if (iter->oom_lock) {
-> > >  			/*
-> > >  			 * this subtree of our hierarchy is already locked
-> > >  			 * so we cannot give a lock.
-> > >  			 */
-> > > -			lock_count = 0;
-> > >  			failed = iter;
-> > >  			cond = false;
-> > > -		}
-> > > +		} else
-> > > +			iter->oom_lock = true;
-> > >  	}
-> > >  
-> > >  	if (!failed)
-> > 
-> > We can return here and get rid of done label.
+Le mardi 09 août 2011 à 23:18 +0800, stufever@gmail.com a écrit :
+> From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
 > 
-> Ah, right you are.  Here is an update.
-
-Thanks!
-
+>   drivers/net/gianfar_ethtool.c:765: warning: the frame size of 2048 bytes is larger than 1024 bytes
 > 
+> Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
 > ---
-> From 86b36904033e6c6a1af4716e9deef13ebd31e64c Mon Sep 17 00:00:00 2001
-> From: Johannes Weiner <jweiner@redhat.com>
-> Date: Tue, 9 Aug 2011 15:31:30 +0200
-> Subject: [patch] memcg: fix hierarchical oom locking
+>  drivers/net/gianfar_ethtool.c |   26 +++++++++++++++++++++++---
+>  1 files changed, 23 insertions(+), 3 deletions(-)
 > 
-> Commit "79dfdac memcg: make oom_lock 0 and 1 based rather than
-> counter" tried to oom lock the hierarchy and roll back upon
-> encountering an already locked memcg.
-> 
-> The code is confused when it comes to detecting a locked memcg,
-> though, so it would fail and rollback after locking one memcg and
-> encountering an unlocked second one.
-
-It is actually worse than that. The way how it is broken also allows to
-lock a hierarchy which already contains locked subtree...
-
-> 
-> The result is that oom-locking hierarchies fails unconditionally and
-> that every oom killer invocation simply goes to sleep on the oom
-> waitqueue forever.  The tasks practically hang forever without anyone
-> intervening, possibly holding locks that trip up unrelated tasks, too.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> Acked-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  mm/memcontrol.c |   17 +++++------------
->  1 files changed, 5 insertions(+), 12 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index c6faa32..f39c8fb 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1843,29 +1843,23 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
->   */
->  static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
+> diff --git a/drivers/net/gianfar_ethtool.c b/drivers/net/gianfar_ethtool.c
+> index 6e35069..039e9c3 100644
+> --- a/drivers/net/gianfar_ethtool.c
+> +++ b/drivers/net/gianfar_ethtool.c
+> @@ -686,10 +686,26 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
 >  {
-> -	int lock_count = -1;
->  	struct mem_cgroup *iter, *failed = NULL;
->  	bool cond = true;
+>  	unsigned int last_rule_idx = priv->cur_filer_idx;
+>  	unsigned int cmp_rqfpr;
+> -	unsigned int local_rqfpr[MAX_FILER_IDX + 1];
+> -	unsigned int local_rqfcr[MAX_FILER_IDX + 1];
+> +	unsigned int *local_rqfpr;
+> +	unsigned int *local_rqfcr;
+>  	int i = 0x0, k = 0x0;
+>  	int j = MAX_FILER_IDX, l = 0x0;
+> +	int ret = 1;
+> +
+> +	local_rqfpr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
+> +		GFP_KERNEL);
+> +	if (local_rqfpr) {
+
+	if (!local_rqfpr) {
+
+> +		pr_err("Out of memory\n");
+> +		ret = 0;
+> +		got err;
+> +	}
+> +	local_rqfcr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
+> +		GFP_KERNEL);
+> +	if (local_rqfcr) {
+
+same here : if (!local_rqfcr) ...
+
+> +		pr_err("Out of memory\n");
+> +		ret = 0;
+> +		goto err1;
+> +	}
 >  
->  	for_each_mem_cgroup_tree_cond(iter, mem, cond) {
-> -		bool locked = iter->oom_lock;
-> -
-> -		iter->oom_lock = true;
-> -		if (lock_count == -1)
-> -			lock_count = iter->oom_lock;
-> -		else if (lock_count != locked) {
-> +		if (iter->oom_lock) {
->  			/*
->  			 * this subtree of our hierarchy is already locked
->  			 * so we cannot give a lock.
->  			 */
-> -			lock_count = 0;
->  			failed = iter;
->  			cond = false;
-> -		}
-> +		} else
-> +			iter->oom_lock = true;
+>  	switch (class) {
+>  	case TCP_V4_FLOW:
+> @@ -765,7 +781,11 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
+>  		priv->cur_filer_idx = priv->cur_filer_idx - 1;
 >  	}
 >  
->  	if (!failed)
-> -		goto done;
-> +		return true;
->  
->  	/*
->  	 * OK, we failed to lock the whole subtree so we have to clean up
-> @@ -1879,8 +1873,7 @@ static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
->  		}
->  		iter->oom_lock = false;
->  	}
-> -done:
-> -	return lock_count;
-> +	return false;
+> -	return 1;
+> +	kfree(local_rqfcr);
+> +err1:
+> +	kfree(local_rqfpr);
+> +err:
+> +	return ret;
 >  }
 >  
->  /*
-> -- 
-> 1.7.6
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>  static int gfar_set_hash_opts(struct gfar_private *priv, struct ethtool_rxnfc *cmd)
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+
