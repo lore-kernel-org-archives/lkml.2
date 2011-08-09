@@ -1,184 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab1HIRjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 13:39:12 -0400
-Received: from gw1.transmode.se ([195.58.98.146]:36471 "EHLO gw1.transmode.se"
+	id S1754238Ab1HIRl0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 13:41:26 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:39839 "EHLO mail.mnsspb.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753945Ab1HIRjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 13:39:11 -0400
-In-Reply-To: <00d401cc565c$98eeab60$cacc0220$@systemfabricworks.com>
-References: <4E40C5C7.2050609@systemfabricworks.com> <00d401cc565c$98eeab60$cacc0220$@systemfabricworks.com>
-Subject: RE: [patch v3 7/7] crc32: final-cleanup.diff
-X-KeepSent: 4E555F7A:DF08D1FB-C12578E7:005FA1A8;
- type=4; name=$KeepSent
-To: "Bob Pearson" <rpearson@systemfabricworks.com>
-Cc: akpm@linux-foundation.org, fzago@systemfabricworks.com, linux@horizon.com,
-        linux-kernel@vger.kernel.org
-X-Mailer: Lotus Notes Release 8.5.2FP3 Aug 10, 2010
-Message-ID: <OF4E555F7A.DF08D1FB-ONC12578E7.005FA1A8-C12578E7.0060F7CA@transmode.se>
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Date: Tue, 9 Aug 2011 19:39:08 +0200
-X-MIMETrack: Serialize by Router on mail1/Transmode(Release 8.5.2FP3|July 10, 2011) at
- 08/09/2011 19:39:09
+	id S1753971Ab1HIRlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 13:41:25 -0400
+Date: Tue, 9 Aug 2011 21:40:01 +0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Ray Lee <ray-lk@madrabbit.org>
+Cc: Vasily Khoruzhick <anarsoul@gmail.com>, intel-gfx@lists.freedesktop.org,
+        Keith Packard <keithp@keithp.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, Luke-Jr <luke@dashjr.org>,
+        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
+        Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Intel-gfx] Major 2.6.38 / 2.6.39 / 3.0 regression ignored?
+Message-ID: <20110809174001.GA23408@tugrik.mns.mnsspb.ru>
+References: <013811$4lfs6@fmsmga002.fm.intel.com> <201108091809.58425.anarsoul@gmail.com> <20110809153446.GA22077@tugrik.mns.mnsspb.ru> <201108091903.00071.anarsoul@gmail.com> <20110809163206.GA3410@tugrik.mns.mnsspb.ru> <CADU53JVXiX2v+5N-VP8mz6vnxF60BYYXKV_PZQdd_U+qM5Gd6A@mail.gmail.com>
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CADU53JVXiX2v+5N-VP8mz6vnxF60BYYXKV_PZQdd_U+qM5Gd6A@mail.gmail.com>
+Organization: Marine Bridge & Navigation Systems
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Bob Pearson" <rpearson@systemfabricworks.com> wrote on 2011/08/09 08:21:38:
->
-> Additional comments.
->
->
-> > Some final cleanup changes
-> >
-> >    - added a comment at the top of crc32.c
-> >    - moved macros ahead of function prototype
-> >    - replaced loops with for (i = 0; i < xxx; i++) which
-> >      requires fewer instructions on x86 since the
-> >      buffer lookups can use i as an index.
+On Tue, Aug 09, 2011 at 09:56:01AM -0700, Ray Lee wrote:
+> On Tue, Aug 9, 2011 at 9:32 AM, Kirill Smelkov <kirr@mns.spb.ru> wrote:
+> > Quite frankly, I don't understand intel-gfx developers attitude: why is
+> > it me, just random user who is nitpicking here? Why there is no
+> > interest/will to analyze now obviously buggy/duplicate code and fix it?
+> 
+> Because they don't have an infinite amount of manpower. Actual bugs
+> hitting actual users take precedence over 'cleanups' which always have
+> a chance of causing regressions, as you're well aware. Code churn for
+> the sake of abstract prettiness is discouraged, as it has a potential
+> cost for little potential gain.
+> 
+> If you like, submit a patch. You may now be more up-to-date on those
+> particular code paths than most of the intel-gfx developers.
 
-Doing this adds one insn to ppc. What is good for x86 isn't for
-pcc32 (and I guess any modern arch).
+Ray, I'd agree with you if the topic was about cleanups.
 
-> >
-> > -/* implements slicing-by-4 or slicing-by-8 algorithm */
-> > -static inline u32
-> > -crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32
-> > (*tab)[256])
->
-> After careful measurements and looking at asm code I figured out that there
-> was no penalty for using 2D array. That allowed me to go back to the
-> original form.
+But here I was talking about copy-pasty commit which introduced
+regressions and bugs, and if now it's a user dilemma to either "clean up"
+it after developers himself, or accept that something is broken because
+developers lack manpower and so plug things in a hurry increasing
+entropy, I'd like to remind a good rule, at least to me one more time,
+not to break things in the first place.
 
-What about my suggestion to assign each table to a ptr? This was good
-for ppc so if it doesn't slow x86 it should be added.
+I'm not talking about cleanup here. I'm talking about original commit
+which introduced problems, and that there is no need to clean it up, but
+better revert and redo properly to avoid subsequent code churn in lots
+of fixes.
 
->
-> > -{
-> >  # ifdef __LITTLE_ENDIAN
-> >  #  define DO_CRC(x) crc = tab[0][(crc ^ (x)) & 255] ^ (crc >> 8)
-> > -#  define DO_CRC4 crc = tab[3][(crc) & 255] ^ \
-> > -      tab[2][(crc >> 8) & 255] ^ \
-> > -      tab[1][(crc >> 16) & 255] ^ \
-> > -      tab[0][(crc >> 24) & 255]
-> > -#  define DO_CRC8a (tab[7][(q) & 255] ^ \
-> > -      tab[6][(q >> 8) & 255] ^ \
-> > -      tab[5][(q >> 16) & 255] ^ \
-> > -      tab[4][(q >> 24) & 255])
-> > -#  define DO_CRC8b (tab[3][(q) & 255] ^ \
-> > +#  define DO_CRC4 (tab[3][(q) & 255] ^ \
-> >        tab[2][(q >> 8) & 255] ^ \
-> >        tab[1][(q >> 16) & 255] ^ \
-> >        tab[0][(q >> 24) & 255])
->
-> By changing the syntax a little so that the assignment is done down below
-> the 4 byte and 8 byte algorithms can share DO_CRC4.
->
-> > +#  define DO_CRC8 (tab[7][(q) & 255] ^ \
-> > +      tab[6][(q >> 8) & 255] ^ \
-> > +      tab[5][(q >> 16) & 255] ^ \
-> > +      tab[4][(q >> 24) & 255])
-> >  # else
-> >  #  define DO_CRC(x) crc = tab[0][((crc >> 24) ^ (x)) & 255] ^ (crc << 8)
-> > -#  define DO_CRC4 crc = tab[0][(crc) & 255] ^ \
-> > -      tab[1][(crc >> 8) & 255] ^ \
-> > -      tab[2][(crc >> 16) & 255] ^ \
-> > -      tab[3][(crc >> 24) & 255]
-> > -#  define DO_CRC8a (tab[4][(q) & 255] ^ \
-> > -      tab[5][(q >> 8) & 255] ^ \
-> > -      tab[6][(q >> 16) & 255] ^ \
-> > -      tab[8][(q >> 24) & 255])
-> > -#  define DO_CRC8b (tab[0][(q) & 255] ^ \
-> > +#  define DO_CRC4 (tab[0][(q) & 255] ^ \
-> >        tab[1][(q >> 8) & 255] ^ \
-> >        tab[2][(q >> 16) & 255] ^ \
-> >        tab[3][(q >> 24) & 255])
-> > +#  define DO_CRC8 (tab[4][(q) & 255] ^ \
-> > +      tab[5][(q >> 8) & 255] ^ \
-> > +      tab[6][(q >> 16) & 255] ^ \
-> > +      tab[7][(q >> 24) & 255])
-> >  # endif
-> > +
-> > +/* implements slicing-by-4 or slicing-by-8 algorithm */
-> > +static inline u32 crc32_body(u32 crc, unsigned char const *buf,
-> > +              size_t len, const u32 (*tab)[256])
-> > +{
-> >     const u32 *b;
-> > +   u8 *p;
-> > +   u32 q;
-> >     size_t init_len;
-> >     size_t middle_len;
-> >     size_t rem_len;
-> > +   size_t i;
-> >
-> >     /* break buf into init_len bytes before and
-> >      * rem_len bytes after a middle section with
-> > @@ -96,37 +96,34 @@ crc32_body(u32 crc, unsigned char const
-> >     rem_len = (len - init_len) & 7;
-> >  # endif
-> >
-> > -   /* Align it */
-> > -   if (unlikely(init_len)) {
-> > -      do {
-> > -         DO_CRC(*buf++);
-> > -      } while (--init_len);
-> > -   }
-> > -   b = (const u32 *)buf;
-> > -   for (--b; middle_len; --middle_len) {
-> > +   /* process unaligned initial bytes */
-> > +   for (i = 0; i < init_len; i++)
-> > +      DO_CRC(*buf++);
-> > +
-> > +   /* process aligned words */
-> > +   b = (const u32 *)(buf - 4);
-> > +
-> > +   for (i = 0; i < middle_len; i++) {
-> >  # if CRC_LE_BITS == 32
-> > -      crc ^= *++b; /* use pre increment for speed */
-> > -      DO_CRC4;
-> > +      /* slicing-by-4 algorithm */
-> > +      q = crc ^ *++b; /* use pre increment for speed */
-> > +      crc = DO_CRC4;
-> >  # else
-> > -      u32 q;
-> > +      /* slicing-by-8 algorithm */
-> >        q = crc ^ *++b;
-> > -      crc = DO_CRC8a;
-> > +      crc = DO_CRC8;
-> >        q = *++b;
-> > -      crc ^= DO_CRC8b;
-> > +      crc ^= DO_CRC4;
-> >  # endif
->
-> This really shows how close the two algorithms are.
 
-Indeed. Look at the WIP patch I sent. There it is even closer :)
+Sorry, I won't submit a patch. If there is a need to find/fix/cleanup
+obvious things after company's developers, I have better things to do,
+and a todo item to re-evaluate hardware for my next project.
 
->
-> >     }
-> > -   /* And the last few bytes */
-> > -   if (rem_len) {
-> > -      u8 *p = (u8 *)(b + 1) - 1;
-> > -      do {
-> > -         DO_CRC(*++p); /* use pre increment for speed */
-> > -      } while (--rem_len);
-> > -   }
-> > +
-> > +   /* process unaligned remaining bytes */
-> > +   p = (u8 *)(b + 1) - 1;
-> > +
-> > +   for (i = 0; i < rem_len; i++)
-> > +      DO_CRC(*++p); /* use pre increment for speed */
-> > +
-> >     return crc;
-> > -#undef DO_CRC
-> > -#undef DO_CRC4
-> > -#undef DO_CRC8a
-> > -#undef DO_CRC8b
-> >  }
-> >  #endif
->
->
 
+Thanks,
+Kirill
