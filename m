@@ -1,101 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538Ab1HICGt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 22:06:49 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6106 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953Ab1HICGr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 22:06:47 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 08 Aug 2011 19:06:47 -0700
-From: dilee@nvidia.com
-To: rpurdie@rpsys.net, lethal@linux-sh.org, akpm@linux-foundation.org,
-        arun.murthy@stericsson.com, rmorell@nvidia.com,
-        linus.walleij@stericsson.com
-Cc: jnien@nvidia.com, swarren@nvidia.com, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Dilan Lee <dilee@nvidia.com>
-Subject: [PATCH] video: Add a callback 'notify_after' for backlight control
-Date: Tue,  9 Aug 2011 10:05:25 +0800
-Message-Id: <1312855525-21464-1-git-send-email-dilee@nvidia.com>
-X-Mailer: git-send-email 1.7.6
+	id S1751651Ab1HICJL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 22:09:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47590 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751393Ab1HICJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 22:09:09 -0400
+Date: Mon, 8 Aug 2011 22:08:17 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
+        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] writeback: dirty position control
+Message-ID: <20110809020817.GB3700@redhat.com>
+References: <20110806084447.388624428@intel.com>
+ <20110806094526.733282037@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110806094526.733282037@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dilan Lee <dilee@nvidia.com>
+On Sat, Aug 06, 2011 at 04:44:49PM +0800, Wu Fengguang wrote:
+> Old scheme is,
+>                                           |
+>                            free run area  |  throttle area
+>   ----------------------------------------+---------------------------->
+>                                     thresh^                  dirty pages
+> 
+> New scheme is,
+> 
+>   ^ task rate limit
+>   |
+>   |            *
+>   |             *
+>   |              *
+>   |[free run]      *      [smooth throttled]
+>   |                  *
+>   |                     *
+>   |                         *
+>   ..bdi->dirty_ratelimit..........*
+>   |                               .     *
+>   |                               .          *
+>   |                               .              *
+>   |                               .                 *
+>   |                               .                    *
+>   +-------------------------------.-----------------------*------------>
+>                           setpoint^                  limit^  dirty pages
+> 
+> For simplicity, only the global/bdi setpoint control lines are
+> implemented here, so the [*] curve is more straight than the ideal one
+> showed in the above figure.
+> 
+> bdi_position_ratio() provides a scale factor to bdi->dirty_ratelimit, so
+> that the resulted task rate limit can drive the dirty pages back to the
+> global/bdi setpoints.
+> 
 
-We need a callback to do some things after pwm_enable, pwm_disable
-and pwm_config.
+IMHO, "position_ratio" is not necessarily very intutive. Can there be
+a better name? Based on your slides, it is scaling factor applied to
+task rate limit depending on how well we are doing in terms of meeting
+our goal of dirty limit. Will "dirty_rate_scale_factor" or something like
+that make sense and be little more intutive? 
 
-This may be necessary to properly sequence timing on
-certain devices.
-
-For example, GPIO backlight_en has to be risen after pwm has been enabled
-to meet panel power on sequence defined in panel specification.
-
-Signed-off-by: Dilan Lee <dilee@nvidia.com>
----
- drivers/video/backlight/pwm_bl.c |   11 ++++++++++-
- include/linux/pwm_backlight.h    |    1 +
- 2 files changed, 11 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index b8f38ec..e92e6e0 100644
---- a/drivers/video/backlight/pwm_bl.c
-+++ b/drivers/video/backlight/pwm_bl.c
-@@ -27,7 +27,9 @@ struct pwm_bl_data {
- 	unsigned int		period;
- 	unsigned int		lth_brightness;
- 	int			(*notify)(struct device *,
--					  int brightness);
-+					int brightness);
-+	void			(*notify_after)(struct device *,
-+					int brightness);
- 	int			(*check_fb)(struct device *, struct fb_info *);
- };
+Thanks
+Vivek
  
-@@ -55,6 +57,10 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
- 		pwm_config(pb->pwm, brightness, pb->period);
- 		pwm_enable(pb->pwm);
- 	}
-+
-+	if (pb->notify_after)
-+		pb->notify_after(pb->dev, brightness);
-+
- 	return 0;
- }
- 
-@@ -105,6 +111,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
- 
- 	pb->period = data->pwm_period_ns;
- 	pb->notify = data->notify;
-+	pb->notify_after = data->notify_after;
- 	pb->check_fb = data->check_fb;
- 	pb->lth_brightness = data->lth_brightness *
- 		(data->pwm_period_ns / data->max_brightness);
-@@ -172,6 +179,8 @@ static int pwm_backlight_suspend(struct platform_device *pdev,
- 		pb->notify(pb->dev, 0);
- 	pwm_config(pb->pwm, 0, pb->period);
- 	pwm_disable(pb->pwm);
-+	if (pb->notify_after)
-+		pb->notify_after(pb->dev, 0);
- 	return 0;
- }
- 
-diff --git a/include/linux/pwm_backlight.h b/include/linux/pwm_backlight.h
-index 5e3e25a..63d2df4 100644
---- a/include/linux/pwm_backlight.h
-+++ b/include/linux/pwm_backlight.h
-@@ -14,6 +14,7 @@ struct platform_pwm_backlight_data {
- 	unsigned int pwm_period_ns;
- 	int (*init)(struct device *dev);
- 	int (*notify)(struct device *dev, int brightness);
-+	void (*notify_after)(struct device *dev, int brightness);
- 	void (*exit)(struct device *dev);
- 	int (*check_fb)(struct device *dev, struct fb_info *info);
- };
--- 
-1.7.6
 
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  mm/page-writeback.c |  143 ++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 143 insertions(+)
+> 
+> --- linux-next.orig/mm/page-writeback.c	2011-08-06 10:31:32.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2011-08-06 11:17:07.000000000 +0800
+> @@ -46,6 +46,8 @@
+>   */
+>  #define BANDWIDTH_INTERVAL	max(HZ/5, 1)
+>  
+> +#define BANDWIDTH_CALC_SHIFT	10
+> +
+>  /*
+>   * After a CPU has dirtied this many pages, balance_dirty_pages_ratelimited
+>   * will look to see if it needs to force writeback or throttling.
+> @@ -495,6 +497,147 @@ unsigned long bdi_dirty_limit(struct bac
+>  	return bdi_dirty;
+>  }
+>  
+> +/*
+> + * Dirty position control.
+> + *
+> + * (o) global/bdi setpoints
+> + *
+> + *  When the number of dirty pages go higher/lower than the setpoint, the dirty
+> + *  position ratio (and hence dirty rate limit) will be decreased/increased to
+> + *  bring the dirty pages back to the setpoint.
+> + *
+> + *                              setpoint
+> + *                                 v
+> + * |-------------------------------*-------------------------------|-----------|
+> + * ^                               ^                               ^           ^
+> + * (thresh + background_thresh)/2  thresh - thresh/DIRTY_SCOPE     thresh  limit
+> + *
+> + *                          bdi setpoint
+> + *                                 v
+> + * |-------------------------------*-------------------------------------------|
+> + * ^                               ^                                           ^
+> + * 0                               bdi_thresh - bdi_thresh/DIRTY_SCOPE     limit
+> + *
+> + * (o) pseudo code
+> + *
+> + *     pos_ratio = 1 << BANDWIDTH_CALC_SHIFT
+> + *
+> + *     if (dirty < thresh) scale up   pos_ratio
+> + *     if (dirty > thresh) scale down pos_ratio
+> + *
+> + *     if (bdi_dirty < bdi_thresh) scale up   pos_ratio
+> + *     if (bdi_dirty > bdi_thresh) scale down pos_ratio
+> + *
+> + * (o) global/bdi control lines
+> + *
+> + * Based on the number of dirty pages (the X), pos_ratio (the Y) is scaled by
+> + * several control lines in turn.
+> + *
+> + * The control lines for the global/bdi setpoints both stretch up to @limit.
+> + * If any control line drops below Y=0 before reaching @limit, an auxiliary
+> + * line will be setup to connect them. The below figure illustrates the main
+> + * bdi control line with an auxiliary line extending it to @limit.
+> + *
+> + * This allows smoothly throttling bdi_dirty down to normal if it starts high
+> + * in situations like
+> + * - start writing to a slow SD card and a fast disk at the same time. The SD
+> + *   card's bdi_dirty may rush to 5 times higher than bdi setpoint.
+> + * - the bdi dirty thresh goes down quickly due to change of JBOD workload
+> + *
+> + *   o
+> + *     o
+> + *       o                                      [o] main control line
+> + *         o                                    [*] auxiliary control line
+> + *           o
+> + *             o
+> + *               o
+> + *                 o
+> + *                   o
+> + *                     o
+> + *                       o--------------------- balance point, bw scale = 1
+> + *                       | o
+> + *                       |   o
+> + *                       |     o
+> + *                       |       o
+> + *                       |         o
+> + *                       |           o
+> + *                       |             o------- connect point, bw scale = 1/2
+> + *                       |               .*
+> + *                       |                 .   *
+> + *                       |                   .      *
+> + *                       |                     .         *
+> + *                       |                       .           *
+> + *                       |                         .              *
+> + *                       |                           .                 *
+> + *  [--------------------+-----------------------------.--------------------*]
+> + *  0                 bdi setpoint                 bdi origin            limit
+> + *
+> + * The bdi control line: if (origin < limit), an auxiliary control line (*)
+> + * will be setup to extend the main control line (o) to @limit.
+> + */
+> +static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
+> +					unsigned long thresh,
+> +					unsigned long dirty,
+> +					unsigned long bdi_thresh,
+> +					unsigned long bdi_dirty)
+> +{
+> +	unsigned long limit = hard_dirty_limit(thresh);
+> +	unsigned long origin;
+> +	unsigned long goal;
+> +	unsigned long long span;
+> +	unsigned long long pos_ratio;	/* for scaling up/down the rate limit */
+> +
+> +	if (unlikely(dirty >= limit))
+> +		return 0;
+> +
+> +	/*
+> +	 * global setpoint
+> +	 */
+> +	goal = thresh - thresh / DIRTY_SCOPE;
+> +	origin = 4 * thresh;
+> +
+> +	if (unlikely(origin < limit && dirty > (goal + origin) / 2)) {
+> +		origin = limit;			/* auxiliary control line */
+> +		goal = (goal + origin) / 2;
+> +		pos_ratio >>= 1;
+> +	}
+> +	pos_ratio = origin - dirty;
+> +	pos_ratio <<= BANDWIDTH_CALC_SHIFT;
+> +	do_div(pos_ratio, origin - goal + 1);
+> +
+> +	/*
+> +	 * bdi setpoint
+> +	 */
+> +	if (unlikely(bdi_thresh > thresh))
+> +		bdi_thresh = thresh;
+> +	goal = bdi_thresh - bdi_thresh / DIRTY_SCOPE;
+> +	/*
+> +	 * Use span=(4*bw) in single disk case and transit to bdi_thresh in
+> +	 * JBOD case.  For JBOD, bdi_thresh could fluctuate up to its own size.
+> +	 * Otherwise the bdi write bandwidth is good for limiting the floating
+> +	 * area, which makes the bdi control line a good backup when the global
+> +	 * control line is too flat/weak in large memory systems.
+> +	 */
+> +	span = (u64) bdi_thresh * (thresh - bdi_thresh) +
+> +		(4 * bdi->avg_write_bandwidth) * bdi_thresh;
+> +	do_div(span, thresh + 1);
+> +	origin = goal + 2 * span;
+> +
+> +	if (unlikely(bdi_dirty > goal + span)) {
+> +		if (bdi_dirty > limit)
+> +			return 0;
+> +		if (origin < limit) {
+> +			origin = limit;		/* auxiliary control line */
+> +			goal += span;
+> +			pos_ratio >>= 1;
+> +		}
+> +	}
+> +	pos_ratio *= origin - bdi_dirty;
+> +	do_div(pos_ratio, origin - goal + 1);
+> +
+> +	return pos_ratio;
+> +}
+> +
+>  static void bdi_update_write_bandwidth(struct backing_dev_info *bdi,
+>  				       unsigned long elapsed,
+>  				       unsigned long written)
+> 
