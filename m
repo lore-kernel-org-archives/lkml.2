@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105Ab1HIKJs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 06:09:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42350 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752804Ab1HIKJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 06:09:46 -0400
-Date: Tue, 9 Aug 2011 12:09:44 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
-        Balbir Singh <bsingharora@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] memcg: fix drain_all_stock crash
-Message-ID: <20110809100944.GE7463@tiehlicka.suse.cz>
-References: <cover.1311338634.git.mhocko@suse.cz>
- <a9244082ba28c4c2e4a6997311d5493bdaa117e9.1311338634.git.mhocko@suse.cz>
- <20110808184738.GA7749@redhat.com>
- <20110808214704.GA4396@tiehlicka.suse.cz>
- <20110808231912.GA29002@redhat.com>
- <20110809072615.GA7463@tiehlicka.suse.cz>
- <20110809093150.GC7463@tiehlicka.suse.cz>
- <20110809183216.97daf2b0.kamezawa.hiroyu@jp.fujitsu.com>
- <20110809094503.GD7463@tiehlicka.suse.cz>
- <20110809185313.dc784d70.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1753127Ab1HIKLx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 06:11:53 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:46167 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752804Ab1HIKLw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 06:11:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110809185313.dc784d70.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E40912C.5040801@codeaurora.org>
+References: <1312780773-23142-1-git-send-email-Baohua.Song@csr.com>
+	<20110808081552.GI32513@linux-sh.org>
+	<CACxGe6ssT4=kxApaKhv+=7nDcEFVW+oyByFQ_hzcfyZ4gw2C3g@mail.gmail.com>
+	<CAH9JG2V-66Wn7nwJz6tOkESoQAUJzAg-47YeMY0vzwu6T9O=Rg@mail.gmail.com>
+	<4E40912C.5040801@codeaurora.org>
+Date: Tue, 9 Aug 2011 12:11:51 +0200
+Message-ID: <CACRpkdZUxYP0Mbe+heEwrZE5VC+J42g_-QAusrOsUuBPT324Hw@mail.gmail.com>
+Subject: Re: [PATCH] GPIOLIB: add generic gpio_set_pull API
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Rohit Vaswani <rvaswani@codeaurora.org>
+Cc: Kyungmin Park <kmpark@infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Barry Song <Baohua.Song@csr.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-08-11 18:53:13, KAMEZAWA Hiroyuki wrote:
-> On Tue, 9 Aug 2011 11:45:03 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > On Tue 09-08-11 18:32:16, KAMEZAWA Hiroyuki wrote:
-> > > On Tue, 9 Aug 2011 11:31:50 +0200
-> > > Michal Hocko <mhocko@suse.cz> wrote:
-> > > 
-> > > > What do you think about the half backed patch bellow? I didn't manage to
-> > > > test it yet but I guess it should help. I hate asymmetry of drain_lock
-> > > > locking (it is acquired somewhere else than it is released which is
-> > > > not). I will think about a nicer way how to do it.
-> > > > Maybe I should also split the rcu part in a separate patch.
-> > > > 
-> > > > What do you think?
-> > > 
-> > > 
-> > > I'd like to revert 8521fc50 first and consider total design change
-> > > rather than ad-hoc fix.
-> > 
-> > Agreed. Revert should go into 3.0 stable as well. Although the global
-> > mutex is buggy we have that behavior for a long time without any reports.
-> > We should address it but it can wait for 3.2.
+On Tue, Aug 9, 2011 at 3:45 AM, Rohit Vaswani <rvaswani@codeaurora.org> wrote:
 
-I will send the revert request to Linus.
+> If we add this API - the remaining gpio controls like drive strength and
+> function select could also be added,
 
-> What "buggy" means here ? "problematic" or "cause OOps ?"
+I agree.
 
-I have described that in an earlier email. Consider pathological case
-when CPU0 wants to async. drain a memcg which has a lot of cached charges while
-CPU1 is already draining so it holds the mutex. CPU0 backs off so it has
-to reclaim although we could prevent from it by getting rid of cached
-charges. This is not critical though.
+> which eats into the pinmux domain.
 
-> 
-> > > Personally, I don't like to have spin-lock in per-cpu area.
-> > 
-> > spinlock is not that different from what we already have with the bit
-> > lock.
-> 
-> maybe. The best is lockless style...but pointer in percpu cache is problem..
-> 
-> Thanks,
-> -Kame
+That's not so bad, since the pinctrl/pinmux subsystem is just a prototype
+people may want to wrap up their drivers into gpio_chip/gpiolib as
+they stand today to atleast get some isolation. Later on they can
+refactor and migrate to a pinctrl/pinmux subsystem.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+The latter will take some time to provide anyway, since I have been
+asked to restructure it so as not to use a global pin number space.
+
+> Linus W. had a patch earlier which added an API for a gpio config to be
+> specified through gpiolib. " gpio: add a custom configuration mechanism to
+> gpiolib" which is sort of an extensible model of this API.
+
+Yes I think I have already suggested a bunch of ways to skin this
+cat but somehow none of them seem to win general approval.
+
+Yours,
+Linus Walleij
