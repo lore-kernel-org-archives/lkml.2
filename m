@@ -1,69 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751629Ab1HINJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 09:09:56 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:53469 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab1HINJy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 09:09:54 -0400
+	id S1751841Ab1HINNm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 09:13:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18102 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751061Ab1HINNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 09:13:41 -0400
+Date: Tue, 9 Aug 2011 15:13:31 +0200
+From: Jiri Pirko <jpirko@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [forcedeth bug] Re: [GIT] Networking
+Message-ID: <20110809131330.GA2020@minipsycho.brq.redhat.com>
+References: <20110722.073339.1236244143490935644.davem@davemloft.net>
+ <20110801151308.GA31256@elte.hu>
+ <20110804215354.GA7056@elte.hu>
+ <20110805102239.GB1928@minipsycho.orion>
+ <20110805102903.GF2420@elte.hu>
+ <20110805112557.GD1928@minipsycho.orion>
+ <20110805121855.GC13055@elte.hu>
+ <20110805123136.GF1928@minipsycho.orion>
+ <20110805143732.GH1928@minipsycho.orion>
 MIME-Version: 1.0
-In-Reply-To: <20110809135050.79eed316@lxorguk.ukuu.org.uk>
-References: <cover.1312893572.git.luto@mit.edu> <20110809135050.79eed316@lxorguk.ukuu.org.uk>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Tue, 9 Aug 2011 09:09:34 -0400
-X-Google-Sender-Auth: 6MXMwRAS4aqRNhz3XIIGLsj9wvg
-Message-ID: <CAObL_7G5j-8dmQDc2Q+matB8nHk7421CWnBHqQs9-T2fjVecng@mail.gmail.com>
-Subject: Re: [PATCH v3 0/2] Forcibly enable some MISC_ENABLE features on Intel
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110805143732.GH1928@minipsycho.orion>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 9, 2011 at 8:50 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Tue,  9 Aug 2011 08:41:04 -0400
-> Andy Lutomirski <luto@MIT.EDU> wrote:
+Fri, Aug 05, 2011 at 04:37:33PM CEST, jpirko@redhat.com wrote:
+>Fri, Aug 05, 2011 at 02:31:37PM CEST, jpirko@redhat.com wrote:
+>>Fri, Aug 05, 2011 at 02:18:55PM CEST, mingo@elte.hu wrote:
+>>>
+>>>* Jiri Pirko <jpirko@redhat.com> wrote:
+>>>
+>>>> >> Is DEV_HAS_VLAN set in id->driver_data (L5344) ?
+>>>> >
+>>>> >How do i tell that without hacking the driver?
+>>>> 
+>>>> look in dmesg for line like:
+>>>> "forcedeth 0000:00:08.0: highdma csum vlan pwrctl mgmt gbit lnktim msi
+>>>> desc-v3"
+>>>> 
+>>>> if "vlan" is there, DEV_HAS_VLAN is set
+>>>
+>>>[    3.534489] forcedeth 0000:00:0a.0: highdma csum gbit lnktim desc-v3
+>>>
+>>>Note, this is a pretty old system with an old nvidia chipset and 
+>>>on-board ethernet:
+>>>
+>>>00:0a.0 Bridge: nVidia Corporation CK804 Ethernet Controller (rev a3)
+>>>        Subsystem: ASUSTeK Computer Inc. K8N4-E Mainboard
+>>>        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B-
+>>>        Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR-
+>>>        Latency: 0 (250ns min, 5000ns max)
+>>>        Interrupt: pin A routed to IRQ 11
+>>>        Region 0: Memory at da100000 (32-bit, non-prefetchable) [size=4K]
+>>>        Region 1: I/O ports at d000 [size=8]
+>>>        Capabilities: [44] Power Management version 2
+>>>                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0+,D1+,D2+,D3hot+,D3cold+)
+>>>                Status: D0 PME-Enable+ DSel=0 DScale=0 PME-
+>>
+>>Please do lspci -nn
+>>
+>>There are two CK804 chips:
+>>0x10DE, 0x0056
+>>0x10DE, 0x0057
+>>
+>>I have only the second one handy - Getting the machine as we speak.
 >
->> Intel allows BIOS or the OS to enable or disable some CPU fueatures via
->> IA32_MISC_ENABLE.  I have machines that don't enable fast strings or
->> monitor/mwait in BIOS, so do it on bootup instead.
+>I'm unable to see problems you are referring to on my machine.
 >
-> The question is - why.
+>Would you please try following patch if it fixes your issue? It's
+>in fact returning everything back to the original state (for your card).
+
+
+Ingo, any news with this?
+
+Thanks.
+
+Jirka
+
 >
->> The Intel SDM volume 3, appendix B.1 says that the OS should not touch
->> the monitor enable bit if SSE3 is not present, which presumably means
->> that the OS may touch that bit if SSE3 is present.  In any case, these
->> patches seem to work.
->
-> That's a big "presumes"
->
-> For example back in Pentium days the BIOS sometimes turned off a string
-> fast path because it was subtly not reliable on certain parts and could
-> corrupt.
->
-> It's possible your BIOS vendor has a good reason for doing this. It's
-> also possible its a bug, or a left over perhaps from some pre-release
-> processor or something.
-
-Intel also says:
-
-  However, Intel recomments that system software always enable
-  fast-string operation.
-
-On my machine it's definitely a bug.  It's a Sandy Bridge box (from
-Intel) and with TXT disabled the BIOS enables fast strings on its own.
-
-Fenghua, do you know if there are any machines that will pass the
-version checks and will actually allow fast strings to be enabled but
-that will have problems as a result?
-
-If we want to be conservative, we could limit it to the most recent
-family 6 devices and exclude family 0xf entirely.
-
---Andy
+>diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
+>index e55df30..d7d43d4 100644
+>--- a/drivers/net/forcedeth.c
+>+++ b/drivers/net/forcedeth.c
+>@@ -2763,18 +2763,18 @@ static int nv_rx_process_optimized(struct net_device *dev, int limit)
+> 			skb->protocol = eth_type_trans(skb, dev);
+> 			prefetch(skb->data);
+> 
+>-			vlanflags = le32_to_cpu(np->get_rx.ex->buflow);
+>-
+> 			/*
+> 			 * There's need to check for NETIF_F_HW_VLAN_RX here.
+> 			 * Even if vlan rx accel is disabled,
+> 			 * NV_RX3_VLAN_TAG_PRESENT is pseudo randomly set.
+> 			 */
+>-			if (dev->features & NETIF_F_HW_VLAN_RX &&
+>-			    vlanflags & NV_RX3_VLAN_TAG_PRESENT) {
+>-				u16 vid = vlanflags & NV_RX3_VLAN_TAG_MASK;
+>+			if (dev->features & NETIF_F_HW_VLAN_RX) {
+>+				vlanflags = le32_to_cpu(np->get_rx.ex->buflow);
+>+				if (vlanflags & NV_RX3_VLAN_TAG_PRESENT) {
+>+					u16 vid = vlanflags & NV_RX3_VLAN_TAG_MASK;
+> 
+>-				__vlan_hwaccel_put_tag(skb, vid);
+>+					__vlan_hwaccel_put_tag(skb, vid);
+>+				}
+> 			}
+> 			napi_gro_receive(&np->napi, skb);
+> 
+>@@ -5615,7 +5615,7 @@ static int __devinit nv_probe(struct pci_dev *pci_dev, const struct pci_device_i
+> 		goto out_error;
+> 	}
+> 
+>-	nv_vlan_mode(dev, dev->features);
+>+	//nv_vlan_mode(dev, dev->features);
+> 
+> 	netif_carrier_off(dev);
+> 
