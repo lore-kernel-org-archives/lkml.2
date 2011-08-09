@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab1HIQxI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 12:53:08 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:59279 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011Ab1HIQxH (ORCPT
+	id S1754055Ab1HIQzY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 12:55:24 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:41683 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753011Ab1HIQzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 12:53:07 -0400
-Subject: Re: [PATCH] gianfar: reduce stack usage in gianfar_ethtool.c
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: stufever@gmail.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
-        Wang Shaoyan <wangshaoyan.pt@taobao.com>
-In-Reply-To: <1312907945-1982-1-git-send-email-wangshaoyan.pt@taobao.com>
-References: <1312907945-1982-1-git-send-email-wangshaoyan.pt@taobao.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Aug 2011 18:53:04 +0200
-Message-ID: <1312908784.2371.53.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	Tue, 9 Aug 2011 12:55:23 -0400
+Date: Tue, 9 Aug 2011 12:55:12 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] xen: off by one error in xen/setup.c
+Message-ID: <20110809165512.GA6935@dumpdata.com>
+References: <1312278325-4246-1-git-send-email-imammedo@redhat.com>
+ <1312278325-4246-2-git-send-email-imammedo@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1312278325-4246-2-git-send-email-imammedo@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090204.4E416679.0133,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 10 août 2011 à 00:39 +0800, stufever@gmail.com a écrit :
-> From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+On Tue, Aug 02, 2011 at 11:45:23AM +0200, Igor Mammedov wrote:
+> Do not try to initialize pfn beyond of available address space.
+
+Actually, thinking about this I don't think this is right.
+
+We want to initialize the P2M space _at_ the xen_max_p2m_pfn. With
+your patch we would only initialize it up to xen_max_p2m_pfn-1 - so
+the last PFN would not be set to INVALID_P2M_ENTRY.
+
 > 
->   drivers/net/gianfar_ethtool.c:765: warning: the frame size of 2048 bytes is larger than 1024 bytes
-> 
-> Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
 > ---
->  drivers/net/gianfar_ethtool.c |   20 +++++++++++++++++---
->  1 files changed, 17 insertions(+), 3 deletions(-)
+>  arch/x86/xen/setup.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/net/gianfar_ethtool.c b/drivers/net/gianfar_ethtool.c
-> index 6e35069..134fe1b 100644
-> --- a/drivers/net/gianfar_ethtool.c
-> +++ b/drivers/net/gianfar_ethtool.c
-> @@ -686,10 +686,21 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
->  {
->  	unsigned int last_rule_idx = priv->cur_filer_idx;
->  	unsigned int cmp_rqfpr;
-> -	unsigned int local_rqfpr[MAX_FILER_IDX + 1];
-> -	unsigned int local_rqfcr[MAX_FILER_IDX + 1];
-> +	unsigned int *local_rqfpr;
-> +	unsigned int *local_rqfcr;
->  	int i = 0x0, k = 0x0;
->  	int j = MAX_FILER_IDX, l = 0x0;
-> +	int ret = 1;
-> +
-> +	local_rqfpr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
-> +		GFP_KERNEL);
-> +	local_rqfcr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
-> +		GFP_KERNEL);
-> +	if (!local_rqfpr || !local_rqfcr) {
-> +		pr_err("Out of memory\n");
-
-	Please remove this pr_err(), kmalloc() will complain already.
-
-> +		ret = 0;
-> +		got err;
-> +	}
+> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> index 60aeeb5..2221b05 100644
+> --- a/arch/x86/xen/setup.c
+> +++ b/arch/x86/xen/setup.c
+> @@ -69,7 +69,7 @@ static void __init xen_add_extra_mem(unsigned long pages)
 >  
->  	switch (class) {
->  	case TCP_V4_FLOW:
-> @@ -765,7 +776,10 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
->  		priv->cur_filer_idx = priv->cur_filer_idx - 1;
->  	}
+>  	xen_max_p2m_pfn = PFN_DOWN(extra_start + size);
 >  
-> -	return 1;
-> +err:
-> +	kfree(local_rqfcr);
-> +	kfree(local_rqfpr);
-> +	return ret;
+> -	for (pfn = PFN_DOWN(extra_start); pfn <= xen_max_p2m_pfn; pfn++)
+> +	for (pfn = PFN_DOWN(extra_start); pfn < xen_max_p2m_pfn; ++pfn)
+>  		__set_phys_to_machine(pfn, INVALID_P2M_ENTRY);
 >  }
 >  
-
-You should now track all "return 0;" done in this function to make sure
-no memory leak is added by your patch.
-
-
-
+> -- 
+> 1.7.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
