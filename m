@@ -1,112 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273Ab1HIVqw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 17:46:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48130 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796Ab1HIVqv (ORCPT
+	id S1752924Ab1HIWAR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 18:00:17 -0400
+Received: from mail127.messagelabs.com ([216.82.250.115]:36140 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641Ab1HIWAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 17:46:51 -0400
-Date: Tue, 9 Aug 2011 23:46:46 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] slub: fix check_bytes() for slub debugging
-Message-ID: <20110809214646.GA3719@joi.lan>
-References: <1312709438-7608-1-git-send-email-akinobu.mita@gmail.com>
- <1312859440.2531.20.camel@edumazet-laptop>
- <1312860783.2531.31.camel@edumazet-laptop>
- <CAC5umyhLuhNK55WDXTii2SFsqPNau1B9F1z+E0r0CaLNkGZfDg@mail.gmail.com>
- <1312883169.2371.16.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	Tue, 9 Aug 2011 18:00:15 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-15.tower-127.messagelabs.com!1312927212!27954986!12
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.180]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Ryan Mallon <rmallon@gmail.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Date: Tue, 9 Aug 2011 17:00:11 -0500
+Subject: RE: gpio-ep93xx: Add helper function to convert irq to gpio, port,
+ and mask.
+Thread-Topic: gpio-ep93xx: Add helper function to convert irq to gpio, port,
+ and mask.
+Thread-Index: AcxW3c0LsW0Fg9eFQDOWhRdm3nOdhwAAYyKg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F001F3883894A4@AUSP01VMBX24.collaborationhost.net>
+References: <201108091104.14053.hartleys@visionengravers.com>
+ <4E41AB23.4080209@gmail.com>
+In-Reply-To: <4E41AB23.4080209@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1312883169.2371.16.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p79M0kgJ000306
 
-On Tue, Aug 09, 2011 at 11:46:09AM +0200, Eric Dumazet wrote:
-> Le mardi 09 aoÃ»t 2011 Ã  18:38 +0900, Akinobu Mita a Ã©crit :
-> > 2011/8/9 Eric Dumazet <eric.dumazet@gmail.com>:
-> > 
-> > >> > diff --git a/mm/slub.c b/mm/slub.c
-> > >> > index eb5a8f9..5695f92 100644
-> > >> > --- a/mm/slub.c
-> > >> > +++ b/mm/slub.c
-> > >> > @@ -701,7 +701,7 @@ static u8 *check_bytes(u8 *start, u8 value, unsigned int bytes)
-> > >> >             return check_bytes8(start, value, bytes);
-> > >> >
-> > >> >     value64 = value | value << 8 | value << 16 | value << 24;
-> > >> > -   value64 = value64 | value64 << 32;
-> > >> > +   value64 = (value64 & 0xffffffff) | value64 << 32;
-> > >> >     prefix = 8 - ((unsigned long)start) % 8;
-> > >> >
-> > >> >     if (prefix) {
-> > >>
-> > >> Still buggy I am afraid. Could we use the following ?
-> > >>
-> > >>
-> > >>       value64 = value;
-> > >>       value64 |= value64 << 8;
-> > >>       value64 |= value64 << 16;
-> > >>       value64 |= value64 << 32;
-> > >>
-> > >>
-> > >
-> > > Well, 'buggy' was not well chosen.
-> > >
-> > > Another possibility would be to use a multiply if arch has a fast
-> > > multiplier...
-> > >
-> > >
-> > >        value64 = value;
-> > > #if defined(ARCH_HAS_FAST_MULTIPLIER) && BITS_PER_LONG == 64
-> > >        value64 *= 0x0101010101010101;
-> > > #elif defined(ARCH_HAS_FAST_MULTIPLIER)
-> > >        value64 *= 0x01010101;
-> > >        value64 |= value64 << 32;
-> > > #else
-> > >        value64 |= value64 << 8;
-> > >        value64 |= value64 << 16;
-> > >        value64 |= value64 << 32;
-> > > #endif
-> > 
-> > I don't really care about which one should be used.  So tell me if I need
-> > to resend it with this improvement.
-> 
-> It would be nice to fix all bugs while we review this code.
-> 
-> Lets push your patch and I'll submit a patch for next kernel.
-> 
-> For example, following code is suboptimal :
-> 
->         prefix = 8 - ((unsigned long)start) % 8;
-> 
->         if (prefix) {
->                 u8 *r = check_bytes8(start, value, prefix);
->                 if (r)
->                         return r;
->                 start += prefix;
->                 bytes -= prefix;
->         }
-> 
-> 
-> Since we always have prefix = 8 if 'start' is longword aligned, so we
-> call check_bytes8() at least once with 8 bytes to compare...
+On Tuesday, August 09, 2011 2:48 PM, Ryan Mallon wrote:
+> On 10/08/11 04:04, H Hartley Sweeten wrote:
+>> This consolidates the irq_to_gpio() call and the shift magic used to convert
+>> a GPIO irq into it's relevant GPIO, port, and mask values.
+>>
+>> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+>> Cc: Ryan Mallon <rmallon@gmail.com>
+>
+> I think this should have my:
+>
+> Signed-off-by: Ryan Mallon <rmallon@gmail.com>
+>
+> Since I wrote the original patch.
 
-Yeah. 
- 
-> Also, 32bit arches should be taken into account properly.
+Sorry, misunderstood your previous email.
 
-At least on x86_32 reading 8 bytes is faster than 4 (I benchmarked it - IIRC
-reading 8 bytes speeds up by a factor of ~5 and reading 4 only by ~3.5) 
+I re-coded this patch based on my one helper function instead of your two
+functions.  Regardless, the idea was yours and I have no problem with it
+having your Signed-off-by.
 
+I'll re-post it with the modified sign offs shortly.
 
-Marcin
-
+Thanks,
+Hartley
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
