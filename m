@@ -1,83 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab1HIOXH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 10:23:07 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:50555 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750722Ab1HIOXF (ORCPT
+	id S1752161Ab1HIOXl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 10:23:41 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:46773 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750722Ab1HIOXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 10:23:05 -0400
-X-Sasl-enc: V6Zi+M6/YoFMP8TptaDWtjsKBQ6Zj3rm0S9guGg8q8xU 1312899784
-Date: Tue, 9 Aug 2011 07:22:56 -0700
-From: Greg KH <greg@kroah.com>
-To: David Chang <dchang@suse.com>
-Cc: =?iso-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>,
-        Matthew Wilcox <matthew@wil.cx>, Max Vozeler <max@vozeler.com>,
-        Matt Mooney <mfm@muteddisk.com>, Joe Perches <joe@perches.com>,
-        linux-usb@vger.kernel.org, usbip-devel@lists.sourceforge.net,
-        devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH, RFC] USBIP protocol documentation
-Message-ID: <20110809142256.GB1805@kroah.com>
-References: <4DDBF8BD.3000603@freemail.hu>
- <20110524183448.GA18511@kroah.com>
- <4DDC142E.6070003@freemail.hu>
- <20110525031222.GB14290@haskell.muteddisk.com>
- <4DDC93D5.9070607@freemail.hu>
- <4DDDFDA7.6030900@freemail.hu>
- <4E097A32.1000504@freemail.hu>
- <CAL-cBk1Kzr1Gn3YCHDpudkVSmdSWOcCo7_rpLddCUQ_3ZjP+kQ@mail.gmail.com>
+	Tue, 9 Aug 2011 10:23:40 -0400
+Date: Tue, 9 Aug 2011 10:23:40 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Jesper Juhl <jj@chaosbits.net>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] Crash when suspending Lenovo T510 laptop (2.6.39.3)
+In-Reply-To: <alpine.LNX.2.00.1108091426090.17636@swampdragon.chaosbits.net>
+Message-ID: <Pine.LNX.4.44L0.1108091021020.1949-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAL-cBk1Kzr1Gn3YCHDpudkVSmdSWOcCo7_rpLddCUQ_3ZjP+kQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 09, 2011 at 05:23:14PM +0800, David Chang wrote:
-> Hi Greg,
+On Tue, 9 Aug 2011, Jesper Juhl wrote:
+
+> Just happened again, this time with 3.0.1 :
 > 
-> 2011/6/28 Németh Márton <nm127@freemail.hu>:
-> > From: Márton Németh <nm127@freemail.hu>
-> >
-> > USBIP v1.0.0 protocol documentation.
-> >
-> > Signed-off-by: Márton Németh <nm127@freemail.hu>
-> > ---
-> >
-> > Hi,
-> >
-> > I tried to document the USBIP protocol as implemented in the Linux kernel 3.0-rc2.
-> >
-> > The description is a preliminary draft only, it may contain mistakes. I tried
-> > to document what I have understand from the source code and from the actual
-> > captured network traffic when the USBIP is in action. Please review it, correct it,
-> > point out the missing parts.
-> >
-> > During I have documented the protocol a question came into my mind: why do we
-> > have two different type of package when the URB completition handler is called,
-> > namely USB_RET_SUBMIT and USBIP_RET_UNLINK? As far as I can see this causes race
-> > condition because for one URB the completition handler is only called once. If
-> > the one URB is sent in with USB_CMD_SUBMIT and then unlinked with USB_CMD_UNLINK
-> > the completition handler is called only once. In the protocol, however, we have
-> > two different type of packets: USB_RET_SUBMIT and USBIP_RET_UNLINK. The status
-> > field of these messages may contain anything in this case depending on the timing.
-> >
-> > Regards,
-> >
-> >        Márton Németh
-> 
-> Sorry, just one question about the usbip protocol document.
-> I would like to know why didn't you apply this patch.
+> [30377.372749] ------------[ cut here ]------------
+> [30377.372779] WARNING: at drivers/net/e1000e/netdev.c:5235 __e1000_shutdown+0x43f/0x4c0 [e1000e]()
+> [30377.372783] Hardware name: 4384GJG
+> [30377.372786] Modules linked in: vboxnetadp vboxnetflt vboxdrv appletalk ipx p8022 psnap llc p8023 ipv6 snd_hda_codec_hdmi snd_hda_codec_conexant uvcvideo videodev media v4l2_compat_ioctl32 snd_hda_intel snd_hda_codec snd_hwdep snd_pcm cpufreq_ondemand serio_raw arc4 snd_timer snd_page_alloc psmouse i915 drm_kms_helper sg msr drm acpi_cpufreq iwlagn i2c_algo_bit mac80211 freq_table video evdev e1000e firewire_ohci i2c_i801 battery mxm_wmi i2c_core cfg80211 mei(C) tpm_tis firewire_core iTCO_wdt ac iTCO_vendor_support tpm intel_agp crc_itu_t sdhci_pci sdhci mmc_core intel_ips intel_gtt tpm_bios thermal pcspkr wmi mperf processor button thinkpad_acpi rfkill snd soundcore nvram ext4 mbcache jbd2 crc16 sr_mod cdrom sd_mod usbhid hid ahci libahci libata ehci_hcd scsi_mod usbcore [last unloaded: vboxdrv]
+> [30377.372876] Pid: 17558, comm: kworker/1:0 Tainted: G         C  3.0-ARCH #1
+> [30377.372879] Call Trace:
+> [30377.372895]  [<ffffffff8105c7bf>] warn_slowpath_common+0x7f/0xc0
+> [30377.372898]  [<ffffffff8105c81a>] warn_slowpath_null+0x1a/0x20
+> [30377.372902]  [<ffffffffa02603cf>] __e1000_shutdown+0x43f/0x4c0 [e1000e]
+> [30377.372906]  [<ffffffffa0260489>] e1000_runtime_suspend+0x39/0x50 [e1000e]
+> [30377.372911]  [<ffffffff81240b9d>] pci_pm_runtime_suspend+0x4d/0x100
 
-Because it was sent as a "RFC" (i.e. request for comments) and based on
-the discussion afterward, there were lots of comments :)
+It seems to me that this is a bug in the e1000e driver.  Therefore you 
+should CC: the maintainer for that driver; that's who is most likely to 
+be able to fix it.
 
-If someone wants to resend it to me, without that marking, I'll be glad
-to apply it.
+Alan Stern
 
-thanks,
-
-greg k-h
