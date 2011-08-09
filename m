@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab1HILkW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 07:40:22 -0400
-Received: from mail-iy0-f170.google.com ([209.85.210.170]:33560 "EHLO
-	mail-iy0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753134Ab1HILkV (ORCPT
+	id S1753406Ab1HILnw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 07:43:52 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59469 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753134Ab1HILnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 07:40:21 -0400
-Subject: [PATCH] drivers/leds: leds-renesas-tpu.c needs module.h
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Magnus Damm <damm@opensource.se>, Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Aug 2011 19:40:08 +0800
-Message-ID: <1312890008.14708.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Tue, 9 Aug 2011 07:43:51 -0400
+Message-ID: <4E411D72.7000604@linutronix.de>
+Date: Tue, 09 Aug 2011 13:43:46 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Chris Wright <chrisw@redhat.com>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Anthony Foiani <anthony.foiani@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uio/gen-pci: don't enable interrupts in ISR
+References: <20110804204606.GA19724@linutronix.de> <20110804210413.GA29222@redhat.com> <20110805191842.GA4224@linutronix.de> <20110808064050.GC5182@redhat.com>
+In-Reply-To: <20110808064050.GC5182@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-leds-renesas-tpu.c needs to include linux/module.h to fix below build errors.
+Michael S. Tsirkin wrote:
+>> It seems to me that you could drop this "user block" thing
+>> since you never change anything outside of this command register and it
+>> does not stop the race.
+> 
+> I don't think so: if we did, we would lose userspace modifications to
+> other bits such as io enable, and there's no way to guess what their
+> values should be.
 
-  CC      drivers/leds/leds-renesas-tpu.o
-drivers/leds/leds-renesas-tpu.c:341: error: expected declaration specifiers or '...' before string constant
-drivers/leds/leds-renesas-tpu.c:341: warning: data definition has no type or storage class
-drivers/leds/leds-renesas-tpu.c:341: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
-drivers/leds/leds-renesas-tpu.c:341: warning: function declaration isn't a prototype
-drivers/leds/leds-renesas-tpu.c:342: error: expected declaration specifiers or '...' before string constant
-drivers/leds/leds-renesas-tpu.c:342: warning: data definition has no type or storage class
-drivers/leds/leds-renesas-tpu.c:342: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
-drivers/leds/leds-renesas-tpu.c:342: warning: function declaration isn't a prototype
-drivers/leds/leds-renesas-tpu.c:343: error: expected declaration specifiers or '...' before string constant
-drivers/leds/leds-renesas-tpu.c:343: warning: data definition has no type or storage class
-drivers/leds/leds-renesas-tpu.c:343: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
-drivers/leds/leds-renesas-tpu.c:343: warning: function declaration isn't a prototype
-make[2]: *** [drivers/leds/leds-renesas-tpu.o] Error 1
-make[1]: *** [drivers/leds] Error 2
-make: *** [drivers] Error 2
+How so?
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/leds/leds-renesas-tpu.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/leds/leds-renesas-tpu.c b/drivers/leds/leds-renesas-tpu.c
-index 5bfb40e1..d9a7d72 100644
---- a/drivers/leds/leds-renesas-tpu.c
-+++ b/drivers/leds/leds-renesas-tpu.c
-@@ -17,6 +17,7 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-  */
- 
-+#include <linux/module.h>
- #include <linux/init.h>
- #include <linux/platform_device.h>
- #include <linux/spinlock.h>
--- 
-1.7.4.1
-
-
-
+Sebastian
