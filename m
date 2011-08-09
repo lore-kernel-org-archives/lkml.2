@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614Ab1HISfe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 14:35:34 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50398 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab1HISfd convert rfc822-to-8bit (ORCPT
+	id S1752751Ab1HIShh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 14:37:37 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:47481 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751239Ab1HIShg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 14:35:33 -0400
-Subject: Re: [PATCH 4/5] writeback: per task dirty rate limit
-From: Peter Zijlstra <peterz@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Andrea Righi <arighi@develer.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 09 Aug 2011 20:35:06 +0200
-In-Reply-To: <20110806094527.002914580@intel.com>
-References: <20110806084447.388624428@intel.com>
-	 <20110806094527.002914580@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2- 
-Message-ID: <1312914906.1083.71.camel@twins>
-Mime-Version: 1.0
+	Tue, 9 Aug 2011 14:37:36 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] mfd/tc3589x: add missing #ifdef around PM block
+Date: Tue, 9 Aug 2011 20:37:17 +0200
+Message-ID: <1312915037-9716-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-08-06 at 16:44 +0800, Wu Fengguang wrote:
-> 
-> Add two fields to task_struct.
-> 
-> 1) account dirtied pages in the individual tasks, for accuracy
-> 2) per-task balance_dirty_pages() call intervals, for flexibility
-> 
-> The balance_dirty_pages() call interval (ie. nr_dirtied_pause) will
-> scale near-sqrt to the safety gap between dirty pages and threshold.
-> 
-> XXX: The main problem of per-task nr_dirtied is, if 10k tasks start
-> dirtying pages at exactly the same time, each task will be assigned a
-> large initial nr_dirtied_pause, so that the dirty threshold will be
-> exceeded long before each task reached its nr_dirtied_pause and hence
-> call balance_dirty_pages(). 
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Right, so why remove the per-cpu threshold? you can keep that as a bound
-on the number of out-standing dirty pages.
+The CONFIG_PM code was unconditionally compiled in despite
+the dev_pm_ops only being included into the driver struct
+if used. Fix this by adding the missing #ifdef.
 
-Loosing that bound is actually a bad thing (TM), since you could have
-configured a tight dirty limit and lock up your machine this way.
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/mfd/tc3589x.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
+index c27e515..de97974 100644
+--- a/drivers/mfd/tc3589x.c
++++ b/drivers/mfd/tc3589x.c
+@@ -357,6 +357,7 @@ static int __devexit tc3589x_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
+ static int tc3589x_suspend(struct device *dev)
+ {
+ 	struct tc3589x *tc3589x = dev_get_drvdata(dev);
+@@ -387,6 +388,7 @@ static int tc3589x_resume(struct device *dev)
+ 
+ static const SIMPLE_DEV_PM_OPS(tc3589x_dev_pm_ops, tc3589x_suspend,
+ 						tc3589x_resume);
++#endif
+ 
+ static const struct i2c_device_id tc3589x_id[] = {
+ 	{ "tc3589x", 24 },
+-- 
+1.7.3.2
+
