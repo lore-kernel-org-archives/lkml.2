@@ -1,211 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483Ab1HIH0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 03:26:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33455 "EHLO mx2.suse.de"
+	id S1752672Ab1HIHlK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 03:41:10 -0400
+Received: from mga02.intel.com ([134.134.136.20]:2511 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752196Ab1HIH0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 03:26:18 -0400
-Date: Tue, 9 Aug 2011 09:26:15 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] memcg: get rid of percpu_charge_mutex lock
-Message-ID: <20110809072615.GA7463@tiehlicka.suse.cz>
-References: <cover.1311338634.git.mhocko@suse.cz>
- <a9244082ba28c4c2e4a6997311d5493bdaa117e9.1311338634.git.mhocko@suse.cz>
- <20110808184738.GA7749@redhat.com>
- <20110808214704.GA4396@tiehlicka.suse.cz>
- <20110808231912.GA29002@redhat.com>
+	id S1751468Ab1HIHlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 03:41:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,342,1309762800"; 
+   d="scan'208";a="36675986"
+Date: Tue, 9 Aug 2011 10:41:41 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Seemanta Dutta <seemanta@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: kdump: Trouble reading /dev/oldmem from capture kernel
+Message-ID: <20110809074141.GF16790@intel.com>
+References: <3f4665f1a191945db7c1711ecd154509.squirrel@www.codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110808231912.GA29002@redhat.com>
+In-Reply-To: <3f4665f1a191945db7c1711ecd154509.squirrel@www.codeaurora.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-08-11 01:19:12, Johannes Weiner wrote:
-> On Mon, Aug 08, 2011 at 11:47:04PM +0200, Michal Hocko wrote:
-> > On Mon 08-08-11 20:47:38, Johannes Weiner wrote:
-> > [...]
-> > > > --- a/mm/memcontrol.c
-> > > > +++ b/mm/memcontrol.c
-> > > > @@ -2071,7 +2071,6 @@ struct memcg_stock_pcp {
-> > > >  #define FLUSHING_CACHED_CHARGE	(0)
-> > > >  };
-> > > >  static DEFINE_PER_CPU(struct memcg_stock_pcp, memcg_stock);
-> > > > -static DEFINE_MUTEX(percpu_charge_mutex);
-> > > >  
-> > > >  /*
-> > > >   * Try to consume stocked charge on this cpu. If success, one page is consumed
-> > > > @@ -2178,7 +2177,8 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
-> > > >  
-> > > >  	for_each_online_cpu(cpu) {
-> > > >  		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
-> > > > -		if (test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
-> > > > +		if (mem_cgroup_same_or_subtree(root_mem, stock->cached) &&
-> > > > +				test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
-> > > >  			flush_work(&stock->work);
-> > > >  	}
-> > > >  out:
-> > > 
-> > > This hunk triggers a crash for me, as the draining is already done and
-> > > stock->cached reset to NULL when dereferenced here.  Oops is attached.
-> > 
-> > Thanks for catching this. We are racing synchronous drain from
-> > force_empty and async drain from reclaim, I guess.
+On Fri, Aug 05, 2011 at 02:01:03PM -0700, Seemanta Dutta wrote:
 > 
-> It's at the end of a benchmark where several tasks delete the cgroups.
-> There is no reclaim going on anymore, it must be several sync drains
-> from force_empty of different memcgs.
+> 2. Dump capture kernel provides two interfaces to access 'old' kernel
+> memory (as per kdump dpcumentation): /dev/oldmem and /proc/vmcore. The
+> latter works perfectly. But I am more interested in the raw memory, rather
+> than the core file.
 
-I am afraid it is worse than that. Sync. drainer can kick itself really
-trivial just by doing local draining. Then stock->cached is guaranteed
-to be NULL when we reach this...
+Is there some specific reason to use /dev/oldmem instead? At least I've
+never needed that interface. crash utility works pretty well with
+/dev/vmcore.
 
-[...]
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index f4ec4e7..626c916 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -2197,8 +2197,10 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
-> >  
-> >  	for_each_online_cpu(cpu) {
-> >  		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
-> > -		if (mem_cgroup_same_or_subtree(root_mem, stock->cached) &&
-> > -				test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
-> > +		struct mem_cgroup *mem = stock->cached;
-> > +		if (test_bit(FLUSHING_CACHED_CHARGE, &stock->flags) &&
-> > +				 mem && mem_cgroup_same_or_subtree(root_mem, mem)
-> > +				)
-> >  			flush_work(&stock->work);
-> >  	}
-> >  out:
+> My expectation in this scenario was that I would be able to access entire
+> physical RAM using the /dev/oldmem device. But turns out, I can't.
 > 
-> This ordering makes sure that mem is a sensible pointer, but it still
-> does not pin the object, *mem, which could go away the femtosecond
-> after the test_bit succeeds.
-
-Yes there are possible races
-	CPU0			CPU1				CPU2
-mem = stock->cached
-			stock->cached = NULL
-			clear_bit
-							    test_and_set_bit
-test_bit()
-<preempted>		...
-			mem_cgroup_destroy
-use after free
-
-The race is not very probable because we are doing quite a bunch of work
-before we can deallocate mem. mem_cgroup_destroy is called after
-synchronize_rcu so we can close the race by rcu_read_lock, right?
-
-
-[...]
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index f4ec4e7..eca46141 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -2179,17 +2179,23 @@ static void drain_all_stock(struct mem_cgroup *root_mem, bool sync)
-> >  		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
-> >  		struct mem_cgroup *mem;
-> >  
-> > +		/* Try to lock the cache */
-> > +		if(test_and_set_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
-> > +			continue;
-> > +
-> >  		mem = stock->cached;
-> >  		if (!mem || !stock->nr_pages)
-> > -			continue;
-> > +			goto unlock_cache;
-> >  		if (!mem_cgroup_same_or_subtree(root_mem, mem))
-> > -			continue;
-> > -		if (!test_and_set_bit(FLUSHING_CACHED_CHARGE, &stock->flags)) {
-> > -			if (cpu == curcpu)
-> > -				drain_local_stock(&stock->work);
-> > -			else
-> > -				schedule_work_on(cpu, &stock->work);
-> > -		}
-> > +			goto unlock_cache;
+> I would be grateful if anyone pointed out if I was doing something wrong
+> or missing something.
 > 
-> So one thread locks the cache, recognizes stock->cached is not in the
-> right hierarchy and unlocks again.  While the cache was locked, a
-> concurrent drainer with the right hierarchy skipped the stock because
-> it was locked.  That doesn't sound right.
+> This is happening over ARM. Could that have to do something with this ?
+> Not sure if the ARM integration of KDUMP/KEXEC has something to do with
+> it.
 
-You are right. We have to make it less parallel.
-
-> 
-> But yes, we probably need exclusive access to the stock state.
-> 
-> > +
-> > +		if (cpu == curcpu)
-> > +			drain_local_stock(&stock->work);
-> > +		else
-> > +			schedule_work_on(cpu, &stock->work);
-> > +		continue;
-> > +unlock_cache:
-> > +		clear_bit(FLUSHING_CACHED_CHARGE, &stock->flags);
-> > 
-> >                 ^^^^^
-> > 		need a barrier?
-> >  	}
-> >  
-> >  	if (!sync)
-> >  
-> > > Without the mutex serializing this code, can't there be a concurrent
-> > > execution that leads to stock->cached being drained, becoming empty
-> > > and freed by someone else between the stock->nr_pages check and the
-> > > ancestor check, resulting in use after free?
-> > > 
-> > > What makes stock->cached safe to dereference?
-> > 
-> > We are using FLUSHING_CACHED_CHARGE as a lock for local draining. I
-> > guess it should be sufficient.
-> > 
-> > mutex which was used previously caused that async draining was exclusive
-> > so a root_mem that has potentially many relevant caches has to back off
-> > because other mem wants to clear the cache on the same CPU.
-> 
-> It's now replaced by what is essentially a per-stock bit-spinlock that
-> is always trylocked.
-
-Yes.
-
-> 
-> Would it make sense to promote it to a real spinlock?  Draining a
-> stock is pretty fast, there should be minimal lock hold times, but we
-> would still avoid that tiny race window where we would skip otherwise
-> correct stocks just because they are locked.
-
-Yes, per-stock spinlock will be easiest way because if tried other games
-with atomics we would endup with a more complicated refill_stock which
-can race with draining as well.
-
-> > I will think about this tomorrow (with fresh eyes). I think we should be
-> > able to be without mutex.
-> 
-> The problem is that we have a multi-op atomic section, so we can not
-> go lockless.  We can read the stock state just fine, and order
-> accesses to different members so that we get a coherent image.  But
-> there is still nothing that pins the charge to the memcg, and thus
-> nothing that stabilizes *stock->cached.
-> 
-> I agree that we can probably do better than a global lock, though.
-
-Fully agreed. I will send a patch after I give it some testing.
-
-Thanks!
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+I haven't tried lately but it looks like ARM is missing setting of
+'saved_max_pfn' which could explain why it works that way.
