@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab1HIRqo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 13:46:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40773 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754210Ab1HIRqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 13:46:43 -0400
-Date: Tue, 9 Aug 2011 13:46:21 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, Greg Thelen <gthelen@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] writeback: per task dirty rate limit
-Message-ID: <20110809174621.GF6482@redhat.com>
-References: <20110806084447.388624428@intel.com>
- <20110806094527.002914580@intel.com>
+	id S1754336Ab1HIRvQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 13:51:16 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:57921 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753373Ab1HIRvP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 13:51:15 -0400
+Date: Tue, 9 Aug 2011 19:51:10 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org,
+        Jens Axboe <jaxboe@fusionio.com>, Vivek Goyal <vgoyal@redhat.com>,
+        dm-devel@redhat.com
+Subject: Re: block: properly handle flush/fua requests in
+ blk_insert_cloned_request
+Message-ID: <20110809175110.GE23842@htj.dyndns.org>
+References: <x49y5z2eibl.fsf@segfault.boston.devel.redhat.com>
+ <20110809153826.GB23842@htj.dyndns.org>
+ <x49liv2eg34.fsf@segfault.boston.devel.redhat.com>
+ <20110809161334.GC23842@htj.dyndns.org>
+ <20110809174347.GA13293@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110806094527.002914580@intel.com>
+In-Reply-To: <20110809174347.GA13293@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 06, 2011 at 04:44:51PM +0800, Wu Fengguang wrote:
+Hello,
 
-[..]
->   * balance_dirty_pages() must be called by processes which are generating dirty
->   * data.  It looks at the number of dirty pages in the machine and will force
->   * the caller to perform writeback if the system is over `vm_dirty_ratio'.
-> @@ -1008,6 +1005,9 @@ static void balance_dirty_pages(struct a
->  	if (clear_dirty_exceeded && bdi->dirty_exceeded)
->  		bdi->dirty_exceeded = 0;
->  
-> +	current->nr_dirtied = 0;
-> +	current->nr_dirtied_pause = ratelimit_pages(nr_dirty, dirty_thresh);
-> +
->  	if (writeback_in_progress(bdi))
->  		return;
->  
-> @@ -1034,8 +1034,6 @@ void set_page_dirty_balance(struct page 
->  	}
->  }
->  
-> -static DEFINE_PER_CPU(unsigned long, bdp_ratelimits) = 0;
-> -
->  /**
->   * balance_dirty_pages_ratelimited_nr - balance dirty memory state
->   * @mapping: address_space which was dirtied
-> @@ -1055,30 +1053,17 @@ void balance_dirty_pages_ratelimited_nr(
->  {
->  	struct backing_dev_info *bdi = mapping->backing_dev_info;
->  	unsigned long ratelimit;
-> -	unsigned long *p;
->  
->  	if (!bdi_cap_account_dirty(bdi))
->  		return;
->  
-> -	ratelimit = ratelimit_pages;
-> -	if (mapping->backing_dev_info->dirty_exceeded)
-> +	ratelimit = current->nr_dirtied_pause;
-> +	if (bdi->dirty_exceeded)
->  		ratelimit = 8;
+On Tue, Aug 09, 2011 at 01:43:47PM -0400, Mike Snitzer wrote:
+> [cc'ing dm-devel]
+> 
+> All of these issues have come to light because DM was not setting
+> flush_flags based on the underlying device(s).  Now fixed in v3.1-rc1:
+> ed8b752 dm table: set flush capability based on underlying devices
+> 
+> Given that commit, and that request-based DM is beneath the elevator, it
+> seems any additional effort to have DM flushes re-enter the flush
+> machinary is unnecessary.
 
-Should we make sure that ratelimit is more than 8? It could be that
-ratelimit is 1 and we set it higher (just reverse of what we wanted?)
+Hmmm... what if the underlying devices have different featureset?  Use
+the lowest common denominator?  The flush mechanism is designed to
+deal with stacking by going through flush at each level.  Stacking
+queue can simply export support for both REQ_FLUSH and FUA and the
+lower lever queue will decompose them according to the capability
+supported by the actual device.
 
-Thanks
-Vivek
+IIUC, what's broken here is some insert functions aren't using
+ELEVATOR_INSERT_FLUSH when needed and there are some issues due to the
+special nature of the stacked requests which I think should be fixed.
+
+Thanks.
+
+-- 
+tejun
