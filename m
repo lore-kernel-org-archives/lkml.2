@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695Ab1HIPic (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 11:38:32 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:57122 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753595Ab1HIPib (ORCPT
+	id S1753665Ab1HIPlA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 11:41:00 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18930 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753178Ab1HIPk6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 11:38:31 -0400
-Date: Tue, 9 Aug 2011 17:38:26 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>,
-        Mike Snitzer <msnitzer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [patch] block: properly handle flush/fua requests in
- blk_insert_cloned_request
-Message-ID: <20110809153826.GB23842@htj.dyndns.org>
-References: <x49y5z2eibl.fsf@segfault.boston.devel.redhat.com>
+	Tue, 9 Aug 2011 11:40:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,344,1309762800"; 
+   d="scan'208";a="37339424"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Andy Lutomirski <luto@MIT.EDU>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Anvin, H Peter" <h.peter.anvin@intel.com>
+Date: Tue, 9 Aug 2011 08:40:06 -0700
+Subject: RE: [PATCH v3 1/2] x86: Enable fast strings on Intel if BIOS hasn't
+ already
+Thread-Topic: [PATCH v3 1/2] x86: Enable fast strings on Intel if BIOS
+ hasn't already
+Thread-Index: AcxWkaMquDEgaC6aRVyD4/LS5ifVIgAGMjbw
+Message-ID: <493994B35A117E4F832F97C4719C4C040132CE80CE@orsmsx505.amr.corp.intel.com>
+References: <cover.1312893572.git.luto@mit.edu>
+ <d9f3056c77b6cd44a2f4c90278ce483a011dda12.1312893572.git.luto@mit.edu>
+In-Reply-To: <d9f3056c77b6cd44a2f4c90278ce483a011dda12.1312893572.git.luto@mit.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49y5z2eibl.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> -----Original Message-----
+> From: Andy Lutomirski [mailto:luto@MIT.EDU]
+> Sent: Tuesday, August 09, 2011 5:41 AM
+> To: x86@kernel.org; linux-kernel@vger.kernel.org
+> Cc: Yu, Fenghua; Matthew Garrett; Len Brown; linux-
+> acpi@vger.kernel.org; Ingo Molnar; Andy Lutomirski
+> Subject: [PATCH v3 1/2] x86: Enable fast strings on Intel if BIOS
+> hasn't already
+> 
+> Intel SDM volume 3A, 8.4.2 says:
+> 
+>   Software can disable fast-string operation by clearing the
+>   fast-string-enable bit (bit 0) of IA32_MISC_ENABLE MSR.
+>   However, Intel recomments that system software always enable
+>   fast-string operation.
+> 
+> The Intel DQ67SW board (with latest BIOS) disables fast string
+> operations if TXT is enabled.  A Lenovo X220 disables it regardless
+> of TXT setting.  I doubt I'm the only person with a dumb BIOS like
+> this.
+> 
+> Signed-off-by: Andy Lutomirski <luto@mit.edu>
+> ---
+>  arch/x86/kernel/cpu/intel.c |   28 +++++++++++++++++++++++-----
+>  1 files changed, 23 insertions(+), 5 deletions(-)
 
-On Tue, Aug 09, 2011 at 11:05:34AM -0400, Jeff Moyer wrote:
-> @@ -1708,6 +1710,21 @@ int blk_insert_cloned_request(struct request_queue *q, struct request *rq)
->  	    should_fail_request(&rq->rq_disk->part0, blk_rq_bytes(rq)))
->  		return -EIO;
->  
-> +	/*
-> +	 * Check the cmd_flags against the flush flags of the underlying
-> +	 * request_queue and resolve any differences.
-> +	 */
-> +	if (rq->cmd_flags & (REQ_FLUSH|REQ_FUA)) {
-> +		if (!(q->flush_flags & REQ_FLUSH))
-> +			rq->cmd_flags &= ~REQ_FLUSH;
-> +		if (!(q->flush_flags & REQ_FUA))
-> +			rq->cmd_flags &= ~REQ_FUA;
-> +		if (!(rq->cmd_flags & REQ_FLUSH) && !blk_rq_sectors(rq)) {
-> +			blk_end_bidi_request(rq, 0, 0, 0);
-> +			return 0;
-> +		}
-> +	}
-> +
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 
-I'm a bit confused.  We still need ELEVATOR_INSERT_FLUSH fix for
-insertion paths, right?  Or is blk_insert_cloned_request() supposed to
-used only by request based dm which lives under the elevator?  If so,
-it would be great to make that explicit in the comment.  Maybe just
-renaming it to blk_insert_dm_cloned_request() would be better as it
-wouldn't be safe for other cases anyway.
-
-> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-> index 6395692..4fe753f 100644
-> --- a/include/linux/blk_types.h
-> +++ b/include/linux/blk_types.h
-> @@ -168,7 +168,7 @@ enum rq_flag_bits {
->  #define REQ_COMMON_MASK \
->  	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_SYNC | REQ_META | REQ_DISCARD | \
->  	 REQ_NOIDLE | REQ_FLUSH | REQ_FUA | REQ_SECURE)
-> -#define REQ_CLONE_MASK		REQ_COMMON_MASK
-> +#define REQ_CLONE_MASK		(REQ_COMMON_MASK | REQ_FLUSH_SEQ)
-
-Given the weirdness, I think it deserves fat comment on why
-REQ_FLUSH_SEQ is necessary.
-
-Thanks.
-
--- 
-tejun
