@@ -1,113 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab1HIPQg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 11:16:36 -0400
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:40886 "EHLO
-	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab1HIPQf (ORCPT
+	id S1753233Ab1HIPSU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 11:18:20 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:39896 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760Ab1HIPST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 11:16:35 -0400
-Subject: [PATCH] [RFC] BTUSB: be quiet on device disconnect
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-bluetooth@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Aug 2011 17:16:28 +0200
-Message-ID: <1312902988.1853.24.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Aug 2011 11:18:19 -0400
+Date: Tue, 9 Aug 2011 16:18:10 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Jack Steiner <steiner@sgi.com>, tglx@linutronix.de, davej@redhat.com,
+        yinghan@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] x86: Reduce clock calibration time during slave cpu
+ startup
+Message-ID: <20110809151810.GA14795@srcf.ucam.org>
+References: <20110727135730.GA17717@sgi.com>
+ <20110727140523.GA24206@redhat.com>
+ <20110727141527.GA8453@sgi.com>
+ <20110727155200.GA25381@redhat.com>
+ <20110801184542.GA3939@sgi.com>
+ <20110805104635.GB13055@elte.hu>
+ <20110805131638.GA27779@sgi.com>
+ <20110805213836.GB21114@elte.hu>
+ <20110807003642.GA4442@srcf.ucam.org>
+ <20110809150624.GG28228@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110809150624.GG28228@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disabling the bluetooth usb device embedded in (some) ThinkPads tends to
-lead to errors like these:
-    btusb_bulk_complete: hci0 urb ffff88011b9bfd68 failed to resubmit (19)
-    btusb_intr_complete: hci0 urb ffff88011b46a318 failed to resubmit (19)
-    btusb_bulk_complete: hci0 urb ffff88011b46a000 failed to resubmit (19)
+On Tue, Aug 09, 2011 at 05:06:24PM +0200, Ingo Molnar wrote:
 
-That is because usb_disconnect() doesn't "quiesces" pending urbs.
+> The delay loop might be calibrated against the TSC, but the amount of 
+> real delay we get when we loop 100,000 times will be frequency 
+> dependent.
 
-Disconnecting a device is a normal thing to happen so it's no big deal
-that usb_submit_urb() returns -ENODEV. The simplest way to get rid of
-these errors is to stop treating that return as an error. Trivial,
-actually.
+We don't have a situation where a system boots with one core in a 
+package fixed at one frequency and another core in the same package at 
+another. It's possible that they'll float independently due to cpufreq 
+changes (although that's not possible with most current hardware), but 
+we need to take that into account anyway.
 
-While we're at it, add comments to be explicit about the reasons we're
-not complaining about -EPERM and -ENODEV.
+> What we probably want is the most conservative udelay calibration: 
+> have a lpj value measured on the highest possible frequency - this 
+> way hardware components can never be overclocked by a driver.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) This patch seems to put an end to a pet peeve of mine: the errors in
-the logs of a ThinkPad when I disable its embedded bluetooth.
+There's no way to force the highest possible frequency. Calibration 
+occurs before cpuidle is running, and the only way to get the maximum 
+frequency on a given core is to have all the other cores in C6.
 
-1) I added Greg and linux-usb@vger.kernel.org because usb_submit_urb()
-doesn't specify the meaning of its negative return values. I traced
--EPERM to usb_hcd_link_urb_to_ep(). That returns -EPERM if the urb is
-"being killed". Did I trace the calls made by usb_submit_urb()
-correctly? I also just assumed that -ENODEV always means device got
-disconnected or something comparable. Is that correct too?
+> Or does udelay() scale with the current frequency of the CPU?
 
-2) Sent as an RFC because btusb's btusb_*_complete() functions puzzle
-me. If I read their code correctly these three functions will be an
-urb's completion handler when usb_submit_urb() is called on that urb.
-This means they will be called when usb_submit_urb() is done doing its
-stuff. But they themselves also call usb_submit_urb()! So, apparently,
-there's this endless loop:
-    usb_submit_urb()
-        btusb_*_complete()
-           usb_submit_urb()
-               [...]
-
-It seems that usb_submit_urb() returning -EPERM is the expected way for
-this loop to end. Am I reading this correctly? If so, doesn't this need
-some comments to explain that? But perhaps calling usb_submit_urb() in a
-completion handler is a common pattern for usb devices.
-
- drivers/bluetooth/btusb.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 91d13a9..9e4448e 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -256,7 +256,9 @@ static void btusb_intr_complete(struct urb *urb)
- 
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err < 0) {
--		if (err != -EPERM)
-+		/* -EPERM: urb is being killed;
-+		 * -ENODEV: device got disconnected */
-+		if (err != -EPERM && err != -ENODEV)
- 			BT_ERR("%s urb %p failed to resubmit (%d)",
- 						hdev->name, urb, -err);
- 		usb_unanchor_urb(urb);
-@@ -341,7 +343,9 @@ static void btusb_bulk_complete(struct urb *urb)
- 
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err < 0) {
--		if (err != -EPERM)
-+		/* -EPERM: urb is being killed;
-+		 * -ENODEV: device got disconnected */
-+		if (err != -EPERM && err != -ENODEV)
- 			BT_ERR("%s urb %p failed to resubmit (%d)",
- 						hdev->name, urb, -err);
- 		usb_unanchor_urb(urb);
-@@ -431,7 +435,9 @@ static void btusb_isoc_complete(struct urb *urb)
- 
- 	err = usb_submit_urb(urb, GFP_ATOMIC);
- 	if (err < 0) {
--		if (err != -EPERM)
-+		/* -EPERM: urb is being killed;
-+		 * -ENODEV: device got disconnected */
-+		if (err != -EPERM && err != -ENODEV)
- 			BT_ERR("%s urb %p failed to resubmit (%d)",
- 						hdev->name, urb, -err);
- 		usb_unanchor_urb(urb);
+If it doesn't then it's been broken for the past 8 years or so.
 -- 
-1.7.4.4
-
+Matthew Garrett | mjg59@srcf.ucam.org
