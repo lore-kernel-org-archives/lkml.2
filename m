@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787Ab1HIPuc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 11:50:32 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:25183 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab1HIPub (ORCPT
+	id S1753844Ab1HIPvN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 11:51:13 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:58042 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028Ab1HIPvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 11:50:31 -0400
-Date: Tue, 9 Aug 2011 11:50:14 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@eu.citrix.com>
-Cc: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen: modify kernel mappings corresponding to granted
- pages
-Message-ID: <20110809155014.GA4237@dumpdata.com>
-References: <1311699345-32579-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <20110809023407.GA13905@dumpdata.com>
- <1312893028.26263.129.camel@zakaz.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1312893028.26263.129.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090202.4E415741.0016,ss=1,re=0.000,fgs=0
+	Tue, 9 Aug 2011 11:51:12 -0400
+Date: Tue, 09 Aug 2011 08:50:49 -0700 (PDT)
+Message-Id: <20110809.085049.747100276988072226.davem@davemloft.net>
+To: stufever@gmail.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Sandeep.Kumar@freescale.com, wangshaoyan.pt@taobao.com
+Subject: Re: [PATCH] gianfar: reduce stack usage in gianfar_ethtool.c
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1312904711-1855-1-git-send-email-wangshaoyan.pt@taobao.com>
+References: <1312904711-1855-1-git-send-email-wangshaoyan.pt@taobao.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 09 Aug 2011 08:51:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > So I hadn't looked at this in detail, but I wonder if we can use the
-> > MULTIcall for this? It looks like we need to do two hypercalls so why
-> > not batch it?
-> 
-> That was going to be my next question. We should definitely batch these
-> if possible.
-> 
-> > And while we are it - we could change the MMU ops to only do this on
-> > initial domain and for the domU case do the old mechanism?
-> 
-> We need this in domU for driver domains and the like, don't we?
+From: stufever@gmail.com
+Date: Tue,  9 Aug 2011 23:45:11 +0800
 
-Sure, but I believe the majority of domU domains would not require this.
+> From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+> 
+>   drivers/net/gianfar_ethtool.c:765: warning: the frame size of 2048 bytes is larger than 1024 bytes
+> 
+> Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
 
-I was thinking that when we start playing with the device/driver domains
-we would want to escalate the privilige level (or perhaps not)? Or
-perhaps introcuce a new type - "if (xen_driver_domain())" to recognize
-that we are special ?
+Would you be so kind as to actually acknowledge in some way the person
+who found all the bugs in your first version of this patch? :-/
 
