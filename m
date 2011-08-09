@@ -1,157 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab1HIJAR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 05:00:17 -0400
-Received: from exprod5og107.obsmtp.com ([64.18.0.184]:39373 "EHLO
-	exprod5og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab1HIJAO (ORCPT
+	id S1752472Ab1HIJC4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 05:02:56 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:47824 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab1HIJCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 05:00:14 -0400
-Message-ID: <4E40F719.1020100@ge.com>
-Date: Tue, 09 Aug 2011 10:00:09 +0100
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Tue, 9 Aug 2011 05:02:54 -0400
 MIME-Version: 1.0
-To: "Emilio G. Cota" <cota@braap.org>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/8] staging: vme: add functions for bridge module refcounting
-References: <20110804163451.GA18422@flamenco.cs.columbia.edu> <4E3B9FA2.3060303@ge.com> <20110805090416.GA4806@becoht-mvanga> <4E3BB6E7.6020809@ge.com> <20110805174728.GA1741@flamenco.cs.columbia.edu> <4E3F97EA.2020600@ge.com> <20110808091432.GA19570@flamenco.cs.columbia.edu> <4E3FABDA.8080204@ge.com> <20110808101140.GA21300@flamenco.cs.columbia.edu> <4E3FC33D.2080202@ge.com> <20110808172216.GA2311@flamenco.cs.columbia.edu>
-In-Reply-To: <20110808172216.GA2311@flamenco.cs.columbia.edu>
-X-Enigmail-Version: 1.1.2
+In-Reply-To: <CAC5umyhWr8t7HyQVEn-W-7HSaeESnTLX8okcQNqPO6mYFuWtUg@mail.gmail.com>
+References: <1312834049-29910-1-git-send-email-per.forlin@linaro.org>
+	<CAC5umyhWr8t7HyQVEn-W-7HSaeESnTLX8okcQNqPO6mYFuWtUg@mail.gmail.com>
+Date: Tue, 9 Aug 2011 11:02:53 +0200
+Message-ID: <CAJ0pr18Mpv7mFHC3NnfqEqtTFd_qgNhH9rZgCENgH0zKmBfFsQ@mail.gmail.com>
+Subject: Re: [PATCH --mmotm v5 0/3] Make fault injection available for MMC IO
+From: Per Forlin <per.forlin@linaro.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: akpm@linux-foundation.org, Linus Walleij <linus.ml.walleij@gmail.com>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Chris Ball <cjb@laptop.org>, linux-doc@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linaro-dev@lists.linaro.org,
+        linux-mm@kvack.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Aug 2011 08:56:52.0968 (UTC) FILETIME=[48829680:01CC5672]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/11 18:22, Emilio G. Cota wrote:
-> On Mon, Aug 08, 2011 at 12:06:37 +0100, Martyn Welch wrote:
->> On 08/08/11 11:11, Emilio G. Cota wrote:
->>> On Mon, Aug 08, 2011 at 10:26:50 +0100, Martyn Welch wrote:
->>>> On 08/08/11 10:14, Emilio G. Cota wrote:
->>>>> Martyn, no one in the kernel is doing what you propose, for
->>>>> good reason. Look at USB, PCI, RapidIO.  They all provide get
->>>>> and put functions to be called from probe and release.
->>>>
->>>> Really, which functions are these for PCI?
->>>
->>> pci_get_dev/put in drivers/pci/pci-driver.c.
->>>
->>
->> Which isn't explicitly used by the vast majority of PCI drivers. In fact the
->> instances which I did find where this was used by a PCI device driver, it
->> appears to be using the old-style PCI probing.
-> 
->> This is taken care of automatically for drivers using the "newer" PCI driver
->> registration model as part of the probe.
-> 
-> And I don't care. The new model is not doing that nor what you suggest
-> anyway, AFAIK it's not incrementing any refcounts for devices--perhaps
-> because it cannot be built as a module? I dunno.
-> 
-> Look at other subsystems that usually sit under PCI, like USB
-> or RapidIO.
-> 
+On 9 August 2011 02:51, Akinobu Mita <akinobu.mita@gmail.com> wrote:
+> All three patches look good.
+> Acked-by: Akinobu Mita <akinobu.mita@gmail.com>
+>
+> 2011/8/9 Per Forlin <per.forlin@linaro.org>:
+>> This patchset is sent to the mm-tree because it depends on Akinobu's patch
+>> "fault-injection: add ability to export fault_attr in..."
+>
+> That patch has already been merged in mainline.
+>
+Please drop this patchset.
+Patch #1 "fault-injection: export fault injection functions" is merged
+too. There is no need to merge this through mm-tree anymore. All
+fault-injection patches needed by MMC fault injection code are merged.
+I'll repost the patchset to mmc-next when mmc-next has moved to 3.1
+code base.
 
-Just did.
-
-RapidIO, defines rio_dev_put() in rio-driver.c, used in the rio_device_probe
-function, so handled much like it is in PCI. Can't see any explicit
-refcounting in the rionet driver.
-
-USB, interestingly here the functions are defined as usb_get_dev() and
-usb_put_dev() (not usb_dev_get() and usb_dev_put()). Here the situation is a
-little different, the refcounting is more explicit, I assume because of the
-hotplug and/or hierarchical nature of the USB bus (maybe Greg would be kind
-enough to explain the rationale?)
-
-So, out of the 3 bus types you have used to demonstrate that refcounts should
-always be handled explicitly, 2 of the 3 (at least to me) appear to implicitly
-handling refcounting.
-
->> No, your driver will be told the resource isn't available by vme_lm_request(),
->> it would return null. It would then be up to you as the driver writer to
->> handle that gracefully. In fact, just as you'd have to do if the location
->> monitor was already being used by a different VME device driver which had
->> positioned them where it needed them.
-> 
-> Ok, we may not oops, but this is unnecessary pain for the driver--and
-> probably not what the driver wanted.
-> 
-
-The location monitor is a single, (location) configurable resource. If it's
-being used for one purpose in one location by a driver, it can't be
-repositioned and used for another purpose by another driver without adversely
-affecting the operation of the first.
-
->>> Remember that we're writing a bus driver here, we shouldn't
->>> get on the way of the drivers for the devices on the bus, no
->>> matter how crazy they are.
->>
->> Actually we're providing resource management and a bridge independent VME API
->> for VME device drivers as part of a bus specific core, much as USB and PCI do.
->> The VME bridge drivers bind under it, the VME device drivers bind on top of it.
->>
->> Crazy probably equates to not portable across different VME bridges
-> 
-> ?? Crazy means crazy. ftrace is crazy, linux-rt is crazy. And
-> they're great.
-> 
-
-I'm sure they are great, not sure I'd describe them as crazy though.
-
->> , so no I don't agree. I'm in favour of providing as much flexibility to VME device
->> driver authors as possible, without impacting the flexibility of the user to
->> use the drivers on top of different VME bridges.
-> 
-> This is nonsense.
-> 
->>> IMHO in order to make sure we're on
->>> the right track we must look at other bus drivers. And these
->>> other drivers just keep things simple and stupid, which is
->>> flexible, safe and "Obviously Correct(tm)".
->>
->> Though I don't think the approach you are advocating is simple for the VME
->> device driver writer (new style PCI drivers don't as a rule directly manage
->> refcounting, in the same way your approach would add complexity for the
->> individual VME device drivers); it's not safe (I deem it unsafe to expect
->> every VME device driver writer to manage the refcounting in their drivers
->> explicitly, just as it appears is the case for PCI devices) and as a result
->> not "Obviously Correct(tm)".
-> 
-> By your definition there are lots of drivers in the kernel
-> that are unsafe..
-> 
-
-It appears to me that both PCI and RapidIO (both buses that you have tried to
-use to defend your position) don't seem to me to by-and-large expect drivers
-to explicitly manage refcounting. That leaves USB, which I'd argue is a very
-different bus to VME.
-
-> I'm tired of your non-arguments. I'm just trying to persuade you
-> to do what everyone else is doing, with technical reasons. To me
-> (and to everybody else in this list, I'd imagine) refcounting
-> should be explicit. You're going against what I perceive are
-> well-established pratices in the kernel. I can't understand it.
-
-Which I have yet to see you convincingly backup. I see a large amount of bluff
-about oppses and how buses apparently deal with refcounting. I also know I
-have had a number of commits to the VME code by a number of others (which is a
-matter of public record, you can look at the commits in git) that haven't
-complained about how the bus code is structured.
-
-You have proposed a completely different structure. Manohar has proposed some
-changes and I am trying to work with him to find a solution that satisfies
-both of us. I'm not going to make any claims about others views, simply
-because as they haven't aired them, I don't currently actually know what they are.
-
-Martyn
-
--- 
-Martyn Welch (Principal Software Engineer) | Registered in England and
-GE Intelligent Platforms                   | Wales (3828642) at 100
-T +44(0)127322748                          | Barbirolli Square, Manchester,
-E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
+Thanks,
+Per
