@@ -1,75 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab1HINO6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 09:14:58 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:20538 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751812Ab1HINO5 (ORCPT
+	id S1752295Ab1HINRf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 09:17:35 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:25798 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061Ab1HINRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 09:14:57 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19wbNaHYRdvtCfmqAhtzCDd
-Date: Tue, 9 Aug 2011 06:14:53 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: Daniel Morsing <daniel.morsing@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: Re: Build failure: bisected: v3.1-rc1 with config ARCH_OMAP &&
- !ARCH_OMAP4 fails with linker error
-Message-ID: <20110809131453.GR1866@atomide.com>
-References: <1312819724.14483.29.camel@morsingpad>
- <alpine.DEB.2.00.1108081435340.4764@utopia.booyaka.com>
+	Tue, 9 Aug 2011 09:17:33 -0400
+Subject: [PATCH] hpsa: fix problem that OBDR devices are not detected
+To: james.bottomley@hansenpartnership.com
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mikem@beardog.cce.hp.com, stephenmcameron@gmail.com, thenzl@redhat.com,
+        akpm@linux-foundation.org, stable@kernel.org
+Date: Tue, 09 Aug 2011 08:17:30 -0500
+Message-ID: <20110809131730.10599.22108.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1108081435340.4764@utopia.booyaka.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Walmsley <paul@pwsan.com> [110808 13:31]:
-> Hi
-> 
-> On Mon, 8 Aug 2011, Daniel Morsing wrote:
-> 
-> > Building the v3.1-rc1 kernel with ARCH_OMAP && !ARCH_OMAP4 support fails
-> > on linking with the following error
-> > 
-> > ...
-> >   LD      .tmp_vmlinux1
-> > arch/arm/mach-omap2/built-in.o:(.data+0xf7d8): undefined reference to `omap4430_phy_init'
-> > arch/arm/mach-omap2/built-in.o:(.data+0xf7dc): undefined reference to `omap4430_phy_exit'
-> > arch/arm/mach-omap2/built-in.o:(.data+0xf7e0): undefined reference to `omap4430_phy_power'
-> > arch/arm/mach-omap2/built-in.o:(.data+0xf7e4): undefined reference to `omap4430_phy_set_clk'
-> > arch/arm/mach-omap2/built-in.o:(.data+0xf7e8): undefined reference to `omap4430_phy_suspend'
-> > 
-> > I've bisected the first bad commit to "OMAP4: Move common twl6030
-> > configuration to twl-common" (commit-id
-> > b22f954bae35be115a10c6426dc070f7d652b32e). The problem seems to be
-> > unconditionally taking a function pointer to an omap4430 specific
-> > function in arch/arm/mach-omap2/twl-common.c. The definition for
-> > omap4430_phy_init and friends is in
-> > arch/arm/mach-omap2/omap_phy_internal.c, which is only compiled when
-> > building with support for one of the omap4430 boards.
-> 
-> Thanks for the bisect; this should be fixed by 
-> 
-> https://patchwork.kernel.org/patch/963462/
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-Hmm, there are also these when CONFIG_ARCH_OMAP4 is not selected:
+The test to detect OBDR ("One Button Disaster Recovery")
+cd-rom devices was comparing against uninitialized data.
 
-arch/arm/mach-omap2/built-in.o: In function `_enable_module':
-arch/arm/mach-omap2/omap_hwmod.c:701: undefined reference to `omap4_cminst_module_enable'
-arch/arm/mach-omap2/built-in.o: In function `_disable_module':
-arch/arm/mach-omap2/omap_hwmod.c:726: undefined reference to `omap4_cminst_module_disable'
-arch/arm/mach-omap2/built-in.o: In function `_wait_target_disable':
-arch/arm/mach-omap2/omap_hwmod.c:1179: undefined reference to `omap4_cminst_wait_module_idle'
-distcc[27594] ERROR: compile (null) on localhost failed
-make: *** [.tmp_vmlinux1] Error 1
+Fixed by moving the test for the device to where the
+inquiry data is collected, and uninitialized variable
+altogether as it wasn't really being used.
 
-Care to take a look?
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+---
+ drivers/scsi/hpsa.c |   47 +++++++++++++++++++++++++++--------------------
+ 1 files changed, 27 insertions(+), 20 deletions(-)
 
-Tony
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index ec61bdb..1f32f06 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -1548,10 +1548,17 @@ static inline void hpsa_set_bus_target_lun(struct hpsa_scsi_dev_t *device,
+ }
+ 
+ static int hpsa_update_device_info(struct ctlr_info *h,
+-	unsigned char scsi3addr[], struct hpsa_scsi_dev_t *this_device)
++	unsigned char scsi3addr[], struct hpsa_scsi_dev_t *this_device,
++	unsigned char *is_OBDR_device)
+ {
+-#define OBDR_TAPE_INQ_SIZE 49
++
++#define OBDR_SIG_OFFSET 43
++#define OBDR_TAPE_SIG "$DR-10"
++#define OBDR_SIG_LEN (sizeof(OBDR_TAPE_SIG) - 1)
++#define OBDR_TAPE_INQ_SIZE (OBDR_SIG_OFFSET + OBDR_SIG_LEN)
++
+ 	unsigned char *inq_buff;
++	unsigned char *obdr_sig;
+ 
+ 	inq_buff = kzalloc(OBDR_TAPE_INQ_SIZE, GFP_KERNEL);
+ 	if (!inq_buff)
+@@ -1583,6 +1590,16 @@ static int hpsa_update_device_info(struct ctlr_info *h,
+ 	else
+ 		this_device->raid_level = RAID_UNKNOWN;
+ 
++	if (is_OBDR_device) {
++		/* See if this is a One-Button-Disaster-Recovery device
++		 * by looking for "$DR-10" at offset 43 in inquiry data.
++		 */
++		obdr_sig = &inq_buff[OBDR_SIG_OFFSET];
++		*is_OBDR_device = (this_device->devtype == TYPE_ROM &&
++					strncmp(obdr_sig, OBDR_TAPE_SIG,
++						OBDR_SIG_LEN) == 0);
++	}
++
+ 	kfree(inq_buff);
+ 	return 0;
+ 
+@@ -1716,7 +1733,7 @@ static int add_msa2xxx_enclosure_device(struct ctlr_info *h,
+ 		return 0;
+ 	}
+ 
+-	if (hpsa_update_device_info(h, scsi3addr, this_device))
++	if (hpsa_update_device_info(h, scsi3addr, this_device, NULL))
+ 		return 0;
+ 	(*nmsa2xxx_enclosures)++;
+ 	hpsa_set_bus_target_lun(this_device, bus, target, 0);
+@@ -1808,7 +1825,6 @@ static void hpsa_update_scsi_devices(struct ctlr_info *h, int hostno)
+ 	 */
+ 	struct ReportLUNdata *physdev_list = NULL;
+ 	struct ReportLUNdata *logdev_list = NULL;
+-	unsigned char *inq_buff = NULL;
+ 	u32 nphysicals = 0;
+ 	u32 nlogicals = 0;
+ 	u32 ndev_allocated = 0;
+@@ -1824,11 +1840,9 @@ static void hpsa_update_scsi_devices(struct ctlr_info *h, int hostno)
+ 		GFP_KERNEL);
+ 	physdev_list = kzalloc(reportlunsize, GFP_KERNEL);
+ 	logdev_list = kzalloc(reportlunsize, GFP_KERNEL);
+-	inq_buff = kmalloc(OBDR_TAPE_INQ_SIZE, GFP_KERNEL);
+ 	tmpdevice = kzalloc(sizeof(*tmpdevice), GFP_KERNEL);
+ 
+-	if (!currentsd || !physdev_list || !logdev_list ||
+-		!inq_buff || !tmpdevice) {
++	if (!currentsd || !physdev_list || !logdev_list || !tmpdevice) {
+ 		dev_err(&h->pdev->dev, "out of memory\n");
+ 		goto out;
+ 	}
+@@ -1863,7 +1877,7 @@ static void hpsa_update_scsi_devices(struct ctlr_info *h, int hostno)
+ 	/* adjust our table of devices */
+ 	nmsa2xxx_enclosures = 0;
+ 	for (i = 0; i < nphysicals + nlogicals + 1; i++) {
+-		u8 *lunaddrbytes;
++		u8 *lunaddrbytes, is_OBDR = 0;
+ 
+ 		/* Figure out where the LUN ID info is coming from */
+ 		lunaddrbytes = figure_lunaddrbytes(h, raid_ctlr_position,
+@@ -1874,7 +1888,8 @@ static void hpsa_update_scsi_devices(struct ctlr_info *h, int hostno)
+ 			continue;
+ 
+ 		/* Get device type, vendor, model, device id */
+-		if (hpsa_update_device_info(h, lunaddrbytes, tmpdevice))
++		if (hpsa_update_device_info(h, lunaddrbytes, tmpdevice,
++							&is_OBDR))
+ 			continue; /* skip it if we can't talk to it. */
+ 		figure_bus_target_lun(h, lunaddrbytes, &bus, &target, &lun,
+ 			tmpdevice);
+@@ -1898,7 +1913,7 @@ static void hpsa_update_scsi_devices(struct ctlr_info *h, int hostno)
+ 		hpsa_set_bus_target_lun(this_device, bus, target, lun);
+ 
+ 		switch (this_device->devtype) {
+-		case TYPE_ROM: {
++		case TYPE_ROM:
+ 			/* We don't *really* support actual CD-ROM devices,
+ 			 * just "One Button Disaster Recovery" tape drive
+ 			 * which temporarily pretends to be a CD-ROM drive.
+@@ -1906,15 +1921,8 @@ static void hpsa_update_scsi_devices(struct ctlr_info *h, int hostno)
+ 			 * device by checking for "$DR-10" in bytes 43-48 of
+ 			 * the inquiry data.
+ 			 */
+-				char obdr_sig[7];
+-#define OBDR_TAPE_SIG "$DR-10"
+-				strncpy(obdr_sig, &inq_buff[43], 6);
+-				obdr_sig[6] = '\0';
+-				if (strncmp(obdr_sig, OBDR_TAPE_SIG, 6) != 0)
+-					/* Not OBDR device, ignore it. */
+-					break;
+-			}
+-			ncurrent++;
++			if (is_OBDR)
++				ncurrent++;
+ 			break;
+ 		case TYPE_DISK:
+ 			if (i < nphysicals)
+@@ -1947,7 +1955,6 @@ out:
+ 	for (i = 0; i < ndev_allocated; i++)
+ 		kfree(currentsd[i]);
+ 	kfree(currentsd);
+-	kfree(inq_buff);
+ 	kfree(physdev_list);
+ 	kfree(logdev_list);
+ }
+
