@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab1HIMsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 08:48:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55687 "EHLO mx1.redhat.com"
+	id S1753759Ab1HIMyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 08:54:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19271 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753665Ab1HIMst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 08:48:49 -0400
-Date: Tue, 9 Aug 2011 08:48:43 -0400
-From: Dave Jones <davej@redhat.com>
-To: Greg KH <greg@kroah.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>
-Subject: Re: exception in interrupt during elv_completed_request. (3.0)
-Message-ID: <20110809124842.GA17607@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, Greg KH <greg@kroah.com>,
-	Jens Axboe <jaxboe@fusionio.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	"James.Bottomley@hansenpartnership.com" <James.Bottomley@hansenpartnership.com>
-References: <20110808145826.GA22457@redhat.com>
- <4E3FFAB0.40205@fusionio.com>
- <20110808151352.GA24992@redhat.com>
- <4E3FFDB9.3090805@fusionio.com>
- <20110809054323.GA3653@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110809054323.GA3653@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753612Ab1HIMyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 08:54:12 -0400
+Subject: Re: [PATCH] net/9p: Convert net/9p protocol dumps to tracepoints
+From: Steven Rostedt <srostedt@redhat.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Pekka Enberg <penberg@kernel.org>, v9fs-developer@lists.sourceforge.net,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <87r54u92ok.fsf@skywalker.in.ibm.com>
+References: <1312890773-15305-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	 <CAOJsxLHDg8+QUFu68NBQoq8EgrgapTE15sFXQucw+pyDXV0tLQ@mail.gmail.com>
+	 <87r54u92ok.fsf@skywalker.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat
+Date: Tue, 09 Aug 2011 08:53:15 -0400
+Message-ID: <1312894395.3064.23.camel@fedora>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 10:43:23PM -0700, Greg Kroah-Hartman wrote:
- > On Mon, Aug 08, 2011 at 05:16:09PM +0200, Jens Axboe wrote:
- > > On 2011-08-08 17:13, Dave Jones wrote:
- > > >  > On 2011-08-08 16:58, Dave Jones wrote:
- > > >  > > Jens,
- > > >  > > 
- > > >  > > We got a report of a panic from a user when he plugged in his usb drive,
- > > >  > > https://bugzilla.redhat.com/attachment.cgi?id=517141
- > > >  > > 
- > > >  > > any ideas what happened here ?
- > > >  > 
- > > >  > 2.6.40?
- > > > 
- > > > it's 3.0 in all but name. didn't want to risk breaking dumb userspace
- > > > in an update for older fedora releases.  It does have the
- > > > scsi_dispatch_cmd fix that went into 3.0.1, but otherwise block/
- > > > should be stock 3.0
- > > 
- > > OK
- > > 
- > > >  > Looks like the recent SCSI removal oopses, perhaps it happened when he
- > > >  > yanked it instead of directly on insertion?
- > > >  
- > > > sorry my bad, yes, this was on device removal.
- > > > 
- > > > according to the user, he did everything right, and unmounted safely.	
- > > > https://bugzilla.redhat.com/show_bug.cgi?id=728872
- > > 
- > > James?
- > 
- > Should be resolved in 3.0.1 now.
- > 
- > If not, please let James, and me, know.
+On Tue, 2011-08-09 at 18:12 +0530, Aneesh Kumar K.V wrote:
 
-Are you talking about the scsi_dispatch_cmd fix ?  this is something else.
+> +#define P9_PROTO_DUMP_SZ (16 * 3 + 2 + 16 + 1)
 
-	Dave
+Wow, you're making your event have 67 byte arrays, two of them.
+
+> +TRACE_EVENT(9p_protocol_dump,
+> +	    TP_PROTO(struct p9_client *clnt, struct p9_fcall *pdu),
+> +
+> +	    TP_ARGS(clnt, pdu),
+> +
+> +	    TP_STRUCT__entry(
+> +		    __field(	__u64,		clnt				)
+> +		    __field(	__u8,		type				)
+> +		    __field(	__u16,		tag				)
+> +		    __array(	unsigned char,	line1,	P9_PROTO_DUMP_SZ	)
+> +		    __array(	unsigned char,	line2,	P9_PROTO_DUMP_SZ	)
+> +		    ),
+
+Wouldn't it be better to put this as two unsigned char arrays of 16
+bytes?
+
+> +
+> +	    TP_fast_assign(
+> +		    const u8 *ptr   =  pdu->sdata;
+> +		    __entry->clnt   =  (__u64)clnt;
+> +		    __entry->type   =  pdu->id;
+> +		    __entry->tag    =  pdu->tag;
+> +		    hex_dump_to_buffer(ptr, 16, 16,
+> +				       1, __entry->line1, P9_PROTO_DUMP_SZ, true);
+> +		    hex_dump_to_buffer(ptr + 16, 16, 16,
+> +				       1, __entry->line2, P9_PROTO_DUMP_SZ, true);
+> +		    ),
+> +
+> +	    TP_printk("clnt %lu %s(tag = %d)\n%.8x: %s\n%.8x: %s\n",
+> +		      (long)__entry->clnt, show_9p_op(__entry->type),
+> +		      __entry->tag, 0, __entry->line1, 16 , __entry->line2)
+
+Yeah, you would need to make the above ugly to print out the array, but
+it's not that hard. And you will be saving 102 bytes per event in the
+ring buffer, which is very expensive real-estate. Not to mention the
+time it takes to copy all that.
+
+-- Steve
+
 
