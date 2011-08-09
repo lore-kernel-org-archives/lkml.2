@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120Ab1HIPIH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 11:08:07 -0400
-Received: from gateway.hbm.com ([213.157.30.2]:54418 "EHLO hbmntx5.hbm.com"
+	id S1753101Ab1HIPI6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 11:08:58 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:59461 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750779Ab1HIPIG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 11:08:06 -0400
-Thread-Index: AcxWpiMof+JyVU/iS6epDU+EVETgAg==
-Thread-Topic: [ANNOUNCE] 3.0-rt7 - Error with low latency desktop config
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
-Content-class: urn:content-classes:message
-Importance: normal
-From: "Tim Sander" <tim.sander@hbm.com>
-Organization: Hottinger Baldwin Messtechnik
-To: =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [ANNOUNCE] 3.0-rt7 - Error with low latency desktop config
-Date: Tue, 9 Aug 2011 17:07:49 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.39; KDE/4.4.5; x86_64; ; )
-Cc: "Peter Zijlstra" <peterz@infradead.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        "linux-rt-users" <linux-rt-users@vger.kernel.org>
-References: <1312465990.16729.22.camel@twins> <201108091548.06875.tim.sander@hbm.com> <20110809140923.GA11398@pengutronix.de>
-In-Reply-To: <20110809140923.GA11398@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/Plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <201108091707.49832.tim.sander@hbm.com>
-X-OriginalArrivalTime: 09 Aug 2011 15:08:03.0977 (UTC) FILETIME=[2310DF90:01CC56A6]
+	id S1752149Ab1HIPI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 11:08:57 -0400
+Date: Wed, 10 Aug 2011 01:08:47 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 1/2] regmap: Use int rather than size_t for lengths when
+ logging blocks
+Message-Id: <20110810010847.77e916a7780ffddd98d91f68@canb.auug.org.au>
+In-Reply-To: <1312876805-460-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1312876805-460-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__10_Aug_2011_01_08_47_+1000_KNcZq9lAS1xGZKYt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe
+--Signature=_Wed__10_Aug_2011_01_08_47_+1000_KNcZq9lAS1xGZKYt
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I just double checked.
-> The config doesn't look like a 3.0-rt7 one. There is neither
-> 
-> 	PREEMPT_RTB=y
-> 
-> nor
-> 
-> 	# PREEMPT_RTB is not set
-If i switch the configs with "Kernel Feature"-> "Preemption Model" -
->"(Preemtible Kernel) Low-Latency Desktop"
-there are no such config options visible even with a -rt7 kernel.
-(My workflow in ptxdist is
-comment (in/out) rtpatch in patches/linux-3.0/series
-ptxdist clean kernel && ptxdist targetinstall kernel
-deploy.sh
+Hi Mark,
 
-Otherwise ptxdist would cheat on me and at 
-$(PROJECT_DIR)/configs/$(PLATFORM)/kernelconfig would be out of sync.)
+On Tue,  9 Aug 2011 17:00:04 +0900 Mark Brown <broonie@opensource.wolfsonmi=
+cro.com> wrote:
+>
+> x86_64 warns as size_t is not an int.
+>=20
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Stephen Rothwell <sfr@canb.auug.org.au>
 
-Best regards
-Tim
+Reported-by?
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
+--Signature=_Wed__10_Aug_2011_01_08_47_+1000_KNcZq9lAS1xGZKYt
+Content-Type: application/pgp-signature
 
-Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
-Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
-Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
+iQEcBAEBAgAGBQJOQU1/AAoJEDMEi1NhKgbsB2gH/1827uNCpTmzzPUfnkQelCIX
+q8lD3PWqEeWKgzjpBs3OFEhnmm9du9Tk00mP5lJGJRTz7JBBbt+JrUkHIiSJKyg/
+8DpbzK282tzBFjq9Ifuz2/l1h8Me9sJO1Ji+YF/4FgB0VAh0o7M93/EMloYGJruY
+nl1wqA3N7Z61QWS+3LJ4kXOxslmCrFbejC8FjHoUuIefUv3LuXj+8QO0/ULRjlnd
+zJL1vr4kqfGgD5q6vaB3bCfDWbUq1r864azZOeLNPn+uxYY9IPntUFxqfkeQwNZ2
+iU6eiLd2XjBWBLMmcI7ApComhKpe36Rn6ti5AOuXWYWhbuSEEouUuWAOiRS+SJ4=
+=dJlT
+-----END PGP SIGNATURE-----
 
-The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
-
-Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
-
+--Signature=_Wed__10_Aug_2011_01_08_47_+1000_KNcZq9lAS1xGZKYt--
