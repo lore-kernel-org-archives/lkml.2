@@ -1,80 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab1HIUWn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 16:22:43 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:39858 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752735Ab1HIUWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 16:22:42 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: Greg KH <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "stable-review@kernel.org" <stable-review@kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [Stable-review] [28/55] [SCSI] fix crash in scsi_dispatch_cmd()
-Thread-Topic: [Stable-review] [28/55] [SCSI] fix crash in scsi_dispatch_cmd()
-Thread-Index: AQHMVS8JppVwAs6Xz0uGJqTkQMem7ZUTpWwAgAASYoCAAbdUAA==
-Date: Tue, 9 Aug 2011 20:22:37 +0000
-Message-ID: <1312921356.8648.13.camel@mulgrave>
-References: <20110806000251.682788533@clark.kroah.org>
-	 <1312739411.2591.1026.camel@deadeye> <1312739484.2591.1027.camel@deadeye>
-	 <20110808170424.GB27419@suse.de>  <20110808181011.GE29924@decadent.org.uk>
-In-Reply-To: <20110808181011.GE29924@decadent.org.uk>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [76.243.235.53]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <A84AD9E80330C946A80C9257334FF172@sw.swsoft.com>
-MIME-Version: 1.0
+	id S1753460Ab1HIU0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 16:26:25 -0400
+Received: from smtp-out3.tiscali.nl ([195.241.79.178]:34481 "EHLO
+	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751875Ab1HIU0Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 16:26:24 -0400
+Subject: Re: [PATCH] [RFC] BTUSB: be quiet on device disconnect
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-bluetooth@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 09 Aug 2011 22:26:08 +0200
+In-Reply-To: <Pine.LNX.4.44L0.1108091159050.1949-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1108091159050.1949-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.1.4 (3.1.4-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1312921583.30382.12.camel@t41.thuisdomein>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p79KMpF3032529
 
-On Mon, 2011-08-08 at 19:10 +0100, Ben Hutchings wrote:
-> On Mon, Aug 08, 2011 at 10:04:24AM -0700, Greg KH wrote:
-> > On Sun, Aug 07, 2011 at 06:51:24PM +0100, Ben Hutchings wrote:
-> > > On Sun, 2011-08-07 at 18:50 +0100, Ben Hutchings wrote:
-> > > > On Fri, 2011-08-05 at 17:01 -0700, Greg KH wrote:
-> > > > > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
-> > > > > 
-> > > > > ------------------
-> > > > > 
-> > > > > From: James Bottomley <James.Bottomley@HansenPartnership.com>
-> > > > > 
-> > > > > commit bfe159a51203c15d23cb3158fffdc25ec4b4dda1 upstream.
-> > > > > 
-> > > > > USB surprise removal of sr is triggering an oops in
-> > > > > scsi_dispatch_command().  What seems to be happening is that USB is
-> > > > > hanging on to a queue reference until the last close of the upper
-> > > > > device, so the crash is caused by surprise remove of a mounted CD
-> > > > > followed by attempted unmount.
-> > > > [...]
-> > > > 
-> > > > This has been reported in 2.6.39.y and 3.0, but not in 2.6.32.y.
-> > > 
-> > > That is, AFAIK.
-> > 
-> > Oops, good catch, I've dropped this from the .32 and .33 queue now, it's
-> > not needed there at all.
->  
-> Well, it is entirely possible that I am confusing multiple bugs (I
-> actualy attempted to delete this message from my outgoing mail queue
-> as I was becoming less confident about it).  I assume James can
-> confirm one way or the other.
+On Tue, 2011-08-09 at 12:00 -0400, Alan Stern wrote:
+> On Tue, 9 Aug 2011, Paul Bolle wrote:
+> > 1) I added Greg and linux-usb@vger.kernel.org because usb_submit_urb()
+> > doesn't specify the meaning of its negative return values. I traced
+> 
+> In fact, many of these values are documented in 
+> Documentation/usb/error-codes.txt.
 
-No ... There is an original bug somewhere that might permeate to 2.6.32
-which the patch series fixes, but I don't think all the precursors were
-stable tagged and it's a race condition which only started showing up in
-2.6.38.
+0) Thanks. I hadn't found that, obviously.
 
-James
+1) Would it make sense to add links to that file in the documentation
+for usb_submit_urb() and other core usb functions? (Does the kernel-doc
+syntax have a notation for links?) I only do hit-and-run patches in the
+usb subsystem, and any other subsystem, for that matter, so I'm not sure
+that what I like to see is what's actually needed.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+Paul Bolle
+
