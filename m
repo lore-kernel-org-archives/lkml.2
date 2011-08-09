@@ -1,61 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750957Ab1HIAjK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 20:39:10 -0400
-Received: from mail209.messagelabs.com ([216.82.255.3]:47278 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758Ab1HIAjI (ORCPT
+	id S1750997Ab1HIAvK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 20:51:10 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:34162 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752Ab1HIAvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 20:39:08 -0400
-X-VirusChecked: Checked
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-209.messagelabs.com!1312850345!13057298!16
-X-StarScan-Version: 6.2.17; banners=-,-,-
-X-Originating-IP: [216.166.12.180]
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] gpio: ep93xx: remove usless pr_err message
-Date: Mon, 8 Aug 2011 17:38:44 -0700
-User-Agent: KMail/1.9.9
-CC: <rmallon@gmail.com>, <grant.likely@secretlab.ca>
+	Mon, 8 Aug 2011 20:51:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201108081738.44996.hartleys@visionengravers.com>
+In-Reply-To: <1312834049-29910-1-git-send-email-per.forlin@linaro.org>
+References: <1312834049-29910-1-git-send-email-per.forlin@linaro.org>
+Date: Tue, 9 Aug 2011 09:51:06 +0900
+Message-ID: <CAC5umyhWr8t7HyQVEn-W-7HSaeESnTLX8okcQNqPO6mYFuWtUg@mail.gmail.com>
+Subject: Re: [PATCH --mmotm v5 0/3] Make fault injection available for MMC IO
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Per Forlin <per.forlin@linaro.org>
+Cc: akpm@linux-foundation.org, Linus Walleij <linus.ml.walleij@gmail.com>,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Chris Ball <cjb@laptop.org>, linux-doc@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linaro-dev@lists.linaro.org,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the IRQ_TYPE_* options are handled so the pr_err message is
-not really necessary, remove it.
+All three patches look good.
+Acked-by: Akinobu Mita <akinobu.mita@gmail.com>
 
-Also, since this was the only pr_* use in the file, remove the pr_fmt.
+2011/8/9 Per Forlin <per.forlin@linaro.org>:
+> This patchset is sent to the mm-tree because it depends on Akinobu's patch
+> "fault-injection: add ability to export fault_attr in..."
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ryan Mallon <rmallon@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-
----
-
-diff --git a/drivers/gpio/gpio-ep93xx.c b/drivers/gpio/gpio-ep93xx.c
-index 468b27d..b229a29 100644
---- a/drivers/gpio/gpio-ep93xx.c
-+++ b/drivers/gpio/gpio-ep93xx.c
-@@ -12,8 +12,6 @@
-  *  published by the Free Software Foundation.
-  */
- 
--#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
--
- #include <linux/init.h>
- #include <linux/platform_device.h>
- #include <linux/io.h>
-@@ -209,7 +207,6 @@ static int ep93xx_gpio_irq_type(struct irq_data *d, unsigned int type)
- 		handler = handle_edge_irq;
- 		break;
- 	default:
--		pr_err("failed to set irq type %d for gpio %d\n", type, gpio);
- 		return -EINVAL;
- 	}
- 
+That patch has already been merged in mainline.
