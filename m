@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab1HIT4X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 15:56:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35902 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993Ab1HIT4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 15:56:22 -0400
-Message-ID: <4E41912F.50901@redhat.com>
-Date: Tue, 09 Aug 2011 21:57:35 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc15 Lightning/1.0b2 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
-        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
-        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Theodore Kilgore <kilgota@banach.math.auburn.edu>,
-        Adam Baker <linux@baker-net.org.uk>
-Subject: Re: USB mini-summit at LinuxCon Vancouver
-References: <Pine.LNX.4.44L0.1108091016380.1949-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1108091016380.1949-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752933Ab1HIT5T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 15:57:19 -0400
+Received: from wondertoys-mx.wondertoys.net ([206.117.179.246]:52621 "EHLO
+	labridge.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750839Ab1HIT5S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 15:57:18 -0400
+Subject: Re: [PATCH] gianfar: reduce stack usage in gianfar_ethtool.c
+From: Joe Perches <joe@perches.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, stufever@gmail.com, netdev@vger.kernel.org,
+        davem@davemloft.net, Wang Shaoyan <wangshaoyan.pt@taobao.com>
+In-Reply-To: <1312914257.2547.10.camel@edumazet-laptop>
+References: <1312907945-1982-1-git-send-email-wangshaoyan.pt@taobao.com>
+	 <1312908784.2371.53.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <1312912326.11924.12.camel@Joe-Laptop>
+	 <1312912774.2547.1.camel@edumazet-laptop>
+	 <1312913545.11924.16.camel@Joe-Laptop>
+	 <1312914257.2547.10.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Aug 2011 12:57:15 -0700
+Message-ID: <1312919835.11924.26.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2011-08-09 at 20:24 +0200, Eric Dumazet wrote:
+> Le mardi 09 août 2011 à 11:12 -0700, Joe Perches a écrit :
+> > On Tue, 2011-08-09 at 19:59 +0200, Eric Dumazet wrote:
+> > > Le mardi 09 août 2011 à 10:52 -0700, Joe Perches a écrit :
+> > > > On Tue, 2011-08-09 at 18:53 +0200, Eric Dumazet wrote:
+> > > > > Le mercredi 10 août 2011 à 00:39 +0800, stufever@gmail.com a écrit :
+> > > > []
+> > > > > > +	if (!local_rqfpr || !local_rqfcr) {
+> > > > > > +		pr_err("Out of memory\n");
+> > > > > 	Please remove this pr_err(), kmalloc() will complain already.
 
-On 08/09/2011 04:19 PM, Alan Stern wrote:
-> On Tue, 9 Aug 2011, Hans de Goede wrote:
->
->> I would really like to see the dual mode camera and TV tuner discussion
->> separated. They are 2 different issues AFAIK.
->>
->> 1) Dual mode cameras:
->>
->> In the case of the dual mode camera we have 1 single device (both at
->> the hardware level and at the logical block level), which can do 2 things,
->> but not at the same time. It can stream live video data from a sensor,
->> or it can retrieve earlier taken pictures from some picture memory.
->>
->> Unfortunately even though these 2 functions live in a single logical block,
->> historically we've developed 2 drivers for them. This leads to fighting
->> over device ownership (surprise surprise), and to me the solution is
->> very clear, 1 logical block == 1 driver.
->
-> According to Theodore, we have developed 5 drivers for them because the
-> stillcam modes in different devices use four different vendor-specific
-> drivers.
+I think this is fine and should be kept until
+some general agreement is made that OOM messages
+should be removed generically.
 
-Yes, but so the the webcam modes of the different devices, so for
-the 5 (not sure if that is the right number) dual-cam mode chipsets
-we support there will be 5 drivers, each supporting both the
-webcam and the access to pictures stored in memory of the chipset
-they support. So 5 chipsets -> 5 drivers each supporting 1 chipset,
-and both functions of the single logical device that chipset
-represents.
+If these are really superfluous, which I doubt a
+little because these are emitted at different
+KERN_<LEVEL>, (the generic one emits at KERN_WARNING),
+there are _thousands_ of these OOM errors in drivers/
+alone that could be removed.
 
->  Does it really make sense to combine 5 drivers into one?
+$ grep -rP --include=*.[ch] \
+	"(printk|\b[a-z]+_\w+)\s*\(.*\".*(alloc|mem)" drivers | \
+  wc -l
+5147
 
-Right, that is not the plan. The plan is to simply stop having 2 drivers
-for 1 logical (and physical) block. So we go from 10 drivers, 5 stillcam
-+ 5 webcam, to just 5 drivers. We will also likely be able to share
-code between the code for the 2 functionalities for things like generic
-set / get register functions, initialization, etc.
+call it 50% false positive, it's still a lot.
 
-Regards,
+I think one more won't hurt for awhile.
 
-Hans
+
