@@ -1,144 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab1HIOEA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 10:04:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23519 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750752Ab1HIOD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 10:03:59 -0400
-Date: Tue, 9 Aug 2011 16:03:12 +0200
-From: Johannes Weiner <jweiner@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2 v2] memcg: make oom_lock 0 and 1 based rather than
- coutner
-Message-ID: <20110809140312.GA2265@redhat.com>
-References: <cover.1310732789.git.mhocko@suse.cz>
- <44ec61829ed8a83b55dc90a7aebffdd82fe0e102.1310732789.git.mhocko@suse.cz>
+	id S1751934Ab1HIOEo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 10:04:44 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:61854 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752Ab1HIOEm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 10:04:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <44ec61829ed8a83b55dc90a7aebffdd82fe0e102.1310732789.git.mhocko@suse.cz>
+In-Reply-To: <20110809034724.GA22257@july>
+References: <20110809034724.GA22257@july>
+Date: Tue, 9 Aug 2011 23:04:41 +0900
+X-Google-Sender-Auth: 4bHMF0LcBkkJncm16wSCvFCTHKU
+Message-ID: <CAH9JG2UqMD=S3e+BupO+8dfEZQy5eZWO2gMhbTPmmjHJFOimtw@mail.gmail.com>
+Subject: Re: [RFC PATCH] request: teach the device more intelligent
+From: Kyungmin Park <kmpark@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>, jaxboe@fusionio.com
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, jh80.chung@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 13, 2011 at 01:05:49PM +0200, Michal Hocko wrote:
-> @@ -1803,37 +1806,83 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
->  /*
->   * Check OOM-Killer is already running under our hierarchy.
->   * If someone is running, return false.
-> + * Has to be called with memcg_oom_mutex
->   */
->  static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
->  {
-> -	int x, lock_count = 0;
-> -	struct mem_cgroup *iter;
-> +	int lock_count = -1;
-> +	struct mem_cgroup *iter, *failed = NULL;
-> +	bool cond = true;
->  
-> -	for_each_mem_cgroup_tree(iter, mem) {
-> -		x = atomic_inc_return(&iter->oom_lock);
-> -		lock_count = max(x, lock_count);
-> +	for_each_mem_cgroup_tree_cond(iter, mem, cond) {
-> +		bool locked = iter->oom_lock;
+Cc the correct email address of jens
+
+On Tue, Aug 9, 2011 at 12:47 PM, Kyungmin Park <kmpark@infradead.org> wrote:
+> Hi Jens
+>
+> Now eMMC device requires the upper layer information to improve the data
+> performance and reliability.
+>
+> . Context ID
+> Using the context information, it can sort out the data internally and improve the performance.
+> The main problem is that it's needed to define "What's the context".
+> Actually I expect cfq queue has own unique ID but it doesn't so decide to use the pid instead
+>
+> . Data Tag
+> Using the Data Tag (1-bit information), It writes the data at SLC area when it's hot data. So it can make the chip more reliable.
+> First I expect the REQ_META but current ext4 doesn't pass the WRITE_META. only use the READ_META. so it needs to investigate it.
+>
+> With these characteristics, it's helpful to teach the device. After some consideration. it's needed to pass out these information at request data structure.
+>
+> Can you give your opinions and does it proper fields at requests?
+>
+> Thank you,
+> Kyungmin Park
+> ---
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 1f96ad6..d73bfa7 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -3790,6 +3790,7 @@ new_queue:
+>        rq->elevator_private[0] = cic;
+>        rq->elevator_private[1] = cfqq;
+>        rq->elevator_private[2] = cfq_ref_get_cfqg(cfqq->cfqg);
+> +       rq->hint.context = (int) cfqq->pid;
+>        spin_unlock_irqrestore(q->queue_lock, flags);
+>        return 0;
+>
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index 0e67c45..0145c10 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -69,6 +69,14 @@ enum rq_cmd_type_bits {
+>        REQ_TYPE_ATA_PC,
+>  };
+>
+> +/*
+> + * request hint
+> + */
+> +struct request_hint {
+> +       int context;                    /* Context ID */
+> +       int hot:1;                      /* Hot/cold data */
+> +};
 > +
-> +		iter->oom_lock = true;
-> +		if (lock_count == -1)
-> +			lock_count = iter->oom_lock;
-> +		else if (lock_count != locked) {
-> +			/*
-> +			 * this subtree of our hierarchy is already locked
-> +			 * so we cannot give a lock.
-> +			 */
-> +			lock_count = 0;
-> +			failed = iter;
-> +			cond = false;
-> +		}
-
-I noticed system-wide hangs during a parallel/hierarchical memcg test
-and found that a single task with a central i_mutex held was sleeping
-on the memcg oom waitqueue, stalling everyone else contending for that
-same inode.
-
-The problem is the above code, which never succeeds in hierarchies
-with more than one member.  The first task going OOM tries to oom lock
-the hierarchy, fails, goes to sleep on the OOM waitqueue with the
-mutex held, without anybody actually OOM killing anything to make
-progress.
-
-Here is a patch that rectified things for me.
-
----
->From c4b52cbe01ed67d6487a96850400cdf5a9de91aa Mon Sep 17 00:00:00 2001
-From: Johannes Weiner <jweiner@redhat.com>
-Date: Tue, 9 Aug 2011 15:31:30 +0200
-Subject: [patch] memcg: fix hierarchical oom locking
-
-Commit "79dfdac memcg: make oom_lock 0 and 1 based rather than
-counter" tried to oom lock the hierarchy and roll back upon
-encountering an already locked memcg.
-
-The code is pretty confused when it comes to detecting a locked memcg,
-though, so it would fail and rollback after locking one memcg and
-encountering an unlocked second one.
-
-The result is that oom-locking hierarchies fails unconditionally and
-that every oom killer invocation simply goes to sleep on the oom
-waitqueue forever.  The tasks practically hang forever without anyone
-intervening, possibly holding locks that trip up unrelated tasks, too.
-
-Signed-off-by: Johannes Weiner <jweiner@redhat.com>
----
- mm/memcontrol.c |   14 ++++----------
- 1 files changed, 4 insertions(+), 10 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 930de94..649c568 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1841,25 +1841,19 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
-  */
- static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
- {
--	int lock_count = -1;
- 	struct mem_cgroup *iter, *failed = NULL;
- 	bool cond = true;
- 
- 	for_each_mem_cgroup_tree_cond(iter, mem, cond) {
--		bool locked = iter->oom_lock;
--
--		iter->oom_lock = true;
--		if (lock_count == -1)
--			lock_count = iter->oom_lock;
--		else if (lock_count != locked) {
-+		if (iter->oom_lock) {
- 			/*
- 			 * this subtree of our hierarchy is already locked
- 			 * so we cannot give a lock.
- 			 */
--			lock_count = 0;
- 			failed = iter;
- 			cond = false;
--		}
-+		} else
-+			iter->oom_lock = true;
- 	}
- 
- 	if (!failed)
-@@ -1878,7 +1872,7 @@ static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
- 		iter->oom_lock = false;
- 	}
- done:
--	return lock_count;
-+	return failed == NULL;
- }
- 
- /*
--- 
-1.7.6
-
+>  #define BLK_MAX_CDB    16
+>
+>  /*
+> @@ -139,6 +147,7 @@ struct request {
+>
+>        int ref_count;
+>
+> +       struct request_hint hint;       /* request hint information */
+>        void *special;          /* opaque pointer available for LLD use */
+>        char *buffer;           /* kaddr of the current segment if available */
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
