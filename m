@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058Ab1HIDKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 23:10:49 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45766 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472Ab1HIDKs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 23:10:48 -0400
-Subject: Re: [PATCH] slub: fix check_bytes() for slub debugging
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-mm@kvack.org
-In-Reply-To: <1312709438-7608-1-git-send-email-akinobu.mita@gmail.com>
-References: <1312709438-7608-1-git-send-email-akinobu.mita@gmail.com>
+	id S1752171Ab1HIDNj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 23:13:39 -0400
+Received: from mga14.intel.com ([143.182.124.37]:11633 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751747Ab1HIDNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 23:13:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,341,1309762800"; 
+   d="scan'208";a="36523938"
+Subject: [PATCH ] printk: add module parameter ignore_loglevel to control
+ ignore_loglevel
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Reply-To: yanmin_zhang@linux.intel.com
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Aug 2011 05:10:40 +0200
-Message-ID: <1312859440.2531.20.camel@edumazet-laptop>
+Organization: UMG
+Date: Tue, 09 Aug 2011 11:12:44 +0800
+Message-ID: <1312859564.1743.13.camel@ymzhang>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 07 août 2011 à 18:30 +0900, Akinobu Mita a écrit :
-> The check_bytes() function is used by slub debugging.  It returns a pointer
-> to the first unmatching byte for a character in the given memory area.
-> 
-> If the character for matching byte is greater than 0x80, check_bytes()
-> doesn't work.  Becuase 64-bit pattern is generated as below.
-> 
-> 	value64 = value | value << 8 | value << 16 | value << 24;
-> 	value64 = value64 | value64 << 32;
-> 
-> The integer promotions are performed and sign-extended as the type of value
-> is u8.  The upper 32 bits of value64 is 0xffffffff in the first line, and
-> the second line has no effect.
-> 
-> This fixes the 64-bit pattern generation.
-> 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Christoph Lameter <cl@linux-foundation.org>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: Matt Mackall <mpm@selenic.com>
-> Cc: linux-mm@kvack.org
-> ---
->  mm/slub.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/slub.c b/mm/slub.c
-> index eb5a8f9..5695f92 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -701,7 +701,7 @@ static u8 *check_bytes(u8 *start, u8 value, unsigned int bytes)
->  		return check_bytes8(start, value, bytes);
->  
->  	value64 = value | value << 8 | value << 16 | value << 24;
-> -	value64 = value64 | value64 << 32;
-> +	value64 = (value64 & 0xffffffff) | value64 << 32;
->  	prefix = 8 - ((unsigned long)start) % 8;
->  
->  	if (prefix) {
+We are enabling some power features on medfield. To test suspend-2-RAM
+conveniently, we need turn on/off ignore_loglevel frequently without rebooting.
 
-Still buggy I am afraid. Could we use the following ?
+Below patch adds a module parameter, so users could change it by:
+/sys/module/printk/parameters/ignore_loglevel
 
+Signed-off-by: Yanmin Zhang <yanmin.zhang@intel.com>
 
-	value64 = value;
-	value64 |= value64 << 8;
-	value64 |= value64 << 16;
-	value64 |= value64 << 32;
+---
+ kernel/printk.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index ce00f1b..12d4437 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -530,6 +530,7 @@ static int __init ignore_loglevel_setup(char *str)
+ }
+ 
+ early_param("ignore_loglevel", ignore_loglevel_setup);
++module_param_named(ignore_loglevel, ignore_loglevel, bool, S_IRUGO | S_IWUSR);
+ 
+ /*
+  * Write out chars from start to end - 1 inclusive
+-- 
+1.7.1
 
 
 
