@@ -1,86 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509Ab1HISEZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 14:04:25 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:32863 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754203Ab1HISEV (ORCPT
+	id S1754520Ab1HISFf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 14:05:35 -0400
+Received: from mail160.messagelabs.com ([216.82.253.99]:14988 "EHLO
+	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754313Ab1HISFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 14:04:21 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3/3] gpio/nomadik: use genirq core to track enablement
-Date: Tue, 9 Aug 2011 20:04:00 +0200
-Message-ID: <1312913040-7574-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
+	Tue, 9 Aug 2011 14:05:34 -0400
+X-VirusChecked: Checked
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-4.tower-160.messagelabs.com!1312913073!31116557!14
+X-StarScan-Version: 6.2.17; banners=-,-,-
+X-Originating-IP: [216.166.12.72]
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: gpio-ep93xx: Add helper function to convert irq to gpio, port, and mask.
+Date: Tue, 9 Aug 2011 11:04:13 -0700
+User-Agent: KMail/1.9.9
+CC: <rmallon@gmail.com>, <grant.likely@secretlab.ca>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201108091104.14053.hartleys@visionengravers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+This consolidates the irq_to_gpio() call and the shift magic used to convert
+a GPIO irq into it's relevant GPIO, port, and mask values.
 
-Currently the Nomadik GPIO driver tracks enabled/disabled interrupt
-status with a local variable, switch to using the interrupt core.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Ryan Mallon <rmallon@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/gpio/gpio-nomadik.c |   11 ++---------
- 1 files changed, 2 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/gpio/gpio-nomadik.c b/drivers/gpio/gpio-nomadik.c
-index 97e9be9..0b7ec12 100644
---- a/drivers/gpio/gpio-nomadik.c
-+++ b/drivers/gpio/gpio-nomadik.c
-@@ -58,7 +58,6 @@ struct nmk_gpio_chip {
- 	u32 rwimsc;
- 	u32 fwimsc;
- 	u32 slpm;
--	u32 enabled;
- 	u32 pull_up;
- };
+diff --git a/drivers/gpio/gpio-ep93xx.c b/drivers/gpio/gpio-ep93xx.c
+index 468b27d..788c7c4 100644
+--- a/drivers/gpio/gpio-ep93xx.c
++++ b/drivers/gpio/gpio-ep93xx.c
+@@ -46,6 +46,20 @@ static const u8 eoi_register_offset[3]		= { 0x98, 0xb4, 0x54 };
+ static const u8 int_en_register_offset[3]	= { 0x9c, 0xb8, 0x58 };
+ static const u8 int_debounce_register_offset[3]	= { 0xa8, 0xc4, 0x64 };
  
-@@ -605,11 +604,6 @@ static int nmk_gpio_irq_maskunmask(struct irq_data *d, bool enable)
- 	if (!nmk_chip)
- 		return -EINVAL;
- 
--	if (enable)
--		nmk_chip->enabled |= bitmask;
--	else
--		nmk_chip->enabled &= ~bitmask;
--
- 	clk_enable(nmk_chip->clk);
- 	spin_lock_irqsave(&nmk_gpio_slpm_lock, flags);
- 	spin_lock(&nmk_chip->lock);
-@@ -653,7 +647,7 @@ static int nmk_gpio_irq_set_wake(struct irq_data *d, unsigned int on)
- 	spin_lock_irqsave(&nmk_gpio_slpm_lock, flags);
- 	spin_lock(&nmk_chip->lock);
- 
--	if (!(nmk_chip->enabled & bitmask))
-+	if (irqd_irq_disabled(d))
- 		__nmk_gpio_set_wake(nmk_chip, gpio, on);
- 
- 	if (on)
-@@ -670,7 +664,7 @@ static int nmk_gpio_irq_set_wake(struct irq_data *d, unsigned int on)
- 
- static int nmk_gpio_irq_set_type(struct irq_data *d, unsigned int type)
++/*
++ * Map a sw irq to it's GPIO port and mask.
++ */
++static int ep93xx_gpio_irq_to_gpio_port_mask(unsigned int irq,
++			int *port, int *port_mask)
++{
++	int gpio = irq_to_gpio(irq);
++
++	*port = gpio >> 3;
++	*port_mask = 1 << (gpio & 7);
++
++	return gpio;
++}
++
+ static void ep93xx_gpio_update_int_params(unsigned port)
  {
--	bool enabled;
-+	bool enabled = !irqd_irq_disabled(d);
- 	bool wake = irqd_is_wakeup_set(d);
- 	int gpio;
- 	struct nmk_gpio_chip *nmk_chip;
-@@ -691,7 +685,6 @@ static int nmk_gpio_irq_set_type(struct irq_data *d, unsigned int type)
- 	clk_enable(nmk_chip->clk);
- 	spin_lock_irqsave(&nmk_chip->lock, flags);
+ 	BUG_ON(port > 2);
+@@ -69,9 +83,9 @@ static inline void ep93xx_gpio_int_mask(unsigned line)
  
--	enabled = !!(nmk_chip->enabled & bitmask);
- 	if (enabled)
- 		__nmk_gpio_irq_modify(nmk_chip, gpio, NORMAL, false);
+ static void ep93xx_gpio_int_debounce(unsigned int irq, bool enable)
+ {
+-	int line = irq_to_gpio(irq);
+-	int port = line >> 3;
+-	int port_mask = 1 << (line & 7);
++	int port, port_mask;
++
++	ep93xx_gpio_irq_to_gpio_port_mask(irq, &port, &port_mask);
  
--- 
-1.7.3.2
-
+ 	if (enable)
+ 		gpio_int_debounce[port] |= port_mask;
+@@ -119,9 +133,9 @@ static void ep93xx_gpio_f_irq_handler(unsigned int irq, struct irq_desc *desc)
+ 
+ static void ep93xx_gpio_irq_ack(struct irq_data *d)
+ {
+-	int line = irq_to_gpio(d->irq);
+-	int port = line >> 3;
+-	int port_mask = 1 << (line & 7);
++	int port, port_mask;
++
++	ep93xx_gpio_irq_to_gpio_port_mask(d->irq, &port, &port_mask);
+ 
+ 	if (irqd_get_trigger_type(d) == IRQ_TYPE_EDGE_BOTH) {
+ 		gpio_int_type2[port] ^= port_mask; /* switch edge direction */
+@@ -133,9 +147,9 @@ static void ep93xx_gpio_irq_ack(struct irq_data *d)
+ 
+ static void ep93xx_gpio_irq_mask_ack(struct irq_data *d)
+ {
+-	int line = irq_to_gpio(d->irq);
+-	int port = line >> 3;
+-	int port_mask = 1 << (line & 7);
++	int port, port_mask;
++
++	ep93xx_gpio_irq_to_gpio_port_mask(d->irq, &port, &port_mask);
+ 
+ 	if (irqd_get_trigger_type(d) == IRQ_TYPE_EDGE_BOTH)
+ 		gpio_int_type2[port] ^= port_mask; /* switch edge direction */
+@@ -148,19 +162,21 @@ static void ep93xx_gpio_irq_mask_ack(struct irq_data *d)
+ 
+ static void ep93xx_gpio_irq_mask(struct irq_data *d)
+ {
+-	int line = irq_to_gpio(d->irq);
+-	int port = line >> 3;
++	int port, port_mask;
++
++	ep93xx_gpio_irq_to_gpio_port_mask(d->irq, &port, &port_mask);
+ 
+-	gpio_int_unmasked[port] &= ~(1 << (line & 7));
++	gpio_int_unmasked[port] &= ~port_mask;
+ 	ep93xx_gpio_update_int_params(port);
+ }
+ 
+ static void ep93xx_gpio_irq_unmask(struct irq_data *d)
+ {
+-	int line = irq_to_gpio(d->irq);
+-	int port = line >> 3;
++	int port, port_mask;
++
++	ep93xx_gpio_irq_to_gpio_port_mask(d->irq, &port, &port_mask);
+ 
+-	gpio_int_unmasked[port] |= 1 << (line & 7);
++	gpio_int_unmasked[port] |= port_mask;
+ 	ep93xx_gpio_update_int_params(port);
+ }
+ 
+@@ -171,11 +187,11 @@ static void ep93xx_gpio_irq_unmask(struct irq_data *d)
+  */
+ static int ep93xx_gpio_irq_type(struct irq_data *d, unsigned int type)
+ {
+-	const int gpio = irq_to_gpio(d->irq);
+-	const int port = gpio >> 3;
+-	const int port_mask = 1 << (gpio & 7);
++	int gpio, port, port_mask;
+ 	irq_flow_handler_t handler;
+ 
++	gpio = ep93xx_gpio_irq_to_gpio_port_mask(d->irq, &port, &port_mask);
++
+ 	gpio_direction_input(gpio);
+ 
+ 	switch (type) {
