@@ -1,54 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751036Ab1HIN1R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 09:27:17 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:62306 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab1HIN1P (ORCPT
+	id S1751217Ab1HIN1V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 09:27:21 -0400
+Received: from cernmx30.cern.ch ([137.138.144.177]:57656 "EHLO
+	CERNMX30.cern.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866Ab1HIN1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 09:27:15 -0400
+	Tue, 9 Aug 2011 09:27:18 -0400
+Date: Tue, 9 Aug 2011 15:24:13 +0200
+From: Manohar Vanga <manohar.vanga@cern.ch>
+To: Martyn Welch <martyn.welch@ge.com>
+CC: "Emilio G. Cota" <cota@braap.org>, <gregkh@suse.de>,
+        <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/8] staging: vme: add functions for bridge module
+ refcounting
+Message-ID: <20110809132413.GA9762@becoht-mvanga>
+Mail-Followup-To: Martyn Welch <martyn.welch@ge.com>,
+	"Emilio G. Cota" <cota@braap.org>, gregkh@suse.de,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <1312194053-32310-1-git-send-email-manohar.vanga@cern.ch>
+ <1312194053-32310-6-git-send-email-manohar.vanga@cern.ch>
+ <4E39555C.30507@ge.com>
+ <20110803140630.GA29460@becoht-mvanga>
+ <20110803152317.GA21903@flamenco.cs.columbia.edu>
+ <4E3A4904.3040007@ge.com>
+ <20110804163451.GA18422@flamenco.cs.columbia.edu>
+ <4E3B9FA2.3060303@ge.com>
+ <20110805090416.GA4806@becoht-mvanga>
+ <4E3BB6E7.6020809@ge.com>
 MIME-Version: 1.0
-In-Reply-To: <20110805212153.GL5782@one.firstfloor.org>
-References: <20110805200945.GA14014@tassilo.jf.intel.com> <4E3C5154.2050307@zytor.com>
- <CAObL_7E3yOHtx9N3qd2UXVn+h6tACoNjekRhiMcHrzb=Mu4q8A@mail.gmail.com>
- <4E3C571C.1070903@zytor.com> <20110805205222.GK5782@one.firstfloor.org>
- <CAObL_7G2TqBVXvfuh2GPNteYBNoc8_s398KS+jPOPQYAhPHz0Q@mail.gmail.com> <20110805212153.GL5782@one.firstfloor.org>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Tue, 9 Aug 2011 09:26:55 -0400
-X-Google-Sender-Auth: 39VbEoSJfKtdoC08n8n7Lzv6xNg
-Message-ID: <CAObL_7Exnu8rHNY67o_HutizpLrGMx0heYU8wKXeEutXZywvdA@mail.gmail.com>
-Subject: Re: New vsyscall emulation breaks JITs
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        lueckintel@yahoo.com, kimwooyoung@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4E3BB6E7.6020809@ge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [137.138.192.18]
+Keywords: CERN SpamKiller Note: -50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 5, 2011 at 5:21 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> On Fri, Aug 05, 2011 at 05:00:44PM -0400, Andrew Lutomirski wrote:
->> > If anything runtime, but really for me it looks like the vsyscall
->> > changes should be only in one of those limited compability paranoia
->> > patchkits.
->>
->> Switching it in runtime would be a giant mess because user code might
->
-> You can always switch at boot time.
->
-> But really serious binary incompatibility like this should not be default
-> (not even talking about the slow down for existing binaries using time())
+Hey Martyn,
 
-Why do we care about pin again?
+> I think that by refcounting the resources being used we will know whether a
+> bridge module is being used or not, thus whether it can be unloaded or not. By
+> reference counting the use of resources we minimise the chance of poorly
+> written drivers using resources, but not registering the fact that they are in
+> fact using a VME bridge.
 
-$ ./pin -t obj-intel64/opcodemix.so -- /bin/ls
-E:3.0 is not a supported linux release
+In the end, this discussion is about what we want the bride module reference count
+to represent. I see your point here that it would be really useful to know what
+resources have been allocated. I am just wondering whether the module refcount is
+a good place to give information on allocated resources (rather than the bridge
+module refcount).
 
-So we've already broken it completely, and they'll have to release a
-new version anyway to fix it.  This version is from June of this year.
+I am not really an expert in these matters but would something like a sysfs file
+be a cleaner approach to providing information on allocated resources within the
+driver?
 
-I'll send out the updated patch anyway for the benefit of DynamoRIO
-(which is the only thing I know of that is affected).
+With this approach, I am also thinking about cases where resources are not allocated
+within the probe call. This can cause issues if the bridge module is removed after
+a successful probe but before the resources are allocated. This would be a direct
+bug :-/
 
---Andy
+If we really don't want explicit module refcounting by drivers, can we perhaps use
+the return value of the probe to automatically do this? eg. in vme_bus_probe() like
+below:
+
+    int ret = 0;
+    ...
+    vme_bridge_get(bridge);
+    if (driver->probe)
+            ret = driver->probe(vdev);
+    if (ret)
+        vme_bridge_put(bridge);
+    return ret;
+
+Just a thought. Feel free to shoot it down if you think it's the incorrect
+approach :P
+
+Thanks!
+
+--
+/manohar
