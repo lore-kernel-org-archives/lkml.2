@@ -1,122 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab1HIKr7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 06:47:59 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13857 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab1HIKr5 (ORCPT
+	id S1753036Ab1HIKsO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 06:48:14 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:46716 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752914Ab1HIKsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 06:47:57 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 09 Aug 2011 03:47:57 -0700
-From: dahuang@nvidia.com
-To: broonie@opensource.wolfsonmicro.com, lrg@ti.com, mike@compulab.co.il,
-        sameo@linux.intel.com, xxie@nvidia.com
-Cc: linux-kernel@vger.kernel.org, Danny Huang <dahuang@nvidia.com>
-Subject: [PATCH] regulator: tps6586x: add SMx slew rate setting
-Date: Tue,  9 Aug 2011 18:47:50 +0800
-Message-Id: <1312886870-17451-1-git-send-email-dahuang@nvidia.com>
-X-Mailer: git-send-email 1.7.6
-X-NVConfidentiality: public
+	Tue, 9 Aug 2011 06:48:11 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AroDAAkPQU55LbABgWdsb2JhbABCpzcVAQEWJiWBQAEBBTIBIyMQCAMOBgEDLhQlAyETxEIOhjgEmzyIRg
+Date: Tue, 9 Aug 2011 20:48:04 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/2] dcache: convert dentry_stat.nr_unused to per-cpu
+ counters
+Message-ID: <20110809104804.GS3162@dastard>
+References: <1312787021-11324-1-git-send-email-david@fromorbit.com>
+ <1312787021-11324-2-git-send-email-david@fromorbit.com>
+ <CAOJsxLEqNZYV-4qs3HM9EkX-C=KAzjuAXpDOaijykWaa4NSRbg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOJsxLEqNZYV-4qs3HM9EkX-C=KAzjuAXpDOaijykWaa4NSRbg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xin Xie <xxie@nvidia.com>
+On Mon, Aug 08, 2011 at 10:08:20AM +0300, Pekka Enberg wrote:
+> On Mon, Aug 8, 2011 at 10:03 AM, Dave Chinner <david@fromorbit.com> wrote:
+> > From: Dave Chinner <dchinner@redhat.com>
+> >
+> > Before we split up the dcache_lru_lock, the unused dentry counter
+> > needs to be made independent of the global dcache_lru_lock. Convert
+> > it to per-cpu counters to do this.
+> >
+> > Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> > ---
+> >  fs/dcache.c |   17 ++++++++++++++---
+> >  1 files changed, 14 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/fs/dcache.c b/fs/dcache.c
+> > index b05aac3..5e5208d 100644
+> > --- a/fs/dcache.c
+> > +++ b/fs/dcache.c
+> > @@ -116,6 +116,7 @@ struct dentry_stat_t dentry_stat = {
+> >  };
+> >
+> >  static DEFINE_PER_CPU(unsigned int, nr_dentry);
+> > +static DEFINE_PER_CPU(unsigned int, nr_dentry_unused);
+> >
+> >  #if defined(CONFIG_SYSCTL) && defined(CONFIG_PROC_FS)
+> >  static int get_nr_dentry(void)
+> > @@ -127,10 +128,20 @@ static int get_nr_dentry(void)
+> >        return sum < 0 ? 0 : sum;
+> >  }
+> >
+> > +static int get_nr_dentry_unused(void)
+> > +{
+> > +       int i;
+> > +       int sum = 0;
+> > +       for_each_possible_cpu(i)
+> > +               sum += per_cpu(nr_dentry_unused, i);
+> > +       return sum < 0 ? 0 : sum;
+> > +}
+> 
+> Why not use struct percpu_counter and percpu_counter_sum_positive() for this?
 
-Add output vlotage slew rate setting for SM0/SM1
+That's what I originally implemented for all these VFS per-cpu
+counters. e.g:
 
-Signed-off-by: Xin Xie <xxie@nvidia.com>
-Signed-off-by: Danny Huang <dahuang@nvidia.com>
----
- drivers/regulator/tps6586x-regulator.c |   32 +++++++++++++++++++++++++++++++-
- include/linux/mfd/tps6586x.h           |   16 ++++++++++++++++
- 2 files changed, 47 insertions(+), 1 deletions(-)
+cffbc8a fs: Convert nr_inodes and nr_unused to per-cpu counters
 
-diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
-index bb04a75..dbcf09d 100644
---- a/drivers/regulator/tps6586x-regulator.c
-+++ b/drivers/regulator/tps6586x-regulator.c
-@@ -332,6 +332,36 @@ static inline int tps6586x_regulator_preinit(struct device *parent,
- 				 1 << ri->enable_bit[1]);
- }
- 
-+static int tps6586x_regulator_set_slew_rate(struct platform_device *pdev)
-+{
-+	struct device *parent = pdev->dev.parent;
-+	struct regulator_init_data *p = pdev->dev.platform_data;
-+	struct tps6586x_settings *setting = p->driver_data;
-+	uint8_t reg;
-+
-+	if (setting == NULL)
-+		return 0;
-+
-+	if (!(setting->slew_rate & TPS6586X_SLEW_RATE_SET))
-+		return 0;
-+
-+	/* only SM0 and SM1 can have the slew rate settings */
-+	switch (pdev->id) {
-+	case TPS6586X_ID_SM_0:
-+		reg = TPS6586X_SM0SL;
-+		break;
-+	case TPS6586X_ID_SM_1:
-+		reg = TPS6586X_SM1SL;
-+		break;
-+	default:
-+		dev_warn(&pdev->dev, "Only SM0/SM1 can set slew rate\n");
-+		return -EINVAL;
-+	}
-+
-+	return tps6586x_write(parent, reg,
-+			setting->slew_rate & TPS6586X_SLEW_RATE_MASK);
-+}
-+
- static inline struct tps6586x_regulator *find_regulator_info(int id)
- {
- 	struct tps6586x_regulator *ri;
-@@ -374,7 +404,7 @@ static int __devinit tps6586x_regulator_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, rdev);
- 
--	return 0;
-+	return tps6586x_regulator_set_slew_rate(pdev);
- }
- 
- static int __devexit tps6586x_regulator_remove(struct platform_device *pdev)
-diff --git a/include/linux/mfd/tps6586x.h b/include/linux/mfd/tps6586x.h
-index b6bab1b..b19176e 100644
---- a/include/linux/mfd/tps6586x.h
-+++ b/include/linux/mfd/tps6586x.h
-@@ -1,6 +1,18 @@
- #ifndef __LINUX_MFD_TPS6586X_H
- #define __LINUX_MFD_TPS6586X_H
- 
-+#define TPS6586X_SLEW_RATE_INSTANTLY	0x00
-+#define TPS6586X_SLEW_RATE_110UV	0x01
-+#define TPS6586X_SLEW_RATE_220UV	0x02
-+#define TPS6586X_SLEW_RATE_440UV	0x03
-+#define TPS6586X_SLEW_RATE_880UV	0x04
-+#define TPS6586X_SLEW_RATE_1760UV	0x05
-+#define TPS6586X_SLEW_RATE_3520UV	0x06
-+#define TPS6586X_SLEW_RATE_7040UV	0x07
-+
-+#define TPS6586X_SLEW_RATE_SET		0x08
-+#define TPS6586X_SLEW_RATE_MASK         0x07
-+
- enum {
- 	TPS6586X_ID_SM_0,
- 	TPS6586X_ID_SM_1,
-@@ -48,6 +60,10 @@ enum {
- 	TPS6586X_INT_RTC_ALM2,
- };
- 
-+struct tps6586x_settings {
-+	int slew_rate;
-+};
-+
- struct tps6586x_subdev_info {
- 	int		id;
- 	const char	*name;
+but then this happened:
+
+commit 86c8749ede0c59e590de9267066932a26f1ce796
+Author: Nick Piggin <npiggin@kernel.dk>
+Date:   Fri Jan 7 17:49:18 2011 +1100
+
+    vfs: revert per-cpu nr_unused counters for dentry and inodes
+    
+    The nr_unused counters count the number of objects on an LRU, and as such they
+    are synchronized with LRU object insertion and removal and scanning, and
+    protected under the LRU lock.
+    
+    Making it per-cpu does not actually get any concurrency improvements because o
+    this lock, and summing the counter is much slower, and
+    incrementing/decrementing it costs more code size and is slower too.
+    
+    These counters should stay per-LRU, which currently means global.
+    
+    Signed-off-by: Nick Piggin <npiggin@kernel.dk>
+
+and then, because the per-cpu counters were actually necessary,
+a couple of patches later in the series per-cpu counters were
+re-introduced:
+
+commit 3e880fb5e4bb6a012035e3edd0586ee2817c2e24
+Author: Nick Piggin <npiggin@kernel.dk>
+Date:   Fri Jan 7 17:49:19 2011 +1100
+
+    fs: use fast counters for vfs caches
+    
+    percpu_counter library generates quite nasty code, so unless you need
+    to dynamically allocate counters or take fast approximate value, a
+    simple per cpu set of counters is much better.
+    
+    The percpu_counter can never be made to work as well, because it has an
+    indirection from pointer to percpu memory, and it can't use direct
+    this_cpu_inc interfaces because it doesn't use static PER_CPU data, so
+    code will always be worse.
+
+....
+
+No point in making arguments about how using and improving the
+generic counter helps everyone, the maintenance is lower as well,
+or that we are summing the counters on every single shrinker call
+(i.e. could be thousands of times a second) so we need fast
+approximate values to be taken.
+
+The change to per-sb LRUs actually takes away the need to sum the
+VFS inode and dentry counters on every shrinker call, so now the use
+of the roll-your-own counter structure makes a bit of sense because
+they are only read when someone read /proc/sys/fs/dentry-state. It
+sure as hell didn't make sense back when this code was merged,
+though....
+
+Cheers,
+
+Dave.
+
 -- 
-1.7.6
-
+Dave Chinner
+david@fromorbit.com
