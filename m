@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab1HIUa0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 16:30:26 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58237 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753528Ab1HIUaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 16:30:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [patch 1/1] [PATCH] include storage keys in hibernation image.
-Date: Tue, 9 Aug 2011 21:56:12 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc1+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
-        Jiri Slaby <jslaby@suse.cz>
-References: <20110608074523.211912903@de.ibm.com> <201107290001.14465.rjw@sisk.pl> <20110809174524.45cd496d@mschwide>
-In-Reply-To: <20110809174524.45cd496d@mschwide>
+	id S1753104Ab1HIUiO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 16:38:14 -0400
+Received: from april.london.02.net ([87.194.255.143]:41405 "EHLO
+	april.london.02.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab1HIUiO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 16:38:14 -0400
+X-Greylist: delayed 408 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Aug 2011 16:38:13 EDT
+From: Adam Baker <linux@baker-net.org.uk>
+To: Hans de Goede <hdegoede@redhat.com>
+Subject: Re: USB mini-summit at LinuxCon Vancouver
+Date: Tue, 9 Aug 2011 21:31:03 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38-10-generic; KDE/4.6.2; i686; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, libusb-devel@lists.sourceforge.net,
+        Alexander Graf <agraf@suse.de>, Gerd Hoffmann <kraxel@redhat.com>,
+        hector@marcansoft.com, Jan Kiszka <jan.kiszka@siemens.com>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, pbonzini@redhat.com,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Oliver Neukum <oliver@neukum.org>, Felipe Balbi <balbi@ti.com>,
+        Clemens Ladisch <clemens@ladisch.de>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Theodore Kilgore <kilgota@banach.math.auburn.edu>
+References: <Pine.LNX.4.44L0.1108091016380.1949-100000@iolanthe.rowland.org> <4E41912F.50901@redhat.com>
+In-Reply-To: <4E41912F.50901@redhat.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201108092156.12451.rjw@sisk.pl>
+Message-Id: <201108092131.03818.linux@baker-net.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 09, 2011, Martin Schwidefsky wrote:
-> On Fri, 29 Jul 2011 00:01:14 +0200
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+On Tuesday 09 August 2011, Hans de Goede wrote:
+> Hi,
 > 
-> > Sorry for the extreme delay.
-> 
-> No big deal, I have been busy with other things anyway.
->  
-> > Having reconsidered things I think the code under the #ifdef above
-> > should really go to arch/s390.
-> 
-> Ok, that is reasonable.
->  
-> > Now, for the purpose of exporting the headers I'd introduce
-> > CONFIG_ARCH_SAVE_PAGE_KEYS and make S390 do
-> > 
-> > select ARCH_SAVE_PAGE_KEYS if HIBERNATION
-> > 
-> > and I'd put a #ifdef depending on that into include/linux/suspend.h.
-> > 
-> > Apart from this, I have only one complaint, which is that the kerneldoc
-> > comments should follow the standard (the other comments in snapshot.c don't,
-> > but that's a matter for a separate patch).
-> 
-> Sounds good. I will come up with new patches for this and resend them
-> for review. Might be one or two weeks though, currently conferencing in
-> Orlando..
+> On 08/09/2011 04:19 PM, Alan Stern wrote:
 
-OK, thanks!
+> >  Does it really make sense to combine 5 drivers into one?
+> 
+> Right, that is not the plan. The plan is to simply stop having 2 drivers
+> for 1 logical (and physical) block. So we go from 10 drivers, 5 stillcam
+> + 5 webcam, to just 5 drivers. We will also likely be able to share
+> code between the code for the 2 functionalities for things like generic
+> set / get register functions, initialization, etc.
+> 
+
+Unfortunately as Theodore recently pointed out you don't go from 10 to 5, you 
+go from 10 to 10 where 5 of the new 10 are only used on Win32, FreeBSD and OSX 
+(but they aren't any simpler because they still rely on libusb) and the other 
+5 that are only used on Linux become significantly more complicated than they 
+currently are.
+
+It has also just occured to me that it might be possible to solve the issues 
+we are facing just in the kernel. At the moment when the kernel performs a 
+USBDEVFS_DISCONNECT it keeps the kernel driver locked out until userspace 
+performs a USBDEVFS_CONNECT. If the kernel reattached the kernel driver when 
+the device file was closed then, as gvfs doesn't keep the file open the 
+biggest current issue would be solved instantly. If a mechanism could be found 
+to prevent USBDEVFS_DISCONNECT from succeeding when the corresponding 
+/dev/videox file was open then that would seem to be a reasonable solution.
+
+Hans had expressed the opinion that merely having the device open to control 
+the camera not to stream shouldn't  prevent stillcam operation - I disagree 
+because if you are setting up the controls you are probably already streaming 
+so you can see what you are doing and if not you are probably about to.
+
+Of course changing the behaviour of USBDEVFS_DISCONNECT is not something to be 
+done lightly. I don't know how many other users there are for it and if the 
+current behaviour is actually correct for any of them. Cleaning up on file 
+close does have the useful side effect though that applications no longer need 
+to worry about the fact that even if they clean up properly on a normal exit, 
+if they crash they leave the kernel driver permanently disabled
+
+Regards
+
+Adam
