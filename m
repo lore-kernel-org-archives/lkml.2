@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801Ab1HIOJf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 10:09:35 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49879 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab1HIOJe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 10:09:34 -0400
-Date: Tue, 9 Aug 2011 16:09:23 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Tim Sander <tim.sander@hbm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.0-rt7 - Error with low latency desktop config
-Message-ID: <20110809140923.GA11398@pengutronix.de>
-References: <1312465990.16729.22.camel@twins>
- <201108091548.06875.tim.sander@hbm.com>
+	id S1751989Ab1HIOON (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 10:14:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56363 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751315Ab1HIOOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 10:14:12 -0400
+Message-ID: <4E4140B3.7090802@suse.cz>
+Date: Tue, 09 Aug 2011 16:14:11 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201108091548.06875.tim.sander@hbm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, David Woodhouse <dwmw2@infradead.org>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 2/2] Enable 'make CONFIG_FOO=y oldconfig'
+References: <1312067499.22074.59.camel@i7.infradead.org> <1312067670.22074.61.camel@i7.infradead.org> <CACqU3MV460WGjmQdOOmhk3ZJT1FNjEjfuHqx8mYcgun9+7SfjA@mail.gmail.com> <4E34998D.8060806@zytor.com> <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
+In-Reply-To: <CACqU3MWn-OQVfLH96E+AeTCEjUw5+girXbuNgmUvXrEQuBe4vg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 09, 2011 at 03:48:06PM +0200, Tim Sander wrote:
-> Hi
-> 
-> When running a slightly patched 3.0-rt7 kernel  as a low latency desktop config 
-> with the kconfig as attached i get appended error below. 
-> 
-> I'm not sure if you are interested in these errors but since you are aiming 
-> for inclusion into mainline, i think these errors are also worthwhile?
-> 
-> Note this is not a vanilla 3.0-rt7 since that does not run on our hardware, 
-> but tried to make sure that this error is not from my platform patches.
-The config doesn't look like a 3.0-rt7 one. There is neither
+On 31.7.2011 02:05, Arnaud Lacombe wrote:
+> Hi,
+>
+> On Sat, Jul 30, 2011 at 7:53 PM, H. Peter Anvin<hpa@zytor.com>  wrote:
+>> On 07/30/2011 04:44 PM, Arnaud Lacombe wrote:
+>>>
+>>> Beside that, the one thing I dislike with your patch is that it is
+>>> unconditional and global to all symbols, and you have no way to forbid
+>>> the environment to override a value.
+>>>
+>>
+>> Why????
+>>
+> Because kconfig might not be ran exclusively from a fully controlled
+> and restricted environment ? Not to mention that it is used by other
+> people than the linux kernel folks.
 
-	PREEMPT_RTB=y
+Well, it has always been possible to trick kbuild (not kconfig) into 
+accepting CONFIG_* options from environment, because unset kconfig 
+options in auto.conf are not seen by make. Of course this is completely 
+fragile, because there is no dependency checking and such variables are 
+only seen by make and do not appear in autoconf.h. So a patch that 
+teaches kconfig to read options from the environment would actually make 
+some (albeit currently "illegal") use cases work correctly :).
 
-nor
-
-	# PREEMPT_RTB is not set
-
-in it.
-
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Michal
