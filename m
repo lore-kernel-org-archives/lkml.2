@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab1HIOlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 10:41:39 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:3984 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750695Ab1HIOli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 10:41:38 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Subject: Re: [PATCH net-next 2/2] bnx2x: Coalesce pr_cont uses and fix
- DP typos
-From: "Eilon Greenstein" <eilong@broadcom.com>
-Reply-to: eilong@broadcom.com
-To: "Joe Perches" <joe@perches.com>
-cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <98d09e1b3d7a73bf5f2744f0ca238321573e4579.1312818707.git.joe@perches.com>
-References: <cover.1312818707.git.joe@perches.com>
- <98d09e1b3d7a73bf5f2744f0ca238321573e4579.1312818707.git.joe@perches.com>
-Organization: Broadcom
-Date: Tue, 9 Aug 2011 17:41:23 +0300
-Message-ID: <1312900883.31417.2.camel@lb-tlvb-eilong.il.broadcom.com>
+	id S1752637Ab1HIOnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 10:43:12 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:42858 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750695Ab1HIOnK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 10:43:10 -0400
+Date: Tue, 9 Aug 2011 16:43:26 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux-usb@vger.kernel.org, Anisse Astier <anisse@astier.eu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Arnaud Lacombe <lacombar@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: ehci post 3.0: new section mismatch of ehci_bios_handoff() to
+ ehci_dmi_nohandoff_table
+Message-ID: <20110809144326.GA10105@gere.osrc.amd.com>
+References: <20110805170120.4a3fd14c@stein>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3
-X-WSS-ID: 625F97E53DK9349361-01-01
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110805170120.4a3fd14c@stein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-08-08 at 08:53 -0700, Joe Perches wrote:
-> Uses of pr_cont should be avoided where reasonably possible
-> because they can be interleaved by other threads and processes.
+On Fri, Aug 05, 2011 at 05:01:20PM +0200, Stefan Richter wrote:
+> Hi,
 > 
-> Coalesce pr_cont uses.
+> commit 03c75362181b0b1d6a330e7cf8def10ba988dfbe "ehci: refactor pci quirk
+> to use standard dmi_check_system method" added a new section mismatch.  A
+> web search shows that there is already a fix for this from Arnaud.
+> https://patchwork.kernel.org/patch/996112/mbox/
 > 
-> Fix typos, duplicated words and spacing in DP uses caused
-> by split multi-line formats.  Coalesce some of these
-> split formats.  Add missing terminating newlines to DP uses.
+> Unless I am looking at a wrong git tree, the fix is not committed yet.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
+> The section mismatch:
+> 
+> WARNING: drivers/built-in.o(.devinit.text+0x2e37): Section mismatch in
+> reference from the function ehci_bios_handoff() to the
+> variable .init.rodata:ehci_dmi_nohandoff_table
+> The function __devinit ehci_bios_handoff() references
+> a variable __initconst ehci_dmi_nohandoff_table.
+> If ehci_dmi_nohandoff_table is only used by ehci_bios_handoff then
+> annotate ehci_dmi_nohandoff_table with a matching annotation.
 
-....
+Same here on -rc1 :(.
 
-> @@ -12254,7 +12261,7 @@ void bnx2x_period_func(struct link_params *params, struct link_vars *vars)
->  {
->         struct bnx2x *bp = params->bp;
->         if (!params) {
-> -               DP(NETIF_MSG_LINK, "Ininitliazed params !\n");
-> +               DP(NETIF_MSG_LINK, "Uninitialized params !\n");
->                 return;
->         }
->         /* DP(NETIF_MSG_LINK, "Periodic called vars->phy_flags 0x%x speed 0x%x
+Can someone please pick up the fix already? Greg?
 
-This does not apply on the current net-next. Other than that - it looks
-good.
+Thanks.
 
-Please re-submit this patch series once net-next is opened for driver
-changes (see: http://marc.info/?l=linux-netdev&m=131278578427946&w=2 )
-and I will ACK it.
+-- 
+Regards/Gruss,
+Boris.
 
-Thanks,
-Eilon
-
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
