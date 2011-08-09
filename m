@@ -1,126 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058Ab1HIFxB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 01:53:01 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:42466 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab1HIFw7 (ORCPT
+	id S1752279Ab1HIFz6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 01:55:58 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:20828 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751036Ab1HIFz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 01:52:59 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:sender:date:from:to:cc:subject:message-id:
-	references:mime-version:content-type:content-disposition:in-reply-to:
-	x-operating-system:user-agent:x-system-of-record;
-	b=HOg449HEQlRl0UHpuvfJoZQ0Fu1xcyDmPmn7b5aDpCyE0zJwrZ1EVrO5XQ7Xd4p1Z
-	CB6ZzYpQnT06q2630EC0A==
-Date: Mon, 8 Aug 2011 22:52:27 -0700
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Joe Perches <joe@perches.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        Ramsay Jones <ramsay@ramsay1.demon.co.uk>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Joachim Eastwood <manabian@gmail.com>,
-        Andreas Schwab <schwab@linux-m68k.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] lib/sha1: remove memsets and allocate workspace on the
- stack
-Message-ID: <20110809055226.GE6103@google.com>
-References: <1312844837-10086-1-git-send-email-msb@chromium.org>
- <1312847115.1643.22.camel@Joe-Laptop>
+	Tue, 9 Aug 2011 01:55:57 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoADAFfIQE55LbABgWdsb2JhbABCpykVAQEWJiWBQAEBAwEBOhwPFAULCAMOChUZFCUDIRMJEodSBL4LDoMrgw0Eo38
+Date: Tue, 9 Aug 2011 15:55:51 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, Greg Thelen <gthelen@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] IO-less dirty throttling v8
+Message-ID: <20110809055551.GP3162@dastard>
+References: <20110806084447.388624428@intel.com>
+ <20110809020127.GA3700@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1312847115.1643.22.camel@Joe-Laptop>
-X-Operating-System: Linux/2.6.32-gg426-generic (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+In-Reply-To: <20110809020127.GA3700@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches (joe@perches.com) wrote:
-> On Mon, 2011-08-08 at 16:07 -0700, Mandeep Singh Baines wrote:
-> > The previous implementation required the workspace to be passed in as
-> > a parameter. This prevents the compiler from being able to store the
-> > workspace in registers. I've also removed the memset since that also
-> > prevents the compiler from storing the workspace in registers.
+On Mon, Aug 08, 2011 at 10:01:27PM -0400, Vivek Goyal wrote:
+> On Sat, Aug 06, 2011 at 04:44:47PM +0800, Wu Fengguang wrote:
+> > Hi all,
+> > 
+> > The _core_ bits of the IO-less balance_dirty_pages().
+> > Heavily simplified and re-commented to make it easier to review.
+> > 
+> > 	git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git dirty-throttling-v8
+> > 
+> > Only the bare minimal algorithms are presented, so you will find some rough
+> > edges in the graphs below. But it's usable :)
+> > 
+> > 	http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/dirty-throttling-v8/
+> > 
+> > And an introduction to the (more complete) algorithms:
+> > 
+> > 	http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/slides/smooth-dirty-throttling.pdf
+> > 
+> > Questions and reviews are highly appreciated!
 > 
-> I did a similar patch locally.
+> Hi Wu,
 > 
-> > There is no loss of security due to removing the memset. It would be a
-> > bug for the stack to leak to userspace. However, a defence-in-depth
-> > argument could be made for keeping the clearing of the workspace.
+> I am going through the slide number 39 where you talk about it being
+> future proof and it can be used for IO control purposes. You have listed
+> following merits of this approach.
 > 
-> You should add #include <linux/crypthash.h> to
-> lib/sha1.c and perhaps rationalize the use of __u8
-> and char for the second argument to sha_transform in
-> the definition and uses.
+> * per-bdi nature, works on NFS and Software RAID
+> * no delayed response (working at the right layer)
+> * no page tracking, hence decoupled from memcg
+> * no interactions with FS and CFQ
+> * get proportional IO controller for free
+> * reuse/inherit all the base facilities/functions
 > 
-> For defense in depth, a bool could be added to sha_transform
-> like:
-> 
-> void sha_transform(__u32 *digest, const char *data, bool wipe);
-> 
+> I would say that it will also be a good idea to list the demerits of
+> this approach in current form and that is that it only deals with
+> controlling buffered write IO and nothing else.
 
-This seems reasonable to me. In our case, there is no secrecy
-issue. We hash the blocks of the RO root filesystem. There is nothing
-secret about the rootfs blocks or their hash. We use the hashes to verify
-that the blocks haven't been modified by an attacker.
+That's not a demerit - that is all it is designed to do.
 
-We don't call sha_tranform directly. We use crypto_hash_digest. So maybe
-add a wipe param there. I'm happy to work on or test such a patch if folks
-think its interesting. Its saves me 190 ms on a 6 second boot. I suspect
-there may be other hash intense applications that also don't need secracy.
+> So on the same block device, other direct writes might be going on
+> from same group and in this scheme a user will not have any
+> control.
 
-> and the internal workspace memset after use if wipe set though
-> perhaps the memset could be a compile time option like
-> CONFIG_CRYPTO_DEFENSE_IN_DEPTH or such instead.
-> 
+But it is taken into account by the IO write throttling.
 
-Maybe instead use wipe=0 in code paths where you don't need secracy.
+> Another disadvantage is that throttling at page cache
+> level does not take care of IO spikes at device level.
 
-> > diff --git a/drivers/char/random.c b/drivers/char/random.c
-> []
-> > @@ -816,13 +816,13 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
-> >  static void extract_buf(struct entropy_store *r, __u8 *out)
-> []
-> > -		sha_transform(hash, (__u8 *)(r->pool + i), workspace);
-> > +		sha_transform(hash, (__u8 *)(r->pool + i));
-> []
-> > diff --git a/include/linux/cryptohash.h b/include/linux/cryptohash.h
-> []
-> > @@ -3,10 +3,9 @@
-> []
-> > -void sha_transform(__u32 *digest, const char *data, __u32 *W);
-> > +void sha_transform(__u32 *digest, const char *data);
-> []
-> > diff --git a/lib/sha1.c b/lib/sha1.c
-> []
-> > +void sha_transform(__u32 *digest, const char *data)
-> []
-> > diff --git a/net/ipv4/syncookies.c b/net/ipv4/syncookies.c
-> []
-> > @@ -50,7 +49,7 @@ static u32 cookie_hash(__be32 saddr, __be32 daddr, __be16 sport, __be16 dport,
-> []
-> > -	sha_transform(tmp + 16, (__u8 *)tmp, tmp + 16 + 5);
-> > +	sha_transform(tmp + 16, (__u8 *)tmp);
-> []
-> > diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-> []
-> > @@ -2511,8 +2510,7 @@ struct sk_buff *tcp_make_synack(struct sock *sk, struct dst_entry *dst,
-> []
-> >  			sha_transform((__u32 *)&xvp->cookie_bakery[0],
-> > -				      (char *)mess,
-> > -				      &workspace[0]);
-> > +				      (char *)mess);
-> []
-> > diff --git a/net/ipv6/syncookies.c b/net/ipv6/syncookies.c
-> []
-> > @@ -81,7 +80,7 @@ static u32 cookie_hash(const struct in6_addr *saddr, const struct in6_addr *dadd
-> []
-> > -	sha_transform(tmp + 16, (__u8 *)tmp, tmp + 16 + 5);
-> > +	sha_transform(tmp + 16, (__u8 *)tmp);
-> 
-> 
+And that is handled as well.
+
+How? By the indirect effect other IO and IO spikes have on the
+writeback rate. That is, other IO reduces the writeback bandwidth,
+which then changes the throttling parameters via feedback loops.
+
+The buffered write throttle is designed to reduce the page cache
+dirtying rate to the current cleaning rate of the backing device
+is. Increase the cleaning rate (i.e. device is otherwise idle) and
+it will throttle less. Decrease the cleaning rate (i.e. other IO
+spikes or block IO throttle activates) and it will throttle more.
+
+We have to do vary buffered write throttling like this to adapt to
+changing IO workloads (e.g.  someone starting a read-heavy workload
+will slow down writeback rate, so we need to throttle buffered
+writes more aggressively), so it has to be independent of any sort
+of block layer IO controller.
+
+Simply put: the block IO controller still has direct control over
+the rate at which buffered writes drain out of the system. The
+IO-less write throttle simply limits the rate at which buffered
+writes come into the system to match whatever the IO path allows to
+drain out....
+
+> Now I think one could probably come up with more sophisticated scheme
+> where throttling is done at bdi level but is also accounted at device
+> level at IO controller. (Something similar I had done in the past but
+> Dave Chinner did not like it).
+
+I don't like it because it is solution to a specific problem and
+requires complex coupling across multiple layers of the system. We
+are trying to move away from that throttling model. More
+fundamentally, though, is that it is not a general solution to the
+entire class of "IO writeback rate changed" problems that buffered
+write throttling needs to solve.
+
+> Anyway, keeping track of per cgroup rate and throttling accordingly
+> can definitely help implement an algorithm for per cgroup IO control.
+> We probably just need to find a reasonable way to account all this
+> IO to end device so that we have control of all kind of IO of a cgroup.
+> How do you implement proportional control here? From overall bdi bandwidth
+> vary per cgroup bandwidth regularly based on cgroup weight? Again the
+> issue here is that it controls only buffered WRITES and nothing else and
+> in this case co-ordinating with CFQ will probably be hard. So I guess
+> usage of proportional IO just for buffered WRITES will have limited
+> usage.
+
+The whole point of doing the throttling this way is that we don't
+need any sort of special connection between block IO throttling and
+page cache (buffered write) throttling. We significantly reduce the
+coupling between the layers by relying on feedback-driven control
+loops to determine the buffered write throttling thresholds
+adaptively. IOWs, the IO-less write throttling at the page cache
+will adjust automatically to whatever throughput the block IO
+throttling allows async writes to achieve.
+
+However, before we have a "finished product", there is still another
+piece of the puzzle to be put in place - memcg-aware buffered
+writeback. That is, having a flusher thread do work on behalf of
+memcg in the IO context of the memcg. Then the IO controller just
+sees a stream of async writes in the context of the memcg the
+buffered writes came from in the first place. The block layer
+throttles them just like any other IO in the IO context of the
+memcg...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
