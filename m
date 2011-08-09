@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab1HIJsK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 05:48:10 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57247 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950Ab1HIJsI (ORCPT
+	id S1753041Ab1HIJsS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 05:48:18 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:50597 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993Ab1HIJsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 05:48:08 -0400
+	Tue, 9 Aug 2011 05:48:16 -0400
 From: Per Forlin <per.forlin@linaro.org>
 To: Akinobu Mita <akinobu.mita@gmail.com>, akpm@linux-foundation.org,
         Linus Walleij <linus.ml.walleij@gmail.com>,
@@ -15,41 +15,41 @@ To: Akinobu Mita <akinobu.mita@gmail.com>, akpm@linux-foundation.org,
 Cc: linux-doc@vger.kernel.org, linux-mmc@vger.kernel.org,
         linaro-dev@lists.linaro.org, linux-mm@kvack.org,
         Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH --mmotm v6 0/3] Make fault injection available for MMC IO
-Date: Tue,  9 Aug 2011 11:47:45 +0200
-Message-Id: <1312883268-4342-1-git-send-email-per.forlin@linaro.org>
+Subject: [PATCH --mmotm v6 3/3] fault injection: add documentation on MMC IO fault injection
+Date: Tue,  9 Aug 2011 11:47:48 +0200
+Message-Id: <1312883268-4342-4-git-send-email-per.forlin@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1312883268-4342-1-git-send-email-per.forlin@linaro.org>
+References: <1312883268-4342-1-git-send-email-per.forlin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-change log:
- v2 - Resolve build issue in mmc core.c due to multiple init_module by
-      removing the fault inject module.
-    - Export fault injection functions to make them available for modules
-    - Update fault injection documentation on MMC IO  
- v3 - add function descriptions in core.c
-    - use export GPL for fault injection functions
- v4 - make the fault_attr per host. This prepares for upcoming patch from
-      Akinobu that adds support for creating debugfs entries in
-      arbitrary directory.
- v5 - Make use of fault_create_debugfs_attr() in Akinobu's
-      patch "fault-injection: add ability to export fault_attr in...". 
- v6 - Fix typo in commit message in patch "export fault injection functions"
+Add description on how to enable random fault injection
+for MMC IO
 
-Per Forlin (3):
-  fault-inject: export fault injection functions
-  mmc: core: add random fault injection
-  fault injection: add documentation on MMC IO fault injection
+Signed-off-by: Per Forlin <per.forlin@linaro.org>
+Acked-by: Akinobu Mita <akinobu.mita@gmail.com>
+---
+ Documentation/fault-injection/fault-injection.txt |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
- Documentation/fault-injection/fault-injection.txt |    5 ++
- drivers/mmc/core/core.c                           |   44 +++++++++++++++++++++
- drivers/mmc/core/debugfs.c                        |   24 +++++++++++
- include/linux/mmc/host.h                          |    7 +++
- lib/Kconfig.debug                                 |   11 +++++
- lib/fault-inject.c                                |    2 +
- 6 files changed, 93 insertions(+), 0 deletions(-)
-
+diff --git a/Documentation/fault-injection/fault-injection.txt b/Documentation/fault-injection/fault-injection.txt
+index 82a5d25..10571df 100644
+--- a/Documentation/fault-injection/fault-injection.txt
++++ b/Documentation/fault-injection/fault-injection.txt
+@@ -21,6 +21,11 @@ o fail_make_request
+   /sys/block/<device>/make-it-fail or
+   /sys/block/<device>/<partition>/make-it-fail. (generic_make_request())
+ 
++o fail_mmc_request
++
++  injects MMC data errors on devices permitted by setting
++  debugfs entries under /sys/kernel/debug/mmc0/fail_mmc_request
++
+ Configure fault-injection capabilities behavior
+ -----------------------------------------------
+ 
 -- 
 1.7.4.1
 
