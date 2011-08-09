@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab1HISYX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 14:24:23 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43773 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799Ab1HISYW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 14:24:22 -0400
-Subject: Re: [PATCH] gianfar: reduce stack usage in gianfar_ethtool.c
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, stufever@gmail.com, netdev@vger.kernel.org,
-        davem@davemloft.net, Wang Shaoyan <wangshaoyan.pt@taobao.com>
-In-Reply-To: <1312913545.11924.16.camel@Joe-Laptop>
-References: <1312907945-1982-1-git-send-email-wangshaoyan.pt@taobao.com>
-	 <1312908784.2371.53.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <1312912326.11924.12.camel@Joe-Laptop>
-	 <1312912774.2547.1.camel@edumazet-laptop>
-	 <1312913545.11924.16.camel@Joe-Laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 09 Aug 2011 20:24:17 +0200
-Message-ID: <1312914257.2547.10.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1751867Ab1HIS3d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 14:29:33 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:48906 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750780Ab1HIS3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 14:29:32 -0400
+X-ASG-Debug-ID: 1312914571-01de280c1e1336c0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4E417C87.5040105@fusionio.com>
+Date: Tue, 9 Aug 2011 20:29:27 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [block] allow blk_flush_policy to return REQ_FSEQ_DATA independent
+  of *FLUSH
+References: <x49ty9qehg7.fsf@segfault.boston.devel.redhat.com>
+X-ASG-Orig-Subj: Re: [block] allow blk_flush_policy to return REQ_FSEQ_DATA independent
+  of *FLUSH
+In-Reply-To: <x49ty9qehg7.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1312914571
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.71305
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 09 août 2011 à 11:12 -0700, Joe Perches a écrit :
-> On Tue, 2011-08-09 at 19:59 +0200, Eric Dumazet wrote:
-> > Le mardi 09 août 2011 à 10:52 -0700, Joe Perches a écrit :
-> > > On Tue, 2011-08-09 at 18:53 +0200, Eric Dumazet wrote:
-> > > > Le mercredi 10 août 2011 à 00:39 +0800, stufever@gmail.com a écrit :
-> > > []
-> > > > > +	if (!local_rqfpr || !local_rqfcr) {
-> > > > > +		pr_err("Out of memory\n");
-> > > > 	Please remove this pr_err(), kmalloc() will complain already.
-> > > Always?
-> > > I know there's a trace option, but is it always on?
-> > Yes, unless caller added ___GFP_NOWARN in gfp :
-> > ptr = kmalloc(size, GFP_KERNEL | ___GFP_NOWARN);
+On 2011-08-09 17:24, Jeff Moyer wrote:
+> Hi,
 > 
-> Isn't that true only for slub?
+> blk_insert_flush has the following check:
 > 
-
-nope, this is page allocation, so common to slab/slub/...
-
-> Do you know where this get emitted?
-> I looked cursorily but I don't see it.
+> 	/*
+> 	 * If there's data but flush is not necessary, the request can be
+> 	 * processed directly without going through flush machinery.  Queue
+> 	 * for normal execution.
+> 	 */
+> 	if ((policy & REQ_FSEQ_DATA) &&
+> 	    !(policy & (REQ_FSEQ_PREFLUSH | REQ_FSEQ_POSTFLUSH))) {
+> 		list_add_tail(&rq->queuelist, &q->queue_head);
+> 		return;
+> 	}
 > 
+> However, blk_flush_policy will not return with policy set to only
+> REQ_FSEQ_DATA:
+> 
+> static unsigned int blk_flush_policy(unsigned int fflags, struct request *rq)
+> {
+> 	unsigned int policy = 0;
+> 
+> 	if (fflags & REQ_FLUSH) {
+> 		if (rq->cmd_flags & REQ_FLUSH)
+> 			policy |= REQ_FSEQ_PREFLUSH;
+> 		if (blk_rq_sectors(rq))
+> 			policy |= REQ_FSEQ_DATA;
+> 		if (!(fflags & REQ_FUA) && (rq->cmd_flags & REQ_FUA))
+> 			policy |= REQ_FSEQ_POSTFLUSH;
+> 	}
+> 	return policy;
+> }
+> 
+> Notice that REQ_FSEQ_DATA is only set if REQ_FLUSH is set.  Fix this
+> mismatch by moving the setting of REQ_FSEQ_DATA outside of the REQ_FLUSH
+> check.
 
-This is a bit beyond this thread
+Thanks Jeff, applied.
 
-Look at mm/page_alloc.c
-
-void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
-
-
+-- 
+Jens Axboe
 
