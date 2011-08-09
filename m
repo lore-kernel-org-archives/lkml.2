@@ -1,175 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456Ab1HIGVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 02:21:41 -0400
-Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.32]:45784 "EHLO
-	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751696Ab1HIGVk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 02:21:40 -0400
-Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
-X-Authority-Analysis: v=1.1 cv=40Z/dbZBr1wgzPkGSf8y7qdCkiWp+M7NvixVUiz+qMg= c=1 sm=0 a=wzY9NJouJbkA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=r17jK6sfZkYSxad0qIwqKg==:17 a=GsJbbCf-cH9O1XzAk2IA:9 a=wOGM8WdVIRTzxVLw1-gA:7 a=CjuIK1q_8ugA:10 a=r17jK6sfZkYSxad0qIwqKg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 24.153.165.185
-From: "Bob Pearson" <rpearson@systemfabricworks.com>
-To: <linux-kernel@vger.kernel.org>, <linux@horizon.com>,
-        <joakim.tjernlund@transmode.se>, <fzago@systemfabricworks.com>,
-        <akpm@linux-foundation.org>
-References: <4E40C5C7.2050609@systemfabricworks.com>
-In-Reply-To: <4E40C5C7.2050609@systemfabricworks.com>
-Subject: RE: [patch v3 7/7] crc32: final-cleanup.diff
-Date: Tue, 9 Aug 2011 01:21:38 -0500
-Message-ID: <00d401cc565c$98eeab60$cacc0220$@systemfabricworks.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQFUJhJtE0E7wgc4id8VkXG2Xj6UAJYEaynA
-Content-Language: en-us
+	id S1752252Ab1HIGYF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 02:24:05 -0400
+Received: from mail.ispras.ru ([83.149.199.43]:57111 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751396Ab1HIGYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 02:24:03 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, wfp5p@virginia.edu,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: serqt_usb2: fix sleeping with spinlock held
+Date: Tue,  9 Aug 2011 10:23:42 +0400
+Message-Id: <1312871022-14875-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <20110805151747.GB18527@suse.de>
+References: <20110805151747.GB18527@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Additional comments.
+The patch replaces spinlock with mutex.
 
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/staging/serqt_usb2/serqt_usb2.c |   34 ++++++++++++------------------
+ 1 files changed, 14 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/staging/serqt_usb2/serqt_usb2.c b/drivers/staging/serqt_usb2/serqt_usb2.c
+index 12f5eba..2ea82c1 100644
+--- a/drivers/staging/serqt_usb2/serqt_usb2.c
++++ b/drivers/staging/serqt_usb2/serqt_usb2.c
+@@ -190,7 +190,7 @@ struct quatech_port {
  
-> Some final cleanup changes
-> 
-> 	- added a comment at the top of crc32.c
-> 	- moved macros ahead of function prototype
-> 	- replaced loops with for (i = 0; i < xxx; i++) which
-> 	  requires fewer instructions on x86 since the
-> 	  buffer lookups can use i as an index.
-> 
-> -/* implements slicing-by-4 or slicing-by-8 algorithm */
-> -static inline u32
-> -crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32
-> (*tab)[256])
-
-After careful measurements and looking at asm code I figured out that there
-was no penalty for using 2D array. That allowed me to go back to the
-original form.
-
-> -{
->  # ifdef __LITTLE_ENDIAN
->  #  define DO_CRC(x) crc = tab[0][(crc ^ (x)) & 255] ^ (crc >> 8)
-> -#  define DO_CRC4 crc = tab[3][(crc) & 255] ^ \
-> -		tab[2][(crc >> 8) & 255] ^ \
-> -		tab[1][(crc >> 16) & 255] ^ \
-> -		tab[0][(crc >> 24) & 255]
-> -#  define DO_CRC8a (tab[7][(q) & 255] ^ \
-> -		tab[6][(q >> 8) & 255] ^ \
-> -		tab[5][(q >> 16) & 255] ^ \
-> -		tab[4][(q >> 24) & 255])
-> -#  define DO_CRC8b (tab[3][(q) & 255] ^ \
-> +#  define DO_CRC4 (tab[3][(q) & 255] ^ \
->  		tab[2][(q >> 8) & 255] ^ \
->  		tab[1][(q >> 16) & 255] ^ \
->  		tab[0][(q >> 24) & 255])
-
-By changing the syntax a little so that the assignment is done down below
-the 4 byte and 8 byte algorithms can share DO_CRC4.
-
-> +#  define DO_CRC8 (tab[7][(q) & 255] ^ \
-> +		tab[6][(q >> 8) & 255] ^ \
-> +		tab[5][(q >> 16) & 255] ^ \
-> +		tab[4][(q >> 24) & 255])
->  # else
->  #  define DO_CRC(x) crc = tab[0][((crc >> 24) ^ (x)) & 255] ^ (crc << 8)
-> -#  define DO_CRC4 crc = tab[0][(crc) & 255] ^ \
-> -		tab[1][(crc >> 8) & 255] ^ \
-> -		tab[2][(crc >> 16) & 255] ^ \
-> -		tab[3][(crc >> 24) & 255]
-> -#  define DO_CRC8a (tab[4][(q) & 255] ^ \
-> -		tab[5][(q >> 8) & 255] ^ \
-> -		tab[6][(q >> 16) & 255] ^ \
-> -		tab[8][(q >> 24) & 255])
-> -#  define DO_CRC8b (tab[0][(q) & 255] ^ \
-> +#  define DO_CRC4 (tab[0][(q) & 255] ^ \
->  		tab[1][(q >> 8) & 255] ^ \
->  		tab[2][(q >> 16) & 255] ^ \
->  		tab[3][(q >> 24) & 255])
-> +#  define DO_CRC8 (tab[4][(q) & 255] ^ \
-> +		tab[5][(q >> 8) & 255] ^ \
-> +		tab[6][(q >> 16) & 255] ^ \
-> +		tab[7][(q >> 24) & 255])
->  # endif
-> +
-> +/* implements slicing-by-4 or slicing-by-8 algorithm */
-> +static inline u32 crc32_body(u32 crc, unsigned char const *buf,
-> +			     size_t len, const u32 (*tab)[256])
-> +{
->  	const u32 *b;
-> +	u8 *p;
-> +	u32 q;
->  	size_t init_len;
->  	size_t middle_len;
->  	size_t rem_len;
-> +	size_t i;
-> 
->  	/* break buf into init_len bytes before and
->  	 * rem_len bytes after a middle section with
-> @@ -96,37 +96,34 @@ crc32_body(u32 crc, unsigned char const
->  	rem_len = (len - init_len) & 7;
->  # endif
-> 
-> -	/* Align it */
-> -	if (unlikely(init_len)) {
-> -		do {
-> -			DO_CRC(*buf++);
-> -		} while (--init_len);
-> -	}
-> -	b = (const u32 *)buf;
-> -	for (--b; middle_len; --middle_len) {
-> +	/* process unaligned initial bytes */
-> +	for (i = 0; i < init_len; i++)
-> +		DO_CRC(*buf++);
-> +
-> +	/* process aligned words */
-> +	b = (const u32 *)(buf - 4);
-> +
-> +	for (i = 0; i < middle_len; i++) {
->  # if CRC_LE_BITS == 32
-> -		crc ^= *++b; /* use pre increment for speed */
-> -		DO_CRC4;
-> +		/* slicing-by-4 algorithm */
-> +		q = crc ^ *++b; /* use pre increment for speed */
-> +		crc = DO_CRC4;
->  # else
-> -		u32 q;
-> +		/* slicing-by-8 algorithm */
->  		q = crc ^ *++b;
-> -		crc = DO_CRC8a;
-> +		crc = DO_CRC8;
->  		q = *++b;
-> -		crc ^= DO_CRC8b;
-> +		crc ^= DO_CRC4;
->  # endif
-
-This really shows how close the two algorithms are.
-
->  	}
-> -	/* And the last few bytes */
-> -	if (rem_len) {
-> -		u8 *p = (u8 *)(b + 1) - 1;
-> -		do {
-> -			DO_CRC(*++p); /* use pre increment for speed */
-> -		} while (--rem_len);
-> -	}
-> +
-> +	/* process unaligned remaining bytes */
-> +	p = (u8 *)(b + 1) - 1;
-> +
-> +	for (i = 0; i < rem_len; i++)
-> +		DO_CRC(*++p); /* use pre increment for speed */
-> +
->  	return crc;
-> -#undef DO_CRC
-> -#undef DO_CRC4
-> -#undef DO_CRC8a
-> -#undef DO_CRC8b
->  }
->  #endif
-
+ 	struct usb_serial_port *port;	/* owner of this object */
+ 	struct qt_get_device_data DeviceData;
+-	spinlock_t lock;
++	struct mutex lock;
+ 	bool read_urb_busy;
+ 	int RxHolding;
+ 	int ReadBulkStopped;
+@@ -745,7 +745,7 @@ static int qt_startup(struct usb_serial *serial)
+ 			}
+ 			return -ENOMEM;
+ 		}
+-		spin_lock_init(&qt_port->lock);
++		mutex_init(&qt_port->lock);
+ 
+ 		usb_set_serial_port_data(port, qt_port);
+ 
+@@ -1160,7 +1160,6 @@ static int qt_write_room(struct tty_struct *tty)
+ 	struct usb_serial_port *port = tty->driver_data;
+ 	struct usb_serial *serial;
+ 	struct quatech_port *qt_port;
+-	unsigned long flags;
+ 
+ 	int retval = -EINVAL;
+ 
+@@ -1176,7 +1175,7 @@ static int qt_write_room(struct tty_struct *tty)
+ 
+ 	qt_port = qt_get_port_private(port);
+ 
+-	spin_lock_irqsave(&qt_port->lock, flags);
++	mutex_lock(&qt_port->lock);
+ 
+ 	dbg("%s - port %d\n", __func__, port->number);
+ 
+@@ -1185,7 +1184,7 @@ static int qt_write_room(struct tty_struct *tty)
+ 			retval = port->bulk_out_size;
+ 	}
+ 
+-	spin_unlock_irqrestore(&qt_port->lock, flags);
++	mutex_unlock(&qt_port->lock);
+ 	return retval;
+ 
+ }
+@@ -1358,7 +1357,6 @@ static void qt_break(struct tty_struct *tty, int break_state)
+ 	struct quatech_port *qt_port;
+ 	u16 index, onoff;
+ 	unsigned int result;
+-	unsigned long flags;
+ 
+ 	index = tty->index - serial->minor;
+ 
+@@ -1369,7 +1367,7 @@ static void qt_break(struct tty_struct *tty, int break_state)
+ 	else
+ 		onoff = 0;
+ 
+-	spin_lock_irqsave(&qt_port->lock, flags);
++	mutex_lock(&qt_port->lock);
+ 
+ 	dbg("%s - port %d\n", __func__, port->number);
+ 
+@@ -1377,7 +1375,7 @@ static void qt_break(struct tty_struct *tty, int break_state)
+ 	    usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
+ 			    QT_BREAK_CONTROL, 0x40, onoff, index, NULL, 0, 300);
+ 
+-	spin_unlock_irqrestore(&qt_port->lock, flags);
++	mutex_unlock(&qt_port->lock);
+ }
+ 
+ static inline int qt_real_tiocmget(struct tty_struct *tty,
+@@ -1466,21 +1464,20 @@ static int qt_tiocmget(struct tty_struct *tty)
+ 	struct usb_serial *serial = get_usb_serial(port, __func__);
+ 	struct quatech_port *qt_port = qt_get_port_private(port);
+ 	int retval = -ENODEV;
+-	unsigned long flags;
+ 
+ 	dbg("In %s\n", __func__);
+ 
+ 	if (!serial)
+ 		return -ENODEV;
+ 
+-	spin_lock_irqsave(&qt_port->lock, flags);
++	mutex_lock(&qt_port->lock);
+ 
+ 	dbg("%s - port %d\n", __func__, port->number);
+ 	dbg("%s - port->RxHolding = %d\n", __func__, qt_port->RxHolding);
+ 
+ 	retval = qt_real_tiocmget(tty, port, serial);
+ 
+-	spin_unlock_irqrestore(&qt_port->lock, flags);
++	mutex_unlock(&qt_port->lock);
+ 	return retval;
+ }
+ 
+@@ -1491,7 +1488,6 @@ static int qt_tiocmset(struct tty_struct *tty,
+ 	struct usb_serial_port *port = tty->driver_data;
+ 	struct usb_serial *serial = get_usb_serial(port, __func__);
+ 	struct quatech_port *qt_port = qt_get_port_private(port);
+-	unsigned long flags;
+ 	int retval = -ENODEV;
+ 
+ 	dbg("In %s\n", __func__);
+@@ -1499,14 +1495,14 @@ static int qt_tiocmset(struct tty_struct *tty,
+ 	if (!serial)
+ 		return -ENODEV;
+ 
+-	spin_lock_irqsave(&qt_port->lock, flags);
++	mutex_lock(&qt_port->lock);
+ 
+ 	dbg("%s - port %d\n", __func__, port->number);
+ 	dbg("%s - qt_port->RxHolding = %d\n", __func__, qt_port->RxHolding);
+ 
+ 	retval = qt_real_tiocmset(tty, port, serial, set);
+ 
+-	spin_unlock_irqrestore(&qt_port->lock, flags);
++	mutex_unlock(&qt_port->lock);
+ 	return retval;
+ }
+ 
+@@ -1515,7 +1511,6 @@ static void qt_throttle(struct tty_struct *tty)
+ 	struct usb_serial_port *port = tty->driver_data;
+ 	struct usb_serial *serial = get_usb_serial(port, __func__);
+ 	struct quatech_port *qt_port;
+-	unsigned long flags;
+ 
+ 	dbg("%s - port %d\n", __func__, port->number);
+ 
+@@ -1524,13 +1519,13 @@ static void qt_throttle(struct tty_struct *tty)
+ 
+ 	qt_port = qt_get_port_private(port);
+ 
+-	spin_lock_irqsave(&qt_port->lock, flags);
++	mutex_lock(&qt_port->lock);
+ 
+ 	/* pass on to the driver specific version of this function */
+ 	qt_port->RxHolding = 1;
+ 	dbg("%s - port->RxHolding = 1\n", __func__);
+ 
+-	spin_unlock_irqrestore(&qt_port->lock, flags);
++	mutex_unlock(&qt_port->lock);
+ 	return;
+ }
+ 
+@@ -1539,7 +1534,6 @@ static void qt_unthrottle(struct tty_struct *tty)
+ 	struct usb_serial_port *port = tty->driver_data;
+ 	struct usb_serial *serial = get_usb_serial(port, __func__);
+ 	struct quatech_port *qt_port;
+-	unsigned long flags;
+ 	unsigned int result;
+ 
+ 	if (!serial)
+@@ -1547,7 +1541,7 @@ static void qt_unthrottle(struct tty_struct *tty)
+ 
+ 	qt_port = qt_get_port_private(port);
+ 
+-	spin_lock_irqsave(&qt_port->lock, flags);
++	mutex_lock(&qt_port->lock);
+ 
+ 	dbg("%s - port %d\n", __func__, port->number);
+ 
+@@ -1573,7 +1567,7 @@ static void qt_unthrottle(struct tty_struct *tty)
+ 				    __func__, result);
+ 		}
+ 	}
+-	spin_unlock_irqrestore(&qt_port->lock, flags);
++	mutex_unlock(&qt_port->lock);
+ 	return;
+ 
+ }
+-- 
+1.7.4.1
 
