@@ -1,216 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab1HILpI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 07:45:08 -0400
-Received: from science.horizon.com ([71.41.210.146]:30854 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753295Ab1HILpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 07:45:06 -0400
-Date: 9 Aug 2011 07:45:04 -0400
-Message-ID: <20110809114504.6140.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: akpm@linux-foundation.org, fzago@systemfabricworks.com,
-        joakim.tjernlund@transmode.se, linux-kernel@vger.kernel.org,
-        linux@horizon.com, rdunlap@xenotime.net,
-        rpearson@systemfabricworks.com
-Subject: Re: [patch v4 1/7] crc32: move-to-documentation.diff
-In-Reply-To: <4E40CCCF.5070000@systemfabricworks.com>
+	id S1753444Ab1HILqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 07:46:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46784 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753272Ab1HILqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 07:46:44 -0400
+Date: Tue, 9 Aug 2011 13:46:42 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] memcg: fix drain_all_stock crash
+Message-ID: <20110809114642.GG7463@tiehlicka.suse.cz>
+References: <20110808184738.GA7749@redhat.com>
+ <20110808214704.GA4396@tiehlicka.suse.cz>
+ <20110808231912.GA29002@redhat.com>
+ <20110809072615.GA7463@tiehlicka.suse.cz>
+ <20110809093150.GC7463@tiehlicka.suse.cz>
+ <20110809183216.97daf2b0.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110809094503.GD7463@tiehlicka.suse.cz>
+ <20110809185313.dc784d70.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110809100944.GE7463@tiehlicka.suse.cz>
+ <20110809190725.96309c88.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110809190725.96309c88.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's a hopefully-improved Documentation file, which explains the slicing
-algorithm as well.  As long as you have a big diff, it seems worth tweaking.
+On Tue 09-08-11 19:07:25, KAMEZAWA Hiroyuki wrote:
+> On Tue, 9 Aug 2011 12:09:44 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Tue 09-08-11 18:53:13, KAMEZAWA Hiroyuki wrote:
+> > > On Tue, 9 Aug 2011 11:45:03 +0200
+> > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > 
+> > > > On Tue 09-08-11 18:32:16, KAMEZAWA Hiroyuki wrote:
+> > > > > On Tue, 9 Aug 2011 11:31:50 +0200
+> > > > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > > > 
+> > > > > > What do you think about the half backed patch bellow? I didn't manage to
+> > > > > > test it yet but I guess it should help. I hate asymmetry of drain_lock
+> > > > > > locking (it is acquired somewhere else than it is released which is
+> > > > > > not). I will think about a nicer way how to do it.
+> > > > > > Maybe I should also split the rcu part in a separate patch.
+> > > > > > 
+> > > > > > What do you think?
+> > > > > 
+> > > > > 
+> > > > > I'd like to revert 8521fc50 first and consider total design change
+> > > > > rather than ad-hoc fix.
+> > > > 
+> > > > Agreed. Revert should go into 3.0 stable as well. Although the global
+> > > > mutex is buggy we have that behavior for a long time without any reports.
+> > > > We should address it but it can wait for 3.2.
+> > 
+> > I will send the revert request to Linus.
+> > 
+> > > What "buggy" means here ? "problematic" or "cause OOps ?"
+> > 
+> > I have described that in an earlier email. Consider pathological case
+> > when CPU0 wants to async. drain a memcg which has a lot of cached charges while
+> > CPU1 is already draining so it holds the mutex. CPU0 backs off so it has
+> > to reclaim although we could prevent from it by getting rid of cached
+> > charges. This is not critical though.
+> > 
+> 
+> That problem should be fixed by background reclaim.
 
-You also might want to leave a pointer in lib/crc32.c to the relocated docs.
+How? Do you plan to rework locking or the charge caching completely?
 
-(I'm just inclding the whole changed file because I assume it's easier
-to review that way; do you prefer a diff?)
-
-=== Cut here ===
-A brief CRC tutorial.
-
-A CRC is a long-division remainder.  You add the CRC to the message,
-and the whole thing (message+CRC) is a multiple of the given
-CRC polynomial.  To check the CRC, you can either check that the
-CRC matches the recomputed value, *or* you can check that the
-remainder computed on the message+CRC is 0.  This latter approach
-is used by a lot of hardware implementations, and is why so many
-protocols put the end-of-frame flag after the CRC.
-
-It's actually the same long division you learned in school, except that
-- We're working in binary, so the digits are only 0 and 1, and
-- When dividing polynomials, there are no carries.  Rather than add and
-  subtract, we just xor.  Thus, we tend to get a bit sloppy about
-  the difference between adding and subtracting.
-
-Like all division, the remainder is always smaller than the divisor.
-To produce a 32-bit CRC, the divisor is actually a 33-bit CRC polynomial.
-Since it's 33 bits long, bit 32 is always going to be set, so usually the
-CRC is written in hex with the most significant bit omitted.  (If you're
-familiar with the IEEE 754 floating-point format, it's the same idea.)
-
-Note that a CRC is computed over a string of *bits*, so you have
-to decide on the endianness of the bits within each byte.  To get
-the best error-detecting properties, this should correspond to the
-order they're actually sent.  For example, standard RS-232 serial is
-little-endian; the most significant bit (sometimes used for parity)
-is sent last.  And when appending a CRC word to a message, you should
-do it in the right order, matching the endianness.
-
-
-Just like with ordinary division, you proceed one digit (bit) at a time.
-Each step of the division, division, you take one more digit (bit) of the
-dividend and append it to the current remainder.  Then you figure out the
-appropriate multiple of the divisor to subtract to being the remainder
-back into range.  In binary, this is easy - it has to be either 0 or 1,
-and to make the XOR cancel, it's just a copy of bit 32 of the remainder.
-
-When computing a CRC, we don't care about the quotient, so we can
-throw the quotient bit away, but subtract the appropriate multiple of
-the polynomial from the remainder and we're back to where we started,
-ready to process the next bit.
-
-A big-endian CRC written this way would be coded like:
-for (i = 0; i < input_bits; i++) {
-	multiple = remainder & 0x80000000 ? CRCPOLY : 0;
-	remainder = (remainder << 1 | next_input_bit()) ^ multiple;
-}
-
-Notice how, to get at bit 32 of the shifted remainder, we look
-at bit 31 of the remainder *before* shifting it.
-
-But also notice how the next_input_bit() bits we're shifting into
-the remainder don't actually affect any decision-making until
-32 bits later.  Thus, the first 32 cycles of this are pretty boring.
-Also, to add the CRC to a message, we need a 32-bit-long hole for it at
-the end, so we have to add 32 extra cycles shifting in zeros at the
-end of every message,
-
-These details lead to a standard trick: rearrange merging in the
-next_input_bit() until the moment it's needed.  Then the first 32 cycles
-can be precomputed, and merging in the final 32 zero bits to make room
-for the CRC can be skipped entirely.  This changes the code to:
-
-for (i = 0; i < input_bits; i++) {
-	remainder ^= next_input_bit() << 31;
-	multiple = (remainder & 0x80000000) ? CRCPOLY : 0;
-	remainder = (remainder << 1) ^ multiple;
-}
-
-With this optimization, the little-endian code is particularly simple:
-for (i = 0; i < input_bits; i++) {
-	remainder ^= next_input_bit();
-	multiple = (remainder & 1) ? CRCPOLY : 0;
-	remainder = (remainder >> 1) ^ multiple;
-}
-
-The most significant coefficient of the remainder polynomial is stored
-in the least significant bit of the binary "remainder" variable.
-The other details of endianness have been hidden in CRCPOLY (which must
-be bit-reversed) and next_input_bit().
-
-As long as next_input_bit is returning the bits in a sensible order, we don't
-*have* to wait until the last possible moment to merge in additional bits.
-We can do it 8 bits at a time rather than 1 bit at a time:
-for (i = 0; i < input_bytes; i++) {
-	remainder ^= next_input_byte() << 24;
-	for (j = 0; j < 8; j++) {
-		multiple = (remainder & 0x80000000) ? CRCPOLY : 0;
-		remainder = (remainder << 1) ^ multiple;
-	}
-}
-Or in little-endian:
-for (i = 0; i < input_bytes; i++) {
-	remainder ^= next_input_byte();
-	for (j = 0; j < 8; j++) {
-		multiple = (remainder & 1) ? CRCPOLY : 0;
-		remainder = (remainder << 1) ^ multiple;
-	}
-}
-
-If the input is a multiple of 32 bits, you can even XOR in a 32-bit
-word at a time and increase the inner loop count to 32.
-
-You can also mix and match the two loop styles, for example doing the
-bulk of a message byte-at-a-time and adding bit-at-a-time processing
-for any fractional bytes at the end.
-
-
-To reduce the number of conditional branches, software commonly uses
-the byte-at-a-time table method, popularized by Dilip V. Sarwate,
-"Computation of Cyclic Redundancy Checks via Table Look-Up", Comm. ACM
-v.31 no.8 (August 1998) p. 1008-1013.
-
-Here, rather than just shifting one bit of the remainder to decide
-in the correct multiple to subtract, we can shift a byte at a time.
-This produces a 40-bit (rather than a 33-bit) intermediate remainder,
-and the correct multiple of the polynomial to subtract is found using
-a 256-entry lookup table indexed by the high 8 bits.
-
-(The table entries are simply the CRC-32 of the given one-byte messages.)
-
-When space is more constrained, smaller tables can be used, e.g. two
-4-bit shifts followed by a lookup in a 16-entry table.
-
-
-It is not practical to process much more than 8 bits at a time using this
-technique, because tables larger than 256 entries use too much memory and,
-more importantly, too much of the L1 cache.
-
-To get higher software performance, a "slicing" technique can be used.
-See "High Octane CRC Generation with the Intel Slicing-by-8 Algorithm",
-ftp://download.intel.com/technology/comms/perfnet/download/slicing-by-8.pdf
-
-This does not change the number of table lookups, but does increase
-the parallelism.  With the classic Sarwate algorithm, each table lookup
-must be completed before the index of the next can be computed.
-
-A "slicing by 2" technique would shift the remainder 16 bits at a time,
-producing a 48-bit intermediate remainder.  Rather than doing a single
-lookup in a 65536-entry table, the two high bytes are looked up in
-two different 256-entry tables.  Each contains the remainder required
-to cancel out the corresponding byte.  The tables are different because the
-polynomials to cancel are different.  One has non-zero coefficients from
-x^32 to x^39, while the other goes from x^40 to x^47.
-
-Since modern processors can handle many parallel memory operations, this
-takes barely longer than a single table look-up and thus performs almost
-twice as fast as the basic Sarwate algorithm.
-
-This can be extended to "slicing by 4" using 4 256-entry tables.
-Each step, 32 bits of data is fetched, XORed with the CRC, and the result
-broken into bytes and looked up in the tables.  Because the 32-bit shift
-leaves the low-order bits of the intermediate remainder zero, the
-final CRC is simply the XOR of the 4 table look-ups.
-
-But this still enforces sequential execution: a second group of table
-look-ups cannot begin until the previous groups 4 table look-ups have all
-been completed.  Thus, the processor's load/store unit is sometimes idle.
-
-To make maximum use of the processor, "slicing by 8" performs 8 look-ups
-in parallel.  Each step, the 32-bit CRC is shifted 64 bits and XORed
-with 64 bits of input data.  What is important to note is that 4 of
-those 8 bytes are simply copies of the input data; they do not depend
-on the previous CRC at all.  Thus, those 4 table look-ups may commence
-immediately, without waiting for the previous loop iteration.
-
-By always having 4 loads in flight, a modern superscalar processor can
-be kept busy and make full use of its L1 cache.
-
-
-Two more details about CRC implementation in the real world:
-
-Normally, appending zero bits to a message which is already a multiple
-of a polynomial produces a larger multiple of that polynomial.  Thus,
-a basic CRC will not detect appended zero bits (or bytes).  To enable
-a CRC to detect this condition, it's common to invert the CRC before
-appending it.  This makes the remainder of the message+crc come out not
-as zero, but some fixed non-zero value.  (The CRC of the inversion
-pattern, 0xffffffff.)
-
-The same problem applies to zero bits prepended to the message, and a
-similar solution is used.  Instead of starting the CRC computation with
-a remainder of 0, an initial remainder of all ones is used.  As long as
-you start the same way on decoding, it doesn't make a difference.
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
