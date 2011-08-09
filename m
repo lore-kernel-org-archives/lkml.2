@@ -1,43 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841Ab1HITjR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 15:39:17 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38941 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722Ab1HITjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 15:39:14 -0400
+	id S1753114Ab1HITkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 15:40:14 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58064 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538Ab1HITjQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 15:39:16 -0400
 From: <pavan_savoy@ti.com>
 To: <gregkh@suse.de>, <linux-kernel@vger.kernel.org>
-CC: <pavan_savoy@sify.com>, Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH 0/8] drivers:misc: ti-st: fixes
-Date: Tue, 9 Aug 2011 14:38:52 -0500
-Message-ID: <1312918749-29627-1-git-send-email-pavan_savoy@ti.com>
+CC: <pavan_savoy@sify.com>, Vijay Badawadagi <bvijay@ti.com>,
+        Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH 4/8] drivers:misc: ti-st: fail-safe on wrong pkt type
+Date: Tue, 9 Aug 2011 14:39:05 -0500
+Message-ID: <1312918749-29627-14-git-send-email-pavan_savoy@ti.com>
 X-Mailer: git-send-email 1.5.6.3
+In-Reply-To: <1312918749-29627-13-git-send-email-pavan_savoy@ti.com>
+References: <1312918749-29627-1-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-2-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-3-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-4-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-5-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-6-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-7-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-8-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-9-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-10-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-11-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-12-git-send-email-pavan_savoy@ti.com>
+ <1312918749-29627-13-git-send-email-pavan_savoy@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavan Savoy <pavan_savoy@ti.com>
+From: Vijay Badawadagi <bvijay@ti.com>
 
+Texas Instrument's shared transport driver interpret incoming data from the
+UART based on the various protocol drivers registered to the driver such as
+btwilink driver or FM or GPS driver which provide logical channel IDs.
 
-These are some of the fixes that have gone into the driver during various
-testing, production validation stages.
-Some are very minor and some impact performance.
+In case of bad-behavior from chip such as HCI Event response for a GPS command
+or a HCI Event (h/w error event) for a FM response & In case of bad-behavior
+from UART driver such as dropping data bytes a fail-safe is required to avoid
+kernel panic.
 
-Greg,
-Packing more patches this time around. Please review
+Change-Id: I4a0b4b3152a27830ae85f986f5f2de922f007cd2
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+Signed-off-by: Vijay Badawadagi <bvijay@ti.com>
+---
+ drivers/misc/ti-st/st_core.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-Pavan Savoy (7):
-  drivers:misc: ti-st: avoid a misleading dbg msg
-  drivers:misc:ti-st: platform hooks for chip states
-  drivers:misc: ti-st: reinit completion on ver read
-  drivers:misc: ti-st: reinit completion before send
-  drivers:misc: ti-st: wait for completion at fail
-  drivers:misc: ti-st: free skb on firmware download
-  drivers:misc: ti-st: fix unexpected UART close
-
-Vijay Badawadagi (1):
-  drivers:misc: ti-st: fail-safe on wrong pkt type
+diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
+index c8e335d..1f973ce 100644
+--- a/drivers/misc/ti-st/st_core.c
++++ b/drivers/misc/ti-st/st_core.c
+@@ -338,6 +338,12 @@ void st_int_recv(void *disc_data,
+ 			/* Unknow packet? */
+ 		default:
+ 			type = *ptr;
++			if (st_gdata->list[type] == NULL) {
++				pr_err("chip/interface misbehavior dropping"
++					" frame starting with 0x%02x", type);
++				goto done;
++
++			}
+ 			st_gdata->rx_skb = alloc_skb(
+ 					st_gdata->list[type]->max_frame_size,
+ 					GFP_ATOMIC);
+@@ -354,6 +360,7 @@ void st_int_recv(void *disc_data,
+ 		ptr++;
+ 		count--;
+ 	}
++done:
+ 	spin_unlock_irqrestore(&st_gdata->lock, flags);
+ 	pr_debug("done %s", __func__);
+ 	return;
+-- 
+1.7.4.1
 
