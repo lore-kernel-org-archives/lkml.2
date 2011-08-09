@@ -1,398 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464Ab1HIOAY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 10:00:24 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46608 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882Ab1HIOAW (ORCPT
+	id S1751611Ab1HIOBd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 10:01:33 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41636 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882Ab1HIOBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 10:00:22 -0400
-From: Michael Grzeschik <m.grzeschik@pengutronix.de>
-To: ashish.jangam@kpitcummins.com
-Cc: randy.dunlap@oracle.com, dtor@mail.ru, dmitry.torokhov@gmail.com,
-        linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH] da9052_tsi: remove fifo and use delayed work
-Date: Tue,  9 Aug 2011 15:59:32 +0200
-Message-Id: <1312898372-24575-1-git-send-email-m.grzeschik@pengutronix.de>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1310633890.284.90.camel@L-0532.kpit.com>
-References: <1310633890.284.90.camel@L-0532.kpit.com>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: mgr@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 9 Aug 2011 10:01:32 -0400
+From: Vasily Khoruzhick <anarsoul@gmail.com>
+To: intel-gfx@lists.freedesktop.org
+Subject: Re: [Intel-gfx] Major 2.6.38 / 2.6.39 / 3.0 regression ignored?
+Date: Tue, 9 Aug 2011 17:00:52 +0300
+User-Agent: KMail/1.13.7 (Linux/2.6.39-gentoo-anarsoul; KDE/4.6.3; i686; ; )
+Cc: Kirill Smelkov <kirr@mns.spb.ru>, Keith Packard <keithp@keithp.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Herbert Xu <herbert@gondor.hengli.com.au>, "Luke-Jr" <luke@dashjr.org>,
+        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
+        Pekka Enberg <penberg@kernel.org>, Ray Lee <ray-lk@madrabbit.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <013811$4lfs6@fmsmga002.fm.intel.com> <20110726134827.GA23696@tugrik.mns.mnsspb.ru> <20110809120803.GA15844@tugrik.mns.mnsspb.ru>
+In-Reply-To: <20110809120803.GA15844@tugrik.mns.mnsspb.ru>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201108091700.53131.anarsoul@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the coordinate fifo and check for penup with a delayed work,
-instead of a watching kernel thread.
+On Tuesday 09 August 2011 15:08:03 Kirill Smelkov wrote:
+> On Tue, Jul 26, 2011 at 05:48:27PM +0400, Kirill Smelkov wrote:
+> > On Sat, Jul 23, 2011 at 12:23:36AM +0400, Kirill Smelkov wrote:
+> > > Keith,
+> > > 
+> > > first of all thanks for your prompt reply. Then...
+> > > 
+> > > On Fri, Jul 22, 2011 at 11:00:41AM -0700, Keith Packard wrote:
+> > > > On Fri, 22 Jul 2011 15:08:06 +0400, Kirill Smelkov <kirr@mns.spb.ru> 
+wrote:
+> > > > > And now after v3.0 is out, I've tested it again, and yes, like it
+> > > > > was broken on v3.0-rc5, it is (now even more) broken on v3.0 --
+> > > > > after first
+> > > > 
+> > > > > bad io access the system freezes completely:
+> > > > I looked at this when I first saw it (a couple of weeks ago), and I
+> > > > couldn't see any obvious reason this patch would cause this
+> > > > particular problem. I didn't want to revert the patch at that point
+> > > > as I feared it would cause other subtle problems. Given that you've
+> > > > got a work-around, it seemed best to just push this off past 3.0.
+> > > 
+> > > What kind of a workaround are you talking about? Sorry, to me it all
+> > > looked like "UMS is being ignored forever". Anyway, let's move on to
+> > > try to solve the issue.
+> > > 
+> > > > Given the failing address passed to ioread32, this seems like it's
+> > > > probably the call to READ_BREADCRUMB -- I915_BREADCRUMB_INDEX is
+> > > > 0x21, which is an offset in 32-bit units within the hardware status
+> > > > page. If the status_page.page_addr value was zero, then the computed
+> > > > address would end up being 0x84.
+> > > > 
+> > > > And, it looks like status_page.page_addr *will* end up being zero as
+> > > > a result of the patch in question. The patch resets the entire ring
+> > > > structure contents back to the initial values, which includes
+> > > > smashing the status_page structure to zero, clearing the value of
+> > > > status_page.page_addr set in i915_init_phys_hws.
+> > > > 
+> > > > Here's an untested patch which moves the initialization of
+> > > > status_page.page_addr into intel_render_ring_init_dri. I note that
+> > > > intel_init_render_ring_buffer *already* has the setting of the
+> > > > status_page.page_addr value, and so I've removed the setting of
+> > > > status_page.page_addr from i915_init_phys_hws.
+> > > > 
+> > > > I suspect we could remove the memset from
+> > > > intel_init_render_ring_buffer; it seems entirely superfluous given
+> > > > the memset in i915_init_phys_hws.
+> > > > 
+> > > > From 159ba1dd207fc52590ce8a3afd83f40bd2cedf46 Mon Sep 17 00:00:00
+> > > > 2001 From: Keith Packard <keithp@keithp.com>
+> > > > Date: Fri, 22 Jul 2011 10:44:39 -0700
+> > > > Subject: [PATCH] drm/i915: Initialize RCS ring status page address in
+> > > > 
+> > > >  intel_render_ring_init_dri
+> > > > 
+> > > > Physically-addressed hardware status pages are initialized early in
+> > > > the driver load process by i915_init_phys_hws. For UMS environments,
+> > > > the ring structure is not initialized until the X server starts. At
+> > > > that point, the entire ring structure is re-initialized with all new
+> > > > values. Any values set in the ring structure (including
+> > > > ring->status_page.page_addr) will be lost when the ring is
+> > > > re-initialized.
+> > > > 
+> > > > This patch moves the initialization of the status_page.page_addr
+> > > > value to intel_render_ring_init_dri.
+> > > > 
+> > > > Signed-off-by: Keith Packard <keithp@keithp.com>
+> > > > ---
+> > > > 
+> > > >  drivers/gpu/drm/i915/i915_dma.c         |    6 ++----
+> > > >  drivers/gpu/drm/i915/intel_ringbuffer.c |    3 +++
+> > > >  2 files changed, 5 insertions(+), 4 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/gpu/drm/i915/i915_dma.c
+> > > > b/drivers/gpu/drm/i915/i915_dma.c index 1271282..8a3942c 100644
+> > > > --- a/drivers/gpu/drm/i915/i915_dma.c
+> > > > +++ b/drivers/gpu/drm/i915/i915_dma.c
+> > > > @@ -61,7 +61,6 @@ static void i915_write_hws_pga(struct drm_device
+> > > > *dev)
+> > > > 
+> > > >  static int i915_init_phys_hws(struct drm_device *dev)
+> > > >  {
+> > > >  
+> > > >  	drm_i915_private_t *dev_priv = dev->dev_private;
+> > > > 
+> > > > -	struct intel_ring_buffer *ring = LP_RING(dev_priv);
+> > > > 
+> > > >  	/* Program Hardware Status Page */
+> > > >  	dev_priv->status_page_dmah =
+> > > > 
+> > > > @@ -71,10 +70,9 @@ static int i915_init_phys_hws(struct drm_device
+> > > > *dev)
+> > > > 
+> > > >  		DRM_ERROR("Can not allocate hardware status page\n");
+> > > >  		return -ENOMEM;
+> > > >  	
+> > > >  	}
+> > > > 
+> > > > -	ring->status_page.page_addr =
+> > > > -		(void __force __iomem *)dev_priv->status_page_dmah->vaddr;
+> > > > 
+> > > > -	memset_io(ring->status_page.page_addr, 0, PAGE_SIZE);
+> > > > +	memset_io((void __force __iomem
+> > > > *)dev_priv->status_page_dmah->vaddr, +		  0, PAGE_SIZE);
+> > > > 
+> > > >  	i915_write_hws_pga(dev);
+> > > > 
+> > > > diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c
+> > > > b/drivers/gpu/drm/i915/intel_ringbuffer.c index e961568..47b9b27
+> > > > 100644
+> > > > --- a/drivers/gpu/drm/i915/intel_ringbuffer.c
+> > > > +++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+> > > > @@ -1321,6 +1321,9 @@ int intel_render_ring_init_dri(struct
+> > > > drm_device *dev, u64 start, u32 size)
+> > > > 
+> > > >  		ring->get_seqno = pc_render_get_seqno;
+> > > >  	
+> > > >  	}
+> > > > 
+> > > > +	if (!I915_NEED_GFX_HWS(dev))
+> > > > +		ring->status_page.page_addr = dev_priv->status_page_dmah->vaddr;
+> > > > +
+> > > > 
+> > > >  	ring->dev = dev;
+> > > >  	INIT_LIST_HEAD(&ring->active_list);
+> > > >  	INIT_LIST_HEAD(&ring->request_list);
+> > > 
+> > > I can't tell whether this is correct, because intel gfx driver is
+> > > unknown to me, but from the first glance your description sounds
+> > > reasonable.
+> > > 
+> > > I'm out of office till ~ next week's tuesday, and on return I'll try
+> > > to test it on the hardware in question.
+> > 
+> > Keith, thanks again for the patch. As promised I've tested it on the
+> > hardware in question and yes, bad_access is gone and X seems to work,
+> > so thank you, but...
+> > 
+> > 
+> > I see there are more such bugs in introduced-in-guilty-patch
+> > intel_render_ring_init_dri(). For example ring->irq_queue is
+> > left uninitialized and also ring->irq_lock etc...
+> > 
+> > 
+> > I'm X newbie, so if here is something stupid X-wise, please don't
+> > beat me too hard, but to me the gist of the problem is the original
+> > patch, where Chris does
+> > 
+> > ( git show e8616b6ced6137085e6657cc63bc2fe3900b8616 )
+> > 
+> > > diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c
+> > > b/drivers/gpu/drm/i915/intel_ringbuffer.c index 03e3370..51fbc5e
+> > > 100644
+> > > --- a/drivers/gpu/drm/i915/intel_ringbuffer.c
+> > > +++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+> > > @@ -1291,6 +1291,48 @@ int intel_init_render_ring_buffer(struct
+> > > drm_device *dev)
+> > > 
+> > >         return intel_init_ring_buffer(dev, ring);
+> > >  
+> > >  }
+> > > 
+> > > +int intel_render_ring_init_dri(struct drm_device *dev, u64 start, u32
+> > > size) +{
+> > > +       drm_i915_private_t *dev_priv = dev->dev_private;
+> > > +       struct intel_ring_buffer *ring = &dev_priv->ring[RCS];
+> > > +
+> > > +       *ring = render_ring;
+> > > 
+> >           ^^^^^^^^^^^^^^^^^^^
+> >           here resets
+> > > 
+> > > +       if (INTEL_INFO(dev)->gen >= 6) {
+> > > +               ring->add_request = gen6_add_request;
+> > > +               ring->irq_get = gen6_render_ring_get_irq;
+> > > +               ring->irq_put = gen6_render_ring_put_irq;
+> > > +       } else if (IS_GEN5(dev)) {
+> > > +               ring->add_request = pc_render_add_request;
+> > > +               ring->get_seqno = pc_render_get_seqno;
+> > > +       }
+> > 
+> > and then the rest of the `ring` is initialized seemingly copy-pasted
+> > 
+> > from intel_init_ring_buffer():
+> > > +       ring->dev = dev;
+> > > +       INIT_LIST_HEAD(&ring->active_list);
+> > > +       INIT_LIST_HEAD(&ring->request_list);
+> > > +       INIT_LIST_HEAD(&ring->gpu_write_list);
+> > > +
+> > > +       ring->size = size;
+> > > +       ring->effective_size = ring->size;
+> > > +       if (IS_I830(ring->dev))
+> > > +               ring->effective_size -= 128;
+> > > +
+> > > +       ring->map.offset = start;
+> > > +       ring->map.size = size;
+> > > +       ring->map.type = 0;
+> > > +       ring->map.flags = 0;
+> > > +       ring->map.mtrr = 0;
+> > 
+> > ...
+> > 
+> > where both 3 chunks go almost exactly from intel_init_ring_buffer(), and
+> > ring->effective_size tweak even stripped original comment:
+> > 
+> > # original version from intel_init_ring_buffer():
+> >         /* Workaround an erratum on the i830 which causes a hang if
+> >         
+> >          * the TAIL pointer points to within the last 2 cachelines
+> >          * of the buffer.
+> >          */
+> >         
+> >         ring->effective_size = ring->size;
+> >         if (IS_I830(ring->dev))
+> >         
+> >                 ring->effective_size -= 128;
+> > 
+> > ...
+> > 
+> > 
+> > The line marked "here resets" resets all the fields, and maybe it's not a
+> > good idea to re-initialize them all afterwards (missing some as this
+> > thread show), or at least if it is really needed, share initialization
+> > code between intel_render_ring_init_dri() and intel_init_ring_buffer() ?
+> > 
+> > >From the outside it looks like the offending patch was done as a quick
+> > 
+> > fix in a hurry (lots of copy-paste), and maybe it would be better to
+> > re-do it properly...
+> 
+> Silence... ?
+> 
+> I read UMS is still ignored, because e.g. that uninitialized
+> ring->irq_lock which I've wrote about above is for sure used e.g. in
+> gen6_render_ring_get_irq() added to ring vtable in
+> intel_render_ring_init_dri().
 
-Issues:
-Sometimes there are well defined jitter values on the x-axys this must
-be more investigated. Hint: DA9052_TSI_CONT_A_REG holds some time Adjust
-values for TSI_SKIP and TSI_DELAY, which might have to be properly
-aligned to the touch events.
+I really doubt that UMS supports gen6 hardware.
 
-Signed-off-by: Michael Grzeschik <m.grzeschik@pengutronix.de>
----
- drivers/input/touchscreen/da9052_tsi.c |  245 ++++++++------------------------
- 1 files changed, 61 insertions(+), 184 deletions(-)
-
-diff --git a/drivers/input/touchscreen/da9052_tsi.c b/drivers/input/touchscreen/da9052_tsi.c
-index 91e051a..91d489f 100755
---- a/drivers/input/touchscreen/da9052_tsi.c
-+++ b/drivers/input/touchscreen/da9052_tsi.c
-@@ -15,47 +15,24 @@
- #include <linux/input.h>
- #include <linux/delay.h>
- #include <linux/platform_device.h>
--#include <linux/freezer.h>
-+#include <linux/sched.h>
- #include <linux/kthread.h>
--#include <linux/kfifo.h>
- 
- #include <linux/mfd/da9052/reg.h>
- #include <linux/mfd/da9052/da9052.h>
- 
--#define DA9052_ACTIVE			1
--#define DA9052_INACTIVE		0
--
--#define DA9052_TSI_FIFOSIZE		640
--
--enum {
--	DA9052_PEN_IDLE,
--	DA9052_PEN_DOWN,
--	DA9052_PEN_UP
--};
--
- struct da9052_tsi_reg {
- 	u16	x;
- 	u16	y;
- };
- 
--struct tsi_thread_type {
--	u8		pid;
--	u8		state;
--	struct completion	notifier;
--	struct task_struct	*thread_task;
--};
--
- struct da9052_tsi {
- 	struct da9052	*da9052;
- 	struct input_dev *dev;
--	struct tsi_thread_type	tsi_pen_state_thread;
--	struct tsi_thread_type  tsi_filter_thread;
--	struct kfifo fifo;
--	struct kfifo fifo_buf;
- 	u8 pen_up_detect_interval;
- 	u32 zero_data_cnt;
- 	u32 valid_penup_count;
--	u8 pen_state;
-+	struct delayed_work work;
- 	int irq_pendwn;
- 	int irq_datardy;
- };
-@@ -71,6 +48,48 @@ static inline int da9052_ts_stop(struct da9052_tsi *tsi)
- 	return da9052_clear_bits(tsi->da9052, DA9052_TSI_CONT_A_REG, 1 << 0);
- }
- 
-+static void da9052_work(struct work_struct *work)
-+{
-+	struct da9052_tsi *tsi = container_of(work, struct da9052_tsi, work.work);
-+	struct da9052 *da9052 = tsi->da9052;
-+	int ret;
-+	uint8_t _v;
-+	u16 down;
-+
-+	ret = da9052_reg_read(tsi->da9052, DA9052_TSI_LSB_REG);
-+	if (ret < 0)
-+		return;
-+
-+	_v = (uint8_t) ret;
-+	down = ((_v & 0x40) >> 6);
-+
-+	if (!down) {
-+		tsi->da9052->events_mask |= DA9052_E_TSI_READY;
-+		tsi->da9052->events_mask &= ~DA9052_E_PEN_DOWN;
-+
-+		/* Mask TSI_READY event and unmask PEN_DOWN event*/
-+		ret = da9052_reg_update(tsi->da9052, DA9052_IRQ_MASK_B_REG, 0x40, 0x80);
-+		if (ret < 0)
-+			return;
-+
-+		input_report_abs(tsi->dev, ABS_PRESSURE, 0);
-+		input_report_key(tsi->dev, BTN_TOUCH, 1);
-+		input_sync(tsi->dev);
-+	} else {
-+		da9052->events_mask |= DA9052_E_PEN_DOWN;
-+		da9052->events_mask &= ~DA9052_E_TSI_READY;
-+
-+		/* Mask PEN_DOWN event and unmask TSI_READY event*/
-+		ret = da9052_reg_update(da9052, DA9052_IRQ_MASK_B_REG, 0x80, 0x40);
-+		if (ret < 0)
-+			return;
-+
-+		/* start polling for touch_det to detect release */
-+		schedule_delayed_work(&tsi->work, HZ / 50);
-+	}
-+
-+}
-+
- static irqreturn_t da9052_ts_pendwn_irq(int irq, void *data)
- {
- 	struct da9052_tsi *tsi = (struct da9052_tsi *)data;
-@@ -86,7 +105,10 @@ static irqreturn_t da9052_ts_pendwn_irq(int irq, void *data)
- 		return IRQ_NONE;
- 
- 	da9052_ts_start(tsi);
--	tsi->pen_state = DA9052_PEN_DOWN;
-+
-+	input_report_abs(tsi->dev, ABS_PRESSURE, 1023);
-+	input_report_key(tsi->dev, BTN_TOUCH, 0);
-+	input_sync(tsi->dev);
- 
- 	return IRQ_HANDLED;
- }
-@@ -118,7 +140,10 @@ static int da9052_ts_read(struct da9052_tsi *tsi)
- 	co_ord.x = ((_x << 2) & 0x3fc) | (_v & 0x3);
- 	co_ord.y = ((_y << 2) & 0x3fc) | ((_v & 0xc) >> 2);
- 
--	ret = kfifo_in(&tsi->fifo, &co_ord, sizeof(struct da9052_tsi_reg));
-+	input_report_abs(tsi->dev, ABS_X, co_ord.x);
-+	input_report_abs(tsi->dev, ABS_Y, co_ord.y);
-+	input_report_abs(tsi->dev, ABS_PRESSURE, 1023);
-+	input_sync(tsi->dev);
- 
- 	return 0;
- }
-@@ -135,131 +160,10 @@ static irqreturn_t da9052_ts_datardy_irq(int irq, void *data)
- 		return IRQ_NONE;
- 	}
- 
--	return IRQ_HANDLED;
--}
--
--/*
--* Two FIFO are been used. FIFO1 is used for detecting pen up and
--* FIFO2 for reporting pen down co-ordinate.
--*/
--void da9052_ts_process_reg_data(struct da9052_tsi *tsi)
--{
--	struct da9052_tsi_reg tmp_raw_data;
--	u32 reg_data_cnt;
--	int ret;
--
--	reg_data_cnt = kfifo_len(&tsi->fifo);
--
--	while (reg_data_cnt-- > 0) {
--		ret = kfifo_out(&tsi->fifo, &tmp_raw_data,
--				sizeof(struct da9052_tsi_reg));
--		if (ret < 0)
--			continue;
--		kfifo_in(&tsi->fifo_buf, &tmp_raw_data,
--			 sizeof(struct da9052_tsi_reg));
--	}
--	return;
--}
--
--static void da9052_ts_report_penup(struct da9052_tsi *tsi)
--{
--	struct input_dev *ip_dev = tsi->dev;
--	struct da9052 *da9052 = tsi->da9052;
--	ssize_t ret;
--
--	ret = da9052_ts_stop(tsi);
--	if (ret < 0)
--		return;
--
--	da9052->events_mask |= DA9052_E_TSI_READY;
--	da9052->events_mask &= ~DA9052_E_PEN_DOWN;
--
--	/* Mask TSI_READY event and unmask PEN_DOWN event*/
--	ret = da9052_reg_update(da9052, DA9052_IRQ_MASK_B_REG, 0x40, 0x80);
--	if (ret < 0)
--		return;
--
--	input_report_abs(ip_dev, BTN_TOUCH, 0);
--	input_sync(ip_dev);
--
--	tsi->zero_data_cnt = 0;
--}
--
--/*
--* This function detects the pen up state using the kfifo len.
--* If kfifo len is zero for some interval then pen up is reported.
--* Else pen co-ordinate are reported.
--*/
--static int da9052_ts_monitor_pen_state(void *data)
--{
--	struct da9052_tsi *tsi = (struct da9052_tsi *) data;
--	u32 data_cnt;
--
--	set_freezable();
--
--	while (tsi->tsi_pen_state_thread.state == DA9052_ACTIVE) {
--		try_to_freeze();
--
--		set_current_state(TASK_INTERRUPTIBLE);
--		schedule_timeout(msecs_to_jiffies(10));
--
--		if (tsi->pen_state != DA9052_PEN_DOWN)
--			continue;
--
--		data_cnt = kfifo_len(&tsi->fifo);
--		if (data_cnt < 0)
--			continue;
--
--		da9052_ts_process_reg_data(tsi);
--
--		if (data_cnt)
--			tsi->zero_data_cnt = 0;
--		else {
--			if ((++(tsi->zero_data_cnt)) >
--				tsi->valid_penup_count) {
--				tsi->pen_state = DA9052_PEN_UP;
--				da9052_ts_report_penup(tsi);
--			}
--		}
--	}
--
--	complete_and_exit(&tsi->tsi_pen_state_thread.notifier, 0);
--	return 0;
--}
--
--static int da9052_ts_process_thread(void *ptr)
--{
--	struct da9052_tsi_reg co_ord;
--	int cnt = 0, ret;
--	struct da9052_tsi *tsi = (struct da9052_tsi *)ptr;
--
--	set_freezable();
--
--	while (tsi->tsi_filter_thread.state == DA9052_ACTIVE) {
--
--		try_to_freeze();
--
--		set_current_state(TASK_INTERRUPTIBLE);
--		schedule_timeout(msecs_to_jiffies(10));
--		cnt = kfifo_len(&tsi->fifo_buf);
--		if (cnt <= 0)
--			continue;
--
--		ret = kfifo_out(&tsi->fifo_buf, &co_ord,
--				sizeof(struct da9052_tsi_reg));
--		if (ret < 0)
--			continue;
--
--		input_report_abs(tsi->dev, BTN_TOUCH, 1);
--		input_report_abs(tsi->dev, ABS_X, co_ord.x);
--		input_report_abs(tsi->dev, ABS_Y, co_ord.y);
--		input_sync(tsi->dev);
--	}
--
--	tsi->tsi_filter_thread.thread_task = NULL;
--	complete_and_exit(&tsi->tsi_filter_thread.notifier, 0);
-+	/* start polling for touch_det to detect release */
-+	schedule_delayed_work(&tsi->work, HZ / 50);
- 
--	return 0;
-+	return IRQ_HANDLED;
- }
- 
- static int da9052_ts_configure_gpio(struct da9052 *da9052)
-@@ -296,16 +200,6 @@ static int __init da9052_ts_enable_device(struct da9052_tsi *tsi)
- 
- 	tsi->valid_penup_count = 5;
- 
--	init_completion(&tsi->tsi_pen_state_thread.notifier);
--	tsi->tsi_pen_state_thread.state = DA9052_ACTIVE;
--	tsi->tsi_pen_state_thread.pid = kernel_thread(da9052_ts_monitor_pen_state, tsi,
--						      CLONE_KERNEL | SIGCHLD);
--
--	init_completion(&tsi->tsi_filter_thread.notifier);
--	tsi->tsi_filter_thread.state = DA9052_ACTIVE;
--	tsi->tsi_filter_thread.pid = kernel_thread(da9052_ts_process_thread, tsi,
--						   CLONE_KERNEL | SIGCHLD);
--
- 	tsi->zero_data_cnt = 0;
- 
- 	/* Measure TSI sample every 1ms */
-@@ -354,14 +248,6 @@ static s32 __devinit da9052_ts_probe(struct platform_device *pdev)
- 		goto err_mem;
- 	}
- 
--	ret = kfifo_alloc(&tsi->fifo, DA9052_TSI_FIFOSIZE, GFP_KERNEL);
--	if (ret < 0)
--		goto err_input;
--
--	ret = kfifo_alloc(&tsi->fifo_buf, DA9052_TSI_FIFOSIZE, GFP_KERNEL);
--	if (ret < 0)
--		goto err_fifo;
--
- 	tsi->da9052 = da9052;
- 	tsi->pen_up_detect_interval = 5;
- 	platform_set_drvdata(pdev, tsi);
-@@ -388,6 +274,8 @@ static s32 __devinit da9052_ts_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto err_mem;
- 
-+	INIT_DELAYED_WORK(&tsi->work, da9052_work);
-+
- 	tsi->irq_pendwn = platform_get_irq_byname(pdev, "PENDWN");
- 	ret = request_threaded_irq(tsi->da9052->irq_base + tsi->irq_pendwn,
- 				NULL, da9052_ts_pendwn_irq,
-@@ -397,7 +285,7 @@ static s32 __devinit da9052_ts_probe(struct platform_device *pdev)
- 		dev_err(tsi->da9052->dev,
- 			"Failed to register %s IRQ %d, error = %d\n", "PENDWN",
- 			tsi->da9052->irq_base + tsi->irq_pendwn, ret);
--		goto err_fifo_buf;
-+		goto err_input;
- 	}
- 
- 	tsi->irq_datardy = platform_get_irq_byname(pdev, "TSIRDY");
-@@ -409,19 +297,15 @@ static s32 __devinit da9052_ts_probe(struct platform_device *pdev)
- 		dev_err(tsi->da9052->dev,
- 			"Failed to register %s IRQ %d, error = %d\n", "TSIRDY",
- 			tsi->da9052->irq_base + tsi->irq_datardy, ret);
--		goto err_fifo_buf;
-+		goto err_input;
- 	}
- 
- 	ret = da9052_ts_enable_device(tsi);
- 	if (ret < 0)
--		goto err_fifo_buf;
-+		goto err_input;
- 
- 	return 0;
- 
--err_fifo_buf:
--	kfifo_free(&tsi->fifo_buf);
--err_fifo:
--	kfifo_free(&tsi->fifo);
- err_input:
- 	input_free_device(input_dev);
- err_mem:
-@@ -445,18 +329,11 @@ static int __devexit da9052_ts_remove(struct platform_device *pdev)
- 	free_irq(tsi->da9052->irq_base + tsi->irq_pendwn, NULL);
- 	free_irq(tsi->da9052->irq_base + tsi->irq_datardy, NULL);
- 
--	tsi->tsi_pen_state_thread.state = DA9052_INACTIVE;
--	wait_for_completion(&tsi->tsi_pen_state_thread.notifier);
--
--	tsi->tsi_filter_thread.state = DA9052_INACTIVE;
--	wait_for_completion(&tsi->tsi_filter_thread.notifier);
--
-+	cancel_delayed_work(&tsi->work);
- 	input_unregister_device(tsi->dev);
- 
- 	platform_set_drvdata(pdev, NULL);
- 
--	kfifo_free(&tsi->fifo);
--	kfifo_free(&tsi->fifo_buf);
- 	kfree(tsi);
- 
- 	return 0;
--- 
-1.7.5.4
-
+Regards
+Vasily
