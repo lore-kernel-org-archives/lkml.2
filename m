@@ -1,122 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab1HINFj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 09:05:39 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:34949 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753387Ab1HINFi (ORCPT
+	id S1751629Ab1HINJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 09:09:56 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:53469 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab1HINJy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 09:05:38 -0400
-Date: Tue, 9 Aug 2011 15:05:31 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 2/2] x86, cpu, amd: Add a per-vendor BSP function
-Message-ID: <20110809130531.GA26196@aftab>
-References: <1312829872-20260-1-git-send-email-bp@amd64.org>
- <1312829872-20260-3-git-send-email-bp@amd64.org>
- <4E404D68.5060507@zytor.com>
- <20110808215713.GB22088@liondog.tnic>
- <4E405F7D.9000701@zytor.com>
+	Tue, 9 Aug 2011 09:09:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E405F7D.9000701@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110809135050.79eed316@lxorguk.ukuu.org.uk>
+References: <cover.1312893572.git.luto@mit.edu> <20110809135050.79eed316@lxorguk.ukuu.org.uk>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Tue, 9 Aug 2011 09:09:34 -0400
+X-Google-Sender-Auth: 6MXMwRAS4aqRNhz3XIIGLsj9wvg
+Message-ID: <CAObL_7G5j-8dmQDc2Q+matB8nHk7421CWnBHqQs9-T2fjVecng@mail.gmail.com>
+Subject: Re: [PATCH v3 0/2] Forcibly enable some MISC_ENABLE features on Intel
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 08, 2011 at 06:13:17PM -0400, H. Peter Anvin wrote:
-> On 08/08/2011 04:57 PM, Borislav Petkov wrote:
-> >>
-> >> This is totally going backwards.  We *should* be using struct cpu_dev
-> >> rather than switch statements for this.
-> > 
-> > Right, but all the cpu_dev things are annotated with __cpuinitconst
-> > because they're used in CONFIG_HOTPLUG_CPU. __init, OTOH, will be
-> > discarded once we're done booting. So, we can't convert cpu_dev
-> > to __initdata because we need it for cpu hotplug and we want the
-> > run_on_bsp() functionality to be __init since it runs once on boot.
-> > 
-> > Maybe leave cpu_dev in __cpuinit let it have an __init member which is
-> > the ->run_on_bsp()? Does that even work?
-> > 
-> 
-> I don't think so, which is a fundamental shortcoming of our way of
-> handling these kinds of pointers.  One way to deal with it would be to
-> make struct cpu_dev __initconst and copy it into a __cpuinit variable at
-> init time.
+On Tue, Aug 9, 2011 at 8:50 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> On Tue,  9 Aug 2011 08:41:04 -0400
+> Andy Lutomirski <luto@MIT.EDU> wrote:
+>
+>> Intel allows BIOS or the OS to enable or disable some CPU fueatures via
+>> IA32_MISC_ENABLE.  I have machines that don't enable fast strings or
+>> monitor/mwait in BIOS, so do it on bootup instead.
+>
+> The question is - why.
+>
+>> The Intel SDM volume 3, appendix B.1 says that the OS should not touch
+>> the monitor enable bit if SSE3 is not present, which presumably means
+>> that the OS may touch that bit if SSE3 is present.  In any case, these
+>> patches seem to work.
+>
+> That's a big "presumes"
+>
+> For example back in Pentium days the BIOS sometimes turned off a string
+> fast path because it was subtly not reliable on certain parts and could
+> corrupt.
+>
+> It's possible your BIOS vendor has a good reason for doing this. It's
+> also possible its a bug, or a left over perhaps from some pre-release
+> processor or something.
 
-How about we shut up modpost by allowing __cpuinitconst to reference
-__init functions - I mean, __cpuinitconst stays while __init gets
-discarded and if we take a special care to not call the ->bsp_on_init()
-pointer after boot, I don't see why not. I.e., mimick something like the
-__initdata_refok semantics but for __cpuinitconst sections referencing
-__init functions.
+Intel also says:
 
-I.e., something like the clumsy proof-of-concept below:
+  However, Intel recomments that system software always enable
+  fast-string operation.
 
+On my machine it's definitely a bug.  It's a Sandy Bridge box (from
+Intel) and with TXT disabled the BIOS enables fast strings on its own.
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index b6e3e87..dc2a411 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -410,7 +410,7 @@ static void __cpuinit early_init_amd_mc(struct cpuinfo_x86 *c)
- #endif
- }
- 
--static void __cpuinit bsp_init_amd(struct cpuinfo_x86 *c)
-+static void __init bsp_init_amd(struct cpuinfo_x86 *c)
- {
- 	if (cpu_has(c, X86_FEATURE_CONSTANT_TSC)) {
- 
-diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-index 413c536..f288756 100644
---- a/scripts/mod/modpost.c
-+++ b/scripts/mod/modpost.c
-@@ -865,6 +865,7 @@ static const char *init_exit_sections[] =
- 
- /* data section */
- static const char *data_sections[] = { DATA_SECTIONS, NULL };
-+static const char *cpuinit_sections[] = { CPU_INIT_SECTIONS, NULL };
- 
- 
- /* symbols in .data that may refer to init/exit sections */
-@@ -943,7 +944,7 @@ const struct sectioncheck sectioncheck[] = {
- 	.fromsec = { ALL_XXXINIT_SECTIONS, NULL },
- 	.tosec   = { INIT_SECTIONS, NULL },
- 	.mismatch = XXXINIT_TO_SOME_INIT,
--	.symbol_white_list = { DEFAULT_SYMBOL_WHITE_LIST, NULL },
-+	.symbol_white_list = { DEFAULT_SYMBOL_WHITE_LIST, "*_cpu_dev", NULL },
- },
- /* Do not reference cpuinit code/data from meminit code/data */
- {
-@@ -1081,9 +1082,11 @@ static int secref_whitelist(const struct sectioncheck *mismatch,
- 
- 	/* Check for pattern 2 */
- 	if (match(tosec, init_exit_sections) &&
--	    match(fromsec, data_sections) &&
--	    match(fromsym, mismatch->symbol_white_list))
-+	    (match(fromsec, data_sections) ||
-+	     match(fromsec, cpuinit_sections)) &&
-+	    match(fromsym, mismatch->symbol_white_list)) {
- 		return 0;
-+	}
- 
- 	/* Check for pattern 3 */
- 	if (match(fromsec, head_sections) &&
+Fenghua, do you know if there are any machines that will pass the
+version checks and will actually allow fast strings to be enabled but
+that will have problems as a result?
 
+If we want to be conservative, we could limit it to the most recent
+family 6 devices and exclude family 0xf entirely.
 
-
-Hmmm..?
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+--Andy
