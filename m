@@ -1,126 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841Ab1HINNm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 09:13:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18102 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061Ab1HINNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 09:13:41 -0400
-Date: Tue, 9 Aug 2011 15:13:31 +0200
-From: Jiri Pirko <jpirko@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [forcedeth bug] Re: [GIT] Networking
-Message-ID: <20110809131330.GA2020@minipsycho.brq.redhat.com>
-References: <20110722.073339.1236244143490935644.davem@davemloft.net>
- <20110801151308.GA31256@elte.hu>
- <20110804215354.GA7056@elte.hu>
- <20110805102239.GB1928@minipsycho.orion>
- <20110805102903.GF2420@elte.hu>
- <20110805112557.GD1928@minipsycho.orion>
- <20110805121855.GC13055@elte.hu>
- <20110805123136.GF1928@minipsycho.orion>
- <20110805143732.GH1928@minipsycho.orion>
+	id S1752339Ab1HINO6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 09:14:58 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:20538 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751812Ab1HINO5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 09:14:57 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19wbNaHYRdvtCfmqAhtzCDd
+Date: Tue, 9 Aug 2011 06:14:53 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: Daniel Morsing <daniel.morsing@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, Peter Ujfalusi <peter.ujfalusi@ti.com>
+Subject: Re: Build failure: bisected: v3.1-rc1 with config ARCH_OMAP &&
+ !ARCH_OMAP4 fails with linker error
+Message-ID: <20110809131453.GR1866@atomide.com>
+References: <1312819724.14483.29.camel@morsingpad>
+ <alpine.DEB.2.00.1108081435340.4764@utopia.booyaka.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110805143732.GH1928@minipsycho.orion>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.00.1108081435340.4764@utopia.booyaka.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fri, Aug 05, 2011 at 04:37:33PM CEST, jpirko@redhat.com wrote:
->Fri, Aug 05, 2011 at 02:31:37PM CEST, jpirko@redhat.com wrote:
->>Fri, Aug 05, 2011 at 02:18:55PM CEST, mingo@elte.hu wrote:
->>>
->>>* Jiri Pirko <jpirko@redhat.com> wrote:
->>>
->>>> >> Is DEV_HAS_VLAN set in id->driver_data (L5344) ?
->>>> >
->>>> >How do i tell that without hacking the driver?
->>>> 
->>>> look in dmesg for line like:
->>>> "forcedeth 0000:00:08.0: highdma csum vlan pwrctl mgmt gbit lnktim msi
->>>> desc-v3"
->>>> 
->>>> if "vlan" is there, DEV_HAS_VLAN is set
->>>
->>>[    3.534489] forcedeth 0000:00:0a.0: highdma csum gbit lnktim desc-v3
->>>
->>>Note, this is a pretty old system with an old nvidia chipset and 
->>>on-board ethernet:
->>>
->>>00:0a.0 Bridge: nVidia Corporation CK804 Ethernet Controller (rev a3)
->>>        Subsystem: ASUSTeK Computer Inc. K8N4-E Mainboard
->>>        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B-
->>>        Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR-
->>>        Latency: 0 (250ns min, 5000ns max)
->>>        Interrupt: pin A routed to IRQ 11
->>>        Region 0: Memory at da100000 (32-bit, non-prefetchable) [size=4K]
->>>        Region 1: I/O ports at d000 [size=8]
->>>        Capabilities: [44] Power Management version 2
->>>                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0+,D1+,D2+,D3hot+,D3cold+)
->>>                Status: D0 PME-Enable+ DSel=0 DScale=0 PME-
->>
->>Please do lspci -nn
->>
->>There are two CK804 chips:
->>0x10DE, 0x0056
->>0x10DE, 0x0057
->>
->>I have only the second one handy - Getting the machine as we speak.
->
->I'm unable to see problems you are referring to on my machine.
->
->Would you please try following patch if it fixes your issue? It's
->in fact returning everything back to the original state (for your card).
+* Paul Walmsley <paul@pwsan.com> [110808 13:31]:
+> Hi
+> 
+> On Mon, 8 Aug 2011, Daniel Morsing wrote:
+> 
+> > Building the v3.1-rc1 kernel with ARCH_OMAP && !ARCH_OMAP4 support fails
+> > on linking with the following error
+> > 
+> > ...
+> >   LD      .tmp_vmlinux1
+> > arch/arm/mach-omap2/built-in.o:(.data+0xf7d8): undefined reference to `omap4430_phy_init'
+> > arch/arm/mach-omap2/built-in.o:(.data+0xf7dc): undefined reference to `omap4430_phy_exit'
+> > arch/arm/mach-omap2/built-in.o:(.data+0xf7e0): undefined reference to `omap4430_phy_power'
+> > arch/arm/mach-omap2/built-in.o:(.data+0xf7e4): undefined reference to `omap4430_phy_set_clk'
+> > arch/arm/mach-omap2/built-in.o:(.data+0xf7e8): undefined reference to `omap4430_phy_suspend'
+> > 
+> > I've bisected the first bad commit to "OMAP4: Move common twl6030
+> > configuration to twl-common" (commit-id
+> > b22f954bae35be115a10c6426dc070f7d652b32e). The problem seems to be
+> > unconditionally taking a function pointer to an omap4430 specific
+> > function in arch/arm/mach-omap2/twl-common.c. The definition for
+> > omap4430_phy_init and friends is in
+> > arch/arm/mach-omap2/omap_phy_internal.c, which is only compiled when
+> > building with support for one of the omap4430 boards.
+> 
+> Thanks for the bisect; this should be fixed by 
+> 
+> https://patchwork.kernel.org/patch/963462/
 
+Hmm, there are also these when CONFIG_ARCH_OMAP4 is not selected:
 
-Ingo, any news with this?
+arch/arm/mach-omap2/built-in.o: In function `_enable_module':
+arch/arm/mach-omap2/omap_hwmod.c:701: undefined reference to `omap4_cminst_module_enable'
+arch/arm/mach-omap2/built-in.o: In function `_disable_module':
+arch/arm/mach-omap2/omap_hwmod.c:726: undefined reference to `omap4_cminst_module_disable'
+arch/arm/mach-omap2/built-in.o: In function `_wait_target_disable':
+arch/arm/mach-omap2/omap_hwmod.c:1179: undefined reference to `omap4_cminst_wait_module_idle'
+distcc[27594] ERROR: compile (null) on localhost failed
+make: *** [.tmp_vmlinux1] Error 1
 
-Thanks.
+Care to take a look?
 
-Jirka
-
->
->diff --git a/drivers/net/forcedeth.c b/drivers/net/forcedeth.c
->index e55df30..d7d43d4 100644
->--- a/drivers/net/forcedeth.c
->+++ b/drivers/net/forcedeth.c
->@@ -2763,18 +2763,18 @@ static int nv_rx_process_optimized(struct net_device *dev, int limit)
-> 			skb->protocol = eth_type_trans(skb, dev);
-> 			prefetch(skb->data);
-> 
->-			vlanflags = le32_to_cpu(np->get_rx.ex->buflow);
->-
-> 			/*
-> 			 * There's need to check for NETIF_F_HW_VLAN_RX here.
-> 			 * Even if vlan rx accel is disabled,
-> 			 * NV_RX3_VLAN_TAG_PRESENT is pseudo randomly set.
-> 			 */
->-			if (dev->features & NETIF_F_HW_VLAN_RX &&
->-			    vlanflags & NV_RX3_VLAN_TAG_PRESENT) {
->-				u16 vid = vlanflags & NV_RX3_VLAN_TAG_MASK;
->+			if (dev->features & NETIF_F_HW_VLAN_RX) {
->+				vlanflags = le32_to_cpu(np->get_rx.ex->buflow);
->+				if (vlanflags & NV_RX3_VLAN_TAG_PRESENT) {
->+					u16 vid = vlanflags & NV_RX3_VLAN_TAG_MASK;
-> 
->-				__vlan_hwaccel_put_tag(skb, vid);
->+					__vlan_hwaccel_put_tag(skb, vid);
->+				}
-> 			}
-> 			napi_gro_receive(&np->napi, skb);
-> 
->@@ -5615,7 +5615,7 @@ static int __devinit nv_probe(struct pci_dev *pci_dev, const struct pci_device_i
-> 		goto out_error;
-> 	}
-> 
->-	nv_vlan_mode(dev, dev->features);
->+	//nv_vlan_mode(dev, dev->features);
-> 
-> 	netif_carrier_off(dev);
-> 
+Tony
