@@ -1,69 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751201Ab1HINg7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 09:36:59 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:43897 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750695Ab1HINg5 (ORCPT
+	id S1751167Ab1HINkB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 09:40:01 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:39249 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750695Ab1HINj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 09:36:57 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH] Staging: comedi: fix error issue in dt9812.c
-Date: Tue,  9 Aug 2011 19:21:21 +0530
-Message-Id: <1312897881-17433-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.6.5.2
-In-Reply-To: <[PATCH]Staging: comedi: fix error issue in dt9812.c>
-References: <[PATCH]Staging: comedi: fix error issue in dt9812.c>
+	Tue, 9 Aug 2011 09:39:59 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19/QnK/Kft06XABFqv///sC
+Date: Tue, 9 Aug 2011 06:39:54 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: =?utf-8?B?UMOpdGVy?= Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Paul Walmsley <paul@pwsan.com>, Daniel Morsing <daniel.morsing@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: Re: Build failure: bisected: v3.1-rc1 with config ARCH_OMAP &&
+ !ARCH_OMAP4 fails with linker error
+Message-ID: <20110809133954.GT1866@atomide.com>
+References: <1312819724.14483.29.camel@morsingpad>
+ <alpine.DEB.2.00.1108081435340.4764@utopia.booyaka.com>
+ <20110809131453.GR1866@atomide.com>
+ <1789641.q69g0yHCiG@barack>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1789641.q69g0yHCiG@barack>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+* Péter Ujfalusi <peter.ujfalusi@ti.com> [110809 06:15]:
+> Hi Tony, Paul,
+> 
+> On Tuesday 09 August 2011 15:14:53 Tony Lindgren wrote:
+> > * Paul Walmsley <paul@pwsan.com> [110808 13:31]:
+> > > Hi
+> > > 
+> > > On Mon, 8 Aug 2011, Daniel Morsing wrote:
+> > > > Building the v3.1-rc1 kernel with ARCH_OMAP && !ARCH_OMAP4 support
+> > > > fails on linking with the following error
+> > > > 
+> > > > ...
+> > > > 
+> > > >   LD      .tmp_vmlinux1
+> > > > 
+> > > > arch/arm/mach-omap2/built-in.o:(.data+0xf7d8): undefined reference
+> > > > to `omap4430_phy_init'
+> > > > arch/arm/mach-omap2/built-in.o:(.data+0xf7dc): undefined reference
+> > > > to `omap4430_phy_exit'
+> > > > arch/arm/mach-omap2/built-in.o:(.data+0xf7e0): undefined reference
+> > > > to `omap4430_phy_power'
+> > > > arch/arm/mach-omap2/built-in.o:(.data+0xf7e4): undefined reference
+> > > > to `omap4430_phy_set_clk'
+> > > > arch/arm/mach-omap2/built-in.o:(.data+0xf7e8): undefined reference
+> > > > to `omap4430_phy_suspend'
+> > > > 
+> > > > I've bisected the first bad commit to "OMAP4: Move common twl6030
+> > > > configuration to twl-common" (commit-id
+> > > > b22f954bae35be115a10c6426dc070f7d652b32e). The problem seems to be
+> > > > unconditionally taking a function pointer to an omap4430 specific
+> > > > function in arch/arm/mach-omap2/twl-common.c. The definition for
+> > > > omap4430_phy_init and friends is in
+> > > > arch/arm/mach-omap2/omap_phy_internal.c, which is only compiled when
+> > > > building with support for one of the omap4430 boards.
+> > > 
+> > > Thanks for the bisect; this should be fixed by
+> > > 
+> > > https://patchwork.kernel.org/patch/963462/
+> > 
+> > Hmm, there are also these when CONFIG_ARCH_OMAP4 is not selected:
+> > 
+> > arch/arm/mach-omap2/built-in.o: In function `_enable_module':
+> > arch/arm/mach-omap2/omap_hwmod.c:701: undefined reference to
+> > `omap4_cminst_module_enable' arch/arm/mach-omap2/built-in.o: In function
+> > `_disable_module':
+> > arch/arm/mach-omap2/omap_hwmod.c:726: undefined reference to
+> > `omap4_cminst_module_disable' arch/arm/mach-omap2/built-in.o: In function
+> > `_wait_target_disable': arch/arm/mach-omap2/omap_hwmod.c:1179: undefined
+> > reference to `omap4_cminst_wait_module_idle' distcc[27594] ERROR: compile
+> > (null) on localhost failed
+> > make: *** [.tmp_vmlinux1] Error 1
+> > 
+> > Care to take a look?
+> 
+> I just sent a patch fixing this:
+> http://marc.info/?l=linux-omap&m=131289342114258&w=2
 
-This is a patch to the dt9812.c file that fixes up a error: "foo * bar" should be "foo *bar" found by the checkpatch.pl tool
+But that still won't fix the omap4_cminst_* errors, only the omap4430_phy_*
+errors AFAIK.
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/dt9812.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/dt9812.c b/drivers/staging/comedi/drivers/dt9812.c
-index 32d9c42..e50f5df 100644
---- a/drivers/staging/comedi/drivers/dt9812.c
-+++ b/drivers/staging/comedi/drivers/dt9812.c
-@@ -365,7 +365,7 @@ static int dt9812_read_info(struct usb_dt9812 *dev, int offset, void *buf,
- }
- 
- static int dt9812_read_multiple_registers(struct usb_dt9812 *dev, int reg_count,
--					  u8 * address, u8 * value)
-+					  u8 *address, u8 *value)
- {
- 	struct dt9812_usb_cmd cmd;
- 	int i, count, retval;
-@@ -391,8 +391,8 @@ static int dt9812_read_multiple_registers(struct usb_dt9812 *dev, int reg_count,
- }
- 
- static int dt9812_write_multiple_registers(struct usb_dt9812 *dev,
--					   int reg_count, u8 * address,
--					   u8 * value)
-+					   int reg_count, u8 *address,
-+					   u8 *value)
- {
- 	struct dt9812_usb_cmd cmd;
- 	int i, count, retval;
-@@ -619,7 +619,7 @@ exit:
- }
- 
- static int dt9812_analog_out_shadow(struct slot_dt9812 *slot, int channel,
--				    u16 * value)
-+				    u16 *value)
- {
- 	int result = -ENODEV;
- 
--- 
-1.6.5.2
-
+Tony 
