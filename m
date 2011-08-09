@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab1HIJRr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 05:17:47 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:57608 "EHLO
+	id S1752804Ab1HIJXN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 05:23:13 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:33305 "EHLO
 	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab1HIJRq (ORCPT
+	with ESMTP id S1752144Ab1HIJXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 05:17:46 -0400
+	Tue, 9 Aug 2011 05:23:10 -0400
 X-IronPort-AV: E=Sophos;i="4.67,342,1309737600"; 
-   d="scan'208";a="7171996"
-Subject: Re: [Xen-devel] [PATCH 2/3] xen/pv-on-hvm kexec: rebind virqs to
- existing eventchannel ports
+   d="scan'208";a="7172159"
+Subject: Re: [Xen-devel] [PATCH 3/3] xen/pv-on-hvm kexec+kdump: reset PV
+ devices in kexec or crash kernel
 From: Ian Campbell <Ian.Campbell@citrix.com>
 To: Olaf Hering <olaf@aepfle.de>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "Jeremy Fitzhardinge" <jeremy@goop.org>,
         Konrad <konrad.wilk@oracle.com>,
         "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-In-Reply-To: <20110804162054.510901329@aepfle.de>
+In-Reply-To: <20110804162054.806626433@aepfle.de>
 References: <20110804162053.723541930@aepfle.de>
-	 <20110804162054.510901329@aepfle.de>
+	 <20110804162054.806626433@aepfle.de>
 Content-Type: text/plain; charset="UTF-8"
 Organization: Citrix Systems, Inc.
-Date: Tue, 9 Aug 2011 10:17:40 +0100
-Message-ID: <1312881460.26263.46.camel@zakaz.uk.xensource.com>
+Date: Tue, 9 Aug 2011 10:23:08 +0100
+Message-ID: <1312881788.26263.50.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
 X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
@@ -32,85 +32,184 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, 2011-08-04 at 17:20 +0100, Olaf Hering wrote:
-> During a kexec boot some virqs such as timer and debugirq were already
-> registered by the old kernel.  The hypervisor will return -EEXISTS from
-> the new EVTCHNOP_bind_virq request and the BUG in bind_virq_to_irq()
-> triggers.  Catch the -EEXISTS error and loop through all possible ports to find
-> what port belongs to the virq/cpu combo.
-
-Would it be better to proactively just query the status of all event
-channels early on, like you do in find_virq, and setup the irq info
-structures as appropriate? Rather than waiting for an -EEXISTS I mean.
-
+> After triggering a crash dump in a HVM guest, the PV backend drivers
+> will remain in Connected state. When the kdump kernel starts the PV
+> drivers will skip such devices. As a result, no root device is found and
+> the vmcore cant be saved.  
+> 
+> A similar situation happens after a kexec boot, here the devices will be
+> in the Closed state.
+> 
+> With this change all frontend devices with state XenbusStateConnected or
+> XenbusStateClosed will be reset by changing the state file to
+> Closing/Closed/Initializing.  This will trigger a disconnect in the
+> backend drivers. Now the frontend drivers will find the backend drivers
+> in state Initwait and can connect.
 > 
 > Signed-off-by: Olaf Hering <olaf@aepfle.de>
 > 
 > ---
->  drivers/xen/events.c |   40 +++++++++++++++++++++++++++++++++++-----
->  1 file changed, 35 insertions(+), 5 deletions(-)
+>  drivers/xen/xenbus/xenbus_comms.c          |    4 -
+>  drivers/xen/xenbus/xenbus_probe_frontend.c |  116 +++++++++++++++++++++++++++++
+>  2 files changed, 119 insertions(+), 1 deletion(-)
 > 
-> Index: linux-3.0/drivers/xen/events.c
+> Index: linux-3.0/drivers/xen/xenbus/xenbus_comms.c
 > ===================================================================
-> --- linux-3.0.orig/drivers/xen/events.c
-> +++ linux-3.0/drivers/xen/events.c
-> @@ -877,11 +877,35 @@ static int bind_interdomain_evtchn_to_ir
->  	return err ? : bind_evtchn_to_irq(bind_interdomain.local_port);
+> --- linux-3.0.orig/drivers/xen/xenbus/xenbus_comms.c
+> +++ linux-3.0/drivers/xen/xenbus/xenbus_comms.c
+> @@ -212,7 +212,9 @@ int xb_init_comms(void)
+>  		printk(KERN_WARNING "XENBUS response ring is not quiescent "
+>  		       "(%08x:%08x): fixing up\n",
+>  		       intf->rsp_cons, intf->rsp_prod);
+> -		intf->rsp_cons = intf->rsp_prod;
+> +		/* breaks kdump */
+> +		if (!reset_devices)
+> +			intf->rsp_cons = intf->rsp_prod;
+>  	}
+>  
+>  	if (xenbus_irq) {
+> Index: linux-3.0/drivers/xen/xenbus/xenbus_probe_frontend.c
+> ===================================================================
+> --- linux-3.0.orig/drivers/xen/xenbus/xenbus_probe_frontend.c
+> +++ linux-3.0/drivers/xen/xenbus/xenbus_probe_frontend.c
+> @@ -252,10 +252,126 @@ int __xenbus_register_frontend(struct xe
 >  }
+>  EXPORT_SYMBOL_GPL(__xenbus_register_frontend);
 >  
-> +/* BITS_PER_LONG is used in Xen */
-> +#define MAX_EVTCHNS (64 * 64)
+> +static DECLARE_WAIT_QUEUE_HEAD(backend_state_wq);
+> +static int backend_state;
 > +
-> +static int find_virq(unsigned int virq, unsigned int cpu)
+> +static void xenbus_reset_backend_state_changed(struct xenbus_watch *w,
+> +					const char **v, unsigned int l)
 > +{
-> +	struct evtchn_status status;
-> +	int port, rc = -ENOENT;
-> +
-> +	memset(&status, 0, sizeof(status));
-> +	for (port = 0; port <= MAX_EVTCHNS; port++) {
-> +		status.dom = DOMID_SELF;
-> +		status.port = port;
-> +		rc = HYPERVISOR_event_channel_op(EVTCHNOP_status, &status);
-> +		if (rc < 0)
-> +			continue;
-> +		if (status.status != EVTCHNSTAT_virq)
-> +			continue;
-> +		if (status.u.virq == virq && status.vcpu == cpu) {
-> +			rc = port;
-> +			break;
-> +		}
-> +	}
-> +	return rc;
+> +	xenbus_scanf(XBT_NIL, v[XS_WATCH_PATH], "", "%i", &backend_state);
+> +	printk(KERN_DEBUG "XENBUS: %s %s\n",
+> +			v[XS_WATCH_PATH], xenbus_strstate(backend_state));
+> +	wake_up(&backend_state_wq);
 > +}
->  
->  int bind_virq_to_irq(unsigned int virq, unsigned int cpu)
+> +
+> +static void xenbus_reset_wait_for_backend(int expected)
+> +{
+> +	wait_event_interruptible(backend_state_wq, backend_state == expected);
+> +}
+> +
+> +/*
+> + * Reset frontend if it is in Connected or Closed state.
+> + * Wait for backend to catch up.
+> + * State Connected happens during kdump, Closed after kexec.
+> + */
+> +static void xenbus_reset_frontend(char *fe, char *be, int be_state)
+> +{
+> +	struct xenbus_watch be_watch;
+> +
+> +	printk(KERN_DEBUG "XENBUS: backend %s %s\n",
+> +			be, xenbus_strstate(be_state));
+> +
+> +	memset(&be_watch, 0, sizeof(be_watch));
+> +	be_watch.node = kasprintf(GFP_NOIO | __GFP_HIGH, "%s/state", be);
+> +	if (!be_watch.node)
+> +		return;
+> +
+> +	be_watch.callback = xenbus_reset_backend_state_changed;
+> +	backend_state = XenbusStateUnknown;
+> +
+> +	printk(KERN_INFO "XENBUS: triggering reconnect on %s\n", be);
+> +	register_xenbus_watch(&be_watch);
+> +
+> +	switch (be_state) {
+> +	case XenbusStateConnected:
+> +		xenbus_printf(XBT_NIL, fe, "state", "%d", XenbusStateClosing);
+> +		xenbus_reset_wait_for_backend(XenbusStateClosing);
+> +
+> +	case XenbusStateClosing:
+> +		xenbus_printf(XBT_NIL, fe, "state", "%d", XenbusStateClosed);
+> +		xenbus_reset_wait_for_backend(XenbusStateClosed);
+> +
+> +	case XenbusStateClosed:
+> +		xenbus_printf(XBT_NIL, fe, "state", "%d", XenbusStateInitialising);
+> +		xenbus_reset_wait_for_backend(XenbusStateInitWait);
+> +	}
+> +
+> +	unregister_xenbus_watch(&be_watch);
+> +	printk(KERN_INFO "XENBUS: reconnect done on %s\n", be);
+> +	kfree(be_watch.node);
+> +}
+> +
+> +static void xenbus_check_frontend(char *class, char *dev)
+> +{
+> +	int be_state, fe_state, err;
+> +	char *backend, *frontend;
+> +
+> +	frontend = kasprintf(GFP_NOIO | __GFP_HIGH, "device/%s/%s", class, dev);
+> +	if (!frontend)
+> +		return;
+> +
+> +	err = xenbus_scanf(XBT_NIL, frontend, "state", "%i", &fe_state);
+> +	if (err != 1)
+> +		goto out;
+> +
+> +	switch (fe_state) {
+> +	case XenbusStateConnected:
+> +	case XenbusStateClosed:
+> +		printk(KERN_DEBUG "XENBUS: frontend %s %s\n",
+> +				frontend, xenbus_strstate(fe_state));
+> +		backend = xenbus_read(XBT_NIL, frontend, "backend", NULL);
+> +		if (!backend || IS_ERR(backend))
+> +			goto out;
+> +		err = xenbus_scanf(XBT_NIL, backend, "state", "%i", &be_state);
+> +		if (err == 1)
+> +			xenbus_reset_frontend(frontend, backend, be_state);
+> +		kfree(backend);
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +out:
+> +	kfree(frontend);
+> +}
+> +
+> +static void xenbus_reset_state(void)
+> +{
+> +	char **devclass, **dev;
+> +	int devclass_n, dev_n;
+> +	int i, j;
+> +
+> +	devclass = xenbus_directory(XBT_NIL, "device", "", &devclass_n);
+> +	if (IS_ERR(devclass))
+> +		return;
+> +
+> +	for (i = 0; i < devclass_n; i++) {
+> +		dev = xenbus_directory(XBT_NIL, "device", devclass[i], &dev_n);
+> +		if (IS_ERR(dev))
+> +			continue;
+> +		for (j = 0; j < dev_n; j++)
+> +			xenbus_check_frontend(devclass[i], dev[j]);
+> +		kfree(dev);
+> +	}
+> +	kfree(devclass);
+> +}
+> +
+>  static int frontend_probe_and_watch(struct notifier_block *notifier,
+>  				   unsigned long event,
+>  				   void *data)
 >  {
->  	struct evtchn_bind_virq bind_virq;
-> -	int evtchn, irq;
-> +	int evtchn, irq, ret;
->  
->  	spin_lock(&irq_mapping_update_lock);
->  
-> @@ -897,10 +921,16 @@ int bind_virq_to_irq(unsigned int virq,
->  
->  		bind_virq.virq = virq;
->  		bind_virq.vcpu = cpu;
-> -		if (HYPERVISOR_event_channel_op(EVTCHNOP_bind_virq,
-> -						&bind_virq) != 0)
-> -			BUG();
-> -		evtchn = bind_virq.port;
-> +		ret = HYPERVISOR_event_channel_op(EVTCHNOP_bind_virq,
-> +						&bind_virq);
-> +		if (ret == 0)
-> +			evtchn = bind_virq.port;
-> +		else {
-> +			if (ret == -EEXIST)
-> +				ret = find_virq(virq, cpu);
-> +			BUG_ON(ret < 0);
-> +			evtchn = ret;
-> +		}
->  
->  		xen_irq_info_virq_init(cpu, irq, evtchn, virq);
->  
+> +	/* reset devices in Connected or Closed state */
+> +	if (xen_hvm_domain())
+                               && reset_devices ??
+
+How long should we wait for the backend to respond? Should we add a
+timeout and countdown similar to wait_for_devices?
+
+It's unfortunate that this code is effectively serialising on each
+device. It would be much preferable to kick off all the resets and then
+wait for them to occur. You could probably do this by incrementing a
+counter for each device you reset and decrementing it each time a watch
+triggers then wait for the counter to hit zero.
+
+> +		xenbus_reset_state();
+>  	/* Enumerate devices in xenstore and watch for changes. */
+>  	xenbus_probe_devices(&xenbus_frontend);
+>  	register_xenbus_watch(&fe_watch);
 > 
 > 
 > _______________________________________________
