@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab1HIJkI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 05:40:08 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40452 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752199Ab1HIJkG (ORCPT
+	id S1752679Ab1HIJn2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 05:43:28 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:39518 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751679Ab1HIJn1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 05:40:06 -0400
-Date: Tue, 9 Aug 2011 10:43:23 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Vincent Palatin <vpalatin@chromium.org>
-Cc: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: cdc-acm: fix possible null pointer in
- acm_tty_hangup
-Message-ID: <20110809104323.412b6282@lxorguk.ukuu.org.uk>
-In-Reply-To: <1312843100-1811-1-git-send-email-vpalatin@chromium.org>
-References: <1312843100-1811-1-git-send-email-vpalatin@chromium.org>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Aug 2011 05:43:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAC5umyhLuhNK55WDXTii2SFsqPNau1B9F1z+E0r0CaLNkGZfDg@mail.gmail.com>
+References: <1312709438-7608-1-git-send-email-akinobu.mita@gmail.com>
+	<1312859440.2531.20.camel@edumazet-laptop>
+	<1312860783.2531.31.camel@edumazet-laptop>
+	<CAC5umyhLuhNK55WDXTii2SFsqPNau1B9F1z+E0r0CaLNkGZfDg@mail.gmail.com>
+Date: Tue, 9 Aug 2011 12:43:26 +0300
+X-Google-Sender-Auth: 5k1TZq8UZ2qAhcZegM7kGjh2TgY
+Message-ID: <CAOJsxLHKJT_qCsiPVCEh=+nbZ2D7+y=mJgMM+wEob395zEN6XQ@mail.gmail.com>
+Subject: Re: [PATCH] slub: fix check_bytes() for slub debugging
+From: Pekka Enberg <penberg@kernel.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  8 Aug 2011 15:38:20 -0700
-Vincent Palatin <vpalatin@chromium.org> wrote:
+On Tue, Aug 9, 2011 at 12:38 PM, Akinobu Mita <akinobu.mita@gmail.com> wrote:
+> 2011/8/9 Eric Dumazet <eric.dumazet@gmail.com>:
+>
+>>> > diff --git a/mm/slub.c b/mm/slub.c
+>>> > index eb5a8f9..5695f92 100644
+>>> > --- a/mm/slub.c
+>>> > +++ b/mm/slub.c
+>>> > @@ -701,7 +701,7 @@ static u8 *check_bytes(u8 *start, u8 value, unsigned int bytes)
+>>> >             return check_bytes8(start, value, bytes);
+>>> >
+>>> >     value64 = value | value << 8 | value << 16 | value << 24;
+>>> > -   value64 = value64 | value64 << 32;
+>>> > +   value64 = (value64 & 0xffffffff) | value64 << 32;
+>>> >     prefix = 8 - ((unsigned long)start) % 8;
+>>> >
+>>> >     if (prefix) {
+>>>
+>>> Still buggy I am afraid. Could we use the following ?
+>>>
+>>>
+>>>       value64 = value;
+>>>       value64 |= value64 << 8;
+>>>       value64 |= value64 << 16;
+>>>       value64 |= value64 << 32;
+>>>
+>>>
+>>
+>> Well, 'buggy' was not well chosen.
+>>
+>> Another possibility would be to use a multiply if arch has a fast
+>> multiplier...
+>>
+>>
+>>        value64 = value;
+>> #if defined(ARCH_HAS_FAST_MULTIPLIER) && BITS_PER_LONG == 64
+>>        value64 *= 0x0101010101010101;
+>> #elif defined(ARCH_HAS_FAST_MULTIPLIER)
+>>        value64 *= 0x01010101;
+>>        value64 |= value64 << 32;
+>> #else
+>>        value64 |= value64 << 8;
+>>        value64 |= value64 << 16;
+>>        value64 |= value64 << 32;
+>> #endif
+>
+> I don't really care about which one should be used.  So tell me if I need
+> to resend it with this improvement.
 
-> Sometimes, acm_tty_hangup and acm_tty_close are called concurrently.
-> This results in acm pointer being null in acm_tty_hangup and panics when
-> it is dereferenced.
+I'm confused. What was wrong with your original patch?
 
-This is definitely not the way to attack the problem.
-
-The tty port hangup and close logic will do all the needed locking and do
-it right. The big problem here is touching tty->driver_data. If you have
-a block of memory that is tied to the tty object lifetime it needs to get
-destroyed when the tty object is destroyed not as close/hangup or you
-still leave races.
-
-Take a look at
-
-	tty_port_close
-	tty_port_hangup
-
-and in particular for port internal sychronization of open/close/hangup
-once only events at
-
-	port->ops->activate
-	port->ops->shutdown
-	port->ops->destruct
-
-and for a tty lifetime object
-
-	tty->ops->shutdown
-
-Alan
+                        Pekka
