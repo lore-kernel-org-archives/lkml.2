@@ -1,72 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab1HIDVU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Aug 2011 23:21:20 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58302 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751989Ab1HIDVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Aug 2011 23:21:19 -0400
-Date: Tue, 9 Aug 2011 13:21:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warnings after merge of the regmap tree
-Message-Id: <20110809132111.af88776afc00f9e87e1bd6a1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.5; i486-pc-linux-gnu)
+	id S1752280Ab1HIDdK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Aug 2011 23:33:10 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:42021 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631Ab1HIDdJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Aug 2011 23:33:09 -0400
+Subject: Re: [PATCH] slub: fix check_bytes() for slub debugging
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org
+In-Reply-To: <1312859440.2531.20.camel@edumazet-laptop>
+References: <1312709438-7608-1-git-send-email-akinobu.mita@gmail.com>
+	 <1312859440.2531.20.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Aug 2011 05:33:03 +0200
+Message-ID: <1312860783.2531.31.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__9_Aug_2011_13_21_11_+1000_e7RRg5vocPJby6fB"
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__9_Aug_2011_13_21_11_+1000_e7RRg5vocPJby6fB
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Le mardi 09 août 2011 à 05:10 +0200, Eric Dumazet a écrit :
+> Le dimanche 07 août 2011 à 18:30 +0900, Akinobu Mita a écrit :
+> > The check_bytes() function is used by slub debugging.  It returns a pointer
+> > to the first unmatching byte for a character in the given memory area.
+> > 
+> > If the character for matching byte is greater than 0x80, check_bytes()
+> > doesn't work.  Becuase 64-bit pattern is generated as below.
+> > 
+> > 	value64 = value | value << 8 | value << 16 | value << 24;
+> > 	value64 = value64 | value64 << 32;
+> > 
+> > The integer promotions are performed and sign-extended as the type of value
+> > is u8.  The upper 32 bits of value64 is 0xffffffff in the first line, and
+> > the second line has no effect.
+> > 
+> > This fixes the 64-bit pattern generation.
+> > 
+> > Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> > Cc: Christoph Lameter <cl@linux-foundation.org>
+> > Cc: Pekka Enberg <penberg@kernel.org>
+> > Cc: Matt Mackall <mpm@selenic.com>
+> > Cc: linux-mm@kvack.org
+> > ---
+> >  mm/slub.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/mm/slub.c b/mm/slub.c
+> > index eb5a8f9..5695f92 100644
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > @@ -701,7 +701,7 @@ static u8 *check_bytes(u8 *start, u8 value, unsigned int bytes)
+> >  		return check_bytes8(start, value, bytes);
+> >  
+> >  	value64 = value | value << 8 | value << 16 | value << 24;
+> > -	value64 = value64 | value64 << 32;
+> > +	value64 = (value64 & 0xffffffff) | value64 << 32;
+> >  	prefix = 8 - ((unsigned long)start) % 8;
+> >  
+> >  	if (prefix) {
+> 
+> Still buggy I am afraid. Could we use the following ?
+> 
+> 
+> 	value64 = value;
+> 	value64 |= value64 << 8;
+> 	value64 |= value64 << 16;
+> 	value64 |= value64 << 32;
+> 
+> 
 
-Hi Mark,
+Well, 'buggy' was not well chosen.
 
-After merging the regmap tree, today's linux-next build (x86_64
-allmodconfig) produced these warning:
+Another possibility would be to use a multiply if arch has a fast
+multiplier...
 
-drivers/base/regmap/regmap-debugfs.c: In function 'regmap_map_read_file':
-drivers/base/regmap/regmap-debugfs.c:71:6: warning: field precision should =
-have type 'int', but argument 4 has type 'size_t'
-drivers/base/regmap/regmap-debugfs.c:78:7: warning: field precision should =
-have type 'int', but argument 4 has type 'size_t'
 
-Introduced by commit 31244e396fa9 ("regmap: Provide register map dump via
-debugfs").
+	value64 = value;
+#if defined(ARCH_HAS_FAST_MULTIPLIER) && BITS_PER_LONG == 64
+	value64 *= 0x0101010101010101;
+#elif defined(ARCH_HAS_FAST_MULTIPLIER)
+	value64 *= 0x01010101;
+	value64 |= value64 << 32;
+#else
+	value64 |= value64 << 8;
+	value64 |= value64 << 16;
+	value64 |= value64 << 32;
+#endif
 
-In file included from include/trace/ftrace.h:296:0,
-                 from include/trace/define_trace.h:96,
-                 from include/trace/events/regmap.h:112,
-                 from drivers/base/regmap/regmap.c:19:
-include/trace/events/regmap.h: In function 'ftrace_raw_output_regmap_block':
-include/trace/events/regmap.h:58:1: warning: format '%d' expects type 'int'=
-, but argument 5 has type 'size_t'
 
-Introduced by commit fb2736bbaee0 ("regmap: Add basic tracepoints").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Tue__9_Aug_2011_13_21_11_+1000_e7RRg5vocPJby6fB
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOQKenAAoJEDMEi1NhKgbsHiYH/2ePAwtdnjlaNnoTJB/MAcZK
-BsyqhHB405PAPFR0aNqncirF+IwuNJz8z0uv63Lg47prksA2raoziZ3Aofh7YS9M
-SyraaujC165ipRLy9YGkeEMHepB9afhkwnTfBINLPxDsHZGhtFT61f/yVthqe/qL
-+fNxfzfdRyIdbfc1XcYymfxiM4Y3Fzgc7OGRlnqDcOIgYYBfX8c96OQ4SW0rZun0
-auHDVDIOkTvFS7Qjuuu+2KDcigw5AzD291qa5JCI5/y/UlPJ61MtndGQOl5YECxb
-Ioivw9vz4XUZCpW2Xg29c3aWB52BIiOw8boAINKQ1Eu6KtChjU1iq/zZYMm8+7g=
-=DS4z
------END PGP SIGNATURE-----
-
---Signature=_Tue__9_Aug_2011_13_21_11_+1000_e7RRg5vocPJby6fB--
