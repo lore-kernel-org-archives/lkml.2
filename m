@@ -1,79 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab1HIPWV (ORCPT <rfc822;w@1wt.eu>);
+	id S1753602Ab1HIPW4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 11:22:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32882 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753122Ab1HIPWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 9 Aug 2011 11:22:21 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:42135 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab1HIPWU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 11:22:20 -0400
-From: stufever@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, davem@davemloft.net, Sandeep.Kumar@freescale.com,
-        Wang Shaoyan <wangshaoyan.pt@taobao.com>
-Subject: [PATCH] gianfar: reduce stack usage in gianfar_ethtool.c
-Date: Tue,  9 Aug 2011 23:18:23 +0800
-Message-Id: <1312903103-1734-1-git-send-email-wangshaoyan.pt@taobao.com>
-X-Mailer: git-send-email 1.7.0.4
+Date: Tue, 9 Aug 2011 17:22:18 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: linux-mm@kvack.org, Balbir Singh <bsingharora@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2 v2] memcg: make oom_lock 0 and 1 based rather than
+ coutner
+Message-ID: <20110809152218.GK7463@tiehlicka.suse.cz>
+References: <cover.1310732789.git.mhocko@suse.cz>
+ <44ec61829ed8a83b55dc90a7aebffdd82fe0e102.1310732789.git.mhocko@suse.cz>
+ <20110809140312.GA2265@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110809140312.GA2265@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wang Shaoyan <wangshaoyan.pt@taobao.com>
+On Tue 09-08-11 16:03:12, Johannes Weiner wrote:
+> On Wed, Jul 13, 2011 at 01:05:49PM +0200, Michal Hocko wrote:
+> > @@ -1803,37 +1806,83 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
+> >  /*
+> >   * Check OOM-Killer is already running under our hierarchy.
+> >   * If someone is running, return false.
+> > + * Has to be called with memcg_oom_mutex
+> >   */
+> >  static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
+> >  {
+> > -	int x, lock_count = 0;
+> > -	struct mem_cgroup *iter;
+> > +	int lock_count = -1;
+> > +	struct mem_cgroup *iter, *failed = NULL;
+> > +	bool cond = true;
+> >  
+> > -	for_each_mem_cgroup_tree(iter, mem) {
+> > -		x = atomic_inc_return(&iter->oom_lock);
+> > -		lock_count = max(x, lock_count);
+> > +	for_each_mem_cgroup_tree_cond(iter, mem, cond) {
+> > +		bool locked = iter->oom_lock;
+> > +
+> > +		iter->oom_lock = true;
+> > +		if (lock_count == -1)
+> > +			lock_count = iter->oom_lock;
+> > +		else if (lock_count != locked) {
+> > +			/*
+> > +			 * this subtree of our hierarchy is already locked
+> > +			 * so we cannot give a lock.
+> > +			 */
+> > +			lock_count = 0;
+> > +			failed = iter;
+> > +			cond = false;
+> > +		}
+> 
+> I noticed system-wide hangs during a parallel/hierarchical memcg test
+> and found that a single task with a central i_mutex held was sleeping
+> on the memcg oom waitqueue, stalling everyone else contending for that
+> same inode.
 
-  drivers/net/gianfar_ethtool.c:765: warning: the frame size of 2048 bytes is larger than 1024 bytes
+Nasty. Thanks for reporting and fixing this. The condition is screwed
+totally :/
 
-Signed-off-by: Wang Shaoyan <wangshaoyan.pt@taobao.com>
----
- drivers/net/gianfar_ethtool.c |   26 +++++++++++++++++++++++---
- 1 files changed, 23 insertions(+), 3 deletions(-)
+> 
+> The problem is the above code, which never succeeds in hierarchies
+> with more than one member.  The first task going OOM tries to oom lock
+> the hierarchy, fails, goes to sleep on the OOM waitqueue with the
+> mutex held, without anybody actually OOM killing anything to make
+> progress.
+> 
+> Here is a patch that rectified things for me.
+> 
+> ---
+> From c4b52cbe01ed67d6487a96850400cdf5a9de91aa Mon Sep 17 00:00:00 2001
+> From: Johannes Weiner <jweiner@redhat.com>
+> Date: Tue, 9 Aug 2011 15:31:30 +0200
+> Subject: [patch] memcg: fix hierarchical oom locking
+> 
+> Commit "79dfdac memcg: make oom_lock 0 and 1 based rather than
+> counter" tried to oom lock the hierarchy and roll back upon
+> encountering an already locked memcg.
+> 
+> The code is pretty confused when it comes to detecting a locked memcg,
+> though, so it would fail and rollback after locking one memcg and
+> encountering an unlocked second one.
+> 
+> The result is that oom-locking hierarchies fails unconditionally and
+> that every oom killer invocation simply goes to sleep on the oom
+> waitqueue forever.  The tasks practically hang forever without anyone
+> intervening, possibly holding locks that trip up unrelated tasks, too.
+> 
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 
-diff --git a/drivers/net/gianfar_ethtool.c b/drivers/net/gianfar_ethtool.c
-index 6e35069..039e9c3 100644
---- a/drivers/net/gianfar_ethtool.c
-+++ b/drivers/net/gianfar_ethtool.c
-@@ -686,10 +686,26 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
- {
- 	unsigned int last_rule_idx = priv->cur_filer_idx;
- 	unsigned int cmp_rqfpr;
--	unsigned int local_rqfpr[MAX_FILER_IDX + 1];
--	unsigned int local_rqfcr[MAX_FILER_IDX + 1];
-+	unsigned int *local_rqfpr;
-+	unsigned int *local_rqfcr;
- 	int i = 0x0, k = 0x0;
- 	int j = MAX_FILER_IDX, l = 0x0;
-+	int ret = 1;
-+
-+	local_rqfpr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
-+		GFP_KERNEL);
-+	if (local_rqfpr) {
-+		pr_err("Out of memory\n");
-+		ret = 0;
-+		got err;
-+	}
-+	local_rqfcr = kmalloc(sizeof(unsigned int) * (MAX_FILER_IDX + 1),
-+		GFP_KERNEL);
-+	if (local_rqfcr) {
-+		pr_err("Out of memory\n");
-+		ret = 0;
-+		goto err1;
-+	}
- 
- 	switch (class) {
- 	case TCP_V4_FLOW:
-@@ -765,7 +781,11 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
- 		priv->cur_filer_idx = priv->cur_filer_idx - 1;
- 	}
- 
--	return 1;
-+	kfree(local_rqfcr);
-+err1:
-+	kfree(local_rqfpr);
-+err:
-+	return ret;
- }
- 
- static int gfar_set_hash_opts(struct gfar_private *priv, struct ethtool_rxnfc *cmd)
+Looks good. Thanks!
+Just a minor nit about done label bellow.
+
+Acked-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  mm/memcontrol.c |   14 ++++----------
+>  1 files changed, 4 insertions(+), 10 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 930de94..649c568 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1841,25 +1841,19 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
+>   */
+>  static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
+>  {
+> -	int lock_count = -1;
+
+Yes, the whole lock_count thingy is just stupid. We care just about all
+or nothing and state of the first is really not important.
+
+>  	struct mem_cgroup *iter, *failed = NULL;
+>  	bool cond = true;
+>  
+>  	for_each_mem_cgroup_tree_cond(iter, mem, cond) {
+> -		bool locked = iter->oom_lock;
+> -
+> -		iter->oom_lock = true;
+> -		if (lock_count == -1)
+> -			lock_count = iter->oom_lock;
+> -		else if (lock_count != locked) {
+> +		if (iter->oom_lock) {
+>  			/*
+>  			 * this subtree of our hierarchy is already locked
+>  			 * so we cannot give a lock.
+>  			 */
+> -			lock_count = 0;
+>  			failed = iter;
+>  			cond = false;
+> -		}
+> +		} else
+> +			iter->oom_lock = true;
+>  	}
+>  
+>  	if (!failed)
+
+We can return here and get rid of done label.
+
+> @@ -1878,7 +1872,7 @@ static bool mem_cgroup_oom_lock(struct mem_cgroup *mem)
+>  		iter->oom_lock = false;
+>  	}
+>  done:
+> -	return lock_count;
+> +	return failed == NULL;
+>  }
+>  
+>  /*
+> -- 
+> 1.7.6
+
 -- 
-1.7.0.4
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
