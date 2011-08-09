@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab1HIUmC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Aug 2011 16:42:02 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45658 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780Ab1HIUmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Aug 2011 16:42:01 -0400
-Message-ID: <4E419B6E.1030309@zytor.com>
-Date: Tue, 09 Aug 2011 15:41:18 -0500
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110707 Thunderbird/5.0
+	id S1751273Ab1HIUwi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Aug 2011 16:52:38 -0400
+Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.32]:59784 "EHLO
+	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750773Ab1HIUwh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Aug 2011 16:52:37 -0400
+Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
+X-Authority-Analysis: v=1.1 cv=QcSFu2tMqX8VyBnwf4xZriMeG3TVj1s8v1Rcea0EwGI= c=1 sm=0 a=3CAT4r-dEVgA:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:17 a=tlf1A0flXDu0pkJXk_AA:9 a=lZzpJhahoEhUmEKPbaQA:7 a=CjuIK1q_8ugA:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.79.195.91
+From: "Bob Pearson" <rpearson@systemfabricworks.com>
+To: "'Joakim Tjernlund'" <joakim.tjernlund@transmode.se>
+Cc: <akpm@linux-foundation.org>, <fzago@systemfabricworks.com>,
+        <linux@horizon.com>, <linux-kernel@vger.kernel.org>
+References: <4E40C55F.8070703@systemfabricworks.com> <OFBF50514E.82734B36-ONC12578E7.005E58EE-C12578E7.005F648F@transmode.se>
+In-Reply-To: <OFBF50514E.82734B36-ONC12578E7.005E58EE-C12578E7.005F648F@transmode.se>
+Subject: RE: [patch v3 6/7] crc32: add-slicing-by-8.diff
+Date: Tue, 9 Aug 2011 15:52:34 -0500
+Message-ID: <018501cc56d6$448293a0$cd87bae0$@systemfabricworks.com>
 MIME-Version: 1.0
-To: matthieu castet <castet.matthieu@free.fr>
-CC: mingo@redhat.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        rjw@sisk.pl, hpa@linux.intel.com, linux-tip-commits@vger.kernel.org,
-        Kees Cook <kees.cook@canonical.com>
-Subject: Re: [tip:x86/trampoline] x86, suspend: Merge 32- and 64-bit realmode
- wakeup code
-References: <1309628621-23107-1-git-send-email-castet.matthieu@free.fr> <tip-ababf605370b2c67cc6a37305c5fa17469a4e1f1@git.kernel.org> <20110809213440.21ec2947@mat-laptop>
-In-Reply-To: <20110809213440.21ec2947@mat-laptop>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQF1xyKC3NFpBDSpQjvmEwcz73CzIwFHH570lbfkt+A=
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2011 02:34 PM, matthieu castet wrote:
-> Note that
-> https://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=7a3136666bc0f0419f7aaa7b1fabb4b0e0a7fb76
-> should be reverted for applying the patch.
-> 
-> This is not a problem as the x86_32 trampoline code already does that.
-> 
-> Any idea when it will be merged in the mainline tree ?
+> >    - extend largest BITS size from 32 to 64
+> >    - extend table from tab[4][256] to tab[8][256]
+> >    - change algorithm to align on 8 byte boundary
+> >      (it was noted that all that is really required
+> >      is that the inner loop must comsume 8 bytes.
+> >      As written it can start on even or odd 4 byte
+> >      boundary.)
+> So why not do that in the code too?
 > 
 
-3.2 merge window, unless something goes wrong.
+I did the experiment with the random test set and it is a couple of % faster
+so I made the change. I had thought that it wouldn't make a measurable
+difference.
 
-	-hpa
